@@ -68,10 +68,30 @@ def _Number(parent, propObj, tkProp, tkVar):
 
     if makeScale:
 
-        # TODO labels
-        widget = ttk.Scale(parent, orient=tk.HORIZONTAL,
+        scaleFrame = ttk.Frame(parent)
+        scaleFrame.columnconfigure(0, weight=1)
+        scaleFrame.columnconfigure(1, weight=1)
+        scaleFrame.columnconfigure(2, weight=1)
+
+        widget = ttk.Scale(scaleFrame, orient=tk.HORIZONTAL,
                            from_=minval, to=maxval,
                            variable=tkVar)
+
+        minLabel = ttk.Label(scaleFrame, text='{}'.format(minval), anchor=tk.W)
+        curLabel = ttk.Label(scaleFrame, text='{}'.format(value),  anchor=tk.CENTER)
+        maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval), anchor=tk.E)
+
+        widget  .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W, columnspan=3)
+        minLabel.grid(row=1, column=0, sticky=tk.W)
+        curLabel.grid(row=1, column=1)
+        maxLabel.grid(row=1, column=2, sticky=tk.E)
+
+        def updateLabel(*args):
+            curLabel.config(text='{:0.6}'.format(tkVar.get()))
+
+        tkVar.trace("w", updateLabel)
+                
+        widget = scaleFrame
         
     else:
 

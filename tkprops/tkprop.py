@@ -170,8 +170,6 @@ class Number(PropertyBase):
 
     def __set__(self, instance, value):
 
-        print('Attempt to set {} to {}'.format(self.label, value))
-
         if self.minval is not None and value < self.minval:
             raise ValueError('{} must be at least {}'.format(
                 self.label, self.minval))
@@ -180,8 +178,6 @@ class Number(PropertyBase):
             raise ValueError('{} must be at most {}'.format(
                 self.label, self.maxval))
 
-        print('Success')
-        
         super(Number, self).__set__(instance, value)
 
         
