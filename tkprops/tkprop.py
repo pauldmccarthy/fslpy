@@ -30,7 +30,39 @@
 #     # access the underlying Tkinter object:
 #     myPropObj.myProperty_tkVar
 #
-#     # >>> <Tkinter.BooleanVar instance at 0x1047ef518>
+#     # >>> <_tkprops.tkprop._BooleanVar instance at 0x1047ef518>
+#
+# 
+# Lots of the code in this class is probably very confusing. First
+# of all, you will need to understand python descriptors.
+# Descriptors are a way of adding properties to python objects,
+# and allowing them to be accessed as if they were just simple
+# attributes of the object, but controlling the way that the
+# attributes are accessed and assigned.
+#
+# The following link provides a good overview, and contains the
+# ideas which form the basis for the implementation in this module:
+#
+#  -  http://nbviewer.ipython.org/urls/gist.github.com/\
+#     ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb
+#
+# And if you've got 30 minutes, this video gives a very good
+# introduction to descriptors:
+#
+#  - http://pyvideo.org/video/1760/encapsulation-with-descriptors
+#
+# Once you know how Python descriptors work, you then need to know
+# how Tk control variables work. These are simple objects which
+# may be passed to a Tkinter widget object when it is created. When
+# a user modifies the widget value, the Tk control variable is
+# modified. Conversely, if the value of a Tk control variable object
+# is modified, any widgets which are bound to the variable are
+# updated to reflect the new value.
+#
+# This module, and the associated tkpropwidget module, uses magic to
+# encapsulate Tkinter control variables within python descriptors,
+# thus allowing custom validation rules to be enforced on such 
+# control variables.
 #
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -39,24 +71,102 @@ import os.path as op
 
 import Tkinter as tk
 
+# The classes below are used in place of the Tkinter.*Var classes.
+# They are identical to the Tkinter versions, with the following
+# exceptions:
+#
+#   1. A reference to a PropertyBase object is saved when the
+#      Var object is created.
+#
+#   2. When the set() method is called on the Var object, the
+#      PropertyBase.validate method is called, to test that
+#      the new value is valid. If not, a ValueError is raised.
+
+class _StringVar(tk.StringVar):
+    def __init__(self, tkProp, **kwargs):
+        self.tkProp = tkProp
+        tk.StringVar.__init__(self, **kwargs)
+    def set(self, value):
+        self.tkProp.validate(value)
+        tk.StringVar.set(self, value)
+
+class _DoubleVar(tk.DoubleVar):
+    def __init__(self, tkProp, **kwargs):
+        self.tkProp = tkProp
+        tk.DoubleVar.__init__(self, **kwargs)
+    def set(self, value):
+        self.tkProp.validate(value)
+        tk.DoubleVar.set(self, value)
+
+class _IntVar(tk.IntVar):
+    def __init__(self, tkProp, **kwargs):
+        self.tkProp = tkProp
+        tk.IntVar.__init__(self, **kwargs)
+    def set(self, value):
+        self.tkProp.validate(value)
+        tk.IntVar.set(self, value)
+
+class _BooleanVar(tk.BooleanVar):
+    def __init__(self, tkProp, **kwargs):
+        self.tkProp = tkProp
+        tk.BooleanVar.__init__(self, **kwargs)
+
+    def get(self):
+        
+        # For some reason, tk.BooleanVar.get() returns an int,
+        # 0 or 1, so here we're casting it to a python bool
+        return bool(tk.BooleanVar.get(self))
+        
+    def set(self, value):
+        self.tkProp.validate(value)
+        tk.BooleanVar.set(self, value)
+ 
+
 class PropertyBase(object):
     """
-    The base class for objects which represent a property. Provides default
-    getter/setter methods.
+    The base class for descriptor objects. Provides default getter/setter
+    methods. Subclasses should override the validate method to implement
+    any required validation rules.
     """
     
     def __init__(self, tkvartype, default):
+        """
+        The tkvartype parameter should be one of the Tkinter.*Var
+        class replacements, defined above (e.g. _BooleanVar, _IntVar,
+        etc).  For every object which has this PropertyBase object
+        as a property, an instance of the tkvartype is created and
+        attached to the instance.
+        """
         self.label      = None
         self._tkvartype = tkvartype
         self.default    = default
 
     def _make_instval(self, instance):
+        """
+        Creates a Tkinter control variable of the appropriate
+        type, and attaches it to the given instance.
+        """
         
-        instval = self._tkvartype(value=self.default, name=self.label)
+        instval = self._tkvartype(self, value=self.default, name=self.label)
         instance.__dict__[self.label] = instval
         return instval
 
+    def validate(self, value):
+        """
+        Called when an attempt is made to set the property value.
+        If the given value is invalid, subclass implementations
+        shouldd raise an Error. Otherwise, they should not return
+        any value.  The default implementation does nothing.
+        """
+        pass
+
     def __get__(self, instance, owner):
+        """
+        If called on the HasProperties class, and not on an instance,
+        returns this PropertyBase object. Otherwise, returns the value
+        contained in the Tk control variable which is attached to the
+        instance.
+        """
 
         if instance is None:
             return self
@@ -66,6 +176,12 @@ class PropertyBase(object):
         return instval.get()
 
     def __set__(self, instance, value):
+        """
+        Attempts to set the Tk variable, attached to the given instance,
+        to the given value.  The set() method of the tk variable will
+        call the validate() method of this PropertyBase object, which
+        will raise an Error if the value is not valid.
+        """
 
         instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._make_instval(instance)
@@ -95,7 +211,7 @@ class HasProperties(object):
 
     def __new__(cls, *args, **kwargs):
         """
-        Here, we add some extra fields to a newly created HssProperties
+        Here, we add some extra fields to a newly created HasProperties
         instance. These fields provided direct access to the Tkinter.*Var
         objects, and the tkprop objects. This overcomes the need for the
         slightly ugly default methods of access, i.e.:
@@ -140,19 +256,7 @@ class Boolean(PropertyBase):
     """
 
     def __init__(self, default=False):
-        super(Boolean, self).__init__(tk.BooleanVar, default)
-
-    def __get__(self, instance, owner):
-        result = super(Boolean, self).__get__(instance, owner)
-
-        # tk.BooleanVar.get() returns an int, 0 or 1, so
-        # here we're casting it to a python bool, unless
-        # this was a class level attribute access.
-        if instance is None: return result
-        else:                return bool(result)
-
-    def __set__(self, instance, value):
-        super(Boolean, self).__set__(instance, bool(value))
+        super(Boolean, self).__init__(_BooleanVar, default)
 
 
 class Number(PropertyBase):
@@ -168,7 +272,7 @@ class Number(PropertyBase):
         
         super(Number, self).__init__(tkvartype, default)
 
-    def __set__(self, instance, value):
+    def validate(self, value):
 
         if self.minval is not None and value < self.minval:
             raise ValueError('{} must be at least {}'.format(
@@ -177,8 +281,6 @@ class Number(PropertyBase):
         if self.maxval is not None and value > self.maxval:
             raise ValueError('{} must be at most {}'.format(
                 self.label, self.maxval))
-
-        super(Number, self).__set__(instance, value)
 
         
 class Int(Number):
@@ -193,12 +295,12 @@ class Int(Number):
           - minval
           - maxval 
         """
-        super(Int, self).__init__(tk.IntVar, **kwargs)
+        super(Int, self).__init__(_IntVar, **kwargs)
 
-    def __set__(self, instance, value):
+    def validate(self, value):
         value = int(value)
-        super(Int, self).__set__(instance, value)
-        
+        Number.validate(self, value)
+
 
 class Double(Number):
     """
@@ -212,11 +314,11 @@ class Double(Number):
           - minval
           - maxval
         """
-        super(Double, self).__init__(tk.DoubleVar, **kwargs)
+        super(Double, self).__init__(_DoubleVar, **kwargs)
 
-    def __set__(self, instance, value):
+    def validate(self, value):
         value = float(value)
-        super(Double, self).__set__(instance, value)
+        Number.validate(self, value)
 
 
 class String(PropertyBase):
@@ -237,9 +339,10 @@ class String(PropertyBase):
         self.minlen     = minlen
         self.maxlen     = maxlen
         self.filterFunc = filterFunc
-        super(String, self).__init__(tk.StringVar, default)
+        super(String, self).__init__(_StringVar, default)
 
-    def __set__(self, instance, value):
+    def validate(self, value):
+        
         value = str(value)
 
         if self.minlen is not None and len(value) < self.minlen:
@@ -254,10 +357,8 @@ class String(PropertyBase):
             raise ValueError('Invalid value for {}: {}'.format(
                 self.label, value))
         
-        super(String, self).__set__(instance, value)
 
-
-class Choice(String): # why only string?
+class Choice(String):
     """
     A property which may only be set to one of a set of predefined values.
     """
@@ -277,34 +378,36 @@ class Choice(String): # why only string?
 
         super(Choice, self).__init__(default=default)
 
-    def __set__(self, instance, value):
+    def validate(self, value):
 
         value = str(value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice for {}: {}'.format(
                 self.label, value))
-        
-        super(Choice, self).__set__(instance, value)
 
 
 class FilePath(String):
     """
-    A property which represents a file path.
+    A property which represents a file or directory path.
     """
 
-    def __init__(self, default=None, exists=False):
+    def __init__(self, exists=False, isFile=True):
 
         self.exists = exists
-        super(FilePath, self).__init__(default=default)
+        self.isFile = isFile
+        super(FilePath, self).__init__()
 
-    def __set__(self, instance, value):
+    def validate(self, value):
 
-        value = str(value)
+        if value is None: value = ''
+        
+        if (value != '') and self.exists:
 
-        if self.exists and (not op.exists(value)):
-            raise ValueError('{} must be a file that exists ({})'.format(
-                self.label, value))
+            if self.isFile and (not op.isfile(value)):
+                raise ValueError('{} must be a file ({})'.format(
+                    self.label, value)) 
 
-        super(FilePath, self).__set__(instance, value)
-
+                if (not self.isFile) and (not op.isdir(value)):
+                    raise ValueError('{} must be a directory ({})'.format(
+                        self.label, value)) 

@@ -88,23 +88,21 @@ class BetFrame(tk.Frame):
 
     def __init__(self, parent, betopts):
         tk.Frame.__init__(self, parent)
-        self.pack(fill=tk.X, expand=1)
+        self.pack(fill=tk.BOTH, expand=1)
         
         self.betopts = betopts
 
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.X, expand=1)
+        self.notebook.pack(fill=tk.BOTH, expand=1)
 
         self.stdOptFrame = tk.Frame(self.notebook)
         self.advOptFrame = tk.Frame(self.notebook)
 
-        self.stdOptFrame.pack(fill=tk.X, expand=1)
-        self.advOptFrame.pack(fill=tk.X, expand=1)
+        self.stdOptFrame.pack(fill=tk.BOTH, expand=1)
+        self.advOptFrame.pack(fill=tk.BOTH, expand=1)
 
-        self.stdOptFrame.columnconfigure(0, weight=1)
         self.stdOptFrame.columnconfigure(1, weight=1)
-        self.advOptFrame.columnconfigure(0, weight=1)
-        self.advOptFrame.columnconfigure(1, weight=1) 
+        self.advOptFrame.columnconfigure(1, weight=1)
 
         self.notebook.add(self.stdOptFrame, text='BET options')
         self.notebook.add(self.advOptFrame, text='Advanced options')
@@ -120,6 +118,8 @@ class BetFrame(tk.Frame):
 
             label .grid(row=idx, column=0, sticky=tk.N+tk.E+tk.S+tk.W)
             widget.grid(row=idx, column=1, sticky=tk.N+tk.E+tk.S+tk.W)
+
+            self.stdOptFrame.rowconfigure(idx, weight=1)
 
             setattr(self, '{}Widget'.format(option), widget)
             setattr(self, '{}Label' .format(option), label)
@@ -141,7 +141,9 @@ class BetFrame(tk.Frame):
             widget.grid(row=idx, column=1, sticky=tk.N+tk.E+tk.S+tk.W)
 
             setattr(self, '{}Widget'.format(option), widget)
-            setattr(self, '{}Label' .format(option), label) 
+            setattr(self, '{}Label' .format(option), label)
+
+            self.advOptFrame.rowconfigure(idx, weight=1)
 
 
         self.buttonFrame = tk.Frame(self)
@@ -154,7 +156,7 @@ class BetFrame(tk.Frame):
 
         self.runButton  .pack(fill=tk.X, expand=1, side=tk.LEFT) 
         self.quitButton .pack(fill=tk.X, expand=1, side=tk.RIGHT)
-        self.buttonFrame.pack(fill=tk.X, expand=1)
+        self.buttonFrame.pack(fill=tk.X)
 
 
 if __name__ == '__main__':
@@ -165,6 +167,10 @@ if __name__ == '__main__':
     print('Before')
     print(betopts)
 
+    # stupid hack for testing under OS X - forces the TK
+    # window to be displayed above all other windows
+    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
+    
     app.mainloop()
 
     print('After')

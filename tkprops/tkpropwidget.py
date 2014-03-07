@@ -7,39 +7,130 @@
 
 import sys
 
+import os
+import os.path as op
+
 import tkprops.tkprop as tkp
 
-import Tkinter as tk
-import            ttk
+import Tkinter      as tk
+import tkFileDialog as tkfile
+import                 ttk
 
 
 def _setupValidation(widget, propObj, tkProp):
+    """
+    Configures input validation for the given widget, which is assumed
+    to be managing the given tkProp (tkprop.PropertyBase) object, which
+    is further assumed to be a property of the given propObj
+    (tkprop.HasProperties) object.  When a new value is entered into
+    the widget, as soon as the widget loses focus, the new value is
+    passed to the validate() method of the property object. If the
+    validate method raises an error, the property (and widget) value is
+    reverted to its previous value (which was previously stored when
+    the widget gained focus).
+    """
 
-    def _validate(oldValue, newValue):
+    # Container used for storing the previous value of the property,
+    # and sharing this value amongst the inner functions below.
+    oldValue = [0]
 
-        valid = False
+    # When the widget receives focus, save the current
+    # property value, so we can roll back to it if
+    # necessary
+    def _focused(event):
+        oldValue[0] = getattr(propObj, tkProp.label)
+
+    # When the widget loses focus, pass the entered
+    # value to the property validate() method. 
+    def _validate(newValue):
+
         try:
-            setattr(propObj, tkProp.label, newValue)
-            valid = True
+            tkProp.validate(newValue)
+            return True
             
         except ValueError as e:
-            setattr(propObj, tkProp.label, tkProp.default)
+            return False
 
+    # If the new value is invalid, revert
+    # the property to its former value
+    def _invalid():
+        
+        setattr(propObj, tkProp.label, oldValue[0])
+
+        # The tk validation type is reset on some (not all)
+        # widgets, if the invalidcommand (this function)
+        # modifies the tk control variable.  So here we
+        # just re-initialise validation on the widget.
         widget.after_idle(lambda: widget.config(validate='focusout'))
-        widget.icursor(tk.END)
- 
-        return valid
 
-    vcmd = (widget.register(_validate), '%s', '%P')
-
-    widget.config(validate='focusout', validatecommand=vcmd)
+    # Set up all of the validation and event callbacks
+    vcmd   = (widget.register(_validate), '%P')
+    invcmd = (widget.register(_invalid),)
     
+    widget.bind('<FocusIn>', _focused)
+    widget.config(
+        validate='focusout',
+        validatecommand=vcmd,
+        invalidcommand=invcmd)
 
+
+# This variable is used to retain the most recently
+# visited directory in file dialogs. New file dialogs
+# are initialised to display this directory.
+_lastFilePathDir = None
 def _FilePath(parent, propObj, tkProp, tkVar):
-    return ttk.Entry(parent, textvariable=tkVar)
+    """
+    Creates and returns a tk Frame containing an Entry and a
+    Button. The button, when clicked, opens a file dialog
+    allowing the user to choose a file/directory to open, or
+    a location to save (this depends upon how the tkprop
+    [tkprop.FilePath] object was configured).
+    """
+
+    global _lastFilePathDir
+    if _lastFilePathDir is None:
+        _lastFilePathDir = os.getcwd()
+
+    frame   = tk.Frame(parent)
+    textbox = ttk.Entry(frame, textvariable=tkVar)
+    _setupValidation(textbox, propObj, tkProp)
+
+    def chooseFile():
+        global _lastFilePathDir
+
+        if tkProp.exists:
+
+            if tkProp.isFile:
+                path = tkfile.askopenfilename(
+                    initialdir=_lastFilePathDir,
+                    title='Open file')
+            else:
+                path = tkfile.askdirectory(
+                    initialdir=_lastFilePathDir,
+                    title='Open directory') 
+
+        else:
+            path = tkfile.asksaveasfilename(
+                initialdir=_lastFilePathDir,
+                title='Save file')
+
+        if path is not None:
+            _lastFilePathDir = op.dirname(path)
+            setattr(propObj, tkProp.label, path)
+
+    button  = ttk.Button(frame, text='Choose', command=chooseFile)
+
+    textbox.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
+    button .pack(fill=tk.Y,    side=tk.RIGHT)
+    
+    return frame
     
 
 def _Choice(parent, propObj, tkProp, tkVar):
+    """
+    Creates and returns a ttk Combobox allowing the
+    user to set the given tkProp (tkprop.Choice) object.
+    """
 
     choices = tkProp.choices
     widget  = ttk.Combobox(parent, textvariable=tkVar, values=choices)
@@ -48,6 +139,11 @@ def _Choice(parent, propObj, tkProp, tkVar):
 
 
 def _String(parent, propObj, tkProp, tkVar):
+    """
+    Creates and returns a ttk Entry object, allowing
+    the user to set the given tkPRop (tkprop.String)
+    object.
+    """
 
     widget = ttk.Entry(parent, textvariable=tkVar)
     _setupValidation(widget, propObj, tkProp)
@@ -56,6 +152,11 @@ def _String(parent, propObj, tkProp, tkVar):
     
 
 def _Number(parent, propObj, tkProp, tkVar):
+    """
+    Creates and returns a tk widget, either a ttk.Scale,
+    or a tk.Spinbox, allowing the user to set the given
+    tkProp object (either a tkprop.Int or tkprop.Double).
+    """
 
     value  = tkVar.get()
     minval = tkProp.minval
@@ -63,11 +164,16 @@ def _Number(parent, propObj, tkProp, tkVar):
 
     makeScale = True
 
+    # if both minval and maxval have been set, we
+    # can use a Scale. Otherwise we use a spinbox.
     if any((minval is None, maxval is None)):
         makeScale = False
 
     if makeScale:
 
+        # Embed the Scale inside a Frame, along
+        # with labels which display the minimum,
+        # maximum, and current value.
         scaleFrame = ttk.Frame(parent)
         scaleFrame.columnconfigure(0, weight=1)
         scaleFrame.columnconfigure(1, weight=1)
@@ -77,22 +183,30 @@ def _Number(parent, propObj, tkProp, tkVar):
                            from_=minval, to=maxval,
                            variable=tkVar)
 
-        minLabel = ttk.Label(scaleFrame, text='{}'.format(minval), anchor=tk.W)
-        curLabel = ttk.Label(scaleFrame, text='{}'.format(value),  anchor=tk.CENTER)
-        maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval), anchor=tk.E)
+        minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
+                             anchor=tk.W)
+        curLabel = ttk.Label(scaleFrame, text='{}'.format(value),
+                             anchor=tk.CENTER)
+        maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval),
+                             anchor=tk.E)
 
-        widget  .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W, columnspan=3)
+        widget  .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W,
+                      columnspan=3)
         minLabel.grid(row=1, column=0, sticky=tk.W)
         curLabel.grid(row=1, column=1)
         maxLabel.grid(row=1, column=2, sticky=tk.E)
 
+        # update the current value Label when
+        # the underlying variable changes
         def updateLabel(*args):
             curLabel.config(text='{:0.6}'.format(tkVar.get()))
 
         tkVar.trace("w", updateLabel)
                 
         widget = scaleFrame
-        
+
+    # The minval and maxval attributes have not both
+    # been set, so we create a Spinbox instead of a Scale.
     else:
 
         # Tkinter spinboxes don't behave well if you
@@ -123,6 +237,10 @@ def _Int(parent, propObj, tkProp, tkVar):
 
 
 def _Boolean(parent, propObj, tkProp, tkVar):
+    """
+    Creates and returns a ttk Checkbutton, allowing the
+    user to set the given tkProp (tkprop.Boolean) object.
+    """
 
     value = bool(tkVar.get())
     return ttk.Checkbutton(parent, variable=tkVar)
@@ -130,9 +248,10 @@ def _Boolean(parent, propObj, tkProp, tkVar):
 
 def makeWidget(parent, propObj, propName):
     """
-    Given a tkprop.HasProperties object, the name of a property, and a Tkinter
-    parent object, creates and returns a Tkinter widget, or a frame containing
-    widgets, which may be used to edit the property.
+    Given propObj (a tkprop.HasProperties object), propName (the name of a
+    property of propObj), and parent (a Tkinter object), creates and returns a
+    Tkinter widget, or a frame containing widgets, which may be used to edit
+    the property.
     """
 
     tkProp = getattr(propObj, '{}_tkProp'.format(propName), None)
