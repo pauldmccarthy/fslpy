@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from tkprops.tkprop import \
+from tkprop.properties import \
     HasProperties, \
     Boolean, \
     Int, \
@@ -14,5 +14,5 @@ from tkprops.tkprop import \
     Choice, \
     FilePath
 
-from tkprops.tkpropwidget import \
+from tkprop.widgets import \
     makeWidget

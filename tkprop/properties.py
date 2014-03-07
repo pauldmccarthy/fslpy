@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# tkprop.py - Tkinter control variables encapsulated inside Python
+# properties.py - Tkinter control variables encapsulated inside Python
 # descriptors.
 #
 # Usage:
@@ -8,12 +8,16 @@
 #     import Tkinter as tk
 #     import tkprops as tkp
 #
-#     app = tk.Tk()
 #
 #     class PropObj(tkp.HasProperties):
-#         myProperty = tkp.BooleanProp()
+#         myProperty = tkp.Boolean()
 #
+#
+#     # The Tk root object must be created
+#     # before any HasProperties objects.
+#     app       = tk.Tk()
 #     myPropObj = PropObj()
+#
 #
 #     # access the property value as normal:
 #     myPropObj.myProperty = True
@@ -22,12 +26,14 @@
 #
 #     # >>> True
 #
+#
 #     # access the tkp.Boolean instance:
 #     myPropObj.myProperty_tkProp
 #
 #     # >>> <tkprops.tkprop.Boolean at 0x1045e2710>
 #
-#     # access the underlying Tkinter object:
+#
+#     # access the underlying Tkinter control variable:
 #     myPropObj.myProperty_tkVar
 #
 #     # >>> <_tkprops.tkprop._BooleanVar instance at 0x1047ef518>
@@ -80,7 +86,8 @@ import Tkinter as tk
 #
 #   2. When the set() method is called on the Var object, the
 #      PropertyBase.validate method is called, to test that
-#      the new value is valid. If not, a ValueError is raised.
+#      the new value is valid. If the new value is not valid,
+#      a ValueError is raised.
 
 class _StringVar(tk.StringVar):
     def __init__(self, tkProp, **kwargs):
@@ -393,6 +400,13 @@ class FilePath(String):
     """
 
     def __init__(self, exists=False, isFile=True):
+        """
+        FilePath constructor. Optional arguments:
+          - exists: If True, the path must exist.
+          - isFile: If True, the path must be a file. If False, the
+                    path must be a directory. This check is only
+                    performed if exists=True.
+        """
 
         self.exists = exists
         self.isFile = isFile

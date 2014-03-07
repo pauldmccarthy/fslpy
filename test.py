@@ -13,9 +13,7 @@ from collections import OrderedDict
 
 import Tkinter as tk
 import            ttk
-import tkprops as tkp
-
-app = tk.Tk()
+import tkprop  as tkp
 
 runChoices = OrderedDict((
     ('Run standard brain extraction using bet2'                             , ''),
@@ -160,7 +158,8 @@ class BetFrame(tk.Frame):
 
 
 if __name__ == '__main__':
-    
+
+    app     = tk.Tk()
     betopts = BetOptions()
     frame   = BetFrame(app, betopts)
 

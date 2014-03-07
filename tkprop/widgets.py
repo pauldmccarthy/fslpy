@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# tkpropwidget.py - Generate widgets for tkprop property objects.
+# widgets.py - Generate widgets for tkprop property objects.
+#
+# The sole entry point for this module is the makeWidget function. You
+# don't need to worry about the rest of the code.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -77,6 +80,11 @@ def _setupValidation(widget, propObj, tkProp):
 # This variable is used to retain the most recently
 # visited directory in file dialogs. New file dialogs
 # are initialised to display this directory.
+#
+# This is currently a global setting, but it may be
+# more appropriate to make it a per-widget setting.
+# Easily done, just make this a dict, with the widget
+# (or property name) as the key.
 _lastFilePathDir = None
 def _FilePath(parent, propObj, tkProp, tkVar):
     """
@@ -134,6 +142,7 @@ def _Choice(parent, propObj, tkProp, tkVar):
 
     choices = tkProp.choices
     widget  = ttk.Combobox(parent, textvariable=tkVar, values=choices)
+    widget.state(['readonly'])
 
     return widget
 
