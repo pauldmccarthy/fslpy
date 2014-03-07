@@ -255,6 +255,33 @@ class HasProperties(object):
                 setattr(inst, '{}_tkProp'.format(attr), tkProp)
                 
         return inst
+
+    def __str__(self):
+        """
+        Returns a multi-line string containing the names and values
+        of all the properties of this object.
+        """
+        
+        name = self.__class__.__name__
+
+        props = filter(
+            lambda (name,prop): isinstance(prop, PropertyBase),
+            self.__class__.__dict__.items())
+    
+        propNames,props = zip(*props)
+
+        propVals = ['{}'.format(getattr(self, propName))
+                    for propName in propNames]
+
+        maxNameLength = max(map(len, propNames))
+
+        lines = [name]
+
+        for propName,propVal in zip(propNames,propVals):
+            fmtStr = '  {:>' + str(maxNameLength) + '} = {}'
+            lines.append(fmtStr.format(propName, propVal))
+            
+        return '\n'.join(lines)
                 
 
 class Boolean(PropertyBase):
