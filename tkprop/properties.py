@@ -39,7 +39,7 @@
 #     # >>> <_tkprops.tkprop._BooleanVar instance at 0x1047ef518>
 #
 # 
-# Lots of the code in this class is probably very confusing. First
+# Lots of the code in this file is probably very confusing. First
 # of all, you will need to understand python descriptors.
 # Descriptors are a way of adding properties to python objects,
 # and allowing them to be accessed as if they were just simple
