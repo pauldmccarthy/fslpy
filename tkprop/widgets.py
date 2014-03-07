@@ -13,7 +13,7 @@ import sys
 import os
 import os.path as op
 
-import tkprops.tkprop as tkp
+import tkprop       as tkp
 
 import Tkinter      as tk
 import tkFileDialog as tkfile
