@@ -308,7 +308,11 @@ def _createGroup(parent, group, propObj):
     if group.showLabels: labelObjs = []
     else:                labelObjs = None
 
-    for child in group.children:
+    for i,child in enumerate(group.children):
+
+        if isinstance(child, str):
+            child = Widget(child)
+            group.children[i] = child
 
         labelObj = None
         if group.showLabels:
@@ -371,6 +375,8 @@ def _defaultView(propObj):
         propDict.items())
     
     propNames,props = zip(*props)
+
+    propNames = map(Widget, propNames)
 
     return VGroup(label=propObj.__class__.__name__,
                   children=propNames,

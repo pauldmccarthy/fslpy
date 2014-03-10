@@ -148,6 +148,7 @@ class PropertyBase(object):
         self._tkvartype = tkvartype
         self.default    = default
 
+        
     def _make_instval(self, instance):
         """
         Creates a Tkinter control variable of the appropriate
@@ -158,6 +159,7 @@ class PropertyBase(object):
         instance.__dict__[self.label] = instval
         return instval
 
+        
     def validate(self, value):
         """
         Called when an attempt is made to set the property value.
@@ -167,6 +169,7 @@ class PropertyBase(object):
         """
         pass
 
+        
     def __get__(self, instance, owner):
         """
         If called on the HasProperties class, and not on an instance,
@@ -182,6 +185,7 @@ class PropertyBase(object):
         if instval is None: instval = self._make_instval(instance)
         return instval.get()
 
+        
     def __set__(self, instance, value):
         """
         Attempts to set the Tk variable, attached to the given instance,
@@ -386,6 +390,9 @@ class String(PropertyBase):
         super(String, self).__init__(_StringVar, default)
 
     def validate(self, value):
+
+        if value is None:
+            return
         
         value = str(value)
 
@@ -451,9 +458,7 @@ class FilePath(String):
 
     def validate(self, value):
 
-        if value is None: value = ''
-        
-        if (value != '') and self.exists:
+        if (value != '') and (value is not None) and self.exists:
 
             if self.isFile and (not op.isfile(value)):
                 raise ValueError('{} must be a file ({})'.format(
@@ -466,27 +471,30 @@ class FilePath(String):
 
 class _ListWrapper(object):
     """
-    An object which acts like a list, but for which items are embedded in
-    an appropriate Tkinter variable, a minimum/maximum length may be
-    enforced, and value/type constraints enforced on the values added to
-    it.
+    Used by the List property type, defined below. An object which
+    sort of acts like a list, but for which items are embedded in
+    an appropriate Tkinter variable, a minimum/maximum length may
+    be enforced, and value/type constraints enforced on the values
+    added to it.  Not all list operations are supported.
     """
 
     def __init__(self,
+                 owner,
+                 listProp,
                  values=None,
-                 label=None,
                  listType=None,
                  minlen=None,
                  maxlen=None):
-        
+
+        self._listProp = listProp
+        self._owner    = owner
         self._listType = listType
-        self._label    = label
         self._minlen   = minlen
         self._maxlen   = maxlen
         self._l        = []
-        self.tkVars    = _l
+        self.tkVars    = self._l
 
-        self._listType.label = label
+        self._listType.label = self._listProp.label
 
         if values is not None:
 
@@ -499,41 +507,34 @@ class _ListWrapper(object):
                 self.append(v)
 
         
-    def __len__(     self):           return self._l.__len__()
-    def reverse(     self):           self._l.reverse()
-    def sort(        self, **kwargs): self._l.sort(**kwargs)
-
+    def __len__(self): return self._l.__len__()
     
-    def __repr__(self):
-
-        return list([i.get() for i in self._l]).__repr__()
-
-    
-    def __str__(self):
-        return list([i.get() for i in self._l]).__str__()
+    def __repr__(self): return list([i.get() for i in self._l]).__repr__()
+    def __str__( self): return list([i.get() for i in self._l]).__str__()
  
-
     
     def _check_maxlen(self, change=1):
         if (self._maxlen is not None) and (len(self._l)+change > self._maxlen):
             raise IndexError('{} must have a length of at most {}'.format(
-                self._label, self._maxlen))
+                self._listProp.label, self._maxlen))
 
 
     def _check_minlen(self, change=1):
         if (self._minlen is not None) and (len(self._l)-change < self._minlen):
             raise IndexError('{} must have a length of at least {}'.format(
-                self._label, self._minlen))
+                self._listProp.label, self._minlen))
 
             
-    def _makeTkVar(self, value):
+    def _makeTkVar(self, value, index):
         """
         Encapsulate the given value in a Tkinter variable.  A
         ValueError is raised if the value does not meet the
         list type/value constraints.
         """
 
-        tkval = self._listType._tkvartype(self._listType)
+        tkval = self._listType._tkvartype(
+            self._listType,
+            name='{}_{}'.format(self._listProp.label, index))
         tkval.set(value)
         return tkval
 
@@ -563,7 +564,6 @@ class _ListWrapper(object):
             return [i.get() for i in items]
         else:
             return items.get()
-
 
 
     def __iter__(self):
@@ -611,8 +611,11 @@ class _ListWrapper(object):
         """
         
         self._check_maxlen()
-        tkval = self._makeTkVar(item)
+        index = len(self._l)
+        tkval = self._makeTkVar(item, index)
         self._l.append(tkval)
+        setattr(self._owner, '{}_{}'.format(
+            self._listProp.label, index), tkval)
 
 
     def extend(self, iterable):
@@ -641,37 +644,22 @@ class _ListWrapper(object):
         Inserts the given item at the specified index. A ValueError is
         raised if the item does not meet the list type/value constraints.
         """
-        tkval = self._makeTkVar(item)
-        self._l.insert(index, tkval)
+        self._l[index].set(item)
 
         
-    def pop(self, index=None):
+    def pop(self):
         """
-        Remove and return the value at the specified index (default:
-        last). An IndexError is raised if the removal would cause the
-        list length to go below its minimum length.
+        Remove and return the last value in the list. An IndexError is raised
+        if the removal would cause the list length to go below its
+        minimum length.
         """
-        if index is None:
-            index = len(self._l) - 1
+        
+        index = len(self._l) - 1
         
         self._check_minlen()
-        return self._l.pop(index).get()
-        
 
-    def remove(self, value):
-        """
-        Remove the first occurence of the given value in the list.
-        An IndexError is raised if the removal would cause the list
-        length to go below its minimum length.
-        """
-        
-        for i in range(len(self._l)):
-            v = self._l[i]
-            if v.get() == value:
-                self.pop(i)
-                return
-                
-        raise ValueError('Value {} not present'.format(value))
+        delattr(self, '{}_{}'.format(self.label, index))
+        return self._l.pop(index).get()
 
 
     def __setitem__(self, key, value):
@@ -681,32 +669,11 @@ class _ListWrapper(object):
         list type/value constraints.
         """
 
-        tkvals = []
-
         if isinstance(key, slice):
-            for v in value:
-                tkvals.append(self._makeTkVar(v))
+            for i,v in zip(range(key.start, key.stop, key.step), value):
+                self._l[i].set(v)
         else:
-            tkvals = self._makeTkVar(value)
-            
-        self._l.__setitem__(key, tkvals)
-
-        
-    def __delitem__(self, key):
-        """
-        Remove the item(s) at the specified index/slice. Raises
-        an IndexError if the deletion would cause the list length
-        to go below its minimum length, if it has one.
-        """
-
-        dellen = 1
-
-        if isinstance(key, slice):
-            start,stop,step = slc.indices(len(self))
-            dellen = (start - stop) / step
-
-        self._check_minlen(dellen)
-        self._value.__delitem__(key)
+            self._l[key].set(value)
 
 
 class List(PropertyBase):
@@ -728,8 +695,9 @@ class List(PropertyBase):
 
         instval = instance.__dict__.get(self.label, None)
         if instval is None:
-            instval = _ListWrapper(values=self.default,
-                                   label=self.label,
+            instval = _ListWrapper(instance,
+                                   self,
+                                   values=self.default,
                                    listType=self.listType,
                                    minlen=self.minlen,
                                    maxlen=self.maxlen)
@@ -740,8 +708,9 @@ class List(PropertyBase):
         
     def __set__(self, instance, value):
 
-        instval = _ListWrapper(values=value,
-                               label=self.label,
+        instval = _ListWrapper(instance,
+                               self,
+                               values=value,
                                listType=self.listType,
                                minlen=self.minlen,
                                maxlen=self.maxlen)

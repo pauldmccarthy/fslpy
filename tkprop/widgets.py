@@ -20,7 +20,7 @@ import tkFileDialog as tkfile
 import                 ttk
 
 
-def _setupValidation(widget, propObj, tkProp):
+def _setupValidation(widget, tkProp, tkVar):
     """
     Configures input validation for the given widget, which is assumed
     to be managing the given tkProp (tkprop.PropertyBase) object, which
@@ -41,7 +41,7 @@ def _setupValidation(widget, propObj, tkProp):
     # property value, so we can roll back to it if
     # necessary
     def _focused(event):
-        oldValue[0] = getattr(propObj, tkProp.label)
+        oldValue[0] = tkVar.get()
 
     # When the widget loses focus, pass the entered
     # value to the property validate() method. 
@@ -57,8 +57,8 @@ def _setupValidation(widget, propObj, tkProp):
     # If the new value is invalid, revert
     # the property to its former value
     def _invalid():
-        
-        setattr(propObj, tkProp.label, oldValue[0])
+
+        tkVar.set(oldValue[0])
 
         # The tk validation type is reset on some (not all)
         # widgets, if the invalidcommand (this function)
@@ -101,7 +101,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
 
     frame   = tk.Frame(parent)
     textbox = ttk.Entry(frame, textvariable=tkVar)
-    _setupValidation(textbox, propObj, tkProp)
+    _setupValidation(textbox, tkProp, tkVar)
 
     def chooseFile():
         global _lastFilePathDir
@@ -124,7 +124,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
 
         if path is not None:
             _lastFilePathDir = op.dirname(path)
-            setattr(propObj, tkProp.label, path)
+            tkVar.set(path)
 
     button  = ttk.Button(frame, text='Choose', command=chooseFile)
 
@@ -155,9 +155,37 @@ def _String(parent, propObj, tkProp, tkVar):
     """
 
     widget = ttk.Entry(parent, textvariable=tkVar)
-    _setupValidation(widget, propObj, tkProp)
+    _setupValidation(widget, tkProp, tkVar)
     
     return widget
+
+
+def _List(parent, propObj, tkProp, tkVar):
+    """
+    Basic list implementation - will be improved.
+    """
+
+    frame  = ttk.Frame(parent)
+    tkVars = tkVar.tkVars
+
+    frame.columnconfigure(0, weight=1)
+ 
+    for i,v in enumerate(tkVars):
+        
+        makeFunc = getattr(
+            sys.modules[__name__],
+            '_{}'.format(tkProp.listType.__class__.__name__), None)
+
+        if makeFunc is None:
+            raise ValueError(
+                'Unknown property type: {}'.format(tkProp.__class__.__name__))
+
+        widg = makeFunc(frame, propObj, tkProp.listType, v)
+
+        widg.grid(row=i, column=0, sticky=tk.W+tk.E)
+
+    return frame
+
     
 
 def _Number(parent, propObj, tkProp, tkVar):
@@ -232,7 +260,7 @@ def _Number(parent, propObj, tkProp, tkVar):
                             textvariable=tkVar,
                             increment=1)
 
-        _setupValidation(widget, propObj, tkProp)
+        _setupValidation(widget, tkProp, tkVar)
 
     return widget
 
@@ -244,6 +272,10 @@ def _Double(parent, propObj, tkProp, tkVar):
 def _Int(parent, propObj, tkProp, tkVar):
     return _Number(parent, propObj, tkProp, tkVar)
 
+
+def _Percentage(parent, propObj, tkProp, tkVar):
+    return _Number(parent, propObj, tkProp, tkVar) 
+        
 
 def _Boolean(parent, propObj, tkProp, tkVar):
     """
