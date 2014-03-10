@@ -355,6 +355,16 @@ class Double(Number):
         Number.validate(self, value)
 
 
+class Percentage(Double):
+    """
+    A property which represents a percentage.
+    """
+
+    def __init__(self, default=0):
+        super(Percentage, self).__init__(
+            default=default, minval=0.0, maxval=100.0)
+
+
 class String(PropertyBase):
     """
     A property which encapsulates a Tkinter.StringVar object. 
@@ -451,4 +461,159 @@ class FilePath(String):
 
                 if (not self.isFile) and (not op.isdir(value)):
                     raise ValueError('{} must be a directory ({})'.format(
-                        self.label, value)) 
+                        self.label, value))
+
+
+class _ListWrapper(object):
+    """
+    An object which acts like a list, but for which a minimum/maximum
+    length may be enforced, and value/type constraints enforced on the
+    values added to it.
+    """
+
+    def __init__(self,
+                 values=None,
+                 label=None,
+                 listType=None,
+                 minlen=None,
+                 maxlen=None):
+        
+        self._listType = listType
+        self._label    = label
+        self._minlen   = minlen
+        self._maxlen   = maxlen
+        self._l        = []
+
+        self._listType.label = label
+
+        if values is not None:
+
+            self._check_minlen(-len(values))
+            self._check_maxlen( len(values))
+            
+            # manually append each item on to the
+            # list so the values are  validated
+            for v in values:
+                self.append(v)
+
+        
+    def __len__(     self):           return self._l.__len__()
+    def __getitem__( self, key):      return self._l.__getitem__(key)
+    def __iter__(    self):           return self._l.__iter__()
+    def __contains__(self, item):     return self._l.__contains__(item)
+    def __repr__(    self):           return self._l.__repr__()
+    def __str__(     self):           return self._l.__str__()
+    def count(       self, item):     return self._l.count(item)
+    def index(       self, item):     return self._l.index(item)
+    def reverse(     self):           self._l.reverse()
+    def sort(        self, **kwargs): self._l.sort(**kwargs)
+
+    
+    def _check_maxlen(self, change=1):
+        if (self._maxlen is not None) and (len(self._l)+change > self._maxlen):
+            raise IndexError('{} must have a length of at most {}'.format(
+                self._label, self._maxlen))
+
+
+    def _check_minlen(self, change=1):
+        if (self._minlen is not None) and (len(self._l)-change < self._minlen):
+            raise IndexError('{} must have a length of at least {}'.format(
+                self._label, self._minlen))
+            
+
+    def append(self, item):
+        self._check_maxlen()
+        self._listType.validate(item)
+        self._l.append(item)
+
+
+    def extend(self, iterable):
+        while True:
+            try:
+                nxt = iterable.next()
+
+                # this will raise an IndexError if maxlen is exceeded
+                self.append(nxt)
+            except StopIteration:
+                break
+
+
+    def insert(self, index, item):
+        self._check_maxlen()
+        self._listType.validate(item)
+        self._l.insert(index, item)
+
+        
+    def pop(self, index=None):
+        if index is None:
+            index = len(self._l) - 1
+        
+        self._check_minlen()
+        return self._l.pop(index)
+        
+
+    def remove(self, value):
+        self._check_minlen()
+        self._l.remove(value)
+
+
+    def __setitem__(self, key, value):
+
+        if isinstance(key, slice):
+            for v in value:
+                self._listType.validate(v)
+        else:
+            self._listType.validate(value)
+            
+        self._value.__setitem__(key, value)
+
+
+    def __delitem__(self, key):
+
+        dellen = 1
+
+        if isinstance(key, slice):
+            start,stop,step = slc.indices(len(self))
+            dellen = (start - stop) / step
+
+        self._check_minlen(dellen)
+        self._value.__delitem__(key)
+
+
+class List(PropertyBase):
+    """
+    """
+    
+    def __init__(self, default=None, listType=None, minlen=None, maxlen=None):
+
+        self.listType = listType
+        self.minlen   = minlen
+        self.maxlen   = maxlen
+        
+        PropertyBase.__init__(self, None, default)
+
+     
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        instval = instance.__dict__.get(self.label, None)
+        if instval is None:
+            instval = _ListWrapper(values=self.default,
+                                   label=self.label,
+                                   listType=self.listType,
+                                   minlen=self.minlen,
+                                   maxlen=self.maxlen)
+            instance.__dict__[self.label] = instval
+            
+        return instval
+
+        
+    def __set__(self, instance, value):
+
+        instval = _ListWrapper(values=value,
+                               label=self.label,
+                               listType=self.listType,
+                               minlen=self.minlen,
+                               maxlen=self.maxlen)
+        instance.__dict__[self.label] = instval        

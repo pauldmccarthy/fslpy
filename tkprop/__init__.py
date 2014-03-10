@@ -6,23 +6,25 @@
 #
 
 from tkprop.properties import \
-    PropertyBase, \
+    PropertyBase,  \
     HasProperties, \
-    Boolean, \
-    Int, \
-    Double, \
-    String, \
-    Choice, \
+    Boolean,       \
+    Int,           \
+    Double,        \
+    Percentage,    \
+    String,        \
+    Choice,        \
+    List,          \
     FilePath
 
 from tkprop.widgets import \
     makeWidget
 
 from tkprop.build import \
-    buildGUI, \
-    ViewItem, \
-    Widget, \
-    Group, \
+    buildGUI,      \
+    ViewItem,      \
+    Widget,        \
+    Group,         \
     NotebookGroup, \
-    HGroup, \
+    HGroup,        \
     VGroup
