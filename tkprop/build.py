@@ -42,22 +42,37 @@ class ViewItem(object):
                          GUI.
         
           - visibleWhen: A 2-tuple which contains the name of a property
-                         of the HasProperties object, and a reference to
-                         a function which takes one argument , and
-                         returns a boolean.  When the specified property
-                         changes, the function is called, and the
-                         current property value passed to it. The return
-                         value is used to determine whether this item
-                         should be made visible or invisible.
+                         of the HasProperties object, or a list of
+                         property names, and a reference to a function
+                         which takes one argument , and returns a
+                         boolean.  When the specified property changes,
+                         the function is called, and the current property
+                         value passed to it. The return value is used to
+                         determine whether this item should be made
+                         visible or invisible.
         
           - enabledWhen: Same as the visibleWhen parameter, except the
                          state of the item (or its children) is changed
                          between enabled and disabled.
         """
         
-        self.label       = label
+        self.label = label
+
+        if visibleWhen is not None:
+            props, func = visibleWhen
+            if isinstance(props, str):
+                props = [props]
+            visibleWhen = (props, func)
+
+        if enabledWhen is not None:
+            props, func = enabledWhen
+            if isinstance(props, str):
+                props = [props]
+            enabledWhen = (props, func)
+
         self.visibleWhen = visibleWhen
         self.enabledWhen = enabledWhen
+ 
 
 
 class Widget(ViewItem):
@@ -130,8 +145,8 @@ def _configureEnabledWhen(viewItem, tkObj, propObj, tkLabel=None):
 
     if viewItem.enabledWhen is None: return
 
-    condProp, condFunc = viewItem.enabledWhen
-    tkVar = getattr(propObj, '{}_tkVar'.format(condProp))
+    condProps, condFunc = viewItem.enabledWhen
+    tkVars = [getattr(propObj, '{}_tkVar'.format(p)) for p in condProps]
 
     def _changeState(obj, state):
         """
@@ -152,15 +167,18 @@ def _configureEnabledWhen(viewItem, tkObj, propObj, tkLabel=None):
         the tk object (and its label if there is one).
         """
 
-        if condFunc(tkVar.get()): state = 'enabled'
-        else:                     state = 'disabled'
+        varVals = [tkVar.get() for tkVar in tkVars]
+
+        if condFunc(*varVals): state = 'enabled'
+        else:                  state = 'disabled'
         
         _changeState(tkObj, state)
         if tkLabel is not None: _changeState(tkLabel, state)
 
     # set up initial state
     _toggleEnabled()
-    tkVar.trace('w', _toggleEnabled)
+    
+    for tkVar in tkVars: tkVar.trace('w', _toggleEnabled)
 
 
 def _configureVisibleWhen(viewItem, tkObj, propObj, tkLabel=None):
@@ -171,13 +189,14 @@ def _configureVisibleWhen(viewItem, tkObj, propObj, tkLabel=None):
 
     if viewItem.visibleWhen is None: return
 
-    condProp, condFunc = viewItem.visibleWhen
-
-    tkVar = getattr(propObj, '{}_tkVar'.format(condProp))
+    condProps, condFunc = viewItem.visibleWhen
+    tkVars = [getattr(propObj, '{}_tkVar'.format(p)) for p in condProps]
 
     def _toggleVis(*a):
 
-        if not condFunc(tkVar.get()):
+        varVals = [tkVar.get() for tkVar in tkVars]
+
+        if not condFunc(*varVals):
             tkObj.grid_remove()
             if tkLabel is not None: tkLabel.grid_remove()
         else:
@@ -186,7 +205,8 @@ def _configureVisibleWhen(viewItem, tkObj, propObj, tkLabel=None):
 
     # set up initial visibility
     _toggleVis()
-    tkVar.trace('w', _toggleVis)
+    
+    for tkVar in tkVars: tkVar.trace('w', _toggleVis)
 
 
 def _createLabel(parent, viewItem, propObj):
@@ -248,28 +268,30 @@ def _layoutGroup(group, parent, children, labels):
                   objects, one for each child.
     """
 
-    if isinstance(group, VGroup) and (labels is not None):
-        parent.columnconfigure(1, weight=1)
-
-    # TODO use grid for everything, not pack
+    if isinstance(group, VGroup):
+        if labels is not None: parent.columnconfigure(1, weight=1)
+        else:                  parent.columnconfigure(0, weight=1)
 
     for cidx in range(len(children)):
 
         if isinstance(group, HGroup):
+            
             if labels is not None:
-                labels[cidx].pack(fill=tk.X, side=tk.LEFT)
-            children[cidx].pack(fill=tk.X, side=tk.LEFT, expand=1)
+                parent.columnconfigure(cidx*2+1,weight=1) 
+                labels  [cidx].grid(row=0, column=cidx*2,   sticky=tk.E+tk.W)
+                children[cidx].grid(row=0, column=cidx*2+1, sticky=tk.E+tk.W)
+            else:
+                parent.columnconfigure(cidx,  weight=1)
+                children[cidx].grid(row=0, column=cidx, sticky=tk.E+tk.W)
+                
             
         elif isinstance(group, VGroup):
+            
             if labels is not None:
-
-                labels  [cidx].grid(row=cidx, column=0,
-                                    sticky=tk.E+tk.W)
-                children[cidx].grid(row=cidx, column=1,
-                                    sticky=tk.E+tk.W)
-
+                labels  [cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
+                children[cidx].grid(row=cidx, column=1, sticky=tk.E+tk.W)
             else:
-                children[cidx].pack(fill=tk.X, expand=1)
+                children[cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
     
 
 def _createGroup(parent, group, propObj):
