@@ -466,9 +466,10 @@ class FilePath(String):
 
 class _ListWrapper(object):
     """
-    An object which acts like a list, but for which a minimum/maximum
-    length may be enforced, and value/type constraints enforced on the
-    values added to it.
+    An object which acts like a list, but for which items are embedded in
+    an appropriate Tkinter variable, a minimum/maximum length may be
+    enforced, and value/type constraints enforced on the values added to
+    it.
     """
 
     def __init__(self,
@@ -483,6 +484,7 @@ class _ListWrapper(object):
         self._minlen   = minlen
         self._maxlen   = maxlen
         self._l        = []
+        self.tkVars    = _l
 
         self._listType.label = label
 
@@ -498,15 +500,18 @@ class _ListWrapper(object):
 
         
     def __len__(     self):           return self._l.__len__()
-    def __getitem__( self, key):      return self._l.__getitem__(key)
-    def __iter__(    self):           return self._l.__iter__()
-    def __contains__(self, item):     return self._l.__contains__(item)
-    def __repr__(    self):           return self._l.__repr__()
-    def __str__(     self):           return self._l.__str__()
-    def count(       self, item):     return self._l.count(item)
-    def index(       self, item):     return self._l.index(item)
     def reverse(     self):           self._l.reverse()
     def sort(        self, **kwargs): self._l.sort(**kwargs)
+
+    
+    def __repr__(self):
+
+        return list([i.get() for i in self._l]).__repr__()
+
+    
+    def __str__(self):
+        return list([i.get() for i in self._l]).__str__()
+ 
 
     
     def _check_maxlen(self, change=1):
@@ -519,56 +524,180 @@ class _ListWrapper(object):
         if (self._minlen is not None) and (len(self._l)-change < self._minlen):
             raise IndexError('{} must have a length of at least {}'.format(
                 self._label, self._minlen))
-            
 
+            
+    def _makeTkVar(self, value):
+        """
+        Encapsulate the given value in a Tkinter variable.  A
+        ValueError is raised if the value does not meet the
+        list type/value constraints.
+        """
+
+        tkval = self._listType._tkvartype(self._listType)
+        tkval.set(value)
+        return tkval
+
+
+    def index(self, item):
+        """
+        Returns the first index of the value, or a ValueError if the
+        value is not present.
+        """
+
+        for i in range(len(self._l)):
+
+            if self._l[i].get() == item:
+                return i
+                
+        raise ValueError('{}')
+        
+
+    def __getitem__(self, key):
+        """
+        Return the value(s) at the specified index/slice.
+        """
+        
+        items = self._l.__getitem__(key)
+
+        if isinstance(key,slice):
+            return [i.get() for i in items]
+        else:
+            return items.get()
+
+
+
+    def __iter__(self):
+        """
+        Returns an iterator over the values in the list.
+        """
+        
+        innerIter = self._l.__iter__()
+        for i in innerIter:
+            yield i.get()
+
+        
+    def __contains__(self, item):
+        """
+        Returns True if the given is in the list, False otherwise.
+        """
+        
+        try:    self.index(item)
+        except: return False
+        
+        return True
+
+        
+    def count(self, item):
+        """
+        Counts the number of occurrences of the given value.
+        """
+
+        c = 0
+
+        for i in self._l:
+            if i.get() == item:
+                 c = c + 1
+                 
+        return c
+
+    
     def append(self, item):
+        """
+        Appends the given item to the end of the list.  A
+        ValueError is raised if the item does not meet the list
+        type/value constraints. An IndexError is raised if the
+        insertion would causes the list to grow beyond its
+        maximum length. 
+        """
+        
         self._check_maxlen()
-        self._listType.validate(item)
-        self._l.append(item)
+        tkval = self._makeTkVar(item)
+        self._l.append(tkval)
 
 
     def extend(self, iterable):
+        """
+        Appends all items in the given iterable to the end of the
+        list.  A ValueError is raised if any item does not meet the
+        list type/value constraints. An IndexError is raised if
+        an insertion would causes the list to grow beyond its
+        maximum length.
+        """ 
+        
         while True:
             try:
                 nxt = iterable.next()
 
-                # this will raise an IndexError if maxlen is exceeded
+                # this will raise an IndexError if maxlen is exceeded,
+                # or a ValueError if the value is invalid
                 self.append(nxt)
+                
             except StopIteration:
                 break
 
 
     def insert(self, index, item):
-        self._check_maxlen()
-        self._listType.validate(item)
-        self._l.insert(index, item)
+        """
+        Inserts the given item at the specified index. A ValueError is
+        raised if the item does not meet the list type/value constraints.
+        """
+        tkval = self._makeTkVar(item)
+        self._l.insert(index, tkval)
 
         
     def pop(self, index=None):
+        """
+        Remove and return the value at the specified index (default:
+        last). An IndexError is raised if the removal would cause the
+        list length to go below its minimum length.
+        """
         if index is None:
             index = len(self._l) - 1
         
         self._check_minlen()
-        return self._l.pop(index)
+        return self._l.pop(index).get()
         
 
     def remove(self, value):
-        self._check_minlen()
-        self._l.remove(value)
+        """
+        Remove the first occurence of the given value in the list.
+        An IndexError is raised if the removal would cause the list
+        length to go below its minimum length.
+        """
+        
+        for i in range(len(self._l)):
+            v = self._l[i]
+            if v.get() == value:
+                self.pop(i)
+                return
+                
+        raise ValueError('Value {} not present'.format(value))
 
 
     def __setitem__(self, key, value):
+        """
+        Sets the value(s) of the list at the specified index/slice.
+        A ValueError is raised if any of the values do not meet the
+        list type/value constraints.
+        """
+
+        tkvals = []
 
         if isinstance(key, slice):
             for v in value:
-                self._listType.validate(v)
+                tkvals.append(self._makeTkVar(v))
         else:
-            self._listType.validate(value)
+            tkvals = self._makeTkVar(value)
             
-        self._value.__setitem__(key, value)
+        self._l.__setitem__(key, tkvals)
 
-
+        
     def __delitem__(self, key):
+        """
+        Remove the item(s) at the specified index/slice. Raises
+        an IndexError if the deletion would cause the list length
+        to go below its minimum length, if it has one.
+        """
 
         dellen = 1
 
