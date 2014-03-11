@@ -519,7 +519,7 @@ class _ListWrapper(object):
         self._minlen   = minlen
         self._maxlen   = maxlen
         self._l        = []
-        self.tkVars    = self._l
+        self._tkVars   = self._l
 
         self._listType.label = self._listProp.label
 
@@ -684,7 +684,8 @@ class _ListWrapper(object):
         
         self._check_minlen()
 
-        delattr(self, '{}_{}'.format(self.label, index))
+        delattr(self._owner,
+                '{}_{}'.format(self._listProp.label, index))
         return self._l.pop(index).get()
 
 

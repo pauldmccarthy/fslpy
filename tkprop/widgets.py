@@ -19,18 +19,19 @@ import Tkinter      as tk
 import tkFileDialog as tkfile
 import                 ttk
 
+# the List property is complex enough to get its own module.
+from tkprop.widgets_list import _List
+
 
 def _setupValidation(widget, tkProp, tkVar):
     """
     Configures input validation for the given widget, which is assumed
-    to be managing the given tkProp (tkprop.PropertyBase) object, which
-    is further assumed to be a property of the given propObj
-    (tkprop.HasProperties) object.  When a new value is entered into
-    the widget, as soon as the widget loses focus, the new value is
-    passed to the validate() method of the property object. If the
-    validate method raises an error, the property (and widget) value is
-    reverted to its previous value (which was previously stored when
-    the widget gained focus).
+    to be managing the given tkProp (tkprop.PropertyBase) object.  When
+    a new value is entered into the widget, as soon as the widget loses
+    focus, the new value is passed to the validate() method of the
+    property object. If the validate method raises an error, the
+    property (and widget) value is reverted to its previous value
+    (which was previously stored when the widget gained focus).
     """
 
     # Container used for storing the previous value of the property,
@@ -160,33 +161,6 @@ def _String(parent, propObj, tkProp, tkVar):
     return widget
 
 
-def _List(parent, propObj, tkProp, tkVar):
-    """
-    Basic list implementation - will be improved.
-    """
-
-    frame  = ttk.Frame(parent)
-    tkVars = tkVar.tkVars
-
-    frame.columnconfigure(0, weight=1)
- 
-    for i,v in enumerate(tkVars):
-        
-        makeFunc = getattr(
-            sys.modules[__name__],
-            '_{}'.format(tkProp.listType.__class__.__name__), None)
-
-        if makeFunc is None:
-            raise ValueError(
-                'Unknown property type: {}'.format(tkProp.__class__.__name__))
-
-        widg = makeFunc(frame, propObj, tkProp.listType, v)
-
-        widg.grid(row=i, column=0, sticky=tk.W+tk.E)
-
-    return frame
-
-    
 
 def _Number(parent, propObj, tkProp, tkVar):
     """
@@ -274,6 +248,7 @@ def _Int(parent, propObj, tkProp, tkVar):
 
 
 def _Percentage(parent, propObj, tkProp, tkVar):
+    # TODO Add '%' signs to Scale labels.
     return _Number(parent, propObj, tkProp, tkVar) 
         
 
