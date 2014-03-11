@@ -472,10 +472,24 @@ class FilePath(String):
 class _ListWrapper(object):
     """
     Used by the List property type, defined below. An object which
-    sort of acts like a list, but for which items are embedded in
-    an appropriate Tkinter variable, a minimum/maximum length may
+    acts like a list, but for which items are embedded in an
+    appropriate Tkinter variable, a minimum/maximum list length may
     be enforced, and value/type constraints enforced on the values
-    added to it.  Not all list operations are supported.
+    added to it.
+
+    Not all list operations are supported.  The only way that new
+    items may be added to the list is via append(), and the only
+    way that items may be removed is via pop(). Item values may be
+    modified, however, via standard list slice assignment.
+
+    A Tk Variable object is created for each item that is added to
+    the list.  When a list value is changed, instead of a new
+    Tk Variable being created, the value of the existing variable
+    is changed.  References to every Tk variable in the list are
+    added to the HasProperties object (the owner, passed to
+    __init__), with a name of the form 'label_index', where 'label'
+    is the List property label, and 'index' is the index, in this
+    list, of the Tk variable.
     """
 
     def __init__(self,
@@ -485,9 +499,22 @@ class _ListWrapper(object):
                  listType=None,
                  minlen=None,
                  maxlen=None):
+        """
+        Parameters:
+         - owner:    The HasProperties object, of which the List object
+                     which is managing this _ListWrapper object, is a
+                     property.
+         - listProp: The List property object which is managing this
+                     _ListWrapper object.
+         - values:   list of initial values.
+         - listType: A PropertyBase instance, specifying the type of
+                     data allowed in this list.
+         - minlen:   minimum list length
+         - maxlen:   maximum list length
+        """
 
-        self._listProp = listProp
         self._owner    = owner
+        self._listProp = listProp
         self._listType = listType
         self._minlen   = minlen
         self._maxlen   = maxlen
@@ -502,24 +529,31 @@ class _ListWrapper(object):
             self._check_maxlen( len(values))
             
             # manually append each item on to the
-            # list so the values are  validated
+            # list so the values are validated
             for v in values:
                 self.append(v)
 
         
-    def __len__(self): return self._l.__len__()
-    
+    def __len__( self): return self._l.__len__()
     def __repr__(self): return list([i.get() for i in self._l]).__repr__()
     def __str__( self): return list([i.get() for i in self._l]).__str__()
  
     
     def _check_maxlen(self, change=1):
+        """
+        Test that adding the given number of items to the list would
+        not cause the list to grow beyond its maximum length.
+        """
         if (self._maxlen is not None) and (len(self._l)+change > self._maxlen):
             raise IndexError('{} must have a length of at most {}'.format(
                 self._listProp.label, self._maxlen))
 
 
     def _check_minlen(self, change=1):
+        """
+        Test that removing the given number of items to the list would
+        not cause the list to shrink beyond its minimum length.
+        """ 
         if (self._minlen is not None) and (len(self._l)-change < self._minlen):
             raise IndexError('{} must have a length of at least {}'.format(
                 self._listProp.label, self._minlen))
@@ -535,6 +569,8 @@ class _ListWrapper(object):
         tkval = self._listType._tkvartype(
             self._listType,
             name='{}_{}'.format(self._listProp.label, index))
+
+        # ValueError here if value is bad
         tkval.set(value)
         return tkval
 
@@ -546,11 +582,10 @@ class _ListWrapper(object):
         """
 
         for i in range(len(self._l)):
-
             if self._l[i].get() == item:
                 return i
                 
-        raise ValueError('{}')
+        raise ValueError('{} is not present'.format(item))
         
 
     def __getitem__(self, key):
@@ -583,7 +618,6 @@ class _ListWrapper(object):
         
         try:    self.index(item)
         except: return False
-        
         return True
 
         
@@ -639,19 +673,11 @@ class _ListWrapper(object):
                 break
 
 
-    def insert(self, index, item):
-        """
-        Inserts the given item at the specified index. A ValueError is
-        raised if the item does not meet the list type/value constraints.
-        """
-        self._l[index].set(item)
-
-        
     def pop(self):
         """
-        Remove and return the last value in the list. An IndexError is raised
-        if the removal would cause the list length to go below its
-        minimum length.
+        Remove and return the last value in the list. An IndexError is
+        raised if the removal would cause the list length to shrink
+        below its minimum length.
         """
         
         index = len(self._l) - 1
@@ -678,9 +704,20 @@ class _ListWrapper(object):
 
 class List(PropertyBase):
     """
+    A property which represents a list of items, of another property type.
+    List functionality is not complete - see the documentation for the
+    _ListWrapper class, defined above.
     """
     
     def __init__(self, default=None, listType=None, minlen=None, maxlen=None):
+        """
+        Optional parameters:
+          - default:  Default/initial list of values
+          - listType: A PropertyBase instance, specifying the values allowed
+                      in the list
+          - minlen:   minimum list length
+          - maxlen:   maximum list length
+        """
 
         self.listType = listType
         self.minlen   = minlen
@@ -707,7 +744,6 @@ class List(PropertyBase):
 
         
     def __set__(self, instance, value):
-
         instval = _ListWrapper(instance,
                                self,
                                values=value,
