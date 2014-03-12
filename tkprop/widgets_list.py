@@ -22,29 +22,70 @@ import            ttk
 
 
 
-def _pasteDataDialog(parent):
+def _pasteDataDialog(parent, listProp, propObj):
     """
     A dialog which displays an editable text field, allowing the user
     to type/paste bulk data which will be used to populate the list
     (one line per item).
     """
 
-    listType  = listProp.listType
-    tkVarList = listObj._tkVars
+    listObj = getattr(propObj, listProp.label)
+    
     window = tk.Toplevel()
     frame  = ttk.Frame(window)
 
-
     frame.pack(fill=tk.BOTH, expand=True)
+    frame.columnconfigure(0, weight=1)
+    frame.rowconfigure(   0, weight=1)
 
-    # make the list edit dialog modal
+    # TODO label explaining what to do
+    text    = tk.Text(frame, wrap="none")
+    vScroll = ttk.Scrollbar(frame, orient=tk.VERTICAL,   command=text.yview)
+    hScroll = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=text.xview)
+    
+    initText = '\n'.join([str(l) for l in listObj])
+    text.insert('1.0', initText)
+
+    def pasteIntoList():
+        """
+        Copies whatever the user typed/pasted
+        into the text area into the list.
+        """
+
+        listData = text.get('1.0', 'end')
+        listData = listData.split('\n')
+        listData = [s.strip() for s in listData]
+        listData = filter(len, listData)
+
+        print('Pasting data into list: {}'.format(listData))
+
+        setattr(propObj, listProp.label, listData)
+        
+        window.destroy()
+
+    # ok/cancel buttons
+    btnFrame     = ttk.Frame(frame)
+    okButton     = ttk.Button(btnFrame, text="Ok",     command=pasteIntoList)
+    cancelButton = ttk.Button(btnFrame, text="Cancel", command=window.destroy)
+
+    # lay out the widgets!
+    text    .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+    hScroll .grid(row=1, column=0, sticky=tk.E+tk.W)
+    vScroll .grid(row=0, column=1, sticky=tk.N+tk.S)
+    btnFrame.grid(row=2, column=0, sticky=tk.E+tk.W, columnspan=2)
+
+    btnFrame.columnconfigure(0, weight=1)
+    btnFrame.columnconfigure(1, weight=1)
+    okButton    .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+    cancelButton.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+
+    # make this window modal
     window.transient(parent)
     window.grab_set()
     parent.wait_window(window) 
-    pass
 
 
-def _editListDialog(parent, listProp, listObj, propObj):
+def _editListDialog(parent, listProp, propObj):
     """
     A dialog which displays a widget for every item in the list,
     and which allows the user to adjust the number of items in
@@ -52,11 +93,12 @@ def _editListDialog(parent, listProp, listObj, propObj):
     Parameters:
       - parent
       - listProp
-      - listObj
       - propObj
     """
 
+
     listType  = listProp.listType
+    listObj   = getattr(propObj, listProp.label)
     tkVarList = listObj._tkVars
 
     # Get a reference to a function which can make
@@ -161,21 +203,22 @@ def _List(parent, propObj, tkProp, tkVar):
 
     frame = ttk.Frame(parent)
 
-    print('Making list widgets for {} !!'.format(tkProp.label))
-
-    # When the user pushes this button on the parent window, a new window
-    # is displayed, allowing the user to edit the values in the list 
+    # When the user pushes this button on the parent window,
+    # a new window is displayed, allowing the user to edit
+    # the values in the list individually
     editButton = ttk.Button(
         frame, text='Edit',
-        command=lambda: _editListDialog(parent, tkProp, tkVar, propObj))
+        command=lambda: _editListDialog(parent, tkProp, propObj))
 
     # When the user pushes this button, a new window is
     # displayed, allowing the user to type/paste bulk data
     pasteButton = ttk.Button(
         frame, text='Paste data',
-        command=lambda: _pasteDataDialog(parent, tkProp, tkVar, propObj))
+        command=lambda: _pasteDataDialog(parent, tkProp, propObj))
 
-    editButton .pack(side=tk.LEFT,  fill=tk.X, expand=True)
-    pasteButton.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+    frame.columnconfigure(0, weight=1)
+    frame.columnconfigure(1, weight=1)
+    editButton .grid(row=0, column=0, sticky=tk.E+tk.W)
+    pasteButton.grid(row=0, column=1, sticky=tk.E+tk.W)
         
     return frame

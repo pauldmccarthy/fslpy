@@ -485,11 +485,9 @@ class _ListWrapper(object):
     A Tk Variable object is created for each item that is added to
     the list.  When a list value is changed, instead of a new
     Tk Variable being created, the value of the existing variable
-    is changed.  References to every Tk variable in the list are
-    added to the HasProperties object (the owner, passed to
-    __init__), with a name of the form 'label_index', where 'label'
-    is the List property label, and 'index' is the index, in this
-    list, of the Tk variable.
+    is changed.  References to every Tk variable in the list may
+    be accessed via the _tkVars attribute of hte _ListWrapper
+    object.
     """
 
     def __init__(self,
@@ -513,30 +511,27 @@ class _ListWrapper(object):
          - maxlen:   maximum list length
         """
 
-        self._owner    = owner
-        self._listProp = listProp
-        self._listType = listType
-        self._minlen   = minlen
-        self._maxlen   = maxlen
-        self._l        = []
-        self._tkVars   = self._l
+        self._owner          = owner
+        self._listProp       = listProp
+        self._listType       = listType
+        self._listType.label = self._listProp.label 
+        self._minlen         = minlen
+        self._maxlen         = maxlen
 
-        self._listType.label = self._listProp.label
+        # This is the list that the _ListWrapper wraps.
+        self._tkVars = []
 
         if values is not None:
-
-            self._check_minlen(-len(values))
-            self._check_maxlen( len(values))
-            
-            # manually append each item on to the
-            # list so the values are validated
-            for v in values:
-                self.append(v)
+            self.extend(values)
+                
+        elif self._minlen is not None:
+            for i in range(self._minlen):
+                self.append(listType.default)
 
         
-    def __len__( self): return self._l.__len__()
-    def __repr__(self): return list([i.get() for i in self._l]).__repr__()
-    def __str__( self): return list([i.get() for i in self._l]).__str__()
+    def __len__( self): return self._tkVars.__len__()
+    def __repr__(self): return list([i.get() for i in self._tkVars]).__repr__()
+    def __str__( self): return list([i.get() for i in self._tkVars]).__str__()
  
     
     def _check_maxlen(self, change=1):
@@ -544,7 +539,8 @@ class _ListWrapper(object):
         Test that adding the given number of items to the list would
         not cause the list to grow beyond its maximum length.
         """
-        if (self._maxlen is not None) and (len(self._l)+change > self._maxlen):
+        if (self._maxlen is not None) and \
+           (len(self._tkVars) + change > self._maxlen):
             raise IndexError('{} must have a length of at most {}'.format(
                 self._listProp.label, self._maxlen))
 
@@ -554,24 +550,21 @@ class _ListWrapper(object):
         Test that removing the given number of items to the list would
         not cause the list to shrink beyond its minimum length.
         """ 
-        if (self._minlen is not None) and (len(self._l)-change < self._minlen):
+        if (self._minlen is not None) and \
+           (len(self._tkVars) - change < self._minlen):
             raise IndexError('{} must have a length of at least {}'.format(
                 self._listProp.label, self._minlen))
 
             
-    def _makeTkVar(self, value, index):
+    def _makeTkVar(self, value):
         """
         Encapsulate the given value in a Tkinter variable.  A
         ValueError is raised if the value does not meet the
         list type/value constraints.
         """
 
-        tkval = self._listType._tkvartype(
-            self._listType,
-            name='{}_{}'.format(self._listProp.label, index))
-
-        # ValueError here if value is bad
-        tkval.set(value)
+        # ValueError will be raised here if value is bad
+        tkval = self._listType._tkvartype(self._listType, value=value)
         return tkval
 
 
@@ -581,8 +574,8 @@ class _ListWrapper(object):
         value is not present.
         """
 
-        for i in range(len(self._l)):
-            if self._l[i].get() == item:
+        for i in range(len(self._tkVars)):
+            if self._tkVars[i].get() == item:
                 return i
                 
         raise ValueError('{} is not present'.format(item))
@@ -593,7 +586,7 @@ class _ListWrapper(object):
         Return the value(s) at the specified index/slice.
         """
         
-        items = self._l.__getitem__(key)
+        items = self._tkVars.__getitem__(key)
 
         if isinstance(key,slice):
             return [i.get() for i in items]
@@ -606,7 +599,7 @@ class _ListWrapper(object):
         Returns an iterator over the values in the list.
         """
         
-        innerIter = self._l.__iter__()
+        innerIter = self._tkVars.__iter__()
         for i in innerIter:
             yield i.get()
 
@@ -628,7 +621,7 @@ class _ListWrapper(object):
 
         c = 0
 
-        for i in self._l:
+        for i in self._tkVars:
             if i.get() == item:
                  c = c + 1
                  
@@ -645,11 +638,11 @@ class _ListWrapper(object):
         """
         
         self._check_maxlen()
-        index = len(self._l)
-        tkval = self._makeTkVar(item, index)
-        self._l.append(tkval)
-        setattr(self._owner, '{}_{}'.format(
-            self._listProp.label, index), tkval)
+        
+        index = len(self._tkVars)
+        tkVal = self._makeTkVar(item)
+        
+        self._tkVars.append(tkVal)
 
 
     def extend(self, iterable):
@@ -659,20 +652,15 @@ class _ListWrapper(object):
         list type/value constraints. An IndexError is raised if
         an insertion would causes the list to grow beyond its
         maximum length.
-        """ 
+        """
+
+        toAdd = list(iterable)
+        self._check_maxlen(len(toAdd))
+
+        for i in toAdd:
+            self.append(i)
+
         
-        while True:
-            try:
-                nxt = iterable.next()
-
-                # this will raise an IndexError if maxlen is exceeded,
-                # or a ValueError if the value is invalid
-                self.append(nxt)
-                
-            except StopIteration:
-                break
-
-
     def pop(self):
         """
         Remove and return the last value in the list. An IndexError is
@@ -680,27 +668,62 @@ class _ListWrapper(object):
         below its minimum length.
         """
         
-        index = len(self._l) - 1
-        
+        index = len(self._tkVars) - 1
         self._check_minlen()
-
-        delattr(self._owner,
-                '{}_{}'.format(self._listProp.label, index))
-        return self._l.pop(index).get()
+        return self._tkVars.pop(index).get()
 
 
     def __setitem__(self, key, value):
         """
         Sets the value(s) of the list at the specified index/slice.
         A ValueError is raised if any of the values do not meet the
-        list type/value constraints.
+        list type/value constraints. 
         """
 
         if isinstance(key, slice):
-            for i,v in zip(range(key.start, key.stop, key.step), value):
-                self._l[i].set(v)
+            if (key.step is not None) and (key.step > 1):
+               raise ValueError(
+                   '_ListWrapper does not support extended slices')
+            indices = range(*key.indices(len(self)))
+            
+        elif isinstance(key, int):
+            indices = [key]
+            value   = [value]
+            
         else:
-            self._l[key].set(value)
+            raise ValueError('Invalid key type')
+
+        # if the number of indices specified in the key
+        # is different from the number of values passed
+        # in, it means that we are either adding or
+        # removing items from the list
+        lenDiff = len(value) - len(indices)
+        oldLen  = len(self)
+        newLen  = oldLen + lenDiff
+
+        if   newLen > oldLen: self._check_maxlen( lenDiff)
+        elif newLen < oldLen: self._check_minlen(-lenDiff)
+
+        value = [self._makeTkVar(v) for v in value]
+        if len(value) == 1: value = value[0]
+        self._tkVars.__setitem__(key, value)
+
+                
+    def __delitem__(self, key):
+        """
+        Remove items at the specified index/slice from the list. An
+        IndexError is raised if the removal would cause the list to
+        shrink below its minimum length.
+        """
+
+        if isinstance(key, slice):
+            indices = range(*key.indices(len(self)))
+        else:
+            indices = [key]
+
+        self._check_minlen(len(indices))
+
+        self._tkVars.__delitem__(key)
 
 
 class List(PropertyBase):
@@ -745,10 +768,6 @@ class List(PropertyBase):
 
         
     def __set__(self, instance, value):
-        instval = _ListWrapper(instance,
-                               self,
-                               values=value,
-                               listType=self.listType,
-                               minlen=self.minlen,
-                               maxlen=self.maxlen)
-        instance.__dict__[self.label] = instval        
+
+        instval    = getattr(instance, self.label)
+        instval[:] = value
