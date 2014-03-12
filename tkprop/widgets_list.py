@@ -20,13 +20,16 @@ import Tkinter as tk
 import            ttk
 
 
-
-
 def _pasteDataDialog(parent, listProp, propObj):
     """
     A dialog which displays an editable text field, allowing the user
     to type/paste bulk data which will be used to populate the list
     (one line per item).
+    
+    Parameters:
+      - parent:   Tkinter parent object
+      - listProp: The tkprop.List property object
+      - propObj:  The tkprop.HasProperties object which owns listProp.    
     """
 
     listObj = getattr(propObj, listProp.label)
@@ -87,15 +90,14 @@ def _pasteDataDialog(parent, listProp, propObj):
 
 def _editListDialog(parent, listProp, propObj):
     """
-    A dialog which displays a widget for every item in the list,
-    and which allows the user to adjust the number of items in
-    the list.
+    A dialog which displays a widget for every item in the list, and
+    which allows the user to adjust the number of items in the list.
+    
     Parameters:
-      - parent
-      - listProp
-      - propObj
+      - parent:   Tkinter parent object
+      - listProp: The tkprop.List property object
+      - propObj:  The tkprop.HasProperties object which owns listProp.
     """
-
 
     listType  = listProp.listType
     listObj   = getattr(propObj, listProp.label)
@@ -178,7 +180,7 @@ def _editListDialog(parent, listProp, propObj):
         # adjust the okButton location
         okButton.grid(row=newLen+1, column=0, sticky=tk.W+tk.E)
 
-    numRows.trace('w', changeNumRows)
+    traceName = numRows.trace('w', changeNumRows)
 
     # layout
     numRowsBox.grid(row=0, column=0, sticky=tk.W+tk.E)
@@ -195,10 +197,16 @@ def _editListDialog(parent, listProp, propObj):
     window.grab_set()
     parent.wait_window(window)
 
+    # We explicitly remove the trace on the numRows variable,
+    # as otherwise it may not be garbage collected
+    numRows.trace_vdelete('w', traceName)
+
 
 def _List(parent, propObj, tkProp, tkVar):
     """
-    Basic list implementation - will be improved.
+    Creates and returns a ttk.Frame containing two buttons which,
+    when pushed, display dialogs allowing the user to edit the
+    values contained in the list.
     """
 
     frame = ttk.Frame(parent)
