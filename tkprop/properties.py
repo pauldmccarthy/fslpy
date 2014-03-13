@@ -448,6 +448,8 @@ class Choice(String):
 class FilePath(String):
     """
     A property which represents a file or directory path.
+    There is currently no support for validating a path which
+    may be either a file or a directory.
     """
 
     def __init__(self, exists=False, isFile=True):
@@ -465,15 +467,15 @@ class FilePath(String):
 
     def validate(self, value):
 
-        if (value != '') and (value is not None) and self.exists:
+        if (value is not None) and (value != '') and self.exists:
 
             if self.isFile and (not op.isfile(value)):
                 raise ValueError('{} must be a file ({})'.format(
                     self.label, value)) 
 
-                if (not self.isFile) and (not op.isdir(value)):
-                    raise ValueError('{} must be a directory ({})'.format(
-                        self.label, value))
+            if (not self.isFile) and (not op.isdir(value)):
+                raise ValueError('{} must be a directory ({})'.format(
+                    self.label, value))
 
 
 class _ListWrapper(object):
