@@ -77,6 +77,7 @@ import os.path as op
 
 import Tkinter as tk
 
+#
 # The classes below are used in place of the Tkinter.*Var classes.
 # They are identical to the Tkinter versions, with the following
 # exceptions:
@@ -88,7 +89,13 @@ import Tkinter as tk
 #      PropertyBase.validate method is called, to test that
 #      the new value is valid. If the new value is not valid,
 #      a ValueError is raised.
-
+#
+# NOTE TO SELF: Another way that I could provide this callback
+# functionality is to simply use the trace feature of Tkinter
+# variables. I'd need to come up with some sort of mechanism
+# for reverting to a previous value for invalid writes, though.
+# Better? Worse? I don't know.
+#
 class _StringVar(tk.StringVar):
     def __init__(self, tkProp, **kwargs):
         self.tkProp = tkProp

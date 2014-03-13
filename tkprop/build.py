@@ -72,7 +72,17 @@ class ViewItem(object):
 
         self.visibleWhen = visibleWhen
         self.enabledWhen = enabledWhen
- 
+
+
+class Button(ViewItem):
+    """
+    Represents a button which, when clicked, willl call a specified
+    callback function.
+    """
+
+    def __init__(self, callback=None, **kwargs):
+        self.callback = callback
+        ViewItem.__init__(self, **kwargs)
 
 
 class Widget(ViewItem):
@@ -222,6 +232,15 @@ def _createLabel(parent, viewItem, propObj):
     return label
 
 
+def _createButton(parent, widget):
+    """
+    Creates a ttk.Button object for the given Button widget.
+    """
+
+    button = ttk.Button(parent, text=widget.label, command=widget.callback)
+    return button
+
+
 def _createWidget(parent, widget, propObj):
     """
     Creates a widget for the given Widget object, using the
@@ -353,6 +372,9 @@ def _create(parent, viewItem, propObj):
 
     if isinstance(viewItem, Widget):
         return _createWidget(parent, viewItem, propObj)
+
+    elif isinstance(viewItem, Button):
+        return _createButton(parent, viewItem)
         
     elif isinstance(viewItem, NotebookGroup):
         return _createNotebookGroup(parent, viewItem, propObj)
