@@ -120,7 +120,7 @@ class Group(ViewItem):
     """
     Represents a collection of other ViewItems.
     """
-    def __init__(self, children=[], showLabels=False, **kwargs):
+    def __init__(self, children=[], showLabels=True, **kwargs):
         """
         Parameters:
         
@@ -410,9 +410,7 @@ def _defaultView(propObj):
     
     propNames,props = zip(*props)
 
-    return VGroup(label=propObj.__class__.__name__,
-                  children=propNames,
-                  showLabels=True)
+    return VGroup(label=propObj.__class__.__name__, children=propNames)
 
 
 def _prepareView(viewItem, labels, tooltips):
