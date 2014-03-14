@@ -85,7 +85,10 @@ import Tkinter as tk
 #   1. A reference to a PropertyBase object is saved when the
 #      Var object is created.
 #
-#   2. When the set() method is called on the Var object, the
+#   2. Similarly, a reference to the owner of the PropertyBase
+#      object (a HasProperties instance) is saved.
+#
+#   3. When the set() method is called on the Var object, the
 #      PropertyBase.validate method is called, to test that
 #      the new value is valid. If the new value is not valid,
 #      a ValueError is raised.
@@ -97,32 +100,36 @@ import Tkinter as tk
 # Better? Worse? I don't know.
 #
 class _StringVar(tk.StringVar):
-    def __init__(self, tkProp, **kwargs):
-        self.tkProp = tkProp
+    def __init__(self, tkProp, instance, **kwargs):
+        self.tkProp   = tkProp
+        self.instance = instance
         tk.StringVar.__init__(self, **kwargs)
     def set(self, value):
-        self.tkProp.validate(value)
+        self.tkProp.validate(self.instance, value)
         tk.StringVar.set(self, value)
 
 class _DoubleVar(tk.DoubleVar):
-    def __init__(self, tkProp, **kwargs):
-        self.tkProp = tkProp
+    def __init__(self, tkProp, instance, **kwargs):
+        self.tkProp   = tkProp
+        self.instance = instance
         tk.DoubleVar.__init__(self, **kwargs)
     def set(self, value):
-        self.tkProp.validate(value)
+        self.tkProp.validate(self.instance, value)
         tk.DoubleVar.set(self, value)
 
 class _IntVar(tk.IntVar):
-    def __init__(self, tkProp, **kwargs):
-        self.tkProp = tkProp
+    def __init__(self, tkProp, instance, **kwargs):
+        self.tkProp   = tkProp
+        self.instance = instance
         tk.IntVar.__init__(self, **kwargs)
     def set(self, value):
-        self.tkProp.validate(value)
+        self.tkProp.validate(self.instance, value)
         tk.IntVar.set(self, value)
 
 class _BooleanVar(tk.BooleanVar):
-    def __init__(self, tkProp, **kwargs):
-        self.tkProp = tkProp
+    def __init__(self, tkProp, instance, **kwargs):
+        self.tkProp   = tkProp
+        self.instance = instance
         tk.BooleanVar.__init__(self, **kwargs)
 
     def get(self):
@@ -132,7 +139,7 @@ class _BooleanVar(tk.BooleanVar):
         return bool(tk.BooleanVar.get(self))
         
     def set(self, value):
-        self.tkProp.validate(value)
+        self.tkProp.validate(self.instance, value)
         tk.BooleanVar.set(self, value)
  
 
@@ -143,17 +150,20 @@ class PropertyBase(object):
     any required validation rules.
     """
     
-    def __init__(self, tkvartype, default):
+    def __init__(self, tkvartype, default, validateFunc=None):
         """
         The tkvartype parameter should be one of the Tkinter.*Var
         class replacements, defined above (e.g. _BooleanVar, _IntVar,
         etc).  For every object which has this PropertyBase object
         as a property, an instance of the tkvartype is created and
-        attached to the instance.
+        attached to the instance.  Subclasses should call this
+        superclass constructor, passing it the tkvartype, default
+        value, and any leftover **kwargs.
         """
-        self.label      = None
-        self._tkvartype = tkvartype
-        self.default    = default
+        self.label         = None
+        self._tkvartype    = tkvartype
+        self.default       = default
+        self._validateFunc = validateFunc
 
         
     def _make_instval(self, instance):
@@ -162,21 +172,29 @@ class PropertyBase(object):
         type, and attaches it to the given instance.
         """
         
-        instval = self._tkvartype(self, value=self.default, name=self.label)
+        instval = self._tkvartype(
+            self, instance, value=self.default, name=self.label)
         instance.__dict__[self.label] = instval
         return instval
 
         
-    def validate(self, value):
+    def validate(self, instance, value):
         """
-        Called when an attempt is made to set the property value.
-        If the given value is invalid, subclass implementations
-        shouldd raise an Error. Otherwise, they should not return
-        any value.  The default implementation does nothing.
+        Called when an attempt is made to set the property value on
+        the given instance. If the given value is invalid, subclass
+        implementations should raise a ValueError. Otherwise, they
+        should not return any value.  The default implementation
+        does nothing, unless a custom validate function was passed
+        to the constructor, in which case it is called. Subclasses
+        which override this method should therefore call this
+        superclass implementation in addition to performing their
+        own processing.
         """
-        pass
 
-        
+        if self._validateFunc is not None:
+            self._validateFunc(instance, value)
+
+            
     def __get__(self, instance, owner):
         """
         If called on the HasProperties class, and not on an instance,
@@ -267,6 +285,7 @@ class HasProperties(object):
                 
         return inst
 
+        
     def __str__(self):
         """
         Returns a multi-line string containing the names and values
@@ -300,24 +319,30 @@ class Boolean(PropertyBase):
     A property which encapsulates a Tkinter.BooleanVar object.
     """
 
-    def __init__(self, default=False):
-        super(Boolean, self).__init__(_BooleanVar, default)
+    def __init__(self, **kwargs):
+
+        kwargs['default'] = kwargs.get('default', False)
+        PropertyBase.__init__(self, _BooleanVar, **kwargs)
 
 
-class Number(PropertyBase):
+class _Number(PropertyBase):
     """
     Base class for the Int and Double classes. Don't subclass
     this, subclass one of Int or Double.
     """
     
-    def __init__(self, tkvartype, default=0, minval=None, maxval=None):
+    def __init__(self, tkvartype, minval=None, maxval=None, **kwargs):
 
         self.minval = minval
         self.maxval = maxval
-        
-        super(Number, self).__init__(tkvartype, default)
 
-    def validate(self, value):
+        kwargs['default'] = kwargs.get('default', 0)
+        PropertyBase.__init__(self, tkvartype, **kwargs)
+
+        
+    def validate(self, instance, value):
+        
+        PropertyBase.validate(self, instance, value)
 
         if self.minval is not None and value < self.minval:
             raise ValueError('{} must be at least {}'.format(
@@ -328,52 +353,52 @@ class Number(PropertyBase):
                 self.label, self.maxval))
 
         
-class Int(Number):
+class Int(_Number):
     """
     A property which encapsulates a Tkinter.IntVar object. 
     """
     
     def __init__(self, **kwargs):
         """
-        Int constructor. Optional keyword arguments:
-          - default
-          - minval
-          - maxval 
+        Int constructor. See the Number class for keyword
+        arguments.
         """
-        super(Int, self).__init__(_IntVar, **kwargs)
+        _Number.__init__(self, _IntVar, **kwargs)
 
-    def validate(self, value):
+        
+    def validate(self, instance, value):
         value = int(value)
-        Number.validate(self, value)
+        _Number.validate(self, instance, value)
 
 
-class Double(Number):
+class Double(_Number):
     """
     A property which encapsulates a Tkinter.DoubleVar object. 
     """
     
     def __init__(self, **kwargs):
         """
-        Double constructor. Optional keyword arguments:
-          - default
-          - minval
-          - maxval
+        Double constructor. See the Number class for keyword
+        arguments.
         """
-        super(Double, self).__init__(_DoubleVar, **kwargs)
+        _Number.__init__(self, _DoubleVar, **kwargs)
 
-    def validate(self, value):
+        
+    def validate(self, instance, value):
         value = float(value)
-        Number.validate(self, value)
+        _Number.validate(self, instance, value)
 
 
 class Percentage(Double):
     """
-    A property which represents a percentage.
+    A property which represents a percentage. 
     """
 
-    def __init__(self, default=0):
-        super(Percentage, self).__init__(
-            default=default, minval=0.0, maxval=100.0)
+    def __init__(self, **kwargs):
+        kwargs['minval']  = 0.0
+        kwargs['maxval']  = 100.0
+        kwargs['default'] = kwargs.get('default', 50.0)
+        Double.__init__(self, **kwargs)
 
 
 class String(PropertyBase):
@@ -381,25 +406,25 @@ class String(PropertyBase):
     A property which encapsulates a Tkinter.StringVar object. 
     """
     
-    def __init__(self, default='', minlen=None, maxlen=None, filterFunc=None):
+    def __init__(self, minlen=None, maxlen=None, **kwargs):
         """
         String contructor. Optional keyword arguments:
-          - default
           - minlen
           - maxlen
-          - filterFunc: function of the form filterFunc(str) -> bool. A
-            ValueError is raised if an attempt is made to set a String
-            property to a value for which the filterFunc returns false.
         """ 
-        self.minlen     = minlen
-        self.maxlen     = maxlen
-        self.filterFunc = filterFunc
-        super(String, self).__init__(_StringVar, default)
+        self.minlen = minlen
+        self.maxlen = maxlen
+        
+        kwargs['default'] = kwargs.get('default', '')
+        PropertyBase.__init__(self, _StringVar, **kwargs)
 
-    def validate(self, value):
+        
+    def validate(self, instance, value):
 
         if value is None:
             return
+
+        PropertyBase.validate(self, instance, value)
         
         value = str(value)
 
@@ -410,10 +435,6 @@ class String(PropertyBase):
         if self.maxlen is not None and len(value) > self.maxlen:
             raise ValueError('{} must have length at most {}'.format(
                 self.label, self.maxlen))
-
-        if self.filterFunc is not None and (not self.filterFunc(value)):
-            raise ValueError('Invalid value for {}: {}'.format(
-                self.label, value))
         
 
 class Choice(String):
@@ -421,24 +442,28 @@ class Choice(String):
     A property which may only be set to one of a set of predefined values.
     """
 
-    def __init__(self, choices, default=None, choiceLabels=None):
+    def __init__(self, choices, choiceLabels=None, **kwargs):
         """
         Choice constructor. Arguments:
           - choices: list of strings, the possible values that this
             property can take.
-          - default (optional)
         """
+
+        if choices is None:
+            raise ValueError('A list of choices must be provided')
 
         self.choices = choices
 
-        if default is None:
-            default = self.choices[0]
+        kwargs['default'] = kwargs.get('default', self.choices[0])
 
-        super(Choice, self).__init__(default=default)
+        String.__init__(self, **kwargs)
 
-    def validate(self, value):
+        
+    def validate(self, instance, value):
 
         value = str(value)
+
+        PropertyBase.validate(self, instance, value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice for {}: {}'.format(
@@ -452,7 +477,7 @@ class FilePath(String):
     may be either a file or a directory.
     """
 
-    def __init__(self, exists=False, isFile=True):
+    def __init__(self, exists=False, isFile=True, **kwargs):
         """
         FilePath constructor. Optional arguments:
           - exists: If True, the path must exist.
@@ -463,11 +488,17 @@ class FilePath(String):
 
         self.exists = exists
         self.isFile = isFile
-        super(FilePath, self).__init__()
+        String.__init__(self, **kwargs)
 
-    def validate(self, value):
+        
+    def validate(self, instance, value):
 
-        if (value is not None) and (value != '') and self.exists:
+        if value is None: return
+        if value == '':   return
+
+        PropertyBase.validate(self, instance, value)
+
+        if self.exists:
 
             if self.isFile and (not op.isfile(value)):
                 raise ValueError('{} must be a file ({})'.format(
@@ -740,23 +771,35 @@ class List(PropertyBase):
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
     _ListWrapper class, defined above.
+
+    This class is a bit different from the other PropertyBase classes, in
+    that the validation logic is built into the _ListWrapper class, rather
+    than this class.
     """
     
-    def __init__(self, default=None, listType=None, minlen=None, maxlen=None):
+    def __init__(self, listType, minlen=None, maxlen=None, **kwargs):
         """
-        Optional parameters:
-          - default:  Default/initial list of values
+        Mandatory parameters:
           - listType: A PropertyBase instance, specifying the values allowed
                       in the list
+        
+        Optional parameters:
+
           - minlen:   minimum list length
           - maxlen:   maximum list length
         """
 
+        if listType is None or not isinstance(listType, PropertyBase):
+            raise ValueError(
+                'A list type (a PropertyBase instance) must be specified')
+
         self.listType = listType
         self.minlen   = minlen
         self.maxlen   = maxlen
+
+        kwargs['default'] = kwargs.get('default', [])
         
-        PropertyBase.__init__(self, None, default)
+        PropertyBase.__init__(self, None, **kwargs)
 
      
     def __get__(self, instance, owner):

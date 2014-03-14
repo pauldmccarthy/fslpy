@@ -23,7 +23,7 @@ import                 ttk
 from tkprop.widgets_list import _List
 
 
-def _setupValidation(widget, tkProp, tkVar):
+def _setupValidation(widget, propObj, tkProp, tkVar):
     """
     Configures input validation for the given widget, which is assumed
     to be managing the given tkProp (tkprop.PropertyBase) object.  When
@@ -49,7 +49,7 @@ def _setupValidation(widget, tkProp, tkVar):
     def _validate(newValue):
 
         try:
-            tkProp.validate(newValue)
+            tkProp.validate(propObj, newValue)
             return True
             
         except ValueError as e:
@@ -102,7 +102,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
 
     frame   = tk.Frame(parent)
     textbox = ttk.Entry(frame, textvariable=tkVar)
-    _setupValidation(textbox, tkProp, tkVar)
+    _setupValidation(textbox, propObj, tkProp, tkVar)
 
     def chooseFile():
         global _lastFilePathDir
@@ -156,7 +156,7 @@ def _String(parent, propObj, tkProp, tkVar):
     """
 
     widget = ttk.Entry(parent, textvariable=tkVar)
-    _setupValidation(widget, tkProp, tkVar)
+    _setupValidation(widget, propObj, tkProp, tkVar)
     
     return widget
 
@@ -234,7 +234,7 @@ def _Number(parent, propObj, tkProp, tkVar):
                             textvariable=tkVar,
                             increment=1)
 
-        _setupValidation(widget, tkProp, tkVar)
+        _setupValidation(widget, propObj, tkProp, tkVar)
 
     return widget
 
