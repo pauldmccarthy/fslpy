@@ -246,7 +246,7 @@ featView = tkp.NotebookGroup((
                     'b0_echoSpacing',
                     'b0_TE',
                     'b0_unwarpDir',
-                    'b0_signalLossThreshold'))
+                    'b0_signalLossThreshold')),
             'sliceTimingCorrection',
             'sliceTimingFile')),
     
