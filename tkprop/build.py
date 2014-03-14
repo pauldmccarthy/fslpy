@@ -31,15 +31,27 @@ import tkprop  as tkp
 
 class ViewItem(object):
     """
-    Superclass for Widgets and Groups. Represents an item to be displayed.
+    Superclass for Widgets, Buttons and Groups. Represents an item to be
+    displayed.
     """
     
-    def __init__(self, label=None, visibleWhen=None, enabledWhen=None):
+    def __init__(self, key=None, label=None, tooltip=None,
+                 visibleWhen=None, enabledWhen=None):
         """
         Parameters:
+
+          - key:         An identifier for this item. If this item is a
+                         Widget, this should be the property name that
+                         the widget edits. This key is used to look up
+                         labels and tooltips, if they are passed in as
+                         dicts (see the buildGUI function).
         
           - label:       A label for this item, which may be used in the
                          GUI.
+
+          - tooltip:     A tooltip, which may be displayed when the user
+                         hovers the mouse over the widget for this
+                         ViewItem.
         
           - visibleWhen: A 2-tuple which contains the name of a property
                          of the HasProperties object, or a list of
@@ -56,8 +68,6 @@ class ViewItem(object):
                          between enabled and disabled.
         """
         
-        self.label = label
-
         if visibleWhen is not None:
             props, func = visibleWhen
             if isinstance(props, str):
@@ -70,19 +80,22 @@ class ViewItem(object):
                 props = [props]
             enabledWhen = (props, func)
 
+        self.key         = key
+        self.label       = label
+        self.tooltip     = tooltip
         self.visibleWhen = visibleWhen
         self.enabledWhen = enabledWhen
 
 
 class Button(ViewItem):
     """
-    Represents a button which, when clicked, willl call a specified
+    Represents a button which, when clicked, will call a specified
     callback function.
     """
 
-    def __init__(self, callback=None, **kwargs):
+    def __init__(self, key=None, callback=None, **kwargs):
         self.callback = callback
-        ViewItem.__init__(self, **kwargs)
+        ViewItem.__init__(self, key, **kwargs)
 
 
 class Widget(ViewItem):
@@ -98,8 +111,9 @@ class Widget(ViewItem):
         
           - kwargs:   Passed to the ViewItem constructor.
         """
+        
+        kwargs['key'] = propName
         ViewItem.__init__(self, **kwargs)
-        self.propName = propName
 
 
 class Group(ViewItem):
@@ -248,7 +262,7 @@ def _createWidget(parent, widget, propObj):
     for more details).
     """
 
-    tkWidget = tkp.makeWidget(parent, propObj, widget.propName)
+    tkWidget = tkp.makeWidget(parent, propObj, widget.key)
     return tkWidget
 
     
@@ -367,9 +381,6 @@ def _create(parent, viewItem, propObj):
     children.
     """
 
-    if isinstance(viewItem, str):
-        viewItem = Widget(viewItem)
-
     if isinstance(viewItem, Widget):
         return _createWidget(parent, viewItem, propObj)
 
@@ -382,7 +393,8 @@ def _create(parent, viewItem, propObj):
     elif isinstance(viewItem, Group):
         return _createGroup(parent, viewItem, propObj)
 
-    return None
+    raise ValueError('Unrecognised ViewItem: {}'.format(
+        viewItem.__class__.__name__)) 
 
 
 def _defaultView(propObj):
@@ -398,21 +410,70 @@ def _defaultView(propObj):
     
     propNames,props = zip(*props)
 
-    propNames = map(Widget, propNames)
-
     return VGroup(label=propObj.__class__.__name__,
                   children=propNames,
                   showLabels=True)
 
 
-def buildGUI(parent, propObj, view=None):
+def _prepareView(viewItem, labels, tooltips):
+    """
+    Recursively steps through the given viewItem and its children (if any).
+    If the viewItem is a string, it is assumed to be a property name, and
+    it is turned into a Widget object. If the viewItem does not have a
+    label/tooltip, and there is a label/tooltip for it in the given
+    labels/tooltips dict, then its label/tooltip is set.  Returns a
+    reference to the updated ViewItem.
+    """
+
+    if isinstance(viewItem, str):
+        viewItem = Widget(viewItem)
+
+    if not isinstance(viewItem, ViewItem):
+        raise ValueError('Not a ViewItem')
+
+    if viewItem.label   is None:
+        viewItem.label   = labels  .get(viewItem.key, None)
+    if viewItem.tooltip is None:
+        viewItem.tooltip = tooltips.get(viewItem.key, None) 
+
+    if isinstance(viewItem, Group):
+
+        # children may have been specified as a tuple
+        viewItem.children = list(viewItem.children)
+
+        for i,child in enumerate(viewItem.children):
+            viewItem.children[i] = _prepareView(child, labels, tooltips)
+
+    return viewItem
+
+
+def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     """
     Builds a Tkinter/ttk interface which allows the properties of the
     given propObj object (a tkprop.HasProperties object) to be edited.
     Returns a reference to the top level Tkinter object (typically a
     ttk.Frame or ttk.Notebook).
+
+    Parameters:
+    
+     - parent:   Tkinter parent object
+    
+     - propObj:  tkprop.HasProperties object
+    
+    Optional:
+    
+     - view:     ViewItem object, specifying the interface layout
+    
+     - labels:   Dict specifying labels
+    
+     - tooltips: Dict specifying tooltips
     """
 
     if view is None: view = _defaultView(propObj)
+
+    if labels   is None: labels   = {}
+    if tooltips is None: tooltips = {}
+
+    view = _prepareView(view, labels, tooltips)
         
     return _create(parent, view, propObj)

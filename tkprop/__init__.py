@@ -23,6 +23,7 @@ from tkprop.widgets import \
 from tkprop.build import \
     buildGUI,      \
     ViewItem,      \
+    Button,        \
     Widget,        \
     Group,         \
     NotebookGroup, \
