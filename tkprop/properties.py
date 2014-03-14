@@ -93,12 +93,6 @@ import Tkinter as tk
 #      the new value is valid. If the new value is not valid,
 #      a ValueError is raised.
 #
-# NOTE TO SELF: Another way that I could provide this callback
-# functionality is to simply use the trace feature of Tkinter
-# variables. I'd need to come up with some sort of mechanism
-# for reverting to a previous value for invalid writes, though.
-# Better? Worse? I don't know.
-#
 class _StringVar(tk.StringVar):
     def __init__(self, tkProp, instance, **kwargs):
         self.tkProp   = tkProp

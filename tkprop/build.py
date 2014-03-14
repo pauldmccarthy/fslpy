@@ -68,18 +68,6 @@ class ViewItem(object):
                          between enabled and disabled.
         """
         
-        if visibleWhen is not None:
-            props, func = visibleWhen
-            if isinstance(props, str):
-                props = [props]
-            visibleWhen = (props, func)
-
-        if enabledWhen is not None:
-            props, func = enabledWhen
-            if isinstance(props, str):
-                props = [props]
-            enabledWhen = (props, func)
-
         self.key         = key
         self.label       = label
         self.tooltip     = tooltip
@@ -96,6 +84,28 @@ class Button(ViewItem):
     def __init__(self, key=None, callback=None, **kwargs):
         self.callback = callback
         ViewItem.__init__(self, key, **kwargs)
+
+
+class Label(ViewItem):
+    """
+    Represents a static text label.
+    """
+    def __init__(self, viewItem=None, **kwargs):
+        """
+        A Label object may either be created in the same way as any other
+        ViewItem object, or it may be created from another ViewItem object,
+        the object to be lablled.
+        """
+
+        if viewItem is not None:
+            kwargs['key']         = '{}_label'.format(viewItem.key)
+            kwargs['label']       = viewItem.label
+            kwargs['tooltip']     = viewItem.tooltip
+            kwargs['visibleWhen'] = viewItem.enabledWhen
+            kwargs['enabledWhen'] = viewItem.enabledWhen
+            
+        ViewItem.__init__(self, **kwargs)
+    pass
 
 
 class Widget(ViewItem):
@@ -128,7 +138,10 @@ class Group(ViewItem):
                         Group.
         
           - showLabels: Whether labels should be displayed for each of
-                        the children.
+                        the children. If this is true, an attribute will
+                        be added to this Group object in the _prepareView
+                        function, called 'childLabels', and containing a
+                        Label object for each child.
         
           - kwargs:     Passed to the ViewItem constructor.
         """
@@ -161,16 +174,25 @@ class VGroup(Group):
     pass
 
 
-def _configureEnabledWhen(viewItem, tkObj, propObj, tkLabel=None):
+class PropGUI(object):
+    """
+    A container class used for convenience. Stores references to
+    all Tkinter/ttk objects that are created, and to all conditional
+    callbacks (which control visibility/state).
+    """
+    
+    def __init__(self):
+        self.onChangeCallbacks = []
+        self.tkObjects         = {}
+ 
+
+def _configureEnabledWhen(viewItem, tkObj, propObj):
     """
     Sets up event handling for enabling/disabling the Tkinter object
     represented by the given viewItem.
     """
 
-    if viewItem.enabledWhen is None: return
-
-    condProps, condFunc = viewItem.enabledWhen
-    tkVars = [getattr(propObj, '{}_tkVar'.format(p)) for p in condProps]
+    if viewItem.enabledWhen is None: return None
 
     def _changeState(obj, state):
         """
@@ -185,52 +207,34 @@ def _configureEnabledWhen(viewItem, tkObj, propObj, tkLabel=None):
             for child in obj.winfo_children():
                 _changeState(child, state)
     
-    def _toggleEnabled(*a):
+    def _toggleEnabled():
         """
         Calls the conditional function and enables/disables
         the tk object (and its label if there is one).
         """
 
-        varVals = [tkVar.get() for tkVar in tkVars]
-
-        if condFunc(*varVals): state = 'enabled'
-        else:                  state = 'disabled'
+        if viewItem.enabledWhen(propObj): state = 'enabled'
+        else:                             state = 'disabled'
         
         _changeState(tkObj, state)
-        if tkLabel is not None: _changeState(tkLabel, state)
 
-    # set up initial state
-    _toggleEnabled()
-    
-    for tkVar in tkVars: tkVar.trace('w', _toggleEnabled)
+    return _toggleEnabled
 
 
-def _configureVisibleWhen(viewItem, tkObj, propObj, tkLabel=None):
+def _configureVisibleWhen(viewItem, tkObj, propObj):
     """
     Sets up event handling for showing/hiding the Tkinter object
     represented by the given viewItem.
     """ 
 
-    if viewItem.visibleWhen is None: return
+    if viewItem.visibleWhen is None: return None
 
-    condProps, condFunc = viewItem.visibleWhen
-    tkVars = [getattr(propObj, '{}_tkVar'.format(p)) for p in condProps]
+    def _toggleVis():
 
-    def _toggleVis(*a):
+        if not viewItem.visibleWhen(propObj): tkObj.grid_remove()
+        else:                                 tkObj.grid()
 
-        varVals = [tkVar.get() for tkVar in tkVars]
-
-        if not condFunc(*varVals):
-            tkObj.grid_remove()
-            if tkLabel is not None: tkLabel.grid_remove()
-        else:
-            tkObj.grid()
-            if tkLabel is not None: tkLabel.grid()
-
-    # set up initial visibility
-    _toggleVis()
-    
-    for tkVar in tkVars: tkVar.trace('w', _toggleVis)
+    return _toggleVis
 
 
 def _createLabel(parent, viewItem, propObj):
@@ -239,10 +243,7 @@ def _createLabel(parent, viewItem, propObj):
     viewItem.
     """
 
-    if isinstance(viewItem, str): labelText = viewItem
-    else:                         labelText = viewItem.label
-
-    label = ttk.Label(parent, text=labelText)
+    label = ttk.Label(parent, text=viewItem.label)
     return label
 
 
@@ -266,7 +267,7 @@ def _createWidget(parent, widget, propObj):
     return tkWidget
 
     
-def _createNotebookGroup(parent, group, propObj):
+def _createNotebookGroup(parent, group, propObj, propGui):
     """
     Creates a ttk.Notebook object for the given NotebookGroup object.
     The children of the group object are also created via recursive
@@ -277,7 +278,7 @@ def _createNotebookGroup(parent, group, propObj):
 
     for child in group.children:
 
-        page = _create(notebook, child, propObj)
+        page = _create(notebook, child, propObj, propGui)
         page.pack(fill=tk.X, expand=1)
         
         notebook.add(page, text=child.label)
@@ -327,7 +328,7 @@ def _layoutGroup(group, parent, children, labels):
                 children[cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
     
 
-def _createGroup(parent, group, propObj):
+def _createGroup(parent, group, propObj, propGui):
     """
     Creates a ttk.Frame object for the given group. Children of the
     group are recursively created via calls to _create, and laid out on
@@ -343,58 +344,56 @@ def _createGroup(parent, group, propObj):
 
     for i,child in enumerate(group.children):
 
-        if isinstance(child, str):
-            child = Widget(child)
-            group.children[i] = child
-
         labelObj = None
         if group.showLabels:
-            labelObj = _createLabel(frame, child, propObj)
+            labelObj = _create(frame, group.childLabels[i], propObj, propGui)
             labelObjs.append(labelObj)
 
-        childObj = _create(frame, child, propObj)
+        childObj = _create(frame, child, propObj, propGui)
 
         childObjs.append(childObj)
 
     _layoutGroup(group, frame, childObjs, labelObjs)
 
-    # set up widget events after they have been
-    # laid out, so their initial state (e.g.
-    # visible, enabled, etc) is correct
-    for cidx in range(len(childObjs)):
-
-        child    = group.children[cidx]
-        childObj = childObjs[cidx]
-
-        if labelObjs is not None: labelObj = labelObjs[cidx]
-        else:                     labelObj = None
-
-        _configureVisibleWhen(child, childObj, propObj, labelObj)
-        _configureEnabledWhen(child, childObj, propObj, labelObj) 
-
     return frame
 
 
-def _create(parent, viewItem, propObj):
+def _create(parent, viewItem, propObj, propGui):
     """
     Creates the given ViewItem object and, if it is a group, all of its
     children.
     """
 
+    # replace with an introspective lookup
+
     if isinstance(viewItem, Widget):
-        return _createWidget(parent, viewItem, propObj)
+        tkObject = _createWidget(parent, viewItem, propObj)
+
+    elif isinstance(viewItem, Label):
+        tkObject = _createLabel(parent, viewItem, propObj)
 
     elif isinstance(viewItem, Button):
-        return _createButton(parent, viewItem)
+        tkObject = _createButton(parent, viewItem)
         
     elif isinstance(viewItem, NotebookGroup):
-        return _createNotebookGroup(parent, viewItem, propObj)
+        tkObject = _createNotebookGroup(parent, viewItem, propObj, propGui)
         
     elif isinstance(viewItem, Group):
-        return _createGroup(parent, viewItem, propObj)
+        tkObject = _createGroup(parent, viewItem, propObj, propGui)
 
-    raise ValueError('Unrecognised ViewItem: {}'.format(
-        viewItem.__class__.__name__)) 
+    else:
+        raise ValueError('Unrecognised ViewItem: {}'.format(
+            viewItem.__class__.__name__))
+
+    visibleCb = _configureVisibleWhen(viewItem, tkObject, propObj)
+    enableCb  = _configureEnabledWhen(viewItem, tkObject, propObj)
+
+    if visibleCb is not None: propGui.onChangeCallbacks.append(visibleCb)
+    if enableCb  is not None: propGui.onChangeCallbacks.append(enableCb)
+
+    propGui.tkObjects[viewItem.key] = tkObject
+
+    return tkObject
 
 
 def _defaultView(propObj):
@@ -442,7 +441,41 @@ def _prepareView(viewItem, labels, tooltips):
         for i,child in enumerate(viewItem.children):
             viewItem.children[i] = _prepareView(child, labels, tooltips)
 
+        if viewItem.showLabels:
+            viewItem.childLabels = []
+
+            for child in viewItem.children:
+                viewItem.childLabels.append(Label(child))
+
     return viewItem
+
+def _prepareEvents(propObj, propGui):
+    """
+    """
+
+    if len(propGui.onChangeCallbacks) == 0:
+        return
+
+    def onChange(*a):
+        for cb in propGui.onChangeCallbacks:
+            cb()
+
+    propDict = propObj.__class__.__dict__
+    
+    props = filter(
+        lambda (name,prop): isinstance(prop, tkp.PropertyBase),
+        propDict.items())
+    
+    propNames,props = zip(*props)
+
+    tkVars = [getattr(propObj, '{}_tkVar'.format(name)) for name in propNames]
+
+    # initialise widget states
+    onChange()
+
+    for t in tkVars:
+        if not isinstance(t, tk.Variable): continue
+        t.trace('w', onChange)
 
 
 def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
@@ -467,11 +500,19 @@ def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
      - tooltips: Dict specifying tooltips
     """
 
+
+
     if view is None: view = _defaultView(propObj)
 
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
 
     view = _prepareView(view, labels, tooltips)
+
+    propGui = PropGUI()
         
-    return _create(parent, view, propObj)
+    topLevel = _create(parent, view, propObj, propGui)
+
+    _prepareEvents(propObj, propGui)
+
+    return topLevel

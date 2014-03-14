@@ -135,7 +135,7 @@ betView = tkp.NotebookGroup((
             tkp.Widget('fractionalIntensity', label=optNames['fractionalIntensity']),
             tkp.Widget('runChoice',           label=optNames['runChoice']),
             tkp.Widget('t2Image',             label=optNames['t2Image'],
-                       visibleWhen=('runChoice', lambda v: v.startswith('As above')))
+                       visibleWhen=lambda i: i.runChoice.startswith('As above'))
         )),
     tkp.VGroup(
         label='Advanced options',

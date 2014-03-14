@@ -240,6 +240,7 @@ featView = tkp.NotebookGroup((
             'b0Unwarping',
             tkp.VGroup(
                 label='B0 Unwarping options',
+                visibleWhen=lambda i: i.b0Unwarping,
                 children=(
                     'b0_fieldmap',
                     'b0_fieldmapMag',
