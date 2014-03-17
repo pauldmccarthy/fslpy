@@ -412,6 +412,12 @@ class String(PropertyBase):
         kwargs['default'] = kwargs.get('default', '')
         PropertyBase.__init__(self, _StringVar, **kwargs)
 
+    def __get__(self, instance, owner):
+        val = PropertyBase.__get__(self, instance, owner)
+
+        if val == '': return None
+        return val
+
         
     def validate(self, instance, value):
 
