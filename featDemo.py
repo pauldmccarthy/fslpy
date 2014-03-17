@@ -8,12 +8,86 @@
 import os
 import sys
 
+from collections import OrderedDict
+
 import Tkinter as tk
 import            ttk
 import tkprop  as tkp
 
-# Currently only supports first-level analysis/full analysis
+# TODO Could change these OrderedDicts to enums or simple python objects?
+
+analysisTypeOpts = OrderedDict((
+    ('firstLevel', 'First-level analysis'),
+    ('highLevel',  'Higher-level analysis')))
+
+analysisStageOpts = OrderedDict((
+    ('full',       'Full analysis'),
+    ('pre',        'Pre-stats'),
+    ('pre-stats',  'Pre-stats + Stats'),
+    ('stats',      'Stats'),
+    ('stats-post', 'Stats + Post-stats'),
+    ('post',       'Post-stats'),
+    ('reg',        'Registration only')))
+
+highLevelInputTypes = OrderedDict((
+    ('featDirs',   'Inputs are lower-level FEAT directories'),
+    ('copeImages', 'Inputs are 3D cope images from FEAT directories')))
+
+sliceTimingOpts = OrderedDict((
+    ('none',       'None'),
+    ('regup',      'Regular up (0, 1, 2, ..., n-1)'),
+    ('regdown',    'Regular down (n-1, n-2, ..., 0'),
+    ('int',        'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)'),
+    ('orderFile',  'Use slice order file'),
+    ('timingFile', 'Use slice timings file')))
+
+perfusionOpts = OrderedDict((
+    ('tag',     'First timepoint is tag'),
+    ('control', 'First timepoint is control')))
+
+motionParameterOpts = OrderedDict((
+    ('none',     "Don't Add Motion Parameters"),
+    ('standard', "Standard Motion Parameters"),
+    ('extended', "Standard + Extended Motion Parameters")))
+
+effectModellingOpts = OrderedDict((
+    ('fixed',  'Fixed effects'),
+    ('ols',    'Mixed effects: Simple OLS'),
+    ('flame1', 'Mixed effects: FLAME 1'),
+    ('flame2', 'Mixed effects: FLAME 1+2')))
+
+zRenderingOpts = OrderedDict((
+    ('actual', 'Use actual Z min/max'),
+    ('preset', 'Use preset Z min/max')))
+
+blobOpts = OrderedDict((
+    ('solid',      'Solid blobs'),
+    ('transparent','Transparent blobs')))
+
+regSearchOpts = OrderedDict((
+    ('none',   'No search'),
+    ('normal', 'Normal search'),
+    ('full',   'Full search')))
+
+regDofOpts = OrderedDict((
+    ('3',  '3 DOF'),
+    ('6',  '6 DOF'),
+    ('7',  '7 DOF'),
+    ('9',  '9 DOF'),
+    ('12', '12 DOF')))
+
+regStructDofOpts = OrderedDict((
+    ('3',   '3 DOF'),
+    ('6',   '6 DOF'),
+    ('7',   '7 DOF'),
+    ('BBR', 'BBR'),
+    ('12',  '12 DOF')))
+                
+
 class FeatOptions(tkp.HasProperties):
+
+    analysisType   = tkp.Choice(analysisTypeOpts)
+    analysisStages = tkp.Choice(analysisStageOpts)
 
     # Misc options
     balloonHelp              = tkp.Boolean(default=True)
@@ -22,6 +96,9 @@ class FeatOptions(tkp.HasProperties):
     noiseLevel               = tkp.Percentage(default=0.66)
     temporalSmoothness       = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
     zThreshold               = tkp.Double(default=5.3, minval=0.0)
+
+    # misc/higher level
+    cleanUpFirstLevel        = tkp.Boolean(default=False)
 
     #
     # Data options
@@ -32,6 +109,11 @@ class FeatOptions(tkp.HasProperties):
     deleteVolumes        = tkp.Int(minval=0)
     TR                   = tkp.Double(minval=0, default=3.0)
     highpassFilterCutoff = tkp.Int(minval=0, default=100)
+
+    # data/higher level
+    inputDataType        = tkp.Choice(highLevelInputTypes)
+    higherLevelFeatInput = tkp.List(minlen=3, listType=tkp.FilePath(isFile=False, exists=True))
+    higherLevelCopeInput = tkp.List(minlen=3, listType=tkp.FilePath(exists=True))
 
     #
     # Pre-stats options
@@ -48,16 +130,12 @@ class FeatOptions(tkp.HasProperties):
     b0_unwarpDir           = tkp.Choice(('x','-x','y','-y','z','-z'))
     b0_signalLossThreshold = tkp.Percentage(default=10)
 
-    sliceTimingCorrection  = tkp.Choice(('None',
-                                         'Regular up (0, 1, 2, ..., n-1)',
-                                         'Regular down (n-1, n-2, ..., 0',
-                                         'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)',
-                                         'Use slice order file',
-                                         'Use slice timings file'))
+    sliceTimingCorrection  = tkp.Choice(sliceTimingOpts)
 
     # slice timing file, displayed if the timing correction
     # choice is for a custom order/timing file
     sliceTimingFile       = tkp.FilePath(exists=True)
+    sliceOrderFile        = tkp.FilePath(exists=True)
     
     brainExtraction       = tkp.Boolean(default=True)
     smoothingFWHM         = tkp.Double(minval=0.0, default=5.0)
@@ -65,8 +143,7 @@ class FeatOptions(tkp.HasProperties):
     perfusionSubtraction  = tkp.Boolean(default=False)
 
     # displayed if perfusion subtraction is enabled
-    perfusionOption       = tkp.Choice(('First timepoint is tag',
-                                        'First timepoint is control'))
+    perfusionOption       = tkp.Choice(perfusionOpts)
     
     temporalHighpass      = tkp.Boolean(default=True)
     melodic               = tkp.Boolean(default=False)
@@ -75,12 +152,14 @@ class FeatOptions(tkp.HasProperties):
     # Stats options
     #
     useFILMPrewhitening    = tkp.Boolean(default=True)
-    addMotionParameters    = tkp.Choice(("Don't Add Motion Parameters",
-                                         "Standard Motion Parameters",
-                                         "Standard + Extended Motion Parameters"))
+    addMotionParameters    = tkp.Choice(motionParameterOpts)
     voxelwiseConfoundList  = tkp.FilePath(exists=True)
     applyExternalScript    = tkp.FilePath(exists=True)
     addAdditionalConfounds = tkp.FilePath(exists=True)
+
+    # stats/higher level
+    effectModelling = tkp.Choice(effectModellingOpts)
+    outlierDeweighting = tkp.Boolean(default=False)
 
     #
     # Post-stats options
@@ -93,16 +172,13 @@ class FeatOptions(tkp.HasProperties):
     pThreshold  = tkp.Double(minval=0.0, maxval=1.0, default=0.05)
     zThreshold  = tkp.Double(minval=0.0, default=2.3)
 
-    renderZMinMax = tkp.Choice(('Use actual Z min/max',
-                                'Use preset Z min/max'))
+    renderZMinMax = tkp.Choice(zRenderingOpts)
     
     # displayed if renderZMinMax is 'preset'
     renderZMin    = tkp.Double(minval=0.0, default=2.0)
     renderZMax    = tkp.Double(minval=0.0, default=8.0)
     
-    blobTypes     = tkp.Choice(('Solid blobs',
-                                'Transparent blobs'))
-
+    blobTypes     = tkp.Choice(blobOpts)
     createTSPlots = tkp.Boolean(default=True)
 
     #
@@ -113,38 +189,34 @@ class FeatOptions(tkp.HasProperties):
     standardSpaceImage      = tkp.FilePath(exists=True)
 
     # only shown if functional image is not none
-    functionalSearch = tkp.Choice(('No search',
-                                   'Normal search',
-                                   'Full search'))
-    functionalDof    = tkp.Choice(('3 DOF',
-                                   '6 DOF',
-                                   '7 DOF',
-                                   '9 DOF',
-                                   '12 DOF'))
+    functionalSearch = tkp.Choice(regSearchOpts)
+    functionalDof    = tkp.Choice(regDofOpts)
 
     # only shown if structural image is not none
-    structuralSearch = tkp.Choice(('No search',
-                                   'Normal search',
-                                   'Full search'))
-    structuralDof    = tkp.Choice(('3 DOF',
-                                   '6 DOF',
-                                   '7 DOF',
-                                   'BBR',
-                                   '12 DOF'))
+    structuralSearch = tkp.Choice(regSearchOpts)
+    structuralDof    = tkp.Choice(regStructDofOpts)
 
     # only shown if standard image is not none
-    standardSearch = tkp.Choice(('No search',
-                                 'Normal search',
-                                 'Full search'))
-    standardDof    = tkp.Choice(('3 DOF',
-                                 '6 DOF',
-                                 '7 DOF',
-                                 '9 DOF',
-                                 '12 DOF'))
-    nonLinearReg = tkp.Boolean(default=False)
+    standardSearch = tkp.Choice(regSearchOpts)
+    standardDof    = tkp.Choice(regDofOpts)
+    nonLinearReg   = tkp.Boolean(default=False)
     # only shown if nonlinear reg is selected
     warpResolution = tkp.Double(minval=0.0, default=10.0)
 
+
+    def __init__(self):
+        """
+        Adds some listeners to various inter-dependent properties.
+        """
+
+        def updateAnalysisStage(analysisType):
+            if analysisType == 'highLevel':
+                self.analysisStages = 'statsPost'
+        
+        FeatOptions.analysisType.addListener(self,
+                                             'updateAnalysisStage',
+                                              updateAnalysisStage)
+        
 
 labels = {
     # misc
@@ -174,6 +246,7 @@ labels = {
     'b0_unwarpDir'             : 'Unwarp direction',
     'b0_signalLossThreshold'   : '% Signal loss threshold',
     'sliceTimingCorrection'    : 'Slice timing correction',
+    'sliceOrderFile'           : 'Slice order file',
     'sliceTimingFile'          : 'Slice timing file',
     'brainExtraction'          : 'BET brain extraction',
     'smoothingFWHM'            : 'Spatial smoothing FWHM (mm)',
@@ -207,6 +280,37 @@ labels = {
     
 }
 
+def tabEnabled(featOpts, tabName):
+
+    aType  = featOpts.analysisType
+    aStage = featOpts.analysisStages
+
+    if tabName == 'Pre-stats':
+        
+        if aType == 'highLevel':
+            return False
+        
+        if (aStage != 'full') and (aStage.find('pre') < 0):
+            return False
+        
+    elif tabName == 'Stats':
+
+        if (aStage != 'full') and (aStage.find('stats') < 0):
+            return False
+        
+    elif tabName == 'Post-stats':
+
+        if (aStage != 'full') and (aStage.find('post') < 0):
+            return False        
+        
+    elif tabName == 'Registration':
+        if aType == 'highLevel': return False
+
+        if (aStage != 'full') and (aStage.find('reg') < 0):
+            return False 
+        
+    return True
+
 miscView = tkp.VGroup(
     label='Misc',
     children=(
@@ -226,15 +330,26 @@ miscView = tkp.VGroup(
 dataView = tkp.VGroup(
     label='Data',
     children=(
-        'inputData',
-        'outputDirectory',
-        'totalVolumes',
-        'deleteVolumes',
-        'TR',
-        'highpassFilterCutoff'))
+        tkp.VGroup(
+            visibleWhen=lambda i:i.analysisType == 'firstLevel',
+            children=(
+                'inputData',
+                'outputDirectory',
+                'totalVolumes',
+                'deleteVolumes',
+                'TR',
+                'highpassFilterCutoff')),
+        tkp.VGroup(
+            visibleWhen=lambda i:i.analysisType == 'highLevel',
+            children=(
+                'inputDataType',
+                tkp.Widget('higherLevelFeatInput', visibleWhen=lambda i:i.inputDataType == 'featDirs'),
+                tkp.Widget('higherLevelCopeInput', visibleWhen=lambda i:i.inputDataType == 'copeImages'),
+                'outputDirectory'))))
 
 prestatsView = tkp.VGroup(
     label='Pre-stats',
+    visibleWhen=lambda i: tabEnabled(i, 'Pre-stats'),
     children=(
         'altReferenceImage',
         'motionCorrection',
@@ -251,8 +366,8 @@ prestatsView = tkp.VGroup(
                 'b0_unwarpDir',
                 'b0_signalLossThreshold')),
         'sliceTimingCorrection',
-        tkp.Widget('sliceTimingFile',
-                   visibleWhen=lambda i: i.sliceTimingCorrection.startswith('Use')),
+        tkp.Widget('sliceTimingFile', visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
+        tkp.Widget('sliceOrderFile',  visibleWhen=lambda i: i.sliceTimingCorrection == 'orderFile'),
         'brainExtraction',
         'smoothingFWHM',
         'intensityNorm',
@@ -268,6 +383,7 @@ prestatsView = tkp.VGroup(
 
 statsView = tkp.VGroup(
     label='Stats',
+    visibleWhen=lambda i: tabEnabled(i, 'Stats'),
     children=(
         'useFILMPrewhitening',
         'addMotionParameters',
@@ -279,6 +395,7 @@ statsView = tkp.VGroup(
 
 postStatsView = tkp.VGroup(
     label='Post-stats',
+    visibleWhen=lambda i: tabEnabled(i, 'Post-stats'),
     children=(
         'preThresholdMask',
         tkp.VGroup(
@@ -295,13 +412,14 @@ postStatsView = tkp.VGroup(
             visibleWhen=lambda i: i.thresholding != 'None',
             children=(
                 'renderZMinMax',
-                tkp.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax.startswith('Use preset')),
-                tkp.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax.startswith('Use preset')),
+                tkp.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
+                tkp.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
                 'blobTypes')),
         'createTSPlots'))
 
 regView = tkp.VGroup(
     label='Registration',
+    visibleWhen=lambda i: tabEnabled(i, 'Registration'),
     children=(
         'expandedFunctionalImage',
         tkp.HGroup(
@@ -325,13 +443,16 @@ regView = tkp.VGroup(
                 tkp.HGroup(('nonLinearReg',
                             tkp.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
 
-featView = tkp.NotebookGroup((
-    miscView,
-    dataView,
-    prestatsView,
-    statsView,
-    postStatsView,
-    regView))
+featView =tkp.VGroup((
+    'analysisType',
+    tkp.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
+    tkp.NotebookGroup((
+        miscView,
+        dataView,
+        prestatsView,
+        statsView,
+        postStatsView,
+        regView))))
 
 class FeatFrame(tk.Frame):
     
@@ -358,10 +479,11 @@ class FeatFrame(tk.Frame):
 
 if __name__ == '__main__':
 
-    app  = tk.Tk()
+    app   = tk.Tk()
     fopts = FeatOptions()
-
     frame = FeatFrame(app, fopts)
+
+    app.title('FEAT')
 
     print('Before')
     print(fopts)
