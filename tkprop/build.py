@@ -212,12 +212,28 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
         If the given object is a container, the state of its children
         are (recursively) set.
         """
-        
-        try: obj.configure(state=state)
-        
-        except tk.TclError:
-            for child in obj.winfo_children():
-                _changeState(child, state)
+
+        # if this object is a tab on a Notebook,
+        # we can disable the entire tab
+        parent = obj.nametowidget(obj.winfo_parent())
+        if isinstance(parent, ttk.Notebook):
+
+            # notebook objects use 'normal'/'disabled'
+            if state == 'enabled': state = 'normal'
+
+            objPath  = obj.winfo_pathname(obj.winfo_id())
+            objTabID = parent.index(objPath)
+            
+            parent.tab(objTabID, state=state)
+
+        # For non-notebook tabs, we change the state
+        # of the object, and do so recursively for
+        # all of its children
+        else:
+            try: obj.configure(state=state)
+            except tk.TclError:
+                for child in obj.winfo_children():
+                    _changeState(child, state)
     
     def _toggleEnabled():
         """
@@ -243,9 +259,27 @@ def _configureVisibleWhen(viewItem, tkObj, propObj):
 
     def _toggleVis():
 
-        if not viewItem.visibleWhen(propObj): tkObj.grid_remove()
-        else:                                 tkObj.grid()
+        visible = viewItem.visibleWhen(propObj)
 
+        # See comments in  _configureEnabledWhen -
+        # ttk.Notebook object state/visibility is
+        # handled a bit different to other Tkinter
+        # objects
+        parent = tkObj.nametowidget(tkObj.winfo_parent())
+        if isinstance(parent, ttk.Notebook):
+            
+            if visible: state = 'normal'
+            else:       state = 'hidden'
+
+            objPath  = tkObj.winfo_pathname(tkObj.winfo_id())
+            objTabID = parent.index(objPath)
+            
+            parent.tab(objTabID, state=state)
+
+        else:
+            if visible: tkObj.grid()
+            else:       tkObj.grid_remove()
+        
     return _toggleVis
 
 
