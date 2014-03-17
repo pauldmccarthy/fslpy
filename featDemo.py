@@ -12,53 +12,16 @@ import Tkinter as tk
 import            ttk
 import tkprop  as tkp
 
-
-sliceTimingChoices = [
-    'None',
-    'Regular up (0, 1, 2, ..., n-1)',
-    'Regular down (n-1, n-2, ..., 0',
-    'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)',
-    'Use slice order file',
-    'Use slice timings file'
-]
-
 # Currently only supports first-level analysis/full analysis
 class FeatOptions(tkp.HasProperties):
 
-    #
     # Misc options
-    #
-
-    # Have not yet implemented tooltip functionality. There
-    # are numerous ways we could do so ...
-    #
-    # 1. We could think of a different way to provide help  (e.g.
-    #    a '?' button next to every option which pops up a dialog).
-    #
-    # 2. Or we could have two optional parameters to the
-    #    tkp.buildGUI function:
-    #
-    #   - a dict with property names as keys, and tooltip text
-    #     as values
-    #   - the name of a boolean property, on this HasProperties
-    #     object, which controls whether tooltips are shown.
-    #
-    # 3. Or we could add a 'tooltip' attribute to build.ViewItem
-    #    objects, passed in at the constructor. In addition to this
-    #    the buildFromGUI function takes an optional parameter, the
-    #    name of a boolean property which controls whether tooltips
-    #    are enabled.
-    #
-    # I think I like the third option best.
-    #
     balloonHelp              = tkp.Boolean(default=True)
     progressWatcher          = tkp.Boolean(default=True)
     brainBackgroundThreshold = tkp.Percentage(default=10)
-
-    # Misc -> design efficiency options
-    noiseLevel         = tkp.Percentage(default=0.66)
-    temporalSmoothness = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
-    zThreshold         = tkp.Double(default=5.3, minval=0.0)
+    noiseLevel               = tkp.Percentage(default=0.66)
+    temporalSmoothness       = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
+    zThreshold               = tkp.Double(default=5.3, minval=0.0)
 
     #
     # Data options
@@ -82,10 +45,15 @@ class FeatOptions(tkp.HasProperties):
     b0_fieldmapMag         = tkp.FilePath(exists=True)
     b0_echoSpacing         = tkp.Double(minval=0.0, default=0.7)
     b0_TE                  = tkp.Double(minval=0.0, default=35)
-    b0_unwarpDir           = tkp.Choice(('-x','x','-y','y','-z','z'))
+    b0_unwarpDir           = tkp.Choice(('x','-x','y','-y','z','-z'))
     b0_signalLossThreshold = tkp.Percentage(default=10)
 
-    sliceTimingCorrection = tkp.Choice(sliceTimingChoices)
+    sliceTimingCorrection  = tkp.Choice(('None',
+                                         'Regular up (0, 1, 2, ..., n-1)',
+                                         'Regular down (n-1, n-2, ..., 0',
+                                         'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)',
+                                         'Use slice order file',
+                                         'Use slice timings file'))
 
     # slice timing file, displayed if the timing correction
     # choice is for a custom order/timing file
@@ -106,11 +74,10 @@ class FeatOptions(tkp.HasProperties):
     #
     # Stats options
     #
-    useFILMPrewhitening = tkp.Boolean(default=True)
-    addMotionParameters = tkp.Choice(("Don't Add Motion Parameters",
-                                      "Standard Motion Parameters",
-                                      "Standard + Extended Motion Parameters"))
-    
+    useFILMPrewhitening    = tkp.Boolean(default=True)
+    addMotionParameters    = tkp.Choice(("Don't Add Motion Parameters",
+                                         "Standard Motion Parameters",
+                                         "Standard + Extended Motion Parameters"))
     voxelwiseConfoundList  = tkp.FilePath(exists=True)
     applyExternalScript    = tkp.FilePath(exists=True)
     addAdditionalConfounds = tkp.FilePath(exists=True)
@@ -139,7 +106,7 @@ class FeatOptions(tkp.HasProperties):
     createTSPlots = tkp.Boolean(default=True)
 
     #
-    # Post-stats options
+    # Registration options
     #
     expandedFunctionalImage = tkp.FilePath(exists=True)
     mainStructuralImage     = tkp.FilePath(exists=True)
@@ -174,24 +141,29 @@ class FeatOptions(tkp.HasProperties):
                                  '7 DOF',
                                  '9 DOF',
                                  '12 DOF'))
-    nonlinearReg = tkp.Boolean(default=False)
+    nonLinearReg = tkp.Boolean(default=False)
     # only shown if nonlinear reg is selected
     warpResolution = tkp.Double(minval=0.0, default=10.0)
 
 
 labels = {
+    # misc
     'balloonHelp'              : 'Balloon help',
     'progressWatcher'          : 'Progress watcher',
     'brainBackgroundThreshold' : 'Brain/background threshold',
     'noiseLevel'               : 'Noise level',
     'temporalSmoothness'       : 'Temporal smoothness',
     'zThreshold'               : 'Z threshold',
+
+    # data
     'inputData'                : 'Select 4D data',
     'outputDirectory'          : 'Output directory',
     'totalVolumes'             : 'Total volumes',
     'deleteVolumes'            : 'Delete volumes',
     'TR'                       : 'TR (s)',
     'highpassFilterCutoff'     : 'High pass filter cutoff (s)',
+
+    # pre-stats
     'altReferenceImage'        : 'Alternative reference image',
     'motionCorrection'         : 'Motion correction',
     'b0Unwarping'              : 'B0 Unwarping',
@@ -207,10 +179,32 @@ labels = {
     'smoothingFWHM'            : 'Spatial smoothing FWHM (mm)',
     'intensityNorm'            : 'Intensity normalization',
     'perfusion'                : 'Perfusion subtraction',
-#    'pertfusionSubtraction'         : '',
-#    'pertfusionOption'         : '',
     'temporalHighpass'         : 'Highpass',
-    'melodic'                  : 'MELODIC ICA data exploration'
+    'melodic'                  : 'MELODIC ICA data exploration',
+
+    # stats
+    'useFILMPrewhitening'      : 'Use FILM Prewhitening',
+    'addMotionParameters'      : 'Motion parameters',
+    'voxelwiseConfoundList'    : 'Voxelwise Counfound List',
+    'applyExternalScript'      : 'Apply external Script',
+    'addAdditionalConfounds'   : 'Additional confound EVs',
+
+    # post stats
+    'preThresholdMask'         : 'Pre-threshold masking',
+    'thresholding'             : 'Thresholding type',
+    'pThreshold'               : 'P threshold',
+    'zThreshold'               : 'Z threshold',
+    'renderZMin'               : 'Min',
+    'renderZMax'               : 'Max',
+    'createTSPlots'            : 'Create time series plots',
+
+    # registration
+    'expandedFunctionalImage'  : 'Expanded functional image',
+    'mainStructuralImage'      : 'Main structural image',
+    'standardSpaceImage'       : 'Standard space image',
+    'nonLinearReg'             : 'Non linear',
+    'warpResolution'           : 'Warp resolution (mm)'
+    
 }
 
 miscView = tkp.VGroup(
@@ -272,12 +266,72 @@ prestatsView = tkp.VGroup(
         'temporalHighpass',
         'melodic'))
 
+statsView = tkp.VGroup(
+    label='Stats',
+    children=(
+        'useFILMPrewhitening',
+        'addMotionParameters',
+        'voxelwiseConfoundList',
+        'applyExternalScript',
+        'addAdditionalConfounds',
+        tkp.Button(text='Model setup wizard'),
+        tkp.Button(text='Full model setup')))
+
+postStatsView = tkp.VGroup(
+    label='Post-stats',
+    children=(
+        'preThresholdMask',
+        tkp.VGroup(
+            label='Thresholding',
+            border=True,
+            children=(
+                'thresholding',
+                tkp.Widget('pThreshold', visibleWhen=lambda i:i.thresholding != 'None'),
+                tkp.Widget('zThreshold', visibleWhen=lambda i:i.thresholding == 'Cluster'))),
+        tkp.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'),
+        tkp.VGroup(
+            label='Rendering',
+            border=True,
+            visibleWhen=lambda i: i.thresholding != 'None',
+            children=(
+                'renderZMinMax',
+                tkp.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax.startswith('Use preset')),
+                tkp.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax.startswith('Use preset')),
+                'blobTypes')),
+        'createTSPlots'))
+
+regView = tkp.VGroup(
+    label='Registration',
+    children=(
+        'expandedFunctionalImage',
+        tkp.HGroup(
+            label='Functional -> Expanded functional',
+            border=True,
+            visibleWhen=lambda i:i.expandedFunctionalImage is not None,
+            children=('functionalSearch', 'functionalDof')),
+        'mainStructuralImage',
+        tkp.HGroup(
+            label='Functional -> Structural',
+            border=True,
+            visibleWhen=lambda i:i.mainStructuralImage is not None,
+            children=('structuralSearch', 'structuralDof')), 
+        'standardSpaceImage',
+        tkp.VGroup(
+            label='Structural -> Standard',
+            border=True,
+            visibleWhen=lambda i:i.standardSpaceImage is not None,
+            children=(
+                tkp.HGroup(('standardSearch', 'standardDof')),
+                tkp.HGroup(('nonLinearReg',
+                            tkp.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
+
 featView = tkp.NotebookGroup((
     miscView,
     dataView,
-    prestatsView))
-
-    
+    prestatsView,
+    statsView,
+    postStatsView,
+    regView))
 
 class FeatFrame(tk.Frame):
     
