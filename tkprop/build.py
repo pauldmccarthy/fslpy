@@ -10,10 +10,12 @@
 
 # The sole entry point for this module is the buildGUI function, which
 # accepts as parameters a tk object to be used as the parent (e.g. a
-# root or Frame object), a tkprop.HasProperties object, and an optional
-# ViewItem object, which specifies how the interface is to be laid out.
+# root or Frame object), a tkprop.HasProperties object, an optional
+# ViewItem object, which specifies how the interface is to be laid
+# out, and two optional dictionaries for passing in labels and
+# tooltips.
 #
-# This third parameter allows the layout of the generated interface to
+# The view parameter allows the layout of the generated interface to
 # be customised.  Property widgets may be grouped together by embedding
 # them within a HGroup or VGroup object; they will then respectively be
 # laid out horizontally or verticaly.  Groups may be embedded within a
@@ -24,9 +26,12 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import Tkinter as tk
-import            ttk
-import tkprop  as tkp
+import sys
+
+import Tkinter           as tk
+import                      ttk
+import tkprop            as tkp
+import tkprop.properties as properties
 
 
 class ViewItem(object):
@@ -188,8 +193,8 @@ class PropGUI(object):
 
 def _configureEnabledWhen(viewItem, tkObj, propObj):
     """
-    Sets up event handling for enabling/disabling the Tkinter object
-    represented by the given viewItem.
+    Returns a reference to a callback function for this view item,
+    if its enabledWhen attribute was set.
     """
 
     if viewItem.enabledWhen is None: return None
@@ -223,8 +228,8 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
 
 def _configureVisibleWhen(viewItem, tkObj, propObj):
     """
-    Sets up event handling for showing/hiding the Tkinter object
-    represented by the given viewItem.
+    Returns a reference to a callback function for this view item,
+    if its visibleWhen attribute was set.
     """ 
 
     if viewItem.visibleWhen is None: return None
@@ -237,7 +242,7 @@ def _configureVisibleWhen(viewItem, tkObj, propObj):
     return _toggleVis
 
 
-def _createLabel(parent, viewItem, propObj):
+def _createLabel(parent, viewItem, propObj, propGui):
     """
     Creates a ttk.Label object containing a label for the given
     viewItem.
@@ -247,23 +252,23 @@ def _createLabel(parent, viewItem, propObj):
     return label
 
 
-def _createButton(parent, widget):
+def _createButton(parent, viewItem, propObj, propGui):
     """
     Creates a ttk.Button object for the given Button widget.
     """
 
-    button = ttk.Button(parent, text=widget.label, command=widget.callback)
+    button = ttk.Button(parent, text=viewItem.label, command=viewItem.callback)
     return button
 
 
-def _createWidget(parent, widget, propObj):
+def _createWidget(parent, viewItem, propObj, propGui):
     """
     Creates a widget for the given Widget object, using the
     tkprop.makeWidget function (see the tkprop.widgets module
     for more details).
     """
 
-    tkWidget = tkp.makeWidget(parent, propObj, widget.key)
+    tkWidget = tkp.makeWidget(parent, propObj, viewItem.key)
     return tkWidget
 
     
@@ -358,33 +363,28 @@ def _createGroup(parent, group, propObj, propGui):
     return frame
 
 
+# These aliases are so we can introspectively look up the
+# appropriate _create* function based upon the class name
+# of the ViewItem being created.
+_createHGroup = _createGroup
+_createVGroup = _createGroup
+
+
 def _create(parent, viewItem, propObj, propGui):
     """
     Creates the given ViewItem object and, if it is a group, all of its
     children.
     """
 
-    # replace with an introspective lookup
+    cls = viewItem.__class__.__name__
 
-    if isinstance(viewItem, Widget):
-        tkObject = _createWidget(parent, viewItem, propObj)
+    createFunc = getattr(sys.modules[__name__], '_create{}'.format(cls), None)
 
-    elif isinstance(viewItem, Label):
-        tkObject = _createLabel(parent, viewItem, propObj)
-
-    elif isinstance(viewItem, Button):
-        tkObject = _createButton(parent, viewItem)
-        
-    elif isinstance(viewItem, NotebookGroup):
-        tkObject = _createNotebookGroup(parent, viewItem, propObj, propGui)
-        
-    elif isinstance(viewItem, Group):
-        tkObject = _createGroup(parent, viewItem, propObj, propGui)
-
-    else:
+    if createFunc is None:
         raise ValueError('Unrecognised ViewItem: {}'.format(
             viewItem.__class__.__name__))
 
+    tkObject  = createFunc(parent, viewItem, propObj, propGui)
     visibleCb = _configureVisibleWhen(viewItem, tkObject, propObj)
     enableCb  = _configureEnabledWhen(viewItem, tkObject, propObj)
 
@@ -449,8 +449,13 @@ def _prepareView(viewItem, labels, tooltips):
 
     return viewItem
 
+    
 def _prepareEvents(propObj, propGui):
     """
+    If the visibleWhen or enabledWhen conditional attributes were set for any
+    ViewItem objects, a trace callback function is set on all Tkinter control
+    variables. When any variable value changes, the visibleWhen/enabledWhen
+    callback functions are called.
     """
 
     if len(propGui.onChangeCallbacks) == 0:
@@ -474,8 +479,19 @@ def _prepareEvents(propObj, propGui):
     onChange()
 
     for t in tkVars:
-        if not isinstance(t, tk.Variable): continue
-        t.trace('w', onChange)
+        
+        # The List property type stores a reference to the underlying
+        # _ListWrapper object in the _tkVar attribute. The Tkinter
+        # variables are stored in this _ListWrapper object.
+        if not isinstance(t, properties._ListWrapper): 
+            t.trace('w', onChange)
+
+        # TODO add support for lists. This will probably require
+        # some additions to the properties._ListWrapper class,
+        # as it will need to manage addition/removal of traces
+        # on the list variables.
+        else:
+            pass
 
 
 def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
@@ -488,19 +504,14 @@ def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     Parameters:
     
      - parent:   Tkinter parent object
-    
      - propObj:  tkprop.HasProperties object
     
     Optional:
     
      - view:     ViewItem object, specifying the interface layout
-    
      - labels:   Dict specifying labels
-    
      - tooltips: Dict specifying tooltips
     """
-
-
 
     if view is None: view = _defaultView(propObj)
 
