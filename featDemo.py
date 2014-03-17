@@ -185,73 +185,98 @@ labels = {
     'brainBackgroundThreshold' : 'Brain/background threshold',
     'noiseLevel'               : 'Noise level',
     'temporalSmoothness'       : 'Temporal smoothness',
-    'noiseLevelEstimate'       : 'Estimate from data',
-    'highpassEstimate'         : 'Estimate High Pass Filter',
     'zThreshold'               : 'Z threshold',
     'inputData'                : 'Select 4D data',
     'outputDirectory'          : 'Output directory',
     'totalVolumes'             : 'Total volumes',
     'deleteVolumes'            : 'Delete volumes',
     'TR'                       : 'TR (s)',
-    'highpassFilterCutoff'     : 'Hgih pass filter cutoff (s)'
+    'highpassFilterCutoff'     : 'High pass filter cutoff (s)',
+    'altReferenceImage'        : 'Alternative reference image',
+    'motionCorrection'         : 'Motion correction',
+    'b0Unwarping'              : 'B0 Unwarping',
+    'b0_fieldmap'              : 'Fieldmap',
+    'b0_fieldmapMag'           : 'Fieldmap mag',
+    'b0_echoSpacing'           : 'Effective EPI echos spacing (ms)',
+    'b0_TE'                    : 'EPI TE (ms)',
+    'b0_unwarpDir'             : 'Unwarp direction',
+    'b0_signalLossThreshold'   : '% Signal loss threshold',
+    'sliceTimingCorrection'    : 'Slice timing correction',
+    'sliceTimingFile'          : 'Slice timing file',
+    'brainExtraction'          : 'BET brain extraction',
+    'smoothingFWHM'            : 'Spatial smoothing FWHM (mm)',
+    'intensityNorm'            : 'Intensity normalization',
+    'perfusion'                : 'Perfusion subtraction',
+#    'pertfusionSubtraction'         : '',
+#    'pertfusionOption'         : '',
+    'temporalHighpass'         : 'Highpass',
+    'melodic'                  : 'MELODIC ICA data exploration'
 }
 
-tooltips = {
-    'balloonHelp'              : "And don't expect this message to appear whilst you've turned this option off!",
-    'progressWatcher'          : 'Start a web browser to watch the analysis progress?',
-    'brainBackgroundThreshold' : 'This is automatically calculated, as a % of the maximum input image intensity. It is used in intensity normalisation, brain mask generation and various other places in the analysis.',
-    'noiseLevel'               : 'The "Noise level %" and "Temporal smoothness" together characterise the noise in the data, to be used only in the design efficiency estimation.\n\nThe "Noise level %" is the standard deviation (over time) for a typical voxel, expressed as a percentage of the baseline signal level.\n\nThe "Temporal smoothness" is the smoothness coefficient in a simple AR(1) autocorrelation model (much simpler than that actually used in the FILM timeseries analysis but good enough for the efficiency calculation here).\n\nIf you want to get a rough estimate of this noise level and smoothness from your actual input data, press the "Estimate from data" button (after you have told FEAT where your input data is). This takes about 30-60 seconds to estimate. This applies just the spatial and temporal filtering (i.e., no motion correction) that you have specified in the "Pre-stats" section, and gives a reasonable approximation of the noise characteristics that will remain in the fully preprocessed data, once FEAT has run.',
-    'zThreshold'               : 'This is the Z value used to determine what level of activation would be statistically significant, to be used only in the design efficiency calculation. Increasing this will result in higher estimates of required effect.',
+miscView = tkp.VGroup(
+    label='Misc',
+    children=(
+        'balloonHelp',
+        'progressWatcher',
+        'brainBackgroundThreshold',
+        tkp.VGroup(
+            label='Design efficiency',
+            border=True,
+            children=(
+                'noiseLevel',
+                'temporalSmoothness',
+                'zThreshold',
+                tkp.Button(text='Estimate noise and smoothness'),
+                tkp.Button(text='Estimate highpass filter')))))
 
-    'outputDirectory'          : 'If this is left blank, the output directory name is derived from the input data name.\n\nIf, however, you wish to explicitly choose the output directory name, for example, so that you can include in the name a hint about the particular analysis that was carried out, you can set this here.\n\nThis output directory naming behaviour is modified if you are setting up multiple analyses, where you are selecting multiple input data sets and will end up with multiple output directories. In this case, whatever you enter here will be used and appended to what would have been the default output directory name if you had entered nothing.',
-    'totalVolumes'             : 'The number of FMRI volumes in the time series, including any initial volumes that you wish to delete. This will get set automatically once valid input data has been selected.\n\nAlternatively you can set this number by hand before selecting data so that you can setup and view a model without having any data, for experimental planning purposes etc.',
-    'deleteVolumes'            : 'The number of initial FMRI volumes to delete before any further processing. Typically your experiment would have begun after these initial scans (sometimes called "dummy scans"). These should be the volumes that are not wanted because steady-state imaging has not yet been reached - typically two or three volumes. These volumes are deleted as soon as the analysis is started.',
-    'TR'                       : 'The time (in seconds) between scanning successive FMRI volumes.',
-    'highpassFilterCutoff'     : 'The high pass frequency cutoff point (seconds), that is, the longest temporal period that you will allow.\n\nA sensible setting in the case of an rArA or rArBrArB type block design is the (r+A) or (r+A+r+B) total cycle time.\n\nFor event-related designs the rule is not so simple, but in general the cutoff can typically be reduced at least to 50s.\n\nThis value is setup here rather than in Pre-stats because in FEAT it also affects the generation of the model; the same high pass filtering is applied to the model as to the data, to get the best possible match between the model and data.'
-    
-}
+dataView = tkp.VGroup(
+    label='Data',
+    children=(
+        'inputData',
+        'outputDirectory',
+        'totalVolumes',
+        'deleteVolumes',
+        'TR',
+        'highpassFilterCutoff'))
+
+prestatsView = tkp.VGroup(
+    label='Pre-stats',
+    children=(
+        'altReferenceImage',
+        'motionCorrection',
+        'b0Unwarping',
+        tkp.VGroup(
+            label='B0 Unwarping options',
+            border=True,
+            visibleWhen=lambda i: i.b0Unwarping,
+            children=(
+                'b0_fieldmap',
+                'b0_fieldmapMag',
+                'b0_echoSpacing',
+                'b0_TE',
+                'b0_unwarpDir',
+                'b0_signalLossThreshold')),
+        'sliceTimingCorrection',
+        tkp.Widget('sliceTimingFile',
+                   visibleWhen=lambda i: i.sliceTimingCorrection.startswith('Use')),
+        'brainExtraction',
+        'smoothingFWHM',
+        'intensityNorm',
+        tkp.HGroup(
+            showLabels=False,
+            key='perfusion',
+            children=(
+                'perfusionSubtraction',
+                tkp.Widget('perfusionOption',
+                           visibleWhen=lambda i: i.perfusionSubtraction))),
+        'temporalHighpass',
+        'melodic'))
 
 featView = tkp.NotebookGroup((
-    tkp.VGroup(
-        label='Misc',
-        children=(
-            'balloonHelp',
-            'progressWatcher',
-            'brainBackgroundThreshold',
-            'noiseLevel',
-            'temporalSmoothness',
-            'zThreshold',
-            tkp.Button('noiseLevelEstimate'),
-            tkp.Button('highpassEstimate'))),
-    tkp.VGroup(
-        label='Data',
-        children=(
-            'inputData',
-            'outputDirectory',
-            'totalVolumes',
-            'deleteVolumes',
-            'TR',
-            'highpassFilterCutoff')),
-    tkp.VGroup(
-        label='Pre-stats',
-        children=(
-            'altReferenceImage',
-            'motionCorrection',
-            'b0Unwarping',
-            tkp.VGroup(
-                label='B0 Unwarping options',
-                visibleWhen=lambda i: i.b0Unwarping,
-                children=(
-                    'b0_fieldmap',
-                    'b0_fieldmapMag',
-                    'b0_echoSpacing',
-                    'b0_TE',
-                    'b0_unwarpDir',
-                    'b0_signalLossThreshold')),
-            'sliceTimingCorrection',
-            'sliceTimingFile')),
-    
-))
+    miscView,
+    dataView,
+    prestatsView))
+
     
 
 class FeatFrame(tk.Frame):
@@ -261,7 +286,7 @@ class FeatFrame(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.pack(fill=tk.BOTH, expand=1)
 
-        self.tkpFrame = tkp.buildGUI(self, featOpts, featView, labels, tooltips)
+        self.tkpFrame = tkp.buildGUI(self, featOpts, featView, labels)
         self.tkpFrame.pack(fill=tk.BOTH, expand=1)
 
         self.buttonFrame = tk.Frame(self)

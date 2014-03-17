@@ -86,8 +86,9 @@ class Button(ViewItem):
     callback function.
     """
 
-    def __init__(self, key=None, callback=None, **kwargs):
+    def __init__(self, key=None, text=None, callback=None, **kwargs):
         self.callback = callback
+        self.text     = text
         ViewItem.__init__(self, key, **kwargs)
 
 
@@ -106,7 +107,7 @@ class Label(ViewItem):
             kwargs['key']         = '{}_label'.format(viewItem.key)
             kwargs['label']       = viewItem.label
             kwargs['tooltip']     = viewItem.tooltip
-            kwargs['visibleWhen'] = viewItem.enabledWhen
+            kwargs['visibleWhen'] = viewItem.visibleWhen
             kwargs['enabledWhen'] = viewItem.enabledWhen
             
         ViewItem.__init__(self, **kwargs)
@@ -135,7 +136,7 @@ class Group(ViewItem):
     """
     Represents a collection of other ViewItems.
     """
-    def __init__(self, children=[], showLabels=True, **kwargs):
+    def __init__(self, children=[], showLabels=True, border=False, **kwargs):
         """
         Parameters:
         
@@ -147,11 +148,17 @@ class Group(ViewItem):
                         be added to this Group object in the _prepareView
                         function, called 'childLabels', and containing a
                         Label object for each child.
+
+          - border:     If True, this group will be drawn with a border
+                        around it. If this group is a child of another
+                        VGroup, it will be laid out a bit differently,
+                        too.
         
           - kwargs:     Passed to the ViewItem constructor.
         """
         ViewItem.__init__(self, **kwargs)
         self.children   = children
+        self.border     = border
         self.showLabels = showLabels
 
 
@@ -257,7 +264,13 @@ def _createButton(parent, viewItem, propObj, propGui):
     Creates a ttk.Button object for the given Button widget.
     """
 
-    button = ttk.Button(parent, text=viewItem.label, command=viewItem.callback)
+    btnText = None
+
+    if   viewItem.text  is not None: btnText = viewItem.text
+    elif viewItem.label is not None: btnText = viewItem.label
+    elif viewItem.key   is not None: btnText = viewItem.key
+        
+    button = ttk.Button(parent, text=btnText, command=viewItem.callback)
     return button
 
 
@@ -315,23 +328,40 @@ def _layoutGroup(group, parent, children, labels):
 
         if isinstance(group, HGroup):
             
-            if labels is not None:
+            if labels is not None and labels[cidx] is not None:
                 parent.columnconfigure(cidx*2+1,weight=1) 
-                labels  [cidx].grid(row=0, column=cidx*2,   sticky=tk.E+tk.W)
-                children[cidx].grid(row=0, column=cidx*2+1, sticky=tk.E+tk.W)
+                labels  [cidx].grid(row=0, column=cidx*2,   sticky=tk.W+tk.E)
+                children[cidx].grid(row=0, column=cidx*2+1, sticky=tk.W+tk.E)
             else:
                 parent.columnconfigure(cidx,  weight=1)
-                children[cidx].grid(row=0, column=cidx, sticky=tk.E+tk.W)
-                
+                children[cidx].grid(row=0, column=cidx, sticky=tk.W+tk.E)
             
         elif isinstance(group, VGroup):
-            
-            if labels is not None:
-                labels  [cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
-                children[cidx].grid(row=cidx, column=1, sticky=tk.E+tk.W)
+
+            # Groups within VGroups, which don't have a border, are 
+            # laid out the same as any other widget, which probably
+            # looks a bit ugly. If they do have a border, however,
+            # they are laid out so as to span the entire width of
+            # the parent VGroup, and given a border. Instead of
+            # having a separate label widget, the label is embedded
+            # in the border.
+            if isinstance(group.children[cidx], (HGroup, VGroup)) and \
+               group.children[cidx].border:
+
+                children[cidx].grid(
+                    row=cidx, column=0, columnspan=2,
+                    sticky=tk.E+tk.W+tk.N+tk.S)
+
+            elif labels is not None:
+                if labels[cidx] is not None:
+                    labels  [cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
+                    children[cidx].grid(row=cidx, column=1, sticky=tk.E+tk.W)
+                else:
+                    children[cidx].grid(row=cidx, column=0, columnspan=2,
+                                        sticky=tk.E+tk.W)
             else:
                 children[cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
-    
+
 
 def _createGroup(parent, group, propObj, propGui):
     """
@@ -340,7 +370,15 @@ def _createGroup(parent, group, propObj, propGui):
     the Frame.
     """
 
-    frame = ttk.Frame(parent)
+    if group.border:
+        frame = ttk.LabelFrame(parent)
+        frame.config(
+            borderwidth=20,
+            relief=tk.SUNKEN,
+            labelanchor='n',
+            text=group.label) 
+    else:
+        frame = ttk.Frame(parent)
 
     childObjs = []
 
@@ -350,9 +388,15 @@ def _createGroup(parent, group, propObj, propGui):
     for i,child in enumerate(group.children):
 
         labelObj = None
+
         if group.showLabels:
-            labelObj = _create(frame, group.childLabels[i], propObj, propGui)
-            labelObjs.append(labelObj)
+            if group.childLabels[i] is not None:
+                labelObj = _create(
+                    frame, group.childLabels[i], propObj, propGui)
+                labelObjs.append(labelObj)
+            else:
+                labelObjs.append(None)
+            
 
         childObj = _create(frame, child, propObj, propGui)
 
@@ -435,7 +479,8 @@ def _prepareView(viewItem, labels, tooltips):
 
     if isinstance(viewItem, Group):
 
-        # children may have been specified as a tuple
+        # children may have been specified as
+        # a tuple, so we cast it to a list
         viewItem.children = list(viewItem.children)
 
         for i,child in enumerate(viewItem.children):
@@ -445,7 +490,12 @@ def _prepareView(viewItem, labels, tooltips):
             viewItem.childLabels = []
 
             for child in viewItem.children:
-                viewItem.childLabels.append(Label(child))
+                if child.label is None:
+                    viewItem.childLabels.append(None)
+                elif isinstance(child, (HGroup,VGroup)) and child.border:
+                    viewItem.childLabels.append(None)
+                else:
+                    viewItem.childLabels.append(Label(child))
 
     return viewItem
 
