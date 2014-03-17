@@ -154,13 +154,15 @@ class PropertyBase(object):
         superclass constructor, passing it the tkvartype, default
         value, and any leftover **kwargs.
         """
-        self.label         = None
-        self._tkvartype    = tkvartype
-        self.default       = default
-        self._validateFunc = validateFunc
+        self.label             = None
+        self._tkvartype        = tkvartype
+        self.default           = default
+        self._validateFunc     = validateFunc
+        self._changeListeners  = {}
+        self._changeTraceNames = {}
 
         
-    def _make_instval(self, instance):
+    def _makeTkVar(self, instance):
         """
         Creates a Tkinter control variable of the appropriate
         type, and attaches it to the given instance.
@@ -189,6 +191,75 @@ class PropertyBase(object):
             self._validateFunc(instance, value)
 
             
+    def _listenerTrace(self, instance):
+        """
+        Function which is used as a trace callback on the Tkinter
+        variable of this property, when one or more listeners
+        functions have been registered via the addListener method.
+        This function is called when the Tkinter variable value
+        changes; it propagates the change event on to any
+        registered listeners.
+        """
+        
+        if instance not in self._changeListeners: return
+
+        tkVar = getattr(instance, '{}_tkVar'.format(self.label))
+        value = tkVar.get()
+
+        for name, func in self._changeListeners[instance].items():
+            print('Calling listener {} on variable {}'.format(name, self.label))
+            func(value)
+
+
+    def addListener(self, instance, name, callback):
+        """
+        Adds a listener for this property object, on the specified
+        HasProperties instance (the owner of this property). When
+        the value of this property changes, the listener callback
+        function is called, and is passed the new value.
+        """
+
+        # initialise a listener dictionary for this instance,
+        # if no listeners have previously been registered
+        if instance not in self._changeListeners:
+            self._changeListeners [instance] = {}
+
+        # There is not currently a trace on the Tkinter
+        # variable of this property - add one, and save
+        # a reference to it so we can remove it later.
+        if instance not in self._changeTraceNames:
+            
+            traceFunc = lambda *a: self._listenerTrace(instance)
+            tkVar     = getattr(instance, '{}_tkVar'.format(self.label))
+            trace     = tkVar.trace('w', traceFunc)
+ 
+            self._changeTraceNames[instance] = trace
+
+        # Save a reference to the listeenr callback function
+        self._changeListeners[instance][name] = callback
+
+
+    def removeListener(self, instance, name):
+        """
+        Removes the listener with the given name from the specified
+        instance.
+        """
+
+        if instance not in self._changeListeners:            return
+        if name     not in self._changeListeners[instance]:  return
+
+        # remove the listener with the specified name
+        self._changeListeners[instance].pop(name)
+
+        # If there are no longer any listeners for this
+        # instance, remove the Tkinter variable trace.
+        if len(self._changeListeners[instance]) == 0:
+            
+            trace = self._changeTraceNames.pop(instance)
+            tkVar = getattr(instance, '{}_tkVar'.format(self.label))
+            tkVar.trace_vdelete('w', trace)
+
+            
     def __get__(self, instance, owner):
         """
         If called on the HasProperties class, and not on an instance,
@@ -201,7 +272,7 @@ class PropertyBase(object):
             return self
 
         instval = instance.__dict__.get(self.label, None)
-        if instval is None: instval = self._make_instval(instance)
+        if instval is None: instval = self._makeTkVar(instance)
         return instval.get()
 
         
@@ -214,7 +285,7 @@ class PropertyBase(object):
         """
 
         instval = instance.__dict__.get(self.label, None)
-        if instval is None: instval = self._make_instval(instance)
+        if instval is None: instval = self._makeTkVar(instance)
         instval.set(value)
             
 
