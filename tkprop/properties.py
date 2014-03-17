@@ -75,6 +75,8 @@
 import os
 import os.path as op
 
+from collections import OrderedDict
+
 import Tkinter as tk
 
 #
@@ -207,7 +209,6 @@ class PropertyBase(object):
         value = tkVar.get()
 
         for name, func in self._changeListeners[instance].items():
-            print('Calling listener {} on variable {}'.format(name, self.label))
             func(value)
 
 
@@ -515,15 +516,41 @@ class Choice(String):
 
     def __init__(self, choices, choiceLabels=None, **kwargs):
         """
-        Choice constructor. Arguments:
-          - choices: list of strings, the possible values that this
-            property can take.
+        Choice constructor. Parameters:
+        
+          - choices:      List of strings, the possible values that
+                          this property can take.
+        
+        Optional parameters
+        
+          - choiceLabels: List of labels, one for each choice, to
+                          be used for display purposes.
+
+        As an alternative to passing in separate choice and
+        choiceLabels lists, you may pass in a dict as the
+        choice parameter. The will keys be used as the
+        choices, and the values as labels. Make sure to use
+        a collections.OrderedDict if the display order is
+        important.
         """
 
         if choices is None:
             raise ValueError('A list of choices must be provided')
 
-        self.choices = choices
+        if isinstance(choices, dict):
+            
+            self.choices, self.choiceLabels = zip(*choices.items()) 
+        else:
+            self.choices      = choices
+            self.choiceLabels = choiceLabels
+
+        if self.choiceLabels is None:
+            self.choiceLabels = self.choices
+
+        # Lookup dictionaries for choies -> labels,
+        # and vice versa. See _makeTkVar below.
+        self.choiceDict = OrderedDict(zip(self.choices,      self.choiceLabels))
+        self.labelDict  = OrderedDict(zip(self.choiceLabels, self.choices))
 
         kwargs['default'] = kwargs.get('default', self.choices[0])
 
@@ -539,6 +566,43 @@ class Choice(String):
         if value not in self.choices:
             raise ValueError('Invalid choice for {}: {}'.format(
                 self.label, value))
+
+
+    def _makeTkVar(self, instance):
+        """
+        We're using a bit of trickery here. For visual editing of a Choice
+        property, we want to display the labels, rather than the choices.  But
+        the ttk.Combobox doesn't allow anything like this, so if we were to
+        link the Tk control variable to the combo box, and display the labels,
+        the tk variable would be set to the selected label value, rather than
+        the corresponding choice value. So instead of passing the TK control
+        variable, we use a proxy control variable, and set a trace on it so
+        that whenever its value changes (one of the label values), the real
+        control variable is set to the corresponding choice. Similarly, we add
+        a trace to the original control variable, so that when its choice
+        value is modified, the label variable value is changed.  Even though
+        this circular event callback situation looks incredibly dangerous,
+        Tkinter (in python 2.7.6) seems to be smart enough to inhibit an
+        infinitely recursive event explosion.
+
+        The label control variable is added as an attribute to the instance,
+        with the name 'propertyName_tkLabelVar'.
+        """
+
+        choiceVar = String._makeTkVar(self, instance)
+        labelVar  = tk.StringVar()
+
+        labelVar.set(self.choiceDict[choiceVar.get()])
+
+        setattr(instance, '{}_tkLabelVar'.format(self.label), labelVar)
+        
+        def choiceChanged(*a): labelVar .set(self.choiceDict[choiceVar.get()])
+        def labelChanged (*a): choiceVar.set(self.labelDict [labelVar .get()])
+
+        choiceVar.trace('w', choiceChanged)
+        labelVar .trace('w', labelChanged)
+
+        return choiceVar
 
 
 class FilePath(String):

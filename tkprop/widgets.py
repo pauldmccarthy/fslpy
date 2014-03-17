@@ -13,6 +13,8 @@ import sys
 import os
 import os.path as op
 
+from collections import OrderedDict
+
 import tkprop       as tkp
 
 import Tkinter      as tk
@@ -141,10 +143,16 @@ def _Choice(parent, propObj, tkProp, tkVar):
     user to set the given tkProp (tkprop.Choice) object.
     """
 
-    choices = tkProp.choices
-    widget  = ttk.Combobox(parent, textvariable=tkVar, values=choices)
-    widget.state(['readonly'])
+    # See the documentation for properties.Choice._makeTkVar
+    # for an explanation of what is going on here.
+    labels   = tkProp.choiceLabels
+    labelVar = getattr(propObj, '{}_tkLabelVar'.format(tkProp.label))
 
+    widget  = ttk.Combobox(parent,
+                           values=labels,
+                           textvariable=labelVar,
+                           state='readonly')
+    
     return widget
 
 
