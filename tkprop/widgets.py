@@ -190,9 +190,10 @@ def _Number(parent, propObj, tkProp, tkVar):
 
     if makeScale:
 
-        # Embed the Scale inside a Frame, along
-        # with labels which display the minimum,
-        # maximum, and current value.
+        # Embed the Scale inside a Frame, along with
+        # labels which display the minimum and
+        # maximum and a Spinbox allowing direct
+        # modification of the current value.
         scaleFrame = ttk.Frame(parent)
         scaleFrame.columnconfigure(0, weight=1)
         scaleFrame.columnconfigure(1, weight=1)
@@ -204,8 +205,13 @@ def _Number(parent, propObj, tkProp, tkVar):
 
         minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
                              anchor=tk.W)
-        curLabel = ttk.Label(scaleFrame, text='{}'.format(value),
-                             anchor=tk.CENTER)
+        
+        curLabel = tk.Spinbox(scaleFrame,
+                              from_=minval, to=maxval,
+                              textvariable=tkVar,
+                              format='%0.6f',
+                              increment=(maxval-minval)/20.0)
+        
         maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval),
                              anchor=tk.E)
 
@@ -215,12 +221,7 @@ def _Number(parent, propObj, tkProp, tkVar):
         curLabel.grid(row=1, column=1)
         maxLabel.grid(row=1, column=2, sticky=tk.E)
 
-        # update the current value Label when
-        # the underlying variable changes
-        def updateLabel(*args):
-            curLabel.config(text='{:0.6}'.format(tkVar.get()))
-
-        tkVar.trace("w", updateLabel)
+        _setupValidation(curLabel, propObj, tkProp, tkVar)
                 
         widget = scaleFrame
 

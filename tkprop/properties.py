@@ -538,8 +538,8 @@ class Choice(String):
             raise ValueError('A list of choices must be provided')
 
         if isinstance(choices, dict):
+            self.choices, self.choiceLabels = zip(*choices.items())
             
-            self.choices, self.choiceLabels = zip(*choices.items()) 
         else:
             self.choices      = choices
             self.choiceLabels = choiceLabels
@@ -547,7 +547,7 @@ class Choice(String):
         if self.choiceLabels is None:
             self.choiceLabels = self.choices
 
-        # Lookup dictionaries for choies -> labels,
+        # Lookup dictionaries for choices -> labels,
         # and vice versa. See _makeTkVar below.
         self.choiceDict = OrderedDict(zip(self.choices,      self.choiceLabels))
         self.labelDict  = OrderedDict(zip(self.choiceLabels, self.choices))
@@ -558,6 +558,9 @@ class Choice(String):
 
         
     def validate(self, instance, value):
+        """
+        Rejects values that are not in the choices list.
+        """
 
         value = str(value)
 
