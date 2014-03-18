@@ -339,13 +339,15 @@ class HasProperties(object):
         for attr,value in inst.__class__.__dict__.items():
 
             if isinstance(value, PropertyBase):
+
+                # this will trigger creation of the Tkinter
+                # control variable for this instance/property
                 value.__get__(inst, cls)
 
                 tkVar  = inst.__dict__[attr]
                 tkProp = value
 
-                # test to see if attrs already exist and throw an error?
-                
+                # TODO test to see if attrs already exist and throw an error?
                 setattr(inst, '{}_tkVar' .format(attr), tkVar)
                 setattr(inst, '{}_tkProp'.format(attr), tkProp)
                 
@@ -528,7 +530,7 @@ class Choice(String):
 
         As an alternative to passing in separate choice and
         choiceLabels lists, you may pass in a dict as the
-        choice parameter. The will keys be used as the
+        choice parameter. The keys will be used as the
         choices, and the values as labels. Make sure to use
         a collections.OrderedDict if the display order is
         important.
@@ -549,7 +551,7 @@ class Choice(String):
 
         # Lookup dictionaries for choices -> labels,
         # and vice versa. See _makeTkVar below.
-        self.choiceDict = OrderedDict(zip(self.choices,      self.choiceLabels))
+        self.choiceDict = OrderedDict(zip(self.choices, self.choiceLabels))
         self.labelDict  = OrderedDict(zip(self.choiceLabels, self.choices))
 
         kwargs['default'] = kwargs.get('default', self.choices[0])

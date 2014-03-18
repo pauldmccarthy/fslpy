@@ -195,9 +195,6 @@ def _Number(parent, propObj, tkProp, tkVar):
         # maximum and a Spinbox allowing direct
         # modification of the current value.
         scaleFrame = ttk.Frame(parent)
-        scaleFrame.columnconfigure(0, weight=1)
-        scaleFrame.columnconfigure(1, weight=1)
-        scaleFrame.columnconfigure(2, weight=1)
 
         widget = ttk.Scale(scaleFrame, orient=tk.HORIZONTAL,
                            from_=minval, to=maxval,
@@ -206,22 +203,20 @@ def _Number(parent, propObj, tkProp, tkVar):
         minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
                              anchor=tk.W)
         
-        curLabel = tk.Spinbox(scaleFrame,
+        curEntry = tk.Spinbox(scaleFrame,
                               from_=minval, to=maxval,
                               textvariable=tkVar,
-                              format='%0.6f',
                               increment=(maxval-minval)/20.0)
         
         maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval),
                              anchor=tk.E)
 
-        widget  .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W,
-                      columnspan=3)
-        minLabel.grid(row=1, column=0, sticky=tk.W)
-        curLabel.grid(row=1, column=1)
-        maxLabel.grid(row=1, column=2, sticky=tk.E)
+        minLabel.pack(side=tk.LEFT, fill=tk.X)
+        widget  .pack(side=tk.LEFT, fill=tk.X, expand=True)
+        maxLabel.pack(side=tk.LEFT, fill=tk.X)
+        curEntry.pack(side=tk.LEFT, fill=tk.X)
 
-        _setupValidation(curLabel, propObj, tkProp, tkVar)
+        _setupValidation(curEntry, propObj, tkProp, tkVar)
                 
         widget = scaleFrame
 
