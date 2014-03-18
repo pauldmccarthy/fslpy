@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# testBuild.py - Demonstration of the tkprop package.
+# betDemo.py - 
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -16,14 +16,14 @@ import            ttk
 import tkprop  as tkp
 
 runChoices = OrderedDict((
-    ('Run standard brain extraction using bet2'                             , ''),
-    ('Robust brain centre estimation (iterates bet2 several times)'         , '-R'),
-    ('Eye & optic nerve cleanup (can be useful in SIENA)'                   , '-S'),
-    ('Bias field & neck cleanup (can be useful in SIENA)'                   , '-B'),
-    ('Improve BET if FOV is very small in Z'                                , '-Z'),
-    ('Apply to 4D FMRI data'                                                , '-F'),
-    ('Run bet2 and then betsurf to get additional skull and scalp surfaces' , '-A'),
-    ('As above, when also feeding in non-brain extracted T2'                , '-A2')))
+    ('',    'Run standard brain extraction using bet2'),
+    ('-R',  'Robust brain centre estimation (iterates bet2 several times)'),
+    ('-S',  'Eye & optic nerve cleanup (can be useful in SIENA)'),
+    ('-B',  'Bias field & neck cleanup (can be useful in SIENA)'),
+    ('-Z',  'Improve BET if FOV is very small in Z'),
+    ('-F',  'Apply to 4D FMRI data'),
+    ('-A',  'Run bet2 and then betsurf to get additional skull and scalp surfaces'),
+    ('-A2', 'As above, when also feeding in non-brain extracted T2')))
 
 
 class BetOptions(tkp.HasProperties):
@@ -32,7 +32,7 @@ class BetOptions(tkp.HasProperties):
     outputImage          = tkp.FilePath()
     t2Image              = tkp.FilePath(exists=True)
     
-    runChoice            = tkp.Choice(choices=runChoices.keys())
+    runChoice            = tkp.Choice(runChoices)
     
     outputExtracted      = tkp.Boolean(default=True)
     outputMaskImage      = tkp.Boolean(default=False)
@@ -47,6 +47,64 @@ class BetOptions(tkp.HasProperties):
     xCoordinate          = tkp.Double(default=0.0, minval=0.0)
     yCoordinate          = tkp.Double(default=0.0, minval=0.0)
     zCoordinate          = tkp.Double(default=0.0, minval=0.0)
+
+    
+optLabels = {
+    'inputImage'           : 'Input image',
+    'outputImage'          : 'Output image',
+    'runChoice'            : 'Run options',
+    't2Image'              : 'T2 image',
+    'outputExtracted'      : 'Output brain-extracted image', 
+    'outputMaskImage'      : 'Output binary brain mask image', 
+    'thresholdImages'      : 'Apply thresholding to brain and mask image', 
+    'outputSkull'          : 'Output exterior skull surface image',
+    'outputMesh'           : 'Generate brain surface as mesh in .vtk format', 
+    'outputSurfaceOverlay' : 'Output brain surface overlaid onto original image',
+    'fractionalIntensity'  : 'Fractional intensity threshold',
+    'thresholdGradient'    : 'Threshold gradient',
+    'headRadius'           : 'Head radius (mm)',
+    'centreCoords'         : 'Centre coordinates (voxels)',
+    'xCoordinate'          : 'X',
+    'yCoordinate'          : 'Y',
+    'zCoordinate'          : 'Z'
+}
+
+optTooltips = {
+    'fractionalIntensity' : 'Smaller values give larger brain outline estimates.',
+    'thresholdGradient'   : 'Positive values give larger brain outline at bottom, smaller at top.',
+    'headRadius'          : 'Initial surface sphere is set to half of this.',
+    'centreCoords'        : 'Coordinates (voxels) for centre of initial brain surface sphere.'
+}
+
+betView = tkp.NotebookGroup((
+    tkp.VGroup(
+        label='BET options',
+        children=(
+            'inputImage',
+            'outputImage',
+            'fractionalIntensity',
+            'runChoice',
+            tkp.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
+        )),
+    tkp.VGroup(
+        label='Advanced options',
+        children=(
+            'outputExtracted',
+            'outputMaskImage',
+            'thresholdImages',
+            'outputSkull',
+            'outputSurfaceOverlay',
+            'outputMesh', 
+            'thresholdGradient', 
+            'headRadius', 
+            tkp.HGroup(
+                key='centreCoords',
+                children=(
+                    'xCoordinate',
+                    'yCoordinate',
+                    'zCoordinate'))
+        ))
+))
 
 
 def generateBetCmd(bopts):
@@ -105,60 +163,6 @@ def generateBetCmd(bopts):
 
     return cmd
  
-    
-optNames = {
-    'inputImage'           : 'Input image',
-    'outputImage'          : 'Output image',
-    'runChoice'            : 'Run options',
-    't2Image'              : 'T2 image',
-    'outputExtracted'      : 'Output brain-extracted image', 
-    'outputMaskImage'      : 'Output binary brain mask image', 
-    'thresholdImages'      : 'Apply thresholding to brain and mask image', 
-    'outputSkull'          : 'Output exterior skull surface image',
-    'outputMesh'           : 'Generate brain surface as mesh in .vtk format', 
-    'outputSurfaceOverlay' : 'Output brain surface overlaid onto original image ',
-    'fractionalIntensity'  : 'Fractional intensity threshold; smaller values give larger brain outline estimates',
-    'thresholdGradient'    : 'Threshold gradient; positive values give larger brain outline at bottom, smaller at top',
-    'headRadius'           : 'head radius (mm not voxels); initial surface sphere is set to half of this',
-    'xCoordinate'          : 'X',
-    'yCoordinate'          : 'Y',
-    'zCoordinate'          : 'Z'
-}
-
-betView = tkp.NotebookGroup((
-    tkp.VGroup(
-        label='BET options',
-        showLabels=True,
-        children=(
-            tkp.Widget('inputImage',          label=optNames['inputImage']),
-            tkp.Widget('outputImage',         label=optNames['outputImage']),
-            tkp.Widget('fractionalIntensity', label=optNames['fractionalIntensity']),
-            tkp.Widget('runChoice',           label=optNames['runChoice']),
-            tkp.Widget('t2Image',             label=optNames['t2Image'],
-                       visibleWhen=lambda i: i.runChoice.startswith('As above'))
-        )),
-    tkp.VGroup(
-        label='Advanced options',
-        showLabels=True,
-        children=(
-            tkp.Widget('outputExtracted',      label=optNames['outputExtracted']),
-            tkp.Widget('outputMaskImage',      label=optNames['outputMaskImage']),
-            tkp.Widget('thresholdImages',      label=optNames['thresholdImages']),
-            tkp.Widget('outputSkull',          label=optNames['outputSkull']),
-            tkp.Widget('outputSurfaceOverlay', label=optNames['outputSurfaceOverlay']),
-            tkp.Widget('outputMesh',           label=optNames['outputMesh']),
-            tkp.Widget('thresholdGradient',    label=optNames['thresholdGradient']),
-            tkp.Widget('headRadius',           label=optNames['headRadius']),
-            tkp.HGroup(
-                label='Coordinates (voxels) for centre of initial brain surface sphere',
-                showLabels=True,
-                children=(
-                    tkp.Widget('xCoordinate', label=optNames['xCoordinate']),
-                    tkp.Widget('yCoordinate', label=optNames['yCoordinate']),
-                    tkp.Widget('zCoordinate', label=optNames['zCoordinate'])
-                ))
-        ))
-))
 
 class BetFrame(tk.Frame):
     
@@ -167,7 +171,7 @@ class BetFrame(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.pack(fill=tk.BOTH, expand=1)
 
-        self.tkpFrame = tkp.buildGUI(self, betOpts, betView)
+        self.tkpFrame = tkp.buildGUI(self, betOpts, betView, optLabels, optTooltips)
         self.tkpFrame.pack(fill=tk.BOTH, expand=1)
 
         self.buttonFrame = tk.Frame(self)

@@ -14,8 +14,6 @@ import Tkinter as tk
 import            ttk
 import tkprop  as tkp
 
-# TODO Could change these OrderedDicts to enums or simple python objects?
-
 analysisTypeOpts = OrderedDict((
     ('firstLevel', 'First-level analysis'),
     ('highLevel',  'Higher-level analysis')))
@@ -211,13 +209,12 @@ class FeatOptions(tkp.HasProperties):
 
         def updateAnalysisStage(analysisType):
             if analysisType == 'highLevel':
-                self.analysisStages = 'statsPost'
+                self.analysisStages = 'stats-post'
         
         FeatOptions.analysisType.addListener(self,
                                              'updateAnalysisStage',
                                               updateAnalysisStage)
         
-
 labels = {
     # misc
     'balloonHelp'              : 'Balloon help',
