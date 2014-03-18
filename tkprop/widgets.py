@@ -188,6 +188,25 @@ def _Number(parent, propObj, tkProp, tkVar):
     if any((minval is None, maxval is None)):
         makeScale = False
 
+    # Tkinter spinboxes don't behave well if you
+    # don't set both of the from_ and to limits.
+    if minval is None:
+        if   isinstance(tkProp, tkp.Int):    minval = -sys.maxint-1
+        elif isinstance(tkProp, tkp.Double): minval = sys.float_info.min
+    if maxval is None:
+        if   isinstance(tkProp, tkp.Int):    maxval = sys.maxint
+        elif isinstance(tkProp, tkp.Double): maxval = sys.float_info.max
+
+    # string format, and increment magnitude, for spinboxes
+    if isinstance(tkProp, tkp.Int):
+        formatStr = '%0.0f'
+        increment = 1
+    else:
+        formatStr = '%0.4f'
+
+        if makeScale: increment = (maxval-minval)/20.0
+        else:         increment = 0.5
+    
     if makeScale:
 
         # Embed the Scale inside a Frame, along with
@@ -202,11 +221,12 @@ def _Number(parent, propObj, tkProp, tkVar):
 
         minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
                              anchor=tk.W)
-        
+
         curEntry = tk.Spinbox(scaleFrame,
                               from_=minval, to=maxval,
                               textvariable=tkVar,
-                              increment=(maxval-minval)/20.0)
+                              format=formatStr,
+                              increment=increment)
         
         maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval),
                              anchor=tk.E)
@@ -223,20 +243,11 @@ def _Number(parent, propObj, tkProp, tkVar):
     # The minval and maxval attributes have not both
     # been set, so we create a Spinbox instead of a Scale.
     else:
-
-        # Tkinter spinboxes don't behave well if you
-        # don't set both of the from_ and to limits.
-        if minval is None:
-            if   isinstance(tkProp, tkp.Int):    minval = -sys.maxint-1
-            elif isinstance(tkProp, tkp.Double): minval = sys.float_info.min
-        if maxval is None:
-            if   isinstance(tkProp, tkp.Int):    maxval = sys.maxint
-            elif isinstance(tkProp, tkp.Double): maxval = sys.float_info.max
-
         widget = tk.Spinbox(parent,
                             from_=minval, to=maxval,
                             textvariable=tkVar,
-                            increment=1)
+                            format=formatStr,
+                            increment=increment)
 
         _setupValidation(widget, propObj, tkProp, tkVar)
 

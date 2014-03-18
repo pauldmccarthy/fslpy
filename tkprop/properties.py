@@ -169,10 +169,11 @@ class PropertyBase(object):
         Creates a Tkinter control variable of the appropriate
         type, and attaches it to the given instance.
         """
-        
+
         instval = self._tkvartype(
             self, instance, value=self.default, name=self.label)
         instance.__dict__[self.label] = instval
+
         return instval
 
         
@@ -435,7 +436,12 @@ class Int(_Number):
 
         
     def validate(self, instance, value):
-        value = int(value)
+
+        try:
+            value = int(value)
+        except:
+            raise ValueError('{} must be an integer ({})'.format(
+                self.label, value))
         _Number.validate(self, instance, value)
 
 
@@ -453,7 +459,12 @@ class Double(_Number):
 
         
     def validate(self, instance, value):
-        value = float(value)
+
+        try:
+            value = float(value)
+        except:
+            raise ValueError('{} must be a floating point number ({})'.format(
+                self.label, value)) 
         _Number.validate(self, instance, value)
 
 
