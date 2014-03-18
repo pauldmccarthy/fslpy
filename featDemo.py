@@ -91,9 +91,9 @@ class FeatOptions(tkp.HasProperties):
     balloonHelp              = tkp.Boolean(default=True)
     progressWatcher          = tkp.Boolean(default=True)
     brainBackgroundThreshold = tkp.Percentage(default=10)
-    noiseLevel               = tkp.Percentage(default=0.66)
-    temporalSmoothness       = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
-    zThreshold               = tkp.Double(default=5.3, minval=0.0)
+    efficNoiseLevel          = tkp.Percentage(default=0.66)
+    efficTemporalSmoothness  = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
+    efficZThreshold          = tkp.Double(default=5.3, minval=0.0)
 
     # misc/higher level
     cleanUpFirstLevel        = tkp.Boolean(default=False)
@@ -201,7 +201,6 @@ class FeatOptions(tkp.HasProperties):
     # only shown if nonlinear reg is selected
     warpResolution = tkp.Double(minval=0.0, default=10.0)
 
-
     def __init__(self):
         """
         Adds some listeners to various inter-dependent properties.
@@ -220,9 +219,9 @@ labels = {
     'balloonHelp'              : 'Balloon help',
     'progressWatcher'          : 'Progress watcher',
     'brainBackgroundThreshold' : 'Brain/background threshold',
-    'noiseLevel'               : 'Noise level',
-    'temporalSmoothness'       : 'Temporal smoothness',
-    'zThreshold'               : 'Z threshold',
+    'efficNoiseLevel'          : 'Noise level',
+    'efficTemporalSmoothness'  : 'Temporal smoothness',
+    'efficZThreshold'          : 'Z threshold',
 
     # data
     'inputData'                : 'Select 4D data',
@@ -302,9 +301,6 @@ def tabEnabled(featOpts, tabName):
         
     elif tabName == 'Registration':
         if aType == 'highLevel': return False
-
-        if (aStage != 'full') and (aStage.find('reg') < 0):
-            return False 
         
     return True
 
@@ -318,9 +314,9 @@ miscView = tkp.VGroup(
             label='Design efficiency',
             border=True,
             children=(
-                'noiseLevel',
-                'temporalSmoothness',
-                'zThreshold',
+                'efficNoiseLevel',
+                'efficTemporalSmoothness',
+                'efficZThreshold',
                 tkp.Button(text='Estimate noise and smoothness'),
                 tkp.Button(text='Estimate highpass filter')))))
 
@@ -483,7 +479,7 @@ if __name__ == '__main__':
     app.title('FEAT')
 
     print('Before')
-    print(fopts)
+    print(fopts) 
 
     # stupid hack for testing under OS X - forces the TK
     # window to be displayed above all other windows
