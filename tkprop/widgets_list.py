@@ -32,7 +32,7 @@ def _pasteDataDialog(parent, listProp, propObj):
       - propObj:  The tkprop.HasProperties object which owns listProp.    
     """
 
-    listObj = getattr(propObj, listProp.label)
+    listObj = propObj.getTkVar(listObj.label)
     
     window = tk.Toplevel()
     frame  = ttk.Frame(window)
@@ -59,8 +59,6 @@ def _pasteDataDialog(parent, listProp, propObj):
         listData = listData.split('\n')
         listData = [s.strip() for s in listData]
         listData = filter(len, listData)
-
-        print('Pasting data into list: {}'.format(listData))
 
         setattr(propObj, listProp.label, listData)
         
@@ -100,7 +98,7 @@ def _editListDialog(parent, listProp, propObj):
     """
 
     listType  = listProp.listType
-    listObj   = getattr(propObj, listProp.label)
+    listObj   = propObj.getTkVar(listProp.label)
     tkVarList = listObj._tkVars
 
     # Get a reference to a function which can make
@@ -120,7 +118,7 @@ def _editListDialog(parent, listProp, propObj):
 
     # Make a widget for every element in the list
     for i,v in enumerate(tkVarList):
-        widget = makeFunc(frame, propObj, listType, v)
+        widget = makeFunc(frame, propObj, listType, v.tkVar)
         listWidgets.append(widget)
 
     # A spinbox, and associated TK variable, allowing
@@ -155,7 +153,7 @@ def _editListDialog(parent, listProp, propObj):
 
             # add a tkVar
             listObj.append(listType.default)
-            tkVar = tkVarList[-1]
+            tkVar = tkVarList[-1].tkVar
 
             # add a widget
             widg = makeFunc(frame, propObj, listProp.listType, tkVar)
@@ -187,7 +185,7 @@ def _editListDialog(parent, listProp, propObj):
     for i,w in enumerate(listWidgets):
         w.grid(row=i+1, column=0, sticky=tk.W+tk.E)
 
-    okButton.grid(row=i+2, column=0, sticky=tk.W+tk.E)
+    okButton.grid(row=len(listWidgets)+2, column=0, sticky=tk.W+tk.E)
 
     frame.columnconfigure(0, weight=1)
     frame.pack(fill=tk.BOTH, expand=True)
