@@ -545,7 +545,7 @@ def _prepareEvents(propObj, propGui):
     if len(propGui.onChangeCallbacks) == 0:
         return
 
-    def onChange(*a):
+    def onChange(instance, name, value):
         for cb in propGui.onChangeCallbacks:
             cb()
 
@@ -557,26 +557,13 @@ def _prepareEvents(propObj, propGui):
     
     propNames,props = zip(*props)
 
-    tkVars = [getattr(propObj, '{}_tkVar'.format(name)) for name in propNames]
-
     # initialise widget states
     onChange()
 
-    for t in tkVars:
-        
-        # The List property type stores a reference to the underlying
-        # _ListWrapper object in the _tkVar attribute. The Tkinter
-        # variables are stored in this _ListWrapper object.
-        if not isinstance(t, properties._ListWrapper): 
-            t.trace('w', onChange)
-
-        # TODO add support for lists. This will probably require
-        # some additions to the properties._ListWrapper class,
-        # as it will need to manage addition/removal of traces
-        # on the list variables.
-        else:
-            pass
-
+    for prop,propName in zip(props,propNames):
+        if not isinstance(t, properties._ListWrapper):
+            prop.addListener(propObj, '', onChange)
+ 
 
 def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     """

@@ -28,15 +28,15 @@
 #
 #
 #     # access the tkp.Boolean instance:
-#     myPropObj.myProperty_tkProp
+#     myPropObj.getTkProp('myProperty')
 #
 #     # >>> <tkprops.tkprop.Boolean at 0x1045e2710>
 #
 #
 #     # access the underlying Tkinter control variable:
-#     myPropObj.myProperty_tkVar
+#     myPropObj.getTkVar('myProperty')
 #
-#     # >>> <_tkprops.tkprop._BooleanVar instance at 0x1047ef518>
+#     # >>> <tkinter.BooleanVar instance at 0x1047ef518>
 #
 # 
 # Lots of the code in this file is probably very confusing. First
@@ -79,64 +79,28 @@ from collections import OrderedDict
 
 import Tkinter as tk
 
-#
-# The classes below are used in place of the Tkinter.*Var classes.
-# They are identical to the Tkinter versions, with the following
-# exceptions:
-#
-#   1. A reference to a PropertyBase object is saved when the
-#      Var object is created.
-#
-#   2. Similarly, a reference to the owner of the PropertyBase
-#      object (a HasProperties instance) is saved.
-#
-#   3. When the set() method is called on the Var object, the
-#      PropertyBase.validate method is called, to test that
-#      the new value is valid. If the new value is not valid,
-#      a ValueError is raised.
-#
-class _StringVar(tk.StringVar):
-    def __init__(self, tkProp, instance, **kwargs):
-        self.tkProp   = tkProp
-        self.instance = instance
-        tk.StringVar.__init__(self, **kwargs)
-    def set(self, value):
-        self.tkProp.validate(self.instance, value)
-        tk.StringVar.set(self, value)
 
-class _DoubleVar(tk.DoubleVar):
-    def __init__(self, tkProp, instance, **kwargs):
-        self.tkProp   = tkProp
-        self.instance = instance
-        tk.DoubleVar.__init__(self, **kwargs)
-    def set(self, value):
-        self.tkProp.validate(self.instance, value)
-        tk.DoubleVar.set(self, value)
+class _TkVarProxy(object):
 
-class _IntVar(tk.IntVar):
-    def __init__(self, tkProp, instance, **kwargs):
-        self.tkProp   = tkProp
-        self.instance = instance
-        tk.IntVar.__init__(self, **kwargs)
-    def set(self, value):
-        self.tkProp.validate(self.instance, value)
-        tk.IntVar.set(self, value)
-
-class _BooleanVar(tk.BooleanVar):
-    def __init__(self, tkProp, instance, **kwargs):
-        self.tkProp   = tkProp
-        self.instance = instance
-        tk.BooleanVar.__init__(self, **kwargs)
-
-    def get(self):
+    def __init__(self, tkProp, instance, tkVarType, value, name):
         
-        # For some reason, tk.BooleanVar.get() returns an int,
-        # 0 or 1, so here we're casting it to a python bool
-        return bool(tk.BooleanVar.get(self))
-        
-    def set(self, value):
-        self.tkProp.validate(self.instance, value)
-        tk.BooleanVar.set(self, value)
+        self.tkVarType = tkVarType
+        self.tkProp    = tkProp
+        self.instance  = instance
+        self.lastValue = value
+        self.tkVar     = tkVarType(value=value, name=name)
+        self.traceName = self.tkVar.trace('w', self._traceCb)
+
+    def _traceCb(self, *args):
+
+        try:
+            newValue = self.tkVar.get()
+            self.tkProp.validate(self.instance, newValue)
+            self.lastValue = newValue
+            self.tkProp._notify(self.instance, newValue)
+            
+        except ValueError:
+            self.tkVar.set(self.lastValue)
  
 
 class PropertyBase(object):
@@ -146,7 +110,7 @@ class PropertyBase(object):
     any required validation rules.
     """
     
-    def __init__(self, tkvartype, default, validateFunc=None):
+    def __init__(self, tkVarType, default, validateFunc=None):
         """
         The tkvartype parameter should be one of the Tkinter.*Var
         class replacements, defined above (e.g. _BooleanVar, _IntVar,
@@ -157,21 +121,20 @@ class PropertyBase(object):
         value, and any leftover **kwargs.
         """
         self.label             = None
-        self._tkvartype        = tkvartype
+        self.tkVarType         = tkVarType
         self.default           = default
-        self._validateFunc     = validateFunc
-        self._changeListeners  = {}
-        self._changeTraceNames = {}
+        self.validateFunc      = validateFunc
+        self.changeListeners   = {}
 
         
     def _makeTkVar(self, instance):
         """
-        Creates a Tkinter control variable of the appropriate
-        type, and attaches it to the given instance.
+        Creates a _TkVarProxy object, and attaches it to the given
+        instance.
         """
 
-        instval = self._tkvartype(
-            self, instance, value=self.default, name=self.label)
+        instval = _TkVarProxy(
+            self, instance, self.tkVarType, self.default, self.label)
         instance.__dict__[self.label] = instval
 
         return instval
@@ -190,11 +153,11 @@ class PropertyBase(object):
         own processing.
         """
 
-        if self._validateFunc is not None:
-            self._validateFunc(instance, value)
+        if self.validateFunc is not None:
+            self.validateFunc(instance, value)
 
             
-    def _listenerTrace(self, instance):
+    def _notify(self, instance, value):
         """
         Function which is used as a trace callback on the Tkinter
         variable of this property, when one or more listeners
@@ -204,13 +167,10 @@ class PropertyBase(object):
         registered listeners.
         """
         
-        if instance not in self._changeListeners: return
+        if instance not in self.changeListeners: return
 
-        tkVar = getattr(instance, '{}_tkVar'.format(self.label))
-        value = tkVar.get()
-
-        for name, func in self._changeListeners[instance].items():
-            func(value)
+        for name, func in self.changeListeners[instance].items():
+            func(instance, name, value)
 
 
     def addListener(self, instance, name, callback):
@@ -223,22 +183,11 @@ class PropertyBase(object):
 
         # initialise a listener dictionary for this instance,
         # if no listeners have previously been registered
-        if instance not in self._changeListeners:
-            self._changeListeners [instance] = {}
-
-        # There is not currently a trace on the Tkinter
-        # variable of this property - add one, and save
-        # a reference to it so we can remove it later.
-        if instance not in self._changeTraceNames:
-            
-            traceFunc = lambda *a: self._listenerTrace(instance)
-            tkVar     = getattr(instance, '{}_tkVar'.format(self.label))
-            trace     = tkVar.trace('w', traceFunc)
- 
-            self._changeTraceNames[instance] = trace
+        if instance not in self.changeListeners:
+            self.changeListeners[instance] = {}
 
         # Save a reference to the listeenr callback function
-        self._changeListeners[instance][name] = callback
+        self.changeListeners[instance][name] = callback
 
 
     def removeListener(self, instance, name):
@@ -247,19 +196,11 @@ class PropertyBase(object):
         instance.
         """
 
-        if instance not in self._changeListeners:            return
-        if name     not in self._changeListeners[instance]:  return
+        if instance not in self.changeListeners:            return
+        if name     not in self.changeListeners[instance]:  return
 
         # remove the listener with the specified name
-        self._changeListeners[instance].pop(name)
-
-        # If there are no longer any listeners for this
-        # instance, remove the Tkinter variable trace.
-        if len(self._changeListeners[instance]) == 0:
-            
-            trace = self._changeTraceNames.pop(instance)
-            tkVar = getattr(instance, '{}_tkVar'.format(self.label))
-            tkVar.trace_vdelete('w', trace)
+        self.changeListeners[instance].pop(name)
 
             
     def __get__(self, instance, owner):
@@ -275,7 +216,7 @@ class PropertyBase(object):
 
         instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._makeTkVar(instance)
-        return instval.get()
+        return instval.tkVar.get()
 
         
     def __set__(self, instance, value):
@@ -288,7 +229,7 @@ class PropertyBase(object):
 
         instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._makeTkVar(instance)
-        instval.set(value)
+        instval.tkVar.set(value)
             
 
 class PropertyOwner(type):
@@ -312,48 +253,37 @@ class HasProperties(object):
     """
     __metaclass__ = PropertyOwner
 
+        
+    def getTkProp(self, propName):
+        """
+        Return the tkprop PropertyBase object for the given property.
+        """
+        return getattr(self.__class__, propName)
+
+
+    def getTkVar(self, propName):
+        """
+        Return the Tkinter control variable for the given property.
+        """
+        return self.__dict__[propName].tkVar
+
+
     def __new__(cls, *args, **kwargs):
         """
-        Here, we add some extra fields to a newly created HasProperties
-        instance. These fields provided direct access to the Tkinter.*Var
-        objects, and the tkprop objects. This overcomes the need for the
-        slightly ugly default methods of access, i.e.:
-        
-          MyPropClass.propName
-
-        to access the tkprop property object, and
-        
-          myPropObj.__dict__['propName']
-
-        to access Tkinter.*Var obj. Instead, the tkprop property object can
-        be accessed by the field:
-        
-          myPropObj.propName_tkProp
-
-        and the Tkinter Var object via:
-        
-          myPropObj.propName_tkVar
+        Here we create a new HasProperties instance, and loop through all
+        of its PropertyBase properties to ensure that they are initialised.
         """
-
-        inst = super(HasProperties, cls).__new__(cls, *args, **kwargs)
         
-        for attr,value in inst.__class__.__dict__.items():
-
+        inst = super(HasProperties, cls).__new__(cls, *args, **kwargs)
+        for attr, value in inst.__class__.__dict__.items():
             if isinstance(value, PropertyBase):
 
-                # this will trigger creation of the Tkinter
-                # control variable for this instance/property
+                # all we need to do is access the property
+                # to force its initialisation
                 value.__get__(inst, cls)
 
-                tkVar  = inst.__dict__[attr]
-                tkProp = value
-
-                # TODO test to see if attrs already exist and throw an error?
-                setattr(inst, '{}_tkVar' .format(attr), tkVar)
-                setattr(inst, '{}_tkProp'.format(attr), tkProp)
-                
         return inst
-
+        
         
     def __str__(self):
         """
@@ -391,7 +321,7 @@ class Boolean(PropertyBase):
     def __init__(self, **kwargs):
 
         kwargs['default'] = kwargs.get('default', False)
-        PropertyBase.__init__(self, _BooleanVar, **kwargs)
+        PropertyBase.__init__(self, tk.BooleanVar, **kwargs)
 
 
 class _Number(PropertyBase):
@@ -432,7 +362,7 @@ class Int(_Number):
         Int constructor. See the Number class for keyword
         arguments.
         """
-        _Number.__init__(self, _IntVar, **kwargs)
+        _Number.__init__(self, tk.IntVar, **kwargs)
 
         
     def validate(self, instance, value):
@@ -455,7 +385,7 @@ class Double(_Number):
         Double constructor. See the Number class for keyword
         arguments.
         """
-        _Number.__init__(self, _DoubleVar, **kwargs)
+        _Number.__init__(self, tk.DoubleVar, **kwargs)
 
         
     def validate(self, instance, value):
@@ -495,7 +425,7 @@ class String(PropertyBase):
         self.maxlen = maxlen
         
         kwargs['default'] = kwargs.get('default', '')
-        PropertyBase.__init__(self, _StringVar, **kwargs)
+        PropertyBase.__init__(self, tk.StringVar, **kwargs)
 
     def __get__(self, instance, owner):
         val = PropertyBase.__get__(self, instance, owner)

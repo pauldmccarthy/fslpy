@@ -35,6 +35,7 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
     property (and widget) value is reverted to its previous value
     (which was previously stored when the widget gained focus).
     """
+    pass
 
     # Container used for storing the previous value of the property,
     # and sharing this value amongst the inner functions below.
@@ -285,8 +286,8 @@ def makeWidget(parent, propObj, propName):
     the property.
     """
 
-    tkProp = getattr(propObj, '{}_tkProp'.format(propName), None)
-    tkVar  = getattr(propObj, '{}_tkVar' .format(propName), None)
+    tkProp = propObj.getTkProp(propName)
+    tkVar  = propObj.getTkVar( propName)
 
     if any((tkProp is None, tkVar is None)):
         raise ValueError('Could not find property {}.{}'.format(
