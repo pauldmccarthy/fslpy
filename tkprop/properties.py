@@ -211,7 +211,12 @@ class PropertyBase(object):
         Adds a listener for this property object, on the specified
         HasProperties instance (the owner of this property). When
         the value of this property changes, the listener callback
-        function is called, and is passed the new value.
+        function is called. The callback function must accept three
+        arguments:
+        
+          instance - The HasProperties instance
+          name     - Name of the property that changed
+          value    - The new property value
         """
 
         # initialise a listener dictionary for this instance,
