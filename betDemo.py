@@ -30,9 +30,9 @@ class BetOptions(tkp.HasProperties):
     
     inputImage           = tkp.FilePath(exists=True)
     outputImage          = tkp.FilePath()
-#    t2Image              = tkp.FilePath(exists=True)
+    t2Image              = tkp.FilePath(exists=True)
     
-#    runChoice            = tkp.Choice(runChoices)
+    runChoice            = tkp.Choice(runChoices)
     
     outputExtracted      = tkp.Boolean(default=True)
     outputMaskImage      = tkp.Boolean(default=False)
@@ -82,9 +82,9 @@ betView = tkp.NotebookGroup((
         children=(
             'inputImage',
             'outputImage',
-            'fractionalIntensity' #,
-#            'runChoice',
-#            tkp.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
+            'fractionalIntensity',
+            'runChoice',
+            tkp.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
         )),
     tkp.VGroup(
         label='Advanced options',

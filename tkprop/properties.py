@@ -38,6 +38,21 @@
 #
 #     # >>> <tkinter.BooleanVar instance at 0x1047ef518>
 #
+#
+#     # Receive notification of property value changes
+#     def myPropertyChanged(instance, propName, newValue):
+#         print('New value for {}: {}'.format(propname, newValue)
+#
+#     PropObj.myProperty.addListener(
+#         myPropObj, 'myListener', myPropertyChanged)
+#
+#
+#     # Remove a previously added listener
+#     PropObj.myProperty.removeListener(myPropObj, 'myListener')
+#
+#
+#
+#
 # 
 # Lots of the code in this file is probably very confusing. First
 # of all, you will need to understand python descriptors.
@@ -81,8 +96,17 @@ import Tkinter as tk
 
 
 class _TkVarProxy(object):
+    """
+    Proxy object which encapsulates a Tkinter control variable.
+    A _TkVarProxy object is created for every property of a
+    HasProperties instance.  
+    """
 
     def __init__(self, tkProp, instance, tkVarType, value, name):
+        """
+        Creates an instance of the specified TkVarType, and sets
+        a trace on it.
+        """
         
         self.tkVarType = tkVarType
         self.tkProp    = tkProp
@@ -92,7 +116,15 @@ class _TkVarProxy(object):
         self.traceName = self.tkVar.trace('w', self._traceCb)
 
     def _traceCb(self, *args):
-
+        """
+        Called whenever the Tkinter control variable value is changed.
+        The PropertyBase.validate() method is called on the parent
+        property of this TkVarProxy object. If this validate method
+        raises an error, the Tkinter variable value is reverted to its
+        last good value. Otherwise, the PropertyBase._notify() method
+        is called, to notify it of the value change.
+        """
+        
         try:
             newValue = self.tkVar.get()
             self.tkProp.validate(self.instance, newValue)
@@ -105,20 +137,20 @@ class _TkVarProxy(object):
 
 class PropertyBase(object):
     """
-    The base class for descriptor objects. Provides default getter/setter
-    methods. Subclasses should override the validate method to implement
-    any required validation rules.
+    The base class for descriptor objects.  Subclasses should override the
+    validate method to implement any required validation rules and, in
+    special cases, may override __get__, __set__, and _makeTkVar, with care.
     """
     
     def __init__(self, tkVarType, default, validateFunc=None):
         """
         The tkvartype parameter should be one of the Tkinter.*Var
-        class replacements, defined above (e.g. _BooleanVar, _IntVar,
-        etc).  For every object which has this PropertyBase object
-        as a property, an instance of the tkvartype is created and
-        attached to the instance.  Subclasses should call this
-        superclass constructor, passing it the tkvartype, default
-        value, and any leftover **kwargs.
+        classes.  For every object (the parent) which has this
+        PropertyBase object as a property, a _TkVarProxy instance
+        is created and attached as an attribute of the parent.
+        Subclasses should call this superclass constructor,
+        passing it the tkvartype and default value, and an optional
+        custom validation function.
         """
         self.label             = None
         self.tkVarType         = tkVarType
@@ -150,7 +182,7 @@ class PropertyBase(object):
         to the constructor, in which case it is called. Subclasses
         which override this method should therefore call this
         superclass implementation in addition to performing their
-        own processing.
+        own validation.
         """
 
         if self.validateFunc is not None:
@@ -221,10 +253,10 @@ class PropertyBase(object):
         
     def __set__(self, instance, value):
         """
-        Attempts to set the Tk variable, attached to the given instance,
-        to the given value.  The set() method of the tk variable will
-        call the validate() method of this PropertyBase object, which
-        will raise an Error if the value is not valid.
+        Attempts to set the Tkinter variable, attached to the given
+        instance, to the given value.  If the new value is invalid,
+        the _TkVarProxy object which controls the Tkinter variable
+        will revert the change.
         """
 
         instval = instance.__dict__.get(self.label, None)
@@ -278,8 +310,8 @@ class HasProperties(object):
         for attr, value in inst.__class__.__dict__.items():
             if isinstance(value, PropertyBase):
 
-                # all we need to do is access the property
-                # to force its initialisation
+                # all we need to do is access the property to force
+                # its initialisation - see PropertyBase.__get__
                 value.__get__(inst, cls)
 
         return inst
@@ -326,8 +358,8 @@ class Boolean(PropertyBase):
 
 class _Number(PropertyBase):
     """
-    Base class for the Int and Double classes. Don't subclass
-    this, subclass one of Int or Double.
+    Base class for the Int and Double classes. Don't
+    subclass this, subclass one of Int or Double.
     """
     
     def __init__(self, tkvartype, minval=None, maxval=None, **kwargs):
@@ -495,6 +527,10 @@ class Choice(String):
         self.choiceDict = OrderedDict(zip(self.choices, self.choiceLabels))
         self.labelDict  = OrderedDict(zip(self.choiceLabels, self.choices))
 
+        # Dict for storing references to Tkinter
+        # label control variables - see _makeTkVar.
+        self.labelVars  = {}
+
         kwargs['default'] = kwargs.get('default', self.choices[0])
 
         String.__init__(self, **kwargs)
@@ -513,6 +549,13 @@ class Choice(String):
             raise ValueError('Invalid choice for {}: {}'.format(
                 self.label, value))
 
+            
+    def getLabelVar(self, instance):
+        """
+        Return the label variable for the given instance.
+        """
+        return self.labelVars[instance]
+
 
     def _makeTkVar(self, instance):
         """
@@ -522,25 +565,26 @@ class Choice(String):
         link the Tk control variable to the combo box, and display the labels,
         the tk variable would be set to the selected label value, rather than
         the corresponding choice value. So instead of passing the TK control
-        variable, we use a proxy control variable, and set a trace on it so
-        that whenever its value changes (one of the label values), the real
-        control variable is set to the corresponding choice. Similarly, we add
-        a trace to the original control variable, so that when its choice
-        value is modified, the label variable value is changed.  Even though
-        this circular event callback situation looks incredibly dangerous,
-        Tkinter (in python 2.7.6) seems to be smart enough to inhibit an
-        infinitely recursive event explosion.
+        variable, we use another control variable as a proxy, and set a trace
+        on it so that whenever its value changes (one of the label values),
+        the real control variable is set to the corresponding choice.
+        Similarly, we add a trace to the original control variable, so that
+        when its choice value is modified, the label variable value is
+        changed.  Even though this circular event callback situation looks
+        incredibly dangerous, Tkinter (in python 2.7.6) seems to be smart
+        enough to inhibit an infinitely recursive event explosion.
 
-        The label control variable is added as an attribute to the instance,
-        with the name 'propertyName_tkLabelVar'.
+        The label control variable is accessible via the Choice.getLabelVar()
+        method.
         """
 
-        choiceVar = String._makeTkVar(self, instance)
-        labelVar  = tk.StringVar()
+        choiceVarProxy = String._makeTkVar(self, instance)
+        choiceVar      = choiceVarProxy.tkVar
+        labelVar       = tk.StringVar()
 
         labelVar.set(self.choiceDict[choiceVar.get()])
 
-        setattr(instance, '{}_tkLabelVar'.format(self.label), labelVar)
+        self.labelVars[instance] = labelVar
         
         def choiceChanged(*a): labelVar .set(self.choiceDict[choiceVar.get()])
         def labelChanged (*a): choiceVar.set(self.labelDict [labelVar .get()])
@@ -548,7 +592,7 @@ class Choice(String):
         choiceVar.trace('w', choiceChanged)
         labelVar .trace('w', labelChanged)
 
-        return choiceVar
+        return choiceVarProxy
 
 
 class FilePath(String):

@@ -147,7 +147,7 @@ def _Choice(parent, propObj, tkProp, tkVar):
     # See the documentation for properties.Choice._makeTkVar
     # for an explanation of what is going on here.
     labels   = tkProp.choiceLabels
-    labelVar = getattr(propObj, '{}_tkLabelVar'.format(tkProp.label))
+    labelVar = tkProp.getLabelVar(propObj)
 
     widget  = ttk.Combobox(parent,
                            values=labels,

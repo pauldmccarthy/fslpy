@@ -558,10 +558,10 @@ def _prepareEvents(propObj, propGui):
     propNames,props = zip(*props)
 
     # initialise widget states
-    onChange()
+    onChange(propObj, None, None)
 
     for prop,propName in zip(props,propNames):
-        if not isinstance(t, properties._ListWrapper):
+        if not isinstance(prop, properties._ListWrapper):
             prop.addListener(propObj, '', onChange)
  
 
