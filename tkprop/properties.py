@@ -103,18 +103,30 @@ class _TkVarProxy(object):
     HasProperties instance.  
     """
 
-    def __init__(self, tkProp, instance, tkVarType, value=None, name=None):
+    def __init__(self, tkProp, instance, tkVarType, value, name=None):
         """
         Creates an instance of the specified TkVarType, and sets
-        a trace on it.
+        a trace on it. If a name is not provided, a unique name
+        is created.
         """
         
         self.tkVarType = tkVarType
         self.tkProp    = tkProp
         self.instance  = instance
         self.lastValue = value
+
+        if name is None: name = '{}_{}'.format(tkProp.label, id(self))
+
+        self.name      = name
         self.tkVar     = tkVarType(value=value, name=name)
         self.traceName = self.tkVar.trace('w', self._traceCb)
+
+
+    def revert(self):
+        """
+        Sets the Tk variable to its last known good value.
+        """
+        self.tkVar.set(self.lastValue)
 
         
     def _traceCb(self, *args):
@@ -126,16 +138,35 @@ class _TkVarProxy(object):
         last good value. Otherwise, the PropertyBase._notify() method
         is called, to notify it of the value change.
         """
-        
+
+        # This is silly. Tkinter allows Boolean/Int/Double
+        # variables to be set to invalid values (e.g. it
+        # allows DoubleVars to be set to strings containing
+        # non numeric characters). But then, later calls to
+        # get() will fail, as they will attempt to convert
+        # the invalid value to a boolean/int/double. So here
+        # we attempt to get the current value in the normal
+        # way...
+        try:    newValue = self.tkVar.get()
+
+        # and if that fails, we manually look up the value
+        # via the current tk context.
+        except: newValue = self.tkVar._tk.globalgetvar(self.name)
+
+        # Notify all listeners about the change, ignoring
+        # any errors - it is up to the listeners to ensure
+        # that they handle invalid values
+        try:    self.tkProp._notify(self.instance, newValue)
+        except: pass
+
         try:
-            newValue = self.tkVar.get()
+            # if the new value is valid, save it
             self.tkProp.validate(self.instance, newValue)
             self.lastValue = newValue
-            self.tkProp._notify(self.instance, newValue)
-            
+
         except ValueError:
-            self.tkVar.set(self.lastValue)
- 
+            pass
+            
 
 class PropertyBase(object):
     """
@@ -192,6 +223,15 @@ class PropertyBase(object):
         if self.validateFunc is not None:
             self.validateFunc(instance, value)
 
+ 
+    def revert(self, instance):
+        """
+        Reverts the value of this property to its last known good
+        value.
+        """
+        tkvar = instance.__dict__[self.label]
+        tkvar.revert()
+
             
     def _notify(self, instance, value):
         """
@@ -205,7 +245,13 @@ class PropertyBase(object):
         
         if instance not in self.changeListeners: return
 
-        for name, func in self.changeListeners[instance].items():
+        listeners = self.changeListeners[instance].items()
+
+        print('{} changed ({} listeners to notify): {}'.format(
+            self.label, len(listeners), value))
+
+        for name, func in listeners:
+            print('  Notifying {}'.format(name))
             func(instance, name, value)
 
 
@@ -228,6 +274,7 @@ class PropertyBase(object):
             self.changeListeners[instance] = {}
 
         # Save a reference to the listeenr callback function
+        print('Saving listener on {}: {}'.format(self.label, name))
         self.changeListeners[instance][name] = callback
 
 
