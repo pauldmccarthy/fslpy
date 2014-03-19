@@ -19,9 +19,8 @@
 #     myPropObj = PropObj()
 #
 #
-#     # access the property value as normal:
+#     # Access the property value as a normal attribute:
 #     myPropObj.myProperty = True
-#
 #     myPropObj.myProperty
 #
 #     # >>> True
@@ -33,25 +32,27 @@
 #     # >>> <tkprops.tkprop.Boolean at 0x1045e2710>
 #
 #
-#     # access the underlying Tkinter control variable:
+#     # access the underlying Tkinter control variable
+#     # (there are caveats for List properties):
 #     myPropObj.getTkVar('myProperty')
 #
 #     # >>> <tkinter.BooleanVar instance at 0x1047ef518>
 #
 #
 #     # Receive notification of property value changes
-#     def myPropertyChanged(instance, propName, newValue):
-#         print('New value for {}: {}'.format(propname, newValue)
+#     def myPropertyChanged(instance, name, value):
+#         print('New value for {}: {}'.format(name, value))
 #
 #     PropObj.myProperty.addListener(
 #         myPropObj, 'myListener', myPropertyChanged)
+# 
+#     myPropObj.myProperty = False
+#
+#     # >>> New value for myProperty: False
 #
 #
 #     # Remove a previously added listener
 #     PropObj.myProperty.removeListener(myPropObj, 'myListener')
-#
-#
-#
 #
 # 
 # Lots of the code in this file is probably very confusing. First
@@ -150,8 +151,10 @@ class PropertyBase(object):
         PropertyBase object as a property, a _TkVarProxy instance
         is created and attached as an attribute of the parent.
         Subclasses should call this superclass constructor,
-        passing it the tkvartype and default value, and an optional
-        custom validation function.
+        passing it the tkVarType and default value, and an optional
+        custom validation function specified by the application
+        code. Built in validation should be specified by overriding
+        the validate method.
         """
         self.label             = None
         self.tkVarType         = tkVarType
@@ -643,15 +646,16 @@ class FilePath(String):
 class _ListWrapper(object):
     """
     Used by the List property type, defined below. An object which
-    acts like a list, but for which items are embedded in an
-    appropriate Tkinter variable, a minimum/maximum list length may
-    be enforced, and value/type constraints enforced on the values
-    added to it. Not all list operations are supported.  
+    acts like a list, but for which items are embedded in a
+    _TkVarProxy object, minimum/maximum list length may be enforced,
+    and value/type constraints enforced on the values added to it.
+    
+    Not all list operations are supported.  
 
     A _TkVarProxy object is created for each item that is added to
     the list.  When a list value is changed, instead of a new
     variable being created, the value of the existing variable
-    is changed.  References to every Tk variable in the list may
+    is changed.  References to the list of _TkVarProxy objects may
     be accessed via the _tkVars attribute of the _ListWrapper
     object.
     """
@@ -700,10 +704,11 @@ class _ListWrapper(object):
     def tkVar(self):
         """
         There is a bit of trickery going on here.  The HasProperties
-        class thinks that all properties are represented by a _TkVarProxy
-        object, which encapsulates a Tkinter control variable, which in
-        turn controls the property value. The Tkinter control variable
-        is accessible via the 'tkVar' attribute of the _TkVarProxy class.
+        class thinks that all properties are represented by a single
+        _TkVarProxy object, which encapsulates a Tkinter control
+        variable, which in turn controls the property value. The
+        Tkinter control variable is accessible via the 'tkVar'
+        attribute of the _TkVarProxy class.
         
         However, this is not possible for List properties, because a single
         List property has multiple values, and is thus represented by a

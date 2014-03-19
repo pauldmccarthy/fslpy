@@ -32,7 +32,7 @@ def _pasteDataDialog(parent, listProp, propObj):
       - propObj:  The tkprop.HasProperties object which owns listProp.    
     """
 
-    listObj = propObj.getTkVar(listObj.label)
+    listObj = propObj.getTkVar(listProp.label)
     
     window = tk.Toplevel()
     frame  = ttk.Frame(window)
