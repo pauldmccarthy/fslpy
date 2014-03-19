@@ -28,58 +28,54 @@ from tkprop.widgets_list import _List
 def _setupValidation(widget, propObj, tkProp, tkVar):
     """
     Configures input validation for the given widget, which is assumed
-    to be managing the given tkProp (tkprop.PropertyBase) object.  When
-    a new value is entered into the widget, as soon as the widget loses
-    focus, the new value is passed to the validate() method of the
-    property object. If the validate method raises an error, the
-    property (and widget) value is reverted to its previous value
-    (which was previously stored when the widget gained focus).
+    to be managing the given tkProp (tkprop.PropertyBase) object.  Any
+    changes to the property value are validated and, if the new value
+    is invalid, the widget background colour is changed to a light
+    red, so that the user is aware of the invalid-ness.
     """
-    pass
 
-    # Container used for storing the previous value of the property,
-    # and sharing this value amongst the inner functions below.
-    oldValue = [0]
+    invalidBGColour = '#ff9999'
+    _setBG = None
 
-    # When the widget receives focus, save the current
-    # property value, so we can roll back to it if
-    # necessary
-    def _focused(event):
-        oldValue[0] = tkVar.get()
+    # this is a new ttk widget - we need to use
+    # a style to change the background colour
+    try: 
+        defaultStyleName = widget['style'] or widget.winfo_class()
+        invalidStyleName = 'Invalid.' + defaultStyleName
 
-    # When the widget loses focus, pass the entered
-    # value to the property validate() method. 
-    def _validate(newValue):
+        invalidStyle = ttk.Style()
+        invalidStyle.configure(invalidStyleName, background=invalidBGColour)
+
+        def _setBG(isValid):
+            if isValid: widget.configure(style=defaultStyleName)
+            else:       widget.configure(style=invalidStyleName)
+
+    # this is an old Tk widget - we change
+    # the background colour directly
+    except tk.TclError:
+
+        defaultBGColour = widget['background']
+
+        def _setBG(isValid):
+            if isValid: widget.configure(background=defaultBGColour)
+            else:       widget.configure(background=invalidBGColour)
+
+    def _changeBGOnValidate(instance, name, value):
+        """
+        Called whenever the property value changes. Checks
+        to see if the new value is valid and changes the
+        widget background colour accordingly.
+        """
 
         try:
-            tkProp.validate(propObj, newValue)
-            return True
-            
-        except ValueError as e:
-            return False
+            tkProp.validate(instance, value)
+            _setBG(True)
+        except ValueError:
+            _setBG(False)
 
-    # If the new value is invalid, revert
-    # the property to its former value
-    def _invalid():
-
-        tkVar.set(oldValue[0])
-
-        # The tk validation type is reset on some (not all)
-        # widgets, if the invalidcommand (this function)
-        # modifies the tk control variable.  So here we
-        # just re-initialise validation on the widget.
-        widget.after_idle(lambda: widget.config(validate='focusout'))
-
-    # Set up all of the validation and event callbacks
-    vcmd   = (widget.register(_validate), '%P')
-    invcmd = (widget.register(_invalid),)
+    listenerName = '{}_changeBGOnValidate'.format(tkVar._name)
+    tkProp.addListener(propObj, listenerName, _changeBGOnValidate)
     
-    widget.bind('<FocusIn>', _focused)
-    widget.config(
-        validate='focusout',
-        validatecommand=vcmd,
-        invalidcommand=invcmd)
-
 
 # This variable is used to retain the most recently
 # visited directory in file dialogs. New file dialogs

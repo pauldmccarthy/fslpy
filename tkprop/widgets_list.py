@@ -123,9 +123,10 @@ def _editListDialog(parent, listProp, propObj):
 
     # A spinbox, and associated TK variable, allowing
     # the user to change the number of items in the list
-    numRows   = tk.IntVar(
-        name='{}_numRows'.format(listProp.label),
-        value=len(listObj))
+    numRowsName = '{}_numRows'.format(listProp.label)
+    numRows     = tk.IntVar(master=window,
+                            name=numRowsName,
+                            value=len(listObj))
 
     minval = listProp.minlen if (listProp.minlen is not None) else 0
     maxval = listProp.maxlen if (listProp.maxlen is not None) else sys.maxint
@@ -194,10 +195,6 @@ def _editListDialog(parent, listProp, propObj):
     window.transient(parent)
     window.grab_set()
     parent.wait_window(window)
-
-    # We explicitly remove the trace on the numRows variable,
-    # as otherwise it may not be garbage collected
-    numRows.trace_vdelete('w', traceName)
 
 
 def _List(parent, propObj, tkProp, tkVar):

@@ -128,6 +128,21 @@ class _TkVarProxy(object):
         """
         self.tkVar.set(self.lastValue)
 
+
+    def __del__(self):
+        """
+        Remove the trace on the Tkinter variable, and tell
+        tk to delete the variable.
+        """
+
+        tkVar = self.tkVar
+        _tk   = tkVar._tk
+
+        print('Deleting variable {}'.format(self.name))
+
+        tkVar.trace_vdelete('w', self.traceName)
+        _tk.globalunsetvar(self.name)
+
         
     def _traceCb(self, *args):
         """
@@ -153,20 +168,27 @@ class _TkVarProxy(object):
         # via the current tk context.
         except: newValue = self.tkVar._tk.globalgetvar(self.name)
 
+        # if the new value is valid, save it
+        #
+        # TODO The validate method is called multiple times
+        # in a redundant manner (e.g. called here, called
+        # in widgets._setupValidation via the _notify call
+        # above). Alternately, we could call validate here
+        # and set a boolean isValid flag, then use that
+        # flag everywhere else. 
+        try:
+            self.tkProp.validate(self.instance, newValue)
+            self.lastValue = newValue
+
+        except ValueError:
+            pass
+
         # Notify all listeners about the change, ignoring
         # any errors - it is up to the listeners to ensure
         # that they handle invalid values
         try:    self.tkProp._notify(self.instance, newValue)
         except: pass
 
-        try:
-            # if the new value is valid, save it
-            self.tkProp.validate(self.instance, newValue)
-            self.lastValue = newValue
-
-        except ValueError:
-            pass
-            
 
 class PropertyBase(object):
     """
@@ -250,7 +272,7 @@ class PropertyBase(object):
         print('{} changed ({} listeners to notify): {}'.format(
             self.label, len(listeners), value))
 
-        for name, func in listeners:
+        for (name, func) in listeners:
             print('  Notifying {}'.format(name))
             func(instance, name, value)
 
@@ -286,6 +308,8 @@ class PropertyBase(object):
 
         if instance not in self.changeListeners:            return
         if name     not in self.changeListeners[instance]:  return
+
+        print('Removing listener on {}: {}'.format(self.label, name))
 
         # remove the listener with the specified name
         self.changeListeners[instance].pop(name)
@@ -965,11 +989,6 @@ class _ListWrapper(object):
             indices = [key]
 
         self._check_minlen(len(indices))
-
-        for i in indices:
-            t = self._tkVars[i]
-            t.tkVar.trace_vdelete('w', t.traceName)
-
         self._tkVars.__delitem__(key)
 
 
