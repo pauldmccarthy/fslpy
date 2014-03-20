@@ -2,8 +2,9 @@
 #
 # widgets.py - Generate widgets for tkprop property objects.
 #
-# The sole entry point for this module is the makeWidget function. You
-# don't need to worry about the rest of the code.
+# The sole entry point for this module is the makeWidget function,
+# which is called via the build module when it automatically
+# builds a GUI for the properties of a HasProperty instance.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -16,7 +17,6 @@ import os.path as op
 from collections import OrderedDict
 
 import tkprop       as tkp
-
 import Tkinter      as tk
 import tkFileDialog as tkfile
 import                 ttk
@@ -73,9 +73,10 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
     tkVar.addListener(listenerName, _changeBGOnValidate)
     
 
-# This variable is used to retain the most recently
-# visited directory in file dialogs. New file dialogs
-# are initialised to display this directory.
+# The _lastFilePathDir variable is used to retain the
+# most recentlyvisited directory in file dialogs. New
+# file dialogs are initialised to display this
+# directory.
 #
 # This is currently a global setting, but it may be
 # more appropriate to make it a per-widget setting.
@@ -84,7 +85,7 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
 _lastFilePathDir = None
 def _FilePath(parent, propObj, tkProp, tkVar):
     """
-    Creates and returns a tk Frame containing an Entry and a
+    Creates and returns a ttk Frame containing an Entry and a
     Button. The button, when clicked, opens a file dialog
     allowing the user to choose a file/directory to open, or
     a location to save (this depends upon how the tkprop
@@ -95,7 +96,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
     if _lastFilePathDir is None:
         _lastFilePathDir = os.getcwd()
 
-    frame   = tk.Frame(parent)
+    frame   = ttk.Frame(parent)
     textbox = ttk.Entry(frame, textvariable=tkVar.tkVar)
     _setupValidation(textbox, propObj, tkProp, tkVar)
 
@@ -140,11 +141,9 @@ def _Choice(parent, propObj, tkProp, tkVar):
     # for an explanation of what is going on here.
     labels   = tkProp.choiceLabels
     labelVar = tkProp.getLabelVar(propObj)
+    widget   = ttk.Combobox(parent, values=labels, textvariable=labelVar)
 
-    widget  = ttk.Combobox(parent,
-                           values=labels,
-                           textvariable=labelVar,
-                           state='readonly')
+    widget.configure(state='readonly')
     
     return widget
 
@@ -152,7 +151,7 @@ def _Choice(parent, propObj, tkProp, tkVar):
 def _String(parent, propObj, tkProp, tkVar):
     """
     Creates and returns a ttk Entry object, allowing
-    the user to set the given tkPRop (tkprop.String)
+    the user to edit the given tkProp (tkprop.String)
     object.
     """
 
@@ -162,12 +161,11 @@ def _String(parent, propObj, tkProp, tkVar):
     return widget
 
 
-
 def _Number(parent, propObj, tkProp, tkVar):
     """
     Creates and returns a tk widget, either a ttk.Scale,
-    or a tk.Spinbox, allowing the user to set the given
-    tkProp object (either a tkprop.Int or tkprop.Double).
+    or a tk.Spinbox, allowing the user to edit the given
+    tkProp object (a tkprop.Int or tkprop.Double).
     """
 
     value  = tkVar.tkVar.get()

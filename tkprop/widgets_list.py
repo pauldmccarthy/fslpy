@@ -9,21 +9,17 @@
 #
 
 import sys
-
 import os
 
-import tkprop  as tkp
-
-import widgets
-
+import            widgets
 import Tkinter as tk
 import            ttk
 
 
 def _pasteDataDialog(parent, listProp, propObj):
     """
-    A dialog which displays an editable text field, allowing the user
-    to type/paste bulk data which will be used to populate the list
+    Displays a dialog containing an editable text field, allowing the
+    user to type/paste bulk data which will be used to populate the list
     (one line per item).
     
     Parameters:
@@ -46,13 +42,12 @@ def _pasteDataDialog(parent, listProp, propObj):
     hScroll = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=text.xview)
 
     initText = '\n'.join([str(l).strip() for l in listObj])
-    print initText
     text.insert('1.0', initText)
 
     def pasteIntoList():
         """
-        Copies whatever the user typed/pasted
-        into the text area into the list.
+        Called when the user pushes 'Ok'. Copies whatever the
+        user typed/pasted into the text area into the list.
         """
 
         listData = text.get('1.0', 'end').strip()
@@ -96,14 +91,15 @@ def _editListDialog(parent, listProp, propObj):
       - propObj:  The tkprop.HasProperties object which owns listProp.
     """
 
-    listType  = listProp.listType
+    # listObj is the list of TkVarProxy objects being
+    # managed by the listProp property object.
     listObj   = getattr(propObj, listProp.label)
+    listType  = listProp.listType
 
-    # Get a reference to a function which can make
-    # individual widgets for each list item
+    # Get a reference to a function in the widgets module,
+    # which can make individual widgets for each list item
     makeFunc = getattr(
-        widgets,
-        '_{}'.format(listType.__class__.__name__), None)
+        widgets, '_{}'.format(listType.__class__.__name__), None)
 
     if makeFunc is None:
         raise ValueError(
@@ -116,7 +112,7 @@ def _editListDialog(parent, listProp, propObj):
 
     # Make a widget for every element in the list
     for i in range(len(listObj)):
-        tkVar = listProp.getTkVar(propObj, i)
+        tkVar  = listProp.getTkVar(propObj, i)
         widget = makeFunc(frame, propObj, listType, tkVar)
         listWidgets.append(widget)
 
@@ -127,6 +123,8 @@ def _editListDialog(parent, listProp, propObj):
                             name=numRowsName,
                             value=len(listObj))
 
+    # Explicitly set minimum/maximum values on the
+    # spinbox, otherwise it doesn't behave very nicely.
     minval = listProp.minlen if (listProp.minlen is not None) else 0
     maxval = listProp.maxlen if (listProp.maxlen is not None) else sys.maxint
     numRowsBox = tk.Spinbox(frame,
@@ -151,7 +149,7 @@ def _editListDialog(parent, listProp, propObj):
         # add rows
         while oldLen < newLen:
 
-            # add a tkVar
+            # add a new element to the list
             listObj.append(listType.default)
             tkVar = listProp.getTkVar(propObj, -1)
 
@@ -159,7 +157,7 @@ def _editListDialog(parent, listProp, propObj):
             widg = makeFunc(frame, propObj, listProp.listType, tkVar)
             widg.grid(row=len(listObj), column=0, sticky=tk.W+tk.E)
             listWidgets.append(widg)
-
+ 
             oldLen = oldLen + 1
 
         # remove rows
