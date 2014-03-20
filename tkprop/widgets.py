@@ -64,15 +64,11 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         """
         Called whenever the property value changes. Checks
         to see if the new value is valid and changes the
-        widget background colour accordingly.
+        widget background colour according to the validity
+        of the new value.
         """
-
-        try:
-            tkProp.validate(instance, value)
-            _setBG(True)
-        except ValueError:
-            _setBG(False)
-
+        _setBG(valid)
+        
     listenerName = 'ChangeBGOnValidate_{}'.format(tkVar.name)
     tkVar.addListener(listenerName, _changeBGOnValidate)
     

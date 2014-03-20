@@ -32,10 +32,9 @@ def _pasteDataDialog(parent, listProp, propObj):
       - propObj:  The tkprop.HasProperties object which owns listProp.    
     """
 
-    listObj = propObj.getTkVar(listProp.label)
-    
-    window = tk.Toplevel()
-    frame  = ttk.Frame(window)
+    window  = tk.Toplevel()
+    frame   = ttk.Frame(window)
+    listObj = getattr(propObj, listProp.label)
 
     frame.pack(fill=tk.BOTH, expand=True)
     frame.columnconfigure(0, weight=1)
@@ -45,8 +44,9 @@ def _pasteDataDialog(parent, listProp, propObj):
     text    = tk.Text(frame, wrap="none")
     vScroll = ttk.Scrollbar(frame, orient=tk.VERTICAL,   command=text.yview)
     hScroll = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=text.xview)
-    
-    initText = '\n'.join([str(l) for l in listObj])
+
+    initText = '\n'.join([str(l).strip() for l in listObj])
+    print initText
     text.insert('1.0', initText)
 
     def pasteIntoList():
@@ -55,10 +55,9 @@ def _pasteDataDialog(parent, listProp, propObj):
         into the text area into the list.
         """
 
-        listData = text.get('1.0', 'end')
+        listData = text.get('1.0', 'end').strip()
         listData = listData.split('\n')
         listData = [s.strip() for s in listData]
-        listData = filter(len, listData)
 
         setattr(propObj, listProp.label, listData)
         
@@ -98,8 +97,7 @@ def _editListDialog(parent, listProp, propObj):
     """
 
     listType  = listProp.listType
-    listObj   = propObj.getTkVar(listProp.label)
-    tkVarList = listObj._tkVars
+    listObj   = getattr(propObj, listProp.label)
 
     # Get a reference to a function which can make
     # individual widgets for each list item
@@ -117,8 +115,9 @@ def _editListDialog(parent, listProp, propObj):
     listWidgets = []
 
     # Make a widget for every element in the list
-    for i,v in enumerate(tkVarList):
-        widget = makeFunc(frame, propObj, listType, v.tkVar)
+    for i in range(len(listObj)):
+        tkVar = listProp.getTkVar(propObj, i)
+        widget = makeFunc(frame, propObj, listType, tkVar)
         listWidgets.append(widget)
 
     # A spinbox, and associated TK variable, allowing
@@ -154,7 +153,7 @@ def _editListDialog(parent, listProp, propObj):
 
             # add a tkVar
             listObj.append(listType.default)
-            tkVar = tkVarList[-1].tkVar
+            tkVar = listProp.getTkVar(propObj, -1)
 
             # add a widget
             widg = makeFunc(frame, propObj, listProp.listType, tkVar)
@@ -196,7 +195,12 @@ def _editListDialog(parent, listProp, propObj):
     window.grab_set()
     parent.wait_window(window)
 
+    # I'm pretty sure that Tkinter takes care of cleaning up
+    # traces/variables etc etc when the corresponding python
+    # objects are garbage collected. So there's no need to
+    # clean up after myself here.
 
+    
 def _List(parent, propObj, tkProp, tkVar):
     """
     Creates and returns a ttk.Frame containing two buttons which,

@@ -8,7 +8,9 @@
 from tkprop.properties import \
     TkVarProxy,    \
     PropertyBase,  \
-    HasProperties, \
+    HasProperties
+
+from tkprop.properties_types import \
     Boolean,       \
     Int,           \
     Double,        \
