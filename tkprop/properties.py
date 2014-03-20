@@ -34,7 +34,7 @@
 #
 #     # access the underlying Tkinter control variable
 #     # (there are caveats for List properties):
-#     myPropObj.getTkVar('myProperty')
+#     myPropObj.getTkVar('myProperty').tkVar
 #
 #     # >>> <tkinter.BooleanVar instance at 0x1047ef518>
 #
@@ -370,10 +370,12 @@ class PropertyBase(object):
 
     def getTkVar(self, instance):
         """
-        Return the Tkinter control variable (or variables) for this
-        property, associated with the given HasProperties instance.
+        Return the TkVarProxy object (or objects) for this property,
+        associated with the given HasProperties instance. Properties
+        which contain multiple TkVarProxy objects should override
+        this method to return a list of said objects.
         """
-        return instance.__dict__[self.label].tkVar
+        return instance.__dict__[self.label]
 
         
     def validate(self, instance, value):
@@ -391,15 +393,6 @@ class PropertyBase(object):
 
         if self.validateFunc is not None:
             self.validateFunc(instance, value)
-
- 
-    def revert(self, instance):
-        """
-        Reverts the value of this property to its last known good
-        value.
-        """
-        tkvar = instance.__dict__[self.label]
-        tkvar.revert()
 
             
     def __get__(self, instance, owner):
@@ -460,7 +453,7 @@ class HasProperties(object):
 
     def getTkVar(self, propName):
         """
-        Return the Tkinter control variable for the given property.
+        Return the TkVarProxy object(s) for the given property. 
         """
         return self.getTkProp(propName).getTkVar(self)
 
@@ -532,7 +525,17 @@ class Number(PropertyBase):
         self.minval = minval
         self.maxval = maxval
 
-        kwargs['default'] = kwargs.get('default', 0)
+        default = kwargs.get('default', None)
+
+        if default is None:
+            if self.minval is not None and self.maxval is not None:
+                default = (self.minval + self.maxval) / 2
+            elif self.minval is not None:
+                default = self.minval
+            elif self.maxval is not None:
+                default = self.maxval 
+                
+        kwargs['default'] = default
         PropertyBase.__init__(self, tkvartype, **kwargs)
 
         
@@ -807,7 +810,8 @@ class _ListWrapper(object):
     TkVarProxy object, minimum/maximum list length may be enforced,
     and value/type constraints enforced on the values added to it.
     
-    Not all list operations are supported.  
+    Not all list operations are supported.  All list modifications
+    occur in __setitem__ and __delitem__.
 
     A TkVarProxy object is created for each item that is added to
     the list.  When a list value is changed, instead of a new
@@ -823,7 +827,8 @@ class _ListWrapper(object):
                  values=None,
                  listType=None,
                  minlen=None,
-                 maxlen=None):
+                 maxlen=None,
+                 listener=None):
         """
         Parameters:
          - owner:    The HasProperties object, of which the List object
@@ -836,6 +841,9 @@ class _ListWrapper(object):
                      data allowed in this list.
          - minlen:   minimum list length
          - maxlen:   maximum list length
+         - listener: A callback function (see TkVarProxy.addListener for
+                     the required signature) which is notified when the
+                     list changes.
         """
 
         self._owner          = owner
@@ -844,6 +852,7 @@ class _ListWrapper(object):
         self._listType.label = self._listProp.label 
         self._minlen         = minlen
         self._maxlen         = maxlen
+        self._listener       = listener
 
         # This is the list that the _ListWrapper wraps.
         # It contains TkVarProxy objects.
@@ -856,25 +865,6 @@ class _ListWrapper(object):
             
             for i in range(self._minlen):
                 self.append(listType.default)
-
-    @property
-    def tkVar(self):
-        """
-        There is a bit of trickery going on here.  The HasProperties
-        class thinks that all properties are represented by a single
-        TkVarProxy object, which encapsulates a Tkinter control
-        variable, which in turn controls the property value. The
-        Tkinter control variable is accessible via the 'tkVar'
-        attribute of the TkVarProxy class.
-        
-        However, this is not possible for List properties, because a single
-        List property has multiple values, and is thus represented by a
-        _ListWrapper class.  So here, we are exposing an attribute called
-        'tkVar', which just returns this _ListWrapper object.  General
-        code will be none the wiser, and code which knows that it is dealing
-        with a List property will know.
-        """
-        return self
 
         
     def __len__(self): return self._tkVars.__len__()
@@ -908,6 +898,17 @@ class _ListWrapper(object):
                 self._listProp.label, self._minlen))
 
             
+    def _notify(self):
+        """
+        If a listener was passed to the constructor, it is called.
+        """
+        
+        if self._listener is None: return
+        
+        self._listener(
+            self, True, self._owner, self._listProp, self._listProp.label) 
+
+        
     def _makeTkVar(self, value):
         """
         Encapsulate the given value in a TkVarProxy object.
@@ -988,12 +989,8 @@ class _ListWrapper(object):
         maximum length. 
         """
         
-        self._check_maxlen()
-        
-        index = len(self._tkVars)
-        tkVal = self._makeTkVar(item)
-        
-        self._tkVars.append(tkVal)
+        # append via __setitem__
+        self[len(self)-1:] = [self[-1], item]
 
 
     def extend(self, iterable):
@@ -1006,8 +1003,6 @@ class _ListWrapper(object):
         """
 
         toAdd = list(iterable)
-        self._check_maxlen(len(toAdd))
-
         for i in toAdd:
             self.append(i)
 
@@ -1020,7 +1015,6 @@ class _ListWrapper(object):
         """
         
         index = len(self._tkVars) - 1
-        self._check_minlen()
         val = self._tkVars[index].tkVar.get()
         self.__delitem__(index)
         return val
@@ -1054,12 +1048,17 @@ class _ListWrapper(object):
         oldLen  = len(self)
         newLen  = oldLen + lenDiff
 
+        # adding items
         if   newLen > oldLen: self._check_maxlen( lenDiff)
-        elif newLen < oldLen: self._check_minlen(-lenDiff)
 
+        # removing items
+        elif newLen < oldLen: self._check_minlen(-lenDiff)
+        
         value = [self._makeTkVar(v) for v in value]
         if len(value) == 1: value = value[0]
+        
         self._tkVars.__setitem__(key, value)
+        self._notify()
 
                 
     def __delitem__(self, key):
@@ -1069,13 +1068,12 @@ class _ListWrapper(object):
         shrink below its minimum length.
         """
 
-        if isinstance(key, slice):
-            indices = range(*key.indices(len(self)))
-        else:
-            indices = [key]
+        if isinstance(key, slice): indices = range(*key.indices(len(self)))
+        else:                      indices = [key]
 
         self._check_minlen(len(indices))
         self._tkVars.__delitem__(key)
+        self._notify()
 
 
 class List(PropertyBase):
@@ -1110,28 +1108,51 @@ class List(PropertyBase):
         self.maxlen   = maxlen
 
         kwargs['default'] = kwargs.get('default', None)
-        
+
         PropertyBase.__init__(self, None, **kwargs)
+
+        
+    def getTkVar(self, instance):
+        """
+        Return a list of TkVarProxy objects.
+        """
+        return instance.__dict__[self.label]._tkVars
+
+
+    def _makeTkVar(self, instance):
+        """
+        _ListWrapper instead of TkVarProxy.
+        """
+        instval = _ListWrapper(instance,
+                               self,
+                               values=self.default,
+                               listType=self.listType,
+                               minlen=self.minlen,
+                               maxlen=self.maxlen,
+                               listener=self._varChanged)
+        instance.__dict__[self.label] = instval
+
+        return instval 
 
      
     def __get__(self, instance, owner):
+        """
+        Return _ListWrapper instead of value.
+        """
+        
         if instance is None:
             return self
 
         instval = instance.__dict__.get(self.label, None)
-        if instval is None:
-            instval = _ListWrapper(instance,
-                                   self,
-                                   values=self.default,
-                                   listType=self.listType,
-                                   minlen=self.minlen,
-                                   maxlen=self.maxlen)
-            instance.__dict__[self.label] = instval
-            
+        if instval is None: instval = self._makeTkVar(instance) 
+        
         return instval
 
         
     def __set__(self, instance, value):
+        """
+        Replace contents of list.
+        """
 
         instval    = getattr(instance, self.label)
         instval[:] = value

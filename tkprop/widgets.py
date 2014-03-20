@@ -73,8 +73,8 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         except ValueError:
             _setBG(False)
 
-    listenerName = 'ChangeBGOnValidate_{}'.format(tkVar._name)
-    tkProp.addListener(propObj, listenerName, _changeBGOnValidate)
+    listenerName = 'ChangeBGOnValidate_{}'.format(tkVar.name)
+    tkVar.addListener(listenerName, _changeBGOnValidate)
     
 
 # This variable is used to retain the most recently
@@ -100,7 +100,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
         _lastFilePathDir = os.getcwd()
 
     frame   = tk.Frame(parent)
-    textbox = ttk.Entry(frame, textvariable=tkVar)
+    textbox = ttk.Entry(frame, textvariable=tkVar.tkVar)
     _setupValidation(textbox, propObj, tkProp, tkVar)
 
     def chooseFile():
@@ -124,7 +124,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
 
         if path is not None:
             _lastFilePathDir = op.dirname(path)
-            tkVar.set(path)
+            tkVar.tkVar.set(path)
 
     button  = ttk.Button(frame, text='Choose', command=chooseFile)
 
@@ -160,7 +160,7 @@ def _String(parent, propObj, tkProp, tkVar):
     object.
     """
 
-    widget = ttk.Entry(parent, textvariable=tkVar)
+    widget = ttk.Entry(parent, textvariable=tkVar.tkVar)
     _setupValidation(widget, propObj, tkProp, tkVar)
     
     return widget
@@ -174,7 +174,7 @@ def _Number(parent, propObj, tkProp, tkVar):
     tkProp object (either a tkprop.Int or tkprop.Double).
     """
 
-    value  = tkVar.get()
+    value  = tkVar.tkVar.get()
     minval = tkProp.minval
     maxval = tkProp.maxval
 
@@ -214,14 +214,14 @@ def _Number(parent, propObj, tkProp, tkVar):
 
         widget = ttk.Scale(scaleFrame, orient=tk.HORIZONTAL,
                            from_=minval, to=maxval,
-                           variable=tkVar)
+                           variable=tkVar.tkVar)
 
         minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
                              anchor=tk.W)
 
         curEntry = tk.Spinbox(scaleFrame,
                               from_=minval, to=maxval,
-                              textvariable=tkVar,
+                              textvariable=tkVar.tkVar,
                               format=formatStr,
                               increment=increment)
         
@@ -242,7 +242,7 @@ def _Number(parent, propObj, tkProp, tkVar):
     else:
         widget = tk.Spinbox(parent,
                             from_=minval, to=maxval,
-                            textvariable=tkVar,
+                            textvariable=tkVar.tkVar,
                             format=formatStr,
                             increment=increment)
 
@@ -270,8 +270,7 @@ def _Boolean(parent, propObj, tkProp, tkVar):
     user to set the given tkProp (tkprop.Boolean) object.
     """
 
-    value = bool(tkVar.get())
-    return ttk.Checkbutton(parent, variable=tkVar)
+    return ttk.Checkbutton(parent, variable=tkVar.tkVar)
 
 
 def makeWidget(parent, propObj, propName):

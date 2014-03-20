@@ -6,6 +6,7 @@
 #
 
 from tkprop.properties import \
+    TkVarProxy,    \
     PropertyBase,  \
     HasProperties, \
     Boolean,       \
@@ -13,9 +14,9 @@ from tkprop.properties import \
     Double,        \
     Percentage,    \
     String,        \
+    FilePath,      \
     Choice,        \
-    List,          \
-    FilePath
+    List
 
 from tkprop.widgets import \
     makeWidget
