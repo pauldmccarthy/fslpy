@@ -118,7 +118,7 @@ def _FilePath(parent, propObj, tkProp, tkVar):
                 initialdir=_lastFilePathDir,
                 title='Save file')
 
-        if path is not None:
+        if path != '' and path is not None:
             _lastFilePathDir = op.dirname(path)
             tkVar.tkVar.set(path)
 
