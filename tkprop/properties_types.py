@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 #
 # properties_types.py - Definitions for different property types - see
-# properties.py.
+# properties.py for more information.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os
+import            os
 import os.path as op
-
 import logging as log
 
 from collections import OrderedDict
 
-import Tkinter as tk
-
-
+import Tkinter           as tk
 import tkprop.properties as props
 
 
@@ -33,7 +30,7 @@ class Boolean(props.PropertyBase):
 class Number(props.PropertyBase):
     """
     Base class for the Int and Double classes. Don't
-    subclass this, subclass one of Int or Double.
+    use/subclass this, use/subclass one of Int or Double.
     """
     
     def __init__(self, tkvartype, minval=None, maxval=None, **kwargs):
@@ -255,9 +252,11 @@ class Choice(String):
         the real control variable is set to the corresponding choice.
         Similarly, we add a trace to the original control variable, so that
         when its choice value is modified, the label variable value is
-        changed.  Even though this circular event callback situation looks
-        incredibly dangerous, Tkinter (in python 2.7.6) seems to be smart
-        enough to inhibit an infinitely recursive event explosion.
+        changed.
+
+        Even though this circular event callback situation looks incredibly
+        dangerous, Tkinter (in python 2.7.6) seems to be smart enough to
+        inhibit an infinitely recursive event explosion.
 
         The label control variable is accessible via the Choice.getLabelVar()
         method.
@@ -319,21 +318,22 @@ class FilePath(String):
                     self.label, value))
 
 
-class _ListWrapper(object):
+class ListWrapper(object):
     """
     Used by the List property type, defined below. An object which
-    acts like a list, but for which items are embedded in a
-    TkVarProxy object, minimum/maximum list length may be enforced,
-    and value/type constraints enforced on the values added to it.
+    acts like a list, but for which items are embedded in TkVarProxy
+    objects, minimum/maximum list length may be enforced, and
+    value/type constraints enforced on the values added to it.
     
-    Only basic list operations are supported. All list modifications
-    occur in the append and pop methods. 
+    Only basic list operations are supported. List modifications
+    occur exclusively in the append, pop, __setitem__ and
+    __delitem__ methods.
 
     A TkVarProxy object is created for each item that is added to
     the list.  When a list value is changed, instead of a new
     variable being created, the value of the existing variable
     is changed.  References to the list of TkVarProxy objects may
-    be accessed via the _tkVars attribute of the _ListWrapper
+    be accessed via the _tkVars attribute of the ListWrapper
     object.
     """
 
@@ -347,14 +347,21 @@ class _ListWrapper(object):
         """
         Parameters:
          - owner:    The HasProperties object, of which the List object
-                     which is managing this _ListWrapper object, is a
+                     which is managing this ListWrapper object, is a
                      property.
+        
          - listProp: The List property object which is managing this
-                     _ListWrapper object.
+                     ListWrapper object. Whenever the list, or a value
+                     within the list is modified, listProp._valueChanged
+                     is called.
+        
          - values:   list of initial values.
+        
          - listType: A PropertyBase instance, specifying the type of
                      data allowed in this list.
+        
          - minlen:   minimum list length
+        
          - maxlen:   maximum list length
         """
 
@@ -365,13 +372,16 @@ class _ListWrapper(object):
         self._minlen         = minlen
         self._maxlen         = maxlen
 
-        # This is the list that the _ListWrapper wraps.
+        # This is the list that the ListWrapper wraps.
         # It contains TkVarProxy objects.
         self._tkVars = []
 
+        # Set the list to the given initial values
         if values is not None:
             self.extend(values)
 
+        # Or create a list of length at least
+        # minlen, containing default values
         elif self._minlen is not None:
             
             for i in range(self._minlen):
@@ -411,7 +421,8 @@ class _ListWrapper(object):
             
     def _notify(self):
         """
-        If a listener was passed to the constructor, it is called.
+        Called on list modifications. Notifies the List property via
+        its _varChanged method.
         """
         
         self._listProp._varChanged(
@@ -507,10 +518,8 @@ class _ListWrapper(object):
     def extend(self, iterable):
         """
         Appends all items in the given iterable to the end of the
-        list.  A ValueError is raised if any item does not meet the
-        list type/value constraints. An IndexError is raised if
-        an insertion would causes the list to grow beyond its
-        maximum length.
+        list.  An IndexError is raised if an insertion would causes
+        the list to grow beyond its maximum length.
         """
 
         toAdd = list(iterable)
@@ -531,6 +540,7 @@ class _ListWrapper(object):
         
         tkVar = self._tkVars.pop()
         val   = tkVar.tkVar.get()
+        
         self._notify()
         return val
 
@@ -538,14 +548,12 @@ class _ListWrapper(object):
     def __setitem__(self, key, values):
         """
         Sets the value(s) of the list at the specified index/slice.
-        A ValueError is raised if any of the values do not meet the
-        list type/value constraints.
         """
 
         if isinstance(key, slice):
             if (key.step is not None) and (key.step > 1):
                raise ValueError(
-                   '_ListWrapper does not support extended slices')
+                   'ListWrapper does not support extended slices')
             indices = range(*key.indices(len(self)))
 
         elif isinstance(key, int):
@@ -569,10 +577,12 @@ class _ListWrapper(object):
         # removing items
         elif newLen < oldLen: self._checkMinlen(-lenDiff)
 
+        # Replace values of existing items
         if newLen == oldLen:
             for i,v in zip(indices, values):
                 self._tkVars[i].tkVar.set(v)
-            
+
+        # Replace old TkVarProxy objects with new ones. 
         else:
             values = [self._makeTkVar(v) for v in values]
             if len(values) == 1: values = values[0]
@@ -600,10 +610,10 @@ class List(props.PropertyBase):
     """
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
-    _ListWrapper class, defined above.
+    ListWrapper class, defined above.
 
     This class is a bit different from the other PropertyBase classes, in
-    that the validation logic is built into the _ListWrapper class, rather
+    that the validation logic is built into the ListWrapper class, rather
     than this class.
     """
     
@@ -634,7 +644,7 @@ class List(props.PropertyBase):
         
     def getTkVar(self, instance, index=None):
         """
-        Return a list of TkVarProxy objects or, if index is specifried, 
+        Return a list of TkVarProxy objects or, if index is specified, 
         the TkVarProxy object at the specified index.
         """
         if index is None: return instance.__dict__[self.label]._tkVars
@@ -643,14 +653,15 @@ class List(props.PropertyBase):
 
     def _makeTkVar(self, instance):
         """
-        _ListWrapper instead of TkVarProxy.
+        Creates a ListWrapper object, and attaches it to the
+        given instance.
         """
-        instval = _ListWrapper(instance,
-                               self,
-                               values=self.default,
-                               listType=self.listType,
-                               minlen=self.minlen,
-                               maxlen=self.maxlen)
+        instval = ListWrapper(instance,
+                              self,
+                              values=self.default,
+                              listType=self.listType,
+                              minlen=self.minlen,
+                              maxlen=self.maxlen)
         instance.__dict__[self.label] = instval
 
         return instval 
@@ -658,7 +669,8 @@ class List(props.PropertyBase):
      
     def __get__(self, instance, owner):
         """
-        Return _ListWrapper instead of value.
+        If instance is None, returns this List object. Otherwise returns
+        the ListWrapper instance attached to the given instance.
         """
         
         if instance is None:
@@ -672,10 +684,10 @@ class List(props.PropertyBase):
         
     def __set__(self, instance, value):
         """
-        Replace contents of list.
+        Replaces the contents of the ListWrapper object attached
+        to the given instance.
         """
 
-        instval = getattr(instance, self.label)
-
+        instval    = getattr(instance, self.label)
         instval[:] = value
 

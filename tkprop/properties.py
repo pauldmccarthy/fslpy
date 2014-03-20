@@ -3,8 +3,8 @@
 # properties.py - Tkinter control variables encapsulated inside Python
 # descriptors.
 #
-# This module should not typically be imported directly - import the
-# tkprops package. Property type definitions are in properties_types.py.
+# This module should not be imported directly - import the tkprops
+# package instead. Property type definitions are in properties_types.py.
 #
 # Usage:
 #
@@ -88,7 +88,7 @@
 # allowing custom validation rules to be enforced on such control
 # variables.
 #
-# Class structure is organised as follows:
+# The runtime structure of Tk properties is organised as follows:
 #
 # A HasProperties (sub)class contains a collection of PropertyBase
 # instances. When an instance of the HasProperties class is created, one
@@ -121,7 +121,7 @@
 # If one is interested in changes to a single TkVarProxy object
 # (e.g. one element of a List property), then a listener may be
 # registered directly with the TkVarProxy object. This listener will
-# only be notified of changes to that TkVarProxy object.
+# then only be notified of changes to that TkVarProxy object.
 #
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -170,9 +170,9 @@ class TkVarProxy(object):
 
     def addListener(self, name, callback):
         """
-        Adds a listener for this variable. When the variable value, the
-        listener callback function is called. The callback function
-        must accept these arguments:
+        Adds a listener for this variable. When the variable value
+        changes, the listener callback function is called. The
+        callback function must accept these arguments:
 
           value    - The new property value
           valid    - Whether the new value is valid or invalid
@@ -229,10 +229,12 @@ class TkVarProxy(object):
         try:    newValue = self.tkVar.get()
 
         # and if that fails, we manually look up the value
-        # via the current tk context.
+        # via the current tk context, thus avoiding the
+        # failing type cast. Ugly.
         except: newValue = self.tkVar._tk.globalgetvar(self.name)
 
-        # if the new value is valid, save it
+        # if the new value is valid, save it as the last
+        # known good value
         try:
             self.tkProp.validate(self.owner, newValue)
             self.lastValue = newValue
@@ -253,8 +255,9 @@ class TkVarProxy(object):
             log.debug('Notifying listener on {}: {}'.format(self.name, name))
             
             try: func(newValue, valid, self.owner, self.tkProp, self.name)
-            except:
-                log.debug('')
+            except Exception as e:
+                log.debug('Listener on {} ({}) raised exception: {}'.format(
+                    self.name, name, e))
 
 
     def revert(self):
@@ -274,10 +277,28 @@ class TkVarProxy(object):
 
 class PropertyBase(object):
     """
-    The base class for properties.  Subclasses should override the
-    validate method to implement any required validation rules and, in
-    special cases, may override __get__, __set__, and _makeTkVar, with
-    care.
+    The base class for properties.  Subclasses should:
+
+      - Ensure that PropertyBase.__init__ is called.
+
+      - Override the validate method to implement any built in
+        validation rules, ensuring that the PropertyBase.validate
+        method is called.
+
+      - Override __get__ and __set__ for any required implicit
+        casting/data transformation rules (see
+        properties_types.String for an example).
+
+      - Override _makeTkVar if creation of the TkVarProxy needs
+        to be controlled (see properties_types.Choice for an
+        example).
+
+      - Override getTkVar for properties which consist of
+        more than one TkVarProxy object
+        (see properties_types.List for an example).
+
+      - Override whatever you want for advanced usage (see
+        properties_types.List for an example).
     """
     
     def __init__(self, tkVarType, default, validateFunc=None):
@@ -394,7 +415,7 @@ class PropertyBase(object):
         """
         If called on the HasProperties class, and not on an instance,
         returns this PropertyBase object. Otherwise, returns the value
-        contained in the Tk control variable which is attached to the
+        contained in the TkVarProxy variable which is attached to the
         instance.
         """
 
@@ -412,8 +433,7 @@ class PropertyBase(object):
         the given value.  
         """
 
-        instval = instance.__dict__.get(self.label, None)
-        if instval is None: instval = self._makeTkVar(instance)
+        instval = getattr(self, instance)
         instval.tkVar.set(value)
             
 
