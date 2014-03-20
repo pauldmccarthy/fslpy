@@ -36,8 +36,8 @@ import tkprop.properties as properties
 
 class ViewItem(object):
     """
-    Superclass for Widgets, Buttons and Groups. Represents an item to be
-    displayed.
+    Superclass for Widgets, Buttons, Labels  and Groups. Represents an
+    item to be displayed.
     """
     
     def __init__(self, key=None, label=None, tooltip=None,
@@ -61,11 +61,11 @@ class ViewItem(object):
           - visibleWhen: A 2-tuple which contains the name of a property
                          of the HasProperties object, or a list of
                          property names, and a reference to a function
-                         which takes one argument , and returns a
+                         which takes one argument, and returns a
                          boolean.  When the specified property changes,
-                         the function is called, and the current property
-                         value passed to it. The return value is used to
-                         determine whether this item should be made
+                         the function is called, and the HasProperties
+                         instance passed to it. The return value is used
+                         to determine whether this item should be made
                          visible or invisible.
         
           - enabledWhen: Same as the visibleWhen parameter, except the
@@ -100,7 +100,7 @@ class Label(ViewItem):
         """
         A Label object may either be created in the same way as any other
         ViewItem object, or it may be created from another ViewItem object,
-        the object to be lablled.
+        the object to be labelled.
         """
 
         if viewItem is not None:
@@ -116,7 +116,7 @@ class Label(ViewItem):
 
 class Widget(ViewItem):
     """
-    Represents a low level widget which is used to modify a property value.
+    Represents a widget which is used to modify a property value.
     """
     def __init__(self, propName, **kwargs):
         """
@@ -202,6 +202,11 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
     """
     Returns a reference to a callback function for this view item,
     if its enabledWhen attribute was set.
+    Parameters:
+
+      - viewItem: The ViewItem object
+      - tkObj:    The Tkinter object created from the ViewItem
+      - propObj:  The HasProperties instance
     """
 
     if viewItem.enabledWhen is None: return None
@@ -237,8 +242,9 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
     
     def _toggleEnabled():
         """
-        Calls the conditional function and enables/disables
-        the tk object (and its label if there is one).
+        Calls the viewItem.enabledWhen function and
+        enables/disables the tk object, depending
+        upon the result.
         """
 
         if viewItem.enabledWhen(propObj): state = 'enabled'
@@ -295,7 +301,8 @@ def _createLabel(parent, viewItem, propObj, propGui):
 
 def _createButton(parent, viewItem, propObj, propGui):
     """
-    Creates a ttk.Button object for the given Button widget.
+    Creates a ttk.Button object for the given ViewItem (assumed to be a
+    Button).
     """
 
     btnText = None
@@ -354,6 +361,11 @@ def _layoutGroup(group, parent, children, labels):
                   objects, one for each child.
     """
 
+    # Note about layout: we are exclusively using grid layout,
+    # for both horizontal and vertical groups, as the use of
+    # grid makes hiding/showing Tkinter objects very easy. See
+    # _configureVisibleWhen above.
+
     if isinstance(group, VGroup):
         if labels is not None: parent.columnconfigure(1, weight=1)
         else:                  parent.columnconfigure(0, weight=1)
@@ -401,7 +413,7 @@ def _createGroup(parent, group, propObj, propGui):
     """
     Creates a ttk.Frame object for the given group. Children of the
     group are recursively created via calls to _create, and laid out on
-    the Frame.
+    the Frame via the _layoutGroup function.
     """
 
     if group.border:
@@ -441,9 +453,10 @@ def _createGroup(parent, group, propObj, propGui):
     return frame
 
 
-# These aliases are so we can introspectively look up the
-# appropriate _create* function based upon the class name
-# of the ViewItem being created.
+# These aliases are defined so we can introspectively look
+# up the appropriate _create* function based upon the class
+# name of the ViewItem being created, in the _create
+# function below.
 _createHGroup = _createGroup
 _createVGroup = _createGroup
 
@@ -476,7 +489,10 @@ def _create(parent, viewItem, propObj, propGui):
 
 def _defaultView(propObj):
     """
-    Creates a default view specification for the given object.
+    Creates a default view specification for the given HasProperties
+    object, with all properties laid out vertically. This function is
+    only called if a view specification was not provided in the call
+    to the buildGUI function (defined below).
     """
 
     propDict = propObj.__class__.__dict__
@@ -492,12 +508,12 @@ def _defaultView(propObj):
 
 def _prepareView(viewItem, labels, tooltips):
     """
-    Recursively steps through the given viewItem and its children (if any).
-    If the viewItem is a string, it is assumed to be a property name, and
-    it is turned into a Widget object. If the viewItem does not have a
-    label/tooltip, and there is a label/tooltip for it in the given
-    labels/tooltips dict, then its label/tooltip is set.  Returns a
-    reference to the updated ViewItem.
+    Recursively steps through the given viewItem and its children (if
+    any). If the viewItem is a string, it is assumed to be a property
+    name, and it is turned into a Widget object. If the viewItem does
+    not have a label/tooltip, and there is a label/tooltip for it in
+    the given labels/tooltips dict, then its label/tooltip is set.
+    Returns a reference to the updated/newly created ViewItem.
     """
 
     if isinstance(viewItem, str):
@@ -513,19 +529,28 @@ def _prepareView(viewItem, labels, tooltips):
 
     if isinstance(viewItem, Group):
 
-        # children may have been specified as
-        # a tuple, so we cast it to a list
+        # children may have been specified as a tuple,
+        # so we cast it to a list, making it mutable
         viewItem.children = list(viewItem.children)
 
         for i,child in enumerate(viewItem.children):
             viewItem.children[i] = _prepareView(child, labels, tooltips)
 
+        # Create a Label object for
+        # each child of this group
         if viewItem.showLabels:
             viewItem.childLabels = []
 
             for child in viewItem.children:
+
+                # unless there is no label specified
                 if child.label is None:
                     viewItem.childLabels.append(None)
+
+                # or the child is also a group, and it
+                # is configured to be laid out with a
+                # border (in which case the label will
+                # be displayed as a title)
                 elif isinstance(child, (HGroup,VGroup)) and child.border:
                     viewItem.childLabels.append(None)
                 else:
@@ -570,7 +595,7 @@ def _prepareEvents(propObj, propGui):
 def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     """
     Builds a Tkinter/ttk interface which allows the properties of the
-    given propObj object (a tkprop.HasProperties object) to be edited.
+    given propObj object (a tkprop.HasProperties instance) to be edited.
     Returns a reference to the top level Tkinter object (typically a
     ttk.Frame or ttk.Notebook).
 
@@ -591,12 +616,14 @@ def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
 
-    view = _prepareView(view, labels, tooltips)
-
-    propGui = PropGUI()
-        
+    propGui  = PropGUI()
+    view     = _prepareView(view, labels, tooltips)
     topLevel = _create(parent, view, propObj, propGui)
 
     _prepareEvents(propObj, propGui)
+
+    # TODO return the propGui object, so the caller has
+    # access to all of the Tkinter objects that were
+    # created, via the propGui.tkObjects dict.
 
     return topLevel
