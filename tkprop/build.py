@@ -536,16 +536,16 @@ def _prepareView(viewItem, labels, tooltips):
     
 def _prepareEvents(propObj, propGui):
     """
-    If the visibleWhen or enabledWhen conditional attributes were set for any
-    ViewItem objects, a trace callback function is set on all Tkinter control
-    variables. When any variable value changes, the visibleWhen/enabledWhen
-    callback functions are called.
+    If the visibleWhen or enabledWhen conditional attributes were set
+    for any ViewItem objects, a callback function is set on all
+    properties. When any property value changes, the visibleWhen/
+    enabledWhen callback functions are called.
     """
 
     if len(propGui.onChangeCallbacks) == 0:
         return
 
-    def onChange(instance, name, value):
+    def onChange(*a):
         for cb in propGui.onChangeCallbacks:
             cb()
 
@@ -558,11 +558,13 @@ def _prepareEvents(propObj, propGui):
     propNames,props = zip(*props)
 
     # initialise widget states
-    onChange(propObj, None, None)
+    onChange()
 
+    # add a callback listener to every property
     for prop,propName in zip(props,propNames):
-        if not isinstance(prop, properties._ListWrapper):
-            prop.addListener(propObj, '', onChange)
+
+        lName = 'ChangeEvent_{}'.format(propName)
+        prop.addListener(propObj, lName, onChange)
  
 
 def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):

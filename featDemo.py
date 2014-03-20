@@ -206,7 +206,7 @@ class FeatOptions(tkp.HasProperties):
         Adds some listeners to various inter-dependent properties.
         """
 
-        def updateAnalysisStage(instance, propName, analysisType):
+        def updateAnalysisStage(analysisType, *a):
             if analysisType == 'highLevel':
                 self.analysisStages = 'stats-post'
         

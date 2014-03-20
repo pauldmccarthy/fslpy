@@ -60,7 +60,7 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
             if isValid: widget.configure(background=defaultBGColour)
             else:       widget.configure(background=invalidBGColour)
 
-    def _changeBGOnValidate(instance, name, value):
+    def _changeBGOnValidate(value, valid, instance, *a):
         """
         Called whenever the property value changes. Checks
         to see if the new value is valid and changes the
@@ -73,7 +73,7 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         except ValueError:
             _setBG(False)
 
-    listenerName = '{}_changeBGOnValidate'.format(tkVar._name)
+    listenerName = 'ChangeBGOnValidate_{}'.format(tkVar._name)
     tkProp.addListener(propObj, listenerName, _changeBGOnValidate)
     
 

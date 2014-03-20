@@ -55,15 +55,14 @@
 #     PropObj.myProperty.removeListener(myPropObj, 'myListener')
 #
 # 
-# Lots of the code in this file is probably very confusing. First
-# of all, you will need to understand python descriptors.
-# Descriptors are a way of adding properties to python objects,
-# and allowing them to be accessed as if they were just simple
-# attributes of the object, but controlling the way that the
-# attributes are accessed and assigned.
+# Lots of the code in this file is probably very confusing. First of
+# all, you will need to understand python descriptors.  Descriptors are
+# a way of adding properties to python objects, and allowing them to be
+# accessed as if they were just simple attributes of the object, but
+# controlling the way that the attributes are accessed and assigned.
 #
-# The following link provides a good overview, and contains the
-# ideas which form the basis for the implementation in this module:
+# The following link provides a good overview, and contains the ideas
+# which form the basis for the implementation in this module:
 #
 #  -  http://nbviewer.ipython.org/urls/gist.github.com/\
 #     ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb
@@ -73,58 +72,192 @@
 #
 #  - http://pyvideo.org/video/1760/encapsulation-with-descriptors
 #
-# Once you know how Python descriptors work, you then need to know
-# how Tk control variables work. These are simple objects which
-# may be passed to a Tkinter widget object when it is created. When
-# a user modifies the widget value, the Tk control variable is
-# modified. Conversely, if the value of a Tk control variable object
-# is modified, any widgets which are bound to the variable are
-# updated to reflect the new value.
+# Once you know how Python descriptors work, you then need to know how
+# Tk control variables work. These are simple objects which may be
+# passed to a Tkinter widget object when it is created. When a user
+# modifies the widget value, the Tk control variable is
+# modified. Conversely, if the value of a Tk control variable object is
+# modified, any widgets which are bound to the variable are updated to
+# reflect the new value.
 #
 # This module, and the associated tkpropwidget module, uses magic to
-# encapsulate Tkinter control variables within python descriptors,
-# thus allowing custom validation rules to be enforced on such 
-# control variables.
+# encapsulate Tkinter control variables within python descriptors, thus
+# allowing custom validation rules to be enforced on such control
+# variables.
+#
+# Class structure is organised as follows:
+#
+# A HasProperties (sub)class contains a collection of PropertyBase
+# instances. When an instance of the HasProperties class is created, one
+# or more TkVarProxy objects are created for each of the PropertyBase
+# instances. For most properties, there is a one-to-one mapping between
+# TkVarProxy instances and PropertyBase instances (for each
+# HasProperties instance), however this is not mandatory.  For example,
+# the List property manages multiple TkVarProxy objects for each
+# HasProperties instance.
+
+# Each of these TkVarProxy instances encapsulates a single Tkinter
+# control variable.  Whenever a variable value changes, the TkVarProxy
+# instance passes the new value to the validate method of its parent
+# PropertyBase instance to determine whether the new value is valid, and
+# notifies any registered listeners of the change. The TkVarProxy object
+# will allow its underlying Tkinter variable to be given invalid values,
+# but it will tell registered listeners whether the new value is valid
+# or invalid.
+#
+# Application code may be notified of property changes in two ways.
+# First, a listener may be registered with a PropertyBase object, by
+# passing a reference to the HasProperties instance, a name, and a
+# callback function to the PropertyBase.addListener method.  Such a
+# listener will be notified of changes to any of the TkVarProxy objects
+# managed by the PropertyBase object, and associated with the
+# HasProperties instance. This is important for List properties, as it
+# means that a change to a single TkVarProxy object in a list will
+# result in notification of all registered listeners.
+#
+# If one is interested in changes to a single TkVarProxy object
+# (e.g. one element of a List property), then a listener may be
+# registered directly with the TkVarProxy object. This listener will
+# only be notified of changes to that TkVarProxy object.
 #
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 import os
 import os.path as op
 
+import logging as log
+
 from collections import OrderedDict
 
 import Tkinter as tk
 
 
-class _TkVarProxy(object):
+class TkVarProxy(object):
     """
-    Proxy object which encapsulates a Tkinter control variable.
-    A _TkVarProxy object is created for every property of a
-    HasProperties instance.  
+    Proxy object which encapsulates a Tkinter control variable.  One or
+    more TkVarProxy objects is created for every property of a
+    HasProperties instance.
     """
 
-    def __init__(self, tkProp, instance, tkVarType, value, name=None):
+    def __init__(self, tkProp, owner, tkVarType, value, name=None):
         """
-        Creates an instance of the specified TkVarType, and sets
-        a trace on it. If a name is not provided, a unique name
-        is created.
+        Creates an instance of the specified tkVarType, and sets a
+        trace on it.
+        
+        Parameters:
+        
+          - tkProp:    The PropertyBase object which manages this
+                       TkVarProxy.
+          - owner:     The HasProperties object, the owner of the
+                       tkProp property.
+          - tkVarType: The type of Tkinter control variable that
+                       this TkVarProxy encapsulates.
+          - value:     Initial value.
+          - name:      Variable name - if not provided, a default,
+                       unique name is created.
+
         """
         
-        self.tkVarType = tkVarType
-        self.tkProp    = tkProp
-        self.instance  = instance
-        self.lastValue = value
-
         if name is None: name = '{}_{}'.format(tkProp.label, id(self))
+        
+        self.tkVarType       = tkVarType
+        self.tkProp          = tkProp
+        self.owner           = owner
+        self.lastValue       = value
+        self.changeListeners = {}
+        self.name            = name
+        self.tkVar           = tkVarType(value=value, name=name)
+        self.traceName       = self.tkVar.trace('w', self._traceCb)
 
-        self.name      = name
-        self.tkVar     = tkVarType(value=value, name=name)
-        self.traceName = self.tkVar.trace('w', self._traceCb)
+
+    def addListener(self, name, callback):
+        """
+        Adds a listener for this variable. When the variable value, the
+        listener callback function is called. The callback function
+        must accept these arguments:
+
+          value    - The new property value
+          valid    - Whether the new value is valid or invalid
+          instance - The HasProperties instance
+          tkProp   - The PropertyBase instance
+          name     - The name of this TkVarProxy
+
+        If you are only interested in the value, you can define your
+        callback function like 'def callback(value, *a): ...'
+        """
+
+        log.debug('Adding listener on {}: {}'.format(self.name, name))
+
+        # Save a reference to the listener callback function
+        self.changeListeners[name] = callback
+
+
+    def removeListener(self, name):
+        """
+        Removes the listener with the given name from the specified
+        instance.
+        """
+
+        log.debug('Removing listener on {}: {}'.format(self.name, name))
+        
+        self.changeListeners[instance].pop(name, None)
+
+        
+    def _traceCb(self, *args):
+        """
+        Called whenever the Tkinter control variable value is changed.
+        The PropertyBase.validate() method is called on the parent
+        property of this TkVarProxy object. If this validate method
+        does not raise an error, the new value is stored as the last
+        known good value. If the validate method does raise an error,
+        the last known good value is not changed. The variable can
+        be reverted to its last known good value via the revert
+        method.
+        
+        After the PropertyBase.validate method is called, any registered
+        listeners are notified of the variable value change.
+        """
+
+        valid = True
+
+        # This is silly. Tkinter allows Boolean/Int/Double
+        # variables to be set to invalid values (e.g. it
+        # allows DoubleVars to be set to strings containing
+        # non numeric characters). But then, later calls to
+        # get() will fail, as they will attempt to convert
+        # the invalid value to a boolean/int/double. So here
+        # we attempt to get the current value in the normal
+        # way ...
+        try:    newValue = self.tkVar.get()
+
+        # and if that fails, we manually look up the value
+        # via the current tk context.
+        except: newValue = self.tkVar._tk.globalgetvar(self.name)
+
+        # if the new value is valid, save it
+        try:
+            self.tkProp.validate(self.owner, newValue)
+            self.lastValue = newValue
+
+        except ValueError:
+            valid = False
+
+        # Notify all listeners about the change, ignoring
+        # any errors - it is up to the listeners to ensure
+        # that they handle invalid values
+        for name,func in self.changeListeners.items():
+
+            log.debug('Notifying listener on {}: {}'.format(self.name, name))
+            
+            try: func(newValue, valid, self.owner, self.tkProp, self.name)
+            except:
+                log.debug('')
 
 
     def revert(self):
         """
-        Sets the Tk variable to its last known good value.
+        Sets the Tk variable to its last known good value. This will
+        result in any registered listeners being notified of the change.
         """
         self.tkVar.set(self.lastValue)
 
@@ -138,70 +271,25 @@ class _TkVarProxy(object):
         tkVar = self.tkVar
         _tk   = tkVar._tk
 
-        print('Deleting variable {}'.format(self.name))
+        log.debug('Deleting variable {}'.format(self.name))
 
         tkVar.trace_vdelete('w', self.traceName)
         _tk.globalunsetvar(self.name)
-
         
-    def _traceCb(self, *args):
-        """
-        Called whenever the Tkinter control variable value is changed.
-        The PropertyBase.validate() method is called on the parent
-        property of this TkVarProxy object. If this validate method
-        raises an error, the Tkinter variable value is reverted to its
-        last good value. Otherwise, the PropertyBase._notify() method
-        is called, to notify it of the value change.
-        """
-
-        # This is silly. Tkinter allows Boolean/Int/Double
-        # variables to be set to invalid values (e.g. it
-        # allows DoubleVars to be set to strings containing
-        # non numeric characters). But then, later calls to
-        # get() will fail, as they will attempt to convert
-        # the invalid value to a boolean/int/double. So here
-        # we attempt to get the current value in the normal
-        # way...
-        try:    newValue = self.tkVar.get()
-
-        # and if that fails, we manually look up the value
-        # via the current tk context.
-        except: newValue = self.tkVar._tk.globalgetvar(self.name)
-
-        # if the new value is valid, save it
-        #
-        # TODO The validate method is called multiple times
-        # in a redundant manner (e.g. called here, called
-        # in widgets._setupValidation via the _notify call
-        # above). Alternately, we could call validate here
-        # and set a boolean isValid flag, then use that
-        # flag everywhere else. 
-        try:
-            self.tkProp.validate(self.instance, newValue)
-            self.lastValue = newValue
-
-        except ValueError:
-            pass
-
-        # Notify all listeners about the change, ignoring
-        # any errors - it is up to the listeners to ensure
-        # that they handle invalid values
-        try:    self.tkProp._notify(self.instance, newValue)
-        except: pass
-
 
 class PropertyBase(object):
     """
-    The base class for descriptor objects.  Subclasses should override the
+    The base class for properties.  Subclasses should override the
     validate method to implement any required validation rules and, in
-    special cases, may override __get__, __set__, and _makeTkVar, with care.
+    special cases, may override __get__, __set__, and _makeTkVar, with
+    care.
     """
     
     def __init__(self, tkVarType, default, validateFunc=None):
         """
         The tkvartype parameter should be one of the Tkinter.*Var
         classes.  For every object (the parent) which has this
-        PropertyBase object as a property, a _TkVarProxy instance
+        PropertyBase object as a property, a TkVarProxy instance
         is created and attached as an attribute of the parent.
         Subclasses should call this superclass constructor,
         passing it the tkVarType and default value, and an optional
@@ -216,17 +304,76 @@ class PropertyBase(object):
         self.changeListeners   = {}
 
         
-    def _makeTkVar(self, instance):
+    def addListener(self, instance, name, callback):
         """
-        Creates a _TkVarProxy object, and attaches it to the given
-        instance.
+        Register a listener with this property. When the property value
+        changes, the listener will be notified.
         """
 
-        instval = _TkVarProxy(
+        if instance not in self.changeListeners:
+            self.changeListeners[instance] = {}
+
+        log.debug('Adding listener on {}: {}'.format(self.label, name))
+
+        self.changeListeners[instance][name] = callback
+
+        
+    def removeListener(self, instance, name):
+        """
+        De-register the named listener from this property.
+        """
+
+        if instance not in self.changeListeners:           return
+        if name     not in self.changeListeners[instance]: return
+
+        log.debug('Removing listener on {}: {}'.format(self.label, name))
+
+        self.changeListeners[instance].pop(name)
+
+        
+    def _varChanged(self, value, valid, instance, tkProp, name):
+        """
+        This function is registered with the TkVarProxy object (or
+        objects) which are managed by this PropertyBase instance.
+        It notifies any listeners which have been registered to
+        this property, (and to the associated HasProperties instance).
+        """
+
+        if instance not in self.changeListeners: return
+        
+        listeners = self.changeListeners[instance].items()
+
+        for (lName, func) in listeners:
+            
+            log.debug('Notifying listener on {}: {}'.format(self.label, lName))
+            
+            func(value, valid, instance, tkProp, name)
+
+    
+    def _makeTkVar(self, instance):
+        """
+        Creates a TkVarProxy object, and attaches it to the given
+        instance.  Also registers this PropertyBase instance as a
+        listener on the TkVarProxy object.
+        """
+
+        instval = TkVarProxy(
             self, instance, self.tkVarType, self.default, self.label)
         instance.__dict__[self.label] = instval
 
+        listenerName = 'PropertyBase_{}_{}'.format(self.label, id(instval))
+
+        instval.addListener(listenerName, self._varChanged)
+
         return instval
+
+
+    def getTkVar(self, instance):
+        """
+        Return the Tkinter control variable (or variables) for this
+        property, associated with the given HasProperties instance.
+        """
+        return instance.__dict__[self.label].tkVar
 
         
     def validate(self, instance, value):
@@ -255,66 +402,6 @@ class PropertyBase(object):
         tkvar.revert()
 
             
-    def _notify(self, instance, value):
-        """
-        Function which is used as a trace callback on the Tkinter
-        variable of this property, when one or more listeners
-        functions have been registered via the addListener method.
-        This function is called when the Tkinter variable value
-        changes; it propagates the change event on to any
-        registered listeners.
-        """
-        
-        if instance not in self.changeListeners: return
-
-        listeners = self.changeListeners[instance].items()
-
-        print('{} changed ({} listeners to notify): {}'.format(
-            self.label, len(listeners), value))
-
-        for (name, func) in listeners:
-            print('  Notifying {}'.format(name))
-            func(instance, name, value)
-
-
-    def addListener(self, instance, name, callback):
-        """
-        Adds a listener for this property object, on the specified
-        HasProperties instance (the owner of this property). When
-        the value of this property changes, the listener callback
-        function is called. The callback function must accept three
-        arguments:
-        
-          instance - The HasProperties instance
-          name     - Name of the property that changed
-          value    - The new property value
-        """
-
-        # initialise a listener dictionary for this instance,
-        # if no listeners have previously been registered
-        if instance not in self.changeListeners:
-            self.changeListeners[instance] = {}
-
-        # Save a reference to the listeenr callback function
-        print('Saving listener on {}: {}'.format(self.label, name))
-        self.changeListeners[instance][name] = callback
-
-
-    def removeListener(self, instance, name):
-        """
-        Removes the listener with the given name from the specified
-        instance.
-        """
-
-        if instance not in self.changeListeners:            return
-        if name     not in self.changeListeners[instance]:  return
-
-        print('Removing listener on {}: {}'.format(self.label, name))
-
-        # remove the listener with the specified name
-        self.changeListeners[instance].pop(name)
-
-            
     def __get__(self, instance, owner):
         """
         If called on the HasProperties class, and not on an instance,
@@ -333,10 +420,8 @@ class PropertyBase(object):
         
     def __set__(self, instance, value):
         """
-        Attempts to set the Tkinter variable, attached to the given
-        instance, to the given value.  If the new value is invalid,
-        the _TkVarProxy object which controls the Tkinter variable
-        will revert the change.
+        Set the Tkinter variable, attached to the given instance, to
+        the given value.  
         """
 
         instval = instance.__dict__.get(self.label, None)
@@ -377,7 +462,7 @@ class HasProperties(object):
         """
         Return the Tkinter control variable for the given property.
         """
-        return self.__dict__[propName].tkVar
+        return self.getTkProp(propName).getTkVar(self)
 
 
     def __new__(cls, *args, **kwargs):
@@ -436,7 +521,7 @@ class Boolean(PropertyBase):
         PropertyBase.__init__(self, tk.BooleanVar, **kwargs)
 
 
-class _Number(PropertyBase):
+class Number(PropertyBase):
     """
     Base class for the Int and Double classes. Don't
     subclass this, subclass one of Int or Double.
@@ -464,7 +549,7 @@ class _Number(PropertyBase):
                 self.label, self.maxval))
 
         
-class Int(_Number):
+class Int(Number):
     """
     A property which encapsulates a Tkinter.IntVar object. 
     """
@@ -474,7 +559,7 @@ class Int(_Number):
         Int constructor. See the Number class for keyword
         arguments.
         """
-        _Number.__init__(self, tk.IntVar, **kwargs)
+        Number.__init__(self, tk.IntVar, **kwargs)
 
         
     def validate(self, instance, value):
@@ -484,10 +569,10 @@ class Int(_Number):
         except:
             raise ValueError('{} must be an integer ({})'.format(
                 self.label, value))
-        _Number.validate(self, instance, value)
+        Number.validate(self, instance, value)
 
 
-class Double(_Number):
+class Double(Number):
     """
     A property which encapsulates a Tkinter.DoubleVar object. 
     """
@@ -497,7 +582,7 @@ class Double(_Number):
         Double constructor. See the Number class for keyword
         arguments.
         """
-        _Number.__init__(self, tk.DoubleVar, **kwargs)
+        Number.__init__(self, tk.DoubleVar, **kwargs)
 
         
     def validate(self, instance, value):
@@ -507,7 +592,7 @@ class Double(_Number):
         except:
             raise ValueError('{} must be a floating point number ({})'.format(
                 self.label, value)) 
-        _Number.validate(self, instance, value)
+        Number.validate(self, instance, value)
 
 
 class Percentage(Double):
@@ -566,7 +651,8 @@ class String(PropertyBase):
 
 class Choice(String):
     """
-    A property which may only be set to one of a set of predefined values.
+    A property which may only be set to one of a set of predefined
+    values.
     """
 
     def __init__(self, choices, choiceLabels=None, **kwargs):
@@ -718,15 +804,15 @@ class _ListWrapper(object):
     """
     Used by the List property type, defined below. An object which
     acts like a list, but for which items are embedded in a
-    _TkVarProxy object, minimum/maximum list length may be enforced,
+    TkVarProxy object, minimum/maximum list length may be enforced,
     and value/type constraints enforced on the values added to it.
     
     Not all list operations are supported.  
 
-    A _TkVarProxy object is created for each item that is added to
+    A TkVarProxy object is created for each item that is added to
     the list.  When a list value is changed, instead of a new
     variable being created, the value of the existing variable
-    is changed.  References to the list of _TkVarProxy objects may
+    is changed.  References to the list of TkVarProxy objects may
     be accessed via the _tkVars attribute of the _ListWrapper
     object.
     """
@@ -760,7 +846,7 @@ class _ListWrapper(object):
         self._maxlen         = maxlen
 
         # This is the list that the _ListWrapper wraps.
-        # It contains _TkVarProxy objects.
+        # It contains TkVarProxy objects.
         self._tkVars = []
 
         if values is not None:
@@ -776,10 +862,10 @@ class _ListWrapper(object):
         """
         There is a bit of trickery going on here.  The HasProperties
         class thinks that all properties are represented by a single
-        _TkVarProxy object, which encapsulates a Tkinter control
+        TkVarProxy object, which encapsulates a Tkinter control
         variable, which in turn controls the property value. The
         Tkinter control variable is accessible via the 'tkVar'
-        attribute of the _TkVarProxy class.
+        attribute of the TkVarProxy class.
         
         However, this is not possible for List properties, because a single
         List property has multiple values, and is thus represented by a
@@ -824,10 +910,10 @@ class _ListWrapper(object):
             
     def _makeTkVar(self, value):
         """
-        Encapsulate the given value in a _TkVarProxy object.
+        Encapsulate the given value in a TkVarProxy object.
         """
 
-        tkval = _TkVarProxy(
+        tkval = TkVarProxy(
             self._listType, self._owner, self._listType.tkVarType, value)
         
         return tkval
