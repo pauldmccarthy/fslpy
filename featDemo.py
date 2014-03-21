@@ -470,7 +470,11 @@ class FeatFrame(tk.Frame):
         self.buttonFrame.pack(fill=tk.X) 
 
 
+import logging
+        
 if __name__ == '__main__':
+
+    logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
 
     app   = tk.Tk()
     fopts = FeatOptions()
