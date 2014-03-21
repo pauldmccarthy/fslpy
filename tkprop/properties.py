@@ -126,6 +126,8 @@
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import types
+
 import logging as log
 import Tkinter as tk
 
@@ -234,6 +236,17 @@ class TkVarProxy(object):
         # failing type cast. Ugly.
         except: newValue = self.tkVar._tk.globalgetvar(self.name)
 
+        # More silliness related to above silliness. All
+        # variables in Tk, be they IntVars, BooleanVars, or
+        # whatever, are stored as strings, and cannot have no
+        # value. If you try to set a Tk variable to None, it
+        # will be converted to a string, and stored as 'None',
+        # which is quite different. So I'm following the
+        # convention that an empty string, for any of the 
+        # variable types, is equivalent to None. 
+        if newValue == '':
+            newValue = None
+
         # print a log message if the value has changed
         if newValue != self.lastValue:
             log.debug(
@@ -303,21 +316,37 @@ class PropertyBase(object):
         properties_types.List for an example).
     """
     
-    def __init__(self, tkVarType, default, validateFunc=None):
+    def __init__(self, tkVarType, default, required=False, validateFunc=None):
         """
         The tkvartype parameter should be one of the Tkinter.*Var
         classes.  For every object (the parent) which has this
-        PropertyBase object as a property, a TkVarProxy instance
-        is created and attached as an attribute of the parent.
-        Subclasses should call this superclass constructor,
-        passing it the tkVarType and default value, and an optional
-        custom validation function specified by the application
-        code. Built in validation should be specified by overriding
-        the validate method.
+        PropertyBase object as a property, one or more TkVarProxy
+        instances are created and attached as an attribute of the
+        parent. Parameters:
+        
+          - tkVarType:    Tkinter control variable class. May be
+                          None for properties which manage multiple
+                          TkVarProxy objects.
+        
+          - default:      Default/initial value.
+        
+          - required:     Boolean determining whether or not this
+                          property must have a value. May alternately
+                          be a function which accepts one parameter,
+                          the owning HasProperties instance, and
+                          returns True or False.
+        
+          - validateFunc: Custom validation function. Must accept
+                          two parameters:a reference to the
+                          HasProperties instance, the owner of
+                          this property; and the new property
+                          value. Should raise a ValueError if the
+                          new value is invalid.
         """
         self.label             = None
         self.tkVarType         = tkVarType
         self.default           = default
+        self.required          = required
         self.validateFunc      = validateFunc
         self.changeListeners   = {}
 
@@ -325,7 +354,8 @@ class PropertyBase(object):
     def addListener(self, instance, name, callback):
         """
         Register a listener with this property. When the property value
-        changes, the listener will be notified.
+        changes, the listener will be notified. See TkVarProxy.addListener
+        for required callback function signature.
         """
 
         if instance not in self.changeListeners:
@@ -426,6 +456,19 @@ class PropertyBase(object):
         own validation.
         """
 
+        # a value is required
+        if (self.required is not None) and (value is None):
+
+            # required may either be a boolean value
+            if isinstance(self.required, bool) and self.required:
+                raise ValueError('A value is required for {}'.format(
+                    self.label))
+
+            # or a function
+            elif self.required(instance):
+                raise ValueError('A value is required for {}'.format(
+                    self.label))
+
         if self.validateFunc is not None:
             self.validateFunc(instance, value)
 
@@ -443,7 +486,15 @@ class PropertyBase(object):
 
         instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._makeTkVar(instance)
-        return instval.tkVar.get()
+
+        # See comments in TkVarProxy._traceCb
+        # for a brief overview of this silliness.
+        try:    val = instval.tkVar.get()
+        except: val = instval.tkVar._tk.globalgetvar(instval.tkVar._name)
+
+        if val == '': val = None
+
+        return val
 
         
     def __set__(self, instance, value):
@@ -452,7 +503,9 @@ class PropertyBase(object):
         the given value.  
         """
 
-        instval = getattr(self, instance)
+        if value is None: value = ''
+
+        instval = self.getTkVar(instance)
         instval.tkVar.set(value)
             
 
@@ -477,21 +530,7 @@ class HasProperties(object):
     """
     __metaclass__ = PropertyOwner
 
-        
-    def getTkProp(self, propName):
-        """
-        Return the tkprop PropertyBase object for the given property.
-        """
-        return getattr(self.__class__, propName)
-
-
-    def getTkVar(self, propName):
-        """
-        Return the TkVarProxy object(s) for the given property. 
-        """
-        return self.getTkProp(propName).getTkVar(self)
-
-
+    
     def __new__(cls, *args, **kwargs):
         """
         Here we create a new HasProperties instance, and loop through all
@@ -509,26 +548,77 @@ class HasProperties(object):
         return inst
         
         
+    def getTkProp(self, propName):
+        """
+        Return the tkprop PropertyBase object for the given property.
+        """
+        return getattr(self.__class__, propName)
+
+
+    def getTkVar(self, propName):
+        """
+        Return the TkVarProxy object(s) for the given property. 
+        """
+        return self.getTkProp(propName).getTkVar(self)
+
+        
+    def getAllProperties(self):
+        """
+        Returns two lists, the first containing the names of all
+        properties of this object, and the second containing the
+        corresponding PropertyBase objects.
+        """
+
+        props = filter(
+            lambda (name,prop): isinstance(prop, PropertyBase),
+            self.__class__.__dict__.items())
+    
+        propNames, props = zip(*props)
+
+        return propNames, props
+        
+
+    def validateAll(self):
+        """
+        Validates all of the properties of this HasProperties object.
+        A list of strings is returned, with each string containing
+        an error message about the property which failed validation.
+        If all property values are valid, the returned list will be
+        empty.
+        """
+
+        names, props = self.getAllProperties()
+
+        errors = []
+
+        for name, prop in zip(names,props):
+            
+            try:
+                val = getattr(self, name)
+                prop.validate(self, val)
+                
+            except ValueError as e:
+                errors.append(e.message)
+
+        return errors
+
+        
     def __str__(self):
         """
         Returns a multi-line string containing the names and values
         of all the properties of this object.
         """
         
-        name = self.__class__.__name__
+        clsname = self.__class__.__name__
 
-        props = filter(
-            lambda (name,prop): isinstance(prop, PropertyBase),
-            self.__class__.__dict__.items())
-    
-        propNames,props = zip(*props)
+        propNames,props = self.getAllProperties()
 
         propVals = ['{}'.format(getattr(self, propName))
                     for propName in propNames]
 
         maxNameLength = max(map(len, propNames))
 
-        lines = [name]
+        lines = [clsname]
 
         for propName,propVal in zip(propNames,propVals):
             fmtStr = '  {:>' + str(maxNameLength) + '} = {}'

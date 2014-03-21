@@ -16,7 +16,7 @@ import            ttk
 import tkprop  as tkp
 
 runChoices = OrderedDict((
-    ('',    'Run standard brain extraction using bet2'),
+    (' ',   'Run standard brain extraction using bet2'),
     ('-R',  'Robust brain centre estimation (iterates bet2 several times)'),
     ('-S',  'Eye & optic nerve cleanup (can be useful in SIENA)'),
     ('-B',  'Bias field & neck cleanup (can be useful in SIENA)'),
@@ -28,9 +28,9 @@ runChoices = OrderedDict((
 
 class BetOptions(tkp.HasProperties):
     
-    inputImage           = tkp.FilePath(exists=True)
-    outputImage          = tkp.FilePath()
-    t2Image              = tkp.FilePath(exists=True)
+    inputImage           = tkp.FilePath(exists=True, required=True)
+    outputImage          = tkp.FilePath(             required=True)
+    t2Image              = tkp.FilePath(exists=True, required=lambda i: i.runChoice == '-A2')
     
     runChoice            = tkp.Choice(runChoices)
     
@@ -47,6 +47,81 @@ class BetOptions(tkp.HasProperties):
     xCoordinate          = tkp.Double(default=0.0, minval=0.0)
     yCoordinate          = tkp.Double(default=0.0, minval=0.0)
     zCoordinate          = tkp.Double(default=0.0, minval=0.0)
+
+
+    def setOutputImage(self, value, valid, *a):
+        """
+        When a (valid) input image file name is selected, the output
+        image is set to the same, name, with a suffix of '_brain'.
+        """
+
+        if not valid: return
+        self.outputImage = value + '_brain'
+
+
+    def __init__(self):
+        """
+        """
+
+        BetOptions.inputImage.addListener(
+            self, 'setOutputImage', self.setOutputImage)
+
+
+    def genBetCmd(self):
+        
+        cmd = ['bet']
+
+        if self.inputImage is None or self.inputImage == '':
+            raise ValueError('Input image not specified')
+
+        if self.outputImage is None or self.outputImage == '':
+            raise ValueError('Output image not specified')
+
+        if runChoices == '-A2' and \
+           ((self.t2Image is None) or (self.t2Image == '')):
+            raise ValueError('T2 image not specified') 
+
+        cmd.append(self.inputImage)
+        cmd.append(self.outputImage)
+
+        runChoice = runChoices[self.runChoice]
+
+        if runChoice != '':
+            cmd.append(runChoice)
+
+        if runChoice == '-A2':
+
+            if self.t2Image is None or self.t2Image == '':
+                raise ValueError('T2 image not specified')
+
+            cmd.append(self.t2Image)        
+
+        if not self.outputExtracted:      cmd.append('-n')
+        if     self.outputMaskImage:      cmd.append('-m')
+        if     self.outputSkull:          cmd.append('-s')
+        if     self.outputSurfaceOverlay: cmd.append('-o')
+        if     self.outputMesh:           cmd.append('-e')
+        if     self.thresholdImages:      cmd.append('-t')
+
+        cmd.append('-f')
+        cmd.append('{}'.format(self.fractionalIntensity))
+
+        cmd.append('-g')
+        cmd.append('{}'.format(self.thresholdGradient))
+
+        if self.headRadius > 0.0:
+            cmd.append('-r')
+            cmd.append('{}'.format(self.headRadius))
+
+        if all((self.xCoordinate > 0.0,
+                self.yCoordinate > 0.0,
+                self.zCoordinate > 0.0)):
+            cmd.append('-c')
+            cmd.append('{}'.format(self.xCoordinate))
+            cmd.append('{}'.format(self.yCoordinate))
+            cmd.append('{}'.format(self.zCoordinate))
+
+        return cmd 
 
     
 optLabels = {
@@ -107,63 +182,6 @@ betView = tkp.NotebookGroup((
 ))
 
 
-def generateBetCmd(bopts):
-
-    cmd = ['bet']
-
-    if bopts.inputImage is None or bopts.inputImage == '':
-        raise ValueError('Input image not specified')
-
-    if bopts.outputImage is None or bopts.outputImage == '':
-        raise ValueError('Output image not specified')
-
-    if runChoices == '-A2' and \
-       ((bopts.t2Image is None) or (bopts.t2Image == '')):
-        raise ValueError('T2 image not specified') 
-
-    cmd.append(bopts.inputImage)
-    cmd.append(bopts.outputImage)
-
-    runChoice = runChoices[bopts.runChoice]
-
-    if runChoice != '':
-        cmd.append(runChoice)
-
-    if runChoice == '-A2':
-
-        if bopts.t2Image is None or bopts.t2Image == '':
-            raise ValueError('T2 image not specified')
-
-        cmd.append(bopts.t2Image)        
-
-    if not bopts.outputExtracted:      cmd.append('-n')
-    if     bopts.outputMaskImage:      cmd.append('-m')
-    if     bopts.outputSkull:          cmd.append('-s')
-    if     bopts.outputSurfaceOverlay: cmd.append('-o')
-    if     bopts.outputMesh:           cmd.append('-e')
-    if     bopts.thresholdImages:      cmd.append('-t')
-
-    cmd.append('-f')
-    cmd.append('{}'.format(bopts.fractionalIntensity))
-
-    cmd.append('-g')
-    cmd.append('{}'.format(bopts.thresholdGradient))
-
-    if bopts.headRadius > 0.0:
-        cmd.append('-r')
-        cmd.append('{}'.format(bopts.headRadius))
-
-    if all((bopts.xCoordinate > 0.0,
-            bopts.yCoordinate > 0.0,
-            bopts.zCoordinate > 0.0)):
-        cmd.append('-c')
-        cmd.append('{}'.format(bopts.xCoordinate))
-        cmd.append('{}'.format(bopts.yCoordinate))
-        cmd.append('{}'.format(bopts.zCoordinate))
-
-    return cmd
- 
-
 class BetFrame(tk.Frame):
     
     def __init__(self, parent, betOpts):
@@ -206,5 +224,10 @@ if __name__ == '__main__':
     print('After')
     print(betopts)
 
-    print('Command:')
-    print(' '.join(generateBetCmd(betopts)))
+    errors = betopts.validateAll()
+    if len(errors)  == 0:
+        print('Command:')
+        print(' '.join(betopts.genBetCmd()))
+    else:
+        print('Errors:')
+        print('  ' + '\n  '.join(errors))

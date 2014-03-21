@@ -149,10 +149,10 @@ class String(props.PropertyBase):
         
     def validate(self, instance, value):
 
-        if value is None:
-            return
-
         props.PropertyBase.validate(self, instance, value)
+
+        if value is None: return
+        if value == '':   return 
         
         value = str(value)
 
@@ -223,9 +223,9 @@ class Choice(String):
         Rejects values that are not in the choices list.
         """
 
-        value = str(value)
+        String.validate(self, instance, value)
 
-        props.PropertyBase.validate(self, instance, value)
+        value = str(value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice for {}: {}'.format(
@@ -302,10 +302,10 @@ class FilePath(String):
         
     def validate(self, instance, value):
 
+        String.validate(self, instance, value)
+
         if value is None: return
         if value == '':   return
-
-        String.validate(self, instance, value)
 
         if self.exists:
 
@@ -664,7 +664,24 @@ class List(props.PropertyBase):
                               maxlen=self.maxlen)
         instance.__dict__[self.label] = instval
 
-        return instval 
+        return instval
+
+    def validate(self, instance, values):
+        props.PropertyBase.validate(self, instance, values)
+
+        if values is None:
+            return
+            
+        if (self.minlen is not None) and (len(values) < self.minlen):
+            raise ValueError('{} must have length at least {}'.format(
+                self.label, self.minlen))
+        if (self.maxlen is not None) and (len(values) > self.maxlen):
+            raise ValueError('{} must have length at most {}'.format(
+                self.label, self.maxlen))
+
+        for v in values:
+            self.listType.validate(instance, v)
+            
 
      
     def __get__(self, instance, owner):
@@ -688,6 +705,7 @@ class List(props.PropertyBase):
         to the given instance.
         """
 
+        if value is None: value = []
+
         instval    = getattr(instance, self.label)
         instval[:] = value
-
