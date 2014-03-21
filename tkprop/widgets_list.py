@@ -105,8 +105,48 @@ def _editListDialog(parent, listProp, propObj):
         raise ValueError(
             'Unknown property type: {}'.format(listProp.__class__.__name__)) 
 
-    window = tk.Toplevel()
-    frame  = ttk.Frame(window)
+    # Edit widgets go on the frame. But frames are not scrollable.
+    # So we embed the frame inside a canvas, which is scrollable.
+    #
+    # Widget layout is as follows:
+    #   - window
+    #     - canvasFrame
+    #       - canvas
+    #         - frame
+    #       - scrollbar
+    #     - okButton
+    
+    window      = tk.Toplevel()
+    canvasFrame = ttk.Frame(window)
+    canvas      = tk.Canvas(canvasFrame)
+    frame       = ttk.Frame(canvas)
+    scrollbar   = ttk.Scrollbar(canvasFrame, orient=tk.VERTICAL, command=canvas.yview)
+    okButton    = ttk.Button(window, text='Ok', command=window.destroy)
+    
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.create_window((4,4), window=frame, anchor=tk.NW, tag='frame')
+
+    canvasFrame.pack(fill=tk.BOTH, expand=True)
+    okButton   .pack(fill=tk.X)
+
+    canvas   .pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    scrollbar.pack(side=tk.LEFT, fill=tk.Y)
+    frame.columnconfigure(0, weight=1)
+
+    # When the frame changes size, the canvas
+    # scroll region is updated to fit it
+    def updateCanvas(ev):
+        bbox = canvas.bbox(tk.ALL)
+        canvas.configure(scrollregion=bbox)
+
+    # When the canvas changes size, the frame
+    # is updated to fill it horizontally
+    def resizeFrame(ev):
+        width = canvas.winfo_width()
+        canvas.itemconfig('frame', width=width-5) 
+        
+    frame .bind('<Configure>', updateCanvas)
+    canvas.bind('<Configure>', resizeFrame)
 
     listWidgets = []
 
@@ -116,8 +156,8 @@ def _editListDialog(parent, listProp, propObj):
         widget = makeFunc(frame, propObj, listType, tkVar)
         listWidgets.append(widget)
 
-    # A spinbox, and associated TK variable, allowing
-    # the user to change the number of items in the list
+    # A TK variable used in a spinbox created below,,
+    # which stores the number of items in the list
     numRowsName = '{}_numRows'.format(listProp.label)
     numRows     = tk.IntVar(master=window,
                             name=numRowsName,
@@ -127,14 +167,23 @@ def _editListDialog(parent, listProp, propObj):
     # spinbox, otherwise it doesn't behave very nicely.
     minval = listProp.minlen if (listProp.minlen is not None) else 0
     maxval = listProp.maxlen if (listProp.maxlen is not None) else sys.maxint
+
+    # Spinbox allowing user to change
+    # number of items in the list
     numRowsBox = tk.Spinbox(frame,
                             from_=minval,
                             to=maxval,
                             textvariable=numRows,
                             increment=1)
 
-    # A button to push when the user is finished
-    okButton = ttk.Button(frame, text='Ok', command=window.destroy)
+    # Restrict spinbox values to numeric characters
+    vcmd = (numRowsBox.register(lambda s: s.isdigit()), '%S')
+    numRowsBox.configure(validate='key', validatecommand=vcmd)
+
+    # layout spinbox and list widgets
+    numRowsBox.grid(row=0, column=0, sticky=tk.W+tk.E)
+    for i,w in enumerate(listWidgets):
+        w.grid(row=i+1, column=0, sticky=tk.W+tk.E)
 
     def changeNumRows(*args):
         """
@@ -144,7 +193,12 @@ def _editListDialog(parent, listProp, propObj):
         """
 
         oldLen = len(listObj)
-        newLen = numRows.get()
+
+        try:    newLen = numRows.get()
+
+        # If numRows.get() raises an error, it means
+        # that the user has typed in non-numeric data.
+        except: return
 
         # add rows
         while oldLen < newLen:
@@ -173,20 +227,7 @@ def _editListDialog(parent, listProp, propObj):
 
             oldLen = oldLen - 1
 
-        # adjust the okButton location
-        okButton.grid(row=newLen+1, column=0, sticky=tk.W+tk.E)
-
     traceName = numRows.trace('w', changeNumRows)
-
-    # layout
-    numRowsBox.grid(row=0, column=0, sticky=tk.W+tk.E)
-    for i,w in enumerate(listWidgets):
-        w.grid(row=i+1, column=0, sticky=tk.W+tk.E)
-
-    okButton.grid(row=len(listWidgets)+2, column=0, sticky=tk.W+tk.E)
-
-    frame.columnconfigure(0, weight=1)
-    frame.pack(fill=tk.BOTH, expand=True)
 
     # make the list edit dialog modal
     window.transient(parent)
