@@ -216,7 +216,8 @@ class TkVarProxy(object):
         listeners are notified of the variable value change.
         """
 
-        valid = True
+        valid     = True
+        listeners = self.changeListeners.items()
 
         # This is silly. Tkinter allows Boolean/Int/Double
         # variables to be set to invalid values (e.g. it
@@ -233,19 +234,20 @@ class TkVarProxy(object):
         # failing type cast. Ugly.
         except: newValue = self.tkVar._tk.globalgetvar(self.name)
 
-        # if the new value is valid, save it as the last
-        # known good value
+        # print a log message if the value has changed
+        if newValue != self.lastValue:
+            log.debug(
+                'Variable {} changed: {} (valid: {}, {} listeners)'.format(
+                    self.name, newValue, valid, len(listeners)))
+
+        # if the new value is valid, save
+        # it as the last known good value
         try:
             self.tkProp.validate(self.owner, newValue)
             self.lastValue = newValue
 
         except ValueError:
             valid = False
-
-        listeners = self.changeListeners.items()
-
-        log.debug('Variable {} changed: {} (valid: {}, {} listeners)'.format(
-            self.name, newValue, valid, len(listeners)))
 
         # Notify all listeners about the change, ignoring
         # any errors - it is up to the listeners to ensure
@@ -345,6 +347,23 @@ class PropertyBase(object):
         log.debug('Removing listener on {}: {}'.format(self.label, name))
 
         self.changeListeners[instance].pop(name)
+
+        
+    def forceValidation(self, instance):
+        """
+        Forces validation of this property value, for the current instance.
+        This will result in any registered listeners being notified.
+        """
+
+        varProxies = instance.getTkVar(self.label)
+
+        # getTkVar returns either a TkVarProxy object, or a
+        # list of TkVarProxy objects (it should do, anyway).
+        if isinstance(varProxies, TkVarProxy):
+            varProxies = [varProxies]
+
+        for var in varProxies:
+            var._traceCb()
 
         
     def _varChanged(self, value, valid, instance, tkProp, name):

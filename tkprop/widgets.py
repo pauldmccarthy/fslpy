@@ -71,6 +71,10 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         
     listenerName = 'ChangeBGOnValidate_{}'.format(tkVar.name)
     tkVar.addListener(listenerName, _changeBGOnValidate)
+
+    # Validate the initial property value,
+    # so the background is appropriately set
+    tkProp.forceValidation(propObj)
     
 
 # The _lastFilePathDir variable is used to retain the
