@@ -638,11 +638,12 @@ def buildGUI(parent,
         topLevel  = ttk.Frame(parent)
         propFrame = _create(topLevel, view, propObj, propGui)
 
-        topLevel.rowconfigure(   0, weight=1)
-        topLevel.columnconfigure(0, weight=1)
-        topLevel.columnconfigure(1, weight=1)
+        topLevel.rowconfigure(0, weight=1)
 
-        propFrame.grid(row=0, column=0, columnspan=2,
+        for i in range(len(buttons)):
+            topLevel.columnconfigure(i, weight=1)
+
+        propFrame.grid(row=0, column=0, columnspan=len(buttons),
                        sticky=tk.N+tk.S+tk.E+tk.W)
 
         for i,(label,callback) in enumerate(buttons.items()):
