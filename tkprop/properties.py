@@ -462,13 +462,11 @@ class PropertyBase(object):
 
             # required may either be a boolean value
             if isinstance(self.required, bool) and self.required:
-                raise ValueError('A value is required for {}'.format(
-                    self.label))
+                raise ValueError('A value is required')
 
             # or a function
             elif self.required(instance):
-                raise ValueError('A value is required for {}'.format(
-                    self.label))
+                raise ValueError('A value is required')
 
         if self.validateFunc is not None:
             self.validateFunc(instance, value)
@@ -584,10 +582,11 @@ class HasProperties(object):
     def validateAll(self):
         """
         Validates all of the properties of this HasProperties object.
-        A list of strings is returned, with each string containing
-        an error message about the property which failed validation.
-        If all property values are valid, the returned list will be
-        empty.
+        A list of tuples is returned, with each tuple containing a
+        property name, and an associated error string. The error
+        string is a  message about the property which failed
+        validation. If all property values are valid, the returned
+        list will be empty.
         """
 
         names, props = self.getAllProperties()
@@ -601,7 +600,7 @@ class HasProperties(object):
                 prop.validate(self, val)
                 
             except ValueError as e:
-                errors.append(e.message)
+                errors.append((name, e.message))
 
         return errors
 

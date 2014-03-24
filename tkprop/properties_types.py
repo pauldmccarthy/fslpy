@@ -57,12 +57,10 @@ class Number(props.PropertyBase):
         props.PropertyBase.validate(self, instance, value)
 
         if self.minval is not None and value < self.minval:
-            raise ValueError('{} must be at least {}'.format(
-                self.label, self.minval))
+            raise ValueError('Must be at least {}'.format(self.minval))
             
         if self.maxval is not None and value > self.maxval:
-            raise ValueError('{} must be at most {}'.format(
-                self.label, self.maxval))
+            raise ValueError('Must be at most {}'.format(self.maxval))
 
         
 class Int(Number):
@@ -80,11 +78,9 @@ class Int(Number):
         
     def validate(self, instance, value):
 
-        try:
-            value = int(value)
-        except:
-            raise ValueError('{} must be an integer ({})'.format(
-                self.label, value))
+        try:    value = int(value)
+        except: raise ValueError('Must be an integer ({})'.format(value))
+        
         Number.validate(self, instance, value)
 
 
@@ -103,11 +99,9 @@ class Double(Number):
         
     def validate(self, instance, value):
 
-        try:
-            value = float(value)
-        except:
-            raise ValueError('{} must be a floating point number ({})'.format(
-                self.label, value)) 
+        try:    value = float(value)
+        except: raise ValueError('Must be a number ({})'.format(value))
+        
         Number.validate(self, instance, value)
 
 
@@ -157,12 +151,10 @@ class String(props.PropertyBase):
         value = str(value)
 
         if self.minlen is not None and len(value) < self.minlen:
-            raise ValueError('{} must have length at least {}'.format(
-                self.label, self.minlen))
+            raise ValueError('Must have length at least {}'.format(self.minlen))
 
         if self.maxlen is not None and len(value) > self.maxlen:
-            raise ValueError('{} must have length at most {}'.format(
-                self.label, self.maxlen))
+            raise ValueError('Must have length at most {}'.format(self.maxlen))
         
 
 class Choice(String):
@@ -228,8 +220,7 @@ class Choice(String):
         value = str(value)
 
         if value not in self.choices:
-            raise ValueError('Invalid choice for {}: {}'.format(
-                self.label, value))
+            raise ValueError('Invalid choice ({})'.format(value))
 
             
     def getLabelVar(self, instance):
@@ -310,12 +301,10 @@ class FilePath(String):
         if self.exists:
 
             if self.isFile and (not op.isfile(value)):
-                raise ValueError('{} must be a file ({})'.format(
-                    self.label, value)) 
+                raise ValueError('Must be a file ({})'.format(value)) 
 
             if (not self.isFile) and (not op.isdir(value)):
-                raise ValueError('{} must be a directory ({})'.format(
-                    self.label, value))
+                raise ValueError('Must be a directory ({})'.format(value))
 
 
 class ListWrapper(object):
@@ -666,6 +655,7 @@ class List(props.PropertyBase):
 
         return instval
 
+        
     def validate(self, instance, values):
         props.PropertyBase.validate(self, instance, values)
 
@@ -673,16 +663,14 @@ class List(props.PropertyBase):
             return
             
         if (self.minlen is not None) and (len(values) < self.minlen):
-            raise ValueError('{} must have length at least {}'.format(
-                self.label, self.minlen))
+            raise ValueError('Must have length at least {}'.format(self.minlen))
+            
         if (self.maxlen is not None) and (len(values) > self.maxlen):
-            raise ValueError('{} must have length at most {}'.format(
-                self.label, self.maxlen))
+            raise ValueError('Must have length at most {}'.format(self.maxlen))
 
         for v in values:
             self.listType.validate(instance, v)
             
-
      
     def __get__(self, instance, owner):
         """

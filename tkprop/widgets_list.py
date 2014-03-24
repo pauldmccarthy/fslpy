@@ -2,8 +2,8 @@
 #
 # widgets_list.py - A widget for editing a tkprop.List property.
 #
-# This file really belongs in widgets.py, but it is large and
-# complex enough to warrent its own module.
+# The code in this file really belongs in widgets.py, but it is
+# large and complex enough to warrent its own module.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
