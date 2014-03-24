@@ -65,6 +65,19 @@ class BetOptions(tkp.HasProperties):
         if not valid: return
         self.outputImage = value + '_brain'
 
+    def clearT2Image(self, value, *a):
+        """
+        This is a bit of a hack. If the user provides an invalid value
+        for the T2 image (when running bet with the -A2 flag), but then
+        changes their run choice to something other than -A2 (meaning
+        that the invalid T2 image won't actually be used, so the fact
+        that it is invalid doesn't really matter), tkprop will still
+        complain that the T2 image is invalid. So here, when the run
+        choice is changed to something other than -A2, the T2 image is
+        cleared, and tkprop won't complain.
+        """
+        if value != '-A2': self.t2Image = None
+
 
     def __init__(self):
         """
@@ -73,6 +86,8 @@ class BetOptions(tkp.HasProperties):
 
         BetOptions.inputImage.addListener(
             self, 'setOutputImage', self.setOutputImage)
+        BetOptions.runChoice.addListener(
+            self, 'clearT2Image',   self.clearT2Image) 
 
 
     def genBetCmd(self):
@@ -238,7 +253,7 @@ class BetFrame(tk.Frame):
 
         buttons = OrderedDict((
             ('Run BET',  lambda : checkAndRun(betOpts, parent)),
-            ('Cancel',   parent.destroy),
+            ('Quit',     parent.destroy),
             ('Help',     openHelp)))
 
         self.tkpFrame = tkp.buildGUI(
