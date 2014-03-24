@@ -39,7 +39,7 @@ def run(cmd, tkRoot, modal=True):
     btnFrame    = ttk.Frame(frame)
     killButton  = ttk.Button(btnFrame, text="Kill process", command=kill)
     closeButton = ttk.Button(btnFrame, text="Close window",
-                             command=window.destroy())
+                             command=window.destroy)
 
     text    .grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
     hScroll .grid(row=1, column=0, sticky=tk.E+tk.W)
@@ -67,7 +67,9 @@ def run(cmd, tkRoot, modal=True):
         try:                output = outq.get_nowait()
         except queue.Empty: output = None
 
-        if output is not None: text.insert('end', output)
+        if output is not None:
+            try:    text.insert('end', output)
+            except: pass
 
         
     def pollOutput():
@@ -83,7 +85,9 @@ def run(cmd, tkRoot, modal=True):
             
         outq.put('\nProcess finished\n')
         tkRoot.after_idle(writeToDialog)
-        killButton.configure(state='disabled')
+
+        try:    killButton.configure(state='disabled')
+        except: pass
 
         
     # poll the process output on a separate thread

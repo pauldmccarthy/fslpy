@@ -165,6 +165,8 @@ class TkVarProxy(object):
         self.owner           = owner
         self.changeListeners = {}
         self.name            = name
+        self._lastValue      = value
+        self._lastValid      = None
         self.tkVar           = tkVarType(value=value, name=name)
         self.traceName       = self.tkVar.trace('w', self._traceCb)
 
@@ -242,8 +244,10 @@ class TkVarProxy(object):
         """
         Passes the current variable value to the validate()
         method of the PropertyBase object which owns this
-        TkVarProxy, and then notifies any listeners which
-        have been registered with this TkVarProxy object.
+        TkVarProxy. If the value, or the validity of that
+        value, has changed since the last validation, any
+        listeners which have been registered with this
+        TkVarProxy object are notified..
         """
         
         value     = self._getVarValue()
@@ -252,6 +256,14 @@ class TkVarProxy(object):
 
         try:               self.tkProp.validate(self.owner, value)
         except ValueError: valid = False
+
+        # Listeners are only notified if the value or its
+        # validity has changed since the last validation
+        if (value == self._lastValue) and (valid == self._lastValid):
+            return
+
+        self._lastValue = value
+        self._lastValid = valid
 
         # Notify all listeners, ignoring any errors -
         # it is up to the listeners to ensure that
@@ -609,12 +621,12 @@ class HasProperties(object):
         """
         Called whenever any property value changes. Forces validation
         for all other properties, and notification of their registered
-        listeners. This is done because the validity of some
-        properties may be dependent upon the values of others. So when
-        a particular property value changes, it may ahve changed the
-        validity of another property, meaning that the listeners of
-        the latter property need to be notified of this change in
-        validity.
+        listeners, if their value or validity has changed. This is done
+        because the validity of some properties may be dependent upon
+        the values of others. So when a particular property value
+        changes, it may ahve changed the validity of another property,
+        meaning that the listeners of the latter property need to be
+        notified of this change in validity.
         """
         propNames, props = self.getAllProperties()
 
