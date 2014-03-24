@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# betDemo.py - 
+# betDemo.py - Replicating FSL's bet gui in Tkinter using tkprop.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -11,11 +11,18 @@ import sys
 
 from collections import OrderedDict
 
-import Tkinter as tk
-import            ttk
-import tkprop  as tkp
+import Tkinter      as tk
+import tkMessageBox as tkmsg
+import                 ttk
+import tkprop       as tkp
+
+import runshell     as shell
 
 runChoices = OrderedDict((
+
+    # This is a bit silly, but we can't use an empty
+    # string as a key here, due to the way that tkprop
+    # and Tkinter handle empty strings.
     (' ',   'Run standard brain extraction using bet2'),
     ('-R',  'Robust brain centre estimation (iterates bet2 several times)'),
     ('-S',  'Eye & optic nerve cleanup (can be useful in SIENA)'),
@@ -41,8 +48,8 @@ class BetOptions(tkp.HasProperties):
     outputMesh           = tkp.Boolean(default=False)
     thresholdImages      = tkp.Boolean(default=False)
     
-    fractionalIntensity  = tkp.Double(default=0,   minval=0.0, maxval=1.0)
-    thresholdGradient    = tkp.Double(default=0.5, minval=0.0, maxval=1.0)
+    fractionalIntensity  = tkp.Double(default=0,   minval=0.0,  maxval=1.0)
+    thresholdGradient    = tkp.Double(default=0.5, minval=-1.0, maxval=1.0)
     headRadius           = tkp.Double(default=0.0, minval=0.0)
     xCoordinate          = tkp.Double(default=0.0, minval=0.0)
     yCoordinate          = tkp.Double(default=0.0, minval=0.0)
@@ -52,7 +59,7 @@ class BetOptions(tkp.HasProperties):
     def setOutputImage(self, value, valid, *a):
         """
         When a (valid) input image file name is selected, the output
-        image is set to the same, name, with a suffix of '_brain'.
+        image is set to the same name, with a suffix of '_brain'.
         """
 
         if not valid: return
@@ -61,6 +68,7 @@ class BetOptions(tkp.HasProperties):
 
     def __init__(self):
         """
+        Adds a few callback listeners for various bits of behaviour.
         """
 
         BetOptions.inputImage.addListener(
@@ -68,32 +76,28 @@ class BetOptions(tkp.HasProperties):
 
 
     def genBetCmd(self):
+        """
+        Generates a command line call to the bet shell script, from
+        the current option values.
+        """
+
+        errors = self.validateAll()
+
+        if len(errors) > 0:
+            raise ValueError('Options are not valid')
         
         cmd = ['bet']
 
-        if self.inputImage is None or self.inputImage == '':
-            raise ValueError('Input image not specified')
-
-        if self.outputImage is None or self.outputImage == '':
-            raise ValueError('Output image not specified')
-
-        if runChoices == '-A2' and \
-           ((self.t2Image is None) or (self.t2Image == '')):
-            raise ValueError('T2 image not specified') 
-
         cmd.append(self.inputImage)
         cmd.append(self.outputImage)
+        cmd.append('-v')
 
-        runChoice = runChoices[self.runChoice]
+        runChoice = self.runChoice
 
-        if runChoice != '':
+        if runChoice.strip() != '':
             cmd.append(runChoice)
 
         if runChoice == '-A2':
-
-            if self.t2Image is None or self.t2Image == '':
-                raise ValueError('T2 image not specified')
-
             cmd.append(self.t2Image)        
 
         if not self.outputExtracted:      cmd.append('-n')
@@ -121,7 +125,7 @@ class BetOptions(tkp.HasProperties):
             cmd.append('{}'.format(self.yCoordinate))
             cmd.append('{}'.format(self.zCoordinate))
 
-        return cmd 
+        return cmd
 
     
 optLabels = {
@@ -144,12 +148,14 @@ optLabels = {
     'zCoordinate'          : 'Z'
 }
 
+
 optTooltips = {
     'fractionalIntensity' : 'Smaller values give larger brain outline estimates.',
     'thresholdGradient'   : 'Positive values give larger brain outline at bottom, smaller at top.',
     'headRadius'          : 'Initial surface sphere is set to half of this.',
     'centreCoords'        : 'Coordinates (voxels) for centre of initial brain surface sphere.'
 }
+
 
 betView = tkp.NotebookGroup((
     tkp.VGroup(
@@ -182,6 +188,47 @@ betView = tkp.NotebookGroup((
 ))
 
 
+def checkAndRun(betOpts, tkRoot):
+    """
+    Checks that the given options are valid. If they are, bet is run.
+    If the options are not valid, some complaints are directed towards
+    the user.
+    """
+
+    errors = betOpts.validateAll()
+    if len(errors) > 0:
+
+        msg = 'There are numerous errors which need '\
+              'to be fixed before BET can be run:\n'
+
+        for name,error in errors:
+            msg = msg + '\n - {}: {}'.format(optLabels[name], error)
+
+        tkmsg.showwarning('Error', msg)
+        
+    else:
+        cmd = betOpts.genBetCmd()
+        shell.run(cmd, tkRoot)
+
+
+def openHelp():
+    """
+    Opens BET help in a web browser.
+    """
+
+    fsldir = os.environ.get('FSLDIR', None)
+    url    = 'file://{}/doc/redirects/bet.html'.format(fsldir)
+
+    if fsldir is not None:
+        import webbrowser
+        webbrowser.open(url)
+    else:
+        tkmsg.showerror(
+            'Error',
+            'The FSLDIR environment variable is not set - I don\'t '\
+            'know where to find the FSL documentation.') 
+
+    
 class BetFrame(tk.Frame):
     
     def __init__(self, parent, betOpts):
@@ -189,45 +236,42 @@ class BetFrame(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.pack(fill=tk.BOTH, expand=1)
 
-        self.tkpFrame = tkp.buildGUI(self, betOpts, betView, optLabels, optTooltips)
+        buttons = OrderedDict((
+            ('Run BET',  lambda : checkAndRun(betOpts, parent)),
+            ('Cancel',   parent.destroy),
+            ('Help',     openHelp)))
+
+        self.tkpFrame = tkp.buildGUI(
+            self, betOpts, betView, optLabels, optTooltips, buttons)
+        
         self.tkpFrame.pack(fill=tk.BOTH, expand=1)
-
-        self.buttonFrame = tk.Frame(self)
-        self.runButton   = ttk.Button(self.buttonFrame,
-                                      text='Run BET',
-                                      command=parent.destroy)
-        self.quitButton  = ttk.Button(self.buttonFrame,
-                                      text='Quit',
-                                      command=parent.destroy)
-
-        self.runButton  .pack(fill=tk.X, expand=1, side=tk.LEFT) 
-        self.quitButton .pack(fill=tk.X, expand=1, side=tk.RIGHT)
-        self.buttonFrame.pack(fill=tk.X) 
 
 
 if __name__ == '__main__':
 
+    import logging
+    logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
+
     app     = tk.Tk()
     betopts = BetOptions()
 
-    frame = BetFrame(app, betopts)
+    betopts.inputImage  = '/Users/paulmc/MNI152_T1_2mm.nii.gz'
+    betopts.outputImage = '/Users/paulmc/brain'
 
-    print('Before')
-    print(betopts)
+    frame = BetFrame(app, betopts)
 
     # stupid hack for testing under OS X - forces the TK
     # window to be displayed above all other windows
-    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
-    
+    os.system('''/usr/bin/osascript -e 'tell app "Finder" to '''\
+              '''set frontmost of process "Python" to true' ''')
+
+    def checkFslDir():
+        fsldir = os.environ.get('FSLDIR', None)
+        if fsldir is None:
+            tkmsg.showwarning(
+                'Warning',
+                'The FSLDIR environment variable is not set - '\
+                'you will not be able to run BET.')
+            
+    app.after_idle(checkFslDir)
     app.mainloop()
-
-    print('After')
-    print(betopts)
-
-    errors = betopts.validateAll()
-    if len(errors)  == 0:
-        print('Command:')
-        print(' '.join(betopts.genBetCmd()))
-    else:
-        print('Errors:')
-        print('  ' + '\n  '.join(errors))
