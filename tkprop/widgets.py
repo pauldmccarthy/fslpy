@@ -68,7 +68,11 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         of the new value.
         """
         _setBG(valid)
-        
+
+    # We add a callback listener to the Tk variable, rather than
+    # to the property, as one property may be associated with
+    # multiple variables, and we don't want the widgets associated
+    # with those other variables to change background.
     listenerName = 'ChangeBGOnValidate_{}'.format(tkVar.name)
     tkVar.addListener(listenerName, _changeBGOnValidate)
 

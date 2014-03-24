@@ -163,7 +163,6 @@ class TkVarProxy(object):
         self.tkVarType       = tkVarType
         self.tkProp          = tkProp
         self.owner           = owner
-        self.lastValue       = value
         self.changeListeners = {}
         self.name            = name
         self.tkVar           = tkVarType(value=value, name=name)
@@ -173,11 +172,13 @@ class TkVarProxy(object):
     def addListener(self, name, callback):
         """
         Adds a listener for this variable. When the variable value
-        changes, the listener callback function is called. The
-        callback function must accept these arguments:
+        changes, the listener callback function is called. Listener
+        notification may also be programmatically triggered via the
+        PropertyBase.forceValidation method. The callback function
+        must accept these arguments:
 
-          value    - The new property value
-          valid    - Whether the new value is valid or invalid
+          value    - The property value
+          valid    - Whether the value is valid or invalid
           instance - The HasProperties instance
           tkProp   - The PropertyBase instance
           name     - The name of this TkVarProxy
@@ -202,24 +203,12 @@ class TkVarProxy(object):
         
         self.changeListeners[instance].pop(name, None)
 
-        
-    def _traceCb(self, *args):
-        """
-        Called whenever the Tkinter control variable value is changed.
-        The PropertyBase.validate() method is called on the parent
-        property of this TkVarProxy object. If this validate method
-        does not raise an error, the new value is stored as the last
-        known good value. If the validate method does raise an error,
-        the last known good value is not changed. The variable can
-        be reverted to its last known good value via the revert
-        method.
-        
-        After the PropertyBase.validate method is called, any registered
-        listeners are notified of the variable value change.
-        """
 
-        valid     = True
-        listeners = self.changeListeners.items()
+    def _getVarValue(self):
+        """
+        Returns the current value of the Tkinter control
+        variable being managed by this TkVarProxy object.
+        """
 
         # This is silly. Tkinter allows Boolean/Int/Double
         # variables to be set to invalid values (e.g. it
@@ -229,12 +218,12 @@ class TkVarProxy(object):
         # the invalid value to a boolean/int/double. So here
         # we attempt to get the current value in the normal
         # way ...
-        try:    newValue = self.tkVar.get()
+        try:    value = self.tkVar.get()
 
         # and if that fails, we manually look up the value
         # via the current tk context, thus avoiding the
         # failing type cast. Ugly.
-        except: newValue = self.tkVar._tk.globalgetvar(self.name)
+        except: value = self.tkVar._tk.globalgetvar(self.name)
 
         # More silliness related to above silliness. All
         # variables in Tk, be they IntVars, BooleanVars, or
@@ -244,43 +233,55 @@ class TkVarProxy(object):
         # which is quite different. So I'm following the
         # convention that an empty string, for any of the 
         # variable types, is equivalent to None. 
-        if newValue == '':
-            newValue = None
+        if value == '': value = None
 
-        # print a log message if the value has changed
-        if newValue != self.lastValue:
-            log.debug(
-                'Variable {} changed: {} (valid: {}, {} listeners)'.format(
-                    self.name, newValue, valid, len(listeners)))
+        return value
+        
 
-        # if the new value is valid, save
-        # it as the last known good value
-        try:
-            self.tkProp.validate(self.owner, newValue)
-            self.lastValue = newValue
+    def validateAndNotify(self):
+        """
+        Passes the current variable value to the validate()
+        method of the PropertyBase object which owns this
+        TkVarProxy, and then notifies any listeners which
+        have been registered with this TkVarProxy object.
+        """
+        
+        value     = self._getVarValue()
+        valid     = True
+        listeners = self.changeListeners.items()
 
-        except ValueError:
-            valid = False
+        try:               self.tkProp.validate(self.owner, value)
+        except ValueError: valid = False
 
-        # Notify all listeners about the change, ignoring
-        # any errors - it is up to the listeners to ensure
-        # that they handle invalid values
+        # Notify all listeners, ignoring any errors -
+        # it is up to the listeners to ensure that
+        # they handle invalid values
         for (name,func) in listeners:
 
             log.debug('Notifying listener on {}: {}'.format(self.name, name))
             
-            try: func(newValue, valid, self.owner, self.tkProp, self.name)
+            try: func(value, valid, self.owner, self.tkProp, self.name)
             except Exception as e:
                 log.debug('Listener on {} ({}) raised exception: {}'.format(
                     self.name, name, e))
 
+        
+    def _traceCb(self, *args):
+        """
+        Called whenever the Tkinter control variable value is changed.
+        Notifies any registered listeners, and the HasProperties
+        property owner, of the change.
+        """
+        
+        newValue = self._getVarValue()
 
-    def revert(self):
-        """
-        Sets the Tk variable to its last known good value. This will
-        result in any registered listeners being notified of the change.
-        """
-        self.tkVar.set(self.lastValue)
+        log.debug('Variable {} changed: {}'.format(self.name, newValue))
+
+        # Validate the new value and notify any registered listeners
+        self.validateAndNotify()
+            
+        # Notify the property owner that this property has changed
+        self.owner._propChanged(self.tkProp)
 
 
     def __del__(self):
@@ -337,7 +338,7 @@ class PropertyBase(object):
                           returns True or False.
         
           - validateFunc: Custom validation function. Must accept
-                          two parameters:a reference to the
+                          two parameters: a reference to the
                           HasProperties instance, the owner of
                           this property; and the new property
                           value. Should raise a ValueError if the
@@ -393,7 +394,7 @@ class PropertyBase(object):
             varProxies = [varProxies]
 
         for var in varProxies:
-            var._traceCb()
+            var.validateAndNotify()
 
         
     def _varChanged(self, value, valid, instance, tkProp, name):
@@ -487,7 +488,7 @@ class PropertyBase(object):
         instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._makeTkVar(instance)
 
-        # See comments in TkVarProxy._traceCb
+        # See comments in TkVarProxy._getVarValue
         # for a brief overview of this silliness.
         try:    val = instval.tkVar.get()
         except: val = instval.tkVar._tk.globalgetvar(instval.tkVar._name)
@@ -503,6 +504,8 @@ class PropertyBase(object):
         the given value.  
         """
 
+        # See comments in TkVarProxy._getVarValue
+        # for a brief overview of this silliness. 
         if value is None: value = ''
 
         instval = self.getTkVar(instance)
@@ -576,8 +579,8 @@ class HasProperties(object):
         propNames, props = zip(*props)
 
         return propNames, props
-        
 
+        
     def validateAll(self):
         """
         Validates all of the properties of this HasProperties object.
@@ -602,6 +605,24 @@ class HasProperties(object):
 
         return errors
 
+        
+    def _propChanged(self, cProp):
+        """
+        Called whenever any property value changes. Forces validation
+        for all other properties, and notification of their registered
+        listeners. This is done because the validity of some
+        properties may be dependent upon the values of others. So when
+        a particular property value changes, it may ahve changed the
+        validity of another property, meaning that the listeners of
+        the latter property need to be notified of this change in
+        validity.
+        """
+        propNames, props = self.getAllProperties()
+
+        for prop in props:
+            if prop == cProp: continue
+            prop.forceValidation(self)
+        
         
     def __str__(self):
         """

@@ -12,8 +12,8 @@
 # accepts as parameters a tk object to be used as the parent (e.g. a
 # root or Frame object), a tkprop.HasProperties object, an optional
 # ViewItem object, which specifies how the interface is to be laid
-# out, and two optional dictionaries for passing in labels and
-# tooltips.
+# out, two optional dictionaries for passing in labels and tooltips,
+# and another optional dictionary for any buttons to be added.
 #
 # The view parameter allows the layout of the generated interface to
 # be customised.  Property widgets may be grouped together by embedding
@@ -592,7 +592,12 @@ def _prepareEvents(propObj, propGui):
         prop.addListener(propObj, lName, onChange)
  
 
-def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
+def buildGUI(parent,
+             propObj,
+             view=None,
+             labels=None,
+             tooltips=None,
+             buttons=None):
     """
     Builds a Tkinter/ttk interface which allows the properties of the
     given propObj object (a tkprop.HasProperties instance) to be edited.
@@ -609,6 +614,12 @@ def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
      - view:     ViewItem object, specifying the interface layout
      - labels:   Dict specifying labels
      - tooltips: Dict specifying tooltips
+     - buttons:  Dict specifying buttons to add to the interface.
+                 Keys are used as button labels, and values are
+                 callback functions which take two arguments - the
+                 Tkinter parent object, and the HasProperties
+                 object (parent and propObj). Make sure to use a
+                 collections.OrderedDict if order is important.
     """
 
     if view is None: view = _defaultView(propObj)
@@ -617,8 +628,30 @@ def buildGUI(parent, propObj, view=None, labels=None, tooltips=None):
     if tooltips is None: tooltips = {}
 
     propGui  = PropGUI()
-    view     = _prepareView(view, labels, tooltips)
-    topLevel = _create(parent, view, propObj, propGui)
+    view     = _prepareView(view, labels, tooltips) 
+
+    # If any buttons were specified, the properties
+    # interface is embedded in a higher level frame,
+    # along with the buttons
+    if len(buttons) > 0:
+        
+        topLevel  = ttk.Frame(parent)
+        propFrame = _create(topLevel, view, propObj, propGui)
+
+        topLevel.rowconfigure(   0, weight=1)
+        topLevel.columnconfigure(0, weight=1)
+        topLevel.columnconfigure(1, weight=1)
+
+        propFrame.grid(row=0, column=0, columnspan=2,
+                       sticky=tk.N+tk.S+tk.E+tk.W)
+
+        for i,(label,callback) in enumerate(buttons.items()):
+
+            button = ttk.Button(topLevel, text=label, command=callback)
+            button.grid(row=1, column=i, sticky=tk.N+tk.S+tk.E+tk.W)
+            
+    else:
+        topLevel = _create(parent, view, propObj, propGui)
 
     _prepareEvents(propObj, propGui)
 
