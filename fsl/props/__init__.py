@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 #
-# __init__.py - Sets up the tkprop package namespace.
+# __init__.py - Sets up the fsl.props package namespace.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from tkprop.properties import \
-    TkVarProxy,    \
+from fsl.props.properties import \
     PropertyBase,  \
     HasProperties
 
-from tkprop.properties_types import \
+from fsl.props.properties_types import \
     Boolean,       \
     Int,           \
     Double,        \
@@ -20,10 +19,10 @@ from tkprop.properties_types import \
     Choice,        \
     List
 
-from tkprop.widgets import \
+from fsl.props.widgets import \
     makeWidget
 
-from tkprop.build import \
+from fsl.props.build import \
     buildGUI,      \
     ViewItem,      \
     Button,        \
