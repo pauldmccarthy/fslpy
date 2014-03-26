@@ -273,12 +273,10 @@ class PropertyBase(object):
         method is called first.
 
       - Override __get__ and __set__ for any required implicit
-        casting/data transformation rules (see
-        properties_types.String for an example).
+        casting/data transformation rules.
 
       - Override _makePropVal if creation of the PropertyValue
-        needs to be controlled (see properties_types.Choice for
-        an example).
+        needs to be controlled.
 
       - Override getPropVal for properties which consist of
         more than one PropertyValue object
@@ -289,7 +287,7 @@ class PropertyBase(object):
 
     """
     
-    def __init__(self, default, required=False, validateFunc=None):
+    def __init__(self, default=None, required=False, validateFunc=None):
         """
         Parameters:
         

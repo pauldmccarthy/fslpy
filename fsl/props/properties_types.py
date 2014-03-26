@@ -12,19 +12,24 @@ import logging as log
 
 from collections import OrderedDict
 
-import Tkinter           as tk
-import tkprop.properties as props
-
+import fsl.props.properties as props
 
 class Boolean(props.PropertyBase):
     """
-    A property which encapsulates a Tkinter.BooleanVar object.
+    A property which encapsulates a boolean value.
     """
 
     def __init__(self, **kwargs):
 
         kwargs['default'] = kwargs.get('default', False)
-        props.PropertyBase.__init__(self, tk.BooleanVar, **kwargs)
+        props.PropertyBase.__init__(self, **kwargs)
+
+        
+    def validate(instance, value):
+        props.PropertyBase.validate(self, instance, value)
+
+        try:    value = bool(value)
+        except: raise ValueError('Must be a boolean')
 
 
 class Number(props.PropertyBase):
@@ -33,7 +38,7 @@ class Number(props.PropertyBase):
     use/subclass this, use/subclass one of Int or Double.
     """
     
-    def __init__(self, tkvartype, minval=None, maxval=None, **kwargs):
+    def __init__(self, minval=None, maxval=None, **kwargs):
 
         self.minval = minval
         self.maxval = maxval
@@ -49,7 +54,7 @@ class Number(props.PropertyBase):
                 default = self.maxval 
                 
         kwargs['default'] = default
-        props.PropertyBase.__init__(self, tkvartype, **kwargs)
+        props.PropertyBase.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
@@ -65,7 +70,7 @@ class Number(props.PropertyBase):
         
 class Int(Number):
     """
-    A property which encapsulates a Tkinter.IntVar object. 
+    A property which encapsulates an integer. 
     """
     
     def __init__(self, **kwargs):
@@ -73,7 +78,7 @@ class Int(Number):
         Int constructor. See the Number class for keyword
         arguments.
         """
-        Number.__init__(self, tk.IntVar, **kwargs)
+        Number.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
@@ -86,7 +91,7 @@ class Int(Number):
 
 class Double(Number):
     """
-    A property which encapsulates a Tkinter.DoubleVar object. 
+    A property which encapsulates a double. 
     """
     
     def __init__(self, **kwargs):
@@ -94,7 +99,7 @@ class Double(Number):
         Double constructor. See the Number class for keyword
         arguments.
         """
-        Number.__init__(self, tk.DoubleVar, **kwargs)
+        Number.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
@@ -119,7 +124,7 @@ class Percentage(Double):
 
 class String(props.PropertyBase):
     """
-    A property which encapsulates a Tkinter.StringVar object. 
+    A property which encapsulates a string. 
     """
     
     def __init__(self, minlen=None, maxlen=None, **kwargs):
@@ -131,23 +136,16 @@ class String(props.PropertyBase):
         self.minlen = minlen
         self.maxlen = maxlen
         
-        kwargs['default'] = kwargs.get('default', '')
-        props.PropertyBase.__init__(self, tk.StringVar, **kwargs)
-
-    def __get__(self, instance, owner):
-        val = props.PropertyBase.__get__(self, instance, owner)
-
-        if val == '': return None
-        return val
+        kwargs['default'] = kwargs.get('default', None)
+        props.PropertyBase.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
-
         props.PropertyBase.validate(self, instance, value)
 
         if value is None: return
-        if value == '':   return 
-        
+        if value == '':   return
+
         value = str(value)
 
         if self.minlen is not None and len(value) < self.minlen:
@@ -160,7 +158,7 @@ class String(props.PropertyBase):
 class Choice(String):
     """
     A property which may only be set to one of a set of predefined
-    values.
+    strings.
     """
 
     def __init__(self, choices, choiceLabels=None, **kwargs):
@@ -196,15 +194,6 @@ class Choice(String):
         if self.choiceLabels is None:
             self.choiceLabels = self.choices
 
-        # Lookup dictionaries for choices -> labels,
-        # and vice versa. See _makeTkVar below.
-        self.choiceDict = OrderedDict(zip(self.choices, self.choiceLabels))
-        self.labelDict  = OrderedDict(zip(self.choiceLabels, self.choices))
-
-        # Dict for storing references to Tkinter
-        # label control variables - see _makeTkVar.
-        self.labelVars  = {}
-
         kwargs['default'] = kwargs.get('default', self.choices[0])
 
         String.__init__(self, **kwargs)
@@ -214,60 +203,12 @@ class Choice(String):
         """
         Rejects values that are not in the choices list.
         """
-
         String.validate(self, instance, value)
 
         value = str(value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice ({})'.format(value))
-
-            
-    def getLabelVar(self, instance):
-        """
-        Return the label variable for the given instance.
-        """
-        return self.labelVars[instance]
-
-
-    def _makeTkVar(self, instance):
-        """
-        We're using a bit of trickery here. For visual editing of a Choice
-        property, we want to display the labels, rather than the choices.  But
-        the ttk.Combobox doesn't allow anything like this, so if we were to
-        link the Tk control variable to the combo box, and display the labels,
-        the tk variable would be set to the selected label value, rather than
-        the corresponding choice value. So instead of passing the TK control
-        variable, we use another control variable as a proxy, and set a trace
-        on it so that whenever its value changes (one of the label values),
-        the real control variable is set to the corresponding choice.
-        Similarly, we add a trace to the original control variable, so that
-        when its choice value is modified, the label variable value is
-        changed.
-
-        Even though this circular event callback situation looks incredibly
-        dangerous, Tkinter (in python 2.7.6) seems to be smart enough to
-        inhibit an infinitely recursive event explosion.
-
-        The label control variable is accessible via the Choice.getLabelVar()
-        method.
-        """
-
-        choiceVarProxy = String._makeTkVar(self, instance)
-        choiceVar      = choiceVarProxy.tkVar
-        labelVar       = tk.StringVar()
-
-        labelVar.set(self.choiceDict[choiceVar.get()])
-
-        self.labelVars[instance] = labelVar
-        
-        def choiceChanged(*a): labelVar .set(self.choiceDict[choiceVar.get()])
-        def labelChanged (*a): choiceVar.set(self.labelDict [labelVar .get()])
-
-        choiceVar.trace('w', choiceChanged)
-        labelVar .trace('w', labelChanged)
-
-        return choiceVarProxy
 
 
 class FilePath(String):
@@ -330,20 +271,21 @@ class FilePath(String):
 class ListWrapper(object):
     """
     Used by the List property type, defined below. An object which
-    acts like a list, but for which items are embedded in TkVarProxy
-    objects, minimum/maximum list length may be enforced, and
-    value/type constraints enforced on the values added to it.
+    acts like a list, but for which items are embedded in
+    PropertyValue objects, minimum/maximum list length may be
+    enforced, and value/type constraints enforced on the values
+    added to it.
     
     Only basic list operations are supported. List modifications
     occur exclusively in the append, pop, __setitem__ and
     __delitem__ methods.
 
-    A TkVarProxy object is created for each item that is added to
-    the list.  When a list value is changed, instead of a new
+    A PropertyValue object is created for each item that is added
+    to the list.  When a list value is changed, instead of a new
     variable being created, the value of the existing variable
-    is changed.  References to the list of TkVarProxy objects may
-    be accessed via the _tkVars attribute of the ListWrapper
-    object.
+    is changed.  References to the list of PropertyValue objects
+    may be accessed via the List.getPropVals method of the
+    enclosing List object.
     """
 
     def __init__(self,
@@ -383,7 +325,7 @@ class ListWrapper(object):
 
         # This is the list that the ListWrapper wraps.
         # It contains TkVarProxy objects.
-        self._tkVars = []
+        self._propVals = []
 
         # Set the list to the given initial values
         if values is not None:
@@ -397,13 +339,13 @@ class ListWrapper(object):
                 self.append(listType.default)
 
         
-    def __len__(self): return self._tkVars.__len__()
+    def __len__(self): return self._propVals.__len__()
     
     def __repr__(self):
-        return list([i.tkVar.get() for i in self._tkVars]).__repr__()
+        return list([i.get() for i in self._propVals]).__repr__()
         
     def __str__(self):
-        return list([i.tkVar.get() for i in self._tkVars]).__str__()
+        return list([i.get() for i in self._propVals]).__str__()
  
     
     def _checkMaxlen(self, change=1):
@@ -412,7 +354,7 @@ class ListWrapper(object):
         not cause the list to grow beyond its maximum length.
         """
         if (self._maxlen is not None) and \
-           (len(self._tkVars) + change > self._maxlen):
+           (len(self._propVals) + change > self._maxlen):
             raise IndexError('{} must have a length of at most {}'.format(
                 self._listProp.label, self._maxlen))
 
@@ -423,7 +365,7 @@ class ListWrapper(object):
         not cause the list to shrink beyond its minimum length.
         """ 
         if (self._minlen is not None) and \
-           (len(self._tkVars) - change < self._minlen):
+           (len(self._propVals) - change < self._minlen):
             raise IndexError('{} must have a length of at least {}'.format(
                 self._listProp.label, self._minlen))
 
@@ -438,13 +380,12 @@ class ListWrapper(object):
             self, True, self._owner, self._listProp, self._listProp.label) 
 
         
-    def _makeTkVar(self, value):
+    def _makePropVal(self, value):
         """
-        Encapsulate the given value in a TkVarProxy object.
+        Encapsulate the given value in a PropertyValue object.
         """
 
-        tkval = props.TkVarProxy(
-            self._listType, self._owner, self._listType.tkVarType, value)
+        tkval = props.PropertyValue(self._listType, self._owner, value)
         
         return tkval
 
@@ -455,8 +396,8 @@ class ListWrapper(object):
         value is not present.
         """
 
-        for i in range(len(self._tkVars)):
-            if self._tkVars[i].tkVar.get() == item:
+        for i in range(len(self._propVals)):
+            if self._propVals[i].get() == item:
                 return i
                 
         raise ValueError('{} is not present'.format(item))
@@ -467,12 +408,12 @@ class ListWrapper(object):
         Return the value(s) at the specified index/slice.
         """
         
-        items = self._tkVars.__getitem__(key)
+        items = self._propVals.__getitem__(key)
 
         if isinstance(key,slice):
-            return [i.tkVar.get() for i in items]
+            return [i.get() for i in items]
         else:
-            return items.tkVar.get()
+            return items.get()
 
 
     def __iter__(self):
@@ -480,9 +421,9 @@ class ListWrapper(object):
         Returns an iterator over the values in the list.
         """
         
-        innerIter = self._tkVars.__iter__()
+        innerIter = self._propVals.__iter__()
         for i in innerIter:
-            yield i.tkVar.get()
+            yield i.get()
 
         
     def __contains__(self, item):
@@ -502,8 +443,8 @@ class ListWrapper(object):
 
         c = 0
 
-        for i in self._tkVars:
-            if i.tkVar.get() == item:
+        for i in self._propVals:
+            if i.get() == item:
                  c = c + 1
                  
         return c
@@ -518,9 +459,9 @@ class ListWrapper(object):
 
         self._checkMaxlen()
 
-        newVar = self._makeTkVar(item)
+        newVal = self._makePropVal(item)
         
-        self._tkVars.append(newVar)
+        self._propVals.append(newVal)
         self._notify()
 
 
@@ -547,8 +488,8 @@ class ListWrapper(object):
 
         self._checkMinlen()
         
-        tkVar = self._tkVars.pop()
-        val   = tkVar.tkVar.get()
+        propVal = self._propVals.pop()
+        val     = propVal.get()
         
         self._notify()
         return val
@@ -589,13 +530,13 @@ class ListWrapper(object):
         # Replace values of existing items
         if newLen == oldLen:
             for i,v in zip(indices, values):
-                self._tkVars[i].tkVar.set(v)
+                self._propVals[i].set(v)
 
-        # Replace old TkVarProxy objects with new ones. 
+        # Replace old PropertyValue objects with new ones. 
         else:
-            values = [self._makeTkVar(v) for v in values]
+            values = [self._makePropVal(v) for v in values]
             if len(values) == 1: values = values[0]
-            self._tkVars.__setitem__(key, values)
+            self._propVals.__setitem__(key, values)
             
         self._notify() 
 
@@ -611,7 +552,7 @@ class ListWrapper(object):
         else:                      indices = [key]
 
         self._checkMinlen(len(indices))
-        self._tkVars.__delitem__(key)
+        self._propVals.__delitem__(key)
         self._notify() 
 
 
@@ -648,19 +589,19 @@ class List(props.PropertyBase):
 
         kwargs['default'] = kwargs.get('default', None)
 
-        props.PropertyBase.__init__(self, None, **kwargs)
+        props.PropertyBase.__init__(self, **kwargs)
 
         
-    def getTkVar(self, instance, index=None):
+    def getPropVal(self, instance, index=None):
         """
-        Return a list of TkVarProxy objects or, if index is specified, 
-        the TkVarProxy object at the specified index.
+        Return a list of PropertyValue objects or, if index is specified, 
+        the PropertyValue object at the specified index.
         """
-        if index is None: return instance.__dict__[self.label]._tkVars
-        else:             return instance.__dict__[self.label]._tkVars[index]
+        if index is None: return instance.__dict__[self.label]._propVals
+        else:             return instance.__dict__[self.label]._propVals[index]
 
 
-    def _makeTkVar(self, instance):
+    def _makePropVal(self, instance):
         """
         Creates a ListWrapper object, and attaches it to the
         given instance.
@@ -677,6 +618,9 @@ class List(props.PropertyBase):
 
         
     def validate(self, instance, values):
+        """
+        Validates the list and all of its values.
+        """
         props.PropertyBase.validate(self, instance, values)
 
         if values is None:
@@ -701,8 +645,8 @@ class List(props.PropertyBase):
         if instance is None:
             return self
 
-        instval = instance.__dict__.get(self.label, None)
-        if instval is None: instval = self._makeTkVar(instance) 
+        instval = self.getPropVal(instance)
+        if instval is None: instval = self._makePropVal(instance) 
         
         return instval
 
