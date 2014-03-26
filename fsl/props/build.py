@@ -580,21 +580,21 @@ def _prepareEvents(propObj, propGui):
  
 
 def buildGUI(parent,
-             propObj,
+             hasProps,
              view=None,
              labels=None,
              tooltips=None,
              buttons=None):
     """
     Builds a Tkinter/ttk interface which allows the properties of the
-    given propObj object (a props.HasProperties instance) to be edited.
+    given hasProps object (a props.HasProperties instance) to be edited.
     Returns a reference to the top level Tkinter object (typically a
     ttk.Frame or ttk.Notebook).
 
     Parameters:
     
      - parent:   Tkinter parent object
-     - propObj:  props.HasProperties object
+     - hasProps: props.HasProperties object
     
     Optional:
     
@@ -605,11 +605,11 @@ def buildGUI(parent,
                  Keys are used as button labels, and values are
                  callback functions which take two arguments - the
                  Tkinter parent object, and the HasProperties
-                 object (parent and propObj). Make sure to use a
+                 object (parent and hasProps). Make sure to use a
                  collections.OrderedDict if order is important.
     """
 
-    if view is None: view = _defaultView(propObj)
+    if view is None: view = _defaultView(hasProps)
 
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
@@ -624,7 +624,7 @@ def buildGUI(parent,
     if len(buttons) > 0:
         
         topLevel  = ttk.Frame(parent)
-        propFrame = _create(topLevel, view, propObj, propGui)
+        propFrame = _create(topLevel, view, hasProps, propGui)
 
         topLevel.rowconfigure(0, weight=1)
 
@@ -640,9 +640,9 @@ def buildGUI(parent,
             button.grid(row=1, column=i, sticky=tk.N+tk.S+tk.E+tk.W)
             
     else:
-        topLevel = _create(parent, view, propObj, propGui)
+        topLevel = _create(parent, view, hasProps, propGui)
 
-    _prepareEvents(propObj, propGui)
+    _prepareEvents(hasProps, propGui)
 
     # TODO return the propGui object, so the caller has
     # access to all of the Tkinter objects that were

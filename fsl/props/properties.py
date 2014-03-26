@@ -597,3 +597,6 @@ class HasProperties(object):
             lines.append(fmtStr.format(propName, propVal))
             
         return '\n'.join(lines)
+
+
+from properties_types import * 

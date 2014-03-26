@@ -7,9 +7,7 @@
 
 from properties import \
     PropertyBase,  \
-    HasProperties
-
-from properties_types import \
+    HasProperties, \
     Boolean,       \
     Int,           \
     Double,        \

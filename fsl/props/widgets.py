@@ -180,7 +180,7 @@ def _String(parent, hasProps, propObj):
     """
 
     propVal = propObj.getPropVal(hasProps)
-    tkVar   = _createTkVar(propVal, tk.String)
+    tkVar   = _createTkVar(propVal, tk.StringVar)
 
     widget = ttk.Entry(parent, textvariable=tkVar)
     _setupValidation(widget, hasProps, propObj, propVal)
