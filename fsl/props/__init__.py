@@ -5,11 +5,11 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from fsl.props.properties import \
+from properties import \
     PropertyBase,  \
     HasProperties
 
-from fsl.props.properties_types import \
+from properties_types import \
     Boolean,       \
     Int,           \
     Double,        \
@@ -19,10 +19,10 @@ from fsl.props.properties_types import \
     Choice,        \
     List
 
-from fsl.props.widgets import \
+from widgets import \
     makeWidget
 
-from fsl.props.build import \
+from build import \
     buildGUI,      \
     ViewItem,      \
     Button,        \

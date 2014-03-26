@@ -401,7 +401,7 @@ class PropertyBase(object):
         which contain multiple PropertyValue objects should override
         this method to return a list of said objects.
         """
-        return instance.__dict__[self.label]
+        return instance.__dict__.get(self.label, None)
 
         
     def validate(self, instance, value):

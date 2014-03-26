@@ -12,7 +12,7 @@ import logging as log
 
 from collections import OrderedDict
 
-import fsl.props.properties as props
+import properties as props
 
 class Boolean(props.PropertyBase):
     """
@@ -25,7 +25,7 @@ class Boolean(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def validate(instance, value):
+    def validate(self, instance, value):
         props.PropertyBase.validate(self, instance, value)
 
         try:    value = bool(value)
@@ -284,7 +284,7 @@ class ListWrapper(object):
     to the list.  When a list value is changed, instead of a new
     variable being created, the value of the existing variable
     is changed.  References to the list of PropertyValue objects
-    may be accessed via the List.getPropVals method of the
+    may be accessed via the List.getPropVal method of the
     enclosing List object.
     """
 
@@ -597,8 +597,11 @@ class List(props.PropertyBase):
         Return a list of PropertyValue objects or, if index is specified, 
         the PropertyValue object at the specified index.
         """
-        if index is None: return instance.__dict__[self.label]._propVals
-        else:             return instance.__dict__[self.label]._propVals[index]
+        propVal = instance.__dict__.get(self.label, None)
+        if propVal is None: return None
+        
+        if index is None: return propVal._propVals
+        else:             return propVal._propVals[index]
 
 
     def _makePropVal(self, instance):
@@ -645,7 +648,7 @@ class List(props.PropertyBase):
         if instance is None:
             return self
 
-        instval = self.getPropVal(instance)
+        instval = instance.__dict__.get(self.label, None)
         if instval is None: instval = self._makePropVal(instance) 
         
         return instval
