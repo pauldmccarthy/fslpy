@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 #
-# build.py - Automatically build a Tkinter GUI for an object with tkprop
-#            Properties.
+# build.py - Automatically build a Tkinter GUI for a props.HasProperties
+#            object.
 #
 # This module provides functionality to automatically build a Tkinter
 # interface containing widgets which allow the user to change the
-# properties (tkprop.PropertyBase objects) of a specified
-# tkprop.HasProperties object.
+# properties (props.PropertyBase objects) of a specified
+# props.HasProperties object.
 
 # The sole entry point for this module is the buildGUI function, which
 # accepts as parameters a tk object to be used as the parent (e.g. a
-# root or Frame object), a tkprop.HasProperties object, an optional
+# root or Frame object), a props.HasProperties object, an optional
 # ViewItem object, which specifies how the interface is to be laid
 # out, two optional dictionaries for passing in labels and tooltips,
 # and another optional dictionary for any buttons to be added.
@@ -28,11 +28,10 @@
 
 import sys
 
-import Tkinter           as tk
-import                      ttk
-import tkprop            as tkp
-import tkprop.properties as properties
+import Tkinter as tk
+import            ttk
 
+import widgets
 
 class ViewItem(object):
     """
@@ -318,11 +317,11 @@ def _createButton(parent, viewItem, propObj, propGui):
 def _createWidget(parent, viewItem, propObj, propGui):
     """
     Creates a widget for the given Widget object, using the
-    tkprop.makeWidget function (see the tkprop.widgets module
+    props.makeWidget function (see the props.widgets module
     for more details).
     """
 
-    tkWidget = tkp.makeWidget(parent, propObj, viewItem.key)
+    tkWidget = widgets.makeWidget(parent, propObj, viewItem.key)
     return tkWidget
 
     
@@ -495,14 +494,8 @@ def _defaultView(propObj):
     to the buildGUI function (defined below).
     """
 
-    propDict = propObj.__class__.__dict__
+    propNames, props = propObj.getAllProperties()
     
-    props = filter(
-        lambda (name,prop): isinstance(prop, tkp.PropertyBase),
-        propDict.items())
-    
-    propNames,props = zip(*props)
-
     return VGroup(label=propObj.__class__.__name__, children=propNames)
 
 
@@ -574,13 +567,7 @@ def _prepareEvents(propObj, propGui):
         for cb in propGui.onChangeCallbacks:
             cb()
 
-    propDict = propObj.__class__.__dict__
-    
-    props = filter(
-        lambda (name,prop): isinstance(prop, tkp.PropertyBase),
-        propDict.items())
-    
-    propNames,props = zip(*props)
+    propNames, props = propObj.getAllProperties()
 
     # initialise widget states
     onChange()
@@ -600,14 +587,14 @@ def buildGUI(parent,
              buttons=None):
     """
     Builds a Tkinter/ttk interface which allows the properties of the
-    given propObj object (a tkprop.HasProperties instance) to be edited.
+    given propObj object (a props.HasProperties instance) to be edited.
     Returns a reference to the top level Tkinter object (typically a
     ttk.Frame or ttk.Notebook).
 
     Parameters:
     
      - parent:   Tkinter parent object
-     - propObj:  tkprop.HasProperties object
+     - propObj:  props.HasProperties object
     
     Optional:
     
