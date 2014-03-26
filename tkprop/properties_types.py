@@ -277,17 +277,21 @@ class FilePath(String):
     may be either a file or a directory.
     """
 
-    def __init__(self, exists=False, isFile=True, **kwargs):
+    def __init__(self, exists=False, isFile=True, suffixes=[], **kwargs):
         """
         FilePath constructor. Optional arguments:
-          - exists: If True, the path must exist.
-          - isFile: If True, the path must be a file. If False, the
-                    path must be a directory. This check is only
-                    performed if exists=True.
+          - exists:       If True, the path must exist.
+          - isFile:       If True, the path must be a file. If False, the
+                          path must be a directory. This check is only
+                          performed if exists=True.
+          - suffixes:     List of acceptable file suffixes (only relevant
+                          if isFile is True).
         """
 
-        self.exists = exists
-        self.isFile = isFile
+        self.exists   = exists
+        self.isFile   = isFile
+        self.suffixes = suffixes
+        
         String.__init__(self, **kwargs)
 
         
@@ -295,16 +299,32 @@ class FilePath(String):
 
         String.validate(self, instance, value)
 
-        if value is None: return
-        if value == '':   return
+        if value is None:   return
+        if value == '':     return
+        if not self.exists: return
 
-        if self.exists:
+        if self.isFile:
 
-            if self.isFile and (not op.isfile(value)):
-                raise ValueError('Must be a file ({})'.format(value)) 
+            values = [value]
 
-            if (not self.isFile) and (not op.isdir(value)):
-                raise ValueError('Must be a directory ({})'.format(value))
+            # if suffixes have been specified, check to
+            # see if any file exists with each of the
+            # suffixes (in addition to the specified path)
+            if len(self.suffixes) > 0:
+                values.extend(['{}{}'.format(value, s) for s in self.suffixes])
+
+            files = map(op.isfile, values)
+
+            if not any(map(op.isfile, values)):
+                if len(self.suffixes) == 0:
+                    raise ValueError('Must be a file ({})'.format(value))
+                else:
+                    raise ValueError(
+                        'Must be a file ending in [{}] ({})'.format(
+                            ','.join(self.suffixes), value))
+
+        elif not op.isdir(value):
+            raise ValueError('Must be a directory ({})'.format(value))
 
 
 class ListWrapper(object):

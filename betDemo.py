@@ -32,12 +32,13 @@ runChoices = OrderedDict((
     ('-A',  'Run bet2 and then betsurf to get additional skull and scalp surfaces'),
     ('-A2', 'As above, when also feeding in non-brain extracted T2')))
 
+filetypes = ['.nii.gz', '.nii', '.hdr', '.img']
 
 class BetOptions(tkp.HasProperties):
     
-    inputImage           = tkp.FilePath(exists=True, required=True)
-    outputImage          = tkp.FilePath(             required=True)
-    t2Image              = tkp.FilePath(exists=True, required=lambda i: i.runChoice == '-A2')
+    inputImage           = tkp.FilePath(exists=True, suffixes=filetypes, required=True)
+    outputImage          = tkp.FilePath(                                 required=True)
+    t2Image              = tkp.FilePath(exists=True, suffixes=filetypes, required=lambda i: i.runChoice == '-A2')
     
     runChoice            = tkp.Choice(runChoices)
     
@@ -264,14 +265,11 @@ class BetFrame(tk.Frame):
 
 if __name__ == '__main__':
 
-    import logging
-    logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
+    #import logging
+    #logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
 
     app     = tk.Tk()
     betopts = BetOptions()
-
-    betopts.inputImage  = '/Users/paulmc/MNI152_T1_2mm.nii.gz'
-    betopts.outputImage = '/Users/paulmc/brain'
 
     frame = BetFrame(app, betopts)
 

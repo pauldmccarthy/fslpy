@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# runshell.py -
+# runshell.py - Run a process, display its output in a Tkinter window.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
