@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
-# widgets.py - Generate widgets for tkprop property objects.
+# widgets.py - Generate Tkinter widgets for props.PropertyBase objects.
 #
 # The sole entry point for this module is the makeWidget function,
 # which is called via the build module when it automatically
-# builds a GUI for the properties of a HasProperty instance.
+# builds a GUI for the properties of a props.HasProperties instance.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -16,19 +16,30 @@ import os.path as op
 
 from collections import OrderedDict
 
-import tkprop       as tkp
 import Tkinter      as tk
 import tkFileDialog as tkfile
 import                 ttk
 
 # the List property is complex enough to get its own module.
-from tkprop.widgets_list import _List
+from widgets_list import _List
+
+import properties as props
+
+def _createTkVar(propVal, varType):
+
+    value = propVal.get()
+    tkVar = varType(name=propVal.name, value=value)
+
+    def _trace(*a):
+        propVal.set(tkVar.get())
+
+    tkVar.trace('w', _trace)
 
 
-def _setupValidation(widget, propObj, tkProp, tkVar):
+def _setupValidation(widget, hasProps, propObj, propVal):
     """
     Configures input validation for the given widget, which is assumed
-    to be managing the given tkProp (tkprop.PropertyBase) object.  Any
+    to be managing the given prop (props.PropertyBase) object.  Any
     changes to the property value are validated and, if the new value
     is invalid, the widget background colour is changed to a light
     red, so that the user is aware of the invalid-ness.
@@ -69,16 +80,17 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
         """
         _setBG(valid)
 
-    # We add a callback listener to the Tk variable, rather than
-    # to the property, as one property may be associated with
-    # multiple variables, and we don't want the widgets associated
-    # with those other variables to change background.
-    listenerName = 'ChangeBGOnValidate_{}'.format(tkVar.name)
-    tkVar.addListener(listenerName, _changeBGOnValidate)
+    # We add a callback listener to the PropertyValue object,
+    # rather than to the PropertyBase, as one property may be
+    # associated with multiple variables, and we don't want
+    # the widgets associated with those other variables to
+    # change background.
+    listenerName = '{}_ChangeBGOnValidate'.format(propVal.name)
+    propVal.addListener(listenerName, _changeBGOnValidate)
 
     # Validate the initial property value,
     # so the background is appropriately set
-    tkProp.forceValidation(propObj)
+    propObj.forceValidation(hasProps)
     
 
 # The _lastFilePathDir variable is used to retain the
@@ -91,29 +103,32 @@ def _setupValidation(widget, propObj, tkProp, tkVar):
 # Easily done, just make this a dict, with the widget
 # (or property name) as the key.
 _lastFilePathDir = None
-def _FilePath(parent, propObj, tkProp, tkVar):
+def _FilePath(parent, hasProps, propObj):
     """
     Creates and returns a ttk Frame containing an Entry and a
     Button. The button, when clicked, opens a file dialog
     allowing the user to choose a file/directory to open, or
-    a location to save (this depends upon how the tkprop
-    [tkprop.FilePath] object was configured).
+    a location to save (this depends upon how the propObj
+    [props.FilePath] object was configured).
     """
+
+    propVal = propObj.getPropVal(hasProps)
+    tkVar   = _createTkVar(propVal, tk.StringVar)
 
     global _lastFilePathDir
     if _lastFilePathDir is None:
         _lastFilePathDir = os.getcwd()
 
     frame   = ttk.Frame(parent)
-    textbox = ttk.Entry(frame, textvariable=tkVar.tkVar)
-    _setupValidation(textbox, propObj, tkProp, tkVar)
+    textbox = ttk.Entry(frame, textvariable=tkVar)
+    _setupValidation(textbox, hasProps, propObj, propVal)
 
     def chooseFile():
         global _lastFilePathDir
 
-        if tkProp.exists:
+        if propObj.exists:
 
-            if tkProp.isFile:
+            if propObj.isFile:
                 path = tkfile.askopenfilename(
                     initialdir=_lastFilePathDir,
                     title='Open file')
@@ -129,9 +144,9 @@ def _FilePath(parent, propObj, tkProp, tkVar):
 
         if path != '' and path is not None:
             _lastFilePathDir = op.dirname(path)
-            tkVar.tkVar.set(path)
+            tkVar.set(path)
 
-    button  = ttk.Button(frame, text='Choose', command=chooseFile)
+    button = ttk.Button(frame, text='Choose', command=chooseFile)
 
     textbox.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
     button .pack(fill=tk.Y,    side=tk.RIGHT)
@@ -139,46 +154,58 @@ def _FilePath(parent, propObj, tkProp, tkVar):
     return frame
     
 
-def _Choice(parent, propObj, tkProp, tkVar):
+def _Choice(parent, hasProps, propObj):
     """
     Creates and returns a ttk Combobox allowing the
-    user to set the given tkProp (tkprop.Choice) object.
+    user to set the given propObj (props.Choice) object.
     """
 
-    # See the documentation for properties.Choice._makeTkVar
-    # for an explanation of what is going on here.
-    labels   = tkProp.choiceLabels
-    labelVar = tkProp.getLabelVar(propObj)
-    widget   = ttk.Combobox(parent, values=labels, textvariable=labelVar)
+    # TODO labels<->values
 
-    widget.configure(state='readonly')
+    # labels   = tkProp.choiceLabels
+    # labelVar = tkProp.getLabelVar(propObj)
+    # widget   = ttk.Combobox(parent, values=labels, textvariable=labelVar)
+
+    # widget.configure(state='readonly')
     
-    return widget
+    # return widget
+    return None
 
 
-def _String(parent, propObj, tkProp, tkVar):
+def _String(parent, hasProps, propObj):
     """
     Creates and returns a ttk Entry object, allowing
-    the user to edit the given tkProp (tkprop.String)
+    the user to edit the given propObj (props.String)
     object.
     """
 
-    widget = ttk.Entry(parent, textvariable=tkVar.tkVar)
-    _setupValidation(widget, propObj, tkProp, tkVar)
+    propVal = propObj.getPropVal(hasProps)
+    tkVar   = _createTkVar(propVal, tk.String)
+
+    widget = ttk.Entry(parent, textvariable=tkVar)
+    _setupValidation(widget, hasProps, propObj, propVal)
     
     return widget
 
 
-def _Number(parent, propObj, tkProp, tkVar):
+def _Number(parent, hasProps, propObj):
     """
     Creates and returns a tk widget, either a ttk.Scale,
     or a tk.Spinbox, allowing the user to edit the given
-    tkProp object (a tkprop.Int or tkprop.Double).
+    property (a props.Int or props.Double).
     """
 
-    value  = tkVar.tkVar.get()
-    minval = tkProp.minval
-    maxval = tkProp.maxval
+    if   isinstance(propObj, props.Int):    tkVarType = tk.IntVar
+    elif isinstance(propObj, props.Double): tkVarType = tk.DoubleVar
+    
+    else: raise TypeError('Invalid property type: {}'.format(
+            propObj.__class__.__name__))
+
+    propVal = propObj.getPropVal(hasProps)
+    value   = propVal.get()
+    tkVar   = _createTkVar(propVal, tkVarType)
+    minval  = propObj.minval
+    maxval  = propObj.maxval
 
     makeScale = True
 
@@ -190,14 +217,14 @@ def _Number(parent, propObj, tkProp, tkVar):
     # Tkinter spinboxes don't behave well if you
     # don't set both of the from_ and to limits.
     if minval is None:
-        if   isinstance(tkProp, tkp.Int):    minval = -sys.maxint-1
-        elif isinstance(tkProp, tkp.Double): minval = sys.float_info.min
+        if   isinstance(propObj, props.Int):    minval = -sys.maxint-1
+        elif isinstance(propObj, props.Double): minval = sys.float_info.min
     if maxval is None:
-        if   isinstance(tkProp, tkp.Int):    maxval = sys.maxint
-        elif isinstance(tkProp, tkp.Double): maxval = sys.float_info.max
+        if   isinstance(propObj, props.Int):    maxval = sys.maxint
+        elif isinstance(propObj, props.Double): maxval = sys.float_info.max
 
     # string format, and increment magnitude, for spinboxes
-    if isinstance(tkProp, tkp.Int):
+    if isinstance(propObj, props.Int):
         formatStr = '%0.0f'
         increment = 1
     else:
@@ -216,14 +243,14 @@ def _Number(parent, propObj, tkProp, tkVar):
 
         widget = ttk.Scale(scaleFrame, orient=tk.HORIZONTAL,
                            from_=minval, to=maxval,
-                           variable=tkVar.tkVar)
+                           variable=tkVar)
 
         minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
                              anchor=tk.W)
 
         curEntry = tk.Spinbox(scaleFrame,
                               from_=minval, to=maxval,
-                              textvariable=tkVar.tkVar,
+                              textvariable=tkVar,
                               format=formatStr,
                               increment=increment)
         
@@ -235,7 +262,7 @@ def _Number(parent, propObj, tkProp, tkVar):
         maxLabel.pack(side=tk.LEFT, fill=tk.X)
         curEntry.pack(side=tk.LEFT, fill=tk.X)
 
-        _setupValidation(curEntry, propObj, tkProp, tkVar)
+        _setupValidation(curEntry, hasProps, propObj, propVal)
                 
         widget = scaleFrame
 
@@ -244,58 +271,60 @@ def _Number(parent, propObj, tkProp, tkVar):
     else:
         widget = tk.Spinbox(parent,
                             from_=minval, to=maxval,
-                            textvariable=tkVar.tkVar,
+                            textvariable=tkVar,
                             format=formatStr,
                             increment=increment)
 
-        _setupValidation(widget, propObj, tkProp, tkVar)
+        _setupValidation(widget, hasProps, propObj, propVal)
 
     return widget
 
 
-def _Double(parent, propObj, tkProp, tkVar):
-    return _Number(parent, propObj, tkProp, tkVar)
+def _Double(parent, hasProps, propObj):
+    return _Number(parent, hasProps, propObj)
 
 
-def _Int(parent, propObj, tkProp, tkVar):
-    return _Number(parent, propObj, tkProp, tkVar)
+def _Int(parent, hasProps, propObj):
+    return _Number(parent, hasProps, propObj)
 
 
-def _Percentage(parent, propObj, tkProp, tkVar):
+def _Percentage(parent, hasProps, propObj):
     # TODO Add '%' signs to Scale labels.
-    return _Number(parent, propObj, tkProp, tkVar) 
+    return _Number(parent, hasProps, propObj) 
         
 
-def _Boolean(parent, propObj, tkProp, tkVar):
+def _Boolean(parent, hasProps, propObj):
     """
     Creates and returns a ttk Checkbutton, allowing the
-    user to set the given tkProp (tkprop.Boolean) object.
+    user to set the given propObj (props.Boolean) object.
     """
 
-    return ttk.Checkbutton(parent, variable=tkVar.tkVar)
+    propVal = propObj.getPropVal(hasProps)
+    tkVar   = _createTkVar(propVal, tk.BooleanVar)
+
+    return ttk.Checkbutton(parent, variable=tkVar)
 
 
-def makeWidget(parent, propObj, propName):
+def makeWidget(parent, hasProps, propName):
     """
-    Given propObj (a tkprop.HasProperties object), propName (the name of a
-    property of propObj), and parent (a Tkinter object), creates and returns a
+    Given hasProps (a props.HasProperties object), propName (the name of a
+    property of hasProps), and parent (a Tkinter object), creates and returns a
     Tkinter widget, or a frame containing widgets, which may be used to edit
     the property.
     """
 
-    tkProp = propObj.getTkProp(propName)
-    tkVar  = propObj.getTkVar( propName)
+    propObj = hasProps.getProp(propName)
 
-    if any((tkProp is None, tkVar is None)):
+    if propObj is None:
         raise ValueError('Could not find property {}.{}'.format(
-            propObj.__class__.__name__, propName))
+            hasProps.__class__.__name__, propName))
 
     makeFunc = getattr(
         sys.modules[__name__],
-        '_{}'.format(tkProp.__class__.__name__), None)
+        '_{}'.format(propObj.__class__.__name__), None)
 
     if makeFunc is None:
         raise ValueError(
-            'Unknown property type: {}'.format(tkProp.__class__.__name__))
+            'Unknown property type: {}'.format(propObj.__class__.__name__))
 
-    return makeFunc(parent, propObj, tkProp, tkVar)
+    return makeFunc(parent, hasProps, propObj)

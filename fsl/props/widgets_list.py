@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# widgets_list.py - A widget for editing a tkprop.List property.
+# widgets_list.py - A widget for editing a props.List property.
 #
 # The code in this file really belongs in widgets.py, but it is
 # large and complex enough to warrent its own module.
@@ -11,26 +11,28 @@
 import sys
 import os
 
-import            widgets
 import Tkinter as tk
 import            ttk
 
+import widgets
 
-def _pasteDataDialog(parent, listProp, propObj):
+
+
+def _pasteDataDialog(parent, hasProps, propObj):
     """
     Displays a dialog containing an editable text field, allowing the
     user to type/paste bulk data which will be used to populate the list
     (one line per item).
     
     Parameters:
-      - parent:   Tkinter parent object
-      - listProp: The tkprop.List property object
-      - propObj:  The tkprop.HasProperties object which owns listProp.    
+      - parent:   Tkinter parent object 
+      - hasProps: The props.HasProperties object which owns propObj. 
+      - propObj:  The props.List property object
     """
 
     window  = tk.Toplevel()
     frame   = ttk.Frame(window)
-    listObj = getattr(propObj, listProp.label)
+    listObj = getattr(hasProps, propObj.label)
 
     frame.pack(fill=tk.BOTH, expand=True)
     frame.columnconfigure(0, weight=1)
@@ -54,7 +56,7 @@ def _pasteDataDialog(parent, listProp, propObj):
         listData = listData.split('\n')
         listData = [s.strip() for s in listData]
 
-        setattr(propObj, listProp.label, listData)
+        setattr(hasProps, propObj.label, listData)
         
         window.destroy()
 
@@ -80,21 +82,15 @@ def _pasteDataDialog(parent, listProp, propObj):
     parent.wait_window(window) 
 
 
-def _editListDialog(parent, listProp, propObj):
+def _editListDialog(parent, hasProps, propObj):
     """
     A dialog which displays a widget for every item in the list, and
     which allows the user to adjust the number of items in the list.
-    
-    Parameters:
-      - parent:   Tkinter parent object
-      - listProp: The tkprop.List property object
-      - propObj:  The tkprop.HasProperties object which owns listProp.
     """
 
-    # listObj is the list of TkVarProxy objects being
-    # managed by the listProp property object.
-    listObj   = getattr(propObj, listProp.label)
-    listType  = listProp.listType
+    # listObj is a properties.ListWrapper object
+    listObj  = getattr(hasProps, propObj.label)
+    listType = propObj.listType
 
     # Get a reference to a function in the widgets module,
     # which can make individual widgets for each list item
@@ -102,8 +98,8 @@ def _editListDialog(parent, listProp, propObj):
         widgets, '_{}'.format(listType.__class__.__name__), None)
 
     if makeFunc is None:
-        raise ValueError(
-            'Unknown property type: {}'.format(listProp.__class__.__name__)) 
+        raise TypeError(
+            'Unknown property type: {}'.format(propObj.__class__.__name__)) 
 
     # Edit widgets go on the frame. But frames are not scrollable.
     # So we embed the frame inside a canvas, which is scrollable.
@@ -152,21 +148,21 @@ def _editListDialog(parent, listProp, propObj):
 
     # Make a widget for every element in the list
     for i in range(len(listObj)):
-        tkVar  = listProp.getTkVar(propObj, i)
-        widget = makeFunc(frame, propObj, listType, tkVar)
+        propVal = propObj.getPropVal(hasProps, i)
+        widget  = makeFunc(frame, hasProps, listType)
         listWidgets.append(widget)
 
     # A TK variable used in a spinbox created below,,
     # which stores the number of items in the list
-    numRowsName = '{}_numRows'.format(listProp.label)
+    numRowsName = '{}_numRows'.format(propObj.label)
     numRows     = tk.IntVar(master=window,
                             name=numRowsName,
                             value=len(listObj))
 
     # Explicitly set minimum/maximum values on the
     # spinbox, otherwise it doesn't behave very nicely.
-    minval = listProp.minlen if (listProp.minlen is not None) else 0
-    maxval = listProp.maxlen if (listProp.maxlen is not None) else sys.maxint
+    minval = propObj.minlen if (propObj.minlen is not None) else 0
+    maxval = propObj.maxlen if (propObj.maxlen is not None) else sys.maxint
 
     # Spinbox allowing user to change
     # number of items in the list
@@ -194,10 +190,9 @@ def _editListDialog(parent, listProp, propObj):
 
         oldLen = len(listObj)
 
-        try:    newLen = numRows.get()
-
         # If numRows.get() raises an error, it means
-        # that the user has typed in non-numeric data.
+        # that the user has typed in non-numeric data. 
+        try:    newLen = numRows.get()
         except: return
 
         # add rows
@@ -205,10 +200,10 @@ def _editListDialog(parent, listProp, propObj):
 
             # add a new element to the list
             listObj.append(listType.default)
-            tkVar = listProp.getTkVar(propObj, -1)
+            propVal = propObj.getPropVal(hasProps, -1)
 
             # add a widget
-            widg = makeFunc(frame, propObj, listProp.listType, tkVar)
+            widg = makeFunc(frame, hasProps, listType)
             widg.grid(row=len(listObj), column=0, sticky=tk.W+tk.E)
             listWidgets.append(widg)
  
@@ -227,20 +222,15 @@ def _editListDialog(parent, listProp, propObj):
 
             oldLen = oldLen - 1
 
-    traceName = numRows.trace('w', changeNumRows)
+    numRows.trace('w', changeNumRows)
 
     # make the list edit dialog modal
     window.transient(parent)
     window.grab_set()
     parent.wait_window(window)
 
-    # I'm pretty sure that Tkinter takes care of cleaning up
-    # traces/variables etc etc when the corresponding python
-    # objects are garbage collected. So there's no need to
-    # clean up after myself here.
-
     
-def _List(parent, propObj, tkProp, tkVar):
+def _List(parent, hasProps, propObj):
     """
     Creates and returns a ttk.Frame containing two buttons which,
     when pushed, display dialogs allowing the user to edit the
@@ -254,13 +244,13 @@ def _List(parent, propObj, tkProp, tkVar):
     # the values in the list individually
     editButton = ttk.Button(
         frame, text='Edit',
-        command=lambda: _editListDialog(parent, tkProp, propObj))
+        command=lambda: _editListDialog(parent, hasProps, propObj))
 
     # When the user pushes this button, a new window is
     # displayed, allowing the user to type/paste bulk data
     pasteButton = ttk.Button(
         frame, text='Paste data',
-        command=lambda: _pasteDataDialog(parent, tkProp, propObj))
+        command=lambda: _pasteDataDialog(parent, hasProps, propObj))
 
     frame.columnconfigure(0, weight=1)
     frame.columnconfigure(1, weight=1)
