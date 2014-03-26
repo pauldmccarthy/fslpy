@@ -473,8 +473,9 @@ class PropertyBase(object):
         if (self.required is not None) and (value is None):
 
             # required may either be a boolean value
-            if isinstance(self.required, bool) and self.required:
-                raise ValueError('A value is required')
+            if isinstance(self.required, bool):
+                if self.required:
+                    raise ValueError('A value is required')
 
             # or a function
             elif self.required(instance):
