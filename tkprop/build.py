@@ -626,6 +626,7 @@ def buildGUI(parent,
 
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
+    if buttons  is None: buttons  = []
 
     propGui  = PropGUI()
     view     = _prepareView(view, labels, tooltips) 
