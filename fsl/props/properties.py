@@ -182,6 +182,8 @@ class PropertyValue(object):
 
         log.debug('Adding listener on {}: {}'.format(self.name, name))
 
+        name = 'PropertyValue_{}_{}'.format(self.name, name)
+
         # Save a reference to the listener callback function
         self.changeListeners[name] = callback
 
@@ -193,6 +195,8 @@ class PropertyValue(object):
         """
 
         log.debug('Removing listener on {}: {}'.format(self.name, name))
+
+        name = 'PropertyValue_{}_{}'.format(self.name, name)
         
         self.changeListeners[instance].pop(name, None)
 
@@ -325,6 +329,8 @@ class PropertyBase(object):
 
         log.debug('Adding listener on {}: {}'.format(self.label, name))
 
+
+
         self.changeListeners[instance][name] = callback
 
         
@@ -337,6 +343,8 @@ class PropertyBase(object):
         if name     not in self.changeListeners[instance]: return
 
         log.debug('Removing listener on {}: {}'.format(self.label, name))
+
+        name = 'PropertyBase_{}_{}'.format(self.label, name)
 
         self.changeListeners[instance].pop(name)
 
@@ -387,9 +395,7 @@ class PropertyBase(object):
         instval = PropertyValue(self, instance, self.default, self.label)
         instance.__dict__[self.label] = instval
 
-        listenerName = 'PropertyBase_{}_{}'.format(self.label, id(instval))
-
-        instval.addListener(listenerName, self._varChanged)
+        instval.addListener('internal', self._varChanged)
 
         return instval
 
