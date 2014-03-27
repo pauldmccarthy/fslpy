@@ -149,7 +149,7 @@ def _editListDialog(parent, hasProps, propObj):
     # Make a widget for every element in the list
     for i in range(len(listObj)):
         propVal = propObj.getPropVal(hasProps, i)
-        widget  = makeFunc(frame, hasProps, listType)
+        widget  = makeFunc(frame, hasProps, listType, propVal)
         listWidgets.append(widget)
 
     # A TK variable used in a spinbox created below,,
@@ -203,7 +203,7 @@ def _editListDialog(parent, hasProps, propObj):
             propVal = propObj.getPropVal(hasProps, -1)
 
             # add a widget
-            widg = makeFunc(frame, hasProps, listType)
+            widg = makeFunc(frame, hasProps, listType, propVal)
             widg.grid(row=len(listObj), column=0, sticky=tk.W+tk.E)
             listWidgets.append(widg)
  
@@ -230,7 +230,7 @@ def _editListDialog(parent, hasProps, propObj):
     parent.wait_window(window)
 
     
-def _List(parent, hasProps, propObj):
+def _List(parent, hasProps, propObj, propVal):
     """
     Creates and returns a ttk.Frame containing two buttons which,
     when pushed, display dialogs allowing the user to edit the
