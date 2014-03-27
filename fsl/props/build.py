@@ -197,7 +197,7 @@ class PropGUI(object):
         self.tkObjects         = {}
  
 
-def _configureEnabledWhen(viewItem, tkObj, propObj):
+def _configureEnabledWhen(viewItem, tkObj, hasProps):
     """
     Returns a reference to a callback function for this view item,
     if its enabledWhen attribute was set.
@@ -205,7 +205,7 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
 
       - viewItem: The ViewItem object
       - tkObj:    The Tkinter object created from the ViewItem
-      - propObj:  The HasProperties instance
+      - hasProps: The HasProperties instance
     """
 
     if viewItem.enabledWhen is None: return None
@@ -246,15 +246,15 @@ def _configureEnabledWhen(viewItem, tkObj, propObj):
         upon the result.
         """
 
-        if viewItem.enabledWhen(propObj): state = 'enabled'
-        else:                             state = 'disabled'
+        if viewItem.enabledWhen(hasProps): state = 'enabled'
+        else:                              state = 'disabled'
         
         _changeState(tkObj, state)
 
     return _toggleEnabled
 
 
-def _configureVisibleWhen(viewItem, tkObj, propObj):
+def _configureVisibleWhen(viewItem, tkObj, hasProps):
     """
     Returns a reference to a callback function for this view item,
     if its visibleWhen attribute was set.
@@ -264,7 +264,7 @@ def _configureVisibleWhen(viewItem, tkObj, propObj):
 
     def _toggleVis():
 
-        visible = viewItem.visibleWhen(propObj)
+        visible = viewItem.visibleWhen(hasProps)
 
         # See comments in  _configureEnabledWhen -
         # ttk.Notebook object state/visibility is
@@ -288,7 +288,7 @@ def _configureVisibleWhen(viewItem, tkObj, propObj):
     return _toggleVis
 
 
-def _createLabel(parent, viewItem, propObj, propGui):
+def _createLabel(parent, viewItem, hasProps, propGui):
     """
     Creates a ttk.Label object containing a label for the given
     viewItem.
@@ -298,7 +298,7 @@ def _createLabel(parent, viewItem, propObj, propGui):
     return label
 
 
-def _createButton(parent, viewItem, propObj, propGui):
+def _createButton(parent, viewItem, hasProps, propGui):
     """
     Creates a ttk.Button object for the given ViewItem (assumed to be a
     Button).
@@ -314,18 +314,18 @@ def _createButton(parent, viewItem, propObj, propGui):
     return button
 
 
-def _createWidget(parent, viewItem, propObj, propGui):
+def _createWidget(parent, viewItem, hasProps, propGui):
     """
     Creates a widget for the given Widget object, using the
     props.makeWidget function (see the props.widgets module
     for more details).
     """
 
-    tkWidget = widgets.makeWidget(parent, propObj, viewItem.key)
+    tkWidget = widgets.makeWidget(parent, hasProps, viewItem.key)
     return tkWidget
 
     
-def _createNotebookGroup(parent, group, propObj, propGui):
+def _createNotebookGroup(parent, group, hasProps, propGui):
     """
     Creates a ttk.Notebook object for the given NotebookGroup object.
     The children of the group object are also created via recursive
@@ -336,7 +336,7 @@ def _createNotebookGroup(parent, group, propObj, propGui):
 
     for child in group.children:
 
-        page = _create(notebook, child, propObj, propGui)
+        page = _create(notebook, child, hasProps, propGui)
         page.pack(fill=tk.X, expand=1)
         
         notebook.add(page, text=child.label)
@@ -408,7 +408,7 @@ def _layoutGroup(group, parent, children, labels):
                 children[cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
 
 
-def _createGroup(parent, group, propObj, propGui):
+def _createGroup(parent, group, hasProps, propGui):
     """
     Creates a ttk.Frame object for the given group. Children of the
     group are recursively created via calls to _create, and laid out on
@@ -437,13 +437,13 @@ def _createGroup(parent, group, propObj, propGui):
         if group.showLabels:
             if group.childLabels[i] is not None:
                 labelObj = _create(
-                    frame, group.childLabels[i], propObj, propGui)
+                    frame, group.childLabels[i], hasProps, propGui)
                 labelObjs.append(labelObj)
             else:
                 labelObjs.append(None)
             
 
-        childObj = _create(frame, child, propObj, propGui)
+        childObj = _create(frame, child, hasProps, propGui)
 
         childObjs.append(childObj)
 
@@ -460,7 +460,7 @@ _createHGroup = _createGroup
 _createVGroup = _createGroup
 
 
-def _create(parent, viewItem, propObj, propGui):
+def _create(parent, viewItem, hasProps, propGui):
     """
     Creates the given ViewItem object and, if it is a group, all of its
     children.
@@ -474,9 +474,9 @@ def _create(parent, viewItem, propObj, propGui):
         raise ValueError('Unrecognised ViewItem: {}'.format(
             viewItem.__class__.__name__))
 
-    tkObject  = createFunc(parent, viewItem, propObj, propGui)
-    visibleCb = _configureVisibleWhen(viewItem, tkObject, propObj)
-    enableCb  = _configureEnabledWhen(viewItem, tkObject, propObj)
+    tkObject  = createFunc(parent, viewItem, hasProps, propGui)
+    visibleCb = _configureVisibleWhen(viewItem, tkObject, hasProps)
+    enableCb  = _configureEnabledWhen(viewItem, tkObject, hasProps)
 
     if visibleCb is not None: propGui.onChangeCallbacks.append(visibleCb)
     if enableCb  is not None: propGui.onChangeCallbacks.append(enableCb)
@@ -486,7 +486,7 @@ def _create(parent, viewItem, propObj, propGui):
     return tkObject
 
 
-def _defaultView(propObj):
+def _defaultView(hasProps):
     """
     Creates a default view specification for the given HasProperties
     object, with all properties laid out vertically. This function is
@@ -494,9 +494,11 @@ def _defaultView(propObj):
     to the buildGUI function (defined below).
     """
 
-    propNames, props = propObj.getAllProperties()
+    propNames, propObjs = hasProps.getAllProperties()
+
+    widgets = [Widget(name, label=name) for name in propNames]
     
-    return VGroup(label=propObj.__class__.__name__, children=propNames)
+    return VGroup(label=hasProps.__class__.__name__, children=widgets)
 
 
 def _prepareView(viewItem, labels, tooltips):
@@ -552,7 +554,7 @@ def _prepareView(viewItem, labels, tooltips):
     return viewItem
 
     
-def _prepareEvents(propObj, propGui):
+def _prepareEvents(hasProps, propGui):
     """
     If the visibleWhen or enabledWhen conditional attributes were set
     for any ViewItem objects, a callback function is set on all
@@ -567,16 +569,16 @@ def _prepareEvents(propObj, propGui):
         for cb in propGui.onChangeCallbacks:
             cb()
 
-    propNames, props = propObj.getAllProperties()
+    propNames, propObjs = hasProps.getAllProperties()
 
     # initialise widget states
     onChange()
 
     # add a callback listener to every property
-    for prop,propName in zip(props,propNames):
+    for propObj,propName in zip(propsObjs,propNames):
 
         lName = 'ChangeEvent_{}'.format(propName)
-        prop.addListener(propObj, lName, onChange)
+        propObj.addListener(hasProps, lName, onChange)
  
 
 def buildGUI(parent,
