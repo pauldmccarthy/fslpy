@@ -27,9 +27,23 @@ from widgets_list import _List
 
 import properties as props
 
-def _createTkVar(propVal, varType):
+def _createTkVar(propVal, varType, valueMap=None):
+    """
+    Creates a Tkinter control variable and links it to the given propVal
+    (a PropertyValue object). If valueMap is provided, it should be a
+    dictionary of label->value pairs where the label is what is
+    displayed to the user, and the value is what is assigned to the
+    property value when a corresponding label is selected. It is
+    basically to here support Choice properties.
+    """
 
     value = propVal.get()
+
+    if valueMap is not None:
+        keys,vals = zip(*valueMap.items())
+        valIdx    = vals.index(value)
+        value     = keys[valIdx]
+        
     tkVar = varType(name=propVal.name, value=value)
 
     def _trace(*a):
@@ -38,6 +52,9 @@ def _createTkVar(propVal, varType):
         # variable value has previously been set to something invalid
         try:    val = tkVar.get()
         except: val = tkVar._tk.globalgetvar(tkVar._name)
+
+        if valueMap is not None:
+            val = valueMap[val]
         
         propVal.set(val)
 
@@ -167,16 +184,17 @@ def _Choice(parent, hasProps, propObj, propVal):
     user to set the given propObj (props.Choice) object.
     """
 
-    # TODO labels<->values
-
-    # labels   = tkProp.choiceLabels
-    # labelVar = tkProp.getLabelVar(propObj)
-    # widget   = ttk.Combobox(parent, values=labels, textvariable=labelVar)
-
-    # widget.configure(state='readonly')
+    choices = propObj.choices
+    labels  = propObj.choiceLabels
     
-    # return widget
-    return None
+    valMap  = OrderedDict(zip(labels, choices))
+    tkVar   = _createTkVar(propVal, tk.StringVar, valMap)
+
+    widget  = ttk.Combobox(parent, values=labels, textvariable=tkVar)
+
+    widget.configure(state='readonly')
+    
+    return widget
 
 
 def _String(parent, hasProps, propObj, propVal):
