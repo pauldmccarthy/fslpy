@@ -14,7 +14,7 @@ from collections import OrderedDict
 import Tkinter      as tk
 import tkMessageBox as tkmsg
 import                 ttk
-import tkprop       as tkp
+import fsl.props    as props
 
 import runshell     as shell
 
@@ -34,27 +34,27 @@ runChoices = OrderedDict((
 
 filetypes = ['.nii.gz', '.nii', '.hdr', '.img']
 
-class BetOptions(tkp.HasProperties):
+class BetOptions(props.HasProperties):
     
-    inputImage           = tkp.FilePath(exists=True, suffixes=filetypes, required=True)
-    outputImage          = tkp.FilePath(                                 required=True)
-    t2Image              = tkp.FilePath(exists=True, suffixes=filetypes, required=lambda i: i.runChoice == '-A2')
+    inputImage           = props.FilePath(exists=True, suffixes=filetypes, required=True)
+    outputImage          = props.FilePath(                                 required=True)
+    t2Image              = props.FilePath(exists=True, suffixes=filetypes, required=lambda i: i.runChoice == '-A2')
     
-    runChoice            = tkp.Choice(runChoices)
+    runChoice            = props.Choice(runChoices)
     
-    outputExtracted      = tkp.Boolean(default=True)
-    outputMaskImage      = tkp.Boolean(default=False)
-    outputSkull          = tkp.Boolean(default=False)
-    outputSurfaceOverlay = tkp.Boolean(default=False)
-    outputMesh           = tkp.Boolean(default=False)
-    thresholdImages      = tkp.Boolean(default=False)
+    outputExtracted      = props.Boolean(default=True)
+    outputMaskImage      = props.Boolean(default=False)
+    outputSkull          = props.Boolean(default=False)
+    outputSurfaceOverlay = props.Boolean(default=False)
+    outputMesh           = props.Boolean(default=False)
+    thresholdImages      = props.Boolean(default=False)
     
-    fractionalIntensity  = tkp.Double(default=0,   minval=0.0,  maxval=1.0)
-    thresholdGradient    = tkp.Double(default=0.5, minval=-1.0, maxval=1.0)
-    headRadius           = tkp.Double(default=0.0, minval=0.0)
-    xCoordinate          = tkp.Double(default=0.0, minval=0.0)
-    yCoordinate          = tkp.Double(default=0.0, minval=0.0)
-    zCoordinate          = tkp.Double(default=0.0, minval=0.0)
+    fractionalIntensity  = props.Double(default=0,   minval=0.0,  maxval=1.0)
+    thresholdGradient    = props.Double(default=0.5, minval=-1.0, maxval=1.0)
+    headRadius           = props.Double(default=0.0, minval=0.0)
+    xCoordinate          = props.Double(default=0.0, minval=0.0)
+    yCoordinate          = props.Double(default=0.0, minval=0.0)
+    zCoordinate          = props.Double(default=0.0, minval=0.0)
 
 
     def setOutputImage(self, value, valid, *a):
@@ -72,10 +72,10 @@ class BetOptions(tkp.HasProperties):
         for the T2 image (when running bet with the -A2 flag), but then
         changes their run choice to something other than -A2 (meaning
         that the invalid T2 image won't actually be used, so the fact
-        that it is invalid doesn't really matter), tkprop will still
+        that it is invalid doesn't really matter), props will still
         complain that the T2 image is invalid. So here, when the run
         choice is changed to something other than -A2, the T2 image is
-        cleared, and tkprop won't complain.
+        cleared, and props won't complain.
         """
         if value != '-A2': self.t2Image = None
 
@@ -173,17 +173,17 @@ optTooltips = {
 }
 
 
-betView = tkp.NotebookGroup((
-    tkp.VGroup(
+betView = props.NotebookGroup((
+    props.VGroup(
         label='BET options',
         children=(
             'inputImage',
             'outputImage',
             'fractionalIntensity',
             'runChoice',
-            tkp.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
+            props.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
         )),
-    tkp.VGroup(
+    props.VGroup(
         label='Advanced options',
         children=(
             'outputExtracted',
@@ -194,7 +194,7 @@ betView = tkp.NotebookGroup((
             'outputMesh', 
             'thresholdGradient', 
             'headRadius', 
-            tkp.HGroup(
+            props.HGroup(
                 key='centreCoords',
                 children=(
                     'xCoordinate',
@@ -257,16 +257,18 @@ class BetFrame(tk.Frame):
             ('Quit',     parent.destroy),
             ('Help',     openHelp)))
 
-        self.tkpFrame = tkp.buildGUI(
+        self.propFrame = props.buildGUI(
             self, betOpts, betView, optLabels, optTooltips, buttons)
         
-        self.tkpFrame.pack(fill=tk.BOTH, expand=1)
+        self.propFrame.pack(fill=tk.BOTH, expand=1)
 
 
 if __name__ == '__main__':
 
-    #import logging
-    #logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
+    import logging
+    logging.basicConfig(
+        format='%(levelname)8s %(filename)20s %(lineno)4d: %(funcName)s - %(message)s',
+        level=logging.DEBUG) 
 
     app     = tk.Tk()
     betopts = BetOptions()
