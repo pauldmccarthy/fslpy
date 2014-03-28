@@ -10,9 +10,9 @@ import sys
 
 from collections import OrderedDict
 
-import Tkinter as tk
-import            ttk
-import tkprop  as tkp
+import Tkinter   as tk
+import              ttk
+import fsl.props as props
 
 analysisTypeOpts = OrderedDict((
     ('firstLevel', 'First-level analysis'),
@@ -82,124 +82,124 @@ regStructDofOpts = OrderedDict((
     ('12',  '12 DOF')))
                 
 
-class FeatOptions(tkp.HasProperties):
+class FeatOptions(props.HasProperties):
 
-    analysisType   = tkp.Choice(analysisTypeOpts)
-    analysisStages = tkp.Choice(analysisStageOpts)
+    analysisType   = props.Choice(analysisTypeOpts)
+    analysisStages = props.Choice(analysisStageOpts)
 
     # Misc options
-    balloonHelp              = tkp.Boolean(default=True)
-    progressWatcher          = tkp.Boolean(default=True)
-    brainBackgroundThreshold = tkp.Percentage(default=10)
-    efficNoiseLevel          = tkp.Percentage(default=0.66)
-    efficTemporalSmoothness  = tkp.Double(default=0.34, minval=-1.0, maxval=1.0)
-    efficZThreshold          = tkp.Double(default=5.3, minval=0.0)
+    balloonHelp              = props.Boolean(default=True)
+    progressWatcher          = props.Boolean(default=True)
+    brainBackgroundThreshold = props.Percentage(default=10)
+    efficNoiseLevel          = props.Percentage(default=0.66)
+    efficTemporalSmoothness  = props.Double(default=0.34, minval=-1.0, maxval=1.0)
+    efficZThreshold          = props.Double(default=5.3, minval=0.0)
 
     # misc/higher level
-    cleanUpFirstLevel        = tkp.Boolean(default=False)
+    cleanUpFirstLevel        = props.Boolean(default=False)
 
     #
     # Data options
     #
-    inputData            = tkp.List(minlen=1, listType=tkp.FilePath(exists=True))
-    outputDirectory      = tkp.FilePath(isFile=False)
-    totalVolumes         = tkp.Int(minval=0)
-    deleteVolumes        = tkp.Int(minval=0)
-    TR                   = tkp.Double(minval=0, default=3.0)
-    highpassFilterCutoff = tkp.Int(minval=0, default=100)
+    inputData            = props.List(minlen=1, listType=props.FilePath(exists=True))
+    outputDirectory      = props.FilePath(isFile=False)
+    totalVolumes         = props.Int(minval=0)
+    deleteVolumes        = props.Int(minval=0)
+    TR                   = props.Double(minval=0, default=3.0)
+    highpassFilterCutoff = props.Int(minval=0, default=100)
 
     # data/higher level
-    inputDataType        = tkp.Choice(highLevelInputTypes)
-    higherLevelFeatInput = tkp.List(minlen=3, listType=tkp.FilePath(isFile=False, exists=True))
-    higherLevelCopeInput = tkp.List(minlen=3, listType=tkp.FilePath(exists=True))
+    inputDataType        = props.Choice(highLevelInputTypes)
+    higherLevelFeatInput = props.List(minlen=3, listType=props.FilePath(isFile=False, exists=True))
+    higherLevelCopeInput = props.List(minlen=3, listType=props.FilePath(exists=True))
 
     #
     # Pre-stats options
     #
-    altReferenceImage = tkp.FilePath(exists=True)
-    motionCorrection  = tkp.Choice(('MCFLIRT', 'None'))
-    b0Unwarping       = tkp.Boolean(default=False)
+    altReferenceImage = props.FilePath(exists=True)
+    motionCorrection  = props.Choice(('MCFLIRT', 'None'))
+    b0Unwarping       = props.Boolean(default=False)
 
     # B0 unwarping sub-options - displayed if b0Unwarping is true
-    b0_fieldmap            = tkp.FilePath(exists=True)
-    b0_fieldmapMag         = tkp.FilePath(exists=True)
-    b0_echoSpacing         = tkp.Double(minval=0.0, default=0.7)
-    b0_TE                  = tkp.Double(minval=0.0, default=35)
-    b0_unwarpDir           = tkp.Choice(('x','-x','y','-y','z','-z'))
-    b0_signalLossThreshold = tkp.Percentage(default=10)
+    b0_fieldmap            = props.FilePath(exists=True)
+    b0_fieldmapMag         = props.FilePath(exists=True)
+    b0_echoSpacing         = props.Double(minval=0.0, default=0.7)
+    b0_TE                  = props.Double(minval=0.0, default=35)
+    b0_unwarpDir           = props.Choice(('x','-x','y','-y','z','-z'))
+    b0_signalLossThreshold = props.Percentage(default=10)
 
-    sliceTimingCorrection  = tkp.Choice(sliceTimingOpts)
+    sliceTimingCorrection  = props.Choice(sliceTimingOpts)
 
     # slice timing file, displayed if the timing correction
     # choice is for a custom order/timing file
-    sliceTimingFile       = tkp.FilePath(exists=True)
-    sliceOrderFile        = tkp.FilePath(exists=True)
+    sliceTimingFile       = props.FilePath(exists=True)
+    sliceOrderFile        = props.FilePath(exists=True)
     
-    brainExtraction       = tkp.Boolean(default=True)
-    smoothingFWHM         = tkp.Double(minval=0.0, default=5.0)
-    intensityNorm         = tkp.Boolean(default=False)
-    perfusionSubtraction  = tkp.Boolean(default=False)
+    brainExtraction       = props.Boolean(default=True)
+    smoothingFWHM         = props.Double(minval=0.0, default=5.0)
+    intensityNorm         = props.Boolean(default=False)
+    perfusionSubtraction  = props.Boolean(default=False)
 
     # displayed if perfusion subtraction is enabled
-    perfusionOption       = tkp.Choice(perfusionOpts)
+    perfusionOption       = props.Choice(perfusionOpts)
     
-    temporalHighpass      = tkp.Boolean(default=True)
-    melodic               = tkp.Boolean(default=False)
+    temporalHighpass      = props.Boolean(default=True)
+    melodic               = props.Boolean(default=False)
 
     #
     # Stats options
     #
-    useFILMPrewhitening    = tkp.Boolean(default=True)
-    addMotionParameters    = tkp.Choice(motionParameterOpts)
-    voxelwiseConfoundList  = tkp.FilePath(exists=True)
-    applyExternalScript    = tkp.FilePath(exists=True)
-    addAdditionalConfounds = tkp.FilePath(exists=True)
+    useFILMPrewhitening    = props.Boolean(default=True)
+    addMotionParameters    = props.Choice(motionParameterOpts)
+    voxelwiseConfoundList  = props.FilePath(exists=True)
+    applyExternalScript    = props.FilePath(exists=True)
+    addAdditionalConfounds = props.FilePath(exists=True)
 
     # stats/higher level
-    effectModelling = tkp.Choice(effectModellingOpts)
-    outlierDeweighting = tkp.Boolean(default=False)
+    effectModelling = props.Choice(effectModellingOpts)
+    outlierDeweighting = props.Boolean(default=False)
 
     #
     # Post-stats options
     #
-    preThresholdMask = tkp.FilePath(exists=True)
-    thresholding     = tkp.Choice(('None','Uncorrected','Voxel','Cluster'))
+    preThresholdMask = props.FilePath(exists=True)
+    thresholding     = props.Choice(('None','Uncorrected','Voxel','Cluster'))
 
     # Thresholding sub-options
     # displayed if thresholding is not None
-    pThreshold  = tkp.Double(minval=0.0, maxval=1.0, default=0.05)
-    zThreshold  = tkp.Double(minval=0.0, default=2.3)
+    pThreshold  = props.Double(minval=0.0, maxval=1.0, default=0.05)
+    zThreshold  = props.Double(minval=0.0, default=2.3)
 
-    renderZMinMax = tkp.Choice(zRenderingOpts)
+    renderZMinMax = props.Choice(zRenderingOpts)
     
     # displayed if renderZMinMax is 'preset'
-    renderZMin    = tkp.Double(minval=0.0, default=2.0)
-    renderZMax    = tkp.Double(minval=0.0, default=8.0)
+    renderZMin    = props.Double(minval=0.0, default=2.0)
+    renderZMax    = props.Double(minval=0.0, default=8.0)
     
-    blobTypes     = tkp.Choice(blobOpts)
-    createTSPlots = tkp.Boolean(default=True)
+    blobTypes     = props.Choice(blobOpts)
+    createTSPlots = props.Boolean(default=True)
 
     #
     # Registration options
     #
-    expandedFunctionalImage = tkp.FilePath(exists=True)
-    mainStructuralImage     = tkp.FilePath(exists=True)
-    standardSpaceImage      = tkp.FilePath(exists=True)
+    expandedFunctionalImage = props.FilePath(exists=True)
+    mainStructuralImage     = props.FilePath(exists=True)
+    standardSpaceImage      = props.FilePath(exists=True)
 
     # only shown if functional image is not none
-    functionalSearch = tkp.Choice(regSearchOpts)
-    functionalDof    = tkp.Choice(regDofOpts)
+    functionalSearch = props.Choice(regSearchOpts)
+    functionalDof    = props.Choice(regDofOpts)
 
     # only shown if structural image is not none
-    structuralSearch = tkp.Choice(regSearchOpts)
-    structuralDof    = tkp.Choice(regStructDofOpts)
+    structuralSearch = props.Choice(regSearchOpts)
+    structuralDof    = props.Choice(regStructDofOpts)
 
     # only shown if standard image is not none
-    standardSearch = tkp.Choice(regSearchOpts)
-    standardDof    = tkp.Choice(regDofOpts)
-    nonLinearReg   = tkp.Boolean(default=False)
+    standardSearch = props.Choice(regSearchOpts)
+    standardDof    = props.Choice(regDofOpts)
+    nonLinearReg   = props.Boolean(default=False)
     # only shown if nonlinear reg is selected
-    warpResolution = tkp.Double(minval=0.0, default=10.0)
+    warpResolution = props.Double(minval=0.0, default=10.0)
 
     def __init__(self):
         """
@@ -304,26 +304,26 @@ def tabEnabled(featOpts, tabName):
         
     return True
 
-miscView = tkp.VGroup(
+miscView = props.VGroup(
     label='Misc',
     children=(
         'balloonHelp',
         'progressWatcher',
         'brainBackgroundThreshold',
-        tkp.VGroup(
+        props.VGroup(
             label='Design efficiency',
             border=True,
             children=(
                 'efficNoiseLevel',
                 'efficTemporalSmoothness',
                 'efficZThreshold',
-                tkp.Button(text='Estimate noise and smoothness'),
-                tkp.Button(text='Estimate highpass filter')))))
+                props.Button(text='Estimate noise and smoothness'),
+                props.Button(text='Estimate highpass filter')))))
 
-dataView = tkp.VGroup(
+dataView = props.VGroup(
     label='Data',
     children=(
-        tkp.VGroup(
+        props.VGroup(
             visibleWhen=lambda i:i.analysisType == 'firstLevel',
             children=(
                 'inputData',
@@ -332,22 +332,22 @@ dataView = tkp.VGroup(
                 'deleteVolumes',
                 'TR',
                 'highpassFilterCutoff')),
-        tkp.VGroup(
+        props.VGroup(
             visibleWhen=lambda i:i.analysisType == 'highLevel',
             children=(
                 'inputDataType',
-                tkp.Widget('higherLevelFeatInput', visibleWhen=lambda i:i.inputDataType == 'featDirs'),
-                tkp.Widget('higherLevelCopeInput', visibleWhen=lambda i:i.inputDataType == 'copeImages'),
+                props.Widget('higherLevelFeatInput', visibleWhen=lambda i:i.inputDataType == 'featDirs'),
+                props.Widget('higherLevelCopeInput', visibleWhen=lambda i:i.inputDataType == 'copeImages'),
                 'outputDirectory'))))
 
-prestatsView = tkp.VGroup(
+prestatsView = props.VGroup(
     label='Pre-stats',
     visibleWhen=lambda i: tabEnabled(i, 'Pre-stats'),
     children=(
         'altReferenceImage',
         'motionCorrection',
         'b0Unwarping',
-        tkp.VGroup(
+        props.VGroup(
             label='B0 Unwarping options',
             border=True,
             visibleWhen=lambda i: i.b0Unwarping,
@@ -359,22 +359,22 @@ prestatsView = tkp.VGroup(
                 'b0_unwarpDir',
                 'b0_signalLossThreshold')),
         'sliceTimingCorrection',
-        tkp.Widget('sliceTimingFile', visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
-        tkp.Widget('sliceOrderFile',  visibleWhen=lambda i: i.sliceTimingCorrection == 'orderFile'),
+        props.Widget('sliceTimingFile', visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
+        props.Widget('sliceOrderFile',  visibleWhen=lambda i: i.sliceTimingCorrection == 'orderFile'),
         'brainExtraction',
         'smoothingFWHM',
         'intensityNorm',
-        tkp.HGroup(
+        props.HGroup(
             showLabels=False,
             key='perfusion',
             children=(
                 'perfusionSubtraction',
-                tkp.Widget('perfusionOption',
+                props.Widget('perfusionOption',
                            visibleWhen=lambda i: i.perfusionSubtraction))),
         'temporalHighpass',
         'melodic'))
 
-statsView = tkp.VGroup(
+statsView = props.VGroup(
     label='Stats',
     visibleWhen=lambda i: tabEnabled(i, 'Stats'),
     children=(
@@ -383,63 +383,63 @@ statsView = tkp.VGroup(
         'voxelwiseConfoundList',
         'applyExternalScript',
         'addAdditionalConfounds',
-        tkp.Button(text='Model setup wizard'),
-        tkp.Button(text='Full model setup')))
+        props.Button(text='Model setup wizard'),
+        props.Button(text='Full model setup')))
 
-postStatsView = tkp.VGroup(
+postStatsView = props.VGroup(
     label='Post-stats',
     visibleWhen=lambda i: tabEnabled(i, 'Post-stats'),
     children=(
         'preThresholdMask',
-        tkp.VGroup(
+        props.VGroup(
             label='Thresholding',
             border=True,
             children=(
                 'thresholding',
-                tkp.Widget('pThreshold', visibleWhen=lambda i:i.thresholding != 'None'),
-                tkp.Widget('zThreshold', visibleWhen=lambda i:i.thresholding == 'Cluster'))),
-        tkp.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'),
-        tkp.VGroup(
+                props.Widget('pThreshold', visibleWhen=lambda i:i.thresholding != 'None'),
+                props.Widget('zThreshold', visibleWhen=lambda i:i.thresholding == 'Cluster'))),
+        props.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'),
+        props.VGroup(
             label='Rendering',
             border=True,
             visibleWhen=lambda i: i.thresholding != 'None',
             children=(
                 'renderZMinMax',
-                tkp.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
-                tkp.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
+                props.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
+                props.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
                 'blobTypes')),
         'createTSPlots'))
 
-regView = tkp.VGroup(
+regView = props.VGroup(
     label='Registration',
     visibleWhen=lambda i: tabEnabled(i, 'Registration'),
     children=(
         'expandedFunctionalImage',
-        tkp.HGroup(
+        props.HGroup(
             label='Functional -> Expanded functional',
             border=True,
             visibleWhen=lambda i:i.expandedFunctionalImage is not None,
             children=('functionalSearch', 'functionalDof')),
         'mainStructuralImage',
-        tkp.HGroup(
+        props.HGroup(
             label='Functional -> Structural',
             border=True,
             visibleWhen=lambda i:i.mainStructuralImage is not None,
             children=('structuralSearch', 'structuralDof')), 
         'standardSpaceImage',
-        tkp.VGroup(
+        props.VGroup(
             label='Structural -> Standard',
             border=True,
             visibleWhen=lambda i:i.standardSpaceImage is not None,
             children=(
-                tkp.HGroup(('standardSearch', 'standardDof')),
-                tkp.HGroup(('nonLinearReg',
-                            tkp.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
+                props.HGroup(('standardSearch', 'standardDof')),
+                props.HGroup(('nonLinearReg',
+                            props.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
 
-featView =tkp.VGroup((
+featView =props.VGroup((
     'analysisType',
-    tkp.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
-    tkp.NotebookGroup((
+    props.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
+    props.NotebookGroup((
         miscView,
         dataView,
         prestatsView,
@@ -454,7 +454,7 @@ class FeatFrame(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.pack(fill=tk.BOTH, expand=1)
 
-        self.tkpFrame = tkp.buildGUI(self, featOpts, featView, labels)
+        self.tkpFrame = props.buildGUI(self, featOpts, featView, labels)
         self.tkpFrame.pack(fill=tk.BOTH, expand=1)
 
         self.buttonFrame = tk.Frame(self)
