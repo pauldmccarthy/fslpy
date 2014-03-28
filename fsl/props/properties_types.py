@@ -248,11 +248,16 @@ class FilePath(String):
 
             values = [value]
 
-            # if suffixes have been specified, check to
-            # see if any file exists with each of the
-            # suffixes (in addition to the specified path)
+            # if suffixes have been specified, and the given
+            # path does not already have a suffix, check to
+            # see if any file exists with each of the suffixes
+            # (in addition to the specified path)
             if len(self.suffixes) > 0:
-                values.extend(['{}{}'.format(value, s) for s in self.suffixes])
+                
+                path,suf = op.splitext(value)
+
+                if suf == '':
+                    values = ['{}{}'.format(value, s) for s in self.suffixes]
 
             files = map(op.isfile, values)
 

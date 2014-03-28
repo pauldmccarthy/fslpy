@@ -157,8 +157,7 @@ class PropertyValue(object):
         self.name            = name
         self.changeListeners = {}
         self._value          = value
-        self._valid          = None
-        self._lastValue      = value
+        self._lastValue      = None
         self._lastValid      = None 
 
 
@@ -223,6 +222,18 @@ class PropertyValue(object):
             
         # Notify the property owner that this property has changed
         self.owner._propChanged(self.prop)
+
+        
+    def isValid(self):
+        """
+        Returns True if hte current property value is valid, False
+        otherwise.
+        """
+
+        try:    self.prop.validate(self.owner, self.get())
+        except: return False
+        
+        return True
 
         
     def validateAndNotify(self):
@@ -329,8 +340,6 @@ class PropertyBase(object):
 
         log.debug('Adding listener on {}: {}'.format(self.label, name))
 
-
-
         self.changeListeners[instance][name] = callback
 
         
@@ -381,7 +390,6 @@ class PropertyBase(object):
         for (lName, func) in listeners:
             
             log.debug('Notifying listener on {}: {}'.format(self.label, lName))
-            
             func(value, valid, instance, prop, name)
 
     

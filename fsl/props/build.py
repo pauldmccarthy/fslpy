@@ -575,7 +575,7 @@ def _prepareEvents(hasProps, propGui):
     onChange()
 
     # add a callback listener to every property
-    for propObj,propName in zip(propsObjs,propNames):
+    for propObj,propName in zip(propObjs,propNames):
 
         lName = 'ChangeEvent_{}'.format(propName)
         propObj.addListener(hasProps, lName, onChange)

@@ -27,38 +27,68 @@ from widgets_list import _List
 
 import properties as props
 
-def _createTkVar(propVal, varType, valueMap=None):
+def _createTkVar(propVal, varType, labelMap=None):
     """
     Creates a Tkinter control variable and links it to the given propVal
-    (a PropertyValue object). If valueMap is provided, it should be a
-    dictionary of label->value pairs where the label is what is
+    (a PropertyValue object). If labelMap is provided, it should be a
+    dictionary of value->label pairs where the label is what is
     displayed to the user, and the value is what is assigned to the
     property value when a corresponding label is selected. It is
     basically to here support Choice properties.
     """
 
-    value = propVal.get()
+    tkVar        = varType(name=propVal.name)
+    listenerName = 'tkVar_{}'.format(id(tkVar))
+    valMap       = None
 
-    if valueMap is not None:
-        keys,vals = zip(*valueMap.items())
-        valIdx    = vals.index(value)
-        value     = keys[valIdx]
-        
-    tkVar = varType(name=propVal.name, value=value)
+    if labelMap is not None:
+        valMap = dict([(lbl,val) for (val,lbl) in labelMap.items()])
 
-    def _trace(*a):
+    def _tkTrace(*a):
+        """
+        Called when the Tkinter variable value changes. Sets the
+        property value.
+        """
 
-        # Tkinter variables throw an error on calls to get() if the
-        # variable value has previously been set to something invalid
+        # Tkinter variables throw an error on calls
+        # to get() if the variable value has
+        # previously been set to something invalid
         try:    val = tkVar.get()
         except: val = tkVar._tk.globalgetvar(tkVar._name)
 
-        if valueMap is not None:
-            val = valueMap[val]
-        
-        propVal.set(val)
+        # In the Tkinterland, everything is a
+        # string. If you set a variable to None, said
+        # variable will be set to a string 'None'. 
+        if val == '': val = None
 
-    tkVar.trace('w', _trace)
+        if valMap is not None: propVal.set(valMap[val])
+        else:                  propVal.set(val)
+
+    def _tkDel(*a):
+        """
+        Called when the Tkinter variable is deleted. Removes the
+        listener from the property value.
+        """
+        propVal.removeListener(listenerName)
+
+    def _propTrace(val, *a):
+        """
+        Called when the property value changes. Sets the Tkinter
+        variable value.
+        """
+
+        if val is None: val = ''
+        if labelMap is not None: tkVar.set(labelMap[val])
+        else:                    tkVar.set(val)
+
+    # sync the two values
+    _propTrace(propVal.get())
+
+    # link the two values
+    tkVar.trace('w', _tkTrace)
+    tkVar.trace('u', _tkDel)
+    propVal.addListener(listenerName, _propTrace)
+
     return tkVar
 
 
@@ -115,7 +145,7 @@ def _setupValidation(widget, hasProps, propObj, propVal):
 
     # Validate the initial property value,
     # so the background is appropriately set
-    propObj.forceValidation(hasProps)
+    _changeBGOnValidate(None, propVal.isValid(), None)
     
 
 # The _lastFilePathDir variable is used to retain the
@@ -187,7 +217,7 @@ def _Choice(parent, hasProps, propObj, propVal):
     choices = propObj.choices
     labels  = propObj.choiceLabels
     
-    valMap  = OrderedDict(zip(labels, choices))
+    valMap  = OrderedDict(zip(choices, labels))
     tkVar   = _createTkVar(propVal, tk.StringVar, valMap)
 
     widget  = ttk.Combobox(parent, values=labels, textvariable=tkVar)
