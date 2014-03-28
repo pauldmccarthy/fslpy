@@ -82,7 +82,7 @@ regStructDofOpts = OrderedDict((
     ('12',  '12 DOF')))
                 
 
-class FeatOptions(props.HasProperties):
+class Options(props.HasProperties):
 
     analysisType   = props.Choice(analysisTypeOpts)
     analysisStages = props.Choice(analysisStageOpts)
@@ -210,7 +210,7 @@ class FeatOptions(props.HasProperties):
             if analysisType == 'highLevel':
                 self.analysisStages = 'stats-post'
         
-        FeatOptions.analysisType.addListener(self,
+        Options.analysisType.addListener(self,
                                              'updateAnalysisStage',
                                               updateAnalysisStage)
         
@@ -447,7 +447,7 @@ featView =props.VGroup((
         postStatsView,
         regView))))
 
-class FeatFrame(tk.Frame):
+class Frame(tk.Frame):
     
     def __init__(self, parent, featOpts):
         
@@ -469,26 +469,3 @@ class FeatFrame(tk.Frame):
         self.quitButton .pack(fill=tk.X, expand=1, side=tk.RIGHT)
         self.buttonFrame.pack(fill=tk.X) 
 
-
-if __name__ == '__main__':
-
-    import logging
-    logging.basicConfig(format='%(levelname)s - %(funcName)s: %(message)s', level=logging.DEBUG)
-
-    app   = tk.Tk()
-    fopts = FeatOptions()
-    frame = FeatFrame(app, fopts)
-
-    app.title('FEAT')
-
-    print('Before')
-    print(fopts) 
-
-    # stupid hack for testing under OS X - forces the TK
-    # window to be displayed above all other windows
-    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "Python" to true' ''')
-    
-    app.mainloop()
-
-    print('After')
-    print(fopts)

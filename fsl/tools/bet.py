@@ -14,9 +14,9 @@ from collections import OrderedDict
 import Tkinter      as tk
 import tkMessageBox as tkmsg
 import                 ttk
-import fsl.props    as props
 
-import runshell     as shell
+import fsl.props          as props
+import fsl.utils.runshell as shell
 
 runChoices = OrderedDict((
 
@@ -34,7 +34,7 @@ runChoices = OrderedDict((
 
 filetypes = ['.nii.gz', '.nii', '.hdr', '.img']
 
-class BetOptions(props.HasProperties):
+class Options(props.HasProperties):
     
     inputImage           = props.FilePath(exists=True, suffixes=filetypes, required=True)
     outputImage          = props.FilePath(                                 required=True)
@@ -85,9 +85,9 @@ class BetOptions(props.HasProperties):
         Adds a few callback listeners for various bits of behaviour.
         """
 
-        BetOptions.inputImage.addListener(
+        Options.inputImage.addListener(
             self, 'setOutputImage', self.setOutputImage)
-        BetOptions.runChoice.addListener(
+        Options.runChoice.addListener(
             self, 'clearT2Image',   self.clearT2Image) 
 
 
@@ -245,7 +245,7 @@ def openHelp():
             'know where to find the FSL documentation.') 
 
     
-class BetFrame(tk.Frame):
+class Frame(tk.Frame):
     
     def __init__(self, parent, betOpts):
         
@@ -261,32 +261,3 @@ class BetFrame(tk.Frame):
             self, betOpts, betView, optLabels, optTooltips, buttons)
         
         self.propFrame.pack(fill=tk.BOTH, expand=1)
-
-
-if __name__ == '__main__':
-
-    import logging
-    logging.basicConfig(
-        format='%(levelname)8s %(filename)20s %(lineno)4d: %(funcName)s - %(message)s',
-        level=logging.DEBUG) 
-
-    app     = tk.Tk()
-    betopts = BetOptions()
-
-    frame = BetFrame(app, betopts)
-
-    # stupid hack for testing under OS X - forces the TK
-    # window to be displayed above all other windows
-    os.system('''/usr/bin/osascript -e 'tell app "Finder" to '''\
-              '''set frontmost of process "Python" to true' ''')
-
-    def checkFslDir():
-        fsldir = os.environ.get('FSLDIR', None)
-        if fsldir is None:
-            tkmsg.showwarning(
-                'Warning',
-                'The FSLDIR environment variable is not set - '\
-                'you will not be able to run BET.')
-            
-    app.after_idle(checkFslDir)
-    app.mainloop()
