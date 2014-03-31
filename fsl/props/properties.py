@@ -318,8 +318,8 @@ class PropertyBase(object):
                           two parameters: a reference to the
                           HasProperties instance, the owner of
                           this property; and the new property
-                          value. Should raise a ValueError if the
-                          new value is invalid.
+                          value. Should return True if the property
+                          value is valid, False otherwise.
         """
         self.label             = None
         self.default           = default
@@ -444,7 +444,8 @@ class PropertyBase(object):
                 raise ValueError('A value is required')
 
         if self.validateFunc is not None:
-            self.validateFunc(instance, value)
+            if not self.validateFunc(instance, value):
+                raise ValueError('Value does not meet custom validation rules')
 
             
     def __get__(self, instance, owner):

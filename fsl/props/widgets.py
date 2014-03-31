@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# widgets.py - Generate Tkinter widgets for props.PropertyBase objects.
+# widgets.py - Generate wx GUI widgets for props.PropertyBase objects.
 #
 # The sole entry point for this module is the makeWidget function,
 # which is called via the build module when it automatically
@@ -17,79 +17,51 @@ import os.path as op
 import logging
 
 from collections import OrderedDict
+from collections import Iterable
 
-import Tkinter      as tk
-import tkFileDialog as tkfile
-import                 ttk
+import wx
 
 # the List property is complex enough to get its own module.
 from widgets_list import _List
 
 import properties as props
 
-def _createTkVar(propVal, varType, labelMap=None):
-    """
-    Creates a Tkinter control variable and links it to the given propVal
-    (a PropertyValue object). If labelMap is provided, it should be a
-    dictionary of value->label pairs where the label is what is
-    displayed to the user, and the value is what is assigned to the
-    property value when a corresponding label is selected. It is
-    basically to here support Choice properties.
-    """
 
-    tkVar        = varType(name=propVal.name)
-    listenerName = 'tkVar_{}'.format(id(tkVar))
+def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
+
+    if not isinstance(evType, Iterable): evType = [evType]
+
+    listenerName = 'propBind_{}'.format(id(guiObj))
     valMap       = None
 
     if labelMap is not None:
         valMap = dict([(lbl,val) for (val,lbl) in labelMap.items()])
 
-    def _tkTrace(*a):
-        """
-        Called when the Tkinter variable value changes. Sets the
-        property value.
-        """
+    def _guiUpdate(value, *a):
 
-        # Tkinter variables throw an error on calls
-        # to get() if the variable value has
-        # previously been set to something invalid
-        try:    val = tkVar.get()
-        except: val = tkVar._tk.globalgetvar(tkVar._name)
+        if guiObj.GetValue() == value: return
 
-        # In the Tkinterland, everything is a
-        # string. If you set a variable to None, said
-        # variable will be set to a string 'None'. 
-        if val == '': val = None
+        if valMap is not None: guiObj.SetValue(valMap[value])
+        else:                  guiObj.SetValue(value)
+        
+    def _propUpdate(*a):
 
-        if valMap is not None: propVal.set(valMap[val])
-        else:                  propVal.set(val)
+        # TODO remove property value listener when GUI object is destroyed
+        try:
+            value = guiObj.GetValue()
+        except:
+            raise
 
-    def _tkDel(*a):
-        """
-        Called when the Tkinter variable is deleted. Removes the
-        listener from the property value.
-        """
-        propVal.removeListener(listenerName)
+        if propVal.get() == value: return
 
-    def _propTrace(val, *a):
-        """
-        Called when the property value changes. Sets the Tkinter
-        variable value.
-        """
+        if labelMap is not None: propVal.set(labelMap[value])
+        else:                    propVal.set(value)
 
-        if val is None: val = ''
-        if labelMap is not None: tkVar.set(labelMap[val])
-        else:                    tkVar.set(val)
+    guiObj.SetValue(propVal.get())
 
-    # sync the two values
-    _propTrace(propVal.get())
-
-    # link the two values
-    tkVar.trace('w', _tkTrace)
-    tkVar.trace('u', _tkDel)
-    propVal.addListener(listenerName, _propTrace)
-
-    return tkVar
+    for ev in evType: guiObj.Bind(ev, _propUpdate)
+    
+    propVal.addListener(listenerName, _guiUpdate)
 
 
 def _setupValidation(widget, hasProps, propObj, propVal):
@@ -102,30 +74,7 @@ def _setupValidation(widget, hasProps, propObj, propVal):
     """
 
     invalidBGColour = '#ff9999'
-    _setBG = None
-
-    # this is a new ttk widget - we need to use
-    # a style to change the background colour
-    try: 
-        defaultStyleName = widget['style'] or widget.winfo_class()
-        invalidStyleName = 'Invalid.' + defaultStyleName
-
-        invalidStyle = ttk.Style()
-        invalidStyle.configure(invalidStyleName, background=invalidBGColour)
-
-        def _setBG(isValid):
-            if isValid: widget.configure(style=defaultStyleName)
-            else:       widget.configure(style=invalidStyleName)
-
-    # this is an old Tk widget - we change
-    # the background colour directly
-    except tk.TclError:
-
-        defaultBGColour = widget['background']
-
-        def _setBG(isValid):
-            if isValid: widget.configure(background=defaultBGColour)
-            else:       widget.configure(background=invalidBGColour)
+    validBGColour   = widget.GetBackgroundColour()
 
     def _changeBGOnValidate(value, valid, instance, *a):
         """
@@ -134,7 +83,10 @@ def _setupValidation(widget, hasProps, propObj, propVal):
         widget background colour according to the validity
         of the new value.
         """
-        _setBG(valid)
+        if valid: widget.SetBackgroundColour(validBGColour)
+        else:     widget.SetBackgroundColour(invalidBGColour)
+
+        widget.Refresh()
 
     # We add a callback listener to the PropertyValue object,
     # rather than to the PropertyBase, as one property may be
@@ -234,101 +186,79 @@ def _String(parent, hasProps, propObj, propVal):
     object.
     """
 
-    tkVar   = _createTkVar(propVal, tk.StringVar)
+    widget = wx.TextCtrl(parent)
 
-    widget = ttk.Entry(parent, textvariable=tkVar)
-    _setupValidation(widget, hasProps, propObj, propVal)
+    _propBind(hasProps, propObj, propVal, widget, wx.EVT_TEXT)
     
     return widget
 
 
 def _Number(parent, hasProps, propObj, propVal):
     """
-    Creates and returns a tk widget, either a ttk.Scale,
-    or a tk.Spinbox, allowing the user to edit the given
-    property (a props.Int or props.Double).
+    Creates and returns a widget allowing the user to edit
+    the given property (a props.Int or props.Double).
     """
 
-    if   isinstance(propObj, props.Int):    tkVarType = tk.IntVar
-    elif isinstance(propObj, props.Double): tkVarType = tk.DoubleVar
-    
-    else: raise TypeError('Invalid property type: {}'.format(
-            propObj.__class__.__name__))
-
     value   = propVal.get()
-    tkVar   = _createTkVar(propVal, tkVarType)
     minval  = propObj.minval
     maxval  = propObj.maxval
 
-    makeScale = True
-
-    # if both minval and maxval have been set, we
-    # can use a Scale. Otherwise we use a spinbox.
-    if any((minval is None, maxval is None)):
-        makeScale = False
-
-    # Tkinter spinboxes don't behave well if you
-    # don't set both of the from_ and to limits.
-    if minval is None:
-        if   isinstance(propObj, props.Int):    minval = -sys.maxint-1
-        elif isinstance(propObj, props.Double): minval = sys.float_info.min
-    if maxval is None:
-        if   isinstance(propObj, props.Int):    maxval = sys.maxint
-        elif isinstance(propObj, props.Double): maxval = sys.float_info.max
-
-    # string format, and increment magnitude, for spinboxes
-    if isinstance(propObj, props.Int):
-        formatStr = '%0.0f'
-        increment = 1
-    else:
-        formatStr = '%0.4f'
-
-        if makeScale: increment = (maxval-minval)/20.0
-        else:         increment = 0.5
-    
-    if makeScale:
-
-        # Embed the Scale inside a Frame, along with
-        # labels which display the minimum and
-        # maximum and a Spinbox allowing direct
-        # modification of the current value.
-        scaleFrame = ttk.Frame(parent)
-
-        widget = ttk.Scale(scaleFrame, orient=tk.HORIZONTAL,
-                           from_=minval, to=maxval,
-                           variable=tkVar)
-
-        minLabel = ttk.Label(scaleFrame, text='{}'.format(minval),
-                             anchor=tk.W)
-
-        curEntry = tk.Spinbox(scaleFrame,
-                              from_=minval, to=maxval,
-                              textvariable=tkVar,
-                              format=formatStr,
-                              increment=increment)
+    if   isinstance(propObj, props.Int):    SpinCtr = wx.SpinCtrl
+    elif isinstance(propObj, props.Double): SpinCtr = wx.SpinCtrlDouble
         
-        maxLabel = ttk.Label(scaleFrame, text='{}'.format(maxval),
-                             anchor=tk.E)
+    else:
+        raise TypeError('Unrecognised property type: {}'.format(
+            propObj.__class__.__name__))
 
-        minLabel.pack(side=tk.LEFT, fill=tk.X)
-        widget  .pack(side=tk.LEFT, fill=tk.X, expand=True)
-        maxLabel.pack(side=tk.LEFT, fill=tk.X)
-        curEntry.pack(side=tk.LEFT, fill=tk.X)
+    makeSlider = (minval is not None) and (maxval is not None)
 
-        _setupValidation(curEntry, hasProps, propObj, propVal)
-                
-        widget = scaleFrame
+    if   isinstance(propObj, props.Int):    increment = None
+    elif isinstance(propObj, props.Double):
+        if makeSlider: increment = (maxval-minval)/20.0
+        else:          increment = 0.5
+
+    params = {}
+    if increment is not None: params['inc']     = increment
+    if minval    is not None: params['min']     = minval
+    if maxval    is not None: params['max']     = maxval
+    if value     is not None: params['initial'] = value
 
     # The minval and maxval attributes have not both
-    # been set, so we create a Spinbox instead of a Scale.
-    else:
-        widget = tk.Spinbox(parent,
-                            from_=minval, to=maxval,
-                            textvariable=tkVar,
-                            format=formatStr,
-                            increment=increment)
+    # been set, so we create a spinbox instead of a slider.
+    if not makeSlider:
 
+        widget = SpinCtr(parent, **params)
+        
+        _propBind(hasProps, propObj, propVal, widget,
+                  [wx.EVT_SPINCTRL, wx.EVT_TEXT])
         _setupValidation(widget, hasProps, propObj, propVal)
+
+    # if both minval and maxval have been set, we can use a slider. 
+    else:
+
+        panel = wx.Panel(parent)
+
+        slider = wx.Slider(
+            panel,
+            value=value,
+            minValue=minval,
+            maxValue=maxval)
+
+        spin = SpinCtr(panel, **params)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        panel.SetSizer(sizer)
+        sizer.Add(slider, flag=wx.EXPAND, proportion=1)
+        sizer.Add(spin)
+
+        sizer.Layout()
+
+        _propBind(hasProps, propObj, propVal, slider, wx.EVT_SLIDER)
+        _propBind(hasProps, propObj, propVal, spin,   wx.EVT_SPINCTRL)
+        _setupValidation(spin, hasProps, propObj, propVal)
+
+        widget = panel
+
 
     return widget
 
@@ -348,20 +278,21 @@ def _Percentage(parent, hasProps, propObj, propVal):
 
 def _Boolean(parent, hasProps, propObj, propVal):
     """
-    Creates and returns a ttk Checkbutton, allowing the
-    user to set the given propObj (props.Boolean) object.
+    Creates and returns a check box, allowing the user
+    to set the given propObj (props.Boolean) object.
     """
 
-    tkVar   = _createTkVar(propVal, tk.BooleanVar)
-    return ttk.Checkbutton(parent, variable=tkVar)
+    checkBox = wx.CheckBox(parent)
+    _propBind(hasProps, propObj, propVal, checkBox, wx.EVT_CHECKBOX)
+    return checkBox
 
 
 def makeWidget(parent, hasProps, propName):
     """
-    Given hasProps (a props.HasProperties object), propName (the name of a
-    property of hasProps), and parent (a Tkinter object), creates and returns a
-    Tkinter widget, or a frame containing widgets, which may be used to edit
-    the property.
+    Given hasProps (a props.HasProperties object), propName (the name
+    of a property of hasProps), and parent GUI object, creates and
+    returns a widget, or a frame containing widgets, which may be
+    used to edit the property.
     """
 
     propObj = hasProps.getProp(propName)

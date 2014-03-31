@@ -51,7 +51,9 @@ class Number(props.PropertyBase):
             elif self.minval is not None:
                 default = self.minval
             elif self.maxval is not None:
-                default = self.maxval 
+                default = self.maxval
+            else:
+                default = 0
                 
         kwargs['default'] = default
         props.PropertyBase.__init__(self, **kwargs)
@@ -136,7 +138,7 @@ class String(props.PropertyBase):
         self.minlen = minlen
         self.maxlen = maxlen
         
-        kwargs['default'] = kwargs.get('default', None)
+        kwargs['default'] = kwargs.get('default', '')
         props.PropertyBase.__init__(self, **kwargs)
 
         

@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 #
-# build.py - Automatically build a Tkinter GUI for a props.HasProperties
+# build.py - Automatically build a wx GUI for a props.HasProperties
 #            object.
 #
-# This module provides functionality to automatically build a Tkinter
+# This module provides functionality to automatically build a GUI
 # interface containing widgets which allow the user to change the
 # properties (props.PropertyBase objects) of a specified
 # props.HasProperties object.
 
 # The sole entry point for this module is the buildGUI function, which
 # accepts as parameters a tk object to be used as the parent (e.g. a
-# root or Frame object), a props.HasProperties object, an optional
+# wx.Frame object), a props.HasProperties object, an optional
 # ViewItem object, which specifies how the interface is to be laid
 # out, two optional dictionaries for passing in labels and tooltips,
 # and another optional dictionary for any buttons to be added.
@@ -28,11 +28,7 @@
 
 import sys
 
-import Tkinter as tk
-import            ttk
-
 import wx
-
 import widgets
 
 class ViewItem(object):
@@ -173,7 +169,7 @@ class NotebookGroup(Group):
 
 class HGroup(Group):
     """
-    A group representing a GUI Frame, whose children are laid out
+    A group representing a GUI panel, whose children are laid out
     horizontally.
     """
     pass
@@ -181,7 +177,7 @@ class HGroup(Group):
 
 class VGroup(Group): 
     """
-    A group representing a GUI Frame, whose children are laid out
+    A group representing a GUI panel, whose children are laid out
     vertically.
     """
     pass
@@ -199,7 +195,7 @@ class PropGUI(object):
         self.tkObjects         = {}
  
 
-def _configureEnabledWhen(viewItem, tkObj, hasProps):
+def _configureEnabledWhen(viewItem, guiObj, hasProps):
     """
     Returns a reference to a callback function for this view item,
     if its enabledWhen attribute was set.
@@ -212,35 +208,6 @@ def _configureEnabledWhen(viewItem, tkObj, hasProps):
 
     if viewItem.enabledWhen is None: return None
 
-    def _changeState(obj, state):
-        """
-        Sets the state of the given GUI object to the given state.
-        If the given object is a container, the state of its children
-        are (recursively) set.
-        """
-
-        # if this object is a tab on a Notebook,
-        # we can disable the entire tab
-        parent = obj.nametowidget(obj.winfo_parent())
-        if isinstance(parent, ttk.Notebook):
-
-            # notebook objects use 'normal'/'disabled'
-            if state == 'enabled': state = 'normal'
-
-            objPath  = obj.winfo_pathname(obj.winfo_id())
-            objTabID = parent.index(objPath)
-            
-            parent.tab(objTabID, state=state)
-
-        # For non-notebook tabs, we change the state
-        # of the object, and do so recursively for
-        # all of its children
-        else:
-            try: obj.configure(state=state)
-            except tk.TclError:
-                for child in obj.winfo_children():
-                    _changeState(child, state)
-    
     def _toggleEnabled():
         """
         Calls the viewItem.enabledWhen function and
@@ -248,15 +215,16 @@ def _configureEnabledWhen(viewItem, tkObj, hasProps):
         upon the result.
         """
 
-        if viewItem.enabledWhen(hasProps): state = 'enabled'
-        else:                              state = 'disabled'
-        
-        _changeState(tkObj, state)
+        if viewItem.enabledWhen(hasProps): state = True
+        else:                              state = False
+
+        if guiObj.IsEnabled != state:
+            guiObj.Enable(state)
 
     return _toggleEnabled
 
 
-def _configureVisibleWhen(viewItem, tkObj, hasProps):
+def _configureVisibleWhen(viewItem, guiObj, hasProps):
     """
     Returns a reference to a callback function for this view item,
     if its visibleWhen attribute was set.
@@ -268,24 +236,10 @@ def _configureVisibleWhen(viewItem, tkObj, hasProps):
 
         visible = viewItem.visibleWhen(hasProps)
 
-        # See comments in  _configureEnabledWhen -
-        # ttk.Notebook object state/visibility is
-        # handled a bit different to other Tkinter
-        # objects
-        parent = tkObj.nametowidget(tkObj.winfo_parent())
-        if isinstance(parent, ttk.Notebook):
-            
-            if visible: state = 'normal'
-            else:       state = 'hidden'
-
-            objPath  = tkObj.winfo_pathname(tkObj.winfo_id())
-            objTabID = parent.index(objPath)
-            
-            parent.tab(objTabID, state=state)
-
-        else:
-            if visible: tkObj.grid()
-            else:       tkObj.grid_remove()
+        if visible != guiObj.IsShown():
+            guiObj.Show(visible)
+            #guiObj.GetParent().Fit()
+            guiObj.GetParent().Layout()
         
     return _toggleVis
 
@@ -296,7 +250,7 @@ def _createLabel(parent, viewItem, hasProps, propGui):
     given viewItem.
     """
 
-    label = ttk.Label(parent, text=viewItem.label)
+    label = wx.StaticText(parent, label=viewItem.label)
     return label
 
 
@@ -323,8 +277,8 @@ def _createWidget(parent, viewItem, hasProps, propGui):
     for more details).
     """
 
-    tkWidget = widgets.makeWidget(parent, hasProps, viewItem.key)
-    return tkWidget
+    widget = widgets.makeWidget(parent, hasProps, viewItem.key)
+    return widget
 
     
 def _createNotebookGroup(parent, group, hasProps, propGui):
@@ -334,14 +288,20 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    notebook = ttk.Notebook(parent)
+    panel    = wx.Panel(parent)
+    sizer    = wx.BoxSizer(wx.VERTICAL)
+    notebook = wx.Notebook(panel)
 
     for child in group.children:
 
         page = _create(notebook, child, hasProps, propGui)
-        page.pack(fill=tk.X, expand=1)
-        
-        notebook.add(page, text=child.label)
+        notebook.AddPage(page, child.label)
+
+    panel.SetSizer(sizer)
+    sizer.Add(notebook, flag=wx.EXPAND)
+
+    panel.Fit()
+    panel.Layout()
 
     return notebook
 
@@ -361,26 +321,19 @@ def _layoutGroup(group, parent, children, labels):
                   objects, one for each child.
     """
 
-    # Note about layout: we are exclusively using grid layout,
-    # for both horizontal and vertical groups, as the use of
-    # grid makes hiding/showing Tkinter objects very easy. See
-    # _configureVisibleWhen above.
-
-    if isinstance(group, VGroup):
-        if labels is not None: parent.columnconfigure(1, weight=1)
-        else:                  parent.columnconfigure(0, weight=1)
+    if   isinstance(group, VGroup): sizer = wx.GridBagSizer()
+    elif isinstance(group, HGroup): sizer = wx.BoxSizer(wx.HORIZONTAL)
+    else:
+        raise TypeError('Unknown group type: {}'.format(
+            group.__class__.__name__))
 
     for cidx in range(len(children)):
 
         if isinstance(group, HGroup):
-            
             if labels is not None and labels[cidx] is not None:
-                parent.columnconfigure(cidx*2+1,weight=1) 
-                labels  [cidx].grid(row=0, column=cidx*2,   sticky=tk.W+tk.E)
-                children[cidx].grid(row=0, column=cidx*2+1, sticky=tk.W+tk.E)
-            else:
-                parent.columnconfigure(cidx,  weight=1)
-                children[cidx].grid(row=0, column=cidx, sticky=tk.W+tk.E)
+                sizer.Add(labels[cidx], flag=wx.EXPAND)
+                
+            sizer.Add(children[cidx], flag=wx.EXPAND)
             
         elif isinstance(group, VGroup):
 
@@ -394,37 +347,47 @@ def _layoutGroup(group, parent, children, labels):
             if isinstance(group.children[cidx], (HGroup, VGroup)) and \
                group.children[cidx].border:
 
-                children[cidx].grid(
-                    row=cidx, column=0, columnspan=2,
-                    sticky=tk.E+tk.W+tk.N+tk.S)
+                sizer.Add(children[cidx],
+                          pos=(cidx,0),
+                          span=(1,2),
+                          flag=wx.EXPAND)
 
             elif labels is not None:
                 if labels[cidx] is not None:
-                    labels  [cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
-                    children[cidx].grid(row=cidx, column=1, sticky=tk.E+tk.W)
+                    sizer.Add(labels  [cidx], pos=(cidx,0), flag=wx.EXPAND)
+                    sizer.Add(children[cidx], pos=(cidx,1), flag=wx.EXPAND)
+
                 else:
-                    children[cidx].grid(row=cidx, column=0, columnspan=2,
-                                        sticky=tk.E+tk.W)
+                    sizer.Add(children[cidx],
+                              pos=(cidx,1),
+                              span=(1,2),
+                              flag=wx.EXPAND)
+
             else:
-                children[cidx].grid(row=cidx, column=0, sticky=tk.E+tk.W)
+                sizer.Add(children[cidx],
+                          pos=(cidx,0),
+                          span=(1,2),
+                          flag=wx.EXPAND)
+
+    if isinstance(group, VGroup): sizer.AddGrowableCol(1)
+
+    parent.SetSizer(sizer)
+    parent.Layout()
 
 
 def _createGroup(parent, group, hasProps, propGui):
     """
-    Creates a GUI Frame object for the given group. Children of the
+    Creates a GUI panel object for the given group. Children of the
     group are recursively created via calls to _create, and laid out on
     the Frame via the _layoutGroup function.
     """
 
-    if group.border:
-        frame = ttk.LabelFrame(parent)
-        frame.config(
-            borderwidth=20,
-            relief=tk.SUNKEN,
-            labelanchor='n',
-            text=group.label) 
+    if not group.border:
+        realPanel = wx.Panel(parent)
+        panel     = realPanel
     else:
-        frame = ttk.Frame(parent)
+        realPanel = wx.StaticBox(parent, group.label)
+        panel     = wx.Panel(realPanel)
 
     childObjs = []
 
@@ -438,19 +401,18 @@ def _createGroup(parent, group, hasProps, propGui):
         if group.showLabels:
             if group.childLabels[i] is not None:
                 labelObj = _create(
-                    frame, group.childLabels[i], hasProps, propGui)
+                    panel, group.childLabels[i], hasProps, propGui)
                 labelObjs.append(labelObj)
             else:
                 labelObjs.append(None)
-            
 
-        childObj = _create(frame, child, hasProps, propGui)
+        childObj = _create(panel, child, hasProps, propGui)
 
         childObjs.append(childObj)
 
-    _layoutGroup(group, frame, childObjs, labelObjs)
+    _layoutGroup(group, panel, childObjs, labelObjs)
 
-    return frame
+    return realPanel
 
 
 # These aliases are defined so we can introspectively look
@@ -497,7 +459,7 @@ def _defaultView(hasProps):
 
     propNames, propObjs = hasProps.getAllProperties()
 
-    widgets = [Widget(name, label=name) for name in propNames]
+    widgets = [Widget(name) for name in propNames]
     
     return VGroup(label=hasProps.__class__.__name__, children=widgets)
 
@@ -616,7 +578,7 @@ def buildGUI(parent,
 
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
-    if buttons  is None: buttons  = []
+    if buttons  is None: buttons  = {}
 
     propGui  = PropGUI()
     view     = _prepareView(view, labels, tooltips) 
