@@ -31,6 +31,8 @@ import sys
 import Tkinter as tk
 import            ttk
 
+import wx
+
 import widgets
 
 class ViewItem(object):
@@ -163,7 +165,7 @@ class Group(ViewItem):
 
 class NotebookGroup(Group):
     """
-    A Group representing a ttk.Notebook. Children are added as notebook
+    A Group representing a GUI Notebook. Children are added as notebook
     pages.
     """
     pass
@@ -171,7 +173,7 @@ class NotebookGroup(Group):
 
 class HGroup(Group):
     """
-    A group representing a ttk.Frame, whose children are laid out
+    A group representing a GUI Frame, whose children are laid out
     horizontally.
     """
     pass
@@ -179,7 +181,7 @@ class HGroup(Group):
 
 class VGroup(Group): 
     """
-    A group representing a ttk.Frame, whose children are laid out
+    A group representing a GUI Frame, whose children are laid out
     vertically.
     """
     pass
@@ -188,7 +190,7 @@ class VGroup(Group):
 class PropGUI(object):
     """
     A container class used for convenience. Stores references to
-    all Tkinter/ttk objects that are created, and to all conditional
+    all wx objects that are created, and to all conditional
     callbacks (which control visibility/state).
     """
     
@@ -204,7 +206,7 @@ def _configureEnabledWhen(viewItem, tkObj, hasProps):
     Parameters:
 
       - viewItem: The ViewItem object
-      - tkObj:    The Tkinter object created from the ViewItem
+      - guiObj:   The GUI object created from the ViewItem
       - hasProps: The HasProperties instance
     """
 
@@ -212,7 +214,7 @@ def _configureEnabledWhen(viewItem, tkObj, hasProps):
 
     def _changeState(obj, state):
         """
-        Sets the state of the given Tkinter object to the given state.
+        Sets the state of the given GUI object to the given state.
         If the given object is a container, the state of its children
         are (recursively) set.
         """
@@ -242,7 +244,7 @@ def _configureEnabledWhen(viewItem, tkObj, hasProps):
     def _toggleEnabled():
         """
         Calls the viewItem.enabledWhen function and
-        enables/disables the tk object, depending
+        enables/disables the GUI object, depending
         upon the result.
         """
 
@@ -290,8 +292,8 @@ def _configureVisibleWhen(viewItem, tkObj, hasProps):
 
 def _createLabel(parent, viewItem, hasProps, propGui):
     """
-    Creates a ttk.Label object containing a label for the given
-    viewItem.
+    Creates a GUI static text label object containing a label for the
+    given viewItem.
     """
 
     label = ttk.Label(parent, text=viewItem.label)
@@ -300,7 +302,7 @@ def _createLabel(parent, viewItem, hasProps, propGui):
 
 def _createButton(parent, viewItem, hasProps, propGui):
     """
-    Creates a ttk.Button object for the given ViewItem (assumed to be a
+    Creates a GUI Button object for the given ViewItem (assumed to be a
     Button).
     """
 
@@ -327,7 +329,7 @@ def _createWidget(parent, viewItem, hasProps, propGui):
     
 def _createNotebookGroup(parent, group, hasProps, propGui):
     """
-    Creates a ttk.Notebook object for the given NotebookGroup object.
+    Creates a GUI Notebook object for the given NotebookGroup object.
     The children of the group object are also created via recursive
     calls to the _create function.
     """
@@ -351,12 +353,11 @@ def _layoutGroup(group, parent, children, labels):
     
       - group:    HGroup or VGroup object
     
-      - parent:   ttk.Frame object which represents the group
+      - parent:   GUI Frame object which represents the group
     
-      - children: List of Tkinter/ttk objects, the children of
-                  the group.
+      - children: List of GUI objects, the children of the group.
 
-      - labels:   None if no labels, otherwise a list of ttk.Label
+      - labels:   None if no labels, otherwise a list of GUI Label
                   objects, one for each child.
     """
 
@@ -410,7 +411,7 @@ def _layoutGroup(group, parent, children, labels):
 
 def _createGroup(parent, group, hasProps, propGui):
     """
-    Creates a ttk.Frame object for the given group. Children of the
+    Creates a GUI Frame object for the given group. Children of the
     group are recursively created via calls to _create, and laid out on
     the Frame via the _layoutGroup function.
     """
@@ -588,14 +589,14 @@ def buildGUI(parent,
              tooltips=None,
              buttons=None):
     """
-    Builds a Tkinter/ttk interface which allows the properties of the
-    given hasProps object (a props.HasProperties instance) to be edited.
+    Builds a GUI interface which allows the properties of the given
+    hasProps object (a props.HasProperties instance) to be edited.
     Returns a reference to the top level Tkinter object (typically a
-    ttk.Frame or ttk.Notebook).
+    wx.Frame or wx.Notebook).
 
     Parameters:
     
-     - parent:   Tkinter parent object
+     - parent:   wx parent object
      - hasProps: props.HasProperties object
     
     Optional:
@@ -625,21 +626,22 @@ def buildGUI(parent,
     # along with the buttons
     if len(buttons) > 0:
         
-        topLevel  = ttk.Frame(parent)
+        topLevel  = wx.Frame(parent)
+        topSizer  = wx.BoxSizer(wx.VERTICAL)
         propFrame = _create(topLevel, view, hasProps, propGui)
+        
+        btnFrame  = wx.Frame(topLevel)
+        btnSizer  = wx.BoxSizer(wx.HORIZONTAL) 
 
-        topLevel.rowconfigure(0, weight=1)
-
-        for i in range(len(buttons)):
-            topLevel.columnconfigure(i, weight=1)
-
-        propFrame.grid(row=0, column=0, columnspan=len(buttons),
-                       sticky=tk.N+tk.S+tk.E+tk.W)
+        topSizer.Add(propFrame, flag=wx.EXPAND)
+        topSizer.Add(btnFrame,  flag=wx.EXPAND)
 
         for i,(label,callback) in enumerate(buttons.items()):
 
-            button = ttk.Button(topLevel, text=label, command=callback)
-            button.grid(row=1, column=i, sticky=tk.N+tk.S+tk.E+tk.W)
+            button = wx.Button(btnFrame, label=label)
+
+            button.Bind(wx.EVT_BUTTON, lambda e: callback())
+            btnSizer.Add(button, flag=wx.EXPAND)
             
     else:
         topLevel = _create(parent, view, hasProps, propGui)
