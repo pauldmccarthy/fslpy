@@ -28,6 +28,18 @@ import properties as props
 
 
 def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
+    """
+    Sets up event callback functions such that, on a change to the given
+    property value, the value displayed by the given GUI widget will be
+    updated. Similarly, whenever a GUI event of the specified type (or
+    types) occurs, the property value will be set to the value controlled
+    by the GUI widget. 
+
+    If labelMap is provided, it should be a dictionary of value->label pairs
+    where the label is what is displayed to the user, and the value is what is
+    assigned to the property value when a corresponding label is selected. It
+    is basically here to support Choice properties
+    """
 
     if not isinstance(evType, Iterable): evType = [evType]
 
@@ -38,13 +50,21 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
         valMap = dict([(lbl,val) for (val,lbl) in labelMap.items()])
 
     def _guiUpdate(value, *a):
+        """
+        Called whenever the property value is changed.
+        Sets the GUI widget value to that of the property.
+        """
 
         if guiObj.GetValue() == value: return
 
-        if valMap is not None: guiObj.SetValue(valMap[value])
+        if valMap is not None: guiObj.SetValue(labelMap[value])
         else:                  guiObj.SetValue(value)
         
     def _propUpdate(*a):
+        """
+        Called when the value controlled by the GUI widget
+        is changed. Updates the property value.
+        """
 
         # TODO remove property value listener when GUI object is destroyed
         try:
@@ -54,13 +74,13 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
 
         if propVal.get() == value: return
 
-        if labelMap is not None: propVal.set(labelMap[value])
+        if labelMap is not None: propVal.set(valMap[value])
         else:                    propVal.set(value)
 
     guiObj.SetValue(propVal.get())
 
+    # set up the callback functions
     for ev in evType: guiObj.Bind(ev, _propUpdate)
-    
     propVal.addListener(listenerName, _guiUpdate)
 
 
@@ -83,9 +103,11 @@ def _setupValidation(widget, hasProps, propObj, propVal):
         widget background colour according to the validity
         of the new value.
         """
-        if valid: widget.SetBackgroundColour(validBGColour)
-        else:     widget.SetBackgroundColour(invalidBGColour)
-
+        
+        if valid: newBGColour = validBGColour
+        else:     newBGColour = invalidBGColour
+        
+        widget.SetBackgroundColour(newBGColour)
         widget.Refresh()
 
     # We add a callback listener to the PropertyValue object,
@@ -112,52 +134,60 @@ def _setupValidation(widget, hasProps, propObj, propVal):
 _lastFilePathDir = None
 def _FilePath(parent, hasProps, propObj, propVal):
     """
-    Creates and returns a ttk Frame containing an Entry and a
+    Creates and returns a panel containing a text field and a
     Button. The button, when clicked, opens a file dialog
     allowing the user to choose a file/directory to open, or
     a location to save (this depends upon how the propObj
     [props.FilePath] object was configured).
     """
 
-    tkVar = _createTkVar(propVal, tk.StringVar)
-
     global _lastFilePathDir
     if _lastFilePathDir is None:
         _lastFilePathDir = os.getcwd()
 
-    frame   = ttk.Frame(parent)
-    textbox = ttk.Entry(frame, textvariable=tkVar)
-    _setupValidation(textbox, hasProps, propObj, propVal)
+    value = propVal.get()
+    if value is None: value = ''
 
-    def chooseFile():
+    panel   = wx.Panel(parent)
+    textbox = wx.TextCtrl(panel)
+    button  = wx.Button(panel)
+    
+    def _choosePath():
         global _lastFilePathDir
 
-        if propObj.exists:
-
-            if propObj.isFile:
-                path = tkfile.askopenfilename(
-                    initialdir=_lastFilePathDir,
-                    title='Open file')
-            else:
-                path = tkfile.askdirectory(
-                    initialdir=_lastFilePathDir,
-                    title='Open directory') 
+        if propObj.exists and propObj.isFile:
+            dlg = wx.FileDialog(parent,
+                                message='Choose file',
+                                defaultDir=_lastFilePathDir,
+                                defaultFile=value,
+                                style=wx.FD_OPEN)
+            
+        elif propObj.exists and (not propObj.isFile):
+            dlg = wx.DirDialog(parent,
+                               message='Choose directory',
+                               defaultPath=_lastFilePathDir) 
 
         else:
-            path = tkfile.asksaveasfilename(
-                initialdir=_lastFilePathDir,
-                title='Save file')
+            dlg = wx.FileDialog(parent,
+                                message='Save file',
+                                defaultDir=_lastFilePathDir,
+                                defaultFile=value,
+                                style=wx.FD_SAVE)
 
+
+        dlg.ShowModal()
+        path = dlg.GetPath()
+        
         if path != '' and path is not None:
             _lastFilePathDir = op.dirname(path)
-            tkVar.set(path)
+            propVal.set(path)
+            
+    _setupValidation(textbox, hasProps, propObj, propVal)
+    _propBind(hasProps, propObj, propVal, textbox, wx.EVT_TEXT)
 
-    button = ttk.Button(frame, text='Choose', command=chooseFile)
-
-    textbox.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
-    button .pack(fill=tk.Y,    side=tk.RIGHT)
+    button.Bind(wx.EVT_BUTTON, _choosePath)
     
-    return frame
+    return panel
     
 
 def _Choice(parent, hasProps, propObj, propVal):
@@ -170,11 +200,13 @@ def _Choice(parent, hasProps, propObj, propVal):
     labels  = propObj.choiceLabels
     
     valMap  = OrderedDict(zip(choices, labels))
-    tkVar   = _createTkVar(propVal, tk.StringVar, valMap)
 
-    widget  = ttk.Combobox(parent, values=labels, textvariable=tkVar)
+    widget  = wx.ComboBox(
+        parent,
+        choices=labels,
+        style=wx.CB_READONLY | wx.CB_DROPDOWN)
 
-    widget.configure(state='readonly')
+    _propBind(hasProps, propObj, propVal, widget, wx.EVT_COMBOBOX, valMap)
     
     return widget
 
@@ -189,6 +221,7 @@ def _String(parent, hasProps, propObj, propVal):
     widget = wx.TextCtrl(parent)
 
     _propBind(hasProps, propObj, propVal, widget, wx.EVT_TEXT)
+    _setupValidation(widget, hasProps, propObj, propVal)
     
     return widget
 
@@ -233,7 +266,9 @@ def _Number(parent, hasProps, propObj, propVal):
                   [wx.EVT_SPINCTRL, wx.EVT_TEXT])
         _setupValidation(widget, hasProps, propObj, propVal)
 
-    # if both minval and maxval have been set, we can use a slider. 
+    # if both minval and maxval have been set, we can use
+    # a slider. We also add a spinbox for manual entry, and
+    # some labels to show the min/max/current slider value.
     else:
 
         panel = wx.Panel(parent)
@@ -246,19 +281,34 @@ def _Number(parent, hasProps, propObj, propVal):
 
         spin = SpinCtr(panel, **params)
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        panel.SetSizer(sizer)
-        sizer.Add(slider, flag=wx.EXPAND, proportion=1)
-        sizer.Add(spin)
+        minLabel = wx.StaticText(panel, label='{}'.format(minval))
+        curLabel = wx.StaticText(panel, label='{}'.format(value))
+        maxLabel = wx.StaticText(panel, label='{}'.format(maxval))
 
+        sizer = wx.GridBagSizer()
+        panel.SetSizer(sizer)
+        
+        sizer.Add(slider,   pos=(0,0), span=(1,3), flag=wx.EXPAND)
+        sizer.Add(spin,     pos=(0,3), span=(2,1), flag=wx.EXPAND)
+        sizer.Add(minLabel, pos=(1,0), span=(1,1), flag=wx.ALIGN_LEFT)
+        sizer.Add(curLabel, pos=(1,1), span=(1,1), flag=wx.ALIGN_CENTER)
+        sizer.Add(maxLabel, pos=(1,2), span=(1,1), flag=wx.ALIGN_RIGHT)
+
+        sizer.AddGrowableCol(0)
         sizer.Layout()
 
-        _propBind(hasProps, propObj, propVal, slider, wx.EVT_SLIDER)
-        _propBind(hasProps, propObj, propVal, spin,   wx.EVT_SPINCTRL)
+        # TODO how do I remove this listener when the widget is destroyed?
+        def _updateCurLabel(value, *a):
+            curLabel.SetLabel('{}'.format(value))
+        listenerName = 'sliderLabel'
+
+        propVal.addListener(listenerName, _updateCurLabel)
+        _propBind(hasProps, propObj, propVal, slider,   wx.EVT_SLIDER)
+        _propBind(hasProps, propObj, propVal, spin,     wx.EVT_SPINCTRL)
+        
         _setupValidation(spin, hasProps, propObj, propVal)
 
         widget = panel
-
 
     return widget
 

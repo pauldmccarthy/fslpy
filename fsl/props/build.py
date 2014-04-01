@@ -459,7 +459,7 @@ def _defaultView(hasProps):
 
     propNames, propObjs = hasProps.getAllProperties()
 
-    widgets = [Widget(name) for name in propNames]
+    widgets = [Widget(name, label=name) for name in propNames]
     
     return VGroup(label=hasProps.__class__.__name__, children=widgets)
 
