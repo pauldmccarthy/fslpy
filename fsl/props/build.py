@@ -9,7 +9,7 @@
 # props.HasProperties object.
 
 # The sole entry point for this module is the buildGUI function, which
-# accepts as parameters a tk object to be used as the parent (e.g. a
+# accepts as parameters a GUI object to be used as the parent (e.g. a
 # wx.Frame object), a props.HasProperties object, an optional
 # ViewItem object, which specifies how the interface is to be laid
 # out, two optional dictionaries for passing in labels and tooltips,
@@ -192,7 +192,7 @@ class PropGUI(object):
     
     def __init__(self):
         self.onChangeCallbacks = []
-        self.tkObjects         = {}
+        self.guiObjects        = {}
  
 
 def _configureEnabledWhen(viewItem, guiObj, hasProps):
@@ -238,7 +238,6 @@ def _configureVisibleWhen(viewItem, guiObj, hasProps):
 
         if visible != guiObj.IsShown():
             guiObj.Show(visible)
-            #guiObj.GetParent().Fit()
             guiObj.GetParent().Layout()
         
     return _toggleVis
@@ -266,7 +265,8 @@ def _createButton(parent, viewItem, hasProps, propGui):
     elif viewItem.label is not None: btnText = viewItem.label
     elif viewItem.key   is not None: btnText = viewItem.key
         
-    button = ttk.Button(parent, text=btnText, command=viewItem.callback)
+    button = wx.Button(parent, label=btnText)
+    button.Bind(wx.EVT_BUTTON, lambda e: viewItem.callback)
     return button
 
 
@@ -288,20 +288,12 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    panel    = wx.Panel(parent)
-    sizer    = wx.BoxSizer(wx.VERTICAL)
-    notebook = wx.Notebook(panel)
+    notebook = wx.Notebook(parent)
 
     for child in group.children:
 
         page = _create(notebook, child, hasProps, propGui)
         notebook.AddPage(page, child.label)
-
-    panel.SetSizer(sizer)
-    sizer.Add(notebook, flag=wx.EXPAND)
-
-    panel.Fit()
-    panel.Layout()
 
     return notebook
 
@@ -354,8 +346,8 @@ def _layoutGroup(group, parent, children, labels):
 
             elif labels is not None:
                 if labels[cidx] is not None:
-                    sizer.Add(labels  [cidx], pos=(cidx,0), flag=wx.EXPAND)
-                    sizer.Add(children[cidx], pos=(cidx,1), flag=wx.EXPAND)
+                    sizer.Add(labels  [cidx], pos=(cidx,0), span=wx.DefaultSpan, flag=wx.EXPAND)
+                    sizer.Add(children[cidx], pos=(cidx,1), span=wx.DefaultSpan, flag=wx.EXPAND)
 
                 else:
                     sizer.Add(children[cidx],
@@ -372,7 +364,8 @@ def _layoutGroup(group, parent, children, labels):
     if isinstance(group, VGroup): sizer.AddGrowableCol(1)
 
     parent.SetSizer(sizer)
-    parent.Layout()
+    parent.SetAutoLayout(1)
+    sizer.Fit(parent)
 
 
 def _createGroup(parent, group, hasProps, propGui):
@@ -437,16 +430,16 @@ def _create(parent, viewItem, hasProps, propGui):
         raise ValueError('Unrecognised ViewItem: {}'.format(
             viewItem.__class__.__name__))
 
-    tkObject  = createFunc(parent, viewItem, hasProps, propGui)
-    visibleCb = _configureVisibleWhen(viewItem, tkObject, hasProps)
-    enableCb  = _configureEnabledWhen(viewItem, tkObject, hasProps)
+    guiObject = createFunc(parent, viewItem, hasProps, propGui)
+    visibleCb = _configureVisibleWhen(viewItem, guiObject, hasProps)
+    enableCb  = _configureEnabledWhen(viewItem, guiObject, hasProps)
 
     if visibleCb is not None: propGui.onChangeCallbacks.append(visibleCb)
     if enableCb  is not None: propGui.onChangeCallbacks.append(enableCb)
 
-    propGui.tkObjects[viewItem.key] = tkObject
+    propGui.guiObjects[viewItem.key] = guiObject
 
-    return tkObject
+    return guiObject
 
 
 def _defaultView(hasProps):
@@ -553,12 +546,12 @@ def buildGUI(parent,
     """
     Builds a GUI interface which allows the properties of the given
     hasProps object (a props.HasProperties instance) to be edited.
-    Returns a reference to the top level Tkinter object (typically a
+    Returns a reference to the top level GUI object (typically a
     wx.Frame or wx.Notebook).
 
     Parameters:
     
-     - parent:   wx parent object
+     - parent:   parent GUI object
      - hasProps: props.HasProperties object
     
     Optional:
@@ -569,8 +562,8 @@ def buildGUI(parent,
      - buttons:  Dict specifying buttons to add to the interface.
                  Keys are used as button labels, and values are
                  callback functions which take two arguments - the
-                 Tkinter parent object, and the HasProperties
-                 object (parent and hasProps). Make sure to use a
+                 GUI parent object, and the HasProperties object
+                 (parent and hasProps). Make sure to use a
                  collections.OrderedDict if order is important.
     """
 
@@ -587,31 +580,43 @@ def buildGUI(parent,
     # interface is embedded in a higher level frame,
     # along with the buttons
     if len(buttons) > 0:
-        
-        topLevel  = wx.Frame(parent)
-        topSizer  = wx.BoxSizer(wx.VERTICAL)
-        propFrame = _create(topLevel, view, hasProps, propGui)
-        
-        btnFrame  = wx.Frame(topLevel)
-        btnSizer  = wx.BoxSizer(wx.HORIZONTAL) 
 
-        topSizer.Add(propFrame, flag=wx.EXPAND)
-        topSizer.Add(btnFrame,  flag=wx.EXPAND)
+        mainPanel   = wx.Panel(parent)
+        buttonPanel = wx.Panel(mainPanel)
+        propPanel   = _create(mainPanel, view, hasProps, propGui)
+        mainSizer   = wx.BoxSizer(wx.VERTICAL)
+        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        for i,(label,callback) in enumerate(buttons.items()):
+        mainSizer.Add(propPanel,   flag=wx.EXPAND)
+        mainSizer.Add(buttonPanel, flag=wx.EXPAND)
 
-            button = wx.Button(btnFrame, label=label)
+        for (label,callback),colour in zip(buttons.items(), ('red','green','blue')):
 
-            button.Bind(wx.EVT_BUTTON, lambda e: callback())
-            btnSizer.Add(button, flag=wx.EXPAND)
+            button = wx.Button(buttonPanel, label=label)
+            button.Bind(wx.EVT_BUTTON, lambda e, cb=callback: cb())
+            
+            buttonSizer.Add(button, flag=wx.EXPAND, proportion=1)
+
+
+        buttonPanel.SetSizer(buttonSizer)
+        mainPanel  .SetSizer(mainSizer)
+
+        buttonPanel.SetAutoLayout(1)
+        mainPanel  .SetAutoLayout(1)
+
+        buttonSizer.Fit(buttonPanel)
+        mainSizer  .Fit(mainPanel)
+
+        buttonSizer.Layout()
+        mainSizer.Layout()
             
     else:
-        topLevel = _create(parent, view, hasProps, propGui)
+        mainPanel = _create(parent, view, hasProps, propGui)
 
     _prepareEvents(hasProps, propGui)
 
-    # TODO return the propGui object, so the caller has
-    # access to all of the Tkinter objects that were
-    # created, via the propGui.tkObjects dict.
+    # TODO return the propGui object, so the caller
+    # has access to all of the GUI objects that were
+    # created, via the propGui.guiObjects dict.
 
-    return topLevel
+    return mainPanel

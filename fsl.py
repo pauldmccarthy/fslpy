@@ -9,11 +9,9 @@ import os
 import sys
 import logging
 
-import Tkinter      as tk
-import tkMessageBox as tkmsg
+import wx
 
 import fsl.tools as tools
-
 
 if __name__ == '__main__':
 
@@ -39,9 +37,9 @@ if __name__ == '__main__':
         print('{} does not appear to be a valid tool'.format(modname))
         sys.exit(1)
 
-    app   = tk.Tk()
+    app   = wx.App()
     opts  = Options()
-    frame = Frame(app, opts)
+    frame = Frame(opts)
 
     # stupid hack for testing under OS X - forces the TK
     # window to be displayed above all other windows
@@ -51,10 +49,17 @@ if __name__ == '__main__':
     def checkFslDir():
         fsldir = os.environ.get('FSLDIR', None)
         if fsldir is None:
-            tkmsg.showwarning(
-                'Warning',
-                'The FSLDIR environment variable is not set - '\
-                'you will not be able to run {}.'.format(modname))
-            
-    app.after_idle(checkFslDir)
-    app.mainloop()
+
+            msg = 'The FSLDIR environment variable is not set - '\
+                'you will not be able to run {}.'.format(modname)
+
+            wx.MessageDialog(
+                frame,
+                message=msg,
+                style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            app.Unbind(wx.EVT_IDLE)
+
+    frame.Fit()
+    frame.Show()
+    #app.Bind(wx.EVT_IDLE, lambda e: checkFslDir())
+    app.MainLoop()

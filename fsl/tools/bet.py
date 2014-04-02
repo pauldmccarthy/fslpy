@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# betDemo.py - Replicating FSL's bet gui in Tkinter using tkprop.
+# bet.py - Front end to the FSL BET tool.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -11,9 +11,7 @@ import sys
 
 from collections import OrderedDict
 
-import Tkinter      as tk
-import tkMessageBox as tkmsg
-import                 ttk
+import wx
 
 import fsl.props          as props
 import fsl.utils.runshell as shell
@@ -204,7 +202,7 @@ betView = props.NotebookGroup((
 ))
 
 
-def checkAndRun(betOpts, tkRoot):
+def checkAndRun(betOpts):
     """
     Checks that the given options are valid. If they are, bet is run.
     If the options are not valid, some complaints are directed towards
@@ -220,7 +218,10 @@ def checkAndRun(betOpts, tkRoot):
         for name,error in errors:
             msg = msg + '\n - {}: {}'.format(optLabels[name], error)
 
-        tkmsg.showwarning('Error', msg)
+        wx.MessageDialog(
+            None,
+            message=msg,
+            style=wx.OK | wx.ICON_ERROR).ShowModal()
         
     else:
         cmd = betOpts.genBetCmd()
@@ -239,25 +240,26 @@ def openHelp():
         import webbrowser
         webbrowser.open(url)
     else:
-        tkmsg.showerror(
-            'Error',
-            'The FSLDIR environment variable is not set - I don\'t '\
-            'know where to find the FSL documentation.') 
+
+        msg = 'The FSLDIR environment variable is not set - I don\'t '\
+            'know where to find the FSL documentation.'
+
+        wx.MessageDialog(
+            None,
+            message=msg,
+            style=wx.OK | wx.ICON_ERROR).ShowModal()
 
     
-class Frame(tk.Frame):
+class Frame(wx.Frame):
     
-    def __init__(self, parent, betOpts):
+    def __init__(self, betOpts):
         
-        tk.Frame.__init__(self, parent)
-        self.pack(fill=tk.BOTH, expand=1)
+        wx.Frame.__init__(self, None, title='BET')
 
         buttons = OrderedDict((
             ('Run BET',  lambda : checkAndRun(betOpts, parent)),
-            ('Quit',     parent.destroy),
+            ('Quit',     self.Destroy),
             ('Help',     openHelp)))
 
-        self.propFrame = props.buildGUI(
+        self.propPanel = props.buildGUI(
             self, betOpts, betView, optLabels, optTooltips, buttons)
-        
-        self.propFrame.pack(fill=tk.BOTH, expand=1)

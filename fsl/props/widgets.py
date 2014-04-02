@@ -150,7 +150,15 @@ def _FilePath(parent, hasProps, propObj, propVal):
 
     panel   = wx.Panel(parent)
     textbox = wx.TextCtrl(panel)
-    button  = wx.Button(panel)
+    button  = wx.Button(panel, label='Choose')
+
+    sizer = wx.BoxSizer(wx.HORIZONTAL)
+    sizer.Add(textbox, flag=wx.EXPAND, proportion=1)
+    sizer.Add(button,  flag=wx.EXPAND)
+
+    panel.SetSizer(sizer)
+    panel.SetAutoLayout(1)
+    sizer.Fit(panel)
     
     def _choosePath():
         global _lastFilePathDir
@@ -198,9 +206,7 @@ def _Choice(parent, hasProps, propObj, propVal):
 
     choices = propObj.choices
     labels  = propObj.choiceLabels
-    
     valMap  = OrderedDict(zip(choices, labels))
-
     widget  = wx.ComboBox(
         parent,
         choices=labels,
@@ -282,27 +288,20 @@ def _Number(parent, hasProps, propObj, propVal):
         spin = SpinCtr(panel, **params)
 
         minLabel = wx.StaticText(panel, label='{}'.format(minval))
-        curLabel = wx.StaticText(panel, label='{}'.format(value))
         maxLabel = wx.StaticText(panel, label='{}'.format(maxval))
 
-        sizer = wx.GridBagSizer()
-        panel.SetSizer(sizer)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         
-        sizer.Add(slider,   pos=(0,0), span=(1,3), flag=wx.EXPAND)
-        sizer.Add(spin,     pos=(0,3), span=(2,1), flag=wx.EXPAND)
-        sizer.Add(minLabel, pos=(1,0), span=(1,1), flag=wx.ALIGN_LEFT)
-        sizer.Add(curLabel, pos=(1,1), span=(1,1), flag=wx.ALIGN_CENTER)
-        sizer.Add(maxLabel, pos=(1,2), span=(1,1), flag=wx.ALIGN_RIGHT)
+        sizer.Add(minLabel) 
+        sizer.Add(slider, flag=wx.EXPAND, proportion=1)
+        sizer.Add(maxLabel)
+        sizer.Add(spin, flag=wx.EXPAND)
 
-        sizer.AddGrowableCol(0)
-        sizer.Layout()
+        panel.SetSizer(sizer)
+        panel.SetAutoLayout(1)
+        sizer.Fit(panel)
 
-        # TODO how do I remove this listener when the widget is destroyed?
-        def _updateCurLabel(value, *a):
-            curLabel.SetLabel('{}'.format(value))
-        listenerName = 'sliderLabel'
-
-        propVal.addListener(listenerName, _updateCurLabel)
         _propBind(hasProps, propObj, propVal, slider,   wx.EVT_SLIDER)
         _propBind(hasProps, propObj, propVal, spin,     wx.EVT_SPINCTRL)
         
