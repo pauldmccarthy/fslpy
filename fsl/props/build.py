@@ -40,7 +40,7 @@ class ViewItem(object):
     Superclass for Widgets, Buttons, Labels  and Groups. Represents an
     item to be displayed.
     """
-    
+
     def __init__(self, key=None, label=None, tooltip=None,
                  visibleWhen=None, enabledWhen=None):
         """
@@ -73,7 +73,7 @@ class ViewItem(object):
                          state of the item (or its children) is changed
                          between enabled and disabled.
         """
-        
+
         self.key         = key
         self.label       = label
         self.tooltip     = tooltip
@@ -137,7 +137,7 @@ class Group(ViewItem):
     """
     Represents a collection of other ViewItems.
     """
-    def __init__(self, children=[], showLabels=True, border=False, **kwargs):
+    def __init__(self, children, showLabels=True, border=False, **kwargs):
         """
         Parameters:
         
@@ -168,7 +168,9 @@ class NotebookGroup(Group):
     A Group representing a GUI Notebook. Children are added as notebook
     pages.
     """
-    pass
+    def __init__(self, children, **kwargs):
+        kwargs['border'] = kwargs.get('border', True)
+        Group.__init__(self, children, **kwargs)
 
 
 class HGroup(Group):
@@ -184,7 +186,9 @@ class VGroup(Group):
     A group representing a GUI panel, whose children are laid out
     vertically.
     """
-    pass
+    def __init__(self, children, **kwargs):
+        kwargs['border'] = kwargs.get('border', True)
+        Group.__init__(self, children, **kwargs) 
 
 
 class PropGUI(object):
@@ -309,7 +313,7 @@ def _createWidget(parent, viewItem, hasProps, propGui):
     widget = widgets.makeWidget(parent, hasProps, viewItem.key)
     return widget
 
-    
+
 def _createNotebookGroup(parent, group, hasProps, propGui):
     """
     Creates a GUI Notebook object for the given NotebookGroup object.
@@ -317,17 +321,22 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
+    if group.border:
+        pass
+
     notebook = wxnb.FlatNotebook(
         parent,
         agwStyle=wxnb.FNB_NO_X_BUTTON    | \
                  wxnb.FNB_NO_NAV_BUTTONS | \
-                 wxnb.FNB_NODRAG         | \
-                 wxnb.FNB_TABS_BORDER_SIMPLE)
+                 wxnb.FNB_NODRAG)
 
     for i,child in enumerate(group.children):
+        
+        if child.label is None: pageLabel = '{}'.format(i)
+        else:                   pageLabel = child.label
 
         page = _create(notebook, child, hasProps, propGui)
-        notebook.InsertPage(i, page, text=child.label)
+        notebook.InsertPage(i, page, text=pageLabel)
         page._notebookIdx = i
 
     notebook.SetSelection(0)
@@ -354,14 +363,13 @@ def _layoutHGroup(group, parent, children, labels):
 
     for cidx in range(len(children)):
 
-        if isinstance(group, HGroup):
-            if labels is not None and labels[cidx] is not None:
-                sizer.Add(labels[cidx], flag=wx.EXPAND)
+        if labels is not None and labels[cidx] is not None:
+            sizer.Add(labels[cidx], flag=wx.EXPAND)
                 
-            sizer.Add(children[cidx], flag=wx.EXPAND, proportion=1)
+        sizer.Add(children[cidx], flag=wx.EXPAND, proportion=1)
 
-            # TODO I have not added support
-            # for child groups with borders
+        # TODO I have not added support
+        # for child groups with borders
 
     parent.SetSizer(sizer)
     parent.SetAutoLayout(1)
@@ -381,7 +389,7 @@ def _layoutVGroup(group, parent, children, labels):
 
         vItem       = group.children[cidx]
         child       = children[cidx]
-        label       = labels[cidx] if labels is not None else None
+        label       = group.showLabels and labels[cidx] or None
         childParams = {}
 
         # Groups within VGroups, which don't have a border, are 
@@ -392,7 +400,7 @@ def _layoutVGroup(group, parent, children, labels):
         # widget, the label is embedded in the border. The
         # _createGroup function takes care of creating the
         # border/label for the child GUI object.
-        if isinstance(vItem, (HGroup, VGroup)) and vItem.border:
+        if (isinstance(vItem, Group) and vItem.border):
 
             label = None
             childParams['pos']    = (cidx, 0)
@@ -435,19 +443,7 @@ def _createGroup(parent, group, hasProps, propGui):
     the Frame via the _layoutGroup function.
     """
 
-    # TODO Use of the StaticBox/StaticBoxSizer classes causes
-    # problems on both OS X Mavericks and Linux. On Mavericks,
-    # StaticBox items are not resized properly. On linux, the
-    # contents of StaticBox items are not laid out properly.
-    if group.border:
-        box   = wx.StaticBox(parent, label=group.label)
-        panel = wx.Panel(box)
-        sizer = wx.BoxSizer()
-        box.SetSizer(sizer)
-        sizer.Add(panel, flag=wx.EXPAND, proportion=1)
-
-    else:
-        panel = wx.Panel(parent)
+    panel = wx.Panel(parent)
 
     childObjs = []
 
@@ -455,19 +451,41 @@ def _createGroup(parent, group, hasProps, propGui):
     else:                labelObjs = None
 
     for i,child in enumerate(group.children):
+        
+        borderGroup = isinstance(child, Group) and child.border
 
-        labelObj = None
+        if borderGroup:
+
+            borderPanel = wx.Panel(panel, style=wx.SUNKEN_BORDER)
+            borderSizer = wx.BoxSizer(wx.VERTICAL)
+            borderPanel.SetSizer(borderSizer)
+            
+            if child.label is not None:
+                label = wx.StaticText(borderPanel, label=child.label)
+                font = label.GetFont()
+                font.SetPointSize(font.GetPointSize() - 2)
+                font.SetWeight(wx.FONTWEIGHT_LIGHT)
+                label.SetFont(font)
+                borderSizer.Add(label)
+
+            childObj = _create(borderPanel, child, hasProps, propGui)
+            borderSizer.Add(childObj, flag=wx.EXPAND, proportion=1)
+
+            borderPanel.SetAutoLayout(1)
+            borderSizer.Fit(borderPanel)
+                
+        else:
+            childObj = _create(panel, child, hasProps, propGui)
 
         if group.showLabels:
-            if group.childLabels[i] is not None:
+
+            if (not borderGroup) and group.childLabels[i] is not None:
                 labelObj = _create(
                     panel, group.childLabels[i], hasProps, propGui)
                 labelObjs.append(labelObj)
             else:
                 labelObjs.append(None)
-
-        childObj = _create(panel, child, hasProps, propGui)
-
+        
         childObjs.append(childObj)
 
     if   isinstance(group, HGroup):
@@ -475,8 +493,7 @@ def _createGroup(parent, group, hasProps, propGui):
     elif isinstance(group, VGroup):
         _layoutVGroup(group, panel, childObjs, labelObjs)
 
-    if group.border: return box
-    else:            return panel
+    return panel
 
 
 # These aliases are defined so we can introspectively look
@@ -545,7 +562,7 @@ def _prepareView(viewItem, labels, tooltips):
         raise ValueError('Not a ViewItem')
 
     if viewItem.label   is None:
-        viewItem.label   = labels  .get(viewItem.key, None)
+        viewItem.label   = labels  .get(viewItem.key, viewItem.key)
     if viewItem.tooltip is None:
         viewItem.tooltip = tooltips.get(viewItem.key, None) 
 
@@ -573,7 +590,7 @@ def _prepareView(viewItem, labels, tooltips):
                 # is configured to be laid out with a
                 # border (in which case the label will
                 # be displayed as a title)
-                elif isinstance(child, (HGroup,VGroup)) and child.border:
+                elif isinstance(child, Group) and child.border:
                     viewItem.childLabels.append(None)
                 else:
                     viewItem.childLabels.append(Label(child))
@@ -661,7 +678,7 @@ def buildGUI(parent,
         mainSizer.Add(propPanel,   flag=wx.EXPAND, proportion=1)
         mainSizer.Add(buttonPanel, flag=wx.EXPAND)
 
-        for (label,callback),colour in zip(buttons.items(), ('red','green','blue')):
+        for label,callback in buttons.items():
 
             button = wx.Button(buttonPanel, label=label)
             button.Bind(wx.EVT_BUTTON, lambda e, cb=callback: cb())
