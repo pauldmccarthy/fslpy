@@ -30,16 +30,17 @@ if __name__ == '__main__':
         print('Unknown tool: {}'.format(modname))
         sys.exit(1)
 
-    Options = getattr(toolmod, 'Options', None)
-    Frame   = getattr(toolmod, 'Frame',   None)
+    Options   = getattr(toolmod, 'Options',   None)
+    editPanel = getattr(toolmod, 'editPanel', None)
 
-    if (Options is None) or (Frame is None):
+    if (Options is None) or (editPanel is None):
         print('{} does not appear to be a valid tool'.format(modname))
         sys.exit(1)
 
     app   = wx.App()
+    frame = wx.Frame(None, title='FSL')
     opts  = Options()
-    frame = Frame(opts)
+    panel = editPanel(frame, opts)
 
     # stupid hack for testing under OS X - forces the TK
     # window to be displayed above all other windows

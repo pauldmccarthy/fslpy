@@ -4,9 +4,9 @@
 #            object.
 #
 # This module provides functionality to automatically build a GUI
-# interface containing widgets which allow the user to change the
-# properties (props.PropertyBase objects) of a specified
-# props.HasProperties object.
+# containing widgets which allow the user to change the properties
+# (props.PropertyBase objects) of a specified props.HasProperties
+# object.
 
 # The sole entry point for this module is the buildGUI function, which
 # accepts as parameters a GUI object to be used as the parent (e.g. a
@@ -29,6 +29,9 @@
 import sys
 
 import wx
+
+import wx.lib.agw.flatnotebook as wxnb
+
 import widgets
 
 class ViewItem(object):
@@ -208,6 +211,11 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
 
     if viewItem.enabledWhen is None: return None
 
+    parent         = guiObj.GetParent()
+    isNotebookPage = isinstance(parent, wxnb.FlatNotebook)
+    if isNotebookPage:
+        pageIndex = parent.GetPageIndex(guiObj)
+
     def _toggleEnabled():
         """
         Calls the viewItem.enabledWhen function and
@@ -218,7 +226,10 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
         if viewItem.enabledWhen(hasProps): state = True
         else:                              state = False
 
-        if guiObj.IsEnabled != state:
+        if isNotebookPage and parent.GetEnabled(pageIndex) != state:
+            parent.EnableTab(pageIndex, state)
+            
+        elif guiObj.IsEnabled != state:
             guiObj.Enable(state)
 
     return _toggleEnabled
@@ -288,7 +299,11 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    notebook = wx.Notebook(parent)
+    notebook = wxnb.FlatNotebook(
+        parent,
+        agwStyle=wxnb.FNB_NO_X_BUTTON    | \
+                 wxnb.FNB_NO_NAV_BUTTONS | \
+                 wxnb.FNB_NODRAG)
 
     for child in group.children:
 
@@ -325,7 +340,7 @@ def _layoutGroup(group, parent, children, labels):
             if labels is not None and labels[cidx] is not None:
                 sizer.Add(labels[cidx], flag=wx.EXPAND)
                 
-            sizer.Add(children[cidx], flag=wx.EXPAND)
+            sizer.Add(children[cidx], flag=wx.EXPAND, proportion=1)
             
         elif isinstance(group, VGroup):
 
@@ -379,7 +394,7 @@ def _createGroup(parent, group, hasProps, propGui):
         realPanel = wx.Panel(parent)
         panel     = realPanel
     else:
-        realPanel = wx.StaticBox(parent, group.label)
+        realPanel = wx.StaticBox(parent, label=group.label)
         panel     = wx.Panel(realPanel)
 
     childObjs = []

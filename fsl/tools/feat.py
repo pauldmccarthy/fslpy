@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# featDemo.py - 
+# feat.py - 
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -10,8 +10,8 @@ import sys
 
 from collections import OrderedDict
 
-import Tkinter   as tk
-import              ttk
+import wx
+
 import fsl.props as props
 
 analysisTypeOpts = OrderedDict((
@@ -276,6 +276,8 @@ labels = {
     
 }
 
+tooltips = {}
+
 def tabEnabled(featOpts, tabName):
 
     aType  = featOpts.analysisType
@@ -447,25 +449,12 @@ featView =props.VGroup((
         postStatsView,
         regView))))
 
-class Frame(tk.Frame):
-    
-    def __init__(self, parent, featOpts):
-        
-        tk.Frame.__init__(self, parent)
-        self.pack(fill=tk.BOTH, expand=1)
 
-        self.tkpFrame = props.buildGUI(self, featOpts, featView, labels)
-        self.tkpFrame.pack(fill=tk.BOTH, expand=1)
+def editPanel(parent, featOpts):
 
-        self.buttonFrame = tk.Frame(self)
-        self.runButton   = ttk.Button(self.buttonFrame,
-                                      text='Run FEAT',
-                                      command=parent.destroy)
-        self.quitButton  = ttk.Button(self.buttonFrame,
-                                      text='Quit',
-                                      command=parent.destroy)
+    buttons = OrderedDict((
+        ('Run FEAT', parent.Destroy),
+        ('Quit',     parent.Destroy)))
 
-        self.runButton  .pack(fill=tk.X, expand=1, side=tk.LEFT) 
-        self.quitButton .pack(fill=tk.X, expand=1, side=tk.RIGHT)
-        self.buttonFrame.pack(fill=tk.X) 
-
+    return props.buildGUI(
+        parent, featOpts, featView, labels, tooltips, buttons)

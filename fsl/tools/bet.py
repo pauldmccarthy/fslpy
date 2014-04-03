@@ -202,7 +202,7 @@ betView = props.NotebookGroup((
 ))
 
 
-def checkAndRun(betOpts):
+def checkAndRun(betOpts, parent):
     """
     Checks that the given options are valid. If they are, bet is run.
     If the options are not valid, some complaints are directed towards
@@ -219,7 +219,7 @@ def checkAndRun(betOpts):
             msg = msg + '\n - {}: {}'.format(optLabels[name], error)
 
         wx.MessageDialog(
-            None,
+            parent,
             message=msg,
             style=wx.OK | wx.ICON_ERROR).ShowModal()
         
@@ -250,16 +250,12 @@ def openHelp():
             style=wx.OK | wx.ICON_ERROR).ShowModal()
 
     
-class Frame(wx.Frame):
+def editPanel(parent, betOpts):
     
-    def __init__(self, betOpts):
-        
-        wx.Frame.__init__(self, None, title='BET')
+    buttons = OrderedDict((
+        ('Run BET',  lambda : checkAndRun(betOpts, parent)),
+        ('Quit',     parent.Destroy),
+        ('Help',     openHelp)))
 
-        buttons = OrderedDict((
-            ('Run BET',  lambda : checkAndRun(betOpts, parent)),
-            ('Quit',     self.Destroy),
-            ('Help',     openHelp)))
-
-        self.propPanel = props.buildGUI(
-            self, betOpts, betView, optLabels, optTooltips, buttons)
+    return props.buildGUI(
+        parent, betOpts, betView, optLabels, optTooltips, buttons)
