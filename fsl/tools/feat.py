@@ -344,7 +344,7 @@ dataView = props.VGroup(
 
 prestatsView = props.VGroup(
     label='Pre-stats',
-    visibleWhen=lambda i: tabEnabled(i, 'Pre-stats'),
+    enabledWhen=lambda i: tabEnabled(i, 'Pre-stats'),
     children=(
         'altReferenceImage',
         'motionCorrection',
@@ -378,7 +378,7 @@ prestatsView = props.VGroup(
 
 statsView = props.VGroup(
     label='Stats',
-    visibleWhen=lambda i: tabEnabled(i, 'Stats'),
+    enabledWhen=lambda i: tabEnabled(i, 'Stats'),
     children=(
         'useFILMPrewhitening',
         'addMotionParameters',
@@ -390,7 +390,7 @@ statsView = props.VGroup(
 
 postStatsView = props.VGroup(
     label='Post-stats',
-    visibleWhen=lambda i: tabEnabled(i, 'Post-stats'),
+    enabledWhen=lambda i: tabEnabled(i, 'Post-stats'),
     children=(
         'preThresholdMask',
         props.VGroup(
@@ -414,7 +414,7 @@ postStatsView = props.VGroup(
 
 regView = props.VGroup(
     label='Registration',
-    visibleWhen=lambda i: tabEnabled(i, 'Registration'),
+    enabledWhen=lambda i: tabEnabled(i, 'Registration'),
     children=(
         'expandedFunctionalImage',
         props.HGroup(
@@ -442,12 +442,12 @@ featView =props.VGroup((
     'analysisType',
     props.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
     props.NotebookGroup((
-        miscView,
-        dataView,
-        prestatsView,
-        statsView,
-        postStatsView,
-        regView))))
+        #miscView,
+        #dataView,
+        prestatsView,))))
+        # statsView,
+        # postStatsView,
+        # regView))))
 
 
 def editPanel(parent, featOpts):

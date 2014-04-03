@@ -62,5 +62,12 @@ if __name__ == '__main__':
 
     frame.Fit()
     frame.Show()
+
+    # The unbind call, in checkFslDir
+    # above, does not work on linux ...
     #app.Bind(wx.EVT_IDLE, lambda e: checkFslDir())
+
+    #import wx.lib.inspection
+    #wx.lib.inspection.InspectionTool().Show()
+    
     app.MainLoop()

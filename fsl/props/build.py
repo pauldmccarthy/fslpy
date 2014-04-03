@@ -303,7 +303,8 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
         parent,
         agwStyle=wxnb.FNB_NO_X_BUTTON    | \
                  wxnb.FNB_NO_NAV_BUTTONS | \
-                 wxnb.FNB_NODRAG)
+                 wxnb.FNB_NODRAG         | \
+                 wxnb.FNB_TABS_BORDER_SIMPLE)
 
     for child in group.children:
 
@@ -313,14 +314,14 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     return notebook
 
 
-def _layoutGroup(group, parent, children, labels):
+def _layoutHGroup(group, parent, children, labels):
     """
     Lays out the children (and labels, if not None) of the
-    given Group object. Parameters:
+    given HGroup object. Parameters:
     
-      - group:    HGroup or VGroup object
+      - group:    HGroup object
     
-      - parent:   GUI Frame object which represents the group
+      - parent:   GUI object which represents the group
     
       - children: List of GUI objects, the children of the group.
 
@@ -328,11 +329,7 @@ def _layoutGroup(group, parent, children, labels):
                   objects, one for each child.
     """
 
-    if   isinstance(group, VGroup): sizer = wx.GridBagSizer()
-    elif isinstance(group, HGroup): sizer = wx.BoxSizer(wx.HORIZONTAL)
-    else:
-        raise TypeError('Unknown group type: {}'.format(
-            group.__class__.__name__))
+    sizer = wx.BoxSizer(wx.HORIZONTAL)
 
     for cidx in range(len(children)):
 
@@ -341,42 +338,74 @@ def _layoutGroup(group, parent, children, labels):
                 sizer.Add(labels[cidx], flag=wx.EXPAND)
                 
             sizer.Add(children[cidx], flag=wx.EXPAND, proportion=1)
+
+            # TODO I have not added support
+            # for child groups with borders
+
+    parent.SetSizer(sizer)
+    parent.SetAutoLayout(1)
+    sizer.Fit(parent)
+
+    
+def _layoutVGroup(group, parent, children, labels):
+    """
+    Lays out the children (and labels, if not None) of the
+    given VGroup object. Parameters the same as _layoutHGroup.
+    """
+
+    sizer = wx.GridBagSizer(1,1)
+
+    for cidx in range(len(children)):
+
+        vItem       = group.children[cidx]
+        child       = children[cidx]
+        label       = labels[cidx] if labels is not None else None
+        childParams = {}
+
+        # Groups within VGroups, which don't have a border, are 
+        # laid out the same as any other widget, which probably
+        # looks a bit ugly. If they do have a border, however, 
+        # they are laid out so as to span the entire width of
+        # the parent VGroup. Instead of having a separate label
+        # widget, the label is embedded in the border. The
+        # _createGroup function takes care of creating the
+        # border/label for the child GUI object.
+        if isinstance(vItem, (HGroup, VGroup)) and vItem.border:
+
+            # Under OS X mavericks, some weird resize bug occurs
+            # if we attempt to add the StaticBox object to a
+            # parent sizer. The bug doesn't occur if we add the
+            # StaticBoxSizer, so this is what we do here. See
+            # the start of _createGroup for more details.
+            child = child._staticBoxSizer
+            label = None
+            childParams['pos']    = (cidx, 0)
+            childParams['span']   = (1,2)
+            childParams['border'] = 20
+            childParams['flag']   = wx.EXPAND | wx.ALL
+
+        # No labels are being drawn for any child, so all
+        # children should span botgh columns. In this case
+        # we could just use a vertical BoxSizer instead of
+        # a GridBagSizer,  but I'm going to leave that for
+        # the time being.
+        elif labels is None:
+            childParams['pos']    = (cidx, 0)
+            childParams['span']   = (1, 2)
+            childParams['flag']   = wx.EXPAND
+
+        # Otherwise the child is drawn in the standard way -
+        # label on the left column, child on the right.
+        else:
+            childParams['pos']    = (cidx, 1)
+            childParams['flag']   = wx.EXPAND
             
-        elif isinstance(group, VGroup):
+        if label is not None:
+            sizer.Add(labels[cidx], pos=(cidx,0), flag=wx.EXPAND)
+            
+        sizer.Add(child, **childParams)
 
-            # Groups within VGroups, which don't have a border, are 
-            # laid out the same as any other widget, which probably
-            # looks a bit ugly. If they do have a border, however,
-            # they are laid out so as to span the entire width of
-            # the parent VGroup, and given a border. Instead of
-            # having a separate label widget, the label is embedded
-            # in the border.
-            if isinstance(group.children[cidx], (HGroup, VGroup)) and \
-               group.children[cidx].border:
-
-                sizer.Add(children[cidx],
-                          pos=(cidx,0),
-                          span=(1,2),
-                          flag=wx.EXPAND)
-
-            elif labels is not None:
-                if labels[cidx] is not None:
-                    sizer.Add(labels  [cidx], pos=(cidx,0), span=wx.DefaultSpan, flag=wx.EXPAND)
-                    sizer.Add(children[cidx], pos=(cidx,1), span=wx.DefaultSpan, flag=wx.EXPAND)
-
-                else:
-                    sizer.Add(children[cidx],
-                              pos=(cidx,1),
-                              span=(1,2),
-                              flag=wx.EXPAND)
-
-            else:
-                sizer.Add(children[cidx],
-                          pos=(cidx,0),
-                          span=(1,2),
-                          flag=wx.EXPAND)
-
-    if isinstance(group, VGroup): sizer.AddGrowableCol(1)
+    sizer.AddGrowableCol(1)
 
     parent.SetSizer(sizer)
     parent.SetAutoLayout(1)
@@ -390,13 +419,19 @@ def _createGroup(parent, group, hasProps, propGui):
     the Frame via the _layoutGroup function.
     """
 
-    if not group.border:
-        realPanel = wx.Panel(parent)
-        panel     = realPanel
-    else:
-        realPanel = wx.StaticBox(parent, label=group.label)
-        panel     = wx.Panel(realPanel)
+    panel = wx.Panel(parent)
 
+    if group.border:
+        box      = wx.StaticBox(parent, label=group.label)
+        boxSizer = wx.StaticBoxSizer(box)
+        boxSizer.Add(panel, flag=wx.EXPAND, proportion=1)
+
+        # If we set the sizer as normal (i.e. via box.SetSizer(boxSizer)),
+        # the box contents don't get laid out at all. So instead we are
+        # just adding the sizer as a hidden attribute on the StaticBox
+        # instance.
+        box._staticBoxSizer = boxSizer
+        
     childObjs = []
 
     if group.showLabels: labelObjs = []
@@ -418,9 +453,15 @@ def _createGroup(parent, group, hasProps, propGui):
 
         childObjs.append(childObj)
 
-    _layoutGroup(group, panel, childObjs, labelObjs)
 
-    return realPanel
+    if   isinstance(group, HGroup):
+        _layoutHGroup(group, panel, childObjs, labelObjs)
+    elif isinstance(group, VGroup):
+        _layoutVGroup(group, panel, childObjs, labelObjs)
+
+    if group.border:
+        panel = box
+    return panel
 
 
 # These aliases are defined so we can introspectively look
