@@ -27,18 +27,58 @@ from widgets_list import _List
 import properties as props
 
 
+class FloatSlider(wx.Slider):
+    """
+    A cheap and nasty subclass of wx.Slider which supports floating point
+    numbers of any range. The desired range is transformed into the range
+    [0-100].
+    """
+
+    def __init__(self,
+                 parent,
+                 value,
+                 minValue,
+                 maxValue,
+                 **kwargs):
+
+        self.origMinValue = minValue
+        self.origMaxValue = maxValue
+        self.valRange     = abs(maxValue - minValue)
+
+        value = (value - minValue) * (100.0 / self.valRange)
+        value = int(round(value))
+        
+        wx.Slider.__init__(self,
+                           parent,
+                           value=value,
+                           minValue=0,
+                           maxValue=100,
+                           **kwargs)
+
+    def SetValue(self, value):
+
+        value = (value - self.origMinValue) * (100.0 / self.valRange)
+        wx.Slider.SetValue(self, int(round(value)))
+
+    def GetValue(self):
+        
+        value = wx.Slider.GetValue(self)
+        value = value * (self.valRange / 100.0) + self.origMinValue
+        return value
+
+
 def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
     """
     Sets up event callback functions such that, on a change to the given
     property value, the value displayed by the given GUI widget will be
     updated. Similarly, whenever a GUI event of the specified type (or
-    types) occurs, the property value will be set to the value controlled
-    by the GUI widget. 
+    types - you may pass in a list of event types) occurs, the property
+    value will be set to the value controlled by the GUI widget. 
 
     If labelMap is provided, it should be a dictionary of value->label pairs
     where the label is what is displayed to the user, and the value is what is
     assigned to the property value when a corresponding label is selected. It
-    is basically here to support Choice properties
+    is basically here to support Choice properties.
     """
 
     if not isinstance(evType, Iterable): evType = [evType]
@@ -57,8 +97,11 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
 
         if guiObj.GetValue() == value: return
 
-        if valMap is not None: guiObj.SetValue(labelMap[value])
-        else:                  guiObj.SetValue(value)
+        if valMap is not None: value = labelMap[value]
+
+        # most wx widgets complain if you try to set their value to None
+        if value is None: value = ''
+        guiObj.SetValue(value)
         
     def _propUpdate(*a):
         """
@@ -77,7 +120,10 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
         if labelMap is not None: propVal.set(valMap[value])
         else:                    propVal.set(value)
 
-    guiObj.SetValue(propVal.get())
+    val = propVal.get()
+    if val is None: val = ''
+    
+    guiObj.SetValue(val)
 
     # set up the callback functions
     for ev in evType: guiObj.Bind(ev, _propUpdate)
@@ -160,7 +206,7 @@ def _FilePath(parent, hasProps, propObj, propVal):
     panel.SetAutoLayout(1)
     sizer.Fit(panel)
     
-    def _choosePath():
+    def _choosePath(ev):
         global _lastFilePathDir
 
         if propObj.exists and propObj.isFile:
@@ -279,7 +325,7 @@ def _Number(parent, hasProps, propObj, propVal):
 
         panel = wx.Panel(parent)
 
-        slider = wx.Slider(
+        slider = FloatSlider(
             panel,
             value=value,
             minValue=minval,
@@ -302,8 +348,8 @@ def _Number(parent, hasProps, propObj, propVal):
         panel.SetAutoLayout(1)
         sizer.Fit(panel)
 
-        _propBind(hasProps, propObj, propVal, slider,   wx.EVT_SLIDER)
-        _propBind(hasProps, propObj, propVal, spin,     wx.EVT_SPINCTRL)
+        _propBind(hasProps, propObj, propVal, slider, wx.EVT_SLIDER)
+        _propBind(hasProps, propObj, propVal, spin,   wx.EVT_SPIN)
         
         _setupValidation(spin, hasProps, propObj, propVal)
 

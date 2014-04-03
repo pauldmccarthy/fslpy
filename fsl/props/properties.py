@@ -157,8 +157,8 @@ class PropertyValue(object):
         self.name            = name
         self.changeListeners = {}
         self._value          = value
-        self._lastValue      = None
-        self._lastValid      = None 
+        self._lastValue      = value
+        self._lastValid      = self.isValid()
 
 
     def addListener(self, name, callback):
@@ -227,12 +227,13 @@ class PropertyValue(object):
     def isValid(self):
         """
         Returns True if hte current property value is valid, False
-        otherwise.
+        otherwise. Does not trigger notification of any listeners
+        which have been registered with this PropertyValue object.
         """
 
         try:    self.prop.validate(self.owner, self.get())
         except: return False
-        
+
         return True
 
         
@@ -246,11 +247,8 @@ class PropertyValue(object):
         """
         
         value     = self.get()
-        valid     = True
+        valid     = self.isValid()
         listeners = self.changeListeners.items()
-
-        try:               self.prop.validate(self.owner, value)
-        except ValueError: valid = False
 
         # Listeners are only notified if the value or its
         # validity has changed since the last validation

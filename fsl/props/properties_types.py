@@ -138,15 +138,17 @@ class String(props.PropertyBase):
         self.minlen = minlen
         self.maxlen = maxlen
         
-        kwargs['default'] = kwargs.get('default', '')
+        kwargs['default'] = kwargs.get('default', None)
         props.PropertyBase.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
+        
+        if value == '': value = None
+        
         props.PropertyBase.validate(self, instance, value)
 
         if value is None: return
-        if value == '':   return
 
         value = str(value)
 
@@ -250,18 +252,21 @@ class FilePath(String):
 
             values = [value]
 
-            # if suffixes have been specified, and the given
-            # path does not already have a suffix, check to
-            # see if any file exists with each of the suffixes
-            # (in addition to the specified path)
             if len(self.suffixes) > 0:
                 
                 path,suf = op.splitext(value)
 
+                # if the specified path does not have a
+                # suffix, create a list of possible files
                 if suf == '':
                     values = ['{}{}'.format(value, s) for s in self.suffixes]
 
-            files = map(op.isfile, values)
+                # otherwise check to see if the
+                # specified suffix is allowed
+                elif not any(map(lambda s: value.endswith(s), self.suffixes)):
+                    raise ValueError(
+                        'Must be a file ending in [{}] ({})'.format(
+                            ','.join(self.suffixes), value))
 
             if not any(map(op.isfile, values)):
                 if len(self.suffixes) == 0:

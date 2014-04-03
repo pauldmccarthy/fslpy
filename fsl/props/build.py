@@ -602,7 +602,7 @@ def buildGUI(parent,
         mainSizer   = wx.BoxSizer(wx.VERTICAL)
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        mainSizer.Add(propPanel,   flag=wx.EXPAND)
+        mainSizer.Add(propPanel,   flag=wx.EXPAND, proportion=1)
         mainSizer.Add(buttonPanel, flag=wx.EXPAND)
 
         for (label,callback),colour in zip(buttons.items(), ('red','green','blue')):
