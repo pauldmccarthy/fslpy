@@ -7,6 +7,7 @@
 
 import os
 import sys
+import logging
 
 from collections import OrderedDict
 
@@ -101,8 +102,8 @@ class Options(props.HasProperties):
     #
     # Data options
     #
-    inputData            = props.List(minlen=1, listType=props.FilePath(exists=True))
-    outputDirectory      = props.FilePath(isFile=False)
+    inputData            = props.List(minlen=1, listType=props.FilePath(exists=True, required=True))
+    outputDirectory      = props.FilePath(isFile=False, required=True)
     totalVolumes         = props.Int(minval=0)
     deleteVolumes        = props.Int(minval=0)
     TR                   = props.Double(minval=0, default=3.0)
@@ -110,8 +111,8 @@ class Options(props.HasProperties):
 
     # data/higher level
     inputDataType        = props.Choice(highLevelInputTypes)
-    higherLevelFeatInput = props.List(minlen=3, listType=props.FilePath(isFile=False, exists=True))
-    higherLevelCopeInput = props.List(minlen=3, listType=props.FilePath(exists=True))
+    higherLevelFeatInput = props.List(minlen=3, listType=props.FilePath(isFile=False, exists=True, required=lambda i:i.inputDataType=='featDirs'))
+    higherLevelCopeInput = props.List(minlen=3, listType=props.FilePath(              exists=True, required=lambda i:i.inputDataType=='copeImages'))
 
     #
     # Pre-stats options
@@ -121,8 +122,8 @@ class Options(props.HasProperties):
     b0Unwarping       = props.Boolean(default=False)
 
     # B0 unwarping sub-options - displayed if b0Unwarping is true
-    b0_fieldmap            = props.FilePath(exists=True)
-    b0_fieldmapMag         = props.FilePath(exists=True)
+    b0_fieldmap            = props.FilePath(exists=True, required=lambda i:i.b0Unwarping)
+    b0_fieldmapMag         = props.FilePath(exists=True, required=lambda i:i.b0Unwarping)
     b0_echoSpacing         = props.Double(minval=0.0, default=0.7)
     b0_TE                  = props.Double(minval=0.0, default=35)
     b0_unwarpDir           = props.Choice(('x','-x','y','-y','z','-z'))
@@ -132,8 +133,8 @@ class Options(props.HasProperties):
 
     # slice timing file, displayed if the timing correction
     # choice is for a custom order/timing file
-    sliceTimingFile       = props.FilePath(exists=True)
-    sliceOrderFile        = props.FilePath(exists=True)
+    sliceTimingFile       = props.FilePath(exists=True, required=lambda i:i.sliceTimingCorrection=='timingFile')
+    sliceOrderFile        = props.FilePath(exists=True, required=lambda i:i.sliceTimingCorrection=='orderFile')
     
     brainExtraction       = props.Boolean(default=True)
     smoothingFWHM         = props.Double(minval=0.0, default=5.0)
@@ -211,8 +212,8 @@ class Options(props.HasProperties):
                 self.analysisStages = 'stats-post'
         
         Options.analysisType.addListener(self,
-                                             'updateAnalysisStage',
-                                              updateAnalysisStage)
+                                         'updateAnalysisStage',
+                                         updateAnalysisStage)
         
 labels = {
     # misc
@@ -230,6 +231,8 @@ labels = {
     'deleteVolumes'            : 'Delete volumes',
     'TR'                       : 'TR (s)',
     'highpassFilterCutoff'     : 'High pass filter cutoff (s)',
+    'higherLevelFeatInput'     : 'Feat directories',
+    'higherLevelCopeInput'     : 'COPE images',
 
     # pre-stats
     'altReferenceImage'        : 'Alternative reference image',
@@ -283,28 +286,32 @@ def tabEnabled(featOpts, tabName):
     aType  = featOpts.analysisType
     aStage = featOpts.analysisStages
 
+    enabled = True
+
     if tabName == 'Pre-stats':
         
         if aType == 'highLevel':
-            return False
+            enabled = False
         
-        if (aStage != 'full') and (aStage.find('pre') < 0):
-            return False
+        elif (aStage != 'full') and (aStage.find('pre') < 0):
+            enabled = False
         
     elif tabName == 'Stats':
 
         if (aStage != 'full') and (aStage.find('stats') < 0):
-            return False
+            enabled = False
         
     elif tabName == 'Post-stats':
 
         if (aStage != 'full') and (aStage.find('post') < 0):
-            return False        
+            enabled = False        
         
     elif tabName == 'Registration':
-        if aType == 'highLevel': return False
+        if aType == 'highLevel': enabled = False
+
+    logging.debug('For analysis type {}, and stage {}, tab {} state is {}'.format(aType, aStage, tabName, enabled))
         
-    return True
+    return enabled
 
 miscView = props.VGroup(
     label='Misc',
@@ -398,9 +405,9 @@ postStatsView = props.VGroup(
             border=True,
             children=(
                 'thresholding',
-                props.Widget('pThreshold', visibleWhen=lambda i:i.thresholding != 'None'),
-                props.Widget('zThreshold', visibleWhen=lambda i:i.thresholding == 'Cluster'))),
-        props.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'),
+                props.Widget('pThreshold',         visibleWhen=lambda i:i.thresholding != 'None'),
+                props.Widget('zThreshold',         visibleWhen=lambda i:i.thresholding == 'Cluster'),
+                props.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'))),
         props.VGroup(
             label='Rendering',
             border=True,
@@ -442,12 +449,12 @@ featView =props.VGroup((
     'analysisType',
     props.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
     props.NotebookGroup((
-        #miscView,
-        #dataView,
-        prestatsView,))))
-        # statsView,
-        # postStatsView,
-        # regView))))
+        miscView,
+        dataView,
+        prestatsView,
+        statsView,
+        postStatsView,
+        regView))))
 
 
 def editPanel(parent, featOpts):

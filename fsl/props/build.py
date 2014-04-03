@@ -27,6 +27,7 @@
 #
 
 import sys
+import logging
 
 import wx
 
@@ -213,8 +214,6 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
 
     parent         = guiObj.GetParent()
     isNotebookPage = isinstance(parent, wxnb.FlatNotebook)
-    if isNotebookPage:
-        pageIndex = parent.GetPageIndex(guiObj)
 
     def _toggleEnabled():
         """
@@ -226,10 +225,23 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
         if viewItem.enabledWhen(hasProps): state = True
         else:                              state = False
 
-        if isNotebookPage and parent.GetEnabled(pageIndex) != state:
-            parent.EnableTab(pageIndex, state)
+        # TODO The wx.lib.agw.flatnotebook seems to be a little
+        # flaky for enable/disable support. It may be a better
+        # option to use the standard wx.Notebook class, with
+        # some custom event handlers for preventing access to
+        # a disabled tab.
+        if isNotebookPage:
+
+            isCurrent = parent.GetCurrentPage() == guiObj
+            isEnabled = parent.GetEnabled(guiObj._notebookIdx)
+
+            if isEnabled != state:
+                parent.EnableTab(guiObj._notebookIdx, state)
+                
+                if not state and isCurrent:
+                    parent.AdvanceSelection()
             
-        elif guiObj.IsEnabled != state:
+        elif guiObj.IsEnabled() != state:
             guiObj.Enable(state)
 
     return _toggleEnabled
@@ -243,13 +255,19 @@ def _configureVisibleWhen(viewItem, guiObj, hasProps):
 
     if viewItem.visibleWhen is None: return None
 
+    parent = guiObj.GetParent()
+
+    if isinstance(parent, wxnb.FlatNotebook):
+        raise TypeError('Visibility of notebook pages is not '\
+                        'configurable - use enabledWhen instead.')
+
     def _toggleVis():
 
         visible = viewItem.visibleWhen(hasProps)
 
         if visible != guiObj.IsShown():
             guiObj.Show(visible)
-            guiObj.GetParent().Layout()
+            parent.Layout()
         
     return _toggleVis
 
@@ -306,10 +324,13 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
                  wxnb.FNB_NODRAG         | \
                  wxnb.FNB_TABS_BORDER_SIMPLE)
 
-    for child in group.children:
+    for i,child in enumerate(group.children):
 
         page = _create(notebook, child, hasProps, propGui)
-        notebook.AddPage(page, child.label)
+        notebook.InsertPage(i, page, text=child.label)
+        page._notebookIdx = i
+
+    notebook.SetSelection(0)
 
     return notebook
 
@@ -354,6 +375,7 @@ def _layoutVGroup(group, parent, children, labels):
     """
 
     sizer = wx.GridBagSizer(1,1)
+    sizer.SetEmptyCellSize((0,0))
 
     for cidx in range(len(children)):
 
@@ -372,12 +394,6 @@ def _layoutVGroup(group, parent, children, labels):
         # border/label for the child GUI object.
         if isinstance(vItem, (HGroup, VGroup)) and vItem.border:
 
-            # Under OS X mavericks, some weird resize bug occurs
-            # if we attempt to add the StaticBox object to a
-            # parent sizer. The bug doesn't occur if we add the
-            # StaticBoxSizer, so this is what we do here. See
-            # the start of _createGroup for more details.
-            child = child._staticBoxSizer
             label = None
             childParams['pos']    = (cidx, 0)
             childParams['span']   = (1,2)
@@ -419,19 +435,20 @@ def _createGroup(parent, group, hasProps, propGui):
     the Frame via the _layoutGroup function.
     """
 
-    panel = wx.Panel(parent)
-
+    # TODO Use of the StaticBox/StaticBoxSizer classes causes
+    # problems on both OS X Mavericks and Linux. On Mavericks,
+    # StaticBox items are not resized properly. On linux, the
+    # contents of StaticBox items are not laid out properly.
     if group.border:
-        box      = wx.StaticBox(parent, label=group.label)
-        boxSizer = wx.StaticBoxSizer(box)
-        boxSizer.Add(panel, flag=wx.EXPAND, proportion=1)
+        box   = wx.StaticBox(parent, label=group.label)
+        panel = wx.Panel(box)
+        sizer = wx.BoxSizer()
+        box.SetSizer(sizer)
+        sizer.Add(panel, flag=wx.EXPAND, proportion=1)
 
-        # If we set the sizer as normal (i.e. via box.SetSizer(boxSizer)),
-        # the box contents don't get laid out at all. So instead we are
-        # just adding the sizer as a hidden attribute on the StaticBox
-        # instance.
-        box._staticBoxSizer = boxSizer
-        
+    else:
+        panel = wx.Panel(parent)
+
     childObjs = []
 
     if group.showLabels: labelObjs = []
@@ -453,15 +470,13 @@ def _createGroup(parent, group, hasProps, propGui):
 
         childObjs.append(childObj)
 
-
     if   isinstance(group, HGroup):
         _layoutHGroup(group, panel, childObjs, labelObjs)
     elif isinstance(group, VGroup):
         _layoutVGroup(group, panel, childObjs, labelObjs)
 
-    if group.border:
-        panel = box
-    return panel
+    if group.border: return box
+    else:            return panel
 
 
 # These aliases are defined so we can introspectively look
