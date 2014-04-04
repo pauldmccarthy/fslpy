@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# fsl.py -
+# fsl.py - Front end to FSL tools.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -11,8 +11,85 @@ import logging
 
 import wx
 
-import fsl.tools as tools
+import fsl.tools         as tools
+import fsl.utils.webpage as webpage
 
+def fslDirWarning(frame, toolName, fslEnvActive):
+    """
+    If fslEnvActive is False, displays a warning.
+    """
+
+    if fslEnvActive: return
+
+    msg = 'The FSLDIR environment variable is not set - '\
+          'you will not be able to run {}.'.format(toolName)
+
+    wx.MessageDialog(
+        frame,
+        message=msg,
+        style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+
+
+def buildGUI(module, fslEnvActive):
+
+    # Each FSL tool module must specify several things
+    toolName  = getattr(module, 'FSL_TOOLNAME',  None)
+    helpPage  = getattr(module, 'FSL_HELPPAGE',  'index')
+    options   = getattr(module, 'FSL_OPTIONS',   None)
+    interface = getattr(module, 'FSL_INTERFACE', None)
+    runtool   = getattr(module, 'FSL_RUNTOOL',   None)
+
+    if not all((toolName, options,  interface)):
+        logging.error('"{}" does not appear to be a valid FSL tool'.format(
+            module.__name__))
+        sys.exit(1)
+
+    opts = options()
+
+    frame       = wx.Frame(None, title='FSL -- {}'.format(toolName))
+    mainPanel   = wx.Panel(frame)
+    buttonPanel = wx.Panel(mainPanel)
+    toolPanel   = interface(mainPanel, opts)
+
+    runButton   = wx.Button(buttonPanel, label='Run {}'.format(toolName))
+    helpButton  = wx.Button(buttonPanel, label='Help')
+    quitButton  = wx.Button(buttonPanel, label='Quit') 
+
+    buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+    mainSizer   = wx.BoxSizer(wx.VERTICAL)
+
+    mainSizer.Add(toolPanel,   flag=wx.EXPAND, proportion=1)
+    mainSizer.Add(buttonPanel, flag=wx.EXPAND)
+
+    buttonSizer.Add(runButton,  flag=wx.EXPAND, proportion=1)
+    buttonSizer.Add(helpButton, flag=wx.EXPAND, proportion=1)
+    buttonSizer.Add(quitButton, flag=wx.EXPAND, proportion=1)
+
+    if runtool is not None and fslEnvActive:
+        runButton.Bind(wx.EVT_BUTTON, lambda e: runtool(frame, opts))
+    else:
+        runButton.Enable(False)
+
+    if fslEnvActive:
+        helpButton.Bind(wx.EVT_BUTTON, lambda e: webpage.openFSLHelp(helpPage))
+    else:
+        helpButton.Enable(False)
+
+    quitButton.Bind(wx.EVT_BUTTON, lambda e: frame.Destroy())
+
+    buttonPanel.SetSizer(buttonSizer)
+    mainPanel  .SetSizer(mainSizer)
+    
+    buttonSizer.Layout()
+    mainSizer  .Layout() 
+
+    buttonSizer.Fit(buttonPanel)
+    mainSizer  .Fit(mainPanel)
+    frame      .Fit()
+
+    return frame
+
+    
 if __name__ == '__main__':
 
     logging.basicConfig(
@@ -20,53 +97,27 @@ if __name__ == '__main__':
         level=logging.DEBUG) 
 
     if len(sys.argv) != 2:
-        print('usage: fsl.py toolname')
+        logging.error('usage: fsl.py toolname')
         sys.exit(1)
 
+    # Search in fsl.tools for the named module
     modname = sys.argv[1]
     toolmod = getattr(tools, modname, None)
 
     if toolmod is None:
-        print('Unknown tool: {}'.format(modname))
+        logging.error('Unknown tool: {}'.format(modname))
         sys.exit(1)
 
-    Options   = getattr(toolmod, 'Options',   None)
-    editPanel = getattr(toolmod, 'editPanel', None)
+    fsldir = os.environ.get('FSLDIR', None)
 
-    if (Options is None) or (editPanel is None):
-        print('{} does not appear to be a valid tool'.format(modname))
-        sys.exit(1)
+    fslEnvActive = fsldir is not None
 
-    app   = wx.App()
-    frame = wx.Frame(None, title='FSL')
-    opts  = Options()
-    panel = editPanel(frame, opts)
-
-    # stupid hack for testing under OS X - forces the TK
-    # window to be displayed above all other windows
-    os.system('''/usr/bin/osascript -e 'tell app "Finder" to '''\
-              '''set frontmost of process "Python" to true' ''')
-
-    def checkFslDir():
-        fsldir = os.environ.get('FSLDIR', None)
-        if fsldir is None:
-
-            msg = 'The FSLDIR environment variable is not set - '\
-                'you will not be able to run {}.'.format(modname)
-
-            wx.MessageDialog(
-                frame,
-                message=msg,
-                style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
-            app.Unbind(wx.EVT_IDLE)
-
-    frame.Fit()
+    app   = wx.App() 
+    frame = buildGUI(toolmod, fslEnvActive)
     frame.Show()
 
-    # The unbind call, in checkFslDir
-    # above, does not work on linux ...
-    #app.Bind(wx.EVT_IDLE, lambda e: checkFslDir())
-
+    wx.CallLater(1, fslDirWarning, frame, modname, fslEnvActive)
+    
     #import wx.lib.inspection
     #wx.lib.inspection.InspectionTool().Show()
     

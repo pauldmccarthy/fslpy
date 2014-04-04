@@ -12,8 +12,8 @@
 # accepts as parameters a GUI object to be used as the parent (e.g. a
 # wx.Frame object), a props.HasProperties object, an optional
 # ViewItem object, which specifies how the interface is to be laid
-# out, two optional dictionaries for passing in labels and tooltips,
-# and another optional dictionary for any buttons to be added.
+# out, and two optional dictionaries for passing in labels and
+# tooltips.
 #
 # The view parameter allows the layout of the generated interface to
 # be customised.  Property widgets may be grouped together by embedding
@@ -646,8 +646,7 @@ def buildGUI(parent,
              hasProps,
              view=None,
              labels=None,
-             tooltips=None,
-             buttons=None):
+             tooltips=None):
     """
     Builds a GUI interface which allows the properties of the given
     hasProps object (a props.HasProperties instance) to be edited.
@@ -664,61 +663,22 @@ def buildGUI(parent,
      - view:     ViewItem object, specifying the interface layout
      - labels:   Dict specifying labels
      - tooltips: Dict specifying tooltips
-     - buttons:  Dict specifying buttons to add to the interface.
-                 Keys are used as button labels, and values are
-                 callback functions which take two arguments - the
-                 GUI parent object, and the HasProperties object
-                 (parent and hasProps). Make sure to use a
-                 collections.OrderedDict if order is important.
     """
 
     if view is None: view = _defaultView(hasProps)
 
     if labels   is None: labels   = {}
     if tooltips is None: tooltips = {}
-    if buttons  is None: buttons  = {}
 
-    propGui  = PropGUI()
-    view     = _prepareView(view, labels, tooltips) 
-
-    # If any buttons were specified, the properties
-    # interface is embedded in a higher level frame,
-    # along with the buttons
-    if len(buttons) > 0:
-
-        mainPanel   = wx.Panel(parent)
-        buttonPanel = wx.Panel(mainPanel)
-        propPanel   = _create(mainPanel, view, hasProps, propGui)
-        mainSizer   = wx.BoxSizer(wx.VERTICAL)
-        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        mainSizer.Add(propPanel,   flag=wx.EXPAND, proportion=1)
-        mainSizer.Add(buttonPanel, flag=wx.EXPAND)
-
-        for label,callback in buttons.items():
-
-            button = wx.Button(buttonPanel, label=label)
-            button.Bind(wx.EVT_BUTTON, lambda e, cb=callback: cb())
-            
-            buttonSizer.Add(button, flag=wx.EXPAND, proportion=1)
-
-        buttonPanel.SetSizer(buttonSizer)
-        mainPanel  .SetSizer(mainSizer)
-
-        buttonSizer.Fit(buttonPanel)
-        mainSizer  .Fit(mainPanel)
-
-        buttonSizer.Layout()
-        mainSizer.Layout()
-            
-    else:
-        mainPanel = _create(parent, view, hasProps, propGui)
-
+    propGui   = PropGUI()
+    view      = _prepareView(view, labels, tooltips) 
+    mainPanel = _create(parent, view, hasProps, propGui)
+    
     propGui.topLevel = mainPanel
     _prepareEvents(hasProps, propGui)
 
     # TODO return the propGui object, so the caller
     # has access to all of the GUI objects that were
-    # created, via the propGui.guiObjects dict.
+    # created, via the propGui.guiObjects dict. ??
 
     return mainPanel
