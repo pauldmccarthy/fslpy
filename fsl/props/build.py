@@ -168,7 +168,6 @@ class NotebookGroup(Group):
     pages.
     """
     def __init__(self, children, **kwargs):
-        kwargs['border'] = kwargs.get('border', True)
         Group.__init__(self, children, **kwargs)
 
 
@@ -313,6 +312,45 @@ def _createWidget(parent, viewItem, hasProps, propGui):
     return widget
 
 
+def _makeGroupBorder(parent, group, ctr, *args, **kwargs):
+    """
+    If a the border attribute of a Group object has been set to True,
+    this function is called. It creates a parent panel with a border
+    and title, then creates and embeds the GUI object representing
+    the group (via the ctr argument). Returns the parent border panel,
+    and the group GUI object. Parameters:
+      - parent:   Parent GUI object
+      - group:    VGroup, HGroup or NotebookGroup
+      - ctr:      Constructor for a wx.Window object.
+      - *args:    Passed to ctr. You don't need to pass in the parent.
+      - **kwargs: Passed to ctr.
+    """
+    
+    borderPanel = wx.Panel(parent, style=wx.SUNKEN_BORDER)
+    borderSizer = wx.BoxSizer(wx.VERTICAL)
+    groupObject = ctr(borderPanel, *args, **kwargs)
+    
+    if group.label is not None:
+        label = wx.StaticText(borderPanel, label=group.label)
+        line  = wx.StaticLine(borderPanel, style=wx.LI_HORIZONTAL)
+        
+        font  = label.GetFont()
+        font.SetPointSize(font.GetPointSize() - 2)
+        font.SetWeight(wx.FONTWEIGHT_LIGHT)
+        label.SetFont(font)
+        
+        borderSizer.Add(label, border=5, flag=wx.ALL)
+        borderSizer.Add(line,  border=5, flag=wx.EXPAND|wx.ALL)
+    
+    borderSizer.Add(groupObject, border=5, flag=wx.EXPAND|wx.ALL, proportion=1)
+    borderPanel.SetSizer(borderSizer)
+    borderSizer.Layout()
+    borderSizer.Fit(borderPanel)
+
+    return borderPanel, groupObject
+        
+    
+
 def _createNotebookGroup(parent, group, hasProps, propGui):
     """
     Creates a GUI Notebook object for the given NotebookGroup object.
@@ -320,12 +358,16 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    notebook = wxnb.FlatNotebook(
-        parent,
-        agwStyle=wxnb.FNB_NO_X_BUTTON    | \
-                 wxnb.FNB_NO_NAV_BUTTONS | \
-                 wxnb.FNB_NODRAG)
+    nbStyle = wxnb.FNB_NO_X_BUTTON    | \
+              wxnb.FNB_NO_NAV_BUTTONS | \
+              wxnb.FNB_NODRAG
 
+    if group.border:
+        borderPanel, notebook = _makeGroupBorder(
+            parent, group, wxnb.FlatNotebook, agwStyle=nbStyle)
+    else:
+        notebook = wxnb.FlatNotebook(parent, agwStyle=nbStyle)
+                                                 
     for i,child in enumerate(group.children):
         
         if child.label is None: pageLabel = '{}'.format(i)
@@ -340,7 +382,8 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
 
     notebook.SetSelection(0)
 
-    return notebook
+    if group.border: return borderPanel
+    else:            return notebook
 
 
 def _layoutHGroup(group, parent, children, labels):
@@ -444,30 +487,8 @@ def _createGroup(parent, group, hasProps, propGui):
     out on the Frame via the _layoutGroup function.
     """
 
-
     if group.border:
-        
-        borderPanel = wx.Panel(parent, style=wx.SUNKEN_BORDER)
-        borderSizer = wx.BoxSizer(wx.VERTICAL)
-        panel       = wx.Panel(borderPanel)
-        
-        if group.label is not None:
-            label = wx.StaticText(borderPanel, label=group.label)
-            line  = wx.StaticLine(borderPanel, style=wx.LI_HORIZONTAL)
-            
-            font  = label.GetFont()
-            font.SetPointSize(font.GetPointSize() - 2)
-            font.SetWeight(wx.FONTWEIGHT_LIGHT)
-            label.SetFont(font)
-            
-            borderSizer.Add(label, border=5, flag=wx.ALL)
-            borderSizer.Add(line,  border=5, flag=wx.EXPAND|wx.ALL)
-        
-        borderSizer.Add(panel, border=5, flag=wx.EXPAND|wx.ALL, proportion=1)
-        borderPanel.SetSizer(borderSizer)
-        borderSizer.Layout()
-        borderSizer.Fit(borderPanel)
-        
+        borderPanel, panel = _makeGroupBorder(parent, group, wx.Panel)
     else:
         panel = wx.Panel(parent)
 
