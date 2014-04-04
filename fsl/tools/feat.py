@@ -451,7 +451,8 @@ featView =props.VGroup((
         prestatsView,
         statsView,
         postStatsView,
-        regView))))
+        regView))),
+    showLabels=False)
 
 
 def interface(parent, featOpts):

@@ -96,23 +96,31 @@ labels   = None
 tooltips = None
 
 
-searchOptions    = props.VGroup((
-    'searchMode',
-    props.HGroup(('searchAngleXMin', 'searchAngleXMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
-    props.HGroup(('searchAngleYMin', 'searchAngleYMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
-    props.HGroup(('searchAngleZMin', 'searchAngleZMax'), visibleWhen=lambda i:i.searchMode != 'nosearch')))
+searchOptions    = props.VGroup(
+    label='Search',
+    children=(
+        'searchMode',
+        props.HGroup(('searchAngleXMin', 'searchAngleXMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
+        props.HGroup(('searchAngleYMin', 'searchAngleYMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
+        props.HGroup(('searchAngleZMin', 'searchAngleZMax'), visibleWhen=lambda i:i.searchMode != 'nosearch')))
 
-costFuncOptions  = props.VGroup((
-    'costFunction',
-    props.Widget('costHistBins', visibleWhen=lambda i:i.costFunction in ['correlation', 'mutualinfo', 'normmutualinfo'])))
+costFuncOptions  = props.VGroup(
+    label='Cost Function',
+    children=(
+        'costFunction',
+        props.Widget('costHistBins', visibleWhen=lambda i:i.costFunction in ['correlation', 'mutualinfo', 'normmutualinfo'])))
 
-interpOptions    = props.VGroup((
-    'interpolation',
-    props.VGroup(('sincWindow', 'sincWindowWidth'), visibleWhen=lambda i: i.interpolation == 'sinc')))
+interpOptions = props.VGroup(
+    label='Interpolation',
+    children=(
+        'interpolation',
+        props.VGroup(('sincWindow', 'sincWindowWidth'), visibleWhen=lambda i: i.interpolation == 'sinc')))
 
-weightVolOptions = props.VGroup((
-    'weightingReference',
-    'weightingInput'))
+weightVolOptions = props.VGroup(
+    label='Weighting Volumes',
+    children=(
+        'weightingReference',
+        'weightingInput'))
 
 flirtView = props.VGroup((
     'flirtMode',
@@ -126,6 +134,7 @@ flirtView = props.VGroup((
     'outputImage',
     'sndyImages',
     props.NotebookGroup(label='Advanced Options',
+                        border=True,
                         children=(searchOptions,
                                   costFuncOptions,
                                   interpOptions,
