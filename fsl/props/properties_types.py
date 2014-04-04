@@ -142,6 +142,18 @@ class String(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
+    def __set__(self, instance, value):
+        
+        if value == '': value = None
+        props.PropertyBase.__set__(self, instance, value)
+
+    def __get__(self, instance, owner):
+
+        val = props.PropertyBase.__get__(self, instance, owner)
+        if val == '': val = None
+        return val
+
+        
     def validate(self, instance, value):
         
         if value == '': value = None

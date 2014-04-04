@@ -112,7 +112,6 @@ class Label(ViewItem):
             kwargs['enabledWhen'] = viewItem.enabledWhen
             
         ViewItem.__init__(self, **kwargs)
-    pass
 
 
 class Widget(ViewItem):
@@ -201,6 +200,7 @@ class PropGUI(object):
     def __init__(self):
         self.onChangeCallbacks = []
         self.guiObjects        = {}
+        self.topLevel          = None
  
 
 def _configureEnabledWhen(viewItem, guiObj, hasProps):
@@ -259,19 +259,18 @@ def _configureVisibleWhen(viewItem, guiObj, hasProps):
 
     if viewItem.visibleWhen is None: return None
 
-    parent = guiObj.GetParent()
-
-    if isinstance(parent, wxnb.FlatNotebook):
+    if isinstance(guiObj.GetParent(), wxnb.FlatNotebook):
         raise TypeError('Visibility of notebook pages is not '\
                         'configurable - use enabledWhen instead.')
 
     def _toggleVis():
 
         visible = viewItem.visibleWhen(hasProps)
+        parent = guiObj.GetParent()
 
         if visible != guiObj.IsShown():
-            guiObj.Show(visible)
-            parent.Layout()
+            parent.GetSizer().Show(guiObj, visible)
+            parent.GetSizer().Layout()
         
     return _toggleVis
 
@@ -321,9 +320,6 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    if group.border:
-        pass
-
     notebook = wxnb.FlatNotebook(
         parent,
         agwStyle=wxnb.FNB_NO_X_BUTTON    | \
@@ -334,6 +330,9 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
         
         if child.label is None: pageLabel = '{}'.format(i)
         else:                   pageLabel = child.label
+
+        if isinstance(child, Group):
+            child.border = False
 
         page = _create(notebook, child, hasProps, propGui)
         notebook.InsertPage(i, page, text=pageLabel)
@@ -372,7 +371,7 @@ def _layoutHGroup(group, parent, children, labels):
         # for child groups with borders
 
     parent.SetSizer(sizer)
-    parent.SetAutoLayout(1)
+    sizer.Layout()
     sizer.Fit(parent)
 
     
@@ -389,7 +388,7 @@ def _layoutVGroup(group, parent, children, labels):
 
         vItem       = group.children[cidx]
         child       = children[cidx]
-        label       = group.showLabels and labels[cidx] or None
+        label       = labels[cidx]
         childParams = {}
 
         # Groups within VGroups, which don't have a border, are 
@@ -409,20 +408,22 @@ def _layoutVGroup(group, parent, children, labels):
             childParams['flag']   = wx.EXPAND | wx.ALL
 
         # No labels are being drawn for any child, so all
-        # children should span botgh columns. In this case
+        # children should span both columns. In this case
         # we could just use a vertical BoxSizer instead of
         # a GridBagSizer,  but I'm going to leave that for
         # the time being.
-        elif labels is None:
+        elif not group.showLabels:
             childParams['pos']    = (cidx, 0)
             childParams['span']   = (1, 2)
-            childParams['flag']   = wx.EXPAND
+            childParams['border'] = 2
+            childParams['flag']   = wx.EXPAND | wx.BOTTOM
 
         # Otherwise the child is drawn in the standard way -
         # label on the left column, child on the right.
         else:
             childParams['pos']    = (cidx, 1)
-            childParams['flag']   = wx.EXPAND
+            childParams['border'] = 2
+            childParams['flag']   = wx.EXPAND | wx.BOTTOM
             
         if label is not None:
             sizer.Add(labels[cidx], pos=(cidx,0), flag=wx.EXPAND)
@@ -432,60 +433,58 @@ def _layoutVGroup(group, parent, children, labels):
     sizer.AddGrowableCol(1)
 
     parent.SetSizer(sizer)
-    parent.SetAutoLayout(1)
+    sizer.Layout()
     sizer.Fit(parent)
 
 
 def _createGroup(parent, group, hasProps, propGui):
     """
-    Creates a GUI panel object for the given group. Children of the
-    group are recursively created via calls to _create, and laid out on
-    the Frame via the _layoutGroup function.
+    Creates a GUI panel object for the given HGroup or VGroup. Children
+    of the group are recursively created via calls to _create, and laid
+    out on the Frame via the _layoutGroup function.
     """
 
-    panel = wx.Panel(parent)
+
+    if group.border:
+        
+        borderPanel = wx.Panel(parent, style=wx.SUNKEN_BORDER)
+        borderSizer = wx.BoxSizer(wx.VERTICAL)
+        panel       = wx.Panel(borderPanel)
+        
+        if group.label is not None:
+            label = wx.StaticText(borderPanel, label=group.label)
+            line  = wx.StaticLine(borderPanel, style=wx.LI_HORIZONTAL)
+            
+            font  = label.GetFont()
+            font.SetPointSize(font.GetPointSize() - 2)
+            font.SetWeight(wx.FONTWEIGHT_LIGHT)
+            label.SetFont(font)
+            
+            borderSizer.Add(label, border=5, flag=wx.ALL)
+            borderSizer.Add(line,  border=5, flag=wx.EXPAND|wx.ALL)
+        
+        borderSizer.Add(panel, border=5, flag=wx.EXPAND|wx.ALL, proportion=1)
+        borderPanel.SetSizer(borderSizer)
+        borderSizer.Layout()
+        borderSizer.Fit(borderPanel)
+        
+    else:
+        panel = wx.Panel(parent)
 
     childObjs = []
-
-    if group.showLabels: labelObjs = []
-    else:                labelObjs = None
+    labelObjs = []
 
     for i,child in enumerate(group.children):
         
-        borderGroup = isinstance(child, Group) and child.border
+        childObj = _create(panel, child, hasProps, propGui)
 
-        if borderGroup:
-
-            borderPanel = wx.Panel(panel, style=wx.SUNKEN_BORDER)
-            borderSizer = wx.BoxSizer(wx.VERTICAL)
-            borderPanel.SetSizer(borderSizer)
-            
-            if child.label is not None:
-                label = wx.StaticText(borderPanel, label=child.label)
-                font = label.GetFont()
-                font.SetPointSize(font.GetPointSize() - 2)
-                font.SetWeight(wx.FONTWEIGHT_LIGHT)
-                label.SetFont(font)
-                borderSizer.Add(label)
-
-            childObj = _create(borderPanel, child, hasProps, propGui)
-            borderSizer.Add(childObj, flag=wx.EXPAND, proportion=1)
-
-            borderPanel.SetAutoLayout(1)
-            borderSizer.Fit(borderPanel)
-                
+        # Create a label for the child if necessary
+        if group.showLabels and group.childLabels[i] is not None:
+            labelObj = _create(panel, group.childLabels[i], hasProps, propGui)
         else:
-            childObj = _create(panel, child, hasProps, propGui)
+            labelObj = None
 
-        if group.showLabels:
-
-            if (not borderGroup) and group.childLabels[i] is not None:
-                labelObj = _create(
-                    panel, group.childLabels[i], hasProps, propGui)
-                labelObjs.append(labelObj)
-            else:
-                labelObjs.append(None)
-        
+        labelObjs.append(labelObj) 
         childObjs.append(childObj)
 
     if   isinstance(group, HGroup):
@@ -493,7 +492,8 @@ def _createGroup(parent, group, hasProps, propGui):
     elif isinstance(group, VGroup):
         _layoutVGroup(group, panel, childObjs, labelObjs)
 
-    return panel
+    if group.border: return borderPanel
+    else:            return panel
 
 
 # These aliases are defined so we can introspectively look
@@ -570,30 +570,29 @@ def _prepareView(viewItem, labels, tooltips):
 
         # children may have been specified as a tuple,
         # so we cast it to a list, making it mutable
-        viewItem.children = list(viewItem.children)
+        viewItem.children    = list(viewItem.children)
+        viewItem.childLabels = []
 
         for i,child in enumerate(viewItem.children):
             viewItem.children[i] = _prepareView(child, labels, tooltips)
 
-        # Create a Label object for
-        # each child of this group
-        if viewItem.showLabels:
-            viewItem.childLabels = []
+        # Create a Label object for each 
+        # child of this group if necessary
+        for child in viewItem.children:
 
-            for child in viewItem.children:
+            # unless no labels are to be shown
+            # for the items in this group
+            mkLabel = viewItem.showLabels
 
-                # unless there is no label specified
-                if child.label is None:
-                    viewItem.childLabels.append(None)
+            # or there is no label specified for this child
+            mkLabel = mkLabel and (child.label is not None)
 
-                # or the child is also a group, and it
-                # is configured to be laid out with a
-                # border (in which case the label will
-                # be displayed as a title)
-                elif isinstance(child, Group) and child.border:
-                    viewItem.childLabels.append(None)
-                else:
-                    viewItem.childLabels.append(Label(child))
+            # or this child is a group with a border
+            mkLabel = mkLabel and not (isinstance(child, Group) and child.border)
+
+            # unless there is no label specified
+            if mkLabel: viewItem.childLabels.append(Label(child))
+            else:       viewItem.childLabels.append(None)
 
     return viewItem
 
@@ -612,6 +611,10 @@ def _prepareEvents(hasProps, propGui):
     def onChange(*a):
         for cb in propGui.onChangeCallbacks:
             cb()
+        propGui.topLevel.GetSizer().Layout()
+        propGui.topLevel.Refresh()
+        propGui.topLevel.Update()
+
 
     propNames, propObjs = hasProps.getAllProperties()
 
@@ -685,12 +688,8 @@ def buildGUI(parent,
             
             buttonSizer.Add(button, flag=wx.EXPAND, proportion=1)
 
-
         buttonPanel.SetSizer(buttonSizer)
         mainPanel  .SetSizer(mainSizer)
-
-        buttonPanel.SetAutoLayout(1)
-        mainPanel  .SetAutoLayout(1)
 
         buttonSizer.Fit(buttonPanel)
         mainSizer  .Fit(mainPanel)
@@ -701,6 +700,7 @@ def buildGUI(parent,
     else:
         mainPanel = _create(parent, view, hasProps, propGui)
 
+    propGui.topLevel = mainPanel
     _prepareEvents(hasProps, propGui)
 
     # TODO return the propGui object, so the caller

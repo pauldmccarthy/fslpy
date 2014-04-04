@@ -308,8 +308,6 @@ def tabEnabled(featOpts, tabName):
         
     elif tabName == 'Registration':
         if aType == 'highLevel': enabled = False
-
-    logging.debug('For analysis type {}, and stage {}, tab {} state is {}'.format(aType, aStage, tabName, enabled))
         
     return enabled
 
@@ -400,6 +398,7 @@ postStatsView = props.VGroup(
     enabledWhen=lambda i: tabEnabled(i, 'Post-stats'),
     children=(
         'preThresholdMask',
+        'createTSPlots',
         props.VGroup(
             label='Thresholding',
             border=True,
@@ -416,8 +415,7 @@ postStatsView = props.VGroup(
                 'renderZMinMax',
                 props.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
                 props.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
-                'blobTypes')),
-        'createTSPlots'))
+                'blobTypes'))))
 
 regView = props.VGroup(
     label='Registration',
