@@ -11,16 +11,14 @@ import sys
 
 from collections import OrderedDict
 
-import wx
-
-import fsl.props          as props
-import fsl.utils.runshell as shell
+import fsl.props         as props
+import fsl.utils.runtool as runtool
 
 runChoices = OrderedDict((
 
     # This is a bit silly, but we can't use an empty
-    # string as a key here, due to the way that tkprop
-    # and Tkinter handle empty strings.
+    # string as a key here, due to the way that props
+    # handles empty strings.
     (' ',   'Run standard brain extraction using bet2'),
     ('-R',  'Robust brain centre estimation (iterates bet2 several times)'),
     ('-S',  'Eye & optic nerve cleanup (can be useful in SIENA)'),
@@ -197,65 +195,20 @@ betView = props.NotebookGroup((
                 children=(
                     'xCoordinate',
                     'yCoordinate',
-                    'zCoordinate'))
-        ))
-))
+                    'zCoordinate'))))))
 
 
-def checkAndRun(betOpts, parent):
-    """
-    Checks that the given options are valid. If they are, bet is run.
-    If the options are not valid, some complaints are directed towards
-    the user.
-    """
-
-    errors = betOpts.validateAll()
-    if len(errors) > 0:
-
-        msg = 'There are numerous errors which need '\
-              'to be fixed before BET can be run:\n'
-
-        for name,error in errors:
-            msg = msg + '\n - {}: {}'.format(optLabels[name], error)
-
-        wx.MessageDialog(
-            parent,
-            message=msg,
-            style=wx.OK | wx.ICON_ERROR).ShowModal()
-        
-    else:
-        cmd = betOpts.genBetCmd()
-        shell.run(cmd, tkRoot)
-
-
-def openHelp():
-    """
-    Opens BET help in a web browser.
-    """
-
-    fsldir = os.environ.get('FSLDIR', None)
-    url    = 'file://{}/doc/redirects/bet.html'.format(fsldir)
-
-    if fsldir is not None:
-        import webbrowser
-        webbrowser.open(url)
-    else:
-
-        msg = 'The FSLDIR environment variable is not set - I don\'t '\
-            'know where to find the FSL documentation.'
-
-        wx.MessageDialog(
-            None,
-            message=msg,
-            style=wx.OK | wx.ICON_ERROR).ShowModal()
-
-    
-def editPanel(parent, betOpts):
-    
-    buttons = OrderedDict((
-        ('Run BET',  lambda : checkAndRun(betOpts, parent)),
-        ('Quit',     parent.Destroy),
-        ('Help',     openHelp)))
-
+def interface(parent, opts):
     return props.buildGUI(
-        parent, betOpts, betView, optLabels, optTooltips, buttons)
+        parent, opts, betView, optLabels, optTooltips)
+
+def runBet(parent, opts):
+    runtool.checkAndRun('BET', opts, parent, opts.genBetCmd, optLabels)
+
+
+FSL_TOOLNAME  = 'BET'
+FSL_HELPPAGE  = 'bet'
+FSL_OPTIONS   = Options
+FSL_INTERFACE = interface
+FSL_RUNTOOL   = runBet
+

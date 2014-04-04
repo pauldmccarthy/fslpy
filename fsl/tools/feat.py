@@ -11,8 +11,6 @@ import logging
 
 from collections import OrderedDict
 
-import wx
-
 import fsl.props as props
 
 analysisTypeOpts = OrderedDict((
@@ -443,6 +441,7 @@ regView = props.VGroup(
                 props.HGroup(('nonLinearReg',
                             props.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
 
+
 featView =props.VGroup((
     'analysisType',
     props.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
@@ -455,11 +454,14 @@ featView =props.VGroup((
         regView))))
 
 
-def editPanel(parent, featOpts):
-
-    buttons = OrderedDict((
-        ('Run FEAT', parent.Destroy),
-        ('Quit',     parent.Destroy)))
+def interface(parent, featOpts):
 
     return props.buildGUI(
-        parent, featOpts, featView, labels, tooltips, buttons)
+        parent, featOpts, featView, labels, tooltips)
+
+
+FSL_TOOLNAME  = 'FEAT'
+FSL_HELPPAGE  = 'feat'
+FSL_OPTIONS   = Options
+FSL_INTERFACE = interface
+FSL_RUNTOOL   = None

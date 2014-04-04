@@ -10,8 +10,6 @@ import sys
 
 from collections import OrderedDict
 
-import wx
-
 import fsl.props as props
 
 flirtModes = OrderedDict((
@@ -133,38 +131,18 @@ flirtView = props.VGroup((
                                   interpOptions,
                                   weightVolOptions))))
 
-def run():
+def runFlirt(parent, opts):
     pass
 
 
-def openHelp():
-    """
-    Opens BET help in a web browser.
-    """
-
-    fsldir = os.environ.get('FSLDIR', None)
-    url    = 'file://{}/doc/redirects/flirt.html'.format(fsldir)
-
-    if fsldir is not None:
-        import webbrowser
-        webbrowser.open(url)
-    else:
-
-        msg = 'The FSLDIR environment variable is not set - I don\'t '\
-            'know where to find the FSL documentation.'
-
-        wx.MessageDialog(
-            None,
-            message=msg,
-            style=wx.OK | wx.ICON_ERROR).ShowModal()
-
-
-def editPanel(parent, opts):
-
-    buttons = OrderedDict((
-        ('Go', run),
-        ('Exit', parent.Destroy),
-        ('Help', openHelp)))
+def interface(parent, opts):
 
     return props.buildGUI(
-        parent, opts, flirtView, labels, tooltips, buttons)
+        parent, opts, flirtView, labels, tooltips)
+
+
+FSL_TOOLNAME  = 'FLIRT'
+FSL_HELPPAGE  = 'flirt'
+FSL_OPTIONS   = Options
+FSL_INTERFACE = interface
+FSL_RUNTOOL   = runFlirt
