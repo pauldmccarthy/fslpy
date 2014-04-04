@@ -525,6 +525,20 @@ def _create(parent, viewItem, hasProps, propGui):
     if visibleCb is not None: propGui.onChangeCallbacks.append(visibleCb)
     if enableCb  is not None: propGui.onChangeCallbacks.append(enableCb)
 
+    if viewItem.tooltip is not None:
+
+        # Add the tooltip to the GUI object, and
+        # also do so recursively to any children
+        def setToolTip(obj):
+            
+            obj.SetToolTipString(viewItem.tooltip)
+
+            children = obj.GetChildren()
+            if len(children) > 0:
+                map(setToolTip, children)
+        
+        setToolTip(guiObject)
+
     propGui.guiObjects[viewItem.key] = guiObject
 
     return guiObject
