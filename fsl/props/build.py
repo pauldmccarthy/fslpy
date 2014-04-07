@@ -297,7 +297,7 @@ def _createButton(parent, viewItem, hasProps, propGui):
     elif viewItem.key   is not None: btnText = viewItem.key
         
     button = wx.Button(parent, label=btnText)
-    button.Bind(wx.EVT_BUTTON, lambda e: viewItem.callback)
+    button.Bind(wx.EVT_BUTTON, lambda e: viewItem.callback(hasProps, button))
     return button
 
 

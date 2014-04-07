@@ -11,8 +11,13 @@ import sys
 
 from collections import OrderedDict
 
-import fsl.props         as props
-import fsl.utils.runtool as runtool
+import wx
+
+import nibabel as nb
+
+import fsl.props           as props
+import fsl.utils.runtool   as runtool
+import fsl.utils.imageview as imageview
 
 runChoices = OrderedDict((
 
@@ -31,20 +36,20 @@ runChoices = OrderedDict((
 filetypes = ['.nii.gz', '.nii', '.hdr', '.img']
 
 class Options(props.HasProperties):
-    
+
     inputImage           = props.FilePath(exists=True, suffixes=filetypes, required=True)
     outputImage          = props.FilePath(                                 required=True)
     t2Image              = props.FilePath(exists=True, suffixes=filetypes, required=lambda i: i.runChoice == '-A2')
-    
+
     runChoice            = props.Choice(runChoices)
-    
+
     outputExtracted      = props.Boolean(default=True)
     outputMaskImage      = props.Boolean(default=False)
     outputSkull          = props.Boolean(default=False)
     outputSurfaceOverlay = props.Boolean(default=False)
     outputMesh           = props.Boolean(default=False)
     thresholdImages      = props.Boolean(default=False)
-    
+
     fractionalIntensity  = props.Double(default=0,   minval=0.0,  maxval=1.0)
     thresholdGradient    = props.Double(default=0.5, minval=-1.0, maxval=1.0)
     headRadius           = props.Double(default=0.0, minval=0.0)
@@ -84,7 +89,7 @@ class Options(props.HasProperties):
         Options.inputImage.addListener(
             self, 'setOutputImage', self.setOutputImage)
         Options.runChoice.addListener(
-            self, 'clearT2Image',   self.clearT2Image) 
+            self, 'clearT2Image',   self.clearT2Image)
 
 
     def genBetCmd(self):
@@ -97,7 +102,7 @@ class Options(props.HasProperties):
 
         if len(errors) > 0:
             raise ValueError('Options are not valid')
-        
+
         cmd = ['bet']
 
         cmd.append(self.inputImage)
@@ -110,7 +115,7 @@ class Options(props.HasProperties):
             cmd.append(runChoice)
 
         if runChoice == '-A2':
-            cmd.append(self.t2Image)        
+            cmd.append(self.t2Image)
 
         if not self.outputExtracted:      cmd.append('-n')
         if     self.outputMaskImage:      cmd.append('-m')
@@ -139,17 +144,17 @@ class Options(props.HasProperties):
 
         return cmd
 
-    
+
 optLabels = {
     'inputImage'           : 'Input image',
     'outputImage'          : 'Output image',
     'runChoice'            : 'Run options',
     't2Image'              : 'T2 image',
-    'outputExtracted'      : 'Output brain-extracted image', 
-    'outputMaskImage'      : 'Output binary brain mask image', 
-    'thresholdImages'      : 'Apply thresholding to brain and mask image', 
+    'outputExtracted'      : 'Output brain-extracted image',
+    'outputMaskImage'      : 'Output binary brain mask image',
+    'thresholdImages'      : 'Apply thresholding to brain and mask image',
     'outputSkull'          : 'Output exterior skull surface image',
-    'outputMesh'           : 'Generate brain surface as mesh in .vtk format', 
+    'outputMesh'           : 'Generate brain surface as mesh in .vtk format',
     'outputSurfaceOverlay' : 'Output brain surface overlaid onto original image',
     'fractionalIntensity'  : 'Fractional intensity threshold',
     'thresholdGradient'    : 'Threshold gradient',
@@ -167,6 +172,29 @@ optTooltips = {
     'headRadius'          : 'Initial surface sphere is set to half of this.',
     'centreCoords'        : 'Coordinates (voxels) for centre of initial brain surface sphere.'
 }
+
+
+def selectHeadCentre(opts, button):
+    """
+    Pops up a little dialog window allowing the user to interactively
+    select the head centre location.
+    """
+
+    pos    = button.GetScreenPosition()
+    image  = nb.load(opts.inputImage)
+    parent = button.GetTopLevelParent()
+
+    frame  = wx.Frame(
+        parent,
+        title=opts.inputImage)
+
+    panel  = imageview.ImageView(frame, image.get_data())
+
+    frame.SetPosition(pos)
+
+    frame.Layout()
+    frame.Show()
+
 
 
 betView = props.NotebookGroup((
@@ -187,12 +215,13 @@ betView = props.NotebookGroup((
             'thresholdImages',
             'outputSkull',
             'outputSurfaceOverlay',
-            'outputMesh', 
-            'thresholdGradient', 
-            'headRadius', 
+            'outputMesh',
+            'thresholdGradient',
+            'headRadius',
             props.HGroup(
                 key='centreCoords',
                 children=(
+                    props.Button(text='Select', callback=selectHeadCentre, enabledWhen=lambda i: i.isValid('inputImage')),
                     'xCoordinate',
                     'yCoordinate',
                     'zCoordinate'))))))

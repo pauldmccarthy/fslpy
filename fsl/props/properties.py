@@ -543,6 +543,14 @@ class HasProperties(object):
 
         return propNames, props
 
+
+    def isValid(self, propName):
+        """
+        Returns True if the current value of the specified property
+        is valid, False otherwise.
+        """
+        return self.getPropVal(propName).isValid()
+
         
     def validateAll(self):
         """
