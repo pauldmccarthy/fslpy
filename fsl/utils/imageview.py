@@ -97,3 +97,27 @@ class ImageView(wx.Panel):
         self.xcanvas.Refresh()
         self.ycanvas.Refresh()
         self.zcanvas.Refresh()
+
+
+if __name__ == '__main__':
+
+    import sys
+    import nibabel as nb
+
+    if len(sys.argv) != 2:
+        print 'usage: imageview.py filename'
+        sys.exit(1)
+
+    app    = wx.App()
+    image  = nb.load(sys.argv[1])
+
+    frame  = wx.Frame(
+        None,
+        title=sys.argv[1])
+
+    panel = ImageView(frame, image.get_data())
+
+    frame.Layout()
+    frame.Show()
+
+    app.MainLoop()
