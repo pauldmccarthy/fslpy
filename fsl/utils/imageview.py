@@ -83,12 +83,12 @@ class ImageView(wx.Panel):
         y = int(y)
         z = int(z)
 
-        self.xcanvas.horizPos = y
-        self.xcanvas.vertPos  = z
-        self.ycanvas.horizPos = x
-        self.ycanvas.vertPos  = z
-        self.zcanvas.horizPos = x
-        self.zcanvas.vertPos  = y
+        self.xcanvas.xpos = y
+        self.xcanvas.ypos = z
+        self.ycanvas.xpos = x
+        self.ycanvas.ypos = z
+        self.zcanvas.xpos = x
+        self.zcanvas.ypos = y
 
         self.xcanvas.index = x
         self.ycanvas.index = y
