@@ -23,21 +23,21 @@ class SliceCanvas(wxgl.GLCanvas):
     """
 
     @property
-    def index(self):
+    def zpos(self):
         """
         The slice currently being displayed.
         """
-        return self._index
+        return self._zpos
 
-    @index.setter
-    def index(self, index):
+    @zpos.setter
+    def zpos(self, zpos):
 
-        index = int(round(index))
+        zpos = int(round(zpos))
 
-        if   index >= self.nslices: index = self.nslices - 1
-        elif index <  0:            index = 0
+        if   zpos >= self.zdim: zpos = self.zdim - 1
+        elif zpos <  0:         zpos = 0
 
-        self._index = index
+        self._zpos = zpos
 
     @property
     def xpos(self):
@@ -74,33 +74,37 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = ypos
 
 
-    def __init__(self, parent, image, axis=0, index=None, **kwargs):
+    def __init__(self, parent, image, zax=0, zpos=None, **kwargs):
 
-        # reshape the image so the axis being displayed is
-        # the first axis.
+        wxgl.GLCanvas.__init__(self, parent, **kwargs)
+
         # TODO Currently, the displayed x/horizontal and
         # y/vertical axes are defined by their order in
         # the image. Allow the caller to specify which
         # axes should be horizontal/vertical.
         dims = range(3)
-        dims.insert(0, dims.pop(axis))
+        dims.pop(zax)
+
+        self.xax  = dims[0]
+        self.yax  = dims[1]
+        self.zax  = zax
+
+        self.xdim = image.shape[self.xax]
+        self.ydim = image.shape[self.yax]
+        self.zdim = image.shape[self.zax]
+
+        if zpos is None:
+            zpos = self.zdim / 2
+
+        self._xpos = self.xdim / 2
+        self._ypos = self.ydim / 2
+        self._zpos = zpos
+
+        # remove this
+        dims.insert(0, self.zax)
         image = image.transpose(dims)
 
-        if index is None:
-            index = image.shape[0] / 2
-
-        wxgl.GLCanvas.__init__(self, parent, **kwargs)
-
         self.image   = image
-        self.nslices = image.shape[0]
-        self.xdim    = image.shape[1]
-        self.ydim    = image.shape[2]
-        self.axis    = axis
-
-        self._index = index
-        self._xpos  = image.shape[1] / 2
-        self._ypos  = image.shape[2] / 2
-
         self.context = wxgl.GLContext(self)
 
         # these attributes are created by _initGLData,
@@ -218,6 +222,31 @@ class SliceCanvas(wxgl.GLCanvas):
                 geomData[verti+2, :] = [xi+1, yi]
                 geomData[verti+3, :] = [xi+1, 0]
 
+
+        # The next buffer is an array of colour data, derived from the
+        # image voxel data. It is created by the _initImageData method,
+        # and/or may have been passed
+        imageData = self._initImageData()
+
+        # The third buffer, indexData/indexBuffer is simply an array
+        # of vertex indices (i.e. [0,1,2,3,...,n-1] for n vertices)
+        # for a single slice of the image
+        indexData = np.arange(nvertices, dtype=np.uint32)
+
+        # Finally, we can tell OpenGL to store this data on the GPU
+        self.indexBuffer = vbo.VBO(
+            indexData, gl.GL_STATIC_DRAW, gl.GL_ELEMENT_ARRAY_BUFFER)
+
+        self.imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
+        self.geomBuffer  = vbo.VBO(geomData,  gl.GL_STATIC_DRAW)
+
+
+    def _initImageData(self):
+        """
+        """
+
+        nvertices = self.nvertices
+
         # The next buffer is an array of colour data, derived from the
         # image voxel data, and consisting of three values (r,g,b) for
         # each vertex. Ultimately, each voxel is going to be represented
@@ -262,25 +291,15 @@ class SliceCanvas(wxgl.GLCanvas):
         # So here, we chop off the last two values of every
         # slice, which correspond to the unneeded values for
         # the final column of each slice..
-        imageData = imageData.reshape(self.nslices, nvertices + 2)
+        imageData = imageData.reshape(self.zdim, nvertices + 2)
         imageData = imageData[:,:-2]
 
         # Finally, we repeat each image value three times,
         # as colours must be specified by (r,g,b) 3-tuples.
         imageData = imageData.repeat(3)
-        imageData = imageData.reshape(self.nslices * nvertices,3)
+        imageData = imageData.reshape(self.zdim * nvertices, 3)
 
-        # The third buffer, indexData/indexBuffer is simply an array
-        # of vertex indices (i.e. [0,1,2,3,...,n-1] for n vertices)
-        # for a single slice of the image
-        indexData = np.arange(nvertices, dtype=np.uint32)
-
-        # Finally, we can tell OpenGL to store this data on the GPU
-        self.indexBuffer = vbo.VBO(
-            indexData, gl.GL_STATIC_DRAW, gl.GL_ELEMENT_ARRAY_BUFFER)
-
-        self.imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
-        self.geomBuffer  = vbo.VBO(geomData,  gl.GL_STATIC_DRAW)
+        return imageData
 
 
     def resize(self, ev):
@@ -299,6 +318,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
 
     def draw(self, ev):
+        """
+        """
 
         if not self.imageBuffer:
             wx.CallAfter(self._initGLData)
@@ -308,7 +329,7 @@ class SliceCanvas(wxgl.GLCanvas):
         geomBuf  = self.geomBuffer
         indexBuf = self.indexBuffer
 
-        imageOffset = self.index * self.nvertices
+        imageOffset = self.zpos * self.nvertices
 
         self.SetCurrent(self.context)
 
@@ -329,7 +350,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # a vertical line at horizPos, and a horizontal line at vertPos
         x = self.xpos + 0.5
-        y = self.ypos  + 0.5
+        y = self.ypos + 0.5
         gl.glBegin(gl.GL_LINES)
 
         gl.glColor3f(0,1,0)

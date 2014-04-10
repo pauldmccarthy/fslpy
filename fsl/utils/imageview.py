@@ -27,9 +27,9 @@ class ImageView(wx.Panel):
 
         self.SetMinSize((300,100))
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, image, axis=0)
-        self.ycanvas = slicecanvas.SliceCanvas(self, image, axis=1)
-        self.zcanvas = slicecanvas.SliceCanvas(self, image, axis=2)
+        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=0)
+        self.ycanvas = slicecanvas.SliceCanvas(self, image, zax=1)
+        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=2)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -59,9 +59,9 @@ class ImageView(wx.Panel):
 
         my = h - my
 
-        x = self.xcanvas.index
-        y = self.ycanvas.index
-        z = self.zcanvas.index
+        x = self.xcanvas.zpos
+        y = self.ycanvas.zpos
+        z = self.zcanvas.zpos
 
         if source == self.xcanvas:
 
@@ -90,9 +90,9 @@ class ImageView(wx.Panel):
         self.zcanvas.xpos = x
         self.zcanvas.ypos = y
 
-        self.xcanvas.index = x
-        self.ycanvas.index = y
-        self.zcanvas.index = z
+        self.xcanvas.zpos = x
+        self.ycanvas.zpos = y
+        self.zcanvas.zpos = z
 
         self.xcanvas.Refresh()
         self.ycanvas.Refresh()
