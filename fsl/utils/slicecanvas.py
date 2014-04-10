@@ -16,6 +16,7 @@ import OpenGL.GLUT       as glut
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
+
 class SliceCanvas(wxgl.GLCanvas):
     """
     A wx.glcanvas.GLCanvas which may be used to display a single
@@ -124,145 +125,40 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.SetCurrent(self.context)
 
-        # Here we are setting up three buffers which will be copied to
-        # the GPU memory - a geometry buffer containing points which
-        # will be used to draw each voxel, an index buffer containing
-        # identifiers for every point, and an image buffer containing
-        # image data which is used to colour each voxel. Every 2D slice
-        # of our 3D image has the same geometry, and hence the same
-        # number of vertices. So we only need to create geometry and
-        # index information for a single slice, but we can use that
-        # same information to render every slice.
-        #
-        # A single slice of M*N voxels is represented by M*2*(N + 1)
-        # vertices. For example, this image represents a 4*3 slice,
-        # with periods representing vertex locations:
-        #
-        #  .___..___..___..____.
-        #  |    |    |    |    |
-        #  .___..___..__ ..____.
-        #  |    |    |    |    |
-        #  .___..___..___..____.
-        #  |    |    |    |    |
-        #  .___..___..___..____.
-        #
-        #
-        # Two periods are next to each other (i.e. '..') indicates that
-        # those two vertices represent the same point in space. We have
-        # to repeat these inner vertices in order to achieve accurate
-        # colouring of each voxel.
 
-        nvertices = self.xdim * 2 * (self.ydim + 1)
+        nvertices = 4 * self.xdim * self.ydim
 
-        # The first buffer is an array of vertices (x/y coordinate
-        # pairs), one at every point in our 2D slice. We are drawing
-        # each vertical column of voxels one by one, using two
-        # triangles to draw each voxel. In order to eliminate the need
-        # to specify six vertices for every voxel, and hence to reduce
-        # the amount of memory used, we are using a triangle strip to
-        # draw each column of voxels. This image depicts a triangle
-        # strip used to draw a column of two voxels (periods represent
-        # vertex locations).
-        #
-        #  2.----.
-        #     \
-        #      \
-        #  1.----.
-        #     \
-        #      \
-        #  0.----.
-        #   0    1
-        #
-        # In order to use a single OpenGL call to draw multiple
-        # non-contiguous voxel columns, between every column we
-        # add a couple of 'dummy' vertices, which will then be
-        # interpreted by OpenGL as 'degenerate triangles', and will
-        # not be drawn. So in reality, a 4*3 slice would be drawn
-        # as follows:
-        #
-        # 3   .----...----...----...----.
-        #       \      \      \      \
-        #        \      \      \      \
-        # 2   .----. .----. .----. .----.
-        #       \      \      \      \
-        #        \      \      \      \
-        # 1   .----. .----. .----. .----.
-        #       \      \      \      \
-        #        \      \      \      \
-        # 0   .----...----...----...----.
-        #
-        #     0    1      2      3      4
-        #
-        # But we will deal with thesee degenerate vertices in the
-        # index buffer (by indexing existing vertices), so we
-        # don't need to worry about them when creating the geometry
-        # data.
-        degenVertices = 2 * (self.xdim - 1)
-
-        self.degenVertices = degenVertices
-        self.nvertices     = nvertices
-
-        # See these links for good overviews of triangle strips and
-        # degenerate triangles in OpenGL:
-        #
-        #  - http://www.learnopengles.com/tag/degenerate-triangles/
-        #  - http://en.wikipedia.org/wiki/Triangle_strip
-
+        self.nvertices = nvertices
         geomData = np.zeros((nvertices, 2), dtype=np.float32)
 
         for xi in range(self.xdim):
+            for yi in range(self.ydim):
 
-            #xoff = xi * (2*self.ydim + 4)
+                off = (xi * self.ydim + yi) * 4
 
-            xoff = xi * 2*(self.ydim + 1)
-
-            # two vertices for each voxel, plus an
-            # extra two at the top of each column
-            for yi in range(self.ydim + 1):
-                verti = xoff + 2*yi
-                geomData[verti,  :] = [xi,   yi]
-                geomData[verti+1,:] = [xi+1, yi]
-
+                geomData[off,  :] = [xi,   yi]
+                geomData[off+1,:] = [xi+1, yi]
+                geomData[off+2,:] = [xi,   yi+1]
+                geomData[off+3,:] = [xi+1, yi+1]
 
         self.geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
 
-        # The second buffer, indexData/indexBuffer is simply an array
-        # of vertex indices (i.e. [0,1,2,3,...,n-1] for n vertices)
-        # for a single slice of the image.  We need to insert some
-        # additional vertices between each column of voxels, which will
-        # be treated as degenerate vertices.
-
-        indexData = np.arange(nvertices + degenVertices, dtype=np.uint32)
+        nrealverts = 6 * self.xdim * self.ydim
+        indexData  = np.zeros(nrealverts, dtype=np.uint32)
 
         for xi in range(self.xdim):
+            for yi in range(self.ydim):
 
-            # number of vertices in this column, not
-            # taking into account degenerate vertices
-            ncolverts =  2 * (self.ydim + 1)
+                idxOff  = (xi * self.ydim + yi) * 6
+                vertOff = (xi * self.ydim + yi) * 4
 
-            # vertex ID offset
-            vertIdx  = xi * ncolverts
-
-            # offset into indexData, taking
-            # into account degenerates
-            xoff    = xi * 2 * (self.ydim + 2)
-
-            indexData[xoff: xoff + ncolverts] = np.arange(vertIdx,
-                                                          vertIdx + ncolverts)
-            # add two degenerate vertices between every
-            # column (i.e. not needed for the last column)
-            if xi < self.xdim - 1:
-                indexData[xoff + ncolverts]     = vertIdx + ncolverts - 1
-                indexData[xoff + ncolverts + 1] = vertIdx + ncolverts
+                indexData[idxOff:idxOff+6] = np.array([0,1,2,2,1,3])  + vertOff
 
         self.indexBuffer = vbo.VBO(
             indexData, gl.GL_STATIC_DRAW, gl.GL_ELEMENT_ARRAY_BUFFER)
 
-        # The third buffer is an array of colour data, derived from the
-        # image voxel data. It is created by the _initImageBuffer method,
-        # but have been passed to the constructor when this SliceCanvas
-        # instance was created (i.e. data may be shared
-        self.imageBuffer = self._initImageBuffer()
+        self.imageBuffer,_ = self._initImageBuffer()
+
 
 
     def _initImageBuffer(self):
@@ -271,40 +167,20 @@ class SliceCanvas(wxgl.GLCanvas):
 
         nvertices = self.nvertices
 
-        # The next buffer is an array of colour data, derived from the
-        # image voxel data, and consisting of three values (r,g,b) for
-        # each vertex. Ultimately, each voxel is going to be represented
-        # by two triangles, using a triangle strip. In OpenGL, when using
-        # a flat colouring scheme (i.e. not smoothed/interpolated between
-        # vertices), the colour of each triangle is defined by the first
-        # vertex which defines that triangle. This, combined with the use
-        # of a triangle strip geometry, means that we need to repeat each
-        # voxel value twice, once for each triangle which makes up the
-        # voxel. We also need to take into accoun the two extra vertices
-        # at the top of every column.
-
         imageData = np.array(self.image, dtype=np.float32)
 
         # The image data is normalised to lie between 0.0 and 1.0.
         imageData = (imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
 
-        # Repeat the values at the end of each voxel column, to
-        # to take into account one of the two extra vertices at
-        # the top of each column. Then, repeat every value in the
-        # image, as we have two vertices for every voxel (plus
-        # the extra two at the top).
-        imageData = np.dstack((imageData, imageData[:,:,-1]))
-        imageData = imageData.repeat(2, axis=2)
-
         # Finally, we repeat each image value three times,
         # as colours must be specified by (r,g,b) 3-tuples.
-        imageData = imageData.repeat(3)
+        imageData = imageData.repeat(12)
         imageData = imageData.reshape(self.zdim * nvertices, 3)
 
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
-        return imageBuffer
+        return imageBuffer,imageData
 
 
     def resize(self, ev):
@@ -330,10 +206,6 @@ class SliceCanvas(wxgl.GLCanvas):
             wx.CallAfter(self._initGLData)
             return
 
-        imageBuf = self.imageBuffer
-        geomBuf  = self.geomBuffer
-        indexBuf = self.indexBuffer
-
         imageOffset = self.zpos * self.nvertices
 
         self.SetCurrent(self.context)
@@ -344,14 +216,16 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glEnableClientState(gl.GL_COLOR_ARRAY)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-        geomBuf.bind()
+        self.geomBuffer.bind()
         gl.glVertexPointer(2, gl.GL_FLOAT, 0, None)
-        imageBuf.bind()
-        gl.glColorPointer(3, gl.GL_FLOAT, 0, imageBuf + imageOffset*4*3)
+        self.imageBuffer.bind()
+        gl.glColorPointer(
+            3, gl.GL_FLOAT, 0, self.imageBuffer + imageOffset*4*3)
 
-        indexBuf.bind()
+        self.indexBuffer.bind()
+        nRealVertices = self.xdim * self.ydim * 6
         gl.glDrawElements(
-            gl.GL_TRIANGLE_STRIP, self.nvertices, gl.GL_UNSIGNED_INT, None)
+            gl.GL_TRIANGLES, nRealVertices, gl.GL_UNSIGNED_INT, None)
 
         # a vertical line at horizPos, and a horizontal line at vertPos
         x = self.xpos + 0.5

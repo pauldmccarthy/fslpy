@@ -6,9 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import                wx
-import wx.glcanvas as wxgl
-import OpenGL.GL   as gl
+import wx
 
 import fsl.utils.slicecanvas as slicecanvas
 
