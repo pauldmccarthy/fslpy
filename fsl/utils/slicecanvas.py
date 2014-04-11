@@ -123,6 +123,12 @@ class SliceCanvas(wxgl.GLCanvas):
         self.ydim = image.shape[self.yax]
         self.zdim = image.shape[self.zax]
 
+        # TODO these strides are in bytes, and correspond
+        # to the byte size of the input image data type
+        self.xstride = image.strides[self.xax]
+        self.ystride = image.strides[self.yax]
+        self.zstride = image.strides[self.zax]
+
         if zpos is None:
             zpos = self.zdim / 2
 
@@ -177,8 +183,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
         self.positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
-        self.imageBuffer,ida  = self._initImageBuffer()
-
+        self.imageBuffer,_  = self._initImageBuffer()
 
 
     def _initImageBuffer(self):
@@ -220,56 +225,69 @@ class SliceCanvas(wxgl.GLCanvas):
             wx.CallAfter(self._initGLData)
             return
 
-        #imageOffset = self.zpos * self.nvertices
-        imageOffset = self.zpos * self.xdim*self.ydim
+        
 
         self.SetCurrent(self.context)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         gl.glShadeModel(gl.GL_FLAT)
 
-
         gl.glUseProgram(self.shaders)
 
-        self.geomBuffer.bind()
-        gl.glVertexAttribPointer(
-            self.rawVertexPos,
-            2,
-            gl.GL_FLOAT,
-            gl.GL_FALSE,
-            0,
-            None)
-        gl.glEnableVertexAttribArray(self.rawVertexPos)
-        arbia.glVertexAttribDivisorARB(self.rawVertexPos, 0)
+        for xi in range(self.xdim):
 
-        self.positionBuffer.bind()
-        gl.glVertexAttribPointer(
-            self.rawPositionPos,
-            2,
-            gl.GL_FLOAT,
-            gl.GL_FALSE,
-            0,
-            None)
-        gl.glEnableVertexAttribArray(self.rawPositionPos)
-        arbia.glVertexAttribDivisorARB(self.rawPositionPos, 1)
+            imageOffset = (xi * self.ydim + self.xdim * self.ydim * self.zpos) * 4
+            posOffset   = xi * self.ydim * 8
 
-        self.imageBuffer.bind()
-        gl.glVertexAttribPointer(
-            self.rawColourPos,
-            1,
-            gl.GL_FLOAT,
-            gl.GL_FALSE,
-            0,
-            self.imageBuffer + imageOffset*4)
+            # The geometry buffer, which defines the geometry of a
+            # single vertex (4 vertices, drawn as a triangle strip)
+            self.geomBuffer.bind()
+            gl.glVertexAttribPointer(
+                self.rawVertexPos,
+                2,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                None)
+            gl.glEnableVertexAttribArray(self.rawVertexPos)
+            arbia.glVertexAttribDivisorARB(self.rawVertexPos, 0)
 
-        gl.glEnableVertexAttribArray(self.rawColourPos)
-        arbia.glVertexAttribDivisorARB(self.rawColourPos, 1)
+            # The position buffer, which defines
+            # the location of every voxel
+            self.positionBuffer.bind()
+            gl.glVertexAttribPointer(
+                self.rawPositionPos,
+                2,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                self.positionBuffer + posOffset)
+            gl.glEnableVertexAttribArray(self.rawPositionPos)
+            arbia.glVertexAttribDivisorARB(self.rawPositionPos, 1)
 
-        arbdi.glDrawArraysInstancedARB(
-            gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim*self.ydim)
+            # The image buffer, which defines
+            # the value at each voxel.
+            self.imageBuffer.bind()
+            gl.glVertexAttribPointer(
+                self.rawColourPos,
+                1,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                self.imageBuffer + imageOffset)
+
+            gl.glEnableVertexAttribArray(self.rawColourPos)
+            arbia.glVertexAttribDivisorARB(self.rawColourPos, 1)
+
+            # Draw all of the triangles!
+            arbdi.glDrawArraysInstancedARB(
+                gl.GL_TRIANGLE_STRIP, 0, 4, self.ydim)
+            
+            gl.glDisableVertexAttribArray(self.rawVertexPos)
+            gl.glDisableVertexAttribArray(self.rawPositionPos)
+            gl.glDisableVertexAttribArray(self.rawColourPos)
 
         gl.glUseProgram(0)
-        ###################
 
         # a vertical line at horizPos, and a horizontal line at vertPos
         x = self.xpos + 0.5
