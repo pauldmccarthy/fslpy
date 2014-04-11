@@ -115,19 +115,18 @@ class SliceCanvas(wxgl.GLCanvas):
         dims = range(3)
         dims.pop(zax)
 
-        self.xax  = dims[0]
-        self.yax  = dims[1]
-        self.zax  = zax
+        self.image = np.array(image, dtype=np.float32)
+        self.xax   = dims[1]
+        self.yax   = dims[0]
+        self.zax   = zax
 
-        self.xdim = image.shape[self.xax]
-        self.ydim = image.shape[self.yax]
-        self.zdim = image.shape[self.zax]
+        self.xdim = self.image.shape[self.xax]
+        self.ydim = self.image.shape[self.yax]
+        self.zdim = self.image.shape[self.zax]
 
-        # TODO these strides are in bytes, and correspond
-        # to the byte size of the input image data type
-        self.xstride = image.strides[self.xax]
-        self.ystride = image.strides[self.yax]
-        self.zstride = image.strides[self.zax]
+        self.xstride = self.image.strides[self.xax] / 4
+        self.ystride = self.image.strides[self.yax] / 4
+        self.zstride = self.image.strides[self.zax] / 4
 
         if zpos is None:
             zpos = self.zdim / 2
@@ -136,11 +135,6 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = self.ydim / 2
         self._zpos = zpos
 
-        # remove this
-        dims.insert(0, self.zax)
-        image = image.transpose(dims)
-
-        self.image   = image
         self.context = wxgl.GLContext(self)
 
         # these attributes are created by _initGLData,
@@ -190,7 +184,7 @@ class SliceCanvas(wxgl.GLCanvas):
         """
         """
 
-        imageData = np.array(self.image, dtype=np.float32)
+        imageData = self.image
 
         # The image data is normalised to lie between 0.0 and 1.0.
         imageData = (imageData       - imageData.min()) / \
@@ -225,8 +219,6 @@ class SliceCanvas(wxgl.GLCanvas):
             wx.CallAfter(self._initGLData)
             return
 
-        
-
         self.SetCurrent(self.context)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -236,7 +228,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         for xi in range(self.xdim):
 
-            imageOffset = (xi * self.ydim + self.xdim * self.ydim * self.zpos) * 4
+            imageOffset = (self.zpos * self.zstride + xi * self.xstride) * 4
+            imageStride = self.ystride * 4
             posOffset   = xi * self.ydim * 8
 
             # The geometry buffer, which defines the geometry of a
@@ -273,7 +266,7 @@ class SliceCanvas(wxgl.GLCanvas):
                 1,
                 gl.GL_FLOAT,
                 gl.GL_FALSE,
-                0,
+                imageStride,
                 self.imageBuffer + imageOffset)
 
             gl.glEnableVertexAttribArray(self.rawColourPos)
