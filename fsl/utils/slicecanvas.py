@@ -16,17 +16,22 @@ import OpenGL.GLUT       as glut
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
+
+import OpenGL.GL.ARB.instanced_arrays as arbia
+import OpenGL.GL.ARB.draw_instanced   as arbdi
+
 vertex_shader = """
 #version 120
 
-attribute float rawColour;
+attribute vec2  inVertex;
+attribute vec2  inPosition;
+attribute float inColour;
 varying   vec4  outColour;
 
 void main(void) {
 
-  gl_Position = ftransform();
-  outColour   = vec4(rawColour,rawColour,rawColour, 1.0);
-
+  gl_Position = gl_ModelViewProjectionMatrix * vec4(inVertex+inPosition, 0.0, 1.0);
+  outColour   = vec4(inColour, inColour, inColour, 1.0);
 }
 """
 
@@ -153,42 +158,26 @@ class SliceCanvas(wxgl.GLCanvas):
             shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
             shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
 
-        self.rawColourPos = gl.glGetAttribLocation(self.shaders, 'rawColour')
+        self.rawVertexPos   = gl.glGetAttribLocation(self.shaders, 'inVertex')
+        self.rawColourPos   = gl.glGetAttribLocation(self.shaders, 'inColour')
+        self.rawPositionPos = gl.glGetAttribLocation(self.shaders, 'inPosition')
 
-        nvertices = 4 * self.xdim * self.ydim
-        nindices  = 6 * self.xdim * self.ydim
+        geomData = np.array([[0, 0,
+                              1, 0,
+                              0, 1,
+                              1, 1]], dtype=np.float32)
 
-        self.nvertices = nvertices
-        self.nindices  = nindices
-
-        geomData = np.zeros((nvertices, 2), dtype=np.float32)
-
-        for xi in range(self.xdim):
-            for yi in range(self.ydim):
-
-                off = (xi * self.ydim + yi) * 4
-
-                geomData[off,  :] = [xi,   yi]
-                geomData[off+1,:] = [xi+1, yi]
-                geomData[off+2,:] = [xi,   yi+1]
-                geomData[off+3,:] = [xi+1, yi+1]
-
-        self.geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
-
-        indexData  = np.zeros(nindices, dtype=np.uint32)
+        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.float32)
 
         for xi in range(self.xdim):
             for yi in range(self.ydim):
 
-                idxOff  = (xi * self.ydim + yi) * 6
-                vertOff = (xi * self.ydim + yi) * 4
+                positionData[xi * self.ydim + yi, 0] = xi
+                positionData[xi * self.ydim + yi, 1] = yi
 
-                indexData[idxOff:idxOff+6] = np.array([0,1,2,2,1,3])  + vertOff
-
-        self.indexBuffer = vbo.VBO(
-            indexData, gl.GL_STATIC_DRAW, gl.GL_ELEMENT_ARRAY_BUFFER)
-
-        self.imageBuffer,_ = self._initImageBuffer()
+        self.geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
+        self.positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+        self.imageBuffer,ida  = self._initImageBuffer()
 
 
 
@@ -202,11 +191,7 @@ class SliceCanvas(wxgl.GLCanvas):
         imageData = (imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
 
-        # Finally, we repeat each image value four times,
-        # for the four vertices used to represent each voxel.
-        imageData = imageData.repeat(4)
-        imageData = imageData.reshape(self.zdim * self.nvertices, 1)
-
+        # and flattened
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
         return imageBuffer,imageData
@@ -235,20 +220,38 @@ class SliceCanvas(wxgl.GLCanvas):
             wx.CallAfter(self._initGLData)
             return
 
-        imageOffset = self.zpos * self.nvertices
+        #imageOffset = self.zpos * self.nvertices
+        imageOffset = self.zpos * self.xdim*self.ydim
 
         self.SetCurrent(self.context)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         gl.glShadeModel(gl.GL_FLAT)
 
-        ###################
-        # Draw using custom vertex/fragment shaders
+
         gl.glUseProgram(self.shaders)
 
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         self.geomBuffer.bind()
-        gl.glVertexPointer(2, gl.GL_FLOAT, 0, None)
+        gl.glVertexAttribPointer(
+            self.rawVertexPos,
+            2,
+            gl.GL_FLOAT,
+            gl.GL_FALSE,
+            0,
+            None)
+        gl.glEnableVertexAttribArray(self.rawVertexPos)
+        arbia.glVertexAttribDivisorARB(self.rawVertexPos, 0)
+
+        self.positionBuffer.bind()
+        gl.glVertexAttribPointer(
+            self.rawPositionPos,
+            2,
+            gl.GL_FLOAT,
+            gl.GL_FALSE,
+            0,
+            None)
+        gl.glEnableVertexAttribArray(self.rawPositionPos)
+        arbia.glVertexAttribDivisorARB(self.rawPositionPos, 1)
 
         self.imageBuffer.bind()
         gl.glVertexAttribPointer(
@@ -258,11 +261,12 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.GL_FALSE,
             0,
             self.imageBuffer + imageOffset*4)
-        gl.glEnableVertexAttribArray(self.rawColourPos)
 
-        self.indexBuffer.bind()
-        gl.glDrawElements(
-            gl.GL_TRIANGLES, self.nindices, gl.GL_UNSIGNED_INT, None)
+        gl.glEnableVertexAttribArray(self.rawColourPos)
+        arbia.glVertexAttribDivisorARB(self.rawColourPos, 1)
+
+        arbdi.glDrawArraysInstancedARB(
+            gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim*self.ydim)
 
         gl.glUseProgram(0)
         ###################
