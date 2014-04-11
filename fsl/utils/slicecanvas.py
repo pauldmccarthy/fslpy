@@ -12,29 +12,49 @@ import numpy             as np
 import                      wx
 import wx.glcanvas       as wxgl
 import OpenGL.GL         as gl
-import OpenGL.GLUT       as glut
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
-
+# Under OS X, I don't think I can request an OpenGL 3.2 core profile
+# - I'm stuck with OpenGL 2.1 I'm using these ARB extensions for
+# functionality which is standard in 3.2.
 import OpenGL.GL.ARB.instanced_arrays as arbia
 import OpenGL.GL.ARB.draw_instanced   as arbdi
 
+# A slice is rendered using three buffers. The first buffer,
+# the 'geometry buffer' simply contains four vertices, which
+# define the geometry of a single voxel (using triangle
+# strips).
+
+# The second buffer, the 'position buffer', contains the location
+# of every voxel in one slice of the image (these locations are
+# identical for every slice of the image, so we can re-use the
+# location information for every slice).  The third buffer, the
+# 'image buffer' contains data for the entire image, and is used
+# to colour each voxel. This image buffer may be shared between
+# multiple SliceCanvas objects which are displaying the same
+# image - see the 'master' parameter to the SliceCanvas constructor.
+#
+
+# The vertex shader positions and colours a single vertex.
 vertex_shader = """
 #version 120
 
-attribute vec2  inVertex;
-attribute vec2  inPosition;
-attribute float inColour;
-varying   vec4  outColour;
+attribute vec2  inVertex;   /* Current vertex                   */
+attribute vec2  inPosition; /* Position of the current voxel    */
+attribute float inColour;   /* Value of the current voxel       */
+varying   vec4  outColour;  /* Colour, generated from the value */
 
 void main(void) {
 
-  gl_Position = gl_ModelViewProjectionMatrix * vec4(inVertex+inPosition, 0.0, 1.0);
-  outColour   = vec4(inColour, inColour, inColour, 1.0);
+    gl_Position = gl_ModelViewProjectionMatrix * vec4(inVertex+inPosition, 0.0, 1.0);
+
+    /* Greyscale only for the time being. */
+    outColour   = vec4(inColour, inColour, inColour, 1.0);
 }
 """
 
+# Default fragment shader, does nothing special.
 fragment_shader = """
 #version 120
 
@@ -61,6 +81,9 @@ class SliceCanvas(wxgl.GLCanvas):
 
     @zpos.setter
     def zpos(self, zpos):
+        """
+        Change the slice being displayed. You need to manually call Refresh().
+        """
 
         zpos = int(round(zpos))
 
@@ -72,12 +95,15 @@ class SliceCanvas(wxgl.GLCanvas):
     @property
     def xpos(self):
         """
-        The current X location of the cursor.
+        The current X (horizontal) location of the cursor. 
         """
         return self._xpos
 
     @xpos.setter
     def xpos(self, xpos):
+        """
+        Change the x cursor position. You need to manually call Refresh().
+        """ 
 
         xpos = int(round(xpos))
 
@@ -89,12 +115,15 @@ class SliceCanvas(wxgl.GLCanvas):
     @property
     def ypos(self):
         """
-        The current Y location of the cursor.
+        The current Y (vertical) location of the cursor.
         """
         return self._ypos
 
     @ypos.setter
     def ypos(self, ypos):
+        """
+        Change the y cursor position. You need to manually call Refresh().
+        """ 
 
         ypos = int(round(ypos))
 
@@ -104,7 +133,20 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = ypos
 
 
-    def __init__(self, parent, image, zax=0, zpos=None, **kwargs):
+    def __init__(self, parent, image, zax=0, zpos=None, master=None, **kwargs):
+        """
+        Creates a canvas object. The OpenGL data buffers are set up in
+        _initGLData the first time that the canvas is displayed/drawn.
+        Parameters:
+        
+          parent - WX parent object
+          image  - 3D numpy array to be displayed
+          zax    - Axis to be displayed (the 'depth' axis), default 0
+          zpos   - Initial slice to be displayed. If not provided, the
+                   middle slice is used.
+          master - Another SliceCanvas object with which to share the
+                   GL context and the image buffer data.
+        """
 
         wxgl.GLCanvas.__init__(self, parent, **kwargs)
 
@@ -115,7 +157,13 @@ class SliceCanvas(wxgl.GLCanvas):
         dims = range(3)
         dims.pop(zax)
 
-        self.image = np.array(image, dtype=np.float32)
+        if master is not None: context = master.context
+        else:                  context = wxgl.GLContext(self)
+
+        self.master  = master
+        self.context = context
+
+        self.image = image
         self.xax   = dims[1]
         self.yax   = dims[0]
         self.zax   = zax
@@ -124,9 +172,11 @@ class SliceCanvas(wxgl.GLCanvas):
         self.ydim = self.image.shape[self.yax]
         self.zdim = self.image.shape[self.zax]
 
-        self.xstride = self.image.strides[self.xax] / 4
-        self.ystride = self.image.strides[self.yax] / 4
-        self.zstride = self.image.strides[self.zax] / 4
+        dsize = self.image.dtype.itemsize
+
+        self.xstride = self.image.strides[self.xax] / dsize
+        self.ystride = self.image.strides[self.yax] / dsize
+        self.zstride = self.image.strides[self.zax] / dsize
 
         if zpos is None:
             zpos = self.zdim / 2
@@ -135,24 +185,27 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = self.ydim / 2
         self._zpos = zpos
 
-        self.context = wxgl.GLContext(self)
-
         # these attributes are created by _initGLData,
         # which is called on the first EVT_PAINT event
-        self.imageBuffer = None
-        self.indexBuffer = None
-        self.geomBuffer  = None
-        self.nvertices   = 0
+        self.geomBuffer     = None
+        self.positionBuffer = None
+        self.imageBuffer    = None
+
+        self._initDone = False
 
         self.Bind(wx.EVT_PAINT, self.draw)
-        self.Bind(wx.EVT_SIZE,  self.resize)
 
 
     def _initGLData(self):
         """
+        Initialises the GL buffers which are  copied to the GPU,
+        and used to render the voxel data.
         """
 
-        self.SetCurrent(self.context)
+        if self._initDone: return
+        _initDone = True
+
+        self.context.SetCurrent(self)
 
         self.shaders = shaders.compileProgram(
             shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
@@ -162,13 +215,21 @@ class SliceCanvas(wxgl.GLCanvas):
         self.rawColourPos   = gl.glGetAttribLocation(self.shaders, 'inColour')
         self.rawPositionPos = gl.glGetAttribLocation(self.shaders, 'inPosition')
 
-        geomData = np.array([[0, 0,
-                              1, 0,
-                              0, 1,
-                              1, 1]], dtype=np.float32)
+        # Data stored in the geometry buffer. Defines
+        # the geometry of a single voxel, rendered as
+        # a triangle strip.
+        geomData = np.array([0, 0,
+                             1, 0,
+                             0, 1,
+                             1, 1], dtype=np.uint8)
 
-        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.float32)
+        # Data stored in the position buffer. Defines
+        # the location of every voxel.
+        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
 
+        # TODO I'm sure numpy has a convenience function
+        # to auto generate these indices (e.g. numpy.indices,
+        # numpy.meshgrid, or some combination thereof).
         for xi in range(self.xdim):
             for yi in range(self.ydim):
 
@@ -177,28 +238,39 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
         self.positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
-        self.imageBuffer,_  = self._initImageBuffer()
+
+        # The image buffer, containing the image data itself
+        self.imageBuffer = self._initImageBuffer()
 
 
     def _initImageBuffer(self):
         """
+        
         """
 
+        if self.master is not None:
+            del self.image
+            return self.master.imageBuffer
+            
         imageData = self.image
-
-        # The image data is normalised to lie between 0.0 and 1.0.
-        imageData = (imageData       - imageData.min()) / \
+        del self.image
+ 
+        # The image data is normalised to lie
+        # between 0 and 256, then cast to uint8
+        imageData = 255.0*(imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
+
+        imageData = np.array(imageData, dtype=np.uint8)
 
         # and flattened
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
-        return imageBuffer,imageData
+        return imageBuffer
 
 
     def resize(self, ev):
 
-        try: self.SetCurrent(self.context)
+        try: self.context.SetCurrent(self)
         except: return
         size = self.GetSize()
 
@@ -219,7 +291,8 @@ class SliceCanvas(wxgl.GLCanvas):
             wx.CallAfter(self._initGLData)
             return
 
-        self.SetCurrent(self.context)
+        self.resize(None)
+        self.context.SetCurrent(self)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         gl.glShadeModel(gl.GL_FLAT)
@@ -228,9 +301,9 @@ class SliceCanvas(wxgl.GLCanvas):
 
         for xi in range(self.xdim):
 
-            imageOffset = (self.zpos * self.zstride + xi * self.xstride) * 4
-            imageStride = self.ystride * 4
-            posOffset   = xi * self.ydim * 8
+            imageOffset = (self.zpos * self.zstride + xi * self.xstride) 
+            imageStride = self.ystride 
+            posOffset   = xi * self.ydim * 4
 
             # The geometry buffer, which defines the geometry of a
             # single vertex (4 vertices, drawn as a triangle strip)
@@ -238,7 +311,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glVertexAttribPointer(
                 self.rawVertexPos,
                 2,
-                gl.GL_FLOAT,
+                gl.GL_UNSIGNED_BYTE,
                 gl.GL_FALSE,
                 0,
                 None)
@@ -251,7 +324,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glVertexAttribPointer(
                 self.rawPositionPos,
                 2,
-                gl.GL_FLOAT,
+                gl.GL_UNSIGNED_SHORT,
                 gl.GL_FALSE,
                 0,
                 self.positionBuffer + posOffset)
@@ -264,8 +337,8 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glVertexAttribPointer(
                 self.rawColourPos,
                 1,
-                gl.GL_FLOAT,
-                gl.GL_FALSE,
+                gl.GL_UNSIGNED_BYTE,
+                gl.GL_TRUE,
                 imageStride,
                 self.imageBuffer + imageOffset)
 

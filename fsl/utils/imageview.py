@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # imgshow.py - A wx/OpenGL widget for displaying and interacting with a 3D
-# image.
+# image. Displays three canvases, each of which shows a slice of the image
+# along each dimension.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -11,23 +12,18 @@ import wx
 import fsl.utils.slicecanvas as slicecanvas
 
 
-# Events. We can add custom events to Wx, which will then manage
-# all of the listener registration/callback stuff for us.
-WX_IMAGE_LOCATION = 1
-
-
 class ImageView(wx.Panel):
 
     def __init__(self, parent, image, *args, **kwargs):
 
-        self.image = image
         wx.Panel.__init__(self, parent, *args, **kwargs)
-
         self.SetMinSize((300,100))
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=0)
-        self.ycanvas = slicecanvas.SliceCanvas(self, image, zax=1)
-        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=2)
+        self.shape = image.shape
+
+        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=2)
+        self.ycanvas = slicecanvas.SliceCanvas(self, image, zax=1, master=self.xcanvas)
+        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=0, master=self.xcanvas)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -63,18 +59,18 @@ class ImageView(wx.Panel):
 
         if source == self.xcanvas:
 
-            mx = mx * self.image.shape[1] / float(w)
-            my = my * self.image.shape[2] / float(h)
+            mx = mx * self.shape[1] / float(w)
+            my = my * self.shape[2] / float(h)
             y,z = mx,my
 
         elif source == self.ycanvas:
-            mx = mx * self.image.shape[0] / float(w)
-            my = my * self.image.shape[2] / float(h)
+            mx = mx * self.shape[0] / float(w)
+            my = my * self.shape[2] / float(h)
             x,z = mx,my
 
         elif source == self.zcanvas:
-            mx = mx * self.image.shape[0] / float(w)
-            my = my * self.image.shape[1] / float(h)
+            mx = mx * self.shape[0] / float(w)
+            my = my * self.shape[1] / float(h)
             x,y = mx,my
 
         x = int(x)
