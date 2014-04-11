@@ -16,6 +16,30 @@ import OpenGL.GLUT       as glut
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
+vertex_shader = """
+#version 120
+
+attribute float rawColour;
+varying   vec4  outColour;
+
+void main(void) {
+
+  gl_Position = ftransform();
+  outColour   = vec4(rawColour,rawColour,rawColour, 1.0);
+
+}
+"""
+
+fragment_shader = """
+#version 120
+
+varying vec4 outColour;
+
+void main(void) {
+    gl_FragColor = outColour;
+}
+"""
+
 
 class SliceCanvas(wxgl.GLCanvas):
     """
@@ -125,10 +149,18 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.SetCurrent(self.context)
 
+        self.shaders = shaders.compileProgram(
+            shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
+            shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
+
+        self.rawColourPos = gl.glGetAttribLocation(self.shaders, 'rawColour')
 
         nvertices = 4 * self.xdim * self.ydim
+        nindices  = 6 * self.xdim * self.ydim
 
         self.nvertices = nvertices
+        self.nindices  = nindices
+
         geomData = np.zeros((nvertices, 2), dtype=np.float32)
 
         for xi in range(self.xdim):
@@ -143,8 +175,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
 
-        nrealverts = 6 * self.xdim * self.ydim
-        indexData  = np.zeros(nrealverts, dtype=np.uint32)
+        indexData  = np.zeros(nindices, dtype=np.uint32)
 
         for xi in range(self.xdim):
             for yi in range(self.ydim):
@@ -165,18 +196,16 @@ class SliceCanvas(wxgl.GLCanvas):
         """
         """
 
-        nvertices = self.nvertices
-
         imageData = np.array(self.image, dtype=np.float32)
 
         # The image data is normalised to lie between 0.0 and 1.0.
         imageData = (imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
 
-        # Finally, we repeat each image value three times,
-        # as colours must be specified by (r,g,b) 3-tuples.
-        imageData = imageData.repeat(12)
-        imageData = imageData.reshape(self.zdim * nvertices, 3)
+        # Finally, we repeat each image value four times,
+        # for the four vertices used to represent each voxel.
+        imageData = imageData.repeat(4)
+        imageData = imageData.reshape(self.zdim * self.nvertices, 1)
 
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
@@ -213,19 +242,30 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         gl.glShadeModel(gl.GL_FLAT)
 
-        gl.glEnableClientState(gl.GL_COLOR_ARRAY)
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        ###################
+        # Draw using custom vertex/fragment shaders
+        gl.glUseProgram(self.shaders)
 
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         self.geomBuffer.bind()
         gl.glVertexPointer(2, gl.GL_FLOAT, 0, None)
+
         self.imageBuffer.bind()
-        gl.glColorPointer(
-            3, gl.GL_FLOAT, 0, self.imageBuffer + imageOffset*4*3)
+        gl.glVertexAttribPointer(
+            self.rawColourPos,
+            1,
+            gl.GL_FLOAT,
+            gl.GL_FALSE,
+            0,
+            self.imageBuffer + imageOffset*4)
+        gl.glEnableVertexAttribArray(self.rawColourPos)
 
         self.indexBuffer.bind()
-        nRealVertices = self.xdim * self.ydim * 6
         gl.glDrawElements(
-            gl.GL_TRIANGLES, nRealVertices, gl.GL_UNSIGNED_INT, None)
+            gl.GL_TRIANGLES, self.nindices, gl.GL_UNSIGNED_INT, None)
+
+        gl.glUseProgram(0)
+        ###################
 
         # a vertical line at horizPos, and a horizontal line at vertPos
         x = self.xpos + 0.5
@@ -241,7 +281,5 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glVertex2f(self.xdim, y)
 
         gl.glEnd()
-
-        gl.glUseProgram(0)
 
         self.SwapBuffers()
