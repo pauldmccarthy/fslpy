@@ -130,6 +130,18 @@ class ImageView(wx.Panel):
         wx.PostEvent(self, evt)
 
 
+class ImageFrame(wx.Frame):
+    """
+    Convenience class for displaying an image in a standalone window.
+    """
+
+    def __init__(self, parent, image, title=None):
+        wx.Frame.__init__(self, parent, title=title)
+
+        self.image = image
+        self.panel = ImageView(self, image)
+        self.Layout()
+
 
 if __name__ == '__main__':
 
@@ -143,13 +155,10 @@ if __name__ == '__main__':
     app    = wx.App()
     image  = nb.load(sys.argv[1])
 
-    frame  = wx.Frame(
+    frame  = ImageFrame(
         None,
+        image.get_data(),
         title=sys.argv[1])
-
-    panel = ImageView(frame, image.get_data())
-
-    frame.Layout()
     frame.Show()
 
     app.MainLoop()
