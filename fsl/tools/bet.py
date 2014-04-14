@@ -67,6 +67,7 @@ class Options(props.HasProperties):
         if not valid: return
         self.outputImage = value + '_brain'
 
+        
     def clearT2Image(self, value, *a):
         """
         This is a bit of a hack. If the user provides an invalid value
@@ -180,21 +181,54 @@ def selectHeadCentre(opts, button):
     select the head centre location.
     """
 
-    pos    = button.GetScreenPosition()
     image  = nb.load(opts.inputImage)
     parent = button.GetTopLevelParent()
-
-    frame  = wx.Frame(
-        parent,
-        title=opts.inputImage)
-
+    frame  = wx.Frame(parent, title=opts.inputImage)
     panel  = imageview.ImageView(frame, image.get_data())
 
+    panel.setLocation(
+        opts.xCoordinate,
+        opts.yCoordinate,
+        opts.zCoordinate)
+
+    # Whenever the x/y/z coordinates change on
+    # the Options object,update the dialog view. 
+    def updateViewX(val, *a): panel.setXLocation(val)
+    def updateViewY(val, *a): panel.setYLocation(val)
+    def updateViewZ(val, *a): panel.setZLocation(val)
+
+    optListeners = (
+        ('xCoordinate', 'updateViewX_{}'.format(id(panel)), updateViewX),
+        ('yCoordinate', 'updateViewY_{}'.format(id(panel)), updateViewY),
+        ('zCoordinate', 'updateViewZ_{}'.format(id(panel)), updateViewZ))
+
+    for listener in optListeners:
+        opts.addListener(*listener) 
+
+    def rmListeners(ev):
+        for listener in optListeners:
+            prop = listener[0]
+            name = listener[1]
+            opts.removeListener(prop, name)
+
+    # Remove the listeners when the dialog is closed
+    frame.Bind(wx.EVT_WINDOW_DESTROY, rmListeners)
+
+    # And whenever the x/y/z coordinates change
+    # on the dialog, update the option values.
+    def updateOpts(ev):
+        opts.xCoordinate = ev.x
+        opts.yCoordinate = ev.y
+        opts.zCoordinate = ev.z
+
+    panel.Bind(imageview.EVT_LOCATION_EVENT, updateOpts)
+
+    # Position the dialog by the button that was clicked
+    pos = button.GetScreenPosition()
     frame.SetPosition(pos)
 
     frame.Layout()
     frame.Show()
-
 
 
 betView = props.NotebookGroup((
@@ -221,7 +255,9 @@ betView = props.NotebookGroup((
             props.HGroup(
                 key='centreCoords',
                 children=(
-                    props.Button(text='Select', callback=selectHeadCentre, enabledWhen=lambda i: i.isValid('inputImage')),
+                    props.Button(text='Select',
+                                 callback=selectHeadCentre,
+                                 enabledWhen=lambda i: i.isValid('inputImage')),
                     'xCoordinate',
                     'yCoordinate',
                     'zCoordinate'))))))
