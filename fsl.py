@@ -8,11 +8,38 @@
 import os
 import sys
 import logging
-
+import argparse
 import wx
+
+# There's a bug in OpenGL.GL.shaders (which has been fixed in
+# the latest version) - it calls logging.basicConfig(), and
+# thus screws up our own logging. We overcome this by configuring
+# the root logger before OpenGL.GL.shaders is imported (which
+# occurs when fsl.tools.bet imports fsl.utils.ImageView).
+logging.basicConfig(
+    format='%(levelname)8s '\
+           '%(filename)20s '\
+           '%(lineno)4d: '\
+           '%(funcName)s - '\
+           '%(message)s')
+log = logging.getLogger('fsl')
 
 import fsl.tools         as tools
 import fsl.utils.webpage as webpage
+
+
+
+def getArgs():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        'toolname', help='Name of FSL tool to run')
+    parser.add_argument(
+        '-v', '--verbose', action='store_true', help='Verbose output')
+    
+    return parser.parse_args()
+
 
 def fslDirWarning(frame, toolName, fslEnvActive):
     """
@@ -92,31 +119,28 @@ def buildGUI(module, fslEnvActive):
     
 if __name__ == '__main__':
 
-    logging.basicConfig(
-        format='%(levelname)8s %(filename)20s %(lineno)4d: %(funcName)s - %(message)s',
-        level=logging.DEBUG) 
+    args = getArgs()
 
-    if len(sys.argv) != 2:
-        logging.error('usage: fsl.py toolname')
-        sys.exit(1)
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
 
     # Search in fsl.tools for the named module
-    modname = sys.argv[1]
-    toolmod = getattr(tools, modname, None)
+    toolname = args.toolname
+    toolmod  = getattr(tools, toolname, None)
 
     if toolmod is None:
-        logging.error('Unknown tool: {}'.format(modname))
+        log.error('Unknown tool: {}'.format(modname))
         sys.exit(1)
-
+    
     fsldir = os.environ.get('FSLDIR', None)
 
     fslEnvActive = fsldir is not None
 
-    app   = wx.App() 
+    app   = wx.App()
     frame = buildGUI(toolmod, fslEnvActive)
     frame.Show()
 
-    wx.CallLater(1, fslDirWarning, frame, modname, fslEnvActive)
+    wx.CallLater(1, fslDirWarning, frame, toolname, fslEnvActive)
     
     #import wx.lib.inspection
     #wx.lib.inspection.InspectionTool().Show()

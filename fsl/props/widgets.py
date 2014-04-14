@@ -14,8 +14,6 @@ import sys
 import os
 import os.path as op
 
-import logging
-
 from collections import OrderedDict
 from collections import Iterable
 

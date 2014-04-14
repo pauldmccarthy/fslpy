@@ -8,7 +8,6 @@
 
 import            os
 import os.path as op
-import logging as log
 
 from collections import OrderedDict
 

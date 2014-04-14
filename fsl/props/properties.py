@@ -125,8 +125,10 @@
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import            types
-import logging as log
+import types
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class PropertyValue(object):
@@ -338,6 +340,8 @@ class PropertyBase(object):
 
         log.debug('Adding listener on {}: {}'.format(self.label, name))
 
+        name = 'PropertyBase_{}_{}'.format(self.label, name)
+
         self.changeListeners[instance][name] = callback
 
         
@@ -526,6 +530,22 @@ class HasProperties(object):
         Return the PropertyValue object(s) for the given property. 
         """
         return self.getProp(propName).getPropVal(self)
+
+
+    def addListener(self, propName, listenerName, callback):
+        """
+        Convenience method, adds the specified listener to the specified
+        property. See PropertyBase.addListener.
+        """
+        self.getProp(propName).addListener(self, listenerName, callback)
+
+        
+    def removeListener(self, propName, listenerName):
+        """
+        Convenience method, removes the specified listener from the specified
+        property. See PropertyBase.addListener.
+        """ 
+        self.getProp(propName).removeListener(self, listenerName)
 
         
     def getAllProperties(self):

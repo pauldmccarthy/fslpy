@@ -7,7 +7,6 @@
 
 import os
 import sys
-import logging
 
 from collections import OrderedDict
 

@@ -27,10 +27,7 @@
 #
 
 import sys
-import logging
-
 import wx
-
 import wx.lib.agw.flatnotebook as wxnb
 
 import widgets
