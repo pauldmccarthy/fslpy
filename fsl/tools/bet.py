@@ -16,7 +16,7 @@ import wx
 import nibabel as nb
 
 import fsl.props           as props
-import fsl.utils.runtool   as runtool
+import fsl.utils.runwindow as runwindow
 import fsl.utils.imageview as imageview
 
 runChoices = OrderedDict((
@@ -50,8 +50,8 @@ class Options(props.HasProperties):
     outputMesh           = props.Boolean(default=False)
     thresholdImages      = props.Boolean(default=False)
 
-    fractionalIntensity  = props.Double(default=0,   minval=0.0,  maxval=1.0)
-    thresholdGradient    = props.Double(default=0.5, minval=-1.0, maxval=1.0)
+    fractionalIntensity  = props.Double(default=0.5, minval=0.0,  maxval=1.0)
+    thresholdGradient    = props.Double(default=0.0, minval=-1.0, maxval=1.0)
     headRadius           = props.Double(default=0.0, minval=0.0)
     xCoordinate          = props.Double(default=0.0, minval=0.0)
     yCoordinate          = props.Double(default=0.0, minval=0.0)
@@ -183,8 +183,8 @@ def selectHeadCentre(opts, button):
 
     image  = nb.load(opts.inputImage)
     parent = button.GetTopLevelParent()
-    frame  = wx.Frame(parent, title=opts.inputImage)
-    panel  = imageview.ImageView(frame, image.get_data())
+    frame  = imageview.ImageFrame(parent, image.get_data(), opts.inputImage)
+    panel  = frame.panel
 
     panel.setLocation(
         opts.xCoordinate,
@@ -226,8 +226,6 @@ def selectHeadCentre(opts, button):
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
     frame.SetPosition(pos)
-
-    frame.Layout()
     frame.Show()
 
 
@@ -268,7 +266,17 @@ def interface(parent, opts):
         parent, opts, betView, optLabels, optTooltips)
 
 def runBet(parent, opts):
-    runtool.checkAndRun('BET', opts, parent, opts.genBetCmd, optLabels)
+
+    def onFinish():
+        image = nb.load(opts.outputImage)
+        frame = imageview.ImageFrame(parent,
+                                     image.get_data(),
+                                     title=opts.outputImage)
+        frame.Show()
+        
+    runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
+                          optLabels=optLabels,
+                          onFinish=onFinish)
 
 
 FSL_TOOLNAME  = 'BET'
