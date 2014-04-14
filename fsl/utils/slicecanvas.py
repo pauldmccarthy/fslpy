@@ -47,10 +47,16 @@ varying   vec4  outColour;  /* Colour, generated from the value */
 
 void main(void) {
 
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(inVertex+inPosition, 0.0, 1.0);
+    /*
+     * Offset the vertex by the current voxel position
+     * (and perform standard transformation from data
+     * coordinates to screen coordinates).
+     */
+    gl_Position = gl_ModelViewProjectionMatrix * \
+        vec4(inVertex+inPosition, 0.0, 1.0);
 
     /* Greyscale only for the time being. */
-    outColour   = vec4(inColour, inColour, inColour, 1.0);
+    outColour = vec4(inColour, inColour, inColour, 1.0);
 }
 """
 
@@ -191,8 +197,6 @@ class SliceCanvas(wxgl.GLCanvas):
         self.positionBuffer = None
         self.imageBuffer    = None
 
-        self._initDone = False
-
         self.Bind(wx.EVT_PAINT, self.draw)
 
 
@@ -202,9 +206,16 @@ class SliceCanvas(wxgl.GLCanvas):
         and used to render the voxel data.
         """
 
-        if self._initDone: return
-        _initDone = True
-
+        # A bit hacky. We can only set the GL context (and create
+        # the GL data) once something is actually displayed on the
+        # screen. The _initGLData method is called (asynchronously)
+        # by the draw() method if it sees that the image buffer has
+        # not yet been initialised. But draw() may be called more
+        # than once before _initGLData is called. Here, to prevent
+        # _initGLData from running more than once, the first time it
+        # is called it simply overwrites itself with a dummy method.
+        self._initGLData = lambda s: s
+ 
         self.context.SetCurrent(self)
 
         self.shaders = shaders.compileProgram(
@@ -224,17 +235,13 @@ class SliceCanvas(wxgl.GLCanvas):
                              1, 1], dtype=np.uint8)
 
         # Data stored in the position buffer. Defines
-        # the location of every voxel.
+        # the location of every voxel in a single slice.
         positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
-
-        # TODO I'm sure numpy has a convenience function
-        # to auto generate these indices (e.g. numpy.indices,
-        # numpy.meshgrid, or some combination thereof).
-        for xi in range(self.xdim):
-            for yi in range(self.ydim):
-
-                positionData[xi * self.ydim + yi, 0] = xi
-                positionData[xi * self.ydim + yi, 1] = yi
+        xidxs,yidxs  = np.meshgrid(np.arange(self.xdim),
+                                   np.arange(self.ydim),
+                                   indexing='ij')
+        positionData[:,0] = xidxs.ravel()
+        positionData[:,1] = yidxs.ravel()
 
         self.geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
         self.positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
@@ -245,21 +252,22 @@ class SliceCanvas(wxgl.GLCanvas):
 
     def _initImageBuffer(self):
         """
-        
+        Initialises the buffer used to store the image data. If a 'master'
+        canvas was set when this SliceCanvas object was constructed, its
+        image buffer is used instead.
         """
 
-        if self.master is not None:
-            del self.image
-            return self.master.imageBuffer
-            
         imageData = self.image
-        del self.image
+        del self.image 
+
+        if self.master is not None:
+            return self.master.imageBuffer
  
-        # The image data is normalised to lie
-        # between 0 and 256, then cast to uint8
+        # The image data is normalised to lie between 0 and 256
         imageData = 255.0*(imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
 
+        # Then cast to uint8
         imageData = np.array(imageData, dtype=np.uint8)
 
         # and flattened
@@ -268,7 +276,11 @@ class SliceCanvas(wxgl.GLCanvas):
         return imageBuffer
 
 
-    def resize(self, ev):
+    def resize(self):
+        """
+        Sets up the GL canvas size, viewport, and
+        projection. This method is called by draw().
+        """
 
         try: self.context.SetCurrent(self)
         except: return
@@ -285,13 +297,15 @@ class SliceCanvas(wxgl.GLCanvas):
 
     def draw(self, ev):
         """
+        Draws the currently selected slice to the canvas.
         """
 
+        # image data has not been initialised.
         if not self.imageBuffer:
             wx.CallAfter(self._initGLData)
             return
 
-        self.resize(None)
+        self.resize()
         self.context.SetCurrent(self)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -299,6 +313,13 @@ class SliceCanvas(wxgl.GLCanvas):
 
         gl.glUseProgram(self.shaders)
 
+        # We draw each vertical column of voxels one at a time.
+        # This is necessary because, in order to allow image
+        # buffers to be shared between different SliceCanvas
+        # objects, we cannot re-arrange the image data, as
+        # stored in GPU memory. So while the memory offset
+        # between values in the same column (or row) is 
+        # consistent, the offset between columns (rows) is not.
         for xi in range(self.xdim):
 
             imageOffset = (self.zpos * self.zstride + xi * self.xstride) 
@@ -355,19 +376,16 @@ class SliceCanvas(wxgl.GLCanvas):
 
         gl.glUseProgram(0)
 
-        # a vertical line at horizPos, and a horizontal line at vertPos
+        # A vertical line at xpos, and a horizontal line at ypos
         x = self.xpos + 0.5
         y = self.ypos + 0.5
+        
         gl.glBegin(gl.GL_LINES)
-
-        gl.glColor3f(0,1,0)
-        gl.glVertex2f(x, 0)
-        gl.glVertex2f(x, self.ydim)
-
-        gl.glColor3f(0,1,0)
+        gl.glColor3f(0, 1, 0)
+        gl.glVertex2f(x,         0)
+        gl.glVertex2f(x,         self.ydim)
         gl.glVertex2f(0,         y)
         gl.glVertex2f(self.xdim, y)
-
         gl.glEnd()
 
         self.SwapBuffers()
