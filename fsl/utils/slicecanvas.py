@@ -237,8 +237,8 @@ class SliceCanvas(wxgl.GLCanvas):
         # Data stored in the position buffer. Defines
         # the location of every voxel in a single slice.
         positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
-        xidxs,yidxs  = np.meshgrid(np.arange(self.xdim),
-                                   np.arange(self.ydim),
+        yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
+                                   np.arange(self.xdim),
                                    indexing='ij')
         positionData[:,0] = xidxs.ravel()
         positionData[:,1] = yidxs.ravel()
@@ -268,7 +268,8 @@ class SliceCanvas(wxgl.GLCanvas):
                           (imageData.max() - imageData.min())
 
         # Then cast to uint8 and flattened (with dimension
-        # ordering preserved - very important!)
+        # ordering preserved - very important, as numpy
+        # always defaults to C style ordering!)
         imageData = np.array(imageData, dtype=np.uint8)
         imageData = imageData.ravel(order='A')
 
@@ -314,18 +315,18 @@ class SliceCanvas(wxgl.GLCanvas):
 
         gl.glUseProgram(self.shaders)
 
-        # We draw each vertical column of voxels one at a time.
+        # We draw each horizontal row of voxels one at a time.
         # This is necessary because, in order to allow image
         # buffers to be shared between different SliceCanvas
         # objects, we cannot re-arrange the image data, as
         # stored in GPU memory. So while the memory offset
-        # between values in the same column (or row) is 
-        # consistent, the offset between columns (rows) is not.
-        for xi in range(self.xdim):
+        # between values in the same row (or column) is 
+        # consistent, the offset between rows (columns) is not.
+        for yi in range(self.ydim):
 
-            imageOffset = self.zpos * self.zstride + xi * self.xstride
-            imageStride = self.ystride 
-            posOffset   = xi * self.ydim * 4
+            imageOffset = self.zpos * self.zstride + yi * self.ystride
+            imageStride = self.xstride 
+            posOffset   = yi * self.xdim * 4
 
             # The geometry buffer, which defines the geometry of a
             # single vertex (4 vertices, drawn as a triangle strip)
@@ -369,7 +370,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
             # Draw all of the triangles!
             arbdi.glDrawArraysInstancedARB(
-                gl.GL_TRIANGLE_STRIP, 0, 4, self.ydim)
+                gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim)
             
             gl.glDisableVertexAttribArray(self.rawVertexPos)
             gl.glDisableVertexAttribArray(self.rawPositionPos)
