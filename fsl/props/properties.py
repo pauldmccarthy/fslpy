@@ -340,9 +340,9 @@ class PropertyBase(object):
 
         log.debug('Adding listener on {}: {}'.format(self.label, name))
 
-        name = 'PropertyBase_{}_{}'.format(self.label, name)
+        fullname = 'PropertyBase_{}_{}'.format(self.label, name)
 
-        self.changeListeners[instance][name] = callback
+        self.changeListeners[instance][fullname] = callback
 
         
     def removeListener(self, instance, name):
@@ -350,14 +350,14 @@ class PropertyBase(object):
         De-register the named listener from this property.
         """
 
+        fullname = 'PropertyBase_{}_{}'.format(self.label, name)
+
         if instance not in self.changeListeners:           return
-        if name     not in self.changeListeners[instance]: return
+        if fullname not in self.changeListeners[instance]: return
 
         log.debug('Removing listener on {}: {}'.format(self.label, name))
 
-        name = 'PropertyBase_{}_{}'.format(self.label, name)
-
-        self.changeListeners[instance].pop(name)
+        self.changeListeners[instance].pop(fullname)
 
         
     def forceValidation(self, instance):
@@ -544,7 +544,7 @@ class HasProperties(object):
         """
         Convenience method, removes the specified listener from the specified
         property. See PropertyBase.addListener.
-        """ 
+        """
         self.getProp(propName).removeListener(self, listenerName)
 
         

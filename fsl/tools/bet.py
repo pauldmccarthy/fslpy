@@ -16,6 +16,7 @@ import wx
 import nibabel as nb
 
 import fsl.props           as props
+import fsl.data.imagefile  as imagefile
 import fsl.utils.runwindow as runwindow
 import fsl.utils.imageview as imageview
 
@@ -33,13 +34,12 @@ runChoices = OrderedDict((
     ('-A',  'Run bet2 and then betsurf to get additional skull and scalp surfaces'),
     ('-A2', 'As above, when also feeding in non-brain extracted T2')))
 
-filetypes = ['.nii.gz', '.nii', '.hdr', '.img']
 
 class Options(props.HasProperties):
 
-    inputImage           = props.FilePath(exists=True, suffixes=filetypes, required=True)
-    outputImage          = props.FilePath(                                 required=True)
-    t2Image              = props.FilePath(exists=True, suffixes=filetypes, required=lambda i: i.runChoice == '-A2')
+    inputImage           = props.FilePath(exists=True, suffixes=imagefile._allowedExts, required=True)
+    outputImage          = props.FilePath(                                              required=True)
+    t2Image              = props.FilePath(exists=True, suffixes=imagefile._allowedExts, required=lambda i: i.runChoice == '-A2')
 
     runChoice            = props.Choice(runChoices)
 
@@ -65,6 +65,7 @@ class Options(props.HasProperties):
         """
 
         if not valid: return
+        value = imagefile.removeExt(value)
         self.outputImage = value + '_brain'
 
         
@@ -268,7 +269,7 @@ def interface(parent, opts):
 def runBet(parent, opts):
 
     def onFinish():
-        image = nb.load(opts.outputImage)
+        image = nb.load(imagefile.addExt(opts.outputImage))
         frame = imageview.ImageFrame(parent,
                                      image.get_data(),
                                      title=opts.outputImage)
