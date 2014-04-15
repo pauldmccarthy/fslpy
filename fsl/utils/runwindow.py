@@ -7,12 +7,16 @@
 
 import os
 import signal
+import logging
 
 import subprocess as subp
 import threading  as thread
 import Queue      as queue
 
 import wx
+
+
+log = logging.getLogger(__name__)
 
 
 class RunPanel(wx.Panel):
@@ -63,8 +67,7 @@ class RunPanel(wx.Panel):
 def checkAndRun(toolName, opts, parent, cmdFunc,
                 optLabels={},
                 modal=True,
-                onFinish=None,
-                actions=None):
+                onFinish=None):
     """
     Validates the given options. If invalid, a dialog is shown, informing
     the user about the errors. Otherwise, the tool is executed, and its
@@ -85,9 +88,6 @@ def checkAndRun(toolName, opts, parent, cmdFunc,
       - modal:     If true, the command window will be modal.
 
       - onFinish:  Function to be called when the process ends.
-    
-      - actions:   List of (label, callback function) tuples, passed through
-                   to the run() function.
     """
 
     errors = opts.validateAll()
@@ -109,7 +109,7 @@ def checkAndRun(toolName, opts, parent, cmdFunc,
         
     else:
         cmd = cmdFunc(opts)
-        run(toolName, cmd, parent, modal, onFinish, actions)
+        run(toolName, cmd, parent, modal, onFinish)
 
 
 def run(name, cmd, parent, modal=True, onFinish=None, actions=None):
@@ -117,29 +117,28 @@ def run(name, cmd, parent, modal=True, onFinish=None, actions=None):
     Runs the given command, displaying the output in a wx window.
     Parameters:
     
-      - name:    Name of the tool to be run, used in the window title.
+      - name:     Name of the tool to be run, used in the window title.
     
-      - cmd:     List of strings, specifying the command (+args) to be
-                 executed.
+      - cmd:      List of strings, specifying the command (+args) to be
+                  executed.
     
-      - parent:  wx parent object.
+      - parent:   wx parent object.
     
-      - modal:   If true, the command window will be modal.
+      - modal:    If true, the command window will be modal.
 
-     - onFinish:  Function to be called when the process ends.
- 
-      - actions: List of (label, callback function) tuples, specifying
-                 custom buttons to be added to the window. Two buttons are
-                 always added - one to kill the running process, and one
-                 to close the window.
+      - onFinish: Function to be called when the process ends. Must
+                  accept two parameters - a reference to the wx
+                  frame/dialog displaying the process output, and
+                  the exit code of the application.
+          
     """
 
     if actions is None: actions = []
 
+    frame = None # wx.Frame or Dialog, the parent window
     panel = None # Panel containing process output and control buttons
     proc  = None # Object representing the process
     outq  = None # Queue used for reading process output
-
     
     def writeToDialog():
         """
@@ -161,25 +160,38 @@ def run(name, cmd, parent, modal=True, onFinish=None, actions=None):
     def pollOutput():
         """
         Reads the output of the process, line by line, and
-        writes it (asynchronously) to the interface.
+        writes it (asynchronously) to the interface. When
+        the process ends, the onFinish method (if there is
+        one) is called.
         """
         
         for line in proc.stdout:
-            #print(line)
+            
+            log.debug('Process output: {}'.format(line.strip()))
             outq.put(line)
             wx.CallAfter(writeToDialog)
+
+        # When the above for loop ends, it means that the stdout
+        # pipe has been broken. But it doesn't mean that the
+        # subprocess is finished. So here, we wait until the
+        # subprocess terminates, before continuing,
+        proc.wait()
+
+        retcode = proc.returncode
+        
+        log.debug('Process finished with return code {}'.format(retcode))
             
         outq.put('\nProcess finished\n')
         wx.CallAfter(writeToDialog)
 
         if onFinish is not None:
-            wx.CallAfter(onFinish)
+            wx.CallAfter(onFinish, frame, retcode)
 
         def updateKillButton():
 
-            # ignore errors - see above
+            # ignore errors - see writeToDialog
             try:    panel.buttons['Terminate process'].Enable(False)
-            except: raise
+            except: pass
 
         wx.CallAfter(updateKillButton)
 
@@ -189,12 +201,14 @@ def run(name, cmd, parent, modal=True, onFinish=None, actions=None):
         Callback function for the 'Kill process' button. 
         """
         try:
+            log.debug('Attempting to send SIGTERM to '\
+                      'process group with pid {}'.format(proc.pid))
             os.killpg(proc.pid, signal.SIGTERM)
             outq.put('\nSIGTERM sent to process\n\n')
             wx.CallAfter(writeToDialog)
+            
         except:
-            pass
-
+            pass # why am i ignoring errors here?
             
     # Create the GUI
     if modal:
@@ -215,6 +229,7 @@ def run(name, cmd, parent, modal=True, onFinish=None, actions=None):
     panel.text.WriteText(' '.join(cmd) + '\n\n')
 
     # Run the command
+    log.debug('Running process: "{}"'.format(' '.join(cmd)))
     proc = subp.Popen(cmd,
                       stdout=subp.PIPE,
                       bufsize=1,

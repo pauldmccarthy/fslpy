@@ -266,17 +266,22 @@ def interface(parent, opts):
     return props.buildGUI(
         parent, opts, betView, optLabels, optTooltips)
 
+
 def runBet(parent, opts):
 
-    def onFinish():
+    def onFinish(window, exitCode):
+
+        if exitCode != 0: return
+
         image = nb.load(imagefile.addExt(opts.outputImage))
-        frame = imageview.ImageFrame(parent,
+        frame = imageview.ImageFrame(window,
                                      image.get_data(),
                                      title=opts.outputImage)
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
                           optLabels=optLabels,
+                          modal=False,
                           onFinish=onFinish)
 
 
