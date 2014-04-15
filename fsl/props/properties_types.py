@@ -261,31 +261,23 @@ class FilePath(String):
 
         if self.isFile:
 
-            values = [value]
+            exists        = op.isfile(value)
+            matchesSuffix = any(map(lambda s: value.endswith(s),
+                                    self.suffixes))
 
-            if len(self.suffixes) > 0:
-                
-                path,suf = op.splitext(value)
+            # If the file doesn't exist, it's bad
+            if not exists:
+                raise ValueError('Must be a file ({})'.format(value))
 
-                # if the specified path does not have a
-                # suffix, create a list of possible files
-                if suf == '':
-                    values = ['{}{}'.format(value, s) for s in self.suffixes]
+            # if the file exists, and matches one of
+            # the specified suffixes, then it's good
+            if len(self.suffixes) == 0 or matchesSuffix: return
 
-                # otherwise check to see if the
-                # specified suffix is allowed
-                elif not any(map(lambda s: value.endswith(s), self.suffixes)):
-                    raise ValueError(
-                        'Must be a file ending in [{}] ({})'.format(
-                            ','.join(self.suffixes), value))
-
-            if not any(map(op.isfile, values)):
-                if len(self.suffixes) == 0:
-                    raise ValueError('Must be a file ({})'.format(value))
-                else:
-                    raise ValueError(
-                        'Must be a file ending in [{}] ({})'.format(
-                            ','.join(self.suffixes), value))
+            # Otherwise it's bad
+            else:
+                raise ValueError(
+                    'Must be a file ending in [{}] ({})'.format(
+                        ','.join(self.suffixes), value))
 
         elif not op.isdir(value):
             raise ValueError('Must be a directory ({})'.format(value))

@@ -282,29 +282,36 @@ def _Number(parent, hasProps, propObj, propVal):
     the given property (a props.Int or props.Double).
     """
 
-    value   = propVal.get()
-    minval  = propObj.minval
-    maxval  = propObj.maxval
+    value      = propVal.get()
+    minval     = propObj.minval
+    maxval     = propObj.maxval
+    makeSlider = (minval is not None) and (maxval is not None)
 
-    if   isinstance(propObj, props.Int):    SpinCtr = wx.SpinCtrl
-    elif isinstance(propObj, props.Double): SpinCtr = wx.SpinCtrlDouble
+    if isinstance(propObj, props.Int):
         
+        SpinCtr = wx.SpinCtrl
+        if minval is None: minval = -sys.maxint
+        if maxval is None: maxval =  sys.maxint
+        increment = 1
+        
+    elif isinstance(propObj, props.Double):
+        
+        SpinCtr = wx.SpinCtrlDouble
+        if minval is None: minval = -sys.float_info.max
+        if maxval is None: maxval =  sys.float_info.max
+
+        if makeSlider: increment = (maxval-minval)/20.0
+        else:          increment = 0.5 
+                
     else:
         raise TypeError('Unrecognised property type: {}'.format(
             propObj.__class__.__name__))
 
-    makeSlider = (minval is not None) and (maxval is not None)
-
-    if   isinstance(propObj, props.Int):    increment = None
-    elif isinstance(propObj, props.Double):
-        if makeSlider: increment = (maxval-minval)/20.0
-        else:          increment = 0.5
-
     params = {}
-    if increment is not None: params['inc']     = increment
-    if minval    is not None: params['min']     = minval
-    if maxval    is not None: params['max']     = maxval
-    if value     is not None: params['initial'] = value
+    params['inc']     = increment
+    params['min']     = minval
+    params['max']     = maxval
+    params['initial'] = value
 
     # The minval and maxval attributes have not both
     # been set, so we create a spinbox instead of a slider.
@@ -314,7 +321,6 @@ def _Number(parent, hasProps, propObj, propVal):
         
         _propBind(hasProps, propObj, propVal, widget,
                   [wx.EVT_SPINCTRL, wx.EVT_TEXT])
-        _setupValidation(widget, hasProps, propObj, propVal)
 
     # if both minval and maxval have been set, we can use
     # a slider. We also add a spinbox for manual entry, and
@@ -335,7 +341,6 @@ def _Number(parent, hasProps, propObj, propVal):
         maxLabel = wx.StaticText(panel, label='{}'.format(maxval))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-
         
         sizer.Add(minLabel) 
         sizer.Add(slider, flag=wx.EXPAND, proportion=1)
@@ -348,8 +353,6 @@ def _Number(parent, hasProps, propObj, propVal):
 
         _propBind(hasProps, propObj, propVal, slider, wx.EVT_SLIDER)
         _propBind(hasProps, propObj, propVal, spin,   wx.EVT_SPIN)
-        
-        _setupValidation(spin, hasProps, propObj, propVal)
 
         widget = panel
 
