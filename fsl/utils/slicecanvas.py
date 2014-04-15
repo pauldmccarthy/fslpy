@@ -170,8 +170,8 @@ class SliceCanvas(wxgl.GLCanvas):
         self.context = context
 
         self.image = image
-        self.xax   = dims[1]
-        self.yax   = dims[0]
+        self.xax   = dims[0]
+        self.yax   = dims[1]
         self.zax   = zax
 
         self.xdim = self.image.shape[self.xax]
@@ -258,19 +258,20 @@ class SliceCanvas(wxgl.GLCanvas):
         """
 
         imageData = self.image
-        del self.image 
-
+        del self.image
+        
         if self.master is not None:
             return self.master.imageBuffer
  
         # The image data is normalised to lie between 0 and 256
         imageData = 255.0*(imageData       - imageData.min()) / \
-                    (imageData.max() - imageData.min())
+                          (imageData.max() - imageData.min())
 
-        # Then cast to uint8
+        # Then cast to uint8 and flattened (with dimension
+        # ordering preserved - very important!)
         imageData = np.array(imageData, dtype=np.uint8)
+        imageData = imageData.ravel(order='A')
 
-        # and flattened
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
         return imageBuffer
@@ -322,7 +323,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # consistent, the offset between columns (rows) is not.
         for xi in range(self.xdim):
 
-            imageOffset = (self.zpos * self.zstride + xi * self.xstride) 
+            imageOffset = self.zpos * self.zstride + xi * self.xstride
             imageStride = self.ystride 
             posOffset   = xi * self.ydim * 4
 

@@ -27,10 +27,10 @@ class ImageView(wx.Panel):
 
         self.shape = image.shape
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=2)
+        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(self, image, zax=1,
                                                master=self.xcanvas)
-        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=0,
+        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=2,
                                                master=self.xcanvas)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -124,6 +124,14 @@ class ImageView(wx.Panel):
         y = int(y)
         z = int(z)
 
+        if x < 0: x = 0
+        if y < 0: y = 0
+        if z < 0: z = 0
+
+        if x >= self.shape[0]: x = self.shape[0]-1
+        if y >= self.shape[1]: y = self.shape[1]-1
+        if z >= self.shape[2]: z = self.shape[2]-1 
+
         self.setLocation(x,y,z)
 
         evt = LocationEvent(x=x,y=y,z=z)
@@ -154,7 +162,6 @@ if __name__ == '__main__':
 
     app    = wx.App()
     image  = nb.load(sys.argv[1])
-
     frame  = ImageFrame(
         None,
         image.get_data(),
