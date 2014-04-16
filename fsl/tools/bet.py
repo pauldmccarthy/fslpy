@@ -281,8 +281,8 @@ def runBet(parent, opts):
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
                           optLabels=optLabels,
-                          modal=False,
-                          onFinish=onFinish)
+                          onFinish=onFinish,
+                          modal=False)
 
 
 FSL_TOOLNAME  = 'BET'
