@@ -128,6 +128,8 @@
 import types
 import logging
 
+from collections import OrderedDict
+
 log = logging.getLogger(__name__)
 
 
@@ -149,7 +151,6 @@ class PropertyValue(object):
           - value: Initial value.
           - name:  Variable name - if not provided, a default,
                    unique name is created.
-
         """
         
         if name is None: name = '{}_{}'.format(prop.label, id(self))
@@ -157,7 +158,7 @@ class PropertyValue(object):
         self.prop            = prop
         self.owner           = owner
         self.name            = name
-        self.changeListeners = {}
+        self.changeListeners = OrderedDict()
         self._value          = value
         self._lastValue      = value
         self._lastValid      = self.isValid()
@@ -218,6 +219,11 @@ class PropertyValue(object):
         self._value = newValue
 
         log.debug('Variable {} changed: {}'.format(self.name, newValue))
+
+        # Call the PropertyBase prenotify function first, if there is one
+        if self.prop.preNotifyFunc is not None:
+            log.debug('Calling preNotify function for {}'.format(self.name))
+            self.prop.preNotifyFunc(self.owner, newValue)
 
         # Validate the new value and notify any registered listeners
         self.validateAndNotify()
@@ -302,30 +308,40 @@ class PropertyBase(object):
 
     """
     
-    def __init__(self, default=None, required=False, validateFunc=None):
+    def __init__(self,
+                 default=None,
+                 required=False,
+                 validateFunc=None,
+                 preNotifyFunc=None):
         """
         Parameters:
         
-          - default:      Default/initial value.
+          - default:       Default/initial value.
         
-          - required:     Boolean determining whether or not this
-                          property must have a value. May alternately
-                          be a function which accepts one parameter,
-                          the owning HasProperties instance, and
-                          returns True or False.
+          - required:      Boolean determining whether or not this
+                           property must have a value. May alternately
+                           be a function which accepts one parameter,
+                           the owning HasProperties instance, and
+                           returns True or False.
         
-          - validateFunc: Custom validation function. Must accept
-                          two parameters: a reference to the
-                          HasProperties instance, the owner of
-                          this property; and the new property
-                          value. Should return True if the property
-                          value is valid, False otherwise.
+          - validateFunc:  Custom validation function. Must accept
+                           two parameters: a reference to the
+                           HasProperties instance, the owner of
+                           this property; and the new property
+                           value. Should return True if the property
+                           value is valid, False otherwise.
+
+          - preNotifyFunc: Function to be called whenever the property
+                           value(s) changes. This function is called
+                           by the PropertyValue object(s) before any
+                           listeners are notified.
         """
         self.label             = None
         self.default           = default
         self.required          = required
         self.validateFunc      = validateFunc
-        self.changeListeners   = {}
+        self.preNotifyFunc     = preNotifyFunc
+        self.changeListeners   = OrderedDict()
 
         
     def addListener(self, instance, name, callback):

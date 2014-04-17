@@ -197,7 +197,9 @@ class SliceCanvas(wxgl.GLCanvas):
         
           parent - WX parent object
         
-          image  - A fsl.data.image.Image object, or a 3D numpy array.
+          image  - A fsl.data.fslimage.Image object, or a
+                   fsl.data.fslimage.ImageDisplay object, or a 3D numpy
+                   array.
         
           zax    - Axis perpendicular to the plane to be displayed
                    (the 'depth' axis), default 0.
@@ -272,34 +274,34 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.Bind(wx.EVT_PAINT, self.draw)
 
+        # Add a bunch of listeners to the image display
+        # object, so we can update the view when image
+        # display properties are changed.
         def refreshNeeded(*a):
             self.Refresh()
             
         def colourUpdateNeeded(*a):
             self.updateColourBuffer()
-            self.Refresh() 
+            self.Refresh()
+
+        lnrName = 'SliceCanvas_{{}}_{}'.format(id(self))
 
         self.imageDisplay.addListener(
-            'alpha',
-            'SliceCanvasAlpha_{}'.format(id(self)),
-            refreshNeeded)
+            'alpha', lnrName.format('alpha'), refreshNeeded)
+        
         self.imageDisplay.addListener(
-            'displayMin',
-            'SliceCanvasDisplayMin_{}'.format(id(self)),
-            colourUpdateNeeded)
+            'displayMin', lnrName.format('displayMin'), colourUpdateNeeded)
+        
         self.imageDisplay.addListener(
-            'displayMax',
-            'SliceCanvasDisplayMax_{}'.format(id(self)),
-            colourUpdateNeeded)
+            'displayMax', lnrName.format('displayMax'), colourUpdateNeeded)
+        
         self.imageDisplay.addListener(
-            'rangeClip',
-            'SliceCanvasRangeClip_{}'.format(id(self)),
-            colourUpdateNeeded) 
+            'rangeClip', lnrName.format('rangeClip'), colourUpdateNeeded) 
 
 
     def _initGLData(self):
         """
-        Initialises the GL buffers which are  copied to the GPU,
+        Initialises the GL buffers which are copied to the GPU,
         and used to render the voxel data.
         """
 
@@ -319,7 +321,7 @@ class SliceCanvas(wxgl.GLCanvas):
             shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
             shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
 
-        # Indexes of all vertex/fragment shader parameters 
+        # Indices of all vertex/fragment shader parameters 
         self.inVertexPos   = gl.glGetAttribLocation( self.shaders, 'inVertex')
         self.voxelValuePos = gl.glGetAttribLocation( self.shaders, 'voxelValue')
         self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPosition')
@@ -391,16 +393,25 @@ class SliceCanvas(wxgl.GLCanvas):
 
         iDisplay = self.imageDisplay
 
+        # Here we are creating a range of values to be passed
+        # to the matplotlib.colors.Colormap instance of the
+        # image display. We scale this range such that data
+        # values which lie outside the configured display range
+        # will map to values below 0.0 or above 1.0. It is
+        # assumed that the Colormap instance is configured to
+        # generate appropriate colours for these out-of-range
+        # values.
+        
+        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
+        normalStep  = 1.0 / (self.colourResolution - 1) 
+
         normMin = (iDisplay.displayMin - iDisplay.dataMin) / \
                   (iDisplay.dataMax    - iDisplay.dataMin)
         normMax = (iDisplay.displayMax - iDisplay.dataMin) / \
                   (iDisplay.dataMax    - iDisplay.dataMin)
 
-        normalStep  = 1.0 / (self.colourResolution - 1)
-        newStep     = normalStep / (normMax - normMin)
-
-        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
-        newRange    = (normalRange - normMin) * (newStep / normalStep)
+        newStep  = normalStep / (normMax - normMin)
+        newRange = (normalRange - normMin) * (newStep / normalStep)
 
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
