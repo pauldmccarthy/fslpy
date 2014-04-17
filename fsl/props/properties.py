@@ -223,7 +223,14 @@ class PropertyValue(object):
         # Call the PropertyBase prenotify function first, if there is one
         if self.prop.preNotifyFunc is not None:
             log.debug('Calling preNotify function for {}'.format(self.name))
-            self.prop.preNotifyFunc(self.owner, newValue)
+
+            try:
+                self.prop.preNotifyFunc(self.owner, newValue)
+            except Exception as e:
+                
+                log.debug(
+                    'PreNotify function on {} raised exception: {}'.format(
+                        self.name, e)) 
 
         # Validate the new value and notify any registered listeners
         self.validateAndNotify()

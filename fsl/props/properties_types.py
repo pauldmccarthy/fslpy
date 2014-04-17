@@ -11,6 +11,9 @@ import os.path as op
 
 from collections import OrderedDict
 
+import matplotlib.colors as mplcolors
+import matplotlib.cm     as mplcm
+
 import properties as props
 
 class Boolean(props.PropertyBase):
@@ -679,3 +682,41 @@ class List(props.PropertyBase):
 
         instval    = getattr(instance, self.label)
         instval[:] = value
+
+
+# Currently just a string, will soon be a mplcolors.Colormap instance.
+#class ColourMap(props.PropertyBase):
+class ColourMap(String):
+    """
+    A property which encapsulates a matplotlib.colors.Colormap.
+    """
+
+    def __init__(self, **kwargs):
+
+        default = kwargs.get('default', None)
+
+        if   default is None:                         default = 'Greys_r'
+        elif isinstance(default, mplcolors.Colormap): default = default.name
+        
+        #elif isinstance(default, str): default = mplcm.get_cmap(default)
+        
+    #         raise ValueError(
+    #             'Invalid  ColourMap default: '.format(
+    #                 default.__class__.__name__))
+
+        kwargs['default'] = default
+        props.PropertyBase.__init__(self, **kwargs)
+
+
+
+    # def __set__(self, instance, value):
+
+    #     if isinstance(value, str):
+    #         value = mplcm.get_cmap(value)
+            
+    #     elif not isinstance(value, mplcolors.Colormap):
+    #         raise ValueError(
+    #             'Invalid  ColourMap default: '.format(
+    #                 default.__class__.__name__))
+
+    #     props.PropertyBase.__set__(self, instance, value)

@@ -9,7 +9,8 @@
 import itertools         as it
 
 import numpy             as np
-import matplotlib.colors as colors
+import matplotlib.colors as mplcolors
+import matplotlib.cm     as mplcm
 
 import                      wx
 import wx.glcanvas       as wxgl
@@ -264,7 +265,7 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = self.ydim / 2
         self._zpos = zpos
 
-        self._colourResolution = 256
+        self._colourResolution = 64
 
         # these attributes are created by _initGLData,
         # which is called on the first EVT_PAINT event
@@ -296,7 +297,10 @@ class SliceCanvas(wxgl.GLCanvas):
             'displayMax', lnrName.format('displayMax'), colourUpdateNeeded)
         
         self.imageDisplay.addListener(
-            'rangeClip', lnrName.format('rangeClip'), colourUpdateNeeded) 
+            'rangeClip', lnrName.format('rangeClip'), colourUpdateNeeded)
+        
+        self.imageDisplay.addListener(
+            'cmap', lnrName.format('cmap'), colourUpdateNeeded) 
 
 
     def _initGLData(self):
@@ -416,7 +420,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map (see fsl.data.fslimage.Image)
-        colourmap = iDisplay.cmap(newRange)
+        colourmap = mplcm.get_cmap(iDisplay.cmap)(newRange)
         
         # The colour data is stored on
         # the GPU as 8 bit rgb triplets

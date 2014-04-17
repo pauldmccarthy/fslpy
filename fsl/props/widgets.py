@@ -383,6 +383,13 @@ def _Boolean(parent, hasProps, propObj, propVal):
     return checkBox
 
 
+def _ColourMap(parent, hasProps, propObj, propVal):
+    """
+    """
+
+    return _String(parent, hasProps, propObj, propVal)
+
+
 def makeWidget(parent, hasProps, propName):
     """
     Given hasProps (a props.HasProperties object), propName (the name

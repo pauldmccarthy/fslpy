@@ -64,12 +64,15 @@ class ImageDisplay(props.HasProperties):
         it reconfigures the colour map accordingly.
         """
 
+        try: cmap = mplcm.get_cmap(self.cmap)
+        except: return
+
         if self.rangeClip:
-            self.cmap.set_under(self.cmap(0.0), alpha=0.0)
-            self.cmap.set_over( self.cmap(1.0), alpha=0.0)
+            cmap.set_under(cmap(0.0), alpha=0.0)
+            cmap.set_over( cmap(1.0), alpha=0.0)
         else:
-            self.cmap.set_under(self.cmap(0.0), alpha=1.0)
-            self.cmap.set_over( self.cmap(1.0), alpha=1.0)   
+            cmap.set_under(cmap(0.0), alpha=1.0)
+            cmap.set_over( cmap(1.0), alpha=1.0) 
 
     alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
     displayMin = props.Double()
@@ -77,12 +80,17 @@ class ImageDisplay(props.HasProperties):
     rangeClip  = props.Boolean(default=False,
                                preNotifyFunc=updateColourMap)
 
-    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha', 'rangeClip'))
+    cmap       = props.ColourMap(default=mplcm.Greys_r,
+                                 preNotifyFunc=updateColourMap)
+    
+
+    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha', 'rangeClip', 'cmap'))
     _labels = {
         'displayMin' : 'Min.',
         'displayMax' : 'Max.',
         'alpha'      : 'Opacity',
-        'rangeClip'  : 'Clipping'
+        'rangeClip'  : 'Clipping',
+        'cmap'       : 'Colour map'
         }
 
 
@@ -95,8 +103,6 @@ class ImageDisplay(props.HasProperties):
         self.image = image
 
         # Attributes controlling image display
-        self.cmap       = mplcm.Greys_r
-        self.alpha      = 1.0
         self.dataMin    = self.image.data.min()
         self.dataMax    = self.image.data.max() 
         self.displayMin = self.dataMin    # use cal_min/cal_max instead?

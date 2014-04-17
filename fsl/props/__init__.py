@@ -15,7 +15,8 @@ from properties import \
     String,        \
     FilePath,      \
     Choice,        \
-    List
+    List,          \
+    ColourMap
 
 from widgets import \
     makeWidget
