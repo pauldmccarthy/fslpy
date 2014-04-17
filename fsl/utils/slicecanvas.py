@@ -249,6 +249,14 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.Bind(wx.EVT_PAINT, self.draw)
 
+        def alphaChanged(newAlpha, *a):
+            self.Refresh()
+
+        self.image.addListener(
+            'alpha',
+            'SliceCanvasAlpha_{}'.format(id(self)),
+            alphaChanged)
+
 
     def _initGLData(self):
         """
@@ -414,6 +422,10 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glShadeModel(gl.GL_FLAT)
 
         gl.glUseProgram(self.shaders)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         # Set up the colour buffer
         gl.glEnable(gl.GL_TEXTURE_1D)
