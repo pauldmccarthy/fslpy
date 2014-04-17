@@ -7,9 +7,13 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import sys
+
 import wx
 import wx.lib.newevent as wxevent
 
+import fsl.props             as props
+import fsl.data.fslimage     as fslimage
 import fsl.utils.slicecanvas as slicecanvas
 
 LocationEvent, EVT_LOCATION_EVENT = wxevent.NewEvent()
@@ -25,22 +29,33 @@ class ImageView(wx.Panel):
         wx.Panel.__init__(self, parent, *args, **kwargs)
         self.SetMinSize((300,100))
 
-        self.shape = image.shape
+        self.shape = image.data.shape
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, image, zax=0)
-        self.ycanvas = slicecanvas.SliceCanvas(self, image, zax=1,
-                                               master=self.xcanvas)
-        self.zcanvas = slicecanvas.SliceCanvas(self, image, zax=2,
-                                               master=self.xcanvas)
+        self.canvasPanel  = wx.Panel(self)
+        self.controlPanel = props.buildGUI(self, image)
+ 
+        self.xcanvas = slicecanvas.SliceCanvas(
+            self.canvasPanel, image, zax=0)
+        self.ycanvas = slicecanvas.SliceCanvas(
+            self.canvasPanel, image, zax=1, master=self.xcanvas)
+        self.zcanvas = slicecanvas.SliceCanvas(
+            self.canvasPanel, image, zax=2, master=self.xcanvas)
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.mainSizer   = wx.BoxSizer(wx.VERTICAL)
+        self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.SetSizer(self.sizer)
+        self.SetSizer(self.mainSizer)
 
-        self.sizer.Add(self.xcanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.ycanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.zcanvas, flag=wx.EXPAND, proportion=1)
+        self.mainSizer.Add(self.canvasPanel,  flag=wx.EXPAND, proportion=1)
+        self.mainSizer.Add(self.controlPanel, flag=wx.EXPAND)
+        
+        self.canvasPanel.SetSizer(self.canvasSizer)
 
+        self.canvasSizer.Add(self.xcanvas, flag=wx.EXPAND, proportion=1)
+        self.canvasSizer.Add(self.ycanvas, flag=wx.EXPAND, proportion=1)
+        self.canvasSizer.Add(self.zcanvas, flag=wx.EXPAND, proportion=1)
+
+        self.canvasPanel.Layout()
         self.Layout()
 
         self.xcanvas.Bind(wx.EVT_LEFT_DOWN, self._setCanvasPosition)
@@ -153,18 +168,15 @@ class ImageFrame(wx.Frame):
 
 if __name__ == '__main__':
 
-    import sys
-    import nibabel as nb
-
     if len(sys.argv) != 2:
         print 'usage: imageview.py filename'
         sys.exit(1)
 
     app    = wx.App()
-    image  = nb.load(sys.argv[1])
+    image  = fslimage.Image(sys.argv[1])
     frame  = ImageFrame(
         None,
-        image.get_data(),
+        image,
         title=sys.argv[1])
     frame.Show()
 

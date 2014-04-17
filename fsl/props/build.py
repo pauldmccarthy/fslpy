@@ -683,10 +683,17 @@ def buildGUI(parent,
      - tooltips: Dict specifying tooltips
     """
 
-    if view is None: view = _defaultView(hasProps)
+    if view is None:
+        if hasattr(hasProps, '_view'):     view = hasProps._view
+        else:                              view = _defaultView(hasProps)
+    if labels is None:
+        if hasattr(hasProps, '_labels'):   labels = hasProps._labels
+        else:                              labels = {}
+    if tooltips is None:
+        if hasattr(hasProps, '_tooltips'): tooltips = hasProps._tooltips
+        else:                              tooltips = {}
 
-    if labels   is None: labels   = {}
-    if tooltips is None: tooltips = {}
+    print labels
 
     propGui   = PropGUI()
     view      = _prepareView(view, labels, tooltips) 

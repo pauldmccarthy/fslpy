@@ -10,39 +10,21 @@ import nibabel            as nib
 import matplotlib.cm      as mplcm
 import matplotlib.colors  as mplcolors
 
+import fsl.props          as props
 import fsl.data.imagefile as imagefile
 
-class Colours(object):
+class Image(props.HasProperties):
 
-    def __init__(self, image):
-        self.image = image
+    alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
+    displayMin = props.Double()
+    displayMax = props.Double()
 
-    def __getitem__(self, key):
-
-        image = self.image
-        cmap  = image.cmap
-
-        cmap.set_under('k')
-        cmap.set_over( 'k')
-
-        norm    = mplcolors.Normalize(image.displaymin,image.displaymax)
-        data    = image.data.__getitem__(key)
-        colData = cmap(norm(data))
-
-        # move the colour dimension to the front so, e.g.
-        # colData[:,a,b,c] will return the colour data for
-        # voxel [a,b,c]
-        colData = np.rollaxis(colData, len(colData.shape)-1)
-
-        # trim the alpha values, as we use an image wide alpha
-        return colData.take(range(3), axis=0)
-
-        
-class Image(object):
-
-    @property
-    def colour(self):
-        return self._colour[:]
+    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha'))
+    _labels = {
+        'displayMin' : 'Min.',
+        'displayMax' : 'Max.',
+        'alpha'      : 'Opacity'
+        }
 
     def __init__(self, image):
 
@@ -74,13 +56,8 @@ class Image(object):
         # Attributes controlling image display
         self.cmap       = mplcm.Greys_r
         self.alpha      = 1.0
-        self.displaymin = self.data.min()# use cal_min/cal_max instead?
-        self.displaymax = self.data.max()
-        self.datamin    = self.data.min() # use cal_min/cal_max instead?
-        self.datamax    = self.data.max()
+        self.datamin    = self.data.min()
+        self.datamax    = self.data.max() 
+        self.displayMin = self.datamin    # use cal_min/cal_max instead?
+        self.displayMax = self.datamax
 
-        self._colour  = Colours(self)
-
-    def __getitem__(self, key):
-        return self.data.__getitem__(key)
-        
