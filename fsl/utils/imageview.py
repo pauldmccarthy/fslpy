@@ -9,6 +9,15 @@
 
 import sys
 
+# import logging
+# logging.basicConfig(
+#     format='%(levelname)8s '\
+#            '%(filename)20s '\
+#            '%(lineno)4d: '\
+#            '%(funcName)s - '\
+#            '%(message)s',
+#     level=logging.DEBUG)
+
 import wx
 import wx.lib.newevent as wxevent
 
@@ -26,20 +35,25 @@ class ImageView(wx.Panel):
         different axis of the given 3D numpy image.
         """
 
+        if not isinstance(image, fslimage.Image):
+            image = fslimage.Image(image)
+
+        self.imageDisplay = fslimage.ImageDisplay(image)
+
         wx.Panel.__init__(self, parent, *args, **kwargs)
         self.SetMinSize((300,100))
 
         self.shape = image.data.shape
 
         self.canvasPanel  = wx.Panel(self)
-        self.controlPanel = props.buildGUI(self, image)
+        self.controlPanel = props.buildGUI(self, self.imageDisplay)
  
         self.xcanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, image, zax=0)
+            self.canvasPanel, self.imageDisplay, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, image, zax=1, master=self.xcanvas)
+            self.canvasPanel, self.imageDisplay, zax=1, master=self.xcanvas)
         self.zcanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, image, zax=2, master=self.xcanvas)
+            self.canvasPanel, self.imageDisplay, zax=2, master=self.xcanvas)
 
         self.mainSizer   = wx.BoxSizer(wx.VERTICAL)
         self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -97,7 +111,6 @@ class ImageView(wx.Panel):
 
     def setZLocation(self, z):
         self.setLocation(self.xcanvas.zpos, self.ycanvas.zpos, z)
-
 
 
     def _setCanvasPosition(self, ev):

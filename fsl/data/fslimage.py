@@ -13,18 +13,7 @@ import matplotlib.colors  as mplcolors
 import fsl.props          as props
 import fsl.data.imagefile as imagefile
 
-class Image(props.HasProperties):
-
-    alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
-    displayMin = props.Double()
-    displayMax = props.Double()
-
-    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha'))
-    _labels = {
-        'displayMin' : 'Min.',
-        'displayMax' : 'Max.',
-        'alpha'      : 'Opacity'
-        }
+class Image(object):
 
     def __init__(self, image):
 
@@ -53,11 +42,49 @@ class Image(props.HasProperties):
         self.ylen  = ylen
         self.zlen  = zlen
 
+
+        
+class ImageDisplay(props.HasProperties):
+    """
+    """
+
+    alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
+    displayMin = props.Double()
+    displayMax = props.Double()
+    rangeClip  = props.Boolean(default=False)
+
+    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha', 'rangeClip'))
+    _labels = {
+        'displayMin' : 'Min.',
+        'displayMax' : 'Max.',
+        'alpha'      : 'Opacity',
+        'rangeClip'  : 'Clipping'
+        }
+
+
+    def __init__(self, image):
+
+        self.image = image
+
         # Attributes controlling image display
         self.cmap       = mplcm.Greys_r
         self.alpha      = 1.0
-        self.datamin    = self.data.min()
-        self.datamax    = self.data.max() 
-        self.displayMin = self.datamin    # use cal_min/cal_max instead?
-        self.displayMax = self.datamax
+        self.dataMin    = self.image.data.min()
+        self.dataMax    = self.image.data.max() 
+        self.displayMin = self.dataMin    # use cal_min/cal_max instead?
+        self.displayMax = self.dataMax
+
+        self.addListener(
+            'rangeClip',
+            'ImageRangeClip_{}'.format(id(self)),
+            self.updateColourMap)
+
+    def updateColourMap(self, *a):
+
+        if self.rangeClip:
+            self.cmap.set_under(self.cmap(0.0), alpha=0.0)
+            self.cmap.set_over( self.cmap(1.0), alpha=0.0)
+        else:
+            self.cmap.set_under(self.cmap(0.0), alpha=1.0)
+            self.cmap.set_over( self.cmap(1.0), alpha=1.0)   
 

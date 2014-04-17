@@ -693,8 +693,6 @@ def buildGUI(parent,
         if hasattr(hasProps, '_tooltips'): tooltips = hasProps._tooltips
         else:                              tooltips = {}
 
-    print labels
-
     propGui   = PropGUI()
     view      = _prepareView(view, labels, tooltips) 
     mainPanel = _create(parent, view, hasProps, propGui)

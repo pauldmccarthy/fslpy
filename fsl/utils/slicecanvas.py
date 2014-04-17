@@ -9,8 +9,11 @@
 import itertools         as it
 
 import numpy             as np
+import matplotlib.colors as colors
+
 import                      wx
 import wx.glcanvas       as wxgl
+
 import OpenGL.GL         as gl
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
@@ -81,8 +84,15 @@ varying float     fragVoxelValue;
 
 void main(void) {
 
-    vec3 color   = texture1D(colourMap, fragVoxelValue).rgb;
-    gl_FragColor = vec4(color, alpha);
+    vec4  voxTexture = texture1D(colourMap, fragVoxelValue);
+    vec3  voxColour  = voxTexture.rgb;
+    float voxAlpha   = voxTexture.a;
+
+    if (voxAlpha > alpha) {
+        voxAlpha = alpha;
+    }
+
+    gl_FragColor = vec4(voxColour, voxAlpha);
 }
 """
 
@@ -90,7 +100,7 @@ void main(void) {
 class SliceCanvas(wxgl.GLCanvas):
     """
     A wx.glcanvas.GLCanvas which may be used to display a single
-    2D slice from a 3D numpy array.
+    2D slice from a 3D image (see fsl.data.fslimage.Image).
     """
 
     @property
@@ -199,9 +209,21 @@ class SliceCanvas(wxgl.GLCanvas):
                    GL context and the image buffer data.
         """
 
-        if not isinstance(image, fslimage.Image):
-            image = fslimage.Image(image)
+        realImage    = None
+        imageDisplay = None
 
+        if isinstance(image, fslimage.ImageDisplay):
+            realImage    = image.image
+            imageDisplay = image
+            
+        elif isinstance(image, fslimage.Image):
+            realImage    = image
+            imageDisplay = fslimage.ImageDisplay(image)
+
+        elif isinstance(image, np.ndarray):
+            realImage    = fslimage.Image(image)
+            imageDisplay = fslimage.ImageDisplay(realImage)
+        
         wxgl.GLCanvas.__init__(self, parent, **kwargs)
 
         if master is not None: context = master.context
@@ -217,10 +239,11 @@ class SliceCanvas(wxgl.GLCanvas):
         dims = range(3)
         dims.pop(zax)
 
-        self.image = image
-        self.xax   = dims[0]
-        self.yax   = dims[1]
-        self.zax   = zax
+        self.image        = realImage
+        self.imageDisplay = imageDisplay
+        self.xax          = dims[0]
+        self.yax          = dims[1]
+        self.zax          = zax
 
         self.xdim = self.image.data.shape[self.xax]
         self.ydim = self.image.data.shape[self.yax]
@@ -249,13 +272,29 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.Bind(wx.EVT_PAINT, self.draw)
 
-        def alphaChanged(newAlpha, *a):
+        def refreshNeeded(*a):
             self.Refresh()
+            
+        def colourUpdateNeeded(*a):
+            self.updateColourBuffer()
+            self.Refresh() 
 
-        self.image.addListener(
+        self.imageDisplay.addListener(
             'alpha',
             'SliceCanvasAlpha_{}'.format(id(self)),
-            alphaChanged)
+            refreshNeeded)
+        self.imageDisplay.addListener(
+            'displayMin',
+            'SliceCanvasDisplayMin_{}'.format(id(self)),
+            colourUpdateNeeded)
+        self.imageDisplay.addListener(
+            'displayMax',
+            'SliceCanvasDisplayMax_{}'.format(id(self)),
+            colourUpdateNeeded)
+        self.imageDisplay.addListener(
+            'rangeClip',
+            'SliceCanvasRangeClip_{}'.format(id(self)),
+            colourUpdateNeeded) 
 
 
     def _initGLData(self):
@@ -350,19 +389,27 @@ class SliceCanvas(wxgl.GLCanvas):
         change to take effect.
         """
 
+        iDisplay = self.imageDisplay
+
+        normMin = (iDisplay.displayMin - iDisplay.dataMin) / \
+                  (iDisplay.dataMax    - iDisplay.dataMin)
+        normMax = (iDisplay.displayMax - iDisplay.dataMin) / \
+                  (iDisplay.dataMax    - iDisplay.dataMin)
+
+        normalStep  = 1.0 / (self.colourResolution - 1)
+        newStep     = normalStep / (normMax - normMin)
+
+        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
+        newRange    = (normalRange - normMin) * (newStep / normalStep)
+
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map (see fsl.data.fslimage.Image)
-        colourmap = self.image.cmap(
-            np.linspace(0.0, 1.0, self.colourResolution))
-
-        # Strip the alpha values (we use an image wide
-        # alpha constant - fsl.data.fslimage.Image.alpha),
-        colourmap = colourmap[:,:3]
-        colourmap = np.floor(colourmap * 255)
-
+        colourmap = iDisplay.cmap(newRange)
+        
         # The colour data is stored on
         # the GPU as 8 bit rgb triplets
+        colourmap = np.floor(colourmap * 255)
         colourmap = np.array(colourmap, dtype=np.uint8)
         colourmap = colourmap.ravel(order='C')
 
@@ -377,10 +424,10 @@ class SliceCanvas(wxgl.GLCanvas):
         
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
-                        gl.GL_RGB8,
+                        gl.GL_RGBA8,
                         self.colourResolution,
                         0,
-                        gl.GL_RGB,
+                        gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,
                         colourmap)
 
@@ -433,7 +480,7 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourBuffer)
         gl.glUniform1i(self.colourMapPos, 0) 
          
-        gl.glUniform1f(self.alphaPos, self.image.alpha)
+        gl.glUniform1f(self.alphaPos, self.imageDisplay.alpha)
 
         # We draw each horizontal row of voxels one at a time.
         # This is necessary because, in order to allow image
