@@ -161,8 +161,9 @@ class ImageList(object):
 
         
     def pop(self, index=-1):
-        self._images.pop(index)
+        popped = self._images.pop(index)
         self.notify()
+        return popped
 
         
     def insert(self, index, image):
