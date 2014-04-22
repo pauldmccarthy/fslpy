@@ -51,9 +51,9 @@ class ImageView(wx.Panel):
         self.xcanvas = slicecanvas.SliceCanvas(
             self.canvasPanel, self.imageDisplay, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, self.imageDisplay, zax=1, master=self.xcanvas)
+            self.canvasPanel, self.imageDisplay, zax=1, context=self.xcanvas.context)
         self.zcanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, self.imageDisplay, zax=2, master=self.xcanvas)
+            self.canvasPanel, self.imageDisplay, zax=2, context=self.xcanvas.context)
 
         self.mainSizer   = wx.BoxSizer(wx.VERTICAL)
         self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)

@@ -39,8 +39,7 @@ import fsl.data.fslimage as fslimage
 # The third buffer, the 'image buffer' contains the image data itself,
 # scaled to lie between 0.0 and 1.0. It is used to calculate voxel
 # colours, and may be shared between multiple SliceCanvas objects
-# which are displaying the same image - see the 'master' parameter to
-# the SliceCanvas constructor.
+# which are displaying the same image.
 #
 # Finally, the texture, the 'colour buffer', is used to store a
 # lookup table containing colours. 
@@ -190,7 +189,8 @@ class SliceCanvas(wxgl.GLCanvas):
         self._colourResolution = colourResolution
 
 
-    def __init__(self, parent, image, zax=0, zpos=None, master=None, **kwargs):
+    def __init__(
+            self, parent, image, zax=0, zpos=None, context=None, **kwargs):
         """
         Creates a canvas object. The OpenGL data buffers are set up in
         _initGLData the first time that the canvas is displayed/drawn.
@@ -204,12 +204,11 @@ class SliceCanvas(wxgl.GLCanvas):
         
           zax    - Axis perpendicular to the plane to be displayed
                    (the 'depth' axis), default 0.
+
+          context - 
         
           zpos   - Initial slice to be displayed. If not provided, the
                    middle slice is used.
-        
-          master - Another SliceCanvas object with which to share the
-                   GL context and the image buffer data.
         """
 
         realImage    = None
@@ -229,10 +228,8 @@ class SliceCanvas(wxgl.GLCanvas):
         
         wxgl.GLCanvas.__init__(self, parent, **kwargs)
 
-        if master is not None: context = master.context
-        else:                  context = wxgl.GLContext(self)
+        if context is None: context = wxgl.GLContext(self)
 
-        self.master  = master
         self.context = context
 
         # TODO Currently, the displayed x/horizontal and
@@ -267,11 +264,10 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self._colourResolution = 256
 
-        # these attributes are created by _initGLData,
-        # which is called on the first EVT_PAINT event
-        self.geomBuffer     = None
-        self.positionBuffer = None
-        self.imageBuffer    = None
+        # This flag is set by the _initGLData method
+        # when it has finished initialising the OpenGL
+        # data buffers
+        self.glReady = False
 
         self.Bind(wx.EVT_PAINT, self.draw)
 
@@ -360,6 +356,8 @@ class SliceCanvas(wxgl.GLCanvas):
         self.colourBuffer = gl.glGenTextures(1)
         self.updateColourBuffer()
 
+        self.glReady = True
+
         
     def _initImageBuffer(self):
         """
@@ -370,8 +368,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # If a master canvas was passed to the
         # constructor, let's share its image data.
-        if self.master is not None:
-            return self.master.imageBuffer
+        if self.image.glBuffer is not None:
+            return self.image.glBuffer
 
         # The image data is cast to single precision floating
         # point, and normalised to lie between 0.0 and 1.0
@@ -384,6 +382,8 @@ class SliceCanvas(wxgl.GLCanvas):
         # dimension as the fastest changing.
         imageData = imageData.ravel(order='F')
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
+
+        self.image.glBuffer = imageBuffer
 
         return imageBuffer
 
@@ -473,7 +473,7 @@ class SliceCanvas(wxgl.GLCanvas):
         """
 
         # image data has not been initialised.
-        if not self.imageBuffer:
+        if not self.glReady:
             wx.CallAfter(self._initGLData)
             return
 

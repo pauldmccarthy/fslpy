@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# fslimage.py - Classes representing a 3D image, and the display
-# properties of a 3D image.
+# fslimage.py - Classes representing a 3D image, the display
+# properties of a 3D image, and a collection of 3D images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -50,6 +50,8 @@ class Image(object):
         self.xlen  = xlen
         self.ylen  = ylen
         self.zlen  = zlen
+
+        self.glBuffer = None
 
 
 class ImageDisplay(props.HasProperties):
@@ -107,3 +109,14 @@ class ImageDisplay(props.HasProperties):
         self.dataMax    = self.image.data.max() 
         self.displayMin = self.dataMin    # use cal_min/cal_max instead?
         self.displayMax = self.dataMax
+
+        
+class ImageList(object):
+
+    def __init__(self, images=None, displays=None):
+        
+        if images   is None: images   = []
+        if displays is None: displays = []
+        
+        self._images   = images
+        self._displays = displays
