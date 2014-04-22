@@ -118,5 +118,5 @@ class ImageList(object):
         if images   is None: images   = []
         if displays is None: displays = []
         
-        self._images   = images
-        self._displays = displays
+        self.images   = images
+        self.displays = displays

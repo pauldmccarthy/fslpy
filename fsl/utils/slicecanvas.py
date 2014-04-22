@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # slicecanvas.py - A wx.GLCanvas canvas which displays a single
-# slice from a 3D image.
+# slice from a collection of 3D images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -27,22 +27,45 @@ import OpenGL.GL.ARB.draw_instanced   as arbdi
 
 import fsl.data.fslimage as fslimage
 
-# A slice is rendered using three buffers and one texture. The first
-# buffer, the 'geometry buffer' simply contains four vertices, which
-# define the geometry of a single voxel (using triangle strips).
 
-# The second buffer, the 'position buffer', contains the location of
-# every voxel in one slice of the image (these locations are identical
-# for every slice of the image, so we can re-use the location
-# information for every slice).
+class GLImageData(object):
+    """
+    A GLImageData object encapsulates the OpenGL information necessary
+    to render an image.
+    
+    A slice from one image is rendered using three buffers and one
+    texture. The first buffer, the 'geometry buffer' simply contains four
+    vertices, which define the geometry of a single voxel (using triangle
+    strips).
 
-# The third buffer, the 'image buffer' contains the image data itself,
-# scaled to lie between 0.0 and 1.0. It is used to calculate voxel
-# colours, and may be shared between multiple SliceCanvas objects
-# which are displaying the same image.
-#
-# Finally, the texture, the 'colour buffer', is used to store a
-# lookup table containing colours. 
+    The second buffer, the 'position buffer', contains the location of every
+    voxel in one slice of the image (these locations are identical for every
+    slice of the image, so we can re-use the location information for every
+    slice).
+
+    The third buffer, the 'image buffer' contains the image data itself,
+    scaled to lie between 0.0 and 1.0. It is used to calculate voxel colours.
+
+    Finally, the texture, the 'colour buffer', is used to store a lookup table
+    containing colours.
+    """
+    
+    def __init__(
+            self,
+            image,
+            imageBuffer,
+            colourBuffer,
+            positionBuffer,
+            geomBuffer):
+        """
+        Parameters.
+        """
+
+        self.image          = image
+        self.imageBuffer    = imageBuffer
+        self.colourBuffer   = colourBuffer
+        self.positionBuffer = positionBuffer
+        self.geomBuffer     = geomBuffer
 
 
 # The vertex shader positions and colours a single vertex.
@@ -96,11 +119,10 @@ void main(void) {
 }
 """
 
-
 class SliceCanvas(wxgl.GLCanvas):
     """
-    A wx.glcanvas.GLCanvas which may be used to display a single
-    2D slice from a 3D image (see fsl.data.fslimage.Image).
+    A wx.glcanvas.GLCanvas which may be used to display a single 2D slice from
+    a collection of 3D images (see fsl.data.fslimage.ImageList).
     """
 
     @property
@@ -167,70 +189,30 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = ypos
 
 
-    @property
-    def colourResolution(self):
-        """
-        Total number of possible colours that will be used when rendering
-        a slice.
-        """
-        return self._colourResolution
-
-    @colourResolution.setter
-    def colourResolution(self, colourResolution):
-        """
-        Updates the colour resolution. You will need to manually call
-        updateColourBuffer(), and then Refresh(), after changing the
-        colour resolution.
-        """
-
-        if colourResolution <= 0:    return
-        if colourResolution >  4096: return # this upper limit is arbitrary.
-        
-        self._colourResolution = colourResolution
-
-
     def __init__(
-            self, parent, image, zax=0, zpos=None, context=None, **kwargs):
+            self, parent, imageList, zax=0, zpos=None, context=None, **kwargs):
         """
         Creates a canvas object. The OpenGL data buffers are set up in
         _initGLData the first time that the canvas is displayed/drawn.
         Parameters:
         
-          parent - WX parent object
+          parent    - WX parent object
         
-          image  - A fsl.data.fslimage.Image object, or a
-                   fsl.data.fslimage.ImageDisplay object, or a 3D numpy
-                   array.
+          imageList - a fslimage.ImageList object.
         
-          zax    - Axis perpendicular to the plane to be displayed
-                   (the 'depth' axis), default 0.
+          zax       - Axis perpendicular to the plane to be displayed
+                      (the 'depth' axis), default 0.
 
-          context - 
+          context   - wx.glcanvas.GLContext object. If None, one is created.
         
-          zpos   - Initial slice to be displayed. If not provided, the
-                   middle slice is used.
+          zpos      - Initial slice to be displayed. If not provided, the
+                      middle slice is used.
         """
 
-        realImage    = None
-        imageDisplay = None
-
-        if isinstance(image, fslimage.ImageDisplay):
-            realImage    = image.image
-            imageDisplay = image
-            
-        elif isinstance(image, fslimage.Image):
-            realImage    = image
-            imageDisplay = fslimage.ImageDisplay(image)
-
-        elif isinstance(image, np.ndarray):
-            realImage    = fslimage.Image(image)
-            imageDisplay = fslimage.ImageDisplay(realImage)
-        
         wxgl.GLCanvas.__init__(self, parent, **kwargs)
 
-        if context is None: context = wxgl.GLContext(self)
-
-        self.context = context
+        if context is None: self.context = wxgl.GLContext(self)
+        else:               self.context = context
 
         # TODO Currently, the displayed x/horizontal and
         # y/vertical axes are defined by their order in
@@ -239,21 +221,23 @@ class SliceCanvas(wxgl.GLCanvas):
         dims = range(3)
         dims.pop(zax)
 
-        self.image        = realImage
-        self.imageDisplay = imageDisplay
-        self.xax          = dims[0]
-        self.yax          = dims[1]
-        self.zax          = zax
+        self.imageList = imageList
+        self.xax       = dims[0]
+        self.yax       = dims[1]
+        self.zax       = zax
 
-        self.xdim = self.image.data.shape[self.xax]
-        self.ydim = self.image.data.shape[self.yax]
-        self.zdim = self.image.data.shape[self.zax]
+        # Currently all images must be of the same dimensions
+        ref = self.imageList.images[0]
 
-        dsize = self.image.data.dtype.itemsize
+        self.xdim = ref.data.shape[self.xax]
+        self.ydim = ref.data.shape[self.yax]
+        self.zdim = ref.data.shape[self.zax]
 
-        self.xstride = self.image.data.strides[self.xax] / dsize
-        self.ystride = self.image.data.strides[self.yax] / dsize
-        self.zstride = self.image.data.strides[self.zax] / dsize
+        dsize = ref.data.dtype.itemsize
+
+        self.xstride = ref.data.strides[self.xax] / dsize
+        self.ystride = ref.data.strides[self.yax] / dsize
+        self.zstride = ref.data.strides[self.zax] / dsize
 
         if zpos is None:
             zpos = self.zdim / 2
@@ -264,38 +248,48 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self._colourResolution = 256
 
-        # This flag is set by the _initGLData method
-        # when it has finished initialising the OpenGL
-        # data buffers
+        # This flag is set by the _initGLData method when it
+        # has finished initialising the OpenGL data buffers
         self.glReady = False
 
         self.Bind(wx.EVT_PAINT, self.draw)
 
+        for i in range(len(self.imageList.images)):
+            self._configDisplayListeners(i)
+
+
+    def _configDisplayListeners(self, idx):
+        """
+        """
+
+        image   = self.imageList.images  [idx]
+        display = self.imageList.displays[idx]
+
         # Add a bunch of listeners to the image display
-        # object, so we can update the view when image
-        # display properties are changed.
+        # object for each image, so we can update the
+        # view when image display properties are changed.
         def refreshNeeded(*a):
             self.Refresh()
             
         def colourUpdateNeeded(*a):
-            self.updateColourBuffer()
+            self.updateColourBuffer(idx)
             self.Refresh()
 
         lnrName = 'SliceCanvas_{{}}_{}'.format(id(self))
 
-        self.imageDisplay.addListener(
+        display.addListener(
             'alpha', lnrName.format('alpha'), refreshNeeded)
-        
-        self.imageDisplay.addListener(
+
+        display.addListener(
             'displayMin', lnrName.format('displayMin'), colourUpdateNeeded)
-        
-        self.imageDisplay.addListener(
+
+        display.addListener(
             'displayMax', lnrName.format('displayMax'), colourUpdateNeeded)
-        
-        self.imageDisplay.addListener(
+
+        display.addListener(
             'rangeClip', lnrName.format('rangeClip'), colourUpdateNeeded)
-        
-        self.imageDisplay.addListener(
+
+        display.addListener(
             'cmap', lnrName.format('cmap'), colourUpdateNeeded) 
 
 
@@ -328,38 +322,48 @@ class SliceCanvas(wxgl.GLCanvas):
         self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.colourMapPos  = gl.glGetUniformLocation(self.shaders, 'colourMap')
 
-        # Data stored in the geometry buffer. Defines
-        # the geometry of a single voxel, rendered as
-        # a triangle strip.
-        geomData = np.array([0, 0,
-                             1, 0,
-                             0, 1,
-                             1, 1], dtype=np.uint8)
+        self.imageData = []
+        
+        for idx,image in enumerate(self.imageList.images):
 
-        # Data stored in the position buffer. Defines
-        # the location of every voxel in a single slice.
-        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
-        yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
-                                   np.arange(self.xdim),
-                                   indexing='ij')
-        positionData[:,0] = xidxs.ravel()
-        positionData[:,1] = yidxs.ravel()
+            # Data stored in the geometry buffer. Defines
+            # the geometry of a single voxel, rendered as
+            # a triangle strip.
+            geomData = np.array([0, 0,
+                                 1, 0,
+                                 0, 1,
+                                 1, 1], dtype=np.uint8)
 
-        self.geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
-        self.positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+            # Data stored in the position buffer. Defines
+            # the location of every voxel in a single slice.
+            positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
+            yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
+                                       np.arange(self.xdim),
+                                       indexing='ij')
+            positionData[:,0] = xidxs.ravel()
+            positionData[:,1] = yidxs.ravel()
 
-        # The image buffer, containing the image data itself
-        self.imageBuffer = self._initImageBuffer()
+            geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
+            positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
 
-        # The colour buffer, containing a map of
-        # colours (stored on the GPU as a 1D texture)
-        self.colourBuffer = gl.glGenTextures(1)
-        self.updateColourBuffer()
+            # The image buffer, containing the image data itself
+            imageBuffer = self._initImageBuffer(image)
+
+            # The colour buffer, containing a map of
+            # colours (stored on the GPU as a 1D texture)
+            colourBuffer = gl.glGenTextures(1)
+
+            imageData = GLImageData(
+                image, imageBuffer, colourBuffer, positionBuffer, geomBuffer)
+
+            self.imageData.append(imageData)
+
+            self.updateColourBuffer(idx)
 
         self.glReady = True
 
         
-    def _initImageBuffer(self):
+    def _initImageBuffer(self, image):
         """
         Initialises the buffer used to store the image data. If a 'master'
         canvas was set when this SliceCanvas object was constructed, its
@@ -368,12 +372,12 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # If a master canvas was passed to the
         # constructor, let's share its image data.
-        if self.image.glBuffer is not None:
-            return self.image.glBuffer
+        if image.glBuffer is not None:
+            return image.glBuffer
 
         # The image data is cast to single precision floating
         # point, and normalised to lie between 0.0 and 1.0
-        imageData = np.array(self.image.data, dtype=np.float32)
+        imageData = np.array(image.data, dtype=np.float32)
         imageData = (imageData       - imageData.min()) / \
                     (imageData.max() - imageData.min())
 
@@ -383,19 +387,20 @@ class SliceCanvas(wxgl.GLCanvas):
         imageData = imageData.ravel(order='F')
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
-        self.image.glBuffer = imageBuffer
+        image.glBuffer = imageBuffer
 
         return imageBuffer
 
 
-    def updateColourBuffer(self):
+    def updateColourBuffer(self, idx):
         """
         Regenerates the colour buffer used to colour a slice. After
         calling this method, you will need to call Refresh() for the
         change to take effect.
         """
 
-        iDisplay = self.imageDisplay
+        iDisplay     = self.imageList.displays[idx]
+        colourBuffer = self.imageData[idx].colourBuffer
 
         # Here we are creating a range of values to be passed
         # to the matplotlib.colors.Colormap instance of the
@@ -406,8 +411,8 @@ class SliceCanvas(wxgl.GLCanvas):
         # generate appropriate colours for these out-of-range
         # values.
         
-        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
-        normalStep  = 1.0 / (self.colourResolution - 1) 
+        normalRange = np.linspace(0.0, 1.0, self._colourResolution)
+        normalStep  = 1.0 / (self._colourResolution - 1) 
 
         normMin = (iDisplay.displayMin - iDisplay.dataMin) / \
                   (iDisplay.dataMax    - iDisplay.dataMin)
@@ -429,7 +434,7 @@ class SliceCanvas(wxgl.GLCanvas):
         colourmap = colourmap.ravel(order='C')
 
         # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourBuffer)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
         gl.glTexParameteri(
             gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(
@@ -440,7 +445,7 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
                         gl.GL_RGBA8,
-                        self.colourResolution,
+                        self._colourResolution,
                         0,
                         gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,
@@ -489,77 +494,86 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        # Set up the colour buffer
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourBuffer)
-        gl.glUniform1i(self.colourMapPos, 0) 
-         
-        gl.glUniform1f(self.alphaPos, self.imageDisplay.alpha)
+        for i in range(len(self.imageData)):
 
-        # We draw each horizontal row of voxels one at a time.
-        # This is necessary because, in order to allow image
-        # buffers to be shared between different SliceCanvas
-        # objects, we cannot re-arrange the image data, as
-        # stored in GPU memory. So while the memory offset
-        # between values in the same row (or column) is 
-        # consistent, the offset between rows (columns) is
-        # not. And drawing rows seems to be faster than
-        # drawing columns, for reasons unknown to me.
-        for yi in range(self.ydim):
+            image          = self.imageList.images[i]
+            imageDisplay   = self.imageList.displays[i]
+            geomBuffer     = self.imageData[i].geomBuffer
+            imageBuffer    = self.imageData[i].imageBuffer
+            positionBuffer = self.imageData[i].positionBuffer
+            colourBuffer   = self.imageData[i].colourBuffer
 
-            imageOffset = self.zpos * self.zstride + yi * self.ystride
-            imageStride = self.xstride 
-            posOffset   = yi * self.xdim * 4
+            # Set up the colour buffer
+            gl.glEnable(gl.GL_TEXTURE_1D)
+            gl.glActiveTexture(gl.GL_TEXTURE0)
+            gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+            gl.glUniform1i(self.colourMapPos, 0) 
 
-            # The geometry buffer, which defines the geometry of a
-            # single vertex (4 vertices, drawn as a triangle strip)
-            self.geomBuffer.bind()
-            gl.glVertexAttribPointer(
-                self.inVertexPos,
-                2,
-                gl.GL_UNSIGNED_BYTE,
-                gl.GL_FALSE,
-                0,
-                None)
-            gl.glEnableVertexAttribArray(self.inVertexPos)
-            arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
+            gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-            # The position buffer, which defines
-            # the location of every voxel
-            self.positionBuffer.bind()
-            gl.glVertexAttribPointer(
-                self.inPositionPos,
-                2,
-                gl.GL_UNSIGNED_SHORT,
-                gl.GL_FALSE,
-                0,
-                self.positionBuffer + posOffset)
-            gl.glEnableVertexAttribArray(self.inPositionPos)
-            arbia.glVertexAttribDivisorARB(self.inPositionPos, 1)
+            # We draw each horizontal row of voxels one at a time.
+            # This is necessary because, in order to allow image
+            # buffers to be shared between different SliceCanvas
+            # objects, we cannot re-arrange the image data, as
+            # stored in GPU memory. So while the memory offset
+            # between values in the same row (or column) is 
+            # consistent, the offset between rows (columns) is
+            # not. And drawing rows seems to be faster than
+            # drawing columns, for reasons unknown to me.
+            for yi in range(self.ydim):
 
-            # The image buffer, which defines
-            # the colour value at each voxel.
-            self.imageBuffer.bind()
-            gl.glVertexAttribPointer(
-                self.voxelValuePos,
-                1,
-                gl.GL_FLOAT,
-                gl.GL_FALSE,
-                imageStride*4,
-                self.imageBuffer + imageOffset*4)
+                imageOffset = self.zpos * self.zstride + yi * self.ystride
+                imageStride = self.xstride 
+                posOffset   = yi * self.xdim * 4
 
-            gl.glEnableVertexAttribArray(self.voxelValuePos)
-            arbia.glVertexAttribDivisorARB(self.voxelValuePos, 1)
+                # The geometry buffer, which defines the geometry of a
+                # single vertex (4 vertices, drawn as a triangle strip)
+                geomBuffer.bind()
+                gl.glVertexAttribPointer(
+                    self.inVertexPos,
+                    2,
+                    gl.GL_UNSIGNED_BYTE,
+                    gl.GL_FALSE,
+                    0,
+                    None)
+                gl.glEnableVertexAttribArray(self.inVertexPos)
+                arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
 
-            # Draw all of the triangles!
-            arbdi.glDrawArraysInstancedARB(
-                gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim)
-            
-            gl.glDisableVertexAttribArray(self.inVertexPos)
-            gl.glDisableVertexAttribArray(self.inPositionPos)
-            gl.glDisableVertexAttribArray(self.voxelValuePos)
-            gl.glDisable(gl.GL_TEXTURE_1D)
+                # The position buffer, which defines
+                # the location of every voxel
+                positionBuffer.bind()
+                gl.glVertexAttribPointer(
+                    self.inPositionPos,
+                    2,
+                    gl.GL_UNSIGNED_SHORT,
+                    gl.GL_FALSE,
+                    0,
+                    positionBuffer + posOffset)
+                gl.glEnableVertexAttribArray(self.inPositionPos)
+                arbia.glVertexAttribDivisorARB(self.inPositionPos, 1)
+
+                # The image buffer, which defines
+                # the colour value at each voxel.
+                imageBuffer.bind()
+                gl.glVertexAttribPointer(
+                    self.voxelValuePos,
+                    1,
+                    gl.GL_FLOAT,
+                    gl.GL_FALSE,
+                    imageStride*4,
+                    imageBuffer + imageOffset*4)
+
+                gl.glEnableVertexAttribArray(self.voxelValuePos)
+                arbia.glVertexAttribDivisorARB(self.voxelValuePos, 1)
+
+                # Draw all of the triangles!
+                arbdi.glDrawArraysInstancedARB(
+                    gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim)
+
+                gl.glDisableVertexAttribArray(self.inVertexPos)
+                gl.glDisableVertexAttribArray(self.inPositionPos)
+                gl.glDisableVertexAttribArray(self.voxelValuePos)
+                gl.glDisable(gl.GL_TEXTURE_1D)
 
         gl.glUseProgram(0)
 

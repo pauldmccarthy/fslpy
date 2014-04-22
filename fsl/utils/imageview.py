@@ -40,6 +40,8 @@ class ImageView(wx.Panel):
 
         self.imageDisplay = fslimage.ImageDisplay(image)
 
+        imageList = fslimage.ImageList([image], [self.imageDisplay])
+
         wx.Panel.__init__(self, parent, *args, **kwargs)
         self.SetMinSize((300,100))
 
@@ -49,11 +51,11 @@ class ImageView(wx.Panel):
         self.controlPanel = props.buildGUI(self, self.imageDisplay)
  
         self.xcanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, self.imageDisplay, zax=0)
+            self.canvasPanel, imageList, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, self.imageDisplay, zax=1, context=self.xcanvas.context)
+            self.canvasPanel, imageList, zax=1, context=self.xcanvas.context)
         self.zcanvas = slicecanvas.SliceCanvas(
-            self.canvasPanel, self.imageDisplay, zax=2, context=self.xcanvas.context)
+            self.canvasPanel, imageList, zax=2, context=self.xcanvas.context)
 
         self.mainSizer   = wx.BoxSizer(wx.VERTICAL)
         self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
