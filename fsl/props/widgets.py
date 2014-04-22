@@ -315,6 +315,7 @@ def _Number(parent, hasProps, propObj, propVal):
     params['min']     = minval
     params['max']     = maxval
     params['initial'] = value
+    params['value']   = '{}'.format(value)
 
     # The minval and maxval attributes have not both
     # been set, so we create a spinbox instead of a slider.
