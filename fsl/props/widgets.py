@@ -18,6 +18,12 @@ from collections import OrderedDict
 from collections import Iterable
 
 import wx
+import wx.combo
+
+import numpy             as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mplcolors
+import matplotlib.cm     as mplcm
 
 # the List property is complex enough to get its own module.
 from widgets_list import _List
@@ -118,10 +124,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
         if labelMap is not None: propVal.set(valMap[value])
         else:                    propVal.set(value)
 
-    val = propVal.get()
-    if val is None: val = ''
-    
-    guiObj.SetValue(val)
+    _guiUpdate(propVal.get())
 
     # set up the callback functions
     for ev in evType: guiObj.Bind(ev, _propUpdate)
@@ -383,11 +386,76 @@ def _Boolean(parent, hasProps, propObj, propVal):
     return checkBox
 
 
+def _makeColourMapComboBox(parent, cmapDict, selected=None):
+    """
+    Makes a wx.combo.BitmapComboBox which allows the user to select a
+    colour map from the given dictionary of
+    (name -> matplotlib.colors.Colormap) mappings. The name of each
+    colour map is shown in the combo box,, along with a little image
+    for each colour map, showing the colour range.
+    """
+    
+    bitmaps          = []
+    width, height    = 75, 15
+
+    cmapNames, cmaps = zip(*cmapDict.items())
+
+    if selected is not None: selected = cmapNames.index(selected)
+    else:                    selected = 0
+
+    # Make a little bitmap for every colour map. The bitmap
+    # is a (width*height*3) array of bytes
+    for cmapName, cmap in zip(cmapNames, cmaps):
+        
+        # create a single colour  for each horizontal pixel
+        colours = cmap(np.linspace(0.0, 1.0, width))
+
+        # discard alpha values
+        colours = colours[:,:3]
+
+        # repeat each horizontal pixel (height) times
+        colours = np.tile(colours, (height, 1, 1))
+
+        # scale to [0,255] and cast to uint8
+        colours = colours * 255
+        colours = np.array(colours, dtype=np.uint8)
+
+        # make a wx Bitmap from the colour data
+        colours = colours.ravel(order='C')
+        bitmap  = wx.BitmapFromBuffer(width, height, colours)
+
+        bitmaps.append(bitmap)
+
+    # create the combobox
+    cbox = wx.combo.BitmapComboBox(
+        parent, style=wx.CB_READONLY | wx.CB_DROPDOWN)
+
+    for name,bitmap in zip(cmapNames, bitmaps):
+        cbox.Append(name, bitmap)
+
+    cbox.SetSelection(selected)
+
+    return cbox
+
+
 def _ColourMap(parent, hasProps, propObj, propVal):
     """
+    Creates and returns a combobox, allowing the user to change
+    the value of the given ColourMap property.
     """
 
-    return _String(parent, hasProps, propObj, propVal)
+    cmapNames = sorted(mplcm.datad.keys())
+    cmapObjs  = map(mplcm.get_cmap, cmapNames)
+    
+    valMap    = OrderedDict(zip(cmapObjs,  cmapNames))
+    labelMap  = OrderedDict(zip(cmapNames, cmapObjs))
+
+    cbox = _makeColourMapComboBox(
+        parent, labelMap, propVal.get().name)
+
+    _propBind(hasProps, propObj, propVal, cbox, wx.EVT_COMBOBOX, valMap)
+        
+    return cbox   
 
 
 def makeWidget(parent, hasProps, propName):

@@ -265,7 +265,7 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = self.ydim / 2
         self._zpos = zpos
 
-        self._colourResolution = 64
+        self._colourResolution = 256
 
         # these attributes are created by _initGLData,
         # which is called on the first EVT_PAINT event
@@ -420,7 +420,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map (see fsl.data.fslimage.Image)
-        colourmap = mplcm.get_cmap(iDisplay.cmap)(newRange)
+        colourmap = iDisplay.cmap(newRange)
         
         # The colour data is stored on
         # the GPU as 8 bit rgb triplets

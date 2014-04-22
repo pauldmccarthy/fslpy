@@ -684,39 +684,50 @@ class List(props.PropertyBase):
         instval[:] = value
 
 
-# Currently just a string, will soon be a mplcolors.Colormap instance.
-#class ColourMap(props.PropertyBase):
-class ColourMap(String):
+# TODO This would probably be better off as a subclass of Choice. Choice
+# would need to be modified to allow for values of any type, not just
+# Strings. Shouldn't be a major issue.
+class ColourMap(props.PropertyBase):
     """
     A property which encapsulates a matplotlib.colors.Colormap.
     """
 
     def __init__(self, **kwargs):
+        """
+        Creates a ColourMap property. If a default value is not
+        given, the matplotlib.cm.Greys_r colour map is used.
+        """
 
         default = kwargs.get('default', None)
 
-        if   default is None:                         default = 'Greys_r'
-        elif isinstance(default, mplcolors.Colormap): default = default.name
-        
-        #elif isinstance(default, str): default = mplcm.get_cmap(default)
-        
-    #         raise ValueError(
-    #             'Invalid  ColourMap default: '.format(
-    #                 default.__class__.__name__))
+        if default is None:
+            default = mplcm.Greys_r
+            
+        elif isinstance(default, str):
+            default = mplcm.get_cmap(default)
+            
+        elif not isinstance(default, mplcolors.Colormap):
+            raise ValueError(
+                'Invalid  ColourMap default: '.format(
+                    default.__class__.__name__))
 
         kwargs['default'] = default
         props.PropertyBase.__init__(self, **kwargs)
 
 
+    def __set__(self, instance, value):
+        """
+        Set the current ColourMap property value. If a string
+        is given, an attempt is made to convert it to a colour map,
+        via the matplotlib.cm.get_cmap function.
+        """
 
-    # def __set__(self, instance, value):
-
-    #     if isinstance(value, str):
-    #         value = mplcm.get_cmap(value)
+        if isinstance(value, str):
+            value = mplcm.get_cmap(value)
             
-    #     elif not isinstance(value, mplcolors.Colormap):
-    #         raise ValueError(
-    #             'Invalid  ColourMap default: '.format(
-    #                 default.__class__.__name__))
+        elif not isinstance(value, mplcolors.Colormap):
+            raise ValueError(
+                'Invalid  ColourMap value: '.format(
+                    default.__class__.__name__))
 
-    #     props.PropertyBase.__set__(self, instance, value)
+        props.PropertyBase.__set__(self, instance, value)
