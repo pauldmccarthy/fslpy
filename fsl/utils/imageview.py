@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# imgshow.py - A wx/OpenGL widget for displaying and interacting with a 3D
-# image. Displays three canvases, each of which shows a slice of the image
-# along each dimension.
+# imgshow.py - A wx/OpenGL widget for displaying and interacting with a
+# collection of 3D image. Displays three canvases, each of which shows
+# a slice of the images along each dimension.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -29,33 +29,34 @@ LocationEvent, EVT_LOCATION_EVENT = wxevent.NewEvent()
 
 class ImageView(wx.Panel):
 
-    def __init__(self, parent, image, *args, **kwargs):
+    def __init__(self, parent, imageList, *args, **kwargs):
         """
         Creates three SliceCanvas objects, each displaying a
         different axis of the given 3D numpy image.
         """
 
-        if not isinstance(image, fslimage.Image):
-            image = fslimage.Image(image)
-
-        self.imageDisplay = fslimage.ImageDisplay(image)
-
-        imageList = fslimage.ImageList([image], [self.imageDisplay])
+        self.imageList = imageList
 
         wx.Panel.__init__(self, parent, *args, **kwargs)
         self.SetMinSize((300,100))
 
-        self.shape = image.data.shape
+        self.shape = imageList.images[0].data.shape
 
-        self.canvasPanel  = wx.Panel(self)
-        self.controlPanel = props.buildGUI(self, self.imageDisplay)
- 
+        self.canvasPanel = wx.Panel(self)
+
         self.xcanvas = slicecanvas.SliceCanvas(
             self.canvasPanel, imageList, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(
             self.canvasPanel, imageList, zax=1, context=self.xcanvas.context)
         self.zcanvas = slicecanvas.SliceCanvas(
             self.canvasPanel, imageList, zax=2, context=self.xcanvas.context)
+
+
+        self.controlPanel   = wx.Notebook(self)
+        for i in range(len(imageList.images)):
+
+            controlPanel = props.buildGUI(self.controlPanel, self.imageList.displays[i])
+            self.controlPanel.AddPage(controlPanel, '{}'.format(i))
 
         self.mainSizer   = wx.BoxSizer(wx.VERTICAL)
         self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -170,28 +171,32 @@ class ImageView(wx.Panel):
 
 class ImageFrame(wx.Frame):
     """
-    Convenience class for displaying an image in a standalone window.
+    Convenience class for displaying a collection of images in a standalone
+    window.
     """
 
-    def __init__(self, parent, image, title=None):
+    def __init__(self, parent, imageList, title=None):
         wx.Frame.__init__(self, parent, title=title)
 
-        self.image = image
-        self.panel = ImageView(self, image)
+        self.imageList = imageList
+        self.panel     = ImageView(self, imageList)
         self.Layout()
 
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 2:
-        print 'usage: imageview.py filename'
+    if len(sys.argv) < 2:
+        print 'usage: imageview.py filename [filename]'
         sys.exit(1)
 
-    app    = wx.App()
-    image  = fslimage.Image(sys.argv[1])
+    app       = wx.App()
+    images    = map(fslimage.Image, sys.argv[1:])
+    displays  = map(fslimage.ImageDisplay, images)
+    imageList = fslimage.ImageList(images, displays)
+    
     frame  = ImageFrame(
         None,
-        image,
+        imageList,
         title=sys.argv[1])
     frame.Show()
 

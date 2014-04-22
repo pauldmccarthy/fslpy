@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# fslimage.py - Classes representing a 3D image, the display
-# properties of a 3D image, and a collection of 3D images.
+# fslimage.py - Classes for representing 3D images, display
+# properties of 3D images, and collections of 3D images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -39,6 +39,7 @@ class Image(object):
         # otherwise, we assume that it is a nibabel image
         self.nibImage = image
         self.data     = image.get_data()
+        self.name     = image.get_filename()
 
         xdim,ydim,zdim = self.nibImage.get_shape()
         xlen,ylen,zlen = self.nibImage.get_header().get_zooms()
@@ -51,6 +52,10 @@ class Image(object):
         self.ylen  = ylen
         self.zlen  = zlen
 
+        # This attribute may be used to point to an OpenGL
+        # buffer which is to be shared between multiple users
+        # (e.g. two SliceCanvas instances which are displaying
+        # a different view of the same image)
         self.glBuffer = None
 
 
@@ -58,7 +63,6 @@ class ImageDisplay(props.HasProperties):
     """
     A class which describes how an image should be displayed.
     """
-
 
     def updateColourMap(self, newVal):
         """
@@ -76,6 +80,8 @@ class ImageDisplay(props.HasProperties):
             cmap.set_under(cmap(0.0), alpha=1.0)
             cmap.set_over( cmap(1.0), alpha=1.0) 
 
+    # The display properties of an image
+    enabled    = props.Boolean()
     alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
     displayMin = props.Double()
     displayMax = props.Double()
@@ -85,9 +91,14 @@ class ImageDisplay(props.HasProperties):
     cmap       = props.ColourMap(default=mplcm.Greys_r,
                                  preNotifyFunc=updateColourMap)
     
-
-    _view   = props.VGroup(('displayMin', 'displayMax', 'alpha', 'rangeClip', 'cmap'))
+    _view   = props.VGroup(('enabled',
+                            'displayMin',
+                            'displayMax',
+                            'alpha',
+                            'rangeClip',
+                            'cmap'))
     _labels = {
+        'enabled'    : 'Enabled',
         'displayMin' : 'Min.',
         'displayMax' : 'Max.',
         'alpha'      : 'Opacity',
@@ -112,6 +123,9 @@ class ImageDisplay(props.HasProperties):
 
         
 class ImageList(object):
+    """
+    Class representing a collection of images to be displayed together.
+    """
 
     def __init__(self, images=None, displays=None):
         
@@ -120,3 +134,4 @@ class ImageList(object):
         
         self.images   = images
         self.displays = displays
+

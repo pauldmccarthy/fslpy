@@ -44,7 +44,7 @@ class GLImageData(object):
     slice).
 
     The third buffer, the 'image buffer' contains the image data itself,
-    scaled to lie between 0.0 and 1.0. It is used to calculate voxel colours.
+    scaled to lie between 0 and 255. It is used to calculate voxel colours.
 
     Finally, the texture, the 'colour buffer', is used to store a lookup table
     containing colours.
@@ -375,11 +375,13 @@ class SliceCanvas(wxgl.GLCanvas):
         if image.glBuffer is not None:
             return image.glBuffer
 
-        # The image data is cast to single precision floating
-        # point, and normalised to lie between 0.0 and 1.0
+        # The image data is normalised to lie
+        # between 0 and 256, and cast to uint8
         imageData = np.array(image.data, dtype=np.float32)
-        imageData = (imageData       - imageData.min()) / \
-                    (imageData.max() - imageData.min())
+        imageData = 255.0*(imageData       - imageData.min()) / \
+                          (imageData.max() - imageData.min())
+        imageData = np.array(imageData, dtype=np.uint8)
+ 
 
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
@@ -558,10 +560,10 @@ class SliceCanvas(wxgl.GLCanvas):
                 gl.glVertexAttribPointer(
                     self.voxelValuePos,
                     1,
-                    gl.GL_FLOAT,
-                    gl.GL_FALSE,
-                    imageStride*4,
-                    imageBuffer + imageOffset*4)
+                    gl.GL_UNSIGNED_BYTE,
+                    gl.GL_TRUE,
+                    imageStride,
+                    imageBuffer + imageOffset)
 
                 gl.glEnableVertexAttribArray(self.voxelValuePos)
                 arbia.glVertexAttribDivisorARB(self.voxelValuePos, 1)
