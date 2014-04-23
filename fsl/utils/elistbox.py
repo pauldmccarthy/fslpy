@@ -65,6 +65,10 @@ ELB_NO_REMOVE = 2
 # Do not allow items to be reordered.
 ELB_NO_MOVE   = 4
 
+# The first item in the list (index 0) is shown
+# at the botom, and the last item at the top.
+ELB_REVERSE   = 8
+
 class EditableListBox(wx.Panel):
     """
     An EditableListBox contains a ListBox containing some items,
@@ -88,10 +92,13 @@ class EditableListBox(wx.Panel):
 
         wx.Panel.__init__(self, parent)
 
+        reverseOrder  =      style & ELB_REVERSE
         addSupport    = not (style & ELB_NO_ADD)
         removeSupport = not (style & ELB_NO_REMOVE)
         moveSupport   = not (style & ELB_NO_MOVE)
         noButtons     = not any((addSupport, removeSupport, moveSupport))
+
+        self.reverseOrder = reverseOrder
 
         if clientData is None: clientData = [None]*len(choices)
 
@@ -99,12 +106,16 @@ class EditableListBox(wx.Panel):
         self.listBox = wx.ListBox(self, style=wx.LB_SINGLE | wx.LB_NEEDED_SB)
         self.listBox.Bind(wx.EVT_LISTBOX, self._itemSelected)
 
-        for choice,data in zip(choices, clientData):
+        items = zip(choices, clientData)
+        if reverseOrder:
+            items.reverse()
+
+        for choice,data in items:
             self.listBox.Append(choice, data)
 
         # A panel containing buttons for doing stuff with the list
         if not noButtons:
-            self.buttonPanel = wx.Panel(self)
+            self.buttonPanel      = wx.Panel(self)
             self.buttonPanelSizer = wx.BoxSizer(wx.VERTICAL)
             self.buttonPanel.SetSizer(self.buttonPanelSizer) 
 
@@ -150,7 +161,8 @@ class EditableListBox(wx.Panel):
         """
         Returns a 3-tuple containing the index, label, and associated client
         data of the currently selected list item, or (None, None, None) if
-        no item is selected.
+        no item is selected. If the ELB_REVERSE style is active, the index
+        is inverted.
         """
         
         idx    = self.listBox.GetSelection()
@@ -162,6 +174,9 @@ class EditableListBox(wx.Panel):
         else:
             choice = self.listBox.GetString(    idx)
             data   = self.listBox.GetClientData(idx)
+
+        if (idx is not None) and self.reverseOrder:
+            idx = self.listBox.GetCount() - idx - 1
 
         return idx, choice, data
         
@@ -180,12 +195,15 @@ class EditableListBox(wx.Panel):
         wx.PostEvent(self, ev)
 
         
-    def _moveItem(self, oldIdx, newIdx):
+    def _moveItem(self, offset):
         """
         Called when the 'move up' or 'move down' buttons are pushed. Moves
-        the selected item up or down and posts an EVT_ELB_MOVE_EVENT, unless
-        it doesn't make sense to do so.
+        the selected item by the specified offset and posts an
+        EVT_ELB_MOVE_EVENT, unless it doesn't make sense to do the move. 
         """
+
+        oldIdx = self.listBox.GetSelection()
+        newIdx = oldIdx + offset
 
         # nothing is selected, or the selected
         # item is at the top/bottom of the list.
@@ -200,6 +218,10 @@ class EditableListBox(wx.Panel):
         self.listBox.Insert(choice, newIdx, data)
         self.listBox.SetSelection(newIdx)
 
+        if self.reverseOrder:
+            oldIdx = self.listBox.GetCount() - oldIdx - 1
+            newIdx = self.listBox.GetCount() - newIdx - 1
+
         log.debug('ListMoveEvent (oldIdx: {}; newIdx: {}; choice: {})'.format(
             oldIdx, newIdx, choice))
         
@@ -213,9 +235,7 @@ class EditableListBox(wx.Panel):
         Called when the 'move down' button is pushed. Calls the _moveItem
         method.
         """
-        oldIdx = self.listBox.GetSelection()
-        newIdx = oldIdx+1
-        self._moveItem(oldIdx, newIdx)
+        self._moveItem(1)
 
         
     def _moveItemUp(self, ev):
@@ -223,9 +243,7 @@ class EditableListBox(wx.Panel):
         Called when the 'move up' button is pushed. Calls the _moveItem
         method.
         """ 
-        oldIdx = self.listBox.GetSelection()
-        newIdx = oldIdx-1
-        self._moveItem(oldIdx, newIdx) 
+        self._moveItem(-1) 
 
         
     def _addItem(self, ev):
@@ -280,7 +298,7 @@ def main(items):
     app     = wx.App()
     frame   = wx.Frame(None)
     panel   = wx.Panel(frame)
-    listbox = EditableListBox(panel, items)
+    listbox = EditableListBox(panel, items, style=ELB_REVERSE)
 
     panelSizer = wx.BoxSizer(wx.HORIZONTAL)
     panel.SetSizer(panelSizer)
