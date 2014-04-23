@@ -56,6 +56,15 @@ ListRemoveEvent, EVT_ELB_REMOVE_EVENT = wxevent.NewEvent()
 ListMoveEvent,   EVT_ELB_MOVE_EVENT   = wxevent.NewEvent()
 
 
+# Do not allow new items to be added.
+ELB_NO_ADD    = 1
+
+# Do not allow items to be removed.
+ELB_NO_REMOVE = 2
+
+# Do not allow items to be reordered.
+ELB_NO_MOVE   = 4
+
 class EditableListBox(wx.Panel):
     """
     An EditableListBox contains a ListBox containing some items,
@@ -66,53 +75,73 @@ class EditableListBox(wx.Panel):
       - parent:     wx parent object
       - choices:    list of strings, the items in the list
       - clientData: list of data associated with the list items.
+      - style:      Style bitmask - accepts ELB_NO_ADD, ELB_NO_REMOVE,
+                    and ELB_NO_MOVE.
     """
 
     def __init__(
             self,
             parent,
             choices,
-            clientData=None):
+            clientData=None,
+            style=0):
 
         wx.Panel.__init__(self, parent)
 
+        addSupport    = not (style & ELB_NO_ADD)
+        removeSupport = not (style & ELB_NO_REMOVE)
+        moveSupport   = not (style & ELB_NO_MOVE)
+        noButtons     = not any((addSupport, removeSupport, moveSupport))
+
         if clientData is None: clientData = [None]*len(choices)
 
-        self.listBox = wx.ListBox(
-            self, style=wx.LB_SINGLE | wx.LB_NEEDED_SB)
+        # The list box containing the list of items
+        self.listBox = wx.ListBox(self, style=wx.LB_SINGLE | wx.LB_NEEDED_SB)
+        self.listBox.Bind(wx.EVT_LISTBOX, self._itemSelected)
 
         for choice,data in zip(choices, clientData):
             self.listBox.Append(choice, data)
 
-        self.buttonPanel  = wx.Panel(self)
+        # A panel containing buttons for doing stuff with the list
+        if not noButtons:
+            self.buttonPanel = wx.Panel(self)
+            self.buttonPanelSizer = wx.BoxSizer(wx.VERTICAL)
+            self.buttonPanel.SetSizer(self.buttonPanelSizer) 
 
-        self.upButton     = wx.Button(self.buttonPanel, label=u'\u25B2',
-                                      style=wx.BU_EXACTFIT)
-        self.downButton   = wx.Button(self.buttonPanel, label=u'\u25BC',
-                                      style=wx.BU_EXACTFIT)
-        self.addButton    = wx.Button(self.buttonPanel, label='+',
-                                      style=wx.BU_EXACTFIT)
-        self.removeButton = wx.Button(self.buttonPanel, label='-',
-                                      style=wx.BU_EXACTFIT)
+        # Buttons for moving the selected item up/down
+        if moveSupport:
+            self.upButton   = wx.Button(self.buttonPanel, label=u'\u25B2',
+                                        style=wx.BU_EXACTFIT)
+            self.downButton = wx.Button(self.buttonPanel, label=u'\u25BC',
+                                        style=wx.BU_EXACTFIT)
+            self.upButton  .Bind(wx.EVT_BUTTON, self._moveItemUp)
+            self.downButton.Bind(wx.EVT_BUTTON, self._moveItemDown)
 
-        self.listBox     .Bind(wx.EVT_LISTBOX, self._itemSelected)
-        self.upButton    .Bind(wx.EVT_BUTTON,  self._moveItemUp)
-        self.downButton  .Bind(wx.EVT_BUTTON,  self._moveItemDown)
-        self.addButton   .Bind(wx.EVT_BUTTON,  self._addItem)
-        self.removeButton.Bind(wx.EVT_BUTTON,  self._removeItem)
+            self.buttonPanelSizer.Add(self.upButton,   flag=wx.EXPAND)
+            self.buttonPanelSizer.Add(self.downButton, flag=wx.EXPAND) 
 
-        self.buttonPanelSizer = wx.BoxSizer(wx.VERTICAL)
-        self.buttonPanel.SetSizer(self.buttonPanelSizer)
-        self.buttonPanelSizer.Add(self.upButton,     flag=wx.EXPAND)
-        self.buttonPanelSizer.Add(self.downButton,   flag=wx.EXPAND)
-        self.buttonPanelSizer.Add(self.addButton,    flag=wx.EXPAND)
-        self.buttonPanelSizer.Add(self.removeButton, flag=wx.EXPAND)
+        # Button for adding new items
+        if addSupport:
+            self.addButton = wx.Button(self.buttonPanel, label='+',
+                                       style=wx.BU_EXACTFIT)
+            self.addButton.Bind(wx.EVT_BUTTON, self._addItem)
+            self.buttonPanelSizer.Add(self.addButton, flag=wx.EXPAND) 
+
+        # Button for removing the selected item
+        if removeSupport:
+            self.removeButton = wx.Button(self.buttonPanel, label='-',
+                                          style=wx.BU_EXACTFIT)
+
+            self.removeButton.Bind(wx.EVT_BUTTON, self._removeItem)
+            self.buttonPanelSizer.Add(self.removeButton, flag=wx.EXPAND)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
-        
-        self.sizer.Add(self.buttonPanel, flag=wx.EXPAND)
-        self.sizer.Add(self.listBox,     flag=wx.EXPAND, proportion=1)
+
+        if not noButtons:
+            self.sizer.Add(self.buttonPanel, flag=wx.EXPAND)
+            
+        self.sizer.Add(self.listBox, flag=wx.EXPAND, proportion=1)
 
         self.sizer.Layout()
 
@@ -208,6 +237,8 @@ class EditableListBox(wx.Panel):
 
         idx, choice, data = self._getSelection()
 
+        log.debug('ListAddEvent (idx: {}; choice: {})'.format(idx, choice)) 
+
         ev = ListAddEvent(idx=idx, choice=choice, data=data)
         
         wx.PostEvent(self, ev)
@@ -225,6 +256,8 @@ class EditableListBox(wx.Panel):
 
         self.listBox.Delete(idx)
         self.listBox.SetSelection(wx.NOT_FOUND)
+
+        log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(idx, choice)) 
 
         ev = ListRemoveEvent(idx=idx, choice=choice, data=data)
         
