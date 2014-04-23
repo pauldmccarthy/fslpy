@@ -14,9 +14,35 @@ import os.path as op
 # to any of the functions in this module.
 _allowedExts = ['.nii', '.img', '.hdr', '.nii.gz', '.img.gz']
 
+_descriptions = ['NIFTI1 images',
+                 'ANALYZE75 images',
+                 'NIFTI1/ANALYZE75 headers',
+                 'Compressed NIFTI1 images',
+                 'Compressed ANALYZE75/NIFTI1 images']
+
 
 # The default file extension (TODO read this from $FSLOUTPUTTYPE)
 _defaultExt  = '.nii.gz'
+
+
+def wildcard(allowedExts=None):
+    """
+    """
+    
+    if allowedExts is None:
+        allowedExts  = _allowedExts
+        descs        = _descriptions
+    else:
+        descs        = allowedExts
+
+
+    exts = ['*{}'.format(ext) for ext in allowedExts]
+
+    wcParts = ['|'.join((desc,ext)) for (desc,ext) in zip(descs, exts)]
+
+    print  '|'.join(wcParts)
+    return '|'.join(wcParts)
+    
 
 
 def isSupported(filename, allowedExts=None):

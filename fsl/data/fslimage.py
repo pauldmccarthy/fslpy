@@ -15,8 +15,9 @@ import nibabel            as nib
 import matplotlib.cm      as mplcm
 import matplotlib.colors  as mplcolors
 
-import fsl.props          as props
-import fsl.data.imagefile as imagefile
+import fsl.props            as props
+import fsl.data.imagefile   as imagefile
+import fsl.utils.notifylist as notifylist
 
 
 class Image(object):
@@ -31,7 +32,7 @@ class Image(object):
         """
 
         # The image parameter may be the name of an image file
-        if isinstance(image, str):
+        if isinstance(image, basestring):
             image = nib.load(imagefile.addExt(image))
             
         # Or a numpy array - we wrap it in a nibabel image,
@@ -147,7 +148,7 @@ class ImageDisplay(props.HasProperties):
         self.displayMax = self.dataMax
 
         
-class ImageList(object):
+class ImageList(notifylist.NotifyList):
     """
     Class representing a collection of images to be displayed together.
     Provides basic list-like functionality, and a listener interface
@@ -165,42 +166,8 @@ class ImageList(object):
         if not isinstance(images, collections.Iterable):
             raise TypeError('images must be a sequence of images')
 
-        if not all(map(lambda img: isinstance(img, Image), images)):
-            raise TypeError('images must be a sequence of images')
+        def validate(img):
+            if not isinstance(img, Image):
+                raise TypeError('images must be a sequence of images')
         
-        self._images    = images
-        self._listeners = []
-
-
-    def __len__     (self):        return self._images.__len__()
-    def __getitem__ (self, key):   return self._images.__getitem__(key)
-    def __iter__    (self):        return self._images.__iter__()
-    def __contains__(self, image): return self._images.__contains__(image)
-
-        
-    def append(self, image): 
-        self._images.append(image)
-        self.notify()
-
-        
-    def pop(self, index=-1):
-        popped = self._images.pop(index)
-        self.notify()
-        return popped
-
-        
-    def insert(self, index, image):
-        self._images.insert(index, image)
-        self.notify()
-
-
-    def extend(self, images):
-        self._images.extend(images)
-        self.notify()
-
-        
-    def addListener   (self, listener): self._listeners.append(listener)
-    def removeListener(self, listener): self._listeners.remove(listener)
-    def notify        (self):
-        for listener in self._listeners:
-            listener(self)
+        notifylist.NotifyList.__init__(self, images, validate)

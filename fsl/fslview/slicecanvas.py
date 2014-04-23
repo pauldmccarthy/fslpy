@@ -298,11 +298,6 @@ class SliceCanvas(wxgl.GLCanvas):
 
             glImageData = self._initGLImageData(image)
 
-            image.setAttribute('glImageData_{}'.format(id(self)), glImageData)
-            
-            self._configDisplayListeners(image)
-            self.updateColourBuffer(image)
-
         self.glReady = True
 
 
@@ -340,6 +335,10 @@ class SliceCanvas(wxgl.GLCanvas):
         glImageData = GLImageData(
             image, imageBuffer, colourBuffer, positionBuffer, geomBuffer)
 
+        image.setAttribute('glImageData_{}'.format(id(self)), glImageData)
+        self._configDisplayListeners(image)
+        self.updateColourBuffer(image)
+
         return glImageData
 
         
@@ -350,7 +349,8 @@ class SliceCanvas(wxgl.GLCanvas):
         image buffer is used instead.
         """
 
-        imageBuffer = image.getAttribute('glBuffer')
+        try:    imageBuffer = image.getAttribute('glBuffer')
+        except: imageBuffer = None
 
         if imageBuffer is not None:
             return imageBuffer
@@ -518,7 +518,14 @@ class SliceCanvas(wxgl.GLCanvas):
 
             image       = self.imageList[i]
             glImageData = image.getAttribute(
-                'glImageData_{}'.format(id(self))) 
+                'glImageData_{}'.format(id(self)))            
+
+            # try:
+            #     glImageData = image.getAttribute(
+            #         'glImageData_{}'.format(id(self)))
+            # except:
+            #     wx.CallAfter(lambda : self._initGLImageData(image))
+            #     return
             
             imageDisplay   = image.display
             geomBuffer     = glImageData.geomBuffer
