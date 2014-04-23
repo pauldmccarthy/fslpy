@@ -72,15 +72,22 @@ ELB_REVERSE   = 8
 class EditableListBox(wx.Panel):
     """
     An EditableListBox contains a ListBox containing some items,
-    and a strip of buttons for modifying said items. The underlying
+    and a strip of buttons for modifying said items.
+
+    Some rudimentary wrapper methods for modifying the list contents
+    are provided by this EditableListBox object, and the underlying
     wx.ListBox is accessible through an attribute called 'listBox'.
+    But beware of accessing the listBox object directly if you are
+    using ELB_REVERSE, as you will need to manually invert the list
+    indices.
+    
     Parameters:
     
       - parent:     wx parent object
       - choices:    list of strings, the items in the list
       - clientData: list of data associated with the list items.
       - style:      Style bitmask - accepts ELB_NO_ADD, ELB_NO_REMOVE,
-                    and ELB_NO_MOVE.
+                    ELB_NO_MOVE, and ELB_REVERSE.
     """
 
     def __init__(
@@ -157,12 +164,50 @@ class EditableListBox(wx.Panel):
         self.sizer.Layout()
 
         
+    def _fixIndex(self, idx):
+        """
+        If the ELB_REVERSE style is active, this method will return
+        an inverted version of the given index. Otherwise it returns
+        the index value unchanged.
+        """
+
+        if idx is None:           return idx
+        if idx == wx.NOT_FOUND:   return idx
+        if not self.reverseOrder: return idx
+        
+        idx = self.listBox.GetCount() - idx - 1
+        
+        return idx
+
+    #
+    # These methods simply wrap the same-named wx.ListBox methods,
+    # while supporting the ELB_REVERSE style.
+    #
+    
+    def SetSelection(self, n):
+        self.listBox.SetSelection(self._fixIndex(n))
+        
+    def GetSelection(self):
+        return self._fixIndex(self.listBox.GetSelection())
+
+    def Insert(self, item, pos, clientData):
+        return self.listBox.Insert(item, self._fixIndex(pos), clientData)
+
+    def Append(self, item, clientData):
+        if not self.reverseOrder:
+            return self.listBox.Append(item, clientData)
+        else:
+            return self.listBox.Insert(item, 0, clientData)
+
+    def Delete(self, n):
+        return self.listBox.Delete(self._fixIndex(n))
+
+        
     def _getSelection(self):
         """
         Returns a 3-tuple containing the index, label, and associated client
         data of the currently selected list item, or (None, None, None) if
-        no item is selected. If the ELB_REVERSE style is active, the index
-        is inverted.
+        no item is selected. 
         """
         
         idx    = self.listBox.GetSelection()
@@ -175,9 +220,6 @@ class EditableListBox(wx.Panel):
             choice = self.listBox.GetString(    idx)
             data   = self.listBox.GetClientData(idx)
 
-        if (idx is not None) and self.reverseOrder:
-            idx = self.listBox.GetCount() - idx - 1
-
         return idx, choice, data
         
         
@@ -188,6 +230,8 @@ class EditableListBox(wx.Panel):
         """
         
         idx, choice, data = self._getSelection()
+
+        idx = self._fixIndex(idx)
 
         log.debug('ListSelectEvent (idx: {}; choice: {})'.format(idx, choice))
         
@@ -202,25 +246,21 @@ class EditableListBox(wx.Panel):
         EVT_ELB_MOVE_EVENT, unless it doesn't make sense to do the move. 
         """
 
-        oldIdx = self.listBox.GetSelection()
+        oldIdx, choice, data = self._getSelection()
         newIdx = oldIdx + offset
 
         # nothing is selected, or the selected
         # item is at the top/bottom of the list.
-        if oldIdx  == wx.NOT_FOUND:                         return
+        if oldIdx  == None:                                 return
         if oldIdx < 0 or oldIdx >= self.listBox.GetCount(): return
         if newIdx < 0 or newIdx >= self.listBox.GetCount(): return 
-        
-        choice  = self.listBox.GetString(    oldIdx)
-        data    = self.listBox.GetClientData(oldIdx)
 
         self.listBox.Delete(oldIdx)
         self.listBox.Insert(choice, newIdx, data)
         self.listBox.SetSelection(newIdx)
 
-        if self.reverseOrder:
-            oldIdx = self.listBox.GetCount() - oldIdx - 1
-            newIdx = self.listBox.GetCount() - newIdx - 1
+        oldIdx = self._fixIndex(oldIdx)
+        newIdx = self._fixIndex(newIdx)
 
         log.debug('ListMoveEvent (oldIdx: {}; newIdx: {}; choice: {})'.format(
             oldIdx, newIdx, choice))
@@ -255,6 +295,8 @@ class EditableListBox(wx.Panel):
 
         idx, choice, data = self._getSelection()
 
+        idx = self._fixIndex(idx)
+
         log.debug('ListAddEvent (idx: {}; choice: {})'.format(idx, choice)) 
 
         ev = ListAddEvent(idx=idx, choice=choice, data=data)
@@ -270,22 +312,27 @@ class EditableListBox(wx.Panel):
 
         idx, choice, data = self._getSelection()
 
+        realIdx = self._fixIndex(idx)
+
         if idx == None: return
 
         self.listBox.Delete(idx)
         self.listBox.SetSelection(wx.NOT_FOUND)
 
-        log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(idx, choice)) 
+        log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(
+            realIdx, choice)) 
 
-        ev = ListRemoveEvent(idx=idx, choice=choice, data=data)
+        ev = ListRemoveEvent(idx=realIdx, choice=choice, data=data)
         
         wx.PostEvent(self, ev) 
 
 
-def main(items):
+def main():
     """
     Little testing application.
     """
+
+    import random
 
     logging.basicConfig(
         format='%(levelname)8s '\
@@ -293,7 +340,9 @@ def main(items):
                '%(lineno)4d: '\
                '%(funcName)s - '\
                '%(message)s',
-        level=logging.DEBUG) 
+        level=logging.DEBUG)
+
+    items   = map(str, range(5))
 
     app     = wx.App()
     frame   = wx.Frame(None)
@@ -309,10 +358,16 @@ def main(items):
     frameSizer.Add(panel, flag=wx.EXPAND, proportion=1) 
 
     frame.Show()
+
+
+    def addItem(ev):
+        listbox.Append(str(random.randint(100,200)), None)
+
+    listbox.Bind(EVT_ELB_ADD_EVENT, addItem)
+    
     
     app.MainLoop()
 
     
 if __name__ == '__main__':
-    import sys
-    main(sys.argv[1:])
+    main()
