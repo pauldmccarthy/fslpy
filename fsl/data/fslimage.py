@@ -6,6 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import collections
+
 import os.path            as op
 
 import numpy              as np
@@ -144,6 +146,9 @@ class ImageList(object):
         """
         
         if images is None: images = []
+
+        if not isinstance(images, collections.Iterable):
+           raise TypeError('images must be a sequence of images')
 
         self._images    = images
         self._listeners = []
