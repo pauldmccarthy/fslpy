@@ -33,16 +33,11 @@ LocationEvent, EVT_LOCATION_EVENT = wxevent.NewEvent()
 
 class OrthoPanel(wx.Panel):
 
-    def __init__(self, parent, imageList, *args, **kwargs):
+    def __init__(self, parent, imageList):
         """
         Creates three SliceCanvas objects, each displaying the images
         in the given image list along a different axis.
         """
-
-        # if an fslimage.Image is passed in, we turn
-        # a blind eye, and make it a list of length 1
-        if isinstance(imageList, fslimage.Image):
-            imageList = fslimage.ImageList(imageList)
 
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
@@ -50,7 +45,7 @@ class OrthoPanel(wx.Panel):
 
         self.imageList = imageList
 
-        wx.Panel.__init__(self, parent, *args, **kwargs)
+        wx.Panel.__init__(self, parent)
         self.SetMinSize((300,100))
 
         self.shape = imageList[0].data.shape

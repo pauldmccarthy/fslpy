@@ -216,11 +216,6 @@ class SliceCanvas(wxgl.GLCanvas):
         if context is None: self.context = wxgl.GLContext(self)
         else:               self.context = context
 
-        # If a single image has been provided,
-        # make it into a list of length 1
-        if isinstance(imageList, fslimage.Image):
-            imageList = fslimage.ImageList(imageList)
-
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
                 'imageList must be a fsl.data.fslimage.ImageList instance') 
@@ -259,12 +254,14 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self._colourResolution = 256
 
-        # These fields are set by the _initGLData method when it
+        # This flag is set by the _initGLData method when it
         # has finished initialising the OpenGL data buffers
-        self.glReady     = False
-        self.glImageData = None
+        self.glReady = False
 
         self.Bind(wx.EVT_PAINT, self.draw)
+
+
+        self.imageList.addListener(lambda il: self.Refresh())
 
 
     def _initGLData(self):
@@ -296,23 +293,23 @@ class SliceCanvas(wxgl.GLCanvas):
         self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPosition')
         self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.colourMapPos  = gl.glGetUniformLocation(self.shaders, 'colourMap')
-
-        self.glImageData = []
         
-        for idx in range(len(self.imageList)):
-            self.glImageData.append(self._initGLImageData(idx))
-            self._configDisplayListeners(idx)
-            self.updateColourBuffer(idx)
+        for image in self.imageList:
+
+            glImageData = self._initGLImageData(image)
+
+            image.setAttribute('glImageData_{}'.format(id(self)), glImageData)
+            
+            self._configDisplayListeners(image)
+            self.updateColourBuffer(image)
 
         self.glReady = True
 
 
-    def _initGLImageData(self, idx):
+    def _initGLImageData(self, image):
         """
         """
 
-        image = self.imageList[idx]
-        
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
@@ -334,7 +331,7 @@ class SliceCanvas(wxgl.GLCanvas):
         positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
 
         # The image buffer, containing the image data itself
-        imageBuffer = self._initImageBuffer(idx)
+        imageBuffer = self._initImageBuffer(image)
 
         # The colour buffer, containing a map of
         # colours (stored on the GPU as a 1D texture)
@@ -343,23 +340,20 @@ class SliceCanvas(wxgl.GLCanvas):
         glImageData = GLImageData(
             image, imageBuffer, colourBuffer, positionBuffer, geomBuffer)
 
-
         return glImageData
 
         
-    def _initImageBuffer(self, idx):
+    def _initImageBuffer(self, image):
         """
         Initialises the buffer used to store the image data. If a 'master'
         canvas was set when this SliceCanvas object was constructed, its
         image buffer is used instead.
         """
 
-        image = self.imageList[idx]
+        imageBuffer = image.getAttribute('glBuffer')
 
-        # If a master canvas was passed to the
-        # constructor, let's share its image data.
-        if image.glBuffer is not None:
-            return image.glBuffer
+        if imageBuffer is not None:
+            return imageBuffer
 
         # The image data is normalised to lie
         # between 0 and 256, and cast to uint8
@@ -375,16 +369,15 @@ class SliceCanvas(wxgl.GLCanvas):
         imageData = imageData.ravel(order='F')
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
-        image.glBuffer = imageBuffer
+        image.setAttribute('glBuffer', imageBuffer)
 
         return imageBuffer
 
 
-    def _configDisplayListeners(self, idx):
+    def _configDisplayListeners(self, image):
         """
         """
 
-        image   = self.imageList[idx]
         display = image.display
 
         # Add a bunch of listeners to the image display
@@ -394,7 +387,7 @@ class SliceCanvas(wxgl.GLCanvas):
             self.Refresh()
             
         def colourUpdateNeeded(*a):
-            self.updateColourBuffer(idx)
+            self.updateColourBuffer(image)
             self.Refresh()
 
         lnrName = 'SliceCanvas_{{}}_{}'.format(id(self))
@@ -417,15 +410,17 @@ class SliceCanvas(wxgl.GLCanvas):
             'cmap', lnrName.format('cmap'), colourUpdateNeeded) 
 
 
-    def updateColourBuffer(self, idx):
+    def updateColourBuffer(self, image):
         """
         Regenerates the colour buffer used to colour a slice of the
         specified image. After calling this method, you will need to
         call Refresh() for the change to take effect.
         """
 
-        iDisplay     = self.imageList  [idx].display
-        colourBuffer = self.glImageData[idx].colourBuffer
+        iDisplay     = image.display
+        glImageData  = image.getAttribute('glImageData_{}'.format(id(self)))
+        
+        colourBuffer = glImageData.colourBuffer
 
         # Here we are creating a range of values to be passed
         # to the matplotlib.colors.Colormap instance of the
@@ -519,14 +514,17 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        for i in range(len(self.glImageData)):
+        for i in range(len(self.imageList)):
 
-            image          = self.imageList[i]
+            image       = self.imageList[i]
+            glImageData = image.getAttribute(
+                'glImageData_{}'.format(id(self))) 
+            
             imageDisplay   = image.display
-            geomBuffer     = self.glImageData[i].geomBuffer
-            imageBuffer    = self.glImageData[i].imageBuffer
-            positionBuffer = self.glImageData[i].positionBuffer
-            colourBuffer   = self.glImageData[i].colourBuffer
+            geomBuffer     = glImageData.geomBuffer
+            imageBuffer    = glImageData.imageBuffer
+            positionBuffer = glImageData.positionBuffer
+            colourBuffer   = glImageData.colourBuffer
 
             if not imageDisplay.enabled:
                 continue
