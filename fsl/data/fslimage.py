@@ -48,23 +48,36 @@ class Image(object):
         xdim,ydim,zdim = self.nibImage.get_shape()
         xlen,ylen,zlen = self.nibImage.get_header().get_zooms()
         
-        self.xdim  = xdim
-        self.ydim  = ydim
-        self.zdim  = zdim
+        self.xdim = xdim
+        self.ydim = ydim
+        self.zdim = zdim
 
-        self.xlen  = xlen
-        self.ylen  = ylen
-        self.zlen  = zlen
+        self.xlen = xlen
+        self.ylen = ylen
+        self.zlen = zlen
 
         # ImageDisplay instance used to describe
         # how this image is to be displayed
         self.display = ImageDisplay(self)
 
-        # This attribute may be used to point to an OpenGL
-        # buffer which is to be shared between multiple users
-        # (e.g. two SliceCanvas instances which are displaying
-        # a different view of the same image)
-        self.glBuffer = None
+        # This dictionary may be used to store
+        # arbitrary data associated with this image.
+        self._attributes = {}
+
+        
+    def getAttribute(self, name):
+        """
+        Retrieve the attribute with the given name.
+        """
+        return self._attributes[name]
+
+        
+    def setAttribute(self, name, value):
+        """
+        Set an attribute with the given name and the given value.
+        """
+        self._attributes[name] = value
+        
 
 
 class ImageDisplay(props.HasProperties):
@@ -72,6 +85,8 @@ class ImageDisplay(props.HasProperties):
     A class which describes how an image should be displayed. There should
     be no need to manually instantiate ImageDisplay objects - one is created
     for each Image object, and is accessed via the Image.display attribute.
+    If a single image needs to be displayed in different ways, then create
+    away, and manage your own ImageDisplay objects.
     """
 
     def updateColourMap(self, newVal):
@@ -90,7 +105,7 @@ class ImageDisplay(props.HasProperties):
             cmap.set_under(cmap(0.0), alpha=1.0)
             cmap.set_over( cmap(1.0), alpha=1.0) 
 
-    # The display properties of an image
+            
     enabled    = props.Boolean(default=True)
     alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
     displayMin = props.Double()
@@ -140,16 +155,19 @@ class ImageList(object):
     changes (e.g. an image is added or removed).
     """
 
-        
     def __init__(self, images=None):
         """
+        Create an ImageList object from the given sequence of Image objects.
         """
         
         if images is None: images = []
 
         if not isinstance(images, collections.Iterable):
-           raise TypeError('images must be a sequence of images')
+            raise TypeError('images must be a sequence of images')
 
+        if not all(map(lambda img: isinstance(img, Image), images)):
+            raise TypeError('images must be a sequence of images')
+        
         self._images    = images
         self._listeners = []
 
@@ -159,7 +177,7 @@ class ImageList(object):
     def __iter__    (self):        return self._images.__iter__()
     def __contains__(self, image): return self._images.__contains__(image)
 
-    
+        
     def append(self, image): 
         self._images.append(image)
         self.notify()
@@ -186,4 +204,3 @@ class ImageList(object):
     def notify        (self):
         for listener in self._listeners:
             listener(self)
-
