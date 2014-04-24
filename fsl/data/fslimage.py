@@ -13,6 +13,7 @@ import collections
 import os.path            as op
 
 import numpy              as np
+import numpy.linalg       as linalg
 import nibabel            as nib
 import matplotlib.cm      as mplcm
 import matplotlib.colors  as mplcolors
@@ -50,9 +51,10 @@ class Image(object):
         self.data     = image.get_data()
         self.name     = op.basename(image.get_filename())
 
-        self.shape  = self.nibImage.get_shape()
-        self.pixdim = self.nibImage.get_header().get_zooms()
-        self.affine = image.get_affine()
+        self.shape         = self.nibImage.get_shape()
+        self.pixdim        = self.nibImage.get_header().get_zooms()
+        self.voxToWorldMat = image.get_affine().transpose()
+        self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
 
         # ImageDisplay instance used to describe
         # how this image is to be displayed
@@ -63,21 +65,47 @@ class Image(object):
         self._attributes = {}
 
 
-    def transform(self, p):
+    def imageBounds(self, axis):
         """
-          - p: N*3 numpy array of (x,y,z) coordinates.
         """
 
-        a = self.affine
+        points = np.zeros((2,3), dtype=np.float32)
+        points[1,axis] = self.shape[axis]-1
+        
+        tx = self.voxToWorld(points)
+
+        lo,hi = sorted(tx[:,axis])
+
+        lo = lo - self.pixdim[axis]*0.5
+        hi = hi + self.pixdim[axis]*0.5
+
+        return (lo, hi)
+
+
+    def worldToVox(self, p):
+        return self._transform(p, self.worldToVoxMat)
+
+
+    def voxToWorld(self, p):
+        return self._transform(p, self.voxToWorldMat)
+
+        
+    def _transform(self, p, a):
+        """
+        Parameters:
+          - p: N*3 numpy array of (x,y,z) coordinates.
+          - a: 4*4 affine transformation matrix.
+        """
+
         t = np.zeros(p.shape, dtype=p.dtype)
 
         x = p[:,0]
         y = p[:,1]
         z = p[:,2]
 
-        t[:,0] = x * a[0,0] + y * a[0,1] + z * a[0,2] + a[0,3]
-        t[:,1] = x * a[1,0] + y * a[1,1] + z * a[1,2] + a[1,3]
-        t[:,2] = x * a[2,0] + y * a[2,1] + z * a[2,2] + a[2,3]
+        t[:,0] = x * a[0,0] + y * a[1,0] + z * a[2,0] + a[3,0]
+        t[:,1] = x * a[0,1] + y * a[1,1] + z * a[2,1] + a[3,1]
+        t[:,2] = x * a[0,2] + y * a[1,2] + z * a[2,2] + a[3,2]
 
         return t
 
@@ -199,18 +227,17 @@ class ImageList(object):
         Updates the xyz bounds.
         """
 
-        # TODO support negative space (i.e. different image origins)
-
+        minBounds = 3 * [ sys.float_info.max]
         maxBounds = 3 * [-sys.float_info.max]
-        minBounds = [0.0, 0.0, 0.0]
         
         for img in self._items:
 
-            iMaxBounds = map(lambda d,l: d*l, img.shape, img.pixdim)
+            for ax in range(3):
 
-            if iMaxBounds[0] > maxBounds[0]: maxBounds[0] = iMaxBounds[0]
-            if iMaxBounds[1] > maxBounds[1]: maxBounds[1] = iMaxBounds[1]
-            if iMaxBounds[2] > maxBounds[2]: maxBounds[2] = iMaxBounds[2] 
+                lo, hi = img.imageBounds(ax)
+
+                if lo < minBounds[ax]: minBounds[ax] = lo
+                if hi > maxBounds[ax]: maxBounds[ax] = hi
 
         self.minBounds = minBounds
         self.maxBounds = maxBounds

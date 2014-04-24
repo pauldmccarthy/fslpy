@@ -125,8 +125,8 @@ class OrthoPanel(wx.Panel):
         y = self.ycanvas.zpos
         z = self.zcanvas.zpos
 
-        mx = mx * (source.xmax - source.xmin) / float(w)
-        my = my * (source.ymax - source.ymin) / float(h)
+        mx = mx * (source.xmax - source.xmin) / float(w) + source.xmin
+        my = my * (source.ymax - source.ymin) / float(h) + source.ymin
 
         if   source == self.xcanvas: y,z = mx,my
         elif source == self.ycanvas: x,z = mx,my

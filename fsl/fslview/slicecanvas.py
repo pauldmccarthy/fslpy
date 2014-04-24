@@ -101,6 +101,8 @@ class GLImageData(object):
         """
 
         image = self.image
+        xax   = self.canvas.xax
+        yax   = self.canvas.yax
 
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
@@ -114,17 +116,21 @@ class GLImageData(object):
 
         # Data stored in the position buffer. Defines
         # the location of every voxel in a single slice.
-        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.float32)
+        # First we create a set of voxel coordinates for
+        # every voxel in one slice.
+        positionData = np.zeros((self.xdim*self.ydim, 3), dtype=np.float32)
 
-        xidxs = np.arange(self.xdim, dtype=np.float32) * self.xlen + halfx
-        yidxs = np.arange(self.ydim, dtype=np.float32) * self.ylen + halfy
+        xidxs = np.arange(self.xdim, dtype=np.float32)
+        yidxs = np.arange(self.ydim, dtype=np.float32)
         yidxs,xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
 
-        positionData[:,0] = xidxs.ravel('C')
-        positionData[:,1] = yidxs.ravel('C')
-        
-        # TODO origin offset
-        
+        positionData[:,xax] = xidxs.ravel('C')
+        positionData[:,yax] = yidxs.ravel('C')
+
+        # Then we transform from voxel
+        # coordinates to world coordinates
+        positionData = image.voxToWorld(positionData)[:,(xax, yax)]
+         
         geomBuffer     = vbo.VBO(geomData    .ravel('C'), gl.GL_STATIC_DRAW)
         positionBuffer = vbo.VBO(positionData.ravel('C'), gl.GL_STATIC_DRAW)
 
@@ -505,7 +511,7 @@ class SliceCanvas(wxgl.GLCanvas):
             self.xpos = (self.xmax - self.xmin) / 2
             self.ypos = (self.ymax - self.ymin) / 2
             self.zpos = (self.zmax - self.zmin) / 2
-            
+
         self.Refresh()
 
 
@@ -612,9 +618,9 @@ class SliceCanvas(wxgl.GLCanvas):
             zstride = glImageData.zstride
 
             # Figure out which slice we are drawing
-            # TODO origin offset
-            zi = int(self.zpos / glImageData.zlen)
-            if zi == zdim: zi = zdim - 1
+            point = np.zeros((1,3))
+            point[0,self.zax] = self.zpos
+            zi = int(image.worldToVox(point)[0,self.zax])
 
             if not imageDisplay.enabled:
                 continue 
