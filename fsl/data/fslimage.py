@@ -50,16 +50,8 @@ class Image(object):
         self.data     = image.get_data()
         self.name     = op.basename(image.get_filename())
 
-        xdim,ydim,zdim = self.nibImage.get_shape()
-        xlen,ylen,zlen = self.nibImage.get_header().get_zooms()
-        
-        self.xdim = xdim
-        self.ydim = ydim
-        self.zdim = zdim
-
-        self.xlen = xlen
-        self.ylen = ylen
-        self.zlen = zlen
+        self.shape  = self.nibImage.get_shape()
+        self.pixdim = self.nibImage.get_header().get_zooms()
 
         # ImageDisplay instance used to describe
         # how this image is to be displayed

@@ -51,23 +51,222 @@ class GLImageData(object):
     containing colours.
     """
     
-    def __init__(
-            self,
-            image,
-            imageBuffer,
-            colourBuffer,
-            positionBuffer,
-            geomBuffer):
+    def __init__(self, image, canvas):
         """
         Parameters.
         """
 
         self.image          = image
+        self.canvas         = canvas
+        
+        self.imageBuffer    = None
+        self.colourBuffer   = None
+        self.positionBuffer = None
+        self.geomBuffer     = None
+
+        # Here, x,y, and z refer to screen
+        # coordinates, not image coordinates:
+        #   - x: horizontal
+        #   - y: vertical
+        #   - z: depth
+        
+        self.xdim = image.shape[ canvas.xax]
+        self.ydim = image.shape[ canvas.yax]
+        self.zdim = image.shape[ canvas.zax]
+
+        self.xlen = image.pixdim[canvas.xax]
+        self.ylen = image.pixdim[canvas.yax]
+        self.zlen = image.pixdim[canvas.zax]
+
+        dsize = image.data.dtype.itemsize
+
+        self.xstride = image.data.strides[canvas.xax] / dsize
+        self.ystride = image.data.strides[canvas.yax] / dsize
+        self.zstride = image.data.strides[canvas.zax] / dsize
+
+        # Maximum number of colours used to draw image data
+        self.colourResolution = 256
+
+        self.initGLImageData()
+
+
+    def initGLImageData(self):
+        """
+        Creates and initialises the OpenGL data for the given fslimage.Image
+        object. The GL data (a GLImageData object - see the top of this
+        module) is added as an attribute of the image.
+        """
+
+        image = self.image
+
+        # Data stored in the geometry buffer. Defines
+        # the geometry of a single voxel, rendered as
+        # a triangle strip.
+        geomData = np.array([0, 0,
+                             1, 0,
+                             0, 1,
+                             1, 1], dtype=np.uint8)
+
+        # Data stored in the position buffer. Defines
+        # the location of every voxel in a single slice.
+        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
+        yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
+                                   np.arange(self.xdim),
+                                   indexing='ij')
+        positionData[:,0] = xidxs.ravel()
+        positionData[:,1] = yidxs.ravel()
+
+        geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
+        positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+
+        # The image buffer, containing the image data itself
+        imageBuffer = self.initImageBuffer()
+
+        # The colour buffer, containing a map of
+        # colours (stored on the GPU as a 1D texture)
+        colourBuffer = gl.glGenTextures(1)
+
+        self.geomBuffer     = geomBuffer
+        self.positionBuffer = positionBuffer
         self.imageBuffer    = imageBuffer
         self.colourBuffer   = colourBuffer
-        self.positionBuffer = positionBuffer
-        self.geomBuffer     = geomBuffer
 
+        # Add listeners to this image so the view can be
+        # updated when its display properties are changed
+        self.configDisplayListeners()
+
+        # Create the colour buffer for the given image
+        self.updateColourBuffer()
+
+        
+    def initImageBuffer(self):
+        """
+        Initialises the OpenGL buffer used to store the data for the given
+        image. The buffer is stored as an attribute of the image and, if it
+        has already been created (e.g. by another SliceCanvas object), the
+        existing buffer is returned.
+        """
+
+        image = self.image
+
+        try:    imageBuffer = image.getAttribute('glBuffer')
+        except: imageBuffer = None
+
+        if imageBuffer is not None:
+            return imageBuffer
+
+        # The image data is normalised to lie
+        # between 0 and 256, and cast to uint8
+        imageData = np.array(image.data, dtype=np.float32)
+        imageData = 255.0*(imageData       - imageData.min()) / \
+                          (imageData.max() - imageData.min())
+        imageData = np.array(imageData, dtype=np.uint8)
+
+        # Then flattened, with fortran dimension ordering,
+        # so the data, as stored on the GPU, has its first
+        # dimension as the fastest changing.
+        imageData = imageData.ravel(order='F')
+        imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
+
+        image.setAttribute('glBuffer', imageBuffer)
+
+        return imageBuffer
+
+
+    def configDisplayListeners(self):
+        """
+        Adds a bunch of listeners to the fslimage.ImageDisplay object
+        (accessible as an attribute of the given image called 'display'),
+        whcih defines how the given image is to be displayed. This is done
+        so we can refresh the image view when image display properties are
+        changed. 
+        """
+
+        def refreshNeeded(*a):
+            """
+            The view just needs to be refreshed (e.g. the alpha property
+            has changed).
+            """
+            self.canvas.Refresh()
+
+        def colourUpdateNeeded(*a):
+            """
+            The colour map for this image needs to be recreated (e.g. the
+            colour map has been changed).
+            """
+            self.updateColourBuffer()
+            self.canvas.Refresh()
+
+        display           = self.image.display
+        lnrName           = 'SliceCanvas_{{}}_{}'.format(id(self))
+        refreshProps      = ['alpha', 'enabled']
+        colourUpdateProps = ['displayMin', 'displayMax', 'rangeClip', 'cmap']
+
+        for prop in refreshProps:
+            display.addListener(prop, lnrName.format(prop), refreshNeeded)
+
+        for prop in colourUpdateProps:
+            display.addListener(prop, lnrName.format(prop), colourUpdateNeeded)
+
+
+    def updateColourBuffer(self):
+        """
+        Regenerates the colour buffer used to colour a slice of the
+        specified image. 
+        """
+
+        display      = self.image.display
+        colourBuffer = self.colourBuffer
+
+        # Here we are creating a range of values to be passed
+        # to the matplotlib.colors.Colormap instance of the
+        # image display. We scale this range such that data
+        # values which lie outside the configured display range
+        # will map to values below 0.0 or above 1.0. It is
+        # assumed that the Colormap instance is configured to
+        # generate appropriate colours for these out-of-range
+        # values.
+        
+        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
+        normalStep  = 1.0 / (self.colourResolution - 1) 
+
+        normMin = (display.displayMin - display.dataMin) / \
+                  (display.dataMax    - display.dataMin)
+        normMax = (display.displayMax - display.dataMin) / \
+                  (display.dataMax    - display.dataMin)
+
+        newStep  = normalStep / (normMax - normMin)
+        newRange = (normalRange - normMin) * (newStep / normalStep)
+
+        # Create [self.colourResolution] rgb values,
+        # spanning the entire range of the image
+        # colour map (see fsl.data.fslimage.Image)
+        colourmap = display.cmap(newRange)
+        
+        # The colour data is stored on
+        # the GPU as 8 bit rgb triplets
+        colourmap = np.floor(colourmap * 255)
+        colourmap = np.array(colourmap, dtype=np.uint8)
+        colourmap = colourmap.ravel(order='C')
+
+        # GL texture creation stuff
+        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE) 
+        
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                        0,
+                        gl.GL_RGBA8,
+                        self.colourResolution,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        colourmap)
+        
 
 # The vertex shader positions and colours a single vertex.
 vertex_shader = """
@@ -142,8 +341,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         zpos = int(round(zpos))
 
-        if   zpos >= self.zdim: zpos = self.zdim - 1
-        elif zpos <  0:         zpos = 0
+#        if   zpos >= self.zdim: zpos = self.zdim - 1
+#        elif zpos <  0:         zpos = 0
 
         self._zpos = zpos
 
@@ -163,8 +362,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         xpos = int(round(xpos))
 
-        if   xpos >= self.xdim: xpos = self.xdim - 1
-        elif xpos <  0:         xpos = 0
+#        if   xpos >= self.xdim: xpos = self.xdim - 1
+#        elif xpos <  0:         xpos = 0
 
         self._xpos = xpos
 
@@ -184,8 +383,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         ypos = int(round(ypos))
 
-        if   ypos >= self.ydim: ypos = self.ydim - 1
-        elif ypos <  0:         ypos = 0
+#        if   ypos >= self.ydim: ypos = self.ydim - 1
+#        elif ypos <  0:         ypos = 0
 
         self._ypos = ypos
 
@@ -212,6 +411,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         wxgl.GLCanvas.__init__(self, parent, **kwargs)
 
+        self.name = 'SliceCanvas_{}'.format(id(self))
+
         # Use the provided shared GL
         # context, or create a new one
         if context is None: self.context = wxgl.GLContext(self)
@@ -232,30 +433,6 @@ class SliceCanvas(wxgl.GLCanvas):
         self.xax       = dims[0]
         self.yax       = dims[1]
         self.zax       = zax
-
-        # Currently all images must be of the same dimensions
-        ref = self.imageList[0]
-
-        self.xdim = ref.data.shape[self.xax]
-        self.ydim = ref.data.shape[self.yax]
-        self.zdim = ref.data.shape[self.zax]
-
-        dsize = ref.data.dtype.itemsize
-
-        self.xstride = ref.data.strides[self.xax] / dsize
-        self.ystride = ref.data.strides[self.yax] / dsize
-        self.zstride = ref.data.strides[self.zax] / dsize
-
-        if zpos is None:
-            zpos = self.zdim / 2
-
-        self._xpos = self.xdim / 2
-        self._ypos = self.ydim / 2
-        self._zpos = zpos
-
-        # Maximum number of colours used to draw image data
-        self._colourResolution = 256
-
         # This flag is set by the _initGLData method when it
         # has finished initialising the OpenGL data buffers
         self.glReady = False
@@ -263,7 +440,17 @@ class SliceCanvas(wxgl.GLCanvas):
         # All the work is done by the draw method
         self.Bind(wx.EVT_PAINT, self.draw)
 
+        # TODO Fix these numbers
+        self._xpos = 200
+        self._ypos = 200
+        self._zpos = 200
+
         # When the image list changes, refresh the display
+        #
+        # TODO When image list changes, update local attributes
+        # xdim and ydim, so we know how big to set the viewport
+        # in the resize method
+        #
         self.imageList.addListener(lambda il: self.Refresh())
 
 
@@ -300,185 +487,6 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.glReady = True
 
-
-    def _initGLImageData(self, image):
-        """
-        Creates and initialises the OpenGL data for the given fslimage.Image
-        object. The GL data (a GLImageData object - see the top of this
-        module) is added as an attribute of the image.
-        """
-
-        # Data stored in the geometry buffer. Defines
-        # the geometry of a single voxel, rendered as
-        # a triangle strip.
-        geomData = np.array([0, 0,
-                             1, 0,
-                             0, 1,
-                             1, 1], dtype=np.uint8)
-
-        # Data stored in the position buffer. Defines
-        # the location of every voxel in a single slice.
-        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
-        yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
-                                   np.arange(self.xdim),
-                                   indexing='ij')
-        positionData[:,0] = xidxs.ravel()
-        positionData[:,1] = yidxs.ravel()
-
-        geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
-        positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
-
-        # The image buffer, containing the image data itself
-        imageBuffer = self._initImageBuffer(image)
-
-        # The colour buffer, containing a map of
-        # colours (stored on the GPU as a 1D texture)
-        colourBuffer = gl.glGenTextures(1)
-
-        glImageData = GLImageData(
-            image, imageBuffer, colourBuffer, positionBuffer, geomBuffer)
-
-        image.setAttribute('glImageData_{}'.format(id(self)), glImageData)
-
-        # Add listeners to this image so the view can be
-        # updated when its display properties are changed
-        self._configDisplayListeners(image)
-
-        # Create the colour buffer for the given image
-        self.updateColourBuffer(image)
-
-        return glImageData
-
-        
-    def _initImageBuffer(self, image):
-        """
-        Initialises the OpenGL buffer used to store the data for the given
-        image. The buffer is stored as an attribute of the image and, if it
-        has already been created (e.g. by another SliceCanvas object), the
-        existing buffer is returned.
-        """
-
-        try:    imageBuffer = image.getAttribute('glBuffer')
-        except: imageBuffer = None
-
-        if imageBuffer is not None:
-            return imageBuffer
-
-        # The image data is normalised to lie
-        # between 0 and 256, and cast to uint8
-        imageData = np.array(image.data, dtype=np.float32)
-        imageData = 255.0*(imageData       - imageData.min()) / \
-                          (imageData.max() - imageData.min())
-        imageData = np.array(imageData, dtype=np.uint8)
-
-        # Then flattened, with fortran dimension ordering,
-        # so the data, as stored on the GPU, has its first
-        # dimension as the fastest changing.
-        imageData = imageData.ravel(order='F')
-        imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
-
-        image.setAttribute('glBuffer', imageBuffer)
-
-        return imageBuffer
-
-
-    def _configDisplayListeners(self, image):
-        """
-        Adds a bunch of listeners to the fslimage.ImageDisplay object
-        (accessible as an attribute of the given image called 'display'),
-        whcih defines how the given image is to be displayed. This is done
-        so we can refresh the image view when image display properties are
-        changed. 
-        """
-
-        def refreshNeeded(*a):
-            """
-            The view just needs to be refreshed (e.g. the alpha property
-            has changed).
-            """
-            self.Refresh()
-
-        def colourUpdateNeeded(*a):
-            """
-            The colour map for this image needs to be recreated (e.g. the
-            colour map has been changed).
-            """
-            self.updateColourBuffer(image)
-            self.Refresh()
-
-        display           = image.display
-        lnrName           = 'SliceCanvas_{{}}_{}'.format(id(self))
-        refreshProps      = ['alpha', 'enabled']
-        colourUpdateProps = ['displayMin', 'displayMax', 'rangeClip', 'cmap']
-
-        for prop in refreshProps:
-            display.addListener(prop, lnrName.format(prop), refreshNeeded)
-
-        for prop in colourUpdateProps:
-            display.addListener(prop, lnrName.format(prop), colourUpdateNeeded)
-
-
-    def updateColourBuffer(self, image):
-        """
-        Regenerates the colour buffer used to colour a slice of the
-        specified image. After calling this method, you will need to
-        call Refresh() for the change to take effect.
-        """
-
-        display     = image.display
-        glImageData  = image.getAttribute('glImageData_{}'.format(id(self)))
-        
-        colourBuffer = glImageData.colourBuffer
-
-        # Here we are creating a range of values to be passed
-        # to the matplotlib.colors.Colormap instance of the
-        # image display. We scale this range such that data
-        # values which lie outside the configured display range
-        # will map to values below 0.0 or above 1.0. It is
-        # assumed that the Colormap instance is configured to
-        # generate appropriate colours for these out-of-range
-        # values.
-        
-        normalRange = np.linspace(0.0, 1.0, self._colourResolution)
-        normalStep  = 1.0 / (self._colourResolution - 1) 
-
-        normMin = (display.displayMin - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
-        normMax = (display.displayMax - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
-
-        newStep  = normalStep / (normMax - normMin)
-        newRange = (normalRange - normMin) * (newStep / normalStep)
-
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map (see fsl.data.fslimage.Image)
-        colourmap = display.cmap(newRange)
-        
-        # The colour data is stored on
-        # the GPU as 8 bit rgb triplets
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel(order='C')
-
-        # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE) 
-        
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        self._colourResolution,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap)
-
         
     def resize(self):
         """
@@ -493,7 +501,8 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(0, self.xdim, 0, self.ydim, 0, 1)
+        # TODO fix these numbers (see notes in __init__)
+        gl.glOrtho(0, 450, 0, 450, 0, 1)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
@@ -525,16 +534,24 @@ class SliceCanvas(wxgl.GLCanvas):
             image = self.imageList[i]
 
             try:
-                glImageData = image.getAttribute(
-                    'glImageData_{}'.format(id(self)))
+                glImageData = image.getAttribute(self.name)
             except:
-                glImageData = self._initGLImageData(image)
+                glImageData = GLImageData(image, self)
+                image.setAttribute(glImageData, self.name)
             
             imageDisplay   = image.display
+            
             geomBuffer     = glImageData.geomBuffer
             imageBuffer    = glImageData.imageBuffer
             positionBuffer = glImageData.positionBuffer
             colourBuffer   = glImageData.colourBuffer
+
+            xdim    = glImageData.xdim
+            ydim    = glImageData.ydim
+            zdim    = glImageData.zdim
+            xstride = glImageData.xstride
+            ystride = glImageData.ystride
+            zstride = glImageData.zstride 
 
             if not imageDisplay.enabled:
                 continue
@@ -556,11 +573,11 @@ class SliceCanvas(wxgl.GLCanvas):
             # consistent, the offset between rows (columns) is
             # not. And drawing rows seems to be faster than
             # drawing columns, for reasons unknown to me.
-            for yi in range(self.ydim):
+            for yi in range(ydim):
 
-                imageOffset = self.zpos * self.zstride + yi * self.ystride
-                imageStride = self.xstride 
-                posOffset   = yi * self.xdim * 4
+                imageOffset = self.zpos * zstride + yi * ystride
+                imageStride = xstride 
+                posOffset   = yi * xdim * 4
 
                 # The geometry buffer, which defines the geometry of a
                 # single vertex (4 vertices, drawn as a triangle strip)
@@ -604,7 +621,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
                 # Draw all of the triangles!
                 arbdi.glDrawArraysInstancedARB(
-                    gl.GL_TRIANGLE_STRIP, 0, 4, self.xdim)
+                    gl.GL_TRIANGLE_STRIP, 0, 4, xdim)
 
                 gl.glDisableVertexAttribArray(self.inVertexPos)
                 gl.glDisableVertexAttribArray(self.inPositionPos)
@@ -616,13 +633,15 @@ class SliceCanvas(wxgl.GLCanvas):
         # A vertical line at xpos, and a horizontal line at ypos
         x = self.xpos + 0.5
         y = self.ypos + 0.5
+
+        # TODO Fix these numbers (see __init__ notes)
         
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
         gl.glVertex2f(x,         0)
-        gl.glVertex2f(x,         self.ydim)
+        gl.glVertex2f(x,         450)
         gl.glVertex2f(0,         y)
-        gl.glVertex2f(self.xdim, y)
+        gl.glVertex2f(450, y)
         gl.glEnd()
 
         self.SwapBuffers()
