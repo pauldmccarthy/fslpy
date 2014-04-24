@@ -16,11 +16,11 @@ import fsl.fslview.imagelistpanel as imagelistpanel
 import fsl.data.fslimage as fslimage
 
 
-class FslViewFrame(wx.Frame):
+class FslViewPanel(wx.Panel):
 
-    def __init__(self, imageList, title=''):
+    def __init__(self, parent, imageList):
         
-        wx.Frame.__init__(self, None, title=title)
+        wx.Panel.__init__(self, parent)
         self.imageList = imageList
 
         self.orthoPanel = orthopanel    .OrthoPanel(    self, imageList)
@@ -34,13 +34,18 @@ class FslViewFrame(wx.Frame):
 
         self.Layout()
 
-        
+
+FSL_TOOLNAME = 'fslview'
+
+
 if __name__ == '__main__':
 
     app       = wx.App()
     images    = map(fslimage.Image, sys.argv[1:])
     imageList = fslimage.ImageList(images)
-    frame     = FslViewFrame(imageList)
+    
+    frame     = wx.Frame(None, title='fslview')
+    panel     = FslViewPanel(frame, imageList)
 
     frame.Show()
     app.MainLoop()

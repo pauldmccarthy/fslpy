@@ -48,14 +48,18 @@ class ImageListPanel(wx.Panel):
         # allowing the image display properties to be
         # changed
         for i,image in enumerate(imageList):
-            displayPanel = self._makeDisplayPanel(image)
-            displayPanel.Show(i == 0)
+            self._makeDisplayPanel(image)
+            
+        self._showDisplayPanel(0)
 
         self.Layout()
 
         
     def _makeDisplayPanel(self, image):
         """
+        Creates a panel containing widgets allowing the user to
+        edit the display properties of the given image. A reference
+        to the panel is added as an attribute of the image.
         """
             
         displayPanel = props.buildGUI(self, image.display)
@@ -80,17 +84,27 @@ class ImageListPanel(wx.Panel):
         Called when an image is selected in the ListBox. Displays the
         corresponding image display configuration panel.
         """
+        self._showDisplayPanel(ev.idx)
 
+
+    def _showDisplayPanel(self, idx):
+        """
+        Shows the display panel for the image at the specified index.
+        """
+        
         for i,image in enumerate(self.imageList):
             
-            displayPanel = image.getAttribute(
+            displayPanel = image.getAttribute( 
                 'displayPanel_{}'.format(id(self)))
             
-            displayPanel.Show(i == ev.idx)
+            displayPanel.Show(i == idx)
         self.Layout()
+        self.Refresh()
 
-
+        
     def _addImage(self, ev):
+        """
+        """
         
         try:    lastDir = self._lastDir
         except: lastDir = os.getcwd()
@@ -106,9 +120,11 @@ class ImageListPanel(wx.Panel):
         if dlg.ShowModal() != wx.ID_OK: return
 
         image = fslimage.Image(dlg.GetPath())
-        self.imageList.insert(0, image)
+        self.imageList.append(image)
+        self.listBox.Append(image.name, image)
+
         self._makeDisplayPanel(image)
-        self.listBox.Insert(0, image.name, image)
+        self._showDisplayPanel(len(self.imageList)-1)
 
 
     def _imageRemoved(self, ev):

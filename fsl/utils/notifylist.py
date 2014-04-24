@@ -12,8 +12,12 @@ import unittest
 log = logging.getLogger(__name__)
 
 class NotifyList(object):
+    """
+    """
 
     def __init__(self, items=None, validateFunc=None):
+        """
+        """
         
         if items        is None: items = []
         if validateFunc is None: validateFunc = lambda v: v
@@ -39,25 +43,31 @@ class NotifyList(object):
         
     def append(self, item):
         self._validate(item)
+
+        log.debug('Item appended: {}'.format(item))
         self._items.append(item)
         self._notify()
 
         
     def pop(self, index=-1):
-        popped = self._items.pop(index)
+        
+        item = self._items.pop(index)
+        log.debug('Item popped: {} (index {})'.format(item, index))
         self._notify()
-        return popped
+        return item
 
         
     def insert(self, index, item):
         self._validate(item)
         self._items.insert(index, item)
+        log.debug('Item inserted: {} (index {})'.format(item, index))
         self._notify()
 
 
     def extend(self, items):
         map(self._validate, items)
         self._items.extend(items)
+        log.debug('List extended: {}'.format(', '.join([str(i) for i in item])))
         self._notify()
 
 
@@ -68,6 +78,7 @@ class NotifyList(object):
 
         item = self._items.pop(from_)
         self._items.insert(to, item)
+        log.debug('Item moved: {} (from: {} to: {})'.format(item, from_, to))
         self._notify()
 
         

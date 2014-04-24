@@ -7,6 +7,7 @@
 #
 
 import collections
+import logging
 
 import os.path            as op
 
@@ -18,6 +19,9 @@ import matplotlib.colors  as mplcolors
 import fsl.props            as props
 import fsl.data.imagefile   as imagefile
 import fsl.utils.notifylist as notifylist
+
+
+log = logging.getLogger(__name__)
 
 
 class Image(object):
@@ -79,6 +83,8 @@ class Image(object):
         """
         self._attributes[name] = value
         
+        log.debug('Attribute set on {}: {} = {}'.format(
+            self.name, name, str(value)))
 
 
 class ImageDisplay(props.HasProperties):
