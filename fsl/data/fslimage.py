@@ -6,8 +6,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import collections
+import sys
 import logging
+import collections
 
 import os.path            as op
 
@@ -18,7 +19,6 @@ import matplotlib.colors  as mplcolors
 
 import fsl.props            as props
 import fsl.data.imagefile   as imagefile
-import fsl.utils.notifylist as notifylist
 
 
 log = logging.getLogger(__name__)
@@ -146,13 +146,14 @@ class ImageDisplay(props.HasProperties):
         self.displayMax = self.dataMax
 
         
-class ImageList(notifylist.NotifyList):
+class ImageList(object):
     """
     Class representing a collection of images to be displayed together.
     Provides basic list-like functionality, and a listener interface
     allowing callback functions to be notified when the image collection
     changes (e.g. an image is added or removed).
     """
+
 
     def __init__(self, images=None):
         """
@@ -164,8 +165,102 @@ class ImageList(notifylist.NotifyList):
         if not isinstance(images, collections.Iterable):
             raise TypeError('images must be a sequence of images')
 
-        def validate(img):
-            if not isinstance(img, Image):
-                raise TypeError('images must be a sequence of images')
+        map(self._validate, images)
+
+        self._items     = images
+        self._listeners = []
+
+        self._updateImageAttributes()
+
         
-        notifylist.NotifyList.__init__(self, images, validate)
+    def _updateImageAttributes(self):
+        """
+        Called whenever an item is added or removed from the list.
+        Updates the xyz bounds.
+        """
+
+        # TODO support negative space
+
+        maxBounds = 3 * [-sys.float_info.max]
+        minBounds = [0.0, 0.0, 0.0]
+        
+        for img in self._items:
+
+            if img.shape[0] > maxBounds[0]: maxBounds[0] = img.shape[0]
+            if img.shape[1] > maxBounds[1]: maxBounds[1] = img.shape[1]
+            if img.shape[2] > maxBounds[2]: maxBounds[2] = img.shape[2] 
+
+        self.minBounds = minBounds
+        self.maxBounds = maxBounds
+
+        
+    def _validate(self, img):
+        """
+        Called whenever an item is added to the list. Raises
+        a TypeError if said item is not an Image object.
+        """
+        if not isinstance(img, Image):
+            raise TypeError('item must be a fsl.data.fslimage.Image') 
+
+            
+    def __len__     (self):        return self._items.__len__()
+    def __getitem__ (self, key):   return self._items.__getitem__(key)
+    def __iter__    (self):        return self._items.__iter__()
+    def __contains__(self, item):  return self._items.__contains__(item)
+    def __eq__      (self, other): return self._items.__eq__(other)
+    def __str__     (self):        return self._items.__str__()
+    def __repr__    (self):        return self._items.__repr__()
+
+ 
+    def append(self, item):
+        self._validate(item)
+        log.debug('Item appended: {}'.format(item))
+        self._items.append(item)
+        self._updateImageAttributes()
+        self._notify()
+
+        
+    def pop(self, index=-1):
+        item = self._items.pop(index)
+        log.debug('Item popped: {} (index {})'.format(item, index))
+        self._updateImageAttributes()
+        self._notify()
+        return item
+
+        
+    def insert(self, index, item):
+        self._validate(item)
+        self._items.insert(index, item)
+        log.debug('Item inserted: {} (index {})'.format(item, index))
+        self._updateImageAttributes()
+        self._notify()
+
+
+    def extend(self, items):
+        map(self._validate, items)
+        self._items.extend(items)
+        log.debug('List extended: {}'.format(', '.join([str(i) for i in item])))
+        self._updateImageAttributes()
+        self._notify()
+
+
+    def move(self, from_, to):
+        """
+        Move the item from 'from_' to 'to'. 
+        """
+
+        item = self._items.pop(from_)
+        self._items.insert(to, item)
+        log.debug('Image moved: {} (from: {} to: {})'.format(item, from_, to))
+        self._notify()
+
+        
+    def addListener   (self, listener): self._listeners.append(listener)
+    def removeListener(self, listener): self._listeners.remove(listener)
+    def _notify       (self):
+        for listener in self._listeners:
+            try:
+                listener(self)
+            except e:
+                log.debug('Listener raised exception: {}'.format(e.message))
+ 

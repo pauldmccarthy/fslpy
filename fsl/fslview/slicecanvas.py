@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import itertools         as it
+import sys
 
 import numpy             as np
 import matplotlib.colors as mplcolors
@@ -77,6 +77,8 @@ class GLImageData(object):
         self.xlen = image.pixdim[canvas.xax]
         self.ylen = image.pixdim[canvas.yax]
         self.zlen = image.pixdim[canvas.zax]
+
+        # TODO origin
 
         dsize = image.data.dtype.itemsize
 
@@ -339,10 +341,8 @@ class SliceCanvas(wxgl.GLCanvas):
         Refresh() after changing the zpos.
         """
 
-        zpos = int(round(zpos))
-
-#        if   zpos >= self.zdim: zpos = self.zdim - 1
-#        elif zpos <  0:         zpos = 0
+        if   zpos > self.zmax: zpos = self.zmax
+        elif zpos < self.zmin: zpos = self.zmin
 
         self._zpos = zpos
 
@@ -360,10 +360,8 @@ class SliceCanvas(wxgl.GLCanvas):
         Refresh() after changing the xpos.
         """ 
 
-        xpos = int(round(xpos))
-
-#        if   xpos >= self.xdim: xpos = self.xdim - 1
-#        elif xpos <  0:         xpos = 0
+        if   xpos > self.xmax: xpos = self.xmax
+        elif xpos < self.xmin: xpos = self.xmin 
 
         self._xpos = xpos
 
@@ -380,20 +378,18 @@ class SliceCanvas(wxgl.GLCanvas):
         Change the y cursor position. You will need to manually call
         Refresh() after changing the ypos.
         """ 
-
-        ypos = int(round(ypos))
-
-#        if   ypos >= self.ydim: ypos = self.ydim - 1
-#        elif ypos <  0:         ypos = 0
+        
+        if   ypos > self.ymax: ypos = self.ymax
+        elif ypos < self.ymin: ypos = self.ymin 
 
         self._ypos = ypos
 
 
-    def __init__(
-            self, parent, imageList, zax=0, zpos=None, context=None, **kwargs):
+    def __init__(self, parent, imageList, zax=0, context=None):
         """
-        Creates a canvas object. The OpenGL data buffers are set up in
-        _initGLData the first time that the canvas is displayed/drawn.
+        Creates a canvas object. The OpenGL data buffers are set up the
+        first time that the canvas is displayed/drawn.
+        
         Parameters:
         
           parent    - WX parent object
@@ -404,57 +400,109 @@ class SliceCanvas(wxgl.GLCanvas):
                       (the 'depth' axis), default 0.
 
           context   - wx.glcanvas.GLContext object. If None, one is created.
-        
-          zpos      - Initial slice to be displayed. If not provided, the
-                      middle slice is used.
         """
 
-        wxgl.GLCanvas.__init__(self, parent, **kwargs)
+        if not isinstance(imageList, fslimage.ImageList):
+            raise TypeError(
+                'imageList must be a fsl.data.fslimage.ImageList instance') 
 
-        self.name = 'SliceCanvas_{}'.format(id(self))
+        wxgl.GLCanvas.__init__(self, parent)
 
         # Use the provided shared GL
         # context, or create a new one
         if context is None: self.context = wxgl.GLContext(self)
         else:               self.context = context
 
-        if not isinstance(imageList, fslimage.ImageList):
-            raise TypeError(
-                'imageList must be a fsl.data.fslimage.ImageList instance') 
+        self.imageList = imageList
+        self.name      = 'SliceCanvas_{}'.format(id(self))
 
+        # These attributes map from the image axes to
+        # the display axes. xax is horizontal, yax
+        # is vertical, and zax is depth.
+        #
         # TODO Currently, the displayed x/horizontal and
         # y/vertical axes are defined by their order in
-        # the image. Allow the caller to specify which
-        # axes should be horizontal/vertical.
+        # the image. We could allow the caller to specify
+        # which axes should be horizontal/vertical.
         dims = range(3)
         dims.pop(zax)
+        self.xax = dims[0]
+        self.yax = dims[1]
+        self.zax = zax
 
-        self.imageList = imageList
-        self.xax       = dims[0]
-        self.yax       = dims[1]
-        self.zax       = zax
-        # This flag is set by the _initGLData method when it
-        # has finished initialising the OpenGL data buffers
+        # These attributes define the current location
+        # of the cursor, and the displayed slice. They
+        # are initialised in the _imageListChanged
+        # method.
+        self._xpos = None
+        self._ypos = None
+        self._zpos = None 
+
+        # These attributes define the spatial data
+        # limits of all displayed images. They are
+        # set by the _imageListChanged method, and
+        # updated whenever an image is added/removed
+        # from the list.
+        self.xmin = None
+        self.xmax = None
+        self.ymin = None
+        self.ymax = None
+        self.zmin = None
+        self.zmax = None
+        
+        # This flag is set by the _initGLData method
+        # when it has finished initialising the OpenGL
+        # shaders
         self.glReady = False
 
         # All the work is done by the draw method
         self.Bind(wx.EVT_PAINT, self.draw)
 
-        # TODO Fix these numbers
-        self._xpos = 200
-        self._ypos = 200
-        self._zpos = 200
-
-        # When the image list changes, refresh the display
-        #
-        # TODO When image list changes, update local attributes
-        # xdim and ydim, so we know how big to set the viewport
-        # in the resize method
-        #
-        self.imageList.addListener(lambda il: self.Refresh())
+        # When the image list changes, refresh the
+        # display, and update the display bounds
+        self.imageList.addListener(lambda il: self._imageListChanged())
 
 
-    def _initGLShaders(self):
+    def _imageListChanged(self):
+        """
+        This method is called once by _initGLData on the first draw, and
+        then again every time an image is added or removed from the
+        image list. For newly added images, it creates a GLImageData
+        object, which initialises the OpenGL data necessary to render
+        the image. This method also updates the canvas bounds (i.e.
+        the min/max x/y/z coordinates across all images being displayed).
+        """
+
+        # Create a GLImageData object
+        # for any new images
+        for image in self.imageList:
+            try:
+                glData = image.getAttribute(self.name)
+            except: 
+                glData = GLImageData(image, self)
+                image.setAttribute(self.name, glData)
+
+        # Update the minimum/maximum
+        # image bounds along each axis
+        self.xmin = self.imageList.minBounds[self.xax]
+        self.ymin = self.imageList.minBounds[self.yax]
+        self.zmin = self.imageList.minBounds[self.zax]
+
+        self.xmax = self.imageList.maxBounds[self.xax]
+        self.ymax = self.imageList.maxBounds[self.yax]
+        self.zmax = self.imageList.maxBounds[self.zax]
+        
+        # initialise the cursor location and displayed
+        # slice if they do not yet have values
+        if not all((self._xpos, self._ypos, self._zpos)):
+            self.xpos = (self.xmax - self.xmin) / 2
+            self.ypos = (self.ymax - self.ymin) / 2
+            self.zpos = (self.zmax - self.zmin) / 2
+
+        self.Refresh()
+
+
+    def _initGLData(self):
         """
         Compiles the vertex and fragment shader programs, and
         stores references to the shader variables as attributes
@@ -464,13 +512,13 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # A bit hacky. We can only set the GL context (and create
         # the GL data) once something is actually displayed on the
-        # screen. The _initGLShaders method is called (asynchronously)
+        # screen. The _initGLData method is called (asynchronously)
         # by the draw() method if it sees that the glReady flag has
         # not yet been set. But draw() may be called mored than once
-        # before _initGLShaders is called. Here, to prevent
-        # _initGLShaders from running more than once, the first time
+        # before _initGLData is called. Here, to prevent
+        # _initGLData from running more than once, the first time
         # it is called it simply overwrites itself with a dummy method.
-        self._initGLShaders = lambda s: s
+        self._initGLData = lambda s: s
  
         self.context.SetCurrent(self)
 
@@ -484,6 +532,10 @@ class SliceCanvas(wxgl.GLCanvas):
         self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPosition')
         self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.colourMapPos  = gl.glGetUniformLocation(self.shaders, 'colourMap')
+
+        # Initialise data for the images that
+        # are already in the image list 
+        self._imageListChanged()
 
         self.glReady = True
 
@@ -501,8 +553,7 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        # TODO fix these numbers (see notes in __init__)
-        gl.glOrtho(0, 450, 0, 450, 0, 1)
+        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, 0, 1)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
@@ -514,7 +565,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # image data has not been initialised.
         if not self.glReady:
-            wx.CallAfter(self._initGLShaders)
+            wx.CallAfter(self._initGLData)
             return
 
         self.context.SetCurrent(self)
@@ -529,15 +580,15 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        for i in range(len(self.imageList)):
+        for image in self.imageList:
 
-            image = self.imageList[i]
-
-            try:
-                glImageData = image.getAttribute(self.name)
-            except:
-                glImageData = GLImageData(image, self)
-                image.setAttribute(glImageData, self.name)
+            # The GL data is stored as an attribute of the image,
+            # and is created in the _imageListChanged method when
+            # images are added to the image. If there's no data
+            # here, ignore it; hopefully by the time draw() is
+            # called again, it will have been created.
+            try:    glImageData = image.getAttribute(self.name)
+            except: continue
             
             imageDisplay   = image.display
             
@@ -551,9 +602,16 @@ class SliceCanvas(wxgl.GLCanvas):
             zdim    = glImageData.zdim
             xstride = glImageData.xstride
             ystride = glImageData.ystride
-            zstride = glImageData.zstride 
+            zstride = glImageData.zstride
+
+            # Figure out which slice we are drawing
+            # TODO origin and scaling by zlen
+            zi = int(round(self.zpos)) 
 
             if not imageDisplay.enabled:
+                continue 
+
+            if zi < 0 or zi >= zdim:
                 continue
 
             # Set up the colour buffer
@@ -575,7 +633,8 @@ class SliceCanvas(wxgl.GLCanvas):
             # drawing columns, for reasons unknown to me.
             for yi in range(ydim):
 
-                imageOffset = self.zpos * zstride + yi * ystride
+                # TODO zpos is not necessarily in image coords
+                imageOffset = zi * zstride + yi * ystride
                 imageStride = xstride 
                 posOffset   = yi * xdim * 4
 
@@ -631,17 +690,15 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glUseProgram(0)
 
         # A vertical line at xpos, and a horizontal line at ypos
-        x = self.xpos + 0.5
-        y = self.ypos + 0.5
+        x = self.xpos
+        y = self.ypos
 
-        # TODO Fix these numbers (see __init__ notes)
-        
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
-        gl.glVertex2f(x,         0)
-        gl.glVertex2f(x,         450)
-        gl.glVertex2f(0,         y)
-        gl.glVertex2f(450, y)
+        gl.glVertex2f(x,         self.ymin)
+        gl.glVertex2f(x,         self.ymax)
+        gl.glVertex2f(self.xmin, y)
+        gl.glVertex2f(self.xmax, y)
         gl.glEnd()
 
         self.SwapBuffers()

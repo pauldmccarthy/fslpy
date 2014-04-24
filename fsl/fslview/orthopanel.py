@@ -48,8 +48,6 @@ class OrthoPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.SetMinSize((300,100))
 
-        self.shape = imageList[0].data.shape
-
         self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
                                                context=self.xcanvas.context)
@@ -127,33 +125,12 @@ class OrthoPanel(wx.Panel):
         y = self.ycanvas.zpos
         z = self.zcanvas.zpos
 
-        if source == self.xcanvas:
+        mx = mx * (source.xmax - source.xmin) / float(w)
+        my = my * (source.ymax - source.ymin) / float(h)
 
-            mx = mx * self.shape[1] / float(w)
-            my = my * self.shape[2] / float(h)
-            y,z = mx,my
-
-        elif source == self.ycanvas:
-            mx = mx * self.shape[0] / float(w)
-            my = my * self.shape[2] / float(h)
-            x,z = mx,my
-
-        elif source == self.zcanvas:
-            mx = mx * self.shape[0] / float(w)
-            my = my * self.shape[1] / float(h)
-            x,y = mx,my
-
-        x = int(x)
-        y = int(y)
-        z = int(z)
-
-        if x < 0: x = 0
-        if y < 0: y = 0
-        if z < 0: z = 0
-
-        if x >= self.shape[0]: x = self.shape[0]-1
-        if y >= self.shape[1]: y = self.shape[1]-1
-        if z >= self.shape[2]: z = self.shape[2]-1 
+        if   source == self.xcanvas: y,z = mx,my
+        elif source == self.ycanvas: x,z = mx,my
+        elif source == self.zcanvas: x,y = mx,my
 
         self.setLocation(x,y,z)
 
