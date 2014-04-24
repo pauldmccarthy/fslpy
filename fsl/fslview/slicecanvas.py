@@ -69,19 +69,20 @@ class GLImageData(object):
         #   - x: horizontal
         #   - y: vertical
         #   - z: depth
-        
+
+        # number of voxels along each axis
         self.xdim = image.shape[ canvas.xax]
         self.ydim = image.shape[ canvas.yax]
         self.zdim = image.shape[ canvas.zax]
 
+        # length of a voxel along each axis
         self.xlen = image.pixdim[canvas.xax]
         self.ylen = image.pixdim[canvas.yax]
         self.zlen = image.pixdim[canvas.zax]
 
-        # TODO origin
-
         dsize = image.data.dtype.itemsize
 
+        # byte offset along each axis
         self.xstride = image.data.strides[canvas.xax] / dsize
         self.ystride = image.data.strides[canvas.yax] / dsize
         self.zstride = image.data.strides[canvas.zax] / dsize
@@ -104,22 +105,28 @@ class GLImageData(object):
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
-        geomData = np.array([0, 0,
-                             1, 0,
-                             0, 1,
-                             1, 1], dtype=np.uint8)
+        halfx = self.xlen / 2.0
+        halfy = self.ylen / 2.0
+        geomData = np.array([-halfx, -halfy,
+                              halfx, -halfy,
+                             -halfx,  halfy,
+                              halfx,  halfy], dtype=np.float32)
 
         # Data stored in the position buffer. Defines
         # the location of every voxel in a single slice.
-        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.uint16)
-        yidxs,xidxs  = np.meshgrid(np.arange(self.ydim),
-                                   np.arange(self.xdim),
-                                   indexing='ij')
-        positionData[:,0] = xidxs.ravel()
-        positionData[:,1] = yidxs.ravel()
+        positionData = np.zeros((self.xdim*self.ydim, 2), dtype=np.float32)
 
-        geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
-        positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+        xidxs = np.arange(self.xdim, dtype=np.float32) * self.xlen + halfx
+        yidxs = np.arange(self.ydim, dtype=np.float32) * self.ylen + halfy
+        yidxs,xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
+
+        positionData[:,0] = xidxs.ravel('C')
+        positionData[:,1] = yidxs.ravel('C')
+        
+        # TODO origin offset
+        
+        geomBuffer     = vbo.VBO(geomData    .ravel('C'), gl.GL_STATIC_DRAW)
+        positionBuffer = vbo.VBO(positionData.ravel('C'), gl.GL_STATIC_DRAW)
 
         # The image buffer, containing the image data itself
         imageBuffer = self.initImageBuffer()
@@ -498,7 +505,7 @@ class SliceCanvas(wxgl.GLCanvas):
             self.xpos = (self.xmax - self.xmin) / 2
             self.ypos = (self.ymax - self.ymin) / 2
             self.zpos = (self.zmax - self.zmin) / 2
-
+            
         self.Refresh()
 
 
@@ -605,8 +612,9 @@ class SliceCanvas(wxgl.GLCanvas):
             zstride = glImageData.zstride
 
             # Figure out which slice we are drawing
-            # TODO origin and scaling by zlen
-            zi = int(round(self.zpos)) 
+            # TODO origin offset
+            zi = int(self.zpos / glImageData.zlen)
+            if zi == zdim: zi = zdim - 1
 
             if not imageDisplay.enabled:
                 continue 
@@ -633,10 +641,9 @@ class SliceCanvas(wxgl.GLCanvas):
             # drawing columns, for reasons unknown to me.
             for yi in range(ydim):
 
-                # TODO zpos is not necessarily in image coords
                 imageOffset = zi * zstride + yi * ystride
                 imageStride = xstride 
-                posOffset   = yi * xdim * 4
+                posOffset   = yi * xdim * 8
 
                 # The geometry buffer, which defines the geometry of a
                 # single vertex (4 vertices, drawn as a triangle strip)
@@ -644,7 +651,7 @@ class SliceCanvas(wxgl.GLCanvas):
                 gl.glVertexAttribPointer(
                     self.inVertexPos,
                     2,
-                    gl.GL_UNSIGNED_BYTE,
+                    gl.GL_FLOAT,
                     gl.GL_FALSE,
                     0,
                     None)
@@ -657,7 +664,7 @@ class SliceCanvas(wxgl.GLCanvas):
                 gl.glVertexAttribPointer(
                     self.inPositionPos,
                     2,
-                    gl.GL_UNSIGNED_SHORT,
+                    gl.GL_FLOAT,
                     gl.GL_FALSE,
                     0,
                     positionBuffer + posOffset)

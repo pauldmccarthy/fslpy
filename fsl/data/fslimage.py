@@ -52,6 +52,7 @@ class Image(object):
 
         self.shape  = self.nibImage.get_shape()
         self.pixdim = self.nibImage.get_header().get_zooms()
+        self.affine = image.get_affine()
 
         # ImageDisplay instance used to describe
         # how this image is to be displayed
@@ -60,6 +61,25 @@ class Image(object):
         # This dictionary may be used to store
         # arbitrary data associated with this image.
         self._attributes = {}
+
+
+    def transform(self, p):
+        """
+          - p: N*3 numpy array of (x,y,z) coordinates.
+        """
+
+        a = self.affine
+        t = np.zeros(p.shape, dtype=p.dtype)
+
+        x = p[:,0]
+        y = p[:,1]
+        z = p[:,2]
+
+        t[:,0] = x * a[0,0] + y * a[0,1] + z * a[0,2] + a[0,3]
+        t[:,1] = x * a[1,0] + y * a[1,1] + z * a[1,2] + a[1,3]
+        t[:,2] = x * a[2,0] + y * a[2,1] + z * a[2,2] + a[2,3]
+
+        return t
 
         
     def getAttribute(self, name):
@@ -179,16 +199,18 @@ class ImageList(object):
         Updates the xyz bounds.
         """
 
-        # TODO support negative space
+        # TODO support negative space (i.e. different image origins)
 
         maxBounds = 3 * [-sys.float_info.max]
         minBounds = [0.0, 0.0, 0.0]
         
         for img in self._items:
 
-            if img.shape[0] > maxBounds[0]: maxBounds[0] = img.shape[0]
-            if img.shape[1] > maxBounds[1]: maxBounds[1] = img.shape[1]
-            if img.shape[2] > maxBounds[2]: maxBounds[2] = img.shape[2] 
+            iMaxBounds = map(lambda d,l: d*l, img.shape, img.pixdim)
+
+            if iMaxBounds[0] > maxBounds[0]: maxBounds[0] = iMaxBounds[0]
+            if iMaxBounds[1] > maxBounds[1]: maxBounds[1] = iMaxBounds[1]
+            if iMaxBounds[2] > maxBounds[2]: maxBounds[2] = iMaxBounds[2] 
 
         self.minBounds = minBounds
         self.maxBounds = maxBounds
