@@ -49,8 +49,8 @@ class ImageListPanel(wx.Panel):
         # changed
         for i,image in enumerate(imageList):
             self._makeDisplayPanel(image)
-            
-        self._showDisplayPanel(0)
+
+        self._showDisplayPanel(len(imageList)-1)
 
         self.Layout()
 
@@ -98,6 +98,8 @@ class ImageListPanel(wx.Panel):
                 'displayPanel_{}'.format(id(self)))
             
             displayPanel.Show(i == idx)
+
+        self.listBox.SetSelection(idx)
         self.Layout()
         self.Refresh()
 

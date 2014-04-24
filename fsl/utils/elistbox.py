@@ -183,6 +183,8 @@ class EditableListBox(wx.Panel):
     # These methods simply wrap the same-named wx.ListBox methods,
     # while supporting the ELB_REVERSE style.
     #
+
+    def GetCount(self): return self.listBox.GetCount()
     
     def SetSelection(self, n):
         self.listBox.SetSelection(self._fixIndex(n))
