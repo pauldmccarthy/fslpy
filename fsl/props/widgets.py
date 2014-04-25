@@ -290,12 +290,17 @@ def _Number(parent, hasProps, propObj, propVal):
     maxval     = propObj.maxval
     makeSlider = (minval is not None) and (maxval is not None)
 
+    params = {}
     if isinstance(propObj, props.Int):
         
         SpinCtr = wx.SpinCtrl
-        if minval is None: minval = -sys.maxint
-        if maxval is None: maxval =  sys.maxint
-        increment = 1
+
+        # wx.SpinCtrl complains heartily if
+        # we pass values greater than signed 32 bit
+        if minval is None: minval = -2 ** 31 + 1
+        if maxval is None: maxval =  2 ** 31 - 1
+
+        value = int(value)
         
     elif isinstance(propObj, props.Double):
         
@@ -304,14 +309,14 @@ def _Number(parent, hasProps, propObj, propVal):
         if maxval is None: maxval =  sys.float_info.max
 
         if makeSlider: increment = (maxval-minval)/20.0
-        else:          increment = 0.5 
+        else:          increment = 0.5
+
+        params['inc'] = increment
                 
     else:
         raise TypeError('Unrecognised property type: {}'.format(
             propObj.__class__.__name__))
 
-    params = {}
-    params['inc']     = increment
     params['min']     = minval
     params['max']     = maxval
     params['initial'] = value

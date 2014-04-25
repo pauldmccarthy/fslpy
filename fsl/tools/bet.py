@@ -57,9 +57,9 @@ class Options(props.HasProperties):
     fractionalIntensity  = props.Double(default=0.5, minval=0.0,  maxval=1.0)
     thresholdGradient    = props.Double(default=0.0, minval=-1.0, maxval=1.0)
     headRadius           = props.Double(default=0.0, minval=0.0)
-    xCoordinate          = props.Double(default=0.0, minval=0.0)
-    yCoordinate          = props.Double(default=0.0, minval=0.0)
-    zCoordinate          = props.Double(default=0.0, minval=0.0)
+    xCoordinate          = props.Int(default=0, minval=0)
+    yCoordinate          = props.Int(default=0, minval=0)
+    zCoordinate          = props.Int(default=0, minval=0)
 
 
     def setOutputImage(self, value, valid, *a):
