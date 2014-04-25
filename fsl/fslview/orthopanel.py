@@ -118,7 +118,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         changes.
         """
 
-        if not ev.LeftIsDown(): return
+        if not ev.LeftIsDown():      return
+        if len(self.imageList) == 0: return
 
         mx, my  = ev.GetPositionTuple()
         source  = ev.GetEventObject()

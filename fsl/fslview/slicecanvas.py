@@ -468,12 +468,12 @@ class SliceCanvas(wxgl.GLCanvas):
         # set by the _imageListChanged method, and
         # updated whenever an image is added/removed
         # from the list.
-        self.xmin = None
-        self.xmax = None
-        self.ymin = None
-        self.ymax = None
-        self.zmin = None
-        self.zmax = None
+        self.xmin = 0
+        self.ymin = 0
+        self.zmin = 0
+        self.xmax = 1
+        self.ymax = 1 
+        self.zmax = 1 
         
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
@@ -497,6 +497,19 @@ class SliceCanvas(wxgl.GLCanvas):
         the image. This method also updates the canvas bounds (i.e.
         the min/max x/y/z coordinates across all images being displayed).
         """
+
+        if len(self.imageList) == 0:
+            self. xmin = 0
+            self. ymin = 0
+            self. zmin = 0
+            self. xmax = 1
+            self. ymax = 1
+            self. zmax = 1
+            self._xpos = None
+            self._ypos = None
+            self._zpos = None
+            self.Refresh()
+            return
 
         # Create a GLImageData object
         # for any new images
@@ -596,14 +609,21 @@ class SliceCanvas(wxgl.GLCanvas):
         self.context.SetCurrent(self)
         self.resize()
 
+        # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        gl.glShadeModel(gl.GL_FLAT)
+
+        # no images to draw
+        if len(self.imageList) == 0:
+            return
 
         gl.glUseProgram(self.shaders)
 
         # enable transparency
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        # disable interpolation
+        gl.glShadeModel(gl.GL_FLAT)
 
         for image in self.imageList:
 
