@@ -6,11 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import sys
-
 import numpy             as np
-import matplotlib.colors as mplcolors
-import matplotlib.cm     as mplcm
 
 import                      wx
 import wx.glcanvas       as wxgl
@@ -106,7 +102,7 @@ class GLImageData(object):
         xax   = self.canvas.xax
         yax   = self.canvas.yax
         halfx = self.xlen / 2.0
-        halfy = self.ylen / 2.0 
+        halfy = self.ylen / 2.0
 
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
@@ -122,22 +118,22 @@ class GLImageData(object):
         # every voxel in one slice.
         xidxs        = np.arange(self.xdim, dtype=np.float32)
         yidxs        = np.arange(self.ydim, dtype=np.float32)
-        yidxs,xidxs  = np.meshgrid(yidxs, xidxs, indexing='ij')
+        yidxs, xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
 
         # And put them into a single array (the image.voxToWorld
         # method needs xyz coordinates, hence the N*3 shape here)
-        positionData = np.zeros((self.xdim*self.ydim, 3), dtype=np.float32)
-        positionData[:,xax] = xidxs.ravel(order='C')
-        positionData[:,yax] = yidxs.ravel(order='C')
+        positionData = np.zeros((self.xdim * self.ydim, 3), dtype=np.float32)
+        positionData[:, xax] = xidxs.ravel(order='C')
+        positionData[:, yax] = yidxs.ravel(order='C')
 
         # Then we transform them from voxel
         # coordinates to world coordinates
-        positionData = image.voxToWorld(positionData)[:,(xax, yax)]
+        positionData = image.voxToWorld(positionData)[:, (xax, yax)]
 
         # GL buffers for the geometry and position data
         geomData       = geomData    .ravel(order='C')
         positionData   = positionData.ravel(order='C')
-        geomBuffer     = vbo.VBO(geomData    , gl.GL_STATIC_DRAW)
+        geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
         positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
 
         # The image buffer, containing the image data itself
@@ -179,8 +175,8 @@ class GLImageData(object):
         # The image data is normalised to lie
         # between 0 and 255, and cast to uint8
         imageData = np.array(image.data, dtype=np.float32)
-        imageData = 255.0*(imageData       - imageData.min()) / \
-                          (imageData.max() - imageData.min())
+        imageData = 255.0 * (imageData       - imageData.min()) / \
+                            (imageData.max() - imageData.min())
         imageData = np.array(imageData, dtype=np.uint8)
 
         # Then flattened, with fortran dimension ordering,
@@ -295,13 +291,20 @@ class GLImageData(object):
 vertex_shader = """
 #version 120
 
-uniform   float alpha;          /* Opacity - constant for a whole image          */
+/* Opacity - constant for a whole image */
+uniform float alpha;
 
-attribute vec2  inVertex;       /* Current vertex                                */
-attribute vec2  inPosition;     /* Position of the current voxel                 */
-attribute float voxelValue;     /* Value of the current voxel (in range [0,1])   */
+/* Current vertex */
+attribute vec2 inVertex;
 
-varying   float fragVoxelValue; /* Voxel value passed through to fragment shader */ 
+/* Position of the current voxel */
+attribute vec2 inPos;
+
+/* Value of the current voxel (in range [0,1]) */
+attribute float voxValue;
+
+/* Voxel value passed through to fragment shader */ 
+varying float fragVoxValue;
 
 void main(void) {
 
@@ -311,10 +314,10 @@ void main(void) {
      * coordinates to screen coordinates).
      */
     gl_Position = gl_ModelViewProjectionMatrix * \
-        vec4(inVertex+inPosition, 0.0, 1.0);
+        vec4(inVertex+inPos, 0.0, 1.0);
 
     /* Pass the voxel value through to the shader. */
-    fragVoxelValue = voxelValue;
+    fragVoxValue = voxValue;
 }
 """
 
@@ -326,11 +329,11 @@ fragment_shader = """
 
 uniform float     alpha; 
 uniform sampler1D colourMap;      /* RGB colour map, stored as a 1D texture */
-varying float     fragVoxelValue;
+varying float     fragVoxValue;
 
 void main(void) {
 
-    vec4  voxTexture = texture1D(colourMap, fragVoxelValue);
+    vec4  voxTexture = texture1D(colourMap, fragVoxValue);
     vec3  voxColour  = voxTexture.rgb;
     float voxAlpha   = voxTexture.a;
 
@@ -341,6 +344,7 @@ void main(void) {
     gl_FragColor = vec4(voxColour, voxAlpha);
 }
 """
+
 
 class SliceCanvas(wxgl.GLCanvas):
     """
@@ -549,8 +553,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # Indices of all vertex/fragment shader parameters 
         self.inVertexPos   = gl.glGetAttribLocation( self.shaders, 'inVertex')
-        self.voxelValuePos = gl.glGetAttribLocation( self.shaders, 'voxelValue')
-        self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPosition')
+        self.voxelValuePos = gl.glGetAttribLocation( self.shaders, 'voxValue')
+        self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPos')
         self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.colourMapPos  = gl.glGetUniformLocation(self.shaders, 'colourMap')
 
@@ -626,15 +630,13 @@ class SliceCanvas(wxgl.GLCanvas):
             zstride = glImageData.zstride
 
             # Figure out which slice we are drawing
-            point = np.zeros((1,3))
-            point[0,self.zax] = self.zpos
-            zi = int(image.worldToVox(point)[0,self.zax])
+            zi = int(image.worldToVox(self.zpos, self.zax))
 
-            if not imageDisplay.enabled:
-                continue 
+            # and if it's out of range, don't draw it
+            if zi < 0 or zi >= zdim: continue 
 
-            if zi < 0 or zi >= zdim:
-                continue
+            # nor if the display is disabled
+            if not imageDisplay.enabled: continue 
 
             # Set up the colour buffer
             gl.glEnable(gl.GL_TEXTURE_1D)

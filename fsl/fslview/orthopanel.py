@@ -12,10 +12,10 @@ import sys
 if True:
     import logging
     logging.basicConfig(
-        format='%(levelname)8s '\
-               '%(filename)20s '\
-               '%(lineno)4d: '\
-               '%(funcName)s - '\
+        format='%(levelname)8s '
+               '%(filename)20s '
+               '%(lineno)4d: '
+               '%(funcName)s - '
                '%(message)s',
         level=logging.DEBUG)
 
@@ -31,7 +31,12 @@ import fsl.fslview.slicecanvas as slicecanvas
 # the current cursort location in the image space.
 LocationEvent, EVT_LOCATION_EVENT = wxevent.NewEvent()
 
-class OrthoPanel(wx.Panel):
+
+class OrthoPanel(wx.Panel, props.HasProperties):
+
+    displayXCanvas = props.Boolean(default=True)
+    displayYCanvas = props.Boolean(default=True)
+    displayZCanvas = props.Boolean(default=True)
 
     def __init__(self, parent, imageList):
         """
@@ -46,7 +51,7 @@ class OrthoPanel(wx.Panel):
         self.imageList = imageList
 
         wx.Panel.__init__(self, parent)
-        self.SetMinSize((300,100))
+        self.SetMinSize((300, 100))
 
         self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0)
         self.ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
@@ -115,9 +120,9 @@ class OrthoPanel(wx.Panel):
 
         if not ev.LeftIsDown(): return
 
-        mx,my  = ev.GetPositionTuple()
-        source = ev.GetEventObject()
-        w,h = source.GetClientSize()
+        mx, my  = ev.GetPositionTuple()
+        source  = ev.GetEventObject()
+        w, h    = source.GetClientSize()
 
         my = h - my
 
@@ -128,13 +133,13 @@ class OrthoPanel(wx.Panel):
         mx = mx * (source.xmax - source.xmin) / float(w) + source.xmin
         my = my * (source.ymax - source.ymin) / float(h) + source.ymin
 
-        if   source == self.xcanvas: y,z = mx,my
-        elif source == self.ycanvas: x,z = mx,my
-        elif source == self.zcanvas: x,y = mx,my
+        if   source == self.xcanvas: y, z = mx, my
+        elif source == self.ycanvas: x, z = mx, my
+        elif source == self.zcanvas: x, y = mx, my
 
-        self.setLocation(x,y,z)
+        self.setLocation(x, y, z)
 
-        evt = LocationEvent(x=x,y=y,z=z)
+        evt = LocationEvent(x=x, y=y, z=z)
         wx.PostEvent(self, evt)
 
 

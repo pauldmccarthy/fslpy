@@ -5,20 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-
-import os
-import sys
-
 from collections import OrderedDict
 
 import wx
 
 import nibabel as nb
 
-import fsl.props           as props
-import fsl.data.imagefile  as imagefile
-import fsl.utils.runwindow as runwindow
-import fsl.utils.imageview as imageview
+import fsl.props              as props
+import fsl.data.imagefile     as imagefile
+import fsl.data.fslimage      as fslimage
+import fsl.utils.runwindow    as runwindow
+import fsl.fslview.orthopanel as orthopanel
 
 runChoices = OrderedDict((
 
@@ -31,15 +28,22 @@ runChoices = OrderedDict((
     ('-B',  'Bias field & neck cleanup (can be useful in SIENA)'),
     ('-Z',  'Improve BET if FOV is very small in Z'),
     ('-F',  'Apply to 4D FMRI data'),
-    ('-A',  'Run bet2 and then betsurf to get additional skull and scalp surfaces'),
+    ('-A',  'Run bet2 and then betsurf to get additional skull and scalp '
+            'surfaces'),
     ('-A2', 'As above, when also feeding in non-brain extracted T2')))
 
 
 class Options(props.HasProperties):
 
-    inputImage           = props.FilePath(exists=True, suffixes=imagefile._allowedExts, required=True)
-    outputImage          = props.FilePath(                                              required=True)
-    t2Image              = props.FilePath(exists=True, suffixes=imagefile._allowedExts, required=lambda i: i.runChoice == '-A2')
+    inputImage           = props.FilePath(
+        exists=True,
+        suffixes=imagefile._allowedExts,
+        required=True)
+    outputImage          = props.FilePath(required=True)
+    t2Image              = props.FilePath(
+        exists=True,
+        suffixes=imagefile._allowedExts,
+        required=lambda i: i.runChoice == '-A2')
 
     runChoice            = props.Choice(runChoices)
 
@@ -157,7 +161,8 @@ optLabels = {
     'thresholdImages'      : 'Apply thresholding to brain and mask image',
     'outputSkull'          : 'Output exterior skull surface image',
     'outputMesh'           : 'Generate brain surface as mesh in .vtk format',
-    'outputSurfaceOverlay' : 'Output brain surface overlaid onto original image',
+    'outputSurfaceOverlay' : 'Output brain surface overlaid onto original '
+                             'image',
     'fractionalIntensity'  : 'Fractional intensity threshold',
     'thresholdGradient'    : 'Threshold gradient',
     'headRadius'           : 'Head radius (mm)',
@@ -169,10 +174,13 @@ optLabels = {
 
 
 optTooltips = {
-    'fractionalIntensity' : 'Smaller values give larger brain outline estimates.',
-    'thresholdGradient'   : 'Positive values give larger brain outline at bottom, smaller at top.',
+    'fractionalIntensity' : 'Smaller values give larger brain outline '
+                            'estimates.',
+    'thresholdGradient'   : 'Positive values give larger brain outline at '
+                            'bottom, smaller at top.',
     'headRadius'          : 'Initial surface sphere is set to half of this.',
-    'centreCoords'        : 'Coordinates (voxels) for centre of initial brain surface sphere.'
+    'centreCoords'        : 'Coordinates (voxels) for centre of initial '
+                            'brain surface sphere.'
 }
 
 
@@ -182,21 +190,23 @@ def selectHeadCentre(opts, button):
     select the head centre location.
     """
 
-    image  = nb.load(opts.inputImage)
-    parent = button.GetTopLevelParent()
-    frame  = imageview.ImageFrame(parent, image.get_data(), opts.inputImage)
-    panel  = frame.panel
+    image     = fslimage.Image(opts.inputImage)
+    imageList = fslimage.ImageList([image])
+    parent    = button.GetTopLevelParent()
+    frame     = orthopanel.OrthoFrame(parent, imageList, opts.inputImage)
+    panel     = frame.panel
 
-    panel.setLocation(
-        opts.xCoordinate,
-        opts.yCoordinate,
-        opts.zCoordinate)
+    voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
+    worldCoords = image.voxToWorld([voxCoords])[0]
+
+    panel.setLocation(*worldCoords)
 
     # Whenever the x/y/z coordinates change on
-    # the Options object,update the dialog view. 
-    def updateViewX(val, *a): panel.setXLocation(val)
-    def updateViewY(val, *a): panel.setYLocation(val)
-    def updateViewZ(val, *a): panel.setZLocation(val)
+    # the Options object,update the orthopanel
+    # location
+    def updateViewX(val, *a): panel.setXLocation(image.voxToWorld(val, axes=0))
+    def updateViewY(val, *a): panel.setYLocation(image.voxToWorld(val, axes=1))
+    def updateViewZ(val, *a): panel.setZLocation(image.voxToWorld(val, axes=2))
 
     optListeners = (
         ('xCoordinate', 'updateViewX_{}'.format(id(panel)), updateViewX),
@@ -218,11 +228,24 @@ def selectHeadCentre(opts, button):
     # And whenever the x/y/z coordinates change
     # on the dialog, update the option values.
     def updateOpts(ev):
-        opts.xCoordinate = ev.x
-        opts.yCoordinate = ev.y
-        opts.zCoordinate = ev.z
+        x = image.worldToVox(ev.x, axes=0)
+        y = image.worldToVox(ev.y, axes=1)
+        z = image.worldToVox(ev.z, axes=2)
 
-    panel.Bind(imageview.EVT_LOCATION_EVENT, updateOpts)
+        if   x >= image.shape[0]: x = image.shape[0] - 1
+        elif x <  0:              x = 0
+        
+        if   y >= image.shape[1]: y = image.shape[1] - 1
+        elif y <  0:              y = 0
+        
+        if   z >= image.shape[2]: z = image.shape[2] - 1
+        elif z <  0:              z = 0
+
+        opts.xCoordinate = x
+        opts.yCoordinate = y
+        opts.zCoordinate = z
+
+    panel.Bind(orthopanel.EVT_LOCATION_EVENT, updateOpts)
 
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
@@ -254,9 +277,10 @@ betView = props.NotebookGroup((
             props.HGroup(
                 key='centreCoords',
                 children=(
-                    props.Button(text='Select',
-                                 callback=selectHeadCentre,
-                                 enabledWhen=lambda i: i.isValid('inputImage')),
+                    props.Button(
+                        text='Select',
+                        callback=selectHeadCentre,
+                        enabledWhen=lambda i: i.isValid('inputImage')),
                     'xCoordinate',
                     'yCoordinate',
                     'zCoordinate'))))))
@@ -274,9 +298,9 @@ def runBet(parent, opts):
         if exitCode != 0: return
 
         image = nb.load(imagefile.addExt(opts.outputImage))
-        frame = imageview.ImageFrame(window,
-                                     image.get_data(),
-                                     title=opts.outputImage)
+        frame = orthopanel.OrthoFrame(window,
+                                      image.get_data(),
+                                      title=opts.outputImage)
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
@@ -290,4 +314,3 @@ FSL_HELPPAGE  = 'bet'
 FSL_OPTIONS   = Options
 FSL_INTERFACE = interface
 FSL_RUNTOOL   = runBet
-

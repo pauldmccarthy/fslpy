@@ -16,7 +16,6 @@ import numpy              as np
 import numpy.linalg       as linalg
 import nibabel            as nib
 import matplotlib.cm      as mplcm
-import matplotlib.colors  as mplcolors
 
 import fsl.props            as props
 import fsl.data.imagefile   as imagefile
@@ -69,45 +68,106 @@ class Image(object):
         """
         """
 
-        points = np.zeros((2,3), dtype=np.float32)
-        points[1,axis] = self.shape[axis]-1
+        points = np.zeros((2, 3), dtype=np.float32)
+        points[1, axis] = self.shape[axis] - 1
         
         tx = self.voxToWorld(points)
 
-        lo,hi = sorted(tx[:,axis])
+        lo, hi = sorted(tx[:, axis])
 
-        lo = lo - self.pixdim[axis]*0.5
-        hi = hi + self.pixdim[axis]*0.5
+        lo = lo - self.pixdim[axis] * 0.5
+        hi = hi + self.pixdim[axis] * 0.5
 
         return (lo, hi)
 
 
-    def worldToVox(self, p):
-        return self._transform(p, self.worldToVoxMat)
+    def worldToVox(self, p, axes=None):
+        """
+        Transforms the given set of points in voxel coordinates to
+        points in world coordinates, according to the affine
+        transformation specified in the image file. Parameters:
+        
+          - p:    N*A array, where N is the number of points, and A
+                  is the number of axes to consider (default: 3)
+        
+          - axes: If None, it is assumed that the input p is a N*3
+                  array, with each point being specified by x,y,z
+                  coordinates. If a single value in the range (0-2),
+                  it is assumed that p is a 1D array. Or, if a
+                  sequence of 2 or 3 values, p must be an array of
+                  N*2 or N*3, respectively.
+        """
+
+        voxp = self._transform(p, self.worldToVoxMat, axes)
+        voxp = np.array(voxp, dtype=np.int64)
+        
+        return voxp
 
 
-    def voxToWorld(self, p):
-        return self._transform(p, self.voxToWorldMat)
+    def voxToWorld(self, p, axes=None):
+        """
+        Transforms the given set of points in world coordinates to
+        points in voxel coordinates, according to the affine
+        transformation specified in the image file.  See the
+        worldToVox docstring for more details.
+        
+        """ 
+        return self._transform(p, self.voxToWorldMat, axes)
 
         
-    def _transform(self, p, a):
+    def _transform(self, p, a, axes):
         """
-        Parameters:
-          - p: N*3 numpy array of (x,y,z) coordinates.
-          - a: 4*4 affine transformation matrix.
+        Transforms the given set of points p according to the given
+        affine transformation a. See the worldToVox docstring for
+        more details.
         """
 
-        t = np.zeros(p.shape, dtype=p.dtype)
+        p = self._fillPoints(p, axes)
+        t = np.zeros((len(p), 3), dtype=p.dtype)
 
-        x = p[:,0]
-        y = p[:,1]
-        z = p[:,2]
+        x = p[:, 0]
+        y = p[:, 1]
+        z = p[:, 2]
 
-        t[:,0] = x * a[0,0] + y * a[1,0] + z * a[2,0] + a[3,0]
-        t[:,1] = x * a[0,1] + y * a[1,1] + z * a[2,1] + a[3,1]
-        t[:,2] = x * a[0,2] + y * a[1,2] + z * a[2,2] + a[3,2]
+        t[:, 0] = x * a[0, 0] + y * a[1, 0] + z * a[2, 0] + a[3, 0]
+        t[:, 1] = x * a[0, 1] + y * a[1, 1] + z * a[2, 1] + a[3, 1]
+        t[:, 2] = x * a[0, 2] + y * a[1, 2] + z * a[2, 2] + a[3, 2]
 
-        return t
+        if axes is None: axes = [0, 1, 2]
+
+        return t[:, axes]
+
+
+    def _fillPoints(self, p, axes):
+        """
+        Turns the given array p into a N*3 array of x,y,z coordinates.
+        The array p may be a 1D array, or an N*2 or N*3 array. 
+        """
+
+        if not isinstance(p, collections.Iterable): p = [p]
+        p = np.array(p)
+
+        if axes is None: return p
+
+        if not isinstance(axes, collections.Iterable): axes = [axes]
+
+        if p.ndim == 1:
+            p = p.reshape((len(p), 1))
+
+        if p.ndim != 2:
+            raise ValueError('Points array must be either one or two '
+                             'dimensions')
+
+        if len(axes) != p.shape[1]:
+            raise ValueError('Points array shape does not match specified '
+                             'number of axes')
+
+        newp = np.zeros((len(p), 3), dtype=p.dtype)
+
+        for i, ax in enumerate(axes):
+            newp[:, ax] = p[:, i]
+
+        return newp
 
         
     def getAttribute(self, name):
@@ -163,12 +223,12 @@ class ImageDisplay(props.HasProperties):
     cmap       = props.ColourMap(default=mplcm.Greys_r,
                                  preNotifyFunc=updateColourMap)
     
-    _view   = props.VGroup(('enabled',
-                            'displayMin',
-                            'displayMax',
-                            'alpha',
-                            'rangeClip',
-                            'cmap'))
+    _view = props.VGroup(('enabled',
+                          'displayMin',
+                          'displayMax',
+                          'alpha',
+                          'rangeClip',
+                          'cmap'))
     _labels = {
         'enabled'    : 'Enabled',
         'displayMin' : 'Min.',
@@ -176,7 +236,7 @@ class ImageDisplay(props.HasProperties):
         'alpha'      : 'Opacity',
         'rangeClip'  : 'Clipping',
         'cmap'       : 'Colour map'
-        }
+    }
 
 
     def __init__(self, image):
@@ -252,13 +312,13 @@ class ImageList(object):
             raise TypeError('item must be a fsl.data.fslimage.Image') 
 
             
-    def __len__     (self):        return self._items.__len__()
-    def __getitem__ (self, key):   return self._items.__getitem__(key)
-    def __iter__    (self):        return self._items.__iter__()
+    def __len__(     self):        return self._items.__len__()
+    def __getitem__( self, key):   return self._items.__getitem__(key)
+    def __iter__(    self):        return self._items.__iter__()
     def __contains__(self, item):  return self._items.__contains__(item)
-    def __eq__      (self, other): return self._items.__eq__(other)
-    def __str__     (self):        return self._items.__str__()
-    def __repr__    (self):        return self._items.__repr__()
+    def __eq__(      self, other): return self._items.__eq__(other)
+    def __str__(     self):        return self._items.__str__()
+    def __repr__(    self):        return self._items.__repr__()
 
  
     def append(self, item):
@@ -288,7 +348,8 @@ class ImageList(object):
     def extend(self, items):
         map(self._validate, items)
         self._items.extend(items)
-        log.debug('List extended: {}'.format(', '.join([str(i) for i in item])))
+        log.debug('List extended: {}'.format(
+            ', '.join([str(i) for i in items])))
         self._updateImageAttributes()
         self._notify()
 
@@ -304,12 +365,11 @@ class ImageList(object):
         self._notify()
 
         
-    def addListener   (self, listener): self._listeners.append(listener)
+    def addListener(   self, listener): self._listeners.append(listener)
     def removeListener(self, listener): self._listeners.remove(listener)
-    def _notify       (self):
+    def _notify(       self):
         for listener in self._listeners:
             try:
                 listener(self)
-            except e:
+            except Exception as e:
                 log.debug('Listener raised exception: {}'.format(e.message))
- 
