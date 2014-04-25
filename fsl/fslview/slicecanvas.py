@@ -50,10 +50,13 @@ class GLImageData(object):
     Finally, the texture, the 'colour buffer', is used to store a lookup table
     containing colours.
     """
-    
+
     def __init__(self, image, canvas):
         """
-        Parameters.
+        Initialise the OpenGL data buffers required to render the given image.
+        Parameters:
+          - image:  A fsl.data.fslimage.Image object.
+          - canvas: The SliceCanvas object which is rendering the image.
         """
 
         self.image          = image
@@ -95,20 +98,19 @@ class GLImageData(object):
 
     def initGLImageData(self):
         """
-        Creates and initialises the OpenGL data for the given fslimage.Image
-        object. The GL data (a GLImageData object - see the top of this
-        module) is added as an attribute of the image.
+        Creates and initialises the OpenGL data for the fslimage.Image
+        object that was passed to the GLImageData constructor.
         """
 
         image = self.image
         xax   = self.canvas.xax
         yax   = self.canvas.yax
+        halfx = self.xlen / 2.0
+        halfy = self.ylen / 2.0 
 
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
-        halfx = self.xlen / 2.0
-        halfy = self.ylen / 2.0
         geomData = np.array([-halfx, -halfy,
                               halfx, -halfy,
                              -halfx,  halfy,
@@ -118,21 +120,25 @@ class GLImageData(object):
         # the location of every voxel in a single slice.
         # First we create a set of voxel coordinates for
         # every voxel in one slice.
+        xidxs        = np.arange(self.xdim, dtype=np.float32)
+        yidxs        = np.arange(self.ydim, dtype=np.float32)
+        yidxs,xidxs  = np.meshgrid(yidxs, xidxs, indexing='ij')
+
+        # And put them into a single array (the image.voxToWorld
+        # method needs xyz coordinates, hence the N*3 shape here)
         positionData = np.zeros((self.xdim*self.ydim, 3), dtype=np.float32)
+        positionData[:,xax] = xidxs.ravel(order='C')
+        positionData[:,yax] = yidxs.ravel(order='C')
 
-        xidxs = np.arange(self.xdim, dtype=np.float32)
-        yidxs = np.arange(self.ydim, dtype=np.float32)
-        yidxs,xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
-
-        positionData[:,xax] = xidxs.ravel('C')
-        positionData[:,yax] = yidxs.ravel('C')
-
-        # Then we transform from voxel
+        # Then we transform them from voxel
         # coordinates to world coordinates
         positionData = image.voxToWorld(positionData)[:,(xax, yax)]
-         
-        geomBuffer     = vbo.VBO(geomData    .ravel('C'), gl.GL_STATIC_DRAW)
-        positionBuffer = vbo.VBO(positionData.ravel('C'), gl.GL_STATIC_DRAW)
+
+        # GL buffers for the geometry and position data
+        geomData       = geomData    .ravel(order='C')
+        positionData   = positionData.ravel(order='C')
+        geomBuffer     = vbo.VBO(geomData    , gl.GL_STATIC_DRAW)
+        positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
 
         # The image buffer, containing the image data itself
         imageBuffer = self.initImageBuffer()
@@ -171,7 +177,7 @@ class GLImageData(object):
             return imageBuffer
 
         # The image data is normalised to lie
-        # between 0 and 256, and cast to uint8
+        # between 0 and 255, and cast to uint8
         imageData = np.array(image.data, dtype=np.float32)
         imageData = 255.0*(imageData       - imageData.min()) / \
                           (imageData.max() - imageData.min())
@@ -183,6 +189,9 @@ class GLImageData(object):
         imageData = imageData.ravel(order='F')
         imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
 
+        # And added as an attribute of the image, so
+        # other things which want to render the image
+        # don't need to create another buffer.
         image.setAttribute('glBuffer', imageBuffer)
 
         return imageBuffer
@@ -191,8 +200,8 @@ class GLImageData(object):
     def configDisplayListeners(self):
         """
         Adds a bunch of listeners to the fslimage.ImageDisplay object
-        (accessible as an attribute of the given image called 'display'),
-        whcih defines how the given image is to be displayed. This is done
+        (accessible as an attribute, called 'display', of the given image),
+        which defines how the given image is to be displayed. This is done
         so we can refresh the image view when image display properties are
         changed. 
         """
@@ -226,8 +235,7 @@ class GLImageData(object):
 
     def updateColourBuffer(self):
         """
-        Regenerates the colour buffer used to colour a slice of the
-        specified image. 
+        Regenerates the colour buffer used to colour image voxels.
         """
 
         display      = self.image.display
@@ -255,7 +263,7 @@ class GLImageData(object):
 
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
-        # colour map (see fsl.data.fslimage.Image)
+        # colour map
         colourmap = display.cmap(newRange)
         
         # The colour data is stored on
@@ -449,7 +457,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # method.
         self._xpos = None
         self._ypos = None
-        self._zpos = None 
+        self._zpos = None
 
         # These attributes define the spatial data
         # limits of all displayed images. They are
@@ -491,7 +499,7 @@ class SliceCanvas(wxgl.GLCanvas):
         for image in self.imageList:
             try:
                 glData = image.getAttribute(self.name)
-            except: 
+            except:
                 glData = GLImageData(image, self)
                 image.setAttribute(self.name, glData)
 
@@ -508,9 +516,9 @@ class SliceCanvas(wxgl.GLCanvas):
         # initialise the cursor location and displayed
         # slice if they do not yet have values
         if not all((self._xpos, self._ypos, self._zpos)):
-            self.xpos = (self.xmax - self.xmin) / 2
-            self.ypos = (self.ymax - self.ymin) / 2
-            self.zpos = (self.zmax - self.zmin) / 2
+            self.xpos = (abs(self.xmax) - abs(self.xmin)) / 2.0
+            self.ypos = (abs(self.ymax) - abs(self.ymin)) / 2.0
+            self.zpos = (abs(self.zmax) - abs(self.zmin)) / 2.0
 
         self.Refresh()
 
