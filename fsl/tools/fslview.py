@@ -5,11 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import sys
-
 import wx
 
-import fsl.fslview.slicecanvas    as slicecanvas
 import fsl.fslview.orthopanel     as orthopanel
 import fsl.fslview.imagelistpanel as imagelistpanel
 
@@ -35,17 +32,21 @@ class FslViewPanel(wx.Panel):
         self.Layout()
 
 
-FSL_TOOLNAME = 'fslview'
+def fslviewArguments(parser):
+    parser.add_argument('image', help='Image file to view', nargs='*')
 
 
-if __name__ == '__main__':
+def loadImages(args):
+    imageList = fslimage.ImageList(map(fslimage.Image, args.image))
+    return imageList
 
-    app       = wx.App()
-    images    = map(fslimage.Image, sys.argv[1:])
-    imageList = fslimage.ImageList(images)
     
-    frame     = wx.Frame(None, title='fslview')
-    panel     = FslViewPanel(frame, imageList)
+def interface(parent, imageList):
+    panel = FslViewPanel(parent, imageList)
+    return panel
+    
 
-    frame.Show()
-    app.MainLoop()
+FSL_TOOLNAME  = 'FSLView'
+FSL_INTERFACE = interface
+FSL_CONTEXT   = loadImages
+FSL_ARGUMENTS = fslviewArguments

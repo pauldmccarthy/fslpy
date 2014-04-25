@@ -629,14 +629,14 @@ class SliceCanvas(wxgl.GLCanvas):
             ystride = glImageData.ystride
             zstride = glImageData.zstride
 
-            # Figure out which slice we are drawing
-            zi = int(image.worldToVox(self.zpos, self.zax))
-
-            # and if it's out of range, don't draw it
-            if zi < 0 or zi >= zdim: continue 
-
-            # nor if the display is disabled
+            # Don't draw the slice if this
+            # image display is disabled
             if not imageDisplay.enabled: continue 
+
+            # Figure out which slice we are drawing,
+            # and if it's out of range, don't draw it
+            zi = int(image.worldToVox(self.zpos, self.zax))
+            if zi < 0 or zi >= zdim: continue 
 
             # Set up the colour buffer
             gl.glEnable(gl.GL_TEXTURE_1D)
