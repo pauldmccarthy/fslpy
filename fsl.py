@@ -165,7 +165,6 @@ def buildGUI(fslTool, toolCtx, fslEnvActive):
         menuItem = fslMenu.Append(wxId, name)
         frame.Bind(wx.EVT_MENU, func, menuItem)
 
-    toolPanel.Layout()
     frame.Layout()
 
     return frame

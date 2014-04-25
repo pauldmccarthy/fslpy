@@ -5,8 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os
-import sys
 
 from collections import OrderedDict
 
@@ -57,8 +55,8 @@ zRenderingOpts = OrderedDict((
     ('preset', 'Use preset Z min/max')))
 
 blobOpts = OrderedDict((
-    ('solid',      'Solid blobs'),
-    ('transparent','Transparent blobs')))
+    ('solid',       'Solid blobs'),
+    ('transparent', 'Transparent blobs')))
 
 regSearchOpts = OrderedDict((
     ('none',   'No search'),
@@ -90,7 +88,9 @@ class Options(props.HasProperties):
     progressWatcher          = props.Boolean(default=True)
     brainBackgroundThreshold = props.Percentage(default=10)
     efficNoiseLevel          = props.Percentage(default=0.66)
-    efficTemporalSmoothness  = props.Double(default=0.34, minval=-1.0, maxval=1.0)
+    efficTemporalSmoothness  = props.Double(default=0.34,
+                                            minval=-1.0,
+                                            maxval=1.0)
     efficZThreshold          = props.Double(default=5.3, minval=0.0)
 
     # misc/higher level
@@ -99,7 +99,9 @@ class Options(props.HasProperties):
     #
     # Data options
     #
-    inputData            = props.List(minlen=1, listType=props.FilePath(exists=True, required=True))
+    inputData            = props.List(
+        minlen=1,
+        listType=props.FilePath(exists=True, required=True))
     outputDirectory      = props.FilePath(isFile=False, required=True)
     totalVolumes         = props.Int(minval=0)
     deleteVolumes        = props.Int(minval=0)
@@ -108,8 +110,17 @@ class Options(props.HasProperties):
 
     # data/higher level
     inputDataType        = props.Choice(highLevelInputTypes)
-    higherLevelFeatInput = props.List(minlen=3, listType=props.FilePath(isFile=False, exists=True, required=lambda i:i.inputDataType=='featDirs'))
-    higherLevelCopeInput = props.List(minlen=3, listType=props.FilePath(              exists=True, required=lambda i:i.inputDataType=='copeImages'))
+    higherLevelFeatInput = props.List(
+        minlen=3,
+        listType=props.FilePath(
+            isFile=False,
+            exists=True,
+            required=lambda i: i.inputDataType == 'featDirs'))
+    higherLevelCopeInput = props.List(
+        minlen=3,
+        listType=props.FilePath(
+            exists=True,
+            required=lambda i: i.inputDataType == 'copeImages'))
 
     #
     # Pre-stats options
@@ -119,19 +130,25 @@ class Options(props.HasProperties):
     b0Unwarping       = props.Boolean(default=False)
 
     # B0 unwarping sub-options - displayed if b0Unwarping is true
-    b0_fieldmap            = props.FilePath(exists=True, required=lambda i:i.b0Unwarping)
-    b0_fieldmapMag         = props.FilePath(exists=True, required=lambda i:i.b0Unwarping)
+    b0_fieldmap            = props.FilePath(exists=True,
+                                            required=lambda i: i.b0Unwarping)
+    b0_fieldmapMag         = props.FilePath(exists=True,
+                                            required=lambda i: i.b0Unwarping)
     b0_echoSpacing         = props.Double(minval=0.0, default=0.7)
     b0_TE                  = props.Double(minval=0.0, default=35)
-    b0_unwarpDir           = props.Choice(('x','-x','y','-y','z','-z'))
+    b0_unwarpDir           = props.Choice(('x', '-x', 'y', '-y', 'z', '-z'))
     b0_signalLossThreshold = props.Percentage(default=10)
 
     sliceTimingCorrection  = props.Choice(sliceTimingOpts)
 
     # slice timing file, displayed if the timing correction
     # choice is for a custom order/timing file
-    sliceTimingFile       = props.FilePath(exists=True, required=lambda i:i.sliceTimingCorrection=='timingFile')
-    sliceOrderFile        = props.FilePath(exists=True, required=lambda i:i.sliceTimingCorrection=='orderFile')
+    sliceTimingFile       = props.FilePath(
+        exists=True,
+        required=lambda i: i.sliceTimingCorrection == 'timingFile')
+    sliceOrderFile        = props.FilePath(
+        exists=True,
+        required=lambda i: i.sliceTimingCorrection == 'orderFile')
     
     brainExtraction       = props.Boolean(default=True)
     smoothingFWHM         = props.Double(minval=0.0, default=5.0)
@@ -161,7 +178,8 @@ class Options(props.HasProperties):
     # Post-stats options
     #
     preThresholdMask = props.FilePath(exists=True)
-    thresholding     = props.Choice(('None','Uncorrected','Voxel','Cluster'))
+    thresholding     = props.Choice((
+        'None', 'Uncorrected', 'Voxel', 'Cluster'))
 
     # Thresholding sub-options
     # displayed if thresholding is not None
@@ -328,7 +346,7 @@ dataView = props.VGroup(
     label='Data',
     children=(
         props.VGroup(
-            visibleWhen=lambda i:i.analysisType == 'firstLevel',
+            visibleWhen=lambda i: i.analysisType == 'firstLevel',
             children=(
                 'inputData',
                 'outputDirectory',
@@ -337,11 +355,15 @@ dataView = props.VGroup(
                 'TR',
                 'highpassFilterCutoff')),
         props.VGroup(
-            visibleWhen=lambda i:i.analysisType == 'highLevel',
+            visibleWhen=lambda i: i.analysisType == 'highLevel',
             children=(
                 'inputDataType',
-                props.Widget('higherLevelFeatInput', visibleWhen=lambda i:i.inputDataType == 'featDirs'),
-                props.Widget('higherLevelCopeInput', visibleWhen=lambda i:i.inputDataType == 'copeImages'),
+                props.Widget(
+                    'higherLevelFeatInput',
+                    visibleWhen=lambda i: i.inputDataType == 'featDirs'),
+                props.Widget(
+                    'higherLevelCopeInput',
+                    visibleWhen=lambda i: i.inputDataType == 'copeImages'),
                 'outputDirectory'))))
 
 prestatsView = props.VGroup(
@@ -363,8 +385,12 @@ prestatsView = props.VGroup(
                 'b0_unwarpDir',
                 'b0_signalLossThreshold')),
         'sliceTimingCorrection',
-        props.Widget('sliceTimingFile', visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
-        props.Widget('sliceOrderFile',  visibleWhen=lambda i: i.sliceTimingCorrection == 'orderFile'),
+        props.Widget(
+            'sliceTimingFile',
+            visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
+        props.Widget(
+            'sliceOrderFile',
+            visibleWhen=lambda i: i.sliceTimingCorrection == 'orderFile'),
         'brainExtraction',
         'smoothingFWHM',
         'intensityNorm',
@@ -374,7 +400,7 @@ prestatsView = props.VGroup(
             children=(
                 'perfusionSubtraction',
                 props.Widget('perfusionOption',
-                           visibleWhen=lambda i: i.perfusionSubtraction))),
+                             visibleWhen=lambda i: i.perfusionSubtraction))),
         'temporalHighpass',
         'melodic'))
 
@@ -401,17 +427,27 @@ postStatsView = props.VGroup(
             border=True,
             children=(
                 'thresholding',
-                props.Widget('pThreshold',         visibleWhen=lambda i:i.thresholding != 'None'),
-                props.Widget('zThreshold',         visibleWhen=lambda i:i.thresholding == 'Cluster'),
-                props.Button('Contrast masking',   visibleWhen=lambda i:i.thresholding != 'None'))),
+                props.Widget(
+                    'pThreshold',
+                    visibleWhen=lambda i: i.thresholding != 'None'),
+                props.Widget(
+                    'zThreshold',
+                    visibleWhen=lambda i: i.thresholding == 'Cluster'),
+                props.Button(
+                    'Contrast masking',
+                    visibleWhen=lambda i: i.thresholding != 'None'))),
         props.VGroup(
             label='Rendering',
             border=True,
             visibleWhen=lambda i: i.thresholding != 'None',
             children=(
                 'renderZMinMax',
-                props.Widget('renderZMin', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
-                props.Widget('renderZMax', visibleWhen=lambda i:i.renderZMinMax == 'preset'),
+                props.Widget(
+                    'renderZMin',
+                    visibleWhen=lambda i: i.renderZMinMax == 'preset'),
+                props.Widget(
+                    'renderZMax',
+                    visibleWhen=lambda i: i.renderZMinMax == 'preset'),
                 'blobTypes'))))
 
 regView = props.VGroup(
@@ -422,28 +458,32 @@ regView = props.VGroup(
         props.HGroup(
             label='Functional -> Expanded functional',
             border=True,
-            visibleWhen=lambda i:i.expandedFunctionalImage is not None,
+            visibleWhen=lambda i: i.expandedFunctionalImage is not None,
             children=('functionalSearch', 'functionalDof')),
         'mainStructuralImage',
         props.HGroup(
             label='Functional -> Structural',
             border=True,
-            visibleWhen=lambda i:i.mainStructuralImage is not None,
+            visibleWhen=lambda i: i.mainStructuralImage is not None,
             children=('structuralSearch', 'structuralDof')), 
         'standardSpaceImage',
         props.VGroup(
             label='Structural -> Standard',
             border=True,
-            visibleWhen=lambda i:i.standardSpaceImage is not None,
+            visibleWhen=lambda i: i.standardSpaceImage is not None,
             children=(
                 props.HGroup(('standardSearch', 'standardDof')),
-                props.HGroup(('nonLinearReg',
-                            props.Widget('warpResolution',visibleWhen=lambda i:i.nonLinearReg)))))))
+                props.HGroup((
+                    'nonLinearReg',
+                    props.Widget(
+                        'warpResolution',
+                        visibleWhen=lambda i: i.nonLinearReg)))))))
 
 
-featView =props.VGroup((
+featView = props.VGroup((
     'analysisType',
-    props.Widget('analysisStages', enabledWhen=lambda i: i.analysisType == 'firstLevel'),
+    props.Widget('analysisStages',
+                 enabledWhen=lambda i: i.analysisType == 'firstLevel'),
     props.NotebookGroup((
         miscView,
         dataView,
@@ -462,6 +502,5 @@ def interface(parent, featOpts):
 
 FSL_TOOLNAME  = 'FEAT'
 FSL_HELPPAGE  = 'feat'
-FSL_OPTIONS   = Options
+FSL_CONTEXT   = lambda args: Options()
 FSL_INTERFACE = interface
-FSL_RUNTOOL   = None

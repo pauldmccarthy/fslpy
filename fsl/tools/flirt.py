@@ -5,9 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os
-import sys
-
 from collections import OrderedDict
 
 import fsl.props as props
@@ -52,13 +49,18 @@ sincWindowOpts = OrderedDict((
     ('blackman', 'Blackman')))
 
 
+def inSingleMode(  opts): return opts.flirtMode == 'single'
+def inMultipleMode(opts): return opts.flirtMode == 'multiple'
+
+
 class Options(props.HasProperties):
+
 
     flirtMode   = props.Choice(flirtModes)
 
-    inputImage  = props.FilePath(exists=True, required=lambda i: i.flirtMode == 'single')
-    loResImage  = props.FilePath(exists=True, required=lambda i: i.flirtMode == 'multiple')
-    hiResImage  = props.FilePath(exists=True, required=lambda i: i.flirtMode == 'multiple')
+    inputImage  = props.FilePath(exists=True, required=inSingleMode)
+    loResImage  = props.FilePath(exists=True, required=inMultipleMode)
+    hiResImage  = props.FilePath(exists=True, required=inMultipleMode)
     refImage    = props.FilePath(exists=True, required=True)
     outputImage = props.FilePath(             required=True)
 
@@ -100,21 +102,29 @@ searchOptions    = props.VGroup(
     label='Search',
     children=(
         'searchMode',
-        props.HGroup(('searchAngleXMin', 'searchAngleXMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
-        props.HGroup(('searchAngleYMin', 'searchAngleYMax'), visibleWhen=lambda i:i.searchMode != 'nosearch'),
-        props.HGroup(('searchAngleZMin', 'searchAngleZMax'), visibleWhen=lambda i:i.searchMode != 'nosearch')))
+        props.HGroup(('searchAngleXMin', 'searchAngleXMax'),
+                     visibleWhen=lambda i: i.searchMode != 'nosearch'),
+        props.HGroup(('searchAngleYMin', 'searchAngleYMax'),
+                     visibleWhen=lambda i: i.searchMode != 'nosearch'),
+        props.HGroup(('searchAngleZMin', 'searchAngleZMax'),
+                     visibleWhen=lambda i: i.searchMode != 'nosearch')))
 
 costFuncOptions  = props.VGroup(
     label='Cost Function',
     children=(
         'costFunction',
-        props.Widget('costHistBins', visibleWhen=lambda i:i.costFunction in ['correlation', 'mutualinfo', 'normmutualinfo'])))
+        props.Widget(
+            'costHistBins',
+            visibleWhen=lambda i: i.costFunction in ['correlation',
+                                                     'mutualinfo',
+                                                     'normmutualinfo'])))
 
 interpOptions = props.VGroup(
     label='Interpolation',
     children=(
         'interpolation',
-        props.VGroup(('sincWindow', 'sincWindowWidth'), visibleWhen=lambda i: i.interpolation == 'sinc')))
+        props.VGroup(('sincWindow', 'sincWindowWidth'),
+                     visibleWhen=lambda i: i.interpolation == 'sinc')))
 
 weightVolOptions = props.VGroup(
     label='Weighting Volumes',
@@ -125,12 +135,12 @@ weightVolOptions = props.VGroup(
 flirtView = props.VGroup((
     'flirtMode',
     'refImage',
-    props.Widget('inputImage',  visibleWhen=lambda i: i.flirtMode == 'single'),
-    props.Widget('inToRefMode', visibleWhen=lambda i: i.flirtMode == 'single'), 
-    props.Widget('hiResImage',  visibleWhen=lambda i: i.flirtMode == 'multiple'),
-    props.Widget('hiToRefMode', visibleWhen=lambda i: i.flirtMode == 'multiple'),
-    props.Widget('loResImage',  visibleWhen=lambda i: i.flirtMode == 'multiple'),
-    props.Widget('loToHiMode',  visibleWhen=lambda i: i.flirtMode == 'multiple'), 
+    props.Widget('inputImage',  visibleWhen=inSingleMode),
+    props.Widget('inToRefMode', visibleWhen=inSingleMode), 
+    props.Widget('hiResImage',  visibleWhen=inMultipleMode),
+    props.Widget('hiToRefMode', visibleWhen=inMultipleMode),
+    props.Widget('loResImage',  visibleWhen=inMultipleMode),
+    props.Widget('loToHiMode',  visibleWhen=inMultipleMode), 
     'outputImage',
     'sndyImages',
     props.NotebookGroup(label='Advanced Options',
@@ -140,18 +150,18 @@ flirtView = props.VGroup((
                                   interpOptions,
                                   weightVolOptions))))
 
+
 def runFlirt(parent, opts):
     pass
 
 
 def interface(parent, opts):
-
     return props.buildGUI(
         parent, opts, flirtView, labels, tooltips)
 
 
 FSL_TOOLNAME  = 'FLIRT'
 FSL_HELPPAGE  = 'flirt'
-FSL_OPTIONS   = Options
+FSL_CONTEXT   = lambda args: Options()
 FSL_INTERFACE = interface
-FSL_RUNTOOL   = runFlirt
+FSL_ACTIONS   = [('Run FLIRT', runFlirt)]
