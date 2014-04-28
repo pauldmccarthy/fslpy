@@ -256,7 +256,7 @@ def _configureVisibleWhen(viewItem, guiObj, hasProps):
     if viewItem.visibleWhen is None: return None
 
     if isinstance(guiObj.GetParent(), wxnb.FlatNotebook):
-        raise TypeError('Visibility of notebook pages is not '\
+        raise TypeError('Visibility of notebook pages is not '
                         'configurable - use enabledWhen instead.')
 
     def _toggleVis():
@@ -337,9 +337,10 @@ def _makeGroupBorder(parent, group, ctr, *args, **kwargs):
         label.SetFont(font)
         
         borderSizer.Add(label, border=5, flag=wx.ALL)
-        borderSizer.Add(line,  border=5, flag=wx.EXPAND|wx.ALL)
+        borderSizer.Add(line,  border=5, flag=wx.EXPAND | wx.ALL)
     
-    borderSizer.Add(groupObject, border=5, flag=wx.EXPAND|wx.ALL, proportion=1)
+    borderSizer.Add(
+        groupObject, border=5, flag=wx.EXPAND | wx.ALL, proportion=1)
     borderPanel.SetSizer(borderSizer)
     borderSizer.Layout()
     borderSizer.Fit(borderPanel)
@@ -365,7 +366,7 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     else:
         notebook = wxnb.FlatNotebook(parent, agwStyle=nbStyle)
                                                  
-    for i,child in enumerate(group.children):
+    for i, child in enumerate(group.children):
         
         if child.label is None: pageLabel = '{}'.format(i)
         else:                   pageLabel = child.label
@@ -421,8 +422,8 @@ def _layoutVGroup(group, parent, children, labels):
     given VGroup object. Parameters the same as _layoutHGroup.
     """
 
-    sizer = wx.GridBagSizer(1,1)
-    sizer.SetEmptyCellSize((0,0))
+    sizer = wx.GridBagSizer(1, 1)
+    sizer.SetEmptyCellSize((0, 0))
 
     for cidx in range(len(children)):
 
@@ -443,7 +444,7 @@ def _layoutVGroup(group, parent, children, labels):
 
             label = None
             childParams['pos']    = (cidx, 0)
-            childParams['span']   = (1,2)
+            childParams['span']   = (1, 2)
             childParams['border'] = 20
             childParams['flag']   = wx.EXPAND | wx.ALL
 
@@ -466,7 +467,7 @@ def _layoutVGroup(group, parent, children, labels):
             childParams['flag']   = wx.EXPAND | wx.BOTTOM
             
         if label is not None:
-            sizer.Add(labels[cidx], pos=(cidx,0), flag=wx.EXPAND)
+            sizer.Add(labels[cidx], pos=(cidx, 0), flag=wx.EXPAND)
             
         sizer.Add(child, **childParams)
 
@@ -492,7 +493,7 @@ def _createGroup(parent, group, hasProps, propGui):
     childObjs = []
     labelObjs = []
 
-    for i,child in enumerate(group.children):
+    for i, child in enumerate(group.children):
         
         childObj = _create(panel, child, hasProps, propGui)
 
@@ -605,7 +606,7 @@ def _prepareView(viewItem, labels, tooltips):
         viewItem.children    = list(viewItem.children)
         viewItem.childLabels = []
 
-        for i,child in enumerate(viewItem.children):
+        for i, child in enumerate(viewItem.children):
             viewItem.children[i] = _prepareView(child, labels, tooltips)
 
         # Create a Label object for each 
@@ -620,7 +621,8 @@ def _prepareView(viewItem, labels, tooltips):
             mkLabel = mkLabel and (child.label is not None)
 
             # or this child is a group with a border
-            mkLabel = mkLabel and not (isinstance(child, Group) and child.border)
+            mkLabel = mkLabel and \
+                      not (isinstance(child, Group) and child.border)
 
             # unless there is no label specified
             if mkLabel: viewItem.childLabels.append(Label(child))
@@ -654,7 +656,7 @@ def _prepareEvents(hasProps, propGui):
     onChange()
 
     # add a callback listener to every property
-    for propObj,propName in zip(propObjs,propNames):
+    for propObj, propName in zip(propObjs, propNames):
 
         lName = 'ChangeEvent_{}'.format(propName)
         propObj.addListener(hasProps, lName, onChange)

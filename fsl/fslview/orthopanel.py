@@ -7,8 +7,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import sys
-
 if True:
     import logging
     logging.basicConfig(
@@ -154,26 +152,3 @@ class OrthoFrame(wx.Frame):
         wx.Frame.__init__(self, parent, title=title)
         self.panel = OrthoPanel(self, imageList)
         self.Layout()
-
-
-def main():
-    """
-    Test program, displays the image specified on the command line.
-    """
-
-    if len(sys.argv) != 2:
-        print 'usage: orthopanel.py filename'
-        sys.exit(1)
-
-    app       = wx.App()
-    image     = fslimage.Image(sys.argv[1])
-    imageList = fslimage.ImageList([image])
-    
-    frame  = OrthoFrame(None, imageList, title=sys.argv[1])
-    frame.Show()
-
-    app.MainLoop()
-
-    
-if __name__ == '__main__':
-    main()
