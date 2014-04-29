@@ -401,8 +401,6 @@ def _layoutHGroup(group, parent, children, labels):
         # for child groups with borders
 
     parent.SetSizer(sizer)
-    sizer.Layout()
-    sizer.Fit(parent)
 
     
 def _layoutVGroup(group, parent, children, labels):
@@ -463,8 +461,6 @@ def _layoutVGroup(group, parent, children, labels):
     sizer.AddGrowableCol(1)
 
     parent.SetSizer(sizer)
-    sizer.Layout()
-    sizer.Fit(parent)
 
 
 def _createGroup(parent, group, hasProps, propGui):
@@ -500,8 +496,15 @@ def _createGroup(parent, group, hasProps, propGui):
     elif isinstance(group, VGroup):
         _layoutVGroup(group, panel, childObjs, labelObjs)
 
-    if group.border: return borderPanel
-    else:            return panel
+    panel.Layout()
+    panel.Fit()
+
+    if group.border:
+        borderPanel.Layout()
+        borderPanel.Fit()
+        return borderPanel
+    else:
+        return panel
 
 
 # These aliases are defined so we can introspectively look

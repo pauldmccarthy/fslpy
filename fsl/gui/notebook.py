@@ -32,6 +32,8 @@ class Notebook(wx.Panel):
         self.            SetSizer(self.sizer)
         self.buttonPanel.SetSizer(self.buttonSizer)
 
+        self.dividerLine = wx.StaticLine(self, style=wx.LI_HORIZONTAL)
+
         # a row of buttons along the top
         self.sizer.Add(
             self.buttonPanel,
@@ -40,7 +42,7 @@ class Notebook(wx.Panel):
 
         # a horizontal line separating the buttons from the pages
         self.sizer.Add(
-            wx.StaticLine(self, style=wx.LI_HORIZONTAL),
+            self.dividerLine,
             border=5,
             flag=wx.EXPAND | wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT)
 
@@ -49,7 +51,7 @@ class Notebook(wx.Panel):
             0,
             wx.StaticLine(self.buttonPanel, style=wx.VERTICAL),
             border=3,
-            flag=wx.EXPAND | wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT | wx.TOP) 
+            flag=wx.EXPAND | wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT | wx.TOP)
 
         self._pages    = []
         self._buttons  = []
@@ -63,22 +65,20 @@ class Notebook(wx.Panel):
         the size of the button panel.
         """
 
-        # TODO not taking into account divider
-        # line between buttons and pages
-
         buttonSize = self.buttonPanel.GetBestSize()
         pageSizes  = map(lambda p: p.GetBestSize(), self._pages)
 
         buttonWidth  = buttonSize.GetWidth()
         buttonHeight = buttonSize.GetHeight()
 
+        divLineHeight = self.dividerLine.GetBestSize().GetHeight()
+
         pageWidths  = map(lambda ps: ps.GetWidth(),  pageSizes)
         pageHeights = map(lambda ps: ps.GetHeight(), pageSizes)
-
-        pageHeights = [ph + buttonHeight for ph in pageHeights]
         
-        myWidth  = max([buttonWidth] + pageWidths)
-        myHeight = max(pageHeights)
+        myWidth  = max([buttonWidth] + pageWidths)                 + 20
+        myHeight = max(pageHeights) + buttonHeight + divLineHeight + 20
+        
         return wx.Size(myWidth, myHeight)
 
         
