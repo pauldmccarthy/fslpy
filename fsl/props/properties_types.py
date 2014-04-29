@@ -41,35 +41,42 @@ class Number(props.PropertyBase):
     """
     
     def __init__(self, minval=None, maxval=None, **kwargs):
-
-        self.minval = minval
-        self.maxval = maxval
+        """
+        Optional parameters:
+          - minval
+          - maxval
+        """
 
         default = kwargs.get('default', None)
 
         if default is None:
-            if self.minval is not None and self.maxval is not None:
-                default = (self.minval + self.maxval) / 2
-            elif self.minval is not None:
-                default = self.minval
-            elif self.maxval is not None:
-                default = self.maxval
+            if minval is not None and maxval is not None:
+                default = (minval + maxval) / 2
+            elif minval is not None:
+                default = minval
+            elif maxval is not None:
+                default = maxval
             else:
                 default = 0
-                
+
         kwargs['default'] = default
+        kwargs['minval']  = minval
+        kwargs['maxval']  = maxval
         props.PropertyBase.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
         
         props.PropertyBase.validate(self, instance, value)
+        
+        minval = self.getConstraint(instance, 'minval')
+        maxval = self.getConstraint(instance, 'maxval')
 
-        if self.minval is not None and value < self.minval:
-            raise ValueError('Must be at least {}'.format(self.minval))
+        if minval is not None and value < minval:
+            raise ValueError('Must be at least {}'.format(minval))
             
-        if self.maxval is not None and value > self.maxval:
-            raise ValueError('Must be at most {}'.format(self.maxval))
+        if maxval is not None and value > maxval:
+            raise ValueError('Must be at most {}'.format(maxval))
 
         
 class Int(Number):
@@ -137,10 +144,10 @@ class String(props.PropertyBase):
           - minlen
           - maxlen
         """ 
-        self.minlen = minlen
-        self.maxlen = maxlen
         
         kwargs['default'] = kwargs.get('default', None)
+        kwargs['minlen']  = minlen
+        kwargs['maxlen']  = maxlen
         props.PropertyBase.__init__(self, **kwargs)
 
         
@@ -164,13 +171,16 @@ class String(props.PropertyBase):
 
         if value is None: return
 
+        minlen = self.getConstraint(instance, 'minlen')
+        maxlen = self.getConstraint(instance, 'maxlen')
+
         value = str(value)
 
-        if self.minlen is not None and len(value) < self.minlen:
-            raise ValueError('Must have length at least {}'.format(self.minlen))
+        if minlen is not None and len(value) < minlen:
+            raise ValueError('Must have length at least {}'.format(minlen))
 
-        if self.maxlen is not None and len(value) > self.maxlen:
-            raise ValueError('Must have length at most {}'.format(self.maxlen))
+        if maxlen is not None and len(value) > maxlen:
+            raise ValueError('Must have length at most {}'.format(maxlen))
         
 
 class Choice(String):
@@ -247,9 +257,9 @@ class FilePath(String):
                           if isFile is True).
         """
 
-        self.exists   = exists
-        self.isFile   = isFile
-        self.suffixes = suffixes
+        kwargs['exists']   = exists
+        kwargs['isFile']   = isFile
+        kwargs['suffixes'] = suffixes
         
         String.__init__(self, **kwargs)
 
@@ -258,29 +268,31 @@ class FilePath(String):
 
         String.validate(self, instance, value)
 
-        if value is None:   return
-        if value == '':     return
-        if not self.exists: return
+        exists   = self.getConstraint(instance, 'exists')
+        isFile   = self.getConstraint(instance, 'isFile')
+        suffixes = self.getConstraint(instance, 'suffixes')
 
-        if self.isFile:
+        if value is None: return
+        if value == '':   return
+        if not exists:    return
 
-            exists        = op.isfile(value)
-            matchesSuffix = any(map(lambda s: value.endswith(s),
-                                    self.suffixes))
+        if isFile:
+
+            matchesSuffix = any(map(lambda s: value.endswith(s), suffixes))
 
             # If the file doesn't exist, it's bad
-            if not exists:
+            if not op.isfile(value):
                 raise ValueError('Must be a file ({})'.format(value))
 
             # if the file exists, and matches one of
             # the specified suffixes, then it's good
-            if len(self.suffixes) == 0 or matchesSuffix: return
+            if len(suffixes) == 0 or matchesSuffix: return
 
             # Otherwise it's bad
             else:
                 raise ValueError(
                     'Must be a file ending in [{}] ({})'.format(
-                        ','.join(self.suffixes), value))
+                        ','.join(suffixes), value))
 
         elif not op.isdir(value):
             raise ValueError('Must be a directory ({})'.format(value))
@@ -428,7 +440,7 @@ class ListWrapper(object):
         
         items = self._propVals.__getitem__(key)
 
-        if isinstance(key,slice):
+        if isinstance(key, slice):
             return [i.get() for i in items]
         else:
             return items.get()
@@ -463,7 +475,7 @@ class ListWrapper(object):
 
         for i in self._propVals:
             if i.get() == item:
-                 c = c + 1
+                c = c + 1
                  
         return c
 
@@ -520,8 +532,8 @@ class ListWrapper(object):
 
         if isinstance(key, slice):
             if (key.step is not None) and (key.step > 1):
-               raise ValueError(
-                   'ListWrapper does not support extended slices')
+                raise ValueError(
+                    'ListWrapper does not support extended slices')
             indices = range(*key.indices(len(self)))
 
         elif isinstance(key, int):
@@ -547,7 +559,7 @@ class ListWrapper(object):
 
         # Replace values of existing items
         if newLen == oldLen:
-            for i,v in zip(indices, values):
+            for i, v in zip(indices, values):
                 self._propVals[i].set(v)
 
         # Replace old PropertyValue objects with new ones. 
@@ -648,10 +660,12 @@ class List(props.PropertyBase):
             return
             
         if (self.minlen is not None) and (len(values) < self.minlen):
-            raise ValueError('Must have length at least {}'.format(self.minlen))
+            raise ValueError('Must have length at least {}'.format(
+                self.minlen))
             
         if (self.maxlen is not None) and (len(values) > self.maxlen):
-            raise ValueError('Must have length at most {}'.format(self.maxlen))
+            raise ValueError('Must have length at most {}'.format(
+                self.maxlen))
 
         for v in values:
             self.listType.validate(instance, v)
@@ -684,9 +698,9 @@ class List(props.PropertyBase):
         instval[:] = value
 
 
-# TODO This would probably be better off as a subclass of Choice. Choice
-# would need to be modified to allow for values of any type, not just
-# Strings. Shouldn't be a major issue.
+# TODO This might be better off as a subclass of Choice. Choice
+# would need to be modified to allow for values of any type, not
+# just Strings. Shouldn't be a major issue.
 class ColourMap(props.PropertyBase):
     """
     A property which encapsulates a matplotlib.colors.Colormap.

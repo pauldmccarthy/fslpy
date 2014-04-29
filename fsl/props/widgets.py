@@ -21,8 +21,6 @@ import wx
 import wx.combo
 
 import numpy             as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
 
 # the List property is complex enough to get its own module.
@@ -91,7 +89,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
     valMap       = None
 
     if labelMap is not None:
-        valMap = dict([(lbl,val) for (val,lbl) in labelMap.items()])
+        valMap = dict([(lbl, val) for (val, lbl) in labelMap.items()])
 
     def _guiUpdate(value, *a):
         """
@@ -206,18 +204,21 @@ def _FilePath(parent, hasProps, propObj, propVal):
     panel.SetSizer(sizer)
     panel.SetAutoLayout(1)
     sizer.Fit(panel)
+
+    exists = propObj.getConstraint(hasProps, 'exists')
+    isFile = propObj.getConstraint(hasProps, 'isFile')
     
     def _choosePath(ev):
         global _lastFilePathDir
 
-        if propObj.exists and propObj.isFile:
+        if exists and isFile:
             dlg = wx.FileDialog(parent,
                                 message='Choose file',
                                 defaultDir=_lastFilePathDir,
                                 defaultFile=value,
                                 style=wx.FD_OPEN)
             
-        elif propObj.exists and (not propObj.isFile):
+        elif exists and (not isFile):
             dlg = wx.DirDialog(parent,
                                message='Choose directory',
                                defaultPath=_lastFilePathDir) 
@@ -286,8 +287,8 @@ def _Number(parent, hasProps, propObj, propVal):
     """
 
     value      = propVal.get()
-    minval     = propObj.minval
-    maxval     = propObj.maxval
+    minval     = propObj.getConstraint(hasProps, 'minval')
+    maxval     = propObj.getConstraint(hasProps, 'maxval')
     makeSlider = (minval is not None) and (maxval is not None)
 
     params = {}
@@ -308,7 +309,7 @@ def _Number(parent, hasProps, propObj, propVal):
         if minval is None: minval = -sys.float_info.max
         if maxval is None: maxval =  sys.float_info.max
 
-        if makeSlider: increment = (maxval-minval)/20.0
+        if makeSlider: increment = (maxval - minval) / 20.0
         else:          increment = 0.5
 
         params['inc'] = increment
@@ -417,7 +418,7 @@ def _makeColourMapComboBox(parent, cmapDict, selected=None):
         colours = cmap(np.linspace(0.0, 1.0, width))
 
         # discard alpha values
-        colours = colours[:,:3]
+        colours = colours[:, :3]
 
         # repeat each horizontal pixel (height) times
         colours = np.tile(colours, (height, 1, 1))
@@ -436,7 +437,7 @@ def _makeColourMapComboBox(parent, cmapDict, selected=None):
     cbox = wx.combo.BitmapComboBox(
         parent, style=wx.CB_READONLY | wx.CB_DROPDOWN)
 
-    for name,bitmap in zip(cmapNames, bitmaps):
+    for name, bitmap in zip(cmapNames, bitmaps):
         cbox.Append(name, bitmap)
 
     cbox.SetSelection(selected)

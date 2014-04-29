@@ -44,7 +44,7 @@
 #
 #
 #     # Remove a previously added listener
-#     myPropObj.removeListener('myListener')
+#     >>> myPropObj.removeListener('myListener')
 #
 # 
 # Lots of the code in this file is probably very confusing. First of
@@ -69,7 +69,7 @@
 # as class attributes. When an instance of the HasProperties class is created,
 # one or more PropertyValue objects are created for each of the PropertyBase
 # instances. For most properties, there is a one-to-one mapping between
-# ProperyyValue instances and PropertyBase instances (for each HasProperties
+# PropertyValue instances and PropertyBase instances (for each HasProperties
 # instance), however this is not mandatory.  For example, the List property
 # manages multiple PropertyValue objects for each HasProperties instance.
 
@@ -80,6 +80,14 @@
 # listeners of the change. The PropertyValue object will allow its underlying
 # value to be set to something invalid, but it will tell registered listeners
 # whether the new value is valid or invalid.
+#
+# The default validation logic of most PropertyBase objects can be configured
+# via 'constraints'. For example, the Number property  allows 'minval' and
+# 'maxval' constraints to be set.  These may be set via PropertyBase
+# constructors, (i.e. when it is defined as a class attribute of a
+# HasProperties definition), and may be queried and changed on individual
+# HasProperties instances via the getConstraint/setConstraint methods,
+# which are available on both PropertyBase and HasProperties objects.
 #
 # Application code may be notified of property changes in two ways.  First, a
 # listener may be registered with a PropertyBase object, either via the
@@ -96,10 +104,10 @@
 # method. This listener will then only be notified of changes to that
 # PropertyValue object.
 #
+#
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import types
 import logging
 
 from collections import OrderedDict
@@ -114,17 +122,24 @@ class PropertyValue(object):
     of a HasProperties instance.
     """
 
-    def __init__(self, prop, owner, value, name=None):
+    def __init__(self, prop, owner, value, name=None, allowInvalid=True):
         """
         Parameters:
         
-          - prop:  The PropertyBase object which manages this
-                   PropertyValue.
-          - owner: The HasProperties object, the owner of the
-                   prop property.
-          - value: Initial value.
-          - name:  Variable name - if not provided, a default,
-                   unique name is created.
+          - prop:         The PropertyBase object which manages this
+                          PropertyValue.
+        
+          - owner:        The HasProperties object, the owner of the
+                          prop property.
+        
+          - value:        Initial value.
+        
+          - name:         Variable name - if not provided, a default,
+                          unique name is created.
+        
+          - allowInvalid: If False, any attempt to set the value to
+                          something invalid will result in a ValueError.
+                          TODO - not supported yet.
         """
         
         if name is None: name = '{}_{}'.format(prop.label, id(self))
@@ -136,6 +151,7 @@ class PropertyValue(object):
         self._value          = value
         self._lastValue      = value
         self._lastValid      = self.isValid()
+        self._allowInvalid   = allowInvalid
 
 
     def addListener(self, name, callback):
@@ -221,7 +237,10 @@ class PropertyValue(object):
         """
 
         try:    self.prop.validate(self.owner, self.get())
-        except: return False
+        except ValueError as e:
+            log.debug('Value for {} ({}) is invalid: {}'.format(
+                self.name, self.get(), e))
+            return False
 
         return True
 
@@ -250,7 +269,7 @@ class PropertyValue(object):
         # Notify all listeners, ignoring any errors -
         # it is up to the listeners to ensure that
         # they handle invalid values
-        for (name,func) in listeners:
+        for (name, func) in listeners:
 
             log.debug('Notifying listener on {}: {}'.format(self.name, name))
             
@@ -258,6 +277,20 @@ class PropertyValue(object):
             except Exception as e:
                 log.debug('Listener on {} ({}) raised exception: {}'.format(
                     self.name, name, e))
+
+
+class InstanceData(object):
+    """
+    An InstanceData object is created for every instance which has
+    one of these PropertyBase objects as a class attribute. It stores
+    listener callback functions, which are notified whenever the
+    property value changes, and the property constraints used to
+    test validity.
+    """
+    def __init__(self, instance, **constraints):
+        self.instance        = instance
+        self.changeListeners = OrderedDict()
+        self.constraints     = constraints.copy()
 
 
 class PropertyBase(object):
@@ -286,14 +319,15 @@ class PropertyBase(object):
 
       - Override whatever you want for advanced usage (see
         properties_types.List for an example).
-
     """
-    
+
     def __init__(self,
                  default=None,
                  required=False,
                  validateFunc=None,
-                 preNotifyFunc=None):
+                 preNotifyFunc=None,
+                 allowInvalid=True,
+                 **constraints):
         """
         Parameters:
         
@@ -316,13 +350,21 @@ class PropertyBase(object):
                            value(s) changes. This function is called
                            by the PropertyValue object(s) before any
                            listeners are notified.
+
+          - allowInvalid:  If False, a ValueError will be raised on
+                           all attempts to set this property to an
+                           invalid value. TODO - not supported yet.
+        
+          - constraints:   
         """
-        self.label             = None
-        self.default           = default
-        self.required          = required
-        self.validateFunc      = validateFunc
-        self.preNotifyFunc     = preNotifyFunc
-        self.changeListeners   = OrderedDict()
+        self.label              = None
+        self.default            = default
+        self.required           = required
+        self.validateFunc       = validateFunc
+        self.preNotifyFunc      = preNotifyFunc
+        self.allowInvalid       = allowInvalid
+        self.instanceData       = {}
+        self.defaultConstraints = constraints
 
         
     def addListener(self, instance, name, callback):
@@ -332,15 +374,12 @@ class PropertyBase(object):
         for required callback function signature.
         """
 
-        if instance not in self.changeListeners:
-            self.changeListeners[instance] = {}
-
         log.debug('Adding listener on {}: {}'.format(self.label, name))
 
         fullname = 'PropertyBase_{}_{}'.format(self.label, name)
 
-        self.changeListeners[instance][fullname] = callback
-
+        self.instanceData[instance].changeListeners[fullname] = callback
+        
         
     def removeListener(self, instance, name):
         """
@@ -349,12 +388,9 @@ class PropertyBase(object):
 
         fullname = 'PropertyBase_{}_{}'.format(self.label, name)
 
-        if instance not in self.changeListeners:           return
-        if fullname not in self.changeListeners[instance]: return
-
         log.debug('Removing listener on {}: {}'.format(self.label, name))
 
-        self.changeListeners[instance].pop(fullname)
+        self.instanceData[instance].changeListeners.pop(fullname)
 
         
     def forceValidation(self, instance):
@@ -382,14 +418,36 @@ class PropertyBase(object):
         this property, (and to the associated HasProperties instance).
         """
 
-        if instance not in self.changeListeners: return
-        
-        listeners = self.changeListeners[instance].items()
+        listeners = self.instanceData[instance].changeListeners.items()
 
         for (lName, func) in listeners:
             
             log.debug('Notifying listener on {}: {}'.format(self.label, lName))
             func(value, valid, instance, prop, name)
+
+            
+    def _newInstance(self, instance):
+        """
+        Creates an InstanceData object for the new instance, and stores it
+        in self.instanceData.
+        """
+
+        instanceData = InstanceData(instance, **self.defaultConstraints)
+        self.instanceData[instance] = instanceData
+
+        
+    def getConstraint(self, instance, constraint):
+        """
+        Returns the value of the named constraint for the specified instance.
+        """
+        return self.instanceData[instance].constraints[constraint]
+
+
+    def setConstraint(self, instance, constraint, value):
+        """
+        Sets the value of the named constraint for the specified instance.
+        """ 
+        self.instanceData[instance].constraints[constraint] = value
 
     
     def _makePropVal(self, instance):
@@ -399,7 +457,8 @@ class PropertyBase(object):
         listener on the PropertyValue object.
         """
 
-        instval = PropertyValue(self, instance, self.default, self.label)
+        instval = PropertyValue(
+            self, instance, self.default, self.label, self.allowInvalid)
         instance.__dict__[self.label] = instval
 
         instval.addListener('internal', self._varChanged)
@@ -459,8 +518,14 @@ class PropertyBase(object):
             return self
 
         instval = self.getPropVal(instance)
-        
-        if instval is None: instval = self._makePropVal(instance)
+
+        # new instance - create an InstanceData object
+        # to store the instance metadata and a
+        # PropertyValue object to store the property
+        # value for the instance
+        if instval is None:
+            self._newInstance(instance)
+            instval = self._makePropVal(instance)
 
         return instval.get()
 
@@ -529,6 +594,22 @@ class HasProperties(object):
         return self.getProp(propName).getPropVal(self)
 
 
+    def getConstraint(self, propName, constraint):
+        """
+        Convenience method, returns the value of the named constraint for the
+        named property. See PropertyBase.setConstraint.
+        """
+        return self.getProp(propName).getConstraint(self, constraint)
+
+        
+    def setConstraint(self, propName, constraint, value):
+        """
+        Conventience method, sets the value of the named constraint for the
+        named property. See PropertyBase.setConstraint.
+        """ 
+        return self.getProp(propName).setConstraint(self, constraint, value) 
+
+
     def addListener(self, propName, listenerName, callback):
         """
         Convenience method, adds the specified listener to the specified
@@ -553,7 +634,7 @@ class HasProperties(object):
         """
 
         props = filter(
-            lambda (name,prop): isinstance(prop, PropertyBase),
+            lambda (name, prop): isinstance(prop, PropertyBase),
             self.__class__.__dict__.items())
     
         propNames, props = zip(*props)
@@ -583,7 +664,7 @@ class HasProperties(object):
 
         errors = []
 
-        for name, prop in zip(names,props):
+        for name, prop in zip(names, props):
             
             try:
                 val = getattr(self, name)
@@ -621,7 +702,7 @@ class HasProperties(object):
         
         clsname = self.__class__.__name__
 
-        propNames,props = self.getAllProperties()
+        propNames, props = self.getAllProperties()
 
         propVals = ['{}'.format(getattr(self, propName))
                     for propName in propNames]
@@ -630,7 +711,7 @@ class HasProperties(object):
 
         lines = [clsname]
 
-        for propName,propVal in zip(propNames,propVals):
+        for propName, propVal in zip(propNames, propVals):
             fmtStr = '  {:>' + str(maxNameLength) + '} = {}'
             lines.append(fmtStr.format(propName, propVal))
             
