@@ -7,54 +7,44 @@
 #
 # Usage:
 #
-#     import Tkinter as tk
-#     import tkprops as tkp
+#     >>> import fsl.props as props
 #
+#     >>> class PropObj(props.HasProperties):
+#     >>>     myProperty = props.Boolean()
 #
-#     class PropObj(tkp.HasProperties):
-#         myProperty = tkp.Boolean()
-#
-#
-#     # The Tk root object must be created
-#     # before any HasProperties objects.
-#     app       = tk.Tk()
-#     myPropObj = PropObj()
+#     >>> myPropObj = PropObj()
 #
 #
 #     # Access the property value as a normal attribute:
-#     myPropObj.myProperty = True
-#     myPropObj.myProperty
-#
-#     # >>> True
-#
-#
-#     # access the tkp.Boolean instance:
-#     myPropObj.getTkProp('myProperty')
-#
-#     # >>> <tkprops.tkprop.Boolean at 0x1045e2710>
+#     >>> myPropObj.myProperty = True
+#     >>> myPropObj.myProperty
+#     >>> True
 #
 #
-#     # access the underlying Tkinter control variable
+#     # access the props.Boolean instance:
+#     >>> myPropObj.getProp('myProperty')
+#     >>> <props.prop.Boolean at 0x1045e2710>
+#
+#
+#     # access the underlying props.PropertyValue object
 #     # (there are caveats for List properties):
-#     myPropObj.getTkVar('myProperty').tkVar
-#
-#     # >>> <tkinter.BooleanVar instance at 0x1047ef518>
+#     >>> myPropObj.getPropVal('myProperty')
+#     >>> <props.prop.PropertyValue instance at 0x1047ef518>
 #
 #
 #     # Receive notification of property value changes
-#     def myPropertyChanged(instance, name, value):
-#         print('New value for {}: {}'.format(name, value))
+#     >>> def myPropertyChanged(value, *args):
+#     >>>     print('New property value: {}'.format(value))
 #
-#     PropObj.myProperty.addListener(
-#         myPropObj, 'myListener', myPropertyChanged)
+#     >>> myPropObj.addListener(
+#     >>>    'myProperty', 'myListener', myPropertyChanged)
 # 
-#     myPropObj.myProperty = False
-#
-#     # >>> New value for myProperty: False
+#     >>> myPropObj.myProperty = False
+#     >>> New property value: False
 #
 #
 #     # Remove a previously added listener
-#     PropObj.myProperty.removeListener(myPropObj, 'myListener')
+#     myPropObj.removeListener('myListener')
 #
 # 
 # Lots of the code in this file is probably very confusing. First of
@@ -74,53 +64,37 @@
 #
 #  - http://pyvideo.org/video/1760/encapsulation-with-descriptors
 #
-# Once you know how Python descriptors work, you then need to know how
-# Tk control variables work. These are simple objects which may be
-# passed to a Tkinter widget object when it is created. When a user
-# modifies the widget value, the Tk control variable is
-# modified. Conversely, if the value of a Tk control variable object is
-# modified, any widgets which are bound to the variable are updated to
-# reflect the new value.
 #
-# This module, and the associated tkpropwidget module, uses magic to
-# encapsulate Tkinter control variables within python descriptors, thus
-# allowing custom validation rules to be enforced on such control
-# variables.
-#
-# The runtime structure of Tk properties is organised as follows:
-#
-# A HasProperties (sub)class contains a collection of PropertyBase
-# instances. When an instance of the HasProperties class is created, one
-# or more TkVarProxy objects are created for each of the PropertyBase
+# A HasProperties (sub)class contains a collection of PropertyBase instances
+# as class attributes. When an instance of the HasProperties class is created,
+# one or more PropertyValue objects are created for each of the PropertyBase
 # instances. For most properties, there is a one-to-one mapping between
-# TkVarProxy instances and PropertyBase instances (for each
-# HasProperties instance), however this is not mandatory.  For example,
-# the List property manages multiple TkVarProxy objects for each
-# HasProperties instance.
+# ProperyyValue instances and PropertyBase instances (for each HasProperties
+# instance), however this is not mandatory.  For example, the List property
+# manages multiple PropertyValue objects for each HasProperties instance.
 
-# Each of these TkVarProxy instances encapsulates a single Tkinter
-# control variable.  Whenever a variable value changes, the TkVarProxy
-# instance passes the new value to the validate method of its parent
-# PropertyBase instance to determine whether the new value is valid, and
-# notifies any registered listeners of the change. The TkVarProxy object
-# will allow its underlying Tkinter variable to be given invalid values,
-# but it will tell registered listeners whether the new value is valid
-# or invalid.
+# Each of these PropertyValue instances encapsulates a single value, of any
+# type.  Whenever a variable value changes, the PropertyValue instance passes
+# the new value to the validate method of its parent PropertyBase instance to
+# determine whether the new value is valid, and notifies any registered
+# listeners of the change. The PropertyValue object will allow its underlying
+# value to be set to something invalid, but it will tell registered listeners
+# whether the new value is valid or invalid.
 #
-# Application code may be notified of property changes in two ways.
-# First, a listener may be registered with a PropertyBase object, by
-# passing a reference to the HasProperties instance, a name, and a
-# callback function to the PropertyBase.addListener method.  Such a
-# listener will be notified of changes to any of the TkVarProxy objects
-# managed by the PropertyBase object, and associated with the
-# HasProperties instance. This is important for List properties, as it
-# means that a change to a single TkVarProxy object in a list will
-# result in notification of all registered listeners.
+# Application code may be notified of property changes in two ways.  First, a
+# listener may be registered with a PropertyBase object, either via the
+# HasProperties.addListener instance method, or the PropertyBase.addListener
+# class method (these are equivalent).  Such a listener will be notified of
+# changes to any of the PropertyValue objects managed by the PropertyBase
+# object, and associated with the HasProperties instance. This is important
+# for List properties, as it means that a change to a single PropertyValue
+# object in a list will result in notification of all registered listeners.
 #
-# If one is interested in changes to a single TkVarProxy object
-# (e.g. one element of a List property), then a listener may be
-# registered directly with the TkVarProxy object. This listener will
-# then only be notified of changes to that TkVarProxy object.
+# If one is interested in changes to a single PropertyValue object (e.g. one
+# element of a List property), then a listener may be registered directly with
+# the PropertyValue object, via the PropertyValue.addListener instance
+# method. This listener will then only be notified of changes to that
+# PropertyValue object.
 #
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
 #

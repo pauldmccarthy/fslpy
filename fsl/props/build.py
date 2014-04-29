@@ -23,6 +23,10 @@
 # tab for each child Group.  The label for, and behaviour of, the widget
 # for an individual property may be customised with a Widget object.
 #
+# As an alternative to passing in a view, labels, and tooltips, they
+# may be specified as class attributes of the HasProperties object,
+# with respective names '_view', '_labels', and '_tooltips'.
+#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
@@ -337,7 +341,6 @@ def _makeGroupBorder(parent, group, ctr, *args, **kwargs):
     borderSizer.Fit(borderPanel)
 
     return borderPanel, groupObject
-        
     
 
 def _createNotebookGroup(parent, group, hasProps, propGui):
