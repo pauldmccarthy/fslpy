@@ -28,9 +28,10 @@
 
 import sys
 import wx
-import wx.lib.agw.flatnotebook as wxnb
 
 import widgets
+
+import fsl.gui.notebook as nb
 
 class ViewItem(object):
     """
@@ -213,7 +214,7 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
     if viewItem.enabledWhen is None: return None
 
     parent         = guiObj.GetParent()
-    isNotebookPage = isinstance(parent, wxnb.FlatNotebook)
+    isNotebookPage = isinstance(parent, nb.Notebook)
 
     def _toggleEnabled():
         """
@@ -225,22 +226,10 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
         if viewItem.enabledWhen(hasProps): state = True
         else:                              state = False
 
-        # TODO The wx.lib.agw.flatnotebook seems to be a little
-        # flaky for enable/disable support. It may be a better
-        # option to use the standard wx.Notebook class, with
-        # some custom event handlers for preventing access to
-        # a disabled tab.
         if isNotebookPage:
+            if state: parent.EnablePage( parent.FindPage(guiObj))
+            else:     parent.DisablePage(parent.FindPage(guiObj))
 
-            isCurrent = parent.GetCurrentPage() == guiObj
-            isEnabled = parent.GetEnabled(guiObj._notebookIdx)
-
-            if isEnabled != state:
-                parent.EnableTab(guiObj._notebookIdx, state)
-                
-                if not state and isCurrent:
-                    parent.AdvanceSelection()
-            
         elif guiObj.IsEnabled() != state:
             guiObj.Enable(state)
 
@@ -255,16 +244,18 @@ def _configureVisibleWhen(viewItem, guiObj, hasProps):
 
     if viewItem.visibleWhen is None: return None
 
-    if isinstance(guiObj.GetParent(), wxnb.FlatNotebook):
-        raise TypeError('Visibility of notebook pages is not '
-                        'configurable - use enabledWhen instead.')
+    parent         = guiObj.GetParent()
+    isNotebookPage = isinstance(parent, nb.Notebook)
 
     def _toggleVis():
 
         visible = viewItem.visibleWhen(hasProps)
-        parent = guiObj.GetParent()
 
-        if visible != guiObj.IsShown():
+        if isNotebookPage:
+            if visible: parent.ShowPage(parent.FindPage(guiObj))
+            else:       parent.HidePage(parent.FindPage(guiObj))
+
+        elif visible != guiObj.IsShown():
             parent.GetSizer().Show(guiObj, visible)
             parent.GetSizer().Layout()
         
@@ -356,15 +347,11 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
     calls to the _create function.
     """
 
-    nbStyle = wxnb.FNB_NO_X_BUTTON    | \
-              wxnb.FNB_NO_NAV_BUTTONS | \
-              wxnb.FNB_NODRAG
-
     if group.border:
         borderPanel, notebook = _makeGroupBorder(
-            parent, group, wxnb.FlatNotebook, agwStyle=nbStyle)
+            parent, group, nb.Notebook)
     else:
-        notebook = wxnb.FlatNotebook(parent, agwStyle=nbStyle)
+        notebook = nb.Notebook(parent)
                                                  
     for i, child in enumerate(group.children):
         
@@ -375,10 +362,12 @@ def _createNotebookGroup(parent, group, hasProps, propGui):
             child.border = False
 
         page = _create(notebook, child, hasProps, propGui)
-        notebook.InsertPage(i, page, text=pageLabel)
+        notebook.InsertPage(i, page, pageLabel)
         page._notebookIdx = i
 
     notebook.SetSelection(0)
+    notebook.Layout()
+    notebook.Fit()
 
     if group.border: return borderPanel
     else:            return notebook
@@ -645,7 +634,7 @@ def _prepareEvents(hasProps, propGui):
     def onChange(*a):
         for cb in propGui.onChangeCallbacks:
             cb()
-        propGui.topLevel.GetSizer().Layout()
+        propGui.topLevel.Layout()
         propGui.topLevel.Refresh()
         propGui.topLevel.Update()
 

@@ -13,7 +13,7 @@ import wx
 
 import fsl.data.fslimage  as fslimage
 import fsl.data.imagefile as imagefile
-import fsl.utils.elistbox as elistbox
+import fsl.gui.elistbox   as elistbox
 import fsl.props          as props
 
 
