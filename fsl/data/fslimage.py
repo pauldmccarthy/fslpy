@@ -256,6 +256,11 @@ class ImageDisplay(props.HasProperties):
         self.displayMin = self.dataMin    # use cal_min/cal_max instead?
         self.displayMax = self.dataMax
 
+        self.setConstraint('displayMin', 'minval', self.dataMin)
+        self.setConstraint('displayMin', 'maxval', self.dataMax)
+        self.setConstraint('displayMax', 'minval', self.dataMin)
+        self.setConstraint('displayMax', 'maxval', self.dataMax) 
+
         
 class ImageList(object):
     """
