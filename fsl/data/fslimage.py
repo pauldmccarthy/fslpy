@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 class Image(object):
     """
-    Class which represents a 3D image. Interally, the image is loaded/stored
+    Class which represents a 3D image. Internally, the image is loaded/stored
     using nibabel.
     """
 
@@ -66,6 +66,8 @@ class Image(object):
 
     def imageBounds(self, axis):
         """
+        Return the bounds (min, max) of the image, in real world
+        coordinates, along the specified axis.
         """
 
         points = np.zeros((2, 3), dtype=np.float32)
@@ -140,8 +142,9 @@ class Image(object):
 
     def _fillPoints(self, p, axes):
         """
-        Turns the given array p into a N*3 array of x,y,z coordinates.
-        The array p may be a 1D array, or an N*2 or N*3 array. 
+        Used by the _transform method. Turns the given array p into a N*3
+        array of x,y,z coordinates. The array p may be a 1D array, or an
+        N*2 or N*3 array.
         """
 
         if not isinstance(p, collections.Iterable): p = [p]
