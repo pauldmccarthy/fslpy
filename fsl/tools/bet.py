@@ -140,10 +140,13 @@ class Options(props.HasProperties):
             cmd.append('-r')
             cmd.append('{}'.format(self.headRadius))
 
-        if all((self.xCoordinate > 0.0,
+        if any((self.xCoordinate > 0.0,
                 self.yCoordinate > 0.0,
                 self.zCoordinate > 0.0)):
             cmd.append('-c')
+            print type(self.xCoordinate)
+            print self.xCoordinate
+            print '{}'.format(self.xCoordinate)
             cmd.append('{}'.format(self.xCoordinate))
             cmd.append('{}'.format(self.yCoordinate))
             cmd.append('{}'.format(self.zCoordinate))
@@ -196,11 +199,6 @@ def selectHeadCentre(opts, button):
     frame     = orthopanel.OrthoFrame(parent, imageList, opts.inputImage)
     panel     = frame.panel
 
-    voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
-    worldCoords = image.voxToWorld([voxCoords])[0]
-
-    panel.setLocation(*worldCoords)
-
     # Whenever the x/y/z coordinates change on
     # the Options object,update the orthopanel
     # location
@@ -228,9 +226,9 @@ def selectHeadCentre(opts, button):
     # And whenever the x/y/z coordinates change
     # on the dialog, update the option values.
     def updateOpts(ev):
-        x = image.worldToVox(ev.x, axes=0)
-        y = image.worldToVox(ev.y, axes=1)
-        z = image.worldToVox(ev.z, axes=2)
+        x = int(image.worldToVox(ev.x, axes=0))
+        y = int(image.worldToVox(ev.y, axes=1))
+        z = int(image.worldToVox(ev.z, axes=2))
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -251,6 +249,14 @@ def selectHeadCentre(opts, button):
     pos = button.GetScreenPosition()
     frame.SetPosition(pos)
     frame.Show()
+
+    # TODO this needs to be done after the frame has
+    # been displayed i.e via wx.CallAfter or similar)
+    voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
+    worldCoords = image.voxToWorld([voxCoords])[0]
+    panel.setLocation(*worldCoords)
+
+ 
 
 
 betView = props.NotebookGroup((

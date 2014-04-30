@@ -461,6 +461,13 @@ class SliceCanvas(wxgl.GLCanvas):
         self._ypos = None
         self._zpos = None
 
+        self.xmin = 0
+        self.ymin = 0
+        self.zmin = 0
+        self.xmax = 1
+        self.ymax = 1
+        self.zmax = 1
+
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
         # shaders
