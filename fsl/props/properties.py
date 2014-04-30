@@ -371,6 +371,13 @@ class PropertyBase(object):
     has this PropertyBase object as a property, one or more PropertyValue
     instances are created and attached as an attribute of the parent.
 
+    One important point to note is that a PropertyBase object may exist
+    without being bound to a HasProperties object (in which case it will
+    not create or manage any PropertyValue objects). This is useful if you
+    just want validation functionality via the validate(), getConstraint()
+    and setConstraint() methods, passing in None for the instance
+    parameter. Nothing else will work properly though.
+
     Subclasses should:
 
       - Ensure that PropertyBase.__init__ is called.
@@ -457,19 +464,33 @@ class PropertyBase(object):
         
     def getConstraint(self, instance, constraint):
         """
-        Returns the value of the named constraint for the specified instance.
+        Returns the value of the named constraint for the specified instance,
+        or the default constraint value if instance is None.
         """
-        return self._getInstanceData(instance).constraints[constraint]
+
+        if instance is None:
+            return self._defaultConstraints[constraint]
+        else:
+            return self._getInstanceData(instance).constraints.get(
+                constraint, None)
 
 
     def setConstraint(self, instance, constraint, value):
         """
-        Sets the value of the named constraint for the specified instance.
+        Sets the value of the named constraint for the specified instance,
+        or the default value if instance is None.
         """
-        log.debug('Changing constraint on {}: {} = {}'.format(self._label,
-                                                              constraint,
-                                                              value))
-        self._getInstanceData(instance).constraints[constraint] = value
+        
+        log.debug('Changing {} constraint on {}: {} = {}'.format(
+            self._label,
+            'default' if instance is None else 'instance',
+            constraint,
+            value))
+
+        if instance is None:
+            self._defaultConstraints[constraint] = value
+        else:
+            self._getInstanceData(instance).constraints[constraint] = value
 
 
     def getPropVal(self, instance):
