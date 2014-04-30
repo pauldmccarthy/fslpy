@@ -30,6 +30,7 @@ class FslViewPanel(wx.Panel):
         self.sizer.Add(self.listPanel,  flag=wx.EXPAND)
 
         self.Layout()
+        self.Fit()
 
 
 def fslviewArguments(parser):
