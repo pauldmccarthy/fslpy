@@ -67,22 +67,20 @@
 #
 # A HasProperties (sub)class contains a collection of PropertyBase instances
 # as class attributes. When an instance of the HasProperties class is created,
-# one or more PropertyValue objects are created for each of the PropertyBase
-# instances. For most properties, there is a one-to-one mapping between
-# PropertyValue instances and PropertyBase instances (per HasProperties
-# instance), however this is not mandatory.  For example, the List property
-# manages multiple PropertyValue objects for each HasProperties instance.
+# a PropertyValue or PropertyValueList (see properties_value.py) object is
+# created for each of the PropertyBase instances. 
 #
 #
 # Each of these PropertyValue instances encapsulates a single value, of any
-# type.  Whenever a variable value changes, the PropertyValue instance passes
-# the new value to the validate method of its parent PropertyBase instance to
-# determine whether the new value is valid, and notifies any registered
-# listeners of the change. The PropertyValue object will allow its underlying
-# value to be set to something invalid, but it will tell registered listeners
-# whether the new value is valid or invalid (PropertyValue objects  can
-# alternately be configured to raise a ValueError on an attempt to set them
-# to an invalid value, but this has some caveats - see the
+# type (a PropertyValueList instance encapsulates multiple PropertyValue
+# instances).  Whenever a variable value changes, the PropertyValue instance
+# passes the new value to the validate method of its parent PropertyBase
+# instance to determine whether the new value is valid, and notifies any
+# registered listeners of the change. The PropertyValue object will allow its
+# underlying value to be set to something invalid, but it will tell registered
+# listeners whether the new value is valid or invalid (PropertyValue objects
+# can alternately be configured to raise a ValueError on an attempt to set
+# them to an invalid value, but this has some caveats - see the
 # PropertyValue.__init__ docstring).
 #
 #
@@ -122,234 +120,6 @@ from collections import OrderedDict
 log = logging.getLogger(__name__)
 
 
-class PropertyValue(object):
-    """
-    Proxy object which encapsulates a single value for a property.
-    One or more PropertyValue objects is created for every property
-    of a HasProperties instance.
-    """
-
-    def __init__(self,
-                 prop,
-                 owner,
-                 name=None,
-                 preNotifyFunc=None,
-                 allowInvalid=True):
-        """
-        Create a PropertyValue object. You will need to follow this up
-        with a call to set() to set the initial value. Parameters:
-        
-          - prop:          The PropertyBase object which manages this
-                           PropertyValue.
-        
-          - owner:         The HasProperties object, the owner of the
-                           prop property.
-        
-          - name:          Variable name - if not provided, a default,
-                           unique name is created.
-
-          - preNotifyFunc: Function to be called whenever the property
-                           value changes, but before any registered
-                           listeners are called. Must accept two
-                           parameters - the HasProperties object, and
-                           the new value.
-        
-          - allowInvalid:  If False, any attempt to set the value to
-                           something invalid will result in a ValueError.
-                           Note that this does not guarantee that the
-                           property will never have an invalid value, as
-                           the definition of 'valid' depends on external
-                           factors.  Therefore, the validity of a value
-                           may change, even if the value itself has not
-                           changed.
-        """
-        
-        if name is None: name = '{}_{}'.format(prop.label, id(self))
-        
-        self._prop            = prop
-        self._owner           = owner
-        self._name            = name
-        self._preNotifyFunc   = preNotifyFunc
-        self._allowInvalid    = allowInvalid
-        self._changeListeners = OrderedDict()
-        self.__value          = None
-        self.__valid          = False
-
-        # Two other private attributes are added to a PropertyValue instance
-        # on the first call to set(). They are not added here, as they are
-        # used by set() to identify the first call to set().
-        # self.__lastValue = None
-        # self.__lastValid = False
-
-
-    def addListener(self, name, callback):
-        """
-        Adds a listener for this value. When the value changes, the
-        listener callback function is called. Listener notification
-        may also be programmatically triggered via the
-        PropertyBase.forceValidation method. The callback function
-        must accept these arguments:
-
-          value    - The property value
-          valid    - Whether the value is valid or invalid
-          instance - The HasProperties instance
-          prop     - The PropertyBase instance
-          name     - The name of this PropertyValue
-
-        If you are only interested in the value, you can define your
-        callback function like 'def callback(value, *a): ...'
-        """
-        log.debug('Adding listener on {}: {}'.format(self._name, name))
-        name = 'PropertyValue_{}_{}'.format(self._name, name)
-        self._changeListeners[name] = callback
-
-
-    def removeListener(self, name):
-        """
-        Removes the listener with the given name from the specified
-        instance.
-        """
-        log.debug('Removing listener on {}: {}'.format(self._name, name))
-        name = 'PropertyValue_{}_{}'.format(self._name, name)
-        self._changeListeners.pop(name, None)
-
-        
-    def get(self):
-        """
-        Returns the current property value.
-        """
-        return self.__value
-
-        
-    def set(self, newValue):
-        """
-        Sets the property value. The property is validated and, if the
-        property value or its validity has changed, any registered
-        listeners are notified.  If allowInvalid was set to False, and
-        the new value is not valid, a ValueError is raised, and listeners
-        are not notified. Listener notification is not performed on the
-        first call to set().
-        """
-
-        # Figure out if this is the first time that set() has been called,
-        # by testing for the existence of private attributes __lastValid
-        # and/or __lastValue.
-        #
-        # Listener notification is not performed on the first call, in order
-        # to overcome a chicken-egg problem caused by the tight coupling
-        # between PropertyValue, PropertyBase, and HasProperties objects.
-        # The HasProperties._propChanged method is called every time a
-        # property value is changed, and it triggers revalidation of all
-        # other properties, in case their validity is dependent upon the
-        # value of the changed property. But during initialisation, the data
-        # structures for every property are created one by one (in
-        # HasProperties.__new__), meaning that a call to _propChanged for
-        # an early property would fail, as the data for later properties
-        # would not yet exist. The simplest solution to this problem is to
-        # skip notification the first time that property value is set, which
-        # is precisely what we're doing here.
-        #
-        firstCall = False
-        try:
-            self.__lastValid = self.__lastValid
-        except:
-            firstCall = True
-            self.__lastValid = False
-            self.__lastValue = None
-
-        # Check to see if the new value is valid
-        valid = False
-        try:
-            self._prop.validate(self._owner, newValue)
-            valid = True
-            
-        except ValueError as e:
-
-            # Oops, we don't allow invalid values. This
-            # might cause problems on the first call to
-            # set(), but it hasn't yet, so I'm leaving
-            # as is for the time being.
-            if not self._allowInvalid:
-                log.debug('Attempt to set {} to an invalid value ({}), '
-                          'but allowInvalid is False ({})'.format(
-                              self._name, newValue, e)) 
-                raise e
-
-        self.__value = newValue
-        self.__valid = valid
-
-        # If the value or its validity has not
-        # changed, listeners are not notified
-        changed = (self.__value != self.__lastValue) or \
-                  (self.__valid != self.__lastValid)
-
-        if not changed: return
-        
-        self.__lastValue = self.__value
-        self.__lastValid = self.__valid
-
-        log.debug('Value {} changed: {} ({})'.format(
-            self._name,
-            newValue,
-            'valid' if valid else 'invalid'))
-
-        # Notify any registered listeners
-        if not firstCall: self._notify()
-
-        
-    def _notify(self):
-        """
-        Calls the preNotify function (if it is set), any listeners which have
-        been registered with this PropertyValue object, and the HasProperties
-        owner.
-        """
-        
-        value     = self.__value
-        valid     = self.__valid
-        listeners = self._changeListeners.items()
-
-        # Call the prenotify function first, if there is one
-        if self._preNotifyFunc is not None:
-            log.debug('Calling preNotify function for {}'.format(self._name))
-
-            try: self._preNotifyFunc(self._owner, newValue)
-            except Exception as e:
-                log.debug('PreNotify function on {} raised '
-                          'exception: {}'.format(self._name, e)) 
-
-        # Notify all listeners, ignoring any errors -
-        # it is up to the listeners to ensure that
-        # they handle invalid values
-        for (name, func) in listeners:
-
-            log.debug('Notifying listener on {}: {}'.format(self._name, name))
-            
-            try: func(value, valid, self._owner, self._prop, self._name)
-            except Exception as e:
-                log.debug('Listener on {} ({}) raised '
-                          'exception: {}'.format(self._name, name, e))
-
-        # Notify the property owner that this property has changed
-        self._owner._propChanged(self._prop)
-
-
-    def revalidate(self):
-        """
-        Revalidates the current property value, and re-notifies
-        any registered listeners if the value validity has changed.
-        """
-        self.set(self.get())
-
-        
-    def isValid(self):
-        """
-        Returns True if the current property value is valid, False otherwise.
-        """
-        try:               self._prop.validate(self._owner, self.get())
-        except ValueError: return False
-        return True
-
-
 class InstanceData(object):
     """
     An InstanceData object is created for every instance which has
@@ -368,8 +138,8 @@ class InstanceData(object):
 class PropertyBase(object):
     """
     The base class for properties. For every HasProperties object which
-    has this PropertyBase object as a property, one or more PropertyValue
-    instances are created and attached as an attribute of the parent.
+    has this PropertyBase object as a property, one InstanceData object
+    is created and attached as an attribute of the parent.
 
     One important point to note is that a PropertyBase object may exist
     without being bound to a HasProperties object (in which case it will
@@ -387,8 +157,14 @@ class PropertyBase(object):
         method is called first.
 
       - Override _makePropVal for properties which consist of
-        more than one PropertyValue object
-        (see properties_types.List for an example).
+        more than one PropertyValue object, so that it returns
+        a PropertyValueList (see properties_types.List for an
+        example). 
+
+      - Override __get__ and/or __set__ for implicit
+        casting/conversion logic (see properties_types.String,
+        or properties_types.ColourMap for examples), ensuring that
+        PropertyBase.__get__/__set__ are still called.
     """
 
     def __init__(self,
@@ -467,7 +243,6 @@ class PropertyBase(object):
         Returns the value of the named constraint for the specified instance,
         or the default constraint value if instance is None.
         """
-
         if instance is None:
             return self._defaultConstraints[constraint]
         else:
@@ -480,7 +255,6 @@ class PropertyBase(object):
         Sets the value of the named constraint for the specified instance,
         or the default value if instance is None.
         """
-        
         log.debug('Changing {} constraint on {}: {} = {}'.format(
             self._label,
             'default' if instance is None else 'instance',
@@ -500,10 +274,11 @@ class PropertyBase(object):
         value for the given instance.
         """
         instData = self._getInstanceData(instance)
-        
-        if instData is not None: return instData.propVal
-        else:                    return None
- 
+
+        if instData is None: return None
+
+        return instData.propVal
+
 
     def _getInstanceData(self, instance):
         """
@@ -533,14 +308,10 @@ class PropertyBase(object):
         # method does not allow an initial value to be set.
         instance.__dict__[self._label] = instData
 
-        # TODO not supporting multiple property values here
-        propVal.set(self._default)
-
-        # A PropertyBase object registers an 'internal' listener
-        # on every PropertyValue object that it manages, purely
-        # so that the PropertyBase object can propagate value
-        # changes onto its own listeners.
-        propVal.addListener('internal', self.__varChanged) 
+        if isinstance(propVal, PropertyValueList):
+            propVal.extend(self._default)
+        else:
+            propVal.set(self._default)
 
         return instData
 
@@ -549,7 +320,8 @@ class PropertyBase(object):
         """
         Creates and returns PropertyValue object for the given instance.
         Subclasses which encapsulate multiple values should override this
-        method, and return a list of PropertyValue instances.
+        method, and return an object which allows iteration over
+        PropertyValue instances.
         """
         return PropertyValue(self,
                              instance,
@@ -558,12 +330,11 @@ class PropertyBase(object):
                              self._allowInvalid)
 
         
-    def __varChanged(self, value, valid, instance, prop, name):
+    def _valChanged(self, value, valid, instance, prop, name):
         """
-        This function is registered with the PropertyValue object (or
-        objects) which are managed by this PropertyBase instance.
-        It notifies any listeners which have been registered to
-        this property of any value changes.
+        This function is called by PropertyValue objects which are
+        managed by this PropertyBase object. It notifies any listeners
+        which have been registered to this property of any value changes.
         """
 
         listeners = self._getInstanceData(instance).changeListeners.items()
@@ -576,6 +347,17 @@ class PropertyBase(object):
             except Exception as e:
                 log.debug('Listener on {} ({}) raised exvception: {}'.format(
                     self._label, lName, e))
+
+        # Force validation for all other properties of the instance, and
+        # notification of their registered listeners, This is done because the
+        # validity of some properties may be dependent upon the values of this
+        # one. So when the value of this property changes, it may have changed
+        # the validity of another property, meaning that the listeners of the
+        # latter property need to be notified of this change in validity.
+        propNames, props = instance.getAllProperties()
+        for prop in props:
+            if prop is not self:
+                prop.revalidate(instance) 
 
             
     def validate(self, instance, value):
@@ -632,7 +414,9 @@ class PropertyBase(object):
 
         # getPropVal should return either a
         # PropertyValue object, or a list of them
-        if isinstance(propVals, PropertyValue):
+        if isinstance(propVals, PropertyValueList):
+            propVals = propVals.getPropertyValueList()
+        else:
             propVals = [propVals]
 
         for val in propVals:
@@ -655,10 +439,10 @@ class PropertyBase(object):
         if instData is None:
             instData = self.__newInstance(instance)
 
-        if isinstance(instData.propVal, PropertyValue):
-            return instData.propVal.get()
+        if isinstance(instData.propVal, PropertyValueList):
+            return instData.propVal
         else:
-            return [propVal.get() for propVal in instData.propVal]
+            return instData.propVal.get()
 
         
     def __set__(self, instance, value):
@@ -667,13 +451,12 @@ class PropertyBase(object):
         instance, to the given value.  
         """
         
-        propVals = self.getPropVal(instance)
+        propVal = self.getPropVal(instance)
 
-        if isinstance(propVals, PropertyValue):
-            propVals.set(value)
+        if isinstance(propVal, PropertyValueList):
+            propVal[:] = value
         else:
-            for propVal, val in zip(propVals, value):
-                propVal.set(val)
+            propVal.set(value)
 
 
 class PropertyOwner(type):
@@ -783,7 +566,12 @@ class HasProperties(object):
         is valid, False otherwise.
         """
         # TODO not supporting lists here
-        return self.getPropVal(propName).isValid()
+        prop   = self.getProp(propName)
+        curVal = getattr(self, propName)
+        try: prop.validate(self, curVal)
+        except ValueError: return False
+
+        return True
 
         
     def validateAll(self):
@@ -811,24 +599,6 @@ class HasProperties(object):
         return errors
 
         
-    def _propChanged(self, changedProp):
-        """
-        Called whenever any property value changes. Forces validation
-        for all other properties, and notification of their registered
-        listeners, if their value or validity has changed. This is done
-        because the validity of some properties may be dependent upon
-        the values of others. So when a particular property value
-        changes, it may have changed the validity of another property,
-        meaning that the listeners of the latter property need to be
-        notified of this change in validity.
-        """
-        propNames, props = self.getAllProperties()
-
-        for prop in props:
-            if prop != changedProp:
-                prop.revalidate(self)
-        
-        
     def __str__(self):
         """
         Returns a multi-line string containing the names and values
@@ -853,4 +623,5 @@ class HasProperties(object):
         return '\n'.join(lines)
 
 
-from properties_types import * 
+from properties_types import *
+from properties_value import * 

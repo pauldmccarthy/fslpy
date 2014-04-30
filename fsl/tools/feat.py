@@ -114,13 +114,13 @@ class Options(props.HasProperties):
         minlen=3,
         listType=props.FilePath(
             isFile=False,
-            exists=True,
-            required=lambda i: i.inputDataType == 'featDirs'))
+            exists=True),
+        required=lambda i: i.inputDataType == 'featDirs')
     higherLevelCopeInput = props.List(
         minlen=3,
         listType=props.FilePath(
-            exists=True,
-            required=lambda i: i.inputDataType == 'copeImages'))
+            exists=True),
+        required=lambda i: i.inputDataType == 'copeImages')
 
     #
     # Pre-stats options

@@ -77,7 +77,7 @@ def _editListDialog(parent, hasProps, propObj):
     """
 
     # listObj is a properties.ListWrapper object
-    listObj  = getattr(hasProps, propObj.label)
+    listObj  = getattr(hasProps, propObj._label)
     listType = propObj.listType
 
     # Get a reference to a function in the widgets module,
@@ -91,11 +91,14 @@ def _editListDialog(parent, hasProps, propObj):
 
     # min/max values for a spin box which allows the
     # user to select the number of items in the list
-    minval = propObj.minlen if (propObj.minlen is not None) else 1
-    maxval = propObj.maxlen if (propObj.maxlen is not None) else sys.maxint
+    minval = propObj.getConstraint(hasProps, 'minlen')
+    maxval = propObj.getConstraint(hasProps, 'maxlen')
 
-    frame       = wx.Frame(parent)
-    panel       = wx.ScrolledPanel(frame)
+    if minval is None: minval = 1
+    if maxval is None: maxval = 2 ** 31 - 1
+
+    frame       = wx.Dialog(parent)
+    panel       = wx.ScrolledWindow(frame)
     okButton    = wx.Button(frame, label='Ok')
     numRowsBox  = wx.SpinCtrl(frame,
                               min=minval,
@@ -115,7 +118,7 @@ def _editListDialog(parent, hasProps, propObj):
     frameSizer.Add(panel,      flag=wx.EXPAND, proportion=1)
     frameSizer.Add(okButton,   flag=wx.EXPAND)
 
-    panelSizer = wx.BoxSizert(wx.VERTICAL)
+    panelSizer = wx.BoxSizer(wx.VERTICAL)
     panel.SetSizer(panelSizer)
     for i in range(len(listWidgets)):
         panelSizer.Add(listWidgets[i], flag=wx.EXPAND)
@@ -135,7 +138,7 @@ def _editListDialog(parent, hasProps, propObj):
         while oldLen < newLen:
 
             # add a new element to the list
-            listObj.append(listType.default)
+            listObj.append(listType._default)
             propVal = propObj.getPropVal(hasProps, -1)
 
             # add a widget
@@ -179,13 +182,13 @@ def _List(parent, hasProps, propObj, propVal):
     # the values in the list individually
     editButton = wx.Button(panel, label='Edit')
     editButton.Bind(
-        wx.EVT_BUTTON, lambda: _editListDialog(parent, hasProps, propObj))
+        wx.EVT_BUTTON, lambda ev: _editListDialog(parent, hasProps, propObj))
 
     # When the user pushes this button, a new window is
     # displayed, allowing the user to type/paste bulk data
     pasteButton = wx.Button(panel, label='Paste data')
     pasteButton.Bind(
-        wx.EVT_BUTTON, lambda: _pasteDataDialog(parent, hasProps, propObj))
+        wx.EVT_BUTTON, lambda ev: _pasteDataDialog(parent, hasProps, propObj))
 
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     panel.SetSizer(sizer)

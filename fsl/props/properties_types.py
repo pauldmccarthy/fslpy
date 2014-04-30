@@ -300,309 +300,21 @@ class FilePath(String):
             raise ValueError('Must be a directory ({})'.format(value))
 
 
-class ListWrapper(object):
-    """
-    Used by the List property type, defined below. An object which
-    acts like a list, but for which items are embedded in
-    PropertyValue objects, minimum/maximum list length may be
-    enforced, and value/type constraints enforced on the values
-    added to it.
-    
-    Only basic list operations are supported. List modifications
-    occur exclusively in the append, pop, __setitem__ and
-    __delitem__ methods.
-
-    A PropertyValue object is created for each item that is added
-    to the list.  When a list value is changed, instead of a new
-    variable being created, the value of the existing variable
-    is changed.  References to the list of PropertyValue objects
-    may be accessed via the List.getPropVal method of the
-    enclosing List object.
-    """
-
-    def __init__(self,
-                 owner,
-                 listProp,
-                 values=None,
-                 listType=None,
-                 minlen=None,
-                 maxlen=None):
-        """
-        Parameters:
-         - owner:    The HasProperties object, of which the List object
-                     which is managing this ListWrapper object, is a
-                     property.
-        
-         - listProp: The List property object which is managing this
-                     ListWrapper object. Whenever the list, or a value
-                     within the list is modified, listProp._valueChanged
-                     is called.
-        
-         - values:   list of initial values.
-        
-         - listType: A PropertyBase instance, specifying the type of
-                     data allowed in this list.
-        
-         - minlen:   minimum list length
-        
-         - maxlen:   maximum list length
-        """
-
-        self._owner          = owner
-        self._listProp       = listProp
-        self._listType       = listType
-        self._listType.label = self._listProp.label 
-        self._minlen         = minlen
-        self._maxlen         = maxlen
-
-        # This is the list that the ListWrapper wraps.
-        # It contains TkVarProxy objects.
-        self._propVals = []
-
-        # Set the list to the given initial values
-        if values is not None:
-            self.extend(values)
-
-        # Or create a list of length at least
-        # minlen, containing default values
-        elif self._minlen is not None:
-            
-            for i in range(self._minlen):
-                self.append(listType.default)
-
-        
-    def __len__(self): return self._propVals.__len__()
-    
-    def __repr__(self):
-        return list([i.get() for i in self._propVals]).__repr__()
-        
-    def __str__(self):
-        return list([i.get() for i in self._propVals]).__str__()
- 
-    
-    def _checkMaxlen(self, change=1):
-        """
-        Test that adding the given number of items to the list would
-        not cause the list to grow beyond its maximum length.
-        """
-        if (self._maxlen is not None) and \
-           (len(self._propVals) + change > self._maxlen):
-            raise IndexError('{} must have a length of at most {}'.format(
-                self._listProp.label, self._maxlen))
-
-
-    def _checkMinlen(self, change=1):
-        """
-        Test that removing the given number of items to the list would
-        not cause the list to shrink beyond its minimum length.
-        """ 
-        if (self._minlen is not None) and \
-           (len(self._propVals) - change < self._minlen):
-            raise IndexError('{} must have a length of at least {}'.format(
-                self._listProp.label, self._minlen))
-
-            
-    def _notify(self):
-        """
-        Called on list modifications. Notifies the List property via
-        its _varChanged method.
-        """
-        
-        self._listProp._varChanged(
-            self, True, self._owner, self._listProp, self._listProp.label) 
-
-        
-    def _makePropVal(self, value):
-        """
-        Encapsulate the given value in a PropertyValue object.
-        """
-
-        tkval = props.PropertyValue(self._listType, self._owner, value)
-        
-        return tkval
-
-        
-    def index(self, item):
-        """
-        Returns the first index of the value, or a ValueError if the
-        value is not present.
-        """
-
-        for i in range(len(self._propVals)):
-            if self._propVals[i].get() == item:
-                return i
-                
-        raise ValueError('{} is not present'.format(item))
-        
-
-    def __getitem__(self, key):
-        """
-        Return the value(s) at the specified index/slice.
-        """
-        
-        items = self._propVals.__getitem__(key)
-
-        if isinstance(key, slice):
-            return [i.get() for i in items]
-        else:
-            return items.get()
-
-
-    def __iter__(self):
-        """
-        Returns an iterator over the values in the list.
-        """
-        
-        innerIter = self._propVals.__iter__()
-        for i in innerIter:
-            yield i.get()
-
-        
-    def __contains__(self, item):
-        """
-        Returns True if the given is in the list, False otherwise.
-        """
-        
-        try:    self.index(item)
-        except: return False
-        return True
-
-        
-    def count(self, item):
-        """
-        Counts the number of occurrences of the given value.
-        """
-
-        c = 0
-
-        for i in self._propVals:
-            if i.get() == item:
-                c = c + 1
-                 
-        return c
-
-    
-    def append(self, item):
-        """
-        Appends the given item to the end of the list.  An IndexError is
-        raised if the insertion would causes the list to grow beyond its
-        maximum length.
-        """
-
-        self._checkMaxlen()
-
-        newVal = self._makePropVal(item)
-        
-        self._propVals.append(newVal)
-        self._notify()
-
-
-    def extend(self, iterable):
-        """
-        Appends all items in the given iterable to the end of the
-        list.  An IndexError is raised if an insertion would causes
-        the list to grow beyond its maximum length.
-        """
-
-        toAdd = list(iterable)
-        self.checkMaxlen(len(toAdd))
-        
-        for i in toAdd:
-            self.append(i)
-
-        
-    def pop(self):
-        """
-        Remove and return the last value in the list. An IndexError is
-        raised if the removal would cause the list length to shrink
-        below its minimum length.
-        """
-
-        self._checkMinlen()
-        
-        propVal = self._propVals.pop()
-        val     = propVal.get()
-        
-        self._notify()
-        return val
-
-
-    def __setitem__(self, key, values):
-        """
-        Sets the value(s) of the list at the specified index/slice.
-        """
-
-        if isinstance(key, slice):
-            if (key.step is not None) and (key.step > 1):
-                raise ValueError(
-                    'ListWrapper does not support extended slices')
-            indices = range(*key.indices(len(self)))
-
-        elif isinstance(key, int):
-            indices = [key]
-            values  = [values]
-
-        else:
-            raise ValueError('Invalid key type')
-
-        # if the number of indices specified in the key
-        # is different from the number of values passed
-        # in, it means that we are either adding or
-        # removing items from the list
-        lenDiff = len(values) - len(indices)
-        oldLen  = len(self)
-        newLen  = oldLen + lenDiff
-
-        # adding items
-        if   newLen > oldLen: self._checkMaxlen( lenDiff)
-
-        # removing items
-        elif newLen < oldLen: self._checkMinlen(-lenDiff)
-
-        # Replace values of existing items
-        if newLen == oldLen:
-            for i, v in zip(indices, values):
-                self._propVals[i].set(v)
-
-        # Replace old PropertyValue objects with new ones. 
-        else:
-            values = [self._makePropVal(v) for v in values]
-            if len(values) == 1: values = values[0]
-            self._propVals.__setitem__(key, values)
-            
-        self._notify() 
-
-        
-    def __delitem__(self, key):
-        """
-        Remove items at the specified index/slice from the list. An
-        IndexError is raised if the removal would cause the list to
-        shrink below its minimum length.
-        """
-
-        if isinstance(key, slice): indices = range(*key.indices(len(self)))
-        else:                      indices = [key]
-
-        self._checkMinlen(len(indices))
-        self._propVals.__delitem__(key)
-        self._notify() 
-
-
 class List(props.PropertyBase):
     """
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
-    ListWrapper class, defined above.
+    PropertyValueList class, defined in properties_value.py
 
     This class is a bit different from the other PropertyBase classes, in
     that the validation logic is built into the ListWrapper class, rather
-    than this class.
+    than this class. 
     """
     
     def __init__(self, listType, minlen=None, maxlen=None, **kwargs):
         """
         Mandatory parameters:
-          - listType: A PropertyBase instance, specifying the values allowed
+          - listType: A PropertyBase type, specifying the values allowed
                       in the list
         
         Optional parameters:
@@ -615,90 +327,39 @@ class List(props.PropertyBase):
             raise ValueError(
                 'A list type (a PropertyBase instance) must be specified')
 
-        self.listType = listType
-        self.minlen   = minlen
-        self.maxlen   = maxlen
+        self._listType = listType
 
-        kwargs['default'] = kwargs.get('default', None)
+        kwargs['default'] = kwargs.get('default', [])
 
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def getPropVal(self, instance, index=None):
-        """
-        Return a list of PropertyValue objects or, if index is specified, 
-        the PropertyValue object at the specified index.
-        """
-        propVal = instance.__dict__.get(self.label, None)
-        if propVal is None: return None
-        
-        if index is None: return propVal._propVals
-        else:             return propVal._propVals[index]
-
-
     def _makePropVal(self, instance):
         """
-        Creates a ListWrapper object, and attaches it to the
-        given instance.
+        Creates and returns a PropertyValueList object.
         """
-        instval = ListWrapper(instance,
-                              self,
-                              values=self.default,
-                              listType=self.listType,
-                              minlen=self.minlen,
-                              maxlen=self.maxlen)
-        instance.__dict__[self.label] = instval
-
+        minlen = self.getConstraint(instance, 'minlen')
+        maxlen = self.getConstraint(instance, 'maxlen') 
+        instval = props.PropertyValueList(instance,
+                                          self,
+                                          listType=self._listType,
+                                          minlen=minlen,
+                                          maxlen=maxlen)
         return instval
 
-        
-    def validate(self, instance, values):
-        """
-        Validates the list and all of its values.
-        """
-        props.PropertyBase.validate(self, instance, values)
+    def validate(self, instance, value):
 
-        if values is None:
-            return
-            
-        if (self.minlen is not None) and (len(values) < self.minlen):
-            raise ValueError('Must have length at least {}'.format(
-                self.minlen))
-            
-        if (self.maxlen is not None) and (len(values) > self.maxlen):
-            raise ValueError('Must have length at most {}'.format(
-                self.maxlen))
+        minlen = self.getConstraint(instance, 'minlen')
+        maxlen = self.getConstraint(instance, 'maxlen')
 
-        for v in values:
-            self.listType.validate(instance, v)
-            
+        if minlen is not None and len(value) < minlen:
+            raise ValueError('')
+        if maxlen is not None and len(value) > maxlen:
+            raise ValueError('')
+
+        for v in value:
+            self._listType.validate(None, v)
      
-    def __get__(self, instance, owner):
-        """
-        If instance is None, returns this List object. Otherwise returns
-        the ListWrapper instance attached to the given instance.
-        """
-        
-        if instance is None:
-            return self
-
-        instval = instance.__dict__.get(self.label, None)
-        if instval is None: instval = self._makePropVal(instance) 
-        
-        return instval
-
-        
-    def __set__(self, instance, value):
-        """
-        Replaces the contents of the ListWrapper object attached
-        to the given instance.
-        """
-
-        if value is None: value = []
-
-        instval    = getattr(instance, self.label)
-        instval[:] = value
-
 
 # TODO This might be better off as a subclass of Choice. Choice
 # would need to be modified to allow for values of any type, not
