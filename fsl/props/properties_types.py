@@ -6,10 +6,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import            os
 import os.path as op
 
-from collections import OrderedDict
+import numbers
 
 import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
@@ -30,8 +29,8 @@ class Boolean(props.PropertyBase):
     def validate(self, instance, value):
         props.PropertyBase.validate(self, instance, value)
 
-        try:    value = bool(value)
-        except: raise ValueError('Must be a boolean')
+        if not isinstance(value, bool):
+            raise ValueError('Must be a boolean')
 
 
 class Number(props.PropertyBase):
@@ -68,6 +67,9 @@ class Number(props.PropertyBase):
     def validate(self, instance, value):
         
         props.PropertyBase.validate(self, instance, value)
+
+        if not isinstance(value, numbers.Number):
+            raise ValueError('Must be a number')
         
         minval = self.getConstraint(instance, 'minval')
         maxval = self.getConstraint(instance, 'maxval')
@@ -94,15 +96,16 @@ class Int(Number):
         
     def validate(self, instance, value):
 
-        try:    value = int(value)
-        except: raise ValueError('Must be an integer ({})'.format(value))
-        
         Number.validate(self, instance, value)
 
+        if not isinstance(value, numbers.Integral):
+            raise ValueError('Must be an integer')
+        
 
 class Double(Number):
     """
-    A property which encapsulates a double. 
+    A property which encapsulates a double.  TODO Double is a silly name.
+    Change it to Real.
     """
     
     def __init__(self, **kwargs):
@@ -114,12 +117,12 @@ class Double(Number):
 
         
     def validate(self, instance, value):
-
-        try:    value = float(value)
-        except: raise ValueError('Must be a number ({})'.format(value))
         
         Number.validate(self, instance, value)
-
+        
+        if not isinstance(value, numbers.Real):
+            raise ValueError('Must be a floating point number') 
+        
 
 class Percentage(Double):
     """
@@ -171,10 +174,11 @@ class String(props.PropertyBase):
 
         if value is None: return
 
+        if not isinstance(value, basestring):
+            raise ValueError('Must be a string')
+
         minlen = self.getConstraint(instance, 'minlen')
         maxlen = self.getConstraint(instance, 'maxlen')
-
-        value = str(value)
 
         if minlen is not None and len(value) < minlen:
             raise ValueError('Must have length at least {}'.format(minlen))
@@ -232,8 +236,6 @@ class Choice(String):
         Rejects values that are not in the choices list.
         """
         String.validate(self, instance, value)
-
-        value = str(value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice ({})'.format(value))
@@ -742,6 +744,6 @@ class ColourMap(props.PropertyBase):
         elif not isinstance(value, mplcolors.Colormap):
             raise ValueError(
                 'Invalid  ColourMap value: '.format(
-                    default.__class__.__name__))
+                    value.__class__.__name__))
 
         props.PropertyBase.__set__(self, instance, value)
