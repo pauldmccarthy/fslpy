@@ -144,9 +144,6 @@ class Options(props.HasProperties):
                 self.yCoordinate > 0.0,
                 self.zCoordinate > 0.0)):
             cmd.append('-c')
-            print type(self.xCoordinate)
-            print self.xCoordinate
-            print '{}'.format(self.xCoordinate)
             cmd.append('{}'.format(self.xCoordinate))
             cmd.append('{}'.format(self.yCoordinate))
             cmd.append('{}'.format(self.zCoordinate))
@@ -303,10 +300,15 @@ def runBet(parent, opts):
 
         if exitCode != 0: return
 
-        image = nb.load(imagefile.addExt(opts.outputImage))
-        frame = orthopanel.OrthoFrame(window,
-                                      image.get_data(),
-                                      title=opts.outputImage)
+        inImage   = fslimage.Image(opts.inputImage)
+        outImage  = fslimage.Image(opts.outputImage)
+        imageList = fslimage.ImageList([inImage, outImage])
+
+        outImage.display.cmap       = 'Reds'
+        outImage.display.displayMin = 1
+        outImage.display.rangeClip  = True
+
+        frame  = orthopanel.OrthoFrame(parent, imageList, opts.outputImage) 
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
