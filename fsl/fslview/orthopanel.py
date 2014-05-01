@@ -152,3 +152,16 @@ class OrthoFrame(wx.Frame):
         wx.Frame.__init__(self, parent, title=title)
         self.panel = OrthoPanel(self, imageList)
         self.Layout()
+
+
+class OrthoDialog(wx.Dialog):
+    """
+    Convenience class for displaying an OrthoPanel in a (possibly modal)
+    dialog window.
+    """
+
+    def __init__(self, parent, imageList, title=None):
+        
+        wx.Dialog.__init__(self, parent, title=title)
+        self.panel = OrthoPanel(self, imageList)
+        self.Layout()

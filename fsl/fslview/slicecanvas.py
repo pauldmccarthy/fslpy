@@ -120,17 +120,20 @@ class GLImageData(object):
         yidxs        = np.arange(self.ydim, dtype=np.float32)
         yidxs, xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
 
-        # And put them into a single array (the image.voxToWorld
-        # method needs xyz coordinates, hence the N*3 shape here)
-        positionData = np.zeros((self.xdim * self.ydim, 3), dtype=np.float32)
-        positionData[:, xax] = xidxs.ravel(order='C')
-        positionData[:, yax] = yidxs.ravel(order='C')
+        # And put them into a single array
+        positionData = np.vstack((
+            xidxs.ravel(order='C'),
+            yidxs.ravel(order='C'))).transpose()
 
         # Then we transform them from voxel
-        # coordinates to world coordinates
-        positionData = image.voxToWorld(positionData)[:, (xax, yax)]
+        # coordinates to world coordinates,
+        # making sure that they are of type
+        # float32
+        positionData = image.voxToWorld(positionData, axes=(xax, yax))
+        positionData = np.array(positionData, dtype=np.float32)
 
-        # GL buffers for the geometry and position data
+        # Define GL buffers for the geometry and position
+        # data containing the data we just created above
         geomData       = geomData    .ravel(order='C')
         positionData   = positionData.ravel(order='C')
         geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)

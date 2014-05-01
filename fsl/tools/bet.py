@@ -193,39 +193,15 @@ def selectHeadCentre(opts, button):
     image     = fslimage.Image(opts.inputImage)
     imageList = fslimage.ImageList([image])
     parent    = button.GetTopLevelParent()
-    frame     = orthopanel.OrthoFrame(parent, imageList, opts.inputImage)
+    frame     = orthopanel.OrthoDialog(parent, imageList, opts.inputImage)
     panel     = frame.panel
 
     # Whenever the x/y/z coordinates change on
-    # the Options object,update the orthopanel
-    # location
-    def updateViewX(val, *a): panel.setXLocation(image.voxToWorld(val, axes=0))
-    def updateViewY(val, *a): panel.setYLocation(image.voxToWorld(val, axes=1))
-    def updateViewZ(val, *a): panel.setZLocation(image.voxToWorld(val, axes=2))
-
-    optListeners = (
-        ('xCoordinate', 'updateViewX_{}'.format(id(panel)), updateViewX),
-        ('yCoordinate', 'updateViewY_{}'.format(id(panel)), updateViewY),
-        ('zCoordinate', 'updateViewZ_{}'.format(id(panel)), updateViewZ))
-
-    for listener in optListeners:
-        opts.addListener(*listener) 
-
-    def rmListeners(ev):
-        for listener in optListeners:
-            prop = listener[0]
-            name = listener[1]
-            opts.removeListener(prop, name)
-
-    # Remove the listeners when the dialog is closed
-    frame.Bind(wx.EVT_WINDOW_DESTROY, rmListeners)
-
-    # And whenever the x/y/z coordinates change
-    # on the dialog, update the option values.
+    # the ortho panel, update the option values.
     def updateOpts(ev):
-        x = int(image.worldToVox(ev.x, axes=0))
-        y = int(image.worldToVox(ev.y, axes=1))
-        z = int(image.worldToVox(ev.z, axes=2))
+        x = image.worldToVox(ev.x, axes=0)
+        y = image.worldToVox(ev.y, axes=1)
+        z = image.worldToVox(ev.z, axes=2)
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -242,18 +218,18 @@ def selectHeadCentre(opts, button):
 
     panel.Bind(orthopanel.EVT_LOCATION_EVENT, updateOpts)
 
-    # Position the dialog by the button that was clicked
-    pos = button.GetScreenPosition()
-    frame.SetPosition(pos)
-    frame.Show()
-
-    # TODO this needs to be done after the frame has
-    # been displayed i.e via wx.CallAfter or similar)
+    # Set the initial location on the orthopanel.
+    # TODO this ain't working, as it needs to be
+    # done after the frame has been displayed, i.e
+    # via wx.CallAfter or similar. 
     voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
     worldCoords = image.voxToWorld([voxCoords])[0]
     panel.setLocation(*worldCoords)
 
- 
+    # Position the dialog by the button that was clicked
+    pos = button.GetScreenPosition()
+    frame.SetPosition(pos)
+    frame.ShowModal()
 
 
 betView = props.NotebookGroup((
