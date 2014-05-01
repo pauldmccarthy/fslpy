@@ -77,8 +77,8 @@ class Image(object):
 
         lo, hi = sorted(tx[:, axis])
 
-        lo = lo - self.pixdim[axis] * 0.5
-        hi = hi + self.pixdim[axis] * 0.5
+        lo = float(lo - self.pixdim[axis] * 0.5)
+        hi = float(hi + self.pixdim[axis] * 0.5)
 
         return (lo, hi)
 
@@ -87,7 +87,9 @@ class Image(object):
         """
         Transforms the given set of points in voxel coordinates to
         points in world coordinates, according to the affine
-        transformation specified in the image file. Parameters:
+        transformation specified in the image file. The returned array
+        is either a numpy.float64 array, or a single integer value,
+        depending on the input. Parameters:
         
           - p:    N*A array, where N is the number of points, and A
                   is the number of axes to consider (default: 3)
@@ -101,31 +103,39 @@ class Image(object):
         """
 
         voxp = self._transform(p, self.worldToVoxMat, axes)
-        voxp = np.array(voxp, dtype=np.int64)
-        
-        return voxp
+
+        if voxp.size == 1: return int(voxp[0])
+        else:              return voxp
 
 
     def voxToWorld(self, p, axes=None):
         """
         Transforms the given set of points in world coordinates to
         points in voxel coordinates, according to the affine
-        transformation specified in the image file.  See the
-        worldToVox docstring for more details.
-        
-        """ 
-        return self._transform(p, self.voxToWorldMat, axes)
+        transformation specified in the image file.  The returned
+        array is either a numpy.float64 array, or a single float
+        value, depending on the input. See the worldToVox
+        docstring for more details. 
+        """
+
+        worldp = self._transform(p, self.voxToWorldMat, axes)
+
+        if worldp.size == 1:
+            #print 'casting to float!'
+            return float(worldp)
+        else:                return worldp
 
         
     def _transform(self, p, a, axes):
         """
         Transforms the given set of points p according to the given
-        affine transformation a. See the worldToVox docstring for
-        more details.
+        affine transformation a. The transformed points are returned
+        as a numpy.float64 array. See the worldToVox docstring for
+        more details. 
         """
 
         p = self._fillPoints(p, axes)
-        t = np.zeros((len(p), 3), dtype=p.dtype)
+        t = np.zeros((len(p), 3), dtype=np.float64)
 
         x = p[:, 0]
         y = p[:, 1]
@@ -148,6 +158,7 @@ class Image(object):
         """
 
         if not isinstance(p, collections.Iterable): p = [p]
+        
         p = np.array(p)
 
         if axes is None: return p

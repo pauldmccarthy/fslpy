@@ -151,15 +151,15 @@ def buildGUI(fslTool, toolCtx, fslEnvActive):
     actions.append((
         wx.ID_HELP,
         '{} Help'.format(fslTool.toolName),
-        lambda ev: webpage.openFSLHelp(fslTool.helpPage)))
+        lambda *ev: webpage.openFSLHelp(fslTool.helpPage)))
 
     for (name, func) in fslTool.actions:
-        actions.append((-1, name, lambda ev: func(frame, ctx)))
+        actions.append((wx.ID_ANY, name, lambda ev, f=func: f(frame, ctx)))
 
     actions.append((
         wx.ID_EXIT,
         'Exit',
-        lambda ev: frame.Close()))
+        lambda *ev: frame.Close()))
 
     for wxId, name, func in actions:
         menuItem = fslMenu.Append(wxId, name)

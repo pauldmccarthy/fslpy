@@ -112,11 +112,12 @@ class ImageListPanel(wx.Panel):
         except: lastDir = os.getcwd()
 
         wildcard = imagefile.wildcard()
-        
+
+        # wx wildcard handling is buggy, so i'm disabling it for now
         dlg = wx.FileDialog(self.GetParent(),
                             message='Open image file',
                             defaultDir=lastDir,
-                            wildcard=wildcard,
+#                            wildcard=wildcard,
                             style=wx.FD_OPEN)
 
         if dlg.ShowModal() != wx.ID_OK: return
