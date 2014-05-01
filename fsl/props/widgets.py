@@ -85,7 +85,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
 
     if not isinstance(evType, Iterable): evType = [evType]
 
-    listenerName = 'propBind_{}'.format(id(guiObj))
+    listenerName = 'WidgetBind_{}'.format(id(guiObj))
     valMap       = None
 
     if labelMap is not None:
@@ -160,7 +160,9 @@ def _setupValidation(widget, hasProps, propObj, propVal):
     # associated with multiple variables, and we don't want
     # the widgets associated with those other variables to
     # change background.
-    propVal.addListener('changeBGOnValidate', _changeBGOnValidate)
+    propVal.addListener(
+        'widgets_py_ChangeBG_{}'.format(id(widget)),
+        _changeBGOnValidate)
 
     # Validate the initial property value,
     # so the background is appropriately set

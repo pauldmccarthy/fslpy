@@ -653,7 +653,7 @@ def _prepareEvents(hasProps, propGui):
     # add a callback listener to every property
     for propObj, propName in zip(propObjs, propNames):
 
-        lName = 'ChangeEvent_{}'.format(propName)
+        lName = 'build_py_WhenEvent'
         propObj.addListener(hasProps, lName, onChange)
  
 
