@@ -210,7 +210,7 @@ class ImageDisplay(props.HasProperties):
     away, and manage your own ImageDisplay objects.
     """
 
-    def updateColourMap(self, newVal):
+    def updateColourMap(self, newVal, valid):
         """
         When a colour property changes, this method is called -
         it reconfigures the colour map accordingly.

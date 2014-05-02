@@ -13,80 +13,82 @@ log = logging.getLogger(__name__)
 
 class PropertyValue(object):
     """
-    Proxy object which encapsulates a single value for a property.
-    One or more PropertyValue objects is created for every property
-    of a HasProperties instance.
+    An object which encapsulates a value of some sort. The value may be
+    subjected to validation rules, and listners may be registered for
+    notification of value and validity changes.
     """
 
     def __init__(self,
-                 prop,
-                 owner=None,
+                 context,
                  name=None,
+                 value=None,
+                 validateFunc=None,
                  preNotifyFunc=None,
+                 postNotifyFunc=None,
                  allowInvalid=True):
         """
-        Create a PropertyValue object. You will need to follow this up
-        with a call to set() to set the initial value. Parameters:
+        Create a PropertyValue object. Parameters:
         
-          - prop:          The PropertyBase object which manages this
-                           PropertyValue.
-        
-          - owner:         The HasProperties object, the owner of the
-                           prop property.
-        
-          - name:          Variable name - if not provided, a default,
-                           unique name is created.
+          - context:        An object which is passed as the first argument to
+                            the validate, preNotifyFunc, postNotifyFunc, and
+                            any registered listeners.
 
-          - preNotifyFunc: Function to be called whenever the property
-                           value changes, but before any registered
-                           listeners are called. Must accept two
-                           parameters - the HasProperties object, and
-                           the new value.
+          - name:           Value name - if not provided, a default, unique
+                            name is created.
+
+          - value:          Initial value.
         
-          - allowInvalid:  If False, any attempt to set the value to
-                           something invalid will result in a ValueError.
-                           Note that this does not guarantee that the
-                           property will never have an invalid value, as
-                           the definition of 'valid' depends on external
-                           factors.  Therefore, the validity of a value
-                           may change, even if the value itself has not
-                           changed.
+          - validateFunc:   Function which accepts two parameters - a context,
+                            and a value. This function should test the provided
+                            value, and raise a ValueError if it is invalid.
+
+          - preNotifyFunc:  Function to be called whenever the property value
+                            changes, but before any registered listeners are
+                            called. Must accept three parameters - the context
+                            object, the new value, and a boolean value which is
+                            true if the new value is valid, False otherwise.
+        
+          - postNotifyFunc: Function to be called whenever the property value
+                            changes, but after any registered listeners are
+                            called. Must accept the same parameters as the
+                            preNotifyFunc.
+        
+          - allowInvalid:   If False, any attempt to set the value to something
+                            invalid will result in a ValueError. Note that
+                            this does not guarantee that the property will
+                            never have an invalid value, as the definition of
+                            'valid' depends on external factors (i.e. the
+                            validateFunc).  Therefore, the validity of a value
+                            may change, even if the value itself has not
+                            changed.
+
         """
         
-        if name is None: name = '{}_{}'.format(prop._label, id(self))
+        if name is None: name = 'PropertyValue_{}'.format(id(self))
         
-        self._prop            = prop
-        self._owner           = owner
+        self._context         = context
+        self._validate        = validateFunc
         self._name            = name
         self._preNotifyFunc   = preNotifyFunc
+        self._postNotifyFunc  = postNotifyFunc
         self._allowInvalid    = allowInvalid
         self._changeListeners = OrderedDict()
-        self.__value          = None
+        
+        self.__value          = value
         self.__valid          = False
-
-        # Two other private attributes are added to a PropertyValue instance
-        # on the first call to set(). They are not added here, as they are
-        # used by set() to identify the first call to set().
-        # self.__lastValue = None
-        # self.__lastValid = False
+        self.__lastValue      = None
+        self.__lastValid      = False
 
 
     def addListener(self, name, callback):
         """
         Adds a listener for this value. When the value changes, the
-        listener callback function is called. Listener notification
-        may also be programmatically triggered via the
-        PropertyBase.forceValidation method. The callback function
+        listener callback function is called. The callback function
         must accept these arguments:
 
           value    - The property value
           valid    - Whether the value is valid or invalid
-          instance - The HasProperties instance
-          prop     - The PropertyBase instance
-          name     - The name of this PropertyValue
-
-        If you are only interested in the value, you can define your
-        callback function like 'def callback(value, *a): ...'
+          context  - The context object passed in to __init__.
         """
         log.debug('Adding listener on {}: {}'.format(self._name, name))
         name = 'PropertyValue_{}_{}'.format(self._name, name)
@@ -113,51 +115,21 @@ class PropertyValue(object):
     def set(self, newValue):
         """
         Sets the property value. The property is validated and, if the
-        property value or its validity has changed, any registered
-        listeners are notified.  If allowInvalid was set to False, and
-        the new value is not valid, a ValueError is raised, and listeners
-        are not notified. Listener notification is not performed on the
-        first call to set().
+        property value or its validity has changed, the preNotifyFunc,
+        any registered listeners, and the postNotifyFunc are called.
+        If allowInvalid was set to False, and the new value is not
+        valid, a ValueError is raised, and listeners are not notified. 
         """
-
-        # Figure out if this is the first time that set() has been called,
-        # by testing for the existence of private attributes __lastValid
-        # and/or __lastValue.
-        #
-        # Listener notification is not performed on the first call, in order
-        # to overcome a chicken-egg problem caused by the tight coupling
-        # between PropertyValue, PropertyBase, and HasProperties objects.  The
-        # PropertyBase._valChanged method is called every time a property
-        # value is changed, and it triggers revalidation of all other
-        # properties of the owning HasProperties object, in case their
-        # validity is dependent upon the value of the changed property. But
-        # during initialisation, the data structures for every property are
-        # created one by one (in HasProperties.__new__), meaning that a call
-        # to _valChanged for an early property would fail, as the data for
-        # later properties would not yet exist. The simplest solution to this
-        # problem is to skip notification the first time that property value
-        # is set, which is precisely what we're doing here.
-        #
-        firstCall = False
-        try:
-            self.__lastValid = self.__lastValid
-        except:
-            firstCall = True
-            self.__lastValid = False
-            self.__lastValue = None
 
         # Check to see if the new value is valid
         valid = False
         try:
-            self._prop.validate(self._owner, newValue)
+            self._validate(self._context, newValue)
             valid = True
             
         except ValueError as e:
 
-            # Oops, we don't allow invalid values. This
-            # might cause problems on the first call to
-            # set(), but it hasn't yet, so I'm leaving
-            # as is for the time being.
+            # Oops, we don't allow invalid values. 
             if not self._allowInvalid:
                 log.debug('Attempt to set {} to an invalid value ({}), '
                           'but allowInvalid is False ({})'.format(
@@ -183,46 +155,39 @@ class PropertyValue(object):
             'valid' if valid else 'invalid'))
 
         # Notify any registered listeners
-        if not firstCall: self._notify()
+        self._notify()
 
         
     def _notify(self):
         """
         Calls the preNotify function (if it is set), any listeners which have
-        been registered with this PropertyValue object, and the HasProperties
-        owner.
+        been registered with this PropertyValue object, and the postNotify
+        function (if it is set).
         """
         
-        value     = self.__value
-        valid     = self.__valid
-        listeners = self._changeListeners.items()
+        value        = self.__value
+        valid        = self.__valid
+        allListeners = []
 
-        # Call the prenotify function first, if there is one
+        # Call prenotify first
         if self._preNotifyFunc is not None:
-            log.debug('Calling preNotify function for {}'.format(self._name))
+            allListeners.append(('PreNotify', self._preNotifyFunc))
 
-            try: self._preNotifyFunc(self._owner, value)
+        # registered listeners second
+        allListeners.extend(self._changeListeners.items())
+
+        # and postnotify last
+        if self._postNotifyFunc is not None:
+            allListeners.append(('PostNotify', self._postNotifyFunc))
+
+        for name, listener in allListeners:
+
+            log.debug('Calling listener {} for {}'.format(name, self._name))
+
+            try: listener(self._context, value, valid)
             except Exception as e:
-                log.debug('PreNotify function on {} raised '
-                          'exception: {}'.format(self._name, e)) 
-
-        # Notify all listeners, ignoring any errors -
-        # it is up to the listeners to ensure that
-        # they handle invalid values
-        for (name, func) in listeners:
-
-            log.debug('Notifying listener on {}: {}'.format(self._name, name))
-            
-            try: func(value, valid, self._owner, self._prop, self._name)
-            except Exception as e:
-                log.debug('Listener on {} ({}) raised '
-                          'exception: {}'.format(self._name, name, e))
-
-        # Notify the managing PropertyBase object
-        # that this value has changed
-        if self._owner is not None:
-            self._prop._valChanged(
-                value, valid, self._owner, self._prop, self._name)
+                log.debug('Listener {} on {} raised '
+                          'exception: {}'.format(name, self._name, e)) 
 
 
     def revalidate(self):
@@ -233,73 +198,76 @@ class PropertyValue(object):
         self.set(self.get())
 
 
-class PropertyValueList(object):
+    def isValid(self):
+        """
+        Returns true if the current property value is valid, False
+        otherwise.
+        """
+        try: self._validate(self._context, self.get())
+        except: return False
+        return True
+        
+
+class PropertyValueList(PropertyValue):
     """
-    An object which acts like a list, but for which items are
-    embedded in PropertyValue objects, minimum/maximum list length
-    may be enforced, and value/type constraints enforced on the
-    values added to it.
+    A PropertyValue object which stores other PropertyValue objects in a list.
     
     Only basic list operations are supported. List modifications
     occur exclusively in the append, pop, __setitem__ and
     __delitem__ methods.
 
-    A PropertyValue object is created for each item that is added
-    to the list.  When a list value is changed, instead of a new
-    variable being created, the value of the existing variable
-    is changed.
-
-
+    This code is hurting my head.
     """
 
     def __init__(self,
-                 owner,
-                 listProp,
-                 listType, 
-                 minlen=None,
-                 maxlen=None):
+                 context,
+                 name=None,
+                 values=None,
+                 itemValidateFunc=None,
+                 listValidateFunc=None,
+                 itemAllowInvalid=True,
+                 listAllowInvalid=True):
         """
         Parameters:
-         - owner:    The HasProperties object, of which the List object
-                     which is managing this ListWrapper object, is a
-                     property.
-        
-         - listProp: The PropertyBase object which is managing this
-                     PropertyValueList. Whenever the list, or a value
-                     within the list is modified, listProp._valChanged
-                     is called.
-        
-         - listType: A PropertyBase object specifying the type of
-                     data allowed in this list. 
-
-         - maxlen:   minimum list length
-        
-         - minlen:   maximum list length
         """
+        if name is None: name = 'PropertyValueList_{}'.format(id(self))
 
-        self._owner           = owner
-        self._listProp        = listProp
-        self._listType        = listType
-        self._listType._label = None
-        self._minlen          = minlen
-        self._maxlen          = maxlen
+        PropertyValue.__init__(
+            self,
+            context,
+            name,
+            validateFunc=listValidateFunc,
+            allowInvalid=listAllowInvalid)
 
+        self._name             = name
+        self._itemValidateFunc = itemValidateFunc
+        self._itemAllowInvalid = itemAllowInvalid
+        
         # The list of PropertyValue objects.
         self._propVals = []
-       
-        if self._minlen is not None:
 
-            for i in range(self._minlen):
-                self._propVals.append(self.__newItem(listType._default))
+        if values is not None:
+            self.extend(values)
+
+    def get(self):
+        return self[:]
+
+    def set(self, newValue):
+        # TODO test individual values ...
+        # TODO - update propvals list - could do via a preNotify call?
+        raise NotImplementedError()
+
+    def _notify(self):
+        pass
 
         
-    def __len__(self): return self._propVals.__len__()
+    def __len__(self): return self.__propVals.__len__()
     
     def __repr__(self):
-        return list([i.get() for i in self._propVals]).__repr__()
+        return list([i.get() for i in self.__propVals]).__repr__()
         
     def __str__(self):
-        return list([i.get() for i in self._propVals]).__str__()
+        return list([i.get() for i in self.__propVals]).__str__()
 
         
     def getPropertyValueList(self):
@@ -307,38 +275,7 @@ class PropertyValueList(object):
         Return (a copy of) the underlying property value list, allowing
         access to the PropertyValue objects which manage each list item.
         """
-        return list(self._propVals)
-
-        
-    def _checkMaxlen(self, change=1):
-        """
-        Test that adding the given number of items to the list would
-        not cause the list to grow beyond its maximum length.
-        """
-        if (self._maxlen is not None) and \
-           (len(self._propVals) + change > self._maxlen):
-            raise IndexError('{} must have a length of at most {}'.format(
-                self._listProp._label, self._maxlen))
-
-
-    def _checkMinlen(self, change=1):
-        """
-        Test that removing the given number of items to the list would
-        not cause the list to shrink beyond its minimum length.
-        """ 
-        if (self._minlen is not None) and \
-           (len(self._propVals) - change < self._minlen):
-            raise IndexError('{} must have a length of at least {}'.format(
-                self._listProp._label, self._minlen))
-
-            
-    def _notify(self, valid=True):
-        """
-        Called on list additions/removals. Notifies the List property via
-        its _valChanged method.
-        """
-        self._listProp._valChanged(
-            self[:], valid, self._owner, self._listProp, self._listProp._label) 
+        return list(self.__propVals)
 
         
     def __newItem(self, item):
@@ -346,18 +283,16 @@ class PropertyValueList(object):
         Called whenever a new item is added to the list.  Encapsulate the
         given item in a PropertyValue object.
         """
+
+        # TODO prenotify to validate entire list whenever an item is changed
         propVal = PropertyValue(
-            self._listType,
-            None,
-            '{}_Item'.format(self._listProp._label),
-            None,
-            self._listProp._allowInvalid or self._listType._allowInvalid)
+            self._context,
+            name='{}_Item'.format(self._name),
+            validateFunc=self._itemValidateFunc,
+            allowInvalid=self._itemAllowInvalid)
 
+        # raises error allowInvalid is False
         propVal.set(item)
-
-        #propVal.addListener(
-        #    'PropertyValueList',
-        #    lambda value, valid, *a: self._notify(valid))
         
         return propVal
 
@@ -368,8 +303,8 @@ class PropertyValueList(object):
         value is not present.
         """
 
-        for i in range(len(self._propVals)):
-            if self._propVals[i].get() == item:
+        for i in range(len(self.__propVals)):
+            if self.__propVals[i].get() == item:
                 return i
                 
         raise ValueError('{} is not present'.format(item))
@@ -380,7 +315,7 @@ class PropertyValueList(object):
         Return the value(s) at the specified index/slice.
         """
         
-        items = self._propVals.__getitem__(key)
+        items = self.__propVals.__getitem__(key)
 
         if isinstance(key, slice):
             return [i.get() for i in items]
@@ -393,7 +328,7 @@ class PropertyValueList(object):
         Returns an iterator over the values in the list.
         """
         
-        innerIter = self._propVals.__iter__()
+        innerIter = self.__propVals.__iter__()
         for i in innerIter:
             yield i.get()
 
@@ -415,7 +350,7 @@ class PropertyValueList(object):
 
         c = 0
 
-        for i in self._propVals:
+        for i in self.__propVals:
             if i.get() == item:
                 c = c + 1
                  
@@ -429,12 +364,13 @@ class PropertyValueList(object):
         maximum length.
         """
 
-        self._checkMaxlen()
+        # fail if value is bad
+        propVal = self.__newItem(item)
 
-        newVal = self.__newItem(item)
-        
-        self._propVals.append(newVal)
-        self._notify()
+        # fail if list is bad
+        self.set(self[:].append(item))
+
+        self.__propVals.append(propVal)
 
 
     def extend(self, iterable):
@@ -443,12 +379,15 @@ class PropertyValueList(object):
         list.  An IndexError is raised if an insertion would causes
         the list to grow beyond its maximum length.
         """
+        iterable = list(iterable)
 
-        toAdd = list(iterable)
-        self._checkMaxlen(len(toAdd))
+        # fail if value is bad
+        propVals = map(self.__newItem, iterable)
+
+        # fail if list is bad
+        self.set(self[:].extend(iterable))
         
-        for i in toAdd:
-            self.append(i)
+        self.__propVals.extend(propVals)
 
         
     def pop(self, index=-1):
@@ -458,12 +397,12 @@ class PropertyValueList(object):
         to shrink below its minimum length.
         """
 
-        self._checkMinlen()
-        
-        propVal = self._propVals.pop(index)
+        # fail if makes list bad
+        self.__listPropVal.set(self[:].pop(index))
+
+        propVal = self.__propVals.pop(index)
         val     = propVal.get()
-        
-        self._notify()
+
         return val
 
 
@@ -485,6 +424,11 @@ class PropertyValueList(object):
         else:
             raise ValueError('Invalid key type')
 
+        # TODO create property values before calling
+        # self.set(), so values are validated first
+
+        self.set(self[:].__setitem__(key, values))
+
         # if the number of indices specified in the key
         # is different from the number of values passed
         # in, it means that we are either adding or
@@ -493,24 +437,16 @@ class PropertyValueList(object):
         oldLen  = len(self)
         newLen  = oldLen + lenDiff
 
-        # adding items
-        if   newLen > oldLen: self._checkMaxlen( lenDiff)
-
-        # removing items
-        elif newLen < oldLen: self._checkMinlen(-lenDiff)
-
         # Replace values of existing items
         if newLen == oldLen:
             for i, v in zip(indices, values):
-                self._propVals[i].set(v)
+                self.__propVals[i].set(v)
 
         # Replace old PropertyValue objects with new ones. 
         else:
             values = [self.__newItem(v) for v in values]
             if len(values) == 1: values = values[0]
-            self._propVals.__setitem__(key, values)
-            
-        self._notify() 
+            self.__propVals.__setitem__(key, values)
 
         
     def __delitem__(self, key):
@@ -520,9 +456,6 @@ class PropertyValueList(object):
         shrink below its minimum length.
         """
 
-        if isinstance(key, slice): indices = range(*key.indices(len(self)))
-        else:                      indices = [key]
-
-        self._checkMinlen(len(indices))
-        self._propVals.__delitem__(key)
-        self._notify()
+        # fail if makes list bad
+        self.set(self[:].__delitem__(key))
+        self.__propVals.__delitem__(key)

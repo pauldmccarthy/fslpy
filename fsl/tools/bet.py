@@ -62,7 +62,7 @@ class Options(props.HasProperties):
     zCoordinate          = props.Int(default=0, minval=0)
 
 
-    def setOutputImage(self, value, valid, *a):
+    def setOutputImage(self, value, valid):
         """
         When a (valid) input image file name is selected, the output
         image is set to the same name, with a suffix of '_brain'.
@@ -73,7 +73,7 @@ class Options(props.HasProperties):
         self.outputImage = value + '_brain'
 
         
-    def clearT2Image(self, value, *a):
+    def clearT2Image(self, value, valid):
         """
         This is a bit of a hack. If the user provides an invalid value
         for the T2 image (when running bet with the -A2 flag), but then
@@ -93,9 +93,9 @@ class Options(props.HasProperties):
         """
 
         Options.inputImage.addListener(
-            self, 'setOutputImage', self.setOutputImage)
+            self, 'setOutputImage', Options.setOutputImage)
         Options.runChoice.addListener(
-            self, 'clearT2Image',   self.clearT2Image)
+            self, 'clearT2Image',   Options.clearT2Image)
 
 
     def genBetCmd(self):

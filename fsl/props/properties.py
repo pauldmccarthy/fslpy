@@ -169,9 +169,9 @@ class PropertyBase(object):
 
     def __init__(self,
                  default=None,
-                 required=False,
                  validateFunc=None,
                  preNotifyFunc=None,
+                 required=False,
                  allowInvalid=True,
                  **constraints):
         """
@@ -223,6 +223,10 @@ class PropertyBase(object):
         or their validity managed by this PropertyBase object changes, the
         listener will be notified. See PropertyValue.addListener for
         required callback function signature.
+
+        NOTE: Listeners may only be added to bound properties (i.e. properties
+        which are  bound to a specific HasProperties instance). Calling
+        addListener on an unbound property will result in a KeyError.
         """
         log.debug('Adding listener on {}: {}'.format(self._label, name))
         fullname = 'PropertyBase_{}_{}'.format(self._label, name)
@@ -243,11 +247,12 @@ class PropertyBase(object):
         Returns the value of the named constraint for the specified instance,
         or the default constraint value if instance is None.
         """
-        if instance is None:
+        instData = self._getInstanceData(instance)
+        
+        if instData is None:
             return self._defaultConstraints[constraint]
-        else:
-            return self._getInstanceData(instance).constraints.get(
-                constraint, None)
+
+        return instData.constraints.get(constraint, None)
 
 
     def setConstraint(self, instance, constraint, value):
@@ -261,10 +266,10 @@ class PropertyBase(object):
             constraint,
             value))
 
-        if instance is None:
-            self._defaultConstraints[constraint] = value
-        else:
-            self._getInstanceData(instance).constraints[constraint] = value
+        instData = self._getInstanceData(instance)
+
+        if instData is None: self._defaultConstraints[constraint] = value
+        else:                instData.constraints[    constraint] = value
 
 
     def getPropVal(self, instance):
@@ -274,76 +279,54 @@ class PropertyBase(object):
         value for the given instance.
         """
         instData = self._getInstanceData(instance)
-
         if instData is None: return None
-
         return instData.propVal
 
 
     def _getInstanceData(self, instance):
         """
         Returns the InstanceData object for the given instance, or None
-        if there is no InstanceData for the given instance.
+        if there is no InstanceData for the given instance. An InstanceData
+        object, which provides a binding between a PropertyBase object and
+        a  HasProperties instance, is created by that HasProperties
+        instance when it is created (see HasProperties.__new__).
         """
         return instance.__dict__.get(self._label, None)
 
         
-    def __newInstance(self, instance):
-        """
-        Creates an InstanceData object for the new instance, stores it
-        as an attribute of the instance (with name self._label), and
-        returns it.
-        """
-
-        propVal  = self._makePropVal(instance)
-        instData = InstanceData(instance,
-                                propVal,
-                                **self._defaultConstraints)
-
-        # Order here is important - the instanceData object must be
-        # added as an attribute of the instance before we attempt to
-        # set the property value, as this would otherwise result in
-        # an attempt to look up the instanceData object on the
-        # instance! This is also why the PropertyValue.__init__
-        # method does not allow an initial value to be set.
-        instance.__dict__[self._label] = instData
-
-        if isinstance(propVal, PropertyValueList):
-            propVal.extend(self._default)
-        else:
-            propVal.set(self._default)
-
-        return instData
-
-    
     def _makePropVal(self, instance):
         """
         Creates and returns PropertyValue object for the given instance.
         Subclasses which encapsulate multiple values should override this
-        method, and return an object which allows iteration over
-        PropertyValue instances.
+        method, and return a PropertyValueList object instead.
         """
-        return PropertyValue(self,
-                             instance,
-                             self._label,
-                             self._preNotifyFunc,
-                             self._allowInvalid)
+        return PropertyValue(instance,
+                             name=self._label,
+                             value=self._default,
+                             validateFunc=self.validate,
+                             preNotifyFunc=self._preNotifyFunc,
+                             postNotifyFunc=self._valChanged,
+                             allowInvalid=self._allowInvalid)
 
         
-    def _valChanged(self, value, valid, instance, prop, name):
+    def _valChanged(self, instance, value, valid):
         """
         This function is called by PropertyValue objects which are
         managed by this PropertyBase object. It notifies any listeners
         which have been registered to this property of any value changes.
         """
 
-        listeners = self._getInstanceData(instance).changeListeners.items()
+        instData = self._getInstanceData(instance)
+
+        if instData is None: return
+
+        listeners = instData.changeListeners.items()
 
         for (lName, func) in listeners:
-            log.debug('Notifying listener on {}: {}'.format(self._label,
-                                                            lName))
+            log.debug('Notifying listener on {}: {}'.format(
+                self._label, lName))
             try:
-                func(value, valid, instance, prop, name)
+                func(instance, value, valid)
             except Exception as e:
                 log.debug('Listener on {} ({}) raised exvception: {}'.format(
                     self._label, lName, e))
@@ -354,6 +337,12 @@ class PropertyBase(object):
         # one. So when the value of this property changes, it may have changed
         # the validity of another property, meaning that the listeners of the
         # latter property need to be notified of this change in validity.
+
+        #
+        # I don't like this here. It should be in HasProperties. Any reason
+        # against the HasProperties instance registering an 'internal' listener
+        # with every property?
+        #
         propNames, props = instance.getAllProperties()
         for prop in props:
             if prop is not self:
@@ -410,17 +399,8 @@ class PropertyBase(object):
         if the validity of the value has changed.
         """
 
-        propVals = self.getPropVal(instance)
-
-        # getPropVal should return either a
-        # PropertyValue object, or a list of them
-        if isinstance(propVals, PropertyValueList):
-            propVals = propVals.getPropertyValueList()
-        else:
-            propVals = [propVals]
-
-        for val in propVals:
-            val.revalidate()
+        propVal = self.getPropVal(instance)
+        propVal.revalidate()
 
             
     def __get__(self, instance, owner):
@@ -433,16 +413,9 @@ class PropertyBase(object):
 
         if instance is None:
             return self
-
+            
         instData = self._getInstanceData(instance)
-
-        if instData is None:
-            instData = self.__newInstance(instance)
-
-        if isinstance(instData.propVal, PropertyValueList):
-            return instData.propVal
-        else:
-            return instData.propVal.get()
+        return instData.propVal.get()
 
         
     def __set__(self, instance, value):
@@ -452,11 +425,23 @@ class PropertyBase(object):
         """
         
         propVal = self.getPropVal(instance)
+        propVal.set(value)
 
-        if isinstance(propVal, PropertyValueList):
-            propVal[:] = value
-        else:
-            propVal.set(value)
+
+        
+class ListPropertyBase(PropertyBase):
+    def __init__(self, listType, **kwargs):
+        PropertyBase.__init__(self, **kwargs)
+        self._listType = listType
+
+
+    def _makePropVal(self, instance):
+
+        pass
+
+
+    def _valChanged(self, instance, value, valid):
+        pass
 
 
 class PropertyOwner(type):
@@ -487,16 +472,25 @@ class HasProperties(object):
         of its PropertyBase properties to ensure that they are initialised.
         """
         
-        inst = super(HasProperties, cls).__new__(cls, *args, **kwargs)
-        for attr, value in inst.__class__.__dict__.items():
-            if isinstance(value, PropertyBase):
-
-                # all we need to do is access the property to force
-                # its initialisation - see PropertyBase.__get__
-                value.__get__(inst, cls)
-
-        return inst
+        instance = super(HasProperties, cls).__new__(cls, *args, **kwargs)
         
+        for propName, prop in instance.__class__.__dict__.items():
+            if not isinstance(prop, PropertyBase): continue
+
+            # Create a PropertyValue and an InstanceData
+            # object, which bind the PropertyBase object
+            # to this HasProperties instance.
+            propVal  = prop._makePropVal(instance)
+            instData = InstanceData(instance,
+                                    propVal,
+                                    **prop._defaultConstraints)
+
+            # Store the InstanceData object
+            # on the instance itself
+            instance.__dict__[propName] = instData
+
+        return instance
+
         
     def getProp(self, propName):
         """
@@ -565,7 +559,7 @@ class HasProperties(object):
         Returns True if the current value of the specified property
         is valid, False otherwise.
         """
-        # TODO not supporting lists here
+
         prop   = self.getProp(propName)
         curVal = getattr(self, propName)
         try: prop.validate(self, curVal)

@@ -330,6 +330,8 @@ class List(props.PropertyBase):
         self._listType = listType
 
         kwargs['default'] = kwargs.get('default', [])
+        kwargs['minlen']  = minlen
+        kwargs['maxlen']  = maxlen
 
         props.PropertyBase.__init__(self, **kwargs)
 
