@@ -67,8 +67,9 @@
 #
 # A HasProperties (sub)class contains a collection of PropertyBase instances
 # as class attributes. When an instance of the HasProperties class is created,
-# a PropertyValue or PropertyValueList (see properties_value.py) object is
-# created for each of the PropertyBase instances. 
+# a PropertyValue(see properties_value.py) object is created for each of the
+# PropertyBase instances (or a PropertyValueList for ListPropertyBase
+# instances).
 #
 #
 # Each of these PropertyValue instances encapsulates a single value, of any
@@ -76,12 +77,14 @@
 # instances).  Whenever a variable value changes, the PropertyValue instance
 # passes the new value to the validate method of its parent PropertyBase
 # instance to determine whether the new value is valid, and notifies any
-# registered listeners of the change. The PropertyValue object will allow its
+# registered listeners of the change. The PropertyValue object may allow its
 # underlying value to be set to something invalid, but it will tell registered
-# listeners whether the new value is valid or invalid (PropertyValue objects
+# listeners whether the new value is valid or invalid. PropertyValue objects
 # can alternately be configured to raise a ValueError on an attempt to set
 # them to an invalid value, but this has some caveats - see the
-# PropertyValue.__init__ docstring).
+# PropertyValue.__init__ docstring. Finally, to make things more confusing,
+# some PropertyBase types will configure their PropertyValue objects to
+# perform implicit casts when the property value is set.
 #
 #
 # The default validation logic of most PropertyBase objects can be configured
@@ -93,21 +96,19 @@
 # which are available on both PropertyBase and HasProperties objects.
 #
 #
-# Application code may be notified of property changes in two ways.  First, a
-# listener may be registered with a PropertyBase object, either via the
-# HasProperties.addListener instance method, or the PropertyBase.addListener
-# class method (these are equivalent).  Such a listener will be notified of
-# changes to any of the PropertyValue objects managed by the PropertyBase
-# object, and associated with the HasProperties instance. This is important
-# for List properties, as it means that a change to a single PropertyValue
-# object in a list will result in notification of all registered listeners.
-#
-#
-# If one is interested in changes to a single PropertyValue object (e.g. one
-# element of a List property), then a listener may be registered directly with
-# the PropertyValue object, via the PropertyValue.addListener instance
-# method. This listener will then only be notified of changes to that
-# PropertyValue object.
+# Application code may be notified of property changes by registering a
+# callback listener on a PropertyValue object, via the equivalent methods:
+# 
+#   - HasProperties.addListener
+#   - PropertyBase.addListener
+#   - PropertyValue.addListener
+# 
+# Such a listener will be notified of changes to the PropertyValue object
+# managed by the PropertyBase object, and associated with the HasProperties
+# instance. For ListPropertyBase properties,  a listener registered through
+# one of the above methods will be notified of changes to the entire list.
+# Alternately, a listener may be registered with individual items contained
+# in the list (see PropertyValueList.getPropertyValueList).
 #
 #
 # author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -122,16 +123,14 @@ log = logging.getLogger(__name__)
 
 class InstanceData(object):
     """
-    An InstanceData object is created for every instance which has
-    one of these PropertyBase objects as a class attribute. It stores
-    references to the property value(s), listener callback functions
-    which are notified whenever the property value changes, and the
-    property constraints used to test validity.
+    An InstanceData object is created for every PropertyBase object of
+    a HasProperties instance. It stores references to the property value(s)
+    and the instance-specific property constraints used to test validity.
     """
     def __init__(self, instance, propVal, **constraints):
-        self.instance        = instance
-        self.propVal         = propVal
-        self.constraints     = constraints.copy()
+        self.instance    = instance
+        self.propVal     = propVal
+        self.constraints = constraints.copy()
 
 
 class PropertyBase(object):
@@ -155,8 +154,8 @@ class PropertyBase(object):
         validation rules, ensuring that the PropertyBase.validate
         method is called first.
 
-      - Override _cast for implicit casting/conversion logic (see
-        properties_types.Boolean for an example).
+      - Override the cast method for implicit casting/conversion logic
+        (see properties_types.Boolean for an example).
     """
 
     def __init__(self,
@@ -198,7 +197,7 @@ class PropertyBase(object):
                            validity.
         """
 
-        # The _label attribute is set byt the PropertyOwner
+        # The _label attribute is set by the PropertyOwner
         # metaclass when a new HasProperties class is defined
         self._label              = None
         self._default            = default
@@ -286,7 +285,7 @@ class PropertyBase(object):
         return PropertyValue(instance,
                              name=self._label,
                              value=self._default,
-                             castFunc=self._cast,
+                             castFunc=self.cast,
                              validateFunc=self.validate,
                              preNotifyFunc=self._preNotifyFunc,
                              postNotifyFunc=self._valChanged,
@@ -365,6 +364,16 @@ class PropertyBase(object):
                 raise ValueError('Value does not meet custom validation rules')
 
         
+    def cast(self, value):
+        """
+        This method is called when a value is assigned to this PropertyBase
+        object through a HasProperties attribute access. The default
+        implementaton just returns the given value. Subclasses may override
+        this method to perform any required implicit casting rules.
+        """
+        return value
+ 
+        
     def revalidate(self, instance):
         """
         Forces validation of this property value, for the current instance.
@@ -380,7 +389,7 @@ class PropertyBase(object):
         """
         If called on the HasProperties class, and not on an instance,
         returns this PropertyBase object. Otherwise, returns the value
-        contained in the PropertyValue variable which is attached
+        contained in the PropertyValue object which is attached
         to the instance.
         """
 
@@ -391,10 +400,6 @@ class PropertyBase(object):
         return instData.propVal.get()
 
         
-    def _cast(self, value):
-        return value
-
-        
     def __set__(self, instance, value):
         """
         Set the value of this property, as attached to the given
@@ -402,7 +407,7 @@ class PropertyBase(object):
         """
         
         propVal = self.getPropVal(instance)
-        value   = self._cast(value)
+        value   = self.cast(value)
         propVal.set(value)
 
 
@@ -413,12 +418,17 @@ class ListPropertyBase(PropertyBase):
     
     def __init__(self, listType, **kwargs):
         """
+        Parameters:
+          - listType: An unbound PropertyBase instance, defining the
+                      type of value allowed in the list.
         """
         PropertyBase.__init__(self, **kwargs)
         self._listType = listType
 
     def _makePropVal(self, instance):
         """
+        Creates and returns a PropertyValueList object to be associated
+        with the given HasProperties instance.
         """
         return PropertyValueList(
             instance,
@@ -431,9 +441,15 @@ class ListPropertyBase(PropertyBase):
             listAllowInvalid=self._allowInvalid,
             postNotifyFunc=self._valChanged)
 
+        
     def getPropValList(self, instance):
+        """
+        Returns the list of PropertyValue objects which represent
+        the items stored in this list.
+        """
         return self.getPropVal(instance).getPropertyValueList()
 
+        
 class PropertyOwner(type):
     """
     Metaclass for classes which contain PropertyBase objects.  

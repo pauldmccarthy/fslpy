@@ -24,7 +24,7 @@ class Boolean(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def _cast(self, value):
+    def cast(self, value):
         return bool(value)
 
 
@@ -86,7 +86,7 @@ class Int(Number):
         Number.__init__(self, **kwargs)
 
         
-    def _cast(self, value):
+    def cast(self, value):
         return int(value)
         
 
@@ -104,7 +104,7 @@ class Double(Number):
         Number.__init__(self, **kwargs)
 
 
-    def _cast(self, value):
+    def cast(self, value):
         return float(value)
         
 
@@ -138,7 +138,7 @@ class String(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def _cast(self, value):
+    def cast(self, value):
         
         value = str(value)
         if value == '': value = None
@@ -284,10 +284,6 @@ class List(props.ListPropertyBase):
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
     PropertyValueList class, defined in properties_value.py
-
-    This class is a bit different from the other PropertyBase classes, in
-    that the validation logic is built into the ListWrapper class, rather
-    than this class. 
     """
     
     def __init__(self, listType, minlen=None, maxlen=None, **kwargs):
@@ -314,6 +310,10 @@ class List(props.ListPropertyBase):
 
 
     def validate(self, instance, value):
+        """
+        Checks that the given value (which should be a list) meets the
+        minlen/maxlen constraints. Raises a ValueError if it does not.
+        """
 
         minlen = self.getConstraint(instance, 'minlen')
         maxlen = self.getConstraint(instance, 'maxlen')
@@ -355,7 +355,7 @@ class ColourMap(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def _cast(self, value):
+    def cast(self, value):
         """
         If the provided value is a string, an attempt is made
         to convert it to a colour map, via the
