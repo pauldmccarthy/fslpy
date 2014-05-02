@@ -111,11 +111,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
         is changed. Updates the property value.
         """
 
-        # TODO remove property value listener when GUI object is destroyed
-        try:
-            value = guiObj.GetValue()
-        except:
-            raise
+        value = guiObj.GetValue()
 
         if propVal.get() == value: return
 
@@ -127,6 +123,11 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
     # set up the callback functions
     for ev in evType: guiObj.Bind(ev, _propUpdate)
     propVal.addListener(listenerName, _guiUpdate)
+
+    guiObj.Bind(wx.EVT_WINDOW_DESTROY,
+                lambda ev: propVal.removeListener(listenerName))
+
+    
 
 
 def _setupValidation(widget, hasProps, propObj, propVal):
@@ -160,9 +161,13 @@ def _setupValidation(widget, hasProps, propObj, propVal):
     # associated with multiple variables, and we don't want
     # the widgets associated with those other variables to
     # change background.
-    propVal.addListener(
-        'widgets_py_ChangeBG_{}'.format(id(widget)),
-        _changeBGOnValidate)
+    lName = 'widgets_py_ChangeBG_{}'.format(id(widget))
+    propVal.addListener(lName, _changeBGOnValidate)
+
+    # And ensure that the listener is
+    # removed when the widget is destroyed
+    widget.Bind(wx.EVT_WINDOW_DESTROY,
+                lambda ev: propVal.removeListener(lName))
 
     # Validate the initial property value,
     # so the background is appropriately set
