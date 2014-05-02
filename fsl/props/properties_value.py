@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# properties_value.py -
+# properties_value.py - Definitions of the PropertyValue and
+#                       PropertyValueList classes.
+#
+# These definitions are a part of properties.py.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -69,7 +72,8 @@ class PropertyValue(object):
 
         """
         
-        if name is None: name = 'PropertyValue_{}'.format(id(self))
+        if name     is     None: name  = 'PropertyValue_{}'.format(id(self))
+        if castFunc is not None: value = castFunc(value)
         
         self._context         = context
         self._validate        = validateFunc
@@ -134,7 +138,8 @@ class PropertyValue(object):
         # Check to see if the new value is valid
         valid = False
         try:
-            self._validate(self._context, newValue)
+            if self._validate is not None:
+                self._validate(self._context, newValue)
             valid = True
 
         except ValueError as e:
@@ -226,15 +231,12 @@ class PropertyValueList(PropertyValue):
     registered on individual items (accessible via the
     getPropertyValueList method), or on the entire list.
 
-    This code hurts my head, as its a little bit complicated. The value
+    This code hurts my head, as it's a bit complicated. The __value
     encapsulated by this PropertyValue object (a PropertyValueList is
     also a PropertyValue) is just the list of raw values.  Alongside this,
     a separate list is maintained, which contains PropertyValue objects.
     Whenever a list-modifying operation occurs on this PropertyValueList
     (which also acts a bit like a Python list), both lists are updated.
-
-    Modifications of the list of PropertyValue objecs occurs exclusively
-    in the __setitem__ method.
     """
 
     def __init__(self,
@@ -253,15 +255,33 @@ class PropertyValueList(PropertyValue):
         """
         if name is None: name = 'PropertyValueList_{}'.format(id(self))
 
+        # On list modifications, validate both the
+        # list, and all of the items separately
+        def validateFunc(self, newValues):
+            if listValidateFunc is not None:
+                listValidateFunc(context, newValues)
+            if itemValidateFunc is not None:
+                for value in newValues:
+                    itemValidateFunc(context, value)
+
+        # Cast each item separately
+        def castFunc(values):
+            if itemCastFunc is not None and values is not None:
+                return map(itemCastFunc, values)
+            return values
+
         PropertyValue.__init__(
             self,
             context,
             name=name,
-            validateFunc=listValidateFunc,
+            castFunc=castFunc,
+            validateFunc=validateFunc,
             allowInvalid=listAllowInvalid,
             preNotifyFunc=preNotifyFunc,
             postNotifyFunc=postNotifyFunc)
 
+        # These attributes are passed to the PropertyValue
+        # constructor whenever a new item is added to the list
         self._itemCastFunc     = itemCastFunc
         self._itemValidateFunc = itemValidateFunc
         self._itemAllowInvalid = itemAllowInvalid
@@ -269,46 +289,49 @@ class PropertyValueList(PropertyValue):
         # The list of PropertyValue objects.
         self.__propVals = []
 
+        # initialise the list
         if values is not None:
             self.set(values)
 
-
-    def _notify(self): pass
-
-    def get(self):
-        return self
-        
-    def set(self, newValue):
-        """
-        """
-
-        # Update the list of PropertyValue objects
-        # (this triggers a call to __setitem__)
-        self[:] = newValue
-
-        # Validate the list as a whole
-        PropertyValue.set(self, self[:])
- 
-        # Notify listeners on this PropertyValueList object
-        PropertyValue._notify(self)
-
         
     def getPropertyValueList(self):
-
         """
         Return (a copy of) the underlying property value list, allowing
         access to the PropertyValue objects which manage each list item.
         """
         return list(self.__propVals)
+ 
+        
+    def get(self):
+        """
+        Overrides PropertyValue.get(). Returns this PropertyValueList
+        object.
+        """
+        return self
 
-        
-    def __len__(self): return self.__propVals.__len__()
-    
-    def __repr__(self):
-        return list([i.get() for i in self.__propVals]).__repr__()
-        
-    def __str__(self):
-        return list([i.get() for i in self.__propVals]).__str__()
+
+    def set(self, newValues, recreate=True):
+        """
+        Overrides PropertyValue.set(). Sets the values stored in this
+        PropertyValue list.  If the recreate parameter is True (default)
+        all of the PropertyValue objects managed by this PVL object are
+        discarded, and new ones recreated. This flag is intended for
+        internal use only.
+        """
+
+        PropertyValue.set(self, newValues)
+
+        if recreate: 
+            self.__propVals = map(self.__newItem, newValues)
+
+
+    def revalidate(self):
+        """
+        Overrides PropertyValue.revalidate(). Revalidates the values in
+        this list, ensuring that the corresponding PropertyValue objects
+        are not recreated.
+        """
+        self.set(self.get(), False)
 
         
     def __newItem(self, item):
@@ -317,27 +340,33 @@ class PropertyValueList(PropertyValue):
         given item in a PropertyValue object.
         """
 
-        # TODO prenotify to validate entire list
-        # whenever an item is changed? This would
-        # be required for a list validation function
-        # which depends on the values of the list,
-        # in addition to its length. And without it,
-        # a list could get into the state where the
-        # list as a whole is valid, even if individual
-        # property values contained within are not.
+        # The only interesting thing here is the postNotifyFunc -
+        # whenever a PropertyValue in this list changes, the entire
+        # list is revalidated. This is primarily to ensure that
+        # list-listeners are notified of changes to individual list
+        # elements.
         propVal = PropertyValue(
             self._context,
             name='{}_Item'.format(self._name),
+            value=item,
             castFunc=self._itemCastFunc,
+            postNotifyFunc=lambda *a: self.revalidate(),
             validateFunc=self._itemValidateFunc,
             allowInvalid=self._itemAllowInvalid)
-
-        # Explicitly set the initial value  so, if
-        # itemAllowInvalid is False, a ValueError
-        # will be raised
-        propVal.set(item)
         
         return propVal
+
+        
+    def __len__(self):
+        return self.__propVals.__len__()
+
+        
+    def __repr__(self):
+        return list([i.get() for i in self.__propVals]).__repr__()
+
+        
+    def __str__(self):
+        return list([i.get() for i in self.__propVals]).__str__()
 
         
     def index(self, item):
@@ -406,9 +435,13 @@ class PropertyValueList(PropertyValue):
         raised if the insertion would causes the list to grow beyond its
         maximum length.
         """
+
         listVals = self[:]
         listVals.append(item)
-        self.set(listVals)
+        self.set(listVals, False)
+        
+        propVal = self.__newItem(item)
+        self.__propVals.append(propVal)
 
 
     def extend(self, iterable):
@@ -417,7 +450,12 @@ class PropertyValueList(PropertyValue):
         list.  An IndexError is raised if an insertion would causes
         the list to grow beyond its maximum length.
         """
-        self.set(self[:].extend(iterable))
+        listVals = self[:]
+        listVals.extend(iterable)
+        self.set(listVals, False) 
+        
+        propVals = [self.__newItem(item) for item in iterable]
+        self.__propVals.extend(propVals)
 
         
     def pop(self, index=-1):
@@ -427,50 +465,30 @@ class PropertyValueList(PropertyValue):
         to shrink below its minimum length.
         """
         listVals = self[:]
-        val = listVals.pop(index)
-        self.set(listVals)
-        return val
+        listVals.pop(index)
+        self.set(listVals, False)
+
+        propVal = self.__propVals.pop(index)
+        return propVal.get()
 
 
-    def __setitem__(self, key, values):
+    def __setitem__(self, key, value):
         """
         Sets the value(s) of the list at the specified index/slice.
         """
 
         if isinstance(key, slice):
-            if (key.step is not None) and (key.step > 1):
-                raise ValueError(
-                    'PropertyValueList does not support extended slices')
-            indices = range(*key.indices(len(self)))
-
-        elif isinstance(key, int):
-            indices = [key]
-            values  = [values]
+            raise ValueError(
+                'PropertyValueList does not support extended slices')
 
         else:
             raise ValueError('Invalid key type')
 
-        # if the number of indices specified in the key
-        # is different from the number of values passed
-        # in, it means that we are either adding or
-        # removing items from the list
-        lenDiff = len(values) - len(indices)
-        oldLen  = len(self)
-        newLen  = oldLen + lenDiff
-
-        # Replace values of existing items
-        if newLen == oldLen:
-            for i, v in zip(indices, values):
-
-                # fail if value is bad
-                self.__propVals[i].set(v)
-
-        # Replace old PropertyValue objects with new ones. 
-        else:
-
-            # fail if values are bad
-            propVals = [self.__newItem(v) for v in values]
-            self.__propVals.__setitem__(key, propVals)
+        listVals = self[:]
+        listVals[key] = value
+        self.set(listVals, False)
+        
+        self.__propVals[key].set(value)
 
         
     def __delitem__(self, key):
@@ -480,5 +498,7 @@ class PropertyValueList(PropertyValue):
         shrink below its minimum length.
         """
         listVals = self[:]
-        listVals.__delitem(key)
-        self.set(listVals)
+        listVals.__delitem__(key)
+        self.set(listVals, False)
+
+        self.__propVals.__delitem__(key)

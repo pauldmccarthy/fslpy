@@ -8,13 +8,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import sys
-import os
-
 import wx
 
 import widgets
-
 
 def _pasteDataDialog(parent, hasProps, propObj):
     """
@@ -28,13 +24,18 @@ def _pasteDataDialog(parent, hasProps, propObj):
       - propObj:  The props.List property object
     """
 
-    listObj  = getattr(hasProps, propObj.label)
+    listObj  = getattr(hasProps, propObj._label)
     initText = '\n'.join([str(l).strip() for l in listObj])
  
-    frame = wx.Frame(parent)
+    frame = wx.Dialog(parent,
+                      style=wx.DEFAULT_DIALOG_STYLE |
+                            wx.RESIZE_BORDER)
     panel = wx.Panel(frame)
-    text  = wx.TextCtrl(panel, value=text,
-                        style=wx.MULTILINE | wx.VSCROLL | wx.HSCROLL)
+    text  = wx.TextCtrl(panel, value=initText,
+                        style=wx.TE_MULTILINE | 
+                              wx.TE_DONTWRAP  | 
+                              wx.VSCROLL      | 
+                              wx.HSCROLL)
 
     # ok/cancel buttons
     okButton     = wx.Button(panel, label="Ok")
@@ -44,11 +45,13 @@ def _pasteDataDialog(parent, hasProps, propObj):
 
     panel.SetSizer(sizer)
 
-    sizer.Add(text,         pos=(0,0), span=(1,2), flag=wx.EXPAND)
-    sizer.Add(okButton,     pos=(1,0), span=(1,1), flag=wx.EXPAND)
-    sizer.Add(cancelButton, pos=(1,1), span=(1,1), flag=wx.EXPAND)
+    sizer.Add(text,         pos=(0, 0), span=(1, 2), flag=wx.EXPAND)
+    sizer.Add(okButton,     pos=(1, 0), span=(1, 1), flag=wx.EXPAND)
+    sizer.Add(cancelButton, pos=(1, 1), span=(1, 1), flag=wx.EXPAND)
 
     sizer.AddGrowableRow(0)
+    sizer.AddGrowableCol(0)
+    sizer.AddGrowableCol(1)
 
     def pasteIntoList():
         """
@@ -61,11 +64,14 @@ def _pasteDataDialog(parent, hasProps, propObj):
         listData = listData.split('\n')
         listData = [s.strip() for s in listData]
 
-        setattr(hasProps, propObj.label, listData)
+        setattr(hasProps, propObj._label, listData)
         frame.Close()
 
     okButton    .Bind(wx.EVT_BUTTON, lambda e: pasteIntoList())
     cancelButton.Bind(wx.EVT_BUTTON, lambda e: frame.Close())
+
+    panel.Fit()
+    panel.Layout()
 
     frame.ShowModal()
 
@@ -76,9 +82,9 @@ def _editListDialog(parent, hasProps, propObj):
     which allows the user to adjust the number of items in the list.
     """
 
-    # listObj is a properties.ListWrapper object
+    # listObj is a properties_values.PropertyValueList object
     listObj  = getattr(hasProps, propObj._label)
-    listType = propObj.listType
+    listType = propObj._listType
 
     # Get a reference to a function in the widgets module,
     # which can make individual widgets for each list item
@@ -94,34 +100,48 @@ def _editListDialog(parent, hasProps, propObj):
     minval = propObj.getConstraint(hasProps, 'minlen')
     maxval = propObj.getConstraint(hasProps, 'maxlen')
 
-    if minval is None: minval = 1
+    if minval is None: minval = 0
     if maxval is None: maxval = 2 ** 31 - 1
 
-    frame       = wx.Dialog(parent)
-    panel       = wx.ScrolledWindow(frame)
-    okButton    = wx.Button(frame, label='Ok')
-    numRowsBox  = wx.SpinCtrl(frame,
-                              min=minval,
-                              max=maxval,
-                              initial=len(listObj))
+    frame        = wx.Dialog(parent,
+                             style=wx.DEFAULT_DIALOG_STYLE |
+                                   wx.RESIZE_BORDER)
+    numRowsPanel = wx.Panel(frame)
+    entryPanel   = wx.ScrolledWindow(frame)
+    okButton     = wx.Button(frame, label='Ok')
+
+    # Spin box (and label) to adjust the
+    # number of entries in the list
+    numRowsSizer = wx.BoxSizer(wx.HORIZONTAL)
+    numRowsPanel.SetSizer(numRowsSizer)
+    
+    numRowsLabel = wx.StaticText(numRowsPanel, label='Number of entries')
+    numRowsCtrl  = wx.SpinCtrl(numRowsPanel,
+                               min=minval,
+                               max=maxval,
+                               initial=len(listObj))
+
+    numRowsSizer.Add(numRowsLabel, flag=wx.EXPAND, proportion=1)
+    numRowsSizer.Add(numRowsCtrl,  flag=wx.EXPAND, proportion=1)
+    
     listWidgets = []
 
     # Make a widget for every element in the list
-    for i in range(len(listObj)):
-        propVal = propObj.getPropVal(hasProps, i)
-        widget  = makeFunc(panel, hasProps, listType, propVal)
+    propVals = listObj.getPropertyValueList()
+    for propVal in propVals:
+        widget  = makeFunc(entryPanel, hasProps, listType, propVal)
         listWidgets.append(widget)
 
     frameSizer = wx.BoxSizer(wx.VERTICAL)
     frame.SetSizer(frameSizer)
-    frameSizer.Add(numRowsBox, flag=wx.EXPAND)
-    frameSizer.Add(panel,      flag=wx.EXPAND, proportion=1)
-    frameSizer.Add(okButton,   flag=wx.EXPAND)
+    frameSizer.Add(numRowsPanel, flag=wx.EXPAND)
+    frameSizer.Add(entryPanel,   flag=wx.EXPAND, proportion=1)
+    frameSizer.Add(okButton,     flag=wx.EXPAND)
 
-    panelSizer = wx.BoxSizer(wx.VERTICAL)
-    panel.SetSizer(panelSizer)
-    for i in range(len(listWidgets)):
-        panelSizer.Add(listWidgets[i], flag=wx.EXPAND)
+    entryPanelSizer = wx.BoxSizer(wx.VERTICAL)
+    entryPanel.SetSizer(entryPanelSizer)
+    for lw in listWidgets:
+        entryPanelSizer.Add(lw, flag=wx.EXPAND)
 
 
     def changeNumRows(*args):
@@ -131,20 +151,20 @@ def _editListDialog(parent, hasProps, propObj):
         list, and corresponding widget from the window.
         """
 
-        oldLen = len(listObj)
-        newLen = numRowsBox.GetValue()
+        oldLen   = len(listObj)
+        newLen   = numRowsCtrl.GetValue()
 
         # add rows
         while oldLen < newLen:
 
             # add a new element to the list
             listObj.append(listType._default)
-            propVal = propObj.getPropVal(hasProps, -1)
+            propVal = listObj.getPropertyValueList()[-1]
 
             # add a widget
-            widg = makeFunc(frame, hasProps, listType, propVal)
+            widg = makeFunc(entryPanel, hasProps, listType, propVal)
             listWidgets.append(widg)
-            panelSizer.Add(widg, flag=wx.EXPAND)
+            entryPanelSizer.Add(widg, flag=wx.EXPAND)
  
             oldLen = oldLen + 1
 
@@ -156,13 +176,17 @@ def _editListDialog(parent, hasProps, propObj):
 
             # kill the widget
             widg = listWidgets.pop()
+
+            entryPanelSizer.Remove(widg)
+            
             widg.Destroy()
 
-            # TODO Remove widget listener from property value ...
-
             oldLen = oldLen - 1
+        entryPanel.Layout()
+        entryPanel.Refresh()
+        
 
-    numRowsBox.Bind(wx.EVT_SPINCTRL, changeNumRows)
+    numRowsCtrl.Bind(wx.EVT_SPINCTRL, changeNumRows)
     okButton.Bind(wx.EVT_BUTTON, lambda e: frame.Close())
 
     frame.ShowModal()
