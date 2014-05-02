@@ -8,8 +8,6 @@
 
 import os.path as op
 
-import numbers
-
 import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
 
@@ -26,11 +24,8 @@ class Boolean(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def validate(self, instance, value):
-        props.PropertyBase.validate(self, instance, value)
-
-        if not isinstance(value, bool):
-            raise ValueError('Must be a boolean')
+    def _cast(self, value):
+        return bool(value)
 
 
 class Number(props.PropertyBase):
@@ -67,9 +62,6 @@ class Number(props.PropertyBase):
     def validate(self, instance, value):
         
         props.PropertyBase.validate(self, instance, value)
-
-        if not isinstance(value, numbers.Number):
-            raise ValueError('Must be a number')
         
         minval = self.getConstraint(instance, 'minval')
         maxval = self.getConstraint(instance, 'maxval')
@@ -94,12 +86,8 @@ class Int(Number):
         Number.__init__(self, **kwargs)
 
         
-    def validate(self, instance, value):
-
-        Number.validate(self, instance, value)
-
-        if not isinstance(value, numbers.Integral):
-            raise ValueError('Must be an integer')
+    def _cast(self, value):
+        return int(value)
         
 
 class Double(Number):
@@ -115,13 +103,9 @@ class Double(Number):
         """
         Number.__init__(self, **kwargs)
 
-        
-    def validate(self, instance, value):
-        
-        Number.validate(self, instance, value)
-        
-        if not isinstance(value, numbers.Real):
-            raise ValueError('Must be a floating point number') 
+
+    def _cast(self, value):
+        return float(value)
         
 
 class Percentage(Double):
@@ -153,17 +137,12 @@ class String(props.PropertyBase):
         kwargs['maxlen']  = maxlen
         props.PropertyBase.__init__(self, **kwargs)
 
+
+    def _cast(self, value):
         
-    def __set__(self, instance, value):
-        
+        value = str(value)
         if value == '': value = None
-        props.PropertyBase.__set__(self, instance, value)
-
-    def __get__(self, instance, owner):
-
-        val = props.PropertyBase.__get__(self, instance, owner)
-        if val == '': val = None
-        return val
+        return value
 
         
     def validate(self, instance, value):
@@ -300,7 +279,7 @@ class FilePath(String):
             raise ValueError('Must be a directory ({})'.format(value))
 
 
-class List(props.PropertyBase):
+class List(props.ListPropertyBase):
     """
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
@@ -327,27 +306,12 @@ class List(props.PropertyBase):
             raise ValueError(
                 'A list type (a PropertyBase instance) must be specified')
 
-        self._listType = listType
-
         kwargs['default'] = kwargs.get('default', [])
         kwargs['minlen']  = minlen
         kwargs['maxlen']  = maxlen
 
-        props.PropertyBase.__init__(self, **kwargs)
+        props.ListPropertyBase.__init__(self, listType,  **kwargs)
 
-        
-    def _makePropVal(self, instance):
-        """
-        Creates and returns a PropertyValueList object.
-        """
-        minlen = self.getConstraint(instance, 'minlen')
-        maxlen = self.getConstraint(instance, 'maxlen') 
-        instval = props.PropertyValueList(instance,
-                                          self,
-                                          listType=self._listType,
-                                          minlen=minlen,
-                                          maxlen=maxlen)
-        return instval
 
     def validate(self, instance, value):
 
@@ -355,12 +319,9 @@ class List(props.PropertyBase):
         maxlen = self.getConstraint(instance, 'maxlen')
 
         if minlen is not None and len(value) < minlen:
-            raise ValueError('')
+            raise ValueError('Must have length at least {}'.format(minlen))
         if maxlen is not None and len(value) > maxlen:
-            raise ValueError('')
-
-        for v in value:
-            self._listType.validate(None, v)
+            raise ValueError('Must have length at most {}'.format(maxlen))
      
 
 # TODO This might be better off as a subclass of Choice. Choice
@@ -394,19 +355,14 @@ class ColourMap(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def __set__(self, instance, value):
+    def _cast(self, value):
         """
-        Set the current ColourMap property value. If a string
-        is given, an attempt is made to convert it to a colour map,
-        via the matplotlib.cm.get_cmap function.
+        If the provided value is a string, an attempt is made
+        to convert it to a colour map, via the
+        matplotlib.cm.get_cmap function.
         """
 
         if isinstance(value, str):
             value = mplcm.get_cmap(value)
             
-        elif not isinstance(value, mplcolors.Colormap):
-            raise ValueError(
-                'Invalid  ColourMap value: '.format(
-                    value.__class__.__name__))
-
-        props.PropertyBase.__set__(self, instance, value)
+        return value
