@@ -116,7 +116,6 @@
 
 import logging
 
-from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 

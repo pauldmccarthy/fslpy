@@ -139,8 +139,10 @@ class String(props.PropertyBase):
 
 
     def cast(self, value):
+
+        if value is None: value = ''
+        else:             value = str(value)
         
-        value = str(value)
         if value == '': value = None
         return value
 
