@@ -126,7 +126,7 @@ def fslDirWarning(frame, toolName, fslEnvActive):
     if fslEnvActive: return
 
     msg = 'The FSLDIR environment variable is not set - '\
-          'you will not be able to run {}.'.format(toolName)
+          '{} may not behave correctly.'.format(toolName)
 
     wx.MessageDialog(
         frame,
