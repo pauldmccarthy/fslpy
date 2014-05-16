@@ -8,6 +8,7 @@
 
 import sys
 import logging
+import traceback
 import collections
 
 import os.path            as op
@@ -392,3 +393,4 @@ class ImageList(object):
                 listener(self)
             except Exception as e:
                 log.debug('Listener raised exception: {}'.format(e.message))
+                traceback.print_exc()

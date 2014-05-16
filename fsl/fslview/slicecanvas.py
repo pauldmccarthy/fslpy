@@ -20,6 +20,7 @@ import OpenGL.arrays.vbo as vbo
 # for functionality which is standard in 3.2.
 import OpenGL.GL.ARB.instanced_arrays as arbia
 import OpenGL.GL.ARB.draw_instanced   as arbdi
+import OpenGL.GL.ARB.texture_rg       as arbrg
 
 import fsl.data.fslimage as fslimage
 
@@ -57,11 +58,6 @@ class GLImageData(object):
 
         self.image          = image
         self.canvas         = canvas
-        
-        self.imageBuffer    = None
-        self.colourBuffer   = None
-        self.positionBuffer = None
-        self.geomBuffer     = None
 
         # Here, x,y, and z refer to screen
         # coordinates, not image coordinates:
@@ -78,13 +74,6 @@ class GLImageData(object):
         self.xlen = image.pixdim[canvas.xax]
         self.ylen = image.pixdim[canvas.yax]
         self.zlen = image.pixdim[canvas.zax]
-
-        dsize = image.data.dtype.itemsize
-
-        # byte offset along each axis
-        self.xstride = image.data.strides[canvas.xax] / dsize
-        self.ystride = image.data.strides[canvas.yax] / dsize
-        self.zstride = image.data.strides[canvas.zax] / dsize
 
         # Maximum number of colours used to draw image data
         self.colourResolution = 256
@@ -131,49 +120,50 @@ class GLImageData(object):
         # float32
         positionData = image.voxToWorld(positionData, axes=(xax, yax))
         positionData = np.array(positionData, dtype=np.float32)
+        positionData = positionData.ravel('C')
 
-        # Define GL buffers for the geometry and position
-        # data containing the data we just created above
-        geomData       = geomData    .ravel(order='C')
-        positionData   = positionData.ravel(order='C')
-        geomBuffer     = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
-        positionBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+        # The image buffers, containing the image data 
+        imageBuffers    = self.initImageBuffer()
+        screenPosBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
+        geomBuffer      = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
 
-        # The image buffer, containing the image data itself
-        imageBuffer = self.initImageBuffer()
-
-        # The colour buffer, containing a map of
-        # colours (stored on the GPU as a 1D texture)
-        colourBuffer = gl.glGenTextures(1)
-
-        self.geomBuffer     = geomBuffer
-        self.positionBuffer = positionBuffer
-        self.imageBuffer    = imageBuffer
-        self.colourBuffer   = colourBuffer
+        self.dataBuffer      = imageBuffers['dataBuffer']
+        self.voxXBuffer      = imageBuffers['xBuffer']
+        self.voxYBuffer      = imageBuffers['yBuffer']
+        self.voxZBuffer      = imageBuffers['zBuffer']
+        self.screenPosBuffer = screenPosBuffer
+        self.geomBuffer      = geomBuffer
 
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self.configDisplayListeners()
 
-        # Create the colour buffer for the given image
-        self.updateColourBuffer()
-
         
     def initImageBuffer(self):
         """
-        Initialises the OpenGL buffer used to store the data for the given
-        image. The buffer is stored as an attribute of the image and, if it
+        Initialises the OpenGL buffers used to store the data for the given
+        image. The buffers are stored as an attribute of the image and, if it
         has already been created (e.g. by another SliceCanvas object), the
-        existing buffer is returned.
+        existing buffer is returned. The value stored on the image, and
+        the value returned by this method, is a dictionary with the following
+        keys:
+          - dataBuffer:
+          - xBuffer:
+          - yBuffer:
+          - zBuffer:
         """
 
         image = self.image
 
-        try:    imageBuffer = image.getAttribute('glBuffer')
+        try:    imageBuffer = image.getAttribute('glBuffers')
         except: imageBuffer = None
 
         if imageBuffer is not None:
             return imageBuffer
+
+        xlen = image.shape[0]
+        ylen = image.shape[1]
+        zlen = image.shape[2]
 
         # The image data is normalised to lie
         # between 0 and 255, and cast to uint8
@@ -186,12 +176,61 @@ class GLImageData(object):
         # so the data, as stored on the GPU, has its first
         # dimension as the fastest changing.
         imageData = imageData.ravel(order='F')
-        imageBuffer = vbo.VBO(imageData, gl.GL_STATIC_DRAW)
+
+        # Image data is stored on the GPU as a 3D texture
+        dataBuffer = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE) 
+        
+        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                        0,
+                        arbrg.GL_R8,
+                        xlen,
+                        ylen,
+                        zlen,
+                        0,
+                        gl.GL_RED,
+                        gl.GL_UNSIGNED_BYTE,
+                        imageData)
+
+        # x/y/z coordinates are stored as
+        # VBO arrays in the range [0, 1]
+        xstep = 1.0 / xlen
+        ystep = 1.0 / ylen
+        zstep = 1.0 / zlen
+        
+        xData   = np.arange(0.0+xstep/2, 1.0+xstep/2, 1.0 / xlen, dtype=np.float32)
+        yData   = np.arange(0.0+ystep/2, 1.0+ystep/2, 1.0 / ylen, dtype=np.float32)
+        zData   = np.arange(0.0+zstep/2, 1.0+zstep/2, 1.0 / zlen, dtype=np.float32)
+        xBuffer = vbo.VBO(xData, gl.GL_STATIC_DRAW)
+        yBuffer = vbo.VBO(yData, gl.GL_STATIC_DRAW)
+        zBuffer = vbo.VBO(zData, gl.GL_STATIC_DRAW)
+
+
+        print "Data buffer"
+        print imageData
+        print "X buffer"
+        print xData
+        print "Y buffer"
+        print yData
+        print "Z buffer"
+        print zData 
+
+        imageBuffer                    = {}
+        imageBuffer['dataBuffer']      = dataBuffer
+        imageBuffer['xBuffer']         = xBuffer
+        imageBuffer['yBuffer']         = yBuffer
+        imageBuffer['zBuffer']         = zBuffer
 
         # And added as an attribute of the image, so
         # other things which want to render the image
-        # don't need to create another buffer.
-        image.setAttribute('glBuffer', imageBuffer)
+        # don't need to recreate all of those buffers.
+        image.setAttribute('glBuffers', imageBuffer)
 
         return imageBuffer
 
@@ -232,63 +271,6 @@ class GLImageData(object):
             display.addListener(prop, lnrName.format(prop), colourUpdateNeeded)
 
 
-    def updateColourBuffer(self):
-        """
-        Regenerates the colour buffer used to colour image voxels.
-        """
-
-        display      = self.image.display
-        colourBuffer = self.colourBuffer
-
-        # Here we are creating a range of values to be passed
-        # to the matplotlib.colors.Colormap instance of the
-        # image display. We scale this range such that data
-        # values which lie outside the configured display range
-        # will map to values below 0.0 or above 1.0. It is
-        # assumed that the Colormap instance is configured to
-        # generate appropriate colours for these out-of-range
-        # values.
-        
-        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
-        normalStep  = 1.0 / (self.colourResolution - 1) 
-
-        normMin = (display.displayMin - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
-        normMax = (display.displayMax - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
-
-        newStep  = normalStep / (normMax - normMin)
-        newRange = (normalRange - normMin) * (newStep / normalStep)
-
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
-        colourmap = display.cmap(newRange)
-        
-        # The colour data is stored on
-        # the GPU as 8 bit rgb triplets
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel(order='C')
-
-        # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_1D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE) 
-        
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        self.colourResolution,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap)
-        
 
 # The vertex shader positions and colours a single vertex.
 vertex_shader = """
@@ -297,14 +279,19 @@ vertex_shader = """
 /* Opacity - constant for a whole image */
 uniform float alpha;
 
+/* image data texture */
+uniform sampler3D dataBuffer;
+
 /* Current vertex */
 attribute vec2 inVertex;
 
-/* Position of the current voxel */
-attribute vec2 inPos;
+/* Current screen coordinates */
+attribute vec2 screenPos;
 
-/* Value of the current voxel (in range [0,1]) */
-attribute float voxValue;
+/* voxel coordinates */
+attribute float voxX;
+attribute float voxY;
+attribute float voxZ;
 
 /* Voxel value passed through to fragment shader */ 
 varying float fragVoxValue;
@@ -316,33 +303,28 @@ void main(void) {
      * (and perform standard transformation from data
      * coordinates to screen coordinates).
      */
-    gl_Position = gl_ModelViewProjectionMatrix * \
-        vec4(inVertex+inPos, 0.0, 1.0);
+    gl_Position = gl_ModelViewProjectionMatrix *  \
+        vec4(inVertex + screenPos, 0.0, 1.0);
 
     /* Pass the voxel value through to the shader. */
-    fragVoxValue = voxValue;
+    vec4 vt = texture3D(dataBuffer, vec3(voxX, voxY, voxZ));
+    fragVoxValue = vt.r;
 }
 """
 
 
-# Fragment shader. Given the current voxel value, looks
+# Buffer shader. Given the current voxel value, looks
 # up the appropriate colour in the colour buffer.
 fragment_shader = """
 #version 120
 
 uniform float     alpha; 
-uniform sampler1D colourMap;      /* RGB colour map, stored as a 1D texture */
 varying float     fragVoxValue;
 
 void main(void) {
 
-    vec4  voxTexture = texture1D(colourMap, fragVoxValue);
-    vec3  voxColour  = voxTexture.rgb;
-    float voxAlpha   = voxTexture.a;
-
-    if (voxAlpha > alpha) {
-        voxAlpha = alpha;
-    }
+    vec3 voxColour = vec3(fragVoxValue, fragVoxValue, fragVoxValue);
+    float voxAlpha = alpha;
 
     gl_FragColor = vec4(voxColour, voxAlpha);
 }
@@ -551,6 +533,29 @@ class SliceCanvas(wxgl.GLCanvas):
         of this SliceCanvas object. This method is only called
         once, on the first draw.
         """
+ 
+        self.context.SetCurrent(self)
+
+        self.shaders = shaders.compileProgram(
+            shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
+            shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
+
+        # Indices of all vertex/fragment shader parameters
+        self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
+        self.dataBufferPos    = gl.glGetUniformLocation(self.shaders,
+                                                        'dataBuffer')
+        self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
+                                                        'inVertex')
+        self.screenPosPos     = gl.glGetAttribLocation( self.shaders,
+                                                        'screenPos')
+        self.voxXPos          = gl.glGetAttribLocation( self.shaders, 'voxX')
+        self.voxYPos          = gl.glGetAttribLocation( self.shaders, 'voxY')
+        self.voxZPos          = gl.glGetAttribLocation( self.shaders, 'voxZ')
+
+        # Initialise data for the images that
+        # are already in the image list 
+        self._imageListChanged()
+
 
         # A bit hacky. We can only set the GL context (and create
         # the GL data) once something is actually displayed on the
@@ -561,23 +566,6 @@ class SliceCanvas(wxgl.GLCanvas):
         # _initGLData from running more than once, the first time
         # it is called it simply overwrites itself with a dummy method.
         self._initGLData = lambda s: s
- 
-        self.context.SetCurrent(self)
-
-        self.shaders = shaders.compileProgram(
-            shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
-            shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
-
-        # Indices of all vertex/fragment shader parameters 
-        self.inVertexPos   = gl.glGetAttribLocation( self.shaders, 'inVertex')
-        self.voxelValuePos = gl.glGetAttribLocation( self.shaders, 'voxValue')
-        self.inPositionPos = gl.glGetAttribLocation( self.shaders, 'inPos')
-        self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
-        self.colourMapPos  = gl.glGetUniformLocation(self.shaders, 'colourMap')
-
-        # Initialise data for the images that
-        # are already in the image list 
-        self._imageListChanged()
 
         self.glReady = True
 
@@ -590,7 +578,7 @@ class SliceCanvas(wxgl.GLCanvas):
         """
 
         size = self.GetSize()
-
+        
         # set up 2D drawing
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
@@ -616,6 +604,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
+        # load the shaders
         gl.glUseProgram(self.shaders)
 
         # enable transparency
@@ -637,17 +626,16 @@ class SliceCanvas(wxgl.GLCanvas):
             
             imageDisplay   = image.display
             
-            geomBuffer     = glImageData.geomBuffer
-            imageBuffer    = glImageData.imageBuffer
-            positionBuffer = glImageData.positionBuffer
-            colourBuffer   = glImageData.colourBuffer
+            dataBuffer      = glImageData.dataBuffer
+            voxXBuffer      = glImageData.voxXBuffer
+            voxYBuffer      = glImageData.voxYBuffer
+            voxZBuffer      = glImageData.voxZBuffer
+            geomBuffer      = glImageData.geomBuffer
+            screenPosBuffer = glImageData.screenPosBuffer
 
-            xdim    = glImageData.xdim
-            ydim    = glImageData.ydim
-            zdim    = glImageData.zdim
-            xstride = glImageData.xstride
-            ystride = glImageData.ystride
-            zstride = glImageData.zstride
+            xdim = glImageData.xdim
+            ydim = glImageData.ydim
+            zdim = glImageData.zdim
 
             # Don't draw the slice if this
             # image display is disabled
@@ -656,79 +644,95 @@ class SliceCanvas(wxgl.GLCanvas):
             # Figure out which slice we are drawing,
             # and if it's out of range, don't draw it
             zi = int(image.worldToVox(self.zpos, self.zax))
-            if zi < 0 or zi >= zdim: continue 
+            if zi < 0 or zi >= zdim: continue
 
-            # Set up the colour buffer
-            gl.glEnable(gl.GL_TEXTURE_1D)
-            gl.glActiveTexture(gl.GL_TEXTURE0) 
-            gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
-            gl.glUniform1i(self.colourMapPos, 0) 
+            voxOffs  = [0, 0, 0]
+            voxSteps = [1, 1, 1]
 
+            voxOffs[ self.zax] = zi
+            voxSteps[self.yax] = xdim
+            voxSteps[self.zax] = xdim * ydim
+
+            # bind the current alpha value to the
+            # shader alpha variable
             gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-            # We draw each horizontal row of voxels one at a time.
-            # This is necessary because, in order to allow image
-            # buffers to be shared between different SliceCanvas
-            # objects, we cannot re-arrange the image data, as
-            # stored in GPU memory. So while the memory offset
-            # between values in the same row (or column) is 
-            # consistent, the offset between rows (columns) is
-            # not. And drawing rows seems to be faster than
-            # drawing columns, for reasons unknown to me.
-            for yi in range(ydim):
+            # bind the transformation matrix
+            # to the shader variable
+            # gl.glUniformMatrix4fv(self.voxToWorldMatPos,
+            #                      1, False, transformBuffer)
 
-                imageOffset = zi * zstride + yi * ystride
-                imageStride = xstride 
-                posOffset   = yi * xdim * 8
+            # Set up the colour buffer
+            # gl.glEnable(gl.GL_TEXTURE_1D)
+            # gl.glActiveTexture(gl.GL_TEXTURE0) 
+            # gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+            # gl.glUniform1i(self.colourMapPos, 0) 
 
-                # The geometry buffer, which defines the geometry of a
-                # single vertex (4 vertices, drawn as a triangle strip)
-                geomBuffer.bind()
+            # Set up the image data buffer
+            gl.glEnable(gl.GL_TEXTURE_3D)
+            # change to texxture 1 when you get working
+            gl.glActiveTexture(gl.GL_TEXTURE0) 
+            gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
+            gl.glUniform1i(self.dataBufferPos, 0)
+
+            # Screen x positions
+            screenPosBuffer.bind()
+            gl.glVertexAttribPointer(
+                self.screenPosPos,
+                2,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                None)
+            gl.glEnableVertexAttribArray(self.screenPosPos)
+            arbia.glVertexAttribDivisorARB(self.screenPosPos, 1)
+
+            for buf, pos, step, off in zip(
+                    (voxXBuffer, voxYBuffer, voxZBuffer),
+                    (self.voxXPos, self.voxYPos, self.voxZPos),
+                    voxSteps,
+                    voxOffs):
+                
+                buf.bind()
                 gl.glVertexAttribPointer(
-                    self.inVertexPos,
-                    2,
-                    gl.GL_FLOAT,
-                    gl.GL_FALSE,
-                    0,
-                    None)
-                gl.glEnableVertexAttribArray(self.inVertexPos)
-                arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
-
-                # The position buffer, which defines
-                # the location of every voxel
-                positionBuffer.bind()
-                gl.glVertexAttribPointer(
-                    self.inPositionPos,
-                    2,
-                    gl.GL_FLOAT,
-                    gl.GL_FALSE,
-                    0,
-                    positionBuffer + posOffset)
-                gl.glEnableVertexAttribArray(self.inPositionPos)
-                arbia.glVertexAttribDivisorARB(self.inPositionPos, 1)
-
-                # The image buffer, which defines
-                # the colour value at each voxel.
-                imageBuffer.bind()
-                gl.glVertexAttribPointer(
-                    self.voxelValuePos,
+                    pos,
                     1,
-                    gl.GL_UNSIGNED_BYTE,
-                    gl.GL_TRUE,
-                    imageStride,
-                    imageBuffer + imageOffset)
+                    gl.GL_FLOAT,
+                    gl.GL_FALSE,
+                    0,
+                    buf + off * 4)
+                gl.glEnableVertexAttribArray(pos)
+                arbia.glVertexAttribDivisorARB(pos, step)
 
-                gl.glEnableVertexAttribArray(self.voxelValuePos)
-                arbia.glVertexAttribDivisorARB(self.voxelValuePos, 1)
+            # The geometry buffer, which defines the geometry of a
+            # single vertex (4 vertices, drawn as a triangle strip)
+            geomBuffer.bind()
+            gl.glVertexAttribPointer(
+                self.inVertexPos,
+                2,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                None)
+            gl.glEnableVertexAttribArray(self.inVertexPos)
+            arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
 
-                # Draw all of the triangles!
-                arbdi.glDrawArraysInstancedARB(
-                    gl.GL_TRIANGLE_STRIP, 0, 4, xdim)
 
-                gl.glDisableVertexAttribArray(self.inVertexPos)
-                gl.glDisableVertexAttribArray(self.inPositionPos)
-                gl.glDisableVertexAttribArray(self.voxelValuePos)
-                gl.glDisable(gl.GL_TEXTURE_1D)
+            print 'Draw {} voxels from slice {} ({} {} {})'.format(
+                xdim * ydim, zi, self.xax, self.yax, self.zax)
+            print "Offsets: {}".format(voxOffs)
+            print "Steps:   {}".format(voxSteps)
+            
+            arbdi.glDrawArraysInstancedARB(
+                gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
+
+            gl.glDisableVertexAttribArray(self.inVertexPos)
+            gl.glDisableVertexAttribArray(self.screenPosPos)
+            gl.glDisableVertexAttribArray(self.voxXPos)
+            gl.glDisableVertexAttribArray(self.voxYPos)
+            gl.glDisableVertexAttribArray(self.voxZPos)
+            gl.glDisable(gl.GL_TEXTURE_1D)
+            gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glUseProgram(0)
 
