@@ -87,9 +87,8 @@ class GLImageData(object):
         object that was passed to the GLImageData constructor.
         """
 
-        image           = self.image
-        canvas          = self.canvas
-        self.dataBuffer = self.initImageBuffer()
+        image  = self.image
+        canvas = self.canvas
 
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
@@ -101,15 +100,10 @@ class GLImageData(object):
                              -halfx,  halfy,
                               halfx,  halfy], dtype=np.float32)
 
-        # x/y/z coordinates are stored as
-        # VBO arrays in the range [0, 1]
+        # x/y/z coordinates are stored as VBO arrays
         voxData = []
-        for (imgDim, texDim) in zip(image.shape, self.imageTexShape):
-
-            stop = float(imgDim) / texDim
-            step = stop / imgDim
-            data = np.arange(step / 2.0, stop, step, dtype=np.float32)
-
+        for dim in image.shape:
+            data = np.arange(0, dim, dtype=np.float32)
             voxData.append(data)        
         
         # the screen x coordinate data has to be repeated (ylen)
@@ -117,14 +111,10 @@ class GLImageData(object):
         # allow us to loop over a VBO in a single instance
         # rendering call
         voxData[canvas.xax] = np.tile(voxData[canvas.xax], self.ydim)
-
-        xData = voxData[0]
-        yData = voxData[1]
-        zData = voxData[2]
         
-        xBuffer = vbo.VBO(xData, gl.GL_STATIC_DRAW)
-        yBuffer = vbo.VBO(yData, gl.GL_STATIC_DRAW)
-        zBuffer = vbo.VBO(zData, gl.GL_STATIC_DRAW)        
+        xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
+        yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
+        zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)        
 
         # Data stored in the position buffer. Defines
         # the location of every voxel in a single slice.
@@ -152,6 +142,7 @@ class GLImageData(object):
         screenPosBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
         geomBuffer      = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
 
+        self.dataBuffer      = self.initImageBuffer()
         self.voxXBuffer      = xBuffer
         self.voxYBuffer      = yBuffer
         self.voxZBuffer      = zBuffer
@@ -279,16 +270,22 @@ uniform float alpha;
 /* image data texture */
 uniform sampler3D dataBuffer;
 
+/* Image dimensions */
+uniform float xdim;
+uniform float ydim;
+uniform float zdim;
+
 /* Current vertex */
 attribute vec2 inVertex;
 
 /* Current screen coordinates */
 attribute vec2 screenPos;
 
-/* voxel coordinates */
+/* Current voxel coordinates */
 attribute float voxX;
 attribute float voxY;
 attribute float voxZ;
+
 
 /* Voxel value passed through to fragment shader */ 
 varying float fragVoxValue;
@@ -300,11 +297,14 @@ void main(void) {
      * (and perform standard transformation from data
      * coordinates to screen coordinates).
      */
-    gl_Position = gl_ModelViewProjectionMatrix *  \
+    gl_Position = gl_ModelViewProjectionMatrix * \
         vec4(inVertex + screenPos, 0.0, 1.0);
 
     /* Pass the voxel value through to the shader. */
-    vec4 vt = texture3D(dataBuffer, vec3(voxX, voxY, voxZ));
+    float normVoxX = voxX / xdim + 0.5 / xdim;
+    float normVoxY = voxY / ydim + 0.5 / ydim;
+    float normVoxZ = voxZ / zdim + 0.5 / zdim;
+    vec4 vt = texture3D(dataBuffer, vec3(normVoxX, normVoxY, normVoxZ));
     fragVoxValue = vt.r;
 }
 """
@@ -541,6 +541,9 @@ class SliceCanvas(wxgl.GLCanvas):
         self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.dataBufferPos    = gl.glGetUniformLocation(self.shaders,
                                                         'dataBuffer')
+        self.xdimPos          = gl.glGetUniformLocation(self.shaders, 'xdim')
+        self.ydimPos          = gl.glGetUniformLocation(self.shaders, 'ydim')
+        self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
         self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
                                                         'inVertex')
         self.screenPosPos     = gl.glGetAttribLocation( self.shaders,
@@ -549,7 +552,8 @@ class SliceCanvas(wxgl.GLCanvas):
         self.voxYPos          = gl.glGetAttribLocation( self.shaders, 'voxY')
         self.voxZPos          = gl.glGetAttribLocation( self.shaders, 'voxZ')
 
-        # Initialise data for the images that
+
+        # initialise data for the images that
         # are already in the image list 
         self._imageListChanged()
 
@@ -646,6 +650,11 @@ class SliceCanvas(wxgl.GLCanvas):
             # bind the current alpha value to the
             # shader alpha variable
             gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
+
+            # 
+            gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
+            gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
+            gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
 
             # bind the transformation matrix
             # to the shader variable
