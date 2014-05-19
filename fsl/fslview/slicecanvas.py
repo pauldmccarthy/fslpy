@@ -56,8 +56,8 @@ class GLImageData(object):
           - canvas: The SliceCanvas object which is rendering the image.
         """
 
-        self.image          = image
-        self.canvas         = canvas
+        self.image      = image
+        self.canvas     = canvas
 
         # Here, x,y, and z refer to screen
         # coordinates, not image coordinates:
@@ -87,9 +87,10 @@ class GLImageData(object):
         object that was passed to the GLImageData constructor.
         """
 
-        image  = self.image
-        canvas = self.canvas
-        
+        image           = self.image
+        canvas          = self.canvas
+        self.dataBuffer = self.initImageBuffer()
+
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
@@ -103,15 +104,13 @@ class GLImageData(object):
         # x/y/z coordinates are stored as
         # VBO arrays in the range [0, 1]
         voxData = []
-        for dim in image.shape:
+        for (imgDim, texDim) in zip(image.shape, self.imageTexShape):
 
-            step = 1.0 / dim
-            
-            data = np.arange(0.0 + step / 2,
-                             1.0 + step / 2,
-                             step,
-                             dtype=np.float32)
-            voxData.append(data)
+            stop = float(imgDim) / texDim
+            step = stop / imgDim
+            data = np.arange(step / 2.0, stop, step, dtype=np.float32)
+
+            voxData.append(data)        
         
         # the screen x coordinate data has to be repeated (ylen)
         # times - we are drawing row-wise, and opengl does not
@@ -150,24 +149,9 @@ class GLImageData(object):
         positionData = positionData.ravel('C')
 
         # The image buffers, containing the image data 
-        imageBuffer     = self.initImageBuffer()
         screenPosBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
         geomBuffer      = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
 
-        print 
-        print 'xBuffer'
-        print xData
-        print 
-        print 'yBuffer'
-        print yData
-        print 
-        print 'zBuffer'
-        print zData
-        print
-        print 'posData'
-        print positionData
-
-        self.dataBuffer      = imageBuffer
         self.voxXBuffer      = xBuffer
         self.voxYBuffer      = yBuffer
         self.voxZBuffer      = zBuffer
@@ -189,6 +173,10 @@ class GLImageData(object):
 
         image = self.image
 
+        texShape = 2 ** (np.ceil(np.log2(image.shape)))
+        pad      = [(0, l - s) for (l, s) in zip(texShape, image.shape)]
+        self.imageTexShape = texShape 
+
         try:    imageBuffer = image.getAttribute('glBuffers')
         except: imageBuffer = None
 
@@ -200,6 +188,10 @@ class GLImageData(object):
         imageData = np.array(image.data, dtype=np.float32)
         imageData = 255.0 * (imageData       - imageData.min()) / \
                             (imageData.max() - imageData.min())
+
+        # and each dimension is padded so
+        # it has a power-of-two length
+        imageData = np.pad(imageData, pad, 'constant', constant_values=0)
         imageData = np.array(imageData, dtype=np.uint8)
 
         # Then flattened, with fortran dimension ordering,
@@ -224,9 +216,9 @@ class GLImageData(object):
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
                         arbrg.GL_R8,
-                        image.shape[0],
-                        image.shape[1],
-                        image.shape[2],
+                        texShape[0],
+                        texShape[1],
+                        texShape[2],
                         0,
                         gl.GL_RED,
                         gl.GL_UNSIGNED_BYTE,
