@@ -87,19 +87,45 @@ class GLImageData(object):
         object that was passed to the GLImageData constructor.
         """
 
-        image = self.image
-        xax   = self.canvas.xax
-        yax   = self.canvas.yax
-        halfx = self.xlen / 2.0
-        halfy = self.ylen / 2.0
-
+        image  = self.image
+        canvas = self.canvas
+        
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
+        halfx    = self.xlen / 2.0
+        halfy    = self.ylen / 2.0
         geomData = np.array([-halfx, -halfy,
                               halfx, -halfy,
                              -halfx,  halfy,
                               halfx,  halfy], dtype=np.float32)
+
+        # x/y/z coordinates are stored as
+        # VBO arrays in the range [0, 1]
+        voxData = []
+        for dim in image.shape:
+
+            step = 1.0 / dim
+            
+            data = np.arange(0.0 + step / 2,
+                             1.0 + step / 2,
+                             step,
+                             dtype=np.float32)
+            voxData.append(data)
+        
+        # the screen x coordinate data has to be repeated (ylen)
+        # times - we are drawing row-wise, and opengl does not
+        # allow us to loop over a VBO in a single instance
+        # rendering call
+        voxData[canvas.xax] = np.tile(voxData[canvas.xax], self.ydim)
+
+        xData = voxData[0]
+        yData = voxData[1]
+        zData = voxData[2]
+        
+        xBuffer = vbo.VBO(xData, gl.GL_STATIC_DRAW)
+        yBuffer = vbo.VBO(yData, gl.GL_STATIC_DRAW)
+        zBuffer = vbo.VBO(zData, gl.GL_STATIC_DRAW)        
 
         # Data stored in the position buffer. Defines
         # the location of every voxel in a single slice.
@@ -118,19 +144,33 @@ class GLImageData(object):
         # coordinates to world coordinates,
         # making sure that they are of type
         # float32
-        positionData = image.voxToWorld(positionData, axes=(xax, yax))
+        positionData = image.voxToWorld(positionData, axes=(canvas.xax,
+                                                            canvas.yax))
         positionData = np.array(positionData, dtype=np.float32)
         positionData = positionData.ravel('C')
 
         # The image buffers, containing the image data 
-        imageBuffers    = self.initImageBuffer()
+        imageBuffer     = self.initImageBuffer()
         screenPosBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
         geomBuffer      = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
 
-        self.dataBuffer      = imageBuffers['dataBuffer']
-        self.voxXBuffer      = imageBuffers['xBuffer']
-        self.voxYBuffer      = imageBuffers['yBuffer']
-        self.voxZBuffer      = imageBuffers['zBuffer']
+        print 
+        print 'xBuffer'
+        print xData
+        print 
+        print 'yBuffer'
+        print yData
+        print 
+        print 'zBuffer'
+        print zData
+        print
+        print 'posData'
+        print positionData
+
+        self.dataBuffer      = imageBuffer
+        self.voxXBuffer      = xBuffer
+        self.voxYBuffer      = yBuffer
+        self.voxZBuffer      = zBuffer
         self.screenPosBuffer = screenPosBuffer
         self.geomBuffer      = geomBuffer
 
@@ -141,16 +181,10 @@ class GLImageData(object):
         
     def initImageBuffer(self):
         """
-        Initialises the OpenGL buffers used to store the data for the given
-        image. The buffers are stored as an attribute of the image and, if it
+        Initialises the OpenGL buffer used to store the data for the given
+        image. The buffer is stored as an attribute of the image and, if it
         has already been created (e.g. by another SliceCanvas object), the
-        existing buffer is returned. The value stored on the image, and
-        the value returned by this method, is a dictionary with the following
-        keys:
-          - dataBuffer:
-          - xBuffer:
-          - yBuffer:
-          - zBuffer:
+        existing buffer is returned. 
         """
 
         image = self.image
@@ -160,10 +194,6 @@ class GLImageData(object):
 
         if imageBuffer is not None:
             return imageBuffer
-
-        xlen = image.shape[0]
-        ylen = image.shape[1]
-        zlen = image.shape[2]
 
         # The image data is normalised to lie
         # between 0 and 255, and cast to uint8
@@ -178,54 +208,29 @@ class GLImageData(object):
         imageData = imageData.ravel(order='F')
 
         # Image data is stored on the GPU as a 3D texture
-        dataBuffer = gl.glGenTextures(1)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
+        imageBuffer = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexParameteri(
             gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(
             gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE) 
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_R, gl.GL_CLAMP_TO_EDGE)         
         
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
                         arbrg.GL_R8,
-                        xlen,
-                        ylen,
-                        zlen,
+                        image.shape[0],
+                        image.shape[1],
+                        image.shape[2],
                         0,
                         gl.GL_RED,
                         gl.GL_UNSIGNED_BYTE,
                         imageData)
-
-        # x/y/z coordinates are stored as
-        # VBO arrays in the range [0, 1]
-        xstep = 1.0 / xlen
-        ystep = 1.0 / ylen
-        zstep = 1.0 / zlen
-        
-        xData   = np.arange(0.0+xstep/2, 1.0+xstep/2, 1.0 / xlen, dtype=np.float32)
-        yData   = np.arange(0.0+ystep/2, 1.0+ystep/2, 1.0 / ylen, dtype=np.float32)
-        zData   = np.arange(0.0+zstep/2, 1.0+zstep/2, 1.0 / zlen, dtype=np.float32)
-        xBuffer = vbo.VBO(xData, gl.GL_STATIC_DRAW)
-        yBuffer = vbo.VBO(yData, gl.GL_STATIC_DRAW)
-        zBuffer = vbo.VBO(zData, gl.GL_STATIC_DRAW)
-
-
-        print "Data buffer"
-        print imageData
-        print "X buffer"
-        print xData
-        print "Y buffer"
-        print yData
-        print "Z buffer"
-        print zData 
-
-        imageBuffer                    = {}
-        imageBuffer['dataBuffer']      = dataBuffer
-        imageBuffer['xBuffer']         = xBuffer
-        imageBuffer['yBuffer']         = yBuffer
-        imageBuffer['zBuffer']         = zBuffer
 
         # And added as an attribute of the image, so
         # other things which want to render the image
@@ -646,13 +651,6 @@ class SliceCanvas(wxgl.GLCanvas):
             zi = int(image.worldToVox(self.zpos, self.zax))
             if zi < 0 or zi >= zdim: continue
 
-            voxOffs  = [0, 0, 0]
-            voxSteps = [1, 1, 1]
-
-            voxOffs[ self.zax] = zi
-            voxSteps[self.yax] = xdim
-            voxSteps[self.zax] = xdim * ydim
-
             # bind the current alpha value to the
             # shader alpha variable
             gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
@@ -675,7 +673,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
             gl.glUniform1i(self.dataBufferPos, 0)
 
-            # Screen x positions
+            # Screen x/y positions
             screenPosBuffer.bind()
             gl.glVertexAttribPointer(
                 self.screenPosPos,
@@ -687,11 +685,20 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glEnableVertexAttribArray(self.screenPosPos)
             arbia.glVertexAttribDivisorARB(self.screenPosPos, 1)
 
+            # voxel coordinates
+            voxOffs  = [0, 0, 0]
+            voxSteps = [1, 1, 1]
+            voxOffs[ self.zax] = zi
+            voxSteps[self.yax] = xdim
+            voxSteps[self.zax] = xdim * ydim
             for buf, pos, step, off in zip(
                     (voxXBuffer, voxYBuffer, voxZBuffer),
                     (self.voxXPos, self.voxYPos, self.voxZPos),
                     voxSteps,
                     voxOffs):
+
+                if off == 0: off = None
+                else:        off = buf + (off * 4)
                 
                 buf.bind()
                 gl.glVertexAttribPointer(
@@ -700,7 +707,7 @@ class SliceCanvas(wxgl.GLCanvas):
                     gl.GL_FLOAT,
                     gl.GL_FALSE,
                     0,
-                    buf + off * 4)
+                    off)
                 gl.glEnableVertexAttribArray(pos)
                 arbia.glVertexAttribDivisorARB(pos, step)
 
@@ -716,12 +723,6 @@ class SliceCanvas(wxgl.GLCanvas):
                 None)
             gl.glEnableVertexAttribArray(self.inVertexPos)
             arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
-
-
-            print 'Draw {} voxels from slice {} ({} {} {})'.format(
-                xdim * ydim, zi, self.xax, self.yax, self.zax)
-            print "Offsets: {}".format(voxOffs)
-            print "Steps:   {}".format(voxSteps)
             
             arbdi.glDrawArraysInstancedARB(
                 gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
@@ -731,7 +732,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glDisableVertexAttribArray(self.voxXPos)
             gl.glDisableVertexAttribArray(self.voxYPos)
             gl.glDisableVertexAttribArray(self.voxZPos)
-            gl.glDisable(gl.GL_TEXTURE_1D)
+#            gl.glDisable(gl.GL_TEXTURE_1D)
             gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glUseProgram(0)
