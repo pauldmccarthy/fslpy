@@ -12,6 +12,7 @@ import                      wx
 import wx.glcanvas       as wxgl
 
 import OpenGL.GL         as gl
+import OpenGL.GLU        as glu
 import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
@@ -93,20 +94,22 @@ class GLImageData(object):
         # Data stored in the geometry buffer. Defines
         # the geometry of a single voxel, rendered as
         # a triangle strip.
-        halfx    = self.xlen / 2.0
-        halfy    = self.ylen / 2.0
-        geomData = np.array([-halfx, -halfy,
-                              halfx, -halfy,
-                             -halfx,  halfy,
-                              halfx,  halfy], dtype=np.float32)
+        geomData = np.zeros((4, 3), dtype=np.float32)
+        
+        geomData[:, [canvas.xax, canvas.yax]] = [[-0.5, -0.5],
+                                                 [ 0.5, -0.5],
+                                                 [-0.5,  0.5],
+                                                 [ 0.5,  0.5]]
 
+        geomData = geomData.ravel('C')
+        
         # x/y/z coordinates are stored as VBO arrays
         voxData = []
         for dim in image.shape:
             data = np.arange(0, dim, dtype=np.float32)
             voxData.append(data)        
         
-        # the screen x coordinate data has to be repeated (ylen)
+        # the screen x coordinate data has to be repeated (ydim)
         # times - we are drawing row-wise, and opengl does not
         # allow us to loop over a VBO in a single instance
         # rendering call
@@ -115,38 +118,13 @@ class GLImageData(object):
         xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
         yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
         zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)        
-
-        # Data stored in the position buffer. Defines
-        # the location of every voxel in a single slice.
-        # First we create a set of voxel coordinates for
-        # every voxel in one slice.
-        xidxs        = np.arange(self.xdim, dtype=np.float32)
-        yidxs        = np.arange(self.ydim, dtype=np.float32)
-        yidxs, xidxs = np.meshgrid(yidxs, xidxs, indexing='ij')
-
-        # And put them into a single array
-        positionData = np.vstack((
-            xidxs.ravel(order='C'),
-            yidxs.ravel(order='C'))).transpose()
-
-        # Then we transform them from voxel
-        # coordinates to world coordinates,
-        # making sure that they are of type
-        # float32
-        positionData = image.voxToWorld(positionData, axes=(canvas.xax,
-                                                            canvas.yax))
-        positionData = np.array(positionData, dtype=np.float32)
-        positionData = positionData.ravel('C')
-
-        # The image buffers, containing the image data 
-        screenPosBuffer = vbo.VBO(positionData, gl.GL_STATIC_DRAW)
-        geomBuffer      = vbo.VBO(geomData,     gl.GL_STATIC_DRAW)
+        
+        geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
 
         self.dataBuffer      = self.initImageBuffer()
         self.voxXBuffer      = xBuffer
         self.voxYBuffer      = yBuffer
         self.voxZBuffer      = zBuffer
-        self.screenPosBuffer = screenPosBuffer
         self.geomBuffer      = geomBuffer
 
         # Add listeners to this image so the view can be
@@ -276,10 +254,7 @@ uniform float ydim;
 uniform float zdim;
 
 /* Current vertex */
-attribute vec2 inVertex;
-
-/* Current screen coordinates */
-attribute vec2 screenPos;
+attribute vec3 inVertex;
 
 /* Current voxel coordinates */
 attribute float voxX;
@@ -297,8 +272,8 @@ void main(void) {
      * (and perform standard transformation from data
      * coordinates to screen coordinates).
      */
-    gl_Position = gl_ModelViewProjectionMatrix * \
-        vec4(inVertex + screenPos, 0.0, 1.0);
+    vec3 vertPos = inVertex + vec3(voxX, voxY, voxZ);
+    gl_Position = gl_ModelViewProjectionMatrix * vec4(vertPos, 1.0);
 
     /* Pass the voxel value through to the shader. */
     float normVoxX = voxX / xdim + 0.5 / xdim;
@@ -519,6 +494,12 @@ class SliceCanvas(wxgl.GLCanvas):
             except:
                 glData = GLImageData(image, self)
                 image.setAttribute(self.name, glData)
+
+
+        print 'bounds: '
+        print 'X: {} {}'.format(self.xmin, self.xmax)
+        print 'Y: {} {}'.format(self.ymin, self.ymax)
+        print 'Z: {} {}'.format(self.zmin, self.zmax)
                 
         self.Refresh()
 
@@ -546,8 +527,6 @@ class SliceCanvas(wxgl.GLCanvas):
         self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
         self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
                                                         'inVertex')
-        self.screenPosPos     = gl.glGetAttribLocation( self.shaders,
-                                                        'screenPos')
         self.voxXPos          = gl.glGetAttribLocation( self.shaders, 'voxX')
         self.voxYPos          = gl.glGetAttribLocation( self.shaders, 'voxY')
         self.voxZPos          = gl.glGetAttribLocation( self.shaders, 'voxZ')
@@ -579,14 +558,27 @@ class SliceCanvas(wxgl.GLCanvas):
         """
 
         size = self.GetSize()
-        
+
         # set up 2D drawing
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, 0, 1)
+        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
+        
+        up     = [0, 0, 0]
+        centre = [0, 0, 0]
+        eye    = [0, 0, 0]
+
+        eye[self.zax] = self.zmax
+        up[ self.yax] = 1
+
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
+        glu.gluLookAt(
+            eye[   0], eye[   1], eye[   2],
+            centre[0], centre[1], centre[2],
+            up[    0], up[    1], up[    2])
+
 
 
     def draw(self, ev):
@@ -632,7 +624,6 @@ class SliceCanvas(wxgl.GLCanvas):
             voxYBuffer      = glImageData.voxYBuffer
             voxZBuffer      = glImageData.voxZBuffer
             geomBuffer      = glImageData.geomBuffer
-            screenPosBuffer = glImageData.screenPosBuffer
 
             xdim = glImageData.xdim
             ydim = glImageData.ydim
@@ -645,7 +636,8 @@ class SliceCanvas(wxgl.GLCanvas):
             # Figure out which slice we are drawing,
             # and if it's out of range, don't draw it
             zi = int(image.worldToVox(self.zpos, self.zax))
-            if zi < 0 or zi >= zdim: continue
+            if zi < 0 or zi >= zdim:
+                continue
 
             # bind the current alpha value to the
             # shader alpha variable
@@ -673,19 +665,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glActiveTexture(gl.GL_TEXTURE0) 
             gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
             gl.glUniform1i(self.dataBufferPos, 0)
-
-            # Screen x/y positions
-            screenPosBuffer.bind()
-            gl.glVertexAttribPointer(
-                self.screenPosPos,
-                2,
-                gl.GL_FLOAT,
-                gl.GL_FALSE,
-                0,
-                None)
-            gl.glEnableVertexAttribArray(self.screenPosPos)
-            arbia.glVertexAttribDivisorARB(self.screenPosPos, 1)
-
+            
             # voxel coordinates
             voxOffs  = [0, 0, 0]
             voxSteps = [1, 1, 1]
@@ -717,7 +697,7 @@ class SliceCanvas(wxgl.GLCanvas):
             geomBuffer.bind()
             gl.glVertexAttribPointer(
                 self.inVertexPos,
-                2,
+                3,
                 gl.GL_FLOAT,
                 gl.GL_FALSE,
                 0,
@@ -729,7 +709,6 @@ class SliceCanvas(wxgl.GLCanvas):
                 gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
 
             gl.glDisableVertexAttribArray(self.inVertexPos)
-            gl.glDisableVertexAttribArray(self.screenPosPos)
             gl.glDisableVertexAttribArray(self.voxXPos)
             gl.glDisableVertexAttribArray(self.voxYPos)
             gl.glDisableVertexAttribArray(self.voxZPos)
@@ -739,15 +718,23 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glUseProgram(0)
 
         # A vertical line at xpos, and a horizontal line at ypos
-        x = self.xpos
-        y = self.ypos
 
+        xverts = np.zeros((2,3))
+        yverts = np.zeros((2,3))
+
+        xverts[:, self.xax] =  self.xpos
+        xverts[:, self.yax] = [self.ymin, self.ymax]
+        xverts[:, self.zax] =  self.zpos
+        yverts[:, self.xax] = [self.xmin, self.xmax]
+        yverts[:, self.yax] =  self.ypos
+        yverts[:, self.zax] =  self.zpos        
+        
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
-        gl.glVertex2f(x,         self.ymin)
-        gl.glVertex2f(x,         self.ymax)
-        gl.glVertex2f(self.xmin, y)
-        gl.glVertex2f(self.xmax, y)
+        gl.glVertex3f(*xverts[0])
+        gl.glVertex3f(*xverts[1])
+        gl.glVertex3f(*yverts[0])
+        gl.glVertex3f(*yverts[1])
         gl.glEnd()
 
         self.SwapBuffers()
