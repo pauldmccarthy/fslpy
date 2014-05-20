@@ -481,18 +481,16 @@ class SliceCanvas(wxgl.GLCanvas):
         self.yax = dims[1]
         self.zax = zax
 
-        # Current cursor location, initialised
-        # in _imageListChanged
-        self._xpos = None
-        self._ypos = None
-        self._zpos = None
+        self.xmin = imageList.minBounds[self.xax]
+        self.ymin = imageList.minBounds[self.yax]
+        self.zmin = imageList.minBounds[self.zax]
+        self.xmax = imageList.maxBounds[self.xax]
+        self.ymax = imageList.maxBounds[self.yax]
+        self.zmax = imageList.maxBounds[self.zax]
 
-        self.xmin = 0
-        self.ymin = 0
-        self.zmin = 0
-        self.xmax = 1
-        self.ymax = 1
-        self.zmax = 1
+        self._xpos = (self.xmax - self.xmin) / 2.0
+        self._ypos = (self.ymax - self.ymin) / 2.0
+        self._zpos = (self.zmax - self.zmin) / 2.0
 
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
@@ -517,43 +515,22 @@ class SliceCanvas(wxgl.GLCanvas):
         the min/max x/y/z coordinates across all images being displayed).
         """
 
-        if len(self.imageList) == 0:
-            # These attributes define the current location
-            # of the cursor, and the current depth, in real
-            # world coordinates. 
-            self._xpos = 0.5
-            self._ypos = 0.5
-            self._zpos = 0.5
+        # Update the minimum/maximum
+        # image bounds along each axis
+        self.xmin = self.imageList.minBounds[self.xax]
+        self.ymin = self.imageList.minBounds[self.yax]
+        self.zmin = self.imageList.minBounds[self.zax]
 
-            # These attributes define the spatial data
-            # limits of all displayed images, in real world
-            # coordinates. They are updated whenever an
-            # image is added/removed from the list.
-            self.xmin = 0
-            self.ymin = 0
-            self.zmin = 0
-            self.xmax = 1
-            self.ymax = 1 
-            self.zmax = 1 
-        
-        else:
+        self.xmax = self.imageList.maxBounds[self.xax]
+        self.ymax = self.imageList.maxBounds[self.yax]
+        self.zmax = self.imageList.maxBounds[self.zax]
 
-            # Update the minimum/maximum
-            # image bounds along each axis
-            self.xmin = self.imageList.minBounds[self.xax]
-            self.ymin = self.imageList.minBounds[self.yax]
-            self.zmin = self.imageList.minBounds[self.zax]
+        # reset the cursor in case the
+        # old values were out of bounds
+        self.xpos = self.xpos
+        self.ypos = self.ypos
+        self.zpos = self.zpos
 
-            self.xmax = self.imageList.maxBounds[self.xax]
-            self.ymax = self.imageList.maxBounds[self.yax]
-            self.zmax = self.imageList.maxBounds[self.zax]
-
-            # initialise the cursor location and displayed
-            # slice if they do not yet have values
-            if not all((self._xpos, self._ypos, self._zpos)):
-                self.xpos = (abs(self.xmax) - abs(self.xmin)) / 2.0
-                self.ypos = (abs(self.ymax) - abs(self.ymin)) / 2.0
-                self.zpos = (abs(self.zmax) - abs(self.zmin)) / 2.0
                 
         # Create a GLImageData object
         # for any new images
@@ -677,7 +654,8 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glLoadIdentity()
         gl.glOrtho(self.xmin, self.xmax,
                    self.ymin, self.ymax,
-                   self.zmin, self.zmax)
+                   self.zmin-100, self.zmax+100)
+        # I don't know why the above +/-100 is necessary :(
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
@@ -697,7 +675,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # move the currently displayed slice to screen Z coord 0
         trans = [0, 0, 0]
-        trans[self.zax] = -self.zpos
+        trans[self.zax] = -self.zpos 
         gl.glTranslatef(*trans)
 
 
