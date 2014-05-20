@@ -726,10 +726,6 @@ class SliceCanvas(wxgl.GLCanvas):
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
 
-        # enable 1D and 3D textures
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-
         for image in self.imageList:
 
             # The GL data is stored as an attribute of the image,
@@ -833,10 +829,6 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glDisableVertexAttribArray(self.voxYPos)
             gl.glDisableVertexAttribArray(self.voxZPos)
 
-            
-        gl.glDisable(gl.GL_TEXTURE_1D)
-        gl.glDisable(gl.GL_TEXTURE_3D)
-
         gl.glUseProgram(0)
 
         # A vertical line at xpos, and a horizontal line at ypos
@@ -846,11 +838,11 @@ class SliceCanvas(wxgl.GLCanvas):
 
         xverts[:, self.xax] =  self.xpos
         xverts[:, self.yax] = [self.ymin, self.ymax]
-        xverts[:, self.zax] =  self.zpos+1
+        xverts[:, self.zax] =  self.zpos + 1
         yverts[:, self.xax] = [self.xmin, self.xmax]
         yverts[:, self.yax] =  self.ypos
-        yverts[:, self.zax] =  self.zpos+1      
-        
+        yverts[:, self.zax] =  self.zpos + 1      
+
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
         gl.glVertex3f(*xverts[0])
