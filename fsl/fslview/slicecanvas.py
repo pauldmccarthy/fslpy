@@ -27,24 +27,24 @@ import fsl.data.fslimage as fslimage
 class GLImageData(object):
     """
     A GLImageData object encapsulates the OpenGL information necessary
-    to render an image.
+    to render 2D slices of a 3D image.
     
-    A slice from one image is rendered using three buffers and one
-    texture. The first buffer, the 'geometry buffer' simply contains four
-    vertices, which define the geometry of a single voxel (using triangle
-    strips).
+    A slice from one image is rendered using four buffers and two textures.
 
-    The second buffer, the 'position buffer', contains the location of every
-    voxel in one slice of the image (these locations are identical for every
-    slice of the image, so we can re-use the location information for every
-    slice). The four vertices for each voxel (from the geometry buffer, above)
-    are offset by the voxel position, which is read from this position buffer.
+    The first buffer, the 'geometry buffer' simply contains the 3D
+    coordinates (single precision floating point) of four vertices, which
+    define the geometry of a single voxel (using triangle strips).
 
-    The third buffer, the 'image buffer' contains the image data itself,
-    scaled to lie between 0 and 255. It is used to calculate voxel colours.
+    The remaining buffers contain the X, Y, and Z coordinates of the voxels
+    in the slice to be displayed. These coordinates are stored as single
+    precision floating points, and used both to position a voxel, and to
+    look up its value in the 3D data texture (see below). 
 
-    Finally, the texture, the 'colour buffer', is used to store a lookup table
-    containing colours.
+    The image data itself is stored as a 3D texture, with each voxel value
+    stored as a single unsigned byte in the range 0-255.  
+
+    Finally, a 1D texture is used is used to store a lookup table containing
+    an RGBA8 colour map, to colour each voxel according to its value.
     """
 
     def __init__(self, image, canvas):
@@ -201,6 +201,7 @@ class GLImageData(object):
 
         return imageBuffer
 
+        
     def updateColourBuffer(self):
         """
         Regenerates the colour buffer used to colour image voxels.
@@ -235,7 +236,7 @@ class GLImageData(object):
         colourmap = display.cmap(newRange)
         
         # The colour data is stored on
-        # the GPU as 8 bit rgb triplets
+        # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
         colourmap = np.array(colourmap, dtype=np.uint8)
         colourmap = colourmap.ravel(order='C')
