@@ -364,8 +364,9 @@ void main(void) {
 
     vec4  voxTexture = texture1D(colourMap, fragVoxValue);
     vec3  voxColour  = voxTexture.rgb;
-    //vec3 voxColour = vec3(fragVoxValue, fragVoxValue, fragVoxValue);
-    float voxAlpha = alpha;
+    float voxAlpha   = alpha;
+
+    if (voxTexture.a < voxAlpha) voxAlpha = voxTexture.a;
 
     gl_FragColor = vec4(voxColour, voxAlpha);
 }
