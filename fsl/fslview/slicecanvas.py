@@ -60,7 +60,9 @@ class GLImageData(object):
         self.image  = image
         self.canvas = canvas
 
-        # Maximum number of colours used to draw image data
+        # Maximum number of colours used to draw image data.
+        # Keep this to a power of two, as some GL implementations
+        # will complain/misbehave if it isn't.
         self.colourResolution = 256
 
         self.initGLImageData()
@@ -75,16 +77,16 @@ class GLImageData(object):
         image  = self.image
         canvas = self.canvas
 
-        # Data stored in the geometry buffer. Defines
-        # the geometry of a single voxel, rendered as
-        # a triangle strip.
+        # The geometry buffer defines the geometry of
+        # a single voxel, rendered as a triangle strip.
         geomData = np.zeros((4, 3), dtype=np.float32)
         geomData[:, [canvas.xax, canvas.yax]] = [[-0.5, -0.5],
                                                  [ 0.5, -0.5],
                                                  [-0.5,  0.5],
                                                  [ 0.5,  0.5]] 
         
-        geomData = geomData.ravel('C')
+        geomData   = geomData.ravel('C')
+        geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
         
         # x/y/z coordinates are stored as VBO arrays
         voxData = []
@@ -101,19 +103,27 @@ class GLImageData(object):
         
         xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
         yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
-        zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)        
-        
-        geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
+        zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)
 
-        self.dataBuffer = self.initImageBuffer()
-        self.voxXBuffer = xBuffer
-        self.voxYBuffer = yBuffer
-        self.voxZBuffer = zBuffer
-        self.geomBuffer = geomBuffer
+        # The colour buffer, containing a map of
+        # colours (stored on the GPU as a 1D texture)
+        # This is initialised in the updateColourBuffer
+        # method
+        colourBuffer = gl.glGenTextures(1) 
+
+        self.dataBuffer   = self.initImageBuffer()
+        self.voxXBuffer   = xBuffer
+        self.voxYBuffer   = yBuffer
+        self.voxZBuffer   = zBuffer
+        self.geomBuffer   = geomBuffer
+        self.colourBuffer = colourBuffer
 
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self.configDisplayListeners()
+
+        # Create the colour buffer for the given image
+        self.updateColourBuffer() 
 
         
     def initImageBuffer(self):
@@ -192,6 +202,66 @@ class GLImageData(object):
         image.setAttribute('glBuffers', imageBuffer)
 
         return imageBuffer
+
+    def updateColourBuffer(self):
+        """
+        Regenerates the colour buffer used to colour image voxels.
+        """
+
+        display      = self.image.display
+        colourBuffer = self.colourBuffer
+
+        # Here we are creating a range of values to be passed
+        # to the matplotlib.colors.Colormap instance of the
+        # image display. We scale this range such that data
+        # values which lie outside the configured display range
+        # will map to values below 0.0 or above 1.0. It is
+        # assumed that the Colormap instance is configured to
+        # generate appropriate colours for these out-of-range
+        # values.
+        
+        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
+        normalStep  = 1.0 / (self.colourResolution - 1) 
+
+        normMin = (display.displayMin - display.dataMin) / \
+                  (display.dataMax    - display.dataMin)
+        normMax = (display.displayMax - display.dataMin) / \
+                  (display.dataMax    - display.dataMin)
+
+        newStep  = normalStep / (normMax - normMin)
+        newRange = (normalRange - normMin) * (newStep / normalStep)
+
+        # Create [self.colourResolution] rgb values,
+        # spanning the entire range of the image
+        # colour map
+        colourmap = display.cmap(newRange)
+        
+        # The colour data is stored on
+        # the GPU as 8 bit rgb triplets
+        colourmap = np.floor(colourmap * 255)
+        colourmap = np.array(colourmap, dtype=np.uint8)
+        colourmap = colourmap.ravel(order='C')
+
+        # GL texture creation stuff
+        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE) 
+        
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                        0,
+                        gl.GL_RGBA8,
+                        self.colourResolution,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        colourmap)
 
 
     def configDisplayListeners(self):
@@ -286,12 +356,15 @@ void main(void) {
 fragment_shader = """
 #version 120
 
-uniform float     alpha; 
+uniform float     alpha;
+uniform sampler1D colourMap;
 varying float     fragVoxValue;
 
 void main(void) {
 
-    vec3 voxColour = vec3(fragVoxValue, fragVoxValue, fragVoxValue);
+    vec4  voxTexture = texture1D(colourMap, fragVoxValue);
+    vec3  voxColour  = voxTexture.rgb;
+    //vec3 voxColour = vec3(fragVoxValue, fragVoxValue, fragVoxValue);
     float voxAlpha = alpha;
 
     gl_FragColor = vec4(voxColour, voxAlpha);
@@ -494,6 +567,55 @@ class SliceCanvas(wxgl.GLCanvas):
         self.Refresh()
 
 
+    def _compileShaders(self):
+        """
+        Compiles and links the vertex and fragment shader programs,
+        and returns a reference to the resulting program. Raises
+        an error if compilation/linking fails.
+
+        I'm explicitly not using the PyOpenGL
+        OpenGL.GL.shaders.compileProgram function, because it
+        attempts to validate the program after compilation, which
+        fails due to texture data not being bound at the time of
+        validation.
+        """
+
+        # vertex shader
+        vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
+        gl.glShaderSource(vertShader, vertex_shader)
+        gl.glCompileShader(vertShader)
+        vertResult = gl.glGetShaderiv(vertShader, gl.GL_COMPILE_STATUS)
+
+        if vertResult != gl.GL_TRUE:
+            raise '{}'.format(gl.glGetShaderInfoLog(vertShader))
+
+        # fragment shader
+        fragShader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
+        gl.glShaderSource(fragShader, fragment_shader)
+        gl.glCompileShader(fragShader)
+        fragResult = gl.glGetShaderiv(fragShader, gl.GL_COMPILE_STATUS)
+
+        if fragResult != gl.GL_TRUE:
+            raise '{}'.format(gl.glGetShaderInfoLog(fragShader))
+
+        # link all of the shaders!
+        program = gl.glCreateProgram()
+        gl.glAttachShader(program, vertShader)
+        gl.glAttachShader(program, fragShader)
+
+        gl.glLinkProgram(program)
+
+        gl.glDeleteShader(vertShader)
+        gl.glDeleteShader(fragShader)
+
+        linkResult = gl.glGetProgramiv(program, gl.GL_LINK_STATUS)
+
+        if linkResult != gl.GL_TRUE:
+            raise '{}'.format(gl.glGetProgramInfoLog(program))
+
+        return program
+
+
     def _initGLData(self):
         """
         Compiles the vertex and fragment shader programs, and
@@ -504,9 +626,7 @@ class SliceCanvas(wxgl.GLCanvas):
  
         self.context.SetCurrent(self)
 
-        self.shaders = shaders.compileProgram(
-            shaders.compileShader(vertex_shader,   gl.GL_VERTEX_SHADER),
-            shaders.compileShader(fragment_shader, gl.GL_FRAGMENT_SHADER))
+        self.shaders = self._compileShaders()
 
         # Indices of all vertex/fragment shader parameters
         self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
@@ -514,6 +634,8 @@ class SliceCanvas(wxgl.GLCanvas):
                                                         'dataBuffer')
         self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
                                                         'voxToWorldMat')
+        self.colourMapPos     = gl.glGetUniformLocation(self.shaders,
+                                                        'colourMap') 
         self.xdimPos          = gl.glGetUniformLocation(self.shaders, 'xdim')
         self.ydimPos          = gl.glGetUniformLocation(self.shaders, 'ydim')
         self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
@@ -523,11 +645,9 @@ class SliceCanvas(wxgl.GLCanvas):
         self.voxYPos          = gl.glGetAttribLocation( self.shaders, 'voxY')
         self.voxZPos          = gl.glGetAttribLocation( self.shaders, 'voxZ')
 
-
         # initialise data for the images that
         # are already in the image list 
         self._imageListChanged()
-
 
         # A bit hacky. We can only set the GL context (and create
         # the GL data) once something is actually displayed on the
@@ -610,13 +730,13 @@ class SliceCanvas(wxgl.GLCanvas):
             try:    glImageData = image.getAttribute(self.name)
             except: continue
             
-            imageDisplay   = image.display
-            
-            dataBuffer      = glImageData.dataBuffer
-            voxXBuffer      = glImageData.voxXBuffer
-            voxYBuffer      = glImageData.voxYBuffer
-            voxZBuffer      = glImageData.voxZBuffer
-            geomBuffer      = glImageData.geomBuffer
+            imageDisplay = image.display
+            dataBuffer   = glImageData.dataBuffer
+            voxXBuffer   = glImageData.voxXBuffer
+            voxYBuffer   = glImageData.voxYBuffer
+            voxZBuffer   = glImageData.voxZBuffer
+            geomBuffer   = glImageData.geomBuffer
+            colourBuffer = glImageData.colourBuffer
 
             xdim = image.shape[self.xax]
             ydim = image.shape[self.yax]
@@ -632,11 +752,11 @@ class SliceCanvas(wxgl.GLCanvas):
             if zi < 0 or zi >= zdim:
                 continue
 
-            # bind the current alpha value to the
-            # shader alpha variable
+            # bind the current alpha value
+            # to the shader alpha variable
             gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-            # 
+            # Bind the voxel coordinate buffers
             gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
             gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
             gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
@@ -647,17 +767,16 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
 
             # Set up the colour buffer
-            # gl.glEnable(gl.GL_TEXTURE_1D)
-            # gl.glActiveTexture(gl.GL_TEXTURE0) 
-            # gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
-            # gl.glUniform1i(self.colourMapPos, 0) 
+            gl.glEnable(gl.GL_TEXTURE_1D)
+            gl.glActiveTexture(gl.GL_TEXTURE0) 
+            gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+            gl.glUniform1i(self.colourMapPos, 0) 
 
             # Set up the image data buffer
             gl.glEnable(gl.GL_TEXTURE_3D)
-            # change to texxture 1 when you get working
-            gl.glActiveTexture(gl.GL_TEXTURE0) 
+            gl.glActiveTexture(gl.GL_TEXTURE1) 
             gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
-            gl.glUniform1i(self.dataBufferPos, 0)
+            gl.glUniform1i(self.dataBufferPos, 1)
             
             # voxel coordinates
             voxOffs  = [0, 0, 0]
@@ -705,7 +824,7 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glDisableVertexAttribArray(self.voxXPos)
             gl.glDisableVertexAttribArray(self.voxYPos)
             gl.glDisableVertexAttribArray(self.voxZPos)
-#            gl.glDisable(gl.GL_TEXTURE_1D)
+            gl.glDisable(gl.GL_TEXTURE_1D)
             gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glUseProgram(0)
