@@ -79,12 +79,11 @@ class GLImageData(object):
         # the geometry of a single voxel, rendered as
         # a triangle strip.
         geomData = np.zeros((4, 3), dtype=np.float32)
+        geomData[:, [canvas.xax, canvas.yax]] = [[0, 0],
+                                                 [1, 0],
+                                                 [0, 1],
+                                                 [1, 1]]
         
-        geomData[:, [canvas.xax, canvas.yax]] = [[-0.5, -0.5],
-                                                 [ 0.5, -0.5],
-                                                 [-0.5,  0.5],
-                                                 [ 0.5,  0.5]]
-
         geomData = geomData.ravel('C')
         
         # x/y/z coordinates are stored as VBO arrays
@@ -143,8 +142,12 @@ class GLImageData(object):
         imageData = 255.0 * (imageData       - imageData.min()) / \
                             (imageData.max() - imageData.min())
 
-        # and each dimension is padded so
-        # it has a power-of-two length
+        # and each dimension is padded so it has a
+        # power-of-two length. Ugh. This is a horrible,
+        # but as far as I'm aware necessary hack.  At
+        # least it's necessary using the OpenGL 2.1
+        # API on OSX mavericks. It massively increases
+        # image load time, too.
         imageData = np.pad(imageData, pad, 'constant', constant_values=0)
         imageData = np.array(imageData, dtype=np.uint8)
 
@@ -156,16 +159,21 @@ class GLImageData(object):
         # Image data is stored on the GPU as a 3D texture
         imageBuffer = gl.glGenTextures(1)
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexParameteri(
-            gl.GL_TEXTURE_3D, gl.GL_TEXTURE_WRAP_R, gl.GL_CLAMP_TO_EDGE)         
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_T,
+                           gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_R,
+                           gl.GL_CLAMP_TO_EDGE)         
         
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
@@ -233,6 +241,9 @@ uniform float alpha;
 /* image data texture */
 uniform sampler3D dataBuffer;
 
+/* Voxel coordinate -> world space transformation matrix */
+uniform mat4 voxToWorldMat;
+
 /* Image dimensions */
 uniform float xdim;
 uniform float ydim;
@@ -258,7 +269,8 @@ void main(void) {
      * coordinates to screen coordinates).
      */
     vec3 vertPos = inVertex + vec3(voxX, voxY, voxZ);
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(vertPos, 1.0);
+    gl_Position = gl_ModelViewProjectionMatrix * \
+        (voxToWorldMat * vec4(vertPos, 1.0));
 
     /* Pass the voxel value through to the shader. */
     float normVoxX = voxX / xdim + 0.5 / xdim;
@@ -501,6 +513,8 @@ class SliceCanvas(wxgl.GLCanvas):
         self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
         self.dataBufferPos    = gl.glGetUniformLocation(self.shaders,
                                                         'dataBuffer')
+        self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
+                                                        'voxToWorldMat')
         self.xdimPos          = gl.glGetUniformLocation(self.shaders, 'xdim')
         self.ydimPos          = gl.glGetUniformLocation(self.shaders, 'ydim')
         self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
@@ -542,26 +556,16 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
-        
-        up     = [0, 0, 0]
-        centre = [0, 0, 0]
-        eye    = [0, 0, 0]
+        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, self.zmin-1, self.zmax+1)
 
-        eye[self.zax] = self.zmax
-        up[ self.yax] = 1
-
-        # I don't know why this is necessary :(
-        if self.zax == 1:
-            eye[self.zax] = self.zmin
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        glu.gluLookAt(
-            eye[   0], eye[   1], eye[   2],
-            centre[0], centre[1], centre[2],
-            up[    0], up[    1], up[    2])
-
+        gl.glLoadIdentity()        
+        if self.zax == 0:
+            gl.glRotatef(-90, 1, 0, 0)
+            gl.glRotatef(-90, 0, 0, 1)
+        elif self.zax == 1:
+            gl.glRotatef(270, 1, 0, 0)
 
 
     def draw(self, ev):
@@ -633,8 +637,8 @@ class SliceCanvas(wxgl.GLCanvas):
 
             # bind the transformation matrix
             # to the shader variable
-            # gl.glUniformMatrix4fv(self.voxToWorldMatPos,
-            #                      1, False, transformBuffer)
+            xmat = np.array(image.voxToWorldMat, dtype=np.float32)
+            gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
 
             # Set up the colour buffer
             # gl.glEnable(gl.GL_TEXTURE_1D)

@@ -71,8 +71,6 @@ class Image(object):
         coordinates, along the specified axis.
         """
 
-        return (-0.5, self.shape[axis]-0.5)
-
         points = np.zeros((2, 3), dtype=np.float32)
         points[1, axis] = self.shape[axis] - 1
         
@@ -105,8 +103,6 @@ class Image(object):
                   N*2 or N*3, respectively.
         """
 
-        return p
-
         voxp = self._transform(p, self.worldToVoxMat, axes)
 
         if voxp.size == 1: return int(voxp[0])
@@ -123,13 +119,9 @@ class Image(object):
         docstring for more details. 
         """
 
-        return p
-
         worldp = self._transform(p, self.voxToWorldMat, axes)
 
-        if worldp.size == 1:
-            #print 'casting to float!'
-            return float(worldp)
+        if worldp.size == 1: return float(worldp)
         else:                return worldp
 
         
