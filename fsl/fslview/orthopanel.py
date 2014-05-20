@@ -7,16 +7,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-if True:
-    import logging
-    logging.basicConfig(
-        format='%(levelname)8s '
-               '%(filename)20s '
-               '%(lineno)4d: '
-               '%(funcName)s - '
-               '%(message)s',
-        level=logging.DEBUG)
-
 import wx
 import wx.lib.newevent as wxevent
 
@@ -26,7 +16,7 @@ import fsl.fslview.slicecanvas as slicecanvas
 
 # The OrthoPanel emits a LocationEvent whenever the 'cursor' location
 # changes. It contains three attributes, x, y, and z, corresponding to
-# the current cursort location in the image space.
+# the current cursor location in the image space.
 LocationEvent, EVT_LOCATION_EVENT = wxevent.NewEvent()
 
 
