@@ -79,10 +79,10 @@ class GLImageData(object):
         # the geometry of a single voxel, rendered as
         # a triangle strip.
         geomData = np.zeros((4, 3), dtype=np.float32)
-        geomData[:, [canvas.xax, canvas.yax]] = [[0, 0],
-                                                 [1, 0],
-                                                 [0, 1],
-                                                 [1, 1]]
+        geomData[:, [canvas.xax, canvas.yax]] = [[-0.5, -0.5],
+                                                 [ 0.5, -0.5],
+                                                 [-0.5,  0.5],
+                                                 [ 0.5,  0.5]] 
         
         geomData = geomData.ravel('C')
         
@@ -256,7 +256,6 @@ attribute vec3 inVertex;
 attribute float voxX;
 attribute float voxY;
 attribute float voxZ;
-
 
 /* Voxel value passed through to fragment shader */ 
 varying float fragVoxValue;
@@ -556,14 +555,21 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin, self.xmax, self.ymin, self.ymax, self.zmin-1, self.zmax+1)
-
+        gl.glOrtho(self.xmin,     self.xmax,
+                   self.ymin,     self.ymax,
+                   self.zmin - 1, self.zmax + 1)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()        
+        gl.glLoadIdentity()
+
+        # TODO There's got to be a more generic way
+        # to perform this rotation. This will break
+        # if I add functionality allowing the user
+        # to specifty the x/y axes on initialisation.
         if self.zax == 0:
             gl.glRotatef(-90, 1, 0, 0)
             gl.glRotatef(-90, 0, 0, 1)
+            
         elif self.zax == 1:
             gl.glRotatef(270, 1, 0, 0)
 
