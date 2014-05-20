@@ -12,8 +12,6 @@ import                      wx
 import wx.glcanvas       as wxgl
 
 import OpenGL.GL         as gl
-import OpenGL.GLU        as glu
-import OpenGL.GL.shaders as shaders
 import OpenGL.arrays.vbo as vbo
 
 # Under OS X, I don't think I can request an OpenGL 3.2 core profile
@@ -676,13 +674,15 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin,     self.xmax,
-                   self.ymin,     self.ymax,
-                   self.zmin - 1, self.zmax + 1)
+        gl.glOrtho(self.xmin, self.xmax,
+                   self.ymin, self.ymax,
+                   self.zmin, self.zmax)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
+        # Rotate world space so the displayed slice
+        # is visible and correctly oriented
         # TODO There's got to be a more generic way
         # to perform this rotation. This will break
         # if I add functionality allowing the user
@@ -693,6 +693,11 @@ class SliceCanvas(wxgl.GLCanvas):
             
         elif self.zax == 1:
             gl.glRotatef(270, 1, 0, 0)
+
+        # move the currently displayed slice to screen Z coord 0
+        trans = [0, 0, 0]
+        trans[self.zax] = -self.zpos
+        gl.glTranslatef(*trans)
 
 
     def draw(self, ev):
@@ -720,6 +725,10 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
+
+        # enable 1D and 3D textures
+        gl.glEnable(gl.GL_TEXTURE_1D)
+        gl.glEnable(gl.GL_TEXTURE_3D)
 
         for image in self.imageList:
 
@@ -750,8 +759,7 @@ class SliceCanvas(wxgl.GLCanvas):
             # Figure out which slice we are drawing,
             # and if it's out of range, don't draw it
             zi = int(image.worldToVox(self.zpos, self.zax))
-            if zi < 0 or zi >= zdim:
-                continue
+            if zi < 0 or zi >= zdim: continue
 
             # bind the current alpha value
             # to the shader alpha variable
@@ -767,19 +775,17 @@ class SliceCanvas(wxgl.GLCanvas):
             xmat = np.array(image.voxToWorldMat, dtype=np.float32)
             gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
 
-            # Set up the colour buffer
-            gl.glEnable(gl.GL_TEXTURE_1D)
+            # Set up the colour texture
             gl.glActiveTexture(gl.GL_TEXTURE0) 
             gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
             gl.glUniform1i(self.colourMapPos, 0) 
 
-            # Set up the image data buffer
-            gl.glEnable(gl.GL_TEXTURE_3D)
+            # Set up the image data texture
             gl.glActiveTexture(gl.GL_TEXTURE1) 
             gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
             gl.glUniform1i(self.dataBufferPos, 1)
             
-            # voxel coordinates
+            # voxel x/y/z coordinates
             voxOffs  = [0, 0, 0]
             voxSteps = [1, 1, 1]
             voxOffs[ self.zax] = zi
@@ -817,7 +823,8 @@ class SliceCanvas(wxgl.GLCanvas):
                 None)
             gl.glEnableVertexAttribArray(self.inVertexPos)
             arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
-            
+
+            # Draw all of the triangles!
             arbdi.glDrawArraysInstancedARB(
                 gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
 
@@ -825,22 +832,24 @@ class SliceCanvas(wxgl.GLCanvas):
             gl.glDisableVertexAttribArray(self.voxXPos)
             gl.glDisableVertexAttribArray(self.voxYPos)
             gl.glDisableVertexAttribArray(self.voxZPos)
-            gl.glDisable(gl.GL_TEXTURE_1D)
-            gl.glDisable(gl.GL_TEXTURE_3D)
+
+            
+        gl.glDisable(gl.GL_TEXTURE_1D)
+        gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glUseProgram(0)
 
         # A vertical line at xpos, and a horizontal line at ypos
 
-        xverts = np.zeros((2,3))
-        yverts = np.zeros((2,3))
+        xverts = np.zeros((2, 3))
+        yverts = np.zeros((2, 3))
 
         xverts[:, self.xax] =  self.xpos
         xverts[:, self.yax] = [self.ymin, self.ymax]
-        xverts[:, self.zax] =  self.zpos
+        xverts[:, self.zax] =  self.zpos+1
         yverts[:, self.xax] = [self.xmin, self.xmax]
         yverts[:, self.yax] =  self.ypos
-        yverts[:, self.zax] =  self.zpos        
+        yverts[:, self.zax] =  self.zpos+1      
         
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
