@@ -57,24 +57,8 @@ class GLImageData(object):
           - canvas: The SliceCanvas object which is rendering the image.
         """
 
-        self.image      = image
-        self.canvas     = canvas
-
-        # Here, x,y, and z refer to screen
-        # coordinates, not image coordinates:
-        #   - x: horizontal
-        #   - y: vertical
-        #   - z: depth
-
-        # number of voxels along each axis
-        self.xdim = image.shape[ canvas.xax]
-        self.ydim = image.shape[ canvas.yax]
-        self.zdim = image.shape[ canvas.zax]
-
-        # length of a voxel along each axis
-        self.xlen = image.pixdim[canvas.xax]
-        self.ylen = image.pixdim[canvas.yax]
-        self.zlen = image.pixdim[canvas.zax]
+        self.image  = image
+        self.canvas = canvas
 
         # Maximum number of colours used to draw image data
         self.colourResolution = 256
@@ -113,7 +97,8 @@ class GLImageData(object):
         # times - we are drawing row-wise, and opengl does not
         # allow us to loop over a VBO in a single instance
         # rendering call
-        voxData[canvas.xax] = np.tile(voxData[canvas.xax], self.ydim)
+        voxData[canvas.xax] = np.tile(voxData[    canvas.xax],
+                                      image.shape[canvas.yax])
         
         xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
         yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
@@ -121,11 +106,11 @@ class GLImageData(object):
         
         geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
 
-        self.dataBuffer      = self.initImageBuffer()
-        self.voxXBuffer      = xBuffer
-        self.voxYBuffer      = yBuffer
-        self.voxZBuffer      = zBuffer
-        self.geomBuffer      = geomBuffer
+        self.dataBuffer = self.initImageBuffer()
+        self.voxXBuffer = xBuffer
+        self.voxYBuffer = yBuffer
+        self.voxZBuffer = zBuffer
+        self.geomBuffer = geomBuffer
 
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
@@ -495,12 +480,6 @@ class SliceCanvas(wxgl.GLCanvas):
                 glData = GLImageData(image, self)
                 image.setAttribute(self.name, glData)
 
-
-        print 'bounds: '
-        print 'X: {} {}'.format(self.xmin, self.xmax)
-        print 'Y: {} {}'.format(self.ymin, self.ymax)
-        print 'Z: {} {}'.format(self.zmin, self.zmax)
-                
         self.Refresh()
 
 
@@ -559,7 +538,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         size = self.GetSize()
 
-        # set up 2D drawing
+        # set up 2D orthographic drawing
         gl.glViewport(0, 0, size.width, size.height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
@@ -571,6 +550,10 @@ class SliceCanvas(wxgl.GLCanvas):
 
         eye[self.zax] = self.zmax
         up[ self.yax] = 1
+
+        # I don't know why this is necessary :(
+        if self.zax == 1:
+            eye[self.zax] = self.zmin
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
@@ -625,9 +608,9 @@ class SliceCanvas(wxgl.GLCanvas):
             voxZBuffer      = glImageData.voxZBuffer
             geomBuffer      = glImageData.geomBuffer
 
-            xdim = glImageData.xdim
-            ydim = glImageData.ydim
-            zdim = glImageData.zdim
+            xdim = image.shape[self.xax]
+            ydim = image.shape[self.yax]
+            zdim = image.shape[self.zax]
 
             # Don't draw the slice if this
             # image display is disabled
