@@ -412,7 +412,7 @@ class SliceCanvas(wxgl.GLCanvas):
         """ 
 
         if   xpos > self.xmax: xpos = self.xmax
-        elif xpos < self.xmin: xpos = self.xmin 
+        elif xpos < self.xmin: xpos = self.xmin
 
         self._xpos = xpos
 
@@ -431,7 +431,7 @@ class SliceCanvas(wxgl.GLCanvas):
         """ 
         
         if   ypos > self.ymax: ypos = self.ymax
-        elif ypos < self.ymin: ypos = self.ymin 
+        elif ypos < self.ymin: ypos = self.ymin
 
         self._ypos = ypos
 
@@ -488,9 +488,9 @@ class SliceCanvas(wxgl.GLCanvas):
         self.ymax = imageList.maxBounds[self.yax]
         self.zmax = imageList.maxBounds[self.zax]
 
-        self._xpos = (self.xmax - self.xmin) / 2.0
-        self._ypos = (self.ymax - self.ymin) / 2.0
-        self._zpos = (self.zmax - self.zmin) / 2.0
+        self._xpos = self.xmin + abs(self.xmax - self.xmin) / 2.0
+        self._ypos = self.ymin + abs(self.ymax - self.ymin) / 2.0
+        self._zpos = self.zmin + abs(self.zmax - self.zmin) / 2.0
 
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
