@@ -119,8 +119,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         y = self.ycanvas.zpos
         z = self.zcanvas.zpos
 
-        mx = mx * (source.xmax - source.xmin) / float(w) + source.xmin
-        my = my * (source.ymax - source.ymin) / float(h) + source.ymin
+        mx = source.canvasToWorldX(mx)
+        my = source.canvasToWorldY(my)
 
         if   source == self.xcanvas: y, z = mx, my
         elif source == self.ycanvas: x, z = mx, my

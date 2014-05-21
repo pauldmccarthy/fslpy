@@ -435,22 +435,43 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self._ypos = ypos
 
-    @property
-    def canvasXpos(self):
-        pass
 
-    @canvasXpos.setter
-    def canvasXpos(self):
-        pass
+    def canvasToWorldX(self, xpos):
+        """
+        Given a pixel x coordinate on this canvas, translates it
+        into the real world coordinates of the displayed slice.
+        """
 
-    @property
-    def canvasYpos(self):
-        pass
+        realWidth   = float(self.xmax - self.xmin)
+        sliceStart  = float(self._canvasBBox[0])
+        sliceWidth  = float(self._canvasBBox[2])
 
-    @canvasYpos.setter
-    def canvasYpos(self):
-        pass 
+        # Translate the xpos from the canvas to
+        # the slice bounding box, then translate
+        # the xpos from the slice bounding box
+        # to real world coordinates
+        xpos = xpos - sliceStart
+        xpos = self.xmin  + (xpos / sliceWidth)  * realWidth
 
+        return xpos
+
+
+    def canvasToWorldY(self, ypos):
+        """
+        Given a pixel y coordinate on this canvas, translates it
+        into the real world coordinates of the displayed slice.
+        """
+        
+        realHeight   = float(self.ymax - self.ymin)
+        sliceStart   = float(self._canvasBBox[1])
+        sliceHeight  = float(self._canvasBBox[3])
+        
+        ypos = ypos - sliceStart
+        ypos = self.ymin  + (ypos /  sliceHeight) *  realHeight
+
+        return ypos 
+
+        
     def __init__(self, parent, imageList, zax=0, context=None):
         """
         Creates a canvas object. The OpenGL data buffers are set up the
@@ -699,7 +720,7 @@ class SliceCanvas(wxgl.GLCanvas):
         if height != size.height: y = (size.height - height) / 2
 
         self._canvasBBox = [x, y, width, height]
-        
+
         return width, height
 
         
@@ -879,12 +900,17 @@ class SliceCanvas(wxgl.GLCanvas):
         xverts = np.zeros((2, 3))
         yverts = np.zeros((2, 3))
 
-        xverts[:, self.xax] =  self.xpos
+        # add a little padding to the lines if they are
+        # on the boundary, so they don't get cropped
+        if self.xpos == self.xmin: xverts[:, self.xax] = self.xpos + 0.5
+        else:                      xverts[:, self.xax] = self.xpos
+        if self.ypos == self.ymin: yverts[:, self.yax] = self.ypos + 0.5
+        else:                      yverts[:, self.yax] = self.ypos        
+
         xverts[:, self.yax] = [self.ymin, self.ymax]
         xverts[:, self.zax] =  self.zpos + 1
         yverts[:, self.xax] = [self.xmin, self.xmax]
-        yverts[:, self.yax] =  self.ypos
-        yverts[:, self.zax] =  self.zpos + 1      
+        yverts[:, self.zax] =  self.zpos + 1
 
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
