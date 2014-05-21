@@ -645,6 +645,16 @@ class SliceCanvas(wxgl.GLCanvas):
         of this SliceCanvas object. This method is only called
         once, on the first draw.
         """
+
+        # A bit hacky. We can only set the GL context (and create
+        # the GL data) once something is actually displayed on the
+        # screen. The _initGLData method is called (asynchronously)
+        # by the draw() method if it sees that the glReady flag has
+        # not yet been set. But draw() may be called mored than once
+        # before _initGLData is called. Here, to prevent
+        # _initGLData from running more than once, the first time
+        # it is called it simply overwrites itself with a dummy method.
+        self._initGLData = lambda s: s
  
         self.context.SetCurrent(self)
 
@@ -670,16 +680,6 @@ class SliceCanvas(wxgl.GLCanvas):
         # initialise data for the images that
         # are already in the image list 
         self._imageListChanged()
-
-        # A bit hacky. We can only set the GL context (and create
-        # the GL data) once something is actually displayed on the
-        # screen. The _initGLData method is called (asynchronously)
-        # by the draw() method if it sees that the glReady flag has
-        # not yet been set. But draw() may be called mored than once
-        # before _initGLData is called. Here, to prevent
-        # _initGLData from running more than once, the first time
-        # it is called it simply overwrites itself with a dummy method.
-        self._initGLData = lambda s: s
 
         self.glReady = True
 
