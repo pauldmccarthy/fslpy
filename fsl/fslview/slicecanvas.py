@@ -435,6 +435,21 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self._ypos = ypos
 
+    @property
+    def canvasXpos(self):
+        pass
+
+    @canvasXpos.setter
+    def canvasXpos(self):
+        pass
+
+    @property
+    def canvasYpos(self):
+        pass
+
+    @canvasYpos.setter
+    def canvasYpos(self):
+        pass 
 
     def __init__(self, parent, imageList, zax=0, context=None):
         """
@@ -491,6 +506,16 @@ class SliceCanvas(wxgl.GLCanvas):
         self._xpos = self.xmin + abs(self.xmax - self.xmin) / 2.0
         self._ypos = self.ymin + abs(self.ymax - self.ymin) / 2.0
         self._zpos = self.zmin + abs(self.zmax - self.zmin) / 2.0
+
+        # When drawn, the slice does not necessarily take
+        # up the entire canvas size, as its aspect ratio
+        # is maintained. The _canvasBBox attribute is used
+        # to store the [x, y, width, height] bounding box
+        # within which the slice is actually drawn. It is
+        # updated by the _calculateCanvasBBox method
+        # whenever the canvas is resized
+        self._canvasBBox = [0, 0, 0, 0]
+        self.Bind(wx.EVT_SIZE, self._calculateCanvasBBox)
 
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
@@ -638,14 +663,19 @@ class SliceCanvas(wxgl.GLCanvas):
         self.glReady = True
 
 
-    def calculateCanvasSize(self, width, height):
+    def _calculateCanvasBBox(self, ev):
         """
         Calculates the best size to draw the slice, maintaining its
         aspect ratio, within the given (maximum) width and height.
         """
+
+        size = self.GetClientSize()
+
+        if (size.width == 0) or (size.height == 0):
+            return
         
-        width  = float(width)
-        height = float(height)
+        width  = float(size.width)
+        height = float(size.height)
 
         realWidth  = float(self.xmax - self.xmin)
         realHeight = float(self.ymax - self.ymin)
@@ -660,6 +690,15 @@ class SliceCanvas(wxgl.GLCanvas):
 
         width  = int(np.floor(width))
         height = int(np.floor(height))
+
+        # center the slice within
+        # the available space
+        x = 0
+        y = 0
+        if width  != size.width:  x = (size.width  - width)  / 2
+        if height != size.height: y = (size.height - height) / 2
+
+        self._canvasBBox = [x, y, width, height]
         
         return width, height
 
@@ -671,19 +710,10 @@ class SliceCanvas(wxgl.GLCanvas):
         so does not need to be called manually.
         """
 
-        size          = self.GetClientSize()
-        width, height = self.calculateCanvasSize(size.width, size.height)
-
-        # center the slice within
-        # the available space
-        widthOff  = 0
-        heightOff = 0
-
-        if width  != size.width:  widthOff  = (size.width  - width)  / 2
-        if height != size.height: heightOff = (size.height - height) / 2
+        x, y, width, height = self._canvasBBox
 
         # set up 2D orthographic drawing
-        gl.glViewport(widthOff, heightOff, width, height)
+        gl.glViewport(x, y, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
         gl.glOrtho(self.xmin,       self.xmax,
