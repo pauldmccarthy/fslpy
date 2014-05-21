@@ -306,19 +306,22 @@ class SliceCanvas(wxgl.GLCanvas):
         for image in self.imageList:
             try:
                 glData = image.getAttribute(self.name)
-            except:
-                glData = glimagedata.GLImageData(image, self.xax, self.yax)
-                image.setAttribute(self.name, glData)
+                continue
+            except KeyError:
+                pass
+                
+            glData = glimagedata.GLImageData(image, self.xax, self.yax)
+            image.setAttribute(self.name, glData)
 
-                def refresh(*a):
-                    self.Refresh()
+            def refresh(*a):
+                self.Refresh()
 
-                image.display.addListener('enabled',    self.name, refresh)
-                image.display.addListener('alpha',      self.name, refresh)
-                image.display.addListener('displayMin', self.name, refresh)
-                image.display.addListener('displayMax', self.name, refresh)
-                image.display.addListener('rangeClip',  self.name, refresh)
-                image.display.addListener('cmap',       self.name, refresh)
+            image.display.addListener('enabled',    self.name, refresh)
+            image.display.addListener('alpha',      self.name, refresh)
+            image.display.addListener('displayMin', self.name, refresh)
+            image.display.addListener('displayMax', self.name, refresh)
+            image.display.addListener('rangeClip',  self.name, refresh)
+            image.display.addListener('cmap',       self.name, refresh)
 
         self.Refresh()
 
@@ -475,6 +478,12 @@ class SliceCanvas(wxgl.GLCanvas):
                    self.ymin,       self.ymax,
                    self.zmin - 100, self.zmax + 100)
         # I don't know why the above +/-100 is necessary :(
+        # The '100' is arbitrary, but it seems that I need
+        # to extend the depth clipping range beyond the
+        # range of the data. This is despite the fact that
+        # below, I'm actually translating the displayed
+        # slice to Z=0! I don't understand OpenGL sometimes.
+        # Most of the time.
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
