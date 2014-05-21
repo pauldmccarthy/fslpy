@@ -7,11 +7,12 @@
 
 import wx
 
-import numpy                   as np
+import numpy                      as np
 
-import fsl.props               as props
-import fsl.data.fslimage       as fslimage
-import fsl.fslview.slicecanvas as slicecanvas
+import fsl.props                  as props
+import fsl.data.fslimage          as fslimage
+import fsl.fslview.slicecanvas    as slicecanvas
+import fsl.fslview.imagelistpanel as imagelistpanel
 
 class LightBoxPanel(wx.ScrolledWindow, props.HasProperties):
 
@@ -22,7 +23,6 @@ class LightBoxPanel(wx.ScrolledWindow, props.HasProperties):
     def __init__(self, parent, imageList):
 
         wx.ScrolledWindow.__init__(self, parent)
-        # wx.Panel.__init__(self, parent)
 
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
@@ -32,6 +32,13 @@ class LightBoxPanel(wx.ScrolledWindow, props.HasProperties):
         self.canvases  = []
         self.imageList = imageList
 
+        def refresh(*a):
+            self._createCanvases()
+
+        LightBoxPanel.sliceSpacing.addListener(self, 'refresh', refresh)
+        LightBoxPanel.sliceAxis   .addListener(self, 'refresh', refresh)
+
+        self._glContext = None
         self._createCanvases()
 
 
@@ -40,7 +47,6 @@ class LightBoxPanel(wx.ScrolledWindow, props.HasProperties):
         if self.sizer is not None:
             self.sizer.Clear(True)
 
-            
         axis      = int(self.sliceAxis)
         imgMin    = self.imageList.minBounds[axis]
         imgMax    = self.imageList.maxBounds[axis]
@@ -50,15 +56,17 @@ class LightBoxPanel(wx.ScrolledWindow, props.HasProperties):
         self.sizer    = wx.WrapSizer(wx.HORIZONTAL)
         self.canvases = []
 
+        print '{} slices to be drawn'.format(len(slicePoss))
+
         for i, pos in enumerate(slicePoss):
             
-            if i == 0: ctx = None
-            else:      ctx = self.canvases[0].context
-
             canvas = slicecanvas.SliceCanvas(self,
                                              self.imageList,
                                              zax=axis,
-                                             context=ctx)
+                                             context=self._glContext)
+
+            if self._glContext is None: self._glContext = canvas.context
+            
             canvas.zpos = pos
             canvas.SetMinSize((100, 100))
 
@@ -78,7 +86,21 @@ class LightBoxFrame(wx.Frame):
     def __init__(self, parent, imageList, title=None):
         
         wx.Frame.__init__(self, parent, title=title)
-        self.panel = LightBoxPanel(self, imageList)
+
+        
+
+        
+        self.mainPanel = LightBoxPanel( self, imageList)
+        self.propPanel = props.buildGUI(self, self.mainPanel)
+        self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.sizer.Add(self.propPanel, flag=wx.EXPAND)
+        self.sizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.listPanel, flag=wx.EXPAND)
+
+        self.SetSizer(self.sizer)
         self.Layout()
 
 

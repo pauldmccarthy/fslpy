@@ -305,8 +305,17 @@ class SliceCanvas(wxgl.GLCanvas):
         # so we know when to refresh the canvas.
         for image in self.imageList:
             try:
+
+                # TODO I could share GLImageData instances
+                # across different canvases which are
+                # displaying the image with the same axis
+                # orientation. Could store the GLImageData
+                # object with a geneic name, e.g.
+                # "GLImageData_0_1_2", where 0, 1, 2, are
+                # the screen x/y/z axes.
                 glData = image.getAttribute(self.name)
                 continue
+                
             except KeyError:
                 pass
                 
