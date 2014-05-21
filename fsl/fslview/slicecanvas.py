@@ -531,7 +531,6 @@ class SliceCanvas(wxgl.GLCanvas):
         self.ypos = self.ypos
         self.zpos = self.zpos
 
-                
         # Create a GLImageData object
         # for any new images
         for image in self.imageList:
@@ -638,6 +637,32 @@ class SliceCanvas(wxgl.GLCanvas):
 
         self.glReady = True
 
+
+    def calculateCanvasSize(self, width, height):
+        """
+        Calculates the best size to draw the slice, maintaining its
+        aspect ratio, within the given (maximum) width and height.
+        """
+        
+        width  = float(width)
+        height = float(height)
+
+        realWidth  = float(self.xmax - self.xmin)
+        realHeight = float(self.ymax - self.ymin)
+
+        realRatio   = realWidth / realHeight
+        canvasRatio = width     / height
+        
+        if canvasRatio >= realRatio:
+            width  = realWidth  * (height / realHeight)
+        else:
+            height = realHeight * (width  / realWidth)
+
+        width  = int(np.floor(width))
+        height = int(np.floor(height))
+        
+        return width, height
+
         
     def resize(self):
         """
@@ -646,15 +671,24 @@ class SliceCanvas(wxgl.GLCanvas):
         so does not need to be called manually.
         """
 
-        size = self.GetSize()
+        size          = self.GetClientSize()
+        width, height = self.calculateCanvasSize(size.width, size.height)
+
+        # center the slice within
+        # the available space
+        widthOff  = 0
+        heightOff = 0
+
+        if width  != size.width:  widthOff  = (size.width  - width)  / 2
+        if height != size.height: heightOff = (size.height - height) / 2
 
         # set up 2D orthographic drawing
-        gl.glViewport(0, 0, size.width, size.height)
+        gl.glViewport(widthOff, heightOff, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin, self.xmax,
-                   self.ymin, self.ymax,
-                   self.zmin-100, self.zmax+100)
+        gl.glOrtho(self.xmin,       self.xmax,
+                   self.ymin,       self.ymax,
+                   self.zmin - 100, self.zmax + 100)
         # I don't know why the above +/-100 is necessary :(
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
