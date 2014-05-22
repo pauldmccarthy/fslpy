@@ -430,22 +430,27 @@ class SliceCanvas(wxgl.GLCanvas):
         self.glReady = True
 
 
-    def _calculateCanvasBBox(self, ev):
+    def _calculateCanvasBBox(self, ev, realWidth=None, realHeight=None):
         """
         Calculates the best size to draw the slice, maintaining its
-        aspect ratio, within the given (maximum) width and height.
+        aspect ratio, within the current canvas size. The
+        realWidth/realHeight parameters, if provided, are used
+        to calculate the displayed world space aspect ratio. If not
+        provided, they are calculated from the min/max bounds of
+        the displayed image list.
         """
 
         size = self.GetClientSize()
 
+        # canvas is not yet displayed
         if (size.width == 0) or (size.height == 0):
             return
-        
+
         width  = float(size.width)
         height = float(size.height)
 
-        realWidth  = float(self.xmax - self.xmin)
-        realHeight = float(self.ymax - self.ymin)
+        if realWidth  is None: realWidth  = float(abs(self.xmax - self.xmin))
+        if realHeight is None: realHeight = float(abs(self.ymax - self.ymin))
 
         realRatio   = realWidth / realHeight
         canvasRatio = width     / height
@@ -458,7 +463,7 @@ class SliceCanvas(wxgl.GLCanvas):
         width  = int(np.floor(width))
         height = int(np.floor(height))
 
-        # center the slice within
+        # centre the slice within
         # the available space
         x = 0
         y = 0
@@ -470,22 +475,37 @@ class SliceCanvas(wxgl.GLCanvas):
         return width, height
 
         
-    def _resize(self):
+    def _resize(self,
+                bbox=None,
+                xmin=None,
+                xmax=None,
+                ymin=None,
+                ymax=None,
+                zmin=None,
+                zmax=None):
         """
         Sets up the GL canvas size, viewport, and
         projection. This method is called by draw(),
         so does not need to be called manually.
         """
 
-        x, y, width, height = self._canvasBBox
+        if bbox is None: bbox = self._canvasBBox
+        if xmin is None: xmin = self.xmin
+        if xmax is None: xmax = self.xmax
+        if ymin is None: ymin = self.ymin
+        if ymin is None: ymax = self.ymax
+        if zmin is None: zmin = self.zmin
+        if zmax is None: zmax = self.zmax
+
+        x, y, width, height = bbox
 
         # set up 2D orthographic drawing
         gl.glViewport(x, y, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(self.xmin,       self.xmax,
-                   self.ymin,       self.ymax,
-                   self.zmin - 100, self.zmax + 100)
+        gl.glOrtho(xmin,       xmax,
+                   ymin,       ymax,
+                   zmin - 100, zmax + 100)
         # I don't know why the above +/-100 is necessary :(
         # The '100' is arbitrary, but it seems that I need
         # to extend the depth clipping range beyond the
@@ -515,7 +535,7 @@ class SliceCanvas(wxgl.GLCanvas):
         trans[self.zax] = -self.zpos 
         gl.glTranslatef(*trans)
 
-
+        
     def _drawSlice(self, image, sliceno, xform=None):
         """
         Draws the specified slice from the specified image on the
@@ -532,12 +552,6 @@ class SliceCanvas(wxgl.GLCanvas):
         except: return
         
         imageDisplay = image.display
-        dataBuffer   = glImageData.dataBuffer
-        voxXBuffer   = glImageData.voxXBuffer
-        voxYBuffer   = glImageData.voxYBuffer
-        voxZBuffer   = glImageData.voxZBuffer
-        geomBuffer   = glImageData.geomBuffer
-        colourBuffer = glImageData.colourBuffer
 
         xdim = image.shape[self.xax]
         ydim = image.shape[self.yax]
@@ -563,16 +577,17 @@ class SliceCanvas(wxgl.GLCanvas):
         # to the shader variable
         if xform is None:
             xform = np.array(image.voxToWorldMat, dtype=np.float32)
-        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xform)
+        xform = xform.ravel('C')
+        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, False, xform)
 
         # Set up the colour texture
         gl.glActiveTexture(gl.GL_TEXTURE0) 
-        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, glImageData.colourBuffer)
         gl.glUniform1i(self.colourMapPos, 0) 
 
         # Set up the image data texture
         gl.glActiveTexture(gl.GL_TEXTURE1) 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.dataBuffer)
         gl.glUniform1i(self.dataBufferPos, 1)
         
         # voxel x/y/z coordinates
@@ -582,8 +597,12 @@ class SliceCanvas(wxgl.GLCanvas):
         voxSteps[self.yax] = xdim
         voxSteps[self.zax] = xdim * ydim
         for buf, pos, step, off in zip(
-                (voxXBuffer, voxYBuffer, voxZBuffer),
-                (self.voxXPos, self.voxYPos, self.voxZPos),
+                (glImageData.voxXBuffer,
+                 glImageData.voxYBuffer,
+                 glImageData.voxZBuffer),
+                (self.voxXPos,
+                 self.voxYPos,
+                 self.voxZPos),
                 voxSteps,
                 voxOffs):
 
@@ -603,7 +622,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # The geometry buffer, which defines the geometry of a
         # single vertex (4 vertices, drawn as a triangle strip)
-        geomBuffer.bind()
+        glImageData.geomBuffer.bind()
         gl.glVertexAttribPointer(
             self.inVertexPos,
             3,
