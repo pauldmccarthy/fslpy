@@ -516,7 +516,12 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glTranslatef(*trans)
 
 
-    def _drawImage(self, image):
+    def _drawSlice(self, image, sliceno, xform=None):
+        """
+        Draws the specified slice from the specified image on the
+        canvas. If xform is not provided, the image.voxToWorldMat
+        transformation matrix is used.
+        """
 
         # The GL data is stored as an attribute of the image,
         # and is created in the _imageListChanged method when
@@ -542,10 +547,8 @@ class SliceCanvas(wxgl.GLCanvas):
         # image display is disabled
         if not imageDisplay.enabled: return
 
-        # Figure out which slice we are drawing,
-        # and if it's out of range, don't draw it
-        zi = int(image.worldToVox(self.zpos, self.zax))
-        if zi < 0 or zi >= zdim: return
+        # if the slice is out of range, don't draw it
+        if sliceno < 0 or sliceno >= zdim: return
 
         # bind the current alpha value
         # to the shader alpha variable
@@ -558,8 +561,9 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # bind the transformation matrix
         # to the shader variable
-        xmat = np.array(image.voxToWorldMat, dtype=np.float32)
-        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
+        if xform is None:
+            xform = np.array(image.voxToWorldMat, dtype=np.float32)
+        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xform)
 
         # Set up the colour texture
         gl.glActiveTexture(gl.GL_TEXTURE0) 
@@ -574,7 +578,7 @@ class SliceCanvas(wxgl.GLCanvas):
         # voxel x/y/z coordinates
         voxOffs  = [0, 0, 0]
         voxSteps = [1, 1, 1]
-        voxOffs[ self.zax] = zi
+        voxOffs[ self.zax] = sliceno
         voxSteps[self.yax] = xdim
         voxSteps[self.zax] = xdim * ydim
         for buf, pos, step, off in zip(
@@ -647,7 +651,9 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glShadeModel(gl.GL_FLAT)
 
         for image in self.imageList:
-            self._drawImage(image)
+
+            zi = int(image.worldToVox(self.zpos, self.zax))
+            self._drawSlice(image, zi)
 
         gl.glUseProgram(0)
 
