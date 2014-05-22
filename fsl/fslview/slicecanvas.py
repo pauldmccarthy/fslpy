@@ -267,7 +267,7 @@ class SliceCanvas(wxgl.GLCanvas):
         self.glReady = False
 
         # All the work is done by the draw method
-        self.Bind(wx.EVT_PAINT, self.draw)
+        self.Bind(wx.EVT_PAINT, self._draw)
 
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -470,7 +470,7 @@ class SliceCanvas(wxgl.GLCanvas):
         return width, height
 
         
-    def resize(self):
+    def _resize(self):
         """
         Sets up the GL canvas size, viewport, and
         projection. This method is called by draw(),
@@ -516,7 +516,7 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glTranslatef(*trans)
 
 
-    def draw(self, ev):
+    def _draw(self, ev):
         """
         Draws the currently selected slice to the canvas.
         """
@@ -527,7 +527,7 @@ class SliceCanvas(wxgl.GLCanvas):
             return
 
         self.context.SetCurrent(self)
-        self.resize()
+        self._resize()
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
