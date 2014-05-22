@@ -18,19 +18,32 @@ import fsl.fslview.slicecanvas as slicecanvas
 class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
-    def __init__(self, parent, imageList, zax, context=None, scrollbar=None):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 zax,
+                 context=None,
+                 sliceSpacing=2,
+                 ncols=20,
+                 scrollbar=None):
+
+        if (scrollbar is not None) and (not scrollbar.IsVertical()):
+            raise RuntimeError('LightBoxCanvas only supports '
+                               'a vertical scrollbar')
 
         slicecanvas.SliceCanvas.__init__(self, parent, imageList, zax, context)
 
-        self._sliceSpacing = 1
-        self._ncols        = 20
+        self._scrollbar    = scrollbar
+        self._sliceSpacing = sliceSpacing
+        self._ncols        = ncols
 
         # nrows is automatically calculated 
         # in the _imageListChangd method -
         # the value 0 is just a placeholder
-        self._nrows        = 0
+        self._nrows = 0
 
-        self.scrollbar = scrollbar
+        if scrollbar is not None:
+            scrollbar.Bind(wx.EVT_SCROLL, self._draw)
 
 
     def _imageListChanged(self):
@@ -45,6 +58,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         position the slice on the canvas.
         """
 
+        self._updateScrollBar()
+
         # recalculate image bounds, and create
         # GL data for any newly added images.
         slicecanvas.SliceCanvas._imageListChanged(self)
@@ -54,7 +69,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         sliceLocs = np.arange(
             self.zmin + 0.5 * self._sliceSpacing,
             self.zmax,
-            self._sliceSpacing)        
+            self._sliceSpacing)
 
         self._nslices = len(sliceLocs)
         self._nrows   = int(np.ceil(self._nslices / float(self._ncols)))
@@ -77,6 +92,33 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
                 self._transforms[-1].append(xform)
                 self._sliceIdxs[ -1].append(imgZi)
+
+
+    def _updateScrollBar(self):
+        """
+        If a scroll bar was passed in when this LightBoxCanvas was created,
+        this method updates it to reflect the current state of the canvas
+        size and the displayed list of images.
+        """
+        
+        if self._scrollbar is None: return
+
+        screenSize = self.GetClientSize()
+        sliceRatio = abs(self.xmax - self.xmin) / abs(self.ymax - self.ymin)
+
+        sliceWidth   = screenSize.width / float(self._ncols)
+        sliceHeight  = sliceWidth * sliceRatio
+        rowsOnScreen = int(np.floor(screenSize.height / sliceHeight))
+        oldPos       = self._scrollbar.GetThumbPosition()
+
+        if rowsOnScreen == 0:
+            rowsOnScreen = 1
+
+        self._scrollbar.SetScrollbar(oldPos,
+                                     rowsOnScreen,
+                                     self._nrows,
+                                     rowsOnScreen,
+                                     True)
 
 
     def _calculateSliceTransform(self, image, sliceno):
@@ -114,30 +156,54 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         on the canvas, such that their aspect ratio is maintained.
         """
 
-        realWidth  = abs(self.xmax - self.xmin) * self._ncols
-        realHeight = abs(self.ymax - self.ymin) * self._nrows
+        # _calculateCanvasBBox is called on window resizes.
+        # We also want the scroll bar to be updated when
+        # the window size changes, so there you go.
+        self._updateScrollBar()
+
+        worldSliceWidth  = float(abs(self.xmax - self.xmin))
+        worldSliceHeight = float(abs(self.ymax - self.ymin))
+
+        if self._scrollbar is not None:
+            rowsOnScreen = self._scrollbar.GetPageSize()
+            worldWidth   = worldSliceWidth  * self._ncols
+            worldHeight  = worldSliceHeight * rowsOnScreen
+            
+        else:
+            worldWidth   = worldSliceWidth  * self._ncols
+            worldHeight  = worldSliceHeight * self._nrows
 
         slicecanvas.SliceCanvas._calculateCanvasBBox(self,
                                                      ev,
-                                                     realWidth,
-                                                     realHeight)
+                                                     worldWidth=worldWidth,
+                                                     worldHeight=worldHeight)
 
 
     def _resize(self):
         """
         Sets up the GL canvas size, viewport and projection.
         """
-        
-        nslices = abs(self.zmax - self.zmin) / self._sliceSpacing
-        nrows   = int(np.ceil(nslices / float(self._ncols)))
 
         xlen = abs(self.xmax - self.xmin)
         ylen = abs(self.ymax - self.ymin)        
 
+        worldYMin  = None
         worldXMax  = self.xmin + xlen * self._ncols
-        worldYMax  = self.ymin + ylen *       nrows
+        worldYMax  = self.ymin + ylen * self._nrows
 
-        slicecanvas.SliceCanvas._resize(self, xmax=worldXMax, ymax=worldYMax)
+        if self._scrollbar is not None:
+
+            rowsOnScreen = self._scrollbar.GetPageSize()
+            currentRow   = self._scrollbar.GetThumbPosition()
+            currentRow   = self._nrows - currentRow - rowsOnScreen
+
+            worldYMin = self.ymin + ylen * currentRow
+            worldYMax = worldYMin + ylen * rowsOnScreen
+
+        slicecanvas.SliceCanvas._resize(self,
+                                        xmax=worldXMax,
+                                        ymin=worldYMin,
+                                        ymax=worldYMax)
 
         
     def _draw(self, ev):
@@ -149,6 +215,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if not self.glReady:
             wx.CallAfter(self._initGLData)
             return
+
+        if self._scrollbar is None:
+            startSlice = 0
+            endSlice   = self._nslices
+        else:
+            rowsOnScreen = self._scrollbar.GetPageSize()
+            startRow     = self._scrollbar.GetThumbPosition()
+            
+            startSlice   = self._ncols * startRow
+            endSlice     = startSlice + rowsOnScreen * self._ncols
+
+            if endSlice > self._nslices:
+                endSlice = self._nslices
 
         self.context.SetCurrent(self)
         self._resize()
@@ -168,7 +247,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # Draw all the slices for all the images.
         for i, image in enumerate(self.imageList):
-            for zi in range(self._nslices):
+            for zi in range(startSlice, endSlice):
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],
                                 self._transforms[i][zi]) 
@@ -188,14 +267,28 @@ class LightBoxFrame(wx.Frame):
         wx.Frame.__init__(self, parent, title=title)
 
         import fsl.fslview.imagelistpanel as imagelistpanel
-        
-        self.mainPanel = LightBoxCanvas(self, imageList, zax=2)
-        self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
+
+
+        self.canvasPanel = wx.Panel(self)
+        self.listPanel   = imagelistpanel.ImageListPanel(self, imageList)
+
+
+        self.scrollbar = wx.ScrollBar(  self.canvasPanel, style=wx.SB_VERTICAL)
+        self.mainPanel = LightBoxCanvas(self.canvasPanel, imageList, zax=1,
+                                        scrollbar=self.scrollbar,
+                                        sliceSpacing=0.5,
+                                        ncols=10)
+
+        self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.canvasPanel.SetSizer(self.canvasSizer)
+
+        self.canvasSizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
+        self.canvasSizer.Add(self.scrollbar, flag=wx.EXPAND)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.sizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.listPanel, flag=wx.EXPAND)
+        self.sizer.Add(self.canvasPanel, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.listPanel,   flag=wx.EXPAND)
 
         self.SetSizer(self.sizer)
         self.Layout()
