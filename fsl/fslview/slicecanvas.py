@@ -430,7 +430,13 @@ class SliceCanvas(wxgl.GLCanvas):
         self.glReady = True
 
 
-    def _calculateCanvasBBox(self, ev, realWidth=None, realHeight=None):
+    def _calculateCanvasBBox(
+            self,
+            ev,
+            canvasWidth=None,
+            canvasHeight=None,
+            realWidth=None,
+            realHeight=None):
         """
         Calculates the best size to draw the slice, maintaining its
         aspect ratio, within the current canvas size. The
@@ -442,37 +448,43 @@ class SliceCanvas(wxgl.GLCanvas):
 
         size = self.GetClientSize()
 
+        if canvasWidth  is None: canvasWidth  = size.width
+        if canvasHeight is None: canvasHeight = size.height
+
         # canvas is not yet displayed
-        if (size.width == 0) or (size.height == 0):
+        if canvasWidth  == 0 or \
+           canvasHeight == 0 or \
+           realWidth    == 0 or \
+           realHeight   == 0:
             return
 
-        width  = float(size.width)
-        height = float(size.height)
+        canvasWidth  = float(canvasWidth)
+        canvasHeight = float(canvasHeight)
 
         if realWidth  is None: realWidth  = float(abs(self.xmax - self.xmin))
         if realHeight is None: realHeight = float(abs(self.ymax - self.ymin))
 
-        realRatio   = realWidth / realHeight
-        canvasRatio = width     / height
+        realRatio   = realWidth   / realHeight
+        canvasRatio = canvasWidth / canvasHeight
         
         if canvasRatio >= realRatio:
-            width  = realWidth  * (height / realHeight)
+            canvasWidth  = realWidth  * (canvasHeight / realHeight)
         else:
-            height = realHeight * (width  / realWidth)
+            canvasHeight = realHeight * (canvasWidth  / realWidth)
 
-        width  = int(np.floor(width))
-        height = int(np.floor(height))
+        canvasWidth  = int(np.floor(canvasWidth))
+        canvasHeight = int(np.floor(canvasHeight))
 
-        # centre the slice within
-        # the available space
+        # if the canvas size is smaller than the window size,
+        # centre the slice within the available space
         x = 0
         y = 0
-        if width  != size.width:  x = (size.width  - width)  / 2
-        if height != size.height: y = (size.height - height) / 2
+        if canvasWidth  < size.width:  x = (size.width  - canvasWidth)  / 2
+        if canvasHeight < size.height: y = (size.height - canvasHeight) / 2
 
-        self._canvasBBox = [x, y, width, height]
+        self._canvasBBox = [x, y, canvasWidth, canvasHeight]
 
-        return width, height
+        return canvasWidth, canvasHeight
 
         
     def _resize(self,
@@ -493,7 +505,7 @@ class SliceCanvas(wxgl.GLCanvas):
         if xmin is None: xmin = self.xmin
         if xmax is None: xmax = self.xmax
         if ymin is None: ymin = self.ymin
-        if ymin is None: ymax = self.ymax
+        if ymax is None: ymax = self.ymax
         if zmin is None: zmin = self.zmin
         if zmax is None: zmax = self.zmax
 
