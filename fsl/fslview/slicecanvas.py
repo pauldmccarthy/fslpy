@@ -516,6 +516,110 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glTranslatef(*trans)
 
 
+    def _drawImage(self, image):
+
+        # The GL data is stored as an attribute of the image,
+        # and is created in the _imageListChanged method when
+        # images are added to the image. If there's no data
+        # here, ignore it; hopefully by the time draw() is
+        # called again, it will have been created.
+        try:    glImageData = image.getAttribute(self.name)
+        except: return
+        
+        imageDisplay = image.display
+        dataBuffer   = glImageData.dataBuffer
+        voxXBuffer   = glImageData.voxXBuffer
+        voxYBuffer   = glImageData.voxYBuffer
+        voxZBuffer   = glImageData.voxZBuffer
+        geomBuffer   = glImageData.geomBuffer
+        colourBuffer = glImageData.colourBuffer
+
+        xdim = image.shape[self.xax]
+        ydim = image.shape[self.yax]
+        zdim = image.shape[self.zax]
+
+        # Don't draw the slice if this
+        # image display is disabled
+        if not imageDisplay.enabled: return
+
+        # Figure out which slice we are drawing,
+        # and if it's out of range, don't draw it
+        zi = int(image.worldToVox(self.zpos, self.zax))
+        if zi < 0 or zi >= zdim: return
+
+        # bind the current alpha value
+        # to the shader alpha variable
+        gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
+
+        # Bind the voxel coordinate buffers
+        gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
+        gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
+        gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
+
+        # bind the transformation matrix
+        # to the shader variable
+        xmat = np.array(image.voxToWorldMat, dtype=np.float32)
+        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
+
+        # Set up the colour texture
+        gl.glActiveTexture(gl.GL_TEXTURE0) 
+        gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
+        gl.glUniform1i(self.colourMapPos, 0) 
+
+        # Set up the image data texture
+        gl.glActiveTexture(gl.GL_TEXTURE1) 
+        gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
+        gl.glUniform1i(self.dataBufferPos, 1)
+        
+        # voxel x/y/z coordinates
+        voxOffs  = [0, 0, 0]
+        voxSteps = [1, 1, 1]
+        voxOffs[ self.zax] = zi
+        voxSteps[self.yax] = xdim
+        voxSteps[self.zax] = xdim * ydim
+        for buf, pos, step, off in zip(
+                (voxXBuffer, voxYBuffer, voxZBuffer),
+                (self.voxXPos, self.voxYPos, self.voxZPos),
+                voxSteps,
+                voxOffs):
+
+            if off == 0: off = None
+            else:        off = buf + (off * 4)
+            
+            buf.bind()
+            gl.glVertexAttribPointer(
+                pos,
+                1,
+                gl.GL_FLOAT,
+                gl.GL_FALSE,
+                0,
+                off)
+            gl.glEnableVertexAttribArray(pos)
+            arbia.glVertexAttribDivisorARB(pos, step)
+
+        # The geometry buffer, which defines the geometry of a
+        # single vertex (4 vertices, drawn as a triangle strip)
+        geomBuffer.bind()
+        gl.glVertexAttribPointer(
+            self.inVertexPos,
+            3,
+            gl.GL_FLOAT,
+            gl.GL_FALSE,
+            0,
+            None)
+        gl.glEnableVertexAttribArray(self.inVertexPos)
+        arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
+
+        # Draw all of the triangles!
+        arbdi.glDrawArraysInstancedARB(
+            gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
+
+        gl.glDisableVertexAttribArray(self.inVertexPos)
+        gl.glDisableVertexAttribArray(self.voxXPos)
+        gl.glDisableVertexAttribArray(self.voxYPos)
+        gl.glDisableVertexAttribArray(self.voxZPos)        
+
+
     def _draw(self, ev):
         """
         Draws the currently selected slice to the canvas.
@@ -543,107 +647,7 @@ class SliceCanvas(wxgl.GLCanvas):
         gl.glShadeModel(gl.GL_FLAT)
 
         for image in self.imageList:
-
-            # The GL data is stored as an attribute of the image,
-            # and is created in the _imageListChanged method when
-            # images are added to the image. If there's no data
-            # here, ignore it; hopefully by the time draw() is
-            # called again, it will have been created.
-            try:    glImageData = image.getAttribute(self.name)
-            except: continue
-            
-            imageDisplay = image.display
-            dataBuffer   = glImageData.dataBuffer
-            voxXBuffer   = glImageData.voxXBuffer
-            voxYBuffer   = glImageData.voxYBuffer
-            voxZBuffer   = glImageData.voxZBuffer
-            geomBuffer   = glImageData.geomBuffer
-            colourBuffer = glImageData.colourBuffer
-
-            xdim = image.shape[self.xax]
-            ydim = image.shape[self.yax]
-            zdim = image.shape[self.zax]
-
-            # Don't draw the slice if this
-            # image display is disabled
-            if not imageDisplay.enabled: continue 
-
-            # Figure out which slice we are drawing,
-            # and if it's out of range, don't draw it
-            zi = int(image.worldToVox(self.zpos, self.zax))
-            if zi < 0 or zi >= zdim: continue
-
-            # bind the current alpha value
-            # to the shader alpha variable
-            gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
-
-            # Bind the voxel coordinate buffers
-            gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
-            gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
-            gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
-
-            # bind the transformation matrix
-            # to the shader variable
-            xmat = np.array(image.voxToWorldMat, dtype=np.float32)
-            gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, True, xmat)
-
-            # Set up the colour texture
-            gl.glActiveTexture(gl.GL_TEXTURE0) 
-            gl.glBindTexture(gl.GL_TEXTURE_1D, colourBuffer)
-            gl.glUniform1i(self.colourMapPos, 0) 
-
-            # Set up the image data texture
-            gl.glActiveTexture(gl.GL_TEXTURE1) 
-            gl.glBindTexture(gl.GL_TEXTURE_3D, dataBuffer)
-            gl.glUniform1i(self.dataBufferPos, 1)
-            
-            # voxel x/y/z coordinates
-            voxOffs  = [0, 0, 0]
-            voxSteps = [1, 1, 1]
-            voxOffs[ self.zax] = zi
-            voxSteps[self.yax] = xdim
-            voxSteps[self.zax] = xdim * ydim
-            for buf, pos, step, off in zip(
-                    (voxXBuffer, voxYBuffer, voxZBuffer),
-                    (self.voxXPos, self.voxYPos, self.voxZPos),
-                    voxSteps,
-                    voxOffs):
-
-                if off == 0: off = None
-                else:        off = buf + (off * 4)
-                
-                buf.bind()
-                gl.glVertexAttribPointer(
-                    pos,
-                    1,
-                    gl.GL_FLOAT,
-                    gl.GL_FALSE,
-                    0,
-                    off)
-                gl.glEnableVertexAttribArray(pos)
-                arbia.glVertexAttribDivisorARB(pos, step)
-
-            # The geometry buffer, which defines the geometry of a
-            # single vertex (4 vertices, drawn as a triangle strip)
-            geomBuffer.bind()
-            gl.glVertexAttribPointer(
-                self.inVertexPos,
-                3,
-                gl.GL_FLOAT,
-                gl.GL_FALSE,
-                0,
-                None)
-            gl.glEnableVertexAttribArray(self.inVertexPos)
-            arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
-
-            # Draw all of the triangles!
-            arbdi.glDrawArraysInstancedARB(
-                gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
-
-            gl.glDisableVertexAttribArray(self.inVertexPos)
-            gl.glDisableVertexAttribArray(self.voxXPos)
-            gl.glDisableVertexAttribArray(self.voxYPos)
-            gl.glDisableVertexAttribArray(self.voxZPos)
+            self._drawImage(image)
 
         gl.glUseProgram(0)
 
