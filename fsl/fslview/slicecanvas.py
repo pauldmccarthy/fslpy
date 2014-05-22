@@ -435,12 +435,12 @@ class SliceCanvas(wxgl.GLCanvas):
             ev,
             canvasWidth=None,
             canvasHeight=None,
-            realWidth=None,
-            realHeight=None):
+            worldWidth=None,
+            worldHeight=None):
         """
         Calculates the best size to draw the slice, maintaining its
         aspect ratio, within the current canvas size. The
-        realWidth/realHeight parameters, if provided, are used
+        worldWidth/worldHeight parameters, if provided, are used
         to calculate the displayed world space aspect ratio. If not
         provided, they are calculated from the min/max bounds of
         the displayed image list.
@@ -454,23 +454,23 @@ class SliceCanvas(wxgl.GLCanvas):
         # canvas is not yet displayed
         if canvasWidth  == 0 or \
            canvasHeight == 0 or \
-           realWidth    == 0 or \
-           realHeight   == 0:
+           worldWidth   == 0 or \
+           worldHeight  == 0:
             return
 
         canvasWidth  = float(canvasWidth)
         canvasHeight = float(canvasHeight)
 
-        if realWidth  is None: realWidth  = float(abs(self.xmax - self.xmin))
-        if realHeight is None: realHeight = float(abs(self.ymax - self.ymin))
+        if worldWidth  is None: worldWidth  = float(abs(self.xmax - self.xmin))
+        if worldHeight is None: worldHeight = float(abs(self.ymax - self.ymin))
 
-        realRatio   = realWidth   / realHeight
+        worldRatio  = worldWidth  / worldHeight
         canvasRatio = canvasWidth / canvasHeight
         
-        if canvasRatio >= realRatio:
-            canvasWidth  = realWidth  * (canvasHeight / realHeight)
+        if canvasRatio >= worldRatio:
+            canvasWidth  = worldWidth  * (canvasHeight / worldHeight)
         else:
-            canvasHeight = realHeight * (canvasWidth  / realWidth)
+            canvasHeight = worldHeight * (canvasWidth  / worldWidth)
 
         canvasWidth  = int(np.floor(canvasWidth))
         canvasHeight = int(np.floor(canvasHeight))
@@ -483,8 +483,6 @@ class SliceCanvas(wxgl.GLCanvas):
         if canvasHeight < size.height: y = (size.height - canvasHeight) / 2
 
         self._canvasBBox = [x, y, canvasWidth, canvasHeight]
-
-        return canvasWidth, canvasHeight
 
         
     def _resize(self,
