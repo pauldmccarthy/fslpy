@@ -17,12 +17,8 @@ import fsl.fslview.slicecanvas as slicecanvas
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
 
-    # I think this will work ...
-    # I'll have to do my own layout/scrolling. Ugh.
-    # Could manually add scrollbars, then set the GL
-    # viewport according to their position.
 
-    def __init__(self, parent, imageList, zax, context=None):
+    def __init__(self, parent, imageList, zax, context=None, scrollbar=None):
 
         slicecanvas.SliceCanvas.__init__(self, parent, imageList, zax, context)
 
@@ -32,7 +28,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # nrows is automatically calculated 
         # in the _imageListChangd method -
         # the value 0 is just a placeholder
-        self._nrows        = 0 
+        self._nrows        = 0
+
+        self.scrollbar = scrollbar
 
 
     def _imageListChanged(self):
@@ -127,6 +125,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
     def _resize(self):
         """
+        Sets up the GL canvas size, viewport and projection.
         """
         
         nslices = abs(self.zmax - self.zmin) / self._sliceSpacing
@@ -139,7 +138,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         worldYMax  = self.ymin + ylen *       nrows
 
         slicecanvas.SliceCanvas._resize(self, xmax=worldXMax, ymax=worldYMax)
-
 
         
     def _draw(self, ev):
@@ -168,10 +166,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
 
+        # Draw all the slices for all the images.
         for i, image in enumerate(self.imageList):
-
             for zi in range(self._nslices):
-                
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],
                                 self._transforms[i][zi]) 
