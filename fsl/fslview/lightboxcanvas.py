@@ -16,6 +16,8 @@ import fsl.fslview.slicecanvas as slicecanvas
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
+    """
+    """
 
 
     def __init__(self,
@@ -26,6 +28,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                  sliceSpacing=2,
                  ncols=20,
                  scrollbar=None):
+        """
+        """
 
         if (scrollbar is not None) and (not scrollbar.IsVertical()):
             raise RuntimeError('LightBoxCanvas only supports '
