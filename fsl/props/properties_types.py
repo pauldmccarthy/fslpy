@@ -24,7 +24,7 @@ class Boolean(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def cast(self, value):
+    def cast(self, instance, value):
         return bool(value)
 
 
@@ -34,11 +34,12 @@ class Number(props.PropertyBase):
     use/subclass this, use/subclass one of Int or Double.
     """
     
-    def __init__(self, minval=None, maxval=None, **kwargs):
+    def __init__(self, minval=None, maxval=None, clamped=False, **kwargs):
         """
         Optional parameters:
           - minval
           - maxval
+          - clamped: If True, the value will be clamped to its min/max bounds.
         """
 
         default = kwargs.get('default', None)
@@ -56,6 +57,7 @@ class Number(props.PropertyBase):
         kwargs['default'] = default
         kwargs['minval']  = minval
         kwargs['maxval']  = maxval
+        kwargs['clamped'] = clamped
         props.PropertyBase.__init__(self, **kwargs)
 
         
@@ -72,6 +74,21 @@ class Number(props.PropertyBase):
         if maxval is not None and value > maxval:
             raise ValueError('Must be at most {}'.format(maxval))
 
+
+    def cast(self, instance, value):
+
+        clamped = self.getConstraint(instance, 'clamped')
+        
+        if not clamped: return value
+
+        minval = self.getConstraint(instance, 'minval')
+        maxval = self.getConstraint(instance, 'maxval') 
+
+        if minval is not None and value < minval: return minval
+        if maxval is not None and value > maxval: return maxval
+
+        return value
+        
         
 class Int(Number):
     """
@@ -86,8 +103,8 @@ class Int(Number):
         Number.__init__(self, **kwargs)
 
         
-    def cast(self, value):
-        return int(value)
+    def cast(self, instance, value):
+        return Number.cast(self, instance, int(value))
         
 
 class Double(Number):
@@ -104,8 +121,8 @@ class Double(Number):
         Number.__init__(self, **kwargs)
 
 
-    def cast(self, value):
-        return float(value)
+    def cast(self, instance, value):
+        return Number.cast(self, instance, float(value))
         
 
 class Percentage(Double):
@@ -138,7 +155,7 @@ class String(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def cast(self, value):
+    def cast(self, instance, value):
 
         if value is None: value = ''
         else:             value = str(value)
@@ -357,7 +374,7 @@ class ColourMap(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def cast(self, value):
+    def cast(self, instance, value):
         """
         If the provided value is a string, an attempt is made
         to convert it to a colour map, via the

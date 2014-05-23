@@ -42,8 +42,9 @@ class PropertyValue(object):
 
           - value:          Initial value.
 
-          - castFunc:       Function which performs type casting - must accept
-                            one parameter, the value to cast, and return that
+          - castFunc:       Function which performs type casting or data
+                            conversion - must accept two parameters, the
+                            conext, and the value to cast, and return that
                             value, cast appropriately.
         
           - validateFunc:   Function which accepts two parameters - a context,
@@ -73,7 +74,7 @@ class PropertyValue(object):
         """
         
         if name     is     None: name  = 'PropertyValue_{}'.format(id(self))
-        if castFunc is not None: value = castFunc(value)
+        if castFunc is not None: value = castFunc(context, value)
         
         self._context         = context
         self._validate        = validateFunc
@@ -133,7 +134,7 @@ class PropertyValue(object):
 
         # cast the value if necessary
         if self._castFunc is not None:
-            newValue = self._castFunc(newValue)
+            newValue = self._castFunc(self._context, newValue)
             
         # Check to see if the new value is valid
         valid = False
@@ -265,9 +266,9 @@ class PropertyValueList(PropertyValue):
                     itemValidateFunc(context, value)
 
         # Cast each item separately
-        def castFunc(values):
+        def castFunc(context, values):
             if itemCastFunc is not None and values is not None:
-                return map(itemCastFunc, values)
+                return map(lambda v: itemCastFunc(context, v), values)
             return values
 
         PropertyValue.__init__(

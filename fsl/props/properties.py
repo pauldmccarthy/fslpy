@@ -363,12 +363,13 @@ class PropertyBase(object):
                 raise ValueError('Value does not meet custom validation rules')
 
         
-    def cast(self, value):
+    def cast(self, instance, value):
         """
         This method is called when a value is assigned to this PropertyBase
         object through a HasProperties attribute access. The default
         implementaton just returns the given value. Subclasses may override
-        this method to perform any required implicit casting rules.
+        this method to perform any required implicit casting or conversion
+        rules.
         """
         return value
  
@@ -406,7 +407,6 @@ class PropertyBase(object):
         """
         
         propVal = self.getPropVal(instance)
-        value   = self.cast(value)
         propVal.set(value)
 
 
@@ -433,7 +433,7 @@ class ListPropertyBase(PropertyBase):
             instance,
             name=self._label, 
             values=self._default,
-            itemCastFunc=self._listType._cast,
+            itemCastFunc=self._listType.cast,
             itemValidateFunc=self._listType.validate,
             listValidateFunc=self.validate,
             itemAllowInvalid=self._listType._allowInvalid,
