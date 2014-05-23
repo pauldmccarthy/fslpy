@@ -6,6 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os.path     as op
+
 import numpy       as np
 
 import                wx
@@ -20,80 +22,12 @@ import OpenGL.GL.ARB.instanced_arrays as arbia
 import OpenGL.GL.ARB.draw_instanced   as arbdi
 
 import fsl.data.fslimage       as fslimage
+import fsl.props               as props
 import fsl.fslview.glimagedata as glimagedata
 
-
-# The vertex shader positions and colours a single vertex.
-vertex_shader = """
-#version 120
-
-/* Opacity - constant for a whole image */
-uniform float alpha;
-
-/* image data texture */
-uniform sampler3D dataBuffer;
-
-/* Voxel coordinate -> world space transformation matrix */
-uniform mat4 voxToWorldMat;
-
-/* Image dimensions */
-uniform float xdim;
-uniform float ydim;
-uniform float zdim;
-
-/* Current vertex */
-attribute vec3 inVertex;
-
-/* Current voxel coordinates */
-attribute float voxX;
-attribute float voxY;
-attribute float voxZ;
-
-/* Voxel value passed through to fragment shader */ 
-varying float fragVoxValue;
-
-void main(void) {
-
-    /*
-     * Offset the vertex by the current voxel position
-     * (and perform standard transformation from data
-     * coordinates to screen coordinates).
-     */
-    vec3 vertPos = inVertex + vec3(voxX, voxY, voxZ);
-    gl_Position = gl_ModelViewProjectionMatrix * \
-        (voxToWorldMat * vec4(vertPos, 1.0));
-
-    /* Pass the voxel value through to the shader. */
-    float normVoxX = voxX / xdim + 0.5 / xdim;
-    float normVoxY = voxY / ydim + 0.5 / ydim;
-    float normVoxZ = voxZ / zdim + 0.5 / zdim;
-    vec4 vt = texture3D(dataBuffer, vec3(normVoxX, normVoxY, normVoxZ));
-    fragVoxValue = vt.r;
-}
-"""
-
-
-# Buffer shader. Given the current voxel value, looks
-# up the appropriate colour in the colour buffer.
-fragment_shader = """
-#version 120
-
-uniform float     alpha;
-uniform sampler1D colourMap;
-varying float     fragVoxValue;
-
-void main(void) {
-
-    vec4  voxTexture = texture1D(colourMap, fragVoxValue);
-    vec3  voxColour  = voxTexture.rgb;
-    float voxAlpha   = alpha;
-
-    if (voxTexture.a < voxAlpha) voxAlpha = voxTexture.a;
-
-    gl_FragColor = vec4(voxColour, voxAlpha);
-}
-"""
-
+# Locations of the shader source files.
+_vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
+_fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
 
 class SliceCanvas(wxgl.GLCanvas):
     """
@@ -348,23 +282,26 @@ class SliceCanvas(wxgl.GLCanvas):
         validation.
         """
 
+        with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
+        with open(_fragment_shader_file, 'rt') as f: fragShaderSrc = f.read()
+
         # vertex shader
         vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-        gl.glShaderSource(vertShader, vertex_shader)
+        gl.glShaderSource(vertShader, vertShaderSrc)
         gl.glCompileShader(vertShader)
         vertResult = gl.glGetShaderiv(vertShader, gl.GL_COMPILE_STATUS)
 
         if vertResult != gl.GL_TRUE:
-            raise '{}'.format(gl.glGetShaderInfoLog(vertShader))
+            raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(vertShader)))
 
         # fragment shader
         fragShader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-        gl.glShaderSource(fragShader, fragment_shader)
+        gl.glShaderSource(fragShader, fragShaderSrc)
         gl.glCompileShader(fragShader)
         fragResult = gl.glGetShaderiv(fragShader, gl.GL_COMPILE_STATUS)
 
         if fragResult != gl.GL_TRUE:
-            raise '{}'.format(gl.glGetShaderInfoLog(fragShader))
+            raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(fragShader)))
 
         # link all of the shaders!
         program = gl.glCreateProgram()
@@ -379,7 +316,7 @@ class SliceCanvas(wxgl.GLCanvas):
         linkResult = gl.glGetProgramiv(program, gl.GL_LINK_STATUS)
 
         if linkResult != gl.GL_TRUE:
-            raise '{}'.format(gl.glGetProgramInfoLog(program))
+            raise RuntimeError('{}'.format(gl.glGetProgramInfoLog(program)))
 
         return program
 
