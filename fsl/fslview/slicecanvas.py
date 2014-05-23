@@ -29,70 +29,36 @@ import fsl.fslview.glimagedata as glimagedata
 _vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
 _fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
 
-class SliceCanvas(wxgl.GLCanvas):
+
+class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     """
     A wx.glcanvas.GLCanvas which may be used to display a single 2D slice from
     a collection of 3D images (see fsl.data.fslimage.ImageList).
     """
 
-    @property
-    def zpos(self):
-        """
-        The slice currently being displayed.
-        """
-        return self._zpos
+    # The xpos and ypos properties specify the current
+    # position of a 'cursor', which is highlighted with
+    # green crosshairs. The zpos property specifies the
+    # currently displayed slice. These three properties
+    # are all in world coordinates.
+    xpos       = props.Double(clamped=True)
+    ypos       = props.Double(clamped=True)
+    zpos       = props.Double(clamped=True)
 
-    @zpos.setter
-    def zpos(self, zpos):
-        """
-        Change the slice being displayed. You will need to manually call
-        Refresh() after changing the zpos.
-        """
+    # The x/y/z min/max properties specify the display
+    # range, in world coordinates, of the canvas.
+    xmin       = props.Double(clamped=True)
+    xmax       = props.Double(clamped=True)
+    ymin       = props.Double(clamped=True)
+    ymax       = props.Double(clamped=True)
+    zmin       = props.Double(clamped=True)
+    zmax       = props.Double(clamped=True)
 
-        if   zpos > self.zmax: zpos = self.zmax
-        elif zpos < self.zmin: zpos = self.zmin
+    # If False, the green crosshairs which show the
+    # current cursor location will not be drawn.
+    showCursor = props.Boolean(default=True)
 
-        self._zpos = zpos
-
-    @property
-    def xpos(self):
-        """
-        The current X (horizontal) location of the cursor. 
-        """
-        return self._xpos
-
-    @xpos.setter
-    def xpos(self, xpos):
-        """
-        Change the x cursor position. You will need to manually call
-        Refresh() after changing the xpos.
-        """ 
-
-        if   xpos > self.xmax: xpos = self.xmax
-        elif xpos < self.xmin: xpos = self.xmin
-
-        self._xpos = xpos
-
-    @property
-    def ypos(self):
-        """
-        The current Y (vertical) location of the cursor.
-        """
-        return self._ypos
-
-    @ypos.setter
-    def ypos(self, ypos):
-        """
-        Change the y cursor position. You will need to manually call
-        Refresh() after changing the ypos.
-        """ 
-        
-        if   ypos > self.ymax: ypos = self.ymax
-        elif ypos < self.ymin: ypos = self.ymin
-
-        self._ypos = ypos
-
-
+    
     def canvasToWorldX(self, xpos):
         """
         Given a pixel x coordinate on this canvas, translates it
@@ -148,9 +114,10 @@ class SliceCanvas(wxgl.GLCanvas):
 
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
-                'imageList must be a fsl.data.fslimage.ImageList instance') 
+                'imageList must be a fsl.data.fslimage.ImageList instance')
 
         wxgl.GLCanvas.__init__(self, parent)
+        props.HasProperties.__init__(self)
 
         # Use the provided shared GL
         # context, or create a new one
@@ -181,9 +148,26 @@ class SliceCanvas(wxgl.GLCanvas):
         self.ymax = imageList.maxBounds[self.yax]
         self.zmax = imageList.maxBounds[self.zax]
 
-        self._xpos = self.xmin + abs(self.xmax - self.xmin) / 2.0
-        self._ypos = self.ymin + abs(self.ymax - self.ymin) / 2.0
-        self._zpos = self.zmin + abs(self.zmax - self.zmin) / 2.0
+        self.xpos = self.xmin + abs(self.xmax - self.xmin) / 2.0
+        self.ypos = self.ymin + abs(self.ymax - self.ymin) / 2.0
+        self.zpos = self.zmin + abs(self.zmax - self.zmin) / 2.0
+
+        # The x/y/z pos properties are limited
+        # to the x/y/z min/max bounds
+        self._setPropertyConstraints()
+
+        # when any of the xyz properties of
+        # this canvas change, we need to redraw
+        self.addListener('xpos',       self.name, self._refresh)
+        self.addListener('ypos',       self.name, self._refresh)
+        self.addListener('zpos',       self.name, self._refresh)
+        self.addListener('xmin',       self.name, self._refresh)
+        self.addListener('xmax',       self.name, self._refresh)
+        self.addListener('ymin',       self.name, self._refresh)
+        self.addListener('ymax',       self.name, self._refresh)
+        self.addListener('zmin',       self.name, self._refresh)
+        self.addListener('zmax',       self.name, self._refresh)
+        self.addListener('showCursor', self.name, self._refresh) 
 
         # When drawn, the slice does not necessarily take
         # up the entire canvas size, as its aspect ratio
@@ -208,6 +192,50 @@ class SliceCanvas(wxgl.GLCanvas):
         self.imageList.addListener(lambda il: self._imageListChanged())
 
 
+    def _setPropertyConstraints(self):
+        """
+        Updates the constraints on each of the x/y/z pos and min/max
+        properties so they are all limited to stay within a valid
+        range.
+        """
+
+        xmin = self.imageList.minBounds[self.xax]
+        xmax = self.imageList.maxBounds[self.xax]
+        ymin = self.imageList.minBounds[self.yax]
+        ymax = self.imageList.maxBounds[self.yax]
+        zmin = self.imageList.minBounds[self.zax]
+        zmax = self.imageList.maxBounds[self.zax]
+
+        self.setConstraint('xpos', 'minval', self.xmin)
+        self.setConstraint('xpos', 'maxval', self.xmax)
+        self.setConstraint('ypos', 'minval', self.ymin)
+        self.setConstraint('ypos', 'maxval', self.ymax)
+        self.setConstraint('zpos', 'minval', self.zmin)
+        self.setConstraint('zpos', 'maxval', self.zmax) 
+
+        for xprop in ['xmin', 'xmax']:
+            self.setConstraint(xprop, 'minval', xmin)
+            self.setConstraint(xprop, 'maxval', xmax)
+        for yprop in ['ymin', 'ymax']:
+            self.setConstraint(yprop, 'minval', ymin)
+            self.setConstraint(yprop, 'maxval', ymax)
+        for zprop in ['zmin', 'zmax']:
+            self.setConstraint(zprop, 'minval', zmin)
+            self.setConstraint(zprop, 'maxval', zmax)
+
+        # reset the cursor and min/max values in
+        # case the old values were out of bounds
+        self.xpos = self.xpos
+        self.ypos = self.ypos
+        self.zpos = self.zpos
+        self.xmin = self.xmin
+        self.xmax = self.xmax
+        self.ymin = self.ymin
+        self.ymax = self.ymax
+        self.zmin = self.zmin
+        self.zmax = self.zmax 
+
+            
     def _imageListChanged(self):
         """
         This method is called once by _initGLData on the first draw, and
@@ -220,19 +248,7 @@ class SliceCanvas(wxgl.GLCanvas):
 
         # Update the minimum/maximum
         # image bounds along each axis
-        self.xmin = self.imageList.minBounds[self.xax]
-        self.ymin = self.imageList.minBounds[self.yax]
-        self.zmin = self.imageList.minBounds[self.zax]
-
-        self.xmax = self.imageList.maxBounds[self.xax]
-        self.ymax = self.imageList.maxBounds[self.yax]
-        self.zmax = self.imageList.maxBounds[self.zax]
-
-        # reset the cursor in case the
-        # old values were out of bounds
-        self.xpos = self.xpos
-        self.ypos = self.ypos
-        self.zpos = self.zpos
+        self._setPropertyConstraints()
 
         # Create a GLImageData object for any new images,
         # and attach a listener to their display properties
@@ -256,15 +272,12 @@ class SliceCanvas(wxgl.GLCanvas):
             glData = glimagedata.GLImageData(image, self.xax, self.yax)
             image.setAttribute(self.name, glData)
 
-            def refresh(*a):
-                self.Refresh()
-
-            image.display.addListener('enabled',    self.name, refresh)
-            image.display.addListener('alpha',      self.name, refresh)
-            image.display.addListener('displayMin', self.name, refresh)
-            image.display.addListener('displayMax', self.name, refresh)
-            image.display.addListener('rangeClip',  self.name, refresh)
-            image.display.addListener('cmap',       self.name, refresh)
+            image.display.addListener('enabled',    self.name, self._refresh)
+            image.display.addListener('alpha',      self.name, self._refresh)
+            image.display.addListener('displayMin', self.name, self._refresh)
+            image.display.addListener('displayMax', self.name, self._refresh)
+            image.display.addListener('rangeClip',  self.name, self._refresh)
+            image.display.addListener('cmap',       self.name, self._refresh)
 
         self.Refresh()
 
@@ -367,6 +380,17 @@ class SliceCanvas(wxgl.GLCanvas):
         self.glReady = True
 
 
+    def _refresh(self, *a):
+        """
+        Called when a display property changes. Updates x/y/z property
+        values, updates the canvas bounding box, and triggers a redraw.
+        """
+        
+        self._setPropertyConstraints()
+        self._calculateCanvasBBox(None)
+        self.Refresh()
+
+        
     def _calculateCanvasBBox(
             self,
             ev,
@@ -632,29 +656,30 @@ class SliceCanvas(wxgl.GLCanvas):
 
         gl.glUseProgram(0)
 
-        # A vertical line at xpos, and a horizontal line at ypos
+        if self.showCursor:
 
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3))
+            # A vertical line at xpos, and a horizontal line at ypos
+            xverts = np.zeros((2, 3))
+            yverts = np.zeros((2, 3))
 
-        # add a little padding to the lines if they are
-        # on the boundary, so they don't get cropped
-        if self.xpos == self.xmin: xverts[:, self.xax] = self.xpos + 0.5
-        else:                      xverts[:, self.xax] = self.xpos
-        if self.ypos == self.ymin: yverts[:, self.yax] = self.ypos + 0.5
-        else:                      yverts[:, self.yax] = self.ypos        
+            # add a little padding to the lines if they are
+            # on the boundary, so they don't get cropped
+            if self.xpos == self.xmin: xverts[:, self.xax] = self.xpos + 0.5
+            else:                      xverts[:, self.xax] = self.xpos
+            if self.ypos == self.ymin: yverts[:, self.yax] = self.ypos + 0.5
+            else:                      yverts[:, self.yax] = self.ypos        
 
-        xverts[:, self.yax] = [self.ymin, self.ymax]
-        xverts[:, self.zax] =  self.zpos + 1
-        yverts[:, self.xax] = [self.xmin, self.xmax]
-        yverts[:, self.zax] =  self.zpos + 1
+            xverts[:, self.yax] = [self.ymin, self.ymax]
+            xverts[:, self.zax] =  self.zpos + 1
+            yverts[:, self.xax] = [self.xmin, self.xmax]
+            yverts[:, self.zax] =  self.zpos + 1
 
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd()
+            gl.glBegin(gl.GL_LINES)
+            gl.glColor3f(0, 1, 0)
+            gl.glVertex3f(*xverts[0])
+            gl.glVertex3f(*xverts[1])
+            gl.glVertex3f(*yverts[0])
+            gl.glVertex3f(*yverts[1])
+            gl.glEnd()
 
         self.SwapBuffers()
