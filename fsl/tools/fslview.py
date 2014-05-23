@@ -11,6 +11,7 @@ import fsl.fslview.orthopanel     as orthopanel
 import fsl.fslview.imagelistpanel as imagelistpanel
 
 import fsl.data.fslimage as fslimage
+import fsl.props         as props
 
 
 class FslViewPanel(wx.Panel):
@@ -21,11 +22,13 @@ class FslViewPanel(wx.Panel):
         self.imageList = imageList
 
         self.orthoPanel = orthopanel    .OrthoPanel(    self, imageList)
+        self.ctrlPanel  = props.buildGUI(self, self.orthoPanel)
         self.listPanel  = imagelistpanel.ImageListPanel(self, imageList)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
+        self.sizer.Add(self.ctrlPanel,  flag=wx.EXPAND)
         self.sizer.Add(self.orthoPanel, flag=wx.EXPAND, proportion=1)
         self.sizer.Add(self.listPanel,  flag=wx.EXPAND)
 

@@ -158,16 +158,19 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
-        self.addListener('xpos',       self.name, self._refresh)
-        self.addListener('ypos',       self.name, self._refresh)
-        self.addListener('zpos',       self.name, self._refresh)
-        self.addListener('xmin',       self.name, self._refresh)
-        self.addListener('xmax',       self.name, self._refresh)
-        self.addListener('ymin',       self.name, self._refresh)
-        self.addListener('ymax',       self.name, self._refresh)
-        self.addListener('zmin',       self.name, self._refresh)
-        self.addListener('zmax',       self.name, self._refresh)
-        self.addListener('showCursor', self.name, self._refresh) 
+        def posRefresh(  *a): self._refresh()
+        def boundRefresh(*a): self._refresh(True)
+            
+        self.addListener('xpos',       self.name, posRefresh)
+        self.addListener('ypos',       self.name, posRefresh)
+        self.addListener('zpos',       self.name, posRefresh)
+        self.addListener('xmin',       self.name, boundRefresh)
+        self.addListener('xmax',       self.name, boundRefresh)
+        self.addListener('ymin',       self.name, boundRefresh)
+        self.addListener('ymax',       self.name, boundRefresh)
+        self.addListener('zmin',       self.name, boundRefresh)
+        self.addListener('zmax',       self.name, boundRefresh)
+        self.addListener('showCursor', self.name, boundRefresh) 
 
         # When drawn, the slice does not necessarily take
         # up the entire canvas size, as its aspect ratio
@@ -272,12 +275,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             glData = glimagedata.GLImageData(image, self.xax, self.yax)
             image.setAttribute(self.name, glData)
 
-            image.display.addListener('enabled',    self.name, self._refresh)
-            image.display.addListener('alpha',      self.name, self._refresh)
-            image.display.addListener('displayMin', self.name, self._refresh)
-            image.display.addListener('displayMax', self.name, self._refresh)
-            image.display.addListener('rangeClip',  self.name, self._refresh)
-            image.display.addListener('cmap',       self.name, self._refresh)
+            def refresh(*a): self._refresh()
+
+            image.display.addListener('enabled',    self.name, refresh)
+            image.display.addListener('alpha',      self.name, refresh)
+            image.display.addListener('displayMin', self.name, refresh)
+            image.display.addListener('displayMax', self.name, refresh)
+            image.display.addListener('rangeClip',  self.name, refresh)
+            image.display.addListener('cmap',       self.name, refresh)
 
         self.Refresh()
 
@@ -380,13 +385,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.glReady = True
 
 
-    def _refresh(self, *a):
+    def _refresh(self, constraints=False):
         """
         Called when a display property changes. Updates x/y/z property
         values, updates the canvas bounding box, and triggers a redraw.
         """
         
-        self._setPropertyConstraints()
+        if constraints: self._setPropertyConstraints()
         self._calculateCanvasBBox(None)
         self.Refresh()
 
