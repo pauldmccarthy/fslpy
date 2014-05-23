@@ -509,6 +509,15 @@ class SliceCanvas(wxgl.GLCanvas):
 
         x, y, width, height = bbox
 
+        # If there are no images to be displayed,
+        # the dimension bounds will all be 0,
+        # which causes glOrtho to throw an error.
+        if len(self.imageList) == 0:
+            xmin = -1.0
+            xmax =  1.0
+            ymin = -1.0
+            ymax =  1.0
+
         # set up 2D orthographic drawing
         gl.glViewport(x, y, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)

@@ -62,12 +62,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         position the slice on the canvas.
         """
 
-        self._updateScrollBar()
-
         # recalculate image bounds, and create
         # GL data for any newly added images.
         slicecanvas.SliceCanvas._imageListChanged(self)
-
+        
         # calculate the locations, in real world coordinates,
         # of all slices to be displayed on the canvas
         sliceLocs = np.arange(
@@ -77,7 +75,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         self._nslices = len(sliceLocs)
         self._nrows   = int(np.ceil(self._nslices / float(self._ncols)))
-
+        
         self._sliceIdxs  = []
         self._transforms = []
 
@@ -97,6 +95,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 self._transforms[-1].append(xform)
                 self._sliceIdxs[ -1].append(imgZi)
 
+        # update the scrollbar (if there is one),
+        # as the image bounds and hence the number
+        # of slices may have changed
+        self._updateScrollBar()
+
 
     def _updateScrollBar(self):
         """
@@ -106,12 +109,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         
         if self._scrollbar is None: return
+        
+        if len(self.imageList) == 0:
+            self._scrollbar.SetScrollbar(0, 99, 1, 99, True)
+            return
 
         screenSize = self.GetClientSize()
         sliceRatio = abs(self.xmax - self.xmin) / abs(self.ymax - self.ymin)
-
+        
         sliceWidth   = screenSize.width / float(self._ncols)
         sliceHeight  = sliceWidth * sliceRatio
+        
         rowsOnScreen = int(np.floor(screenSize.height / sliceHeight))
         oldPos       = self._scrollbar.GetThumbPosition()
 
@@ -261,6 +269,48 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.SwapBuffers()
 
 
+
+class LightBoxPanel(wx.Panel):
+    """
+    A LightBoxCanvas with a scrollbar and mouse-scrolling behaviour.
+    """
+
+    def __init__(self, parent, *args, **kwargs):
+        """
+        Accepts the same parameters as the LightBoxCanvas constructor,
+        although if you pass in a scrollbar, it will be ignored.
+        """
+
+        wx.Panel.__init__(self, parent)
+
+        self.scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
+        
+        kwargs['scrollbar'] = self.scrollbar
+        
+        self.canvas = LightBoxCanvas(self, *args, **kwargs)
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(self.sizer)
+
+        self.sizer.Add(self.canvas,    flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.scrollbar, flag=wx.EXPAND)
+
+        def scrollOnMouse(ev):
+
+            wheelDir = ev.GetWheelRotation()
+
+            if   wheelDir > 0: wheelDir = -1
+            elif wheelDir < 0: wheelDir =  1
+
+            curPos = self.scrollbar.GetThumbPosition()
+            self.scrollbar.SetThumbPosition(curPos + wheelDir)
+            self.canvas._draw(None)
+
+        self.Bind(wx.EVT_MOUSEWHEEL, scrollOnMouse)
+
+        self.Layout()        
+
+
 class LightBoxFrame(wx.Frame):
     """
     Convenience class for displaying a LightBoxPanel in a standalone window.
@@ -272,27 +322,15 @@ class LightBoxFrame(wx.Frame):
 
         import fsl.fslview.imagelistpanel as imagelistpanel
 
-
-        self.canvasPanel = wx.Panel(self)
-        self.listPanel   = imagelistpanel.ImageListPanel(self, imageList)
-
-
-        self.scrollbar = wx.ScrollBar(  self.canvasPanel, style=wx.SB_VERTICAL)
-        self.mainPanel = LightBoxCanvas(self.canvasPanel, imageList, zax=1,
-                                        scrollbar=self.scrollbar,
-                                        sliceSpacing=0.5,
-                                        ncols=10)
-
-        self.canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.canvasPanel.SetSizer(self.canvasSizer)
-
-        self.canvasSizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
-        self.canvasSizer.Add(self.scrollbar, flag=wx.EXPAND)
+        self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
+        self.mainPanel = LightBoxPanel(self, imageList, zax=1,
+                                       sliceSpacing=0.5,
+                                       ncols=10)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.sizer.Add(self.canvasPanel, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.listPanel,   flag=wx.EXPAND)
+        self.sizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.listPanel, flag=wx.EXPAND)
 
         self.SetSizer(self.sizer)
         self.Layout()

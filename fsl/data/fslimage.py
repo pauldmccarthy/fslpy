@@ -305,8 +305,13 @@ class ImageList(object):
         Updates the xyz bounds.
         """
 
-        minBounds = 3 * [ sys.float_info.max]
-        maxBounds = 3 * [-sys.float_info.max]
+        if len(self._items) == 0:
+            minBounds = [0.0, 0.0, 0.0]
+            maxBounds = [0.0, 0.0, 0.0]
+            
+        else:
+            minBounds = 3 * [ sys.float_info.max]
+            maxBounds = 3 * [-sys.float_info.max]            
         
         for img in self._items:
 
