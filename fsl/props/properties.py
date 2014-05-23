@@ -469,7 +469,6 @@ class HasProperties(object):
     this class.
     """
     __metaclass__ = PropertyOwner
-
     
     def __new__(cls, *args, **kwargs):
         """
@@ -477,11 +476,12 @@ class HasProperties(object):
         of its PropertyBase properties to ensure that they are initialised.
         """
         
-        instance = super(HasProperties, cls).__new__(cls, *args, **kwargs)
-
-        props = instance.__class__.__dict__.items()
+        instance  = super(HasProperties, cls).__new__(cls, *args, **kwargs)
+        propNames = dir(instance.__class__)
         
-        for propName, prop in props:
+        for propName in propNames:
+            
+            prop = getattr(instance.__class__, propName)
             if not isinstance(prop, PropertyBase): continue
 
             # Create a PropertyValue and an InstanceData
@@ -498,7 +498,9 @@ class HasProperties(object):
 
         # Perform validation of the initial
         # value for each property
-        for propName, prop in props:
+        for propName in propNames:
+            
+            prop = getattr(instance.__class__, propName)
             if isinstance(prop, PropertyBase): 
                 prop.revalidate(instance)
 
@@ -558,11 +560,12 @@ class HasProperties(object):
         corresponding PropertyBase objects.
         """
 
-        props = filter(
-            lambda (name, prop): isinstance(prop, PropertyBase),
-            self.__class__.__dict__.items())
-    
-        propNames, props = zip(*props)
+        propNames = dir(self.__class__)
+        props     = map(lambda n: getattr(self.__class__, n), propNames)
+
+        props, propNames = zip(*filter(
+            lambda (p, n): isinstance(p, PropertyBase),
+            zip(props, propNames)))
 
         return propNames, props
 
