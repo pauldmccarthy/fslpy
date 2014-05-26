@@ -189,23 +189,27 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             
         newxmin = canvas.xmin + xshift 
         newxmax = canvas.xmax + xshift
-        newymin = canvas.ymin + xshift 
-        newymax = canvas.ymax + xshift 
+        newymin = canvas.ymin + yshift 
+        newymax = canvas.ymax + yshift 
 
-        if   newxmin < imgxmin: xshift = newxmin - imgxmin 
-        elif newxmax > imgxmax: xshift = newxmax - imgxmax
+        if newxmin < imgxmin:
+            newxmin = imgxmin
+            newxmax = imgxmin + abs(canvas.xmax - canvas.xmin)
+        elif newxmax > imgxmax:
+            newxmax = imgxmax
+            newxmin = imgxmax - abs(canvas.xmax - canvas.xmin)
         
-        if   newymin < imgymin: yshift = newymin - imgymin
-        elif newymax > imgymax: yshift = newymax - imgymax 
+        if newymin < imgymin:
+            newymin = imgymin
+            newymax = imgymin + abs(canvas.ymax - canvas.ymin)
+        elif newymax > imgymax:
+            newymax = imgymax
+            newymin = imgymax - abs(canvas.ymax - canvas.ymin)
 
-        if xshift != 0:
-            print 'xshift {}'.format(xshift)
-            canvas.xmin = canvas.xmin + xshift
-            canvas.xmax = canvas.xmax + xshift
-        if yshift != 0:
-            print 'yshift {}'.format(yshift)
-            canvas.ymin = canvas.ymin + yshift
-            canvas.ymax = canvas.ymax + yshift
+        canvas.xmin = newxmin
+        canvas.xmax = newxmax
+        canvas.ymin = newymin
+        canvas.ymax = newymax
 
 
     def _setCanvasPosition(self, ev):
