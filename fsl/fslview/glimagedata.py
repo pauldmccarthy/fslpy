@@ -76,14 +76,35 @@ class GLImageData(object):
         # will complain/misbehave if it isn't.
         self.colourResolution = 256
 
-        self.initGLImageData()
+        self._initGLImageData()
 
 
-    def initGLImageData(self):
+    def _initGLImageData(self):
         """
         Creates and initialises the OpenGL data for the fslimage.Image
         object that was passed to the GLImageData constructor.
         """
+
+        self.genIndexBuffers()
+        
+        # The colour buffer, containing a map of
+        # colours (stored on the GPU as a 1D texture)
+        # This is initialised in the updateColourBuffer
+        # method
+        colourBuffer = gl.glGenTextures(1) 
+
+        self.dataBuffer   = self._initImageBuffer()
+        self.colourBuffer = colourBuffer
+
+        # Add listeners to this image so the view can be
+        # updated when its display properties are changed
+        self._configDisplayListeners()
+
+        # Create the colour buffer for the given image
+        self.updateColourBuffer() 
+
+        
+    def genIndexBuffers(self, sampleRate=1):
 
         image  = self.image
         xax    = self.xax
@@ -116,28 +137,13 @@ class GLImageData(object):
         yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
         zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)
 
-        # The colour buffer, containing a map of
-        # colours (stored on the GPU as a 1D texture)
-        # This is initialised in the updateColourBuffer
-        # method
-        colourBuffer = gl.glGenTextures(1) 
-
-        self.dataBuffer   = self.initImageBuffer()
         self.voxXBuffer   = xBuffer
         self.voxYBuffer   = yBuffer
         self.voxZBuffer   = zBuffer
         self.geomBuffer   = geomBuffer
-        self.colourBuffer = colourBuffer
-
-        # Add listeners to this image so the view can be
-        # updated when its display properties are changed
-        self.configDisplayListeners()
-
-        # Create the colour buffer for the given image
-        self.updateColourBuffer() 
 
         
-    def initImageBuffer(self):
+    def _initImageBuffer(self):
         """
         Initialises the OpenGL buffer used to store the data for the given
         image. The buffer is stored as an attribute of the image and, if it
@@ -276,7 +282,7 @@ class GLImageData(object):
                         colourmap)
 
 
-    def configDisplayListeners(self):
+    def _configDisplayListeners(self):
         """
         Adds a bunch of listeners to the fslimage.ImageDisplay object which
         defines how the given image is to be displayed. This is done so we
