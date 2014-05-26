@@ -44,12 +44,15 @@ class OrthoPanel(wx.Panel, props.HasProperties):
                          default=1.0,
                          clamped=True)
 
+    sampleRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
+
 
     _view = props.HGroup((
         props.VGroup(('showCursor',
                       'showXCanvas',
                       'showYCanvas',
-                      'showZCanvas')),
+                      'showZCanvas',
+                      'sampleRate')),
         props.VGroup(('xpos',  'ypos',  'zpos')),
         props.VGroup(('xzoom', 'yzoom', 'zzoom'))
     ))
@@ -59,6 +62,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         'showXCanvas' : 'Show X canvas',
         'showYCanvas' : 'Show Y canvas',
         'showZCanvas' : 'Show Z canvas',
+        'sampleRate'  : 'Sample rate',
         'xzoom'       : 'X zoom',
         'yzoom'       : 'Y zoom',
         'zzoom'       : 'Z zoom',
@@ -123,6 +127,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self._configPosListeners()
         self._configShowListeners()
         self._configZoomListeners()
+
+        def sampleRateChanged(ctx, value, valid):
+            self.xcanvas.sampleRate = value
+            self.ycanvas.sampleRate = value
+            self.zcanvas.sampleRate = value
+
+        self.addListener('sampleRate', self.name, sampleRateChanged)
 
 
     def _configPosListeners(self):

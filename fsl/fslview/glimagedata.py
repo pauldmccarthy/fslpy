@@ -146,10 +146,11 @@ class GLImageData(object):
         ydim    = image.shape[yax]
         zdim    = image.shape[zax]
         voxData = [None] * 3
-        
-        voxData[xax] = np.arange(0, xdim, sampleRate, dtype=np.uint16)
-        voxData[yax] = np.arange(0, ydim, sampleRate, dtype=np.uint16)
-        voxData[zax] = np.arange(0, zdim,             dtype=np.uint16)
+
+        start = np.floor(0.5 * sampleRate)
+        voxData[xax] = np.arange(start, xdim, sampleRate, dtype=np.uint16)
+        voxData[yax] = np.arange(start, ydim, sampleRate, dtype=np.uint16)
+        voxData[zax] = np.arange(0,     zdim,             dtype=np.uint16)
         
         # the screen x coordinate data has to be repeated (ydim)
         # times - we are drawing row-wise, and opengl does not
