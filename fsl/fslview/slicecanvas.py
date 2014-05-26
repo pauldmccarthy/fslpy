@@ -58,8 +58,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     # current cursor location will not be drawn.
     showCursor = props.Boolean(default=True)
 
-    # 
-    sampleRate = props.Int(minval=1, maxval=8, default=1, clamped=True)
+    # This property changes the image sampling rate - a
+    # sampling rate of 1 means that every voxel is displayed,
+    # 2 means that every second voxel is displayed, and so on
+    # and so forth.
+    sampleRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     
     def canvasToWorldX(self, xpos):
         """
@@ -166,14 +169,24 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.addListener('xpos',       self.name, posRefresh)
         self.addListener('ypos',       self.name, posRefresh)
         self.addListener('zpos',       self.name, posRefresh)
-        self.addListener('sampleRate', self.name, posRefresh)
         self.addListener('xmin',       self.name, boundRefresh)
         self.addListener('xmax',       self.name, boundRefresh)
         self.addListener('ymin',       self.name, boundRefresh)
         self.addListener('ymax',       self.name, boundRefresh)
         self.addListener('zmin',       self.name, boundRefresh)
         self.addListener('zmax',       self.name, boundRefresh)
-        self.addListener('showCursor', self.name, boundRefresh) 
+        self.addListener('showCursor', self.name, boundRefresh)
+
+        # When the sampling rate property is changed, we need to 
+        # regenerate the voxel indices - this is performed by
+        # the GLImageData object for each image
+        def sampleRateChanged(ctx, value, valid):
+            for image in self.imageList:
+                glData = image.getAttribute(self.name)
+                glData.genIndexBuffers(value)
+                self._refresh()
+
+        self.addListener('sampleRate', self.name, sampleRateChanged)
 
         # When drawn, the slice does not necessarily take
         # up the entire canvas size, as its aspect ratio
@@ -257,14 +270,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # so we know when to refresh the canvas.
         for image in self.imageList:
             try:
-
-                # TODO I could share GLImageData instances
-                # across different canvases which are
-                # displaying the image with the same axis
-                # orientation. Could store the GLImageData
-                # object with a geneic name, e.g.
-                # "GLImageData_0_1_2", where 0, 1, 2, are
-                # the screen x/y/z axes.
                 glData = image.getAttribute(self.name)
                 continue
                 
@@ -362,8 +367,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # Indices of all vertex/fragment shader parameters
         self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
-        self.sampleRatePos    = gl.glGetUniformLocation(self.shaders,
-                                                        'sampleRate')
         self.dataBufferPos    = gl.glGetUniformLocation(self.shaders,
                                                         'dataBuffer')
         self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
@@ -539,6 +542,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
         imageDisplay = image.display
 
+        # The number of voxels to be displayed along
+        # each dimension is not necessarily equal to
+        # the actual image shape, as the image may
+        # be sampled at a lower resolution. The
+        # GLImageData object keeps track of the
+        # current image display resolution.
         xdim = glImageData.xdim
         ydim = glImageData.ydim
         zdim = glImageData.zdim
@@ -553,8 +562,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # bind the current alpha value
         # to the shader alpha variable
         gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
-
-        gl.glUniform1f(self.sampleRatePos, self.sampleRate)
 
         # Bind the voxel coordinate buffers
         gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
@@ -579,8 +586,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         gl.glUniform1i(self.dataBufferPos, 1)
         
         # voxel x/y/z coordinates
-        voxOffs    = [0, 0, 0]
-        voxSteps   = [1, 1, 1]
+        voxOffs  = [0, 0, 0]
+        voxSteps = [1, 1, 1]
 
         voxOffs[ self.zax] = sliceno
         voxSteps[self.yax] = xdim
@@ -596,13 +603,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                 voxOffs):
 
             if off == 0: off = None
-            else:        off = buf + (off * 4)
+            else:        off = buf + (off * 2)
             
             buf.bind()
             gl.glVertexAttribPointer(
                 pos,
                 1,
-                gl.GL_FLOAT,
+                gl.GL_UNSIGNED_SHORT,
                 gl.GL_FALSE,
                 0,
                 off)

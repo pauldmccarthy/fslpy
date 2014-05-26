@@ -8,8 +8,6 @@
 /* Opacity - constant for a whole image */
 uniform float alpha;
 
-uniform float sampleRate;
-
 /* image data texture */
 uniform sampler3D dataBuffer;
 
@@ -34,14 +32,12 @@ varying float fragVoxValue;
 
 void main(void) {
 
-    vec3 vertPos = inVertex * sampleRate;
-
     /*
      * Offset the vertex by the current voxel position
      * (and perform standard transformation from data
      * coordinates to screen coordinates).
      */
-    vertPos = vertPos + vec3(voxX, voxY, voxZ);
+    vec3 vertPos = inVertex + vec3(voxX, voxY, voxZ);
     gl_Position = gl_ModelViewProjectionMatrix * 
         (voxToWorldMat * vec4(vertPos, 1.0));
 

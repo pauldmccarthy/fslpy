@@ -34,10 +34,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         'sliceStart'   : 'First slice',
         'sliceEnd'     : 'Last slice',
         'sliceSpacing' : 'Slice spacing',
+        'sampleRate'   : 'Sampling rate',
         'ncols'        : 'Number of columns'}
 
-
-    _view = props.HGroup(('sliceStart', 'sliceEnd', 'sliceSpacing', 'ncols'))
+    _view = props.VGroup(('sliceStart',
+                          'sliceEnd',
+                          'sliceSpacing',
+                          'sampleRate',
+                          'ncols'))
 
     def __init__(self,
                  parent,
@@ -378,7 +382,7 @@ class LightBoxFrame(wx.Frame):
         import fsl.fslview.imagelistpanel as imagelistpanel
 
         self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
-        self.mainPanel = LightBoxPanel(self, imageList, zax=1)
+        self.mainPanel = LightBoxPanel(self, imageList, zax=2)
         self.ctrlPanel = props.buildGUI(self, self.mainPanel.canvas)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)

@@ -32,6 +32,10 @@
 #  - geomBuffer
 #  - colourBuffer
 #
+# The x, y, z, and geometry buffers may be regenerated via the
+# genIndexBuffers method. If image display properties change, the
+# updateColourBuffer method is called.
+#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
@@ -106,6 +110,18 @@ class GLImageData(object):
 
         
     def genIndexBuffers(self, sampleRate=1):
+        """
+        (Re-)Generates data buffers containing X, Y, and Z coordinates,
+        used for indexing into the image. Also generates the geometry
+        buffer, which defines the geometry of a single voxel. If a
+        sampling rate other than 1 is passed in, the generated index
+        buffers will contain a sampling of the full coordinate space
+        for the X and Y dimensions, and the vertices in the geometry
+        buffer will be scaled accordingly.
+        """
+
+        if sampleRate < 1 or sampleRate > 16:
+            raise ValueError('Sampling rate must be between 1 and 16')
 
         image  = self.image
         xax    = self.xax
@@ -118,16 +134,22 @@ class GLImageData(object):
         geomData[:, [xax, yax]] = [[-0.5, -0.5],
                                    [ 0.5, -0.5],
                                    [-0.5,  0.5],
-                                   [ 0.5,  0.5]] 
-        
+                                   [ 0.5,  0.5]]
+
+        # Scale the voxel by the sampling rate
+        geomData   = geomData * sampleRate
         geomData   = geomData.ravel('C')
         geomBuffer = vbo.VBO(geomData, gl.GL_STATIC_DRAW)
         
         # x/y/z coordinates are stored as VBO arrays
-        voxData = []
-        for dim in image.shape:
-            data = np.arange(0, dim, dtype=np.float32)
-            voxData.append(data)        
+        xdim    = image.shape[xax]
+        ydim    = image.shape[yax]
+        zdim    = image.shape[zax]
+        voxData = [None] * 3
+        
+        voxData[xax] = np.arange(0, xdim, sampleRate, dtype=np.uint16)
+        voxData[yax] = np.arange(0, ydim, sampleRate, dtype=np.uint16)
+        voxData[zax] = np.arange(0, zdim,             dtype=np.uint16)
         
         # the screen x coordinate data has to be repeated (ydim)
         # times - we are drawing row-wise, and opengl does not
