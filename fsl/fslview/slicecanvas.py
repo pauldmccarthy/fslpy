@@ -539,12 +539,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
         imageDisplay = image.display
 
-        xdim = image.shape[self.xax]
-        ydim = image.shape[self.yax]
-        zdim = image.shape[self.zax]
-
-        sampleRate = self.sampleRate
-
+        xdim = glImageData.xdim
+        ydim = glImageData.ydim
+        zdim = glImageData.zdim
+        
         # Don't draw the slice if this
         # image display is disabled
         if not imageDisplay.enabled: return
@@ -556,7 +554,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # to the shader alpha variable
         gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-        gl.glUniform1f(self.sampleRatePos, sampleRate)
+        gl.glUniform1f(self.sampleRatePos, self.sampleRate)
 
         # Bind the voxel coordinate buffers
         gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
@@ -581,18 +579,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         gl.glUniform1i(self.dataBufferPos, 1)
         
         # voxel x/y/z coordinates
-        voxStrides = [0, 0, 0]
         voxOffs    = [0, 0, 0]
         voxSteps   = [1, 1, 1]
 
-        if sampleRate > 1:
-            voxStrides[self.xax] = sampleRate * 4
-            voxStrides[self.yax] = sampleRate * 4
-        
-        voxOffs[   self.zax] = sliceno
-        voxSteps[  self.yax] = xdim / sampleRate
-        voxSteps[  self.zax] = xdim * ydim / sampleRate
-        for buf, pos, step, stride, off in zip(
+        voxOffs[ self.zax] = sliceno
+        voxSteps[self.yax] = xdim
+        voxSteps[self.zax] = xdim * ydim
+        for buf, pos, step, off in zip(
                 (glImageData.voxXBuffer,
                  glImageData.voxYBuffer,
                  glImageData.voxZBuffer),
@@ -600,7 +593,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                  self.voxYPos,
                  self.voxZPos),
                 voxSteps,
-                voxStrides,
                 voxOffs):
 
             if off == 0: off = None
@@ -612,7 +604,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                 1,
                 gl.GL_FLOAT,
                 gl.GL_FALSE,
-                stride,
+                0,
                 off)
             gl.glEnableVertexAttribArray(pos)
             arbia.glVertexAttribDivisorARB(pos, step)
@@ -632,7 +624,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # Draw all of the triangles!
         arbdi.glDrawArraysInstancedARB(
-            gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim / sampleRate)
+            gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
 
         gl.glDisableVertexAttribArray(self.inVertexPos)
         gl.glDisableVertexAttribArray(self.voxXPos)

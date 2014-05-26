@@ -67,6 +67,7 @@ class GLImageData(object):
         self.image = image
         self.xax   = xax
         self.yax   = yax
+        self.zax   = 3 - xax - yax
 
         if imageDisplay is not None: self.display = imageDisplay
         else:                        self.display = image.display
@@ -109,6 +110,7 @@ class GLImageData(object):
         image  = self.image
         xax    = self.xax
         yax    = self.yax
+        zax    = self.zax
 
         # The geometry buffer defines the geometry of
         # a single voxel, rendered as a triangle strip.
@@ -141,6 +143,9 @@ class GLImageData(object):
         self.voxYBuffer   = yBuffer
         self.voxZBuffer   = zBuffer
         self.geomBuffer   = geomBuffer
+        self.xdim         = len(voxData[xax]) / len(voxData[yax])
+        self.ydim         = len(voxData[yax])
+        self.zdim         = len(voxData[zax])
 
         
     def _initImageBuffer(self):
