@@ -249,10 +249,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         the min/max x/y/z coordinates across all images being displayed).
         """
 
-        # Update the minimum/maximum
-        # image bounds along each axis
-        self._setPropertyConstraints()
-
         # Create a GLImageData object for any new images,
         # and attach a listener to their display properties
         # so we know when to refresh the canvas.
@@ -284,7 +280,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             image.display.addListener('rangeClip',  self.name, refresh)
             image.display.addListener('cmap',       self.name, refresh)
 
-        self.Refresh()
+        self._refresh(True)
 
 
     def _compileShaders(self):
