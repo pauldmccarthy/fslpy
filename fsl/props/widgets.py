@@ -23,50 +23,10 @@ import wx.combo
 import numpy             as np
 import matplotlib.cm     as mplcm
 
-# the List property is complex enough to get its own module.
-from widgets_list import _List
-
-import properties as props
-
-
-class FloatSlider(wx.Slider):
-    """
-    A cheap and nasty subclass of wx.Slider which supports floating point
-    numbers of any range. The desired range is transformed into the range
-    [0-100].
-    """
-
-    def __init__(self,
-                 parent,
-                 value,
-                 minValue,
-                 maxValue,
-                 **kwargs):
-
-        self.origMinValue = minValue
-        self.origMaxValue = maxValue
-        self.valRange     = abs(maxValue - minValue)
-
-        value = (value - minValue) * (100.0 / self.valRange)
-        value = int(round(value))
-        
-        wx.Slider.__init__(self,
-                           parent,
-                           value=value,
-                           minValue=0,
-                           maxValue=100,
-                           **kwargs)
-
-    def SetValue(self, value):
-
-        value = (value - self.origMinValue) * (100.0 / self.valRange)
-        wx.Slider.SetValue(self, int(round(value)))
-
-    def GetValue(self):
-        
-        value = wx.Slider.GetValue(self)
-        value = value * (self.valRange / 100.0) + self.origMinValue
-        return value
+# the List and number properties are complex
+# enough to get their own modules.
+from widgets_list   import _List
+from widgets_number import _Number
 
 
 def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
@@ -126,8 +86,6 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
 
     guiObj.Bind(wx.EVT_WINDOW_DESTROY,
                 lambda ev: propVal.removeListener(listenerName))
-
-    
 
 
 def _setupValidation(widget, hasProps, propObj, propVal):
@@ -286,94 +244,6 @@ def _String(parent, hasProps, propObj, propVal):
     
     return widget
 
-
-def _Number(parent, hasProps, propObj, propVal):
-    """
-    Creates and returns a widget allowing the user to edit
-    the given property (a props.Int or props.Double).
-    """
-
-    value      = propVal.get()
-    minval     = propObj.getConstraint(hasProps, 'minval')
-    maxval     = propObj.getConstraint(hasProps, 'maxval')
-    makeSlider = (minval is not None) and (maxval is not None)
-
-    params = {}
-    if isinstance(propObj, props.Int):
-        
-        SpinCtr = wx.SpinCtrl
-
-        # wx.SpinCtrl complains heartily if
-        # we pass values greater than signed 32 bit
-        if minval is None: minval = -2 ** 31 + 1
-        if maxval is None: maxval =  2 ** 31 - 1
-
-        value = int(value)
-        
-    elif isinstance(propObj, props.Double):
-        
-        SpinCtr = wx.SpinCtrlDouble
-        if minval is None: minval = -sys.float_info.max
-        if maxval is None: maxval =  sys.float_info.max
-
-        if makeSlider: increment = (maxval - minval) / 20.0
-        else:          increment = 0.5
-
-        params['inc'] = increment
-                
-    else:
-        raise TypeError('Unrecognised property type: {}'.format(
-            propObj.__class__.__name__))
-
-    params['min']     = minval
-    params['max']     = maxval
-    params['initial'] = value
-    params['value']   = '{}'.format(value)
-
-    # The minval and maxval attributes have not both
-    # been set, so we create a spinbox instead of a slider.
-    if not makeSlider:
-
-        widget = SpinCtr(parent, **params)
-        
-        _propBind(hasProps, propObj, propVal, widget,
-                  [wx.EVT_SPINCTRL, wx.EVT_TEXT])
-
-    # if both minval and maxval have been set, we can use
-    # a slider. We also add a spinbox for manual entry, and
-    # some labels to show the min/max/current slider value.
-    else:
-
-        panel = wx.Panel(parent)
-
-        slider = FloatSlider(
-            panel,
-            value=value,
-            minValue=minval,
-            maxValue=maxval)
-
-        spin = SpinCtr(panel, **params)
-
-        minLabel = wx.StaticText(panel, label='{}'.format(minval))
-        maxLabel = wx.StaticText(panel, label='{}'.format(maxval))
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        sizer.Add(minLabel) 
-        sizer.Add(slider, flag=wx.EXPAND, proportion=1)
-        sizer.Add(maxLabel)
-        sizer.Add(spin, flag=wx.EXPAND)
-
-        panel.SetSizer(sizer)
-        panel.SetAutoLayout(1)
-        sizer.Fit(panel)
-
-        _propBind(hasProps, propObj, propVal, slider, wx.EVT_SLIDER)
-        _propBind(hasProps, propObj, propVal, spin,   wx.EVT_SPIN)
-
-        widget = panel
-
-    return widget
 
 
 def _Double(parent, hasProps, propObj, propVal):
