@@ -132,11 +132,11 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
         spin.SetRange(minval, maxval)
 
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(spin))
-    propVal.addListener(listenerName, updateRange)
+    propObj.addConstraintListener(hasProps, listenerName, updateRange)
     
     spin.Bind(
         wx.EVT_WINDOW_DESTROY,
-        lambda ev: propVal.removeListener(listenerName)) 
+        lambda ev: propObj.removeConstraintListener(hasProps, listenerName))
 
     return spin
 
@@ -182,11 +182,11 @@ def _makeSlider(parent, hasProps, propObj, propVal):
                       (wx.EVT_SPIN, wx.EVT_SPINCTRL))
 
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(slider))
-    propVal.addListener(listenerName, updateRange)
+    propObj.addConstraintListener(hasProps, listenerName, updateRange)
     
     slider.Bind(
         wx.EVT_WINDOW_DESTROY,
-        lambda ev: propVal.removeListener(listenerName)) 
+        lambda ev: propObj.removeConstraintListener(hasProps, listenerName)) 
 
     return panel
 

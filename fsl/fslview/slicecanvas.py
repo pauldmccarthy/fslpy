@@ -518,6 +518,17 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ymin = -1.0
             ymax =  1.0
 
+        # Sanity check - make sure we are setting
+        # the view to something sensible, otherwise
+        # glOrtho will complain.
+        if xmin == xmax or xmin > xmax:
+            xmin = -1.0
+            xmax =  1.0
+            
+        if ymin == ymax or ymin > ymax:
+            ymin = -1.0
+            ymax =  1.0 
+
         log.debug('Setting canvas bounds: '
                   'X {: 5.1f} - {: 5.1f},'
                   'Y {: 5.1f} - {: 5.1f}'.format(xmin, xmax, ymin, ymax))

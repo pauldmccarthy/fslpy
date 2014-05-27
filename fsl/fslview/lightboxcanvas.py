@@ -76,17 +76,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                 self._draw(ev)
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
-        def propChanged(*a): self._refresh(True)
 
-        self.addListener('sliceSpacing', self.name, propChanged)
-        self.addListener('ncols',        self.name, propChanged)
 
         def sliceRangeChanged(*a):
             self._genSliceLocations()
             self._refresh()
 
-        self.addListener('zmin', self.name, sliceRangeChanged)
-        self.addListener('zmax', self.name, sliceRangeChanged)
+        self.addListener('sliceSpacing', self.name, sliceRangeChanged)
+        self.addListener('ncols',        self.name, sliceRangeChanged)
+        self.addListener('zmin',         self.name, sliceRangeChanged)
+        self.addListener('zmax',         self.name, sliceRangeChanged)
 
 
     def _updateBounds(self):
