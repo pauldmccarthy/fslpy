@@ -185,23 +185,23 @@ class String(props.PropertyBase):
             raise ValueError('Must have length at most {}'.format(maxlen))
         
 
-class Choice(String):
+class Choice(props.PropertyBase):
     """
     A property which may only be set to one of a set of predefined
-    strings.
+    values.
     """
 
     def __init__(self, choices, choiceLabels=None, **kwargs):
         """
         Choice constructor. Parameters:
         
-          - choices:      List of strings, the possible values that
+          - choices:      List of values, the possible values that
                           this property can take.
         
         Optional parameters
         
-          - choiceLabels: List of labels, one for each choice, to
-                          be used for display purposes.
+          - choiceLabels: List of string labels, one for each choice,
+                          to be used for display purposes.
 
         As an alternative to passing in separate choice and
         choiceLabels lists, you may pass in a dict as the
@@ -222,18 +222,18 @@ class Choice(String):
             self.choiceLabels = choiceLabels
 
         if self.choiceLabels is None:
-            self.choiceLabels = self.choices
+            self.choiceLabels = map(str, self.choices)
 
         kwargs['default'] = kwargs.get('default', self.choices[0])
 
-        String.__init__(self, **kwargs)
+        props.PropertyBase.__init__(self, **kwargs)
 
         
     def validate(self, instance, value):
         """
         Rejects values that are not in the choices list.
         """
-        String.validate(self, instance, value)
+        props.PropertyBase.validate(self, instance, value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice ({})'.format(value))
