@@ -226,11 +226,12 @@ class ImageDisplay(props.HasProperties):
             cmap.set_over( cmap(1.0), alpha=1.0) 
 
             
-    enabled    = props.Boolean(default=True)
-    alpha      = props.Double(minval=0.0, maxval=1.0, default=1.0)
-    displayMin = props.Double()
-    displayMax = props.Double()
-    rangeClip  = props.Boolean(default=False,
+    enabled      = props.Boolean(default=True)
+    alpha        = props.Double(minval=0.0, maxval=1.0, default=1.0)
+    displayMin   = props.Double()
+    displayMax   = props.Double()
+    samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
+    rangeClip    = props.Boolean(default=False,
                                preNotifyFunc=updateColourMap)
 
     cmap       = props.ColourMap(default=mplcm.Greys_r,
@@ -241,14 +242,16 @@ class ImageDisplay(props.HasProperties):
                           'displayMax',
                           'alpha',
                           'rangeClip',
+                          'samplingRate',
                           'cmap'))
     _labels = {
-        'enabled'    : 'Enabled',
-        'displayMin' : 'Min.',
-        'displayMax' : 'Max.',
-        'alpha'      : 'Opacity',
-        'rangeClip'  : 'Clipping',
-        'cmap'       : 'Colour map'
+        'enabled'      : 'Enabled',
+        'displayMin'   : 'Min.',
+        'displayMax'   : 'Max.',
+        'alpha'        : 'Opacity',
+        'rangeClip'    : 'Clipping',
+        'samplingRate' : 'Sampling rate',
+        'cmap'         : 'Colour map'
     }
 
 

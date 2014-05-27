@@ -58,12 +58,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     # current cursor location will not be drawn.
     showCursor = props.Boolean(default=True)
 
-    # This property changes the image sampling rate - a
-    # sampling rate of 1 means that every voxel is displayed,
-    # 2 means that every second voxel is displayed, and so on
-    # and so forth.
-    sampleRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
-    
     def canvasToWorldX(self, xpos):
         """
         Given a pixel x coordinate on this canvas, translates it
@@ -177,17 +171,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.addListener('zmax',       self.name, boundRefresh)
         self.addListener('showCursor', self.name, boundRefresh)
 
-        # When the sampling rate property is changed, we need to 
-        # regenerate the voxel indices - this is performed by
-        # the GLImageData object for each image
-        def sampleRateChanged(ctx, value, valid):
-            for image in self.imageList:
-                glData = image.getAttribute(self.name)
-                glData.genIndexBuffers(value)
-                self._refresh()
-
-        self.addListener('sampleRate', self.name, sampleRateChanged)
-
         # When drawn, the slice does not necessarily take
         # up the entire canvas size, as its aspect ratio
         # is maintained. The _canvasBBox attribute is used
@@ -281,12 +264,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             def refresh(*a): self._refresh()
 
-            image.display.addListener('enabled',    self.name, refresh)
-            image.display.addListener('alpha',      self.name, refresh)
-            image.display.addListener('displayMin', self.name, refresh)
-            image.display.addListener('displayMax', self.name, refresh)
-            image.display.addListener('rangeClip',  self.name, refresh)
-            image.display.addListener('cmap',       self.name, refresh)
+            image.display.addListener('enabled',      self.name, refresh)
+            image.display.addListener('alpha',        self.name, refresh)
+            image.display.addListener('displayMin',   self.name, refresh)
+            image.display.addListener('displayMax',   self.name, refresh)
+            image.display.addListener('rangeClip',    self.name, refresh)
+            image.display.addListener('samplingRate', self.name, refresh)
+            image.display.addListener('cmap',         self.name, refresh)
 
         self._refresh(True)
 

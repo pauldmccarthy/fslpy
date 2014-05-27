@@ -70,8 +70,7 @@ class GLImageData(object):
 
         self.image = image
         self.xax   = xax
-        self.yax   = yax
-        self.zax   = 3 - xax - yax
+        self.yax   = yax 
 
         if imageDisplay is not None: self.display = imageDisplay
         else:                        self.display = image.display
@@ -81,6 +80,7 @@ class GLImageData(object):
         # will complain/misbehave if it isn't.
         self.colourResolution = 256
 
+        self.genIndexBuffers(xax, yax)
         self._initGLImageData()
 
 
@@ -90,8 +90,6 @@ class GLImageData(object):
         object that was passed to the GLImageData constructor.
         """
 
-        self.genIndexBuffers()
-        
         # The colour buffer, containing a map of
         # colours (stored on the GPU as a 1D texture)
         # This is initialised in the updateColourBuffer
@@ -109,7 +107,7 @@ class GLImageData(object):
         self.updateColourBuffer() 
 
         
-    def genIndexBuffers(self, sampleRate=1):
+    def genIndexBuffers(self, xax, yax, sampleRate=1):
         """
         (Re-)Generates data buffers containing X, Y, and Z coordinates,
         used for indexing into the image. Also generates the geometry
@@ -123,10 +121,11 @@ class GLImageData(object):
         if sampleRate < 1 or sampleRate > 16:
             raise ValueError('Sampling rate must be between 1 and 16')
 
+        self.xax = xax
+        self.yax = yax
+
         image  = self.image
-        xax    = self.xax
-        yax    = self.yax
-        zax    = self.zax
+        zax    = 3 - xax - yax 
 
         # The geometry buffer defines the geometry of
         # a single voxel, rendered as a triangle strip.
@@ -152,10 +151,9 @@ class GLImageData(object):
         voxData[yax] = np.arange(start, ydim, sampleRate, dtype=np.uint16)
         voxData[zax] = np.arange(0,     zdim,             dtype=np.uint16)
         
-        # the screen x coordinate data has to be repeated (ydim)
-        # times - we are drawing row-wise, and opengl does not
-        # allow us to loop over a VBO in a single instance
-        # rendering call
+        # the screen x coordinate data has to be repeated (ydim) times -
+        # we are drawing row-wise, and opengl does not allow us to loop
+        # over a VBO in a single instance rendering call
         voxData[xax] = np.tile(voxData[xax], image.shape[yax])
         
         xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
@@ -321,10 +319,14 @@ class GLImageData(object):
         def colourUpdateNeeded(*a):
             self.updateColourBuffer()
 
+        def indexUpdateNeeded(ctx, value, valid):
+            self.genIndexBuffers(self.xax, self.yax, value)
+
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
-        display.addListener('displayMin', lnrName, colourUpdateNeeded)
-        display.addListener('displayMax', lnrName, colourUpdateNeeded)
-        display.addListener('rangeClip',  lnrName, colourUpdateNeeded)
-        display.addListener('cmap',       lnrName, colourUpdateNeeded)
+        display.addListener('displayMin',   lnrName, colourUpdateNeeded)
+        display.addListener('displayMax',   lnrName, colourUpdateNeeded)
+        display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
+        display.addListener('cmap',         lnrName, colourUpdateNeeded)
+        display.addListener('samplingRate', lnrName, indexUpdateNeeded)

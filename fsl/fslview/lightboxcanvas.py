@@ -34,13 +34,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         'sliceStart'   : 'First slice',
         'sliceEnd'     : 'Last slice',
         'sliceSpacing' : 'Slice spacing',
-        'sampleRate'   : 'Sampling rate',
         'ncols'        : 'Number of columns'}
 
     _view = props.VGroup(('sliceStart',
                           'sliceEnd',
                           'sliceSpacing',
-                          'sampleRate',
                           'ncols'))
 
     def __init__(self,
