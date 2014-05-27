@@ -6,6 +6,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
+logging.basicConfig(
+    format='%(levelname)8.8s '
+           '%(filename)20.20s '
+           '%(lineno)4d: '
+           '%(funcName)-15.15s - '
+           '%(message)s')
+log = logging.getLogger('fsl')
+log.setLevel(logging.DEBUG)
+
 import wx
 
 import numpy as np
@@ -22,8 +33,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
     # Properties which control the starting and end bounds of the
     # displayed slices, and the spacing between them (in real
     # world coordinates)
-    sliceStart   = props.Double(clamped=True)
-    sliceEnd     = props.Double(clamped=True)
     sliceSpacing = props.Double(clamped=True, minval=0.1, default=2.0)
 
     # This property controls the number of slices
@@ -31,15 +40,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
     ncols        = props.Int(   clamped=True, minval=1, maxval=15, default=5)
 
     _labels = {
-        'sliceStart'   : 'First slice',
-        'sliceEnd'     : 'Last slice',
+        'zmin'         : 'First slice',
+        'zmax'         : 'Last slice',
         'sliceSpacing' : 'Slice spacing',
-        'ncols'        : 'Number of columns'}
+        'ncols'        : 'Number of columns',
+        'zax'          : 'Z axis'}
 
-    _view = props.VGroup(('sliceStart',
-                          'sliceEnd',
+    _view = props.VGroup(('zmin',
+                          'zmax',
                           'sliceSpacing',
-                          'ncols'))
+                          'ncols',
+                          'zax'))
 
     def __init__(self,
                  parent,
@@ -52,59 +63,50 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
             raise RuntimeError('LightBoxCanvas only supports '
                                'a vertical scrollbar')
 
+        self._scrollbar = scrollbar
+
         slicecanvas.SliceCanvas.__init__(self, parent, imageList, zax, context)
         props.HasProperties.__init__(self)
 
-        self._scrollbar = scrollbar
-
-        # nrows is automatically calculated 
-        # in the _imageListChangd method -
-        # the value 0 is just a placeholder
-        self._nrows = 0
-
         if scrollbar is not None:
-            scrollbar.Bind(wx.EVT_SCROLL, self._draw)
+            def onScroll(ev):
+                if scrollbar.GetPageSize() >= scrollbar.GetRange():
+                    scrollbar.SetThumbPosition(0)
+                    return
+                self._draw(ev)
+            scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
-        def propChanged(*a):
-            self._genSliceLocations()
-            self._refresh()
+        def propChanged(*a): self._refresh(True)
 
-        self.addListener('sliceStart',   self.name, propChanged)
-        self.addListener('sliceEnd',     self.name, propChanged)
         self.addListener('sliceSpacing', self.name, propChanged)
         self.addListener('ncols',        self.name, propChanged)
 
+        def sliceRangeChanged(*a):
+            self._genSliceLocations()
+            self._refresh()
 
-    def _imageListChanged(self):
+        self.addListener('zmin', self.name, sliceRangeChanged)
+        self.addListener('zmax', self.name, sliceRangeChanged)
+
+
+    def _updateBounds(self):
         """
-        Called when the list of displayed images changes. Calls
-        SliceCanvas._imageListChanged (which recalculates the
-        bounds of all images in the list), then calls
-        _genSliceLocations
         """
 
-        # recalculate image bounds, and create
-        # GL data for any newly added images.
-        slicecanvas.SliceCanvas._imageListChanged(self)
-
-        zmin = self.imageList.minBounds[self.zax]
-        zmax = self.imageList.maxBounds[self.zax]
+        oldzmin = self.zmin
+        oldzmax = self.zmax
         
-        # update bounds on the slice start/end properties
-        self.setConstraint('sliceStart', 'minval', zmin)
-        self.setConstraint('sliceStart', 'maxval', zmax)
-        self.setConstraint('sliceEnd',   'minval', zmin)
-        self.setConstraint('sliceEnd',   'maxval', zmax)
+        slicecanvas.SliceCanvas._updateBounds(self)
 
-        # I'm assuming here that if both the start and end
-        # locations are 0, they need initialising. Or the
-        # user is just weird.
-        if self.sliceStart == 0.0 and self.sliceEnd == 0.0:
-            self.sliceStart = zmin
-            self.sliceEnd   = zmax
+        self.xmin = self.imageList.minBounds[self.xax]
+        self.xmax = self.imageList.maxBounds[self.xax]
+        self.ymin = self.imageList.minBounds[self.yax]
+        self.ymax = self.imageList.maxBounds[self.yax]
 
+        if self.zmin == oldzmin: self.zmin = self.imageList.minBounds[self.zax]
+        if self.zmax == oldzmax: self.zmax = self.imageList.maxBounds[self.zax]            
+        
         self._genSliceLocations()
-        
 
 
     def _genSliceLocations(self):
@@ -121,12 +123,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         # calculate the locations, in real world coordinates,
         # of all slices to be displayed on the canvas
         sliceLocs = np.arange(
-            self.sliceStart,
-            self.sliceEnd + self.sliceSpacing,
+            self.zmin + self.sliceSpacing * 0.5,
+            self.zmax + self.sliceSpacing,
             self.sliceSpacing)
 
         self._nslices = len(sliceLocs)
         self._nrows   = int(np.ceil(self._nslices / float(self.ncols)))
+
+        log.debug('{} slices {} rows {} columns'.format(
+            self._nslices, self._nrows, self.ncols))
         
         self._sliceIdxs  = []
         self._transforms = []
@@ -146,11 +151,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
                 self._transforms[-1].append(xform)
                 self._sliceIdxs[ -1].append(imgZi)
-
-        # update the scrollbar (if there is one),
-        # as the image bounds and hence the number
-        # of slices may have changed
-        self._updateScrollBar()
 
 
     def _calculateSliceTransform(self, image, sliceno):
@@ -192,7 +192,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         if self._scrollbar is None: return
         
         if len(self.imageList) == 0:
-            self._scrollbar.SetScrollbar(0, 99, 1, 99, True)
+            self._scrollbar.SetScrollbar(0, 0, 0, 0, True)
             return
 
         screenSize = self.GetClientSize()
@@ -206,6 +206,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
         if rowsOnScreen == 0:
             rowsOnScreen = 1
+
+        if rowsOnScreen > self._nrows:
+            rowsOnScreen = self._nrows
+
+        log.debug('Slice size {:3.0f} x {:3.0f}, '
+                  'position: {}, '
+                  'rows on screen: {} / {}'.format(
+                      sliceWidth, sliceHeight,
+                      oldPos, rowsOnScreen, self._nrows))
 
         self._scrollbar.SetScrollbar(oldPos,
                                      rowsOnScreen,
@@ -315,7 +324,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         gl.glShadeModel(gl.GL_FLAT)
 
         # Draw all the slices for all the images.
+        
         for i, image in enumerate(self.imageList):
+            print 'Drawing {} slices for image {}'.format(
+                endSlice - startSlice, i)
             for zi in range(startSlice, endSlice):
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],
@@ -359,7 +371,16 @@ class LightBoxPanel(wx.Panel):
             if   wheelDir > 0: wheelDir = -1
             elif wheelDir < 0: wheelDir =  1
 
-            curPos = self.scrollbar.GetThumbPosition()
+            curPos       = self.scrollbar.GetThumbPosition()
+            newPos       = curPos + wheelDir
+            sbRange      = self.scrollbar.GetRange()
+            rowsOnScreen = self.scrollbar.GetPageSize()
+
+            if self.scrollbar.GetPageSize() >= self.scrollbar.GetRange():
+                return
+            if newPos < 0 or newPos + rowsOnScreen > sbRange:
+                return
+            
             self.scrollbar.SetThumbPosition(curPos + wheelDir)
             self.canvas._draw(None)
 

@@ -32,9 +32,13 @@
 #  - geomBuffer
 #  - colourBuffer
 #
-# The x, y, z, and geometry buffers may be regenerated via the
-# genIndexBuffers method. If image display properties change, the
-# updateColourBuffer method is called.
+# The contents of the x, y, z, geom and colour buffers is dependent upon
+# the way that the image is being displayed.  They are regenerated
+# automatically when the image display properties are changed (via
+# listeners registered on the relevant fsl.data.fslimage.ImageDisplay
+# properties).  If the display orientation changes (i.e. the image
+# dimensions that map to the screen X/Y axes) the genIndexBuffers method
+# must be called to regenerate the voxel indices.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -107,7 +111,7 @@ class GLImageData(object):
         self.updateColourBuffer() 
 
         
-    def genIndexBuffers(self, xax, yax, sampleRate=1):
+    def genIndexBuffers(self, xax, yax):
         """
         (Re-)Generates data buffers containing X, Y, and Z coordinates,
         used for indexing into the image. Also generates the geometry
@@ -118,14 +122,12 @@ class GLImageData(object):
         buffer will be scaled accordingly.
         """
 
-        if sampleRate < 1 or sampleRate > 16:
-            raise ValueError('Sampling rate must be between 1 and 16')
-
         self.xax = xax
         self.yax = yax
 
-        image  = self.image
-        zax    = 3 - xax - yax 
+        image      = self.image
+        sampleRate = self.display.samplingRate
+        zax        = 3 - xax - yax 
 
         # The geometry buffer defines the geometry of
         # a single voxel, rendered as a triangle strip.
@@ -319,8 +321,8 @@ class GLImageData(object):
         def colourUpdateNeeded(*a):
             self.updateColourBuffer()
 
-        def indexUpdateNeeded(ctx, value, valid):
-            self.genIndexBuffers(self.xax, self.yax, value)
+        def indexUpdateNeeded(*a):
+            self.genIndexBuffers(self.xax, self.yax)
 
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))

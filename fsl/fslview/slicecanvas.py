@@ -6,6 +6,10 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
+log = logging.getLogger(__name__)
+
 import os.path     as op
 
 import numpy       as np
@@ -58,6 +62,39 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     # current cursor location will not be drawn.
     showCursor = props.Boolean(default=True)
 
+    # The image axis to be used as the screen 'depth' axis.
+    zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
+
+
+    def _zAxisChanged(self, *a):
+        """
+        Called when the Z axis is changed. Calculates the corresponding
+        X and Y axes, and saves them as attributes of the object. Also
+        regenerates the GL index buffers for every image in the image
+        list, as they are dependent upon how the image is being
+        displayed.
+        """
+
+        log.debug('{}'.format(self.zax))
+        
+        dims = range(3)
+        dims.pop(self.zax)
+        self.xax = dims[0]
+        self.yax = dims[1]
+
+        for image in self.imageList:
+
+            try:   glData = image.getAttribute(self.name)
+
+            # if this lookup fails, it means that the GL data
+            # for this image has not yet been generated.
+            except KeyError: continue
+            
+            glData.genIndexBuffers(self.xax, self.yax)
+            
+        self._refresh(True)
+            
+        
     def canvasToWorldX(self, xpos):
         """
         Given a pixel x coordinate on this canvas, translates it
@@ -126,19 +163,23 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList = imageList
         self.name      = 'SliceCanvas_{}'.format(id(self))
 
+        # This flag is set by the _initGLData method
+        # when it has finished initialising the OpenGL
+        # shaders
+        self.glReady = False
+
         # These attributes map from the image axes to
         # the display axes. xax is horizontal, yax
-        # is vertical, and zax is depth.
-        #
-        # TODO Currently, the displayed x/horizontal and
-        # y/vertical axes are defined by their order in
-        # the image. We could allow the caller to specify
-        # which axes should be horizontal/vertical.
-        dims = range(3)
-        dims.pop(zax)
-        self.xax = dims[0]
-        self.yax = dims[1]
+        # is vertical, and zax is depth. The x and y
+        # axes are automatically updated whenever the
+        # zaxis changes, via the _zAxisChanged method.
+        self.addListener('zax', self.name, self._zAxisChanged)
         self.zax = zax
+
+        # make sure the xax and yax attributes are set, as
+        # the callback that we set up above will only happen
+        # if the specified zax is not 0
+        self._zAxisChanged()
 
         self.xmin = imageList.minBounds[self.xax]
         self.ymin = imageList.minBounds[self.yax]
@@ -153,7 +194,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # The x/y/z pos properties are limited
         # to the x/y/z min/max bounds
-        self._setPropertyConstraints()
+        self._updateBounds()
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
@@ -181,11 +222,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self._canvasBBox = [0, 0, 0, 0]
         self.Bind(wx.EVT_SIZE, self._calculateCanvasBBox)
 
-        # This flag is set by the _initGLData method
-        # when it has finished initialising the OpenGL
-        # shaders
-        self.glReady = False
-
         # All the work is done by the draw method
         self.Bind(wx.EVT_PAINT, self._draw)
 
@@ -194,7 +230,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList.addListener(lambda il: self._imageListChanged())
 
 
-    def _setPropertyConstraints(self):
+    def _updateBounds(self):
         """
         Updates the constraints on each of the x/y/z pos and min/max
         properties so they are all limited to stay within a valid
@@ -207,6 +243,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         ymax = self.imageList.maxBounds[self.yax]
         zmin = self.imageList.minBounds[self.zax]
         zmax = self.imageList.maxBounds[self.zax]
+
+        log.debug('New bounds (' 
+                  'X: {: 5.1f} - {: 5.1f}, '
+                  'Y: {: 5.1f} - {: 5.1f}, '
+                  'Z: {: 5.1f} - {: 5.1f})'.format(
+                      xmin, xmax, ymin, ymax, zmin, zmax))
 
         self.setConstraint('xpos', 'minval', self.xmin)
         self.setConstraint('xpos', 'maxval', self.xmax)
@@ -373,13 +415,15 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.glReady = True
 
 
-    def _refresh(self, constraints=False):
+    def _refresh(self, bounds=False):
         """
         Called when a display property changes. Updates x/y/z property
         values, updates the canvas bounding box, and triggers a redraw.
         """
+
+        if not self.glReady: return
         
-        if constraints: self._setPropertyConstraints()
+        if bounds: self._updateBounds()
         self._calculateCanvasBBox(None)
         self.Refresh()
 
@@ -438,6 +482,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         self._canvasBBox = [x, y, canvasWidth, canvasHeight]
 
+        log.debug('Canvas BBox: {}'.format(self._canvasBBox))
+
         
     def _resize(self,
                 bbox=None,
@@ -472,20 +518,24 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ymin = -1.0
             ymax =  1.0
 
+        log.debug('Setting canvas bounds: '
+                  'X {: 5.1f} - {: 5.1f},'
+                  'Y {: 5.1f} - {: 5.1f}'.format(xmin, xmax, ymin, ymax))
+
         # set up 2D orthographic drawing
         gl.glViewport(x, y, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(xmin,       xmax,
-                   ymin,       ymax,
-                   zmin - 100, zmax + 100)
-        # I don't know why the above +/-100 is necessary :(
-        # The '100' is arbitrary, but it seems that I need
-        # to extend the depth clipping range beyond the
-        # range of the data. This is despite the fact that
-        # below, I'm actually translating the displayed
-        # slice to Z=0! I don't understand OpenGL sometimes.
-        # Most of the time.
+        gl.glOrtho(xmin,        xmax,
+                   ymin,        ymax,
+                   zmin - 1000, zmax + 1000)
+        # I don't know why the above +/-1000 is necessary :(
+        # The '1000' is empirically arbitrary, but it seems
+        # that I need to extend the depth clipping range
+        # beyond the range of the data. This is despite the
+        # fact that below, I'm actually translating the
+        # displayed slice to Z=0! I don't understand OpenGL
+        # sometimes. Most of the time.
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
