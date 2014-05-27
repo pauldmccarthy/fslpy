@@ -237,7 +237,7 @@ class PropertyBase(object):
         An AttributeError will be raised if instance is none.
         """
         instData = self._getInstanceData(instance)
-        instData.constraintListeners.pop(listener, None)
+        instData.constraintListeners.pop(name, None)
 
         
     def getConstraint(self, instance, constraint):
