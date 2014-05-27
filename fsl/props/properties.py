@@ -115,9 +115,9 @@
 #
 
 import logging
-
-
 log = logging.getLogger(__name__)
+
+from collections import OrderedDict
 
 
 class InstanceData(object):
@@ -127,9 +127,10 @@ class InstanceData(object):
     and the instance-specific property constraints used to test validity.
     """
     def __init__(self, instance, propVal, **constraints):
-        self.instance    = instance
-        self.propVal     = propVal
-        self.constraints = constraints.copy()
+        self.instance            = instance
+        self.propVal             = propVal
+        self.constraints         = constraints.copy()
+        self.constraintListeners = OrderedDict()
 
 
 class PropertyBase(object):
@@ -223,6 +224,22 @@ class PropertyBase(object):
         self._getInstanceData(instance).propVal.removeListener(name)
 
         
+    def addConstraintListener(self, instance, name, listener):
+        """
+        A TypeError will be raised if instance is none.
+        """
+        instData = self._getInstanceData(instance)
+        instData.constraintListeners[name] = listener
+
+        
+    def removeConstraintListener(self, instance, name):
+        """
+        An AttributeError will be raised if instance is none.
+        """
+        instData = self._getInstanceData(instance)
+        instData.constraintListeners.pop(listener, None)
+
+        
     def getConstraint(self, instance, constraint):
         """
         Returns the value of the named constraint for the specified instance,
@@ -251,6 +268,17 @@ class PropertyBase(object):
 
         if instData is None: self._defaultConstraints[constraint] = value
         else:                instData.constraints[    constraint] = value
+
+        if instData is not None:
+            for name, cb in instData.constraintListeners.items():
+                log.debug('Notifying constraint listener: {}'.format(name))
+
+                try:
+                    cb(instance, constraint, value)
+                except Exception as e:
+                    log.debug('Constraint listener {} on {} raised '
+                              'exception: {}'.format(name, self._label, e),
+                              exc_info=True) 
 
 
     def getPropVal(self, instance):
