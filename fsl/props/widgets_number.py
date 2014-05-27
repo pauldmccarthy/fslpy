@@ -60,12 +60,12 @@ class FloatSlider(wx.Slider):
 
     def _sliderToReal(self, value):
         value = self._realMin + (value - self._sliderMin) * \
-                (self._realRange / self._sliderRange)
+            (self._realRange / self._sliderRange)
         return value
         
     def _realToSlider(self, value):
         value = self._sliderMin + (value - self._realMin) * \
-                (self._sliderRange / self._realRange)
+            (self._sliderRange / self._realRange)
         return int(round(value))
 
     def SetValue(self, value):

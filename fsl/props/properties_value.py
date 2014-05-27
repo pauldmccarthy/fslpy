@@ -149,7 +149,7 @@ class PropertyValue(object):
             if not self._allowInvalid:
                 log.debug('Attempt to set {} to an invalid value ({}), '
                           'but allowInvalid is False ({})'.format(
-                              self._name, newValue, e)) 
+                              self._name, newValue, e), exc_info=True) 
                 raise e
 
         self.__value = newValue
@@ -203,7 +203,8 @@ class PropertyValue(object):
             try: listener(self._context, value, valid)
             except Exception as e:
                 log.debug('Listener {} on {} raised '
-                          'exception: {}'.format(name, self._name, e)) 
+                          'exception: {}'.format(name, self._name, e),
+                          exc_info=True)
 
 
     def revalidate(self):
