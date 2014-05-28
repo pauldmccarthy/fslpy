@@ -55,8 +55,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
     def __init__(self,
                  parent,
                  imageList,
-                 zax,
-                 context=None,
+                 zax=2,
+                 glContext=None,
                  scrollbar=None):
 
         if (scrollbar is not None) and (not scrollbar.IsVertical()):
@@ -65,7 +65,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
         self._scrollbar = scrollbar
 
-        slicecanvas.SliceCanvas.__init__(self, parent, imageList, zax, context)
+        slicecanvas.SliceCanvas.__init__(
+            self, parent, imageList, zax, glContext)
+        
         props.HasProperties.__init__(self)
 
         if scrollbar is not None:
@@ -75,8 +77,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                     return
                 self._draw(ev)
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
-
-
 
         def sliceRangeChanged(*a):
             self._genSliceLocations()
@@ -306,7 +306,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
             if endSlice > self._nslices:
                 endSlice = self._nslices
 
-        self.context.SetCurrent(self)
+        self.glContext.SetCurrent(self)
         self._resize()
 
         # clear the canvas
@@ -386,50 +386,3 @@ class LightBoxPanel(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, scrollOnMouse)
 
         self.Layout()        
-
-
-class LightBoxFrame(wx.Frame):
-    """
-    Convenience class for displaying a LightBoxPanel in a standalone window.
-    """
-
-    def __init__(self, parent, imageList, title=None):
-
-        wx.Frame.__init__(self, parent, title=title)
-
-        import fsl.fslview.imagelistpanel as imagelistpanel
-
-        self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
-        self.mainPanel = LightBoxPanel(self, imageList, zax=2)
-        self.ctrlPanel = props.buildGUI(self, self.mainPanel.canvas)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.sizer.Add(self.ctrlPanel, flag=wx.EXPAND)
-        self.sizer.Add(self.mainPanel, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.listPanel, flag=wx.EXPAND)
-
-        self.SetSizer(self.sizer)
-        self.Layout()
-
-
-if __name__ == '__main__':
-
-    import sys
-    import fsl.data.fslimage as fslimage
-
-    files = sys.argv[1:]
-    # files = ['/Users/paulmc/MNI152_T1_2mm.nii']
-
-    imgs    = map(fslimage.Image, files)
-    imgList = fslimage.ImageList(imgs)
-    app     = wx.App()
-    oframe  = LightBoxFrame(None, imgList, "Test")
-    
-    oframe.Show()
-
-
-
-    # import wx.lib.inspection
-    # wx.lib.inspection.InspectionTool().Show()    
-    app.MainLoop()

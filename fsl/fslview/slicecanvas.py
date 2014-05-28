@@ -131,7 +131,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         return ypos 
 
         
-    def __init__(self, parent, imageList, zax=0, context=None):
+    def __init__(self, parent, imageList, zax=0, glContext=None):
         """
         Creates a canvas object. The OpenGL data buffers are set up the
         first time that the canvas is displayed/drawn.
@@ -145,7 +145,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
           zax       - Axis perpendicular to the plane to be displayed
                       (the 'depth' axis), default 0.
 
-          context   - wx.glcanvas.GLContext object. If None, one is created.
+          glContext - wx.glcanvas.GLContext object. If None, one is created.
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -157,8 +157,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # Use the provided shared GL
         # context, or create a new one
-        if context is None: self.context = wxgl.GLContext(self)
-        else:               self.context = context
+        if glContext is None: self.glContext = wxgl.GLContext(self)
+        else:                 self.glContext = glContext
 
         self.imageList = imageList
         self.name      = 'SliceCanvas_{}'.format(id(self))
@@ -387,7 +387,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # it is called it simply overwrites itself with a dummy method.
         self._initGLData = lambda s: s
  
-        self.context.SetCurrent(self)
+        self.glContext.SetCurrent(self)
 
         self.shaders = self._compileShaders()
 
@@ -413,6 +413,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self._imageListChanged()
 
         self.glReady = True
+
+        self._refresh(True)
 
 
     def _refresh(self, bounds=False):
@@ -694,7 +696,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             wx.CallAfter(self._initGLData)
             return
 
-        self.context.SetCurrent(self)
+        self.glContext.SetCurrent(self)
         self._resize()
 
         # clear the canvas

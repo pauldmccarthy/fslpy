@@ -67,7 +67,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     }
 
 
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, glContext=None):
         """
         Creates three SliceCanvas objects, each displaying the images
         in the given image list along a different axis. 
@@ -83,11 +83,16 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         wx.Panel.__init__(self, parent)
         self.SetMinSize((300, 100))
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0)
+        self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0,
+                                               glContext=glContext)
+
+        if glContext is None:
+            glContext = self.xcanvas.glContext
+        
         self.ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
-                                               context=self.xcanvas.context)
+                                               glContext=glContext)
         self.zcanvas = slicecanvas.SliceCanvas(self, imageList, zax=2,
-                                               context=self.xcanvas.context)
+                                               glContext=glContext)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)

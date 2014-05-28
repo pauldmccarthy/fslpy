@@ -17,16 +17,15 @@ import wx
 # the root logger before OpenGL.GL.shaders is imported (which
 # occurs when fsl.fslview.SliceCanvas is imported).
 logging.basicConfig(
-    format='%(levelname)8s '
-           '%(filename)20s '
+    format='%(levelname)8.8s '
+           '%(filename)20.20s '
            '%(lineno)4d: '
-           '%(funcName)s - '
-           '%(message)s')
+           '%(funcName)-15.15s - '
+           '%(message)s') 
 log = logging.getLogger('fsl')
 
 import fsl.tools         as tools
 import fsl.utils.webpage as webpage
-
 
 
 def loadAllFSLTools():
@@ -138,13 +137,17 @@ def buildGUI(fslTool, toolCtx, fslEnvActive):
     """
     """
 
-    frame     = wx.Frame(None, title='FSL -- {}'.format(fslTool.toolName))
-    toolPanel = fslTool.interface(frame, ctx)
-    menuBar   = wx.MenuBar()
-    fslMenu   = wx.Menu()
+    frame = wx.Frame(None, title='FSL -- {}'.format(fslTool.toolName))
+
+    # create the menu bar first, in case
+    # the tool wants to add things to it
+    menuBar  = wx.MenuBar()
+    fileMenu = wx.Menu()
     
     frame.SetMenuBar(menuBar) 
-    menuBar.Append(fslMenu, 'File')
+    menuBar.Append(fileMenu, 'File')
+
+    toolPanel = fslTool.interface(frame, ctx)
 
     actions = []
 
@@ -162,7 +165,7 @@ def buildGUI(fslTool, toolCtx, fslEnvActive):
         lambda *ev: frame.Close()))
 
     for wxId, name, func in actions:
-        menuItem = fslMenu.Append(wxId, name)
+        menuItem = fileMenu.Append(wxId, name)
         frame.Bind(wx.EVT_MENU, func, menuItem)
 
     frame.Layout()
