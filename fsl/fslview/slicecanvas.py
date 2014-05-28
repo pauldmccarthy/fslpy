@@ -82,6 +82,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.xax = dims[0]
         self.yax = dims[1]
 
+        if not self.glReady:
+            return
+
         for image in self.imageList:
 
             try:   glData = image.getAttribute(self.name)
@@ -105,6 +108,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         sliceStart  = float(self._canvasBBox[0])
         sliceWidth  = float(self._canvasBBox[2])
 
+        if realWidth  == 0: return 0
+        if sliceWidth == 0: return 0
+
         # Translate the xpos from the canvas to
         # the slice bounding box, then translate
         # the xpos from the slice bounding box
@@ -124,6 +130,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         realHeight   = float(self.ymax - self.ymin)
         sliceStart   = float(self._canvasBBox[1])
         sliceHeight  = float(self._canvasBBox[3])
+
+        if realHeight  == 0: return 0
+        if sliceHeight == 0: return 0 
         
         ypos = ypos - sliceStart
         ypos = self.ymin  + (ypos /  sliceHeight) *  realHeight
@@ -179,7 +188,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # make sure the xax and yax attributes are set, as
         # the callback that we set up above will only happen
         # if the specified zax is not 0
-        self._zAxisChanged()
+        if zax == 0: self._zAxisChanged()
 
         self.xmin = imageList.minBounds[self.xax]
         self.ymin = imageList.minBounds[self.yax]
@@ -194,7 +203,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # The x/y/z pos properties are limited
         # to the x/y/z min/max bounds
-        self._updateBounds()
+        if len(self.imageList) > 0: self._updateBounds()
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
@@ -244,6 +253,26 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         zmin = self.imageList.minBounds[self.zax]
         zmax = self.imageList.maxBounds[self.zax]
 
+        for xprop in ['xmin', 'xmax']:
+            self.setConstraint(xprop, 'minval', xmin)
+            self.setConstraint(xprop, 'maxval', xmax)
+        for yprop in ['ymin', 'ymax']:
+            self.setConstraint(yprop, 'minval', ymin)
+            self.setConstraint(yprop, 'maxval', ymax)
+        for zprop in ['zmin', 'zmax']:
+            self.setConstraint(zprop, 'minval', zmin)
+            self.setConstraint(zprop, 'maxval', zmax)
+
+        if self.xmin == self.xmax:
+            self.xmin = xmin
+            self.xmax = xmax
+        if self.ymin == self.ymax:
+            self.ymin = ymin
+            self.ymax = ymax
+        if self.zmin == self.zmax:
+            self.zmin = zmin
+            self.zmax = zmax 
+
         log.debug('New bounds (' 
                   'X: {: 5.1f} - {: 5.1f}, '
                   'Y: {: 5.1f} - {: 5.1f}, '
@@ -256,16 +285,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.setConstraint('ypos', 'maxval', self.ymax)
         self.setConstraint('zpos', 'minval', self.zmin)
         self.setConstraint('zpos', 'maxval', self.zmax) 
-
-        for xprop in ['xmin', 'xmax']:
-            self.setConstraint(xprop, 'minval', xmin)
-            self.setConstraint(xprop, 'maxval', xmax)
-        for yprop in ['ymin', 'ymax']:
-            self.setConstraint(yprop, 'minval', ymin)
-            self.setConstraint(yprop, 'maxval', ymax)
-        for zprop in ['zmin', 'zmax']:
-            self.setConstraint(zprop, 'minval', zmin)
-            self.setConstraint(zprop, 'maxval', zmax)
 
         # reset the cursor and min/max values in
         # case the old values were out of bounds
@@ -426,8 +445,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         if not self.glReady: return
         
-        if bounds: self._updateBounds()
-        self._calculateCanvasBBox(None)
+        if bounds:
+            self._updateBounds()
+            self._calculateCanvasBBox(None)
         self.Refresh()
 
         
@@ -452,18 +472,24 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if canvasWidth  is None: canvasWidth  = size.width
         if canvasHeight is None: canvasHeight = size.height
 
-        # canvas is not yet displayed
-        if canvasWidth  == 0 or \
-           canvasHeight == 0 or \
-           worldWidth   == 0 or \
-           worldHeight  == 0:
-            return
-
         canvasWidth  = float(canvasWidth)
         canvasHeight = float(canvasHeight)
-
+        
         if worldWidth  is None: worldWidth  = float(abs(self.xmax - self.xmin))
         if worldHeight is None: worldHeight = float(abs(self.ymax - self.ymin))
+
+        # canvas is not yet displayed
+        # or no images in the list
+        if canvasWidth         == 0.0 or \
+           canvasHeight        == 0.0 or \
+           worldWidth          == 0.0 or \
+           worldHeight         == 0.0 or \
+           len(self.imageList) == 0:
+            self._canvasBBox = [0, 0, 0, 0]
+            log.debug('Nothing to see here {} {} {} {} {}'.format(
+                canvasWidth, canvasHeight, worldWidth, worldHeight,
+                len(self.imageList)))
+            return
 
         worldRatio  = worldWidth  / worldHeight
         canvasRatio = canvasWidth / canvasHeight
@@ -513,24 +539,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         x, y, width, height = bbox
 
         # If there are no images to be displayed,
-        # the dimension bounds will all be 0,
-        # which causes glOrtho to throw an error.
-        if len(self.imageList) == 0:
-            xmin = -1.0
-            xmax =  1.0
-            ymin = -1.0
-            ymax =  1.0
-
-        # Sanity check - make sure we are setting
-        # the view to something sensible, otherwise
-        # glOrtho will complain.
-        if xmin == xmax or xmin > xmax:
-            xmin = -1.0
-            xmax =  1.0
-            
-        if ymin == ymax or ymin > ymax:
-            ymin = -1.0
-            ymax =  1.0 
+        # or no space to draw, do nothing
+        if (len(self.imageList) == 0) or (width == 0) or (height == 0):
+            return
 
         log.debug('Setting canvas bounds: '
                   'X {: 5.1f} - {: 5.1f},'
@@ -702,6 +713,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # if there is nothing to display, bail out early
+        if len(self.imageList) == 0:
+            return
 
         # load the shaders
         gl.glUseProgram(self.shaders)
