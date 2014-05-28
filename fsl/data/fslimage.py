@@ -244,9 +244,13 @@ class ImageDisplay(props.HasProperties):
     
     volume       = props.Int(minval=0, maxval=0, default=0, clamped=True)
 
+
+    def volumeEnabled(self):
+        return len(self.image.shape) > 3 and self.image.shape[3] > 1
     
     _view = props.VGroup(('enabled',
-                          'volume',
+                          props.Widget('volume',
+                                       enabledWhen=volumeEnabled),
                           'displayMin',
                           'displayMax',
                           'alpha',

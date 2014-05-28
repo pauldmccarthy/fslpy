@@ -50,6 +50,8 @@ class FloatSlider(wx.Slider):
     def SetRange(self, minValue, maxValue):
         self._realMin   = float(minValue)
         self._realMax   = float(maxValue)
+        if self._realMin == self._realMax:
+            self._realMax = self._realMax + 0.01
         self._realRange = abs(self._realMin - self._realMax)
     
     def GetMin(self): return self.GetRange()[0]
