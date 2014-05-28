@@ -220,6 +220,13 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
     parent         = guiObj.GetParent()
     isNotebookPage = isinstance(parent, nb.Notebook)
 
+    def toggleAll(obj, state):
+
+        obj.Enable(state)
+
+        for child in obj.GetChildren():
+            toggleAll(child, state)
+
     def _toggleEnabled():
         """
         Calls the viewItem.enabledWhen function and
@@ -235,7 +242,7 @@ def _configureEnabledWhen(viewItem, guiObj, hasProps):
             else:     parent.DisablePage(parent.FindPage(guiObj))
 
         elif guiObj.IsEnabled() != state:
-            guiObj.Enable(state)
+            toggleAll(guiObj, state)
 
     return _toggleEnabled
 
