@@ -100,7 +100,7 @@ class GLImageData(object):
         # method
         colourBuffer = gl.glGenTextures(1) 
 
-        self.dataBuffer   = self._initImageBuffer()
+        self.dataBuffer   = self._genImageBuffer(self.display.volume)
         self.colourBuffer = colourBuffer
 
         # Add listeners to this image so the view can be
@@ -171,29 +171,52 @@ class GLImageData(object):
         self.zdim         = len(voxData[zax])
 
         
-    def _initImageBuffer(self):
+    def _genImageBuffer(self, volume):
         """
-        Initialises the OpenGL buffer used to store the data for the given
+        (Re-)Generates the OpenGL buffer used to store the data for the given
         image. The buffer is stored as an attribute of the image and, if it
         has already been created (e.g. by another SliceCanvas object), the
         existing buffer is returned. 
         """
 
-        image = self.image
+        image   = self.image
+        display = self.display
 
-        texShape = 2 ** (np.ceil(np.log2(image.shape)))
-        pad      = [(0, l - s) for (l, s) in zip(texShape, image.shape)]
+        # we only store a single 3D image
+        # in GPU memory at any one time
+        shape = image.shape[:3]
+        
+        if len(shape) == 3: imageData = image.data[:, :, :, display.volume]
+        else:               imageData = image.data
+
+        # Calculate the dimensions of the 3D texture;
+        # each dimension must have a power-of-two
+        # length - see below. 
+        texShape = 2 ** (np.ceil(np.log2(shape)))
+        pad      = [(0, l - s) for (l, s) in zip(texShape, shape)]
+
+        # Store the actual image texture shape as an
+        # attribute - the vertex shader needs to know
+        # about it to perform texture lookups (see
+        # fslview/vertex_shader.glsl and
+        # slicecanvas.py:SliceCanvas_draw). If we
+        # can figure out how to avoid the power-of-two
+        # length thing, we won't need to do this.
         self.imageTexShape = texShape 
 
-        try:    imageBuffer = image.getAttribute('glImageBuffer')
+        # Check to see if the image buffer
+        # has already been created
+        try:    oldVolume, imageBuffer = image.getAttribute('glImageBuffer')
         except: imageBuffer = None
 
-        if imageBuffer is not None:
+        # The image buffer already exists, and it
+        # contains the data for the requested volume.  
+        if imageBuffer is not None and oldVolume == volume:
             return imageBuffer
 
         # The image data is normalised to lie
         # between 0 and 255, and cast to uint8
-        imageData = np.array(image.data, dtype=np.float32)
+        imageData = np.array(imageData, dtype=np.float32)
         imageData = 255.0 * (imageData       - imageData.min()) / \
                             (imageData.max() - imageData.min())
 
@@ -202,17 +225,24 @@ class GLImageData(object):
         # but as far as I'm aware, necessary hack.  At
         # least it's necessary using the OpenGL 2.1
         # API on OSX mavericks. It massively increases
-        # image load time, too.
+        # image load time, too, so is a real sticking
+        # point for me.
         imageData = np.pad(imageData, pad, 'constant', constant_values=0)
         imageData = np.array(imageData, dtype=np.uint8)
 
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
         # dimension as the fastest changing.
-        imageData = imageData.ravel(order='F')
+        imageData = imageData.ravel(order='F') 
 
-        # Image data is stored on the GPU as a 3D texture
-        imageBuffer = gl.glGenTextures(1)
+        # Are we creating a new texture or
+        # updating an existing texture?
+        createTexture = False
+        if imageBuffer is None:
+            imageBuffer   = gl.glGenTextures(1)
+            createTexture = True
+
+        # Set up image texture sampling thingos
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_MAG_FILTER,
@@ -228,23 +258,32 @@ class GLImageData(object):
                            gl.GL_CLAMP_TO_EDGE)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_R,
-                           gl.GL_CLAMP_TO_EDGE)         
-        
-        gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                        0,
-                        arbrg.GL_R8,
-                        texShape[0],
-                        texShape[1],
-                        texShape[2],
-                        0,
-                        gl.GL_RED,
-                        gl.GL_UNSIGNED_BYTE,
-                        imageData)
+                           gl.GL_CLAMP_TO_EDGE)
 
-        # And added as an attribute of the image, so
-        # other things which want to render the image
-        # don't need to duplicate all of that data.
-        image.setAttribute('glImageBuffer', imageBuffer)
+        if createTexture:
+            gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                            0,
+                            arbrg.GL_R8,
+                            texShape[0], texShape[1], texShape[2],
+                            0,
+                            gl.GL_RED,
+                            gl.GL_UNSIGNED_BYTE,
+                            imageData)
+        else:
+            gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
+                               0,
+                               0, 0, 0,
+                               texShape[0], texShape[1], texShape[2],
+                               gl.GL_RED,
+                               gl.GL_UNSIGNED_BYTE,
+                               imageData)
+
+        # Add the index of the currently stored volume and
+        # a reference to the texture as an attribute of the
+        # image, so other things which want to render the
+        # same volume of the image  don't need to duplicate
+        # all of that data.
+        image.setAttribute('glImageBuffer', (volume, imageBuffer))
 
         return imageBuffer
 
@@ -317,6 +356,9 @@ class GLImageData(object):
         can update the colour texture when image display properties are
         changed. 
         """
+
+        def imageDataUpdateNeeded(*a):
+            self._genImageBuffer(self.display.volume)
         
         def colourUpdateNeeded(*a):
             self.updateColourBuffer()
@@ -332,3 +374,4 @@ class GLImageData(object):
         display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
         display.addListener('cmap',         lnrName, colourUpdateNeeded)
         display.addListener('samplingRate', lnrName, indexUpdateNeeded)
+        display.addListener('volume',       lnrName, imageDataUpdateNeeded)

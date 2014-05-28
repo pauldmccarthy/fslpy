@@ -207,6 +207,11 @@ class ImageDisplay(props.HasProperties):
     for each Image object, and is accessed via the Image.display attribute.
     If a single image needs to be displayed in different ways, then create
     away, and manage your own ImageDisplay objects.
+
+    This class doesn't have any functionality (apart from updating its own
+    colour map when necessary) - it is up to things which actually display
+    an Image to adhere to the properties stored in the associated
+    ImageDisplay object.
     """
 
     def updateColourMap(self, newVal, valid):
@@ -232,12 +237,16 @@ class ImageDisplay(props.HasProperties):
     displayMax   = props.Double()
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     rangeClip    = props.Boolean(default=False,
-                               preNotifyFunc=updateColourMap)
-
-    cmap       = props.ColourMap(default=mplcm.Greys_r,
                                  preNotifyFunc=updateColourMap)
+
+    cmap         = props.ColourMap(default=mplcm.Greys_r,
+                                   preNotifyFunc=updateColourMap)
+    
+    volume       = props.Int(minval=0, maxval=0, default=0, clamped=True)
+
     
     _view = props.VGroup(('enabled',
+                          'volume',
                           'displayMin',
                           'displayMax',
                           'alpha',
@@ -251,7 +260,8 @@ class ImageDisplay(props.HasProperties):
         'alpha'        : 'Opacity',
         'rangeClip'    : 'Clipping',
         'samplingRate' : 'Sampling rate',
-        'cmap'         : 'Colour map'
+        'cmap'         : 'Colour map',
+        'volume'       : 'Volume'
     }
 
 
@@ -272,7 +282,12 @@ class ImageDisplay(props.HasProperties):
         self.setConstraint('displayMin', 'minval', self.dataMin)
         self.setConstraint('displayMin', 'maxval', self.dataMax)
         self.setConstraint('displayMax', 'minval', self.dataMin)
-        self.setConstraint('displayMax', 'maxval', self.dataMax) 
+        self.setConstraint('displayMax', 'maxval', self.dataMax)
+
+        # is this a 4D volume?
+        if len(image.shape) > 3:
+            self.setConstraint('volume', 'maxval', image.shape[3] - 1)
+            
 
         
 class ImageList(object):

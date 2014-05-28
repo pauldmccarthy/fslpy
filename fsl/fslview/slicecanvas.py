@@ -313,6 +313,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             image.display.addListener('rangeClip',    self.name, refresh)
             image.display.addListener('samplingRate', self.name, refresh)
             image.display.addListener('cmap',         self.name, refresh)
+            image.display.addListener('volume',       self.name, refresh)
 
         self._refresh(True)
 
