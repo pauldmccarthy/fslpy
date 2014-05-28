@@ -8,13 +8,7 @@
 
 import logging
 
-logging.basicConfig(
-    format='%(levelname)8.8s '
-           '%(filename)20.20s '
-           '%(lineno)4d: '
-           '%(funcName)-15.15s - '
-           '%(message)s')
-log = logging.getLogger('fsl')
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 import wx
