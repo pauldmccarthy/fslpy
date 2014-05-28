@@ -47,10 +47,10 @@ class ImageListPanel(wx.Panel):
         # a panel for each image, containing widgets
         # allowing the image display properties to be
         # changed
-        for i,image in enumerate(imageList):
+        for i, image in enumerate(imageList):
             self._makeDisplayPanel(image)
 
-        self._showDisplayPanel(len(imageList)-1)
+        self._showDisplayPanel(len(imageList) - 1)
 
         self.Layout()
 
@@ -92,7 +92,7 @@ class ImageListPanel(wx.Panel):
         Shows the display panel for the image at the specified index.
         """
         
-        for i,image in enumerate(self.imageList):
+        for i, image in enumerate(self.imageList):
             
             displayPanel = image.getAttribute( 
                 'displayPanel_{}'.format(id(self)))
@@ -113,11 +113,12 @@ class ImageListPanel(wx.Panel):
 
         wildcard = imagefile.wildcard()
 
-        # wx wildcard handling is buggy, so i'm disabling it for now
+        # TODO wx wildcard handling is buggy,
+        # so i'm disabling it for now
         dlg = wx.FileDialog(self.GetParent(),
                             message='Open image file',
                             defaultDir=lastDir,
-#                            wildcard=wildcard,
+                            # wildcard=wildcard,
                             style=wx.FD_OPEN)
 
         if dlg.ShowModal() != wx.ID_OK: return
@@ -127,7 +128,12 @@ class ImageListPanel(wx.Panel):
         self.listBox.Append(image.name, image)
 
         self._makeDisplayPanel(image)
-        self._showDisplayPanel(len(self.imageList)-1)
+        self._showDisplayPanel(len(self.imageList) - 1)
+
+        # This panel may have changed size, so
+        # tell the parent to lay itself out
+        self.GetParent().Layout()
+        self.GetParent().Refresh()
 
 
     def _imageRemoved(self, ev):
@@ -138,3 +144,6 @@ class ImageListPanel(wx.Panel):
         displayPanel = image.getAttribute('displayPanel_{}'.format(id(self)))
 
         displayPanel.Destroy()
+
+        self.GetParent().Layout()
+        self.GetParent().Refresh()
