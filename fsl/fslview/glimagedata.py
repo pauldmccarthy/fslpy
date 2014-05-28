@@ -179,15 +179,14 @@ class GLImageData(object):
         existing buffer is returned. 
         """
 
-        image   = self.image
-        display = self.display
+        image = self.image
 
         # we only store a single 3D image
         # in GPU memory at any one time
-        shape = image.shape[:3]
-        
-        if len(shape) == 3: imageData = image.data[:, :, :, display.volume]
-        else:               imageData = image.data
+        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
+        else:                    imageData = image.data
+
+        shape = imageData.shape
 
         # Calculate the dimensions of the 3D texture;
         # each dimension must have a power-of-two
