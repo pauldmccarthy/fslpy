@@ -325,8 +325,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         # Draw all the slices for all the images.
         
         for i, image in enumerate(self.imageList):
-            print 'Drawing {} slices for image {}'.format(
-                endSlice - startSlice, i)
+            log.debug('Drawing {} slices for image {}'.format(
+                endSlice - startSlice, i))
             for zi in range(startSlice, endSlice):
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],

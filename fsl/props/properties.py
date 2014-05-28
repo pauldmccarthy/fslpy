@@ -229,7 +229,8 @@ class PropertyBase(object):
         A TypeError will be raised if instance is none.
         """
         instData = self._getInstanceData(instance)
-        instData.constraintListeners[name] = listener
+        if instData is not None:
+            instData.constraintListeners[name] = listener
 
         
     def removeConstraintListener(self, instance, name):
@@ -237,7 +238,8 @@ class PropertyBase(object):
         An AttributeError will be raised if instance is none.
         """
         instData = self._getInstanceData(instance)
-        instData.constraintListeners.pop(name, None)
+        if instData is not None:
+            instData.constraintListeners.pop(name, None)
 
         
     def getConstraint(self, instance, constraint):
