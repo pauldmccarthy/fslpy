@@ -189,9 +189,13 @@ class GLImageData(object):
         shape = np.array(imageData.shape)
 
         # Calculate the dimensions of the 3D texture;
-        # each dimension must be of even length  - see below.
-        texShape = [d + 1 if (d % 2) else d for d in shape]
-        pad      = [(0, l - s) for (l, s) in zip(texShape, shape)]
+        # each dimension must have length divisble by
+        # 4 - see below.
+        texShape = np.array(shape)
+        for i, dim in enumerate(texShape):
+            texShape[i] += dim % 4
+            
+        pad = [(0, l - s) for (l, s) in zip(texShape, shape)]
 
         # Store the actual image texture shape as an
         # attribute - the vertex shader needs to know
@@ -218,12 +222,13 @@ class GLImageData(object):
         imageData = 255.0 * (imageData       - imageData.min()) / \
                             (imageData.max() - imageData.min())
 
-        # and each dimension is padded so it is of 
-        # even length. Ugh. This seems to be necessary
-        # using the OpenGL 2.1 API on OSX mavericks.
-        # It increases image load time, so is a real
-        # sticking point for me.
-        if np.any(shape % 2):
+        # and each dimension is padded so it has length
+        # divisible by 4. Ugh. It's probably a word-alignment
+        # thing, I don't know. This seems to be necessary
+        # using the OpenGL 2.1 API on OSX mavericks. It
+        # increases image load time, so is a real sticking
+        # point for me. 
+        if np.any(shape % 4):
             imageData = np.pad(imageData, pad, 'constant', constant_values=0)
         imageData = np.array(imageData, dtype=np.uint8)
 

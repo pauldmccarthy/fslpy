@@ -26,7 +26,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
     # Properties which control the starting and end bounds of the
     # displayed slices, and the spacing between them (in real
     # world coordinates)
-    sliceSpacing = props.Double(clamped=True, minval=0.1, default=2.0)
+    sliceSpacing = props.Double(clamped=True, minval=0.1, default=1.0)
 
     # This property controls the number of slices
     # to be displayed on a single row.
@@ -73,7 +73,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
         def sliceRangeChanged(*a):
             self._genSliceLocations()
-            self._refresh()
+            self._refresh(True)
 
         self.addListener('sliceSpacing', self.name, sliceRangeChanged)
         self.addListener('ncols',        self.name, sliceRangeChanged)
@@ -85,18 +85,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         """
         """
 
-        oldzmin = self.zmin
-        oldzmax = self.zmax
-        
         slicecanvas.SliceCanvas._updateBounds(self)
 
         self.xmin = self.imageList.minBounds[self.xax]
         self.xmax = self.imageList.maxBounds[self.xax]
         self.ymin = self.imageList.minBounds[self.yax]
         self.ymax = self.imageList.maxBounds[self.yax]
-
-        if self.zmin == oldzmin: self.zmin = self.imageList.minBounds[self.zax]
-        if self.zmax == oldzmax: self.zmax = self.imageList.maxBounds[self.zax]            
         
         self._genSliceLocations()
 
@@ -122,8 +116,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         self._nslices = len(sliceLocs)
         self._nrows   = int(np.ceil(self._nslices / float(self.ncols)))
 
-        log.debug('{} slices {} rows {} columns'.format(
-            self._nslices, self._nrows, self.ncols))
+        log.debug('{: 5.1f} - {: 5.1f}: {} slices {} rows {} columns'.format(
+            self.zmin, self.zmax, self._nslices, self._nrows, self.ncols))
         
         self._sliceIdxs  = []
         self._transforms = []

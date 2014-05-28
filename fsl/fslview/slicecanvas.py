@@ -170,7 +170,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         else:                 self.glContext = glContext
 
         self.imageList = imageList
-        self.name      = 'SliceCanvas_{}'.format(id(self))
+        self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # This flag is set by the _initGLData method
         # when it has finished initialising the OpenGL
