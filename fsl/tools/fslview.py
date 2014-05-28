@@ -38,7 +38,8 @@ class FslViewPanel(wx.Panel):
 
         self.SetAutoLayout(1)
 
-        # self.showOrtho()
+        self.showOrtho()
+        self.Fit()
 
 
     def _replace(self, mainPanel, ctrlPanel):

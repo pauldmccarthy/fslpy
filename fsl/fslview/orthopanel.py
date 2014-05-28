@@ -81,7 +81,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.name      = 'OrthoPanel_{}'.format(id(self))
 
         wx.Panel.__init__(self, parent)
-        self.SetMinSize((300, 100))
+
+        self.SetMinSize((600, 200))
 
         self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0,
                                                glContext=glContext)
