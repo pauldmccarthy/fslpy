@@ -514,14 +514,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         log.debug('Canvas BBox: {}'.format(self._canvasBBox))
 
         
-    def _resize(self,
-                bbox=None,
-                xmin=None,
-                xmax=None,
-                ymin=None,
-                ymax=None,
-                zmin=None,
-                zmax=None):
+    def _setViewport(self,
+                     bbox=None,
+                     xmin=None,
+                     xmax=None,
+                     ymin=None,
+                     ymax=None,
+                     zmin=None,
+                     zmax=None):
         """
         Sets up the GL canvas size, viewport, and
         projection. This method is called by draw(),
@@ -709,7 +709,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             return
 
         self.glContext.SetCurrent(self)
-        self._resize()
+        self._setViewport()
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)

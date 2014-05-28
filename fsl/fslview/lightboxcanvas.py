@@ -247,7 +247,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                                                      worldHeight=worldHeight)
 
 
-    def _resize(self):
+    def _setViewport(self):
         """
         Sets up the GL canvas size, viewport and projection.
         """
@@ -268,10 +268,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
             worldYMin = self.ymin + ylen * currentRow
             worldYMax = worldYMin + ylen * rowsOnScreen
 
-        slicecanvas.SliceCanvas._resize(self,
-                                        xmax=worldXMax,
-                                        ymin=worldYMin,
-                                        ymax=worldYMax)
+        slicecanvas.SliceCanvas._setViewport(self,
+                                             xmax=worldXMax,
+                                             ymin=worldYMin,
+                                             ymax=worldYMax)
 
         
     def _draw(self, ev):
@@ -301,7 +301,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                 endSlice = self._nslices
 
         self.glContext.SetCurrent(self)
-        self._resize()
+        self._setViewport()
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
