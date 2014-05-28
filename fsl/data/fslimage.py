@@ -277,10 +277,18 @@ class ImageDisplay(props.HasProperties):
 
         self.image = image
 
-        # Attributes controlling image display
-        self.dataMin    = self.image.data.min()
-        self.dataMax    = self.image.data.max() 
-        self.displayMin = self.dataMin    # use cal_min/cal_max instead?
+        # Attributes controlling image display. Only
+        # determine the real min/max for in-memory
+        # images - if it's memory mapped, we have no
+        # idea how big it may be!
+        if isinstance(image.data, np.memmap):
+            self.dataMin    = image.nibImage.get_header().get('cal_min', 0)
+            self.dataMax    = image.nibImage.get_header().get('cal_max', 1000)
+        else:
+            self.dataMin    = image.data.min()
+            self.dataMax    = image.data.max()
+
+        self.displayMin = self.dataMin
         self.displayMax = self.dataMax
 
         self.setConstraint('displayMin', 'minval', self.dataMin)

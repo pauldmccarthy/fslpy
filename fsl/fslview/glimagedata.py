@@ -186,12 +186,11 @@ class GLImageData(object):
         if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
         else:                    imageData = image.data
 
-        shape = imageData.shape
+        shape = np.array(imageData.shape)
 
         # Calculate the dimensions of the 3D texture;
-        # each dimension must have a power-of-two
-        # length - see below. 
-        texShape = 2 ** (np.ceil(np.log2(shape)))
+        # each dimension must be of even length  - see below.
+        texShape = [d + 1 if (d % 2) else d for d in shape]
         pad      = [(0, l - s) for (l, s) in zip(texShape, shape)]
 
         # Store the actual image texture shape as an
@@ -219,14 +218,13 @@ class GLImageData(object):
         imageData = 255.0 * (imageData       - imageData.min()) / \
                             (imageData.max() - imageData.min())
 
-        # and each dimension is padded so it has a
-        # power-of-two length. Ugh. This is a horrible,
-        # but as far as I'm aware, necessary hack.  At
-        # least it's necessary using the OpenGL 2.1
-        # API on OSX mavericks. It massively increases
-        # image load time, too, so is a real sticking
-        # point for me.
-        imageData = np.pad(imageData, pad, 'constant', constant_values=0)
+        # and each dimension is padded so it is of 
+        # even length. Ugh. This seems to be necessary
+        # using the OpenGL 2.1 API on OSX mavericks.
+        # It increases image load time, so is a real
+        # sticking point for me.
+        if np.any(shape % 2):
+            imageData = np.pad(imageData, pad, 'constant', constant_values=0)
         imageData = np.array(imageData, dtype=np.uint8)
 
         # Then flattened, with fortran dimension ordering,
