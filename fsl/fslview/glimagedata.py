@@ -160,14 +160,14 @@ class GLImageData(object):
         self.zdim         = len(voxData[zax])
 
         
-    def _calculateTextureShape(self, shape, samplingRate):
+    def _calculateTextureShape(self, shape):
 
         # each dimension of a texture must have length divisble by 4.
         # I don't know why; I presume that they need to be word-aligned.
-        texShape = np.array(shape) / samplingRate
+        texShape = np.array(shape)
         texPad   = np.zeros(len(shape))
         
-        for i in range(len(texShape)):
+        for i in range(len(shape)):
             if texShape[i] % 4:
                 texPad[  i]  = 4 - (texShape[i] % 4)
                 texShape[i] += texPad[i]
@@ -177,8 +177,7 @@ class GLImageData(object):
 
     def _initImageBuffer(self):
 
-        shape       = self.image.shape
-        texShape, _ = self._calculateTextureShape(shape, 1)
+        texShape, _ = self._calculateTextureShape(self.image.shape)
         imageBuffer = gl.glGenTextures(1)
         
         # Set up image texture sampling thingos
@@ -219,12 +218,23 @@ class GLImageData(object):
         existing buffer is returned. 
         """
 
-        image                  = self.image
-        volume                 = self.display.volume
-        sRate                  = self.display.samplingRate
-        imageShape             = self.image.shape[:3]
-        fullTexShape, _        = self._calculateTextureShape(imageShape, 1)
-        subTexShape, subTexPad = self._calculateTextureShape(imageShape, sRate)
+        image           = self.image
+        volume          = self.display.volume
+        sRate           = self.display.samplingRate
+        imageShape      = np.array(self.image.shape[:3])
+        fullTexShape, _ = self._calculateTextureShape(imageShape)
+
+        # we only store a single 3D image
+        # in GPU memory at any one time
+        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
+        else:                    imageData = image.data
+
+        # resample the image according to the current sampling rate
+        start     = np.floor(0.5 * sRate)
+        imageData = imageData[start::sRate, start::sRate, start::sRate] 
+
+        # calculate the required texture shape for that data
+        subTexShape, subTexPad = self._calculateTextureShape(imageData.shape)
 
         # Store the actual image texture shape as an
         # attribute - the vertex shader needs to know
@@ -256,15 +266,7 @@ class GLImageData(object):
         elif oldVolume == volume and oldSRate == sRate:
             return imageBuffer
 
-        # we only store a single 3D image
-        # in GPU memory at any one time
-        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
-        else:                    imageData = image.data
-
-        # resample the image according to the current sampling rate
-        start     = np.floor(0.5 * sRate)
-        imageData = imageData[start::sRate, start::sRate, start::sRate]
-        shape     = np.array(imageData.shape)
+        shape = np.array(imageData.shape)
             
         # The image data is normalised to lie
         # between 0 and 255, and cast to uint8

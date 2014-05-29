@@ -42,13 +42,16 @@ void main(void) {
      * (and perform standard transformation from data
      * coordinates to screen coordinates).
      */
-    vec3 vertPos = inVertex + vox;
     gl_Position = gl_ModelViewProjectionMatrix * 
-        (voxToWorldMat * vec4(vertPos, 1.0));
+        (voxToWorldMat * vec4(inVertex + vox, 1.0));
 
-    /* Pass the voxel value through to the shader. */
-    vec3 normVox = (vox + 0.5) / imageShape;
+    /* Transform from voxel coordinates to sub-texture coordinates */
+    vox = ((vox + 0.5) / imageShape) * (subTexShape - subTexPad);
 
-    vec4 vt = texture3D(imageBuffer, normVox);
+    /* And then transform from sub-texture coords to normalised 
+       full-texture coordinates */
+    vox = vox / fullTexShape;
+
+    vec4 vt = texture3D(imageBuffer, vox);
     fragVoxValue = vt.r;
 }
