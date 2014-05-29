@@ -9,7 +9,7 @@
 uniform float alpha;
 
 /* image data texture */
-uniform sampler3D dataBuffer;
+uniform sampler3D imageBuffer;
 
 /* Voxel coordinate -> world space transformation matrix */
 uniform mat4 voxToWorldMat;
@@ -45,6 +45,6 @@ void main(void) {
     float normVoxX = voxX / xdim + 0.5 / xdim;
     float normVoxY = voxY / ydim + 0.5 / ydim;
     float normVoxZ = voxZ / zdim + 0.5 / zdim;
-    vec4 vt = texture3D(dataBuffer, vec3(normVoxX, normVoxY, normVoxZ));
+    vec4 vt = texture3D(imageBuffer, vec3(normVoxX, normVoxY, normVoxZ));
     fragVoxValue = vt.r;
 }

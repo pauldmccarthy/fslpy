@@ -25,7 +25,7 @@
 # All of these things are created when a GLImageData object is
 # instantiated. They are available as attributes of the object:
 #
-#  - dataBuffer
+#  - imageBuffer
 #  - xBuffer
 #  - yBuffer
 #  - zBuffer
@@ -71,44 +71,32 @@ class GLImageData(object):
                           is used (see fsl.data.fslimage.ImageDisplay for
                           details).
         """
+        
+        if imageDisplay is None: imageDisplay = image.display
 
-        self.image = image
-        self.xax   = xax
-        self.yax   = yax 
+        self.image   = image
+        self.display = imageDisplay
 
-        if imageDisplay is not None: self.display = imageDisplay
-        else:                        self.display = image.display
+        # Buffers for storing image data
+        # and voxel coordinates
+        self.imageBuffer = self._genImageBuffer()
+        self.genIndexBuffers(xax, yax)
 
         # Maximum number of colours used to draw image data.
         # Keep this to a power of two, as some GL implementations
         # will complain/misbehave if it isn't.
         self.colourResolution = 256
 
-        self.genIndexBuffers(xax, yax)
-        self._initGLImageData()
-
-
-    def _initGLImageData(self):
-        """
-        Creates and initialises the OpenGL data for the fslimage.Image
-        object that was passed to the GLImageData constructor.
-        """
-
         # The colour buffer, containing a map of
         # colours (stored on the GPU as a 1D texture)
         # This is initialised in the updateColourBuffer
         # method
-        colourBuffer = gl.glGenTextures(1) 
-
-        self.dataBuffer   = self._genImageBuffer(self.display.volume)
-        self.colourBuffer = colourBuffer
+        self.colourBuffer = gl.glGenTextures(1) 
+        self.updateColourBuffer()
 
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self._configDisplayListeners()
-
-        # Create the colour buffer for the given image
-        self.updateColourBuffer() 
 
         
     def genIndexBuffers(self, xax, yax):
@@ -171,7 +159,7 @@ class GLImageData(object):
         self.zdim         = len(voxData[zax])
 
         
-    def _genImageBuffer(self, volume):
+    def _genImageBuffer(self):
         """
         (Re-)Generates the OpenGL buffer used to store the data for the given
         image. The buffer is stored as an attribute of the image and, if it
@@ -179,7 +167,8 @@ class GLImageData(object):
         existing buffer is returned. 
         """
 
-        image = self.image
+        image  = self.image
+        volume = self.display.volume
 
         # we only store a single 3D image
         # in GPU memory at any one time
@@ -359,13 +348,14 @@ class GLImageData(object):
         changed. 
         """
 
-        def imageDataUpdateNeeded(*a):
-            self._genImageBuffer(self.display.volume)
+        def imageUpdateNeeded(*a):
+            self._genImageBuffer()
         
         def colourUpdateNeeded(*a):
             self.updateColourBuffer()
 
-        def indexUpdateNeeded(*a):
+        def indexAndImageUpdateNeeded(*a):
+            self._genImageBuffer()
             self.genIndexBuffers(self.xax, self.yax)
 
         display = self.display
@@ -375,5 +365,5 @@ class GLImageData(object):
         display.addListener('displayMax',   lnrName, colourUpdateNeeded)
         display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
         display.addListener('cmap',         lnrName, colourUpdateNeeded)
-        display.addListener('samplingRate', lnrName, indexUpdateNeeded)
-        display.addListener('volume',       lnrName, imageDataUpdateNeeded)
+        display.addListener('samplingRate', lnrName, indexAndImageUpdateNeeded)
+        display.addListener('volume',       lnrName, imageUpdateNeeded)

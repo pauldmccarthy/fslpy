@@ -413,8 +413,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # Indices of all vertex/fragment shader parameters
         self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
-        self.dataBufferPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'dataBuffer')
+        self.imageBufferPos   = gl.glGetUniformLocation(self.shaders,
+                                                        'imageBuffer')
         self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
                                                         'voxToWorldMat')
         self.colourMapPos     = gl.glGetUniformLocation(self.shaders,
@@ -641,8 +641,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # Set up the image data texture
         gl.glActiveTexture(gl.GL_TEXTURE1) 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.dataBuffer)
-        gl.glUniform1i(self.dataBufferPos, 1)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageBuffer)
+        gl.glUniform1i(self.imageBufferPos, 1)
         
         # voxel x/y/z coordinates
         voxOffs  = [0, 0, 0]
