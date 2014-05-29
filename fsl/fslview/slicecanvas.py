@@ -419,13 +419,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                                                         'voxToWorldMat')
         self.colourMapPos     = gl.glGetUniformLocation(self.shaders,
                                                         'colourMap')
-        self.texShapePos      = gl.glGetUniformLocation(self.shaders,
-                                                        'texShape')
+        self.imageShapePos    = gl.glGetUniformLocation(self.shaders,
+                                                        'imageShape') 
+        self.subTexShapePos   = gl.glGetUniformLocation(self.shaders,
+                                                        'subTexShape')
+        self.subTexPadPos     = gl.glGetUniformLocation(self.shaders,
+                                                        'subTexPad') 
         self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
-                                                        'fullTexShape')         
-        self.xdimPos          = gl.glGetUniformLocation(self.shaders, 'xdim')
-        self.ydimPos          = gl.glGetUniformLocation(self.shaders, 'ydim')
-        self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
+                                                        'fullTexShape')
         self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
                                                         'inVertex')
         self.voxXPos          = gl.glGetAttribLocation( self.shaders, 'voxX')
@@ -626,15 +627,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # to the shader alpha variable
         gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-        # and the texture shape buffers
-        gl.glUniform3fv(self.texShapePos,     1, glImageData.imageTexShape)
+        # and the image/texture shape buffers
         gl.glUniform3fv(self.fullTexShapePos, 1, glImageData.fullTexShape)
-
-        # and the voxel coordinate buffers
-        gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
-        gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
-        gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
-
+        gl.glUniform3fv(self.subTexShapePos,  1, glImageData.subTexShape)
+        gl.glUniform3fv(self.subTexPadPos,    1, glImageData.subTexPad)
+        gl.glUniform3fv(self.imageShapePos,   1, image.shape[:3])
         
         # bind the transformation matrix
         # to the shader variable

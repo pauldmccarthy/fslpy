@@ -164,19 +164,21 @@ class GLImageData(object):
 
         # each dimension of a texture must have length divisble by 4.
         # I don't know why; I presume that they need to be word-aligned.
-        texShape = np.array(shape)
+        texShape = np.array(shape) / samplingRate
+        texPad   = np.zeros(len(shape))
         
         for i in range(len(texShape)):
             if texShape[i] % 4:
-                texShape[i] += 4 - (texShape[i] % 4)
+                texPad[  i]  = 4 - (texShape[i] % 4)
+                texShape[i] += texPad[i]
                 
-        return texShape
+        return texShape, texPad 
 
 
     def _initImageBuffer(self):
 
         shape       = self.image.shape
-        texShape    = self._calculateTextureShape(shape, 1)
+        texShape, _ = self._calculateTextureShape(shape, 1)
         imageBuffer = gl.glGenTextures(1)
         
         # Set up image texture sampling thingos
@@ -217,11 +219,12 @@ class GLImageData(object):
         existing buffer is returned. 
         """
 
-        image        = self.image
-        volume       = self.display.volume
-        sRate        = self.display.samplingRate
-        texShape     = self._calculateTextureShape(self.image.shape, sRate)
-        fullTexShape = self._calculateTextureShape(self.image.shape, 1)
+        image                  = self.image
+        volume                 = self.display.volume
+        sRate                  = self.display.samplingRate
+        imageShape             = self.image.shape[:3]
+        fullTexShape, _        = self._calculateTextureShape(imageShape, 1)
+        subTexShape, subTexPad = self._calculateTextureShape(imageShape, sRate)
 
         # Store the actual image texture shape as an
         # attribute - the vertex shader needs to know
@@ -231,8 +234,9 @@ class GLImageData(object):
         # could store textures of an arbitrary size
         # (i.e. without the lengths having to be
         # divisible by 4), we wouldn't need to do this.
-        self.imageTexShape = texShape
         self.fullTexShape  = fullTexShape
+        self.subTexShape   = subTexShape
+        self.subTexPad     = subTexPad
 
         # Check to see if the image buffer
         # has already been created
@@ -274,7 +278,7 @@ class GLImageData(object):
         # thing, I don't know. This seems to be necessary
         # using the OpenGL 2.1 API on OSX mavericks. 
         if np.any(shape % 4):
-            pad       = [(0, l - s) for (l, s) in zip(texShape, shape)]
+            pad       = zip(np.zeros(len(subTexPad)), subTexPad)
             imageData = np.pad(imageData, pad, 'constant', constant_values=0)
 
         # Then flattened, with fortran dimension ordering,
@@ -286,7 +290,7 @@ class GLImageData(object):
         gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
                            0,
                            0, 0, 0,
-                           texShape[0], texShape[1], texShape[2],
+                           subTexShape[0], subTexShape[1], subTexShape[2],
                            gl.GL_RED,
                            gl.GL_UNSIGNED_BYTE,
                            imageData)
