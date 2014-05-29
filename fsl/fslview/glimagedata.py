@@ -112,10 +112,11 @@ class GLImageData(object):
 
         self.xax = xax
         self.yax = yax
-
+        self.zax = 3 - xax - yax
+        
+        zax        = self.zax
         image      = self.image
         sampleRate = self.display.samplingRate
-        zax        = 3 - xax - yax 
 
         # The geometry buffer defines the geometry of
         # a single voxel, rendered as a triangle strip.
@@ -159,79 +160,25 @@ class GLImageData(object):
         self.zdim         = len(voxData[zax])
 
         
-    def _genImageBuffer(self):
-        """
-        (Re-)Generates the OpenGL buffer used to store the data for the given
-        image. The buffer is stored as an attribute of the image and, if it
-        has already been created (e.g. by another SliceCanvas object), the
-        existing buffer is returned. 
-        """
+    def _calculateTextureShape(self, shape, samplingRate):
 
-        image  = self.image
-        volume = self.display.volume
-
-        # we only store a single 3D image
-        # in GPU memory at any one time
-        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
-        else:                    imageData = image.data
-
-        shape = np.array(imageData.shape)
-
-        # Calculate the dimensions of the 3D texture;
-        # each dimension must have length divisble by
-        # 4 - see below.
+        # each dimension of a texture must have length divisble by 4.
+        # I don't know why; I presume that they need to be word-aligned.
         texShape = np.array(shape)
-        for i, dim in enumerate(texShape):
-            texShape[i] += dim % 4
-            
-        pad = [(0, l - s) for (l, s) in zip(texShape, shape)]
+        
+        for i in range(len(texShape)):
+            if texShape[i] % 4:
+                texShape[i] += 4 - (texShape[i] % 4)
+                
+        return texShape
 
-        # Store the actual image texture shape as an
-        # attribute - the vertex shader needs to know
-        # about it to perform texture lookups (see
-        # fslview/vertex_shader.glsl and
-        # slicecanvas.py:SliceCanvas_draw). If we
-        # can figure out how to avoid the power-of-two
-        # length thing, we won't need to do this.
-        self.imageTexShape = texShape 
 
-        # Check to see if the image buffer
-        # has already been created
-        try:    oldVolume, imageBuffer = image.getAttribute('glImageBuffer')
-        except: imageBuffer = None
+    def _initImageBuffer(self):
 
-        # The image buffer already exists, and it
-        # contains the data for the requested volume.  
-        if imageBuffer is not None and oldVolume == volume:
-            return imageBuffer
-
-        # The image data is normalised to lie
-        # between 0 and 255, and cast to uint8
-        imageData = np.array(imageData, dtype=np.float32)
-        imageData = 255.0 * (imageData       - imageData.min()) / \
-                            (imageData.max() - imageData.min())
-
-        # and each dimension is padded so it has length
-        # divisible by 4. Ugh. It's probably a word-alignment
-        # thing, I don't know. This seems to be necessary
-        # using the OpenGL 2.1 API on OSX mavericks. It
-        # increases image load time, so is a real sticking
-        # point for me. 
-        if np.any(shape % 4):
-            imageData = np.pad(imageData, pad, 'constant', constant_values=0)
-        imageData = np.array(imageData, dtype=np.uint8)
-
-        # Then flattened, with fortran dimension ordering,
-        # so the data, as stored on the GPU, has its first
-        # dimension as the fastest changing.
-        imageData = imageData.ravel(order='F') 
-
-        # Are we creating a new texture or
-        # updating an existing texture?
-        createTexture = False
-        if imageBuffer is None:
-            imageBuffer   = gl.glGenTextures(1)
-            createTexture = True
+        shape    = self.image.shape
+        texShape = self._calculateTextureShape(shape, 1)
+        
+        imageBuffer = gl.glGenTextures(1)
 
         # Set up image texture sampling thingos
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
@@ -251,30 +198,104 @@ class GLImageData(object):
                            gl.GL_TEXTURE_WRAP_R,
                            gl.GL_CLAMP_TO_EDGE)
 
-        if createTexture:
-            gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                            0,
-                            arbrg.GL_R8,
-                            texShape[0], texShape[1], texShape[2],
-                            0,
-                            gl.GL_RED,
-                            gl.GL_UNSIGNED_BYTE,
-                            imageData)
-        else:
-            gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
-                               0,
-                               0, 0, 0,
-                               texShape[0], texShape[1], texShape[2],
-                               gl.GL_RED,
-                               gl.GL_UNSIGNED_BYTE,
-                               imageData)
+        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                        0,
+                        arbrg.GL_R8,
+                        texShape[0], texShape[1], texShape[2],
+                        0,
+                        gl.GL_RED,
+                        gl.GL_UNSIGNED_BYTE,
+                        None)
+
+        return imageBuffer
+
+        
+    def _genImageBuffer(self):
+        """
+        (Re-)Generates the OpenGL buffer used to store the data for the given
+        image. The buffer is stored as an attribute of the image and, if it
+        has already been created (e.g. by another SliceCanvas object), the
+        existing buffer is returned. 
+        """
+
+        image    = self.image
+        volume   = self.display.volume
+        sRate    = self.display.samplingRate
+        texShape = self._calculateTextureShape(self.image.shape, sRate)
+
+        # Store the actual image texture shape as an
+        # attribute - the vertex shader needs to know
+        # about it to perform texture lookups (see
+        # fslview/vertex_shader.glsl and
+        # slicecanvas.py:SliceCanvas_draw). If we
+        # could store textures of an arbitrary size
+        # (i.e. without the lengths having to be
+        # divisible by 4), we wouldn't need to do this.
+        self.imageTexShape = texShape
+
+        # Check to see if the image buffer
+        # has already been created
+        try:
+            oldVolume, oldSRate, imageBuffer = \
+                image.getAttribute('glImageBuffer')
+        except:
+            imageBuffer = None
+            oldVolume   = None
+            oldSRate    = None
+
+        if imageBuffer is None:
+            imageBuffer = self._initImageBuffer()
+
+        # The image buffer already exists, and it
+        # contains the data for the requested volume.  
+        elif oldVolume == volume and oldSRate == sRate:
+            return imageBuffer
+
+        # we only store a single 3D image
+        # in GPU memory at any one time
+        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
+        else:                    imageData = image.data
+
+        # resample the image according to the current sampling rate
+        sStart    = sRate / 2
+        imageData = imageData[sStart::sRate, sStart::sRate, sStart::sRate]
+        shape     = np.array(imageData.shape)
+            
+        # The image data is normalised to lie
+        # between 0 and 255, and cast to uint8
+        imageData = np.array(imageData, dtype=np.float32)
+        imageData = 255.0 * (imageData       - imageData.min()) / \
+                            (imageData.max() - imageData.min())
+        imageData = np.array(imageData, dtype=np.uint8)
+
+        # and each dimension is padded so it has length
+        # divisible by 4. Ugh. It's probably a word-alignment
+        # thing, I don't know. This seems to be necessary
+        # using the OpenGL 2.1 API on OSX mavericks. 
+        if np.any(shape % 4):
+            pad       = [(0, l - s) for (l, s) in zip(texShape, shape)]
+            imageData = np.pad(imageData, pad, 'constant', constant_values=0)
+
+        # Then flattened, with fortran dimension ordering,
+        # so the data, as stored on the GPU, has its first
+        # dimension as the fastest changing.
+        imageData = imageData.ravel(order='F') 
+
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+        gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
+                           0,
+                           0, 0, 0,
+                           texShape[0], texShape[1], texShape[2],
+                           gl.GL_RED,
+                           gl.GL_UNSIGNED_BYTE,
+                           imageData)
 
         # Add the index of the currently stored volume and
-        # a reference to the texture as an attribute of the
-        # image, so other things which want to render the
-        # same volume of the image  don't need to duplicate
-        # all of that data.
-        image.setAttribute('glImageBuffer', (volume, imageBuffer))
+        # sampling rate, and a reference to the texture as
+        # an attribute of the image, so other things which
+        # want to render the same volume of the image don't 
+        # need to duplicate all of that data.
+        image.setAttribute('glImageBuffer', (volume, sRate, imageBuffer))
 
         return imageBuffer
 
