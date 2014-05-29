@@ -418,7 +418,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
                                                         'voxToWorldMat')
         self.colourMapPos     = gl.glGetUniformLocation(self.shaders,
-                                                        'colourMap') 
+                                                        'colourMap')
+        self.texShapePos      = gl.glGetUniformLocation(self.shaders,
+                                                        'texShape')
+        self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
+                                                        'fullTexShape')         
         self.xdimPos          = gl.glGetUniformLocation(self.shaders, 'xdim')
         self.ydimPos          = gl.glGetUniformLocation(self.shaders, 'ydim')
         self.zdimPos          = gl.glGetUniformLocation(self.shaders, 'zdim')        
@@ -622,11 +626,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # to the shader alpha variable
         gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
 
-        # Bind the voxel coordinate buffers
+        # and the texture shape buffers
+        gl.glUniform3fv(self.texShapePos,     1, glImageData.imageTexShape)
+        gl.glUniform3fv(self.fullTexShapePos, 1, glImageData.fullTexShape)
+
+        # and the voxel coordinate buffers
         gl.glUniform1f(self.xdimPos,  glImageData.imageTexShape[0])
         gl.glUniform1f(self.ydimPos,  glImageData.imageTexShape[1])
         gl.glUniform1f(self.zdimPos,  glImageData.imageTexShape[2])
 
+        
         # bind the transformation matrix
         # to the shader variable
         if xform is None:

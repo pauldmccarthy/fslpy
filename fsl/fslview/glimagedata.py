@@ -175,11 +175,10 @@ class GLImageData(object):
 
     def _initImageBuffer(self):
 
-        shape    = self.image.shape
-        texShape = self._calculateTextureShape(shape, 1)
-        
+        shape       = self.image.shape
+        texShape    = self._calculateTextureShape(shape, 1)
         imageBuffer = gl.glGenTextures(1)
-
+        
         # Set up image texture sampling thingos
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
@@ -218,10 +217,11 @@ class GLImageData(object):
         existing buffer is returned. 
         """
 
-        image    = self.image
-        volume   = self.display.volume
-        sRate    = self.display.samplingRate
-        texShape = self._calculateTextureShape(self.image.shape, sRate)
+        image        = self.image
+        volume       = self.display.volume
+        sRate        = self.display.samplingRate
+        texShape     = self._calculateTextureShape(self.image.shape, sRate)
+        fullTexShape = self._calculateTextureShape(self.image.shape, 1)
 
         # Store the actual image texture shape as an
         # attribute - the vertex shader needs to know
@@ -232,6 +232,7 @@ class GLImageData(object):
         # (i.e. without the lengths having to be
         # divisible by 4), we wouldn't need to do this.
         self.imageTexShape = texShape
+        self.fullTexShape  = fullTexShape
 
         # Check to see if the image buffer
         # has already been created
@@ -257,8 +258,8 @@ class GLImageData(object):
         else:                    imageData = image.data
 
         # resample the image according to the current sampling rate
-        sStart    = sRate / 2
-        imageData = imageData[sStart::sRate, sStart::sRate, sStart::sRate]
+        start     = np.floor(0.5 * sRate)
+        imageData = imageData[start::sRate, start::sRate, start::sRate]
         shape     = np.array(imageData.shape)
             
         # The image data is normalised to lie

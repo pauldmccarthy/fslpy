@@ -19,6 +19,9 @@ uniform float xdim;
 uniform float ydim;
 uniform float zdim;
 
+uniform vec3 fullTexShape;
+uniform vec3 texShape;
+
 /* Current vertex */
 attribute vec3 inVertex;
 
