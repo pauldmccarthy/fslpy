@@ -12,12 +12,12 @@
 # define the geometry of a single voxel (using triangle strips).
 
 # The remaining buffers contain the X, Y, and Z coordinates of the voxels
-# in the slice to be displayed. These coordinates are stored as single
-# precision floating points, and used both to position a voxel, and to
-# look up its value in the 3D data texture (see below). 
+# in the slice to be displayed. These coordinates are stored as unsigned
+# 16 bit integers, and used both to position a voxel, and to look up its
+# value in the 3D data texture (see below). 
 
 # The image data itself is stored as a 3D texture, with each voxel value
-# stored as a single unsigned byte in the range 0-255.  
+# stored unnormalised, in one of various formats (it's a bit complicated).
 
 # Finally, a 1D texture is used is used to store a lookup table containing
 # an RGBA8 colour map, to colour each voxel according to its value.
@@ -32,13 +32,15 @@
 #  - geomBuffer
 #  - colourBuffer
 #
-# The contents of the x, y, z, geom and colour buffers is dependent upon
-# the way that the image is being displayed.  They are regenerated
-# automatically when the image display properties are changed (via
-# listeners registered on the relevant fsl.data.fslimage.ImageDisplay
-# properties).  If the display orientation changes (i.e. the image
-# dimensions that map to the screen X/Y axes) the genIndexBuffers method
-# must be called to regenerate the voxel indices.
+#
+# The contents of all of these buffers is is dependent upon the way that
+# the image is being displayed.  They are regenerated automatically when
+# the image display properties are changed (via listeners registered on
+# the relevant fsl.data.fslimage.ImageDisplay properties).
+# 
+# If the display orientation changes (i.e. the image dimensions that map
+# to the screen X/Y axes) the genIndexBuffers method must be called
+# manually, to regenerate the voxel indices.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -48,6 +50,7 @@ import numpy as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
 
+# This extension provides some texture data format identifiers which are 
 import OpenGL.GL.ARB.texture_rg as arbrg
 
 
@@ -111,10 +114,19 @@ class GLImageData(object):
             self.texIntFmt = arbrg.GL_R8
             self.texExtFmt = gl.GL_UNSIGNED_BYTE
             self.needNorm  = False
+        elif self.image.data.dtype == np.int8:
+            self.texIntFmt = arbrg.GL_R8
+            self.texExtFmt = gl.GL_UNSIGNED_BYTE
+            self.needNorm  = False 
         else:
             self.texIntFmt = arbrg.GL_R32F
             self.texExtFmt = gl.GL_FLOAT
             self.needNorm  = True
+
+
+        print '{} -> {} / {}'.format(self.image.data.dtype,
+                                     self.texIntFmt,
+                                     self.texExtFmt)
 
 
     def genIndexBuffers(self, xax, yax):
@@ -243,6 +255,7 @@ class GLImageData(object):
         return imageBuffer
 
 
+    @profile
     def _genImageBuffer(self):
         """
         (Re-)Generates the OpenGL buffer used to store the data for the given
@@ -308,6 +321,11 @@ class GLImageData(object):
         if np.any(shape % 4):
             pad       = zip(np.zeros(len(subTexPad)), subTexPad)
             imageData = np.pad(imageData, pad, 'constant', constant_values=0)
+
+
+        print 'Image shape   {}'.format(shape)
+        print 'Texture shape {}'.format(subTexShape)
+        print 'Padded image  {}'.format(imageData.shape)
 
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
