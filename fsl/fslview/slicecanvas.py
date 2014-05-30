@@ -142,8 +142,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
     def __init__(self, parent, imageList, zax=0, glContext=None):
         """
-        Creates a canvas object. The OpenGL data buffers are set up the
-        first time that the canvas is displayed/drawn.
+        Creates a canvas object. The OpenGL data buffers for each image
+        in the list are set up the first time that the canvas is
+        displayed/drawn.
         
         Parameters:
         
@@ -301,12 +302,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             
     def _imageListChanged(self):
         """
-        This method is called once by _initGLData on the first draw, and
-        then again every time an image is added or removed from the
-        image list. For newly added images, it creates a GLImageData
-        object, which initialises the OpenGL data necessary to render
-        the image. This method also updates the canvas bounds (i.e.
-        the min/max x/y/z coordinates across all images being displayed).
+        This method is called once by _initGLData, and then again every
+        time an image is added or removed to/from the image list. For
+        newly added images, it creates a GLImageData object, which
+        initialises the OpenGL data necessary to render the image, and
+        then triggers a refresh.
         """
 
         # Create a GLImageData object for any new images,
@@ -450,8 +450,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
     def _refresh(self, bounds=False):
         """
-        Called when a display property changes. Updates x/y/z property
-        values, updates the canvas bounding box, and triggers a redraw.
+        Called when any display property changes or more generally when
+        something thinks that the canvas should be redrawn. Updates x/y/z
+        property values, updates the canvas bounding box (if bounds is
+        True), and triggers a redraw.
         """
 
         if not self.glReady: return
@@ -536,7 +538,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """
         Sets up the GL canvas size, viewport, and
         projection. This method is called by draw(),
-        so does not need to be called manually.
+        so does not need to be called manually. 
         """
 
         if bbox is None: bbox = self._canvasBBox
@@ -605,7 +607,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # The GL data is stored as an attribute of the image,
         # and is created in the _imageListChanged method when
         # images are added to the image. If there's no data
-        # here, ignore it; hopefully by the time draw() is
+        # here, ignore it; hopefully by the time _draw() is
         # called again, it will have been created.
         try:    glImageData = image.getAttribute(self.name)
         except: return

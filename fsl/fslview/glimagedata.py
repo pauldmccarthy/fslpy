@@ -101,6 +101,11 @@ class GLImageData(object):
 
         
     def _checkDataType(self):
+        """
+        This method determines the appropriate OpenGL texture data
+        format to use for the image managed by this GLImageData
+        object. 
+        """
 
         if self.image.data.dtype == np.uint8:
             self.texIntFmt = arbrg.GL_R8
@@ -110,7 +115,6 @@ class GLImageData(object):
             self.texIntFmt = arbrg.GL_R32F
             self.texExtFmt = gl.GL_FLOAT
             self.needNorm  = True
-
 
 
     def genIndexBuffers(self, xax, yax):
@@ -175,6 +179,15 @@ class GLImageData(object):
 
         
     def _calculateTextureShape(self, shape):
+        """
+        Calculates the size required to store an image of the given shape
+        as a GL texture. I don't know if it is a problem which affects all
+        graphics cards, but on my MacbookPro11,3 (NVIDIA GeForce GT 750M),
+        all dimensions of a texture must have length divisible by 4.
+        This method returns two values - the first is the adjusted shape,
+        and the second is the amount of padding, i.e. the difference
+        between the texture shape and the input shape.
+        """
 
         # each dimension of a texture must have length divisble by 4.
         # I don't know why; I presume that they need to be word-aligned.
@@ -190,6 +203,12 @@ class GLImageData(object):
 
 
     def _initImageBuffer(self):
+        """
+        Initialises a single-channel 3D texture which will be used
+        to store the image managed by this GLImageData object. The
+        texture is not populated with data - this is done by
+        _genImageData on an as-needed basis.
+        """
 
         texShape, _ = self._calculateTextureShape(self.image.shape)
         imageBuffer = gl.glGenTextures(1)
@@ -293,9 +312,7 @@ class GLImageData(object):
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
         # dimension as the fastest changing.
-        # imageData = imageData.view('float32')
         imageData = imageData.ravel(order='F')
-
 
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
