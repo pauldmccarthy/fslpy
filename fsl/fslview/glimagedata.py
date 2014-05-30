@@ -48,9 +48,8 @@ import numpy as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
 
-# This extension provides the GL_R8 constant,
-# which is built into modern versions of OpenGL.
 import OpenGL.GL.ARB.texture_rg as arbrg
+
 
 class GLImageData(object):
 
@@ -77,6 +76,8 @@ class GLImageData(object):
         self.image   = image
         self.display = imageDisplay
 
+        self._checkDataType()
+
         # Buffers for storing image data
         # and voxel coordinates
         self.imageBuffer = self._genImageBuffer()
@@ -99,6 +100,19 @@ class GLImageData(object):
         self._configDisplayListeners()
 
         
+    def _checkDataType(self):
+
+        if self.image.data.dtype == np.uint8:
+            self.texIntFmt = arbrg.GL_R8
+            self.texExtFmt = gl.GL_UNSIGNED_BYTE
+            self.needNorm  = False
+        else:
+            self.texIntFmt = arbrg.GL_R32F
+            self.texExtFmt = gl.GL_FLOAT
+            self.needNorm  = True
+
+
+
     def genIndexBuffers(self, xax, yax):
         """
         (Re-)Generates data buffers containing X, Y, and Z coordinates,
@@ -200,16 +214,16 @@ class GLImageData(object):
 
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
-                        arbrg.GL_R8,
+                        self.texIntFmt,
                         texShape[0], texShape[1], texShape[2],
                         0,
                         gl.GL_RED,
-                        gl.GL_UNSIGNED_BYTE,
+                        self.texExtFmt,
                         None)
 
         return imageBuffer
 
-        
+
     def _genImageBuffer(self):
         """
         (Re-)Generates the OpenGL buffer used to store the data for the given
@@ -267,17 +281,10 @@ class GLImageData(object):
             return imageBuffer
 
         shape = np.array(imageData.shape)
-            
-        # The image data is normalised to lie
-        # between 0 and 255, and cast to uint8
-        imageData = np.array(imageData, dtype=np.float32)
-        imageData = 255.0 * (imageData       - imageData.min()) / \
-                            (imageData.max() - imageData.min())
-        imageData = np.array(imageData, dtype=np.uint8)
 
-        # and each dimension is padded so it has length
-        # divisible by 4. Ugh. It's probably a word-alignment
-        # thing, I don't know. This seems to be necessary
+        # each dimension is padded so it has length
+        # divisible by 4. Ugh. It's a word-alignment
+        # thing, I think. This seems to be necessary
         # using the OpenGL 2.1 API on OSX mavericks. 
         if np.any(shape % 4):
             pad       = zip(np.zeros(len(subTexPad)), subTexPad)
@@ -286,7 +293,9 @@ class GLImageData(object):
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
         # dimension as the fastest changing.
-        imageData = imageData.ravel(order='F') 
+        # imageData = imageData.view('float32')
+        imageData = imageData.ravel(order='F')
+
 
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
@@ -294,7 +303,7 @@ class GLImageData(object):
                            0, 0, 0,
                            subTexShape[0], subTexShape[1], subTexShape[2],
                            gl.GL_RED,
-                           gl.GL_UNSIGNED_BYTE,
+                           self.texExtFmt,
                            imageData)
 
         # Add the index of the currently stored volume and

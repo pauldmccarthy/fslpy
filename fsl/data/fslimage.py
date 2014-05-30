@@ -281,7 +281,7 @@ class ImageDisplay(props.HasProperties):
         # determine the real min/max for in-memory
         # images - if it's memory mapped, we have no
         # idea how big it may be!
-        if isinstance(image.data, np.memmap):
+        if np.prod(image.shape) > 2 ** 30:
             self.dataMin    = image.nibImage.get_header().get('cal_min', 0)
             self.dataMax    = image.nibImage.get_header().get('cal_max', 1000)
         else:

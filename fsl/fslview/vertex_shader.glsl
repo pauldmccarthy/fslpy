@@ -52,6 +52,7 @@ void main(void) {
        full-texture coordinates */
     vox = vox / fullTexShape;
 
+    /* Look up the voxel value, and pass it to the fragment shader */
     vec4 vt = texture3D(imageBuffer, vox);
     fragVoxValue = vt.r;
 }

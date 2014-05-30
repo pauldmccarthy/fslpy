@@ -5,13 +5,43 @@
  */
 #version 120
 
-uniform float     alpha;
+/* 
+ * image opacity (will be overridden by the opacity in the 
+ * colour map, if it is lower) 
+ */
+uniform float alpha;
+
+/*
+ * Texture containing the colour map
+ */
 uniform sampler1D colourMap;
-varying float     fragVoxValue;
+
+/*
+ * Does the voxel value need to be normalised by the image
+ * range? 
+ */
+uniform bool needNorm;
+
+/*
+ * Maximum/minimum image values.
+ */
+uniform float dataMin;
+uniform float dataMax;
+
+/*
+ * Voxel value - Might be unnormalised, or normalised to lie
+ * in the range [0,1].
+ */
+varying float fragVoxValue;
 
 void main(void) {
 
-    vec4  voxTexture = texture1D(colourMap, fragVoxValue);
+    float normVoxValue;
+
+    if (needNorm) normVoxValue = (fragVoxValue - dataMin) / (dataMax - dataMin);
+    else          normVoxValue = fragVoxValue;
+
+    vec4  voxTexture = texture1D(colourMap, normVoxValue);  
     vec3  voxColour  = voxTexture.rgb;
     float voxAlpha   = alpha;
 

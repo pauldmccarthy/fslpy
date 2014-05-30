@@ -424,7 +424,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.subTexShapePos   = gl.glGetUniformLocation(self.shaders,
                                                         'subTexShape')
         self.subTexPadPos     = gl.glGetUniformLocation(self.shaders,
-                                                        'subTexPad') 
+                                                        'subTexPad')
+        self.dataMinPos       = gl.glGetUniformLocation(self.shaders,
+                                                        'dataMin')
+        self.dataMaxPos       = gl.glGetUniformLocation(self.shaders,
+                                                        'dataMax')
+        self.needNormPos      = gl.glGetUniformLocation(self.shaders,
+                                                        'needNorm') 
         self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
                                                         'fullTexShape')
         self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
@@ -624,8 +630,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if sliceno < 0 or sliceno >= zdim: return
 
         # bind the current alpha value
-        # to the shader alpha variable
-        gl.glUniform1f(self.alphaPos, imageDisplay.alpha)
+        # and data range to the shader
+        gl.glUniform1f(self.alphaPos,    imageDisplay.alpha)
+        gl.glUniform1f(self.dataMinPos,  imageDisplay.dataMin)
+        gl.glUniform1f(self.dataMaxPos,  imageDisplay.dataMax)
+        gl.glUniform1f(self.needNormPos, glImageData.needNorm)
 
         # and the image/texture shape buffers
         gl.glUniform3fv(self.fullTexShapePos, 1, glImageData.fullTexShape)
