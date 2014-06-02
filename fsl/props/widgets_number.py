@@ -126,7 +126,7 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
     spin = SpinCtr(parent, **params)
     
     widgets._propBind(hasProps, propObj, propVal, spin,
-                      (wx.EVT_SPIN, wx.EVT_SPINCTRL))
+                      (wx.EVT_SPIN, wx.EVT_SPINCTRL, wx.EVT_SPINCTRLDOUBLE))
 
     def updateRange(*a):
         minval = getMinVal(propObj.getConstraint(hasProps, 'minval'))
