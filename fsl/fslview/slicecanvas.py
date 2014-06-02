@@ -429,8 +429,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                                                         'dataMin')
         self.dataMaxPos       = gl.glGetUniformLocation(self.shaders,
                                                         'dataMax')
-        self.needNormPos      = gl.glGetUniformLocation(self.shaders,
-                                                        'needNorm') 
+        self.normFactorPos    = gl.glGetUniformLocation(self.shaders,
+                                                        'normFactor')
+        self.normOffsetPos    = gl.glGetUniformLocation(self.shaders,
+                                                        'normOffset')
+        self.signedPos        = gl.glGetUniformLocation(self.shaders,
+                                                        'signed') 
         self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
                                                         'fullTexShape')
         self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
@@ -633,10 +637,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # bind the current alpha value
         # and data range to the shader
-        gl.glUniform1f(self.alphaPos,    imageDisplay.alpha)
-        gl.glUniform1f(self.dataMinPos,  imageDisplay.dataMin)
-        gl.glUniform1f(self.dataMaxPos,  imageDisplay.dataMax)
-        gl.glUniform1f(self.needNormPos, glImageData.needNorm)
+        gl.glUniform1f(self.alphaPos,      imageDisplay.alpha)
+        gl.glUniform1f(self.dataMinPos,    imageDisplay.dataMin)
+        gl.glUniform1f(self.dataMaxPos,    imageDisplay.dataMax)
+        gl.glUniform1f(self.normFactorPos, glImageData.normFactor)
+        gl.glUniform1f(self.normOffsetPos, glImageData.normOffset)
+        gl.glUniform1f(self.signedPos,     glImageData.signed)
 
         # and the image/texture shape buffers
         gl.glUniform3fv(self.fullTexShapePos, 1, glImageData.fullTexShape)

@@ -277,16 +277,30 @@ class ImageDisplay(props.HasProperties):
 
         self.image = image
 
+        dtype = image.data.dtype
+
+        # default min/max values in the event that the
+        # image is huge, and cal_min/cal_max are not set
+        if issubclass(dtype.type, np.floating): info = np.finfo(dtype)
+        else:                                   info = np.iinfo(dtype)
+        
+        if image.data.dtype.itemsize <= 2:
+            defMin = info.min
+            defMax = info.max
+        else:
+            defMin = 0.0
+            defMin = 10000.0
+
         # Attributes controlling image display. Only
         # determine the real min/max for in-memory
         # images - if it's memory mapped, we have no
         # idea how big it may be!
         if np.prod(image.shape) > 2 ** 30:
-            self.dataMin    = image.nibImage.get_header().get('cal_min', 0)
-            self.dataMax    = image.nibImage.get_header().get('cal_max', 10000)
+            self.dataMin = image.nibImage.get_header().get('cal_min', defMin)
+            self.dataMax = image.nibImage.get_header().get('cal_max', defMax)
         else:
-            self.dataMin    = image.data.min()
-            self.dataMax    = image.data.max()
+            self.dataMin = image.data.min()
+            self.dataMax = image.data.max()
 
         self.displayMin = self.dataMin
         self.displayMax = self.dataMax

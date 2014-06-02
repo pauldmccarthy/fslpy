@@ -45,6 +45,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+log = logging.getLogger(__name__)
+
 import numpy as np
 
 import OpenGL.GL         as gl
@@ -110,23 +113,43 @@ class GLImageData(object):
         object. 
         """
 
-        if self.image.data.dtype == np.uint8:
-            self.texIntFmt = arbrg.GL_R8
-            self.texExtFmt = gl.GL_UNSIGNED_BYTE
-            self.needNorm  = False
-        elif self.image.data.dtype == np.int8:
-            self.texIntFmt = arbrg.GL_R8
-            self.texExtFmt = gl.GL_UNSIGNED_BYTE
-            self.needNorm  = False 
-        else:
-            self.texIntFmt = arbrg.GL_R32F
-            self.texExtFmt = gl.GL_FLOAT
-            self.needNorm  = True
+        dtype     = self.image.data.dtype
+        dataMin   = float(self.image.display.dataMin)
+        dataMax   = float(self.image.display.dataMax)
+        dataRange = dataMax - dataMin
 
+        if   dtype == np.uint8:  self.texIntFmt = arbrg.GL_R8
+        elif dtype == np.int8:   self.texIntFmt = arbrg.GL_R8
+        elif dtype == np.uint16: self.texIntFmt = arbrg.GL_R16
+        elif dtype == np.int16:  self.texIntFmt = arbrg.GL_R16
+        else:                    self.texIntFmt = arbrg.GL_R32F
 
-        print '{} -> {} / {}'.format(self.image.data.dtype,
-                                     self.texIntFmt,
-                                     self.texExtFmt)
+        if   dtype == np.uint8:  self.texExtFmt = gl.GL_UNSIGNED_BYTE
+        elif dtype == np.int8:   self.texExtFmt = gl.GL_UNSIGNED_BYTE
+        elif dtype == np.uint16: self.texExtFmt = gl.GL_UNSIGNED_SHORT
+        elif dtype == np.int16:  self.texExtFmt = gl.GL_UNSIGNED_SHORT
+        else:                    self.texExtFmt = gl.GL_FLOAT
+
+        if   dtype == np.int8:   self.signed = True
+        elif dtype == np.int16:  self.signed = True
+        else:                    self.signed = False
+
+        if   dtype == np.uint8:  self.normFactor = 255.0   / dataRange
+        elif dtype == np.int8:   self.normFactor = 255.0   / dataRange
+        elif dtype == np.uint16: self.normFactor = 65535.0 / dataRange
+        elif dtype == np.int16:  self.normFactor = 65535.0 / dataRange
+        else:                    self.normFactor = 1.0     / dataRange
+
+        if   dtype == np.uint8:  self.normOffset =  dataMin          / 255.0
+        elif dtype == np.int8:   self.normOffset = (dataMin + 128)   / 255.0
+        elif dtype == np.uint16: self.normOffset =  dataMin          / 65535.0
+        elif dtype == np.int16:  self.normOffset = (dataMin + 32768) / 65535.0
+        else:                    self.normOffset = 0.0
+
+        log.debug('{} ({}) -> {} / {}'.format(dtype,
+                                              dataRange,
+                                              self.texIntFmt,
+                                              self.texExtFmt))
 
 
     def genIndexBuffers(self, xax, yax):
@@ -361,14 +384,17 @@ class GLImageData(object):
         # assumed that the Colormap instance is configured to
         # generate appropriate colours for these out-of-range
         # values.
+
+        displayMin = float(display.displayMin)
+        displayMax = float(display.displayMax)
+        dataMin    = float(display.dataMin)
+        dataMax    = float(display.dataMax)
         
         normalRange = np.linspace(0.0, 1.0, self.colourResolution)
         normalStep  = 1.0 / (self.colourResolution - 1) 
 
-        normMin = (display.displayMin - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
-        normMax = (display.displayMax - display.dataMin) / \
-                  (display.dataMax    - display.dataMin)
+        normMin = abs(displayMin - dataMin) / abs(dataMax - dataMin)
+        normMax = abs(displayMax - dataMin) / abs(dataMax - dataMin)
 
         newStep  = normalStep / (normMax - normMin)
         newRange = (normalRange - normMin) * (newStep / normalStep)
@@ -377,7 +403,7 @@ class GLImageData(object):
         # spanning the entire range of the image
         # colour map
         colourmap = display.cmap(newRange)
-        
+
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
