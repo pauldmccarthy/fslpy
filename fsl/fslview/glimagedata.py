@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 #
 # glimagedata.py - Create OpenGL data to render 2D slices of a 3D image.
-
+#
 # A GLImageData object encapsulates the OpenGL information necessary
 # to render 2D slices of a 3D image.
 # 
 # A slice from one image is rendered using four buffers and two textures.
-
+#
 # The first buffer, the 'geometry buffer' simply contains the 3D
 # coordinates (single precision floating point) of four vertices, which
 # define the geometry of a single voxel (using triangle strips).
-
+#
 # The remaining buffers contain the X, Y, and Z coordinates of the voxels
 # in the slice to be displayed. These coordinates are stored as unsigned
 # 16 bit integers, and used both to position a voxel, and to look up its
 # value in the 3D data texture (see below). 
-
-# The image data itself is stored as a 3D texture, with each voxel value
-# stored unnormalised, in one of various formats (it's a bit complicated).
-
+#
+# The image data itself is stored as a 3D texture. Data for signed or
+# unsigned 8 or 16 bit integer images is stored on the GPU in the same
+# format; all other data types are stored as 32 bit floating point.
+#
 # Finally, a 1D texture is used is used to store a lookup table containing
 # an RGBA8 colour map, to colour each voxel according to its value.
 #
@@ -31,7 +32,6 @@
 #  - zBuffer
 #  - geomBuffer
 #  - colourBuffer
-#
 #
 # The contents of all of these buffers is is dependent upon the way that
 # the image is being displayed.  They are regenerated automatically when
@@ -282,7 +282,7 @@ class GLImageData(object):
         """
         (Re-)Generates the OpenGL buffer used to store the data for the given
         image. The buffer is stored as an attribute of the image and, if it
-        has already been created (e.g. by another SliceCanvas object), the
+        has already been created (e.g. by another GLImageData object), the
         existing buffer is returned. 
         """
 
