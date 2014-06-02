@@ -283,7 +283,7 @@ class ImageDisplay(props.HasProperties):
         # idea how big it may be!
         if np.prod(image.shape) > 2 ** 30:
             self.dataMin    = image.nibImage.get_header().get('cal_min', 0)
-            self.dataMax    = image.nibImage.get_header().get('cal_max', 1000)
+            self.dataMax    = image.nibImage.get_header().get('cal_max', 10000)
         else:
             self.dataMin    = image.data.min()
             self.dataMax    = image.data.max()

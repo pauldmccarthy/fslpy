@@ -255,7 +255,6 @@ class GLImageData(object):
         return imageBuffer
 
 
-    @profile
     def _genImageBuffer(self):
         """
         (Re-)Generates the OpenGL buffer used to store the data for the given
@@ -321,11 +320,6 @@ class GLImageData(object):
         if np.any(shape % 4):
             pad       = zip(np.zeros(len(subTexPad)), subTexPad)
             imageData = np.pad(imageData, pad, 'constant', constant_values=0)
-
-
-        print 'Image shape   {}'.format(shape)
-        print 'Texture shape {}'.format(subTexShape)
-        print 'Padded image  {}'.format(imageData.shape)
 
         # Then flattened, with fortran dimension ordering,
         # so the data, as stored on the GPU, has its first
