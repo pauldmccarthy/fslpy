@@ -28,11 +28,16 @@ class ImageListPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.imageList = imageList
 
-        imageNames = [img.name for img in imageList]
+        imageNames = [img.name                    for img in imageList]
+        imagePaths = [img.nibImage.get_filename() for img in imageList]
 
         # list box containing the list of images
         self.listBox = elistbox.EditableListBox(
-            self, imageNames, imageList, style=elistbox.ELB_REVERSE)
+            self,
+            imageNames,
+            imageList,
+            tooltips=imagePaths,
+            style=elistbox.ELB_REVERSE | elistbox.ELB_TOOLTIP)
 
         self.listBox.Bind(elistbox.EVT_ELB_SELECT_EVENT, self._imageSelected)
         self.listBox.Bind(elistbox.EVT_ELB_MOVE_EVENT,   self._imageMoved)
@@ -123,9 +128,11 @@ class ImageListPanel(wx.Panel):
 
         if dlg.ShowModal() != wx.ID_OK: return
 
-        image = fslimage.Image(dlg.GetPath())
+        path = dlg.GetPath()
+
+        image = fslimage.Image(path)
         self.imageList.append(image)
-        self.listBox.Append(image.name, image)
+        self.listBox.Append(image.name, image, tooltip=path)
 
         self._makeDisplayPanel(image)
         self._showDisplayPanel(len(self.imageList) - 1)
@@ -144,6 +151,9 @@ class ImageListPanel(wx.Panel):
         displayPanel = image.getAttribute('displayPanel_{}'.format(id(self)))
 
         displayPanel.Destroy()
+
+        if len(self.imageList) > 0:
+            self._showDisplayPanel(self.listBox.GetSelection())
 
         self.GetParent().Layout()
         self.GetParent().Refresh()
