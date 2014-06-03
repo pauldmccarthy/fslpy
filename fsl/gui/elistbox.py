@@ -2,7 +2,9 @@
 #
 # elistbox.py - A wx EditableListBox implementation. The
 # wx.gizmos.EditableListBox is buggy under OS X Mavericks,
-# so I felt the need to replicate its functionality.
+# and getting tooltips working with the wx.ListBox is an
+# absolute pain in the behind. So I felt the need to
+# replicate its functionality.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -69,6 +71,11 @@ ELB_NO_MOVE   = 4
 # at the botom, and the last item at the top.
 ELB_REVERSE   = 8
 
+# Client data is used as a tooltip popup on
+# mouse-over.
+ELB_TOOLTIP   = 16
+
+
 class EditableListBox(wx.Panel):
     """
     An EditableListBox contains a ListBox containing some items,
@@ -87,9 +94,12 @@ class EditableListBox(wx.Panel):
       - choices:    list of strings, the items in the list
       - clientData: list of data associated with the list items.
       - style:      Style bitmask - accepts ELB_NO_ADD, ELB_NO_REMOVE,
-                    ELB_NO_MOVE, and ELB_REVERSE.
+                    ELB_NO_MOVE, ELB_REVERSE, and ELB_TOOLTIP.
     """
 
+    _selectedBG = '#7777FF'
+    _defaultBG  = '#FFFFFF' 
+    
     def __init__(
             self,
             parent,
@@ -103,65 +113,68 @@ class EditableListBox(wx.Panel):
         addSupport    = not (style & ELB_NO_ADD)
         removeSupport = not (style & ELB_NO_REMOVE)
         moveSupport   = not (style & ELB_NO_MOVE)
+        showTooltips  =      style & ELB_TOOLTIP
         noButtons     = not any((addSupport, removeSupport, moveSupport))
 
-        self.reverseOrder = reverseOrder
+        self._reverseOrder = reverseOrder
+        self._showTooltips = showTooltips
 
         if clientData is None: clientData = [None] * len(choices)
 
-        # The list box containing the list of items
-        self.listBox = wx.ListBox(self, style=wx.LB_SINGLE | wx.LB_NEEDED_SB)
-        self.listBox.Bind(wx.EVT_LISTBOX, self._itemSelected)
+        # index of the currently selected item
+        self._selection  = wx.NOT_FOUND
+        self._clientData = {}
 
-        items = zip(choices, clientData)
-        if reverseOrder:
-            items.reverse()
+        # the panel containing the list items
+        self._listPanel = wx.Panel(self)
+        self._listSizer = wx.BoxSizer(wx.VERTICAL)
+        self._listPanel.SetSizer(self._listSizer)
 
-        for choice, data in items:
-            self.listBox.Append(choice, data)
+        for choice, data in zip(choices, clientData):
+            self.Append(choice, data)
 
         # A panel containing buttons for doing stuff with the list
         if not noButtons:
-            self.buttonPanel      = wx.Panel(self)
-            self.buttonPanelSizer = wx.BoxSizer(wx.VERTICAL)
-            self.buttonPanel.SetSizer(self.buttonPanelSizer) 
+            self._buttonPanel      = wx.Panel(self)
+            self._buttonPanelSizer = wx.BoxSizer(wx.VERTICAL)
+            self._buttonPanel.SetSizer(self._buttonPanelSizer) 
 
         # Buttons for moving the selected item up/down
         if moveSupport:
-            self.upButton   = wx.Button(self.buttonPanel, label=u'\u25B2',
-                                        style=wx.BU_EXACTFIT)
-            self.downButton = wx.Button(self.buttonPanel, label=u'\u25BC',
-                                        style=wx.BU_EXACTFIT)
-            self.upButton  .Bind(wx.EVT_BUTTON, self._moveItemUp)
-            self.downButton.Bind(wx.EVT_BUTTON, self._moveItemDown)
+            self._upButton   = wx.Button(self._buttonPanel, label=u'\u25B2',
+                                         style=wx.BU_EXACTFIT)
+            self._downButton = wx.Button(self._buttonPanel, label=u'\u25BC',
+                                         style=wx.BU_EXACTFIT)
+            self._upButton  .Bind(wx.EVT_BUTTON, self._moveItemUp)
+            self._downButton.Bind(wx.EVT_BUTTON, self._moveItemDown)
 
-            self.buttonPanelSizer.Add(self.upButton,   flag=wx.EXPAND)
-            self.buttonPanelSizer.Add(self.downButton, flag=wx.EXPAND) 
+            self._buttonPanelSizer.Add(self._upButton,   flag=wx.EXPAND)
+            self._buttonPanelSizer.Add(self._downButton, flag=wx.EXPAND) 
 
         # Button for adding new items
         if addSupport:
-            self.addButton = wx.Button(self.buttonPanel, label='+',
-                                       style=wx.BU_EXACTFIT)
-            self.addButton.Bind(wx.EVT_BUTTON, self._addItem)
-            self.buttonPanelSizer.Add(self.addButton, flag=wx.EXPAND) 
+            self._addButton = wx.Button(self._buttonPanel, label='+',
+                                        style=wx.BU_EXACTFIT)
+            self._addButton.Bind(wx.EVT_BUTTON, self._addItem)
+            self._buttonPanelSizer.Add(self._addButton, flag=wx.EXPAND) 
 
         # Button for removing the selected item
         if removeSupport:
-            self.removeButton = wx.Button(self.buttonPanel, label='-',
-                                          style=wx.BU_EXACTFIT)
+            self._removeButton = wx.Button(self._buttonPanel, label='-',
+                                           style=wx.BU_EXACTFIT)
 
-            self.removeButton.Bind(wx.EVT_BUTTON, self._removeItem)
-            self.buttonPanelSizer.Add(self.removeButton, flag=wx.EXPAND)
+            self._removeButton.Bind(wx.EVT_BUTTON, self._removeItem)
+            self._buttonPanelSizer.Add(self._removeButton, flag=wx.EXPAND)
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self.sizer)
+        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(self._sizer)
 
         if not noButtons:
-            self.sizer.Add(self.buttonPanel, flag=wx.EXPAND)
+            self._sizer.Add(self._buttonPanel, flag=wx.EXPAND)
             
-        self.sizer.Add(self.listBox, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._listPanel, flag=wx.EXPAND, proportion=1)
 
-        self.sizer.Layout()
+        self._sizer.Layout()
 
         
     def _fixIndex(self, idx):
@@ -171,70 +184,122 @@ class EditableListBox(wx.Panel):
         the index value unchanged.
         """
 
-        if idx is None:           return idx
-        if idx == wx.NOT_FOUND:   return idx
-        if not self.reverseOrder: return idx
+        if idx is None:            return idx
+        if idx == wx.NOT_FOUND:    return idx
+        if not self._reverseOrder: return idx
         
-        idx = self.listBox.GetCount() - idx - 1
+        idx = self.GetCount() - idx - 1
+
+        if idx < 0: idx = 0
         
         return idx
 
-    #
-    # These methods simply wrap the same-named wx.ListBox methods,
-    # while supporting the ELB_REVERSE style.
-    #
 
-    def GetCount(self): return self.listBox.GetCount()
-    
+    def GetCount(self):
+        return self._listSizer.GetItemCount()
+
+        
     def SetSelection(self, n):
-        self.listBox.SetSelection(self._fixIndex(n))
+
+
+        if n != wx.NOT_FOUND and (n < 0 or n >= self.GetCount()):
+            raise IndexError('Index {} out of bounds'.format(n))
+
+        # deselect the previous selection, if there is one
+        if self._selection != wx.NOT_FOUND:
+            widget = self._listSizer.GetItem(self._selection).GetWindow()
+            widget.SetBackgroundColour(EditableListBox._defaultBG)
+            self._selection = wx.NOT_FOUND
+
+        if n == wx.NOT_FOUND: return
+
+        self._selection = self._fixIndex(n)
+
+        widget = self._listSizer.GetItem(self._selection).GetWindow()
+        widget.SetBackgroundColour(EditableListBox._selectedBG)
+        
         
     def GetSelection(self):
-        return self._fixIndex(self.listBox.GetSelection())
+        return self._fixIndex(self._selection)
 
+        
     def Insert(self, item, pos, clientData):
-        return self.listBox.Insert(item, self._fixIndex(pos), clientData)
+
+        if pos < 0 or pos > self.GetCount():
+            raise IndexError('Index {} out of bounds'.format(pos))
+
+        pos = self._fixIndex(pos)
+
+        widget = wx.StaticText(self._listPanel, label=item)
+        widget.SetBackgroundColour(EditableListBox._defaultBG)
+
+        widget.Bind(wx.EVT_LEFT_DOWN, self._itemClicked)
+
+        self._listSizer.Insert(pos,
+                               widget,
+                               flag=wx.EXPAND)
+        
+        self._clientData[id(widget)] = clientData
+        self._listSizer.Layout()
+
 
     def Append(self, item, clientData):
-        if not self.reverseOrder:
-            return self.listBox.Append(item, clientData)
-        else:
-            return self.listBox.Insert(item, 0, clientData)
+        self.Insert(item, self.GetCount(), clientData)
+
 
     def Delete(self, n):
-        return self.listBox.Delete(self._fixIndex(n))
+
+        n = self._fixIndex(n)
+
+        widget = self._listSizer.GetItem(n).GetWindow()
+        self._listSizer.Detach(n)
+        self._clientData.pop(id(widget))
+        widget.Destroy()
+        self._listSizer.Layout()
+
+        if self._selection == n: self.SetSelection(wx.NOT_FOUND)
 
         
     def _getSelection(self):
         """
-        Returns a 3-tuple containing the index, label, and associated client
-        data of the currently selected list item, or (None, None, None) if
-        no item is selected. 
+        Returns a 3-tuple containing the (uncorrected) index, label, and
+        associated client data of the currently selected list item, or
+        (None, None, None) if no item is selected. 
         """
         
-        idx    = self.listBox.GetSelection()
+        idx    = self._selection
         choice = None
         data   = None
 
         if idx == wx.NOT_FOUND:
             idx = None
         else:
-            choice = self.listBox.GetString(    idx)
-            data   = self.listBox.GetClientData(idx)
+            widget = self._listSizer.GetItem(idx).GetWindow()
+            choice = widget.GetLabel()
+            data   = self._clientData[id(widget)]
 
         return idx, choice, data
         
         
-    def _itemSelected(self, ev):
+    def _itemClicked(self, ev):
         """
-        Called when an item in the list is selected. Posts an
-        EVT_ELB_SELECT_EVENT.
+        Called when an item in the list is clicked. Selects the item and
+        posts an EVT_ELB_SELECT_EVENT.
         """
+
+        widget    = ev.GetEventObject()
+        choice    = widget.GetLabel()
+        data      = self._clientData[id(widget)]
+
+        sizerItem = self._listSizer.GetItem(widget)
+        choiceIdx = self._listSizer.GetChildren().index(sizerItem)
+        
+        self.SetSelection(self._fixIndex(choiceIdx))
         
         idx, choice, data = self._getSelection()
 
         idx = self._fixIndex(idx)
-
+        
         log.debug('ListSelectEvent (idx: {}; choice: {})'.format(idx, choice))
         
         ev = ListSelectEvent(idx=idx, choice=choice, data=data)
@@ -253,16 +318,21 @@ class EditableListBox(wx.Panel):
 
         # nothing is selected, or the selected
         # item is at the top/bottom of the list.
-        if oldIdx  is None:                                 return
-        if oldIdx < 0 or oldIdx >= self.listBox.GetCount(): return
-        if newIdx < 0 or newIdx >= self.listBox.GetCount(): return 
+        if oldIdx  is None:                         return
+        if oldIdx < 0 or oldIdx >= self.GetCount(): return
+        if newIdx < 0 or newIdx >= self.GetCount(): return
 
-        self.listBox.Delete(oldIdx)
-        self.listBox.Insert(choice, newIdx, data)
-        self.listBox.SetSelection(newIdx)
+        widget = self._listSizer.GetItem(oldIdx).GetWindow()
+
+        self._listSizer.Detach(oldIdx)
+        self._listSizer.Insert(newIdx, widget, flag=wx.EXPAND)
 
         oldIdx = self._fixIndex(oldIdx)
         newIdx = self._fixIndex(newIdx)
+
+        self.SetSelection(newIdx)
+
+        self.Sizer.Layout()
 
         log.debug('ListMoveEvent (oldIdx: {}; newIdx: {}; choice: {})'.format(
             oldIdx, newIdx, choice))
@@ -318,15 +388,21 @@ class EditableListBox(wx.Panel):
 
         if idx is None: return
 
-        self.listBox.Delete(idx)
-        self.listBox.SetSelection(wx.NOT_FOUND)
+        self.Delete(realIdx)
+
+        if self.GetCount == 0:
+            self.SetSelection(wx.NOT_FOUND)
+        elif realIdx == self.GetCount():
+            self.SetSelection(realIdx-1)
+        else:
+            self.SetSelection(realIdx)
 
         log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(
             realIdx, choice)) 
 
         ev = ListRemoveEvent(idx=realIdx, choice=choice, data=data)
         
-        wx.PostEvent(self, ev) 
+        wx.PostEvent(self, ev)
 
 
 def main():
@@ -349,7 +425,7 @@ def main():
     app     = wx.App()
     frame   = wx.Frame(None)
     panel   = wx.Panel(frame)
-    listbox = EditableListBox(panel, items, style=ELB_REVERSE)
+    listbox = EditableListBox(panel, items) #, style=ELB_REVERSE)
 
     panelSizer = wx.BoxSizer(wx.HORIZONTAL)
     panel.SetSizer(panelSizer)
