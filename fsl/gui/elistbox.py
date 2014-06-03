@@ -9,6 +9,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import math
 import logging
 
 import wx
@@ -141,9 +142,6 @@ class EditableListBox(wx.Panel):
 
         self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
 
-        for label, data in zip(labels, clientData):
-            self.Append(label, data)
-
         # A panel containing buttons for doing stuff with the list
         if not noButtons:
             self._buttonPanel      = wx.Panel(self)
@@ -186,6 +184,99 @@ class EditableListBox(wx.Panel):
         self._sizer.Add(self._listPanel, flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._scrollbar, flag=wx.EXPAND)
 
+        def refresh(ev):
+            self._updateScrollbar()
+            self._drawList()
+            ev.Skip()
+
+        self._scrollbar.Bind(wx.EVT_SCROLL, self._drawList)
+        self.Bind(wx.EVT_PAINT, refresh)
+        self.Bind(wx.EVT_SIZE,  refresh)
+
+        for label, data in zip(labels, clientData):
+            self.Append(label, data)
+
+        self._sizer.Layout()
+
+    
+    def _drawList(self, ev=None):
+        """
+        'Draws' the set of items in the list according to the
+        current scrollbar thumb position.
+        """
+
+        nitems       = len(self._listItems)
+        thumbPos     = self._scrollbar.GetThumbPosition()
+        itemsPerPage = self._scrollbar.GetPageSize()
+
+        if itemsPerPage >= nitems:
+            start = 0
+            end   = nitems
+        else:
+            start = thumbPos
+            end   = thumbPos + itemsPerPage
+
+        if end > nitems:
+
+            start = start - (end - nitems)
+            end   = nitems
+
+        for i in range(len(self._listItems)):
+
+            if (i < start) or (i >= end):
+                self._listSizer.Show(i, False)
+            else:
+                self._listSizer.Show(i, True)
+
+        self._listSizer.Layout()
+
+        if ev is not None:
+            ev.Skip()
+
+
+    def _updateScrollbar(self, ev=None):
+        """
+        Updates the scrollbar parameters according to the
+        number of items in the list, and the screen size
+        of the list panel. If there is enough room to display
+        all items in the list, the scroll bar is hidden.
+        """
+
+        nitems     = len(self._listItems)
+        pageHeight = self._listPanel.GetClientSize().GetHeight()
+        
+        # Yep, I'm assuming that all
+        # items are the same size
+        if nitems > 0:
+            itemHeight = self._listItems[0].widget.GetSize().GetHeight()
+        else:
+            itemHeight = 0 
+        
+        if pageHeight == 0 or itemHeight == 0:
+            itemsPerPage = nitems
+        else:
+            itemsPerPage = math.floor(pageHeight / float(itemHeight))
+
+        thumbPos     = self._scrollbar.GetThumbPosition()
+        itemsPerPage = min(itemsPerPage, nitems)
+
+        # Hide the scrollbar if there is enough
+        # room to display the entire list (but
+        # configure the scrollbar correctly)
+        if nitems == 0 or itemsPerPage >= nitems:
+            self._scrollbar.SetScrollbar(0,
+                                         nitems,
+                                         nitems,
+                                         nitems,
+                                         True)
+            self._sizer.Show(self._scrollbar, False)
+        else:
+            self._sizer.Show(self._scrollbar, True) 
+            self._scrollbar.SetScrollbar(thumbPos,
+                                         itemsPerPage,
+                                         nitems,
+                                         itemsPerPage,
+                                         True)
         self._sizer.Layout()
 
         
@@ -266,6 +357,9 @@ class EditableListBox(wx.Panel):
         if self._selection != wx.NOT_FOUND and pos < self._selection:
             self._selection = self._selection + 1
 
+        self._updateScrollbar()
+        self.Refresh()
+
             
     def Append(self, label, clientData):
         self.Insert(label, len(self._listItems), clientData)
@@ -294,6 +388,9 @@ class EditableListBox(wx.Panel):
         # selection, fix the selection index
         elif self._selection > n:
             self._selection = self._selection - 1
+
+        self._updateScrollbar()
+        self.Refresh()
 
             
     def _getSelection(self, fix=False):
