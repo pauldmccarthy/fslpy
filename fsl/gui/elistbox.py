@@ -72,16 +72,16 @@ ELB_NO_MOVE   = 4
 # at the botom, and the last item at the top.
 ELB_REVERSE   = 8
 
-# Client data is used as a tooltip popup on
-# mouse-over.
+# Tooltip popup on mouse-over.
 ELB_TOOLTIP   = 16
 
 
 class _ListItem(object):
-    def __init__(self, label, data, widget):
-        self.label  = label
-        self.data   = data
-        self.widget = widget
+    def __init__(self, label, data, tooltip, widget):
+        self.label   = label
+        self.data    = data
+        self.widget  = widget
+        self.tooltip = tooltip
 
 
 class EditableListBox(wx.Panel):
@@ -114,6 +114,7 @@ class EditableListBox(wx.Panel):
             parent,
             labels,
             clientData=None,
+            tooltips=None,
             style=0):
 
         wx.Panel.__init__(self, parent)
@@ -129,6 +130,7 @@ class EditableListBox(wx.Panel):
         self._showTooltips = showTooltips
 
         if clientData is None: clientData = [None] * len(labels)
+        if tooltips   is None: tooltips   = [None] * len(labels)
 
         # index of the currently selected item
         self._selection  = wx.NOT_FOUND
@@ -193,8 +195,8 @@ class EditableListBox(wx.Panel):
         self.Bind(wx.EVT_PAINT, refresh)
         self.Bind(wx.EVT_SIZE,  refresh)
 
-        for label, data in zip(labels, clientData):
-            self.Append(label, data)
+        for label, data, tooltip in zip(labels, clientData, tooltips):
+            self.Append(label, data, tooltip)
 
         self._sizer.Layout()
 
@@ -331,7 +333,7 @@ class EditableListBox(wx.Panel):
         return self._fixIndex(self._selection)
 
         
-    def Insert(self, label, pos, clientData):
+    def Insert(self, label, pos, clientData, tooltip=None):
 
         if pos < 0 or pos > self.GetCount():
             raise IndexError('Index {} out of bounds'.format(pos))
@@ -343,7 +345,7 @@ class EditableListBox(wx.Panel):
         
         widget.Bind(wx.EVT_LEFT_DOWN, self._itemClicked)
 
-        item = _ListItem(label, clientData, widget)
+        item = _ListItem(label, clientData, tooltip, widget)
 
         log.debug('Inserting item ({}) at index {}'.format(label, pos))
 
@@ -357,12 +359,34 @@ class EditableListBox(wx.Panel):
         if self._selection != wx.NOT_FOUND and pos < self._selection:
             self._selection = self._selection + 1
 
+        self._configTooltip(item)
         self._updateScrollbar()
         self.Refresh()
 
+
+    def _configTooltip(self, listItem):
+        """
+        If ELB_TOOLTIP was enabled, this method configures
+        mouse-over listeners on the widget representing the
+        given list item, so the item displays the tool tip
+        on mouse overs.
+        """
+
+        if not self._showTooltips: return
+
+        def mouseOver(ev):
+            if listItem.tooltip is not None:
+                listItem.widget.SetLabel(listItem.tooltip)
+        def mouseOut(ev):
+            if listItem.tooltip is not None:
+                listItem.widget.SetLabel(listItem.label)
+
+        listItem.widget.Bind(wx.EVT_ENTER_WINDOW, mouseOver)
+        listItem.widget.Bind(wx.EVT_LEAVE_WINDOW, mouseOut)
+                
             
-    def Append(self, label, clientData):
-        self.Insert(label, len(self._listItems), clientData)
+    def Append(self, label, clientData, tooltip=None):
+        self.Insert(label, len(self._listItems), clientData, tooltip)
 
 
     def Delete(self, n):
@@ -555,11 +579,13 @@ def main():
         level=logging.DEBUG)
 
     items   = map(str, range(5))
+    tips    = ['--{}--'.format(i) for i in items]
 
     app     = wx.App()
     frame   = wx.Frame(None)
     panel   = wx.Panel(frame)
-    listbox = EditableListBox(panel, items, style=ELB_REVERSE)
+    listbox = EditableListBox(panel, items, tooltips=tips,
+                              style=ELB_REVERSE | ELB_TOOLTIP)
 
     panelSizer = wx.BoxSizer(wx.HORIZONTAL)
     panel.SetSizer(panelSizer)
@@ -573,6 +599,7 @@ def main():
 
 
     def addItem(ev):
+        
         listbox.Append(str(random.randint(100, 200)), None)
 
     listbox.Bind(EVT_ELB_ADD_EVENT, addItem)
