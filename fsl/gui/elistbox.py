@@ -129,6 +129,8 @@ class EditableListBox(wx.Panel):
         self._listPanel = wx.Panel(self)
         self._listSizer = wx.BoxSizer(wx.VERTICAL)
         self._listPanel.SetSizer(self._listSizer)
+        self._listPanel.SetBackgroundColour(EditableListBox._defaultBG)
+ 
 
         for choice, data in zip(choices, clientData):
             self.Append(choice, data)
@@ -198,18 +200,22 @@ class EditableListBox(wx.Panel):
     def GetCount(self):
         return self._listSizer.GetItemCount()
 
+
+    def ClearSelection(self):
+
+        for child in self._listSizer.GetChildren():
+            widget = child.GetWindow()
+            widget.SetBackgroundColour(EditableListBox._defaultBG)
+
+        self._selection = wx.NOT_FOUND
+
         
     def SetSelection(self, n):
-
 
         if n != wx.NOT_FOUND and (n < 0 or n >= self.GetCount()):
             raise IndexError('Index {} out of bounds'.format(n))
 
-        # deselect the previous selection, if there is one
-        if self._selection != wx.NOT_FOUND:
-            widget = self._listSizer.GetItem(self._selection).GetWindow()
-            widget.SetBackgroundColour(EditableListBox._defaultBG)
-            self._selection = wx.NOT_FOUND
+        self.ClearSelection()
 
         if n == wx.NOT_FOUND: return
 
@@ -235,9 +241,7 @@ class EditableListBox(wx.Panel):
 
         widget.Bind(wx.EVT_LEFT_DOWN, self._itemClicked)
 
-        self._listSizer.Insert(pos,
-                               widget,
-                               flag=wx.EXPAND)
+        self._listSizer.Insert(pos, widget, flag=wx.EXPAND)
         
         self._clientData[id(widget)] = clientData
         self._listSizer.Layout()
@@ -257,10 +261,10 @@ class EditableListBox(wx.Panel):
         widget.Destroy()
         self._listSizer.Layout()
 
-        if self._selection == n: self.SetSelection(wx.NOT_FOUND)
+        if self._selection == n: self.ClearSelection()
 
         
-    def _getSelection(self):
+    def _getSelection(self, fix=False):
         """
         Returns a 3-tuple containing the (uncorrected) index, label, and
         associated client data of the currently selected list item, or
@@ -278,6 +282,9 @@ class EditableListBox(wx.Panel):
             choice = widget.GetLabel()
             data   = self._clientData[id(widget)]
 
+        if fix:
+            idx = self._fixIndex(idx)
+
         return idx, choice, data
         
         
@@ -293,12 +300,10 @@ class EditableListBox(wx.Panel):
 
         sizerItem = self._listSizer.GetItem(widget)
         choiceIdx = self._listSizer.GetChildren().index(sizerItem)
-        
+
         self.SetSelection(self._fixIndex(choiceIdx))
         
-        idx, choice, data = self._getSelection()
-
-        idx = self._fixIndex(idx)
+        idx, choice, data = self._getSelection(True)
         
         log.debug('ListSelectEvent (idx: {}; choice: {})'.format(idx, choice))
         
@@ -314,17 +319,18 @@ class EditableListBox(wx.Panel):
         """
 
         oldIdx, choice, data = self._getSelection()
+        
+        if oldIdx  is None: return
+        
         newIdx = oldIdx + offset
 
-        # nothing is selected, or the selected
-        # item is at the top/bottom of the list.
-        if oldIdx  is None:                         return
+        # the selected item is at the top/bottom of the list.
         if oldIdx < 0 or oldIdx >= self.GetCount(): return
         if newIdx < 0 or newIdx >= self.GetCount(): return
 
         widget = self._listSizer.GetItem(oldIdx).GetWindow()
 
-        self._listSizer.Detach(oldIdx)
+        self._listSizer.Detach(oldIdx) 
         self._listSizer.Insert(newIdx, widget, flag=wx.EXPAND)
 
         oldIdx = self._fixIndex(oldIdx)
@@ -332,7 +338,7 @@ class EditableListBox(wx.Panel):
 
         self.SetSelection(newIdx)
 
-        self.Sizer.Layout()
+        self._listSizer.Layout()
 
         log.debug('ListMoveEvent (oldIdx: {}; newIdx: {}; choice: {})'.format(
             oldIdx, newIdx, choice))
@@ -365,9 +371,7 @@ class EditableListBox(wx.Panel):
         functionality of adding an item to the list.
         """
 
-        idx, choice, data = self._getSelection()
-
-        idx = self._fixIndex(idx)
+        idx, choice, data = self._getSelection(True)
 
         log.debug('ListAddEvent (idx: {}; choice: {})'.format(idx, choice)) 
 
@@ -382,25 +386,21 @@ class EditableListBox(wx.Panel):
         item from the list, and posts an EVT_ELB_REMOVE_EVENT.
         """
 
-        idx, choice, data = self._getSelection()
-
-        realIdx = self._fixIndex(idx)
+        idx, choice, data = self._getSelection(True)
 
         if idx is None: return
 
-        self.Delete(realIdx)
+        self.Delete(idx)
 
-        if self.GetCount == 0:
-            self.SetSelection(wx.NOT_FOUND)
-        elif realIdx == self.GetCount():
-            self.SetSelection(realIdx-1)
-        else:
-            self.SetSelection(realIdx)
+        if self.GetCount() > 0:
+            if idx == self.GetCount():
+                self.SetSelection(idx - 1)
+            else:
+                self.SetSelection(idx)
 
-        log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(
-            realIdx, choice)) 
+        log.debug('ListRemoveEvent (idx: {}; choice: {})'.format(idx, choice)) 
 
-        ev = ListRemoveEvent(idx=realIdx, choice=choice, data=data)
+        ev = ListRemoveEvent(idx=idx, choice=choice, data=data)
         
         wx.PostEvent(self, ev)
 
@@ -425,7 +425,7 @@ def main():
     app     = wx.App()
     frame   = wx.Frame(None)
     panel   = wx.Panel(frame)
-    listbox = EditableListBox(panel, items) #, style=ELB_REVERSE)
+    listbox = EditableListBox(panel, items, style=ELB_REVERSE)
 
     panelSizer = wx.BoxSizer(wx.HORIZONTAL)
     panel.SetSizer(panelSizer)
