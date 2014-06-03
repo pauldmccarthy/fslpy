@@ -107,7 +107,7 @@ class EditableListBox(wx.Panel):
 
         self.reverseOrder = reverseOrder
 
-        if clientData is None: clientData = [None]*len(choices)
+        if clientData is None: clientData = [None] * len(choices)
 
         # The list box containing the list of items
         self.listBox = wx.ListBox(self, style=wx.LB_SINGLE | wx.LB_NEEDED_SB)
@@ -117,7 +117,7 @@ class EditableListBox(wx.Panel):
         if reverseOrder:
             items.reverse()
 
-        for choice,data in items:
+        for choice, data in items:
             self.listBox.Append(choice, data)
 
         # A panel containing buttons for doing stuff with the list
@@ -253,7 +253,7 @@ class EditableListBox(wx.Panel):
 
         # nothing is selected, or the selected
         # item is at the top/bottom of the list.
-        if oldIdx  == None:                                 return
+        if oldIdx  is None:                                 return
         if oldIdx < 0 or oldIdx >= self.listBox.GetCount(): return
         if newIdx < 0 or newIdx >= self.listBox.GetCount(): return 
 
@@ -316,7 +316,7 @@ class EditableListBox(wx.Panel):
 
         realIdx = self._fixIndex(idx)
 
-        if idx == None: return
+        if idx is None: return
 
         self.listBox.Delete(idx)
         self.listBox.SetSelection(wx.NOT_FOUND)
@@ -337,10 +337,10 @@ def main():
     import random
 
     logging.basicConfig(
-        format='%(levelname)8s '\
-               '%(filename)20s '\
-               '%(lineno)4d: '\
-               '%(funcName)s - '\
+        format='%(levelname)8s '
+               '%(filename)20s '
+               '%(lineno)4d: '
+               '%(funcName)s - '
                '%(message)s',
         level=logging.DEBUG)
 
@@ -363,7 +363,7 @@ def main():
 
 
     def addItem(ev):
-        listbox.Append(str(random.randint(100,200)), None)
+        listbox.Append(str(random.randint(100, 200)), None)
 
     listbox.Bind(EVT_ELB_ADD_EVENT, addItem)
     
