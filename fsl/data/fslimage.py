@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# fslimage.py - Classes for representing 3D images, display
-# properties of 3D images, and collections of 3D images.
+# fslimage.py - Classes for representing 3D/4D images, display
+# properties of images, and collections of images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -27,8 +27,8 @@ log = logging.getLogger(__name__)
 
 class Image(object):
     """
-    Class which represents a 3D image. Internally, the image is loaded/stored
-    using nibabel.
+    Class which represents a 3D/4D image. Internally, the image is
+    loaded/stored using nibabel.
     """
 
     def __init__(self, image):
@@ -55,6 +55,9 @@ class Image(object):
         self.pixdim        = self.nibImage.get_header().get_zooms()
         self.voxToWorldMat = image.get_affine().transpose()
         self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
+
+        if len(self.shape) < 3 or len(self.shape) > 4:
+            raise RuntimeError('Only 3D or 4D images are supported')
 
         # ImageDisplay instance used to describe
         # how this image is to be displayed
@@ -279,12 +282,11 @@ class ImageDisplay(props.HasProperties):
 
 
         # Attributes controlling image display. Only
-        # determine the real min/max for in-memory
-        # images - if it's memory mapped, we have no
-        # idea how big it may be! So we calculate
-        # the min/max of a sample (either a slice or
-        # an image, depending on whether the image
-        # is 3D or 4D)
+        # determine the real min/max for small images -
+        # if it's memory mapped, we have no idea how big
+        # it may be! So we calculate the min/max of a
+        # sample (either a slice or an image, depending
+        # on whether the image is 3D or 4D)
         if np.prod(image.shape) > 2 ** 30:
             sample = image.data[..., image.shape[-1] / 2]
             self.dataMin = sample.min()
