@@ -34,12 +34,20 @@ class Number(props.PropertyBase):
     use/subclass this, use/subclass one of Int or Double.
     """
     
-    def __init__(self, minval=None, maxval=None, clamped=False, **kwargs):
+    def __init__(self,
+                 minval=None,
+                 maxval=None,
+                 clamped=False,
+                 editBounds=False,
+                 **kwargs):
         """
         Optional parameters:
-          - minval
-          - maxval
-          - clamped: If True, the value will be clamped to its min/max bounds.
+          - minval:     Minimum value
+          - maxval:     Maximum value
+          - clamped:    If True, the value will be clamped to its min/max
+                        bounds.
+          - editBounds: If True, widgets created to modify Number properties
+                        will allow the user to change the min/max bounds.
         """
 
         default = kwargs.get('default', None)
@@ -54,10 +62,11 @@ class Number(props.PropertyBase):
             else:
                 default = 0
 
-        kwargs['default'] = default
-        kwargs['minval']  = minval
-        kwargs['maxval']  = maxval
-        kwargs['clamped'] = clamped
+        kwargs['default']    = default
+        kwargs['minval']     = minval
+        kwargs['maxval']     = maxval
+        kwargs['editBounds'] = editBounds
+        kwargs['clamped']    = clamped
         props.PropertyBase.__init__(self, **kwargs)
 
         

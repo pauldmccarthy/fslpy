@@ -15,72 +15,13 @@ import wx
 import properties as props
 import widgets
 
-class FloatSlider(wx.Slider):
-    """
-    A cheap and nasty subclass of wx.Slider which supports floating point
-    numbers of any range. The desired range is transformed into the range
-    [-2**31+1, 2**31].
-    """
-
-    def __init__(self,
-                 parent,
-                 value,
-                 minValue,
-                 maxValue,
-                 **kwargs):
-
-        self._sliderMin   = -2 ** 31
-        self._sliderMax   =  2 ** 31 - 1
-        self._sliderRange = abs(self._sliderMax - self._sliderMin)
-
-        self.SetRange(minValue, maxValue)
-
-        value = self._realToSlider(value)
-        
-        wx.Slider.__init__(self,
-                           parent,
-                           value=value,
-                           minValue=self._sliderMin,
-                           maxValue=self._sliderMax,
-                           **kwargs)
-
-    def GetRange(self):
-        return (self._realMin, self._realMax)
-
-    def SetRange(self, minValue, maxValue):
-        self._realMin   = float(minValue)
-        self._realMax   = float(maxValue)
-        if self._realMin == self._realMax:
-            self._realMax = self._realMax + 0.01
-        self._realRange = abs(self._realMin - self._realMax)
-    
-    def GetMin(self): return self.GetRange()[0]
-    def GetMax(self): return self.GetRange()[1]
-    
-    def SetMin(self, minValue): self.SetRange(minValue, self.GetMax())
-    def SetMax(self, maxValue): self.SetRange(self.GetMin(), maxValue)
-
-    def _sliderToReal(self, value):
-        value = self._realMin + (value - self._sliderMin) * \
-            (self._realRange / self._sliderRange)
-        return value
-        
-    def _realToSlider(self, value):
-        value = self._sliderMin + (value - self._realMin) * \
-            (self._sliderRange / self._realRange)
-        return int(round(value))
-
-    def SetValue(self, value):
-        value = self._realToSlider(value)
-        wx.Slider.SetValue(self, value)
-
-    def GetValue(self):
-        value = wx.Slider.GetValue(self)
-        return self._sliderToReal(value)
+import fsl.gui.floatslider  as floatslider
+import fsl.gui.numberdialog as numberdialog
 
 
 def _makeSpinBox(parent, hasProps, propObj, propVal):
     """
+    Creates a spinbox bound to given PropertyValue object.
     """
 
     def getMinVal(val):
@@ -145,21 +86,30 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
 
 def _makeSlider(parent, hasProps, propObj, propVal):
     """
+    Creates a slider bound to the given PropertyValue object.
+    The slider is contained within a wx.Panel, which also contains
+    min/max labels (or buttons if the property value bounds are
+    editable).
     """
 
-    value   = propVal.get()
-    minval  = propObj.getConstraint(hasProps, 'minval')
-    maxval  = propObj.getConstraint(hasProps, 'maxval') 
-    panel   = wx.Panel(parent)
+    value      = propVal.get()
+    minval     = propObj.getConstraint(hasProps, 'minval')
+    maxval     = propObj.getConstraint(hasProps, 'maxval')
+    editBounds = propObj.getConstraint(hasProps, 'editBounds') 
+    panel      = wx.Panel(parent)
 
-    slider = FloatSlider(
+    slider = floatslider.FloatSlider(
         panel,
         value=value,
         minValue=minval,
         maxValue=maxval)
 
-    minLabel = wx.StaticText(panel, label='{}'.format(minval))
-    maxLabel = wx.StaticText(panel, label='{}'.format(maxval))
+    minLabel = wx.Button(panel, label='{}'.format(minval))
+    maxLabel = wx.Button(panel, label='{}'.format(maxval))
+
+    if not editBounds:
+        minLabel.Disable()
+        maxLabel.Disable()
 
     sizer = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -171,6 +121,8 @@ def _makeSlider(parent, hasProps, propObj, propVal):
     panel.SetAutoLayout(1)
     sizer.Fit(panel)
 
+    # Update slider min/max bounds and labels
+    # whenever the property constraints change.    
     def updateRange(*a):
         minval = propObj.getConstraint(hasProps, 'minval')
         maxval = propObj.getConstraint(hasProps, 'maxval')
@@ -188,7 +140,30 @@ def _makeSlider(parent, hasProps, propObj, propVal):
     
     slider.Bind(
         wx.EVT_WINDOW_DESTROY,
-        lambda ev: propObj.removeConstraintListener(hasProps, listenerName)) 
+        lambda ev: propObj.removeConstraintListener(hasProps, listenerName))
+
+    if editBounds:
+
+        # When one of the min/max label buttons are pushed, pop
+        # up a dialog allowing the user to enter a new value
+        def editBounds(minbound):
+
+            if minbound:
+                constraint = 'minval'
+                labeltxt   = 'New minimum value'
+            else:
+                constraint = 'maxval'
+                labeltxt   = 'New maximum value'
+
+            dlg = numberdialog.NumberDialog(
+                panel.GetTopLevelParent(),
+                message=labeltxt)
+
+            if dlg.ShowModal() == wx.ID_OK:
+                propObj.setConstraint(hasProps, constraint, dlg.GetValue())
+            
+        minLabel.Bind(wx.EVT_BUTTON,  lambda ev: editBounds(True))
+        maxLabel.Bind(wx.EVT_BUTTON,  lambda ev: editBounds(False))
 
     return panel
 

@@ -236,8 +236,8 @@ class ImageDisplay(props.HasProperties):
             
     enabled      = props.Boolean(default=True)
     alpha        = props.Double(minval=0.0, maxval=1.0, default=1.0)
-    displayMin   = props.Double()
-    displayMax   = props.Double()
+    displayMin   = props.Double(editBounds=True)
+    displayMax   = props.Double(editBounds=True)
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     rangeClip    = props.Boolean(default=False,
                                  preNotifyFunc=updateColourMap)
