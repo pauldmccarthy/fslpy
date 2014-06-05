@@ -31,12 +31,9 @@ uniform bool signed;
  */
 uniform float normFactor;
 uniform float normOffset;
+uniform float displayMin;
+uniform float displayMax;
 
-/*
- * Maximum/minimum image values.
- */
-uniform float dataMin;
-uniform float dataMax;
 
 /*
  * Voxel value - Might be unnormalised, or normalised to lie
@@ -53,7 +50,8 @@ void main(void) {
         else                     normVoxValue = normVoxValue + 0.5;
     }   
 
-    normVoxValue = (normVoxValue - normOffset) * normFactor;
+    normVoxValue = normVoxValue  * normFactor - normOffset;
+    normVoxValue = (normVoxValue - displayMin ) / (displayMax - displayMin);
 
     vec4  voxTexture = texture1D(colourMap, normVoxValue);  
     vec3  voxColour  = voxTexture.rgb;

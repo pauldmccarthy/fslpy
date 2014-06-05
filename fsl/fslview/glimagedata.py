@@ -113,10 +113,7 @@ class GLImageData(object):
         object. 
         """
 
-        dtype     = self.image.data.dtype
-        dataMin   = float(self.image.display.dataMin)
-        dataMax   = float(self.image.display.dataMax)
-        dataRange = dataMax - dataMin
+        dtype = self.image.data.dtype
 
         if   dtype == np.uint8:  self.texIntFmt = arbrg.GL_R8
         elif dtype == np.int8:   self.texIntFmt = arbrg.GL_R8
@@ -134,22 +131,21 @@ class GLImageData(object):
         elif dtype == np.int16:  self.signed = True
         else:                    self.signed = False
 
-        if   dtype == np.uint8:  self.normFactor = 255.0   / dataRange
-        elif dtype == np.int8:   self.normFactor = 255.0   / dataRange
-        elif dtype == np.uint16: self.normFactor = 65535.0 / dataRange
-        elif dtype == np.int16:  self.normFactor = 65535.0 / dataRange
-        else:                    self.normFactor = 1.0     / dataRange
+        if   dtype == np.uint8:  self.normFactor = 255.0
+        elif dtype == np.int8:   self.normFactor = 255.0
+        elif dtype == np.uint16: self.normFactor = 65535.0
+        elif dtype == np.int16:  self.normFactor = 65535.0
+        else:                    self.normFactor = 1.0
 
-        if   dtype == np.uint8:  self.normOffset =  dataMin          / 255.0
-        elif dtype == np.int8:   self.normOffset = (dataMin + 128)   / 255.0
-        elif dtype == np.uint16: self.normOffset =  dataMin          / 65535.0
-        elif dtype == np.int16:  self.normOffset = (dataMin + 32768) / 65535.0
+        if   dtype == np.int8:   self.normOffset = 128.0
+        elif dtype == np.int16:  self.normOffset = 32768.0
         else:                    self.normOffset = 0.0
 
         log.debug('{} ({}) -> {} / {}'.format(dtype,
-                                              dataRange,
                                               self.texIntFmt,
-                                              self.texExtFmt))
+                                              self.texExtFmt,
+                                              self.normFactor,
+                                              self.normOffset))
 
 
     def genIndexBuffers(self, xax, yax):
@@ -375,34 +371,12 @@ class GLImageData(object):
 
         display      = self.display
         colourBuffer = self.colourBuffer
-
-        # Here we are creating a range of values to be passed
-        # to the matplotlib.colors.Colormap instance of the
-        # image display. We scale this range such that data
-        # values which lie outside the configured display range
-        # will map to values below 0.0 or above 1.0. It is
-        # assumed that the Colormap instance is configured to
-        # generate appropriate colours for these out-of-range
-        # values.
-
-        displayMin = float(display.displayMin)
-        displayMax = float(display.displayMax)
-        dataMin    = float(display.dataMin)
-        dataMax    = float(display.dataMax)
-        
-        normalRange = np.linspace(0.0, 1.0, self.colourResolution)
-        normalStep  = 1.0 / (self.colourResolution - 1) 
-
-        normMin = abs(displayMin - dataMin) / abs(dataMax - dataMin)
-        normMax = abs(displayMax - dataMin) / abs(dataMax - dataMin)
-
-        newStep  = normalStep / (normMax - normMin)
-        newRange = (normalRange - normMin) * (newStep / normalStep)
-
+    
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map
-        colourmap = display.cmap(newRange)
+        colourRange = np.linspace(0.0, 1.0, self.colourResolution)
+        colourmap   = display.cmap(colourRange)
 
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
@@ -418,9 +392,18 @@ class GLImageData(object):
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MIN_FILTER,
                            gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE) 
+
+        if display.rangeClip:
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_WRAP_S,
+                               gl.GL_CLAMP_TO_BORDER) 
+            gl.glTexParameterfv(gl.GL_TEXTURE_1D,
+                                gl.GL_TEXTURE_BORDER_COLOR,
+                                [1.0, 1.0, 1.0, 0.0])
+        else:
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_WRAP_S,
+                               gl.GL_CLAMP_TO_EDGE)
         
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
@@ -453,8 +436,6 @@ class GLImageData(object):
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
-        display.addListener('displayMin',   lnrName, colourUpdateNeeded)
-        display.addListener('displayMax',   lnrName, colourUpdateNeeded)
         display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
         display.addListener('cmap',         lnrName, colourUpdateNeeded)
         display.addListener('samplingRate', lnrName, indexAndImageUpdateNeeded)

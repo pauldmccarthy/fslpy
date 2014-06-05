@@ -425,14 +425,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                                                         'subTexShape')
         self.subTexPadPos     = gl.glGetUniformLocation(self.shaders,
                                                         'subTexPad')
-        self.dataMinPos       = gl.glGetUniformLocation(self.shaders,
-                                                        'dataMin')
-        self.dataMaxPos       = gl.glGetUniformLocation(self.shaders,
-                                                        'dataMax')
         self.normFactorPos    = gl.glGetUniformLocation(self.shaders,
                                                         'normFactor')
         self.normOffsetPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'normOffset')
+                                                        'normOffset') 
+        self.displayMinPos    = gl.glGetUniformLocation(self.shaders,
+                                                        'displayMin')
+        self.displayMaxPos    = gl.glGetUniformLocation(self.shaders,
+                                                        'displayMax') 
         self.signedPos        = gl.glGetUniformLocation(self.shaders,
                                                         'signed') 
         self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
@@ -638,10 +638,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # bind the current alpha value
         # and data range to the shader
         gl.glUniform1f(self.alphaPos,      imageDisplay.alpha)
-        gl.glUniform1f(self.dataMinPos,    imageDisplay.dataMin)
-        gl.glUniform1f(self.dataMaxPos,    imageDisplay.dataMax)
         gl.glUniform1f(self.normFactorPos, glImageData.normFactor)
         gl.glUniform1f(self.normOffsetPos, glImageData.normOffset)
+        gl.glUniform1f(self.displayMinPos, imageDisplay.displayMin)
+        gl.glUniform1f(self.displayMaxPos, imageDisplay.displayMax)
         gl.glUniform1f(self.signedPos,     glImageData.signed)
 
         # and the image/texture shape buffers

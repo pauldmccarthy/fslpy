@@ -217,33 +217,13 @@ class ImageDisplay(props.HasProperties):
     ImageDisplay object.
     """
 
-    def updateColourMap(self, newVal, valid):
-        """
-        When a colour property changes, this method is called -
-        it reconfigures the colour map accordingly.
-        """
-
-        try: cmap = mplcm.get_cmap(self.cmap)
-        except: return
-
-        if self.rangeClip:
-            cmap.set_under(cmap(0.0), alpha=0.0)
-            cmap.set_over( cmap(1.0), alpha=0.0)
-        else:
-            cmap.set_under(cmap(0.0), alpha=1.0)
-            cmap.set_over( cmap(1.0), alpha=1.0)
-
     enabled      = props.Boolean(default=True)
     alpha        = props.Double(minval=0.0, maxval=1.0, default=1.0)
     displayMin   = props.Double(editBounds=True)
     displayMax   = props.Double(editBounds=True)
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
-    rangeClip    = props.Boolean(default=False,
-                                 preNotifyFunc=updateColourMap)
-
-    cmap         = props.ColourMap(default=mplcm.Greys_r,
-                                   preNotifyFunc=updateColourMap)
-    
+    rangeClip    = props.Boolean(default=False)
+    cmap         = props.ColourMap(default=mplcm.Greys_r)
     volume       = props.Int(minval=0, maxval=0, default=0, clamped=True)
 
 
@@ -295,10 +275,13 @@ class ImageDisplay(props.HasProperties):
 
         self.displayMin = self.dataMin
         self.displayMax = self.dataMax
-        self.setConstraint('displayMin', 'minval', self.dataMin)
-        self.setConstraint('displayMin', 'maxval', self.dataMax)
-        self.setConstraint('displayMax', 'minval', self.dataMin)
-        self.setConstraint('displayMax', 'maxval', self.dataMax)
+        
+        displayRange = abs(self.displayMax - self.displayMin)
+        
+        self.setConstraint('displayMin', 'minval', self.dataMin - displayRange)
+        self.setConstraint('displayMin', 'maxval', self.dataMax + displayRange)
+        self.setConstraint('displayMax', 'minval', self.dataMin - displayRange)
+        self.setConstraint('displayMax', 'maxval', self.dataMax + displayRange)
 
 
         # Called whenever the displayMin/displayMax bounds
@@ -319,7 +302,7 @@ class ImageDisplay(props.HasProperties):
             displayBoundsChanged) 
 
         # is this a 4D volume?
-        if len(image.shape) > 3:
+        if self.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
             
 
