@@ -2,12 +2,13 @@
 #
 # imagelistpanel.py - A panel which displays an image list, and a 'console'
 # allowing the display properties of each image to be changed, and images
-# to be added/removed from the list. 
+# to be added/removed from the list.  See fsl.data.fslimage.ImageList.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
 import os
+import os.path as op
 
 import wx
 
@@ -30,6 +31,7 @@ class ImageListPanel(wx.Panel):
 
         imageNames = [img.name                    for img in imageList]
         imagePaths = [img.nibImage.get_filename() for img in imageList]
+        imagePaths = map(op.abspath, imagePaths)
 
         # list box containing the list of images
         self.listBox = elistbox.EditableListBox(
