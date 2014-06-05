@@ -130,7 +130,15 @@ def _makeSlider(parent, hasProps, propObj, propVal):
         minLabel.SetLabel('{}'.format(minval))
         maxLabel.SetLabel('{}'.format(maxval))
         
-        slider.SetRange(minval, maxval)
+        slider.SetMin(minval)
+        slider.SetMax(maxval)
+        
+        # The wx.Slider value changes when its bounds
+        # are changed. It does this to keep the slider
+        # position the same as before, but we don't
+        # want that  ...
+        slider.SetValue(propVal.get())
+
 
     widgets._propBind(hasProps, propObj, propVal, slider,
                       (wx.EVT_SPIN, wx.EVT_SPINCTRL))

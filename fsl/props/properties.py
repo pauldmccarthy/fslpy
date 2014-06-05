@@ -226,7 +226,13 @@ class PropertyBase(object):
         
     def addConstraintListener(self, instance, name, listener):
         """
-        A TypeError will be raised if instance is none.
+        Add a listener which will be notified whenever any constraint on this
+        Property change. A TypeError will be raised if instance is none.
+        The listener function must accept the following parameters:
+          - instance:   The HasProperties instance
+          - propName:   The name of this PropertyBase object
+          - constraint: The name of the constraint that changed
+          - value:      The new constraint value
         """
         instData = self._getInstanceData(instance)
         if instData is not None:
@@ -268,6 +274,11 @@ class PropertyBase(object):
 
         instData = self._getInstanceData(instance)
 
+        if instData is None: oldVal = self._defaultConstraints[constraint]
+        else:                oldVal = instData.constraints[    constraint]
+
+        if value == oldVal: return
+
         if instData is None: self._defaultConstraints[constraint] = value
         else:                instData.constraints[    constraint] = value
 
@@ -276,7 +287,7 @@ class PropertyBase(object):
                 log.debug('Notifying constraint listener: {}'.format(name))
 
                 try:
-                    cb(instance, constraint, value)
+                    cb(instance, self._label, constraint, value)
                 except Exception as e:
                     log.debug('Constraint listener {} on {} raised '
                               'exception: {}'.format(name, self._label, e),

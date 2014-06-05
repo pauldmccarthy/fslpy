@@ -231,9 +231,8 @@ class ImageDisplay(props.HasProperties):
             cmap.set_over( cmap(1.0), alpha=0.0)
         else:
             cmap.set_under(cmap(0.0), alpha=1.0)
-            cmap.set_over( cmap(1.0), alpha=1.0) 
+            cmap.set_over( cmap(1.0), alpha=1.0)
 
-            
     enabled      = props.Boolean(default=True)
     alpha        = props.Double(minval=0.0, maxval=1.0, default=1.0)
     displayMin   = props.Double(editBounds=True)
@@ -248,12 +247,12 @@ class ImageDisplay(props.HasProperties):
     volume       = props.Int(minval=0, maxval=0, default=0, clamped=True)
 
 
-    def volumeEnabled(self):
+    def is4DImage(self):
         return len(self.image.shape) > 3 and self.image.shape[3] > 1
     
     _view = props.VGroup(('enabled',
                           props.Widget('volume',
-                                       enabledWhen=volumeEnabled),
+                                       enabledWhen=is4DImage),
                           'displayMin',
                           'displayMax',
                           'alpha',
@@ -280,7 +279,6 @@ class ImageDisplay(props.HasProperties):
 
         self.image = image
 
-
         # Attributes controlling image display. Only
         # determine the real min/max for small images -
         # if it's memory mapped, we have no idea how big
@@ -297,11 +295,28 @@ class ImageDisplay(props.HasProperties):
 
         self.displayMin = self.dataMin
         self.displayMax = self.dataMax
-
         self.setConstraint('displayMin', 'minval', self.dataMin)
         self.setConstraint('displayMin', 'maxval', self.dataMax)
         self.setConstraint('displayMax', 'minval', self.dataMin)
         self.setConstraint('displayMax', 'maxval', self.dataMax)
+
+
+        # Called whenever the displayMin/displayMax bounds
+        # change. Keeps the min/max bounds synchronised
+        # across the displayMin/displayMax properties.
+        def displayBoundsChanged(self, propName, constraint, newval):
+            if   propName == 'displayMin': otherProp = 'displayMax'
+            elif propName == 'displayMax': otherProp = 'displayMin'
+            self.setConstraint(otherProp, constraint, newval)
+
+        ImageDisplay.displayMin.addConstraintListener(
+            self,
+            '{}_displayMinMaxSync'.format(self.__class__.__name__),
+            displayBoundsChanged)
+        ImageDisplay.displayMax.addConstraintListener(
+            self,
+            '{}_displayMinMaxSync'.format(self.__class__.__name__),
+            displayBoundsChanged) 
 
         # is this a 4D volume?
         if len(image.shape) > 3:
