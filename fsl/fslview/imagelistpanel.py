@@ -124,18 +124,19 @@ class ImageListPanel(wx.Panel):
                             message='Open image file',
                             defaultDir=lastDir,
                             # wildcard=wildcard,
-                            style=wx.FD_OPEN)
+                            style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
         if dlg.ShowModal() != wx.ID_OK: return
 
-        path = dlg.GetPath()
+        paths = dlg.GetPaths()
 
-        image = fslimage.Image(path)
-        self.imageList.append(image)
-        self.listBox.Append(image.name, image, tooltip=path)
+        for path in paths:
+            image = fslimage.Image(path)
+            self.imageList.append(image)
+            self.listBox.Append(image.name, image, tooltip=path)
 
-        self._makeDisplayPanel(image)
-        self._showDisplayPanel(len(self.imageList) - 1)
+            self._makeDisplayPanel(image)
+            self._showDisplayPanel(len(self.imageList) - 1)
 
         # This panel may have changed size, so
         # tell the parent to lay itself out
