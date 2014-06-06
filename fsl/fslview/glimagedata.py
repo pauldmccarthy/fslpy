@@ -141,11 +141,16 @@ class GLImageData(object):
         elif dtype == np.int16:  self.normOffset = 32768.0
         else:                    self.normOffset = 0.0
 
-        log.debug('{} ({}) -> {} / {}'.format(dtype,
-                                              self.texIntFmt,
-                                              self.texExtFmt,
-                                              self.normFactor,
-                                              self.normOffset))
+        log.debug('Image {} (data type {}) is to be '
+                  'stored as a 3D texture with '
+                  'internal format {}, external format {}, '
+                  'norm factor {}, norm offset {}'.format(
+                      self.image.name,
+                      dtype,
+                      self.texIntFmt,
+                      self.texExtFmt,
+                      self.normFactor,
+                      self.normOffset))
 
 
     def genIndexBuffers(self, xax, yax):
@@ -166,6 +171,10 @@ class GLImageData(object):
         zax        = self.zax
         image      = self.image
         sampleRate = self.display.samplingRate
+
+
+        log.debug('Generating geometry and index buffers for {} '
+                  '(sample rate {})'.format(image.name, sampleRate))
 
         # The geometry buffer defines the geometry of
         # a single voxel, rendered as a triangle strip.
@@ -190,6 +199,15 @@ class GLImageData(object):
         voxData[xax] = np.arange(start, xdim, sampleRate, dtype=np.uint16)
         voxData[yax] = np.arange(start, ydim, sampleRate, dtype=np.uint16)
         voxData[zax] = np.arange(0,     zdim,             dtype=np.uint16)
+
+        log.debug('X{} indices: {}*{} = {}; '
+                  'Y{} indices: {}; '
+                  'Z{} indices: {}'.format(
+                      xax,
+                      voxData[xax].size,  image.shape[yax],
+                      voxData[xax].size * image.shape[yax],
+                      yax, voxData[yax].size,
+                      zax, voxData[zax].size))
         
         # the screen x coordinate data has to be repeated (ydim) times -
         # we are drawing row-wise, and opengl does not allow us to loop
@@ -199,7 +217,7 @@ class GLImageData(object):
         xBuffer = vbo.VBO(voxData[0], gl.GL_STATIC_DRAW)
         yBuffer = vbo.VBO(voxData[1], gl.GL_STATIC_DRAW)
         zBuffer = vbo.VBO(voxData[2], gl.GL_STATIC_DRAW)
-
+        
         self.voxXBuffer   = xBuffer
         self.voxYBuffer   = yBuffer
         self.voxZBuffer   = zBuffer
@@ -243,6 +261,10 @@ class GLImageData(object):
 
         texShape, _ = self._calculateTextureShape(self.image.shape)
         imageBuffer = gl.glGenTextures(1)
+
+        log.debug('Initialising texture buffer for {} ({})'.format(
+            self.image.name,
+            texShape))
         
         # Set up image texture sampling thingos
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
@@ -286,6 +308,7 @@ class GLImageData(object):
         volume          = self.display.volume
         sRate           = self.display.samplingRate
         imageShape      = np.array(self.image.shape[:3])
+        
         fullTexShape, _ = self._calculateTextureShape(imageShape)
 
         # we only store a single 3D image
@@ -295,7 +318,7 @@ class GLImageData(object):
 
         # resample the image according to the current sampling rate
         start     = np.floor(0.5 * sRate)
-        imageData = imageData[start::sRate, start::sRate, start::sRate] 
+        imageData = imageData[start::sRate, start::sRate, start::sRate]
 
         # calculate the required texture shape for that data
         subTexShape, subTexPad = self._calculateTextureShape(imageData.shape)
@@ -318,9 +341,9 @@ class GLImageData(object):
             oldVolume, oldSRate, imageBuffer = \
                 image.getAttribute('glImageBuffer')
         except:
-            imageBuffer = None
             oldVolume   = None
             oldSRate    = None
+            imageBuffer = None
 
         if imageBuffer is None:
             imageBuffer = self._initImageBuffer()
@@ -332,11 +355,18 @@ class GLImageData(object):
 
         shape = np.array(imageData.shape)
 
+        log.debug('Populating texture buffer for '
+                  'image {} (data shape: {})'.format(
+                      image.name,
+                      imageData.shape))
+
         # each dimension is padded so it has length
         # divisible by 4. Ugh. It's a word-alignment
         # thing, I think. This seems to be necessary
         # using the OpenGL 2.1 API on OSX mavericks. 
         if np.any(shape % 4):
+            log.debug('Padding image {} data '
+                      'to shape {}'.format(image.name, subTexShape))
             pad       = zip(np.zeros(len(subTexPad)), subTexPad)
             imageData = np.pad(imageData, pad, 'constant', constant_values=0)
 
@@ -371,6 +401,12 @@ class GLImageData(object):
 
         display      = self.display
         colourBuffer = self.colourBuffer
+
+        log.debug('Generating colour buffer for '
+                  'image {} (map: {}; resolution: {})'.format(
+                      self.image.name,
+                      display.cmap.name,
+                      self.colourResolution))
     
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
