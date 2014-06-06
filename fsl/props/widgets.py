@@ -51,7 +51,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
     if labelMap is not None:
         valMap = dict([(lbl, val) for (val, lbl) in labelMap.items()])
 
-    def _guiUpdate(instance, value, valid):
+    def _guiUpdate(value, *a):
         """
         Called whenever the property value is changed.
         Sets the GUI widget value to that of the property.
@@ -78,7 +78,7 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
         if labelMap is not None: propVal.set(valMap[value])
         else:                    propVal.set(value)
 
-    _guiUpdate(hasProps, propVal.get(), True)
+    _guiUpdate(propVal.get())
 
     # set up the callback functions
     for ev in evType: guiObj.Bind(ev, _propUpdate)
@@ -100,7 +100,7 @@ def _setupValidation(widget, hasProps, propObj, propVal):
     invalidBGColour = '#ff9999'
     validBGColour   = widget.GetBackgroundColour()
 
-    def _changeBGOnValidate(instance, value, valid):
+    def _changeBGOnValidate(value, valid, instance):
         """
         Called whenever the property value changes. Checks
         to see if the new value is valid and changes the

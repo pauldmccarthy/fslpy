@@ -139,11 +139,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         are changed, the displayed position is changed.
         """
 
-        def moveX(ctx, value, valid):
+        def moveX(value, *a):
             self.setPosition(value, self.ypos, self.zpos) 
-        def moveY(ctx, value, valid):
+        def moveY(value, *a):
             self.setPosition(self.xpos, value, self.zpos) 
-        def moveZ(ctx, value, valid):
+        def moveZ(value, *a):
             self.setPosition(self.xpos, self.ypos, value) 
 
         self.addListener('xpos', self.name, moveX)
@@ -161,13 +161,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             self.ycanvas.showCursor = value
             self.zcanvas.showCursor = value
 
-        def showXCanvas(ctx, value, valid):
+        def showXCanvas(value, *a):
             self.sizer.Show(self.xcanvas, value)
             self.Layout()
-        def showYCanvas(ctx, value, valid):
+        def showYCanvas(value, *a):
             self.sizer.Show(self.ycanvas, value)
             self.Layout()
-        def showZCanvas(ctx, value, valid):
+        def showZCanvas(value, *a):
             self.sizer.Show(self.zcanvas, value)
             self.Layout() 
 
@@ -204,9 +204,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             canvas.ymin = ycentre - 0.5 * ylen
             canvas.ymax = ycentre + 0.5 * ylen
 
-        def xzoom(ctx, value, valid): zoom(self.xcanvas, 1, 2, value)
-        def yzoom(ctx, value, valid): zoom(self.ycanvas, 0, 2, value)
-        def zzoom(ctx, value, valid): zoom(self.zcanvas, 0, 1, value)
+        def xzoom(value, *a): zoom(self.xcanvas, 1, 2, value)
+        def yzoom(value, *a): zoom(self.ycanvas, 0, 2, value)
+        def zzoom(value, *a): zoom(self.zcanvas, 0, 1, value)
             
         self.addListener('xzoom', self.name, xzoom)
         self.addListener('yzoom', self.name, yzoom)

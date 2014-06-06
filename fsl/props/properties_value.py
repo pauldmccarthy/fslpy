@@ -44,8 +44,8 @@ class PropertyValue(object):
 
           - castFunc:       Function which performs type casting or data
                             conversion - must accept two parameters, the
-                            conext, and the value to cast, and return that
-                            value, cast appropriately.
+                            context, and the value to cast, and return
+                            that value, cast appropriately.
         
           - validateFunc:   Function which accepts two parameters - a context,
                             and a value. This function should test the provided
@@ -53,9 +53,10 @@ class PropertyValue(object):
 
           - preNotifyFunc:  Function to be called whenever the property value
                             changes, but before any registered listeners are
-                            called. Must accept three parameters - the context
-                            object, the new value, and a boolean value which is
-                            true if the new value is valid, False otherwise.
+                            called. Must accept three parameters - the new
+                            value, a boolean value which is true if the new
+                            value is valid, False otherwise, and the context
+                            object.
         
           - postNotifyFunc: Function to be called whenever the property value
                             changes, but after any registered listeners are
@@ -201,7 +202,7 @@ class PropertyValue(object):
 
             log.debug('Calling listener {} for {}'.format(name, self._name))
 
-            try: listener(self._context, value, valid)
+            try: listener(value, valid, self._context)
             except Exception as e:
                 log.debug('Listener {} on {} raised '
                           'exception: {}'.format(name, self._name, e),
@@ -251,7 +252,22 @@ class PropertyValueList(PropertyValue):
     class MyObj(props.HasProperties):
         mylist = List()
 
-    def myListener(myobj, mylistval, valid):
+        def __init__(self):
+            self.addListener('mylist', 'listener1name', self.myListChanged)
+            self.addListener('mylist', 'listener2name', self.myListChanged2)
+
+        def myListChanged(self, *a):
+
+            # self.mylist will be out
+            # of date - don't use it!
+            print self.mylist
+
+        def myListChanged2(self, newlistval, *a):
+            # The value passed to the listener
+            # will contain the new value - all good!
+            print newlistval
+
+    def myListener(mylistval, valid, myobj):
 
         # myobj.mylist will contain the
         # old value - don't use it!

@@ -332,7 +332,7 @@ class PropertyBase(object):
                              allowInvalid=self._allowInvalid)
 
         
-    def _valChanged(self, instance, value, valid):
+    def _valChanged(self, value, valid, instance):
         """
         This function is called by PropertyValue objects which are
         managed by this PropertyBase object. It notifies any listeners

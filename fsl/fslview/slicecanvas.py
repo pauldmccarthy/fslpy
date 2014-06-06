@@ -309,7 +309,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.zmax = self.zmax 
 
             
-    def _imageListChanged(self, imageList, images, valid):
+    def _imageListChanged(self, images, *a):
         """
         This method is called once by _initGLData, and then again every
         time an image is added or removed to/from the image list. For

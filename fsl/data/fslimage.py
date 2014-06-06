@@ -360,11 +360,15 @@ class ImageList(props.HasProperties):
         Registers listeners with the given image on properties which may
         affect the image bounds.
         """
+
+        def imagePropChanged(*a):
+            self._updateImageBounds(self.images)
+        
         image.addListener(
-            'transform', self.__class__.__name__, ImageList._updateImageBounds)
+            'transform', self.__class__.__name__, imagePropChanged)
 
     
-    def _updateImageBounds(self, images, valid):
+    def _updateImageBounds(self, images, *a):
         """
         Called whenever an item is added or removed from the list, or an
         image property changes. Updates the xyz bounds.
@@ -403,7 +407,7 @@ class ImageList(props.HasProperties):
         if images is None: images = []
 
         self.addListener(
-            'images', self.__class__.__name__, ImageList._updateImageBounds)
+            'images', self.__class__.__name__, self._updateImageBounds)
 
         self.images = images
 
