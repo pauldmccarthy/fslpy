@@ -101,7 +101,8 @@ def parseArgs(argv, allTools):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '-v', '--verbose', action='store_true', help='Verbose output')
+        '-v', '--verbose', action='count',
+        help='Verbose output (can be used up to 3 times)')
 
     subparser  = parser.add_subparsers()
 
@@ -184,7 +185,18 @@ if __name__ == '__main__':
     args     = parseArgs(sys.argv[1:], allTools)
     fslTool  = args.fslTool
 
-    if args.verbose:
+    if   args.verbose == 1:
+        log.setLevel(logging.DEBUG)
+
+        # make some noisy things quiet
+        logging.getLogger('fsl.fslview.slicecanvas').setLevel(logging.WARNING)
+        logging.getLogger('fsl.props')              .setLevel(logging.WARNING)
+        logging.getLogger('fsl.gui')                .setLevel(logging.WARNING)
+    elif args.verbose == 2:
+        log.setLevel(logging.DEBUG)
+        logging.getLogger('fsl.props').setLevel(logging.WARNING)
+        logging.getLogger('fsl.gui')  .setLevel(logging.WARNING)
+    elif args.verbose == 3:
         log.setLevel(logging.DEBUG)
 
     if fslTool.context is not None: ctx = fslTool.context(args)
