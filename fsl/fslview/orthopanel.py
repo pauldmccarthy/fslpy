@@ -360,8 +360,11 @@ class OrthoDialog(wx.Dialog):
     dialog window.
     """
 
-    def __init__(self, parent, imageList, title=None):
+    def __init__(self, parent, imageList, title=None, style=None):
+
+        if style is None: style =  wx.DEFAULT_DIALOG_STYLE
+        else:             style |= wx.DEFAULT_DIALOG_STYLE
         
-        wx.Dialog.__init__(self, parent, title=title)
+        wx.Dialog.__init__(self, parent, title=title, style=style)
         self.panel = OrthoPanel(self, imageList)
         self.Layout()

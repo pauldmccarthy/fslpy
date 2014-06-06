@@ -193,15 +193,18 @@ def selectHeadCentre(opts, button):
     image     = fslimage.Image(opts.inputImage)
     imageList = fslimage.ImageList([image])
     parent    = button.GetTopLevelParent()
-    frame     = orthopanel.OrthoDialog(parent, imageList, opts.inputImage)
+    frame     = orthopanel.OrthoDialog(parent,
+                                       imageList,
+                                       opts.inputImage,
+                                       style=wx.RESIZE_BORDER)
     panel     = frame.panel
 
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
-    def updateOpts(ev):
-        x = image.worldToVox(ev.x, axes=0)
-        y = image.worldToVox(ev.y, axes=1)
-        z = image.worldToVox(ev.z, axes=2)
+    def updateOpts(*a):
+        x = image.worldToVox(panel.xpos, axes=0)
+        y = image.worldToVox(panel.ypos, axes=1)
+        z = image.worldToVox(panel.zpos, axes=2)
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -216,7 +219,9 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = y
         opts.zCoordinate = z
 
-    panel.Bind(orthopanel.EVT_LOCATION_EVENT, updateOpts)
+    panel.addListener('xpos', 'BETHeadCentre', updateOpts)
+    panel.addListener('ypos', 'BETHeadCentre', updateOpts)
+    panel.addListener('zpos', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
     # TODO this ain't working, as it needs to be
@@ -224,7 +229,9 @@ def selectHeadCentre(opts, button):
     # via wx.CallAfter or similar. 
     voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
     worldCoords = image.voxToWorld([voxCoords])[0]
-    panel.setLocation(*worldCoords)
+    panel.xpos = worldCoords[0]
+    panel.ypos = worldCoords[1]
+    panel.zpos = worldCoords[2]
 
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
