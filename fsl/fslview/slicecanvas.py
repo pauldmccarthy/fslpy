@@ -191,12 +191,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # if the specified zax is not 0
         if zax == 0: self._zAxisChanged()
 
-        self.xmin = imageList.minBounds[self.xax]
-        self.ymin = imageList.minBounds[self.yax]
-        self.zmin = imageList.minBounds[self.zax]
-        self.xmax = imageList.maxBounds[self.xax]
-        self.ymax = imageList.maxBounds[self.yax]
-        self.zmax = imageList.maxBounds[self.zax]
+        self.xmin = imageList.bounds[self.xax * 2]
+        self.ymin = imageList.bounds[self.yax * 2]
+        self.zmin = imageList.bounds[self.zax * 2]
+        self.xmax = imageList.bounds[self.xax * 2 + 1]
+        self.ymax = imageList.bounds[self.yax * 2 + 1]
+        self.zmax = imageList.bounds[self.zax * 2 + 1]
 
         self.xpos = self.xmin + abs(self.xmax - self.xmin) / 2.0
         self.ypos = self.ymin + abs(self.ymax - self.ymin) / 2.0
@@ -237,7 +237,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # When the image list changes, refresh the
         # display, and update the display bounds
-        self.imageList.addListener(lambda il: self._imageListChanged())
+        self.imageList.addListener(
+            'images',
+            self.name,
+            lambda *a: self._imageListChanged())
+        self.imageList.addListener(
+            'bounds',
+            self.name,
+            lambda *a: self._updateBounds()) 
 
 
     def _updateBounds(self):
@@ -247,12 +254,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         range.
         """
 
-        xmin = self.imageList.minBounds[self.xax]
-        xmax = self.imageList.maxBounds[self.xax]
-        ymin = self.imageList.minBounds[self.yax]
-        ymax = self.imageList.maxBounds[self.yax]
-        zmin = self.imageList.minBounds[self.zax]
-        zmax = self.imageList.maxBounds[self.zax]
+        bounds = self.imageList.bounds
+
+        xmin = bounds[self.xax * 2]
+        ymin = bounds[self.yax * 2]
+        zmin = bounds[self.zax * 2]
+        xmax = bounds[self.xax * 2 + 1]
+        ymax = bounds[self.yax * 2 + 1]
+        zmax = bounds[self.zax * 2 + 1] 
 
         for xprop in ['xmin', 'xmax']:
             self.setConstraint(xprop, 'minval', xmin)

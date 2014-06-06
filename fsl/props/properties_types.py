@@ -311,22 +311,23 @@ class List(props.ListPropertyBase):
     """
     A property which represents a list of items, of another property type.
     List functionality is not complete - see the documentation for the
-    PropertyValueList class, defined in properties_value.py
+    PropertyValueList class, defined in properties_value.py.
     """
     
-    def __init__(self, listType, minlen=None, maxlen=None, **kwargs):
+    def __init__(self, listType=None, minlen=None, maxlen=None, **kwargs):
         """
-        Mandatory parameters:
-          - listType: A PropertyBase type, specifying the values allowed
-                      in the list
-        
-        Optional parameters:
 
+        Parameters (all optional):
+          - listType: A PropertyBase type, specifying the values allowed
+                      in the list. If None, anything can be stored in the
+                      list.
+                
           - minlen:   minimum list length
           - maxlen:   maximum list length
         """
 
-        if listType is None or not isinstance(listType, props.PropertyBase):
+        if (listType is not None) and \
+           (not isinstance(listType, props.PropertyBase)):
             raise ValueError(
                 'A list type (a PropertyBase instance) must be specified')
 
@@ -392,3 +393,47 @@ class ColourMap(props.PropertyBase):
             value = mplcm.get_cmap(value)
             
         return value
+
+
+
+class _BoundObject(object):
+
+    def __init__(self, ndims):
+
+        self._minBounds = [0.0] * ndims
+        self._maxBounds = [0.0] * ndims
+
+
+class Bounds(List):
+    """
+    Property which represents numeric bounds in any number of dimensions.
+    Bound values are stored as a list of floating point values, two values
+    (min, max) for each dimension.
+    """
+
+    def __init__(self,  ndims=1, **kwargs):
+
+        default = kwargs.get('default', None)
+
+        if default is None:
+            default = [0.0] * 2 * ndims
+
+        kwargs['default'] = default
+        kwargs['ndims']   = ndims
+        kwargs['minlen']  = 2 * ndims
+        kwargs['maxlen']  = 2 * ndims
+
+        List.__init__(self, Double(allowInvalid=False), **kwargs)
+
+        
+    def validate(self, instance, value):
+        """
+        """
+
+        ndims = self.getConstraint(instance, 'ndims')
+
+        List.validate(self, instance, value)
+
+        for i in range(ndims):
+            if value[i * 2] > value[i * 2 + 1]:
+                raise ValueError('Min values must be less than max values')

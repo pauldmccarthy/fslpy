@@ -8,7 +8,6 @@
 
 import sys
 import logging
-import traceback
 import collections
 
 import os.path            as op
@@ -337,16 +336,67 @@ class ImageDisplay(props.HasProperties):
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
             
 
-        
-class ImageList(object):
+class ImageList(props.HasProperties):
     """
     Class representing a collection of images to be displayed together.
-    Provides basic list-like functionality, and a listener interface
-    allowing callback functions to be notified when the image collection
-    changes (e.g. an image is added or removed).
+    Contains a List property containing Image objects, and some other 
+    properties on which listeners may register themselves to be notified
+    when the properties of the image collection changes (e.g. image
+    bounds).
     """
 
+    def _validateImage(self, image):
+        if not isinstance(image, Image):
+            raise ValueError('Must be a {} instance'.format(Image.__name__))
 
+    # The bounds property needs to be read-only,
+    # but I don't have a way to enforce it (yet).
+    bounds = props.Bounds(ndims=3)
+    images = props.List(validateFunc=_validateImage, allowInvalid=False)
+
+        
+    def _registerImageListeners(self, image):
+        """
+        Registers listeners with the given image on properties which may
+        affect the image bounds.
+        """
+        image.addListener(
+            'transform', self.__class__.__name__, ImageList._updateImageBounds)
+
+    
+    def _updateImageBounds(self, images, valid):
+        """
+        Called whenever an item is added or removed from the list, or an
+        image property changes. Updates the xyz bounds.
+        """
+
+        if len(images) == 0:
+            minBounds = [0.0, 0.0, 0.0]
+            maxBounds = [0.0, 0.0, 0.0]
+            
+        else:
+            minBounds = 3 * [ sys.float_info.max]
+            maxBounds = 3 * [-sys.float_info.max]
+
+        for img in images:
+
+            # ...
+            self._registerImageListeners(img)
+
+            for ax in range(3):
+
+                lo, hi = img.imageBounds(ax)
+
+                print ax, lo, hi
+
+                if lo < minBounds[ax]: minBounds[ax] = lo
+                if hi > maxBounds[ax]: maxBounds[ax] = hi
+
+        self.bounds = [minBounds[0], maxBounds[0],
+                       minBounds[1], maxBounds[1],
+                       minBounds[2], maxBounds[2]]
+
+        
     def __init__(self, images=None):
         """
         Create an ImageList object from the given sequence of Image objects.
@@ -354,125 +404,23 @@ class ImageList(object):
         
         if images is None: images = []
 
-        if not isinstance(images, collections.Iterable):
-            raise TypeError('images must be a sequence of images')
+        self.addListener(
+            'images', self.__class__.__name__, ImageList._updateImageBounds)
 
-        self._items     = []
-        self._listeners = []
-
-        self.extend(images)
-
-    def _registerImageListeners(self, image):
-        """
-        Registers listeners with the given image on properties which may
-        affect the image bounds.
-        """
-        
-        image.addListener(
-            'transform',
-            self.__class__.__name__,
-            lambda *a: self._updateImageBounds())
-
-        
-    def _updateImageBounds(self):
-        """
-        Called whenever an item is added or removed from the list, or an
-        image property changes. Updates the xyz bounds.
-        """
-
-        if len(self._items) == 0:
-            minBounds = [0.0, 0.0, 0.0]
-            maxBounds = [0.0, 0.0, 0.0]
-            
-        else:
-            minBounds = 3 * [ sys.float_info.max]
-            maxBounds = 3 * [-sys.float_info.max]            
-        
-        for img in self._items:
-
-            for ax in range(3):
-
-                lo, hi = img.imageBounds(ax)
-
-                if lo < minBounds[ax]: minBounds[ax] = lo
-                if hi > maxBounds[ax]: maxBounds[ax] = hi
-
-        self.minBounds = minBounds
-        self.maxBounds = maxBounds
-
-        
-    def _validate(self, img):
-        """
-        Called whenever an item is added to the list. Raises
-        a TypeError if said item is not an Image object.
-        """
-        if not isinstance(img, Image):
-            raise TypeError('item must be a fsl.data.fslimage.Image') 
-
-            
-    def __len__(     self):        return self._items.__len__()
-    def __getitem__( self, key):   return self._items.__getitem__(key)
-    def __iter__(    self):        return self._items.__iter__()
-    def __contains__(self, item):  return self._items.__contains__(item)
-    def __eq__(      self, other): return self._items.__eq__(other)
-    def __str__(     self):        return self._items.__str__()
-    def __repr__(    self):        return self._items.__repr__()
-
- 
-    def append(self, item):
-        self._validate(item)
-        log.debug('Item appended: {}'.format(item))
-        self._items.append(item)
-        self._registerImageListeners(item)
-        self._updateImageBounds()
-        self._notify()
-
-        
-    def pop(self, index=-1):
-        item = self._items.pop(index)
-        log.debug('Item popped: {} (index {})'.format(item, index))
-        self._registerImageListeners(item)
-        self._updateImageBounds()
-        self._notify()
-        return item
-
-        
-    def insert(self, index, item):
-        self._validate(item)
-        self._items.insert(index, item)
-        log.debug('Item inserted: {} (index {})'.format(item, index))
-        self._registerImageListeners(item)
-        self._updateImageBounds()
-        self._notify()
+        self.images = images
 
 
-    def extend(self, items):
-        map(self._validate, items)
-        self._items.extend(items)
-        log.debug('List extended: {}'.format(
-            ', '.join([str(i) for i in items])))
-        map(self._registerImageListeners, items)
-        self._updateImageBounds()
-        self._notify()
-
-
-    def move(self, from_, to):
-        """
-        Move the item from 'from_' to 'to'. 
-        """
-
-        item = self._items.pop(from_)
-        self._items.insert(to, item)
-        log.debug('Image moved: {} (from: {} to: {})'.format(item, from_, to))
-        self._notify()
-
-        
-    def addListener(   self, listener): self._listeners.append(listener)
-    def removeListener(self, listener): self._listeners.remove(listener)
-    def _notify(       self):
-        for listener in self._listeners:
-            try:
-                listener(self)
-            except Exception as e:
-                log.debug('Listener raised exception: {}'.format(e.message))
-                traceback.print_exc()
+    # Wrapers around the images list property, allowing this
+    # ImageList object to be used as if it is actually a list.
+    def __len__(     self):            return self.images.__len__()
+    def __getitem__( self, key):       return self.images.__getitem__(key)
+    def __iter__(    self):            return self.images.__iter__()
+    def __contains__(self, item):      return self.images.__contains__(item)
+    def __setitem__( self, key, val):  return self.images.__setitem__(key, val)
+    def __delitem(   self, key):       return self.images.__delitem__(key)
+    def index(       self, item):      return self.images.index(item)
+    def count(       self, item):      return self.images.count(item)
+    def append(      self, item):      return self.images.append(item)
+    def extend(      self, iterable):  return self.images.extend(iterable)
+    def pop(         self, index=-1):  return self.images.pop(index)
+    def move(        self, from_, to): return self.images.move(from_, to) 

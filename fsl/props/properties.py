@@ -460,7 +460,10 @@ class ListPropertyBase(PropertyBase):
         """
         Parameters:
           - listType: An unbound PropertyBase instance, defining the
-                      type of value allowed in the list.
+                      type of value allowed in the list. This is optional;
+                      if not provided, values of any type will be allowed
+                      in the list, but no validation or casting will be
+                      performed.
         """
         PropertyBase.__init__(self, **kwargs)
         self._listType = listType
@@ -470,14 +473,24 @@ class ListPropertyBase(PropertyBase):
         Creates and returns a PropertyValueList object to be associated
         with the given HasProperties instance.
         """
+
+        if self._listType is not None:
+            itemCastFunc     = self._listType.cast
+            itemAllowInvalid = self._listType._allowInvalid
+            itemValidateFunc = self._listType.validate
+        else:
+            itemCastFunc     = None
+            itemAllowInvalid = None
+            itemValidateFunc = None
+        
         return PropertyValueList(
             instance,
             name=self._label, 
             values=self._default,
-            itemCastFunc=self._listType.cast,
-            itemValidateFunc=self._listType.validate,
+            itemCastFunc=itemCastFunc,
+            itemValidateFunc=itemValidateFunc,
             listValidateFunc=self.validate,
-            itemAllowInvalid=self._listType._allowInvalid,
+            itemAllowInvalid=itemAllowInvalid,
             listAllowInvalid=self._allowInvalid,
             postNotifyFunc=self._valChanged)
 

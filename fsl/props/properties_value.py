@@ -132,7 +132,8 @@ class PropertyValue(object):
         valid, a ValueError is raised, and listeners are not notified. 
         """
 
-        # cast the value if necessary
+        # cast the value if necessary.
+        # Allow any errors to be thrown
         if self._castFunc is not None:
             newValue = self._castFunc(self._context, newValue)
             
@@ -239,6 +240,29 @@ class PropertyValueList(PropertyValue):
     a separate list is maintained, which contains PropertyValue objects.
     Whenever a list-modifying operation occurs on this PropertyValueList
     (which also acts a bit like a Python list), both lists are updated.
+
+    Be very careful with callback listeners on PVL objects. The nature of
+    the implementation means that listeners on the list object will be
+    notified before listeners on individual list items. Furthermore (and
+    more critically), listeners on the list object will be notified of
+    changes *before* the change is actually made. The following snippet
+    of code should make this issue a bit clearer:
+
+    class MyObj(props.HasProperties):
+        mylist = List()
+
+    def myListener(myobj, mylistval, valid):
+
+        # myobj.mylist will contain the
+        # old value - don't use it!
+        print myobj.mylist
+
+        # instead, use the new value that is
+        # passed in to the listener, like this
+        print mylistval
+
+    mo = MyObj()
+    mo.addListener('mylist', 'listenername', myListener)
     """
 
     def __init__(self,
@@ -472,6 +496,20 @@ class PropertyValueList(PropertyValue):
 
         propVal = self.__propVals.pop(index)
         return propVal.get()
+
+        
+    def move(self, from_, to):
+        """
+        Move the item from 'from_' to 'to'.
+        """
+
+        listVals = self[:]
+        val = listVals.pop(from_)
+        listVals.insert(to, val)
+        self.set(listVals, False)
+
+        pval = self.__propVals.pop(from_)
+        self.__propVals.insert(to, pval)
 
 
     def __setitem__(self, key, value):

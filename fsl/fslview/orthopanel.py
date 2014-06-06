@@ -111,18 +111,21 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
-        xmin = imageList.minBounds[0]
-        xmax = imageList.maxBounds[0]
-        ymin = imageList.minBounds[1]
-        ymax = imageList.maxBounds[1] 
-        zmin = imageList.minBounds[2]
-        zmax = imageList.maxBounds[2]
+        xmin = imageList.bounds[0]
+        xmax = imageList.bounds[1]
+        ymin = imageList.bounds[2]
+        ymax = imageList.bounds[3] 
+        zmin = imageList.bounds[4]
+        zmax = imageList.bounds[5]
 
         self.xpos = xmin + abs(xmax - xmin) / 2.0
         self.ypos = ymin + abs(ymax - ymin) / 2.0
         self.zpos = zmin + abs(zmax - zmin) / 2.0
         
-        self.imageList.addListener(lambda il: self._updateImageBounds())
+        self.imageList.addListener(
+            'bounds',
+            self.name,
+            lambda *a: self._updateImageBounds())
         self._updateImageBounds()
 
         self._configPosListeners()
@@ -184,14 +187,14 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         def zoom(canvas, xax, yax, value):
             value = 1.0 / value
             
-            xlen = value * abs(self.imageList.maxBounds[xax] -
-                               self.imageList.minBounds[xax])
-            ylen = value * abs(self.imageList.maxBounds[yax] -
-                               self.imageList.minBounds[yax])
+            xlen = value * abs(self.imageList.bounds[xax * 2 + 1] -
+                               self.imageList.bounds[xax * 2])
+            ylen = value * abs(self.imageList.bounds[yax * 2 + 1] -
+                               self.imageList.bounds[yax * 2])
 
             if value == 1:
-                xcentre = self.imageList.minBounds[xax] + 0.5 * xlen
-                ycentre = self.imageList.minBounds[yax] + 0.5 * ylen
+                xcentre = self.imageList.bounds[xax * 2] + 0.5 * xlen
+                ycentre = self.imageList.bounds[yax * 2] + 0.5 * ylen
             else:
                 xcentre = canvas.xmin + (canvas.xmax - canvas.xmin) / 2.0
                 ycentre = canvas.ymin + (canvas.ymax - canvas.ymin) / 2.0
@@ -216,12 +219,12 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         minimum/maximum bounds on the x/y/zpos properties.
         """
         
-        xmin = self.imageList.minBounds[0]
-        xmax = self.imageList.maxBounds[0]
-        ymin = self.imageList.minBounds[1]
-        ymax = self.imageList.maxBounds[1]
-        zmin = self.imageList.minBounds[2]
-        zmax = self.imageList.maxBounds[2]
+        xmin = self.imageList.bounds[0]
+        xmax = self.imageList.bounds[1]
+        ymin = self.imageList.bounds[2]
+        ymax = self.imageList.bounds[3]
+        zmin = self.imageList.bounds[4]
+        zmax = self.imageList.bounds[5]
 
         self.setConstraint('xpos', 'minval', xmin)
         self.setConstraint('xpos', 'maxval', xmax)
@@ -256,10 +259,10 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         xshift = 0
         yshift = 0
 
-        imgxmin = self.imageList.minBounds[xax]
-        imgxmax = self.imageList.maxBounds[xax]
-        imgymin = self.imageList.minBounds[yax]
-        imgymax = self.imageList.maxBounds[yax] 
+        imgxmin = self.imageList.bounds[xax * 2]
+        imgxmax = self.imageList.bounds[xax * 2 + 1]
+        imgymin = self.imageList.bounds[yax * 2]
+        imgymax = self.imageList.bounds[yax * 2 + 1] 
 
         if   newx < canvas.xmin: xshift = newx - canvas.xmin
         elif newx > canvas.xmax: xshift = newx - canvas.xmax

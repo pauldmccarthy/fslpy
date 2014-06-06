@@ -16,7 +16,8 @@ from properties import \
     FilePath,      \
     Choice,        \
     List,          \
-    ColourMap
+    ColourMap,     \
+    Bounds
 
 from widgets import \
     makeWidget
