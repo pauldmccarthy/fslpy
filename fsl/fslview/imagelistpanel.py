@@ -7,6 +7,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+log = logging.getLogger(__name__)
+
 import os
 import os.path as op
 
@@ -103,6 +106,10 @@ class ImageListPanel(wx.Panel):
             
             displayPanel = image.getAttribute( 
                 'displayPanel_{}'.format(id(self)))
+
+            if i == idx:
+                log.debug('Showing display panel '
+                          'for image {}'.format(self.imageList[i].name))
             
             displayPanel.Show(i == idx)
 

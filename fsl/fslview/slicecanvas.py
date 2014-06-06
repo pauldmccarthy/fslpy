@@ -762,6 +762,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         for image in self.imageList:
 
+            log.debug('Drawing {} slice for image {}'.format(
+                self.zax, image.name))
+
             zi = int(image.worldToVox(self.zpos, self.zax))
             self._drawSlice(image, zi)
 
