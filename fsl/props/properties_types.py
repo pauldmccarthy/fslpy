@@ -352,9 +352,7 @@ class List(props.ListPropertyBase):
             raise ValueError('Must have length at most {}'.format(maxlen))
      
 
-# TODO This might be better off as a subclass of Choice. Choice
-# would need to be modified to allow for values of any type, not
-# just Strings. Shouldn't be a major issue.
+# TODO This might be better off as a subclass of Choice. 
 class ColourMap(props.PropertyBase):
     """
     A property which encapsulates a matplotlib.colors.Colormap.
