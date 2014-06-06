@@ -387,8 +387,6 @@ class ImageList(props.HasProperties):
 
                 lo, hi = img.imageBounds(ax)
 
-                print ax, lo, hi
-
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi
 

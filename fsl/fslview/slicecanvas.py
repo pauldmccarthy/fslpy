@@ -240,7 +240,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList.addListener(
             'images',
             self.name,
-            lambda *a: self._imageListChanged())
+            self._imageListChanged)
         self.imageList.addListener(
             'bounds',
             self.name,
@@ -309,7 +309,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.zmax = self.zmax 
 
             
-    def _imageListChanged(self):
+    def _imageListChanged(self, imageList, images, valid):
         """
         This method is called once by _initGLData, and then again every
         time an image is added or removed to/from the image list. For
@@ -321,7 +321,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # Create a GLImageData object for any new images,
         # and attach a listener to their display properties
         # so we know when to refresh the canvas.
-        for image in self.imageList:
+        for image in images:
             try:
                 glData = image.getAttribute(self.name)
                 continue
@@ -454,7 +454,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # initialise data for the images that
         # are already in the image list 
-        self._imageListChanged()
+        self._imageListChanged(self.imageList, self.imageList.images, True)
 
         self.glReady = True
 

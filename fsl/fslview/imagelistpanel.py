@@ -71,12 +71,23 @@ class ImageListPanel(wx.Panel):
         edit the display properties of the given image. A reference
         to the panel is added as an attribute of the image.
         """
+
+        parentPanel = wx.Panel(self)
             
-        displayPanel = props.buildGUI(self, image.display)
-        self.sizer.Add(displayPanel, flag=wx.EXPAND, proportion=2)
+        displayPanel = props.buildGUI(parentPanel, image.display)
+        imagePanel   = props.buildGUI(parentPanel, image)
+
+        parentSizer = wx.BoxSizer(wx.HORIZONTAL)
+        parentPanel.SetSizer(parentSizer)
+        parentSizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
+        parentSizer.Add(imagePanel,   flag=wx.EXPAND)
+
+        parentSizer.Layout()
+        
+        self.sizer.Add(parentPanel, flag=wx.EXPAND, proportion=2)
         image.setAttribute(
-            'displayPanel_{}'.format(id(self)), displayPanel)
-        return displayPanel
+            'displayPanel_{}'.format(id(self)), parentPanel)
+        return parentPanel
 
         
     def _imageMoved(self, ev):
