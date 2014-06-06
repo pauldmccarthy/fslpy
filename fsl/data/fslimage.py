@@ -25,11 +25,18 @@ import fsl.data.imagefile   as imagefile
 log = logging.getLogger(__name__)
 
 
-class Image(object):
+class Image(props.HasProperties):
     """
     Class which represents a 3D/4D image. Internally, the image is
     loaded/stored using nibabel.
     """
+
+    transform = props.Choice(
+        collections.OrderedDict([
+            ('affine', 'Use qform/sform transformation matrix'),
+            ('pixdim', 'Use pixdims only'),
+            ('id',     'Do not use qform/sform or pixdims')]),
+        default='affine')
 
     def __init__(self, image):
         """
@@ -51,10 +58,15 @@ class Image(object):
         self.data     = image.get_data()
         self.name     = op.basename(image.get_filename())
 
-        self.shape         = self.nibImage.get_shape()
-        self.pixdim        = self.nibImage.get_header().get_zooms()
-        self.voxToWorldMat = image.get_affine().transpose()
-        self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
+        self.shape    = self.nibImage.get_shape()
+        self.pixdim   = self.nibImage.get_header().get_zooms()
+
+        self.addListener(
+            'transform',
+            '{}_{}'.format(self.__class__.__name__, self.name),
+            self._transformChanged)
+
+        self._transformChanged()
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
@@ -66,6 +78,25 @@ class Image(object):
         # This dictionary may be used to store
         # arbitrary data associated with this image.
         self._attributes = {}
+
+
+    def _transformChanged(self, *a):
+        """
+        """
+
+        if self.transform == 'affine':
+            voxToWorldMat = self.nibImage.get_affine().transpose()
+        elif self.transform == 'pixdim':
+            pixdims = [self.pixdim[0], self.pixdim[1], self.pixdim[2], 1]
+            voxToWorldMat = np.diag(pixdims)
+        elif self.transform == 'id':
+            voxToWorldMat = np.identity(4)
+
+        self.voxToWorldMat = np.array(voxToWorldMat, dtype=np.float32)
+        self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
+
+        log.debug('Image {} transformation matrix changed: {}'.format(
+            self.name, self.voxToWorldMat))
 
 
     def imageBounds(self, axis):
@@ -326,18 +357,27 @@ class ImageList(object):
         if not isinstance(images, collections.Iterable):
             raise TypeError('images must be a sequence of images')
 
-        map(self._validate, images)
-
-        self._items     = images
+        self._items     = []
         self._listeners = []
 
-        self._updateImageAttributes()
+        self.extend(images)
+
+    def _registerImageListeners(self, image):
+        """
+        Registers listeners with the given image on properties which may
+        affect the image bounds.
+        """
+        
+        image.addListener(
+            'transform',
+            self.__class__.__name__,
+            lambda *a: self._updateImageBounds())
 
         
-    def _updateImageAttributes(self):
+    def _updateImageBounds(self):
         """
-        Called whenever an item is added or removed from the list.
-        Updates the xyz bounds.
+        Called whenever an item is added or removed from the list, or an
+        image property changes. Updates the xyz bounds.
         """
 
         if len(self._items) == 0:
@@ -383,14 +423,16 @@ class ImageList(object):
         self._validate(item)
         log.debug('Item appended: {}'.format(item))
         self._items.append(item)
-        self._updateImageAttributes()
+        self._registerImageListeners(item)
+        self._updateImageBounds()
         self._notify()
 
         
     def pop(self, index=-1):
         item = self._items.pop(index)
         log.debug('Item popped: {} (index {})'.format(item, index))
-        self._updateImageAttributes()
+        self._registerImageListeners(item)
+        self._updateImageBounds()
         self._notify()
         return item
 
@@ -399,7 +441,8 @@ class ImageList(object):
         self._validate(item)
         self._items.insert(index, item)
         log.debug('Item inserted: {} (index {})'.format(item, index))
-        self._updateImageAttributes()
+        self._registerImageListeners(item)
+        self._updateImageBounds()
         self._notify()
 
 
@@ -408,7 +451,8 @@ class ImageList(object):
         self._items.extend(items)
         log.debug('List extended: {}'.format(
             ', '.join([str(i) for i in items])))
-        self._updateImageAttributes()
+        map(self._registerImageListeners, items)
+        self._updateImageBounds()
         self._notify()
 
 
