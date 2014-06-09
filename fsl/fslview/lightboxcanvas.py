@@ -73,7 +73,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
         def sliceRangeChanged(*a):
             self._genSliceLocations()
-            self._refresh(True)
+            self.Refresh()
 
         self.addListener('sliceSpacing', self.name, sliceRangeChanged)
         self.addListener('ncols',        self.name, sliceRangeChanged)
