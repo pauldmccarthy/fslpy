@@ -284,13 +284,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         imgBounds  = self.imageList.bounds
 
-        xmin = imgBounds.getmin(self.xax)
-        xmax = imgBounds.getmax(self.xax)
-        ymin = imgBounds.getmin(self.yax)
-        ymax = imgBounds.getmax(self.yax)
-        zmin = imgBounds.getmin(self.zax)
-        zmax = imgBounds.getmax(self.zax)
-
         # the _zoomChanged method
         # updates the display bounds
         self._zoomChanged()
@@ -301,8 +294,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.setConstraint('xpos', 'maxval', dispBounds.xmax)
         self.setConstraint('ypos', 'minval', dispBounds.ymin)
         self.setConstraint('ypos', 'maxval', dispBounds.ymax)
-        self.setConstraint('zpos', 'minval', zmin)
-        self.setConstraint('zpos', 'maxval', zmax) 
+        self.setConstraint('zpos', 'minval', imgBounds.getmin(self.zax))
+        self.setConstraint('zpos', 'maxval', imgBounds.getmax(self.zax))
 
         # reset the cursor and min/max values in
         # case the old values were out of bounds
