@@ -441,10 +441,10 @@ class _BoundObject(object):
         return self._boundVals[axis * 2 + 1]
 
     def getrange(self, axis):
-        return [self.min(axis), self.max(axis)]
+        return [self.getmin(axis), self.getmax(axis)]
 
     def getlen(self, axis):
-        return abs(self.max(axis) - self.min(axis))
+        return abs(self.getmax(axis) - self.getmin(axis))
 
     def setmin(self, axis, value):
         self._boundVals[axis * 2] = value
@@ -458,18 +458,18 @@ class _BoundObject(object):
             
     def __getattr__(self, name):
 
-        if   name == 'x':    return self.range(0)
-        elif name == 'y':    return self.range(1)
-        elif name == 'z':    return self.range(2)
-        elif name == 'xmin': return self.min(  0)
-        elif name == 'xmax': return self.max(  0)
-        elif name == 'ymin': return self.min(  1)
-        elif name == 'ymax': return self.max(  1)
-        elif name == 'zmin': return self.min(  2)
-        elif name == 'zmax': return self.max(  2)
-        elif name == 'xlen': return self.len(  0)
-        elif name == 'ylen': return self.len(  1)
-        elif name == 'zlen': return self.len(  2)
+        if   name == 'x':    return self.getrange(0)
+        elif name == 'y':    return self.getrange(1)
+        elif name == 'z':    return self.getrange(2)
+        elif name == 'xmin': return self.getmin(  0)
+        elif name == 'xmax': return self.getmax(  0)
+        elif name == 'ymin': return self.getmin(  1)
+        elif name == 'ymax': return self.getmax(  1)
+        elif name == 'zmin': return self.getmin(  2)
+        elif name == 'zmax': return self.getmax(  2)
+        elif name == 'xlen': return self.getlen(  0)
+        elif name == 'ylen': return self.getlen(  1)
+        elif name == 'zlen': return self.getlen(  2)
         elif name == 'all':  return list(self._boundVals)
 
         raise AttributeError('{} has no attribute called {}'.format(
