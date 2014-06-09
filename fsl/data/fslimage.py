@@ -345,8 +345,8 @@ class ImageList(props.HasProperties):
     bounds).
     """
 
-    def _validateImage(self, image):
-        if not isinstance(image, Image):
+    def _validateImage(self, images):
+        if not all(map(lambda img: isinstance(img, Image))):
             raise ValueError('Must be a {} instance'.format(Image.__name__))
 
     # The bounds property needs to be read-only,
@@ -394,9 +394,9 @@ class ImageList(props.HasProperties):
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi
 
-        self.bounds = [minBounds[0], maxBounds[0],
-                       minBounds[1], maxBounds[1],
-                       minBounds[2], maxBounds[2]]
+        self.bounds.all = [minBounds[0], maxBounds[0],
+                           minBounds[1], maxBounds[1],
+                           minBounds[2], maxBounds[2]]
 
         
     def __init__(self, images=None):

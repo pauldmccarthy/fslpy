@@ -139,7 +139,8 @@ class PropertyValue(object):
             newValue = self._castFunc(self._context, newValue)
             
         # Check to see if the new value is valid
-        valid = False
+        valid    = False
+        validStr = None
         try:
             if self._validate is not None:
                 self._validate(self._context, newValue)
@@ -147,7 +148,8 @@ class PropertyValue(object):
 
         except ValueError as e:
 
-            # Oops, we don't allow invalid values. 
+            # Oops, we don't allow invalid values.
+            validStr = str(e)
             if not self._allowInvalid:
                 log.debug('Attempt to set {} to an invalid value ({}), '
                           'but allowInvalid is False ({})'.format(
@@ -170,7 +172,7 @@ class PropertyValue(object):
         log.debug('Value {} changed: {} ({})'.format(
             self._name,
             newValue,
-            'valid' if valid else 'invalid'))
+            'valid' if valid else 'invalid - {}'.format(validStr)))
 
         # Notify any registered listeners
         self._notify()
@@ -241,44 +243,6 @@ class PropertyValueList(PropertyValue):
     a separate list is maintained, which contains PropertyValue objects.
     Whenever a list-modifying operation occurs on this PropertyValueList
     (which also acts a bit like a Python list), both lists are updated.
-
-    Be very careful with callback listeners on PVL objects. The nature of
-    the implementation means that listeners on the list object will be
-    notified before listeners on individual list items. Furthermore (and
-    more critically), listeners on the list object will be notified of
-    changes *before* the change is actually made. The following snippet
-    of code should make this issue a bit clearer:
-
-    class MyObj(props.HasProperties):
-        mylist = List()
-
-        def __init__(self):
-            self.addListener('mylist', 'listener1name', self.myListChanged)
-            self.addListener('mylist', 'listener2name', self.myListChanged2)
-
-        def myListChanged(self, *a):
-
-            # self.mylist will be out
-            # of date - don't use it!
-            print self.mylist
-
-        def myListChanged2(self, newlistval, *a):
-            # The value passed to the listener
-            # will contain the new value - all good!
-            print newlistval
-
-    def myListener(mylistval, valid, myobj):
-
-        # myobj.mylist will contain the
-        # old value - don't use it!
-        print myobj.mylist
-
-        # instead, use the new value that is
-        # passed in to the listener, like this
-        print mylistval
-
-    mo = MyObj()
-    mo.addListener('mylist', 'listenername', myListener)
     """
 
     def __init__(self,
@@ -288,8 +252,7 @@ class PropertyValueList(PropertyValue):
                  itemCastFunc=None,
                  itemValidateFunc=None,
                  listValidateFunc=None,
-                 itemAllowInvalid=True,
-                 listAllowInvalid=True,
+                 allowInvalid=True,
                  preNotifyFunc=None,
                  postNotifyFunc=None):
         """
@@ -318,7 +281,7 @@ class PropertyValueList(PropertyValue):
             name=name,
             castFunc=castFunc,
             validateFunc=validateFunc,
-            allowInvalid=listAllowInvalid,
+            allowInvalid=allowInvalid,
             preNotifyFunc=preNotifyFunc,
             postNotifyFunc=postNotifyFunc)
 
@@ -326,7 +289,6 @@ class PropertyValueList(PropertyValue):
         # constructor whenever a new item is added to the list
         self._itemCastFunc     = itemCastFunc
         self._itemValidateFunc = itemValidateFunc
-        self._itemAllowInvalid = itemAllowInvalid
         
         # The list of PropertyValue objects.
         self.__propVals = []
@@ -373,7 +335,7 @@ class PropertyValueList(PropertyValue):
         this list, ensuring that the corresponding PropertyValue objects
         are not recreated.
         """
-        self.set(self.get(), False)
+        self.set(PropertyValue.get(self), False)
 
         
     def __newItem(self, item):
@@ -394,88 +356,25 @@ class PropertyValueList(PropertyValue):
             castFunc=self._itemCastFunc,
             postNotifyFunc=lambda *a: self.revalidate(),
             validateFunc=self._itemValidateFunc,
-            allowInvalid=self._itemAllowInvalid)
+            allowInvalid=self._allowInvalid)
         
         return propVal
 
-        
-    def __len__(self):
-        return self.__propVals.__len__()
-
-        
-    def __repr__(self):
-        return list([i.get() for i in self.__propVals]).__repr__()
-
-        
-    def __str__(self):
-        return list([i.get() for i in self.__propVals]).__str__()
-
-        
-    def index(self, item):
-        """
-        Returns the first index of the value, or a ValueError if the
-        value is not present.
-        """
-
-        for i in range(len(self.__propVals)):
-            if self.__propVals[i].get() == item:
-                return i
-                
-        raise ValueError('{} is not present'.format(item))
-        
 
     def __getitem__(self, key):
-        """
-        Return the value(s) at the specified index/slice.
-        """
+        return PropertyValue.get(self).__getitem__(key)
         
-        items = self.__propVals.__getitem__(key)
-
-        if isinstance(key, slice):
-            return [i.get() for i in items]
-        else:
-            return items.get()
-
-
-    def __iter__(self):
-        """
-        Returns an iterator over the values in the list.
-        """
-        
-        innerIter = self.__propVals.__iter__()
-        for i in innerIter:
-            yield i.get()
-
-        
-    def __contains__(self, item):
-        """
-        Returns True if the given is in the list, False otherwise.
-        """
-        
-        try:    self.index(item)
-        except: return False
-        return True
-
-        
-    def count(self, item):
-        """
-        Counts the number of occurrences of the given value.
-        """
-
-        c = 0
-
-        for i in self.__propVals:
-            if i.get() == item:
-                c = c + 1
-                 
-        return c
-
+    def __len__(     self):       return self[:].__len__()
+    def __repr__(    self):       return self[:].__repr__()
+    def __str__(     self):       return self[:].__str__()
+    def __iter__(    self):       return self[:].__iter__()
+    def __contains__(self, item): return self[:].__contains__(item)
+    def index(       self, item): return self[:].index(item)
+    def count(       self, item): return self[:].count(item)
     
     def append(self, item):
         """
-        Appends the given item to the end of the list.  An IndexError is
-        raised if the insertion would causes the list to grow beyond its
-        maximum length.
+        Appends the given item to the end of the list.  
         """
 
         listVals = self[:]

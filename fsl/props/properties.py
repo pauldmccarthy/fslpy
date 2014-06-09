@@ -476,11 +476,9 @@ class ListPropertyBase(PropertyBase):
 
         if self._listType is not None:
             itemCastFunc     = self._listType.cast
-            itemAllowInvalid = self._listType._allowInvalid
             itemValidateFunc = self._listType.validate
         else:
             itemCastFunc     = None
-            itemAllowInvalid = None
             itemValidateFunc = None
         
         return PropertyValueList(
@@ -490,8 +488,7 @@ class ListPropertyBase(PropertyBase):
             itemCastFunc=itemCastFunc,
             itemValidateFunc=itemValidateFunc,
             listValidateFunc=self.validate,
-            itemAllowInvalid=itemAllowInvalid,
-            listAllowInvalid=self._allowInvalid,
+            allowInvalid=self._allowInvalid,
             postNotifyFunc=self._valChanged)
 
         

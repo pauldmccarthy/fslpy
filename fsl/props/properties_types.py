@@ -8,6 +8,8 @@
 
 import os.path as op
 
+import numbers
+
 import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
 
@@ -395,20 +397,141 @@ class ColourMap(props.PropertyBase):
         return value
 
 
-
 class _BoundObject(object):
+    """
+    An which represents bounds (minimum/maximum values) along
+    a number of dimensions (up to 3). The Bounds property type
+    uses a _BoundObject to expose its values.
+    """
 
-    def __init__(self, ndims):
-
-        self._minBounds = [0.0] * ndims
-        self._maxBounds = [0.0] * ndims
+    def __init__(self, ndims, initVal, boundProp, instance):
 
 
-class Bounds(List):
+        if ndims < 1 or ndims > 3:
+            raise ValueError('Only one to three dimensions are supported')
+        if len(initVal) != 2 * ndims:
+            raise ValueError('Wrong number of initial '
+                             'values ({} != {})'.format(
+                                 len(initVal), 2 * ndims))
+        
+        self.__dict__['_ndims']     = ndims
+        self.__dict__['_boundProp'] = boundProp
+        self.__dict__['_instance']  = instance
+        self.__dict__['_boundVals'] = [0.0] * 2 * ndims
+        self.__setAllBounds(initVal)
+
+    def __str__(self):
+        ndims  = getattr(self, '_ndims')
+        bounds = getattr(self, '_boundVals')
+        dims   = ['({}, {})'.format(bounds[i * 2],
+                                    bounds[i * 2 + 1])
+                  for i in range(ndims)]
+        
+        return '[{}]'.format(' '.join(dims))
+
+    def __getAxIdx(self, axstr):
+        if   axstr == 'x': return 0
+        elif axstr == 'y': return 1
+        elif axstr == 'z': return 2
+        else: return None
+
+    def __getSideOffset(self, sidestr):
+        if   sidestr == 'min': return 0
+        elif sidestr == 'max': return 1
+        else: return None
+
+    def __getBothBounds(self, ax):
+        return (self._boundVals[ax * 2], self._boundVals[ax * 2 + 1])
+        
+    def __setBothBounds(self, ax, values):
+        self._boundVals[ax * 2]     = values[0]
+        self._boundVals[ax * 2 + 1] = values[1]
+        
+    def __getBound(self, ax, side):
+        return self._boundVals[ax * 2 + side]
+        
+    def __setBound(self, ax, side, value):
+        self._boundVals[ax * 2 + side] = value
+        
+    def __getAllBounds(self):
+        return list(self._boundVals)
+        
+    def __setAllBounds(self, values):
+        for i in range(len(self._boundVals)):
+            self._boundVals[i] = values[i]
+
+    def __getitem__(self, key):
+        return self._boundVals.__getitem__(key)
+        
+    def __setitem__(self, key, value):
+        self._boundVals.__setitem__(key)
+
+            
+    def __getattr__(self, name):
+
+        # could be a single axis name - we return
+        # the min/max bounds for that axis
+        if len(name) == 1:
+            axidx = self.__getAxIdx(name)
+            if axidx is not None:
+                return self.__getBothBounds(axidx)
+
+        # could be a single axis with a side (min/max)
+        # we return the bound for that axis/side
+        elif len(name) == 4:
+            axidx   = self.__getAxIdx(     name[0])
+            sideoff = self.__getSideOffset(name[1:])
+
+            if all((axidx is not None, sideoff is not None)):
+                return self.__getBound(axidx, sideoff)
+
+        # could be 'all' - return all bounds
+        elif name == 'all':
+            return self.__getAllBounds()
+
+        raise AttributeError('{} has no attribute called {}'.format(
+            self.__class__.__name__,
+            name))
+
+        
+    def __setattr__(self, name, value):
+
+        # could be a single axis name - we return
+        # the min/max bounds for that axis
+        if len(name) == 1:
+            axidx = self.__getAxIdx(name)
+            if axidx is not None:
+                self.__setBothBounds(axidx, value)
+
+        # could be a single axis with a side (min/max)
+        # we return the bound for that axis/side
+        elif len(name) == 4:
+            axidx   = self.__getAxIdx(     name[0])
+            sideoff = self.__getSideOffset(name[1:])
+            
+            if all((axidx is not None, sideoff is not None)):
+                self.__setBound(axidx, sideoff, value)
+
+        # could be 'all' - return all bounds
+        elif name == 'all':
+            self.__setAllBounds(value)
+
+        else:
+            raise AttributeError('{} has no attribute called {}'.format(
+                self.__class__.__name__,
+                name)) 
+ 
+        # and here's the trick
+        self._boundProp.__set__(self._instance, self._boundVals)
+
+        
+class Bounds(props.PropertyBase):
     """
     Property which represents numeric bounds in any number of dimensions.
     Bound values are stored as a list of floating point values, two values
-    (min, max) for each dimension.
+    (min, max) for each dimension.  _BoundObject instances are created
+    whenever an attempt is made to access the property, and used to provide
+    convenient getters/setters for the bound values.
     """
 
     def __init__(self,  ndims=1, **kwargs):
@@ -416,24 +539,36 @@ class Bounds(List):
         default = kwargs.get('default', None)
 
         if default is None:
-            default = [0.0] * 2 * ndims
+            default = list([0.0, 0.0] * ndims)
+            
+        elif len(default) != 2 * ndims:
+            raise ValueError('{} bound values are required'.format(2 * ndims))
 
         kwargs['default'] = default
-        kwargs['ndims']   = ndims
-        kwargs['minlen']  = 2 * ndims
-        kwargs['maxlen']  = 2 * ndims
+        self._ndims = ndims
 
-        List.__init__(self, Double(allowInvalid=False), **kwargs)
+        props.PropertyBase.__init__(self, **kwargs)
 
-        
+
+    def cast(self, instance, value):
+        return list(map(float, value))
+
+
     def validate(self, instance, value):
-        """
-        """
+        props.PropertyBase.validate(self, instance, value)
 
-        ndims = self.getConstraint(instance, 'ndims')
+        if len(value) != 2 * self._ndims:
+            raise ValueError('{} values required'.format(2 * self._ndims))
 
-        List.validate(self, instance, value)
+        for v in value:
+            if not isinstance(v, numbers.Number):
+                raise ValueError('Bound values must be numeric')
+        
 
-        for i in range(ndims):
-            if value[i * 2] > value[i * 2 + 1]:
-                raise ValueError('Min values must be less than max values')
+    def __get__(self, instance, owner):
+        val   = props.PropertyBase.__get__(self, instance, owner)
+
+        if val is self:
+            return val
+
+        return _BoundObject(self._ndims, val, self, instance)
