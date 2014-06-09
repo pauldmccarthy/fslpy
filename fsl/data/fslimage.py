@@ -105,14 +105,11 @@ class Image(props.HasProperties):
         """
 
         points = np.zeros((2, 3), dtype=np.float32)
-        points[1, axis] = self.shape[axis] - 1
-        
+        points[1, axis] = self.shape[axis]
+
         tx = self.voxToWorld(points)
 
         lo, hi = sorted(tx[:, axis])
-
-        lo = float(lo - self.pixdim[axis] * 0.5)
-        hi = float(hi + self.pixdim[axis] * 0.5)
 
         return (lo, hi)
 
@@ -370,7 +367,7 @@ class ImageList(props.HasProperties):
         self.addListener(
             'images',
             self.__class__.__name__,
-            self._updateImageBounds)
+            self._imageListChanged)
 
         self.images = images
 

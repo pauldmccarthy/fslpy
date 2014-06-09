@@ -65,6 +65,10 @@ class FloatSlider(wx.Slider):
 
     def SetValue(self, value):
         value = self._realToSlider(value)
+
+        if value < self._sliderMin: value = self._sliderMin
+        if value > self._sliderMax: value = self._sliderMax
+
         wx.Slider.SetValue(self, value)
 
     def GetValue(self):

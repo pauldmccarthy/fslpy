@@ -242,10 +242,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         zmin = imgBounds.getmin(self.zax)
         zmax = imgBounds.getmax(self.zax)
 
-        dispBounds.xmin = xmin
-        dispBounds.xmax = xmax
-        dispBounds.ymin = ymin
-        dispBounds.ymax = ymax
+#        if xmin < dispBounds.xmin: xmin = dispBounds.xmin
+#        if xmax > dispBounds.xmax: xmax = dispBounds.xmax
+#        if ymin < dispBounds.ymin: ymin = dispBounds.ymin
+#        if ymax > dispBounds.ymax: ymax = dispBounds.ymax
+
+        dispBounds.all = [xmin, xmax, ymin, ymax]
 
         log.debug('New bounds (' 
                   'X: {: 5.1f} - {: 5.1f}, '
@@ -302,7 +304,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             image.display.addListener('samplingRate', self.name, refresh)
             image.display.addListener('cmap',         self.name, refresh)
             image.display.addListener('volume',       self.name, refresh)
-#            image.addListener(        'transform',     self.name, refresh)
 
         self.Refresh()
 

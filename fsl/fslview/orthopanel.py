@@ -180,8 +180,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         """
 
         def zoom(canvas, xax, yax, value):
-            value  = 1.0 / value
-            bounds = self.imageList.bounds
+            value      = 1.0 / value
+            bounds     = self.imageList.bounds
+            dispBounds = canvas.displayBounds
             
             xlen = value * bounds.getlen(xax)
             ylen = value * bounds.getlen(yax)
@@ -190,13 +191,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
                 xcentre = bounds.getmin(xax) + 0.5 * xlen
                 ycentre = bounds.getmin(yax) + 0.5 * ylen
             else:
-                xcentre = canvas.xmin + (canvas.xmax - canvas.xmin) / 2.0
-                ycentre = canvas.ymin + (canvas.ymax - canvas.ymin) / 2.0
+                xcentre = dispBounds.xmin + dispBounds.xlen / 2.0
+                ycentre = dispBounds.ymin + dispBounds.ylen / 2.0
 
-            canvas.xmin = xcentre - 0.5 * xlen
-            canvas.xmax = xcentre + 0.5 * xlen
-            canvas.ymin = ycentre - 0.5 * ylen
-            canvas.ymax = ycentre + 0.5 * ylen
+            dispBounds.all = [xcentre - 0.5 * xlen,
+                              xcentre + 0.5 * xlen,
+                              ycentre - 0.5 * ylen,
+                              ycentre + 0.5 * ylen]
 
         def xzoom(value, *a): zoom(self.xcanvas, 1, 2, value)
         def yzoom(value, *a): zoom(self.ycanvas, 0, 2, value)
@@ -234,11 +235,12 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         the given canvas. Updates the display bounds on the canvas so that
         the current position is within them.
         """
+        dispBounds = canvas.displayBounds
 
-        if newx >= canvas.xmin and \
-           newx <= canvas.xmax and \
-           newy >= canvas.ymin and \
-           newy <= canvas.ymax:
+        if newx >= dispBounds.xmin and \
+           newx <= dispBounds.xmax and \
+           newy >= dispBounds.ymin and \
+           newy <= dispBounds.ymax:
             return
 
         xax = canvas.xax
@@ -252,34 +254,31 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         imgymin = self.imageList.bounds.getmin(yax)
         imgymax = self.imageList.bounds.getmax(yax)
 
-        if   newx < canvas.xmin: xshift = newx - canvas.xmin
-        elif newx > canvas.xmax: xshift = newx - canvas.xmax
-        if   newy < canvas.ymin: yshift = newy - canvas.ymin 
-        elif newy > canvas.ymax: yshift = newy - canvas.ymax 
+        if   newx < dispBounds.xmin: xshift = newx - dispBounds.xmin
+        elif newx > dispBounds.xmax: xshift = newx - dispBounds.xmax
+        if   newy < dispBounds.ymin: yshift = newy - dispBounds.ymin 
+        elif newy > dispBounds.ymax: yshift = newy - dispBounds.ymax 
             
-        newxmin = canvas.xmin + xshift 
-        newxmax = canvas.xmax + xshift
-        newymin = canvas.ymin + yshift 
-        newymax = canvas.ymax + yshift 
+        newxmin = dispBounds.xmin + xshift 
+        newxmax = dispBounds.xmax + xshift
+        newymin = dispBounds.ymin + yshift 
+        newymax = dispBounds.ymax + yshift 
 
         if newxmin < imgxmin:
             newxmin = imgxmin
-            newxmax = imgxmin + abs(canvas.xmax - canvas.xmin)
+            newxmax = imgxmin + dispBounds.xlen
         elif newxmax > imgxmax:
             newxmax = imgxmax
-            newxmin = imgxmax - abs(canvas.xmax - canvas.xmin)
+            newxmin = imgxmax - dispBounds.xlen
         
         if newymin < imgymin:
             newymin = imgymin
-            newymax = imgymin + abs(canvas.ymax - canvas.ymin)
+            newymax = imgymin + dispBounds.ylen
         elif newymax > imgymax:
             newymax = imgymax
-            newymin = imgymax - abs(canvas.ymax - canvas.ymin)
+            newymin = imgymax - dispBounds.ylen
 
-        canvas.xmin = newxmin
-        canvas.xmax = newxmax
-        canvas.ymin = newymin
-        canvas.ymax = newymax
+        dispBounds.all = [newxmin, newxmax, newymin, newymax]
 
         
     def setPosition(self, xpos, ypos, zpos):
