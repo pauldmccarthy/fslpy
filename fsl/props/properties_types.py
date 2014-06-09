@@ -13,7 +13,8 @@ import numbers
 import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
 
-import properties as props
+import properties       as props
+import properties_value as propvals
 
 class Boolean(props.PropertyBase):
     """
@@ -397,48 +398,18 @@ class ColourMap(props.PropertyBase):
         return value
 
 
-class _BoundObject(object):
+class BoundsValueList(propvals.PropertyValueList):
     """
-    An which represents bounds (minimum/maximum values) along
-    a number of dimensions (up to 3). The Bounds property type
-    uses a _BoundObject to expose its values.
     """
 
-    def __init__(self, ndims, initVal, boundProp, instance):
-
-        if ndims < 1 or ndims > 3:
-            raise ValueError('Only one to three dimensions are supported')
-        if len(initVal) != 2 * ndims:
-            raise ValueError('Wrong number of initial '
-                             'values ({} != {})'.format(
-                                 len(initVal), 2 * ndims))
-        
-        self.__dict__['_ndims']     = ndims
-        self.__dict__['_boundProp'] = boundProp
-        self.__dict__['_instance']  = instance
-        self.__dict__['_boundVals'] = initVal
-
-
-    def __str__(self):
-        ndims  = self._ndims
-        bounds = self._boundVals
-        dims   = ['({}, {})'.format(bounds[i * 2],
-                                    bounds[i * 2 + 1])
-                  for i in range(ndims)]
-        
-        return '[{}]'.format(' '.join(dims))
-
-    def __getitem__(self, key):
-        return self._boundVals.__getitem__(key)
-        
-    def __setitem__(self, key, value):
-        self._boundVals.__setitem__(key)
+    def __init__(self, *args, **kwargs):
+        propvals.PropertyValueList.__init__(self, *args, **kwargs)
 
     def getmin(self, axis):
-        return self._boundVals[axis * 2]
+        return self[axis * 2]
         
     def getmax(self, axis):
-        return self._boundVals[axis * 2 + 1]
+        return self[axis * 2 + 1]
 
     def getrange(self, axis):
         return [self.getmin(axis), self.getmax(axis)]
@@ -447,10 +418,10 @@ class _BoundObject(object):
         return abs(self.getmax(axis) - self.getmin(axis))
 
     def setmin(self, axis, value):
-        self._boundVals[axis * 2] = value
+        self[axis * 2] = value
         
     def setmax(self, axis, value):
-        self._boundVals[axis * 2 + 1] = value
+        self[axis * 2 + 1] = value
 
     def setrange(self, axis, values):
         self.setmin(axis, values[0])
@@ -470,16 +441,12 @@ class _BoundObject(object):
         elif name == 'xlen': return self.getlen(  0)
         elif name == 'ylen': return self.getlen(  1)
         elif name == 'zlen': return self.getlen(  2)
-        elif name == 'all':  return list(self._boundVals)
+        elif name == 'all':  return self[:]
 
         raise AttributeError('{} has no attribute called {}'.format(
             self.__class__.__name__, name))
 
-        
     def __setattr__(self, name, value):
-        
-        # could be a single axis name - we return
-        # the min/max bounds for that axis
         if   name == 'x':    self.setrange(0, value)
         elif name == 'y':    self.setrange(1, value)
         elif name == 'z':    self.setrange(2, value)
@@ -489,16 +456,11 @@ class _BoundObject(object):
         elif name == 'ymax': self.setmax(  1, value)
         elif name == 'zmin': self.setmin(  2, value)
         elif name == 'zmax': self.setmax(  2, value)
-        elif name == 'all':  self._boundVals[:] = value
-        else:
-            raise AttributeError('{} has no attribute called {}'.format(
-                self.__class__.__name__, name)) 
+        elif name == 'all':  self[:] = value
+        else:                self.__dict__[name] = value
 
-        # and here's the trick
-        self._boundProp.__set__(self._instance, self._boundVals)
 
-        
-class Bounds(props.PropertyBase):
+class Bounds(List):
     """
     Property which represents numeric bounds in any number of dimensions.
     Bound values are stored as a list of floating point values, two values
@@ -512,7 +474,7 @@ class Bounds(props.PropertyBase):
         default = kwargs.get('default', None)
 
         if default is None:
-            default = list([0.0, 0.0] * ndims)
+            default = [0.0, 0.0] * ndims
             
         elif len(default) != 2 * ndims:
             raise ValueError('{} bound values are required'.format(2 * ndims))
@@ -520,28 +482,25 @@ class Bounds(props.PropertyBase):
         kwargs['default'] = default
         self._ndims = ndims
 
-        props.PropertyBase.__init__(self, **kwargs)
+        List.__init__(self,
+                      listType=Double(clamped=True),
+                      minlen=ndims * 2,
+                      maxlen=ndims * 2, **kwargs)
 
+    def _makePropVal(self, instance):
 
-    def cast(self, instance, value):
-        return list(map(float, value))
+        bvl = BoundsValueList(
+            instance,
+            name=self._label,
+            values=self._default,
+            itemCastFunc=self._listType.cast,
+            itemValidateFunc=self._listType.validate,
+            listValidateFunc=self.validate,
+            allowInvalid=False,
+            postNotifyFunc=self._valChanged)
 
-
-    def validate(self, instance, value):
-        props.PropertyBase.validate(self, instance, value)
-
-        if len(value) != 2 * self._ndims:
-            raise ValueError('{} values required'.format(2 * self._ndims))
-
-        for v in value:
-            if not isinstance(v, numbers.Number):
-                raise ValueError('Bound values must be numeric')
+        return bvl
         
-
-    def __get__(self, instance, owner):
-        val   = props.PropertyBase.__get__(self, instance, owner)
-
-        if val is self:
-            return val
-
-        return _BoundObject(self._ndims, val, self, instance)
+        
+    def validate(self, instance, value):
+        List.validate(self, instance, value)

@@ -427,23 +427,29 @@ class PropertyValueList(PropertyValue):
         self.__propVals.insert(to, pval)
 
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, values):
         """
         Sets the value(s) of the list at the specified index/slice.
         """
 
         if isinstance(key, slice):
-            raise ValueError(
-                'PropertyValueList does not support extended slices')
+            indices = range(*key.indices(len(self)))
+            if len(indices) != len(values):
+                raise ValueError(
+                    'PropertyValueList does not support complex slices')
 
+        elif isinstance(key, int):
+            indices = [key]
+            values  = [values]
         else:
             raise ValueError('Invalid key type')
 
         listVals = self[:]
-        listVals[key] = value
+        listVals[key] = values
         self.set(listVals, False)
-        
-        self.__propVals[key].set(value)
+
+        for idx, val in zip(indices, values):
+            self.__propVals[idx].set(val)
 
         
     def __delitem__(self, key):
