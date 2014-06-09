@@ -179,29 +179,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         is changed.
         """
 
-        def zoom(canvas, xax, yax, value):
-            value      = 1.0 / value
-            bounds     = self.imageList.bounds
-            dispBounds = canvas.displayBounds
-            
-            xlen = value * bounds.getlen(xax)
-            ylen = value * bounds.getlen(yax)
-
-            if value == 1:
-                xcentre = bounds.getmin(xax) + 0.5 * xlen
-                ycentre = bounds.getmin(yax) + 0.5 * ylen
-            else:
-                xcentre = dispBounds.xmin + dispBounds.xlen / 2.0
-                ycentre = dispBounds.ymin + dispBounds.ylen / 2.0
-
-            dispBounds.all = [xcentre - 0.5 * xlen,
-                              xcentre + 0.5 * xlen,
-                              ycentre - 0.5 * ylen,
-                              ycentre + 0.5 * ylen]
-
-        def xzoom(value, *a): zoom(self.xcanvas, 1, 2, value)
-        def yzoom(value, *a): zoom(self.ycanvas, 0, 2, value)
-        def zzoom(value, *a): zoom(self.zcanvas, 0, 1, value)
+        def xzoom(*a): self.xcanvas.zoom = self.xzoom
+        def yzoom(*a): self.ycanvas.zoom = self.yzoom
+        def zzoom(*a): self.zcanvas.zoom = self.zzoom
             
         self.addListener('xzoom', self.name, xzoom)
         self.addListener('yzoom', self.name, yzoom)

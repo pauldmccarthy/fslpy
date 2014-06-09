@@ -49,6 +49,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     ypos = props.Double(clamped=True)
     zpos = props.Double(clamped=True)
 
+    # The image bounds are divided  by this zoom
+    # factor to produce the display bounds.
+    zoom = props.Double(minval=1.0,
+                        maxval=10.0, 
+                        default=1.0,
+                        clamped=True) 
+
     # The x/y min/max properties specify the display
     # range, in world coordinates, of the canvas.
     displayBounds = props.Bounds(ndims=2)
@@ -60,39 +67,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     # The image axis to be used as the screen 'depth' axis.
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
 
-
-    def _zAxisChanged(self, *a):
-        """
-        Called when the Z axis is changed. Calculates the corresponding
-        X and Y axes, and saves them as attributes of the object. Also
-        regenerates the GL index buffers for every image in the image
-        list, as they are dependent upon how the image is being
-        displayed.
-        """
-
-        log.debug('{}'.format(self.zax))
-        
-        dims = range(3)
-        dims.pop(self.zax)
-        self.xax = dims[0]
-        self.yax = dims[1]
-
-        if not self.glReady:
-            return
-
-        for image in self.imageList:
-
-            try:   glData = image.getAttribute(self.name)
-
-            # if this lookup fails, it means that the GL data
-            # for this image has not yet been generated.
-            except KeyError: continue
-            
-            glData.genIndexBuffers(self.xax, self.yax)
-            
-        self._updateBounds()
-        self.Refresh()
-            
         
     def canvasToWorldX(self, xpos):
         """
@@ -207,6 +181,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.addListener('zpos',          self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
+        
+        self.addListener('zoom',          self.name, self._zoomChanged)
 
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -224,6 +200,80 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # All the work is done by the draw method
         self.Bind(wx.EVT_PAINT, self._draw)
 
+        
+    def _zAxisChanged(self, *a):
+        """
+        Called when the Z axis is changed. Calculates the corresponding
+        X and Y axes, and saves them as attributes of the object. Also
+        regenerates the GL index buffers for every image in the image
+        list, as they are dependent upon how the image is being
+        displayed.
+        """
+
+        log.debug('{}'.format(self.zax))
+        
+        dims = range(3)
+        dims.pop(self.zax)
+        self.xax = dims[0]
+        self.yax = dims[1]
+
+        if not self.glReady:
+            return
+
+        for image in self.imageList:
+
+            try:   glData = image.getAttribute(self.name)
+
+            # if this lookup fails, it means that the GL data
+            # for this image has not yet been generated.
+            except KeyError: continue
+            
+            glData.genIndexBuffers(self.xax, self.yax)
+            
+        self._updateBounds()
+        self.Refresh()
+ 
+
+    def _zoomChanged(self, *a):
+        """
+        Called when the zoom property changes - updates the display bounds.
+        """
+        
+        value      = 1.0 / self.zoom
+        bounds     = self.imageList.bounds
+        dispBounds = self.displayBounds
+
+        if value == 1.0:
+            dispBounds.all = (bounds.getrange(self.xax) + 
+                              bounds.getrange(self.yax))
+            return
+
+        xcentre = self.xpos
+        ycentre = self.ypos
+
+        xlen = value * bounds.getlen(self.xax)
+        ylen = value * bounds.getlen(self.yax)
+
+        xmin = xcentre - 0.5 * xlen
+        xmax = xcentre + 0.5 * xlen
+        ymin = ycentre - 0.5 * ylen
+        ymax = ycentre + 0.5 * ylen        
+
+        if xmin < bounds.getmin(self.xax):
+            xmin = bounds.getmin(self.xax)
+            xmax = xmin + xlen
+        elif xmax > bounds.getmax(self.xax):
+            xmax = bounds.getmax(self.xax)
+            xmin = xmax - xlen 
+        if ymin < bounds.getmin(self.yax):
+            ymin = bounds.getmin(self.yax)
+            ymax = ymin + ylen 
+        elif ymax > bounds.getmax(self.yax):
+            ymax = bounds.getmax(self.yax)
+            ymin = ymax - ylen 
+
+        dispBounds.all = [xmin, xmax, ymin, ymax] 
+        
 
     def _updateBounds(self, *a):
         """
@@ -233,7 +283,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """
 
         imgBounds  = self.imageList.bounds
-        dispBounds = self.displayBounds
 
         xmin = imgBounds.getmin(self.xax)
         xmax = imgBounds.getmax(self.xax)
@@ -242,25 +291,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         zmin = imgBounds.getmin(self.zax)
         zmax = imgBounds.getmax(self.zax)
 
-#        if xmin < dispBounds.xmin: xmin = dispBounds.xmin
-#        if xmax > dispBounds.xmax: xmax = dispBounds.xmax
-#        if ymin < dispBounds.ymin: ymin = dispBounds.ymin
-#        if ymax > dispBounds.ymax: ymax = dispBounds.ymax
+        # the _zoomChanged method
+        # updates the display bounds
+        self._zoomChanged()
 
-        dispBounds.all = [xmin, xmax, ymin, ymax]
+        dispBounds = self.displayBounds
 
-        log.debug('New bounds (' 
-                  'X: {: 5.1f} - {: 5.1f}, '
-                  'Y: {: 5.1f} - {: 5.1f}, '
-                  'Z: {: 5.1f} - {: 5.1f})'.format(
-                      xmin, xmax,
-                      ymin, ymax,
-                      zmin, zmax))
-
-        self.setConstraint('xpos', 'minval', xmin)
-        self.setConstraint('xpos', 'maxval', xmax)
-        self.setConstraint('ypos', 'minval', ymin)
-        self.setConstraint('ypos', 'maxval', ymax)
+        self.setConstraint('xpos', 'minval', dispBounds.xmin)
+        self.setConstraint('xpos', 'maxval', dispBounds.xmax)
+        self.setConstraint('ypos', 'minval', dispBounds.ymin)
+        self.setConstraint('ypos', 'maxval', dispBounds.ymax)
         self.setConstraint('zpos', 'minval', zmin)
         self.setConstraint('zpos', 'maxval', zmax) 
 
