@@ -349,32 +349,60 @@ class ImageList(props.HasProperties):
         if not all(map(lambda img: isinstance(img, Image))):
             raise ValueError('Must be a {} instance'.format(Image.__name__))
 
-    # The bounds property needs to be read-only,
+    # The bounds property contains the min/max values of
+    # a bounding box (in real world coordinates) which
+    # is big enough to contain all of the images in the
+    # 'images' list. This property shouid be read-only,
     # but I don't have a way to enforce it (yet).
     bounds = props.Bounds(ndims=3)
+
+    # The images property contains a list of Image objects
     images = props.List(validateFunc=_validateImage, allowInvalid=False)
 
+    
+    def __init__(self, images=None):
+        """
+        Create an ImageList object from the given sequence of Image objects.
+        """
         
-    def _registerImageListeners(self, image):
-        """
-        Registers listeners with the given image on properties which may
-        affect the image bounds.
-        """
+        if images is None: images = []
 
-        def imagePropChanged(*a):
-            self._updateImageBounds(self.images)
+        self.addListener(
+            'images',
+            self.__class__.__name__,
+            self._updateImageBounds)
+
+        self.images = images
+
+
+    def _imageListChanged(self, *a):
+        """
+        Called whenever an item is added or removed from the list. Registers
+        listeners with the properties of each image, and updates the image
+        bounds
+        """ 
         
-        image.addListener(
-            'transform', self.__class__.__name__, imagePropChanged)
+        for img in self.images:
+
+            # This may be called multiple times on each image,
+            # but it doesn't matter, as any listener which has
+            # previously been registered with an image will
+            # just be replaced by the new one here.
+            img.addListener(
+                'transform',
+                self.__class__.__name__,
+                self._updateImageBounds) 
+
+        self._updateImageBounds()
 
     
-    def _updateImageBounds(self, images, *a):
+    def _updateImageBounds(self, *a):
         """
         Called whenever an item is added or removed from the list, or an
         image property changes. Updates the xyz bounds.
         """
 
-        if len(images) == 0:
+        if len(self.images) == 0:
             minBounds = [0.0, 0.0, 0.0]
             maxBounds = [0.0, 0.0, 0.0]
             
@@ -382,10 +410,7 @@ class ImageList(props.HasProperties):
             minBounds = 3 * [ sys.float_info.max]
             maxBounds = 3 * [-sys.float_info.max]
 
-        for img in images:
-
-            # ...
-            self._registerImageListeners(img)
+        for img in self.images:
 
             for ax in range(3):
 
@@ -397,19 +422,6 @@ class ImageList(props.HasProperties):
         self.bounds.all = [minBounds[0], maxBounds[0],
                            minBounds[1], maxBounds[1],
                            minBounds[2], maxBounds[2]]
-
-        
-    def __init__(self, images=None):
-        """
-        Create an ImageList object from the given sequence of Image objects.
-        """
-        
-        if images is None: images = []
-
-        self.addListener(
-            'images', self.__class__.__name__, self._updateImageBounds)
-
-        self.images = images
 
 
     # Wrapers around the images list property, allowing this

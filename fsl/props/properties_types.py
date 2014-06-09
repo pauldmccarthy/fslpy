@@ -8,8 +8,6 @@
 
 import os.path as op
 
-import numbers
-
 import matplotlib.colors as mplcolors
 import matplotlib.cm     as mplcm
 
@@ -464,9 +462,8 @@ class Bounds(List):
     """
     Property which represents numeric bounds in any number of dimensions.
     Bound values are stored as a list of floating point values, two values
-    (min, max) for each dimension.  _BoundObject instances are created
-    whenever an attempt is made to access the property, and used to provide
-    convenient getters/setters for the bound values.
+    (min, max) for each dimension.  The values are stored in a
+    BoundsValueList object.
     """
 
     def __init__(self,  ndims=1, **kwargs):
