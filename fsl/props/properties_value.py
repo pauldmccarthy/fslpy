@@ -322,7 +322,6 @@ class PropertyValueList(PropertyValue):
         discarded, and new ones recreated. This flag is intended for
         internal use only.
         """
-
         PropertyValue.set(self, newValues)
 
         if recreate: 
@@ -445,7 +444,8 @@ class PropertyValueList(PropertyValue):
             raise ValueError('Invalid key type')
 
         listVals = self[:]
-        listVals[key] = values
+        for idx, val in zip(indices, values):
+            listVals[idx] = val
         self.set(listVals, False)
 
         for idx, val in zip(indices, values):

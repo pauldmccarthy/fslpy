@@ -472,6 +472,10 @@ class Bounds(List):
 
         if default is None:
             default = [0.0, 0.0] * ndims
+
+        if ndims < 1 or ndims > 3:
+            raise ValueError('Only bounds of one to three '
+                             'dimensions are supported')
             
         elif len(default) != 2 * ndims:
             raise ValueError('{} bound values are required'.format(2 * ndims))
@@ -480,10 +484,11 @@ class Bounds(List):
         self._ndims = ndims
 
         List.__init__(self,
-                      listType=Double(clamped=True),
+                      listType=Double(),
                       minlen=ndims * 2,
                       maxlen=ndims * 2, **kwargs)
 
+        
     def _makePropVal(self, instance):
 
         bvl = BoundsValueList(
@@ -495,9 +500,5 @@ class Bounds(List):
             listValidateFunc=self.validate,
             allowInvalid=False,
             postNotifyFunc=self._valChanged)
-
+        
         return bvl
-        
-        
-    def validate(self, instance, value):
-        List.validate(self, instance, value)
