@@ -406,7 +406,6 @@ class _BoundObject(object):
 
     def __init__(self, ndims, initVal, boundProp, instance):
 
-
         if ndims < 1 or ndims > 3:
             raise ValueError('Only one to three dimensions are supported')
         if len(initVal) != 2 * ndims:
@@ -417,48 +416,17 @@ class _BoundObject(object):
         self.__dict__['_ndims']     = ndims
         self.__dict__['_boundProp'] = boundProp
         self.__dict__['_instance']  = instance
-        self.__dict__['_boundVals'] = [0.0] * 2 * ndims
-        self.__setAllBounds(initVal)
+        self.__dict__['_boundVals'] = initVal
+
 
     def __str__(self):
-        ndims  = getattr(self, '_ndims')
-        bounds = getattr(self, '_boundVals')
+        ndims  = self._ndims
+        bounds = self._boundVals
         dims   = ['({}, {})'.format(bounds[i * 2],
                                     bounds[i * 2 + 1])
                   for i in range(ndims)]
         
         return '[{}]'.format(' '.join(dims))
-
-    def __getAxIdx(self, axstr):
-        if   axstr == 'x': return 0
-        elif axstr == 'y': return 1
-        elif axstr == 'z': return 2
-        else: return None
-
-    def __getSideOffset(self, sidestr):
-        if   sidestr == 'min': return 0
-        elif sidestr == 'max': return 1
-        else: return None
-
-    def __getBothBounds(self, ax):
-        return (self._boundVals[ax * 2], self._boundVals[ax * 2 + 1])
-        
-    def __setBothBounds(self, ax, values):
-        self._boundVals[ax * 2]     = values[0]
-        self._boundVals[ax * 2 + 1] = values[1]
-        
-    def __getBound(self, ax, side):
-        return self._boundVals[ax * 2 + side]
-        
-    def __setBound(self, ax, side, value):
-        self._boundVals[ax * 2 + side] = value
-        
-    def __getAllBounds(self):
-        return list(self._boundVals)
-        
-    def __setAllBounds(self, values):
-        for i in range(len(self._boundVals)):
-            self._boundVals[i] = values[i]
 
     def __getitem__(self, key):
         return self._boundVals.__getitem__(key)
@@ -466,61 +434,66 @@ class _BoundObject(object):
     def __setitem__(self, key, value):
         self._boundVals.__setitem__(key)
 
+    def getmin(self, axis):
+        return self._boundVals[axis * 2]
+        
+    def getmax(self, axis):
+        return self._boundVals[axis * 2 + 1]
+
+    def getrange(self, axis):
+        return [self.min(axis), self.max(axis)]
+
+    def getlen(self, axis):
+        return abs(self.max(axis) - self.min(axis))
+
+    def setmin(self, axis, value):
+        self._boundVals[axis * 2] = value
+        
+    def setmax(self, axis, value):
+        self._boundVals[axis * 2 + 1] = value
+
+    def setrange(self, axis, values):
+        self.setmin(axis, values[0])
+        self.setmax(axis, values[1])
             
     def __getattr__(self, name):
 
-        # could be a single axis name - we return
-        # the min/max bounds for that axis
-        if len(name) == 1:
-            axidx = self.__getAxIdx(name)
-            if axidx is not None:
-                return self.__getBothBounds(axidx)
-
-        # could be a single axis with a side (min/max)
-        # we return the bound for that axis/side
-        elif len(name) == 4:
-            axidx   = self.__getAxIdx(     name[0])
-            sideoff = self.__getSideOffset(name[1:])
-
-            if all((axidx is not None, sideoff is not None)):
-                return self.__getBound(axidx, sideoff)
-
-        # could be 'all' - return all bounds
-        elif name == 'all':
-            return self.__getAllBounds()
+        if   name == 'x':    return self.range(0)
+        elif name == 'y':    return self.range(1)
+        elif name == 'z':    return self.range(2)
+        elif name == 'xmin': return self.min(  0)
+        elif name == 'xmax': return self.max(  0)
+        elif name == 'ymin': return self.min(  1)
+        elif name == 'ymax': return self.max(  1)
+        elif name == 'zmin': return self.min(  2)
+        elif name == 'zmax': return self.max(  2)
+        elif name == 'xlen': return self.len(  0)
+        elif name == 'ylen': return self.len(  1)
+        elif name == 'zlen': return self.len(  2)
+        elif name == 'all':  return list(self._boundVals)
 
         raise AttributeError('{} has no attribute called {}'.format(
-            self.__class__.__name__,
-            name))
+            self.__class__.__name__, name))
 
         
     def __setattr__(self, name, value):
-
+        
         # could be a single axis name - we return
         # the min/max bounds for that axis
-        if len(name) == 1:
-            axidx = self.__getAxIdx(name)
-            if axidx is not None:
-                self.__setBothBounds(axidx, value)
-
-        # could be a single axis with a side (min/max)
-        # we return the bound for that axis/side
-        elif len(name) == 4:
-            axidx   = self.__getAxIdx(     name[0])
-            sideoff = self.__getSideOffset(name[1:])
-            
-            if all((axidx is not None, sideoff is not None)):
-                self.__setBound(axidx, sideoff, value)
-
-        # could be 'all' - return all bounds
-        elif name == 'all':
-            self.__setAllBounds(value)
-
+        if   name == 'x':    self.setrange(0, value)
+        elif name == 'y':    self.setrange(1, value)
+        elif name == 'z':    self.setrange(2, value)
+        elif name == 'xmin': self.setmin(  0, value)
+        elif name == 'xmax': self.setmax(  0, value)
+        elif name == 'ymin': self.setmin(  1, value)
+        elif name == 'ymax': self.setmax(  1, value)
+        elif name == 'zmin': self.setmin(  2, value)
+        elif name == 'zmax': self.setmax(  2, value)
+        elif name == 'all':  self._boundVals[:] = value
         else:
             raise AttributeError('{} has no attribute called {}'.format(
-                self.__class__.__name__,
-                name)) 
- 
+                self.__class__.__name__, name)) 
+
         # and here's the trick
         self._boundProp.__set__(self._instance, self._boundVals)
 
