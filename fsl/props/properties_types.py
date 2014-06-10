@@ -398,6 +398,9 @@ class ColourMap(props.PropertyBase):
 
 class BoundsValueList(propvals.PropertyValueList):
     """
+    A list of values which represent bounds along a number of
+    dimensions. This class just adds some convenience methods
+    and attributes.
     """
 
     def __init__(self, *args, **kwargs):
@@ -463,7 +466,7 @@ class Bounds(List):
     Property which represents numeric bounds in any number of dimensions.
     Bound values are stored as a list of floating point values, two values
     (min, max) for each dimension.  The values are stored in a
-    BoundsValueList object.
+    BoundsValueList object. 
     """
 
     def __init__(self,  ndims=1, **kwargs):
@@ -490,6 +493,12 @@ class Bounds(List):
 
         
     def _makePropVal(self, instance):
+        """
+        Overrides ListPropertyBase._makePropVal - creates and returns a
+        BoundsValueList instead of a PropertyValueList, so callers get
+        to use the convenience methods/attributes defined in the BVL
+        class.
+        """
 
         bvl = BoundsValueList(
             instance,
@@ -502,3 +511,34 @@ class Bounds(List):
             postNotifyFunc=self._valChanged)
         
         return bvl
+
+        
+    def validate(self, instance, value):
+        """
+        Raises a ValueError if the given value (a list of min/max values)
+        is of the wrong length or data type, or if any of the min values
+        are greater than the corresponding max value.
+        """
+
+        # the List.validate method will check
+        # the value length and type for us
+        List.validate(self, instance, value)
+
+        for i in range(self._ndims):
+
+            imin = value[i * 2]
+            imax = value[i * 2 + 1]
+
+            if imin > imax:
+                raise ValueError('Minimum bound must be smaller '
+                                 'than maximum bound (dimension {}, '
+                                 '{} - {}'.format(i, imin, imax))
+
+
+class PointValueList(propvals.PropertyValueList):
+    pass
+
+
+class Point(List):
+    def __init__(self, ndims=2, **kwargs):
+        pass

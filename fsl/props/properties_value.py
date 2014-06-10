@@ -296,6 +296,7 @@ class PropertyValueList(PropertyValue):
             self,
             context,
             name=name,
+            value=values,
             castFunc=castFunc,
             validateFunc=validateFunc,
             allowInvalid=allowInvalid,
@@ -308,11 +309,8 @@ class PropertyValueList(PropertyValue):
         self._itemValidateFunc = itemValidateFunc
         
         # The list of PropertyValue objects.
-        self.__propVals = []
-
-        # initialise the list
-        if values is not None:
-            self.set(values)
+        if values is not None: self.__propVals = map(self.__newItem, values)
+        else:                  self.__propVals = []
 
         
     def getPropertyValueList(self):
