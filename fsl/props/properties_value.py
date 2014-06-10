@@ -102,7 +102,10 @@ class PropertyValue(object):
           valid    - Whether the value is valid or invalid
           context  - The context object passed in to __init__.
         """
-        log.debug('Adding listener on {}: {}'.format(self._name, name))
+        log.debug('Adding listener on {}.{}: {}'.format(
+            self._context.__class__.__name__,
+            self._name,
+            name))
         name = 'PropertyValue_{}_{}'.format(self._name, name)
         self._changeListeners[name] = callback
 
@@ -112,7 +115,10 @@ class PropertyValue(object):
         Removes the listener with the given name from the specified
         instance.
         """
-        log.debug('Removing listener on {}: {}'.format(self._name, name))
+        log.debug('Removing listener on {}.{}: {}'.format(
+            self._context.__class__.__name__,
+            self._name,
+            name))
         name = 'PropertyValue_{}_{}'.format(self._name, name)
         self._changeListeners.pop(name, None)
 
@@ -151,9 +157,12 @@ class PropertyValue(object):
             # Oops, we don't allow invalid values.
             validStr = str(e)
             if not self._allowInvalid:
-                log.debug('Attempt to set {} to an invalid value ({}), '
+                log.debug('Attempt to set {}.{} to an invalid value ({}), '
                           'but allowInvalid is False ({})'.format(
-                              self._name, newValue, e), exc_info=True) 
+                              self._context.__class__.__name__,
+                              self._name,
+                              newValue,
+                              e), exc_info=True) 
                 raise e
 
         self.__value = newValue
@@ -169,7 +178,8 @@ class PropertyValue(object):
         self.__lastValue = self.__value
         self.__lastValid = self.__valid
 
-        log.debug('Value {} changed: {} ({})'.format(
+        log.debug('Value {}.{} changed: {} ({})'.format(
+            self._context.__class__.__name__,
             self._name,
             newValue,
             'valid' if valid else 'invalid - {}'.format(validStr)))
@@ -202,12 +212,19 @@ class PropertyValue(object):
 
         for name, listener in allListeners:
 
-            log.debug('Calling listener {} for {}'.format(name, self._name))
+            log.debug('Calling listener {} for {}.{}'.format(
+                name,
+                self._context.__class__.__name__,
+                self._name))
 
             try: listener(value, valid, self._context)
             except Exception as e:
-                log.debug('Listener {} on {} raised '
-                          'exception: {}'.format(name, self._name, e),
+                log.debug('Listener {} on {}.{} raised '
+                          'exception: {}'.format(
+                              name,
+                              self._context.__class__.__name__,
+                              self._name,
+                              e),
                           exc_info=True)
 
 
