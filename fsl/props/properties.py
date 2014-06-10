@@ -486,11 +486,79 @@ class ListPropertyBase(PropertyBase):
         """
         return self.getPropVal(instance).getPropertyValueList()
 
+
+    def addItemListener(self, instance, index, name, callback):
+        """
+        Convenience method which adds a listener to the property
+        value object at the given index.
+        """
+        self.getPropValList(instance)[index].addListener(name, callback)
+
+        
+    def removeItemListener(self, instance, index, name):
+        """
+        Convenience method which removes the named listener from
+        the property value at the given index.
+        """
+        self.getPropValList(instance)[index].removeListener(name)
+
+
+    def addItemConstraintListener(self, instance, index, name, listener):
+        """
+        Convenience method which adds a constraint listener (actually an
+        attribute listener) to the PropertyValue  object at the given
+        index.
+        """
+        self.getPropValList(instance)[index].addAttributeListener(
+            name, listener)
+
+        
+    def removeItemConstraintListener(self, instance, index, name):
+        """
+        Convenience method which removes the named constraint listener
+        from the property value at the given index.
+        """
+        self.getPropValList(instance)[index].removeAttributeListener(name)
+
+        
+    def getItemConstraint(self, instance, index, constraint):
+        """
+        Convenience method which returns the specified constraint for the
+        property value at the given index. If instance is None, the index
+        is ignored, and the default list type constraint value is returned.
+        If no list type was specified for this list, an AttributeError
+        is raised.
+        """
+
+        propVal = self.getPropVal(instance)
+
+        if propVal is not None:
+            propVal.getPropertyValueList()[index].getAttribute(constraint)
+        else:
+            self._listType.getConstraint(instance, constraint)
+
+        
+    def setItemConstraint(self, instance, index, constraint, value):
+        """
+        Convenience method which sets the specified constraint to the
+        specified value, for the property value at the given index. If
+        instance is None, the index is ignored, and the default list
+        type constraint value is changed. If no list type was specified
+        for this list, an AttributeError is raised.
+        """
+
+        propVal = self.getPropVal(instance)
+
+        if propVal is not None:
+            propVal.getPropertyValueList()[index].getAttribute(constraint)
+        else:
+            self._listType.setConstraint(instance, constraint) 
+
         
 class PropertyOwner(type):
     """
-    Metaclass for classes which contain PropertyBase objects.  
-    Sets PropertyBase labels from the class attribute names.
+    Metaclass for classes which contain PropertyBase objects. Sets
+    PropertyBase labels from the corresponding class attribute names.
     """
     def __new__(cls, name, bases, attrs):
         for n, v in attrs.items():
