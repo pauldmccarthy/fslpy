@@ -20,8 +20,7 @@ import fsl.fslview.slicecanvas as slicecanvas
 import fsl.props               as props
 
 
-class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
-
+class LightBoxCanvas(slicecanvas.SliceCanvas):
 
     # Properties which control the starting and end bounds of the
     # displayed slices, and the spacing between them (in real
@@ -57,21 +56,37 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                  glContext=None,
                  scrollbar=None):
         """
+        Create a LightBoxCanvas object. Parameters:
+        
+          - parent:    Parent wx object
+        
+          - imageList: a fsl.data.ImageList object which contains, or will
+                       contain, a list of images to be displayed.
+        
+          - zax:       Image axis to be used as the 'depth' axis. Can be
+                       changed via the LightBoxCanvas.zax property.
+
+          - glContext: OpenGL context object. If None, one will be created.
+
+          - scrollbar: A wx.ScrollBar object. If not provided, all slices
+                       will be drawn on the screen.
         """
 
         if (scrollbar is not None) and (not scrollbar.IsVertical()):
             raise RuntimeError('LightBoxCanvas only supports '
                                'a vertical scrollbar')
 
-        self._scrollbar = scrollbar
-
         slicecanvas.SliceCanvas.__init__(
             self, parent, imageList, zax, glContext)
-        
-        props.HasProperties.__init__(self)
 
+        self._scrollbar = scrollbar
         if scrollbar is not None:
+
+            # Trigger a redraw whenever the scrollbar is scrolled
             def onScroll(ev):
+
+                # all slices are displayed on the screen
+                # - the scrollbar is not currently needed
                 if scrollbar.GetPageSize() >= scrollbar.GetRange():
                     scrollbar.SetThumbPosition(0)
                     return
@@ -88,8 +103,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         if len(imageList) > 0:
             self.sliceSpacing = max([i.pixdim[self.zax] for i in imageList])
 
+        # Called when any of the slice properties change
         def sliceRangeChanged(*a):
             self._genSliceLocations()
+            self._updateScrollBar()
             self.Refresh()
 
         sliceRangeChanged()
@@ -99,10 +116,32 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         self.addListener('zmin',         self.name, sliceRangeChanged)
         self.addListener('zmax',         self.name, sliceRangeChanged)
 
+        # The _updateScrollBar method is ultimately
+        # responsible for calculating the number of
+        # rows which are to be displayed on the
+        # canvas. So when the canvas resizes, we
+        # want this to be recalculated.
+        self.Bind(wx.EVT_SIZE, lambda ev: self._updateScrollBar())
+
+
+    def _zAxisChanged(self, *a):
+        """
+        Overrides SliceCanvas._zAxisChanged. Called when the
+        SliceCanvas.zax property changes. Calls the superclass
+        implementation, and then sets the slice zmin/max bounds
+        to the image bounds.
+        """
+
+        slicecanvas.SliceCanvas._zAxisChanged(self, *a)
+        
+        self.zmin = self.imageList.bounds.getmin(self.zax)
+        self.zmax = self.imageList.bounds.getmax(self.zax)
+
 
     def _updateBounds(self):
         """
-        Overrides SliceCanvas._updateBounds. Called when 
+        Overrides SliceCanvas._updateBounds. Called when the image bounds
+        change. Updates the Z axis min/max values.
         """
 
         slicecanvas.SliceCanvas._updateBounds(self)
@@ -120,18 +159,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         self.zmin = self.zmin
         self.zmax = self.zmax
 
-        self._genSliceLocations()
-
 
     def _genSliceLocations(self):
         """
-        Called when the image list changes, or when any of the slice
-        display properties change. For every image in the image list,
-        generates a list of transformation matrices, and a list of
-        slice indices. The latter specifies the slice indices from
-        the image to be displayed, and the former specifies the
-        transformation matrix to be used to position the slice on the
-        canvas.        
+        Called when any of the slice display properties change. For every
+        image in the image list, generates a list of transformation
+        matrices, and a list of slice indices. The latter specifies the
+        slice indices from the image to be displayed, and the former
+        specifies the transformation matrix to be used to position the
+        slice on the canvas.        
         """
         
         # calculate the locations, in real world coordinates,
@@ -169,11 +205,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
 
     def _calculateSliceTransform(self, image, sliceno):
         """
-        Calculates a transformation matrix for the given slice
-        number. Each slice is displayed on the same canvas, but
-        is translated to a specific row/column. So a copy of
-        the voxToWorld transformation matrix of the given image
-        is made, and a translation applied to it, to position
+        Calculates a transformation matrix for the given slice number
+        (voxel index) in the given image. Each slice is displayed on
+        the same canvas, but is translated to a specific row/column.
+        So a copy of the voxToWorld transformation matrix of the given
+        image is made, and a translation applied to it, to position 
         the slice in the correct location on the canvas.
         """
 
@@ -200,7 +236,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         """
         If a scroll bar was passed in when this LightBoxCanvas was created,
         this method updates it to reflect the current state of the canvas
-        size and the displayed list of images.
+        size and the displayed list of images.  
         """
         
         if self._scrollbar is None: return
@@ -248,13 +284,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
         worldSliceWidth  = float(self.displayBounds.xlen)
         worldSliceHeight = float(self.displayBounds.ylen)
 
-        # If there's no scrollbar, we display
-        # all the slices on the screen
+        # If there's a scrollbar, its pagesize
+        # value contains the number of rows
+        # to be displayed on the screen - see
+        # the _updateScrollBar method
         if self._scrollbar is not None:
             rowsOnScreen = self._scrollbar.GetPageSize()
             worldWidth   = worldSliceWidth  * self.ncols
             worldHeight  = worldSliceHeight * rowsOnScreen
 
+        # If there's no scrollbar, we display
+        # all the slices on the screen
         else:
             worldWidth   = worldSliceWidth  * self.ncols
             worldHeight  = worldSliceHeight * self._nrows
@@ -318,7 +358,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                 endSlice = self._nslices
 
         self.glContext.SetCurrent(self)
-        self._updateScrollBar()
         self._setViewport()
 
         # clear the canvas
