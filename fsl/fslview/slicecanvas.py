@@ -181,13 +181,22 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.addListener('zpos',          self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
-        
         self.addListener('zoom',          self.name, self._zoomChanged)
 
         # When the image list changes, refresh the
         # display, and update the display bounds
         self.imageList.addListener('images', self.name, self._imageListChanged)
-        self.imageList.addListener('bounds', self.name, self._updateBounds) 
+        self.imageList.addListener('bounds', self.name, self._updateBounds)
+
+        # the image list is probably going to outlive
+        # this SliceCanvas object, so we do the right
+        # thing and remove our listeners when we die
+        def onDestroy(ev):
+            self.imageList.removeListener('images', self.name)
+            self.imageList.removeListener('bounds', self.name)
+            ev.Skip()
+            
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
         # When drawn, the slice does not necessarily take
         # up the entire canvas size, as its aspect ratio
@@ -337,6 +346,21 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             image.display.addListener('samplingRate', self.name, refresh)
             image.display.addListener('cmap',         self.name, refresh)
             image.display.addListener('volume',       self.name, refresh)
+
+            # remove all those listeners when
+            # this SliceCanvas is destroyed
+            def onDestroy(ev):
+                image.display.removeListener('enabled',      self.name)
+                image.display.removeListener('alpha',        self.name)
+                image.display.removeListener('displayMin',   self.name)
+                image.display.removeListener('displayMax',   self.name)
+                image.display.removeListener('rangeClip',    self.name)
+                image.display.removeListener('samplingRate', self.name)
+                image.display.removeListener('cmap',         self.name)
+                image.display.removeListener('volume',       self.name)
+                ev.Skip()
+                
+            self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
         self.Refresh()
 
