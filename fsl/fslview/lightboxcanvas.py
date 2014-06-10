@@ -101,7 +101,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # slice spacing - the smallest pixdim
         # across all images in the list
         if len(imageList) > 0:
-            self.sliceSpacing = max([i.pixdim[self.zax] for i in imageList])
+            self.sliceSpacing = min([i.pixdim[self.zax] for i in imageList])
 
         # Called when any of the slice properties change
         def sliceRangeChanged(*a):
@@ -138,7 +138,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.zmax = self.imageList.bounds.getmax(self.zax)
 
 
-    def _updateBounds(self):
+    def _updateBounds(self, *a):
         """
         Overrides SliceCanvas._updateBounds. Called when the image bounds
         change. Updates the Z axis min/max values.
@@ -156,8 +156,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # reset zmin/zmax in case they are
         # out of range of the new image bounds
-        self.zmin = self.zmin
-        self.zmax = self.zmax
+        self.zmin = imgzmin
+        self.zmax = imgzmax 
 
 
     def _genSliceLocations(self):
