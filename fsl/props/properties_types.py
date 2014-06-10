@@ -538,6 +538,13 @@ class Bounds(List):
 
 
 class PointValueList(propvals.PropertyValueList):
+    """
+    A list of values which represent a point in some n-dimensional space.
+    Some convenience methods and attributes are available, including
+    GLSL-like swizzling.
+    
+      [http://www.opengl.org/wiki/Data_Type_(GLSL)#Swizzling]
+    """
 
     def __init__(self, *args, **kwargs):
         propvals.PropertyValueList.__init__(self, *args, **kwargs)
@@ -580,6 +587,8 @@ class PointValueList(propvals.PropertyValueList):
 
 class Point(List):
     """
+    A property which represents a point in some n-dimensional space
+    (where n must be either 2 or 3 for the time being).
     """
 
     def __init__(self,  ndims=2, **kwargs):
@@ -602,8 +611,37 @@ class Point(List):
         List.__init__(self,
                       listType=Real(clamped=True),
                       minlen=ndims,
-                      maxlen=ndims, **kwargs)
+                      maxlen=ndims,
+                      **kwargs)
 
+
+    def getMinVal(self, instance, axis):
+        """
+        Returns the minimum bound for the given (0-indexed) axis.
+        """
+        return self.getItemConstraint(instance, axis, 'minval')
+
+        
+    def getMaxVal(self, instance, axis):
+        """
+        Returns the maximum bound for the given (0-indexed) axis.
+        """ 
+        return self.getItemConstraint(instance, axis, 'maxval')
+
+        
+    def setMinVal(self, instance, axis, value):
+        """
+        Sets the minimum bound for the given (0-indexed) axis.
+        """ 
+        self.setItemConstraint(instance, axis, 'minval', value)
+
+        
+    def setMaxVal(self, instance, axis, value):
+        """
+        Sets the maximum bound for the given (0-indexed) axis.
+        """ 
+        self.setItemConstraint(instance, axis, 'maxval', value)
+ 
         
     def _makePropVal(self, instance):
         """
