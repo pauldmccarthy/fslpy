@@ -56,6 +56,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                  zax=2,
                  glContext=None,
                  scrollbar=None):
+        """
+        """
 
         if (scrollbar is not None) and (not scrollbar.IsVertical()):
             raise RuntimeError('LightBoxCanvas only supports '
@@ -76,8 +78,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas, props.HasProperties):
                 self._draw(ev)
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
+        # default to showing the entire slice range
         self.zmin = imageList.bounds.zmin
         self.zmax = imageList.bounds.zmax
+
+        # Pick a sensible default for the
+        # slice spacing - the smallest pixdim
+        # across all images in the list
+        if len(imageList) > 0:
+            self.sliceSpacing = max([i.pixdim[self.zax] for i in imageList])
 
         def sliceRangeChanged(*a):
             self._genSliceLocations()
