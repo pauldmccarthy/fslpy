@@ -3,7 +3,11 @@
 # properties_value.py - Definitions of the PropertyValue and
 #                       PropertyValueList classes.
 #
-# These definitions are a part of properties.py.
+# These definitions are a part of properties.py, and are intended
+# to be created and managed by PropertyBase objects. However,
+# the PropertyValue class definitions have absolutely no dependencies
+# upon the PropertyBase definitions. The same can't be said for the
+# other way around though.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -29,7 +33,8 @@ class PropertyValue(object):
                  validateFunc=None,
                  preNotifyFunc=None,
                  postNotifyFunc=None,
-                 allowInvalid=True):
+                 allowInvalid=True,
+                 **attributes):
         """
         Create a PropertyValue object. Parameters:
         
@@ -71,27 +76,96 @@ class PropertyValue(object):
                             validateFunc).  Therefore, the validity of a value
                             may change, even if the value itself has not
                             changed.
-
+        
+          - attributes:     Any key-value pairs whic are to be associated with
+                            this PropertyValue object. Attributes are not used
+                            by the PropertyValue/List  classes, however they
+                            are used by the List/PropertyBase classes to store
+                            per-instance property constraints. Listeners may
+                            register to be notified when attribute values
+                            change.
         """
         
         if name     is     None: name  = 'PropertyValue_{}'.format(id(self))
         if castFunc is not None: value = castFunc(context, value)
         
-        self._context         = context
-        self._validate        = validateFunc
-        self._name            = name
-        self._castFunc        = castFunc
-        self._preNotifyFunc   = preNotifyFunc
-        self._postNotifyFunc  = postNotifyFunc
-        self._allowInvalid    = allowInvalid
-        self._changeListeners = OrderedDict()
+        self._context            = context
+        self._validate           = validateFunc
+        self._name               = name
+        self._castFunc           = castFunc
+        self._preNotifyFunc      = preNotifyFunc
+        self._postNotifyFunc     = postNotifyFunc
+        self._allowInvalid       = allowInvalid
+        self._attributes         = attributes.copy()
+        self._changeListeners    = OrderedDict()
+        self._attributeListeners = OrderedDict()
         
-        self.__value          = value
-        self.__valid          = False
-        self.__lastValue      = None
-        self.__lastValid      = False
+        self.__value             = value
+        self.__valid             = False
+        self.__lastValue         = None
+        self.__lastValid         = False
 
+        
+    def addAttributeListener(self, name, listener):
+        """
+        Adds an attribute listener for this PropertyValue. The listener
+        callback function must accept the following arguments:
+        
+          - context:   The context associated with this PropertyValue.
+          - attribute: The name of the attribute that changed
+          - value:     The new attribute value 
+        """
+        log.debug('Adding attribute listener on {}.{}: {}'.format(
+            self._context.__class__.__name__, self._name, name))
+        
+        name = 'PropertyValue_{}_{}'.format(self._name, name) 
+        self._attributeListeners[name] = listener
 
+        
+    def removeAttributeListener(self, name):
+        """
+        Removes the attribute listener of the given name.
+        """
+        log.debug('Removing attribute listener on {}.{}: {}'.format(
+            self._context.__class__.__name__, self._name, name))
+        
+        name = 'PropertyValue_{}_{}'.format(self._name, name) 
+        self._attributeListeners.pop(name, None)
+
+        
+    def getAttribute(self, name):
+        """
+        Returns the value of the named attribute.
+        """
+        return self._attributes[name]
+
+        
+    def setAttribute(self, name, value):
+        """
+        Sets the named attribute to the given value, and notifies any
+        registered attribute listeners of the change.
+        """
+        oldVal = self._attributes.get(name, None)
+
+        if oldVal == value: return
+
+        self._attributes[name] = value
+
+        log.debug('Attribute on {} changed: {} = {}'.format(
+            self._name, name, value))
+        
+        for cbName, cb in self._attributeListeners.items():
+            
+            log.debug('Notifying attribute listener: {}'.format(cbName))
+
+            try:
+                cb(self._context, name, value)
+            except Exception as e:
+                log.debug('Attribute listener {} on {} raised '
+                          'exception: {}'.format(cbName, self._name, e),
+                          exc_info=True) 
+        
+        
     def addListener(self, name, callback):
         """
         Adds a listener for this value. When the value changes, the
@@ -271,7 +345,9 @@ class PropertyValueList(PropertyValue):
                  listValidateFunc=None,
                  allowInvalid=True,
                  preNotifyFunc=None,
-                 postNotifyFunc=None):
+                 postNotifyFunc=None,
+                 listAttributes=None,
+                 itemAttributes=None):
         """
         Parameters:
         """
@@ -292,6 +368,7 @@ class PropertyValueList(PropertyValue):
                 return map(lambda v: itemCastFunc(context, v), values)
             return values
 
+        if listAttributes is None: listAttributes = {}
         PropertyValue.__init__(
             self,
             context,
@@ -301,12 +378,14 @@ class PropertyValueList(PropertyValue):
             validateFunc=validateFunc,
             allowInvalid=allowInvalid,
             preNotifyFunc=preNotifyFunc,
-            postNotifyFunc=postNotifyFunc)
+            postNotifyFunc=postNotifyFunc,
+            **listAttributes)
 
         # These attributes are passed to the PropertyValue
         # constructor whenever a new item is added to the list
         self._itemCastFunc     = itemCastFunc
         self._itemValidateFunc = itemValidateFunc
+        self._itemAttributes   = itemAttributes
         
         # The list of PropertyValue objects.
         if values is not None: self.__propVals = map(self.__newItem, values)
@@ -363,6 +442,8 @@ class PropertyValueList(PropertyValue):
         # list is revalidated. This is primarily to ensure that
         # list-listeners are notified of changes to individual list
         # elements.
+        if self._itemAttributes is None: itemAtts = {}
+        else:                            itemAtts = self._itemAttributes
         propVal = PropertyValue(
             self._context,
             name='{}_Item'.format(self._name),
@@ -370,7 +451,8 @@ class PropertyValueList(PropertyValue):
             castFunc=self._itemCastFunc,
             postNotifyFunc=lambda *a: self.revalidate(),
             validateFunc=self._itemValidateFunc,
-            allowInvalid=self._allowInvalid)
+            allowInvalid=self._allowInvalid,
+            **itemAtts)
         
         return propVal
 

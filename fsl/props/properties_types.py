@@ -508,7 +508,9 @@ class Bounds(List):
             itemValidateFunc=self._listType.validate,
             listValidateFunc=self.validate,
             allowInvalid=False,
-            postNotifyFunc=self._valChanged)
+            postNotifyFunc=self._valChanged,
+            listAttributes=self._defaultConstraints,
+            itemAttributes=self._listType._defaultConstraints)
         
         return bvl
 
@@ -536,9 +538,91 @@ class Bounds(List):
 
 
 class PointValueList(propvals.PropertyValueList):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        propvals.PropertyValueList.__init__(self, *args, **kwargs)
+
+    def getpos(self, axis):
+        return self[axis]
+        
+    def setpos(self, axis, value):
+        self[axis] = value
+
+    def __getattr__(self, name):
+
+        if any([dim not in 'xyz' for dim in name]):
+            raise AttributeError('{} has no attribute called {}'.format(
+                self.__class__.__name__, name)) 
+        
+        for dim in name:
+            if   dim == 'x': yield self[0]
+            elif dim == 'y': yield self[1]
+            elif dim == 'z': yield self[2]
+        
+    def __setattr__(self, name, value):
+
+        if any([dim not in 'xyz' for dim in name]):
+            self.__dict__[name] = value
+
+        if len(name) == 1:
+            value = [value]
+
+        if len(name) != len(value):
+            raise AttributeError('Improper number of values '
+                                 '({}) for attribute {}'.format(
+                                     len(value), name))
+        
+        for dim, val in zip(name, value):
+            if   dim == 'x': self[0] = val
+            elif dim == 'y': self[1] = val
+            elif dim == 'z': self[2] = val
 
 
 class Point(List):
-    def __init__(self, ndims=2, **kwargs):
-        pass
+    """
+    """
+
+    def __init__(self,  ndims=2, **kwargs):
+
+        default = kwargs.get('default', None)
+
+        if default is None:
+            default = [0.0] * ndims
+
+        if ndims < 2 or ndims > 3:
+            raise ValueError('Only points of two to three '
+                             'dimensions are supported')
+            
+        elif len(default) != ndims:
+            raise ValueError('{} point values are required'.format(ndims))
+
+        kwargs['default'] = default
+        self._ndims = ndims
+
+        List.__init__(self,
+                      listType=Real(clamped=True),
+                      minlen=ndims,
+                      maxlen=ndims, **kwargs)
+
+        
+    def _makePropVal(self, instance):
+        """
+        Overrides ListPropertyBase._makePropVal - creates and returns a
+        PointjValueList instead of a PropertyValueList, so callers get
+        to use the convenience methods/attributes defined in the PVL
+        class.
+        """
+
+        pvl = PointValueList(
+            instance,
+            name=self._label,
+            values=self._default,
+            itemCastFunc=self._listType.cast,
+            itemValidateFunc=self._listType.validate,
+            listValidateFunc=self.validate,
+            allowInvalid=False,
+            postNotifyFunc=self._valChanged,
+            listAttributes=self._defaultConstraints,
+            itemAtributes=self._listType._defaultConstraints)
+        
+        return pvl

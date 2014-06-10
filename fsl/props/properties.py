@@ -117,22 +117,18 @@
 import logging
 log = logging.getLogger(__name__)
 
-from collections import OrderedDict
-
 
 class InstanceData(object):
     """
     An InstanceData object is created for every PropertyBase object of
-    a HasProperties instance. It stores references to the property value(s)
-    and the instance-specific property constraints used to test validity.
+    a HasProperties instance. It stores references to the the instance
+    and the associated property value(s).
     """
-    def __init__(self, instance, propVal, **constraints):
-        self.instance            = instance
-        self.propVal             = propVal
-        self.constraints         = constraints.copy()
-        self.constraintListeners = OrderedDict()
+    def __init__(self, instance, propVal):
+        self.instance = instance
+        self.propVal  = propVal
 
-
+        
 class PropertyBase(object):
     """
     The base class for properties. For every HasProperties object which
@@ -227,16 +223,15 @@ class PropertyBase(object):
     def addConstraintListener(self, instance, name, listener):
         """
         Add a listener which will be notified whenever any constraint on this
-        Property change. A TypeError will be raised if instance is none.
+        Property change. An AttributeError will be raised if instance is None.
         The listener function must accept the following parameters:
+        
           - instance:   The HasProperties instance
-          - propName:   The name of this PropertyBase object
           - constraint: The name of the constraint that changed
           - value:      The new constraint value
         """
         instData = self._getInstanceData(instance)
-        if instData is not None:
-            instData.constraintListeners[name] = listener
+        instData.propVal.addAttributeListener(name, listener)
 
         
     def removeConstraintListener(self, instance, name):
@@ -244,8 +239,7 @@ class PropertyBase(object):
         An AttributeError will be raised if instance is none.
         """
         instData = self._getInstanceData(instance)
-        if instData is not None:
-            instData.constraintListeners.pop(name, None)
+        instData.propVal.removeAttributeListener(name)
 
         
     def getConstraint(self, instance, constraint):
@@ -255,10 +249,8 @@ class PropertyBase(object):
         """
         instData = self._getInstanceData(instance)
         
-        if instData is None:
-            return self._defaultConstraints[constraint]
-
-        return instData.constraints.get(constraint, None)
+        if instData is None: return self._defaultConstraints[constraint]
+        else:                return instData.propVal.getAttribute(constraint)
 
 
     def setConstraint(self, instance, constraint, value):
@@ -275,23 +267,12 @@ class PropertyBase(object):
         instData = self._getInstanceData(instance)
 
         if instData is None: oldVal = self._defaultConstraints[constraint]
-        else:                oldVal = instData.constraints[    constraint]
+        else:                oldVal = instData.propVal.getAttribute(constraint)
 
         if value == oldVal: return
 
         if instData is None: self._defaultConstraints[constraint] = value
-        else:                instData.constraints[    constraint] = value
-
-        if instData is not None:
-            for name, cb in instData.constraintListeners.items():
-                log.debug('Notifying constraint listener: {}'.format(name))
-
-                try:
-                    cb(instance, self._label, constraint, value)
-                except Exception as e:
-                    log.debug('Constraint listener {} on {} raised '
-                              'exception: {}'.format(name, self._label, e),
-                              exc_info=True) 
+        else:                instData.propVal.setAttribute(constraint, value)
 
 
     def getPropVal(self, instance):
@@ -329,7 +310,8 @@ class PropertyBase(object):
                              validateFunc=self.validate,
                              preNotifyFunc=self._preNotifyFunc,
                              postNotifyFunc=self._valChanged,
-                             allowInvalid=self._allowInvalid)
+                             allowInvalid=self._allowInvalid,
+                             **self._defaultConstraints)
 
         
     def _valChanged(self, value, valid, instance):
@@ -468,6 +450,7 @@ class ListPropertyBase(PropertyBase):
         PropertyBase.__init__(self, **kwargs)
         self._listType = listType
 
+        
     def _makePropVal(self, instance):
         """
         Creates and returns a PropertyValueList object to be associated
@@ -477,9 +460,11 @@ class ListPropertyBase(PropertyBase):
         if self._listType is not None:
             itemCastFunc     = self._listType.cast
             itemValidateFunc = self._listType.validate
+            itemAttributes   = self._listType._defaultConstraints
         else:
             itemCastFunc     = None
             itemValidateFunc = None
+            itemAttributes   = None
         
         return PropertyValueList(
             instance,
@@ -489,7 +474,9 @@ class ListPropertyBase(PropertyBase):
             itemValidateFunc=itemValidateFunc,
             listValidateFunc=self.validate,
             allowInvalid=self._allowInvalid,
-            postNotifyFunc=self._valChanged)
+            postNotifyFunc=self._valChanged,
+            listAttributes=self._defaultConstraints,
+            itemAttributes=itemAttributes)
 
         
     def getPropValList(self, instance):
@@ -539,9 +526,7 @@ class HasProperties(object):
             # object, which bind the PropertyBase object
             # to this HasProperties instance.
             propVal  = prop._makePropVal(instance)
-            instData = InstanceData(instance,
-                                    propVal,
-                                    **prop._defaultConstraints)
+            instData = InstanceData(instance, propVal)
 
             # Store the InstanceData object
             # on the instance itself
