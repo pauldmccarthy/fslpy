@@ -25,7 +25,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     # Properties which control the starting and end bounds of the
     # displayed slices, and the spacing between them (in real
     # world coordinates)
-    sliceSpacing = props.Double(clamped=True, minval=0.1, default=1.0)
+    sliceSpacing = props.Real(clamped=True, minval=0.1, default=1.0)
 
     # This property controls the number of slices
     # to be displayed on a single row.
@@ -33,8 +33,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
     # These properties control the range, in world
     # coordinates, of slices to be displayed
-    zmin = props.Double(clamped=True)
-    zmax = props.Double(clamped=True)
+    zmin = props.Real(clamped=True)
+    zmax = props.Real(clamped=True)
 
     _labels = {
         'zmin'         : 'First slice',

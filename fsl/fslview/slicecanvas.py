@@ -45,16 +45,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     # green crosshairs. The zpos property specifies the
     # currently displayed slice. These three properties
     # are all in world coordinates.
-    xpos = props.Double(clamped=True)
-    ypos = props.Double(clamped=True)
-    zpos = props.Double(clamped=True)
+    xpos = props.Real(clamped=True)
+    ypos = props.Real(clamped=True)
+    zpos = props.Real(clamped=True)
 
     # The image bounds are divided  by this zoom
     # factor to produce the display bounds.
-    zoom = props.Double(minval=1.0,
-                        maxval=10.0, 
-                        default=1.0,
-                        clamped=True) 
+    zoom = props.Real(minval=1.0,
+                      maxval=10.0, 
+                      default=1.0,
+                      clamped=True) 
 
     # The x/y min/max properties specify the display
     # range, in world coordinates, of the canvas.

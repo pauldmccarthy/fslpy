@@ -72,12 +72,12 @@ class Options(props.HasProperties):
 
     # Advanced -> Search
     searchMode      = props.Choice(searchModes)
-    searchAngleXMin = props.Double(minval=-180.0, maxval=180.0)
-    searchAngleXMax = props.Double(minval=-180.0, maxval=180.0)
-    searchAngleYMin = props.Double(minval=-180.0, maxval=180.0)
-    searchAngleYMax = props.Double(minval=-180.0, maxval=180.0)
-    searchAngleZMin = props.Double(minval=-180.0, maxval=180.0)
-    searchAngleZMax = props.Double(minval=-180.0, maxval=180.0)
+    searchAngleXMin = props.Real(minval=-180.0, maxval=180.0)
+    searchAngleXMax = props.Real(minval=-180.0, maxval=180.0)
+    searchAngleYMin = props.Real(minval=-180.0, maxval=180.0)
+    searchAngleYMax = props.Real(minval=-180.0, maxval=180.0)
+    searchAngleZMin = props.Real(minval=-180.0, maxval=180.0)
+    searchAngleZMax = props.Real(minval=-180.0, maxval=180.0)
 
     # Advanced -> Cost function
     costFunction    = props.Choice(costFunctions)

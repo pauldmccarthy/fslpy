@@ -246,7 +246,7 @@ def _String(parent, hasProps, propObj, propVal):
 
 
 
-def _Double(parent, hasProps, propObj, propVal):
+def _Real(parent, hasProps, propObj, propVal):
     return _Number(parent, hasProps, propObj, propVal)
 
 

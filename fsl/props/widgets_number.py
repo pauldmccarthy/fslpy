@@ -26,13 +26,13 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
 
     def getMinVal(val):
         if val is not None: return val
-        if   isinstance(propObj, props.Int):    return -2 ** 31 + 1
-        elif isinstance(propObj, props.Double): return -sys.float_info.max
+        if   isinstance(propObj, props.Int):  return -2 ** 31 + 1
+        elif isinstance(propObj, props.Real): return -sys.float_info.max
         
     def getMaxVal(val):
         if val is not None: return val
-        if   isinstance(propObj, props.Int):    return 2 ** 31 - 1
-        elif isinstance(propObj, props.Double): return sys.float_info.max 
+        if   isinstance(propObj, props.Int):  return 2 ** 31 - 1
+        elif isinstance(propObj, props.Real): return sys.float_info.max 
 
     value   = propVal.get()
     minval  = propObj.getConstraint(hasProps, 'minval')
@@ -46,7 +46,7 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
     if isinstance(propObj, props.Int):
         SpinCtr = wx.SpinCtrl
 
-    elif isinstance(propObj, props.Double):
+    elif isinstance(propObj, props.Real):
         
         SpinCtr = wx.SpinCtrlDouble
 
@@ -179,7 +179,7 @@ def _makeSlider(parent, hasProps, propObj, propVal):
 def _Number(parent, hasProps, propObj, propVal):
     """
     Creates and returns a widget allowing the user to edit
-    the given property (a props.Int or props.Double).
+    the given property (a props.Int or props.Real).
     """
 
     minval  = propObj.getConstraint(hasProps, 'minval')

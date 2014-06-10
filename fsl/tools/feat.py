@@ -88,10 +88,10 @@ class Options(props.HasProperties):
     progressWatcher          = props.Boolean(default=True)
     brainBackgroundThreshold = props.Percentage(default=10)
     efficNoiseLevel          = props.Percentage(default=0.66)
-    efficTemporalSmoothness  = props.Double(default=0.34,
-                                            minval=-1.0,
-                                            maxval=1.0)
-    efficZThreshold          = props.Double(default=5.3, minval=0.0)
+    efficTemporalSmoothness  = props.Real(default=0.34,
+                                          minval=-1.0,
+                                          maxval=1.0)
+    efficZThreshold          = props.Real(default=5.3, minval=0.0)
 
     # misc/higher level
     cleanUpFirstLevel        = props.Boolean(default=False)
@@ -105,7 +105,7 @@ class Options(props.HasProperties):
     outputDirectory      = props.FilePath(isFile=False, required=True)
     totalVolumes         = props.Int(minval=0)
     deleteVolumes        = props.Int(minval=0)
-    TR                   = props.Double(minval=0, default=3.0)
+    TR                   = props.Real(minval=0, default=3.0)
     highpassFilterCutoff = props.Int(minval=0, default=100)
 
     # data/higher level
@@ -134,8 +134,8 @@ class Options(props.HasProperties):
                                             required=lambda i: i.b0Unwarping)
     b0_fieldmapMag         = props.FilePath(exists=True,
                                             required=lambda i: i.b0Unwarping)
-    b0_echoSpacing         = props.Double(minval=0.0, default=0.7)
-    b0_TE                  = props.Double(minval=0.0, default=35)
+    b0_echoSpacing         = props.Real(minval=0.0, default=0.7)
+    b0_TE                  = props.Real(minval=0.0, default=35)
     b0_unwarpDir           = props.Choice(('x', '-x', 'y', '-y', 'z', '-z'))
     b0_signalLossThreshold = props.Percentage(default=10)
 
@@ -151,7 +151,7 @@ class Options(props.HasProperties):
         required=lambda i: i.sliceTimingCorrection == 'orderFile')
     
     brainExtraction       = props.Boolean(default=True)
-    smoothingFWHM         = props.Double(minval=0.0, default=5.0)
+    smoothingFWHM         = props.Real(minval=0.0, default=5.0)
     intensityNorm         = props.Boolean(default=False)
     perfusionSubtraction  = props.Boolean(default=False)
 
@@ -183,14 +183,14 @@ class Options(props.HasProperties):
 
     # Thresholding sub-options
     # displayed if thresholding is not None
-    pThreshold  = props.Double(minval=0.0, maxval=1.0, default=0.05)
-    zThreshold  = props.Double(minval=0.0, default=2.3)
+    pThreshold  = props.Real(minval=0.0, maxval=1.0, default=0.05)
+    zThreshold  = props.Real(minval=0.0, default=2.3)
 
     renderZMinMax = props.Choice(zRenderingOpts)
     
     # displayed if renderZMinMax is 'preset'
-    renderZMin    = props.Double(minval=0.0, default=2.0)
-    renderZMax    = props.Double(minval=0.0, default=8.0)
+    renderZMin    = props.Real(minval=0.0, default=2.0)
+    renderZMax    = props.Real(minval=0.0, default=8.0)
     
     blobTypes     = props.Choice(blobOpts)
     createTSPlots = props.Boolean(default=True)
@@ -215,7 +215,7 @@ class Options(props.HasProperties):
     standardDof    = props.Choice(regDofOpts)
     nonLinearReg   = props.Boolean(default=False)
     # only shown if nonlinear reg is selected
-    warpResolution = props.Double(minval=0.0, default=10.0)
+    warpResolution = props.Real(minval=0.0, default=10.0)
 
     def __init__(self):
         """

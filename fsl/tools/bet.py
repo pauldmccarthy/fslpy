@@ -54,9 +54,9 @@ class Options(props.HasProperties):
     outputMesh           = props.Boolean(default=False)
     thresholdImages      = props.Boolean(default=False)
 
-    fractionalIntensity  = props.Double(default=0.5, minval=0.0,  maxval=1.0)
-    thresholdGradient    = props.Double(default=0.0, minval=-1.0, maxval=1.0)
-    headRadius           = props.Double(default=0.0, minval=0.0)
+    fractionalIntensity  = props.Real(default=0.5, minval=0.0,  maxval=1.0)
+    thresholdGradient    = props.Real(default=0.0, minval=-1.0, maxval=1.0)
+    headRadius           = props.Real(default=0.0, minval=0.0)
     xCoordinate          = props.Int(default=0, minval=0)
     yCoordinate          = props.Int(default=0, minval=0)
     zCoordinate          = props.Int(default=0, minval=0)

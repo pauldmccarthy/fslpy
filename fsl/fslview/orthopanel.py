@@ -25,24 +25,24 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     # Properties which set the current displayed
     # position (in real world coordinates)
-    xpos  = props.Double(clamped=True)
-    ypos  = props.Double(clamped=True)
-    zpos  = props.Double(clamped=True)
+    xpos  = props.Real(clamped=True)
+    ypos  = props.Real(clamped=True)
+    zpos  = props.Real(clamped=True)
 
     # Properties which set the current zoom
     # factor on each of the canvases
-    xzoom = props.Double(minval=1.0,
-                         maxval=10.0, 
-                         default=1.0,
-                         clamped=True)
-    yzoom = props.Double(minval=1.0,
-                         maxval=10.0, 
-                         default=1.0,
-                         clamped=True)
-    zzoom = props.Double(minval=1.0,
-                         maxval=10.0, 
-                         default=1.0,
-                         clamped=True)
+    xzoom = props.Real(minval=1.0,
+                       maxval=10.0, 
+                       default=1.0,
+                       clamped=True)
+    yzoom = props.Real(minval=1.0,
+                       maxval=10.0, 
+                       default=1.0,
+                       clamped=True)
+    zzoom = props.Real(minval=1.0,
+                       maxval=10.0, 
+                       default=1.0,
+                       clamped=True)
 
     _view = props.HGroup((
         props.VGroup(('showCursor',

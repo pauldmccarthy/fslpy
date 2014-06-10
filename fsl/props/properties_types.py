@@ -31,8 +31,8 @@ class Boolean(props.PropertyBase):
 
 class Number(props.PropertyBase):
     """
-    Base class for the Int and Double classes. Don't
-    use/subclass this, use/subclass one of Int or Double.
+    Base class for the Int and Real classes. Don't
+    use/subclass this, use/subclass one of Int or Real.
     """
     
     def __init__(self,
@@ -117,15 +117,15 @@ class Int(Number):
         return Number.cast(self, instance, int(value))
         
 
-class Double(Number):
+class Real(Number):
     """
-    A property which encapsulates a double.  TODO Double is a silly name.
-    Change it to Real.
+    A property which encapsulates a real number (as a python floating
+    point).
     """
     
     def __init__(self, **kwargs):
         """
-        Double constructor. See the Number class for keyword
+        Real constructor. See the Number class for keyword
         arguments.
         """
         Number.__init__(self, **kwargs)
@@ -135,7 +135,7 @@ class Double(Number):
         return Number.cast(self, instance, float(value))
         
 
-class Percentage(Double):
+class Percentage(Real):
     """
     A property which represents a percentage. 
     """
@@ -144,7 +144,7 @@ class Percentage(Double):
         kwargs['minval']  = 0.0
         kwargs['maxval']  = 100.0
         kwargs['default'] = kwargs.get('default', 50.0)
-        Double.__init__(self, **kwargs)
+        Real.__init__(self, **kwargs)
 
 
 class String(props.PropertyBase):
@@ -487,7 +487,7 @@ class Bounds(List):
         self._ndims = ndims
 
         List.__init__(self,
-                      listType=Double(),
+                      listType=Real(),
                       minlen=ndims * 2,
                       maxlen=ndims * 2, **kwargs)
 

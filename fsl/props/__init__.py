@@ -10,7 +10,7 @@ from properties import \
     HasProperties, \
     Boolean,       \
     Int,           \
-    Double,        \
+    Real,          \
     Percentage,    \
     String,        \
     FilePath,      \
