@@ -123,6 +123,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             self._updateImageBounds)
         self._updateImageBounds()
 
+        def onDestroy(ev):
+            self.imageList.removeListener('bounds', self.name)
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
         self._configPosListeners()
         self._configShowListeners()
         self._configZoomListeners()
