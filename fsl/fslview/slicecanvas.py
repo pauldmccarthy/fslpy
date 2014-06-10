@@ -40,14 +40,15 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     a collection of 3D images (see fsl.data.fslimage.ImageList).
     """
 
-    # The xpos and ypos properties specify the current
-    # position of a 'cursor', which is highlighted with
-    # green crosshairs. The zpos property specifies the
-    # currently displayed slice. These three properties
-    # are all in world coordinates.
-    xpos = props.Real(clamped=True)
-    ypos = props.Real(clamped=True)
-    zpos = props.Real(clamped=True)
+    # The currently displayed position. While the values
+    # are in the world coordinates of the image list, the
+    # x and y dimensions correspond to horizontal and
+    # vertical on the screen, and the z dimension to
+    # 'depth'. The X and Y positions denote the position
+    # of a 'cursor', which is highlighted with green
+    # crosshairs. The Z position specifies the currently
+    # displayed slice. 
+    pos = props.Point(ndims=3)
 
     # The image bounds are divided  by this zoom
     # factor to produce the display bounds.
@@ -168,17 +169,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             
             self.displayBounds.all = b.getrange(self.xax) + \
                                      b.getrange(self.yax)
-            self.xpos = b.getmin(self.xax) + b.getlen(self.xax) / 2.0
-            self.ypos = b.getmin(self.yax) + b.getlen(self.yax) / 2.0
-            self.zpos = b.getmin(self.zax) + b.getlen(self.zax) / 2.0
+            self.pos.xyz = [
+                b.getmin(self.xax) + b.getlen(self.xax) / 2.0,
+                b.getmin(self.yax) + b.getlen(self.yax) / 2.0,
+                b.getmin(self.zax) + b.getlen(self.zax) / 2.0]
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
         def refresh(*a): self.Refresh()
             
-        self.addListener('xpos',          self.name, refresh)
-        self.addListener('ypos',          self.name, refresh)
-        self.addListener('zpos',          self.name, refresh)
+        self.addListener('pos',           self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
         self.addListener('zoom',          self.name, self._zoomChanged)
@@ -257,8 +257,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                               bounds.getrange(self.yax))
             return
 
-        xcentre = self.xpos
-        ycentre = self.ypos
+        xcentre, ycentre = self.pos.xy
 
         xlen = value * bounds.getlen(self.xax)
         ylen = value * bounds.getlen(self.yax)
@@ -291,26 +290,26 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         range.
         """
 
-        imgBounds  = self.imageList.bounds
-
         # the _zoomChanged method
         # updates the display bounds
         self._zoomChanged()
 
+        imgBounds  = self.imageList.bounds
         dispBounds = self.displayBounds
 
-        self.setConstraint('xpos', 'minval', dispBounds.xmin)
-        self.setConstraint('xpos', 'maxval', dispBounds.xmax)
-        self.setConstraint('ypos', 'minval', dispBounds.ymin)
-        self.setConstraint('ypos', 'maxval', dispBounds.ymax)
-        self.setConstraint('zpos', 'minval', imgBounds.getmin(self.zax))
-        self.setConstraint('zpos', 'maxval', imgBounds.getmax(self.zax))
+        zmin = imgBounds.getmin(self.zax)
+        zmax = imgBounds.getmax(self.zax)
 
-        # reset the cursor and min/max values in
-        # case the old values were out of bounds
-        self.xpos = self.xpos
-        self.ypos = self.ypos
-        self.zpos = self.zpos
+        self.setItemConstraint('pos', self.xax, 'minval', dispBounds.xmin)
+        self.setItemConstraint('pos', self.xax, 'maxval', dispBounds.xmax)
+        self.setItemConstraint('pos', self.yax, 'minval', dispBounds.ymin)
+        self.setItemConstraint('pos', self.yax, 'maxval', dispBounds.ymax) 
+        self.setItemConstraint('pos', self.zax, 'minval', zmin)
+        self.setItemConstraint('pos', self.zax, 'maxval', zmax)
+        
+        # reset the cursor in case the
+        # old values were out of bounds
+        self.pos.xyz = self.pos.xyz
 
             
     def _imageListChanged(self, *a):
@@ -608,7 +607,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # move the currently displayed slice to screen Z coord 0
         trans = [0, 0, 0]
-        trans[self.zax] = -self.zpos 
+        trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
 
         
@@ -767,7 +766,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
 
-            zi = int(image.worldToVox(self.zpos, self.zax))
+            zi = int(image.worldToVox(self.pos.z, self.zax))
             self._drawSlice(image, zi)
 
         gl.glUseProgram(0)
@@ -782,15 +781,15 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             # add a little padding to the lines if they are
             # on the boundary, so they don't get cropped
-            if self.xpos == bounds.xmin: xverts[:, self.xax] = self.xpos + 0.5
-            else:                        xverts[:, self.xax] = self.xpos
-            if self.ypos == bounds.ymin: yverts[:, self.yax] = self.ypos + 0.5
-            else:                        yverts[:, self.yax] = self.ypos        
+            if self.pos.x == bounds.xmin: xverts[:, self.xax] = self.pos.x + 0.5
+            else:                         xverts[:, self.xax] = self.pos.x
+            if self.pos.y == bounds.ymin: yverts[:, self.yax] = self.pos.y + 0.5
+            else:                         yverts[:, self.yax] = self.pos.y        
 
             xverts[:, self.yax] = [bounds.ymin, bounds.ymax]
-            xverts[:, self.zax] =  self.zpos + 1
+            xverts[:, self.zax] =  self.pos.z + 1
             yverts[:, self.xax] = [bounds.xmin, bounds.xmax]
-            yverts[:, self.zax] =  self.zpos + 1
+            yverts[:, self.zax] =  self.pos.z + 1
 
             gl.glBegin(gl.GL_LINES)
             gl.glColor3f(0, 1, 0)

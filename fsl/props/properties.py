@@ -638,7 +638,29 @@ class HasProperties(object):
         Convenience method, sets the value of the named constraint for the
         named property. See PropertyBase.setConstraint.
         """ 
-        return self.getProp(propName).setConstraint(self, constraint, value) 
+        return self.getProp(propName).setConstraint(self, constraint, value)
+
+
+    def getItemConstraint(self, propName, index, constraint):
+        """
+        Convenience method, returns the value of the named constraint for
+        the value at the specified index of the named list property. See
+        ListPropertyBase.getItemConstraint. If the named property is not
+        a list property, an AttributeError is raised.
+        """
+        return self.getProp(propName).getItemConstraint(
+            self, index, constraint)
+
+        
+    def setItemConstraint(self, propName, index, constraint, value):
+        """
+        Convenience method, sets the value of the named constraint for
+        the value at the specified index of the named list property. See
+        ListPropertyBase.setItemConstraint. If the named property is not
+        a list property, an AttributeError is raised. 
+        """ 
+        return self.getProp(propName).setItemConstraint(
+            self, index, constraint, value) 
 
 
     def addListener(self, propName, listenerName, callback):

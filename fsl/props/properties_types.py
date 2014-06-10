@@ -430,35 +430,40 @@ class BoundsValueList(propvals.PropertyValueList):
             
     def __getattr__(self, name):
 
-        if   name == 'x':    return self.getrange(0)
-        elif name == 'y':    return self.getrange(1)
-        elif name == 'z':    return self.getrange(2)
-        elif name == 'xmin': return self.getmin(  0)
-        elif name == 'xmax': return self.getmax(  0)
-        elif name == 'ymin': return self.getmin(  1)
-        elif name == 'ymax': return self.getmax(  1)
-        elif name == 'zmin': return self.getmin(  2)
-        elif name == 'zmax': return self.getmax(  2)
-        elif name == 'xlen': return self.getlen(  0)
-        elif name == 'ylen': return self.getlen(  1)
-        elif name == 'zlen': return self.getlen(  2)
-        elif name == 'all':  return self[:]
+        lname = name.lower()
+
+        if   lname == 'x':    return self.getrange(0)
+        elif lname == 'y':    return self.getrange(1)
+        elif lname == 'z':    return self.getrange(2)
+        elif lname == 'xmin': return self.getmin(  0)
+        elif lname == 'xmax': return self.getmax(  0)
+        elif lname == 'ymin': return self.getmin(  1)
+        elif lname == 'ymax': return self.getmax(  1)
+        elif lname == 'zmin': return self.getmin(  2)
+        elif lname == 'zmax': return self.getmax(  2)
+        elif lname == 'xlen': return self.getlen(  0)
+        elif lname == 'ylen': return self.getlen(  1)
+        elif lname == 'zlen': return self.getlen(  2)
+        elif lname == 'all':  return self[:]
 
         raise AttributeError('{} has no attribute called {}'.format(
             self.__class__.__name__, name))
 
     def __setattr__(self, name, value):
-        if   name == 'x':    self.setrange(0, value)
-        elif name == 'y':    self.setrange(1, value)
-        elif name == 'z':    self.setrange(2, value)
-        elif name == 'xmin': self.setmin(  0, value)
-        elif name == 'xmax': self.setmax(  0, value)
-        elif name == 'ymin': self.setmin(  1, value)
-        elif name == 'ymax': self.setmax(  1, value)
-        elif name == 'zmin': self.setmin(  2, value)
-        elif name == 'zmax': self.setmax(  2, value)
-        elif name == 'all':  self[:] = value
-        else:                self.__dict__[name] = value
+
+        lname = name.lower()
+        
+        if   lname == 'x':    self.setrange(0, value)
+        elif lname == 'y':    self.setrange(1, value)
+        elif lname == 'z':    self.setrange(2, value)
+        elif lname == 'xmin': self.setmin(  0, value)
+        elif lname == 'xmax': self.setmax(  0, value)
+        elif lname == 'ymin': self.setmin(  1, value)
+        elif lname == 'ymax': self.setmax(  1, value)
+        elif lname == 'zmin': self.setmin(  2, value)
+        elif lname == 'zmax': self.setmax(  2, value)
+        elif lname == 'all':  self[:] = value
+        else:                 self.__dict__[name] = value
 
 
 class Bounds(List):
@@ -557,29 +562,38 @@ class PointValueList(propvals.PropertyValueList):
 
     def __getattr__(self, name):
 
-        if any([dim not in 'xyz' for dim in name]):
+        lname = name.lower()
+
+        if any([dim not in 'xyz' for dim in lname]):
             raise AttributeError('{} has no attribute called {}'.format(
-                self.__class__.__name__, name)) 
-        
-        for dim in name:
-            if   dim == 'x': yield self[0]
-            elif dim == 'y': yield self[1]
-            elif dim == 'z': yield self[2]
+                self.__class__.__name__, name))
+
+        res = []
+        for dim in lname:
+            if   dim == 'x': res.append(self[0])
+            elif dim == 'y': res.append(self[1])
+            elif dim == 'z': res.append(self[2])
+            
+        if len(res) == 1: return res[0]
+        return res
         
     def __setattr__(self, name, value):
 
-        if any([dim not in 'xyz' for dim in name]):
-            self.__dict__[name] = value
+        lname = name.lower()
 
-        if len(name) == 1:
+        if any([dim not in 'xyz' for dim in lname]):
+            self.__dict__[name] = value
+            return
+
+        if len(lname) == 1:
             value = [value]
 
-        if len(name) != len(value):
+        if len(lname) != len(value):
             raise AttributeError('Improper number of values '
                                  '({}) for attribute {}'.format(
-                                     len(value), name))
+                                     len(value), lname))
         
-        for dim, val in zip(name, value):
+        for dim, val in zip(lname, value):
             if   dim == 'x': self[0] = val
             elif dim == 'y': self[1] = val
             elif dim == 'z': self[2] = val
@@ -615,28 +629,28 @@ class Point(List):
                       **kwargs)
 
 
-    def getMinVal(self, instance, axis):
+    def getMin(self, instance, axis):
         """
         Returns the minimum bound for the given (0-indexed) axis.
         """
         return self.getItemConstraint(instance, axis, 'minval')
 
         
-    def getMaxVal(self, instance, axis):
+    def getMax(self, instance, axis):
         """
         Returns the maximum bound for the given (0-indexed) axis.
         """ 
         return self.getItemConstraint(instance, axis, 'maxval')
 
         
-    def setMinVal(self, instance, axis, value):
+    def setMin(self, instance, axis, value):
         """
         Sets the minimum bound for the given (0-indexed) axis.
         """ 
         self.setItemConstraint(instance, axis, 'minval', value)
 
         
-    def setMaxVal(self, instance, axis, value):
+    def setMax(self, instance, axis, value):
         """
         Sets the maximum bound for the given (0-indexed) axis.
         """ 
@@ -661,6 +675,6 @@ class Point(List):
             allowInvalid=False,
             postNotifyFunc=self._valChanged,
             listAttributes=self._defaultConstraints,
-            itemAtributes=self._listType._defaultConstraints)
+            itemAttributes=self._listType._defaultConstraints)
         
         return pvl

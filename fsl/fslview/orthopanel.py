@@ -276,17 +276,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.ypos = ypos
         self.zpos = zpos
 
-        self.xcanvas.xpos = ypos
-        self.xcanvas.ypos = zpos
-        self.xcanvas.zpos = xpos
-
-        self.ycanvas.xpos = xpos
-        self.ycanvas.ypos = zpos
-        self.ycanvas.zpos = ypos
-
-        self.zcanvas.xpos = xpos
-        self.zcanvas.ypos = ypos
-        self.zcanvas.zpos = zpos 
+        self.xcanvas.pos.xyz = [ypos, zpos, xpos]
+        self.ycanvas.pos.xyz = [xpos, zpos, ypos]
+        self.zcanvas.pos.xyz = [xpos, ypos, zpos]
 
         if self.xzoom != 1: self._shiftCanvas(self.xcanvas, ypos, zpos)
         if self.yzoom != 1: self._shiftCanvas(self.ycanvas, xpos, zpos)

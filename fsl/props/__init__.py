@@ -20,7 +20,8 @@ from properties import \
     Choice,        \
     List,          \
     ColourMap,     \
-    Bounds
+    Bounds,        \
+    Point
 
 
 try:
