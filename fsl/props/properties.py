@@ -217,7 +217,10 @@ class PropertyBase(object):
         De-register the named listener from the PropertyValue object managed
         by this property.
         """
-        self._getInstanceData(instance).propVal.removeListener(name)
+        instData = self._getInstanceData(instance)
+        
+        if instData is None: return
+        else:                instData.propVal.removeListener(name)
 
         
     def addConstraintListener(self, instance, name, listener):
@@ -236,10 +239,12 @@ class PropertyBase(object):
         
     def removeConstraintListener(self, instance, name):
         """
-        An AttributeError will be raised if instance is none.
+        Removes the named constraint listener. 
         """
         instData = self._getInstanceData(instance)
-        instData.propVal.removeAttributeListener(name)
+        
+        if instData is None: return
+        else:                instData.propVal.removeAttributeListener(name)
 
         
     def getConstraint(self, instance, constraint):

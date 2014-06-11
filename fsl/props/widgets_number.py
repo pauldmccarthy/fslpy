@@ -76,10 +76,12 @@ def _makeSpinBox(parent, hasProps, propObj, propVal):
 
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(spin))
     propObj.addConstraintListener(hasProps, listenerName, updateRange)
+
+    def onDestroy(ev):
+        propObj.removeConstraintListener(hasProps, listenerName)
+        ev.Skip()
     
-    spin.Bind(
-        wx.EVT_WINDOW_DESTROY,
-        lambda ev: propObj.removeConstraintListener(hasProps, listenerName))
+    spin.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
     return spin
 
@@ -145,10 +147,12 @@ def _makeSlider(parent, hasProps, propObj, propVal):
 
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(slider))
     propObj.addConstraintListener(hasProps, listenerName, updateRange)
+
+    def onDestroy(ev):
+        propObj.removeConstraintListener(hasProps, listenerName)
+        ev.Skip()
     
-    slider.Bind(
-        wx.EVT_WINDOW_DESTROY,
-        lambda ev: propObj.removeConstraintListener(hasProps, listenerName))
+    slider.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
     if editBounds:
 

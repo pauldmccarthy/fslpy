@@ -125,6 +125,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         def onDestroy(ev):
             self.imageList.removeListener('bounds', self.name)
+            ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

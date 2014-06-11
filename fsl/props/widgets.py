@@ -84,8 +84,11 @@ def _propBind(hasProps, propObj, propVal, guiObj, evType, labelMap=None):
     for ev in evType: guiObj.Bind(ev, _propUpdate)
     propVal.addListener(listenerName, _guiUpdate)
 
-    guiObj.Bind(wx.EVT_WINDOW_DESTROY,
-                lambda ev: propVal.removeListener(listenerName))
+    def onDestroy(ev):
+        propVal.removeListener(listenerName)
+        ev.Skip()
+
+    guiObj.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
 
 def _setupValidation(widget, hasProps, propObj, propVal):
@@ -124,8 +127,11 @@ def _setupValidation(widget, hasProps, propObj, propVal):
 
     # And ensure that the listener is
     # removed when the widget is destroyed
-    widget.Bind(wx.EVT_WINDOW_DESTROY,
-                lambda ev: propVal.removeListener(lName))
+    def onDestroy(ev):
+        propVal.removeListener(lName)
+        ev.Skip()
+    
+    widget.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
     # Validate the initial property value,
     # so the background is appropriately set

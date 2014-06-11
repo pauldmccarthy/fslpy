@@ -167,12 +167,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             self._updateBounds()
             b = self.imageList.bounds
             
-            self.displayBounds.all = b.getrange(self.xax) + \
-                                     b.getrange(self.yax)
+            self.displayBounds.all = b.getRange(self.xax) + \
+                                     b.getRange(self.yax)
             self.pos.xyz = [
-                b.getmin(self.xax) + b.getlen(self.xax) / 2.0,
-                b.getmin(self.yax) + b.getlen(self.yax) / 2.0,
-                b.getmin(self.zax) + b.getlen(self.zax) / 2.0]
+                b.getMin(self.xax) + b.getLen(self.xax) / 2.0,
+                b.getMin(self.yax) + b.getLen(self.yax) / 2.0,
+                b.getMin(self.zax) + b.getLen(self.zax) / 2.0]
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
@@ -253,31 +253,31 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         dispBounds = self.displayBounds
 
         if value == 1.0:
-            dispBounds.all = (bounds.getrange(self.xax) + 
-                              bounds.getrange(self.yax))
+            dispBounds.all = (bounds.getRange(self.xax) + 
+                              bounds.getRange(self.yax))
             return
 
         xcentre, ycentre = self.pos.xy
 
-        xlen = value * bounds.getlen(self.xax)
-        ylen = value * bounds.getlen(self.yax)
+        xlen = value * bounds.getLen(self.xax)
+        ylen = value * bounds.getLen(self.yax)
 
         xmin = xcentre - 0.5 * xlen
         xmax = xcentre + 0.5 * xlen
         ymin = ycentre - 0.5 * ylen
         ymax = ycentre + 0.5 * ylen        
 
-        if xmin < bounds.getmin(self.xax):
-            xmin = bounds.getmin(self.xax)
+        if xmin < bounds.getMin(self.xax):
+            xmin = bounds.getMin(self.xax)
             xmax = xmin + xlen
-        elif xmax > bounds.getmax(self.xax):
-            xmax = bounds.getmax(self.xax)
+        elif xmax > bounds.getMax(self.xax):
+            xmax = bounds.getMax(self.xax)
             xmin = xmax - xlen 
-        if ymin < bounds.getmin(self.yax):
-            ymin = bounds.getmin(self.yax)
+        if ymin < bounds.getMin(self.yax):
+            ymin = bounds.getMin(self.yax)
             ymax = ymin + ylen 
-        elif ymax > bounds.getmax(self.yax):
-            ymax = bounds.getmax(self.yax)
+        elif ymax > bounds.getMax(self.yax):
+            ymax = bounds.getMax(self.yax)
             ymin = ymax - ylen 
 
         dispBounds.all = [xmin, xmax, ymin, ymax] 
@@ -297,8 +297,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         imgBounds  = self.imageList.bounds
         dispBounds = self.displayBounds
 
-        zmin = imgBounds.getmin(self.zax)
-        zmax = imgBounds.getmax(self.zax)
+        zmin = imgBounds.getMin(self.zax)
+        zmax = imgBounds.getMax(self.zax)
 
         self.setItemConstraint('pos', self.xax, 'minval', dispBounds.xmin)
         self.setItemConstraint('pos', self.xax, 'maxval', dispBounds.xmax)
@@ -560,8 +560,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if xmax is None: xmax = self.displayBounds.xmax
         if ymin is None: ymin = self.displayBounds.ymin
         if ymax is None: ymax = self.displayBounds.ymax
-        if zmin is None: zmin = self.imageList.bounds.getmin(self.zax)
-        if zmax is None: zmax = self.imageList.bounds.getmax(self.zax)
+        if zmin is None: zmin = self.imageList.bounds.getMin(self.zax)
+        if zmax is None: zmax = self.imageList.bounds.getMax(self.zax)
 
         x, y, width, height = self._canvasBBox
 
@@ -773,22 +773,21 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         if self.showCursor:
 
-            bounds = self.displayBounds
-
             # A vertical line at xpos, and a horizontal line at ypos
             xverts = np.zeros((2, 3))
             yverts = np.zeros((2, 3))
 
             # add a little padding to the lines if they are
             # on the boundary, so they don't get cropped
-            if self.pos.x == bounds.xmin: xverts[:, self.xax] = self.pos.x + 0.5
-            else:                         xverts[:, self.xax] = self.pos.x
-            if self.pos.y == bounds.ymin: yverts[:, self.yax] = self.pos.y + 0.5
-            else:                         yverts[:, self.yax] = self.pos.y        
+            b = self.displayBounds
+            if self.pos.x == b.xmin: xverts[:, self.xax] = self.pos.x + 0.5
+            else:                    xverts[:, self.xax] = self.pos.x
+            if self.pos.y == b.ymin: yverts[:, self.yax] = self.pos.y + 0.5
+            else:                    yverts[:, self.yax] = self.pos.y        
 
-            xverts[:, self.yax] = [bounds.ymin, bounds.ymax]
+            xverts[:, self.yax] = [b.ymin, b.ymax]
             xverts[:, self.zax] =  self.pos.z + 1
-            yverts[:, self.xax] = [bounds.xmin, bounds.xmax]
+            yverts[:, self.xax] = [b.xmin, b.xmax]
             yverts[:, self.zax] =  self.pos.z + 1
 
             gl.glBegin(gl.GL_LINES)

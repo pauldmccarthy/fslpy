@@ -665,6 +665,7 @@ def _prepareEvents(hasProps, propGui):
     def removeListeners(ev):
         for propObj, propName in zip(propObjs, propNames):
             propObj.removeListener(hasProps, lName)
+        ev.Skip()
 
     propGui.topLevel.Bind(wx.EVT_WINDOW_DESTROY, removeListeners)
  
