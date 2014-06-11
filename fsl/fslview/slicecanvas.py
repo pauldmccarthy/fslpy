@@ -300,12 +300,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         zmin = imgBounds.getLo(self.zax)
         zmax = imgBounds.getHi(self.zax)
 
-        self.setItemConstraint('pos', self.xax, 'minval', dispBounds.xlo)
-        self.setItemConstraint('pos', self.xax, 'maxval', dispBounds.xhi)
-        self.setItemConstraint('pos', self.yax, 'minval', dispBounds.ylo)
-        self.setItemConstraint('pos', self.yax, 'maxval', dispBounds.yhi) 
-        self.setItemConstraint('pos', self.zax, 'minval', zmin)
-        self.setItemConstraint('pos', self.zax, 'maxval', zmax)
+        SliceCanvas.pos.setMin(self, self.xax, dispBounds.xlo)
+        SliceCanvas.pos.setMax(self, self.xax, dispBounds.xhi)
+        SliceCanvas.pos.setMin(self, self.yax, dispBounds.ylo)
+        SliceCanvas.pos.setMax(self, self.yax, dispBounds.yhi) 
+        SliceCanvas.pos.setMin(self, self.zax, zmin)
+        SliceCanvas.pos.setMax(self, self.zax, zmax)
         
         # reset the cursor in case the
         # old values were out of bounds

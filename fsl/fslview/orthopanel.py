@@ -235,10 +235,10 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         xshift = 0
         yshift = 0
 
-        imgxmin = self.imageList.bounds.getmin(xax)
-        imgxmax = self.imageList.bounds.getmax(xax)
-        imgymin = self.imageList.bounds.getmin(yax)
-        imgymax = self.imageList.bounds.getmax(yax)
+        imgxmin = self.imageList.bounds.getLo(xax)
+        imgxmax = self.imageList.bounds.getHi(xax)
+        imgymin = self.imageList.bounds.getLo(yax)
+        imgymax = self.imageList.bounds.getHi(yax)
 
         if   newx < dispBounds.xlo: xshift = newx - dispBounds.xlo
         elif newx > dispBounds.xhi: xshift = newx - dispBounds.xhi
