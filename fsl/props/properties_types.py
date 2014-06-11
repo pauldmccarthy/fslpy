@@ -400,13 +400,9 @@ class BoundsValueList(propvals.PropertyValueList):
     """
     A list of values which represent bounds along a number of
     dimensions. This class just adds some convenience methods
-    and attributes.
-
-    For a single dimension, a bound object has a 'lo' value
-    and a 'hi' value, specifying the bounds alon that dimension.
-    Bound values may also have bounds of their own, i.e.
-    minimium/maximum values that the bound values can take. These
-    bound-bounds are referred to as 'min' and 'max'.
+    and attributes.  For a single dimension, a bound object
+    has a 'lo' value and a 'hi' value, specifying the bounds
+    along that dimension.
     """
 
     def __init__(self, *args, **kwargs):
@@ -476,8 +472,15 @@ class Bounds(List):
     """
     Property which represents numeric bounds in any number of dimensions.
     Bound values are stored as a list of floating point values, two values
-    (min, max) for each dimension.  The values are stored in a
-    BoundsValueList object. 
+    (lo, hi) for each dimension.  The values are stored in a
+    BoundsValueList object.
+
+    Bound values may also have bounds of their own, i.e. minimium/maximum
+    values that the bound values can take. These bound-bounds are referred
+    to as 'min' and 'max', and can be set via the setMin/setMax methods.
+    The advantage to using these methods, instead of using
+    HasProperties.setItemConstraint, is that if you use the latter you will
+    have to set the constraints on both the lo and the high values.
     """
 
     def __init__(self,  ndims=1, **kwargs):
@@ -498,9 +501,43 @@ class Bounds(List):
         self._ndims = ndims
 
         List.__init__(self,
-                      listType=Real(),
+                      listType=Real(clamped=True),
                       minlen=ndims * 2,
                       maxlen=ndims * 2, **kwargs)
+
+
+    def getMin(self, instance, axis):
+        """
+        Returns the minimum value that the lo/hi bounds on the given axis
+        may take.
+        """
+        return self.getItemConstraint(instance, axis * 2, 'minval')
+
+        
+    def getMax(self, instance, axis):
+        """
+        Returns the maximum value that the lo/hi bounds on the given axis
+        may take.
+        """ 
+        return self.getItemConstraint(instance, axis * 2, 'maxval')
+
+        
+    def setMin(self, instance, axis, value):
+        """
+        Sets the minimum value that the lo/hi bounds on the given axis
+        may take.
+        """ 
+        self.setItemConstraint(instance, axis * 2,     'minval', value)
+        self.setItemConstraint(instance, axis * 2 + 1, 'minval', value)
+
+        
+    def setMax(self, instance, axis, value):
+        """
+        Sets the maximum value that the lo/hi bounds on the given axis
+        may take.
+        """ 
+        self.setItemConstraint(instance, axis * 2,     'maxval', value)
+        self.setItemConstraint(instance, axis * 2 + 1, 'maxval', value) 
 
         
     def _makePropVal(self, instance):
