@@ -16,8 +16,6 @@ import properties as props
 import widgets
 
 import fsl.gui.floatslider  as floatslider
-import fsl.gui.numberdialog as numberdialog
-
 
 def _makeSpinBox(parent, hasProps, propObj, propVal):
     """
@@ -98,42 +96,26 @@ def _makeSlider(parent, hasProps, propObj, propVal):
     minval     = propObj.getConstraint(hasProps, 'minval')
     maxval     = propObj.getConstraint(hasProps, 'maxval')
     editBounds = propObj.getConstraint(hasProps, 'editBounds') 
-    panel      = wx.Panel(parent)
 
-    slider = floatslider.FloatSlider(
-        panel,
+    slider = floatslider.SliderSpinPanel(
+        parent,
         value=value,
         minValue=minval,
-        maxValue=maxval)
+        maxValue=maxval,
+        showBounds=True,
+        editBounds=editBounds)
 
-    minLabel = wx.Button(panel, label='{}'.format(minval))
-    maxLabel = wx.Button(panel, label='{}'.format(maxval))
-
-    if not editBounds:
-        minLabel.Disable()
-        maxLabel.Disable()
-
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-    sizer.Add(minLabel) 
-    sizer.Add(slider, flag=wx.EXPAND, proportion=1)
-    sizer.Add(maxLabel)
-
-    panel.SetSizer(sizer)
-    panel.SetAutoLayout(1)
-    sizer.Fit(panel)
+    # bind the slider value to the property value
+    widgets._propBind(
+        hasProps, propObj, propVal, slider, floatslider.EVT_SSP_VALUE)
 
     # Update slider min/max bounds and labels
     # whenever the property constraints change.    
-    def updateRange(*a):
+    def updateSliderRange(*a):
         minval = propObj.getConstraint(hasProps, 'minval')
         maxval = propObj.getConstraint(hasProps, 'maxval')
-
-        minLabel.SetLabel('{}'.format(minval))
-        maxLabel.SetLabel('{}'.format(maxval))
         
-        slider.SetMin(minval)
-        slider.SetMax(maxval)
+        slider.SetRange(minval, maxval)
         
         # The wx.Slider value changes when its bounds
         # are changed. It does this to keep the slider
@@ -141,13 +123,10 @@ def _makeSlider(parent, hasProps, propObj, propVal):
         # want that  ...
         slider.SetValue(propVal.get())
 
-
-    widgets._propBind(hasProps, propObj, propVal, slider,
-                      (wx.EVT_SPIN, wx.EVT_SPINCTRL))
-
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(slider))
-    propObj.addConstraintListener(hasProps, listenerName, updateRange)
+    propObj.addConstraintListener(hasProps, listenerName, updateSliderRange)
 
+    # remove the listener when the slider is destroyed
     def onDestroy(ev):
         propObj.removeConstraintListener(hasProps, listenerName)
         ev.Skip()
@@ -156,28 +135,15 @@ def _makeSlider(parent, hasProps, propObj, propVal):
 
     if editBounds:
 
-        # When one of the min/max label buttons are pushed, pop
-        # up a dialog allowing the user to enter a new value
-        def editBounds(minbound):
+        # When the user edits the slider bounds,
+        # update the property constraints
+        def updatePropRange(ev):
+            propObj.setConstraint(hasProps, 'minval', ev.min)
+            propObj.setConstraint(hasProps, 'maxval', ev.max)
 
-            if minbound:
-                constraint = 'minval'
-                labeltxt   = 'New minimum value'
-            else:
-                constraint = 'maxval'
-                labeltxt   = 'New maximum value'
+        slider.Bind(floatslider.EVT_SSP_RANGE, updatePropRange)
 
-            dlg = numberdialog.NumberDialog(
-                panel.GetTopLevelParent(),
-                message=labeltxt)
-
-            if dlg.ShowModal() == wx.ID_OK:
-                propObj.setConstraint(hasProps, constraint, dlg.GetValue())
-            
-        minLabel.Bind(wx.EVT_BUTTON,  lambda ev: editBounds(True))
-        maxLabel.Bind(wx.EVT_BUTTON,  lambda ev: editBounds(False))
-
-    return panel
+    return slider
 
 
 def _Number(parent, hasProps, propObj, propVal):
@@ -192,18 +158,5 @@ def _Number(parent, hasProps, propObj, propVal):
 
     if not isRange:
         return _makeSpinBox(parent, hasProps, propObj, propVal)
-
-    panel = wx.Panel(parent)
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-    spin   = _makeSpinBox(panel, hasProps, propObj, propVal)
-    slider = _makeSlider( panel, hasProps, propObj, propVal)
-
-    sizer.Add(slider, flag=wx.EXPAND, proportion=1)
-    sizer.Add(spin,   flag=wx.EXPAND)
-
-    panel.SetSizer(sizer)
-    panel.SetAutoLayout(1)
-    sizer.Fit(panel)
-    
-    return panel
+    else:
+        return _makeSlider( parent, hasProps, propObj, propVal)
