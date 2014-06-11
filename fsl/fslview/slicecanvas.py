@@ -41,12 +41,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     """
 
     # The currently displayed position. While the values
-    # are in the image list world coordinates, the x and
-    # y dimensions correspond to horizontal and vertical
-    # on the screen, and the z dimension to 'depth'. The
-    # X and Y positions denote the position of a 'cursor',
-    # which is highlighted with green crosshairs. The Z
-    # position specifies the currently displayed slice. 
+    # are in the image list world coordinates, the dimension
+    # ordering may not be the same as the image list dimension
+    # ordering. For this position, the x and y dimensions
+    # correspond to horizontal and vertical on the screen,
+    # and the z dimension to 'depth'. The X and Y positions
+    # denote the position of a 'cursor', which is highlighted
+    # with green crosshairs. The Z position specifies the
+    # currently displayed slice. 
     pos = props.Point(ndims=3)
 
     # The image bounds are divided  by this zoom
@@ -297,16 +299,18 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         imgBounds  = self.imageList.bounds
         dispBounds = self.displayBounds
 
-        zmin = imgBounds.getLo(self.zax)
-        zmax = imgBounds.getHi(self.zax)
+        dispBounds.setMin(0, imgBounds.getLo(self.xax))
+        dispBounds.setMax(0, imgBounds.getHi(self.xax))
+        dispBounds.setMin(1, imgBounds.getLo(self.yax))
+        dispBounds.setMax(1, imgBounds.getHi(self.yax)) 
 
-        SliceCanvas.pos.setMin(self, self.xax, dispBounds.xlo)
-        SliceCanvas.pos.setMax(self, self.xax, dispBounds.xhi)
-        SliceCanvas.pos.setMin(self, self.yax, dispBounds.ylo)
-        SliceCanvas.pos.setMax(self, self.yax, dispBounds.yhi) 
-        SliceCanvas.pos.setMin(self, self.zax, zmin)
-        SliceCanvas.pos.setMax(self, self.zax, zmax)
-        
+        self.pos.setMin(0, dispBounds.xlo)
+        self.pos.setMax(0, dispBounds.xhi)
+        self.pos.setMin(1, dispBounds.ylo)
+        self.pos.setMax(1, dispBounds.yhi)
+        self.pos.setMin(2, imgBounds.getLo(self.zax))
+        self.pos.setMax(2, imgBounds.getHi(self.zax))
+
         # reset the cursor in case the
         # old values were out of bounds
         self.pos.xyz = self.pos.xyz

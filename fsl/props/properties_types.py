@@ -429,6 +429,20 @@ class BoundsValueList(propvals.PropertyValueList):
     def setRange(self, axis, values):
         self.setMin(axis, values[0])
         self.setMax(axis, values[1])
+
+    def getMin(self, axis):
+        return self.getPropertyValueList()[axis * 2].getAttribute('minval')
+        
+    def getMax(self, axis):
+        return self.getPropertyValueList()[axis * 2 + 1].getAttribute('maxval') 
+
+    def setMin(self, axis, value):
+        self.getPropertyValueList()[axis * 2]    .setAttribute('minval', value)
+        self.getPropertyValueList()[axis * 2 + 1].setAttribute('minval', value)
+        
+    def setMax(self, axis, value):
+        self.getPropertyValueList()[axis * 2]    .setAttribute('maxval', value)
+        self.getPropertyValueList()[axis * 2 + 1].setAttribute('maxval', value) 
             
     def __getattr__(self, name):
 
@@ -505,40 +519,6 @@ class Bounds(List):
                       minlen=ndims * 2,
                       maxlen=ndims * 2, **kwargs)
 
-
-    def getMin(self, instance, axis):
-        """
-        Returns the minimum value that the lo/hi bounds on the given axis
-        may take.
-        """
-        return self.getItemConstraint(instance, axis * 2, 'minval')
-
-        
-    def getMax(self, instance, axis):
-        """
-        Returns the maximum value that the lo/hi bounds on the given axis
-        may take.
-        """ 
-        return self.getItemConstraint(instance, axis * 2, 'maxval')
-
-        
-    def setMin(self, instance, axis, value):
-        """
-        Sets the minimum value that the lo/hi bounds on the given axis
-        may take.
-        """ 
-        self.setItemConstraint(instance, axis * 2,     'minval', value)
-        self.setItemConstraint(instance, axis * 2 + 1, 'minval', value)
-
-        
-    def setMax(self, instance, axis, value):
-        """
-        Sets the maximum value that the lo/hi bounds on the given axis
-        may take.
-        """ 
-        self.setItemConstraint(instance, axis * 2,     'maxval', value)
-        self.setItemConstraint(instance, axis * 2 + 1, 'maxval', value) 
-
         
     def _makePropVal(self, instance):
         """
@@ -602,6 +582,18 @@ class PointValueList(propvals.PropertyValueList):
         
     def setpos(self, axis, value):
         self[axis] = value
+
+    def getMin(self, axis):
+        return self.getPropertyValueList()[axis].getAttribute('minval')
+        
+    def getMax(self, axis):
+        return self.getPropertyValueList()[axis].getAttribute('maxval')
+
+    def setMin(self, axis, value):
+        return self.getPropertyValueList()[axis].setAttribute('minval', value)
+        
+    def setMax(self, axis, value):
+        return self.getPropertyValueList()[axis].setAttribute('maxval', value) 
 
     def __getattr__(self, name):
 
@@ -671,34 +663,6 @@ class Point(List):
                       maxlen=ndims,
                       **kwargs)
 
-
-    def getMin(self, instance, axis):
-        """
-        Returns the minimum bound for the given (0-indexed) axis.
-        """
-        return self.getItemConstraint(instance, axis, 'minval')
-
-        
-    def getMax(self, instance, axis):
-        """
-        Returns the maximum bound for the given (0-indexed) axis.
-        """ 
-        return self.getItemConstraint(instance, axis, 'maxval')
-
-        
-    def setMin(self, instance, axis, value):
-        """
-        Sets the minimum bound for the given (0-indexed) axis.
-        """ 
-        self.setItemConstraint(instance, axis, 'minval', value)
-
-        
-    def setMax(self, instance, axis, value):
-        """
-        Sets the maximum bound for the given (0-indexed) axis.
-        """ 
-        self.setItemConstraint(instance, axis, 'maxval', value)
- 
         
     def _makePropVal(self, instance):
         """
