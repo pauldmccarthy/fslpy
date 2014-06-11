@@ -401,27 +401,33 @@ class BoundsValueList(propvals.PropertyValueList):
     A list of values which represent bounds along a number of
     dimensions. This class just adds some convenience methods
     and attributes.
+
+    For a single dimension, a bound object has a 'lo' value
+    and a 'hi' value, specifying the bounds alon that dimension.
+    Bound values may also have bounds of their own, i.e.
+    minimium/maximum values that the bound values can take. These
+    bound-bounds are referred to as 'min' and 'max'.
     """
 
     def __init__(self, *args, **kwargs):
         propvals.PropertyValueList.__init__(self, *args, **kwargs)
 
-    def getMin(self, axis):
+    def getLo(self, axis):
         return self[axis * 2]
         
-    def getMax(self, axis):
+    def getHi(self, axis):
         return self[axis * 2 + 1]
 
     def getRange(self, axis):
-        return [self.getMin(axis), self.getMax(axis)]
+        return [self.getLo(axis), self.getHi(axis)]
 
     def getLen(self, axis):
-        return abs(self.getMax(axis) - self.getMin(axis))
+        return abs(self.getHi(axis) - self.getLo(axis))
 
-    def setMin(self, axis, value):
+    def setLo(self, axis, value):
         self[axis * 2] = value
         
-    def setMax(self, axis, value):
+    def setHi(self, axis, value):
         self[axis * 2 + 1] = value
 
     def setRange(self, axis, values):
@@ -435,12 +441,12 @@ class BoundsValueList(propvals.PropertyValueList):
         if   lname == 'x':    return self.getRange(0)
         elif lname == 'y':    return self.getRange(1)
         elif lname == 'z':    return self.getRange(2)
-        elif lname == 'xmin': return self.getMin(  0)
-        elif lname == 'xmax': return self.getMax(  0)
-        elif lname == 'ymin': return self.getMin(  1)
-        elif lname == 'ymax': return self.getMax(  1)
-        elif lname == 'zmin': return self.getMin(  2)
-        elif lname == 'zmax': return self.getMax(  2)
+        elif lname == 'xlo':  return self.getLo(   0)
+        elif lname == 'xhi':  return self.getHi(   0)
+        elif lname == 'ylo':  return self.getLo(   1)
+        elif lname == 'yhi':  return self.getHi(   1)
+        elif lname == 'zlo':  return self.getLo(   2)
+        elif lname == 'zhi':  return self.getHi(   2)
         elif lname == 'xlen': return self.getLen(  0)
         elif lname == 'ylen': return self.getLen(  1)
         elif lname == 'zlen': return self.getLen(  2)
@@ -456,12 +462,12 @@ class BoundsValueList(propvals.PropertyValueList):
         if   lname == 'x':    self.setRange(0, value)
         elif lname == 'y':    self.setRange(1, value)
         elif lname == 'z':    self.setRange(2, value)
-        elif lname == 'xmin': self.setMin(  0, value)
-        elif lname == 'xmax': self.setMax(  0, value)
-        elif lname == 'ymin': self.setMin(  1, value)
-        elif lname == 'ymax': self.setMax(  1, value)
-        elif lname == 'zmin': self.setMin(  2, value)
-        elif lname == 'zmax': self.setMax(  2, value)
+        elif lname == 'xlo':  self.setLo(   0, value)
+        elif lname == 'xhi':  self.setHi(   0, value)
+        elif lname == 'ylo':  self.setLo(   1, value)
+        elif lname == 'yhi':  self.setHi(   1, value)
+        elif lname == 'zlo':  self.setLo(   2, value)
+        elif lname == 'zhi':  self.setHi(   2, value)
         elif lname == 'all':  self[:] = value
         else:                 self.__dict__[name] = value
 

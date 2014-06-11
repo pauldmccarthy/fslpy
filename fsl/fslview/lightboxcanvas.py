@@ -94,8 +94,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
         # default to showing the entire slice range
-        self.zmin = imageList.bounds.zmin
-        self.zmax = imageList.bounds.zmax
+        self.zmin = imageList.bounds.zlo
+        self.zmax = imageList.bounds.zhi
 
         # Pick a sensible default for the
         # slice spacing - the smallest pixdim
@@ -134,8 +134,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
         
-        self.zmin = self.imageList.bounds.getmin(self.zax)
-        self.zmax = self.imageList.bounds.getmax(self.zax)
+        self.zmin = self.imageList.bounds.getLo(self.zax)
+        self.zmax = self.imageList.bounds.getHi(self.zax)
 
 
     def _updateBounds(self, *a):
@@ -146,8 +146,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas._updateBounds(self)
 
-        imgzmin = self.imageList.bounds.getmin(self.zax)
-        imgzmax = self.imageList.bounds.getmax(self.zax)
+        imgzmin = self.imageList.bounds.getLo(self.zax)
+        imgzmax = self.imageList.bounds.getHi(self.zax)
 
         self.setConstraint('zmin', 'minval', imgzmin)
         self.setConstraint('zmin', 'maxval', imgzmax)
@@ -313,8 +313,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         ylen = self.displayBounds.ylen
 
         worldYMin  = None
-        worldXMax  = self.displayBounds.xmin + xlen * self.ncols
-        worldYMax  = self.displayBounds.ymin + ylen * self._nrows
+        worldXMax  = self.displayBounds.xlo + xlen * self.ncols
+        worldYMax  = self.displayBounds.ylo + ylen * self._nrows
 
         if self._scrollbar is not None:
 
@@ -322,8 +322,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             currentRow   = self._scrollbar.GetThumbPosition()
             currentRow   = self._nrows - currentRow - rowsOnScreen
 
-            worldYMin = self.displayBounds.ymin + ylen * currentRow
-            worldYMax = worldYMin               + ylen * rowsOnScreen
+            worldYMin = self.displayBounds.ylo + ylen * currentRow
+            worldYMax = worldYMin              + ylen * rowsOnScreen
 
         slicecanvas.SliceCanvas._setViewport(self,
                                              xmax=worldXMax,

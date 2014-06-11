@@ -41,13 +41,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     """
 
     # The currently displayed position. While the values
-    # are in the world coordinates of the image list, the
-    # x and y dimensions correspond to horizontal and
-    # vertical on the screen, and the z dimension to
-    # 'depth'. The X and Y positions denote the position
-    # of a 'cursor', which is highlighted with green
-    # crosshairs. The Z position specifies the currently
-    # displayed slice. 
+    # are in the image list world coordinates, the x and
+    # y dimensions correspond to horizontal and vertical
+    # on the screen, and the z dimension to 'depth'. The
+    # X and Y positions denote the position of a 'cursor',
+    # which is highlighted with green crosshairs. The Z
+    # position specifies the currently displayed slice. 
     pos = props.Point(ndims=3)
 
     # The image bounds are divided  by this zoom
@@ -57,8 +56,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                       default=1.0,
                       clamped=True) 
 
-    # The x/y min/max properties specify the display
-    # range, in world coordinates, of the canvas.
+    # The display bound x/y values specify the
+    # horizontal/vertical display range, in
+    # world coordinates, of the canvas.
     displayBounds = props.Bounds(ndims=2)
 
     # If False, the green crosshairs which show the
@@ -87,7 +87,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # the xpos from the slice bounding box
         # to real world coordinates
         xpos = xpos - sliceStart
-        xpos = self.displayBounds.xmin  + (xpos / sliceWidth)  * realWidth
+        xpos = self.displayBounds.xlo  + (xpos / sliceWidth)  * realWidth
 
         return xpos
 
@@ -106,7 +106,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if sliceHeight == 0: return 0 
         
         ypos = ypos - sliceStart
-        ypos = self.displayBounds.ymin  + (ypos /  sliceHeight) *  realHeight
+        ypos = self.displayBounds.ylo  + (ypos /  sliceHeight) *  realHeight
 
         return ypos 
 
@@ -170,9 +170,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             self.displayBounds.all = b.getRange(self.xax) + \
                                      b.getRange(self.yax)
             self.pos.xyz = [
-                b.getMin(self.xax) + b.getLen(self.xax) / 2.0,
-                b.getMin(self.yax) + b.getLen(self.yax) / 2.0,
-                b.getMin(self.zax) + b.getLen(self.zax) / 2.0]
+                b.getLo(self.xax) + b.getLen(self.xax) / 2.0,
+                b.getLo(self.yax) + b.getLen(self.yax) / 2.0,
+                b.getLo(self.zax) + b.getLen(self.zax) / 2.0]
 
         # when any of the xyz properties of
         # this canvas change, we need to redraw
@@ -267,17 +267,17 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         ymin = ycentre - 0.5 * ylen
         ymax = ycentre + 0.5 * ylen        
 
-        if xmin < bounds.getMin(self.xax):
-            xmin = bounds.getMin(self.xax)
+        if xmin < bounds.getLo(self.xax):
+            xmin = bounds.getLo(self.xax)
             xmax = xmin + xlen
-        elif xmax > bounds.getMax(self.xax):
-            xmax = bounds.getMax(self.xax)
+        elif xmax > bounds.getHi(self.xax):
+            xmax = bounds.getHi(self.xax)
             xmin = xmax - xlen 
-        if ymin < bounds.getMin(self.yax):
-            ymin = bounds.getMin(self.yax)
+        if ymin < bounds.getLo(self.yax):
+            ymin = bounds.getLo(self.yax)
             ymax = ymin + ylen 
-        elif ymax > bounds.getMax(self.yax):
-            ymax = bounds.getMax(self.yax)
+        elif ymax > bounds.getHi(self.yax):
+            ymax = bounds.getHi(self.yax)
             ymin = ymax - ylen 
 
         dispBounds.all = [xmin, xmax, ymin, ymax] 
@@ -297,13 +297,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         imgBounds  = self.imageList.bounds
         dispBounds = self.displayBounds
 
-        zmin = imgBounds.getMin(self.zax)
-        zmax = imgBounds.getMax(self.zax)
+        zmin = imgBounds.getLo(self.zax)
+        zmax = imgBounds.getHi(self.zax)
 
-        self.setItemConstraint('pos', self.xax, 'minval', dispBounds.xmin)
-        self.setItemConstraint('pos', self.xax, 'maxval', dispBounds.xmax)
-        self.setItemConstraint('pos', self.yax, 'minval', dispBounds.ymin)
-        self.setItemConstraint('pos', self.yax, 'maxval', dispBounds.ymax) 
+        self.setItemConstraint('pos', self.xax, 'minval', dispBounds.xlo)
+        self.setItemConstraint('pos', self.xax, 'maxval', dispBounds.xhi)
+        self.setItemConstraint('pos', self.yax, 'minval', dispBounds.ylo)
+        self.setItemConstraint('pos', self.yax, 'maxval', dispBounds.yhi) 
         self.setItemConstraint('pos', self.zax, 'minval', zmin)
         self.setItemConstraint('pos', self.zax, 'maxval', zmax)
         
@@ -556,12 +556,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         self._calculateCanvasBBox()
         
-        if xmin is None: xmin = self.displayBounds.xmin
-        if xmax is None: xmax = self.displayBounds.xmax
-        if ymin is None: ymin = self.displayBounds.ymin
-        if ymax is None: ymax = self.displayBounds.ymax
-        if zmin is None: zmin = self.imageList.bounds.getMin(self.zax)
-        if zmax is None: zmax = self.imageList.bounds.getMax(self.zax)
+        if xmin is None: xmin = self.displayBounds.xlo
+        if xmax is None: xmax = self.displayBounds.xhi
+        if ymin is None: ymin = self.displayBounds.ylo
+        if ymax is None: ymax = self.displayBounds.yhi
+        if zmin is None: zmin = self.imageList.bounds.getLo(self.zax)
+        if zmax is None: zmax = self.imageList.bounds.getHi(self.zax)
 
         x, y, width, height = self._canvasBBox
 
@@ -780,14 +780,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             # add a little padding to the lines if they are
             # on the boundary, so they don't get cropped
             b = self.displayBounds
-            if self.pos.x == b.xmin: xverts[:, self.xax] = self.pos.x + 0.5
-            else:                    xverts[:, self.xax] = self.pos.x
-            if self.pos.y == b.ymin: yverts[:, self.yax] = self.pos.y + 0.5
-            else:                    yverts[:, self.yax] = self.pos.y        
+            if self.pos.x == b.xlo: xverts[:, self.xax] = self.pos.x + 0.5
+            else:                   xverts[:, self.xax] = self.pos.x
+            if self.pos.y == b.ylo: yverts[:, self.yax] = self.pos.y + 0.5
+            else:                   yverts[:, self.yax] = self.pos.y        
 
-            xverts[:, self.yax] = [b.ymin, b.ymax]
+            xverts[:, self.yax] = [b.ylo, b.yhi]
             xverts[:, self.zax] =  self.pos.z + 1
-            yverts[:, self.xax] = [b.xmin, b.xmax]
+            yverts[:, self.xax] = [b.xlo, b.xhi]
             yverts[:, self.zax] =  self.pos.z + 1
 
             gl.glBegin(gl.GL_LINES)

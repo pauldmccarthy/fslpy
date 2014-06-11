@@ -113,9 +113,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         bounds = imageList.bounds
 
-        self.xpos = bounds.xmin + bounds.xlen / 2.0
-        self.ypos = bounds.ymin + bounds.ylen / 2.0
-        self.zpos = bounds.zmin + bounds.zlen / 2.0
+        self.xpos = bounds.xlo + bounds.xlen / 2.0
+        self.ypos = bounds.ylo + bounds.ylen / 2.0
+        self.zpos = bounds.zlo + bounds.zlen / 2.0
         
         self.imageList.addListener(
             'bounds',
@@ -201,12 +201,12 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         """
         bounds = self.imageList.bounds
 
-        self.setConstraint('xpos', 'minval', bounds.xmin)
-        self.setConstraint('xpos', 'maxval', bounds.xmax)
-        self.setConstraint('ypos', 'minval', bounds.ymin)
-        self.setConstraint('ypos', 'maxval', bounds.ymax)
-        self.setConstraint('zpos', 'minval', bounds.zmin)
-        self.setConstraint('zpos', 'maxval', bounds.zmax)
+        self.setConstraint('xpos', 'minval', bounds.xlo)
+        self.setConstraint('xpos', 'maxval', bounds.xhi)
+        self.setConstraint('ypos', 'minval', bounds.ylo)
+        self.setConstraint('ypos', 'maxval', bounds.yhi)
+        self.setConstraint('zpos', 'minval', bounds.zlo)
+        self.setConstraint('zpos', 'maxval', bounds.zhi)
         
         # reset the cursor and min/max values in
         # case the old values were out of bounds
@@ -223,10 +223,10 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         """
         dispBounds = canvas.displayBounds
 
-        if newx >= dispBounds.xmin and \
-           newx <= dispBounds.xmax and \
-           newy >= dispBounds.ymin and \
-           newy <= dispBounds.ymax:
+        if newx >= dispBounds.xlo and \
+           newx <= dispBounds.xhi and \
+           newy >= dispBounds.ylo and \
+           newy <= dispBounds.yhi:
             return
 
         xax = canvas.xax
@@ -240,15 +240,15 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         imgymin = self.imageList.bounds.getmin(yax)
         imgymax = self.imageList.bounds.getmax(yax)
 
-        if   newx < dispBounds.xmin: xshift = newx - dispBounds.xmin
-        elif newx > dispBounds.xmax: xshift = newx - dispBounds.xmax
-        if   newy < dispBounds.ymin: yshift = newy - dispBounds.ymin 
-        elif newy > dispBounds.ymax: yshift = newy - dispBounds.ymax 
+        if   newx < dispBounds.xlo: xshift = newx - dispBounds.xlo
+        elif newx > dispBounds.xhi: xshift = newx - dispBounds.xhi
+        if   newy < dispBounds.ylo: yshift = newy - dispBounds.ylo 
+        elif newy > dispBounds.yhi: yshift = newy - dispBounds.yhi 
             
-        newxmin = dispBounds.xmin + xshift 
-        newxmax = dispBounds.xmax + xshift
-        newymin = dispBounds.ymin + yshift 
-        newymax = dispBounds.ymax + yshift 
+        newxmin = dispBounds.xlo + xshift 
+        newxmax = dispBounds.xhi + xshift
+        newymin = dispBounds.ylo + yshift 
+        newymax = dispBounds.yhi + yshift 
 
         if newxmin < imgxmin:
             newxmin = imgxmin
