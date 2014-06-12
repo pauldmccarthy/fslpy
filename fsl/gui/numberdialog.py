@@ -6,15 +6,16 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import sys
 import wx
 
 class NumberDialog(wx.Dialog):
     """
-    A dialog which contains a wx.SpinCtrl/SpinCtrlDouble, and Ok/Cancel
-    buttons, allowing the user to specify a number. If the user pushes
-    the Ok button, the number they entered will be accessible via the
-    GetValue() method.
+    A dialog which contains a wx.TextCtrl, and Ok/Cancel buttons,
+    allowing the user to specify a number. If the user pushes the
+    Ok button, the number they entered will be accessible via the
+    GetValue() method. I've specifically not used the wx.SpinCtrl
+    or wx.SpinCtrlDouble, because they are too limited in their
+    flexibility with regard to validation and events. 
     """
 
     def __init__(self,
@@ -23,24 +24,24 @@ class NumberDialog(wx.Dialog):
                  title=None,
                  message=None,
                  initial=None,
-                 minval=None,
-                 maxval=None):
+                 minValue=None,
+                 maxValue=None):
         """
         Creates and lays out the NumberDialog. Parameters:
         
-          - real:    If true, a wx.SpinCtrlDouble will be used. Otherwise,
-                     a wx.SpinCtrl is used.
+          - real:      If true, a floating point number will be accepted.
+                       Otherwise, only integers are accepted.
         
-          - title:   Dialog title.
+          - title:     Dialog title.
         
-          - message: If not None, a wx.StaticText label is added, containing
-                     the message.
+          - message:   If not None, a wx.StaticText label is added, containing
+                       the message.
         
-          - initial: Initial spinctrl value.
+          - initial:   Initial value.
         
-          - minval:  Minimum spinctrl value.
+          - minValue:  Minimum value.
         
-          - maxval:  Maximum spinctrl value.
+          - maxValue:  Maximum value.
         """
 
         if title   is None: title   = ''
@@ -48,64 +49,97 @@ class NumberDialog(wx.Dialog):
 
         wx.Dialog.__init__(self, parent, title=title)
 
-        self._value = None
+        self._value    = None
+        self._real     = real
+        self._minValue = minValue
+        self._maxValue = maxValue
 
-        self.panel = wx.Panel(self)
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.panel.SetSizer(self.sizer)
+        self._panel = wx.Panel(self)
+        self._sizer = wx.BoxSizer(wx.VERTICAL)
+        self._panel.SetSizer(self._sizer)
 
-        self.buttonPanel = wx.Panel(self.panel)
-        self.buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.buttonPanel.SetSizer(self.buttonSizer)
+        self._buttonPanel = wx.Panel(self._panel)
+        self._buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._buttonPanel.SetSizer(self._buttonSizer)
 
         if message is not None:
-            self.label = wx.StaticText(self.panel, label=message)
-            self.sizer.Add(self.label, flag=wx.EXPAND)
+            self._label = wx.StaticText(self._panel, label=message)
+            self._sizer.Add(self._label, flag=wx.EXPAND)
 
-        if real:
-            if minval is None: minval = -sys.float_info.max
-            if maxval is None: maxval =  sys.float_info.max
-            self.spinctrl = wx.SpinCtrlDouble(self.panel,
-                                              min=minval,
-                                              max=minval,
-                                              initial=initial,
-                                              value='{}'.format(initial))
-        else:
-            if minval is None: minval = -2 ** 31
-            if maxval is None: maxval =  2 ** 31 - 1
-            self.spinctrl = wx.SpinCtrl(self.panel,
-                                        min=minval,
-                                        max=maxval,
-                                        initial=initial,
-                                        value='{}'.format(initial))
+        self._textctrl = wx.TextCtrl(self._panel)
+        self._textctrl.SetValue('{}'.format(initial))
 
-        self.sizer.Add(self.spinctrl, flag=wx.EXPAND)
+        self._sizer.Add(self._textctrl, flag=wx.EXPAND)
 
-        self.okButton     = wx.Button(self.buttonPanel, label='Ok')
-        self.cancelButton = wx.Button(self.buttonPanel, label='Cancel')
+        self._okButton     = wx.Button(self._buttonPanel, label='Ok')
+        self._cancelButton = wx.Button(self._buttonPanel, label='Cancel')
 
-        self.buttonSizer.Add(self.okButton,     flag=wx.EXPAND, proportion=1)
-        self.buttonSizer.Add(self.cancelButton, flag=wx.EXPAND, proportion=1)
+        self._buttonSizer.Add(self._okButton,     flag=wx.EXPAND, proportion=1)
+        self._buttonSizer.Add(self._cancelButton, flag=wx.EXPAND, proportion=1)
 
-        self.sizer.Add(self.buttonPanel, flag=wx.EXPAND)
+        self._sizer.Add(self._buttonPanel, flag=wx.EXPAND)
 
-        def onOk(ev):
-            self._value = self.spinctrl.GetValue()
-            self.EndModal(wx.ID_OK)
-            self.Destroy()
-
-        def onCancel(ev):
-            self.EndModal(wx.ID_CANCEL)
-            self.Destroy()
-
-        self.okButton    .Bind(wx.EVT_BUTTON, onOk)
-        self.cancelButton.Bind(wx.EVT_BUTTON, onCancel)
-
-        self.panel.Layout()
-        self.panel.Fit()
+        self._textctrl    .Bind(wx.EVT_TEXT_ENTER, self._onOk)
+        self._okButton    .Bind(wx.EVT_BUTTON,     self._onOk)
+        self._cancelButton.Bind(wx.EVT_BUTTON,     self._onCancel)
+        
+        self._panel.Layout()
+        self._panel.Fit()
 
         self.Fit()
 
-
+        
     def GetValue(self):
+        """
+        After a valid value has been entered, and OK button pushed (or
+        enter pressed), this method may be used to retrieve the value.
+        Returns None in all other situations.
+        """
         return self._value
+
+
+    def _validate(self):
+        """
+        Validates the current value. If the value is valid, returns it.
+        Otherwise returns None.
+        """
+        
+        value = self._textctrl.GetValue()
+
+        if self._real: cast = float
+        else:          cast = int
+        
+        try:    value = cast(value)
+        except: return None
+
+        if self._minValue is not None and value < self._minValue: return None
+        if self._maxValue is not None and value > self._maxValue: return None
+
+        return value
+
+
+    def _onOk(self, ev):
+        """
+        Called when the Ok button is pushed, or enter is pressed. If the
+        entered value is valid, it is stored and the dialog is closed.
+        The value may be retrieved via the GetValue method. If the value
+        is not valid, the dialog remains open.
+        """
+
+        value = self._validate()
+
+        if value is None:
+            return
+            
+        self._value = value
+        self.EndModal(wx.ID_OK)
+        self.Destroy()
+
+        
+    def _onCancel(self, ev):
+        """
+        Called when the Cancel button is pushed. Closes the dialog.
+        """
+        self._value = None
+        self.EndModal(wx.ID_CANCEL)
+        self.Destroy() 
