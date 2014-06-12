@@ -170,8 +170,8 @@ class SliderSpinPanel(wx.Panel):
     """
     A panel which contains a FloatSlider and a wx.SpinCtrlDouble, linked
     such that changes to one are reflected in the other.  The class also
-    provides the option to have the minimum/maximum bounds displayed on
-    either side of the slider/spinbox, and to have those bounds editable
+    provides the option to have the minimum/maximum limits displayed on
+    either side of the slider/spinbox, and to have those limits editable
     via a button push.
 
     Users of the SliderSpinPanel may wish to bind listeners to the
@@ -185,8 +185,8 @@ class SliderSpinPanel(wx.Panel):
                  value,
                  minValue,
                  maxValue,
-                 showBounds=True,
-                 editBounds=False):
+                 showLimits=True,
+                 editLimits=False):
         """
         Initialises a SliderSpinPanel object. Parameters:
         
@@ -198,20 +198,20 @@ class SliderSpinPanel(wx.Panel):
         
           - maxValue:   Maximum slider/spin value.
         
-          - showBounds: If True, buttons placed on the left and right,
-                        displaying the minimum/maximum bounds.
+          - showLimits: If True, buttons placed on the left and right,
+                        displaying the minimum/maximum limits.
         
-          - editBounds: If True, when said buttons are clicked, a dialog
-                        window pops up allowing the user to edit the bound
+          - editLimits: If True, when said buttons are clicked, a dialog
+                        window pops up allowing the user to edit the limits
                         values (see numberdialog.py). Has no effect if
-                        showBounds is False.
+                        showLimits is False.
         """
 
         wx.Panel.__init__(self, parent)
 
-        if not showBounds: editBounds = False
+        if not showLimits: editLimits = False
         
-        self._showBounds = showBounds
+        self._showLimits = showLimits
 
         self._slider = FloatSlider(
             self,
@@ -236,27 +236,27 @@ class SliderSpinPanel(wx.Panel):
         self._spinbox.Bind(wx.EVT_SPINCTRL,       self._onSpin)
         self._spinbox.Bind(wx.EVT_SPINCTRLDOUBLE, self._onSpin)
 
-        if showBounds:
+        if showLimits:
             self._minButton = wx.Button(self, label='{}'.format(minValue))
             self._maxButton = wx.Button(self, label='{}'.format(maxValue))
 
             self._sizer.Insert(0, self._minButton, flag=wx.EXPAND)
             self._sizer.Add(      self._maxButton, flag=wx.EXPAND)
 
-            self._minButton.Enable(editBounds)
-            self._maxButton.Enable(editBounds)
+            self._minButton.Enable(editLimits)
+            self._maxButton.Enable(editLimits)
 
-            self._minButton.Bind(wx.EVT_BUTTON, self._onBoundButton)
-            self._maxButton.Bind(wx.EVT_BUTTON, self._onBoundButton)
+            self._minButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
+            self._maxButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
 
         self.Layout()
 
         
-    def _onBoundButton(self, ev):
+    def _onLimitButton(self, ev):
         """
-        Called when either of the minimum/maximum bound buttons are
+        Called when either of the minimum/maximum limit buttons are
         clicked. Pops up a numberdialog.NumberDialog window and, if
-        the user changes the value, updates the slider/spin bounds,
+        the user changes the value, updates the slider/spin limits,
         and emits an EVT_SSP_RANGE event.
         """
 
@@ -351,7 +351,7 @@ class SliderSpinPanel(wx.Panel):
         self._slider .SetMin(minValue)
         self._spinbox.SetMin(minValue)
 
-        if self._showBounds:
+        if self._showLimits:
             self._minButton.SetLabel('{}'.format(minValue))
 
             
@@ -362,7 +362,7 @@ class SliderSpinPanel(wx.Panel):
         self._slider .SetMax(maxValue)
         self._spinbox.SetMax(maxValue)
 
-        if self._showBounds:
+        if self._showLimits:
             self._maxButton.SetLabel('{}'.format(maxValue)) 
 
             
