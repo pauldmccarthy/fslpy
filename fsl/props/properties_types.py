@@ -613,10 +613,10 @@ class PointValueList(propvals.PropertyValueList):
         return self.getPropertyValueList()[axis].getAttribute('maxval')
 
     def setMin(self, axis, value):
-        return self.getPropertyValueList()[axis].setAttribute('minval', value)
+        self.getPropertyValueList()[axis].setAttribute('minval', value)
         
     def setMax(self, axis, value):
-        return self.getPropertyValueList()[axis].setAttribute('maxval', value) 
+        self.getPropertyValueList()[axis].setAttribute('maxval', value) 
 
     def __getattr__(self, name):
 

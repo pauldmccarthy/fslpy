@@ -23,11 +23,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     showZCanvas = props.Boolean(default=True)
     showCursor  = props.Boolean(default=True)
 
-    # Properties which set the current displayed
+    # Property which sets the current displayed
     # position (in real world coordinates)
-    xpos  = props.Real(clamped=True)
-    ypos  = props.Real(clamped=True)
-    zpos  = props.Real(clamped=True)
+    pos = props.Point(ndims=3)
 
     # Properties which set the current zoom
     # factor on each of the canvases
@@ -49,7 +47,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
                       'showXCanvas',
                       'showYCanvas',
                       'showZCanvas')),
-        props.VGroup(('xpos',  'ypos',  'zpos')),
+        'pos',
         props.VGroup(('xzoom', 'yzoom', 'zzoom'))
     ))
 
@@ -61,9 +59,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         'xzoom'       : 'X zoom',
         'yzoom'       : 'Y zoom',
         'zzoom'       : 'Z zoom',
-        'xpos'        : 'X position',
-        'ypos'        : 'Y position',
-        'zpos'        : 'Z position'
+        'pos'         : 'Position'
     }
 
 
@@ -113,9 +109,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         bounds = imageList.bounds
 
-        self.xpos = bounds.xlo + bounds.xlen / 2.0
-        self.ypos = bounds.ylo + bounds.ylen / 2.0
-        self.zpos = bounds.zlo + bounds.zlen / 2.0
+        self.pos.xyz = [bounds.xlo + bounds.xlen / 2.0,
+                        bounds.ylo + bounds.ylen / 2.0,
+                        bounds.zlo + bounds.zlen / 2.0]
         
         self.imageList.addListener(
             'bounds',
@@ -140,16 +136,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         are changed, the displayed position is changed.
         """
 
-        def moveX(value, *a):
-            self.setPosition(value, self.ypos, self.zpos) 
-        def moveY(value, *a):
-            self.setPosition(self.xpos, value, self.zpos) 
-        def moveZ(value, *a):
-            self.setPosition(self.xpos, self.ypos, value) 
+        def move(*a): self.setPosition(*self.pos.xyz)
 
-        self.addListener('xpos', self.name, moveX)
-        self.addListener('ypos', self.name, moveY)
-        self.addListener('zpos', self.name, moveZ)
+        self.addListener('pos', self.name, move)
 
 
     def _configShowListeners(self):
@@ -201,18 +190,16 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         """
         bounds = self.imageList.bounds
 
-        self.setConstraint('xpos', 'minval', bounds.xlo)
-        self.setConstraint('xpos', 'maxval', bounds.xhi)
-        self.setConstraint('ypos', 'minval', bounds.ylo)
-        self.setConstraint('ypos', 'maxval', bounds.yhi)
-        self.setConstraint('zpos', 'minval', bounds.zlo)
-        self.setConstraint('zpos', 'maxval', bounds.zhi)
+        self.pos.setMin(0, bounds.xlo)
+        self.pos.setMax(0, bounds.xhi)
+        self.pos.setMin(1, bounds.ylo)
+        self.pos.setMax(1, bounds.yhi)
+        self.pos.setMin(2, bounds.zlo)
+        self.pos.setMax(2, bounds.zhi)
         
         # reset the cursor and min/max values in
         # case the old values were out of bounds
-        self.xpos = self.xpos
-        self.ypos = self.ypos
-        self.zpos = self.zpos
+        self.pos.xyz = self.pos.xyz
 
 
     def _shiftCanvas(self, canvas, newx, newy):
@@ -273,9 +260,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         coordinates).
         """
 
-        self.xpos = xpos
-        self.ypos = ypos
-        self.zpos = zpos
+        self.pos.xyz = [xpos, ypos, zpos]
 
         self.xcanvas.pos.xyz = [ypos, zpos, xpos]
         self.ycanvas.pos.xyz = [xpos, zpos, ypos]
@@ -305,9 +290,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         xpos = source.canvasToWorldX(mx)
         ypos = source.canvasToWorldY(my)
 
-        if   source == self.xcanvas: self.setPosition(self.xpos, xpos, ypos)
-        elif source == self.ycanvas: self.setPosition(xpos, self.ypos, ypos)
-        elif source == self.zcanvas: self.setPosition(xpos, ypos, self.zpos)
+        if   source == self.xcanvas: self.setPosition(self.pos.x, xpos, ypos)
+        elif source == self.ycanvas: self.setPosition(xpos, self.pos.y, ypos)
+        elif source == self.zcanvas: self.setPosition(xpos, ypos, self.pos.z)
  
             
 class OrthoFrame(wx.Frame):
