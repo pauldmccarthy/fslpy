@@ -73,14 +73,14 @@ class FloatSlider(wx.Slider):
         self._realRange = abs(self._realMin - self._realMax)
 
         
-    def getMin(self):
+    def GetMin(self):
         """
         Return the minimum slider value.
         """
         return self.GetRange()[0]
 
     
-    def getMax(self):
+    def GetMax(self):
         """
         Return the maximum slider value.
         """
