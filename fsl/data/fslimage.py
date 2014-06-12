@@ -314,19 +314,19 @@ class ImageDisplay(props.HasProperties):
         # Called whenever the displayMin/displayMax bounds
         # change. Keeps the min/max bounds synchronised
         # across the displayMin/displayMax properties.
-        def displayBoundsChanged(self, propName, constraint, newval):
-            if   propName == 'displayMin': otherProp = 'displayMax'
-            elif propName == 'displayMax': otherProp = 'displayMin'
-            self.setConstraint(otherProp, constraint, newval)
+        def displayMinLimitsChanged(self, constraint, newval):
+            self.setConstraint('displayMax', constraint, newval)
+        def displayMaxLimitsChanged(self, constraint, newval):
+            self.setConstraint('displayMin', constraint, newval) 
 
         ImageDisplay.displayMin.addConstraintListener(
             self,
             '{}_displayMinMaxSync'.format(self.__class__.__name__),
-            displayBoundsChanged)
+            displayMinLimitsChanged)
         ImageDisplay.displayMax.addConstraintListener(
             self,
             '{}_displayMinMaxSync'.format(self.__class__.__name__),
-            displayBoundsChanged) 
+            displayMaxLimitsChanged) 
 
         # is this a 4D volume?
         if self.is4DImage():
