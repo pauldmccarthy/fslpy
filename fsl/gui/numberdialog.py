@@ -54,6 +54,9 @@ class NumberDialog(wx.Dialog):
         self._minValue = minValue
         self._maxValue = maxValue
 
+        if self._real: initial = float(initial)
+        else:          initial = int(  initial)
+
         self._panel = wx.Panel(self)
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self._panel.SetSizer(self._sizer)
@@ -70,6 +73,12 @@ class NumberDialog(wx.Dialog):
         self._textctrl.SetValue('{}'.format(initial))
 
         self._sizer.Add(self._textctrl, flag=wx.EXPAND)
+
+        self._errorLabel = wx.StaticText(self._panel)
+        self._errorLabel.SetForegroundColour('#992222')
+        
+        self._sizer.Add(self._errorLabel)
+        self._sizer.Show(self._errorLabel, False)
 
         self._okButton     = wx.Button(self._buttonPanel, label='Ok')
         self._cancelButton = wx.Button(self._buttonPanel, label='Cancel')
@@ -101,7 +110,7 @@ class NumberDialog(wx.Dialog):
     def _validate(self):
         """
         Validates the current value. If the value is valid, returns it.
-        Otherwise returns None.
+        Otherwise a ValueError is raised with an appropriate message.
         """
         
         value = self._textctrl.GetValue()
@@ -109,11 +118,20 @@ class NumberDialog(wx.Dialog):
         if self._real: cast = float
         else:          cast = int
         
-        try:    value = cast(value)
-        except: return None
+        try:
+            value = cast(value)
+        except:
+            if self._real: err = ' floating point'
+            else:          err = 'n integer'
+            raise ValueError('The value must be a{}'.format(err))
 
-        if self._minValue is not None and value < self._minValue: return None
-        if self._maxValue is not None and value > self._maxValue: return None
+        if self._minValue is not None and value < self._minValue:
+            raise ValueError('The value must be at '
+                             'least {}'.format(self._minValue))
+            
+        if self._maxValue is not None and value > self._maxValue:
+            raise ValueError('The value must be at '
+                             'most {}'.format(self._maxValue))
 
         return value
 
@@ -125,10 +143,16 @@ class NumberDialog(wx.Dialog):
         The value may be retrieved via the GetValue method. If the value
         is not valid, the dialog remains open.
         """
-
-        value = self._validate()
-
-        if value is None:
+        
+        try:
+            value = self._validate()
+            
+        except ValueError as e:
+            self._errorLabel.SetLabel(e.message)
+            self._sizer.Show(self._errorLabel, True)
+            self._panel.Layout()
+            self._panel.Fit()
+            self.Fit()
             return
             
         self._value = value
