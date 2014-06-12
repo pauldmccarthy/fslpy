@@ -12,15 +12,16 @@ import wx
 
 import fsl.gui.rangeslider as rangeslider
 
-def _boundBind(sliderPanel, propVal, axis):
+def _boundBind(hasProps, propObj, sliderPanel, propVal, axis):
     """
     Binds the given RangeSliderSpinPanel to the given BoundValueList
     so that changes in one are propagated to the other.
     """
 
-    lName    = 'BoundBind_{}'.format(id(sliderPanel))
-    lowProp  = propVal.getPropertyValueList()[axis * 2]
-    highProp = propVal.getPropertyValueList()[axis * 2 + 1]
+    lName      = 'BoundBind_{}'.format(id(sliderPanel))
+    editLimits = propObj.getConstraint(hasProps, 'editLimits')    
+    lowProp    = propVal.getPropertyValueList()[axis * 2]
+    highProp   = propVal.getPropertyValueList()[axis * 2 + 1]
 
     def lowGuiUpdate(value, *a):
         if sliderPanel.GetLow() == value: return
@@ -31,18 +32,36 @@ def _boundBind(sliderPanel, propVal, axis):
         sliderPanel.SetHigh(value)
 
     def propUpdate(ev):
-        low, high = sliderPanel.GetRange()
-        lowProp .set(low)
-        highProp.set(high)
+        lowProp .set(ev.low)
+        highProp.set(ev.high)
+
+    def updateSliderRange(*a):
+        minval = propVal.getMin(axis)
+        maxval = propVal.getMax(axis)
+        sliderPanel.SetLimits(minval, maxval)
+
+    def updatePropRange(ev):
+        propVal.setMin(ev.min)
+        propVal.setMax(ev.max)
 
     sliderPanel.Bind(rangeslider.EVT_RANGE, propUpdate)
 
     lowProp .addListener(lName, lowGuiUpdate)
     highProp.addListener(lName, highGuiUpdate)
 
+    propObj.addItemConstraintListener(
+        hasProps, axis * 2,     lName, updateSliderRange)
+    propObj.addItemConstraintListener(
+        hasProps, axis * 2 + 1, lName, updateSliderRange)
+
+    if editLimits:
+        sliderPanel.Bind(rangeslider.EVT_RANGE_LIMIT, updatePropRange)
+
     def onDestroy(ev):
         lowProp .removeListener(lName)
         highProp.removeListener(lName)
+        propObj.removeItemConstraintListener(hasProps, axis * 2,     lName)
+        propObj.removeItemConstraintListener(hasProps, axis * 2 + 1, lName)
         ev.Skip()
         
     sliderPanel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -85,7 +104,7 @@ def _Bounds(parent, hasProps, propObj, propVal):
 
         sizer.Add(slider, flag=wx.EXPAND)
 
-        _boundBind(slider, propVal, i)
+        _boundBind(hasProps, propObj, slider, propVal, i)
 
     panel.Layout()
     return panel

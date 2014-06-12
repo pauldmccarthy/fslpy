@@ -23,10 +23,11 @@ import wx.combo
 import numpy         as np
 import matplotlib.cm as mplcm
 
-# the List and number properties are complex
+# These properties are complex
 # enough to get their own modules.
 from widgets_list   import _List
 from widgets_bounds import _Bounds
+from widgets_point  import _Point
 from widgets_number import _Number
 
 
