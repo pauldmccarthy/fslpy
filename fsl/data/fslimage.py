@@ -246,8 +246,8 @@ class ImageDisplay(props.HasProperties):
 
     enabled      = props.Boolean(default=True)
     alpha        = props.Real(minval=0.0, maxval=1.0, default=1.0)
-    displayMin   = props.Real(editBounds=True)
-    displayMax   = props.Real(editBounds=True)
+    displayMin   = props.Real(editLimits=True)
+    displayMax   = props.Real(editLimits=True)
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     rangeClip    = props.Boolean(default=False)
     cmap         = props.ColourMap(default=mplcm.Greys_r)

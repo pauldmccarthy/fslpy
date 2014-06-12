@@ -39,7 +39,7 @@ class Number(props.PropertyBase):
                  minval=None,
                  maxval=None,
                  clamped=False,
-                 editBounds=False,
+                 editLimits=False,
                  **kwargs):
         """
         Optional parameters:
@@ -47,8 +47,8 @@ class Number(props.PropertyBase):
           - maxval:     Maximum value
           - clamped:    If True, the value will be clamped to its min/max
                         bounds.
-          - editBounds: If True, widgets created to modify Number properties
-                        will allow the user to change the min/max bounds.
+          - editLimits: If True, widgets created to modify Number properties
+                        will allow the user to change the min/max limits.
         """
 
         default = kwargs.get('default', None)
@@ -66,7 +66,7 @@ class Number(props.PropertyBase):
         kwargs['default']    = default
         kwargs['minval']     = minval
         kwargs['maxval']     = maxval
-        kwargs['editBounds'] = editBounds
+        kwargs['editLimits'] = editLimits
         kwargs['clamped']    = clamped
         props.PropertyBase.__init__(self, **kwargs)
 

@@ -95,15 +95,15 @@ def _makeSlider(parent, hasProps, propObj, propVal):
     value      = propVal.get()
     minval     = propObj.getConstraint(hasProps, 'minval')
     maxval     = propObj.getConstraint(hasProps, 'maxval')
-    editBounds = propObj.getConstraint(hasProps, 'editBounds') 
+    editLimits = propObj.getConstraint(hasProps, 'editLimits') 
 
     slider = floatslider.SliderSpinPanel(
         parent,
         value=value,
         minValue=minval,
         maxValue=maxval,
-        showBounds=True,
-        editBounds=editBounds)
+        showLimits=True,
+        editLimits=editLimits)
 
     # bind the slider value to the property value
     widgets._propBind(
@@ -116,12 +116,8 @@ def _makeSlider(parent, hasProps, propObj, propVal):
         maxval = propObj.getConstraint(hasProps, 'maxval')
         
         slider.SetRange(minval, maxval)
-        
-        # The wx.Slider value changes when its bounds
-        # are changed. It does this to keep the slider
-        # position the same as before, but we don't
-        # want that  ...
-        slider.SetValue(propVal.get())
+        # TODO check that value has changed due to the range change?
+
 
     listenerName = 'widgets_number_py_updateRange_{}'.format(id(slider))
     propObj.addConstraintListener(hasProps, listenerName, updateSliderRange)
@@ -133,7 +129,7 @@ def _makeSlider(parent, hasProps, propObj, propVal):
     
     slider.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
-    if editBounds:
+    if editLimits:
 
         # When the user edits the slider bounds,
         # update the property constraints
@@ -141,7 +137,7 @@ def _makeSlider(parent, hasProps, propObj, propVal):
             propObj.setConstraint(hasProps, 'minval', ev.min)
             propObj.setConstraint(hasProps, 'maxval', ev.max)
 
-        slider.Bind(floatslider.EVT_SSP_RANGE, updatePropRange)
+        slider.Bind(floatslider.EVT_SSP_LIMIT, updatePropRange)
 
     return slider
 

@@ -161,10 +161,10 @@ class FloatSlider(wx.Slider):
 # the new value.
 SliderSpinValueEvent, EVT_SSP_VALUE = wxevent.NewEvent()
 
-# Event emitted when the SliderSpinPanel range changes.
+# Event emitted when the SliderSpinPanel limits change.
 # Contains two parameters, 'min' and 'max', which contain
-# the new range values.
-SliderSpinRangeEvent, EVT_SSP_RANGE = wxevent.NewEvent() 
+# the new limit values.
+SliderSpinLimitEvent, EVT_SSP_LIMIT = wxevent.NewEvent() 
 
 class SliderSpinPanel(wx.Panel):
     """
@@ -177,7 +177,7 @@ class SliderSpinPanel(wx.Panel):
     Users of the SliderSpinPanel may wish to bind listeners to the
     following events:
       - EVT_SSP_VALUE: Emitted when the slider value changes.
-      - EVT_SSP_RANGE: Emitted when the slider range changes.
+      - EVT_SSP_LIMIT: Emitted when the slider limits change.
     """
 
     def __init__(self,
@@ -232,8 +232,6 @@ class SliderSpinPanel(wx.Panel):
         self._sizer.Add(self._spinbox, flag=wx.EXPAND)
 
         self._slider .Bind(wx.EVT_SLIDER,         self._onSlider)
-        self._spinbox.Bind(wx.EVT_SPIN,           self._onSpin)
-        self._spinbox.Bind(wx.EVT_SPINCTRL,       self._onSpin)
         self._spinbox.Bind(wx.EVT_SPINCTRLDOUBLE, self._onSpin)
 
         if showLimits:
@@ -257,7 +255,7 @@ class SliderSpinPanel(wx.Panel):
         Called when either of the minimum/maximum limit buttons are
         clicked. Pops up a numberdialog.NumberDialog window and, if
         the user changes the value, updates the slider/spin limits,
-        and emits an EVT_SSP_RANGE event.
+        and emits an EVT_SSP_LIMIT event.
         """
 
         source = ev.GetEventObject()
@@ -282,7 +280,7 @@ class SliderSpinPanel(wx.Panel):
         if   source == self._minButton: self.SetMin(dlg.GetValue())
         elif source == self._maxButton: self.SetMax(dlg.GetValue())
 
-        wx.PostEvent(self, SliderSpinRangeEvent(
+        wx.PostEvent(self, SliderSpinLimitEvent(
             min=self.GetMin(),
             max=self.GetMax()))
 
