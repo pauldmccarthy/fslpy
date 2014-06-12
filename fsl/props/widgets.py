@@ -23,6 +23,8 @@ import wx.combo
 import numpy             as np
 import matplotlib.cm     as mplcm
 
+import fsl.gui.rangeslider as rangeslider
+
 # the List and number properties are complex
 # enough to get their own modules.
 from widgets_list   import _List
@@ -345,7 +347,48 @@ def _ColourMap(parent, hasProps, propObj, propVal):
 
     _propBind(hasProps, propObj, propVal, cbox, wx.EVT_COMBOBOX, valMap)
         
-    return cbox   
+    return cbox
+
+
+def _Bounds(parent, hasProps, propObj, propVal):
+    """
+    Creates and returns a panel containing sliders/spinboxes which allow
+    the user to edit the low/high values along each dimension of the
+    given Bounds property.
+    """
+
+    ndims    = propObj._ndims
+    panel    = wx.Panel(parent)
+    sizer    = wx.BoxSizer(wx.VERTICAL)
+    
+    panel.SetSizer(sizer)
+
+    for i in range(ndims):
+        editLimits  = propObj.getConstraint(hasProps, 'editLimits')
+        minDistance = propObj.getConstraint(hasProps, 'minDistance')
+        minval      = propVal.getMin(i)
+        maxval      = propVal.getMax(i)
+        loval       = propVal.getLo(i)
+        hival       = propVal.getHi(i)
+
+        if editLimits  is None: editLimits  = False
+        if minDistance is None: minDistance = 0
+        if minval      is None: minval      = loval
+        if maxval      is None: maxval      = hival
+        slider = rangeslider.RangeSliderSpinPanel(
+            panel,
+            minValue=minval,
+            maxValue=maxval,
+            lowValue=loval,
+            highValue=hival,
+            minDistance=minDistance, 
+            showLimits=True,
+            editLimits=editLimits)
+
+        sizer.Add(slider, flag=wx.EXPAND)
+
+    panel.Layout()
+    return panel
 
 
 def makeWidget(parent, hasProps, propName):

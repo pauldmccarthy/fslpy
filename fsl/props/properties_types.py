@@ -485,19 +485,29 @@ class BoundsValueList(propvals.PropertyValueList):
 class Bounds(List):
     """
     Property which represents numeric bounds in any number of dimensions.
-    Bound values are stored as a list of floating point values, two values
-    (lo, hi) for each dimension.  The values are stored in a
-    BoundsValueList object.
+    Bound values are stored in a BoundValueList, a list of floating point
+    values, two values (lo, hi) for each dimension.  
 
     Bound values may also have bounds of their own, i.e. minimium/maximum
-    values that the bound values can take. These bound-bounds are referred
-    to as 'min' and 'max', and can be set via the setMin/setMax methods.
-    The advantage to using these methods, instead of using
-    HasProperties.setItemConstraint, is that if you use the latter you will
-    have to set the constraints on both the lo and the high values.
+    values that the bound values can take. These bound-limits are referred
+    to as 'min' and 'max', and can be set via the BoundValueList
+    setMin/setMax methods. The advantage to using these methods, instead
+    of using HasProperties.setItemConstraint, is that if you use the latter
+    you will have to set the constraints on both the low and the high
+    values.
     """
 
-    def __init__(self,  ndims=1, **kwargs):
+    def __init__(self, ndims=1, minDistance=None, editLimits=False, **kwargs):
+        """
+        Initialise a Bounds property. Parameters:
+          - ndims:       Number of dimensions. This is (currently) not a
+                         property constraint, hence it cannot be changed
+                         on HasProperties instances.
+          - minDistance: Minimum distance to be maintained between the
+                         low/high values for each dimension.
+          - editLimits:  If True, widgets created to edit this Bounds
+                         will allow the user to edit the min/max limits 
+        """
 
         default = kwargs.get('default', None)
 
@@ -507,17 +517,24 @@ class Bounds(List):
         if ndims < 1 or ndims > 3:
             raise ValueError('Only bounds of one to three '
                              'dimensions are supported')
-            
+
         elif len(default) != 2 * ndims:
             raise ValueError('{} bound values are required'.format(2 * ndims))
 
-        kwargs['default'] = default
+        if minDistance is None:
+            minDistance = 0
+
+        kwargs['default']     = default
+        kwargs['minDistance'] = minDistance
+        kwargs['editLimits']  = editLimits
+
         self._ndims = ndims
 
         List.__init__(self,
-                      listType=Real(clamped=True),
+                      listType=Real(clamped=True, editLimits=editLimits),
                       minlen=ndims * 2,
-                      maxlen=ndims * 2, **kwargs)
+                      maxlen=ndims * 2,
+                      **kwargs)
 
         
     def _makePropVal(self, instance):
@@ -550,6 +567,8 @@ class Bounds(List):
         are greater than the corresponding max value.
         """
 
+        minDistance = self.getConstraint(instance, 'minDistance')
+
         # the List.validate method will check
         # the value length and type for us
         List.validate(self, instance, value)
@@ -563,6 +582,10 @@ class Bounds(List):
                 raise ValueError('Minimum bound must be smaller '
                                  'than maximum bound (dimension {}, '
                                  '{} - {}'.format(i, imin, imax))
+
+            if imax - imin < minDistance:
+                raise ValueError('Minimum and maximum bounds must be at '
+                                 'least {} apart'.format(minDistance))
 
 
 class PointValueList(propvals.PropertyValueList):
