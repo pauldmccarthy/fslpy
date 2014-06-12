@@ -246,8 +246,7 @@ class ImageDisplay(props.HasProperties):
 
     enabled      = props.Boolean(default=True)
     alpha        = props.Real(minval=0.0, maxval=1.0, default=1.0)
-    displayMin   = props.Real(editLimits=True)
-    displayMax   = props.Real(editLimits=True)
+    displayRange = props.Bounds(ndims=1, editLimits=True)
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     rangeClip    = props.Boolean(default=False)
     cmap         = props.ColourMap(default=mplcm.Greys_r)
@@ -260,16 +259,14 @@ class ImageDisplay(props.HasProperties):
     _view = props.VGroup(('enabled',
                           props.Widget('volume',
                                        enabledWhen=is4DImage),
-                          'displayMin',
-                          'displayMax',
+                          'displayRange',
                           'alpha',
                           'rangeClip',
                           'samplingRate',
                           'cmap'))
     _labels = {
         'enabled'      : 'Enabled',
-        'displayMin'   : 'Min.',
-        'displayMax'   : 'Max.',
+        'displayRange' : 'Display range',
         'alpha'        : 'Opacity',
         'rangeClip'    : 'Clipping',
         'samplingRate' : 'Sampling rate',
@@ -300,33 +297,12 @@ class ImageDisplay(props.HasProperties):
             self.dataMin = image.data.min()
             self.dataMax = image.data.max()
 
-        self.displayMin = self.dataMin
-        self.displayMax = self.dataMax
+        dRangeLen = abs(self.dataMax - self.dataMin)
         
-        displayRange = abs(self.displayMax - self.displayMin)
-        
-        self.setConstraint('displayMin', 'minval', self.dataMin - displayRange)
-        self.setConstraint('displayMin', 'maxval', self.dataMax + displayRange)
-        self.setConstraint('displayMax', 'minval', self.dataMin - displayRange)
-        self.setConstraint('displayMax', 'maxval', self.dataMax + displayRange)
-
-
-        # Called whenever the displayMin/displayMax bounds
-        # change. Keeps the min/max bounds synchronised
-        # across the displayMin/displayMax properties.
-        def displayMinLimitsChanged(self, constraint, newval):
-            self.setConstraint('displayMax', constraint, newval)
-        def displayMaxLimitsChanged(self, constraint, newval):
-            self.setConstraint('displayMin', constraint, newval) 
-
-        ImageDisplay.displayMin.addConstraintListener(
-            self,
-            '{}_displayMinMaxSync'.format(self.__class__.__name__),
-            displayMinLimitsChanged)
-        ImageDisplay.displayMax.addConstraintListener(
-            self,
-            '{}_displayMinMaxSync'.format(self.__class__.__name__),
-            displayMaxLimitsChanged) 
+        self.displayRange.setLo( 0, self.dataMin)
+        self.displayRange.setHi( 0, self.dataMax)
+        self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
+        self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
 
         # is this a 4D volume?
         if self.is4DImage():

@@ -422,13 +422,19 @@ class PropertyValueList(PropertyValue):
             self.__propVals = map(self.__newItem, newValues)
 
 
-    def revalidate(self):
+    def revalidate(self, usePropVals=False):
+        """Overrides PropertyValue.revalidate(). Revalidates the values in this list,
+        ensuring that the corresponding PropertyValue objects are not
+        recreated. The usePropVals parameter is for internal use.  If it is
+        False (the default), the list of values stored in this PropertyValue
+        are used. Otherwise, the PropertyValue objects which represent each
+        value are queried to retrieve their values.
+
         """
-        Overrides PropertyValue.revalidate(). Revalidates the values in
-        this list, ensuring that the corresponding PropertyValue objects
-        are not recreated.
-        """
-        self.set(PropertyValue.get(self), False)
+        if usePropVals: values = [pv.get() for pv in self.__propVals]
+        else:           values = PropertyValue.get(self)
+        
+        self.set(values, False)
 
         
     def __newItem(self, item):
@@ -444,12 +450,13 @@ class PropertyValueList(PropertyValue):
         # elements.
         if self._itemAttributes is None: itemAtts = {}
         else:                            itemAtts = self._itemAttributes
+
         propVal = PropertyValue(
             self._context,
             name='{}_Item'.format(self._name),
             value=item,
             castFunc=self._itemCastFunc,
-            postNotifyFunc=lambda *a: self.revalidate(),
+            postNotifyFunc=lambda *a: self.revalidate(True),
             validateFunc=self._itemValidateFunc,
             allowInvalid=self._allowInvalid,
             **itemAtts)

@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+#
+# widgets_bounds.py - Create widgets for modifying Bounds properties.
+#
+# This module is not intended to be used directly - it is imported
+# into the props.widgets namespace.
+#
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+#
+
+import wx
+
+import fsl.gui.rangeslider as rangeslider
+
+def _boundBind(sliderPanel, propVal, axis):
+    """
+    Binds the given RangeSliderSpinPanel to the given BoundValueList
+    so that changes in one are propagated to the other.
+    """
+
+    lName    = 'BoundBind_{}'.format(id(sliderPanel))
+    lowProp  = propVal.getPropertyValueList()[axis * 2]
+    highProp = propVal.getPropertyValueList()[axis * 2 + 1]
+
+    def lowGuiUpdate(value, *a):
+        if sliderPanel.GetLow() == value: return
+        sliderPanel.SetLow(value)
+        
+    def highGuiUpdate(value, *a):
+        if sliderPanel.GetHigh() == value: return
+        sliderPanel.SetHigh(value)
+
+    def propUpdate(ev):
+        low, high = sliderPanel.GetRange()
+        lowProp .set(low)
+        highProp.set(high)
+
+    sliderPanel.Bind(rangeslider.EVT_RANGE, propUpdate)
+
+    lowProp .addListener(lName, lowGuiUpdate)
+    highProp.addListener(lName, highGuiUpdate)
+
+    def onDestroy(ev):
+        lowProp .removeListener(lName)
+        highProp.removeListener(lName)
+        ev.Skip()
+        
+    sliderPanel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
+
+def _Bounds(parent, hasProps, propObj, propVal):
+    """
+    Creates and returns a panel containing sliders/spinboxes which allow
+    the user to edit the low/high values along each dimension of the
+    given Bounds property.
+    """
+
+    ndims    = propObj._ndims
+    panel    = wx.Panel(parent)
+    sizer    = wx.BoxSizer(wx.VERTICAL)
+    
+    panel.SetSizer(sizer)
+
+    for i in range(ndims):
+        editLimits  = propObj.getConstraint(hasProps, 'editLimits')
+        minDistance = propObj.getConstraint(hasProps, 'minDistance')
+        minval      = propVal.getMin(i)
+        maxval      = propVal.getMax(i)
+        loval       = propVal.getLo(i)
+        hival       = propVal.getHi(i)
+
+        if editLimits  is None: editLimits  = False
+        if minDistance is None: minDistance = 0
+        if minval      is None: minval      = loval
+        if maxval      is None: maxval      = hival
+        slider = rangeslider.RangeSliderSpinPanel(
+            panel,
+            minValue=minval,
+            maxValue=maxval,
+            lowValue=loval,
+            highValue=hival,
+            minDistance=minDistance, 
+            showLimits=True,
+            editLimits=editLimits)
+
+        sizer.Add(slider, flag=wx.EXPAND)
+
+        _boundBind(slider, propVal, i)
+
+    panel.Layout()
+    return panel

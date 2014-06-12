@@ -343,8 +343,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             image.display.addListener('enabled',      self.name, refresh)
             image.display.addListener('alpha',        self.name, refresh)
-            image.display.addListener('displayMin',   self.name, refresh)
-            image.display.addListener('displayMax',   self.name, refresh)
+            image.display.addListener('displayRange', self.name, refresh)
             image.display.addListener('rangeClip',    self.name, refresh)
             image.display.addListener('samplingRate', self.name, refresh)
             image.display.addListener('cmap',         self.name, refresh)
@@ -355,8 +354,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             def onDestroy(ev):
                 image.display.removeListener('enabled',      self.name)
                 image.display.removeListener('alpha',        self.name)
-                image.display.removeListener('displayMin',   self.name)
-                image.display.removeListener('displayMax',   self.name)
+                image.display.removeListener('displayRange', self.name)
                 image.display.removeListener('rangeClip',    self.name)
                 image.display.removeListener('samplingRate', self.name)
                 image.display.removeListener('cmap',         self.name)
@@ -654,8 +652,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         gl.glUniform1f(self.alphaPos,      imageDisplay.alpha)
         gl.glUniform1f(self.normFactorPos, glImageData.normFactor)
         gl.glUniform1f(self.normOffsetPos, glImageData.normOffset)
-        gl.glUniform1f(self.displayMinPos, imageDisplay.displayMin)
-        gl.glUniform1f(self.displayMaxPos, imageDisplay.displayMax)
+        gl.glUniform1f(self.displayMinPos, imageDisplay.displayRange.xlo)
+        gl.glUniform1f(self.displayMaxPos, imageDisplay.displayRange.xhi)
         gl.glUniform1f(self.signedPos,     glImageData.signed)
 
         # and the image/texture shape buffers

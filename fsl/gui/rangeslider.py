@@ -461,7 +461,23 @@ class RangeSliderSpinPanel(wx.Panel):
         Sets the current high range value.
         """ 
         self._sliderPanel.SetHigh(highValue)
-        self._spinPanel  .SetHigh(highValue) 
+        self._spinPanel  .SetHigh(highValue)
+
+
+    def GetRange(self):
+        """
+        Return the current (low, high) range values.
+        """
+        return self._sliderPanel.GetRange()
+
+
+    def SetRange(self, lowValue, highValue):
+        """
+        Set the current low and high range values.
+        """
+        self._sliderPanel.SetRange(lowValue, highValue)
+        self._spinPanel  .SetRange(lowValue, highValue)
+        
 
         
 def _testRangeSliderSpinPanel():

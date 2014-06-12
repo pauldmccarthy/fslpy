@@ -285,9 +285,9 @@ def runBet(parent, opts):
         outImage  = fslimage.Image(opts.outputImage)
         imageList = fslimage.ImageList([inImage, outImage])
 
-        outImage.display.cmap       = 'Reds'
-        outImage.display.displayMin = 1
-        outImage.display.rangeClip  = True
+        outImage.display.cmap             = 'Reds'
+        outImage.display.displayRange.xlo = 1
+        outImage.display.rangeClip        = True
 
         frame  = orthopanel.OrthoFrame(parent, imageList, opts.outputImage) 
         frame.Show()
