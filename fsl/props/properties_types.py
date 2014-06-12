@@ -600,10 +600,10 @@ class PointValueList(propvals.PropertyValueList):
     def __init__(self, *args, **kwargs):
         propvals.PropertyValueList.__init__(self, *args, **kwargs)
 
-    def getpos(self, axis):
+    def getPos(self, axis):
         return self[axis]
         
-    def setpos(self, axis, value):
+    def setPos(self, axis, value):
         self[axis] = value
 
     def getMin(self, axis):
@@ -663,7 +663,7 @@ class Point(List):
     (where n must be either 2 or 3 for the time being).
     """
 
-    def __init__(self,  ndims=2, **kwargs):
+    def __init__(self, ndims=2, editLimits=False, **kwargs):
 
         default = kwargs.get('default', None)
 
@@ -677,11 +677,12 @@ class Point(List):
         elif len(default) != ndims:
             raise ValueError('{} point values are required'.format(ndims))
 
-        kwargs['default'] = default
+        kwargs['default']    = default
+        kwargs['editLimits'] = editLimits
         self._ndims = ndims
 
         List.__init__(self,
-                      listType=Real(clamped=True),
+                      listType=Real(clamped=True, editLimits=editLimits),
                       minlen=ndims,
                       maxlen=ndims,
                       **kwargs)

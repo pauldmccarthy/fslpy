@@ -489,7 +489,9 @@ class ListPropertyBase(PropertyBase):
         Returns the list of PropertyValue objects which represent
         the items stored in this list.
         """
-        return self.getPropVal(instance).getPropertyValueList()
+        propVal = self.getPropVal(instance)
+        if propVal is not None: return propVal.getPropertyValueList()
+        else:                   return None
 
 
     def addItemListener(self, instance, index, name, callback):
@@ -505,7 +507,8 @@ class ListPropertyBase(PropertyBase):
         Convenience method which removes the named listener from
         the property value at the given index.
         """
-        self.getPropValList(instance)[index].removeListener(name)
+        pvl = self.getPropValList(instance)
+        if pvl is not None: pvl[index].removeListener(name)
 
 
     def addItemConstraintListener(self, instance, index, name, listener):
@@ -523,7 +526,8 @@ class ListPropertyBase(PropertyBase):
         Convenience method which removes the named constraint listener
         from the property value at the given index.
         """
-        self.getPropValList(instance)[index].removeAttributeListener(name)
+        pvl = self.getPropValList(instance)
+        if pvl is not None: pvl[index].removeAttributeListener(name)
 
         
     def getItemConstraint(self, instance, index, constraint):
