@@ -38,39 +38,56 @@ class FloatSlider(wx.Slider):
           - maxValue: Maximum slider value
           - kwargs:   Passed through to the wx.Slider constructor
         """
+        self.__sliderMin   = -2 ** 31
+        self.__sliderMax   =  2 ** 31 - 1
+        self.__sliderRange = abs(self.__sliderMax - self.__sliderMin)
 
-        self._sliderMin   = -2 ** 31
-        self._sliderMax   =  2 ** 31 - 1
-        self._sliderRange = abs(self._sliderMax - self._sliderMin)
-
-        self.SetRange(minValue, maxValue)
-
-        value = self._realToSlider(value)
-        
         wx.Slider.__init__(self,
                            parent,
-                           value=value,
-                           minValue=self._sliderMin,
-                           maxValue=self._sliderMax,
+                           minValue=self.__sliderMin,
+                           maxValue=self.__sliderMax,
                            **kwargs)
+
+        self.__SetRange(minValue, maxValue)
+        self.SetValue(value)
         
 
     def GetRange(self):
         """
         Return a tuple containing the (minimum, maximum) slider values.
         """
-        return (self._realMin, self._realMax)
+        return (self.__realMin, self.__realMax)
+
+
+    def __SetRange(self, minValue, maxValue):
+        """
+        Set the minimum/maximum slider values.  This logic is not in
+        the public FloatSlider.SetRange method so we can overcome
+        a chicken-and-egg problem in __init__ - SetValue needs __realMin
+        and __realMax to be set, but SetRange needs to retrieve the
+        value before setting __realMin and __realMax.
+        """ 
+
+        self.__realMin   = float(minValue)
+        self.__realMax   = float(maxValue)
+        if self.__realMin == self.__realMax:
+            self.__realMax = self.__realMax + 1
+        self.__realRange = abs(self.__realMin - self.__realMax)
 
         
     def SetRange(self, minValue, maxValue):
         """
         Set the minimum/maximum slider values.
         """
-        self._realMin   = float(minValue)
-        self._realMax   = float(maxValue)
-        if self._realMin == self._realMax:
-            self._realMax = self._realMax + 1
-        self._realRange = abs(self._realMin - self._realMax)
+
+        # wx.Slider values change when their bounds
+        # are changed. It does this to keep the
+        # slider position the same as before, but I
+        # think it is more appropriate to keep the
+        # slider value the same ... 
+        oldValue = self.GetValue()
+        self.__SetRange(minValue, maxValue)
+        self.SetValue(oldValue)
 
         
     def GetMin(self):
@@ -101,21 +118,21 @@ class FloatSlider(wx.Slider):
         self.SetRange(self.GetMin(), maxValue)
 
         
-    def _sliderToReal(self, value):
+    def __sliderToReal(self, value):
         """
         Converts the given value from slider space to real space.
         """
-        value = self._realMin + (value - self._sliderMin) * \
-            (self._realRange / self._sliderRange)
+        value = self.__realMin + (value - self.__sliderMin) * \
+            (self.__realRange / self.__sliderRange)
         return value
 
         
-    def _realToSlider(self, value):
+    def __realToSlider(self, value):
         """
         Converts the given value from real space to slider space.
         """ 
-        value = self._sliderMin + (value - self._realMin) * \
-            (self._sliderRange / self._realRange)
+        value = self.__sliderMin + (value - self.__realMin) * \
+            (self.__sliderRange / self.__realRange)
         return int(round(value))
 
         
@@ -123,10 +140,10 @@ class FloatSlider(wx.Slider):
         """
         Set the slider value.
         """
-        value = self._realToSlider(value)
+        value = self.__realToSlider(value)
 
-        if value < self._sliderMin: value = self._sliderMin
-        if value > self._sliderMax: value = self._sliderMax
+        if value < self.__sliderMin: value = self.__sliderMin
+        if value > self.__sliderMax: value = self.__sliderMax
 
         wx.Slider.SetValue(self, value)
 
@@ -136,7 +153,7 @@ class FloatSlider(wx.Slider):
         Returns the slider value.
         """
         value = wx.Slider.GetValue(self)
-        return self._sliderToReal(value)
+        return self.__sliderToReal(value)
 
 
 # Event emitted when the SliderSpinPanel value changes.
