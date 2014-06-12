@@ -26,9 +26,9 @@ class FloatSlider(wx.Slider):
 
     def __init__(self,
                  parent,
-                 value,
-                 minValue,
-                 maxValue,
+                 value=0,
+                 minValue=0,
+                 maxValue=100,
                  **kwargs):
         """
         Initialises a FloatSlider. Parameters:
