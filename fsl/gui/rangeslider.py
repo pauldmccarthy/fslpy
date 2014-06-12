@@ -40,11 +40,11 @@ class RangePanel(wx.Panel):
     def __init__(self,
                  parent,
                  widgetType,
-                 minValue=0.0,
-                 maxValue=100.0,
-                 lowValue=0.0,
-                 highValue=100.0,
-                 minDistance=1.0):
+                 minValue=None,
+                 maxValue=None,
+                 lowValue=None,
+                 highValue=None,
+                 minDistance=None):
         """
         Initialise a RangePanel panel. Parameters:
         
@@ -66,8 +66,14 @@ class RangePanel(wx.Panel):
 
         if widgetType not in ('slider', 'spin'):
             raise ValueError('Unknown widget type: {}'.format(widgetType))
-        
+
         wx.Panel.__init__(self, parent)
+
+        if minValue    is None: minValue    = 0
+        if maxValue    is None: maxValue    = 1
+        if lowValue    is None: lowValue    = 0
+        if highValue   is None: highValue   = 1
+        if minDistance is None: minDistance = 0.01
 
         self._minDistance = minDistance
 
@@ -255,11 +261,11 @@ class RangeSliderSpinPanel(wx.Panel):
     
     def __init__(self,
                  parent,
-                 minValue=0.0,
-                 maxValue=100.0,
-                 lowValue=0.0,
-                 highValue=100.0,
-                 minDistance=1.0,
+                 minValue=None,
+                 maxValue=None,
+                 lowValue=None,
+                 highValue=None,
+                 minDistance=None,
                  showLimits=True,
                  editLimits=False):
         """
@@ -287,6 +293,12 @@ class RangeSliderSpinPanel(wx.Panel):
         """
 
         wx.Panel.__init__(self, parent)
+
+        if minValue    is None: minValue    = 0
+        if maxValue    is None: maxValue    = 1
+        if lowValue    is None: lowValue    = 0
+        if highValue   is None: highValue   = 1
+        if minDistance is None: minDistance = 0.01 
         
         if not showLimits: editLimits = False
         

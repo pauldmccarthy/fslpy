@@ -26,9 +26,9 @@ class FloatSlider(wx.Slider):
 
     def __init__(self,
                  parent,
-                 value=0,
-                 minValue=0,
-                 maxValue=100,
+                 value=None,
+                 minValue=None,
+                 maxValue=None,
                  **kwargs):
         """
         Initialises a FloatSlider. Parameters:
@@ -38,6 +38,11 @@ class FloatSlider(wx.Slider):
           - maxValue: Maximum slider value
           - kwargs:   Passed through to the wx.Slider constructor
         """
+
+        if value    is None: value    = 0
+        if minValue is None: minValue = 0
+        if maxValue is None: maxValue = 1
+        
         self.__sliderMin   = -2 ** 31
         self.__sliderMax   =  2 ** 31 - 1
         self.__sliderRange = abs(self.__sliderMax - self.__sliderMin)
@@ -182,9 +187,9 @@ class SliderSpinPanel(wx.Panel):
 
     def __init__(self,
                  parent,
-                 value,
-                 minValue,
-                 maxValue,
+                 value=None,
+                 minValue=None,
+                 maxValue=None,
                  showLimits=True,
                  editLimits=False):
         """
@@ -208,6 +213,10 @@ class SliderSpinPanel(wx.Panel):
         """
 
         wx.Panel.__init__(self, parent)
+
+        if value    is None: value    = 0
+        if minValue is None: minValue = 0
+        if maxValue is None: maxValue = 1 
 
         if not showLimits: editLimits = False
         
