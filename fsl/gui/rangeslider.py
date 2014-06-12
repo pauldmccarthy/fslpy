@@ -14,10 +14,17 @@ import wx.lib.newevent as wxevent
 import floatslider
 import numberdialog
 
-# Event emitted by a RangePanel when either of its low or high values
-# change. Contains two attributes, 'low' and 'high', containing the
-# current low/high range values
+
+# Event emitted by RangePanel and RangeSliderSpinPanel objects  when
+# either of their low or high values change. Contains two attributes,
+# 'low' and 'high', containing the new low/high range values
 RangeEvent, EVT_RANGE = wxevent.NewEvent()
+
+
+# Event emitted by RangeSliderSpinPanel objects when the user modifies
+# the range limits. Contains two attributes, 'min' and 'max', containing
+# the new minimum/maximum range limits.
+RangeLimitEvent, EVT_RANGE_LIMIT = wxevent.NewEvent()
 
 
 class RangePanel(wx.Panel):
@@ -107,7 +114,10 @@ class RangePanel(wx.Panel):
             self.SetHigh(highValue)
             highValue = self.GetHigh()
 
-        wx.PostEvent(self, RangeEvent(low=lowValue, high=highValue))
+        ev = RangeEvent(low=lowValue, high=highValue)
+        ev.SetEventObject(self)
+
+        wx.PostEvent(self, ev)
 
             
     def _onHighChange(self, ev):
@@ -128,8 +138,11 @@ class RangePanel(wx.Panel):
             lowValue = highValue - self._minDistance
             self.SetLow(lowValue)
             lowValue = self.GetLow()
+            
+        ev = RangeEvent(low=lowValue, high=highValue)
+        ev.SetEventObject(self) 
 
-        wx.PostEvent(self, RangeEvent(low=lowValue, high=highValue))
+        wx.PostEvent(self, ev)
 
         
     def GetRange(self):
@@ -218,28 +231,17 @@ class RangePanel(wx.Panel):
     def SetMin(self, minValue):
         """
         Sets the current minimum range value.
-        """ 
+        """
         self._lowWidget .SetMin(minValue)
-        self._highWidget.SetMin(minValue) # + self._minDistance)
+        self._highWidget.SetMin(minValue)
 
         
     def SetMax(self, maxValue):
         """
         Sets the current maximum range value.
-        """ 
-        self._lowWidget .SetMax(maxValue) # - self._minDistance)
-        self._highWidget.SetMax(maxValue) 
-
-
-# Event emitted by the RangeSliderSpinPanel when either the low or high
-# range values change. Contains two attributes, 'low' and 'high',
-# containing the low and high range values.
-RangeSliderSpinValueEvent, EVT_RSSP_VALUE = wxevent.NewEvent()
-
-# Event emitted by the RangeSliderSpinPanel when the range limits
-# change. Contains two attributes, 'min' and 'max', containing the
-# minimum and maximum range limits.
-RangeSliderSpinRangeEvent, EVT_RSSP_RANGE = wxevent.NewEvent()
+        """
+        self._lowWidget .SetMax(maxValue)
+        self._highWidget.SetMax(maxValue)
 
 
 class RangeSliderSpinPanel(wx.Panel):
@@ -247,8 +249,8 @@ class RangeSliderSpinPanel(wx.Panel):
     Panel which contains two sliders and two spinctrls. One slider and spinctrl
     are used to edit the 'low' value of a range, and the other slider/spinctrl
     are used to edit the 'high' range value. Buttons are optionally displayed
-    on either end which display the minimum/maximum bounds and, when clicked,
-    allow the user to modify said bounds.
+    on either end which display the minimum/maximum limits and, when clicked,
+    allow the user to modify said limits.
     """
     
     def __init__(self,
@@ -258,26 +260,37 @@ class RangeSliderSpinPanel(wx.Panel):
                  lowValue=0.0,
                  highValue=100.0,
                  minDistance=1.0,
-                 showBounds=True,
-                 editBounds=False):
+                 showLimits=True,
+                 editLimits=False):
         """
         Initialise a RangeSliderSpinPanel. Parameters:
-          - parent
-          - minValue
-          - maxValue
-          - lowValue
-          - highValue:  
+        
+          - parent:      wx parent object.
+        
+          - minValue:    Minimum low value.
+        
+          - maxValue:    Maximum high value.
+        
+          - lowValue:    Initial low value.
+        
+          - highValue:   Initial high value.
+        
           - minDistance: Minimum distance to maintain between low and
                          high values.
-          - showBounds
-          - editBounds
+        
+          - showLimits:  If True, a button will be shown on either side,
+                         displaying the minimum/maximum values.
+        
+          - editLimits:  If True, when aforementioned buttons are clicked,
+                         a numberdialog.NumberDialog window will pop up,
+                         allowing the user to edit the min/max limits.
         """
 
         wx.Panel.__init__(self, parent)
         
-        if not showBounds: editBounds = False
+        if not showLimits: editLimits = False
         
-        self._showBounds = showBounds 
+        self._showLimits = showLimits 
         
         self._sliderPanel = RangePanel(self,
                                        'slider',
@@ -303,24 +316,27 @@ class RangeSliderSpinPanel(wx.Panel):
         self._sliderPanel.Bind(EVT_RANGE, self._onRangeChange)
         self._spinPanel  .Bind(EVT_RANGE, self._onRangeChange) 
 
-        if showBounds:
+        if showLimits:
             self._minButton = wx.Button(self, label='{}'.format(minValue))
             self._maxButton = wx.Button(self, label='{}'.format(maxValue))
 
             self._sizer.Insert(0, self._minButton, flag=wx.EXPAND)
             self._sizer.Add(      self._maxButton, flag=wx.EXPAND)
 
-            self._minButton.Enable(editBounds)
-            self._maxButton.Enable(editBounds)
+            self._minButton.Enable(editLimits)
+            self._maxButton.Enable(editLimits)
 
-            self._minButton.Bind(wx.EVT_BUTTON, self._onBoundButton)
-            self._maxButton.Bind(wx.EVT_BUTTON, self._onBoundButton)
+            self._minButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
+            self._maxButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
  
         self.Layout()
 
         
     def _onRangeChange(self, ev):
         """
+        Called when the user modifies the low or high range values.
+        Syncs the change betyween the sliders and spinboxes, and emits
+        a RangeEvent.
         """
         source = ev.GetEventObject()
 
@@ -331,27 +347,28 @@ class RangeSliderSpinPanel(wx.Panel):
         elif source == self._spinPanel:
             self._sliderPanel.SetRange(lowValue, highValue)
 
-        wx.PostEvent(self, RangeSliderSpinValueEvent(
-            low=lowValue,
-            high=highValue))
+        ev = RangeEvent(low=lowValue, high=highValue)
+        ev.SetEventObject(self)
+
+        wx.PostEvent(self, ev)
 
             
-    def _onBoundButton(self, ev):
+    def _onLimitButton(self, ev):
         """
         Called when one of the min/max buttons is pushed. Pops up a
         dialog prompting the user to enter a new value, and updates
-        the range accordingly.
+        the range limits accordingly. Emits a RangeLimitEvent.
         """
 
         source = ev.GetEventObject()
         
         if source == self._minButton:
             labeltxt = 'New minimum value'
-            initVal  = self.GetRangeMin()
+            initVal  = self.GetMin()
             
         elif source == self._maxButton:
             labeltxt = 'New maximum value'
-            initVal  = self.GetRangeMax()
+            initVal  = self.GetMax()
             
         else:
             return
@@ -361,76 +378,120 @@ class RangeSliderSpinPanel(wx.Panel):
             message=labeltxt,
             initial=initVal)
 
-        if dlg.ShowModal() != wx.OK:
+        if dlg.ShowModal() != wx.ID_OK:
             return
 
         if   source == self._minButton: self.SetMin(dlg.GetValue())
         elif source == self._maxButton: self.SetMax(dlg.GetValue())
 
-        wx.PostEvent(self, RangeSliderSpinRangeEvent(
-            min=self.GetMin(),
-            max=self.GetMax()))
+        ev = RangeLimitEvent(min=self.GetMin(), max=self.GetMax())
+        ev.SetEventObject(self)
+
+        wx.PostEvent(self, ev)
 
         
     def SetLimits(self, minValue, maxValue):
+        """
+        Sets the minimum/maximum range values.
+        """
         self.SetRangeMin(minValue)
         self.SetRangeMax(maxValue)
 
         
     def SetMin(self, minValue):
+        """
+        Sets the minimum range value.
+        """
         self._sliderPanel.SetMin(minValue)
         self._spinPanel  .SetMin(minValue)
 
-        if self._showBounds:
+        if self._showLimits:
             self._minButton.SetLabel('{}'.format(minValue))
 
             
-    def SetRangeMax(self, maxValue):
+    def SetMax(self, maxValue):
+        """
+        Sets the maximum range value.
+        """
         self._sliderPanel.SetMax(maxValue)
         self._spinPanel  .SetMax(maxValue)
         
-        if self._showBounds:
+        if self._showLimits:
             self._maxButton.SetLabel('{}'.format(maxValue))
 
             
-    def GetMin(self): return self._sliderPanel.GetMin()
-    def GetMax(self): return self._sliderPanel.GetMax()
+    def GetMin(self):
+        """
+        Returns the minimum range value.
+        """
+        return self._sliderPanel.GetMin()
 
-    def GetLow( self): return self._sliderPanel.GetLow()
-    def GetHigh(self): return self._sliderPanel.GetHigh()
- 
-    def SetLow( self, lowValue):
+        
+    def GetMax(self):
+        """
+        Returns the maximum range value.
+        """ 
+        return self._sliderPanel.GetMax()
+
+        
+    def GetLow( self):
+        """
+        Returns the current low range value.
+        """
+        return self._sliderPanel.GetLow()
+
+        
+    def GetHigh(self):
+        """
+        Returns the current high range value.
+        """
+        return self._sliderPanel.GetHigh()
+
+        
+    def SetLow(self, lowValue):
+        """
+        Sets the current low range value.
+        """
         self._sliderPanel.SetLow(lowValue)
         self._spinPanel  .SetLow(lowValue)
+
         
     def SetHigh(self, highValue):
+        """
+        Sets the current high range value.
+        """ 
         self._sliderPanel.SetHigh(highValue)
         self._spinPanel  .SetHigh(highValue) 
 
-def main():
+        
+def _testRangeSliderSpinPanel():
 
     app   = wx.App()
     frame = wx.Frame(None)
     sizer = wx.BoxSizer(wx.VERTICAL)
     frame.SetSizer(sizer)
     
-    slider = RangePanel(
+    slider = RangeSliderSpinPanel(
         frame,
-        'slider',
         minValue=0,
         maxValue=100,
         lowValue=0,
         highValue=100,
-        minDistance=5) # ,
-#        showBounds=True,
-#        editBounds=True)
+        minDistance=5,
+        showLimits=True,
+        editLimits=True)
 
     sizer.Add(slider, flag=wx.EXPAND)
 
     def _range(ev):
-       print 'Range: {} {}'.format(ev.low, ev.high)
+        print 'Range: {} {}'.format(ev.low, ev.high)
 
-    slider.Bind(EVT_RANGE, _range)
+    def _limit(ev):
+        print 'Limit: {} {}'.format(ev.min, ev.max)
+    
+       
+    slider.Bind(EVT_RANGE,       _range)
+    slider.Bind(EVT_RANGE_LIMIT, _limit)
     
     frame.Layout()
     frame.Show()
