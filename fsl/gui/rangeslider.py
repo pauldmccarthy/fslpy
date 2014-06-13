@@ -44,6 +44,8 @@ class RangePanel(wx.Panel):
                  maxValue=None,
                  lowValue=None,
                  highValue=None,
+                 lowLabel=None,
+                 highLabel=None,
                  minDistance=None):
         """
         Initialise a RangePanel panel. Parameters:
@@ -55,8 +57,12 @@ class RangePanel(wx.Panel):
           - minValue:    Minimum range value.
         
           - maxValue:    Maximum range value.
-        
-          - lowValue:    Initial low range value.
+
+          - lowLabel:    If not None, a StaticText widget is placed to the
+                         left of the low widget, containing the given label.
+
+          - highLabel:   If not None, a StaticText widget is placed to the
+                         left of the high widget, containing the given label. 
         
           - highValue:   Initial high range value.
         
@@ -84,19 +90,35 @@ class RangePanel(wx.Panel):
             self._highWidget.Bind(wx.EVT_SLIDER, self._onHighChange)
             
         elif widgetType == 'spin':
-            self._lowWidget   = wx.SpinCtrlDouble(self)
-            self._highWidget  = wx.SpinCtrlDouble(self)
+            self._lowWidget  = wx.SpinCtrlDouble(self)
+            self._highWidget = wx.SpinCtrlDouble(self)
             self._lowWidget .Bind(wx.EVT_SPINCTRLDOUBLE, self._onLowChange)
-            self._highWidget.Bind(wx.EVT_SPINCTRLDOUBLE, self._onHighChange) 
+            self._highWidget.Bind(wx.EVT_SPINCTRLDOUBLE, self._onHighChange)
+
+        self._sizer = wx.GridBagSizer(1, 1)
+        self._sizer.SetEmptyCellSize((0, 0))
+        
+        self.SetSizer(self._sizer)
+
+        self._sizer.Add(self._lowWidget,  pos=(0, 1), flag=wx.EXPAND | wx.ALL)
+        self._sizer.Add(self._highWidget, pos=(1, 1), flag=wx.EXPAND | wx.ALL)
+
+        if lowLabel is not None:
+            self._lowLabel = wx.StaticText(self, label=lowLabel)
+            self._sizer.Add(self._lowLabel,
+                            pos=(0, 0),
+                            flag=wx.EXPAND | wx.ALL)
+
+        if highLabel is not None:
+            self._highLabel = wx.StaticText(self, label=highLabel)
+            self._sizer.Add(self._highLabel,
+                            pos=(1, 0),
+                            flag=wx.EXPAND | wx.ALL) 
 
         self.SetLimits(minValue, maxValue)
         self.SetRange( lowValue, highValue)
 
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-
-        self._sizer.Add(self._lowWidget,  flag=wx.EXPAND)
-        self._sizer.Add(self._highWidget, flag=wx.EXPAND)
+        self._sizer.AddGrowableCol(1)
 
         self.Layout()
 
@@ -266,6 +288,8 @@ class RangeSliderSpinPanel(wx.Panel):
                  lowValue=None,
                  highValue=None,
                  minDistance=None,
+                 lowLabel=None,
+                 highLabel=None,
                  showLimits=True,
                  editLimits=False):
         """
@@ -283,6 +307,12 @@ class RangeSliderSpinPanel(wx.Panel):
         
           - minDistance: Minimum distance to maintain between low and
                          high values.
+
+          - lowLabel:    If not None, a StaticText widget is placed to the
+                         left of the low slider, containing the label.
+
+          - highLabel:   If not None, a StaticText widget is placed to the
+                         left of the high slider, containing the label. 
         
           - showLimits:  If True, a button will be shown on either side,
                          displaying the minimum/maximum values.
@@ -302,22 +332,22 @@ class RangeSliderSpinPanel(wx.Panel):
         
         if not showLimits: editLimits = False
         
-        self._showLimits = showLimits 
+        self._showLimits = showLimits
+
+        params = {
+            'minValue'    : minValue,
+            'maxValue'    : maxValue,
+            'lowValue'    : lowValue,
+            'highValue'   : highValue,
+            'minDistance' : minDistance
+        }
         
         self._sliderPanel = RangePanel(self,
-                                       'slider',
-                                       minValue,
-                                       maxValue,
-                                       lowValue,
-                                       highValue,
-                                       minDistance)
-        self._spinPanel   = RangePanel(self,
-                                       'spin',
-                                       minValue,
-                                       maxValue,
-                                       lowValue,
-                                       highValue,
-                                       minDistance)
+                                       widgetType='slider',
+                                       lowLabel=lowLabel,
+                                       highLabel=highLabel,
+                                       **params)
+        self._spinPanel   = RangePanel(self, widgetType='spin', **params)
         
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)
@@ -332,15 +362,15 @@ class RangeSliderSpinPanel(wx.Panel):
             self._minButton = wx.Button(self, label='{}'.format(minValue))
             self._maxButton = wx.Button(self, label='{}'.format(maxValue))
 
-            self._sizer.Insert(0, self._minButton, flag=wx.EXPAND)
-            self._sizer.Add(      self._maxButton, flag=wx.EXPAND)
+            self._sizer.Insert(0, self._minButton, flag=wx.EXPAND | wx.ALL)
+            self._sizer.Add(      self._maxButton, flag=wx.EXPAND | wx.ALL)
 
             self._minButton.Enable(editLimits)
             self._maxButton.Enable(editLimits)
 
             self._minButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
             self._maxButton.Bind(wx.EVT_BUTTON, self._onLimitButton)
- 
+            
         self.Layout()
 
         
@@ -506,6 +536,8 @@ def _testRangeSliderSpinPanel():
         lowValue=0,
         highValue=100,
         minDistance=5,
+        lowLabel='Low',
+        highLabel='High',
         showLimits=True,
         editLimits=True)
 
