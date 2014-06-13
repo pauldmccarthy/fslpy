@@ -497,7 +497,12 @@ class Bounds(List):
     values.
     """
 
-    def __init__(self, ndims=1, minDistance=None, editLimits=False, **kwargs):
+    def __init__(self,
+                 ndims=1,
+                 minDistance=None,
+                 editLimits=False,
+                 labels=None,
+                 **kwargs):
         """
         Initialise a Bounds property. Parameters:
           - ndims:       Number of dimensions. This is (currently) not a
@@ -506,7 +511,8 @@ class Bounds(List):
           - minDistance: Minimum distance to be maintained between the
                          low/high values for each dimension.
           - editLimits:  If True, widgets created to edit this Bounds
-                         will allow the user to edit the min/max limits 
+                         will allow the user to edit the min/max limits
+          - labels:      List of labels, one for each dimension.
         """
 
         default = kwargs.get('default', None)
@@ -521,6 +527,9 @@ class Bounds(List):
         elif len(default) != 2 * ndims:
             raise ValueError('{} bound values are required'.format(2 * ndims))
 
+        if labels is not None and len(labels) != ndims:
+            raise ValueError('A label for each dimension is required')
+
         if minDistance is None:
             minDistance = 0
 
@@ -528,7 +537,8 @@ class Bounds(List):
         kwargs['minDistance'] = minDistance
         kwargs['editLimits']  = editLimits
 
-        self._ndims = ndims
+        self._ndims  = ndims
+        self._labels = labels
 
         List.__init__(self,
                       listType=Real(clamped=True, editLimits=editLimits),
@@ -663,7 +673,15 @@ class Point(List):
     (where n must be either 2 or 3 for the time being).
     """
 
-    def __init__(self, ndims=2, editLimits=False, **kwargs):
+    def __init__(self, ndims=2, editLimits=False, labels=None, **kwargs):
+        """
+        Initialise a Point property. Parameters:
+        
+          - ndims:      Number of dimensions.
+          - editLimits: If True, widgets created to edit this Point
+                        will allow the user to edit the min/max limits
+          - labels:     List of labels, one for each dimension.
+        """
 
         default = kwargs.get('default', None)
 
@@ -677,9 +695,14 @@ class Point(List):
         elif len(default) != ndims:
             raise ValueError('{} point values are required'.format(ndims))
 
+        if labels is not None and len(labels) != ndims:
+            raise ValueError('A label for each dimension is required')
+
         kwargs['default']    = default
         kwargs['editLimits'] = editLimits
-        self._ndims = ndims
+        
+        self._ndims  = ndims
+        self._labels = labels
 
         List.__init__(self,
                       listType=Real(clamped=True, editLimits=editLimits),
