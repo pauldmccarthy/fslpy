@@ -281,16 +281,22 @@ class SliderSpinPanel(wx.Panel):
         if source == self._minButton:
             message = 'New minimum value'
             initVal = self.GetMin()
+            minVal  = None
+            maxVal  = self.GetMax()
         elif source == self._maxButton:
             message = 'New maximum value'
             initVal = self.GetMax()
+            minVal  = self.GetMin()
+            maxVal  = None
         else:
             return
 
         dlg = numberdialog.NumberDialog(
             self.GetTopLevelParent(),
             message=message,
-            initial=initVal)
+            initial=initVal,
+            minValue=minVal,
+            maxValue=maxVal)
 
         pos = ev.GetEventObject().GetScreenPosition()
         dlg.SetPosition(pos)

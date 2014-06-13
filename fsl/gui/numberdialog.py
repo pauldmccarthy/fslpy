@@ -20,7 +20,7 @@ class NumberDialog(wx.Dialog):
 
     def __init__(self,
                  parent,
-                 real=False,
+                 real=True,
                  title=None,
                  message=None,
                  initial=None,

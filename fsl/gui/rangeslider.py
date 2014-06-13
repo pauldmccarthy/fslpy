@@ -407,10 +407,14 @@ class RangeSliderSpinPanel(wx.Panel):
         if source == self._minButton:
             labeltxt = 'New minimum value'
             initVal  = self.GetMin()
+            minVal   = None
+            maxVal   = self.GetMax()
             
         elif source == self._maxButton:
             labeltxt = 'New maximum value'
             initVal  = self.GetMax()
+            minVal   = self.GetMin() 
+            maxVal   = None
             
         else:
             return
@@ -418,7 +422,9 @@ class RangeSliderSpinPanel(wx.Panel):
         dlg = numberdialog.NumberDialog(
             self.GetTopLevelParent(),
             message=labeltxt,
-            initial=initVal)
+            initial=initVal,
+            minValue=minVal,
+            maxValue=maxVal)
 
         pos = ev.GetEventObject().GetScreenPosition()
         dlg.SetPosition(pos)
@@ -438,8 +444,8 @@ class RangeSliderSpinPanel(wx.Panel):
         """
         Sets the minimum/maximum range values.
         """
-        self.SetRangeMin(minValue)
-        self.SetRangeMax(maxValue)
+        self.SetMin(minValue)
+        self.SetMax(maxValue)
 
         
     def SetMin(self, minValue):
