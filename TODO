@@ -1,0 +1,17 @@
+TODO LIST -*- mode: org; -*-
+
+* Truncate long filenames in image list panel
+* More features on image list panel - e.g. double click to show/hide, 'link' 
+  checkbox, 'lock' checkbox
+* Location panel (information about currently selected location)
+* OpenGL 1.4 implementation
+* Time series plotting option
+* Have multiple views open
+* [#C] Change image dimension ordering
+* [#C] Ability to edit affine transformation
+* Link display properties across images
+* Labels for individual bound/point widget sliders
+* [#C] Separate out props and gui packages - they should really be separate 
+  projects
+* Image editing (e.g. selecting, erasing, filling, mask creation)
+* Mouse-based zooming in ortho panel
