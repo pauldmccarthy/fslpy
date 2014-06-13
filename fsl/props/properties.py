@@ -687,6 +687,23 @@ class HasProperties(object):
         """
         self.getProp(propName).removeListener(self, listenerName)
 
+
+    def addConstraintListener(self, propName, listenerName, callback):
+        """
+        Convenience method, addsthe specified constraint listener to
+        the specified property. See PropertyBase.addConstraintListener.
+        """ 
+        self.getProp(propName).addConstraintListener(
+            self, listenerName, callback)
+
+        
+    def removeConstraintListener(self, propName, listenerName):
+        """
+        Convenience method, removes the specified constraint listener from
+        the specified property. See PropertyBase.removeConstraintListener.
+        """
+        self.getProp(propName).removeConstraintListener(self, listenerName) 
+
         
     def getAllProperties(self):
         """
