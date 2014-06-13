@@ -103,6 +103,9 @@ def parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
+    parser.add_argument(
+        '-w', '--wxinspect', action='store_true',
+        help='Run wx inspection tool') 
 
     subparser  = parser.add_subparsers()
 
@@ -207,8 +210,9 @@ if __name__ == '__main__':
     frame.Show()
 
     wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
-    
-    # import wx.lib.inspection
-    # wx.lib.inspection.InspectionTool().Show()
+
+    if args.wxinspect:
+        import wx.lib.inspection
+        wx.lib.inspection.InspectionTool().Show()
     
     app.MainLoop()
