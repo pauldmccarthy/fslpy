@@ -59,6 +59,11 @@ def _Point(parent, hasProps, propObj, propVal):
     sizer = wx.BoxSizer(wx.VERTICAL)
     panel.SetSizer(sizer)
 
+    ndims  = propObj._ndims
+    labels = propObj._labels
+
+    if labels is None: labels = [None] * ndims
+
     editLimits = propObj.getConstraint(hasProps, 'editLimits')
 
     for dim in range(len(propVal)):
@@ -68,6 +73,7 @@ def _Point(parent, hasProps, propObj, propVal):
             value=propVal[dim],
             minValue=propVal.getMin(dim),
             maxValue=propVal.getMax(dim),
+            label=labels[dim],
             showLimits=True,
             editLimits=editLimits)
 

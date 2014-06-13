@@ -28,7 +28,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     # Property which sets the current displayed
     # position (in real world coordinates)
-    pos = props.Point(ndims=3)
+    pos = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
 
     # Properties which set the current zoom
     # factor on each of the canvases

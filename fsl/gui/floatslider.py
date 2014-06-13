@@ -190,6 +190,7 @@ class SliderSpinPanel(wx.Panel):
                  value=None,
                  minValue=None,
                  maxValue=None,
+                 label=None,
                  showLimits=True,
                  editLimits=False):
         """
@@ -202,6 +203,10 @@ class SliderSpinPanel(wx.Panel):
           - minValue:   Minimum slider/spin value.
         
           - maxValue:   Maximum slider/spin value.
+
+          - label:      If not None, a wx.StaticText widget is added to
+                        the left of the slider, containing the given label.
+                        
         
           - showLimits: If True, buttons placed on the left and right,
                         displaying the minimum/maximum limits.
@@ -236,6 +241,10 @@ class SliderSpinPanel(wx.Panel):
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)
+
+        if label is not None:
+            self._label = wx.StaticText(self, label=label)
+            self._sizer.Add(self._label, flag=wx.EXPAND)
 
         self._sizer.Add(self._slider,  flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._spinbox, flag=wx.EXPAND)
