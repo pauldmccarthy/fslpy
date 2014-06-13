@@ -420,6 +420,8 @@ class RangeSliderSpinPanel(wx.Panel):
             message=labeltxt,
             initial=initVal)
 
+        pos = ev.GetEventObject().GetScreenPosition()
+        dlg.SetPosition(pos)
         if dlg.ShowModal() != wx.ID_OK:
             return
 

@@ -292,6 +292,8 @@ class SliderSpinPanel(wx.Panel):
             message=message,
             initial=initVal)
 
+        pos = ev.GetEventObject().GetScreenPosition()
+        dlg.SetPosition(pos)
         if dlg.ShowModal() != wx.ID_OK:
             return
 
