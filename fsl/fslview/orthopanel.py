@@ -23,6 +23,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     showZCanvas = props.Boolean(default=True)
     showCursor  = props.Boolean(default=True)
 
+    # How should we lay out each of the three slice panels?
+    layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
+
     # Property which sets the current displayed
     # position (in real world coordinates)
     pos = props.Point(ndims=3)
@@ -43,7 +46,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
                        clamped=True)
 
     _view = props.HGroup((
-        props.VGroup(('showCursor',
+        props.VGroup(('layout',
+                      'showCursor',
                       'showXCanvas',
                       'showYCanvas',
                       'showZCanvas')),
@@ -59,7 +63,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         'xzoom'       : 'X zoom',
         'yzoom'       : 'Y zoom',
         'zzoom'       : 'Z zoom',
-        'pos'         : 'Position'
+        'pos'         : 'Position',
+        'layout'      : 'Layout'
     }
 
 
@@ -91,14 +96,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.zcanvas = slicecanvas.SliceCanvas(self, imageList, zax=2,
                                                glContext=glContext)
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self.sizer)
-
-        self.sizer.Add(self.xcanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.ycanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.zcanvas, flag=wx.EXPAND, proportion=1)
-
-        self.Layout()
+        self.addListener('layout', self.name, self._layoutChanged)
+        self._layoutChanged()
 
         self.xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
         self.ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -124,6 +123,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+        self.Bind(wx.EVT_SIZE, self._resize)
 
         self._configPosListeners()
         self._configShowListeners()
@@ -132,12 +132,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     def _configPosListeners(self):
         """
-        Configures listeners on the xpos/ypos/zpos properties - when they
-        are changed, the displayed position is changed.
+        Configures listeners on the pos property - when it
+        is changed, the displayed position is changed.
         """
 
         def move(*a): self.setPosition(*self.pos.xyz)
-
         self.addListener('pos', self.name, move)
 
 
@@ -151,20 +150,20 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             self.ycanvas.showCursor = value
             self.zcanvas.showCursor = value
 
-        def showXCanvas(value, *a):
-            self.sizer.Show(self.xcanvas, value)
-            self.Layout()
-        def showYCanvas(value, *a):
-            self.sizer.Show(self.ycanvas, value)
-            self.Layout()
-        def showZCanvas(value, *a):
-            self.sizer.Show(self.zcanvas, value)
-            self.Layout() 
+        def toggle(canvas, toggle):
+            self.sizer.Show(canvas, toggle)
+            if self.layout.lower() == 'grid':
+                self._configureGridSizes() 
+            self.Layout()            
 
-        self.addListener('showCursor',  self.name, showCursor)
-        self.addListener('showXCanvas', self.name, showXCanvas)
-        self.addListener('showYCanvas', self.name, showYCanvas)
-        self.addListener('showZCanvas', self.name, showZCanvas)
+        self.addListener('showCursor', self.name, showCursor)
+        self.addListener('showXCanvas',
+                         self.name,
+                         lambda *a: toggle(self.xcanvas, self.showXCanvas))
+        self.addListener('showYCanvas', self.name,
+                         lambda *a: toggle(self.ycanvas, self.showYCanvas))
+        self.addListener('showZCanvas', self.name,
+                         lambda *a: toggle(self.zcanvas, self.showZCanvas))
 
             
     def _configZoomListeners(self):
@@ -173,7 +172,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         they are changed, the zoom factor on the corresponding canvas
         is changed.
         """
-
         def xzoom(*a): self.xcanvas.zoom = self.xzoom
         def yzoom(*a): self.ycanvas.zoom = self.yzoom
         def zzoom(*a): self.zcanvas.zoom = self.zzoom
@@ -181,6 +179,81 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.addListener('xzoom', self.name, xzoom)
         self.addListener('yzoom', self.name, yzoom)
         self.addListener('zzoom', self.name, zzoom)
+
+
+    def _resize(self, ev):
+        """
+        Called whenever the panel is resized. Makes sure that the canvases
+        are laid out nicely.
+        """
+        
+        # allow default resize event handler to run
+        ev.Skip()
+        self._configureGridSizes()
+        self.Layout()
+
+        
+    def _configureGridSizes(self):
+        """
+        If the 'Grid' layout has been selected, we have to manually specify
+        sizes for each canvas, as the wx.WrapSizer doesn't know how big
+        they should be. This is not a problem for wx.BoxSizers, as they
+        just fill the available space, and give each canvas an equal share.
+        """
+
+        # Box sizers behave nicely. WrapSizer does not.
+        if self.layout.lower() != 'grid': return
+        
+        width, height = self.GetClientSize().Get()
+
+        # Generate a list of canvases for
+        # which the 'show*Canvas' property is true
+        canvases    = [self.xcanvas,     self.ycanvas,     self.zcanvas]
+        show        = [self.showXCanvas, self.showYCanvas, self.showZCanvas]
+        canvases, _ = zip(*filter(lambda (c, s): s, zip(canvases, show)))
+
+        if len(canvases) == 1:
+            canvases[0].SetMinSize((width, height))
+        elif len(canvases) == 2:
+            canvases[0].SetMinSize((width / 2, height))
+            canvases[1].SetMinSize((width / 2, height))
+        elif len(canvases) == 3:
+            canvases[0].SetMinSize((width / 2, height / 2))
+            canvases[1].SetMinSize((width / 2, height / 2))
+            canvases[2].SetMinSize((width / 2, height / 2))
+
+        
+    def _layoutChanged(self, *a):
+        """
+        Called when the layout property changes. Updates the orthopanel layout
+        accordingly.
+        """
+
+        layout = self.layout.lower()
+
+        if   layout == 'horizontal': self.sizer = wx.BoxSizer( wx.HORIZONTAL)
+        elif layout == 'vertical':   self.sizer = wx.BoxSizer( wx.VERTICAL)
+        elif layout == 'grid':       self.sizer = wx.WrapSizer(wx.HORIZONTAL) 
+
+        self.sizer.Add(self.xcanvas, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.ycanvas, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.zcanvas, flag=wx.EXPAND, proportion=1)
+
+        self.SetSizer(self.sizer) 
+
+        # for grid layout, we need to
+        # manually specify canvas sizes
+        if layout == 'grid':
+            self._configureGridSizes()
+
+        # the other layouts automatically
+        # size the canvases for us
+        else:
+            self.xcanvas.SetMinSize((-1, -1))
+            self.ycanvas.SetMinSize((-1, -1))
+            self.zcanvas.SetMinSize((-1, -1))
+
+        self.Layout()
 
         
     def _updateImageBounds(self, *a):
