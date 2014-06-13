@@ -1,17 +1,32 @@
 TODO LIST -*- mode: org; -*-
 
-* Truncate long filenames in image list panel
-* More features on image list panel - e.g. double click to show/hide, 'link' 
-  checkbox, 'lock' checkbox
-* Location panel (information about currently selected location)
-* OpenGL 1.4 implementation
-* Time series plotting option
-* Have multiple views open
-* [#C] Change image dimension ordering
-* [#C] Ability to edit affine transformation
-* Link display properties across images
-* Labels for individual bound/point widget sliders
-* [#C] Separate out props and gui packages - they should really be separate 
-  projects
-* Image editing (e.g. selecting, erasing, filling, mask creation)
-* Mouse-based zooming in ortho panel
+A mixture of things to do, and things which might be nice to do.  Order is
+arbitrary.
+
+* Little things
+** Truncate long filenames in image list panel.
+** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
+** DONE Labels for individual bound/point widget sliders.
+** Vertically center widget property labels.
+** Fix image bounds calculation (for images with dodgy affines)
+** Constraint listener on Lists which is notified of changes to constraints on any of the items in the list.
+
+* Medium things
+** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox
+** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
+** Selection on LightBoxCanvas.
+** change image dimension ordering
+** ability to edit affine transformation
+** link display properties across images
+** separate out props and gui packages - they should really be separate projects
+** mouse-based zooming in ortho panel
+** Make slice canvas bounding box calculation more intelligent when zoom > 1.
+
+* Big things
+** slice-wise (instead of image-wise) glimagedata implementation for very large images.
+** Code audit - enforce conistent standards for public/private class members
+** Standard for code documentation - Sphinx?
+** opengl 1.4 implementation
+** time series plotting option
+** have multiple views open
+** image editing (e.g. selecting, erasing, filling, mask creation)
