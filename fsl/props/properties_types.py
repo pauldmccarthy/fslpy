@@ -512,7 +512,8 @@ class Bounds(List):
                          low/high values for each dimension.
           - editLimits:  If True, widgets created to edit this Bounds
                          will allow the user to edit the min/max limits
-          - labels:      List of labels, one for each dimension.
+          - labels:      List of labels of length (2*ndims), containing
+                         (low, high) labels for each dimension.
         """
 
         default = kwargs.get('default', None)
@@ -527,7 +528,7 @@ class Bounds(List):
         elif len(default) != 2 * ndims:
             raise ValueError('{} bound values are required'.format(2 * ndims))
 
-        if labels is not None and len(labels) != ndims:
+        if labels is not None and len(labels) != 2 * ndims:
             raise ValueError('A label for each dimension is required')
 
         if minDistance is None:

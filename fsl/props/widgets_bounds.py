@@ -77,8 +77,11 @@ def _Bounds(parent, hasProps, propObj, propVal):
     """
 
     ndims    = propObj._ndims
+    labels   = propObj._labels
     panel    = wx.Panel(parent)
     sizer    = wx.BoxSizer(wx.VERTICAL)
+
+    if labels is None: labels = [None] * 2 * ndims
     
     panel.SetSizer(sizer)
 
@@ -100,6 +103,8 @@ def _Bounds(parent, hasProps, propObj, propVal):
             maxValue=maxval,
             lowValue=loval,
             highValue=hival,
+            lowLabel=labels[i * 2],
+            highLabel=labels[i * 2 + 1],
             minDistance=minDistance, 
             showLimits=True,
             editLimits=editLimits)
