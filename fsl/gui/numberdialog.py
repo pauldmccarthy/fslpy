@@ -69,7 +69,7 @@ class NumberDialog(wx.Dialog):
             self._label = wx.StaticText(self._panel, label=message)
             self._sizer.Add(self._label, flag=wx.EXPAND)
 
-        self._textctrl = wx.TextCtrl(self._panel)
+        self._textctrl = wx.TextCtrl(self._panel, style=wx.TE_PROCESS_ENTER)
         self._textctrl.SetValue('{}'.format(initial))
 
         self._sizer.Add(self._textctrl, flag=wx.EXPAND)
@@ -167,3 +167,37 @@ class NumberDialog(wx.Dialog):
         self._value = None
         self.EndModal(wx.ID_CANCEL)
         self.Destroy() 
+
+
+def _testNumberDialog():
+
+    app    = wx.App()
+    frame  = wx.Frame(None)
+    panel  = wx.Panel(frame)
+    sizer  = wx.BoxSizer(wx.HORIZONTAL)
+    button = wx.Button(panel, label='Show dialog!')
+
+    sizer.Add(button, flag=wx.EXPAND)
+    panel.SetSizer(sizer)
+
+
+    def _showDlg(ev):
+        dlg = NumberDialog(
+            frame,
+            real=True,
+            title='Enter number',
+            message='Enter a number between 0 and 100',
+            initial=20,
+            minValue=0,
+            maxValue=100)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            print 'Not ok'
+        else:
+            print 'Number entered: {}'.format(dlg.GetValue())
+
+
+    button.Bind(wx.EVT_BUTTON, _showDlg)
+
+    frame.Show()
+    app.MainLoop()
