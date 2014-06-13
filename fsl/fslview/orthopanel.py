@@ -145,10 +145,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         Configures listeners on the show* properties, so they can
         be used to toggle visibility of various things.
         """
-        def showCursor(ctx, value, valid):
-            self.xcanvas.showCursor = value
-            self.ycanvas.showCursor = value
-            self.zcanvas.showCursor = value
+        def showCursor(*a):
+            
+            self.xcanvas.showCursor = self.showCursor
+            self.ycanvas.showCursor = self.showCursor
+            self.zcanvas.showCursor = self.showCursor
 
         def toggle(canvas, toggle):
             self.sizer.Show(canvas, toggle)
