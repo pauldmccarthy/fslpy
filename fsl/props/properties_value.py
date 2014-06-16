@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 class PropertyValue(object):
     """
     An object which encapsulates a value of some sort. The value may be
-    subjected to validation rules, and listners may be registered for
+    subjected to validation rules, and listeners may be registered for
     notification of value and validity changes.
     """
 
@@ -48,13 +48,16 @@ class PropertyValue(object):
           - value:          Initial value.
 
           - castFunc:       Function which performs type casting or data
-                            conversion - must accept two parameters, the
-                            context, and the value to cast, and return
-                            that value, cast appropriately.
+                            conversion. Must accept three parameters - the
+                            context, a dictionary containing the attributes
+                            of this object, and the value to cast. Must
+                            return that value, cast appropriately.
         
-          - validateFunc:   Function which accepts two parameters - a context,
-                            and a value. This function should test the provided
-                            value, and raise a ValueError if it is invalid.
+          - validateFunc:   Function which accepts three parameters - the
+                            context, a dictionary containing the attributes
+                            of this object, and a value. This function should
+                            test the provided value, and raise a ValueError
+                            if it is invalid.
 
           - preNotifyFunc:  Function to be called whenever the property value
                             changes, but before any registered listeners are
@@ -77,8 +80,9 @@ class PropertyValue(object):
                             may change, even if the value itself has not
                             changed.
         
-          - attributes:     Any key-value pairs whic are to be associated with
-                            this PropertyValue object. Attributes are not used
+          - attributes:     Any key-value pairs which are to be associated with
+                            this PropertyValue object, and passed to the cast
+                            and validate functions. Attributes are not used
                             by the PropertyValue/List  classes, however they
                             are used by the List/PropertyBase classes to store
                             per-instance property constraints. Listeners may
@@ -87,7 +91,7 @@ class PropertyValue(object):
         """
         
         if name     is     None: name  = 'PropertyValue_{}'.format(id(self))
-        if castFunc is not None: value = castFunc(context, value)
+        if castFunc is not None: value = castFunc(context, attributes, value)
         
         self._context            = context
         self._validate           = validateFunc
@@ -226,14 +230,16 @@ class PropertyValue(object):
         # cast the value if necessary.
         # Allow any errors to be thrown
         if self._castFunc is not None:
-            newValue = self._castFunc(self._context, newValue)
+            newValue = self._castFunc(self._context,
+                                      self._attributes,
+                                      newValue)
             
         # Check to see if the new value is valid
         valid    = False
         validStr = None
         try:
             if self._validate is not None:
-                self._validate(self._context, newValue)
+                self._validate(self._context, self._attributes, newValue)
             valid = True
 
         except ValueError as e:
@@ -325,10 +331,10 @@ class PropertyValue(object):
         Returns true if the current property value is valid, False
         otherwise.
         """
-        try: self._validate(self._context, self.get())
+        try: self._validate(self._context, self._attributes, self.get())
         except: return False
         return True
-        
+
 
 class PropertyValueList(PropertyValue):
     """
@@ -362,30 +368,14 @@ class PropertyValueList(PropertyValue):
         Parameters:
         """
         if name is None: name = 'PropertyValueList_{}'.format(id(self))
-
-        # On list modifications, validate both the
-        # list, and all of the items separately
-        def validateFunc(self, newValues):
-            if listValidateFunc is not None:
-                listValidateFunc(context, newValues)
-            if itemValidateFunc is not None:
-                for value in newValues:
-                    itemValidateFunc(context, value)
-
-        # Cast each item separately
-        def castFunc(context, values):
-            if itemCastFunc is not None and values is not None:
-                return map(lambda v: itemCastFunc(context, v), values)
-            return values
-
+        
         if listAttributes is None: listAttributes = {}
         PropertyValue.__init__(
             self,
             context,
             name=name,
             value=values,
-            castFunc=castFunc,
-            validateFunc=validateFunc,
+            validateFunc=listValidateFunc,
             allowInvalid=allowInvalid,
             preNotifyFunc=preNotifyFunc,
             postNotifyFunc=postNotifyFunc,
@@ -471,6 +461,8 @@ class PropertyValueList(PropertyValue):
             allowInvalid=self._allowInvalid,
             **itemAtts)
 
+        # Attribute listeners on the list object are
+        # notified of changes to item attributes
         def itemAttChanged(ctx, name, value):
             self._notifyAttributeListeners(name, value)
 
@@ -562,13 +554,26 @@ class PropertyValueList(PropertyValue):
         else:
             raise ValueError('Invalid key type')
 
-        listVals = self[:]
+        oldVals = self[:]
+        newVals = list(oldVals)
         for idx, val in zip(indices, values):
-            listVals[idx] = val
-        self.set(listVals, False)
+            newVals[idx] = val
 
-        for idx, val in zip(indices, values):
-            self.__propVals[idx].set(val)
+        # this will raise an error if the
+        # new list is not valid
+        self.set(newVals, False)
+
+        # if any of the individual property values
+        # are invalid, catch the error, revert
+        # the values, and re-raise the error
+        try:
+            
+            for idx, val in zip(indices, values):
+                self.__propVals[idx].set(val)
+
+        except ValueError:
+            self.set(oldVals, False)
+            raise
 
         
     def __delitem__(self, key):
