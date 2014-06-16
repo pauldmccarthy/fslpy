@@ -136,6 +136,14 @@ class PropertyValue(object):
         name = 'PropertyValue_{}_{}'.format(self._name, name) 
         self._attributeListeners.pop(name, None)
 
+
+    def getAttributes(self):
+        """
+        Returns a dictionary containing all the attributes of this
+        PropertyValue object.
+        """
+        return self._attributes.copy()
+
         
     def getAttribute(self, name):
         """
