@@ -153,6 +153,16 @@ class PropertyValue(object):
 
         log.debug('Attribute on {} changed: {} = {}'.format(
             self._name, name, value))
+
+        self._notifyAttributeListeners(name, value)
+
+
+    def _notifyAttributeListeners(self, name, value):
+        """
+        Notifies all registered attribute listeners of an attribute change.
+        This method is separated so that it can be called from subclasses
+        (specifically the PropertyValueList, defined below)
+        """
         
         for cbName, cb in self._attributeListeners.items():
             
@@ -460,6 +470,11 @@ class PropertyValueList(PropertyValue):
             validateFunc=self._itemValidateFunc,
             allowInvalid=self._allowInvalid,
             **itemAtts)
+
+        def itemAttChanged(ctx, name, value):
+            self._notifyAttributeListeners(name, value)
+
+        propVal.addAttributeListener(self._name, itemAttChanged)
         
         return propVal
 

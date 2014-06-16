@@ -609,6 +609,15 @@ class HasProperties(object):
             # on the instance itself
             instance.__dict__[propName] = instData
 
+            # Revalidate the property value whenever
+            # any of its attributes change 
+            def attChanged(ctx, att, val, pv=propVal):
+                pv.revalidate()
+
+            propVal.addAttributeListener(
+                '{}_attChanged'.format(propName),
+                attChanged)
+
         # Perform validation of the initial
         # value for each property
         for propName in propNames:
