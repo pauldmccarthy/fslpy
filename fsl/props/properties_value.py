@@ -168,6 +168,8 @@ class PropertyValue(object):
 
         self._notifyAttributeListeners(name, value)
 
+        self.revalidate()
+
 
     def _notifyAttributeListeners(self, name, value):
         """
