@@ -2,7 +2,8 @@
 #
 # orthopanel.py - A wx/OpenGL widget for displaying and interacting with a
 # collection of 3D images. Displays three canvases, each of which shows the
-# same image(s) on a different orthogonal plane.
+# same image(s) on a different orthogonal plane. The displayed location
+# is driven by the fsl.data.fslimage.ImageList.location property.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -26,10 +27,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
 
-    # Property which sets the current displayed
-    # position (in real world coordinates)
-    pos = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
-
     # Properties which set the current zoom
     # factor on each of the canvases
     xzoom = props.Real(minval=1.0,
@@ -51,7 +48,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
                       'showXCanvas',
                       'showYCanvas',
                       'showZCanvas')),
-        'pos',
         props.VGroup(('xzoom', 'yzoom', 'zzoom'))
     ))
 
@@ -63,7 +59,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         'xzoom'       : 'X zoom',
         'yzoom'       : 'Y zoom',
         'zzoom'       : 'Z zoom',
-        'pos'         : 'Position',
         'layout'      : 'Layout'
     }
 
@@ -105,19 +100,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-
-        bounds = imageList.bounds
-
-        self.pos.xyz = [bounds.xlo + bounds.xlen / 2.0,
-                        bounds.ylo + bounds.ylen / 2.0,
-                        bounds.zlo + bounds.zlen / 2.0]
         
-        self.imageList.addListener(
-            'bounds',
-            self.name,
-            self._updateImageBounds)
-        self._updateImageBounds()
-
         def onDestroy(ev):
             self.imageList.removeListener('bounds', self.name)
             ev.Skip()
@@ -125,19 +108,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
         self.Bind(wx.EVT_SIZE, self._resize)
 
-        self._configPosListeners()
+        def move(*a): self.setPosition(*self.imageList.location)
+        self.imageList.addListener('location', self.name, move) 
+
         self._configShowListeners()
         self._configZoomListeners()
-
-
-    def _configPosListeners(self):
-        """
-        Configures listeners on the pos property - when it
-        is changed, the displayed position is changed.
-        """
-
-        def move(*a): self.setPosition(*self.pos.xyz)
-        self.addListener('pos', self.name, move)
 
 
     def _configShowListeners(self):
@@ -256,25 +231,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         self.Layout()
 
-        
-    def _updateImageBounds(self, *a):
-        """
-        Called when the list of displayed images changes. Updates the
-        minimum/maximum bounds on the x/y/zpos properties.
-        """
-        bounds = self.imageList.bounds
-
-        self.pos.setMin(0, bounds.xlo)
-        self.pos.setMax(0, bounds.xhi)
-        self.pos.setMin(1, bounds.ylo)
-        self.pos.setMax(1, bounds.yhi)
-        self.pos.setMin(2, bounds.zlo)
-        self.pos.setMax(2, bounds.zhi)
-        
-        # reset the cursor and min/max values in
-        # case the old values were out of bounds
-        self.pos.xyz = self.pos.xyz
-
 
     def _shiftCanvas(self, canvas, newx, newy):
         """
@@ -334,8 +290,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         coordinates).
         """
 
-        self.pos.xyz = [xpos, ypos, zpos]
-
         self.xcanvas.pos.xyz = [ypos, zpos, xpos]
         self.ycanvas.pos.xyz = [xpos, zpos, ypos]
         self.zcanvas.pos.xyz = [xpos, ypos, zpos]
@@ -364,9 +318,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         xpos = source.canvasToWorldX(mx)
         ypos = source.canvasToWorldY(my)
 
-        if   source == self.xcanvas: self.setPosition(self.pos.x, xpos, ypos)
-        elif source == self.ycanvas: self.setPosition(xpos, self.pos.y, ypos)
-        elif source == self.zcanvas: self.setPosition(xpos, ypos, self.pos.z)
+        if   source == self.xcanvas: self.imageList.location.yz = [xpos, ypos]
+        elif source == self.ycanvas: self.imageList.location.xz = [xpos, ypos]
+        elif source == self.zcanvas: self.imageList.location.xy = [xpos, ypos]
  
             
 class OrthoFrame(wx.Frame):

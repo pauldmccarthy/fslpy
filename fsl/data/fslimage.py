@@ -104,7 +104,7 @@ class Image(props.HasProperties):
         coordinates, along the specified axis.
         """
 
-        x, y, z = self.shape
+        x, y, z = self.shape[:3]
 
         points = np.zeros((8, 3), dtype=np.float32)
 
@@ -333,6 +333,9 @@ class ImageList(props.HasProperties):
     def _validateImage(self, atts, images):
         return all(map(lambda img: isinstance(img, Image), images))
 
+    # The images property contains a list of Image objects
+    images = props.List(validateFunc=_validateImage, allowInvalid=False) 
+
     # The bounds property contains the min/max values of
     # a bounding box (in real world coordinates) which
     # is big enough to contain all of the images in the
@@ -340,10 +343,13 @@ class ImageList(props.HasProperties):
     # but I don't have a way to enforce it (yet).
     bounds = props.Bounds(ndims=3)
 
-    # The images property contains a list of Image objects
-    images = props.List(validateFunc=_validateImage, allowInvalid=False)
+    # The location property contains the currently 'selected'
+    # 3D location in the image list space. This property
+    # is not used directly by the ImageList object, but it
+    # is here so that the location selection can be synchronised
+    # across multiple displays.
+    location = props.Point(ndims=3)
 
-    
     def __init__(self, images=None):
         """
         Create an ImageList object from the given sequence of Image objects.
@@ -407,8 +413,11 @@ class ImageList(props.HasProperties):
                            minBounds[1], maxBounds[1],
                            minBounds[2], maxBounds[2]]
 
+        for ax in range(3):
+            self.location.setLimits(ax, minBounds[ax], maxBounds[ax])
 
-    # Wrapers around the images list property, allowing this
+
+    # Wrappers around the images list property, allowing this
     # ImageList object to be used as if it is actually a list.
     def __len__(     self):            return self.images.__len__()
     def __getitem__( self, key):       return self.images.__getitem__(key)

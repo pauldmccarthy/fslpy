@@ -9,8 +9,6 @@ from collections import OrderedDict
 
 import wx
 
-import nibabel as nb
-
 import fsl.props              as props
 import fsl.data.imagefile     as imagefile
 import fsl.data.fslimage      as fslimage
@@ -200,7 +198,7 @@ def selectHeadCentre(opts, button):
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
     def updateOpts(*a):
-        x, y, z = image.worldToVox([panel.pos])[0]
+        x, y, z = image.worldToVox([imageList.location])[0]
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -215,7 +213,7 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = y
         opts.zCoordinate = z
 
-    panel.addListener('pos', 'BETHeadCentre', updateOpts)
+    imageList.addListener('location', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
     # TODO this ain't working, as it needs to be
