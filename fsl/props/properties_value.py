@@ -424,6 +424,12 @@ class PropertyValueList(PropertyValue):
         discarded, and new ones recreated. This flag is intended for
         internal use only.
         """
+
+        if self._itemCastFunc is not None:
+            newValues = map(lambda v: self._itemCastFunc(
+                self._context,
+                self._itemAttributes,
+                v), newValues)
         PropertyValue.set(self, newValues)
 
         if recreate: 

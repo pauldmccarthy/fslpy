@@ -319,9 +319,8 @@ class ImageList(props.HasProperties):
     bounds).
     """
 
-    def _validateImage(self, images):
-        if not all(map(lambda img: isinstance(img, Image))):
-            raise ValueError('Must be a {} instance'.format(Image.__name__))
+    def _validateImage(self, atts, images):
+        return all(map(lambda img: isinstance(img, Image), images))
 
     # The bounds property contains the min/max values of
     # a bounding box (in real world coordinates) which

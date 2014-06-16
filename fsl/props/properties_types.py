@@ -25,7 +25,7 @@ class Boolean(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def cast(self, instance, value):
+    def cast(self, instance, attributes, value):
         return bool(value)
 
 
@@ -71,12 +71,12 @@ class Number(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         
-        props.PropertyBase.validate(self, instance, value)
+        props.PropertyBase.validate(self, instance, attributes, value)
         
-        minval = self.getConstraint(instance, 'minval')
-        maxval = self.getConstraint(instance, 'maxval')
+        minval = attributes['minval']
+        maxval = attributes['maxval']
 
         if minval is not None and value < minval:
             raise ValueError('Must be at least {}'.format(minval))
@@ -85,14 +85,14 @@ class Number(props.PropertyBase):
             raise ValueError('Must be at most {}'.format(maxval))
 
 
-    def cast(self, instance, value):
+    def cast(self, instance, attributes, value):
 
-        clamped = self.getConstraint(instance, 'clamped')
+        clamped = attributes['clamped']
         
         if not clamped: return value
 
-        minval = self.getConstraint(instance, 'minval')
-        maxval = self.getConstraint(instance, 'maxval') 
+        minval = attributes['minval']
+        maxval = attributes['maxval']
 
         if minval is not None and value < minval: return minval
         if maxval is not None and value > maxval: return maxval
@@ -113,8 +113,8 @@ class Int(Number):
         Number.__init__(self, **kwargs)
 
         
-    def cast(self, instance, value):
-        return Number.cast(self, instance, int(value))
+    def cast(self, instance, attributes, value):
+        return Number.cast(self, instance, attributes, int(value))
         
 
 class Real(Number):
@@ -131,8 +131,8 @@ class Real(Number):
         Number.__init__(self, **kwargs)
 
 
-    def cast(self, instance, value):
-        return Number.cast(self, instance, float(value))
+    def cast(self, instance, attributes, value):
+        return Number.cast(self, instance, attributes, float(value))
         
 
 class Percentage(Real):
@@ -165,7 +165,7 @@ class String(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def cast(self, instance, value):
+    def cast(self, instance, attributes, value):
 
         if value is None: value = ''
         else:             value = str(value)
@@ -174,19 +174,19 @@ class String(props.PropertyBase):
         return value
 
         
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         
         if value == '': value = None
         
-        props.PropertyBase.validate(self, instance, value)
+        props.PropertyBase.validate(self, instance, attributes, value)
 
         if value is None: return
 
         if not isinstance(value, basestring):
             raise ValueError('Must be a string')
 
-        minlen = self.getConstraint(instance, 'minlen')
-        maxlen = self.getConstraint(instance, 'maxlen')
+        minlen = attributes['minlen']
+        maxlen = attributes['maxlen']
 
         if minlen is not None and len(value) < minlen:
             raise ValueError('Must have length at least {}'.format(minlen))
@@ -239,11 +239,11 @@ class Choice(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
         
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         """
         Rejects values that are not in the choices list.
         """
-        props.PropertyBase.validate(self, instance, value)
+        props.PropertyBase.validate(self, instance, attributes, value)
 
         if value not in self.choices:
             raise ValueError('Invalid choice ({})'.format(value))
@@ -274,13 +274,13 @@ class FilePath(String):
         String.__init__(self, **kwargs)
 
         
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
 
-        String.validate(self, instance, value)
+        String.validate(self, instance, attributes, value)
 
-        exists   = self.getConstraint(instance, 'exists')
-        isFile   = self.getConstraint(instance, 'isFile')
-        suffixes = self.getConstraint(instance, 'suffixes')
+        exists   = attributes['exists']
+        isFile   = attributes['isFile']
+        suffixes = attributes['suffixes']
 
         if value is None: return
         if value == '':   return
@@ -339,14 +339,16 @@ class List(props.ListPropertyBase):
         props.ListPropertyBase.__init__(self, listType,  **kwargs)
 
 
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         """
         Checks that the given value (which should be a list) meets the
         minlen/maxlen constraints. Raises a ValueError if it does not.
         """
 
-        minlen = self.getConstraint(instance, 'minlen')
-        maxlen = self.getConstraint(instance, 'maxlen')
+        props.ListPropertyBase.validate(self, instance, attributes, value)
+
+        minlen = attributes['minlen']
+        maxlen = attributes['maxlen']
 
         if minlen is not None and len(value) < minlen:
             raise ValueError('Must have length at least {}'.format(minlen))
@@ -383,7 +385,7 @@ class ColourMap(props.PropertyBase):
         props.PropertyBase.__init__(self, **kwargs)
 
 
-    def cast(self, instance, value):
+    def cast(self, instance, attributes, value):
         """
         If the provided value is a string, an attempt is made
         to convert it to a colour map, via the
@@ -518,8 +520,12 @@ class Bounds(List):
 
         default = kwargs.get('default', None)
 
+
+        if minDistance is None:
+            minDistance = 0.0
+
         if default is None:
-            default = [0.0, 0.0] * ndims
+            default = [0.0, minDistance] * ndims
 
         if ndims < 1 or ndims > 3:
             raise ValueError('Only bounds of one to three '
@@ -531,8 +537,6 @@ class Bounds(List):
         if labels is not None and len(labels) != 2 * ndims:
             raise ValueError('A label for each dimension is required')
 
-        if minDistance is None:
-            minDistance = 0
 
         kwargs['default']     = default
         kwargs['minDistance'] = minDistance
@@ -571,18 +575,18 @@ class Bounds(List):
         return bvl
 
         
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         """
         Raises a ValueError if the given value (a list of min/max values)
         is of the wrong length or data type, or if any of the min values
         are greater than the corresponding max value.
         """
 
-        minDistance = self.getConstraint(instance, 'minDistance')
+        minDistance = attributes['minDistance']
 
         # the List.validate method will check
         # the value length and type for us
-        List.validate(self, instance, value)
+        List.validate(self, instance, attributes, value)
 
         for i in range(self._ndims):
 

@@ -173,11 +173,12 @@ class PropertyBase(object):
                            returns True or False.
         
           - validateFunc:  Custom validation function. Must accept
-                           two parameters: a reference to the
+                           three parameters: a reference to the
                            HasProperties instance, the owner of
-                           this property; and the new property
-                           value. Should return True if the property
-                           value is valid, False otherwise.
+                           this property; a dictionary containing the
+                           constraints for this property; and the new
+                           property value. Should return True if the
+                           property value is valid, False otherwise.
 
           - preNotifyFunc: Function to be called whenever the property
                            value(s) changes. See PropertyValue.__init__.
@@ -348,7 +349,7 @@ class PropertyBase(object):
                 prop.revalidate(instance) 
 
             
-    def validate(self, instance, value):
+    def validate(self, instance, attributes, value):
         """
         Called when an attempt is made to set the property value on
         the given instance. The sole purpose of PropertyBase.validate
@@ -387,11 +388,11 @@ class PropertyBase(object):
 
         # a custom validation function has been provided
         if self._validateFunc is not None:
-            if not self._validateFunc(instance, value):
+            if not self._validateFunc(instance, attributes, value):
                 raise ValueError('Value does not meet custom validation rules')
 
         
-    def cast(self, instance, value):
+    def cast(self, instance, attributes, value):
         """
         This method is called when a value is assigned to this PropertyBase
         object through a HasProperties attribute access. The default
@@ -737,9 +738,10 @@ class HasProperties(object):
         is valid, False otherwise.
         """
 
-        prop   = self.getProp(propName)
-        curVal = getattr(self, propName)
-        try: prop.validate(self, curVal)
+        prop    = self.getProp(propName)
+        propVal = prop.getPropVal(self)
+        
+        try: prop.validate(self, propVal.getAttributes(), propVal.get())
         except ValueError: return False
 
         return True
@@ -759,10 +761,11 @@ class HasProperties(object):
         errors = []
 
         for name, prop in zip(names, props):
+
+            propVal = prop.getPropVal(self)
             
             try:
-                val = getattr(self, name)
-                prop.validate(self, val)
+                prop.validate(self, propVal.getAttributes(), propVal.get())
                 
             except ValueError as e:
                 errors.append((name, e.message))
