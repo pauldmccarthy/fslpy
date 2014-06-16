@@ -200,9 +200,7 @@ def selectHeadCentre(opts, button):
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
     def updateOpts(*a):
-        x = image.worldToVox(panel.xpos, axes=0)
-        y = image.worldToVox(panel.ypos, axes=1)
-        z = image.worldToVox(panel.zpos, axes=2)
+        x, y, z = image.worldToVox([panel.pos])[0]
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -217,9 +215,7 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = y
         opts.zCoordinate = z
 
-    panel.addListener('xpos', 'BETHeadCentre', updateOpts)
-    panel.addListener('ypos', 'BETHeadCentre', updateOpts)
-    panel.addListener('zpos', 'BETHeadCentre', updateOpts)
+    panel.addListener('pos', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
     # TODO this ain't working, as it needs to be
@@ -227,9 +223,7 @@ def selectHeadCentre(opts, button):
     # via wx.CallAfter or similar. 
     voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
     worldCoords = image.voxToWorld([voxCoords])[0]
-    panel.xpos = worldCoords[0]
-    panel.ypos = worldCoords[1]
-    panel.zpos = worldCoords[2]
+    panel.pos   = worldCoords
 
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
