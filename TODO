@@ -8,9 +8,10 @@ arbitrary.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** DONE Labels for individual bound/point widget sliders.
 ** Vertically center widget property labels.
-** Fix image bounds calculation (for images with dodgy affines)
-** Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
+** DONE Fix image bounds calculation (for images with dodgy affines)
+** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
 ** Ability to edit image affine transformation.
+** Fix mouse tracking (voxel changes)
 
 
 * Medium things

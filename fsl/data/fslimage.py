@@ -104,12 +104,23 @@ class Image(props.HasProperties):
         coordinates, along the specified axis.
         """
 
-        points = np.zeros((2, 3), dtype=np.float32)
-        points[1, axis] = self.shape[axis]
+        x, y, z = self.shape
+
+        points = np.zeros((8, 3), dtype=np.float32)
+
+        points[0, :] = [0, 0, 0]
+        points[1, :] = [0, 0, z]
+        points[2, :] = [0, y, 0]
+        points[3, :] = [0, y, z]
+        points[4, :] = [x, 0, 0]
+        points[5, :] = [x, 0, z]
+        points[6, :] = [x, y, 0]
+        points[7, :] = [x, y, z] 
 
         tx = self.voxToWorld(points)
 
-        lo, hi = sorted(tx[:, axis])
+        lo = tx[:, axis].min()
+        hi = tx[:, axis].max()
 
         return (lo, hi)
 
