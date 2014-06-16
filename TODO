@@ -12,12 +12,13 @@ arbitrary.
 ** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
 ** Ability to edit image affine transformation.
 ** Fix mouse tracking (voxel changes)
+** Orientation labels on slice canvas.
 
 
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox
 ** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
-** Selection on LightBoxCanvas.
+** Location selection on LightBoxCanvas.
 ** change image dimension ordering
 ** link display properties across images
 ** separate out props and gui packages - they should really be separate projects
