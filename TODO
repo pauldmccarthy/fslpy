@@ -9,18 +9,21 @@ arbitrary.
 ** DONE Labels for individual bound/point widget sliders.
 ** Vertically center widget property labels.
 ** Fix image bounds calculation (for images with dodgy affines)
-** Constraint listener on Lists which is notified of changes to constraints on any of the items in the list.
+** Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
+** Ability to edit image affine transformation.
+
 
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox
 ** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** Selection on LightBoxCanvas.
 ** change image dimension ordering
-** ability to edit affine transformation
 ** link display properties across images
 ** separate out props and gui packages - they should really be separate projects
 ** mouse-based zooming in ortho panel
 ** Make slice canvas bounding box calculation more intelligent when zoom > 1.
+** Image export/offscreen rendering.
+** Command line interface.
 
 * Big things
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
