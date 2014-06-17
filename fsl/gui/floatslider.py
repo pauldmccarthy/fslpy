@@ -187,6 +187,7 @@ class SliderSpinPanel(wx.Panel):
 
     def __init__(self,
                  parent,
+                 real=True,
                  value=None,
                  minValue=None,
                  maxValue=None,
@@ -197,6 +198,9 @@ class SliderSpinPanel(wx.Panel):
         Initialises a SliderSpinPanel object. Parameters:
         
           - parent:     wx parent object.
+
+          - real:       If False, a wx.Slider and wx.SpinCtrl are used,
+                        instead of a FloatSlider and wx.SpinCtrlDouble.
         
           - value:      Initial slider/spin value.
         
@@ -227,17 +231,31 @@ class SliderSpinPanel(wx.Panel):
         
         self._showLimits = showLimits
 
-        self._slider = FloatSlider(
-            self,
-            value=value,
-            minValue=minValue,
-            maxValue=maxValue)
-        self._spinbox = wx.SpinCtrlDouble(
-            self,
-            min=minValue,
-            max=maxValue,
-            value='{}'.format(value),
-            initial=value)
+        if real:
+            self._slider = FloatSlider(
+                self,
+                value=value,
+                minValue=minValue,
+                maxValue=maxValue)
+            self._spinbox = wx.SpinCtrlDouble(
+                self,
+                min=minValue,
+                max=maxValue,
+                value='{}'.format(value),
+                initial=value)
+        else:
+            self._slider = wx.Slider(
+                self,
+                value=value,
+                minValue=minValue,
+                maxValue=maxValue)
+            self._spinbox = wx.SpinCtrlDouble(
+                self,
+                min=minValue,
+                max=maxValue,
+                value='{}'.format(value),
+                initial=value)
+ 
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)

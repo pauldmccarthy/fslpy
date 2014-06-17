@@ -685,20 +685,42 @@ class Point(List):
     (where n must be either 2 or 3 for the time being).
     """
 
-    def __init__(self, ndims=2, editLimits=False, labels=None, **kwargs):
+    def __init__(self,
+                 ndims=2,
+                 real=True, 
+                 editLimits=False,
+                 labels=None,
+                 minvals=None,
+                 maxvals=None,
+                 **kwargs):
         """
         Initialise a Point property. Parameters:
         
           - ndims:      Number of dimensions.
+        
+          - real:       If True the point values are stored as Reals,
+                        otherwise they are stored as Ints.
+        
           - editLimits: If True, widgets created to edit this Point
                         will allow the user to edit the min/max limits
+        
           - labels:     List of labels, one for each dimension.
+        
+          - minvals:    List of minimum values, one for each dimension.
+        
+          - maxvals:    List of maximum values, one for each dimension.
         """
 
         default = kwargs.get('default', None)
 
-        if default is None:
-            default = [0.0] * ndims
+        if default is None: default = [0] * ndims
+        if minvals is None: minvals = [0] * ndims
+        if maxvals is None: maxvals = [1] * ndims
+
+        if real:
+            default = map(float, default)
+            minvals = map(float, minvals)
+            maxvals = map(float, maxvals)
 
         if ndims < 2 or ndims > 3:
             raise ValueError('Only points of two to three '
@@ -706,6 +728,10 @@ class Point(List):
             
         elif len(default) != ndims:
             raise ValueError('{} point values are required'.format(ndims))
+        elif len(minvals) != ndims:
+            raise ValueError('{} minimum values are required'.format(ndims))
+        elif len(maxvals) != ndims:
+            raise ValueError('{} maximum values are required'.format(ndims)) 
 
         if labels is not None and len(labels) != ndims:
             raise ValueError('A label for each dimension is required')
@@ -713,11 +739,17 @@ class Point(List):
         kwargs['default']    = default
         kwargs['editLimits'] = editLimits
         
-        self._ndims  = ndims
-        self._labels = labels
+        self._ndims   = ndims
+        self._real    = real
+        self._labels  = labels
+        self._minvals = minvals
+        self._maxvals = maxvals
+
+        if real: listType = Real(clamped=True, editLimits=editLimits)
+        else:    listType = Int( clamped=True, editLimits=editLimits)
 
         List.__init__(self,
-                      listType=Real(clamped=True, editLimits=editLimits),
+                      listType=listType,
                       minlen=ndims,
                       maxlen=ndims,
                       **kwargs)
@@ -742,5 +774,8 @@ class Point(List):
             postNotifyFunc=self._valChanged,
             listAttributes=self._defaultConstraints,
             itemAttributes=self._listType._defaultConstraints)
+
+        for i in range(self._ndims):
+            pvl.setLimits(i, self._minvals[i], self._maxvals[i])
         
         return pvl

@@ -60,6 +60,7 @@ def _Point(parent, hasProps, propObj, propVal):
     panel.SetSizer(sizer)
 
     ndims  = propObj._ndims
+    real   = propObj._real
     labels = propObj._labels
 
     if labels is None: labels = [None] * ndims
@@ -70,6 +71,7 @@ def _Point(parent, hasProps, propObj, propVal):
 
         slider = floatslider.SliderSpinPanel(
             panel,
+            real=real,
             value=propVal[dim],
             minValue=propVal.getMin(dim),
             maxValue=propVal.getMax(dim),
