@@ -185,9 +185,9 @@ class PropertyValue(object):
             try:
                 cb(self._context, name, value)
             except Exception as e:
-                log.debug('Attribute listener {} on {} raised '
-                          'exception: {}'.format(cbName, self._name, e),
-                          exc_info=True) 
+                log.warn('Attribute listener {} on {} raised '
+                         'exception: {}'.format(cbName, self._name, e),
+                         exc_info=True) 
         
         
     def addListener(self, name, callback):
@@ -319,13 +319,13 @@ class PropertyValue(object):
 
             try: listener(value, valid, self._context)
             except Exception as e:
-                log.debug('Listener {} on {}.{} raised '
-                          'exception: {}'.format(
-                              name,
-                              self._context.__class__.__name__,
-                              self._name,
-                              e),
-                          exc_info=True)
+                log.warn('Listener {} on {}.{} raised '
+                         'exception: {}'.format(
+                             name,
+                             self._context.__class__.__name__,
+                             self._name,
+                             e),
+                         exc_info=True)
 
 
     def revalidate(self):
