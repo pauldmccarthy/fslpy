@@ -71,6 +71,10 @@ class ImageListPanel(wx.Panel):
 
         
     def _selectedImageChanged(self, *a):
+        """
+        Called when the ImageList.selectedImage property changes.
+        Shows the control panel for the currently selected image.
+        """
         self._showDisplayPanel(self.imageList.selectedImage)
 
         
