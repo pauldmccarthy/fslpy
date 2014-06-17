@@ -334,7 +334,13 @@ class ImageList(props.HasProperties):
         return all(map(lambda img: isinstance(img, Image), images))
 
     # The images property contains a list of Image objects
-    images = props.List(validateFunc=_validateImage, allowInvalid=False) 
+    images = props.List(validateFunc=_validateImage, allowInvalid=False)
+
+    # Index of the currently 'selected' image. This property
+    # is not used by the ImageList, but is provided so that
+    # other things can control and listen for changes to
+    # the currently selected image
+    selectedImage = props.Int(minval=0, clamped=True)
 
     # The bounds property contains the min/max values of
     # a bounding box (in real world coordinates) which
@@ -415,6 +421,8 @@ class ImageList(props.HasProperties):
 
         for ax in range(3):
             self.location.setLimits(ax, minBounds[ax], maxBounds[ax])
+
+        self.setConstraint('selectedImage', 'maxval', len(self.images))
 
 
     # Wrappers around the images list property, allowing this

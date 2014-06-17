@@ -60,9 +60,18 @@ class ImageListPanel(wx.Panel):
         for i, image in enumerate(imageList):
             self._makeDisplayPanel(image)
 
-        self._showDisplayPanel(len(imageList) - 1)
+        self.imageList.addListener(
+            'selectedImage',
+            '{}_{}'.format(self.__class__.__name__, id(self)),
+            self._selectedImageChanged)
+
+        self.imageList.selectedImage = len(imageList) - 1
 
         self.Layout()
+
+        
+    def _selectedImageChanged(self, *a):
+        self._showDisplayPanel(self.imageList.selectedImage)
 
         
     def _makeDisplayPanel(self, image):
@@ -105,7 +114,7 @@ class ImageListPanel(wx.Panel):
         Called when an image is selected in the ListBox. Displays the
         corresponding image display configuration panel.
         """
-        self._showDisplayPanel(ev.idx)
+        self.imageList.selectedImage = ev.idx
 
 
     def _showDisplayPanel(self, idx):
@@ -156,7 +165,8 @@ class ImageListPanel(wx.Panel):
             self.listBox.Append(image.name, image, tooltip=path)
 
             self._makeDisplayPanel(image)
-            self._showDisplayPanel(len(self.imageList) - 1)
+
+        self.imageList.selectedImage = len(self.imageList) - 1
 
         # This panel may have changed size, so
         # tell the parent to lay itself out
@@ -174,7 +184,7 @@ class ImageListPanel(wx.Panel):
         displayPanel.Destroy()
 
         if len(self.imageList) > 0:
-            self._showDisplayPanel(self.listBox.GetSelection())
+            self.imageList.selectedImage = self.listBox.GetSelection()
 
         self.GetParent().Layout()
         self.GetParent().Refresh()
