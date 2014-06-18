@@ -3,7 +3,13 @@ TODO LIST -*- mode: org; -*-
 A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary.
 
+* Bugs to fix
+** Fix cursors - they go off the canvas in some cases
+** LightBoxCanvas bounding box calculation is broken again.
+** SliceCanvas bounding box calculation is also broken again.
+
 * Little things
+** Wild cards in image file load (controlled by fslview.ImageListPanel)
 ** Truncate long filenames in image list panel.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** DONE Labels for individual bound/point widget sliders.
@@ -14,9 +20,8 @@ arbitrary.
 ** Fix mouse tracking (voxel changes)
 ** Orientation labels on slice canvas.
 
-
 * Medium things
-** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox
+** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** Location selection on LightBoxCanvas.
 ** change image dimension ordering
@@ -26,12 +31,23 @@ arbitrary.
 ** Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
 ** Command line interface.
+** UI design
+** Rewrite GL storage/rendering
+ - Do away with your fancy x-coordinate tiling, and just store coordinates for every voxel.
+ - Calculate the proper coordinates of a real-world Z slice through the image. 
 
 * Big things
+** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
 ** Standard for code documentation - Sphinx?
-** opengl 1.4 implementation
+** OpenGL 1.4 implementation
 ** time series plotting option
-** have multiple views open
+** have multiple views open - look at wxAUI.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
+** Surface display
+
+
+* Other ideas
+** (Saad). Select regions by colour, for editing purposes
+** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
