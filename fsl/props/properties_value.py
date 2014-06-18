@@ -489,14 +489,15 @@ class PropertyValueList(PropertyValue):
 
     def __getitem__(self, key):
         return PropertyValue.get(self).__getitem__(key)
-        
-    def __len__(     self):       return self[:].__len__()
-    def __repr__(    self):       return self[:].__repr__()
-    def __str__(     self):       return self[:].__str__()
-    def __iter__(    self):       return self[:].__iter__()
-    def __contains__(self, item): return self[:].__contains__(item)
-    def index(       self, item): return self[:].index(item)
-    def count(       self, item): return self[:].count(item)
+
+    def __eq__(      self, other): return self[:].__eq__(other[:])
+    def __len__(     self):        return self[:].__len__()
+    def __repr__(    self):        return self[:].__repr__()
+    def __str__(     self):        return self[:].__str__()
+    def __iter__(    self):        return self[:].__iter__()
+    def __contains__(self, item):  return self[:].__contains__(item)
+    def index(       self, item):  return self[:].index(item)
+    def count(       self, item):  return self[:].count(item)
     
     def append(self, item):
         """

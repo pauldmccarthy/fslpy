@@ -682,7 +682,7 @@ class PointValueList(propvals.PropertyValueList):
 class Point(List):
     """
     A property which represents a point in some n-dimensional space
-    (where n must be either 2 or 3 for the time being).
+    (where n must be 1, 2 or 3 for the time being).
     """
 
     def __init__(self,
@@ -690,8 +690,6 @@ class Point(List):
                  real=True, 
                  editLimits=False,
                  labels=None,
-                 minvals=None,
-                 maxvals=None,
                  **kwargs):
         """
         Initialise a Point property. Parameters:
@@ -705,33 +703,21 @@ class Point(List):
                         will allow the user to edit the min/max limits
         
           - labels:     List of labels, one for each dimension.
-        
-          - minvals:    List of minimum values, one for each dimension.
-        
-          - maxvals:    List of maximum values, one for each dimension.
         """
 
         default = kwargs.get('default', None)
 
         if default is None: default = [0] * ndims
-        if minvals is None: minvals = [0] * ndims
-        if maxvals is None: maxvals = [1] * ndims
 
         if real:
             default = map(float, default)
-            minvals = map(float, minvals)
-            maxvals = map(float, maxvals)
 
-        if ndims < 2 or ndims > 3:
-            raise ValueError('Only points of two to three '
+        if ndims < 1 or ndims > 3:
+            raise ValueError('Only points of one to three '
                              'dimensions are supported')
             
         elif len(default) != ndims:
             raise ValueError('{} point values are required'.format(ndims))
-        elif len(minvals) != ndims:
-            raise ValueError('{} minimum values are required'.format(ndims))
-        elif len(maxvals) != ndims:
-            raise ValueError('{} maximum values are required'.format(ndims)) 
 
         if labels is not None and len(labels) != ndims:
             raise ValueError('A label for each dimension is required')
@@ -742,8 +728,6 @@ class Point(List):
         self._ndims   = ndims
         self._real    = real
         self._labels  = labels
-        self._minvals = minvals
-        self._maxvals = maxvals
 
         if real: listType = Real(clamped=True, editLimits=editLimits)
         else:    listType = Int( clamped=True, editLimits=editLimits)
@@ -774,8 +758,5 @@ class Point(List):
             postNotifyFunc=self._valChanged,
             listAttributes=self._defaultConstraints,
             itemAttributes=self._listType._defaultConstraints)
-
-        for i in range(self._ndims):
-            pvl.setLimits(i, self._minvals[i], self._maxvals[i])
         
         return pvl
