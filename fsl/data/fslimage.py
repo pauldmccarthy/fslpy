@@ -145,8 +145,9 @@ class Image(props.HasProperties):
         """
 
         voxp = self._transform(p, self.worldToVoxMat, axes)
+        voxp = np.array(voxp.round(), dtype=np.uint32)
 
-        if voxp.size == 1: return int(voxp[0])
+        if voxp.size == 1: return voxp[0]
         else:              return voxp
 
 
