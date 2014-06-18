@@ -8,6 +8,7 @@
 import wx
 
 import fsl.fslview.orthopanel     as orthopanel
+import fsl.fslview.locationpanel  as locationpanel
 import fsl.fslview.imagelistpanel as imagelistpanel
 import fsl.fslview.lightboxcanvas as lightboxcanvas
 
@@ -24,6 +25,16 @@ class FslViewPanel(wx.Panel):
 
         self.glContext = None
 
+        self.topPanel = wx.Panel(self)
+
+        self.topSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.topPanel.SetSizer(self.topSizer)
+
+        self.locPanel  = locationpanel .LocationPanel( self, imageList)
+
+        self.topSizer.Add(self.locPanel, flag=wx.EXPAND)
+        self.topSizer.Add((1, 1),        flag=wx.EXPAND, proportion=1)
+
         self.ctrlPanel = None
         self.mainPanel = None
         self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
@@ -31,7 +42,7 @@ class FslViewPanel(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
-        self.sizer.Add((1, 1), flag=wx.EXPAND)
+        self.sizer.Add(self.topPanel, flag=wx.EXPAND)
         self.sizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
         
         self.sizer.Add(self.listPanel, flag=wx.EXPAND)
@@ -44,10 +55,10 @@ class FslViewPanel(wx.Panel):
 
     def _replace(self, mainPanel, ctrlPanel):
 
-        self.sizer.Remove(0)
-        self.sizer.Remove(0)
+        self.topSizer.Remove(1)
+        self.sizer.Remove(1)
 
-        self.sizer.Insert(0, ctrlPanel, flag=wx.EXPAND)
+        self.topSizer.Insert(1, ctrlPanel, flag=wx.EXPAND)
         self.sizer.Insert(1, mainPanel, flag=wx.EXPAND, proportion=1)
 
         if self.mainPanel is not None: self.mainPanel.Destroy()

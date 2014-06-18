@@ -355,7 +355,7 @@ class ImageList(props.HasProperties):
     # is not used directly by the ImageList object, but it
     # is here so that the location selection can be synchronised
     # across multiple displays.
-    location = props.Point(ndims=3)
+    location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
 
     def __init__(self, images=None):
         """
