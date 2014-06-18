@@ -30,11 +30,12 @@ arbitrary.
 ** mouse-based zooming in ortho panel
 ** Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
-** Command line interface.
+** Command line interface - build into props package?
 ** UI design
 ** Rewrite GL storage/rendering
  - Do away with your fancy x-coordinate tiling, and just store coordinates for every voxel.
  - Calculate the proper coordinates of a real-world Z slice through the image. 
+** Custon colour maps from original FSLView
 
 * Big things
 ** Test suite for props package
