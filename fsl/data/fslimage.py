@@ -250,10 +250,9 @@ class ImageDisplay(props.HasProperties):
     If a single image needs to be displayed in different ways, then create
     away, and manage your own ImageDisplay objects.
 
-    This class doesn't have any functionality (apart from updating its own
-    colour map when necessary) - it is up to things which actually display
-    an Image to adhere to the properties stored in the associated
-    ImageDisplay object.
+    This class doesn't have any functionality - it is up to things which
+    actually display an Image to adhere to the properties stored in the
+    associated ImageDisplay object.
     """
 
     enabled      = props.Boolean(default=True)
@@ -270,8 +269,7 @@ class ImageDisplay(props.HasProperties):
         return len(self.image.shape) > 3 and self.image.shape[3] > 1
     
     _view = props.VGroup(('enabled',
-                          props.Widget('volume',
-                                       enabledWhen=is4DImage),
+                          props.Widget('volume', enabledWhen=is4DImage),
                           'displayRange',
                           'alpha',
                           'rangeClip',
