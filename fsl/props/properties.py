@@ -621,11 +621,30 @@ class HasProperties(object):
         return instance
 
         
-    def getProp(self, propName):
+    @classmethod
+    def getAllProperties(cls):
+        """
+        Returns two lists, the first containing the names of all
+        properties of this object, and the second containing the
+        corresponding PropertyBase objects.
+        """
+
+        propNames = dir(cls)
+        props     = map(lambda n: getattr(cls, n), propNames)
+
+        props, propNames = zip(*filter(
+            lambda (p, n): isinstance(p, PropertyBase),
+            zip(props, propNames)))
+
+        return propNames, props
+
+
+    @classmethod
+    def getProp(cls, propName):
         """
         Return the PropertyBase object for the given property.
         """
-        return getattr(self.__class__, propName)
+        return getattr(cls, propName)
 
 
     def getPropVal(self, propName):
@@ -704,23 +723,6 @@ class HasProperties(object):
         the specified property. See PropertyBase.removeConstraintListener.
         """
         self.getProp(propName).removeConstraintListener(self, listenerName) 
-
-        
-    def getAllProperties(self):
-        """
-        Returns two lists, the first containing the names of all
-        properties of this object, and the second containing the
-        corresponding PropertyBase objects.
-        """
-
-        propNames = dir(self.__class__)
-        props     = map(lambda n: getattr(self.__class__, n), propNames)
-
-        props, propNames = zip(*filter(
-            lambda (p, n): isinstance(p, PropertyBase),
-            zip(props, propNames)))
-
-        return propNames, props
 
 
     def isValid(self, propName):
