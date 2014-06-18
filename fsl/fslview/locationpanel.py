@@ -152,13 +152,12 @@ class LocationPanel(wx.Panel, props.HasProperties):
         loc    = self.imageList.location.xyz
         voxLoc = image.worldToVox([loc])[0]
 
+        # We explicitly clamp the voxel location values so we don't
+        # trigger any infinite property event callback loops
         for i in range(3):
 
-            # we explicitly allow voxLoc[i] == image.shape[i] -
-            # the voxelLocation property values are clamped to
-            # the image shape anyway
-            if voxLoc[i] < 0 or voxLoc[i] > image.shape[i]:
-                return
+            if   voxLoc[i] < 0:               voxLoc[i] = 0
+            elif voxLoc[i] >= image.shape[i]: voxLoc[i] = image.shape[i] - 1
 
         self.voxelLocation.xyz = voxLoc
 

@@ -23,10 +23,15 @@ import fsl.props          as props
 
 class ImageListPanel(wx.Panel):
     """
+    A panel which contains a list box displaying the list of loaded images
+    and a control panel allowing the display properties of the currently
+    selected image to be modified.  The list box allows the image order
+    to be changed, and allows images to be added and removed from the list.
     """
     
     def __init__(self, parent, imageList):
         """
+        Creates and lays out an ImageListPanel.
         """
         
         wx.Panel.__init__(self, parent)
@@ -144,6 +149,10 @@ class ImageListPanel(wx.Panel):
         
     def _addImage(self, ev):
         """
+        Called when the 'add' button on the list box is pressed. Pops up an
+        open file dialog prompting the user to choose one or more image files,
+        then opens those files, adds them to the image list, and creates
+        display panels for each of them.
         """
         
         try:    lastDir = self._lastDir
@@ -171,7 +180,7 @@ class ImageListPanel(wx.Panel):
             self._makeDisplayPanel(image)
 
         self.imageList.selectedImage = len(self.imageList) - 1
-
+        
         # This panel may have changed size, so
         # tell the parent to lay itself out
         self.GetParent().Layout()
@@ -180,6 +189,9 @@ class ImageListPanel(wx.Panel):
 
     def _imageRemoved(self, ev):
         """
+        Called when an item is removed from the image listbox. Removes the
+        corresponding image from the image list, deletes its display panel,
+        and refreshes the list panel.
         """
 
         image        = self.imageList.pop(ev.idx)
@@ -187,8 +199,18 @@ class ImageListPanel(wx.Panel):
 
         displayPanel.Destroy()
 
+        # make sure that an image is selected
         if len(self.imageList) > 0:
+            
             self.imageList.selectedImage = self.listBox.GetSelection()
+
+            # If the image list was of length 2, and image 0 was
+            # previously selected, the above assignment will not
+            # change the selectedImage property value, and our
+            # listener function will not be called. So here we're
+            # just making sure that it does get called
+            if len(self.imageList) == 1:
+                self._selectedImageChanged()
 
         self.GetParent().Layout()
         self.GetParent().Refresh()
