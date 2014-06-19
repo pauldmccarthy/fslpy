@@ -7,6 +7,7 @@ arbitrary.
 ** Fix cursors - they go off the canvas in some cases
 ** LightBoxCanvas bounding box calculation is broken again.
 ** SliceCanvas bounding box calculation is also broken again.
+** Trnasformation matrix recursion is happening again, for Ludo's file with the bad affine.
 
 * Little things
 ** Wild cards in image file load (controlled by fslview.ImageListPanel)
@@ -19,6 +20,7 @@ arbitrary.
 ** Ability to edit image affine transformation.
 ** Fix mouse tracking (voxel changes)
 ** Orientation labels on slice canvas.
+** 'Add standard'/'Add Atlas' menu options.
 
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
