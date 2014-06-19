@@ -9,7 +9,6 @@ import os
 import sys
 import logging
 import argparse
-import wx
 
 # There's a bug in OpenGL.GL.shaders (which has been fixed in
 # the latest version) - it calls logging.basicConfig(), and
@@ -23,6 +22,11 @@ logging.basicConfig(
            '%(funcName)-15.15s - '
            '%(message)s') 
 log = logging.getLogger('fsl')
+
+try:
+    import wx
+except:
+    log.warn('Could not import wx - GUI functionality is not available')
 
 import fsl.tools         as tools
 import fsl.utils.webpage as webpage
@@ -167,11 +171,14 @@ def fslDirWarning(frame, toolName, fslEnvActive):
     msg = 'The FSLDIR environment variable is not set - '\
           '{} may not behave correctly.'.format(toolName)
 
-    wx.MessageDialog(
-        frame,
-        message=msg,
-        style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
-
+    if frame is not None:
+        wx.MessageDialog(
+            frame,
+            message=msg,
+            style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+    else:
+        log.warn(msg)
+        
 
 def buildGUI(fslTool, toolCtx, fslEnvActive):
     """
