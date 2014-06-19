@@ -61,7 +61,7 @@ def loadFSLTool(moduleName, module):
     # Each FSL tool module may specify several things
     toolName  = getattr(module, 'FSL_TOOLNAME',  None)
     helpPage  = getattr(module, 'FSL_HELPPAGE',  'index')
-    arguments = getattr(module, 'FSL_ARGUMENTS', None)
+    parseArgs = getattr(module, 'FSL_PARSEARGS', None)
     context   = getattr(module, 'FSL_CONTEXT',   None)
     interface = getattr(module, 'FSL_INTERFACE', None)
     actions   = getattr(module, 'FSL_ACTIONS',   [])
@@ -81,7 +81,7 @@ def loadFSLTool(moduleName, module):
     fsltool.moduleName = moduleName
     fsltool.toolName   = toolName
     fsltool.helpPage   = helpPage
-    fsltool.arguments  = arguments
+    fsltool.parseArgs  = parseArgs
     fsltool.context    = context
     fsltool.interface  = interface
     fsltool.actions    = actions
@@ -98,27 +98,63 @@ def parseArgs(argv, allTools):
     arguments that were passed in.
     """
 
-    parser = argparse.ArgumentParser()
+    epilog = 'Type fsl.py help <tool> for program-specific help. ' \
+             'Available programs:\n  {}'.format('\n  '.join(allTools.keys()))
+
+    parser = argparse.ArgumentParser(
+        description='Run a FSL program',
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
-        help='Run wx inspection tool') 
+        help='Run wx inspection tool')
+    parser.add_argument('tool', help='FSL program to run')
 
-    subparser  = parser.add_subparsers()
+    namespace, argv = parser.parse_known_args(argv)
 
-    for moduleName, fslTool in allTools.items():
+    # if the specified tool is 'help', it should be followed by
+    # one more argument, the name of the tool to print help for
+    if namespace.tool == 'help':
         
-        toolParser = subparser.add_parser(
-            moduleName, help='{} help'.format(fslTool.toolName))
-        toolParser.set_defaults(fslTool=fslTool)
-        
-        if fslTool.arguments is not None:
-            fslTool.arguments(toolParser)
+        # no tool name supplied
+        if len(argv) == 0:
+            parser.print_help()
+            sys.exit(1)
 
-    return parser.parse_args(argv)
+        # unknown tool name supplied
+        if argv[0] not in allTools:
+            raise argparse.ArgumentError(
+                'tool',
+                'Unknown FSL tool: {}'.format(namespace.tool))
+
+        fslTool = allTools[argv[0]]
+
+        # no tool specific argument parser
+        if fslTool.parseArgs is None:
+            print 'No help for {}'.format(argv[0])
+            
+        # otherwise, get help from the tool
+        else:
+            fslTool.parseArgs([namespace.tool, '-h'], namespace)
+        sys.exit(0)
+
+    # Unknown tool name supplied
+    elif namespace.tool not in allTools:
+        raise argparse.ArgumentError(
+            'tool',
+            'Unknown FSL tool: {}'.format(namespace.tool))
+
+    # otherwise, give the remaining arguments to the tool parser
+    fslTool = allTools[namespace.tool] 
+    
+    if fslTool.parseArgs is not None:
+        return fslTool, fslTool.parseArgs(argv, namespace)
+    else:
+        return fslTool, namespace
 
 
 def fslDirWarning(frame, toolName, fslEnvActive):
@@ -183,12 +219,10 @@ if __name__ == '__main__':
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None
 
-    
-    allTools = loadAllFSLTools()
-    args     = parseArgs(sys.argv[1:], allTools)
-    fslTool  = args.fslTool
+    allTools      = loadAllFSLTools()
+    fslTool, args = parseArgs(sys.argv[1:], allTools)
 
-    if   args.verbose == 1:
+    if args.verbose == 1:
         log.setLevel(logging.DEBUG)
 
         # make some noisy things quiet
