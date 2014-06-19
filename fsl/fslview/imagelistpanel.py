@@ -37,8 +37,8 @@ class ImageListPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.imageList = imageList
 
-        imageNames = [img.name                    for img in imageList]
-        imagePaths = [img.nibImage.get_filename() for img in imageList]
+        imageNames = [img.name      for img in imageList]
+        imagePaths = [img.imageFile for img in imageList]
         imagePaths = map(op.abspath, imagePaths)
 
         # list box containing the list of images
@@ -175,7 +175,7 @@ class ImageListPanel(wx.Panel):
         for path in paths:
             image = fslimage.Image(path)
             self.imageList.append(image)
-            self.listBox.Append(image.name, image, tooltip=path)
+            self.listBox.Append(image.name, image, tooltip=image.imageFile)
 
             self._makeDisplayPanel(image)
 

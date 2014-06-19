@@ -6,10 +6,12 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os
 import sys
 import logging
+import tempfile
 import collections
-
+import subprocess         as sp
 import os.path            as op
 
 import numpy              as np
@@ -24,12 +26,78 @@ import fsl.data.imagefile   as imagefile
 log = logging.getLogger(__name__)
 
 
+def _loadImageFile(filename):
+    """
+    Given the name of an image file, loads it using nibabel. If the file
+    is large, and is gzipped, it is decompressed to a temporary location,
+    so that it can be memory-mapped.  A tuple is returned, consisting of
+    the nibabel image object, and the name of the file that it was loaded
+    from (either the passed-in file name, or the name of the temporary
+    decompressed file).
+    """
+
+    # If we have a GUI, we can display a dialog
+    # message. Otherwise we print a log message
+    haveGui = False
+    try:
+        import wx
+        if wx.GetApp() is not None: 
+            haveGui = True
+    except:
+        pass
+
+    realFilename = filename
+
+    if filename.endswith('.nii.gz'):
+        
+        mbytes = op.getsize(filename) / 1048576.0
+
+        # This limit is arbitrary
+        if mbytes > 512:
+
+            unzipped, filename = tempfile.mkstemp(suffix='.nii')
+
+            unzipped = os.fdopen(unzipped)
+
+            msg = '{} is a large file ({} MB) - decompressing ' \
+                  'to {}, to allow memory mapping...'.format(realFilename,
+                                                             mbytes,
+                                                             filename)
+
+            if not haveGui:
+                log.info(msg)
+            else:
+                busyDlg = wx.BusyInfo(msg, wx.GetTopLevelWindows()[0])
+
+            gzip = ['gzip', '-d', '-c', realFilename]
+            log.debug('Running {} > {}'.format(' '.join(gzip), filename))
+
+            # If the gzip call fails, revert to loading from the gzipped file
+            try:
+                sp.call(gzip, stdout=unzipped)
+                unzipped.close()
+
+            except OSError as e:
+                log.warn('gzip call failed ({}) - cannot memory '
+                         'map file: {}'.format(e, realFilename),
+                         exc_info=True)
+                unzipped.close()
+                os.remove(filename)
+                filename = realFilename
+
+            if haveGui:
+                busyDlg.Destroy()
+
+    return nib.load(filename), filename
+
+
 class Image(props.HasProperties):
     """
     Class which represents a 3D/4D image. Internally, the image is
     loaded/stored using nibabel.
     """
 
+    # How the image should be transformd into real world space.
     transform = props.Choice(
         collections.OrderedDict([
             ('affine', 'Use qform/sform transformation matrix'),
@@ -37,6 +105,10 @@ class Image(props.HasProperties):
             ('id',     'Do not use qform/sform or pixdims')]),
         default='affine')
 
+    name      = props.String()
+    imageFile = props.FilePath()
+    tempFile  = props.FilePath()
+        
     def __init__(self, image):
         """
         Initialise an Image object with the given image data or file name.
@@ -44,19 +116,38 @@ class Image(props.HasProperties):
 
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
-            image = nib.load(imagefile.addExt(image))
             
+            nibImage, filename = _loadImageFile(imagefile.addExt(image))
+            self.nibImage      = nibImage
+            self.imageFile     = image
+
+            # if the returned file name is not the same as
+            # the provided file name, that means that the
+            # image was opened from a temporary file
+            if filename != image:
+                self.name     = op.basename(self.imageFile)
+                self.tempFile = nibImage.get_filename()
+            else:
+                self.name     = op.basename(self.imageFile)
+                
         # Or a numpy array - we wrap it in a nibabel image,
         # with an identity transformation (each voxel maps
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
-            image = nib.nifti1.Nifti1Image(image, np.identity(4))
-
+            
+            self.nibImage  = nib.nifti1.Nifti1Image(image, np.identity(4))
+            self.name      = 'Numpy array'
+            self.tempFile  = None
+            self.imageFile = None
+            
         # otherwise, we assume that it is a nibabel image
-        self.nibImage = image
-        self.data     = image.get_data()
-        self.name     = op.basename(image.get_filename())
+        else:
+            self.nibImage  = image
+            self.name      = 'Nibabel image'
+            self.tempFile  = None
+            self.imageFile = None 
 
+        self.data     = self.nibImage.get_data()
         self.shape    = self.nibImage.get_shape()
         self.pixdim   = self.nibImage.get_header().get_zooms()
 
