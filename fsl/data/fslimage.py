@@ -285,6 +285,18 @@ class ImageDisplay(props.HasProperties):
         'volume'       : 'Volume'
     }
 
+    _tooltips = {
+        'enabled'      : 'Enable/disable this image',
+        'alpha'        : 'Opacity, between 0.0 (transparent) and 1.0 (opaque)',
+        'displayRange' : 'Minimum/maximum display values',
+        'rangeClip'    : 'Do not show areas of the image which lie '
+                         'outside of the display range',
+        'samplingRate' : 'Draw every Nth voxel',
+        'cmap'         : 'Colour map',
+        'volume'       : 'Volume to display (zero-indexed, for 4D images)'}
+
+    _help = _tooltips
+
 
     def __init__(self, image):
         """
