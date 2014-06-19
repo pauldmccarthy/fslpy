@@ -180,7 +180,7 @@ def fslDirWarning(frame, toolName, fslEnvActive):
         log.warn(msg)
         
 
-def buildGUI(fslTool, toolCtx, fslEnvActive):
+def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     """
     """
 
@@ -194,7 +194,7 @@ def buildGUI(fslTool, toolCtx, fslEnvActive):
     frame.SetMenuBar(menuBar) 
     menuBar.Append(fileMenu, 'File')
 
-    toolPanel = fslTool.interface(frame, ctx)
+    toolPanel = fslTool.interface(frame, args, ctx)
 
     actions = []
 
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     else:                           ctx = None
 
     app   = wx.App()
-    frame = buildGUI(fslTool, ctx, fslEnvActive)
+    frame = buildGUI(args, fslTool, ctx, fslEnvActive)
     frame.Show()
 
     wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
