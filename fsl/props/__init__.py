@@ -23,6 +23,9 @@ from properties import (
     Bounds,
     Point)
 
+from cli import (
+    applyArguments,
+    addParserArguments)
 
 try:
     from widgets import makeWidget
