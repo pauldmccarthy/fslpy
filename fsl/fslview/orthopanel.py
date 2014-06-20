@@ -8,6 +8,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+log = logging.getLogger(__name__)
+
 import wx
 
 import fsl.props               as props
@@ -260,6 +263,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         mx, my  = ev.GetPositionTuple()
         source  = ev.GetEventObject()
         w, h    = source.GetClientSize()
+
+        log.debug('Mouse click on canvas {}: ({}, {})'.format(
+            source.name, mx, my))
 
         my = h - my
 
