@@ -32,7 +32,7 @@ arbitrary.
 ** mouse-based zooming in ortho panel
 ** Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
-** Command line interface - build into props package?
+** IN PROGRESS Command line interface - build into props package?
 ** UI design
 ** Rewrite GL storage/rendering
  - Do away with your fancy x-coordinate tiling, and just store coordinates for every voxel.
