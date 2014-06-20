@@ -105,6 +105,64 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         return ypos
 
+
+    def panDisplayBy(self, xoff, yoff):
+        """
+        Pans the canvas display by the given x/y offsets (specified in world
+        coordinates).
+        """
+        
+        bounds = self.displayBounds
+
+        xmin, xmax, ymin, ymax = bounds.all
+
+        xmin = xmin + xoff
+        xmax = xmax + xoff
+        ymin = ymin + yoff
+        ymax = ymax + yoff
+
+        if xmin < bounds.getMin(0):
+            xmin = bounds.getMin(0)
+            xmax = xmin + bounds.getLen(0)
+            
+        elif xmax > bounds.getMax(0):
+            xmax = bounds.getMax(0)
+            xmin = xmax - bounds.getLen(0)
+            
+        if ymin < bounds.getMin(1):
+            ymin = bounds.getMin(1)
+            ymax = ymin + bounds.getLen(1)
+
+        elif ymax > bounds.getMax(1):
+            ymax = bounds.getMax(1)
+            ymin = ymax - bounds.getLen(1) 
+
+        self.displayBounds.all = [xmin, xmax, ymin, ymax]
+
+
+    def panDisplayToShow(self, xpos, ypos):
+        """
+        Pans the display so that the given x/y position (in world coordinates)
+        is visible.
+        """
+
+        bounds = self.displayBounds
+
+        if xpos >= bounds.xlo and xpos <= bounds.xhi and \
+           ypos >= bounds.ylo and ypos <= bounds.yhi: return
+
+        xoff = 0
+        yoff = 0
+
+        if   xpos <= bounds.xlo: xoff = xpos - bounds.xlo
+        elif xpos >= bounds.xhi: xoff = xpos - bounds.xhi
+        
+        if   ypos <= bounds.ylo: yoff = ypos - bounds.ylo
+        elif ypos >= bounds.yhi: yoff = ypos - bounds.yhi
+        
+        if xoff != 0 or yoff != 0:
+            self.panDisplayBy(xoff, yoff)
+
         
     def __init__(self, parent, imageList, zax=0, glContext=None):
         """

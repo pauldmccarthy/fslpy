@@ -231,58 +231,6 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         self.Layout()
 
-
-    def _shiftCanvas(self, canvas, newx, newy):
-        """
-        Called when the position has changed, and zooming is enabled on
-        the given canvas. Updates the display bounds on the canvas so that
-        the current position is within them.
-        """
-        dispBounds = canvas.displayBounds
-
-        if newx >= dispBounds.xlo and \
-           newx <= dispBounds.xhi and \
-           newy >= dispBounds.ylo and \
-           newy <= dispBounds.yhi:
-            return
-
-        xax = canvas.xax
-        yax = canvas.yax
-
-        xshift = 0
-        yshift = 0
-
-        imgxmin = self.imageList.bounds.getLo(xax)
-        imgxmax = self.imageList.bounds.getHi(xax)
-        imgymin = self.imageList.bounds.getLo(yax)
-        imgymax = self.imageList.bounds.getHi(yax)
-
-        if   newx < dispBounds.xlo: xshift = newx - dispBounds.xlo
-        elif newx > dispBounds.xhi: xshift = newx - dispBounds.xhi
-        if   newy < dispBounds.ylo: yshift = newy - dispBounds.ylo 
-        elif newy > dispBounds.yhi: yshift = newy - dispBounds.yhi 
-            
-        newxmin = dispBounds.xlo + xshift 
-        newxmax = dispBounds.xhi + xshift
-        newymin = dispBounds.ylo + yshift 
-        newymax = dispBounds.yhi + yshift 
-
-        if newxmin < imgxmin:
-            newxmin = imgxmin
-            newxmax = imgxmin + dispBounds.xlen
-        elif newxmax > imgxmax:
-            newxmax = imgxmax
-            newxmin = imgxmax - dispBounds.xlen
-        
-        if newymin < imgymin:
-            newymin = imgymin
-            newymax = imgymin + dispBounds.ylen
-        elif newymax > imgymax:
-            newymax = imgymax
-            newymin = imgymax - dispBounds.ylen
-
-        dispBounds.all = [newxmin, newxmax, newymin, newymax]
-
         
     def setPosition(self, xpos, ypos, zpos):
         """
@@ -294,9 +242,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.ycanvas.pos.xyz = [xpos, zpos, ypos]
         self.zcanvas.pos.xyz = [xpos, ypos, zpos]
 
-        if self.xzoom != 1: self._shiftCanvas(self.xcanvas, ypos, zpos)
-        if self.yzoom != 1: self._shiftCanvas(self.ycanvas, xpos, zpos)
-        if self.zzoom != 1: self._shiftCanvas(self.zcanvas, xpos, ypos)
+        if self.xzoom != 1: self.xcanvas.panDisplayToShow(ypos, zpos)
+        if self.yzoom != 1: self.ycanvas.panDisplayToShow(xpos, zpos)
+        if self.zzoom != 1: self.zcanvas.panDisplayToShow(xpos, ypos)
 
 
     def _onMouseEvent(self, ev):
