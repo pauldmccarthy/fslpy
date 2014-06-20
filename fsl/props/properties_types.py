@@ -444,7 +444,14 @@ class BoundsValueList(propvals.PropertyValueList):
         
     def setMax(self, axis, value):
         self.getPropertyValueList()[axis * 2]    .setAttribute('maxval', value)
-        self.getPropertyValueList()[axis * 2 + 1].setAttribute('maxval', value) 
+        self.getPropertyValueList()[axis * 2 + 1].setAttribute('maxval', value)
+
+    def getLimits(self, axis):
+        return (self.getMin(axis), self.getMax(axis))
+
+    def setLimits(self, axis, minval, maxval):
+        self.setMin(axis, minval)
+        self.setMax(axis, maxval)
             
     def __getattr__(self, name):
 

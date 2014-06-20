@@ -40,29 +40,28 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     a collection of 3D images (see fsl.data.fslimage.ImageList).
     """
 
-    # The currently displayed position. While the values
+    # The currently displayed position. The X and Y positions
+    # denote the position of a 'cursor', which is highlighted
+    # with green crosshairs. The Z position specifies the
+    # currently displayed slice. While the values of this point
     # are in the image list world coordinates, the dimension
     # ordering may not be the same as the image list dimension
     # ordering. For this position, the x and y dimensions
     # correspond to horizontal and vertical on the screen,
-    # and the z dimension to 'depth'. The X and Y positions
-    # denote the position of a 'cursor', which is highlighted
-    # with green crosshairs. The Z position specifies the
-    # currently displayed slice. 
+    # and the z dimension to 'depth'. 
     pos = props.Point(ndims=3)
 
-    # The image bounds are divided  by this zoom
+    # The image bounds are divided by this zoom
     # factor to produce the display bounds.
     zoom = props.Real(minval=1.0,
                       maxval=10.0, 
                       default=1.0,
                       clamped=True) 
 
-    # The display bound x/y values specify the
-    # horizontal/vertical display range, in
-    # world coordinates, of the canvas. The actual
-    # range displayed may be bigger than this, in
-    # order to maintain the world aspect ratio.
+    # The display bound x/y values specify the horizontal/vertical
+    # display range of the canvas, in world coordinates. This may
+    # be a larger area than the size of the displayed images, as
+    # it is adjusted to preserve the aspect ratio.
     displayBounds = props.Bounds(ndims=2)
 
     # If False, the green crosshairs which show the
@@ -79,13 +78,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         into the real world coordinates of the displayed slice.
         """
 
-        realWidth   = float(self.displayBounds.xlen)
-        canvasWidth = self.GetClientSize().GetWidth()
+        realWidth   = self.displayBounds.xlen
+        canvasWidth = float(self.GetClientSize().GetWidth())
 
         if realWidth   == 0: return 0
         if canvasWidth == 0: return 0
         
-        xpos = self.displayBounds.xlo  + (xpos / canvasWidth) * realWidth
+        xpos = self.displayBounds.xlo + (xpos / canvasWidth) * realWidth
 
         return xpos
 
@@ -95,16 +94,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         Given a pixel y coordinate on this canvas, translates it
         into the real world coordinates of the displayed slice.
         """
-        
-        realHeight   = float(self.displayBounds.ylen)
-        canvasHeight = self.GetClientSize().GetWidth()
+
+        realHeight   = self.displayBounds.ylen
+        canvasHeight = float(self.GetClientSize().GetWidth())
 
         if realHeight   == 0: return 0
         if canvasHeight == 0: return 0 
         
-        ypos = self.displayBounds.ylo  + (ypos /  canvasHeight) * realHeight
+        ypos = self.displayBounds.ylo  + (ypos / canvasHeight) * realHeight
 
-        return ypos 
+        return ypos
 
         
     def __init__(self, parent, imageList, zax=0, glContext=None):
@@ -145,39 +144,34 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # shaders
         self.glReady = False
 
-        # These attributes map from the image axes to
-        # the display axes. xax is horizontal, yax
-        # is vertical, and zax is depth. The x and y
-        # axes are automatically updated whenever the
-        # zaxis changes, via the _zAxisChanged method.
-        self.addListener('zax', self.name, self._zAxisChanged)
+        # The image axis which maps to the 'depth' axis of this
+        # canvas. The _zAxisChanged method also adds 'xax' and
+        # 'yax' attributes to this SliceCanvas object.
         self.zax = zax
-
-        # make sure the xax and yax attributes are set, as
-        # the callback that we set up above will only happen
-        # if the specified zax is not 0
-        if zax == 0: self._zAxisChanged()
+        self._zAxisChanged()
+        self.addListener('zax', self.name, self._zAxisChanged)
 
         if len(self.imageList) > 0:
             
             self._imageBoundsChanged()
+
             b = self.imageList.bounds
-            
-            self.displayBounds.all = b.getRange(self.xax) + \
-                                     b.getRange(self.yax)
+ 
             self.pos.xyz = [
                 b.getLo(self.xax) + b.getLen(self.xax) / 2.0,
                 b.getLo(self.yax) + b.getLen(self.yax) / 2.0,
                 b.getLo(self.zax) + b.getLen(self.zax) / 2.0]
 
-        # when any of the xyz properties of
-        # this canvas change, we need to redraw
+        # when any of the properties of this
+        # canvas change, we need to redraw
         def refresh(*a): self.Refresh()
             
         self.addListener('pos',           self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
-        self.addListener('zoom',          self.name, self._zoomChanged)
+        self.addListener('zoom',
+                         self.name,
+                         lambda *a: self._updateDisplayBounds())
 
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -195,8 +189,15 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             self.imageList.removeListener('images', self.name)
             self.imageList.removeListener('bounds', self.name)
             ev.Skip()
-            
+
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
+        # When the canvas is resized, we have to update
+        # the display bounds to preserve the aspect ratio
+        def onResize(ev):
+            self._updateDisplayBounds()
+            ev.Skip()
+        self.Bind(wx.EVT_SIZE, onResize)
 
         # All the work is done by the draw method
         self.Bind(wx.EVT_PAINT, self._draw)
@@ -232,7 +233,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             glData.genIndexBuffers(self.xax, self.yax)
             
         self._imageBoundsChanged()
-        self.Refresh()
  
             
     def _imageListChanged(self, *a):
@@ -400,90 +400,73 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.Refresh()
 
 
-    def _zoomChanged(self, *a):
-        """
-        Called when the zoom property changes - updates the display bounds.
-        """
-        
-        value      = 1.0 / self.zoom
-        bounds     = self.imageList.bounds
-        dispBounds = self.displayBounds
-
-        if value == 1.0:
-            dispBounds.all = (bounds.getRange(self.xax) + 
-                              bounds.getRange(self.yax))
-            return
-
-        xcentre, ycentre = self.pos.xy
-
-        xlen = value * bounds.getLen(self.xax)
-        ylen = value * bounds.getLen(self.yax)
-
-        xmin = xcentre - 0.5 * xlen
-        xmax = xcentre + 0.5 * xlen
-        ymin = ycentre - 0.5 * ylen
-        ymax = ycentre + 0.5 * ylen        
-
-        if xmin < bounds.getLo(self.xax):
-            xmin = bounds.getLo(self.xax)
-            xmax = xmin + xlen
-        elif xmax > bounds.getHi(self.xax):
-            xmax = bounds.getHi(self.xax)
-            xmin = xmax - xlen 
-        if ymin < bounds.getLo(self.yax):
-            ymin = bounds.getLo(self.yax)
-            ymax = ymin + ylen 
-        elif ymax > bounds.getHi(self.yax):
-            ymax = bounds.getHi(self.yax)
-            ymin = ymax - ylen 
-
-        dispBounds.all = [xmin, xmax, ymin, ymax] 
-        
-
     def _imageBoundsChanged(self, *a):
         """
         Called when the image list bounds are changed. Updates the
-        constraints on each of the x/y/z pos and min/max properties
-        so they are all limited to stay within a valid range.
+        constraints on pos property so it is limited to stay within
+        a valid range, and then calls _updateDisplayBounds.
         """
 
-        # the _zoomChanged method
-        # updates the display bounds
-        self._zoomChanged()
+        imgBounds = self.imageList.bounds
 
-        imgBounds  = self.imageList.bounds
-        dispBounds = self.displayBounds
-
-        dispBounds.setMin(0, imgBounds.getLo(self.xax))
-        dispBounds.setMax(0, imgBounds.getHi(self.xax))
-        dispBounds.setMin(1, imgBounds.getLo(self.yax))
-        dispBounds.setMax(1, imgBounds.getHi(self.yax)) 
-
-        self.pos.setMin(0, dispBounds.xlo)
-        self.pos.setMax(0, dispBounds.xhi)
-        self.pos.setMin(1, dispBounds.ylo)
-        self.pos.setMax(1, dispBounds.yhi)
+        self.pos.setMin(0, imgBounds.getLo(self.xax))
+        self.pos.setMax(0, imgBounds.getHi(self.xax))
+        self.pos.setMin(1, imgBounds.getLo(self.yax))
+        self.pos.setMax(1, imgBounds.getHi(self.yax))
         self.pos.setMin(2, imgBounds.getLo(self.zax))
         self.pos.setMax(2, imgBounds.getHi(self.zax))
 
-        # reset the cursor in case the
-        # old values were out of bounds
-        self.pos.xyz = self.pos.xyz
+        self._updateDisplayBounds()
+        
 
+    def _applyZoom(self, xmin, xmax, ymin, ymax):
+        """
+        'Zooms' in to the given rectangle according to the
+        current value of the zoom property. Returns a 4-tuple
+        containing the updated bound values.
+        """
 
-    def _adjustDisplayBounds(self, dispXmin, dispXmax, dispYmin, dispYmax):
+        if self.zoom == 1.0:
+            return (xmin, xmax, ymin, ymax)
+        
+        zoomFactor  = 1.0 / self.zoom
+
+        xlen = xmax - xmin
+        ylen = ymax - ymin
+
+        newxlen = xlen * zoomFactor
+        newylen = ylen * zoomFactor
+
+        xmin = xmin + 0.5 * (xlen - newxlen)
+        xmax = xmax - 0.5 * (xlen - newxlen)
+        ymin = ymin + 0.5 * (ylen - newylen)
+        ymax = ymax - 0.5 * (ylen - newylen)         
+
+        return (xmin, xmax, ymin, ymax)
+
+        
+    def _updateDisplayBounds(self):
         """
-        Given horizontal and vertical ranges in real world coordinates, adjusts
-        either the horizontal or vertical min/max values so that the entire
-        canvas size is used to draw the world, while maintaining aspect ratio.
-        Returns a tuple containing the asjusted (dispXmin, dispXmax, dispYmin,
-        dispYmax) values.
+        Called on canvas resizes, image bound changes, and zoom changes.
+        Calculates the bounding box, in world coordinates, to be displayed
+        on the canvas. Stores this bounding box in the displayBounds
+        property.
         """
+
+        xmin, xmax = self.imageList.bounds.getRange(self.xax)
+        ymin, ymax = self.imageList.bounds.getRange(self.yax)
 
         canvasWidth, canvasHeight = self.GetClientSize().Get()
-        dispWidth                 = float(dispXmax - dispXmin)
-        dispHeight                = float(dispYmax - dispYmin)
-                                          
+        dispWidth                 = float(xmax - xmin)
+        dispHeight                = float(ymax - ymin)
+
+        if canvasWidth == 0 or canvasHeight == 0:
+            self.displayBounds.all = [xmin, xmax, ymin, ymax]
+            return
+
+        # These ratios are used to determine whether
+        # we need to expand the display range to
+        # preserve the image aspect ratio.
         dispRatio   =       dispWidth    / dispHeight
         canvasRatio = float(canvasWidth) / canvasHeight
 
@@ -491,19 +474,22 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # to expand the display width, thus 
         # effectively shrinking the display
         # along the horizontal axis
-        if   canvasRatio > dispRatio:
+        if canvasRatio > dispRatio:
             newDispWidth = canvasWidth * (dispHeight / canvasHeight)
-            dispXmin     = dispXmin - 0.5 * (newDispWidth - dispWidth)
-            dispXmax     = dispXmax + 0.5 * (newDispWidth - dispWidth)
+            xmin         = xmin - 0.5 * (newDispWidth - dispWidth)
+            xmax         = xmax + 0.5 * (newDispWidth - dispWidth)
 
         # the canvas is too high - we need
         # to expand the display height
         elif canvasRatio < dispRatio:
             newDispHeight = canvasHeight * (dispWidth / canvasWidth)
-            dispYmin      = dispYmin - 0.5 * (newDispHeight - dispHeight)
-            dispYmax      = dispYmax + 0.5 * (newDispHeight - dispHeight)
+            ymin          = ymin - 0.5 * (newDispHeight - dispHeight)
+            ymax          = ymax + 0.5 * (newDispHeight - dispHeight)
 
-        return dispXmin, dispXmax, dispYmin, dispYmax
+        self.displayBounds.setLimits(0, xmin, xmax)
+        self.displayBounds.setLimits(1, ymin, ymax) 
+
+        self.displayBounds.all = self._applyZoom(xmin, xmax, ymin, ymax)
 
         
     def _setViewport(self,
@@ -515,10 +501,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                      zmax=None):
         """
         Sets up the GL canvas size, viewport, and projection. This method is
-        called by draw(), so does not need to be called manually.  Returns
-        a 4-tuple containing the (xmin, xmax, ymin, ymax) values which define
-        the real world display bounds (this may not be the same as what is
-        passed in, as they may be adjusted to maintain aspect ratio).
+        called by draw(), so does not need to be called manually.  
         """
         
         if xmin is None: xmin = self.displayBounds.xlo
@@ -527,9 +510,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if ymax is None: ymax = self.displayBounds.yhi
         if zmin is None: zmin = self.imageList.bounds.getLo(self.zax)
         if zmax is None: zmax = self.imageList.bounds.getHi(self.zax)
-
-        xmin, xmax, ymin, ymax = self._adjustDisplayBounds(
-            xmin, xmax, ymin, ymax)
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
@@ -577,8 +557,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         trans = [0, 0, 0]
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
-
-        return (xmin, xmax, ymin, ymax)
 
         
     def _drawSlice(self, image, sliceno, xform=None):
@@ -712,7 +690,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             return
 
         self.glContext.SetCurrent(self)
-        dispXmin, dispXmax, dispYmin, dispYmax = self._setViewport()
+        self._setViewport()
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -747,25 +725,17 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             xverts = np.zeros((2, 3))
             yverts = np.zeros((2, 3))
 
-            imgXmin, imgXmax = self.imageList.bounds.getRange(self.xax)
-            imgYmin, imgYmax = self.imageList.bounds.getRange(self.yax)
-
-            width, height = self.GetClientSize().Get()
-
-            # width/height of one pixel in real-world coordinates
-            padW = width  / (dispXmax - dispXmin)
-            padH = height / (dispYmax - dispYmin)
+            xmin, xmax = self.imageList.bounds.getRange(self.xax)
+            ymin, ymax = self.imageList.bounds.getRange(self.yax)
 
             # add a little padding to the lines if they are
             # on the boundary, so they don't get cropped
-            if self.pos.x == dispXmin: xverts[:, self.xax] = self.pos.x + padW
-            else:                      xverts[:, self.xax] = self.pos.x
-            if self.pos.y == dispYmin: yverts[:, self.yax] = self.pos.y + padH
-            else:                      yverts[:, self.yax] = self.pos.y        
+            xverts[:, self.xax] = self.pos.x
+            yverts[:, self.yax] = self.pos.y 
 
-            xverts[:, self.yax] = [imgYmin, imgYmax]
+            xverts[:, self.yax] = [ymin, ymax]
             xverts[:, self.zax] =  self.pos.z + 1
-            yverts[:, self.xax] = [imgXmin, imgXmax]
+            yverts[:, self.xax] = [xmin, xmax]
             yverts[:, self.zax] =  self.pos.z + 1
 
             gl.glBegin(gl.GL_LINES)
