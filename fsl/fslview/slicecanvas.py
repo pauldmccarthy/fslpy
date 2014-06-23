@@ -96,7 +96,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """
 
         realHeight   = self.displayBounds.ylen
-        canvasHeight = float(self.GetClientSize().GetWidth())
+        canvasHeight = float(self.GetClientSize().GetHeight())
 
         if realHeight   == 0: return 0
         if canvasHeight == 0: return 0 
