@@ -573,7 +573,6 @@ class Bounds(List):
             itemCastFunc=self._listType.cast,
             itemValidateFunc=self._listType.validate,
             listValidateFunc=self.validate,
-            allowInvalid=False,
             postNotifyFunc=self._valChanged,
             listAttributes=self._defaultConstraints,
             itemAttributes=self._listType._defaultConstraints)
@@ -760,7 +759,6 @@ class Point(List):
             itemCastFunc=self._listType.cast,
             itemValidateFunc=self._listType.validate,
             listValidateFunc=self.validate,
-            allowInvalid=False,
             postNotifyFunc=self._valChanged,
             listAttributes=self._defaultConstraints,
             itemAttributes=self._listType._defaultConstraints)

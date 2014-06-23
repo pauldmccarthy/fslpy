@@ -374,7 +374,7 @@ class PropertyValueList(PropertyValue):
                  itemCastFunc=None,
                  itemValidateFunc=None,
                  listValidateFunc=None,
-                 allowInvalid=True,
+                 itemAllowInvalid=True,
                  preNotifyFunc=None,
                  postNotifyFunc=None,
                  listAttributes=None,
@@ -385,13 +385,20 @@ class PropertyValueList(PropertyValue):
         if name is None: name = 'PropertyValueList_{}'.format(id(self))
         
         if listAttributes is None: listAttributes = {}
+
+        # The list as a whole must be allowed to contain
+        # invalid values because, if an individual
+        # PropertyValue item value changes, there is no
+        # nice way to propagate those changes on to other
+        # (dependent) items without the list as a whole
+        # being validated first, and errors being raised.
         PropertyValue.__init__(
             self,
             context,
             name=name,
             value=values,
+            allowInvalid=True,
             validateFunc=listValidateFunc,
-            allowInvalid=allowInvalid,
             preNotifyFunc=preNotifyFunc,
             postNotifyFunc=postNotifyFunc,
             **listAttributes)
@@ -400,6 +407,7 @@ class PropertyValueList(PropertyValue):
         # constructor whenever a new item is added to the list
         self._itemCastFunc     = itemCastFunc
         self._itemValidateFunc = itemValidateFunc
+        self._itemAllowInvalid = itemAllowInvalid
         self._itemAttributes   = itemAttributes
         
         # The list of PropertyValue objects.
@@ -426,7 +434,7 @@ class PropertyValueList(PropertyValue):
     def set(self, newValues, recreate=True):
         """
         Overrides PropertyValue.set(). Sets the values stored in this
-        PropertyValue list.  If the recreate parameter is True (default)
+        PropertyValue list.  If the recreate flag is True (default)
         all of the PropertyValue objects managed by this PVL object are
         discarded, and new ones recreated. This flag is intended for
         internal use only.
@@ -466,10 +474,12 @@ class PropertyValueList(PropertyValue):
             name='{}_Item'.format(self._name),
             value=item,
             castFunc=self._itemCastFunc,
+            allowInvalid=self._itemAllowInvalid,
             validateFunc=self._itemValidateFunc,
-            allowInvalid=self._allowInvalid,
             **itemAtts)
 
+        # When a PropertyValue item value changes,
+        # sync the list values with it if necessary.
         def postNotify(value, *a):
             idx = self.__propVals.index(propVal)
             if self[idx] != value: self[idx] = value
@@ -555,7 +565,7 @@ class PropertyValueList(PropertyValue):
 
     def __setitem__(self, key, values):
         """
-        Sets the value(s) of the list at the specified index/slice.
+        Sets the value(s) of the list at the specified index/slice. 
         """
 
         if isinstance(key, slice):
@@ -575,17 +585,18 @@ class PropertyValueList(PropertyValue):
         for idx, val in zip(indices, values):
             newVals[idx] = val
 
-        # this will raise an error if the
-        # new list is not valid
+        # set the list values
         self.set(newVals, False)
 
-        # if any of the individual property values
-        # are invalid, catch the error, revert
-        # the values, and re-raise the error
+        # propagate the changes to the PropertyValue items if
+        # necessary. if any of the individual property values
+        # are invalid, catch the error, revert the values,
+        # and re-raise the error
         try:
             
             for idx, val in zip(indices, values):
-                self.__propVals[idx].set(val)
+                if self.__propVals[idx].get() != val:
+                    self.__propVals[idx].set(val)
 
         except ValueError:
             self.set(oldVals, False)
