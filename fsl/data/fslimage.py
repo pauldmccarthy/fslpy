@@ -485,6 +485,17 @@ class ImageList(props.HasProperties):
             self.__class__.__name__,
             self._imageListChanged)
 
+        # initialise image bounds
+        self._imageListChanged()
+
+        # initialise the location to be
+        # the centre of the image world
+        b = self.bounds
+        self.location.xyz = [
+            b.xlo + b.xlen / 2.0,
+            b.ylo + b.ylen / 2.0,
+            b.zlo + b.zlen / 2.0] 
+
         self.images = images
 
 

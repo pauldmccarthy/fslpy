@@ -583,7 +583,10 @@ class PropertyValueList(PropertyValue):
         oldVals = self[:]
         newVals = list(oldVals)
         for idx, val in zip(indices, values):
-            newVals[idx] = val
+            propVal = self.__propVals[idx]
+            newVals[idx] = propVal._castFunc(propVal._context,
+                                             propVal._attributes,
+                                             val) 
 
         # set the list values
         self.set(newVals, False)

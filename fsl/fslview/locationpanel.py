@@ -84,6 +84,9 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self.Layout()
 
         lName = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.imageList.addListener('images',
+                                   lName,
+                                   self._selectedImageChanged) 
         self.imageList.addListener('selectedImage',
                                    lName,
                                    self._selectedImageChanged)

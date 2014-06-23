@@ -518,7 +518,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         dispWidth                 = float(xmax - xmin)
         dispHeight                = float(ymax - ymin)
 
-        if canvasWidth == 0 or canvasHeight == 0:
+        if canvasWidth  == 0 or \
+           canvasHeight == 0 or \
+           dispWidth    == 0 or \
+           dispHeight   == 0:
             self.displayBounds.all = [xmin, xmax, ymin, ymax]
             return
 
