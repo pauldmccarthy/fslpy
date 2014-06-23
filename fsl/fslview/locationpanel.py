@@ -96,12 +96,15 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self.addListener(          'voxelLocation',
                                    lName,
                                    self._voxelLocationChanged)
+        self.addListener(          'voxelLocation',
+                                   lName,
+                                   self._updateVoxelValue) 
 
         self._selectedImageChanged()
         self._worldLocationChanged()
 
 
-    def _updateVoxelValue(self):
+    def _updateVoxelValue(self, *a):
         """
         Retrieves the value of the voxel at the current location in the
         currently selected image, and displays it on the value label.
@@ -131,17 +134,23 @@ class LocationPanel(wx.Panel, props.HasProperties):
     def _voxelLocationChanged(self, *a):
         """
         Called when the current voxel location is changed. Propagates the
-        change on to the image list world location, and updates the voxel
-        value label.
+        change on to the image list world location.
         """
 
-        image    = self.imageList[self.imageList.selectedImage]
-        voxLoc   = self.voxelLocation.xyz
-        worldLoc = image.voxToWorld([voxLoc])[0]
+        image       = self.imageList[self.imageList.selectedImage]
+        voxLoc      = self.voxelLocation.xyz
+        worldLoc    = image.voxToWorld([voxLoc])[0]
+        worldVoxLoc = image.worldToVox([self.imageList.location.xyz])[0]
+
+        # if the current image list location is already equal to the
+        # new voxel location, don't change it. The voxel location,
+        # transformed to world coordinates, will be in the centre of
+        # voxel. But the world location can be anywhere within a
+        # voxel. So if the world location is already in the correct
+        # voxel, we don't want it to be shifted to the voxel centre.
+        if all([vl == wvl for (vl, wvl) in zip(voxLoc, worldVoxLoc)]): return
         
         self.imageList.location.xyz = worldLoc
-
-        self._updateVoxelValue()
 
 
     def _worldLocationChanged(self, *a):
