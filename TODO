@@ -4,9 +4,10 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary.
 
 * Bugs to fix
-** Fix cursors - they go off the canvas in some cases
+** DONE Fix cursors - they go off the canvas in some cases
 ** LightBoxCanvas bounding box calculation is broken again.
-** SliceCanvas bounding box calculation is also broken again.
+** DONE SliceCanvas bounding box calculation is also broken again.
+** DONE Fix mouse tracking (voxel changes)
 ** Trnasformation matrix recursion is happening again, for Ludo's file with the bad affine.
 
 * Little things
@@ -18,7 +19,6 @@ arbitrary.
 ** DONE Fix image bounds calculation (for images with dodgy affines)
 ** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
 ** Ability to edit image affine transformation.
-** Fix mouse tracking (voxel changes)
 ** Orientation labels on slice canvas.
 ** 'Add standard'/'Add Atlas' menu options.
 
