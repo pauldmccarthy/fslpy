@@ -176,15 +176,27 @@ class Image(props.HasProperties):
 
         if self.transform == 'affine':
             voxToWorldMat = self.nibImage.get_affine().transpose()
+            pixdims       = self.nibImage.get_header().get_zooms()
+            
         elif self.transform == 'pixdim':
-            pixdims = [self.pixdim[0], self.pixdim[1], self.pixdim[2], 1]
-            voxToWorldMat = np.diag(pixdims)
+            pixdims       = self.nibImage.get_header().get_zooms()
+            voxToWorldMat = np.diag([pixdims[0], pixdims[1], pixdims[2], 1.0])
+            
         elif self.transform == 'id':
             voxToWorldMat = np.identity(4)
+            pixdims       = [1.0, 1.0, 1.0]
 
         self.voxToWorldMat = np.array(voxToWorldMat, dtype=np.float32)
         self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
+        self.pixdims       = pixdims
 
+        # for pixdim/identity transformations, we want the world
+        # location (0, 0) to map to voxel location (0, 0)
+        if self.transform in ['pixdim', 'id']:
+            for i in range(3):
+                self.voxToWorldMat[3, i] =  self.pixdims[i] * 0.5
+                self.worldToVoxMat[3, i] = -self.pixdims[i] * 0.5
+                
         log.debug('Image {} transformation matrix changed: {}'.format(
             self.name, self.voxToWorldMat))
 
@@ -196,6 +208,10 @@ class Image(props.HasProperties):
         """
 
         x, y, z = self.shape[:3]
+
+        x = x - 1
+        y = y - 1
+        z = z - 1
 
         points = np.zeros((8, 3), dtype=np.float32)
 
@@ -210,8 +226,8 @@ class Image(props.HasProperties):
 
         tx = self.voxToWorld(points)
 
-        lo = tx[:, axis].min()
-        hi = tx[:, axis].max()
+        lo = tx[:, axis].min() - self.pixdims[axis] * 0.5
+        hi = tx[:, axis].max() + self.pixdims[axis] * 0.5
 
         return (lo, hi)
 

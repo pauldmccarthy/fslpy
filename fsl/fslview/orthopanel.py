@@ -264,13 +264,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         source  = ev.GetEventObject()
         w, h    = source.GetClientSize()
 
-        log.debug('Mouse click on canvas {}: ({}, {})'.format(
-            source.name, mx, my))
-
         my = h - my
 
         xpos = source.canvasToWorldX(mx)
         ypos = source.canvasToWorldY(my)
+
+        log.debug('Mouse click on canvas {}: ({}, {} -> {}, {})'.format(
+            source.name, mx, my, xpos, ypos))
 
         if   source == self.xcanvas: self.imageList.location.yz = [xpos, ypos]
         elif source == self.ycanvas: self.imageList.location.xz = [xpos, ypos]
