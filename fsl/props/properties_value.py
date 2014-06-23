@@ -223,6 +223,14 @@ class PropertyValue(object):
         name = 'PropertyValue_{}_{}'.format(self._name, name)
         self._changeListeners.pop(name, None)
 
+
+    def setPreNotifyFunction(self, preNotifyFunc):
+        """
+        Sets the function to be called on value changes, before
+        any registered listeners.
+        """
+        self._preNotifyFunc = preNotifyFunc
+
         
     def get(self):
         """

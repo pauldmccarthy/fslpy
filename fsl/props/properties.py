@@ -223,6 +223,19 @@ class PropertyBase(object):
         if instData is None: return
         else:                instData.propVal.removeListener(name)
 
+
+    def setPreNotifyFunction(self, instance, preNotifyFunc):
+        """
+        Sets the function to be called on property value changes, before
+        any registered listeners.
+        """ 
+        instData = self._getInstanceData(instance)
+        
+        if instData is None:
+            return
+        else:
+            instData.propVal.setPreNotifyFunction(preNotifyFunc) 
+
         
     def addConstraintListener(self, instance, name, listener):
         """
@@ -691,7 +704,16 @@ class HasProperties(object):
         a list property, an AttributeError is raised. 
         """ 
         return self.getProp(propName).setItemConstraint(
-            self, index, constraint, value) 
+            self, index, constraint, value)
+
+        
+    def setPreNotifyFunction(self, instance, preNotifyFunc):
+        """
+        Convenience method, sets the pre-notify function. See
+        PropertyBase.setPreNotifyFunction.
+        """ 
+        self.getProp().setPreNotifyFunction(preNotifyFunc) 
+ 
 
 
     def addListener(self, propName, listenerName, callback):

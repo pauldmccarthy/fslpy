@@ -72,38 +72,27 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
 
         
-    def canvasToWorldX(self, xpos):
+    def canvasToWorld(self, xpos, ypos):
         """
-        Given a pixel x coordinate on this canvas, translates it
+        Given pixel x/y coordinates on this canvas, translates them
         into the real world coordinates of the displayed slice.
         """
 
-        realWidth   = self.displayBounds.xlen
-        canvasWidth = float(self.GetClientSize().GetWidth())
-
-        if realWidth   == 0: return 0
-        if canvasWidth == 0: return 0
-        
-        xpos = self.displayBounds.xlo + (xpos / canvasWidth) * realWidth
-
-        return xpos
-
-
-    def canvasToWorldY(self, ypos):
-        """
-        Given a pixel y coordinate on this canvas, translates it
-        into the real world coordinates of the displayed slice.
-        """
-
+        realWidth    = self.displayBounds.xlen
         realHeight   = self.displayBounds.ylen
-        canvasHeight = float(self.GetClientSize().GetHeight())
+        canvasWidth  = float(self.GetClientSize().GetWidth())
+        canvasHeight = float(self.GetClientSize().GetHeight()) 
 
-        if realHeight   == 0: return 0
-        if canvasHeight == 0: return 0 
+        if realWidth    == 0 or \
+           canvasWidth  == 0 or \
+           realHeight   == 0 or \
+           canvasHeight == 0:
+            return 0 
         
-        ypos = self.displayBounds.ylo  + (ypos / canvasHeight) * realHeight
+        xpos = self.displayBounds.xlo + (xpos / canvasWidth)  * realWidth
+        ypos = self.displayBounds.ylo + (ypos / canvasHeight) * realHeight
 
-        return ypos
+        return xpos, ypos
 
 
     def panDisplayBy(self, xoff, yoff):
@@ -503,7 +492,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         return (xmin, xmax, ymin, ymax)
 
         
-    def _updateDisplayBounds(self):
+    def _updateDisplayBounds(self, xmin=None, xmax=None, ymin=None, ymax=None):
         """
         Called on canvas resizes, image bound changes, and zoom changes.
         Calculates the bounding box, in world coordinates, to be displayed
@@ -511,8 +500,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         property.
         """
 
-        xmin, xmax = self.imageList.bounds.getRange(self.xax)
-        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+        if xmin is None: xmin = self.imageList.bounds.getLo(self.xax)
+        if xmax is None: xmax = self.imageList.bounds.getHi(self.xax)
+        if ymin is None: ymin = self.imageList.bounds.getLo(self.yax)
+        if ymax is None: ymax = self.imageList.bounds.getHi(self.yax)
+
+        log.debug('Required display bounds: X: ({}, {}) Y: ({}, {})'.format(
+            xmin, xmax, ymin, ymax))
 
         canvasWidth, canvasHeight = self.GetClientSize().Get()
         dispWidth                 = float(xmax - xmin)

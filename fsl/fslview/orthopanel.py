@@ -266,8 +266,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         my = h - my
 
-        xpos = source.canvasToWorldX(mx)
-        ypos = source.canvasToWorldY(my)
+        xpos, ypos = source.canvasToWorld(mx, my)
 
         log.debug('Mouse click on canvas {}: ({}, {} -> {}, {})'.format(
             source.name, mx, my, xpos, ypos))
