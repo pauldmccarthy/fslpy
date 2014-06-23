@@ -28,7 +28,9 @@ def _pointBind(hasProps, propObj, propVal, slider, dim):
     def propLimitsChanged(*a):
         minval = propVal.getMin(dim)
         maxval = propVal.getMax(dim)
-        slider.SetRange(minval, maxval)
+        
+        if minval is not None: slider.SetMin(minval)
+        if maxval is not None: slider.SetMax(maxval)
 
     def sliderLimitsChanged(ev):
         propVal.setMin(dim, ev.min)
