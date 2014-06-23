@@ -453,11 +453,6 @@ class PropertyValueList(PropertyValue):
         given item in a PropertyValue object.
         """
 
-        # The only interesting thing here is the postNotifyFunc -
-        # whenever a PropertyValue in this list changes, the entire
-        # list is revalidated. This is primarily to ensure that
-        # list-listeners are notified of changes to individual list
-        # elements.
         if self._itemAttributes is None: itemAtts = {}
         else:                            itemAtts = self._itemAttributes
 

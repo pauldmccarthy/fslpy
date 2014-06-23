@@ -412,11 +412,10 @@ class ImageDisplay(props.HasProperties):
             self.dataMax = image.data.max()
 
         dRangeLen = abs(self.dataMax - self.dataMin)
-        
-        self.displayRange.setLo( 0, self.dataMin)
-        self.displayRange.setHi( 0, self.dataMax)
+
         self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
+        self.displayRange.setRange(0, self.dataMin, self.dataMax)
 
         # is this a 4D volume?
         if self.is4DImage():

@@ -428,9 +428,8 @@ class BoundsValueList(propvals.PropertyValueList):
     def setHi(self, axis, value):
         self[axis * 2 + 1] = value
 
-    def setRange(self, axis, values):
-        self.setMin(axis, values[0])
-        self.setMax(axis, values[1])
+    def setRange(self, axis, minval, maxval):
+        self[axis * 2:axis * 2 + 2] = [minval, maxval]
 
     def getMin(self, axis):
         return self.getPropertyValueList()[axis * 2].getAttribute('minval')
