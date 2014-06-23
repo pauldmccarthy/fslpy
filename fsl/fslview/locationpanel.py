@@ -96,9 +96,6 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self.addListener(          'voxelLocation',
                                    lName,
                                    self._voxelLocationChanged)
-        self.addListener(          'voxelLocation',
-                                   lName,
-                                   self._updateVoxelValue) 
 
         self._selectedImageChanged()
         self._worldLocationChanged()
@@ -141,6 +138,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
         voxLoc      = self.voxelLocation.xyz
         worldLoc    = image.voxToWorld([voxLoc])[0]
         worldVoxLoc = image.worldToVox([self.imageList.location.xyz])[0]
+
+        self._updateVoxelValue()
 
         # if the current image list location is already equal to the
         # new voxel location, don't change it. The voxel location,
