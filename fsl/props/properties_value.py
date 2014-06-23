@@ -12,7 +12,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import sys
 import logging
+import traceback
 
 from collections import OrderedDict
 
@@ -187,7 +189,8 @@ class PropertyValue(object):
             except Exception as e:
                 log.warn('Attribute listener {} on {} raised '
                          'exception: {}'.format(cbName, self._name, e),
-                         exc_info=True) 
+                         exc_info=True)
+                traceback.print_stack()
         
         
     def addListener(self, name, callback):
@@ -262,7 +265,8 @@ class PropertyValue(object):
                               self._context.__class__.__name__,
                               self._name,
                               newValue,
-                              e), exc_info=True) 
+                              e, exc_info=True))
+                traceback.print_stack()
                 raise e
 
         self.__value = newValue
@@ -326,6 +330,7 @@ class PropertyValue(object):
                              self._name,
                              e),
                          exc_info=True)
+                traceback.print_stack()
 
 
     def revalidate(self):
