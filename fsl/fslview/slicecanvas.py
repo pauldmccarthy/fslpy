@@ -495,10 +495,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         newxlen = xlen * zoomFactor
         newylen = ylen * zoomFactor
 
-        xmin = xmin + 0.5 * (xlen - newxlen)
-        xmax = xmax - 0.5 * (xlen - newxlen)
-        ymin = ymin + 0.5 * (ylen - newylen)
-        ymax = ymax - 0.5 * (ylen - newylen)         
+        xmin = self.pos.x - 0.5 * newxlen
+        xmax = self.pos.x + 0.5 * newxlen
+        ymin = self.pos.y - 0.5 * newylen
+        ymax = self.pos.y + 0.5 * newylen
 
         return (xmin, xmax, ymin, ymax)
 
