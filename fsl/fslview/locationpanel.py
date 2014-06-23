@@ -148,6 +148,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
         selected image.
         """
 
+        if len(self.imageList) == 0: return
+
         image  = self.imageList[self.imageList.selectedImage]
         loc    = self.imageList.location.xyz
         voxLoc = image.worldToVox([loc])[0]
@@ -167,6 +169,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
         Called when the selected image is changed. Updates the voxel label
         (which contains the image name), and sets the voxel location limits.
         """
+
+        if len(self.imageList) == 0: return
 
         image = self.imageList[self.imageList.selectedImage]
         
