@@ -21,10 +21,16 @@ import fsl.props               as props
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
+    """
+    An OpenGL canvas which displays multiple slices from a collection of 3D
+    images (see fsl.data.fslimage.ImageList). The slices are laid out on the
+    same canvas along rows and columns, with the slice at the minimum Z
+    position translated to the top left of the canvas, and the slice with
+    the maximum Z value translated to the bottom right.
+    """
 
-    # Properties which control the starting and end bounds of the
-    # displayed slices, and the spacing between them (in real
-    # world coordinates)
+    # This property controls the spacing between
+    # slices (in real world coordinates)
     sliceSpacing = props.Real(clamped=True, minval=0.1, default=1.0)
 
     # This property controls the number of slices
@@ -32,7 +38,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     ncols = props.Int(clamped=True, minval=1, maxval=15, default=5)
 
     # These properties control the range, in world
-    # coordinates, of slices to be displayed
+    # coordinates, of the slices to be displayed
     zmin = props.Real(clamped=True)
     zmax = props.Real(clamped=True)
 
@@ -49,6 +55,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                           'ncols',
                           'zax'))
 
+    
+    def canvasToWorld(self, xpos, ypos):
+        """
+        Given pixel x/y coordinates on this canvas, translates them
+        into the real world x/y/z coordinates of the displayed slice.
+        What order should the returned coordinates be in?
+        """ 
+        pass
+
+        
     def __init__(self,
                  parent,
                  imageList,
@@ -76,10 +92,23 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             raise RuntimeError('LightBoxCanvas only supports '
                                'a vertical scrollbar')
 
+        # These attributes are used to keep track of the total number
+        # of displayed slices, the total number of rows, and the total
+        # number of  rows displayed on the screen at once. If a
+        # scrollbar was not passed in, all slices are displayed on the
+        # canvas. Otherwise only a subset are displayed, but the user
+        # is able to scroll through the slices. We're initialising
+        # these attributes before SliceCanvas.__init__, because they
+        # are required by the _updateDisplayBounds method, which ends
+        # up getting called from SliceCanvas.__init__.
+        self._scrollbar    = scrollbar
+        self._nslices      = 0
+        self._nrows        = 0
+        self._rowsOnScreen = 0
+
         slicecanvas.SliceCanvas.__init__(
             self, parent, imageList, zax, glContext)
 
-        self._scrollbar = scrollbar
         if scrollbar is not None:
 
             # Trigger a redraw whenever the scrollbar is scrolled
@@ -89,8 +118,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 # - the scrollbar is not currently needed
                 if scrollbar.GetPageSize() >= scrollbar.GetRange():
                     scrollbar.SetThumbPosition(0)
-                    return
-                self._draw(ev)
+                    
+                # otherwise, figure out the area
+                # to be displayed, and redraw
+                else:
+                    self._updateDisplayBounds()
+                    self.Refresh()
+                
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
         # default to showing the entire slice range
@@ -102,27 +136,73 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # across all images in the list
         if len(imageList) > 0:
             self.sliceSpacing = min([i.pixdim[self.zax] for i in imageList])
-
-        # Called when any of the slice properties change
+ 
+        # Called when any of the slice properties
+        # change. Regenerates slice locations and
+        # display bounds, and redraws
         def sliceRangeChanged(*a):
+            self._slicePropsChanged()
+            self._updateDisplayBounds()
             self._genSliceLocations()
             self._updateScrollBar()
             self.Refresh()
-
         sliceRangeChanged()
 
-        self.addListener('sliceSpacing', self.name, sliceRangeChanged)
-        self.addListener('ncols',        self.name, sliceRangeChanged)
-        self.addListener('zmin',         self.name, sliceRangeChanged)
-        self.addListener('zmax',         self.name, sliceRangeChanged)
+        self.addListener('sliceSpacing',  self.name, sliceRangeChanged)
+        self.addListener('ncols',         self.name, sliceRangeChanged)
+        self.addListener('zmin',          self.name, sliceRangeChanged)
+        self.addListener('zmax',          self.name, sliceRangeChanged)
 
-        # The _updateScrollBar method is ultimately
-        # responsible for calculating the number of
-        # rows which are to be displayed on the
-        # canvas. So when the canvas resizes, we
-        # want this to be recalculated.
-        self.Bind(wx.EVT_SIZE, lambda ev: self._updateScrollBar())
+        # Called on canvas resizes. Recalculates
+        # the number of rows to be displayed, and
+        # the display bounds, and redraws.
+        def onResize(ev):
+            self._slicePropsChanged()
+            self._updateDisplayBounds()
+            self._updateScrollBar()
+            self.Refresh()
+            ev.Skip()
 
+        self.Bind(wx.EVT_SIZE, onResize)
+
+
+    def _slicePropsChanged(self, *a):
+        """
+        Gets called whenever any of the properties which define the
+        number and layout of the lightbox slices, change. Calculates
+        the total number of slices to be displayed, the total number
+        of rows, and the number of rows to be displayed on screen
+        (which is different from the former if the canvas has a scroll
+        bar).
+        """
+        zlen = self.zmax - self.zmin
+        
+        self._nslices = int(np.floor(zlen / self.sliceSpacing))
+        self._nrows   = int(np.ceil(self._nslices / float(self.ncols)))
+
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
+
+        # no scrollbar -> display all rows
+        if self._scrollbar is None:
+            self._rowsOnScreen = self._nrows
+
+        # scrollbar -> display a selection of rows
+        else:
+            width, height = self.GetClientSize().Get()
+            sliceWidth    = width / self.ncols
+            sliceHeight   = sliceWidth * (ylen / xlen)
+
+            self._rowsOnScreen = int(np.ceil(height / sliceHeight))
+
+        if self._rowsOnScreen == 0:          self._rowsOnScreen = 1
+        if self._rowsOnScreen > self._nrows: self._rowsOnScreen = self._nrows
+
+        log.debug('{: 5.1f} - {: 5.1f}: slices={} rows={} ({} on screen) '
+                  'columns={}'.format(self.zmin, self.zmax, self._nslices,
+                                      self._nrows, self._rowsOnScreen,
+                                      self.ncols))
+        
 
     def _zAxisChanged(self, *a):
         """
@@ -131,20 +211,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         implementation, and then sets the slice zmin/max bounds
         to the image bounds.
         """
-
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
         
         self.zmin = self.imageList.bounds.getLo(self.zax)
         self.zmax = self.imageList.bounds.getHi(self.zax)
 
 
-    def _updateBounds(self, *a):
+    def _imageBoundsChanged(self, *a):
         """
-        Overrides SliceCanvas._updateBounds. Called when the image bounds
-        change. Updates the Z axis min/max values.
+        Overrides SliceCanvas._imageBoundsChanged. Called when
+        the image bounds change. Updates the Z axis min/max values.
         """
 
-        slicecanvas.SliceCanvas._updateBounds(self)
+        slicecanvas.SliceCanvas._imageBoundsChanged(self)
 
         imgzmin = self.imageList.bounds.getLo(self.zax)
         imgzmax = self.imageList.bounds.getHi(self.zax)
@@ -157,7 +236,35 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # reset zmin/zmax in case they are
         # out of range of the new image bounds
         self.zmin = imgzmin
-        self.zmax = imgzmax 
+        self.zmax = imgzmax
+
+        
+    def _updateDisplayBounds(self):
+        """
+        Overrides SliceCanvas._updateDisplayBound. Called on
+        canvas resizes, image bound changes and lightbox slice
+        property changes. Calculates the required bounding box
+        that is to be displayed, in real world coordinates.
+        """
+
+        xmin = self.imageList.bounds.getLo( self.xax)
+        ymin = self.imageList.bounds.getLo( self.yax)
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
+
+        if self._scrollbar is not None:
+
+            off = (self._nrows -
+                   self._scrollbar.GetThumbPosition() -
+                   self._rowsOnScreen)
+
+            ymin = ymin + ylen * off
+
+        xmax = xmin + xlen * self.ncols
+        ymax = ymin + ylen * self._rowsOnScreen
+
+        slicecanvas.SliceCanvas._updateDisplayBounds(
+            self, xmin, xmax, ymin, ymax)
 
 
     def _genSliceLocations(self):
@@ -174,15 +281,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # of all slices to be displayed on the canvas
         sliceLocs = np.arange(
             self.zmin + self.sliceSpacing * 0.5,
-            self.zmax + self.sliceSpacing,
+            self.zmax,
             self.sliceSpacing)
 
-        self._nslices = len(sliceLocs)
-        self._nrows   = int(np.ceil(self._nslices / float(self.ncols)))
-
-        log.debug('{: 5.1f} - {: 5.1f}: {} slices {} rows {} columns'.format(
-            self.zmin, self.zmax, self._nslices, self._nrows, self.ncols))
-        
         self._sliceIdxs  = []
         self._transforms = []
 
@@ -218,15 +319,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         xform = np.array(image.voxToWorldMat, dtype=np.float32)
 
-        row = nrows - int(np.floor(sliceno / ncols)) - 1
+        row = int(np.floor(sliceno / ncols))
         col = int(np.floor(sliceno % ncols))
 
-        xlen = self.displayBounds.xlen
-        ylen = self.displayBounds.ylen
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
 
         translate              = np.identity(4, dtype=np.float32)
         translate[3, self.xax] = xlen * col
-        translate[3, self.yax] = ylen * row
+        translate[3, self.yax] = ylen * (nrows - row - 1)
         translate[3, self.zax] = 0
         
         return xform.dot(translate)
@@ -236,7 +337,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         If a scroll bar was passed in when this LightBoxCanvas was created,
         this method updates it to reflect the current state of the canvas
-        size and the displayed list of images.  
+        size and the displayed list of slices.
         """
         
         if self._scrollbar is None: return
@@ -245,27 +346,26 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self._scrollbar.SetScrollbar(0, 0, 0, 0, True)
             return
 
+        imgBounds  = self.imageList.bounds
+        imgxlen    = imgBounds.getLen(self.xax)
+        imgylen    = imgBounds.getLen(self.yax)
         dispBounds = self.displayBounds
+
         screenSize = self.GetClientSize()
-        
-        sliceRatio = dispBounds.xlen / dispBounds.ylen
-        
-        sliceWidth   = screenSize.width / float(self.ncols)
-        sliceHeight  = sliceWidth * sliceRatio
-        
-        rowsOnScreen = int(np.floor(screenSize.height / sliceHeight))
+
+        if screenSize.width  == 0 or \
+           screenSize.height == 0 or \
+           dispBounds.xlen   == 0 or \
+           dispBounds.ylen   == 0 or \
+           imgxlen           == 0 or \
+           imgylen           == 0:
+            return
+
+        rowsOnScreen = self._rowsOnScreen
         oldPos       = self._scrollbar.GetThumbPosition()
 
-        if rowsOnScreen == 0:
-            rowsOnScreen = 1
-
-        if rowsOnScreen > self._nrows:
-            rowsOnScreen = self._nrows
-
-        log.debug('Slice size {:3.0f} x {:3.0f}, '
-                  'position: {}, '
+        log.debug('Slice row: {}, '
                   'rows on screen: {} / {}'.format(
-                      sliceWidth, sliceHeight,
                       oldPos, rowsOnScreen, self._nrows))
 
         self._scrollbar.SetScrollbar(oldPos,
@@ -273,62 +373,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                                      self._nrows,
                                      rowsOnScreen,
                                      True)
-
-
-    def _calculateCanvasBBox(self):
-        """
-        Calculates the bounding box for slices to be displayed
-        on the canvas, such that their aspect ratio is maintained.
-        """
-
-        worldSliceWidth  = float(self.displayBounds.xlen)
-        worldSliceHeight = float(self.displayBounds.ylen)
-
-        # If there's a scrollbar, its pagesize
-        # value contains the number of rows
-        # to be displayed on the screen - see
-        # the _updateScrollBar method
-        if self._scrollbar is not None:
-            rowsOnScreen = self._scrollbar.GetPageSize()
-            worldWidth   = worldSliceWidth  * self.ncols
-            worldHeight  = worldSliceHeight * rowsOnScreen
-
-        # If there's no scrollbar, we display
-        # all the slices on the screen
-        else:
-            worldWidth   = worldSliceWidth  * self.ncols
-            worldHeight  = worldSliceHeight * self._nrows
-
-        slicecanvas.SliceCanvas._calculateCanvasBBox(self,
-                                                     worldWidth=worldWidth,
-                                                     worldHeight=worldHeight)
-
-
-    def _setViewport(self):
-        """
-        Sets up the GL canvas size, viewport and projection.
-        """
-
-        xlen = self.displayBounds.xlen
-        ylen = self.displayBounds.ylen
-
-        worldYMin  = None
-        worldXMax  = self.displayBounds.xlo + xlen * self.ncols
-        worldYMax  = self.displayBounds.ylo + ylen * self._nrows
-
-        if self._scrollbar is not None:
-
-            rowsOnScreen = self._scrollbar.GetPageSize()
-            currentRow   = self._scrollbar.GetThumbPosition()
-            currentRow   = self._nrows - currentRow - rowsOnScreen
-
-            worldYMin = self.displayBounds.ylo + ylen * currentRow
-            worldYMax = worldYMin              + ylen * rowsOnScreen
-
-        slicecanvas.SliceCanvas._setViewport(self,
-                                             xmax=worldXMax,
-                                             ymin=worldYMin,
-                                             ymax=worldYMax)
 
         
     def _draw(self, ev):
@@ -374,10 +418,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         gl.glShadeModel(gl.GL_FLAT)
 
         # Draw all the slices for all the images.
-        
         for i, image in enumerate(self.imageList):
-            log.debug('Drawing {} slices for image {}'.format(
-                endSlice - startSlice, i))
+            
+            log.debug('Drawing {} slices ({} - {}) for image {}'.format(
+                endSlice - startSlice, startSlice, endSlice, i))
+            
             for zi in range(startSlice, endSlice):
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],
@@ -432,7 +477,8 @@ class LightBoxPanel(wx.Panel):
                 return
             
             self.scrollbar.SetThumbPosition(curPos + wheelDir)
-            self.canvas._draw(None)
+            self.canvas._updateDisplayBounds()
+            self.canvas.Refresh()
 
         self.Bind(wx.EVT_MOUSEWHEEL, scrollOnMouse)
 
