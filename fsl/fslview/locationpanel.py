@@ -110,6 +110,13 @@ class LocationPanel(wx.Panel, props.HasProperties):
         image  = self.imageList[self.imageList.selectedImage]
         voxLoc = self.voxelLocation.xyz
 
+        # There's a chance that the voxel location will temporarily
+        # be out of bounds when the selected image is changed.
+        # So we'll be safe and check them.
+        for i in range(3):
+            if voxLoc[i] <= 0 or voxLoc[i] >= image.shape[i]:
+                return
+
         # 3D image
         if len(image.shape) == 3:
             voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2]]
@@ -188,5 +195,13 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self._voxelLabel.SetLabel('Voxel coordinates ({})'.format(image.name))
         self._voxelPanel.Layout()
 
+        oldLoc = self.imageList.location.xyz
+
         for i in range(3):
             self.voxelLocation.setLimits(i, 0, image.shape[i] - 1)
+
+        # The voxel coordinates may have inadvertently been
+        # changed due to a change in their limits. So we'll
+        # restore the old location from the real world
+        # coordinates.
+        oldLoc = self.imageList.location.xyz = oldLoc
