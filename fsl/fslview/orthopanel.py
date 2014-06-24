@@ -103,16 +103,17 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+
+        def move(*a): self.setPosition(*self.imageList.location)
+        self.imageList.addListener('location', self.name, move) 
         
         def onDestroy(ev):
-            self.imageList.removeListener('bounds', self.name)
+            self.imageList.removeListener('bounds',   self.name)
+            self.imageList.removeListener('location', self.name)
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
         self.Bind(wx.EVT_SIZE, self._resize)
-
-        def move(*a): self.setPosition(*self.imageList.location)
-        self.imageList.addListener('location', self.name, move) 
 
         self._configShowListeners()
         self._configZoomListeners()
