@@ -468,6 +468,12 @@ class BoundsValueList(propvals.PropertyValueList):
         elif lname == 'xlen': return self.getLen(  0)
         elif lname == 'ylen': return self.getLen(  1)
         elif lname == 'zlen': return self.getLen(  2)
+        elif lname == 'xmin': return self.getMin(  0)
+        elif lname == 'ymin': return self.getMin(  1)
+        elif lname == 'zmin': return self.getMin(  2)
+        elif lname == 'xmax': return self.getMax(  0)
+        elif lname == 'ymax': return self.getMax(  1)
+        elif lname == 'zmax': return self.getMax(  2) 
         elif lname == 'all':  return self[:]
 
         raise AttributeError('{} has no attribute called {}'.format(

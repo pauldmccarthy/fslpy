@@ -12,9 +12,9 @@ import argparse
 import wx
 
 import fsl.fslview.orthopanel     as orthopanel
+import fsl.fslview.lightboxpanel  as lightboxpanel
 import fsl.fslview.locationpanel  as locationpanel
 import fsl.fslview.imagelistpanel as imagelistpanel
-import fsl.fslview.lightboxcanvas as lightboxcanvas
 
 import fsl.data.fslimage as fslimage
 import fsl.props         as props
@@ -92,11 +92,11 @@ class FslViewPanel(wx.Panel):
 
     def showLightBox(self):
 
-        if isinstance(self.mainPanel, lightboxcanvas.LightBoxPanel):
+        if isinstance(self.mainPanel, lightboxpanel.LightBoxPanel):
             return
 
-        mainPanel = lightboxcanvas.LightBoxPanel(self, self.imageList,
-                                                 glContext=self.glContext)
+        mainPanel = lightboxpanel.LightBoxPanel(self, self.imageList,
+                                                glContext=self.glContext)
         
         ctrlPanel = props.buildGUI(self, mainPanel.canvas)
 

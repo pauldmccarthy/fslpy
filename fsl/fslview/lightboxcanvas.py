@@ -47,22 +47,86 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         'zmax'         : 'Last slice',
         'sliceSpacing' : 'Slice spacing',
         'ncols'        : 'Number of columns',
+        'showCursor'   : 'Show cursor',
         'zax'          : 'Z axis'}
 
-    _view = props.VGroup(('zmin',
+    _view = props.VGroup(('showCursor',
+                          'zmin',
                           'zmax',
                           'sliceSpacing',
                           'ncols',
                           'zax'))
 
     
+    def worldToCanvas(self, xpos, ypos, zpos):
+        """
+        Given an x/y/z location in the image list world (with xpos
+        corresponding to the horizontal screen axis, ypos to the
+        vertical axis, and zpos to the depth axis), converts
+        it into an x/y position, in world coordinates, on the
+        canvas.
+        """
+        sliceno = int(np.floor((zpos - self.zmin) / self.sliceSpacing))
+
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
+        
+        row = self._nrows - int(np.floor(sliceno / self.ncols)) - 1
+        col =               int(np.floor(sliceno % self.ncols))
+
+        xpos = xpos + xlen * col
+        ypos = ypos + ylen * row
+        
+        return xpos, ypos
+
+        
     def canvasToWorld(self, xpos, ypos):
         """
-        Given pixel x/y coordinates on this canvas, translates them
-        into the real world x/y/z coordinates of the displayed slice.
-        What order should the returned coordinates be in?
-        """ 
-        pass
+        Overwrites SliceCanvas.canvasToWorld. Given pixel x/y
+        coordinates on this canvas, translates them into the
+        real world x/y/z coordinates of the displayed slice.
+        Returns a 3-tuple containing the (x, y, z) coordinates
+        (in the dimension order of the image list space). If the
+        given canvas position is out of the image range, None
+        is returned.
+        """
+
+        nrows = self._nrows
+        ncols = self.ncols
+
+        screenx, screeny = slicecanvas.SliceCanvas.canvasToWorld(
+            self, xpos, ypos)
+
+        xmin = self.imageList.bounds.getLo( self.xax)
+        ymin = self.imageList.bounds.getLo( self.yax)
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
+
+        xmax = xmin + ncols * xlen
+        ymax = ymin + nrows * ylen
+
+        col     =         int(np.floor((screenx - xmin) / xlen))
+        row     = nrows - int(np.floor((screeny - ymin) / ylen)) - 1
+        sliceno = row * ncols + col
+
+        if screenx <  xmin or \
+           screenx >  xmax or \
+           screeny <  ymin or \
+           screeny >  ymax or \
+           sliceno <  0    or \
+           sliceno >= self._nslices:
+            return None
+
+        xpos = screenx -          col      * xlen
+        ypos = screeny - (nrows - row - 1) * ylen
+        zpos = self.zmin + (sliceno + 0.5) * self.sliceSpacing
+
+        pos = [0, 0, 0]
+        pos[self.xax] = xpos
+        pos[self.yax] = ypos
+        pos[self.zax] = zpos
+
+        return tuple(pos)
 
         
     def __init__(self,
@@ -175,13 +239,20 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         (which is different from the former if the canvas has a scroll
         bar).
         """
-        zlen = self.zmax - self.zmin
         
-        self._nslices = int(np.floor(zlen / self.sliceSpacing))
-        self._nrows   = int(np.ceil(self._nslices / float(self.ncols)))
-
         xlen = self.imageList.bounds.getLen(self.xax)
         ylen = self.imageList.bounds.getLen(self.yax)
+        zlen = self.zmax - self.zmin
+        width, height = self.GetClientSize().Get()
+
+        if xlen   == 0 or \
+           ylen   == 0 or \
+           width  == 0 or \
+           height == 0:
+            return
+
+        self._nslices = int(np.floor(zlen / self.sliceSpacing))
+        self._nrows   = int(np.ceil(self._nslices / float(self.ncols))) 
 
         # no scrollbar -> display all rows
         if self._scrollbar is None:
@@ -189,9 +260,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # scrollbar -> display a selection of rows
         else:
-            width, height = self.GetClientSize().Get()
-            sliceWidth    = width / self.ncols
-            sliceHeight   = sliceWidth * (ylen / xlen)
+
+            sliceWidth  = width / self.ncols
+            sliceHeight = sliceWidth * (ylen / xlen)
+
+            if sliceWidth == 0 or sliceHeight == 0:
+                return
 
             self._rowsOnScreen = int(np.ceil(height / sliceHeight))
 
@@ -374,6 +448,40 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                                      rowsOnScreen,
                                      True)
 
+
+    def _drawCursor(self):
+        """
+        Draws a cursor at the current canvas position (the SliceCanvas.pos
+        property).
+        """
+
+        xpos, ypos = self.worldToCanvas(*self.pos.xyz)
+
+        xmin, xmax = self.imageList.bounds.getRange(self.xax)
+        ymin, ymax = self.imageList.bounds.getRange(self.yax) 
+
+        xverts = np.zeros((2, 3))
+        yverts = np.zeros((2, 3)) 
+
+        xverts[:, self.xax] = xpos
+        xverts[0, self.yax] = ypos - 5
+        xverts[1, self.yax] = ypos + 5
+        xverts[:, self.zax] = self.pos.z + 1
+
+        yverts[:, self.yax] = ypos
+        yverts[:, self.xax] = [xpos - 5, xpos + 5]
+        yverts[:, self.zax] =  self.pos.z + 1
+
+        log.debug('Drawing cursor at {} - {}'.format(xpos, ypos))
+
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(0, 1, 0)
+        gl.glVertex3f(*xverts[0])
+        gl.glVertex3f(*xverts[1])
+        gl.glVertex3f(*yverts[0])
+        gl.glVertex3f(*yverts[1])
+        gl.glEnd() 
+
         
     def _draw(self, ev):
         """
@@ -426,60 +534,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             for zi in range(startSlice, endSlice):
                 self._drawSlice(image,
                                 self._sliceIdxs[ i][zi],
-                                self._transforms[i][zi]) 
+                                self._transforms[i][zi])
 
-        gl.glUseProgram(0)
+        gl.glUseProgram(0) 
+
+        if self.showCursor:
+            self._drawCursor()
 
         self.SwapBuffers()
-
-
-class LightBoxPanel(wx.Panel):
-    """
-    Convenience Panel which contains a a LightBoxCanvas and a scrollbar,
-    and sets up mouse-scrolling behaviour.
-    """
-
-    def __init__(self, parent, *args, **kwargs):
-        """
-        Accepts the same parameters as the LightBoxCanvas constructor,
-        although if you pass in a scrollbar, it will be ignored.
-        """
-
-        wx.Panel.__init__(self, parent)
-
-        self.scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
-        
-        kwargs['scrollbar'] = self.scrollbar
-        
-        self.canvas = LightBoxCanvas(self, *args, **kwargs)
-
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self.sizer)
-
-        self.sizer.Add(self.canvas,    flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.scrollbar, flag=wx.EXPAND)
-
-        def scrollOnMouse(ev):
-
-            wheelDir = ev.GetWheelRotation()
-
-            if   wheelDir > 0: wheelDir = -1
-            elif wheelDir < 0: wheelDir =  1
-
-            curPos       = self.scrollbar.GetThumbPosition()
-            newPos       = curPos + wheelDir
-            sbRange      = self.scrollbar.GetRange()
-            rowsOnScreen = self.scrollbar.GetPageSize()
-
-            if self.scrollbar.GetPageSize() >= self.scrollbar.GetRange():
-                return
-            if newPos < 0 or newPos + rowsOnScreen > sbRange:
-                return
-            
-            self.scrollbar.SetThumbPosition(curPos + wheelDir)
-            self.canvas._updateDisplayBounds()
-            self.canvas.Refresh()
-
-        self.Bind(wx.EVT_MOUSEWHEEL, scrollOnMouse)
-
-        self.Layout()        
