@@ -454,25 +454,29 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         Draws a cursor at the current canvas position (the SliceCanvas.pos
         property).
         """
+        
+        sliceno = int(np.floor((self.pos.z - self.zmin) / self.sliceSpacing))
+        xlen    = self.imageList.bounds.getLen(self.xax)
+        ylen    = self.imageList.bounds.getLen(self.yax)
+        xmin    = self.imageList.bounds.getLo( self.xax)
+        ymin    = self.imageList.bounds.getLo( self.yax)
+        row     = self._nrows - int(np.floor(sliceno / self.ncols)) - 1
+        col     = int(np.floor(sliceno % self.ncols)) 
 
         xpos, ypos = self.worldToCanvas(*self.pos.xyz)
-
-        xmin, xmax = self.imageList.bounds.getRange(self.xax)
-        ymin, ymax = self.imageList.bounds.getRange(self.yax) 
 
         xverts = np.zeros((2, 3))
         yverts = np.zeros((2, 3)) 
 
         xverts[:, self.xax] = xpos
-        xverts[0, self.yax] = ypos - 5
-        xverts[1, self.yax] = ypos + 5
+        xverts[0, self.yax] = ymin + (row)     * ylen
+        xverts[1, self.yax] = ymin + (row + 1) * ylen
         xverts[:, self.zax] = self.pos.z + 1
 
         yverts[:, self.yax] = ypos
-        yverts[:, self.xax] = [xpos - 5, xpos + 5]
-        yverts[:, self.zax] =  self.pos.z + 1
-
-        log.debug('Drawing cursor at {} - {}'.format(xpos, ypos))
+        yverts[0, self.xax] = xmin + (col)     * xlen
+        yverts[1, self.xax] = xmin + (col + 1) * xlen
+        yverts[:, self.zax] = self.pos.z + 1
 
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
