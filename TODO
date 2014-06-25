@@ -5,11 +5,10 @@ arbitrary.
 
 * Bugs to fix
 ** DONE Fix cursors - they go off the canvas in some cases
-** LightBoxCanvas bounding box calculation is broken again.
+** DONE LightBoxCanvas bounding box calculation is broken again.
 ** DONE SliceCanvas bounding box calculation is also broken again.
 ** DONE Fix mouse tracking (voxel changes)
-** Trnasformation matrix recursion is happening again, for Ludo's file with the bad affine.
-
+** Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
 * Little things
 ** Wild cards in image file load (controlled by fslview.ImageListPanel)
 ** Truncate long filenames in image list panel.
@@ -21,7 +20,8 @@ arbitrary.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Add standard'/'Add Atlas' menu options.
-
+** Update LightBoxCanvas properties - check out funny behaviour in ncols.
+** Pan in LightBoxCanvas, so currently selected location is always on screen.
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
@@ -34,11 +34,13 @@ arbitrary.
 ** Image export/offscreen rendering.
 ** IN PROGRESS Command line interface - build into props package?
 ** UI design
-** Rewrite GL storage/rendering
- - Do away with your fancy x-coordinate tiling, and just store coordinates for every voxel.
- - Calculate the proper coordinates of a real-world Z slice through the image. 
-** Custon colour maps from original FSLView
+** WONTFIX Rewrite GL storage/rendering
+ - Calculate the proper coordinates of a real-world Z slice through the
+   image. Actually, this is quite a complicated problem, and I'm not sure
+   whether it's worth doing. It's really just to support images with bad
+   affine transformations.
 
+** Custon colour maps from original FSLView
 * Big things
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
@@ -49,8 +51,6 @@ arbitrary.
 ** have multiple views open - look at wxAUI.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
-
-
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
