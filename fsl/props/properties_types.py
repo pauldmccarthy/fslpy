@@ -683,11 +683,15 @@ class PointValueList(propvals.PropertyValueList):
             raise AttributeError('Improper number of values '
                                  '({}) for attribute {}'.format(
                                      len(value), lname))
+            
+        newvals = self[:]
         
         for dim, val in zip(lname, value):
-            if   dim == 'x': self[0] = val
-            elif dim == 'y': self[1] = val
-            elif dim == 'z': self[2] = val
+            if   dim == 'x': newvals[0] = val
+            elif dim == 'y': newvals[1] = val
+            elif dim == 'z': newvals[2] = val
+
+        self[:] = newvals
 
 
 class Point(List):
