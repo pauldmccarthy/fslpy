@@ -204,4 +204,4 @@ class LocationPanel(wx.Panel, props.HasProperties):
         # changed due to a change in their limits. So we'll
         # restore the old location from the real world
         # coordinates.
-        oldLoc = self.imageList.location.xyz = oldLoc
+        self.imageList.location.xyz = oldLoc
