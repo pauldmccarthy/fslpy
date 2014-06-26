@@ -5,13 +5,13 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # 
 
-"""An alternative to ``wx.gizmos.EditableListBox``.
+"""An alternative to :class:`wx.gizmos.EditableListBox`.
 
-A wx :class:`EditableListBox` implementation. The ``wx.gizmos.EditableListBox``
-is buggy under OS X Mavericks, and getting tooltips working with the
-``wx.ListBox`` is an absolute pain in the behind. So I felt the need to
-replicate its functionality. This implementation supports single selection
-only.
+An :class:`EditableListBox` implementation. The
+:class:`wx.gizmos.EditableListBox` is buggy under OS X Mavericks, and
+getting tooltips working with the :class:`wx.ListBox` is an absolute pain
+in the behind. So I felt the need to replicate its functionality.
+This implementation supports single selection only.
 """
 
 import math
@@ -126,7 +126,8 @@ class _ListItem(object):
         :param str tooltip: A tooltip to be displayed when the mouse
                             is moved over the item.
         
-        :param widget:      The wx object which represents the list item.
+        :param widget:      The :mod:`wx` object which represents the list
+                            item.
         """
         self.label   = label
         self.data    = data
@@ -135,14 +136,14 @@ class _ListItem(object):
 
 
 class EditableListBox(wx.Panel):
-    """An alternative to wx.gizmos.EditableListBox.
+    """An alternative to :class:`wx.gizmos.EditableListBox`.
 
-    An ``EditableListBox`` contains a ``wx.Panel`` which in turn contains a
-    collection of ``wx.StaticText`` widgets, which are laid out vertically,
-    and display labels for each of the items in the list. Some rudimentary
-    wrapper methods for modifying the list contents are provided by an
-    ``EditableListBox`` object, with an interface similar to that of the
-    ``wx.ListBox`` class.
+    An ``EditableListBox`` contains a :class:`wx.Panel` which in turn contains
+    a collection of :class:`wx.StaticText` widgets, which are laid out
+    vertically, and display labels for each of the items in the list. Some
+    rudimentary wrapper methods for modifying the list contents are provided
+    by an ``EditableListBox`` object, with an interface similar to that of the
+    :class:`wx.ListBox` class.
     """
 
     _selectedBG = '#7777FF'
@@ -162,7 +163,7 @@ class EditableListBox(wx.Panel):
             style=0):
         """Create an :class:`EditableListBox` object.
 
-        :param parent:     Wx parent object
+        :param parent:     :mod:`wx` parent object
         
         :param labels:     List of strings, the items in the list
         :type  labels:     list of strings
@@ -388,7 +389,7 @@ class EditableListBox(wx.Panel):
         
         
     def GetSelection(self):
-        """Returns the index of the selected item, or ``wx.NOT_FOUND``
+        """Returns the index of the selected item, or :data:`wx.NOT_FOUND`
         if no item is selected.
         """
         return self._fixIndex(self._selection)

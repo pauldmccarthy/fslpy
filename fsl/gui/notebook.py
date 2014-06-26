@@ -1,26 +1,38 @@
 #!/usr/bin/env python
 #
-# notebook.py - Re-implementation of the wx.Notebook widget, which
-# supports page enabling/disabling, and page visibility.
-#
-# I didn't want it to come to this, but both the wx.lib.agw.aui.AuiNotebook
-# and wx.lib.agw.flatnotebook are too difficult to use. The AuiNotebook
-# requires me to use an AuiManager for layout, and the flatnotebook has
-# layout/fitting issues. 
+# notebook.py - Re-implementation of the wx.Notebook widget
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+
+"""Re-implementation of the :class:`wx.Notebook` widget.
+
+This :class:`Notebook` implementation supports page enabling/disabling, and
+page visibility.
+
+I didn't want it to come to this, but both the
+:class:`wx.lib.agw.aui.AuiNotebook` and :class:`wx.lib.agw.flatnotebook`
+are too difficult to use. The ``AuiNotebook`` requires me to use an
+``AuiManager`` for layout, and the ``flatnotebook`` has layout/fitting
+issues.
+"""
+
+
 import wx
 
 
 class Notebook(wx.Panel):
-    """
-    A wx.Panel whcih provides Notebook-like functionality. Manages the
-    display of multiple child windows. A row of buttons along the top
-    allows the user to select which child window to display.
+    """A :class:`wx.Panel` which provides :class:`wx.Notebook`-like
+    functionality. Manages the display of multiple child windows. A
+    row of buttons along the top allows the user to select which
+    child window to display.
     """
 
     def __init__(self, parent):
+        """Create a :class:`Notebook` object.
+
+        :param parent: The :mod:`wx` parent object.
+        """
         
         wx.Panel.__init__(self, parent, style=wx.SUNKEN_BORDER)
         
@@ -59,10 +71,9 @@ class Notebook(wx.Panel):
 
 
     def DoGetBestClientSize(self):
-        """
-        Calculate and return the best (minimum) size for the Notebook widget.
-        The returned size is the minimum size of the largest page, plus
-        the size of the button panel.
+        """Calculate and return the best (minimum) size for the
+        :class:`Notebook` widget. The returned size is the minimum
+        size of the largest page, plus the size of the button panel.
         """
 
         buttonSize = self.buttonPanel.GetBestSize()
@@ -83,19 +94,17 @@ class Notebook(wx.Panel):
 
         
     def FindPage(self, page):
-        """
-        Returns the index of the given page, or wx.NOT_FOUND if
-        the page is not in this notebook.
+        """Returns the index of the given page, or :data:`wx.NOT_FOUND`
+        if the page is not in this notebook.
         """
         try:    return self._pages.index(page)
         except: return wx.NOT_FOUND
 
 
     def InsertPage(self, index, page, text):
-        """
-        Inserts the given page into the notebook at the specified index.
-        A button for the page is also added to the button row, with the
-        specified text.
+        """Inserts the given page into the notebook at the specified
+        index. A button for the page is also added to the button row,
+        with the specified text.
         """
 
         if (index > len(self._pages)) or (index < 0):
@@ -148,16 +157,15 @@ class Notebook(wx.Panel):
 
         
     def AddPage(self, page, text):
-        """
-        Adds the given page (and a corresponding button with the
-        given text) to the end of the notebook.
+        """Adds the given page (and a corresponding button
+        with the given text) to the end of the notebook.
         """
         self.InsertPage(len(self._pages), page, text)
 
 
     def RemovePage(self, index):
-        """
-        Removes the page at the specified index, but does not destroy it.
+        """Removes the page at the specified
+        index, but does not destroy it.
         """
 
         if (index >= len(self._pages)) or (index < 0):
@@ -179,8 +187,8 @@ class Notebook(wx.Panel):
 
         
     def DeletePage(self, index):
-        """
-        Removes the page at the specified index, and (attempts to) destroy it.
+        """Removes the page at the specified index,
+        and (attempts to) destroy it.
         """ 
         page = self._pages[index]
         self.RemovePage(index)
@@ -188,16 +196,12 @@ class Notebook(wx.Panel):
 
 
     def GetSelection(self):
-        """
-        Returns the index of the currently selected page.
-        """
+        """Returns the index of the currently selected page."""
         return self._selected
 
 
     def SetSelection(self, index):
-        """
-        Sets the displayed page to the one at the specified index.
-        """
+        """Sets the displayed page to the one at the specified index."""
 
         if index < 0 or index >= len(self._pages):
             raise IndexError('Index out of range: {}'.format(index))
@@ -224,8 +228,8 @@ class Notebook(wx.Panel):
 
         
     def AdvanceSelection(self, forward=True):
-        """
-        Selects the next (or previous, if forward is False) enabled page.
+        """Selects the next (or previous, if ``forward``
+        is ``False``) enabled page.
         """
 
         if forward: offset =  1
@@ -244,16 +248,12 @@ class Notebook(wx.Panel):
 
 
     def EnablePage(self, index):
-        """
-        Enables the page at the specified index.
-        """
+        """Enables the page at the specified index."""
         self._buttons[index].Enable()
 
         
     def DisablePage(self, index):
-        """
-        Disables the page at the specified index.
-        """
+        """Disables the page at the specified index."""
         self._buttons[index].Disable()
         
         if self.GetSelection() == index:
@@ -263,9 +263,7 @@ class Notebook(wx.Panel):
 
             
     def ShowPage(self, index):
-        """
-        Shows the page at the specified index.
-        """
+        """Shows the page at the specified index."""
         self.EnablePage(index)
         self._buttons[index].Show()
         self._pages[  index].Show()
@@ -274,9 +272,7 @@ class Notebook(wx.Panel):
 
         
     def HidePage(self, index):
-        """
-        Hides the page at the specified index.
-        """
+        """Hides the page at the specified index."""
 
         self._buttons[index].Hide()
         self._pages[  index].Hide()

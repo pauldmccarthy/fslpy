@@ -4,21 +4,23 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""An alternative to ``wx.NumberEntryDialog`` which supports floating point."""
+"""An alternative to :class:`wx.NumberEntryDialog` which supports floating
+point numbers.
+"""
 
 import wx
 
 class NumberDialog(wx.Dialog):
-    """Dialog which prompts the user for a number.
+    """A :class:`wx.Dialog` which prompts the user for a number.
     
-    A dialog which contains a ``wx.TextCtrl``, and Ok/Cancel buttons,
-    allowing the user to specify a number. If the user pushes the Ok
-    button, the number they entered will be accessible via the
-    :meth:`GetValue` method.
+    A dialog which contains a :class:`wx.TextCtrl`, and Ok/Cancel
+    buttons, allowing the user to specify a number. If the user
+    pushes the Ok button, the number they entered will be accessible
+    via the :meth:`GetValue` method.
 
-    I've specifically not used the ``wx.SpinCtrl`` or ``wx.SpinCtrlDouble``,
-    because they are too limited in their flexibility with regard to
-    validation and events. 
+    I've specifically not used the :class:`wx.SpinCtrl` or
+    :class:`wx.SpinCtrlDouble`, because they are too limited in
+    their flexibility with regard to validation and events. 
     """
 
     def __init__(self,
@@ -31,16 +33,16 @@ class NumberDialog(wx.Dialog):
                  maxValue=None):
         """Create and lay out a :class:`NumberDialog`.
 
-        :param parent:          Wx parent object.
+        :param parent:          The :mod:`wx` parent object.
 
-        :param bool real:       If true, a floating point number will be 
-                                accepted. Otherwise, only integers are
+        :param bool real:       If ``True``, a floating point number will 
+                                be accepted. Otherwise, only integers are
                                 accepted.
 
         :param str title:       Dialog title.
         
-        :param str message:     If not None, a ``wx.StaticText`` label is
-                                added, containing the message.
+        :param str message:     If not None, a :class:`wx.StaticText` label 
+                                is added, containing the message.
 
         :param number initial:  Initial value.
         
@@ -116,8 +118,8 @@ class NumberDialog(wx.Dialog):
     def _validate(self):
         """Validates the current value.
 
-        If the value is valid, returns it.  Otherwise a ``ValueError`` is
-        raised with an appropriate message.
+        If the value is valid, returns it.  Otherwise a :exc:`ValueError`
+        is raised with an appropriate message.
         """
         
         value = self._textctrl.GetValue()

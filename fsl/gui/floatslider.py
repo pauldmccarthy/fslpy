@@ -8,13 +8,13 @@
 
 Provides two classes, :class:`FloatSlider` and :class:`SliderSpinPanel`.
 
-The :class:FloatSlider` class is an alternative to ``wx.Slider`` which
+The :class:`FloatSlider` class is an alternative to :class:`wx.Slider` which
 supports floating point numbers.
 
 The :class:`SliderSpinPanel` class is a panel containing a :class:`FloatSlider`
-and a ``wx.SpinCtrlDouble``, linked such that changes in one are reflected in
-the other. The :class:`SliderSpinPanel` class also allows the user to change the
-slider limits, via the :class:`~fsl.gui.numberdialog.NumberDialog` class.
+and a :class:`wx.SpinCtrlDouble`, linked such that changes in one are reflected
+in the other. The :class:`SliderSpinPanel` class also allows the user to change
+the slider limits, via the :class:`~fsl.gui.numberdialog.NumberDialog` class.
 """
 
 import wx
@@ -25,9 +25,9 @@ import numberdialog
 class FloatSlider(wx.Slider):
     """Floating point slider widget.
     
-    A cheap and nasty subclass of ``wx.Slider`` which supports floating point
-    numbers of any range. The desired range is transformed into the internal
-    range :math:`[-2^{31}, 2^{31-1}]`.
+    A cheap and nasty subclass of :class:`wx.Slider` which supports floating
+    point numbers of any range. The desired range is transformed into the
+    internal range :math:`[-2^{31}, 2^{31-1}]`.
     """
 
     def __init__(self,
@@ -38,7 +38,7 @@ class FloatSlider(wx.Slider):
                  **kwargs):
         """Initialise a FloatSlider.
 
-        :param parent:         The wx parent.
+        :param parent:         The :mod:`wx` parent object.
         
         :param float value:    Initial slider value.
         
@@ -46,7 +46,7 @@ class FloatSlider(wx.Slider):
         
         :param float maxValue: Maximum slider value.
         
-        :param kwargs:         Passed through to the ``wx.Slider``
+        :param kwargs:         Passed through to the :class:`wx.Slider`
                                constructor.
         """
 
@@ -78,10 +78,9 @@ class FloatSlider(wx.Slider):
 
         This logic is not in the public :meth:`SetRange` method so
         we can overcome a chicken-and-egg problem in :meth:`__init__` -
-        :meth:`SetValue` needs :attribute:`__realMin` and
-        :attribute:`__realMax` to be set, but :meth:`SetRange` needs to
-        retrieve the value before setting :attribute:`__realMin` and
-        :attribute:`__realMax`.
+        :meth:`SetValue` needs :attr:`__realMin` and :attr:`__realMax`
+        to be set, but :meth:`SetRange` needs to retrieve the value
+        before setting :attr:`__realMin` and :attr:`__realMax`.
         """ 
 
         self.__realMin   = float(minValue)
@@ -181,7 +180,8 @@ contain the new limit values.
 
 
 class SliderSpinPanel(wx.Panel):
-    """A panel containing a :class:`FloatSlider` and a ``wx.SpinCtrlDouble``.
+    """A panel containing a :class:`FloatSlider` and a
+    :class:`wx.SpinCtrlDouble`.
 
     The slider and spinbox are linked such that changes to one are
     reflected in the other.  The :class:`SliderSpinPanel` class also
@@ -209,12 +209,12 @@ class SliderSpinPanel(wx.Panel):
         """
         Initialise a :class:`SliderSpinPanel` object.
 
-        :param parent:          Wx parent object.
+        :param parent:          The :mod:`wx` parent object.
 
-        :param bool real:       If ``False``, a ``wx.Slider`` and
-                                ``wx.SpinCtrl`` are used, instead of a
+        :param bool real:       If ``False``, a :class:`wx.Slider` and
+                                :class:`wx.SpinCtrl` are used, instead of a
                                 :class:`FloatSlider` and
-                                ``wx.SpinCtrlDouble``.
+                                :class:`wx.SpinCtrlDouble`.
         
         :param number value:    Initial slider/spin value.
         
@@ -222,9 +222,9 @@ class SliderSpinPanel(wx.Panel):
         
         :param number maxValue: Maximum slider/spin value.
 
-        :param str label:       If not ``None``, a ``wx.StaticText`` widget
-                                is added to the left of the slider, containing
-                                the given label.
+        :param str label:       If not ``None``, a :class:`wx.StaticText`
+                                widget is added to the left of the slider,
+                                containing the given label.
         
         :param bool showLimits: If ``True``, buttons placed on the left and
                                 right, displaying the minimum/maximum limits.
