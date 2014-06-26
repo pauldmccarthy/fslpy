@@ -8,7 +8,7 @@ arbitrary.
 ** DONE LightBoxCanvas bounding box calculation is broken again.
 ** DONE SliceCanvas bounding box calculation is also broken again.
 ** DONE Fix mouse tracking (voxel changes)
-** Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
+** DONE Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
 * Little things
 ** Wild cards in image file load (controlled by fslview.ImageListPanel)
 ** Truncate long filenames in image list panel.
@@ -22,6 +22,8 @@ arbitrary.
 ** 'Add standard'/'Add Atlas' menu options.
 ** Update LightBoxCanvas properties - check out funny behaviour in ncols.
 ** Pan in LightBoxCanvas, so currently selected location is always on screen.
+** If image files were specified on the command line, make sure the open file dialog defaults to one of their paths.
+** Float formatting on range slider buttons
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
@@ -30,7 +32,7 @@ arbitrary.
 ** link display properties across images
 ** separate out props and gui packages - they should really be separate projects
 ** mouse-based zooming in ortho panel
-** Make slice canvas bounding box calculation more intelligent when zoom > 1.
+** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
 ** IN PROGRESS Command line interface - build into props package?
 ** UI design
@@ -46,7 +48,7 @@ arbitrary.
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
 ** Standard for code documentation - Sphinx?
-** OpenGL 1.4 implementation
+** OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** time series plotting option
 ** have multiple views open - look at wxAUI.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
@@ -54,3 +56,5 @@ arbitrary.
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
+** (Mark). That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
+** (Mark). The ability to have separate display ranges for different volumes in one 4D image (maybe only when automatically calculated?) which would be especially useful for diffusion series where the b=0 images are way brighter than the others when using the same display range.
