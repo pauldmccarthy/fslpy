@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 #
-# elistbox.py - A wx EditableListBox implementation. The
-# wx.gizmos.EditableListBox is buggy under OS X Mavericks,
-# and getting tooltips working with the wx.ListBox is an
-# absolute pain in the behind. So I felt the need to
-# replicate its functionality.
+# elistbox.py - An alternative to wx.gizmos.EditableListBox.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
-#
+# 
+
+"""An alternative to ``wx.gizmos.EditableListBox``.
+
+A wx ``EditableListBox`` implementation. The ``wx.gizmos.EditableListBox``
+is buggy under OS X Mavericks, and getting tooltips working with the
+``wx.ListBox`` is an absolute pain in the behind. So I felt the need to
+replicate its functionality. This implementation supports single selection
+only.
+"""
 
 import math
 import logging
@@ -18,66 +23,111 @@ import wx.lib.newevent as wxevent
 log = logging.getLogger(__name__)
 
 
-# Event emitted when an item is selected. A ListSelectEvent
-# has the following attributes (all are set to None if no
-# item was selected):
-# 
-#   - idx:    index of selected item
-#   - label:  label of selected item
-#   - data:   client data associated with selected item
-#
-ListSelectEvent, EVT_ELB_SELECT_EVENT = wxevent.NewEvent()
-
-# Event emitted when the 'add item' button is pushed. A
-# ListAddEvent has the following attributes (all are set
-# to None if no item was selected):
-#
-#   - idx:    index of selected item
-#   - label:  label of selected item
-#   - data:   client data associated with selected item
-#
-ListAddEvent,    EVT_ELB_ADD_EVENT    = wxevent.NewEvent()
-
-# Event emitted when the 'remove item' button is pushed. A
-# ListAddEvent has the following attributes:
-#
-#   - idx:    index of selected item
-#   - label:  label of selected item
-#   - data:   client data associated with selected item
-#
-ListRemoveEvent, EVT_ELB_REMOVE_EVENT = wxevent.NewEvent()
-
-# Event emitted when one of the 'move up'/'move down'
-# buttons is pushed. A ListAddEvent has the following
-# attributes:
-#
-#   - oldIdx: index of item before move
-#   - newIdx: index of item after move
-#   - label:  label of moved item
-#   - data:   client data associated with moved item
-# 
-ListMoveEvent,   EVT_ELB_MOVE_EVENT   = wxevent.NewEvent()
+_ListSelectEvent, _EVT_ELB_SELECT_EVENT = wxevent.NewEvent()
+_ListAddEvent,    _EVT_ELB_ADD_EVENT    = wxevent.NewEvent()
+_ListRemoveEvent, _EVT_ELB_REMOVE_EVENT = wxevent.NewEvent()
+_ListMoveEvent,   _EVT_ELB_MOVE_EVENT   = wxevent.NewEvent()
 
 
-# Do not allow new items to be added.
+EVT_ELB_SELECT_EVENT = _EVT_ELB_SELECT_EVENT
+"""Identifier for the :data:`ListSelectEvent` event."""
+
+
+EVT_ELB_ADD_EVENT = _EVT_ELB_ADD_EVENT
+"""Identifier for the :data:`ListAddEvent` event."""
+
+
+EVT_ELB_REMOVE_EVENT = _EVT_ELB_REMOVE_EVENT
+"""Identifier for the :data:`ListRemoveEvent` event."""
+
+
+EVT_ELB_MOVE_EVENT = _EVT_ELB_MOVE_EVENT
+"""Identifier for the :data:`ListMoveEvent` event."""
+
+
+ListSelectEvent = _ListSelectEvent
+"""Event emitted when an item is selected. A ``ListSelectEvent``
+has the following attributes (all are set to ``None`` if no
+item was selected):
+
+* ``idx``:   Index of selected item
+* ``label``: Label of selected item
+* ``data``:  Client data associated with selected item
+"""
+
+
+ListAddEvent = _ListAddEvent
+"""Event emitted when the 'add item' button is pushed. It is
+up to a listener of this event to actually add a new item
+to the list. A ``ListAddEvent`` has the following attributes
+(all are set to ``None`` if no item was selected):
+
+* ``idx``:   Index of selected item
+* ``label``: Label of selected item
+* ``data``:  Client data associated with selected item
+"""
+
+
+ListRemoveEvent = _ListRemoveEvent
+"""Event emitted when the 'remove item' button is pushed. A
+``ListRemoveEvent`` has the following attributes:
+
+* ``idx``:   Index of removed item
+* ``label``: Label of removed item
+* ``data``:  Client data associated with removed item
+"""
+
+
+ListMoveEvent = _ListMoveEvent
+"""Event emitted when one of the 'move up'/'move down'
+buttons is pushed. A ``ListMoveEvent`` has the following
+attributes:
+
+* ``oldIdx``: Index of item before move
+* ``newIdx``: Index of item after move
+* ``label``:  Label of moved item
+* ``data``:   Client data associated with moved item
+"""
+
+
 ELB_NO_ADD    = 1
+"""Style flag - if enabled, there will be no 'add item' button."""
 
-# Do not allow items to be removed.
+
 ELB_NO_REMOVE = 2
+"""Style flag - if enabled, there will be no 'remove item' button."""
 
-# Do not allow items to be reordered.
+
 ELB_NO_MOVE   = 4
+"""Style flag - if enabled there will be no 'move item up' or 'move item
+down' buttons."""
 
-# The first item in the list (index 0) is shown
-# at the botom, and the last item at the top.
+
 ELB_REVERSE   = 8
+"""Style flag - if enabled, the first item in the list (index 0) will be
+shown at the botom, and the last item at the top."""
 
-# Tooltip popup on mouse-over.
+
 ELB_TOOLTIP   = 16
+"""Style flag - if enabled, list items will be replaced with a tooltip
+on mouse-over."""
 
 
 class _ListItem(object):
+    """Internal class used to represent items in the list."""
+    
     def __init__(self, label, data, tooltip, widget):
+        """Create a _ListItem object.
+
+        :param str label:   The item label which will be displayed.
+
+        :param data:        User data associated with the item.
+
+        :param str tooltip: A tooltip to be displayed when the mouse
+                            is moved over the item.
+        
+        :param widget:      The wx object which represents the list item.
+        """
         self.label   = label
         self.data    = data
         self.widget  = widget
@@ -85,28 +135,22 @@ class _ListItem(object):
 
 
 class EditableListBox(wx.Panel):
-    """
-    An EditableListBox contains a ListBox containing some items,
-    and a strip of buttons for modifying said items.
+    """An alternative to wx.gizmos.EditableListBox.
 
-    Some rudimentary wrapper methods for modifying the list contents
-    are provided by this EditableListBox object, and the underlying
-    wx.ListBox is accessible through an attribute called 'listBox'.
-    But beware of accessing the listBox object directly if you are
-    using ELB_REVERSE, as you will need to manually invert the list
-    indices.
-    
-    Parameters:
-    
-      - parent:     wx parent object
-      - labels:     list of strings, the items in the list
-      - clientData: list of data associated with the list items.
-      - style:      Style bitmask - accepts ELB_NO_ADD, ELB_NO_REMOVE,
-                    ELB_NO_MOVE, ELB_REVERSE, and ELB_TOOLTIP.
+    An ``EditableListBox`` contains a ``wx.Panel`` which in turn contains a
+    collection of ``wx.StaticText`` widgets, which are laid out vertically,
+    and display labels for each of the items in the list. Some rudimentary
+    wrapper methods for modifying the list contents are provided by an
+    ``EditableListBox`` object, with an interface similar to that of the
+    ``wx.ListBox`` class.
     """
 
     _selectedBG = '#7777FF'
+    """Background colour for the currently selected item."""
+
+    
     _defaultBG  = '#FFFFFF'
+    """Background colour for the unselected items."""
 
     
     def __init__(
@@ -116,6 +160,19 @@ class EditableListBox(wx.Panel):
             clientData=None,
             tooltips=None,
             style=0):
+        """Create an ``EditableListBox`` object.
+
+        :param parent:     Wx parent object
+        
+        :param labels:     List of strings, the items in the list
+        :type  labels:     list of strings
+        
+        :param clientData: List of data associated with the list items.
+
+        :param int style:  Style bitmask - accepts :data:`ELB_NO_ADD`,
+                           :data:`ELB_NO_REMOVE`, :data:`ELB_NO_MOVE`,
+                           :data:`ELB_REVERSE`, and :data:`ELB_TOOLTIP`.
+        """
 
         wx.Panel.__init__(self, parent)
 
@@ -202,8 +259,7 @@ class EditableListBox(wx.Panel):
 
     
     def _drawList(self, ev=None):
-        """
-        'Draws' the set of items in the list according to the
+        """'Draws' the set of items in the list according to the
         current scrollbar thumb position.
         """
 
@@ -237,8 +293,7 @@ class EditableListBox(wx.Panel):
 
 
     def _updateScrollbar(self, ev=None):
-        """
-        Updates the scrollbar parameters according to the
+        """Updates the scrollbar parameters according to the
         number of items in the list, and the screen size
         of the list panel. If there is enough room to display
         all items in the list, the scroll bar is hidden.
@@ -283,10 +338,9 @@ class EditableListBox(wx.Panel):
 
         
     def _fixIndex(self, idx):
-        """
-        If the ELB_REVERSE style is active, this method will return
-        an inverted version of the given index. Otherwise it returns
-        the index value unchanged.
+        """If the :data:`ELB_REVERSE` style is active, this
+        method will return an inverted version of the given
+        index. Otherwise it returns the index value unchanged.
         """
 
         if idx is None:               return idx
@@ -305,16 +359,20 @@ class EditableListBox(wx.Panel):
 
 
     def GetCount(self):
+        """Returns the number of items in the list."""
         return len(self._listItems)
 
 
     def ClearSelection(self):
+        """Ensures that no items are selected."""
+        
         for item in self._listItems:
             item.widget.SetBackgroundColour(EditableListBox._defaultBG)
         self._selection = wx.NOT_FOUND
 
         
     def SetSelection(self, n):
+        """Selects the item at the given index."""
 
         if n != wx.NOT_FOUND and (n < 0 or n >= len(self._listItems)):
             raise IndexError('Index {} out of bounds'.format(n))
@@ -330,10 +388,24 @@ class EditableListBox(wx.Panel):
         
         
     def GetSelection(self):
+        """Returns the index of the selected item, or ``wx.NOT_FOUND``
+        if no item is selected.
+        """
         return self._fixIndex(self._selection)
 
         
     def Insert(self, label, pos, clientData, tooltip=None):
+        """Insert an item into the list.
+
+        :param str label:   The label to be displayed
+        
+        :param int pos:     Index at which the item is to be inserted
+        
+        :param clientData:  Data associated with the item
+
+        :param str tooltip: Tooltip to be shown, if the
+                            :data:`ELB_TOOLTIP` style is active.
+        """
 
         if pos < 0 or pos > self.GetCount():
             raise IndexError('Index {} out of bounds'.format(pos))
@@ -365,11 +437,9 @@ class EditableListBox(wx.Panel):
 
 
     def _configTooltip(self, listItem):
-        """
-        If ELB_TOOLTIP was enabled, this method configures
-        mouse-over listeners on the widget representing the
-        given list item, so the item displays the tool tip
-        on mouse overs.
+        """If the :data:`ELB_TOOLTIP` style was enabled, this method
+        configures mouse-over listeners on the widget representing the given
+        list item, so the item displays the tool tip on mouse overs.
         """
 
         if not self._showTooltips: return
@@ -386,10 +456,20 @@ class EditableListBox(wx.Panel):
                 
             
     def Append(self, label, clientData, tooltip=None):
+        """Appends an item to the end of the list.
+
+        :param str label:   The label to be displayed
+        
+        :param clientData:  Data associated with the item
+        
+        :param str tooltip: Tooltip to be shown, if the
+                            :data:`ELB_TOOLTIP` style is active. 
+        """
         self.Insert(label, len(self._listItems), clientData, tooltip)
 
 
     def Delete(self, n):
+        """Removes the item at the given index from the list."""
 
         n = self._fixIndex(n)
 
@@ -418,10 +498,9 @@ class EditableListBox(wx.Panel):
 
             
     def _getSelection(self, fix=False):
-        """
-        Returns a 3-tuple containing the (uncorrected) index, label, and
-        associated client data of the currently selected list item, or
-        (None, None, None) if no item is selected. 
+        """Returns a 3-tuple containing the (uncorrected) index, label,
+        and associated client data of the currently selected list item,
+        or (None, None, None) if no item is selected. 
         """
         
         idx   = self._selection
@@ -441,9 +520,8 @@ class EditableListBox(wx.Panel):
         
         
     def _itemClicked(self, ev):
-        """
-        Called when an item in the list is clicked. Selects the item and
-        posts an EVT_ELB_SELECT_EVENT.
+        """Called when an item in the list is clicked. Selects the item
+        and posts an :data:`EVT_ELB_SELECT_EVENT`.
         """
 
         widget  = ev.GetEventObject()
@@ -468,10 +546,10 @@ class EditableListBox(wx.Panel):
 
         
     def _moveItem(self, offset):
-        """
-        Called when the 'move up' or 'move down' buttons are pushed. Moves
-        the selected item by the specified offset and posts an
-        EVT_ELB_MOVE_EVENT, unless it doesn't make sense to do the move. 
+        """Called when the 'move up' or 'move down' buttons are pushed.
+        Moves the selected item by the specified offset and posts an
+        :data:`EVT_ELB_MOVE_EVENT`, unless it doesn't make sense
+        to do the move. 
         """
 
         oldIdx, label, data = self._getSelection()
@@ -507,26 +585,24 @@ class EditableListBox(wx.Panel):
 
         
     def _moveItemDown(self, ev):
-        """
-        Called when the 'move down' button is pushed. Calls the _moveItem
-        method.
+        """Called when the 'move down' button is pushed. Calls the
+        :meth:`_moveItem` method.
         """
         self._moveItem(1)
 
         
     def _moveItemUp(self, ev):
-        """
-        Called when the 'move up' button is pushed. Calls the _moveItem
-        method.
+        """Called when the 'move up' button is pushed. Calls the
+        :meth:`_moveItem` method.
         """ 
         self._moveItem(-1) 
 
         
     def _addItem(self, ev):
-        """
-        Called when the 'add item' button is pushed. Does nothing but post an
-        EVT_ELB_ADD_EVENT - it is up to a registered handler to implement the
-        functionality of adding an item to the list.
+        """Called when the 'add item' button is pushed. Does nothing but
+        post an :data:`EVT_ELB_ADD_EVENT` - it is up to a registered
+        handler to implement the functionality of adding an item to the
+        list.
         """
 
         idx, label, data = self._getSelection(True)
@@ -539,9 +615,9 @@ class EditableListBox(wx.Panel):
 
         
     def _removeItem(self, ev):
-        """
-        Called when the 'remove item' button is pushed. Removes the selected
-        item from the list, and posts an EVT_ELB_REMOVE_EVENT.
+        """Called when the 'remove item' button is pushed.
+        Removes the selected item from the list, and posts an
+        :data:`EVT_ELB_REMOVE_EVENT`.
         """
 
         idx, label, data = self._getSelection(True)
@@ -564,9 +640,7 @@ class EditableListBox(wx.Panel):
 
 
 def main():
-    """
-    Little testing application.
-    """
+    """Little testing application. """
 
     import random
 
@@ -596,7 +670,6 @@ def main():
     frameSizer.Add(panel, flag=wx.EXPAND, proportion=1) 
 
     frame.Show()
-
 
     def addItem(ev):
         
