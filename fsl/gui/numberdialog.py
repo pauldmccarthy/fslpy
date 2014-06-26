@@ -29,7 +29,7 @@ class NumberDialog(wx.Dialog):
                  initial=None,
                  minValue=None,
                  maxValue=None):
-        """Create and lay out a NumberDialog.
+        """Create and lay out a :class:`NumberDialog`.
 
         :param parent:          Wx parent object.
 

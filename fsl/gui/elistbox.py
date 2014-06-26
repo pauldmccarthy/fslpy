@@ -7,7 +7,7 @@
 
 """An alternative to ``wx.gizmos.EditableListBox``.
 
-A wx ``EditableListBox`` implementation. The ``wx.gizmos.EditableListBox``
+A wx :class:`EditableListBox` implementation. The ``wx.gizmos.EditableListBox``
 is buggy under OS X Mavericks, and getting tooltips working with the
 ``wx.ListBox`` is an absolute pain in the behind. So I felt the need to
 replicate its functionality. This implementation supports single selection
@@ -160,7 +160,7 @@ class EditableListBox(wx.Panel):
             clientData=None,
             tooltips=None,
             style=0):
-        """Create an ``EditableListBox`` object.
+        """Create an :class:`EditableListBox` object.
 
         :param parent:     Wx parent object
         
