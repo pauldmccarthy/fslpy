@@ -50,9 +50,9 @@ ListSelectEvent = _ListSelectEvent
 has the following attributes (all are set to ``None`` if no
 item was selected):
 
-* ``idx``:   Index of selected item
-* ``label``: Label of selected item
-* ``data``:  Client data associated with selected item
+- ``idx``:   Index of selected item
+- ``label``: Label of selected item
+- ``data``:  Client data associated with selected item
 """
 
 
@@ -62,9 +62,9 @@ up to a listener of this event to actually add a new item
 to the list. A ``ListAddEvent`` has the following attributes
 (all are set to ``None`` if no item was selected):
 
-* ``idx``:   Index of selected item
-* ``label``: Label of selected item
-* ``data``:  Client data associated with selected item
+- ``idx``:   Index of selected item
+- ``label``: Label of selected item
+- ``data``:  Client data associated with selected item
 """
 
 
@@ -72,9 +72,9 @@ ListRemoveEvent = _ListRemoveEvent
 """Event emitted when the 'remove item' button is pushed. A
 ``ListRemoveEvent`` has the following attributes:
 
-* ``idx``:   Index of removed item
-* ``label``: Label of removed item
-* ``data``:  Client data associated with removed item
+- ``idx``:   Index of removed item
+- ``label``: Label of removed item
+- ``data``:  Client data associated with removed item
 """
 
 
@@ -83,10 +83,10 @@ ListMoveEvent = _ListMoveEvent
 buttons is pushed. A ``ListMoveEvent`` has the following
 attributes:
 
-* ``oldIdx``: Index of item before move
-* ``newIdx``: Index of item after move
-* ``label``:  Label of moved item
-* ``data``:   Client data associated with moved item
+- ``oldIdx``: Index of item before move
+- ``newIdx``: Index of item after move
+- ``label``:  Label of moved item
+- ``data``:   Client data associated with moved item
 """
 
 
@@ -639,7 +639,7 @@ class EditableListBox(wx.Panel):
         wx.PostEvent(self, ev)
 
 
-def main():
+def _testEListBox():
     """Little testing application. """
 
     import random
@@ -679,7 +679,3 @@ def main():
     
     
     app.MainLoop()
-
-    
-if __name__ == '__main__':
-    main()

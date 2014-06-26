@@ -1,21 +1,24 @@
 #!/usr/bin/env python
 #
-# NumberDialog.py - Similar to the wx.NumberEntryDialog, except allows
-#                   both floating point and integer types
+# numberdialog.py - An alternative to wx.NumberEntryDialog.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""An alternative to ``wx.NumberEntryDialog`` which supports floating point."""
 
 import wx
 
 class NumberDialog(wx.Dialog):
-    """
-    A dialog which contains a wx.TextCtrl, and Ok/Cancel buttons,
-    allowing the user to specify a number. If the user pushes the
-    Ok button, the number they entered will be accessible via the
-    GetValue() method. I've specifically not used the wx.SpinCtrl
-    or wx.SpinCtrlDouble, because they are too limited in their
-    flexibility with regard to validation and events. 
+    """Dialog which prompts the user for a number.
+    
+    A dialog which contains a ``wx.TextCtrl``, and Ok/Cancel buttons,
+    allowing the user to specify a number. If the user pushes the Ok
+    button, the number they entered will be accessible via the
+    :meth:`GetValue` method.
+
+    I've specifically not used the ``wx.SpinCtrl`` or ``wx.SpinCtrlDouble``,
+    because they are too limited in their flexibility with regard to
+    validation and events. 
     """
 
     def __init__(self,
@@ -26,22 +29,24 @@ class NumberDialog(wx.Dialog):
                  initial=None,
                  minValue=None,
                  maxValue=None):
-        """
-        Creates and lays out the NumberDialog. Parameters:
+        """Create and lay out a NumberDialog.
+
+        :param parent:          Wx parent object.
+
+        :param bool real:       If true, a floating point number will be 
+                                accepted. Otherwise, only integers are
+                                accepted.
+
+        :param str title:       Dialog title.
         
-          - real:      If true, a floating point number will be accepted.
-                       Otherwise, only integers are accepted.
+        :param str message:     If not None, a ``wx.StaticText`` label is
+                                added, containing the message.
+
+        :param number initial:  Initial value.
         
-          - title:     Dialog title.
+        :param number minValue: Minimum value.
         
-          - message:   If not None, a wx.StaticText label is added, containing
-                       the message.
-        
-          - initial:   Initial value.
-        
-          - minValue:  Minimum value.
-        
-          - maxValue:  Maximum value.
+        :param number maxValue: Maximum value.
         """
 
         if title   is None: title   = ''
@@ -99,18 +104,20 @@ class NumberDialog(wx.Dialog):
 
         
     def GetValue(self):
-        """
+        """Return the value that the user entered.
+        
         After a valid value has been entered, and OK button pushed (or
         enter pressed), this method may be used to retrieve the value.
-        Returns None in all other situations.
+        Returns ``None`` in all other situations.
         """
         return self._value
 
 
     def _validate(self):
-        """
-        Validates the current value. If the value is valid, returns it.
-        Otherwise a ValueError is raised with an appropriate message.
+        """Validates the current value.
+
+        If the value is valid, returns it.  Otherwise a ``ValueError`` is
+        raised with an appropriate message.
         """
         
         value = self._textctrl.GetValue()
@@ -137,11 +144,11 @@ class NumberDialog(wx.Dialog):
 
 
     def _onOk(self, ev):
-        """
-        Called when the Ok button is pushed, or enter is pressed. If the
-        entered value is valid, it is stored and the dialog is closed.
-        The value may be retrieved via the GetValue method. If the value
-        is not valid, the dialog remains open.
+        """Called when the Ok button is pushed, or enter is pressed.
+
+        If the entered value is valid, it is stored and the dialog is closed.
+        The value may be retrieved via the :meth:`GetValue` method. If the
+        value is not valid, the dialog remains open.
         """
         
         try:
@@ -161,15 +168,14 @@ class NumberDialog(wx.Dialog):
 
         
     def _onCancel(self, ev):
-        """
-        Called when the Cancel button is pushed. Closes the dialog.
-        """
+        """Called when the Cancel button is pushed. Closes the dialog."""
         self._value = None
         self.EndModal(wx.ID_CANCEL)
         self.Destroy() 
 
 
 def _testNumberDialog():
+    """Little test program."""
 
     app    = wx.App()
     frame  = wx.Frame(None)
