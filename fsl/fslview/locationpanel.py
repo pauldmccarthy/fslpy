@@ -9,6 +9,8 @@
 
 import wx
 
+import numpy as np
+
 import fsl.props as props
 
 class LocationPanel(wx.Panel, props.HasProperties):
@@ -91,45 +93,52 @@ class LocationPanel(wx.Panel, props.HasProperties):
                                    lName,
                                    self._selectedImageChanged)
         self.imageList.addListener('location',
-                                   lName,
+                                   '{}_worldToVox'.format(lName),
                                    self._worldLocationChanged)
         self.addListener(          'voxelLocation',
-                                   lName,
+                                   '{}_voxToWorld'.format(lName),
                                    self._voxelLocationChanged)
 
         self._selectedImageChanged()
         self._worldLocationChanged()
 
 
-    def _updateVoxelValue(self, *a):
+    def _updateVoxelValue(self, voxVal=None):
         """
         Retrieves the value of the voxel at the current location in the
         currently selected image, and displays it on the value label.
+        If the voxVal argument is provided, it is displayed. Otherwise
+        the value at the current voxel location is displayed.
         """
         
         image  = self.imageList[self.imageList.selectedImage]
         voxLoc = self.voxelLocation.xyz
 
-        # There's a chance that the voxel location will temporarily
-        # be out of bounds when the selected image is changed.
-        # So we'll be safe and check them.
-        for i in range(3):
-            if voxLoc[i] <= 0 or voxLoc[i] >= image.shape[i]:
-                return
+        if voxVal is None:
 
-        # 3D image
-        if len(image.shape) == 3:
-            voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2]]
-            
-        # 4D image. This will crash on non-4D images,
-        # which is intentional for the time being.
-        else:
+            # There's a chance that the voxel location will temporarily
+            # be out of bounds when the selected image is changed.
+            # So we'll be safe and check them.
+            for i in range(3):
+                if voxLoc[i] < 0 or voxLoc[i] >= image.shape[i]:
+                    return
 
-            # This will not work if an ImageDisplay
-            # instance other than the image.display
-            # property is in use.
-            volume = image.display.volume
-            voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2], volume]
+            # 3D image
+            if len(image.shape) == 3:
+                voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2]]
+
+            # 4D image. This will crash on non-4D images,
+            # which is intentional for the time being.
+            else:
+
+                # This will not work if an ImageDisplay
+                # instance other than the image.display
+                # property is in use.
+                volume = image.display.volume
+                voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2], volume]
+
+            if   np.isnan(voxVal): voxVal = 'NaN'
+            elif np.isinf(voxVal): voxVal = 'Inf'
 
         self._valueLabel.SetLabel('{}'.format(voxVal))
         self._voxelPanel.Layout()
@@ -172,14 +181,25 @@ class LocationPanel(wx.Panel, props.HasProperties):
         loc    = self.imageList.location.xyz
         voxLoc = image.worldToVox([loc])[0]
 
-        # We explicitly clamp the voxel location values so we don't
-        # trigger any infinite property event callback loops
+        inBounds = True
+
+        # If the selected world location is not within the selected
+        # image, we're going to temporarily disable notification on
+        # the voxel location property, because this would otherwise
+        # cause some infinite-property-listener-callback-recursion
+        # nastiness.
         for i in range(3):
 
-            if   voxLoc[i] < 0:               voxLoc[i] = 0
-            elif voxLoc[i] >= image.shape[i]: voxLoc[i] = image.shape[i] - 1
+            # allow the voxel location values to be equal to the image
+            if voxLoc[i] < 0 or voxLoc[i] > image.shape[i]:
+                inBounds = False
+
+        if not inBounds:
+            self._updateVoxelValue(voxVal='Out of bounds')
+            self.voxelLocation.disableNotification()
 
         self.voxelLocation.xyz = voxLoc
+        self.voxelLocation.enableNotification()
 
         
     def _selectedImageChanged(self, *a):

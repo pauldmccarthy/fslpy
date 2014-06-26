@@ -175,7 +175,7 @@ class Image(props.HasProperties):
         """
 
         if self.transform == 'affine':
-            voxToWorldMat = self.nibImage.get_affine().transpose()
+            voxToWorldMat = self.nibImage.get_affine()
             pixdims       = self.nibImage.get_header().get_zooms()
             
         elif self.transform == 'pixdim':
@@ -190,15 +190,19 @@ class Image(props.HasProperties):
         self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
         self.pixdims       = pixdims
 
+        self.voxToWorldMat = self.voxToWorldMat.transpose()
+        self.worldToVoxMat = self.worldToVoxMat.transpose()
+
         # for pixdim/identity transformations, we want the world
         # location (0, 0) to map to voxel location (0, 0)
         if self.transform in ['pixdim', 'id']:
             for i in range(3):
                 self.voxToWorldMat[3, i] =  self.pixdims[i] * 0.5
-                self.worldToVoxMat[3, i] = -self.pixdims[i] * 0.5
+                self.worldToVoxMat[3, i] = -0.5
                 
         log.debug('Image {} transformation matrix changed: {}'.format(
             self.name, self.voxToWorldMat))
+        log.debug('Inverted matrix: {}'.format(self.worldToVoxMat)) 
 
 
     def imageBounds(self, axis):
@@ -238,7 +242,9 @@ class Image(props.HasProperties):
         points in world coordinates, according to the affine
         transformation specified in the image file. The returned array
         is either a numpy.float64 array, or a single integer value,
-        depending on the input. Parameters:
+        depending on the input. There is no guarantee that the returned
+        array of voxel coordinates is within the bounds of the image
+        shape. Parameters:
         
           - p:    N*A array, where N is the number of points, and A
                   is the number of axes to consider (default: 3)
@@ -252,7 +258,14 @@ class Image(props.HasProperties):
         """
 
         voxp = self._transform(p, self.worldToVoxMat, axes)
-        voxp = np.array(voxp.round(), dtype=np.uint32)
+
+        # we're using a signed integer type, because if we were to
+        # used unsigned, and the worldToVox transformation produced
+        # negative voxel values, they'd be re-interpreted as large
+        # positive values. This would be a bad thing. Better to 
+        # return negative voxel values, and rely on callers to
+        # check the return values.
+        voxp = np.array(voxp.round(), dtype=np.int32)
 
         if voxp.size == 1: return voxp[0]
         else:              return voxp
