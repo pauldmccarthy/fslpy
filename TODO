@@ -47,7 +47,7 @@ arbitrary.
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
-** Standard for code documentation - Sphinx?
+** IN PROGRESS Standard for code documentation - Sphinx?
 ** OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** time series plotting option
 ** have multiple views open - look at wxAUI.
