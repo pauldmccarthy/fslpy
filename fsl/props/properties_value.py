@@ -110,7 +110,25 @@ class PropertyValue(object):
         self.__valid             = False
         self.__lastValue         = None
         self.__lastValid         = False
+        self.__notification      = True
 
+        
+    def enableNotification(self):
+        """
+        Enables notification of property value and attribute listeners
+        for this PropertyValue object.
+        """
+        self.__notification = True
+
+        
+    def disableNotification(self):
+        """
+        Disables notification of property value and attribute listeners
+        for this PropertyValue object. Notification can be re-enabled
+        via the enableNotification method.
+        """
+        self.__notification = False
+ 
         
     def addAttributeListener(self, name, listener):
         """
@@ -175,10 +193,13 @@ class PropertyValue(object):
 
     def _notifyAttributeListeners(self, name, value):
         """
-        Notifies all registered attribute listeners of an attribute change.
-        This method is separated so that it can be called from subclasses
-        (specifically the PropertyValueList, defined below)
+        Notifies all registered attribute listeners of an attribute change
+        (unless notification has been disabled via the disableNotification
+        method). This method is separated so that it can be called from
+        subclasses (specifically the PropertyValueList, defined below)
         """
+
+        if not self.__notification: return
         
         for cbName, cb in self._attributeListeners.items():
             
@@ -304,8 +325,11 @@ class PropertyValue(object):
         """
         Calls the preNotify function (if it is set), any listeners which have
         been registered with this PropertyValue object, and the postNotify
-        function (if it is set).
+        function (if it is set). If notification has been disabled (via the
+        disableNotification method), this method does nothing.
         """
+
+        if not self.__notification: return
         
         value        = self.__value
         valid        = self.__valid
