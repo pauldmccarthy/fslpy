@@ -3,16 +3,20 @@
 # properties_value.py - Definitions of the PropertyValue and
 #                       PropertyValueList classes.
 #
-# These definitions are a part of properties.py, and are intended
-# to be created and managed by PropertyBase objects. However,
-# the PropertyValue class definitions have absolutely no dependencies
-# upon the PropertyBase definitions. The same can't be said for the
-# other way around though.
-#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Definitions of the :class:`PropertyValue` and :class:`PropertyValueList`
+classes.
 
-import sys
+These definitions are really a part of the :mod:`fsl.props.properties` module,
+and are intended to be created and managed by
+:class:`~fsl.props.properties.PropertyBase` objects. However, the
+:class:`PropertyValue` class definitions have absolutely no dependencies upon
+the :class:`~fsl.props.properties.PropertyBase` definitions. The same can't be
+said for the other way around though.
+
+"""
+
 import logging
 import traceback
 
@@ -21,10 +25,10 @@ from collections import OrderedDict
 log = logging.getLogger(__name__)
 
 class PropertyValue(object):
-    """
-    An object which encapsulates a value of some sort. The value may be
-    subjected to validation rules, and listeners may be registered for
-    notification of value and validity changes.
+    """An object which encapsulates a value of some sort.
+
+    The value may be subjected to validation rules, and listeners may be
+    registered for notification of value and validity changes.
     """
 
     def __init__(self,
@@ -37,59 +41,67 @@ class PropertyValue(object):
                  postNotifyFunc=None,
                  allowInvalid=True,
                  **attributes):
-        """
-        Create a PropertyValue object. Parameters:
+        """Create a :class:`PropertyValue` object.
         
-          - context:        An object which is passed as the first argument to
-                            the validate, preNotifyFunc, postNotifyFunc, and
-                            any registered listeners.
+        :param context:        An object which is passed as the first argument
+                               to the ``validateFunc``, ``preNotifyFunc``,
+                               ``postNotifyFunc``, and any registered
+                               listeners. Can be anything, but will nearly
+                               always be a
+                               :class:`~fsl.props.properties.HasProperties`
+                               instance.
 
-          - name:           Value name - if not provided, a default, unique
-                            name is created.
+        :param str name:       Value name - if not provided, a default, unique
+                               name is created.
 
-          - value:          Initial value.
+        :param value:          Initial value.
 
-          - castFunc:       Function which performs type casting or data
-                            conversion. Must accept three parameters - the
-                            context, a dictionary containing the attributes
-                            of this object, and the value to cast. Must
-                            return that value, cast appropriately.
+        :param castFunc:       Function which performs type casting or data
+                               conversion. Must accept three parameters - the
+                               context, a dictionary containing the attributes
+                               of this object, and the value to cast. Must
+                               return that value, cast appropriately.
         
-          - validateFunc:   Function which accepts three parameters - the
-                            context, a dictionary containing the attributes
-                            of this object, and a value. This function should
-                            test the provided value, and raise a ValueError
-                            if it is invalid.
+        :param validateFunc:   Function which accepts three parameters - the
+                               context, a dictionary containing the attributes
+                               of this object, and a value. This function
+                               should test the provided value, and raise a
+                               :exc:`ValueError` if it is invalid.
 
-          - preNotifyFunc:  Function to be called whenever the property value
-                            changes, but before any registered listeners are
-                            called. Must accept three parameters - the new
-                            value, a boolean value which is true if the new
-                            value is valid, False otherwise, and the context
-                            object.
+        :param preNotifyFunc:  Function to be called whenever the property
+                               value changes, but before any registered
+                               listeners are called. Must accept three
+                               parameters - the new value, a boolean value
+                               which is ``True`` if the new value is valid,
+                               ``False`` otherwise, and the context object.
         
-          - postNotifyFunc: Function to be called whenever the property value
-                            changes, but after any registered listeners are
-                            called. Must accept the same parameters as the
-                            preNotifyFunc.
+        :param postNotifyFunc: Function to be called whenever the property
+                               value changes, but after any registered
+                               listeners are called. Must accept the same
+                               parameters as the ``preNotifyFunc``.
         
-          - allowInvalid:   If False, any attempt to set the value to something
-                            invalid will result in a ValueError. Note that
-                            this does not guarantee that the property will
-                            never have an invalid value, as the definition of
-                            'valid' depends on external factors (i.e. the
-                            validateFunc).  Therefore, the validity of a value
-                            may change, even if the value itself has not
-                            changed.
+        :param allowInvalid:   If ``False``, any attempt to set the value to
+                               something invalid will result in a
+                               :exc:`ValueError`. Note that this does not
+                               guarantee that the property will never have an
+                               invalid value, as the definition of 'valid'
+                               depends on external factors (i.e. the
+                               ``validateFunc``).  Therefore, the validity of
+                               a value may change, even if the value itself
+                               has not changed.
         
-          - attributes:     Any key-value pairs which are to be associated with
-                            this PropertyValue object, and passed to the cast
-                            and validate functions. Attributes are not used
-                            by the PropertyValue/List  classes, however they
-                            are used by the List/PropertyBase classes to store
-                            per-instance property constraints. Listeners may
-                            register to be notified when attribute values
-                            change.
+        :param attributes:     Any key-value pairs which are to be associated 
+                               with this :class:`PropertyValue` object, and 
+                               passed to the ``castFunc`` and ``validateFunc`` 
+                               functions. Attributes are not used by the 
+                               :class:`PropertyValue` or
+                               :class:`PropertyValueList` classes, however
+                               they are used by the
+                               :class:`~fsl.props.properties.ListPropertyBase`
+                               and :class:`~fsl.props.properties.PropertyBase`
+                               classes to store per-instance property
+                               constraints. Listeners may register to be
+                               notified when attribute values change.
         """
         
         if name     is     None: name  = 'PropertyValue_{}'.format(id(self))
@@ -114,30 +126,36 @@ class PropertyValue(object):
 
         
     def enableNotification(self):
-        """
-        Enables notification of property value and attribute listeners
-        for this PropertyValue object.
+        """Enables notification of property value and attribute listeners for
+        this :class:`PropertyValue` object.
+
         """
         self.__notification = True
 
         
     def disableNotification(self):
-        """
-        Disables notification of property value and attribute listeners
-        for this PropertyValue object. Notification can be re-enabled
-        via the enableNotification method.
+        """Disables notification of property value and attribute listeners for
+        this :class:`PropertyValue` object. Notification can be re-enabled via
+        the :meth:`enableNotification` method.
+
         """
         self.__notification = False
  
         
     def addAttributeListener(self, name, listener):
-        """
-        Adds an attribute listener for this PropertyValue. The listener
-        callback function must accept the following arguments:
+        """Adds an attribute listener for this :class:`PropertyValue`. The
+        listener callback function must accept the following arguments:
         
-          - context:   The context associated with this PropertyValue.
-          - attribute: The name of the attribute that changed
-          - value:     The new attribute value 
+          - ``context``:   The context associated with this
+                           :class:`PropertyValue`.
+          - ``attribute``: The name of the attribute that changed.
+          - ``value``:     The new attribute value.
+
+        :param str name: A unique name for the listener. If a listener with
+                         the specified name already exists, it will be
+                         overwritten.
+        
+        :param listener: The callback function.
         """
         log.debug('Adding attribute listener on {}.{}: {}'.format(
             self._context.__class__.__name__, self._name, name))
@@ -147,9 +165,7 @@ class PropertyValue(object):
 
         
     def removeAttributeListener(self, name):
-        """
-        Removes the attribute listener of the given name.
-        """
+        """Removes the attribute listener of the given name."""
         log.debug('Removing attribute listener on {}.{}: {}'.format(
             self._context.__class__.__name__, self._name, name))
         
@@ -158,23 +174,19 @@ class PropertyValue(object):
 
 
     def getAttributes(self):
-        """
-        Returns a dictionary containing all the attributes of this
-        PropertyValue object.
+        """Returns a dictionary containing all the attributes of this
+        :class:`PropertyValue` object.
         """
         return self._attributes.copy()
 
         
     def getAttribute(self, name):
-        """
-        Returns the value of the named attribute.
-        """
+        """Returns the value of the named attribute."""
         return self._attributes[name]
 
         
     def setAttribute(self, name, value):
-        """
-        Sets the named attribute to the given value, and notifies any
+        """Sets the named attribute to the given value, and notifies any
         registered attribute listeners of the change.
         """
         oldVal = self._attributes.get(name, None)
@@ -192,11 +204,11 @@ class PropertyValue(object):
 
 
     def _notifyAttributeListeners(self, name, value):
-        """
-        Notifies all registered attribute listeners of an attribute change
-        (unless notification has been disabled via the disableNotification
-        method). This method is separated so that it can be called from
-        subclasses (specifically the PropertyValueList, defined below)
+        """Notifies all registered attribute listeners of an attribute change
+        (unless notification has been disabled via the
+        :meth:`disableNotification` method). This method is separated so that
+        it can be called from subclasses (specifically the
+        :class:`PropertyValueList`).
         """
 
         if not self.__notification: return
@@ -215,14 +227,19 @@ class PropertyValue(object):
         
         
     def addListener(self, name, callback):
-        """
-        Adds a listener for this value. When the value changes, the
-        listener callback function is called. The callback function
-        must accept these arguments:
+        """Adds a listener for this value.
 
-          value    - The property value
-          valid    - Whether the value is valid or invalid
-          context  - The context object passed in to __init__.
+        When the value changes, the listener callback function is called. The
+        callback function must accept these arguments:
+
+          - ``value``:   The property value
+          - ``valid``:   Whether the value is valid or invalid
+          - ``context``: The context object passed to :meth:`__init__`.
+
+        :param str name: A unique name for this listener. If a listener with
+                         the name already exists, it will be overwritten.
+        :param callback: The callback function.
+
         """
         log.debug('Adding listener on {}.{}: {}'.format(
             self._context.__class__.__name__,
@@ -233,9 +250,8 @@ class PropertyValue(object):
 
 
     def removeListener(self, name):
-        """
-        Removes the listener with the given name from the specified
-        instance.
+        """Removes the listener with the given name from this
+        :class:`PropertyValue`.
         """
         log.debug('Removing listener on {}.{}: {}'.format(
             self._context.__class__.__name__,
@@ -246,27 +262,25 @@ class PropertyValue(object):
 
 
     def setPreNotifyFunction(self, preNotifyFunc):
-        """
-        Sets the function to be called on value changes, before
-        any registered listeners.
+        """Sets the function to be called on value changes, before any
+        registered listeners.
         """
         self._preNotifyFunc = preNotifyFunc
 
         
     def get(self):
-        """
-        Returns the current property value.
-        """
+        """Returns the current property value."""
         return self.__value
 
         
     def set(self, newValue):
-        """
-        Sets the property value. The property is validated and, if the
-        property value or its validity has changed, the preNotifyFunc,
-        any registered listeners, and the postNotifyFunc are called.
-        If allowInvalid was set to False, and the new value is not
-        valid, a ValueError is raised, and listeners are not notified. 
+        """Sets the property value.
+
+        The property is validated and, if the property value or its validity
+        has changed, the ``preNotifyFunc``, any registered listeners, and the
+        ``postNotifyFunc`` are called.  If ``allowInvalid`` was set to
+        ``False``, and the new value is not valid, a :exc:`ValueError` is
+        raised, and listeners are not notified.
         """
 
         # cast the value if necessary.
@@ -322,11 +336,13 @@ class PropertyValue(object):
 
         
     def _notify(self):
-        """
-        Calls the preNotify function (if it is set), any listeners which have
-        been registered with this PropertyValue object, and the postNotify
-        function (if it is set). If notification has been disabled (via the
-        disableNotification method), this method does nothing.
+        """Notifies registered listeners.
+
+        Calls the ``preNotify`` function (if it is set), any listeners which
+        have been registered with this :class:`PropertyValue` object, and the
+        ``postNotify`` function (if it is set). If notification has been
+        disabled (via the :meth:`disableNotification` method), this method
+        does nothing.
         """
 
         if not self.__notification: return
@@ -366,16 +382,14 @@ class PropertyValue(object):
 
 
     def revalidate(self):
-        """
-        Revalidates the current property value, and re-notifies
-        any registered listeners if the value validity has changed.
+        """Revalidates the current property value, and re-notifies any
+        registered listeners if the value validity has changed.
         """
         self.set(self.get())
 
 
     def isValid(self):
-        """
-        Returns true if the current property value is valid, False
+        """Returns ``True`` if the current property value is valid, ``False``
         otherwise.
         """
         try: self._validate(self._context, self._attributes, self.get())
@@ -384,19 +398,74 @@ class PropertyValue(object):
 
 
 class PropertyValueList(PropertyValue):
-    """
-    A PropertyValue object which stores other PropertyValue objects in
-    a list. When created, separate validation functions may be passed in
-    for individual items, and for the list as a whole. Listeners may be
-    registered on individual items (accessible via the
-    getPropertyValueList method), or on the entire list.
+    """A :class:`PropertyValue` object which stores other
+    :class:`PropertyValue` objects in a list.
 
-    This code hurts my head, as it's a bit complicated. The __value
-    encapsulated by this PropertyValue object (a PropertyValueList is
-    also a PropertyValue) is just the list of raw values.  Alongside this,
-    a separate list is maintained, which contains PropertyValue objects.
-    Whenever a list-modifying operation occurs on this PropertyValueList
-    (which also acts a bit like a Python list), both lists are updated.
+    When created, separate validation functions may be passed in for
+    individual items, and for the list as a whole. Listeners may be registered
+    on individual items (accessible via the :meth:`getPropertyValueList`
+    method), or on the entire list.
+
+    This code hurts my head, as it's a bit complicated. The ``__value``
+    encapsulated by this :class:`PropertyValue` object (a
+    :class:`PropertyValueList` is itself a :class:`PropertyValue`) is just the
+    list of raw values.  Alongside this, a separate list is maintained, which
+    contains :class:`PropertyValue` objects.  Whenever a list-modifying
+    operation occurs on this :class:`PropertyValueList` (which also acts a bit
+    like a Python list), both lists are updated.
+
+    The values contained in this :class:`PropertyValueList` may be accessed
+    through standard Python list operations, including slice-based access
+    and assignment, :meth:`append`, :meth:`extend`, :meth:`pop`,
+    :meth:`index`, :meth:`count`, and :meth:`move` (this last one is
+    non-standard).
+
+    The main restriction of this list-like functionality is that value
+    assigments via indexing must not change the length of the list. For
+    example, this is a valid assignment::
+
+      mylist[2:7] = [3,4,5,6,7]
+
+    Whereas this would result in an :exc:`IndexError`::
+
+      mylist[2:7] = [3,4,5,6]
+
+
+    When a :class:`PropertyValueList` is accessed as an attribute of a
+    :class:`~fsl.props.properties.HasProperties` instance (by far the most
+    common use-case), there is an important semantic difference between
+    an assignment like this::
+
+      myObj.mylist = [1,2,3,4,5]
+
+    and one like this::
+
+      myObj.mylist[:] = [1,2,3,4,5]
+
+    The first approach will result in any existing :class:`PropertyValue`
+    objects in the list being discarded, and new ones created for the new list
+    values. In contrast, the second approach, in addition to raising a
+    :exc:`IndexError` if the existing list length is not ``5``, will not
+    result in creation of new :class:`PropertyValue` instances; rather, the
+    values of the existing :class:`PropertyValue` objects will be
+    updated.
+
+    This is a very important distinction to keep in mind when working with
+    list properties and values which may exist for long periods of time and,
+    more importantly, for which listeners have been registered with individual
+    :class:`PropertyValue` objects contained in the list. If you register
+    a listener with a :class:`PropertyValue` item, and then assign values to
+    the list using the first assignment approach above, your listener will be
+    lost in the ether.
+
+    There are some interesting type-specific subclasses of the
+    :class:`PropertyValueList`, which provide additional functionality:
+
+      - The :class:`~fsl.props.properties_types.PointValueList`, for
+        :class:`~fsl.props.properties_types.Point` properties.
+
+      - The :class:`~fsl.props.properties_types.BoundsValueList`, for
+        :class:`~fsl.props.properties_types.Bounds` properties.
     """
 
     def __init__(self,
@@ -411,8 +480,42 @@ class PropertyValueList(PropertyValue):
                  postNotifyFunc=None,
                  listAttributes=None,
                  itemAttributes=None):
-        """
-        Parameters:
+        """Create a :class:`PropertyValueList`.
+
+        :param context:               See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param str name:              See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param list values:           Initial list values.
+        
+        :param itemCastFunc:          Function which casts a single
+                                      list item. See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param itemValidateFunc:      Function which validates a single
+                                      list item. See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param listValidateFunc:      Function which validates the list as a
+                                      whole.
+        
+        :param bool itemAllowInvalid: Whether items are allowed to containg
+                                      invalid values.
+        
+        :param preNotifyFunc:         See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param postNotifyFunc:        See the :class:`PropertyValue`
+                                      constructor.
+        
+        :param dict listAttributes:   Attributes to be associated with this
+                                      :class:`PropertyValueList`.
+        
+        :param dict itemAttributes:   Attributes to be associated with new
+                                      :class:`PropertyValue` items added to
+                                      the list.
         """
         if name is None: name = 'PropertyValueList_{}'.format(id(self))
         
@@ -448,28 +551,28 @@ class PropertyValueList(PropertyValue):
 
         
     def getPropertyValueList(self):
-        """
-        Return (a copy of) the underlying property value list, allowing
-        access to the PropertyValue objects which manage each list item.
+        """Return (a copy of) the underlying property value list, allowing
+        access to the :class:`PropertyValue` objects which manage each list
+        item.
         """
         return list(self.__propVals)
  
         
     def get(self):
-        """
-        Overrides PropertyValue.get(). Returns this PropertyValueList
-        object.
+        """Overrides :meth:`PropertyValue.get`. Returns this
+        :class:`PropertyValueList` object.
         """
         return self
 
 
     def set(self, newValues, recreate=True):
-        """
-        Overrides PropertyValue.set(). Sets the values stored in this
-        PropertyValue list.  If the recreate flag is True (default)
-        all of the PropertyValue objects managed by this PVL object are
-        discarded, and new ones recreated. This flag is intended for
-        internal use only.
+        """Overrides :meth:`PropertyValue.set`.
+
+        Sets the values stored in this :class:`PropertyValueList`.  If the
+        ``recreate`` flag is ``True`` (default) all of the
+        :class:`PropertyValue` objects managed by this ``PVL`` object are
+        discarded, and new ones recreated. This flag is intended for internal
+        use only.
         """
 
         if self._itemCastFunc is not None:
@@ -484,18 +587,17 @@ class PropertyValueList(PropertyValue):
 
 
     def revalidate(self):
-        """
-        Overrides PropertyValue.revalidate(). Revalidates the values in this
-        list, ensuring that the corresponding PropertyValue objects are not
-        recreated. 
+        """Overrides :meth:`PropertyValue.revalidate`.
+
+        Revalidates the values in this list, ensuring that the corresponding
+        :class:`PropertyValue` objects are not recreated.
         """
         self.set(PropertyValue.get(self), False)
 
         
     def __newItem(self, item):
-        """
-        Called whenever a new item is added to the list.  Encapsulate the
-        given item in a PropertyValue object.
+        """Called whenever a new item is added to the list.  Encapsulate the
+        given item in a :class:`PropertyValue` object.
         """
 
         if self._itemAttributes is None: itemAtts = {}
@@ -541,9 +643,7 @@ class PropertyValueList(PropertyValue):
     def count(       self, item):  return self[:].count(item)
     
     def append(self, item):
-        """
-        Appends the given item to the end of the list.  
-        """
+        """Appends the given item to the end of the list."""
 
         listVals = self[:]
         listVals.append(item)
@@ -554,11 +654,7 @@ class PropertyValueList(PropertyValue):
 
 
     def extend(self, iterable):
-        """
-        Appends all items in the given iterable to the end of the
-        list.  An IndexError is raised if an insertion would causes
-        the list to grow beyond its maximum length.
-        """
+        """Appends all items in the given iterable to the end of the list."""
         listVals = self[:]
         listVals.extend(iterable)
         self.set(listVals, False) 
@@ -568,10 +664,8 @@ class PropertyValueList(PropertyValue):
 
         
     def pop(self, index=-1):
-        """
-        Remove and return the specified value in the list (default: last).
-        An IndexError is raised if the removal would cause the list length
-        to shrink below its minimum length.
+        """Remove and return the specified value in the list (default:
+        last).
         """
         listVals = self[:]
         listVals.pop(index)
@@ -582,9 +676,7 @@ class PropertyValueList(PropertyValue):
 
         
     def move(self, from_, to):
-        """
-        Move the item from 'from_' to 'to'.
-        """
+        """Move the item from 'from\_' to 'to'."""
 
         listVals = self[:]
         val = listVals.pop(from_)
@@ -596,21 +688,19 @@ class PropertyValueList(PropertyValue):
 
 
     def __setitem__(self, key, values):
-        """
-        Sets the value(s) of the list at the specified index/slice. 
-        """
+        """Sets the value(s) of the list at the specified index/slice."""
 
         if isinstance(key, slice):
             indices = range(*key.indices(len(self)))
             if len(indices) != len(values):
-                raise ValueError(
+                raise IndexError(
                     'PropertyValueList does not support complex slices')
 
         elif isinstance(key, int):
             indices = [key]
             values  = [values]
         else:
-            raise ValueError('Invalid key type')
+            raise IndexError('Invalid key type')
 
         oldVals = self[:]
         newVals = list(oldVals)
@@ -639,11 +729,7 @@ class PropertyValueList(PropertyValue):
 
         
     def __delitem__(self, key):
-        """
-        Remove items at the specified index/slice from the list. An
-        IndexError is raised if the removal would cause the list to
-        shrink below its minimum length.
-        """
+        """Remove items at the specified index/slice from the list."""
         listVals = self[:]
         listVals.__delitem__(key)
         self.set(listVals, False)

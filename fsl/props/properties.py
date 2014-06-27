@@ -113,7 +113,13 @@ class PropertyBase(object):
     def addListener(self, instance, name, callback):
         """Register a listener with the
         :class:`~fsl.props.properties_value.PropertyValue` object managed by
-        this property.
+        this property. See
+        :meth:`~fsl.props.properties_value.PropertyValue.addListener`.
+
+        :param instance: The :class:`HasProperties` instance on which the
+                         listener is to be registered.
+        :param str name: A name for the listener.
+        :param callback: The listener callback function
         """
         self._getInstanceData(instance).propVal.addListener(name, callback)
         
@@ -276,7 +282,7 @@ class PropertyBase(object):
         ``required=True``, was passed to the constructor. If ``required`` is
         ``True``, and the value is ``None``, a :exc:`ValueError` is raised. If
         a custom validate function was set, it is called and, if it returns
-        False, a :exc:`ValueError` is raised. It may also raise a
+        ``False``, a :exc:`ValueError` is raised. It may also raise a
         :exc:`ValueError` of its own for invalid values.
 
         Subclasses which override this method should therefore call this
