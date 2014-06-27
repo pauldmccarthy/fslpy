@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 #
-# properties_types.py - Definitions for different property types - see
-# properties.py for more information.
+# properties_types.py - Definitions for different property types.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Definitions for different property types.
+
+This module provides a number of :class:`~fsl.props.properties.PropertyBase`
+subclasses which define properties of different types.
+"""
 
 import os.path as op
 
@@ -14,25 +18,37 @@ import matplotlib.cm     as mplcm
 import properties       as props
 import properties_value as propvals
 
+
 class Boolean(props.PropertyBase):
-    """
-    A property which encapsulates a boolean value.
-    """
+    """A property which encapsulates a ``bool`` value."""
 
     def __init__(self, **kwargs):
+        """Create a :class:`Boolean` property.
+
+        If the ``default`` ``kwarg`` is not provided, a default value of
+        ``False`` is used.
+
+        :param kwargs: All passed through to the
+                       :class:`~fsl.props.properties.PropertyBase`
+                       constructor.
+        """
 
         kwargs['default'] = kwargs.get('default', False)
         props.PropertyBase.__init__(self, **kwargs)
 
         
     def cast(self, instance, attributes, value):
+        """Overrides :class:`~fsl.props.properties.PropertyBase.cast`.
+        Casts the given value to a ``bool``.
+        """
         return bool(value)
 
 
 class Number(props.PropertyBase):
-    """
-    Base class for the Int and Real classes. Don't
-    use/subclass this, use/subclass one of Int or Real.
+    """Base class for the :class:`Int` and :class:`Real` classes.
+
+    A property which represents a number.  Don't use/subclass this,
+    use/subclass one of :class:`Int` or :class:`Real`.
     """
     
     def __init__(self,
@@ -41,14 +57,22 @@ class Number(props.PropertyBase):
                  clamped=False,
                  editLimits=False,
                  **kwargs):
-        """
-        Optional parameters:
-          - minval:     Minimum value
-          - maxval:     Maximum value
-          - clamped:    If True, the value will be clamped to its min/max
-                        bounds.
-          - editLimits: If True, widgets created to modify Number properties
-                        will allow the user to change the min/max limits.
+        """Define a Number property.
+        
+        :param number minval:   Minimum valid value
+        :param number maxval:   Maximum valid value
+        
+        :param bool clamped:    If ``True``, the value will be clamped to its
+                                min/max bounds.
+        
+        :param bool editLimits: If ``True``, widgets created to modify
+                                :class:`Number` properties will allow the user
+                                to change the min/max values.
+        
+        :param kwargs:          Passed through to the
+                                :class:`~fsl.props.properties.PropertyBase`
+                                constructor. If a ``default`` value is not
+                                provided, it is set to something sensible.
         """
 
         default = kwargs.get('default', None)
@@ -72,6 +96,22 @@ class Number(props.PropertyBase):
 
         
     def validate(self, instance, attributes, value):
+        """Overrides :meth:`~fsl.props.properties.PropertyBase.validate`.
+        Validates the given number.
+
+        Calls the :meth:`~fsl.props.properties.PropertyBase.validate` method.
+        Then, if the ``minval`` and/or ``maxval`` constraints have been set,
+        and the given value is not within those values, a :exc:`ValueError` is
+        raised.
+
+        :param instance:        The owning
+                                :class:`~fsl.props.properties.HasProperties`
+                                instance (or ``None``.
+        
+        :param dict attributes: Dictionary containing property constraints.
+        
+        :param number value:    The value to validate.
+        """
         
         props.PropertyBase.validate(self, instance, attributes, value)
         

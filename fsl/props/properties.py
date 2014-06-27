@@ -270,10 +270,13 @@ class PropertyBase(object):
             
     def validate(self, instance, attributes, value):
         """Called when an attempt is made to set the property value on the
-        given instance. The sole purpose of :meth:`validate` is to determine
-        whether a given value is valid or invalid; it should not do anything
-        else. In particular, it should not modify any other property values
-        on the instance, as bad things will probably happen.
+        given instance.
+
+        Called by :class:`PropertyValue` objects when their value changes. The
+        sole purpose of :meth:`validate` is to determine whether a given value
+        is valid or invalid; it should not do anything else. In particular, it
+        should not modify any other property values on the instance, as bad
+        things will probably happen.
         
         If the given value is invalid, subclass implementations should raise a
         :exc:`ValueError` containing a useful message as to why the value is
@@ -288,6 +291,17 @@ class PropertyBase(object):
         Subclasses which override this method should therefore call this
         superclass implementation in addition to performing their own
         validation.
+
+        :param instance:        The :class:`HasProperties` instance which
+                                owns this :class:`PropertyBase` instance,
+                                or ``None`` for an unbound property value.
+        
+        :param dict attributes: Attributes of the :class:`PropertyValue`
+                                object, which are used to store type-specific
+                                constraints for :class:`PropertyBase`
+                                subclasses.
+        
+        :param value:           The value to be validated.
         """
 
         # a value is required
