@@ -82,7 +82,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
     def canvasToWorld(self, xpos, ypos):
         """
-        Overwrites SliceCanvas.canvasToWorld. Given pixel x/y
+        Overrides SliceCanvas.canvasToWorld. Given pixel x/y
         coordinates on this canvas, translates them into the
         real world x/y/z coordinates of the displayed slice.
         Returns a 3-tuple containing the (x, y, z) coordinates

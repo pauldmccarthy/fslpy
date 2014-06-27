@@ -399,7 +399,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # not yet been set. But draw() may be called mored than once
         # before _initGLData is called. Here, to prevent
         # _initGLData from running more than once, the first time
-        # it is called it simply overwrites itself with a dummy method.
+        # it is called it simply overrides itself with a dummy method.
         self._initGLData = lambda s: s
  
         self.glContext.SetCurrent(self)
