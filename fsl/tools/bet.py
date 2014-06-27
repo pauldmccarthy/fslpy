@@ -9,7 +9,8 @@ from collections import OrderedDict
 
 import wx
 
-import fsl.props              as props
+import props
+
 import fsl.data.imagefile     as imagefile
 import fsl.data.fslimage      as fslimage
 import fsl.utils.runwindow    as runwindow

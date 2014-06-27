@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.props               as props
+import props
 import fsl.data.fslimage       as fslimage
 import fsl.fslview.slicecanvas as slicecanvas
 

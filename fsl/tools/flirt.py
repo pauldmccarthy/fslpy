@@ -7,7 +7,7 @@
 
 from collections import OrderedDict
 
-import fsl.props as props
+import props
 
 flirtModes = OrderedDict((
     ('single',   'Input image -> Reference image'),

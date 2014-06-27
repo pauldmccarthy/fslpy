@@ -25,8 +25,9 @@ import OpenGL.GL   as gl
 import OpenGL.GL.ARB.instanced_arrays as arbia
 import OpenGL.GL.ARB.draw_instanced   as arbdi
 
+import props
+
 import fsl.data.fslimage       as fslimage
-import fsl.props               as props
 import fsl.fslview.glimagedata as glimagedata
 
 # Locations of the shader source files.

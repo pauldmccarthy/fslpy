@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.props                  as props
+import props
 import fsl.fslview.lightboxcanvas as lightboxcanvas
 
 class LightBoxPanel(wx.Panel, props.HasProperties):

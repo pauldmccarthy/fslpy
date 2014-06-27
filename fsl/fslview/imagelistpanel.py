@@ -17,8 +17,9 @@ import wx
 
 import fsl.data.fslimage  as fslimage
 import fsl.data.imagefile as imagefile
-import fsl.gui.elistbox   as elistbox
-import fsl.props          as props
+
+import pwidgets.elistbox  as elistbox
+import props
 
 
 class ImageListPanel(wx.Panel):

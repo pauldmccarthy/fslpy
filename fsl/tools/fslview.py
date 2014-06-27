@@ -17,7 +17,8 @@ import fsl.fslview.locationpanel  as locationpanel
 import fsl.fslview.imagelistpanel as imagelistpanel
 
 import fsl.data.fslimage as fslimage
-import fsl.props         as props
+
+import props
 
 
 class FslViewPanel(wx.Panel):

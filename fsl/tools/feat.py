@@ -8,7 +8,7 @@
 
 from collections import OrderedDict
 
-import fsl.props as props
+import props
 
 analysisTypeOpts = OrderedDict((
     ('firstLevel', 'First-level analysis'),

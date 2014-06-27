@@ -19,8 +19,9 @@ import numpy.linalg       as linalg
 import nibabel            as nib
 import matplotlib.cm      as mplcm
 
-import fsl.props            as props
-import fsl.data.imagefile   as imagefile
+import props
+
+import fsl.data.imagefile as imagefile
 
 
 log = logging.getLogger(__name__)

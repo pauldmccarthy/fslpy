@@ -16,8 +16,9 @@ import numpy as np
 
 import OpenGL.GL as gl
 
+import props
+
 import fsl.fslview.slicecanvas as slicecanvas
-import fsl.props               as props
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):

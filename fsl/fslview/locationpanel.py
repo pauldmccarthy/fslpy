@@ -11,7 +11,7 @@ import wx
 
 import numpy as np
 
-import fsl.props as props
+import props
 
 class LocationPanel(wx.Panel, props.HasProperties):
     """
