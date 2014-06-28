@@ -416,7 +416,7 @@ class ImageDisplay(props.HasProperties):
         'cmap'         : 'Colour map',
         'volume'       : 'Volume to display (zero-indexed, for 4D images)'}
 
-    _help = _tooltips
+    _propHelp = _tooltips
 
 
     def __init__(self, image):
