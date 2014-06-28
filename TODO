@@ -26,11 +26,11 @@ arbitrary.
 ** Float formatting on range slider buttons
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
-** location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
-** Location selection on LightBoxCanvas.
+** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
+** DONE Location selection on LightBoxCanvas.
 ** change image dimension ordering
 ** link display properties across images
-** separate out props and gui packages - they should really be separate projects
+** DONE separate out props and gui packages - they should really be separate projects
 ** mouse-based zooming in ortho panel
 ** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
@@ -42,12 +42,12 @@ arbitrary.
    whether it's worth doing. It's really just to support images with bad
    affine transformations.
 
-** Custon colour maps from original FSLView
+** Custom colour maps from original FSLView
 * Big things
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
-** IN PROGRESS Standard for code documentation - Sphinx?
+** IN PROGRESS Standard for code documentation - Sphinx.
 ** OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** time series plotting option
 ** have multiple views open - look at wxAUI.
