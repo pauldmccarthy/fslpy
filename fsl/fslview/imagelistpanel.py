@@ -148,16 +148,17 @@ class ImageListPanel(wx.Panel):
         self.Refresh()
 
         
-    def _addImage(self, ev):
+    def _addImage(self, ev, lastDir=None):
         """
         Called when the 'add' button on the list box is pressed. Pops up an
         open file dialog prompting the user to choose one or more image files,
         then opens those files, adds them to the image list, and creates
         display panels for each of them.
         """
-        
-        try:    lastDir = self._lastDir
-        except: lastDir = os.getcwd()
+
+        if lastDir is None:
+            try:    lastDir = self._lastDir
+            except: lastDir = os.getcwd()
 
         wildcard = imagefile.wildcard()
 

@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os
 import sys
 import os.path as op
 import argparse
@@ -224,6 +225,7 @@ def interface(parent, args, imageList):
     panel = FslViewPanel(parent, imageList)
 
     menubar  = parent.GetMenuBar()
+    fileMenu = menubar.GetMenu(menubar.FindMenu('File'))
     viewMenu = wx.Menu()
     menubar.Append(viewMenu, 'View')
 
@@ -232,6 +234,23 @@ def interface(parent, args, imageList):
 
     parent.Bind(wx.EVT_MENU, lambda ev: panel.showOrtho(),    orthoAction)
     parent.Bind(wx.EVT_MENU, lambda ev: panel.showLightBox(), lightboxAction)
+
+    openFileAction     = fileMenu.Append(wx.ID_ANY, 'Open file')
+    openStandardAction = fileMenu.Append(wx.ID_ANY, 'Open standard')
+
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel.listPanel._addImage(ev),
+                openFileAction)
+
+    fsldir = os.environ.get('FSLDIR', None)
+
+    if fsldir is not None:
+        stddir = op.join(fsldir, 'data', 'standard')
+        parent.Bind(wx.EVT_MENU,
+                    lambda ev: panel.listPanel._addImage(ev, stddir),
+                    openStandardAction)
+    else:
+        openStandardAction.Enable(False)
 
     if args.lightbox:
         panel.showLightBox()
