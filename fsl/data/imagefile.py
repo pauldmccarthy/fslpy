@@ -5,28 +5,38 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Convenience functions for adding/stripping supported
+file extensions to/from image file names.
+"""
 
 import os
 import os.path as op
 
-# The file extensions which we understand. This list is used
-# as the default if if the allowedExts parameter is not passed
-# to any of the functions in this module.
+
 _allowedExts = ['.nii', '.img', '.hdr', '.nii.gz', '.img.gz']
+"""The file extensions which we understand. This list is used as the default
+if if the ``allowedExts`` parameter is not passed to any of the functions in
+this module.
+"""
 
 _descriptions = ['NIFTI1 images',
                  'ANALYZE75 images',
                  'NIFTI1/ANALYZE75 headers',
                  'Compressed NIFTI1 images',
                  'Compressed ANALYZE75/NIFTI1 images']
+"""Descriptions for each of the extensions in :data:`_allowedExts`. """
 
 
-# The default file extension (TODO read this from $FSLOUTPUTTYPE)
 _defaultExt  = '.nii.gz'
+"""The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
 
 
 def wildcard(allowedExts=None):
-    """
+    """Returns a wildcard string for use in a file dialog, to limit
+    the acceptable file types.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
     """
     
     if allowedExts is None:
@@ -38,7 +48,7 @@ def wildcard(allowedExts=None):
 
     exts = ['*{}'.format(ext) for ext in allowedExts]
 
-    wcParts = ['|'.join((desc,ext)) for (desc,ext) in zip(descs, exts)]
+    wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
 
     print  '|'.join(wcParts)
     return '|'.join(wcParts)
@@ -47,8 +57,13 @@ def wildcard(allowedExts=None):
 
 def isSupported(filename, allowedExts=None):
     """
-    Returns True if the given file has a supported extension, False
+    Returns ``True`` if the given file has a supported extension, ``False``
     otherwise.
+
+    :arg filename:    The file name to test.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
     """
 
     if allowedExts is None: allowedExts = _allowedExts
@@ -58,8 +73,13 @@ def isSupported(filename, allowedExts=None):
 
 def removeExt(filename, allowedExts=None):
     """
-    Removes the extension from the given file name. Raises a ValueError
+    Removes the extension from the given file name. Raises a :exc:`ValueError`
     if the file has an unsupported extension.
+
+    :arg filename:    The file name to strip.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.    
     """
 
     if allowedExts is None: allowedExts = _allowedExts
@@ -85,22 +105,27 @@ def addExt(
         mustExist=False,
         allowedExts=None,
         defaultExt=None):
-    """
-    Adds a file extension to the given file prefix. If mustExist is False
-    (the default), and the file does not already have a supported
-    extension, the default extension is appended and the new file name
-    returned. If the prefix already has a supported extension, it is
-    returned unchanged.
+    """Adds a file extension to the given file ``prefix``.
 
-    If mustExist is True, the function checks to see if any files exist
-    that have the given prefix, and a supported file extension.  A
-    ValueError is raised if:
+    If ``mustExist`` is False (the default), and the file does not already
+    have a supported extension, the default extension is appended and the new
+    file name returned. If the prefix already has a supported extension,
+    it is returned unchanged.
+
+    If ``mustExist`` is ``True``, the function checks to see if any files
+    exist that have the given prefix, and a supported file extension.  A
+    :exc:`ValueError` is raised if:
 
        - No files exist with the given prefix and a supported extension.
        - More than one file exists with the given prefix, and a supported
          extension.
 
     Otherwise the full file name is returned.
+
+    :arg prefix:      The file name refix to modify.
+    :arg mustExist:   Whether the file must exist or not.
+    :arg allowedExts: List of allowed file extensions.
+    :arg defaultExt:  Default file extension to use.
     """
 
     if allowedExts is None: allowedExts = _allowedExts
