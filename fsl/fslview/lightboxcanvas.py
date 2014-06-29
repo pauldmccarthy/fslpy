@@ -5,8 +5,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A :class:`wx.GLCanvas` canvas which displays multiple slices along
-a single axis from a collection of 3D images.
+"""A :class:`SliceCanvas` which displays multiple slices along a single axis
+from a collection of 3D images.
 """
 
 import logging
@@ -57,12 +57,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         'ncols'        : 'Number of columns',
         'showCursor'   : 'Show cursor',
         'zax'          : 'Z axis'}
+    """Property labels to be used for GUI displays."""
 
+    
     _view = props.VGroup(('showCursor',
                           'zrange',
                           'sliceSpacing',
                           'ncols',
                           'zax'))
+    """Layout to be used for GUI displays."""
 
     
     def worldToCanvas(self, xpos, ypos, zpos):
@@ -86,12 +89,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         
     def canvasToWorld(self, xpos, ypos):
-        """Overrides :meth:`~fsl.fslview.SliceCanvas.canvasToWorld`. Given
-        pixel x/y coordinates on this canvas, translates them into the real
-        world x/y/z coordinates of the displayed slice.  Returns a 3-tuple
-        containing the (x, y, z) coordinates (in the dimension order of the
-        image list space). If the given canvas position is out of the image
-        range, ``None`` is returned.
+        """Overrides :meth:`fsl.fslview.slicecanvas.SliceCanvas.canvasToWorld`.
+
+        Given pixel x/y coordinates on this canvas, translates them into the
+        real world x/y/z coordinates of the displayed slice.  Returns a
+        3-tuple containing the (x, y, z) coordinates (in the dimension order
+        of the image list space). If the given canvas position is out of the
+        image range, ``None`` is returned.
         """
 
         nrows = self._nrows
@@ -138,13 +142,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                  zax=2,
                  glContext=None,
                  scrollbar=None):
-        """
-        Create a :class:`LightBoxCanvas` object.
+        """Create a :class:`LightBoxCanvas` object.
         
         :arg parent:    Parent :mod:`wx` object
         
-        :arg imageList: a :class:`~fsl.data.ImageList` object which contains,
-                        or will contain, a list of images to be displayed.
+        :arg imageList: a :class:`~fsl.data.fslimage.ImageList` object which
+                        contains, or will contain, a list of images to be
+                        displayed.
         
         :arg zax:       Image axis to be used as the 'depth' axis. Can be
                         changed via the :attr:`LightBoxCanvas.zax` property.
@@ -233,13 +237,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _slicePropsChanged(self, *a):
-        """
-        Gets called whenever any of the properties which define the
-        number and layout of the lightbox slices, change. Calculates
-        the total number of slices to be displayed, the total number
-        of rows, and the number of rows to be displayed on screen
-        (which is different from the former if the canvas has a scroll
-        bar).
+        """Gets called whenever any of the properties which define the number
+        and layout of the lightbox slices, change.
+
+        Calculates the total number of slices to be displayed, the total
+        number of rows, and the number of rows to be displayed on screen
+        (which is different from the former if the canvas has a scroll bar).
         """
         
         xlen = self.imageList.bounds.getLen(self.xax)
@@ -281,11 +284,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
 
     def _zAxisChanged(self, *a):
-        """
-        Overrides SliceCanvas._zAxisChanged. Called when the
-        SliceCanvas.zax property changes. Calls the superclass
-        implementation, and then sets the slice zmin/max bounds
-        to the image bounds.
+        """Overrides :meth:`fsl.fslview.slicecanvas.SliceCanvas._zAxisChanged`.
+
+        Called when the :attr:`~fsl.fslview.SliceCanvas.zax` property
+        changes. Calls the superclass implementation, and then sets the slice
+        :attr:`zrange` bounds to the image bounds.
         """
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
         
@@ -293,9 +296,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _imageBoundsChanged(self, *a):
-        """
-        Overrides SliceCanvas._imageBoundsChanged. Called when
-        the image bounds change. Updates the Z axis min/max values.
+        """Overrides
+        :meth:`fsl.fslview.slicecanvas.SliceCanvas._imageBoundsChanged`.
+
+        Called when the image bounds change. Updates the :attr:`zrange`
+        min/max values.
         """
 
         slicecanvas.SliceCanvas._imageBoundsChanged(self)
@@ -306,11 +311,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         
     def _updateDisplayBounds(self):
-        """
-        Overrides SliceCanvas._updateDisplayBound. Called on
-        canvas resizes, image bound changes and lightbox slice
-        property changes. Calculates the required bounding box
-        that is to be displayed, in real world coordinates.
+        """Overrides
+        :meth:`fsl.fslview.slicecanvas.SliceCanvas._updateDisplayBounds`.
+
+        Called on canvas resizes, image bound changes and lightbox slice
+        property changes. Calculates the required bounding box that is to
+        be displayed, in real world coordinates.
         """
 
         xmin = self.imageList.bounds.getLo( self.xax)
@@ -334,13 +340,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _genSliceLocations(self):
-        """
-        Called when any of the slice display properties change. For every
-        image in the image list, generates a list of transformation
-        matrices, and a list of slice indices. The latter specifies the
-        slice indices from the image to be displayed, and the former
-        specifies the transformation matrix to be used to position the
-        slice on the canvas.        
+        """Called when any of the slice display properties change.
+
+        For every image in the image list, generates a list of transformation
+        matrices, and a list of slice indices. The latter specifies the slice
+        indices from the image to be displayed, and the former specifies the
+        transformation matrix to be used to position the slice on the canvas.
         """
         
         # calculate the locations, in real world coordinates,
@@ -371,13 +376,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _calculateSliceTransform(self, image, sliceno):
-        """
-        Calculates a transformation matrix for the given slice number
-        (voxel index) in the given image. Each slice is displayed on
-        the same canvas, but is translated to a specific row/column.
-        So a copy of the voxToWorld transformation matrix of the given
-        image is made, and a translation applied to it, to position 
-        the slice in the correct location on the canvas.
+        """Calculates a transformation matrix for the given slice number
+        (voxel index) in the given image.
+
+        Each slice is displayed on the same canvas, but is translated to a
+        specific row/column.  So a copy of the voxToWorld transformation
+        matrix of the given image is made, and a translation applied to it, to
+        position the slice in the correct location on the canvas.
         """
 
         nrows = self._nrows
@@ -400,10 +405,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _updateScrollBar(self):
-        """
-        If a scroll bar was passed in when this LightBoxCanvas was created,
-        this method updates it to reflect the current state of the canvas
-        size and the displayed list of slices.
+        """If a scroll bar was passed in when this :class:`LightBoxCanvas`
+        was created, this method updates it to reflect the current state of
+        the canvas size and the displayed list of slices.
         """
         
         if self._scrollbar is None: return
@@ -442,9 +446,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _drawCursor(self):
-        """
-        Draws a cursor at the current canvas position (the SliceCanvas.pos
-        property).
+        """Draws a cursor at the current canvas position (the
+        :attr:`~fsl.fslview.SliceCanvas.pos` property).
         """
         
         sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
@@ -481,9 +484,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         
     def _draw(self, ev):
-        """
-        Draws the currently visible slices to the canvas.
-        """
+        """Draws the currently visible slices to the canvas."""
 
         # image data has not been initialised.
         if not self.glReady:

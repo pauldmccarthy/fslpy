@@ -5,6 +5,9 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A :class:`wx.glcanvas.GLCanvas` canvas which displays a single
+slice from a collection of 3D images.
+"""
 
 import logging
 
@@ -30,52 +33,61 @@ import props
 import fsl.data.fslimage       as fslimage
 import fsl.fslview.glimagedata as glimagedata
 
-# Locations of the shader source files.
+
 _vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
+"""Location of the GLSL vertex shader source code."""
+
+
 _fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
+"""Location of the GLSL fragment shader source code."""
 
 
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
-    """
-    A wx.glcanvas.GLCanvas which may be used to display a single 2D slice from
-    a collection of 3D images (see fsl.data.fslimage.ImageList).
+    """A :class:`wx.glcanvas.GLCanvas` which may be used to display a single
+    2D slice from a collection of 3D images (see
+    :class:`fsl.data.fslimage.ImageList`).
     """
 
-    # The currently displayed position. The X and Y positions
-    # denote the position of a 'cursor', which is highlighted
-    # with green crosshairs. The Z position specifies the
-    # currently displayed slice. While the values of this point
-    # are in the image list world coordinates, the dimension
-    # ordering may not be the same as the image list dimension
-    # ordering. For this position, the x and y dimensions
-    # correspond to horizontal and vertical on the screen,
-    # and the z dimension to 'depth'. 
     pos = props.Point(ndims=3)
+    """The currently displayed position. The ``pos.x`` and ``pos.y`` positions
+    denote the position of a 'cursor', which is highlighted with green
+    crosshairs. The ``pos.z`` position specifies the currently displayed
+    slice. While the values of this point are in the image list world
+    coordinates, the dimension ordering may not be the same as the image list
+    dimension ordering. For this position, the x and y dimensions correspond
+    to horizontal and vertical on the screen, and the z dimension to 'depth'.
+    """
 
-    # The image bounds are divided by this zoom
-    # factor to produce the display bounds.
+
     zoom = props.Real(minval=1.0,
                       maxval=10.0, 
                       default=1.0,
-                      clamped=True) 
+                      clamped=True)
+    """The image bounds are divided by this zoom
+    factor to produce the display bounds.
+    """
 
-    # The display bound x/y values specify the horizontal/vertical
-    # display range of the canvas, in world coordinates. This may
-    # be a larger area than the size of the displayed images, as
-    # it is adjusted to preserve the aspect ratio.
+    
     displayBounds = props.Bounds(ndims=2)
+    """The display bound x/y values specify the horizontal/vertical display
+    range of the canvas, in world coordinates. This may be a larger area
+    than the size of the displayed images, as it is adjusted to preserve the
+    aspect ratio.
+    """
 
-    # If False, the green crosshairs which show the
-    # current cursor location will not be drawn.
+    
     showCursor = props.Boolean(default=True)
+    """If ``False``, the green crosshairs which show
+    the current cursor location will not be drawn.
+    """
+ 
 
-    # The image axis to be used as the screen 'depth' axis.
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
+    """The image axis to be used as the screen 'depth' axis."""
 
         
     def canvasToWorld(self, xpos, ypos):
-        """
-        Given pixel x/y coordinates on this canvas, translates them
+        """Given pixel x/y coordinates on this canvas, translates them
         into the real world coordinates of the displayed slice.
         """
 
@@ -97,9 +109,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
 
     def panDisplayBy(self, xoff, yoff):
-        """
-        Pans the canvas display by the given x/y offsets (specified in world
-        coordinates).
+        """Pans the canvas display by the given x/y offsets (specified in
+        world coordinates).
         """
         
         bounds = self.displayBounds
@@ -131,9 +142,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
 
     def panDisplayToShow(self, xpos, ypos):
-        """
-        Pans the display so that the given x/y position (in world coordinates)
-        is visible.
+        """Pans the display so that the given x/y position (in world
+        coordinates) is visible.
         """
 
         bounds = self.displayBounds
@@ -155,21 +165,19 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def __init__(self, parent, imageList, zax=0, glContext=None):
-        """
-        Creates a canvas object. The OpenGL data buffers for each image
+        """Creates a canvas object. The OpenGL data buffers for each image
         in the list are set up the first time that the canvas is
         displayed/drawn.
         
-        Parameters:
+        :arg parent:    :mod:`wx` parent object
         
-          parent    - WX parent object
+        :arg imageList: A :class:`fsl.data.fslimage.ImageList` object.
         
-          imageList - a fslimage.ImageList object.
-        
-          zax       - Axis perpendicular to the plane to be displayed
-                      (the 'depth' axis), default 0.
+        :arg zax:       Image axis perpendicular to the plane to be displayed
+                        (the 'depth' axis), default 0.
 
-          glContext - wx.glcanvas.GLContext object. If None, one is created.
+        :arg glContext: A :class:`wx.glcanvas.GLContext` object. If ``None``,
+                        one is created.
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -252,12 +260,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def _zAxisChanged(self, *a):
-        """
-        Called when the Z axis is changed. Calculates the corresponding
-        X and Y axes, and saves them as attributes of the object. Also
-        regenerates the GL index buffers for every image in the image
-        list, as they are dependent upon how the image is being
-        displayed.
+        """Called when the :attr:`zax` property is changed. Calculates
+        the corresponding X and Y axes, and saves them as attributes of
+        the object. Also regenerates the GL index buffers for every
+        image in the image list, as they are dependent upon how the
+        image is being displayed.
         """
 
         log.debug('{}'.format(self.zax))
@@ -284,12 +291,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
  
             
     def _imageListChanged(self, *a):
-        """
-        This method is called once by _initGLData, and then again every
-        time an image is added or removed to/from the image list. For
-        newly added images, it creates a GLImageData object, which
-        initialises the OpenGL data necessary to render the image, and
-        then triggers a refresh.
+        """This method is called once by :meth:`_initGLData`, and then again
+        every time an image is added or removed to/from the image list. For
+        newly added images, it creates a
+        :class:`~fsl.fslview.glimagedata.GLImageData` object, which
+        initialises the OpenGL data necessary to render the image, and then
+        triggers a refresh.
         """
 
         # Create a GLImageData object for any new images,
@@ -334,16 +341,14 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
 
     def _compileShaders(self):
-        """
-        Compiles and links the vertex and fragment shader programs,
-        and returns a reference to the resulting program. Raises
+        """Compiles and links the OpenGL GLSL vertex and fragment shader
+        programs, and returns a reference to the resulting program. Raises
         an error if compilation/linking fails.
 
         I'm explicitly not using the PyOpenGL
-        OpenGL.GL.shaders.compileProgram function, because it
-        attempts to validate the program after compilation, which
-        fails due to texture data not being bound at the time of
-        validation.
+        :func:`OpenGL.GL.shaders.compileProgram` function, because it attempts
+        to validate the program after compilation, which fails due to texture
+        data not being bound at the time of validation.
         """
 
         with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
@@ -386,11 +391,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
 
     def _initGLData(self):
-        """
-        Compiles the vertex and fragment shader programs, and
-        stores references to the shader variables as attributes
-        of this SliceCanvas object. This method is only called
-        once, on the first draw.
+        """Compiles the vertex and fragment shader programs (see
+        :meth:`_compileShaders`), and stores references to the
+        shader variables as attributes of this :class:`SliceCanvas`
+        object. This method is only called once, on the first draw.
         """
 
         # A bit hacky. We can only set the GL context (and create
@@ -449,10 +453,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
 
     def _imageBoundsChanged(self, *a):
-        """
-        Called when the image list bounds are changed. Updates the
-        constraints on pos property so it is limited to stay within
-        a valid range, and then calls _updateDisplayBounds.
+        """Called when the image list bounds are changed.
+
+        Updates the constraints on the :attr:`pos` property so it is
+        limited to stay within a valid range, and then calls the
+        :meth:`_updateDisplayBounds` method.
         """
 
         imgBounds = self.imageList.bounds
@@ -468,8 +473,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
 
     def _applyZoom(self, xmin, xmax, ymin, ymax):
-        """
-        'Zooms' in to the given rectangle according to the
+        """'Zooms' in to the given rectangle according to the
         current value of the zoom property. Returns a 4-tuple
         containing the updated bound values.
         """
@@ -494,11 +498,17 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def _updateDisplayBounds(self, xmin=None, xmax=None, ymin=None, ymax=None):
-        """
-        Called on canvas resizes, image bound changes, and zoom changes.
-        Calculates the bounding box, in world coordinates, to be displayed
-        on the canvas. Stores this bounding box in the displayBounds
-        property.
+        """Called on canvas resizes, image bound changes, and zoom changes.
+        
+        Calculates the bounding box, in world coordinates, to be displayed on
+        the canvas. Stores this bounding box in the displayBounds property. If
+        any of the parameters are not provided, the image list
+        :attr:`fsl.data.fslimage.ImageList.bounds` are used.
+
+        :arg xmin: Minimum x (horizontal) value to be in the display bounds.
+        :arg xmax: Maximum x value to be in the display bounds.
+        :arg ymin: Minimum y (vertical) value to be in the display bounds.
+        :arg ymax: Maximum y value to be in the display bounds.
         """
 
         if xmin is None: xmin = self.imageList.bounds.getLo(self.xax)
@@ -555,9 +565,19 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                      ymax=None,
                      zmin=None,
                      zmax=None):
-        """
-        Sets up the GL canvas size, viewport, and projection. This method is
-        called by draw(), so does not need to be called manually.  
+        """Sets up the GL canvas size, viewport, and projection.
+
+        This method is called by draw(), so does not need to be called
+        manually. If any of the min/max parameters are not provided,
+        they are taken from the :attr:`displayBounds` (x/y), and the
+        image list :attr:`~fsl.data.fslimage.ImageList.bounds` (z).
+
+        :arg xmin: Minimum x (horizontal) location
+        :arg xmax: Maximum x location
+        :arg ymin: Minimum y (vertical) location
+        :arg ymax: Maximum y location
+        :arg zmin: Minimum z (depth) location
+        :arg zmax: Maximum z location 
         """
         
         if xmin is None: xmin = self.displayBounds.xlo
@@ -616,10 +636,20 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def _drawSlice(self, image, sliceno, xform=None):
-        """
-        Draws the specified slice from the specified image on the
-        canvas. If xform is not provided, the image.voxToWorldMat
-        transformation matrix is used.
+        """Draws the specified slice from the specified image on the canvas.
+
+        If ``xform`` is not provided, the
+        :class:`~fsl.data.fslimage.Image` ``voxToWorldMat`` transformation
+        matrix is used.
+
+        :arg image:   The :class:`~fsl.data.fslimage.Image` object to draw.
+        
+        :arg sliceno: Voxel index of the slice to be drawn.
+        
+        :arg xform:   A 4*4 transformation matrix to be applied to the slice
+                      data (or ``None`` to use the
+                      :class:`~fsl.data.fslimage.Image` ``voxToWorldMat``
+                      matrix).
         """
 
         # The GL data is stored as an attribute of the image,
@@ -736,9 +766,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def _draw(self, ev):
-        """
-        Draws the currently selected slice to the canvas.
-        """
+        """Draws the currently selected slice (as specified by the ``z``
+        value of the :attr:`pos` property) to the canvas."""
 
         # image data has not been initialised.
         if not self.glReady:
