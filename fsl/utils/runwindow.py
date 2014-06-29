@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 #
 # runwindow.py - Run a process, display its output in a wx window.
-#                The checkAndRun() and run() functions are the entry
-#                points for this module.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Run a process, display its output in a :class:`RunPanel`.
+
+This module has two entry points - the :func:`checkAndRun` function, and the
+:func:`run` function.
+"""
 
 import os
 import signal
@@ -22,18 +25,20 @@ log = logging.getLogger(__name__)
 
 
 class RunPanel(wx.Panel):
-    """
-    A panel which displays a multiline text control, and a couple of
-    buttons along the bottom.
+    """A panel which displays a multiline text control, and a couple of buttons
+    along the bottom.
     """
 
     def __init__(self, parent):
-        """
-        Creates and lays out a text control, and two buttons. One of
-        the buttons is intended to closes the window in which this
-        panel is contained. The second button is intended to terminate
-        the running process. Both buttons are unbound by default, so
-        must be manually bound to callback functions.
+        """Creates and lays out a text control, and two buttons.
+
+        One of the buttons is intended to closes the window in which this
+        panel is contained. The second button is intended to terminate the
+        running process. Both buttons are unbound by default, so must be
+        manually bound to callback functions.
+
+        :ivar closeButton: The `Close window` button.
+        :ivar killButton:  The `Terminate process` button.
         """
         wx.Panel.__init__(self, parent)
 
@@ -43,9 +48,9 @@ class RunPanel(wx.Panel):
         # Horizontal scrolling no work in OSX
         # mavericks. I think it's a wxwidgets bug.
         self.text  = wx.TextCtrl(self,
-                                 style=wx.TE_MULTILINE | \
-                                       wx.TE_READONLY  | \
-                                       wx.TE_DONTWRAP  | \
+                                 style=wx.TE_MULTILINE |
+                                       wx.TE_READONLY  |
+                                       wx.TE_DONTWRAP  |
                                        wx.HSCROLL)
 
         self.sizer.Add(self.text, flag=wx.EXPAND, proportion=1)
@@ -64,26 +69,24 @@ class RunPanel(wx.Panel):
 
 
 class ProcessManager(thread.Thread):
-    """
-    A thread which manages the execution of a child process, and
-    capture of its output.
+    """A thread which manages the execution of a child process, and capture of its
+    output.
     """
 
     def __init__(self, cmd, parent, runPanel, onFinish):
-        """
-        Create a ProcessManager thread object. Does nothing special.
-        Parameters:
-          - cmd:      String or list of strings, the command to be
-                      executed.
+        """Create a ProcessManager thread object. Does nothing special.
         
-          - parent:   GUI parent object.
+        :arg cmd:      String or list of strings, the command to be
+                       executed.
         
-          - runPanel: RunPanel object, for displaying the child process
-                      output.
+        :arg parent:   GUI parent object.
         
-          - onFinish: Callback function to be called when the process
-                      finishes. May be None. Must accept two parameters,
-                      the GUI parent object, and the process return code.
+        :arg runPanel: :class:`RunPanel` object, for displaying the child 
+                       process output.
+        
+        :arg onFinish: Callback function to be called when the process
+                       finishes. May be ``None``. Must accept two parameters,
+                       the GUI parent object, and the process return code.
         """
         thread.Thread.__init__(self, name=cmd[0])
         
@@ -108,10 +111,9 @@ class ProcessManager(thread.Thread):
 
 
     def writeToPanel(self):
-        """
-        Reads a string from the output queue, and appends it
-        to the runPanel. This method is intended to be
-        executed via wx.CallAfter.
+        """Reads a string from the output queue, and appends it
+        to the :class:`RunPanel`. This method is intended to be
+        executed via :func:`wx.CallAfter`.
         """
         
         try:                output = self.outq.get_nowait()
@@ -126,12 +128,11 @@ class ProcessManager(thread.Thread):
  
 
     def run(self):
-        """
-        Starts the process, then reads its output line by
-        line, writing each line asynchronously to the runPanel.
-        When the process ends, the onFinish method (if there is
-        one) is called. If the process finishes abnormally (with
-        a non-0 exit code) a warning dialog is displayed.
+        """Starts the process, then reads its output line by line, writing
+        each line asynchronously to the :class:`RunPanel`.  When the
+        process ends, the ``onFinish`` method (if there is one) is called. 
+        If the process finishes abnormally (with a non-0 exit code) a warning
+        dialog is displayed.
         """
 
         # Run the command. The preexec_fn parameter creates
@@ -146,7 +147,7 @@ class ProcessManager(thread.Thread):
 
         # read process output, line by line, pushing
         # each line onto the output queue and
-       # asynchronously writing it to the runPanel
+        # asynchronously writing it to the runPanel
         for line in self.proc.stdout:
             
             log.debug('Process output: {}'.format(line.strip()))
@@ -181,11 +182,9 @@ class ProcessManager(thread.Thread):
 
         
     def termProc(self):
-        """
-        Attempts to kill the running child process.
-        """
+        """Attempts to kill the running child process."""
         try:
-            log.debug('Attempting to send SIGTERM to '\
+            log.debug('Attempting to send SIGTERM to '
                       'process group with pid {}'.format(self.proc.pid))
             os.killpg(self.proc.pid, signal.SIGTERM)
 
@@ -194,27 +193,25 @@ class ProcessManager(thread.Thread):
             wx.CallAfter(self.writeToPanel)
             
         except:
-            pass # why am i ignoring errors here?
+            pass  # why am i ignoring errors here?
 
 
 def run(name, cmd, parent, onFinish=None, modal=True):
-    """
-    Runs the given command, displaying the output in a wx window.
-    Parameters:
+    """Runs the given command, displaying the output in a :class:`RunPanel`.
     
-      - name:     Name of the tool to be run, used in the window title.
+    :arg name:     Name of the tool to be run, used in the window title.
     
-      - cmd:      String or list of strings, specifying the command to be
-                  executed.
+    :arg cmd:      String or list of strings, specifying the command to be
+                   executed.
     
-      - parent:   wx parent object.
+    :arg parent:   :mod:`wx` parent object.
     
-      - modal:    If True, the command window will be modal.
+    :arg modal:    If ``True``, the command frame will be modal.
 
-      - onFinish: Function to be called when the process ends. Must
-                  accept two parameters - a reference to the wx
-                  frame/dialog displaying the process output, and
-                  the exit code of the application.
+    :arg onFinish: Function to be called when the process ends. Must
+                   accept two parameters - a reference to the :mod:`wx`
+                   frame/dialog displaying the process output, and
+                   the exit code of the application.
     """
 
     # Create the GUI - if modal, the easiest approach is to use a wx.Dialog
@@ -244,31 +241,36 @@ def run(name, cmd, parent, onFinish=None, modal=True):
     else:     frame.Show()
  
 
-def checkAndRun(name, opts, parent, cmdFunc,
+def checkAndRun(name,
+                opts,
+                parent,
+                cmdFunc,
                 optLabels={},
                 modal=True,
                 onFinish=None):
-    """
-    Validates the given options. If invalid, a dialog is shown, informing
-    the user about the errors. Otherwise, the tool is executed, and its
-    output shown in a dialog window. Parameters:
+    """Validates the given options. If invalid, a dialog is shown,
+    informing the user about the errors. Otherwise, the tool is
+    executed, and its output shown in a dialog window. Parameters:
     
-      - name:      Name of the tool, used in the window title
+    :arg name:      Name of the tool, used in the window title.
     
-      - opts:      HasProperties object to be validated
+    :arg opts:      A :class:`~props.properties.HasProperties` object to be
+                    validated.
     
-      - parent:    wx object to be used as parent
+    :arg parent:    :mod:`wx` object to be used as parent.
     
-      - cmdFunc:   Function which takes a HasProperties object, and
-                   returns a command to be executed (as a list of
-                   strings), which will be passed to the run() function.
+    :arg cmdFunc:   Function which takes a
+                    :class:`~props.properties.HasProperties` object, 
+                    and returns a command to be executed (as a list of
+                    strings), which will be passed to the :func:`run`
+                    function.
     
-      - optLabels: Dictionary containing property name -> label mappings.
-                   Used in the error dialog, if any options are invalid.
+    :arg optLabels: Dictionary containing property ``{name : label}`` mappings.
+                    Used in the error dialog, if any options are invalid.
     
-      - modal:     If true, the command window will be modal.
+    :arg modal:     If true, the command window will be modal.
 
-      - onFinish:  Function to be called when the process ends.
+    :arg onFinish:  Function to be called when the process ends.
     """
 
     errors = opts.validateAll()
@@ -278,7 +280,7 @@ def checkAndRun(name, opts, parent, cmdFunc,
         msg = 'There are numerous errors which need '\
               'to be fixed before {} can be run:\n'.format(name)
 
-        for opt,error in errors:
+        for opt, error in errors:
             
             if opt in optLabels: name = optLabels[opt]
             msg = msg + '\n - {}: {}'.format(opt, error)
@@ -291,4 +293,3 @@ def checkAndRun(name, opts, parent, cmdFunc,
     else:
         cmd = cmdFunc(opts)
         run(name, cmd, parent, onFinish, modal)
-
