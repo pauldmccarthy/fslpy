@@ -223,6 +223,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.addListener('ncols',         self.name, sliceRangeChanged)
         self.addListener('zrange',        self.name, sliceRangeChanged)
 
+        # Add a listener to the position so when it
+        # changes we can scroll the display to ensure
+        # the slice corresponding to the current z
+        # position is visible. SliceCanvas.__init__
+        # has already registered a listener, on pos,
+        # with self.name - so we use a different name
+        # here
+        self.addListener('pos',
+                         '{}_zPosChanged'.format(self.name),
+                         self._zPosChanged)
+
         # Called on canvas resizes. Recalculates
         # the number of rows to be displayed, and
         # the display bounds, and redraws.
@@ -281,6 +292,42 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                   'columns={}'.format(self.zrange.xlo, self.zrange.xhi,
                                       self._nslices, self._nrows,
                                       self._rowsOnScreen, self.ncols))
+
+
+    def _zPosChanged(self, *a):
+        """Called when the :attr:`~fsl.fslview.slicecanvas.SliceCanvas.pos`
+        ``z`` value changes.
+
+        Makes sure that the corresponding slice is visible.
+        """
+
+        # no scrollbar - all slices are visible
+        if self._scrollbar is None:
+            return
+
+        # figure out where we are in the canvas world
+        pos = [0] * 3
+        pos[self.xax] = self.pos.x
+        pos[self.yax] = self.pos.y
+        pos[self.zax] = self.pos.z
+        canvasX, canvasY = self.worldToCanvas(*pos)
+
+        # already in bounds
+        if canvasX >= self.displayBounds.xlo and \
+           canvasX <= self.displayBounds.xhi and \
+           canvasY >= self.displayBounds.ylo and \
+           canvasY <= self.displayBounds.yhi:
+            return
+
+        # figure out what row we're on
+        sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
+                               self.sliceSpacing))
+        row     = int(np.floor(sliceno / self.ncols))
+
+        # and make sure that row is visible
+        self._scrollbar.SetThumbPosition(row)
+        self._updateDisplayBounds()
+        self.Refresh()
         
 
     def _zAxisChanged(self, *a):
