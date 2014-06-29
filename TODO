@@ -19,9 +19,10 @@ arbitrary.
 ** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
-** 'Add standard'/'Add Atlas' menu options.
-** Update LightBoxCanvas properties - check out funny behaviour in ncols.
-** Pan in LightBoxCanvas, so currently selected location is always on screen.
+** HALFDONE 'Add standard'/'Add Atlas' menu options.
+** DONE Update LightBoxCanvas properties - check out funny behaviour in ncols.
+** DONE Pan in LightBoxCanvas, so currently selected location is always on screen.
+** DONE Min distance for LightBoxCanvas.zrange.
 ** If image files were specified on the command line, make sure the open file dialog defaults to one of their paths.
 ** Float formatting on range slider buttons
 * Medium things
