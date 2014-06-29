@@ -278,8 +278,8 @@ class Image(props.HasProperties):
 
         tx = self.voxToWorld(points)
 
-        lo = tx[:, axis].min() - self.pixdims[axis] * 0.5
-        hi = tx[:, axis].max() + self.pixdims[axis] * 0.5
+        lo = tx[:, axis].min() - self.pixdim[axis] * 0.5
+        hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
 
         return (lo, hi)
 
