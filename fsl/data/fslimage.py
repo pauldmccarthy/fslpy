@@ -628,9 +628,9 @@ class ImageList(props.HasProperties):
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi
 
-        self.bounds.all = [minBounds[0], maxBounds[0],
-                           minBounds[1], maxBounds[1],
-                           minBounds[2], maxBounds[2]]
+        self.bounds[:] = [minBounds[0], maxBounds[0],
+                          minBounds[1], maxBounds[1],
+                          minBounds[2], maxBounds[2]]
 
         for ax in range(3):
             self.location.setLimits(ax, minBounds[ax], maxBounds[ax])

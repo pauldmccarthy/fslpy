@@ -115,7 +115,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
         bounds = self.displayBounds
 
-        xmin, xmax, ymin, ymax = bounds.all
+        xmin, xmax, ymin, ymax = bounds[:]
 
         xmin = xmin + xoff
         xmax = xmax + xoff
@@ -138,7 +138,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ymax = bounds.getMax(1)
             ymin = ymax - bounds.getLen(1) 
 
-        self.displayBounds.all = [xmin, xmax, ymin, ymax]
+        self.displayBounds[:] = [xmin, xmax, ymin, ymax]
 
 
     def panDisplayToShow(self, xpos, ypos):
@@ -527,7 +527,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
            canvasHeight == 0 or \
            dispWidth    == 0 or \
            dispHeight   == 0:
-            self.displayBounds.all = [xmin, xmax, ymin, ymax]
+            self.displayBounds[:] = [xmin, xmax, ymin, ymax]
             return
 
         # These ratios are used to determine whether
@@ -555,7 +555,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.displayBounds.setLimits(0, xmin, xmax)
         self.displayBounds.setLimits(1, ymin, ymax) 
 
-        self.displayBounds.all = self._applyZoom(xmin, xmax, ymin, ymax)
+        self.displayBounds[:] = self._applyZoom(xmin, xmax, ymin, ymax)
 
         
     def _setViewport(self,
