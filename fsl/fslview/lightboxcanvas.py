@@ -5,6 +5,9 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A :class:`wx.GLCanvas` canvas which displays multiple slices along
+a single axis from a collection of 3D images.
+"""
 
 import logging
 
@@ -22,52 +25,53 @@ import fsl.fslview.slicecanvas as slicecanvas
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
-    """
-    An OpenGL canvas which displays multiple slices from a collection of 3D
-    images (see fsl.data.fslimage.ImageList). The slices are laid out on the
-    same canvas along rows and columns, with the slice at the minimum Z
-    position translated to the top left of the canvas, and the slice with
-    the maximum Z value translated to the bottom right.
+    """An OpenGL canvas which displays multiple slices from a collection of 3D
+    images (see :class:`fsl.data.fslimage.ImageList`). The slices are laid out
+    on the same canvas along rows and columns, with the slice at the minimum Z
+    position translated to the top left of the canvas, and the slice with the
+    maximum Z value translated to the bottom right.
     """
 
-    # This property controls the spacing between
-    # slices (in real world coordinates)
+    
     sliceSpacing = props.Real(clamped=True, minval=0.1, default=1.0)
+    """This property controls the spacing
+    between slices (in real world coordinates).
+    """
 
-    # This property controls the number of slices
-    # to be displayed on a single row.
+    
     ncols = props.Int(clamped=True, minval=1, maxval=15, default=5)
+    """This property controls the number of 
+    slices to be displayed on a single row.
+    """
 
-    # These properties control the range, in world
-    # coordinates, of the slices to be displayed
-    zmin = props.Real(clamped=True)
-    zmax = props.Real(clamped=True)
+    
+    zrange = props.Bounds(ndims=1)
+    """This property controls the range, in world
+    coordinates, of the slices to be displayed.
+    """
 
+    
     _labels = {
-        'zmin'         : 'First slice',
-        'zmax'         : 'Last slice',
+        'zrange'       : 'Slice range',
         'sliceSpacing' : 'Slice spacing',
         'ncols'        : 'Number of columns',
         'showCursor'   : 'Show cursor',
         'zax'          : 'Z axis'}
 
     _view = props.VGroup(('showCursor',
-                          'zmin',
-                          'zmax',
+                          'zrange',
                           'sliceSpacing',
                           'ncols',
                           'zax'))
 
     
     def worldToCanvas(self, xpos, ypos, zpos):
+        """Given an x/y/z location in the image list world (with xpos
+        corresponding to the horizontal screen axis, ypos to the vertical
+        axis, and zpos to the depth axis), converts it into an x/y position,
+        in world coordinates, on the canvas.
         """
-        Given an x/y/z location in the image list world (with xpos
-        corresponding to the horizontal screen axis, ypos to the
-        vertical axis, and zpos to the depth axis), converts
-        it into an x/y position, in world coordinates, on the
-        canvas.
-        """
-        sliceno = int(np.floor((zpos - self.zmin) / self.sliceSpacing))
+        sliceno = int(np.floor((zpos - self.zrange.xlo) / self.sliceSpacing))
 
         xlen = self.imageList.bounds.getLen(self.xax)
         ylen = self.imageList.bounds.getLen(self.yax)
@@ -82,14 +86,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         
     def canvasToWorld(self, xpos, ypos):
-        """
-        Overrides SliceCanvas.canvasToWorld. Given pixel x/y
-        coordinates on this canvas, translates them into the
-        real world x/y/z coordinates of the displayed slice.
-        Returns a 3-tuple containing the (x, y, z) coordinates
-        (in the dimension order of the image list space). If the
-        given canvas position is out of the image range, None
-        is returned.
+        """Overrides :meth:`~fsl.fslview.SliceCanvas.canvasToWorld`. Given
+        pixel x/y coordinates on this canvas, translates them into the real
+        world x/y/z coordinates of the displayed slice.  Returns a 3-tuple
+        containing the (x, y, z) coordinates (in the dimension order of the
+        image list space). If the given canvas position is out of the image
+        range, ``None`` is returned.
         """
 
         nrows = self._nrows
@@ -120,7 +122,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         xpos = screenx -          col      * xlen
         ypos = screeny - (nrows - row - 1) * ylen
-        zpos = self.zmin + (sliceno + 0.5) * self.sliceSpacing
+        zpos = self.zrange.xlo + (sliceno + 0.5) * self.sliceSpacing
 
         pos = [0, 0, 0]
         pos[self.xax] = xpos
@@ -137,20 +139,21 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                  glContext=None,
                  scrollbar=None):
         """
-        Create a LightBoxCanvas object. Parameters:
+        Create a :class:`LightBoxCanvas` object.
         
-          - parent:    Parent wx object
+        :arg parent:    Parent :mod:`wx` object
         
-          - imageList: a fsl.data.ImageList object which contains, or will
-                       contain, a list of images to be displayed.
+        :arg imageList: a :class:`~fsl.data.ImageList` object which contains,
+                        or will contain, a list of images to be displayed.
         
-          - zax:       Image axis to be used as the 'depth' axis. Can be
-                       changed via the LightBoxCanvas.zax property.
+        :arg zax:       Image axis to be used as the 'depth' axis. Can be
+                        changed via the :attr:`LightBoxCanvas.zax` property.
 
-          - glContext: OpenGL context object. If None, one will be created.
+        :arg glContext: A :class:`wx.glcanvas.GLContext` object. If ``None``,
+                        one will be created.
 
-          - scrollbar: A wx.ScrollBar object. If not provided, all slices
-                       will be drawn on the screen.
+        :arg scrollbar: A :class:`wx.ScrollBar` object. If not provided, all
+                        slices will be drawn on the screen.
         """
 
         if (scrollbar is not None) and (not scrollbar.IsVertical()):
@@ -193,8 +196,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             scrollbar.Bind(wx.EVT_SCROLL, onScroll)
 
         # default to showing the entire slice range
-        self.zmin = imageList.bounds.zlo
-        self.zmax = imageList.bounds.zhi
+        self.zrange.x = imageList.bounds.getRange(self.zax)
 
         # Pick a sensible default for the
         # slice spacing - the smallest pixdim
@@ -215,8 +217,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         self.addListener('sliceSpacing',  self.name, sliceRangeChanged)
         self.addListener('ncols',         self.name, sliceRangeChanged)
-        self.addListener('zmin',          self.name, sliceRangeChanged)
-        self.addListener('zmax',          self.name, sliceRangeChanged)
+        self.addListener('zrange',        self.name, sliceRangeChanged)
 
         # Called on canvas resizes. Recalculates
         # the number of rows to be displayed, and
@@ -243,7 +244,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
         xlen = self.imageList.bounds.getLen(self.xax)
         ylen = self.imageList.bounds.getLen(self.yax)
-        zlen = self.zmax - self.zmin
+        zlen = self.zrange.xlen
         width, height = self.GetClientSize().Get()
 
         if xlen   == 0 or \
@@ -274,9 +275,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if self._rowsOnScreen > self._nrows: self._rowsOnScreen = self._nrows
 
         log.debug('{: 5.1f} - {: 5.1f}: slices={} rows={} ({} on screen) '
-                  'columns={}'.format(self.zmin, self.zmax, self._nslices,
-                                      self._nrows, self._rowsOnScreen,
-                                      self.ncols))
+                  'columns={}'.format(self.zrange.xlo, self.zrange.xhi,
+                                      self._nslices, self._nrows,
+                                      self._rowsOnScreen, self.ncols))
         
 
     def _zAxisChanged(self, *a):
@@ -288,8 +289,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
         
-        self.zmin = self.imageList.bounds.getLo(self.zax)
-        self.zmax = self.imageList.bounds.getHi(self.zax)
+        self.zrange.x = self.imageList.bounds.getRange(self.zax)
 
 
     def _imageBoundsChanged(self, *a):
@@ -300,18 +300,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas._imageBoundsChanged(self)
 
-        imgzmin = self.imageList.bounds.getLo(self.zax)
-        imgzmax = self.imageList.bounds.getHi(self.zax)
+        zmin, zmax = self.imageList.bounds.getRange(self.zax)
 
-        self.setConstraint('zmin', 'minval', imgzmin)
-        self.setConstraint('zmin', 'maxval', imgzmax)
-        self.setConstraint('zmax', 'minval', imgzmin)
-        self.setConstraint('zmax', 'maxval', imgzmax)
-
-        # reset zmin/zmax in case they are
-        # out of range of the new image bounds
-        self.zmin = imgzmin
-        self.zmax = imgzmax
+        self.zrange.setLimits(0, zmin, zmax)
 
         
     def _updateDisplayBounds(self):
@@ -355,8 +346,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # calculate the locations, in real world coordinates,
         # of all slices to be displayed on the canvas
         sliceLocs = np.arange(
-            self.zmin + self.sliceSpacing * 0.5,
-            self.zmax,
+            self.zrange.xlo + self.sliceSpacing * 0.5,
+            self.zrange.xhi,
             self.sliceSpacing)
 
         self._sliceIdxs  = []
@@ -456,7 +447,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         property).
         """
         
-        sliceno = int(np.floor((self.pos.z - self.zmin) / self.sliceSpacing))
+        sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
+                               self.sliceSpacing))
         xlen    = self.imageList.bounds.getLen(self.xax)
         ylen    = self.imageList.bounds.getLen(self.yax)
         xmin    = self.imageList.bounds.getLo( self.xax)
