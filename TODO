@@ -11,10 +11,10 @@ arbitrary.
 ** DONE Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
 * Little things
 ** Wild cards in image file load (controlled by fslview.ImageListPanel)
-** Truncate long filenames in image list panel.
+** DONE Truncate long filenames in image list panel.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** DONE Labels for individual bound/point widget sliders.
-** Vertically center widget property labels.
+** DONE Vertically center widget property labels.
 ** DONE Fix image bounds calculation (for images with dodgy affines)
 ** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
 ** Ability to edit image affine transformation.
@@ -24,7 +24,7 @@ arbitrary.
 ** DONE Pan in LightBoxCanvas, so currently selected location is always on screen.
 ** DONE Min distance for LightBoxCanvas.zrange.
 ** If image files were specified on the command line, make sure the open file dialog defaults to one of their paths.
-** Float formatting on range slider buttons
+** DONE Float formatting on range slider buttons
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
