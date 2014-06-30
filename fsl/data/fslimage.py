@@ -493,11 +493,11 @@ class ImageDisplay(props.HasProperties):
         # on whether the image is 3D or 4D)
         if np.prod(image.shape) > 2 ** 30:
             sample = image.data[..., image.shape[-1] / 2]
-            self.dataMin = sample.min()
-            self.dataMax = sample.max()
+            self.dataMin = float(sample.min())
+            self.dataMax = float(sample.max())
         else:
-            self.dataMin = image.data.min()
-            self.dataMax = image.data.max()
+            self.dataMin = float(image.data.min())
+            self.dataMax = float(image.data.max())
 
         dRangeLen = abs(self.dataMax - self.dataMin)
 
