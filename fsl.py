@@ -234,14 +234,16 @@ if __name__ == '__main__':
 
         # make some noisy things quiet
         logging.getLogger('fsl.fslview.slicecanvas').setLevel(logging.WARNING)
-        logging.getLogger('fsl.props')              .setLevel(logging.WARNING)
-        logging.getLogger('fsl.gui')                .setLevel(logging.WARNING)
+        logging.getLogger('props')                  .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets')               .setLevel(logging.WARNING)
     elif args.verbose == 2:
         log.setLevel(logging.DEBUG)
-        logging.getLogger('fsl.props').setLevel(logging.WARNING)
-        logging.getLogger('fsl.gui')  .setLevel(logging.WARNING)
+        logging.getLogger('props')   .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets').setLevel(logging.WARNING)
     elif args.verbose == 3:
         log.setLevel(logging.DEBUG)
+        logging.getLogger('props')   .setLevel(logging.DEBUG)
+        logging.getLogger('pwidgets').setLevel(logging.DEBUG) 
 
     if fslTool.context is not None: ctx = fslTool.context(args)
     else:                           ctx = None
