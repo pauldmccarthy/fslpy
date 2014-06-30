@@ -114,7 +114,7 @@ class Image(props.HasProperties):
                          along each image dimension.
     
     :ivar pixdim:        A list/tuple containing the size of one voxel
-                         alon each image dimension.
+                         along each image dimension.
     
     :ivar voxToWorldMat: A 4*4 array specifying the affine transformation
                          for transforming voxel coordinates into real world
@@ -131,6 +131,7 @@ class Image(props.HasProperties):
                          see :func:`_loadImageFile`).
     """
 
+    
     transform = props.Choice(
         collections.OrderedDict([
             ('affine', 'Use qform/sform transformation matrix'),
@@ -141,13 +142,15 @@ class Image(props.HasProperties):
     space.
     
       - ``affine``: Use the affine transformation matrix stored in the image
-                    (the ``qform``/``sform`` fields in NIFTI1 headers).
+        (the ``qform``/``sform`` fields in NIFTI1 headers).
                     
       - ``pixdim``: Scale voxel sizes by the ``pixdim`` fields in the image
-                    header.
-      - ``id``:     Perform no scaling or transformation - voxels will be
-                    displayed as :math:`1mm^3` isotropic.
+        header.
+    
+      - ``id``: Perform no scaling or transformation - voxels will be
+        displayed as :math:`1mm^3` isotropic.
     """
+
     
     name = props.String()
     """The name of this image."""
@@ -214,6 +217,16 @@ class Image(props.HasProperties):
         # This dictionary may be used to store
         # arbitrary data associated with this image.
         self._attributes = {}
+
+
+    def __str__(self):
+        """Return a string representation of this :class:`Image`."""
+        return '{}("{}")'.format(self.__class__.__name__, self.imageFile)
+
+        
+    def __repr__(self):
+        """See the :meth:`__str__` method."""
+        return self.__str__()
 
 
     def _transformChanged(self, *a):
@@ -392,7 +405,10 @@ class Image(props.HasProperties):
 
         
     def getAttribute(self, name):
-        """Retrieve the attribute with the given name."""
+        """Retrieve the attribute with the given name.
+
+        :raise KeyError: if there is no attribute with the given name.
+        """
         return self._attributes[name]
 
         
@@ -566,6 +582,8 @@ class ImageList(props.HasProperties):
         
         if images is None: images = []
 
+        self.images = images
+
         self.addListener(
             'images',
             self.__class__.__name__,
@@ -582,7 +600,56 @@ class ImageList(props.HasProperties):
             b.ylo + b.ylen / 2.0,
             b.zlo + b.zlen / 2.0] 
 
-        self.images = images
+        # set the _lastDir attribute,
+        # used by the addImages method
+        if len(images) == 0: self._lastDir = os.getcwd()
+        else:                self._lastDir = op.dirname(images[-1].imageFile)
+
+
+    def addImages(self, fromDir=None):
+        """Convenience method for interactively adding images to this
+        :class:`ImageList`.
+
+        If the :mod:`wx` package is available, pops up a file dialog
+        prompting the user to select one or more images to append to the
+        image list.
+
+        :param str fromDir: Directory in which the file dialog should start.
+                            If ``None``, the most recently visited directory
+                            (via this method) is used, or a directory from
+                            an already loaded image, or the current working
+                            directory.
+        
+        :raise ImportError:  if :mod:`wx` is not present.
+        :raise RuntimeError: if a :class:`wx.App` has not been created.
+        """
+        import wx
+
+        app = wx.GetApp()
+
+        if app is None:
+            raise RuntimeError('A wx.App has not been created')
+
+        if fromDir is None: fromDir = self._lastDir
+
+        # TODO wx wildcard handling is buggy,
+        # so i'm disabling it for now
+        # wildcard = imagefile.wildcard()
+        dlg = wx.FileDialog(app.GetTopWindow(),
+                            message='Open image file',
+                            defaultDir=fromDir,
+                            # wildcard=wildcard,
+                            style=wx.FD_OPEN | wx.FD_MULTIPLE)
+
+        if dlg.ShowModal() != wx.ID_OK: return
+
+        paths         = dlg.GetPaths()
+        images        = map(Image, paths)
+        self._lastDir = op.dirname(paths[-1])
+
+        self.extend(images)
+
+        self.selectedImage = len(self) - 1 
 
 
     def _imageListChanged(self, *a):
@@ -600,7 +667,12 @@ class ImageList(props.HasProperties):
             img.addListener(
                 'transform',
                 self.__class__.__name__,
-                self._updateImageBounds) 
+                self._updateImageBounds)
+
+        if len(self.images) > 0:
+            self.setConstraint('selectedImage', 'maxval', len(self.images) - 1)
+        else:
+            self.setConstraint('selectedImage', 'maxval', 0)
 
         self._updateImageBounds()
 
@@ -634,8 +706,6 @@ class ImageList(props.HasProperties):
 
         for ax in range(3):
             self.location.setLimits(ax, minBounds[ax], maxBounds[ax])
-
-        self.setConstraint('selectedImage', 'maxval', len(self.images))
 
 
     # Wrappers around the images list property, allowing this
