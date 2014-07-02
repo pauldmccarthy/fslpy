@@ -11,11 +11,13 @@ import os.path as op
 import argparse
 
 import wx
+import wx.aui
 
-import fsl.fslview.orthopanel     as orthopanel
-import fsl.fslview.lightboxpanel  as lightboxpanel
-import fsl.fslview.locationpanel  as locationpanel
-import fsl.fslview.imagelistpanel as imagelistpanel
+import fsl.fslview.orthopanel        as orthopanel
+import fsl.fslview.lightboxpanel     as lightboxpanel
+import fsl.fslview.locationpanel     as locationpanel
+import fsl.fslview.imagelistpanel    as imagelistpanel
+import fsl.fslview.imagedisplaypanel as imagedisplaypanel
 
 import fsl.data.fslimage as fslimage
 
@@ -27,87 +29,61 @@ class FslViewPanel(wx.Panel):
     def __init__(self, parent, imageList):
         
         wx.Panel.__init__(self, parent)
-        self.imageList = imageList
-
-        self.glContext = None
-
-        self.topPanel = wx.Panel(self)
-
-        self.topSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.topPanel.SetSizer(self.topSizer)
-
-        self.locPanel  = locationpanel .LocationPanel( self, imageList)
-
-        self.topSizer.Add(self.locPanel, flag=wx.EXPAND)
-        self.topSizer.Add((1, 1),        flag=wx.EXPAND, proportion=1)
-
-        self.ctrlPanel = None
-        self.mainPanel = None
-        self.listPanel = imagelistpanel.ImageListPanel(self, imageList)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.sizer)
-
-        self.sizer.Add(self.topPanel, flag=wx.EXPAND)
-        self.sizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
         
-        self.sizer.Add(self.listPanel, flag=wx.EXPAND)
+        self._imageList = imageList
+        self._auimgr    = wx.aui.AuiManager(self)
 
-        self.SetAutoLayout(1)
+        self._centrePane = wx.aui.AuiNotebook(self)
 
-        self.showOrtho()
-        self.Fit()
+        self._auimgr.AddPane(self._centrePane, wx.CENTRE)
+        self._auimgr.Update()
+
+        self._glContext = None
 
 
-    def _replace(self, mainPanel, ctrlPanel):
+    def addOrthoPanel(self):
 
-        self.topSizer.Remove(1)
-        self.sizer.Remove(1)
-
-        self.topSizer.Insert(1, ctrlPanel, flag=wx.EXPAND)
-        self.sizer.Insert(1, mainPanel, flag=wx.EXPAND, proportion=1)
-
-        if self.mainPanel is not None: self.mainPanel.Destroy()
-        if self.ctrlPanel is not None: self.ctrlPanel.Destroy()
-
-        self.mainPanel = mainPanel
-        self.ctrlPanel = ctrlPanel
+        panel = orthopanel.OrthoPanel(self,
+                                      self._imageList,
+                                      glContext=self._glContext)
         
-        self.Layout()
+        if self._glContext is None:
+            self._glContext = panel.xcanvas.glContext
+            
+        self._centrePane.AddPage(panel, 'Ortho view')
 
 
-    def showOrtho(self):
+    def addLightBoxPanel(self):
 
-        if isinstance(self.mainPanel, orthopanel.OrthoPanel):
-            return
-
-        mainPanel = orthopanel.OrthoPanel(self, self.imageList,
-                                          glContext=self.glContext)
+        panel = lightboxpanel.LightBoxPanel(self,
+                                            self._imageList,
+                                            glContext=self._glContext)
         
-        ctrlPanel = props.buildGUI(self, mainPanel)
+        if self._glContext is None:
+            self._glContext = panel.canvas.glContext
 
-        if self.glContext is None:
-            self.glContext = mainPanel.xcanvas.glContext
-
-        self._replace(mainPanel, ctrlPanel)
+        self._centrePane.AddPage(panel, 'Lightbox view')
 
 
-    def showLightBox(self):
+    def addImageDisplayPanel(self):
+        panel = imagedisplaypanel.ImageDisplayPanel(self, self._imageList)
+        self._auimgr.AddPane(panel, wx.BOTTOM, 'Image display properties')
+        self._auimgr.Update()
 
-        if isinstance(self.mainPanel, lightboxpanel.LightBoxPanel):
-            return
 
-        mainPanel = lightboxpanel.LightBoxPanel(self, self.imageList,
-                                                glContext=self.glContext)
+    def addImageListPanel(self):
+        panel = imagelistpanel.ImageListPanel(self, self._imageList)
+        self._auimgr.AddPane(panel, wx.BOTTOM, 'Loaded Images')
+        self._auimgr.Update()
+
+
+    def addLocationPanel(self):
+        panel = locationpanel.LocationPanel(self, self._imageList)
+        self._auimgr.AddPane(panel, wx.BOTTOM, 'Cursor location')
+        self._auimgr.Update()
+    
+
         
-        ctrlPanel = props.buildGUI(self, mainPanel.canvas)
-
-        if self.glContext is None:
-            self.glContext = mainPanel.canvas.glContext 
-
-        self._replace(mainPanel, ctrlPanel) 
-        
-
 def parseArgs(argv, namespace):
     """
     Parses the given command line arguments. Parameters:
@@ -224,22 +200,40 @@ def interface(parent, args, imageList):
     
     panel = FslViewPanel(parent, imageList)
 
-    menubar  = parent.GetMenuBar()
-    fileMenu = menubar.GetMenu(menubar.FindMenu('File'))
+    menuBar  = wx.MenuBar()
+    fileMenu = wx.Menu()
     viewMenu = wx.Menu()
-    menubar.Append(viewMenu, 'View')
 
-    orthoAction    = viewMenu.Append(wx.ID_ANY, 'Ortho view')
-    lightboxAction = viewMenu.Append(wx.ID_ANY, 'Lightbox view')
+    parent.SetMenuBar(menuBar)
+    menuBar.Append(fileMenu, 'File')
+    menuBar.Append(viewMenu, 'View')
 
-    parent.Bind(wx.EVT_MENU, lambda ev: panel.showOrtho(),    orthoAction)
-    parent.Bind(wx.EVT_MENU, lambda ev: panel.showLightBox(), lightboxAction)
-
+    orthoAction        = viewMenu.Append(wx.ID_ANY, 'Ortho view')
+    lightboxAction     = viewMenu.Append(wx.ID_ANY, 'Lightbox view')
+    imageDisplayAction = viewMenu.Append(wx.ID_ANY, 'Image display properties')
+    imageListAction    = viewMenu.Append(wx.ID_ANY, 'Loaded images')
+    locationAction     = viewMenu.Append(wx.ID_ANY, 'Cursor location')
     openFileAction     = fileMenu.Append(wx.ID_ANY, 'Open file')
     openStandardAction = fileMenu.Append(wx.ID_ANY, 'Open standard')
 
     parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.imageList.addImages(),
+                lambda ev: panel.addOrthoPanel(),
+                orthoAction)
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel.addLightBoxPanel(),
+                lightboxAction)
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel.addImageDisplayPanel(),
+                imageDisplayAction)
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel.addImageListPanel(),
+                imageListAction)
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel.addLocationPanel(),
+                locationAction)
+ 
+    parent.Bind(wx.EVT_MENU,
+                lambda ev: panel._imageList.addImages(),
                 openFileAction)
 
     fsldir = os.environ.get('FSLDIR', None)
@@ -247,13 +241,13 @@ def interface(parent, args, imageList):
     if fsldir is not None:
         stddir = op.join(fsldir, 'data', 'standard')
         parent.Bind(wx.EVT_MENU,
-                    lambda ev: panel.imageList.addImages(stddir),
+                    lambda ev: panel._imageList.addImages(stddir),
                     openStandardAction)
     else:
         openStandardAction.Enable(False)
 
-    if args.lightbox:
-        panel.showLightBox()
+    if args.lightbox: panel.addLightBoxPanel()
+    else:             panel.addOrthoPanel()
     
     return panel
     
