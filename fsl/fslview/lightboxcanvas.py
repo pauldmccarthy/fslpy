@@ -345,7 +345,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self.setConstraint('zrange', 'minDistance', zgap)
             
 
+    def _imageListChanged(self, *a):
+        """Overrides
+        :meth:`~fsl.fslview.slicecanvas.SliceCanvas._imageListChanged`.
 
+        Regenerates slice locations for all images, and calls the super
+        implementation.
+        """
+        self._genSliceLocations()
+        slicecanvas.SliceCanvas._imageListChanged(self, *a)
+
+        
     def _imageBoundsChanged(self, *a):
         """Overrides
         :meth:`fsl.fslview.slicecanvas.SliceCanvas._imageBoundsChanged`.
