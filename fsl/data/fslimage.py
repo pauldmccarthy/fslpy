@@ -630,7 +630,10 @@ class ImageList(props.HasProperties):
         if app is None:
             raise RuntimeError('A wx.App has not been created')
 
-        if fromDir is None: fromDir = self._lastDir
+        saveLastDir = False
+        if fromDir is None:
+            fromDir = self._lastDir
+            saveLastDir = True
 
         # TODO wx wildcard handling is buggy,
         # so i'm disabling it for now
@@ -645,7 +648,8 @@ class ImageList(props.HasProperties):
 
         paths         = dlg.GetPaths()
         images        = map(Image, paths)
-        self._lastDir = op.dirname(paths[-1])
+
+        if saveLastDir: self._lastDir = op.dirname(paths[-1])
 
         self.extend(images)
 

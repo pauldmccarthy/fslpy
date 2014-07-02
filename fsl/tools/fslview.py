@@ -239,7 +239,7 @@ def interface(parent, args, imageList):
     openStandardAction = fileMenu.Append(wx.ID_ANY, 'Open standard')
 
     parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.listPanel._addImage(ev),
+                lambda ev: panel.imageList.addImages(),
                 openFileAction)
 
     fsldir = os.environ.get('FSLDIR', None)
@@ -247,7 +247,7 @@ def interface(parent, args, imageList):
     if fsldir is not None:
         stddir = op.join(fsldir, 'data', 'standard')
         parent.Bind(wx.EVT_MENU,
-                    lambda ev: panel.listPanel._addImage(ev, stddir),
+                    lambda ev: panel.imageList.addImages(stddir),
                     openStandardAction)
     else:
         openStandardAction.Enable(False)
