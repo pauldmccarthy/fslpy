@@ -25,6 +25,7 @@ arbitrary.
 ** DONE Min distance for LightBoxCanvas.zrange.
 ** If image files were specified on the command line, make sure the open file dialog defaults to one of their paths.
 ** DONE Float formatting on range slider buttons
+** Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
