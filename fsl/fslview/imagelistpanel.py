@@ -202,11 +202,11 @@ class ImageListPanel(wx.Panel):
 
 
     def _imageRemoved(self, ev):
-        """
-        Called when an item is removed from the image listbox. Removes the
-        corresponding image from the image list. The corresponding display
-        panel will removed via the :meth:`~_imageListChanged` method, which
-        is registered as a listener on the
+        """Called when an item is removed from the image listbox.
+
+        Removes the corresponding image from the image list. The corresponding
+        display panel will removed via the :meth:`~_imageListChanged` method,
+        which is registered as a listener on the
         :attr:`~fsl.data.fslimage.ImageList.images` list.
         """
         self._imageList.pop(ev.idx)
