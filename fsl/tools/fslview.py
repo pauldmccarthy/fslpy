@@ -4,6 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A 3D image viewer.
+"""
 
 import os
 import sys
@@ -11,13 +13,14 @@ import os.path as op
 import argparse
 
 import wx
-import wx.aui
+import wx.lib.agw.aui as aui
 
 import fsl.fslview.orthopanel        as orthopanel
 import fsl.fslview.lightboxpanel     as lightboxpanel
 import fsl.fslview.locationpanel     as locationpanel
 import fsl.fslview.imagelistpanel    as imagelistpanel
 import fsl.fslview.imagedisplaypanel as imagedisplaypanel
+import fsl.fslview.strings           as strings
 
 import fsl.data.fslimage as fslimage
 
@@ -25,15 +28,25 @@ import props
 
 
 class FslViewPanel(wx.Panel):
+    """
+    """
 
     def __init__(self, parent, imageList):
+        """
+        """
         
         wx.Panel.__init__(self, parent)
         
         self._imageList = imageList
-        self._auimgr    = wx.aui.AuiManager(self)
+        self._auimgr    = aui.AuiManager(self)
 
-        self._centrePane = wx.aui.AuiNotebook(self)
+        self._centrePane = aui.AuiNotebook(
+            self,
+            agwStyle=aui.AUI_NB_TOP | 
+            aui.AUI_NB_TAB_SPLIT | 
+            aui.AUI_NB_TAB_MOVE |
+            aui.AUI_NB_TAB_FLOAT |
+            aui.AUI_NB_CLOSE_ON_ALL_TABS)
 
         self._auimgr.AddPane(self._centrePane, wx.CENTRE)
         self._auimgr.Update()
@@ -46,11 +59,16 @@ class FslViewPanel(wx.Panel):
         panel = orthopanel.OrthoPanel(self,
                                       self._imageList,
                                       glContext=self._glContext)
+
+        bm = wx.Bitmap('setting.png')
+        self._centrePane.SetPageBitmap(self._centrePane.GetPageCount() - 1,
+                                       bm) 
         
         if self._glContext is None:
             self._glContext = panel.xcanvas.glContext
             
-        self._centrePane.AddPage(panel, 'Ortho view')
+        self._centrePane.AddPage(panel, strings.orthoTitle)
+
 
 
     def addLightBoxPanel(self):
@@ -62,28 +80,97 @@ class FslViewPanel(wx.Panel):
         if self._glContext is None:
             self._glContext = panel.canvas.glContext
 
-        self._centrePane.AddPage(panel, 'Lightbox view')
+        self._centrePane.AddPage(panel, strings.lightBoxTitle)
 
 
     def addImageDisplayPanel(self):
         panel = imagedisplaypanel.ImageDisplayPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, 'Image display properties')
+        self._auimgr.AddPane(panel, wx.BOTTOM, strings.imageDisplayTitle)
         self._auimgr.Update()
 
 
     def addImageListPanel(self):
         panel = imagelistpanel.ImageListPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, 'Loaded Images')
+        self._auimgr.AddPane(panel, wx.BOTTOM, strings.imageListTitle)
         self._auimgr.Update()
 
 
     def addLocationPanel(self):
         panel = locationpanel.LocationPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, 'Cursor location')
+        self._auimgr.AddPane(panel, wx.BOTTOM, strings.locationTitle)
         self._auimgr.Update()
     
 
+def _makeMenuBar(frame, viewPanel):
+
+    menuBar = frame.GetMenuBar()
+
+    if menuBar is None:
+        menuBar = wx.MenuBar()
+        frame.SetMenuBar(menuBar)
+
+    try:
+        fileMenu = menuBar.GetMenu(menuBar.FindMenu('File'))
+    except:
+        fileMenu = wx.Menu()
+        menuBar.Append(fileMenu, 'File')
         
+    viewMenu = wx.Menu()
+    menuBar.Append(viewMenu, 'View')
+
+    orthoAction        = viewMenu.Append(wx.ID_ANY, strings.orthoTitle)
+    lightboxAction     = viewMenu.Append(wx.ID_ANY, strings.lightBoxTitle)
+    imageDisplayAction = viewMenu.Append(wx.ID_ANY, strings.imageDisplayTitle)
+    imageListAction    = viewMenu.Append(wx.ID_ANY, strings.imageListTitle)
+    locationAction     = viewMenu.Append(wx.ID_ANY, strings.locationTitle)
+    openFileAction     = fileMenu.Append(wx.ID_ANY, strings.openFile)
+    openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
+
+    frame.Bind(wx.EVT_MENU,
+               lambda ev: viewPanel.addOrthoPanel(),
+               orthoAction)
+    frame.Bind(wx.EVT_MENU,
+               lambda ev: viewPanel.addLightBoxPanel(),
+               lightboxAction)
+    frame.Bind(wx.EVT_MENU,
+               lambda ev: viewPanel.addImageDisplayPanel(),
+               imageDisplayAction)
+    frame.Bind(wx.EVT_MENU,
+               lambda ev: viewPanel.addImageListPanel(),
+               imageListAction)
+    frame.Bind(wx.EVT_MENU,
+               lambda ev: viewPanel.addLocationPanel(),
+               locationAction)
+ 
+    frame.Bind(wx.EVT_MENU,
+                lambda ev: viewPanel._imageList.addImages(),
+                openFileAction)
+
+    # disable the 'add standard' menu
+    # item if $FSLDIR is not set
+    fsldir = os.environ.get('FSLDIR', None)
+
+    if fsldir is not None:
+        stddir = op.join(fsldir, 'data', 'standard')
+        frame.Bind(wx.EVT_MENU,
+                   lambda ev: viewPanel._imageList.addImages(stddir),
+                   openStandardAction)
+    else:
+        openStandardAction.Enable(False)
+
+    
+def interface(parent, args, imageList):
+    
+    panel = FslViewPanel(parent, imageList)
+    
+    _makeMenuBar(parent, panel)
+    
+    if args.lightbox: panel.addLightBoxPanel()
+    else:             panel.addOrthoPanel()
+    
+    return panel
+
+
 def parseArgs(argv, namespace):
     """
     Parses the given command line arguments. Parameters:
@@ -194,62 +281,6 @@ def handleArgs(args):
         
     imageList = fslimage.ImageList(images)
     return imageList
-
-    
-def interface(parent, args, imageList):
-    
-    panel = FslViewPanel(parent, imageList)
-
-    menuBar  = wx.MenuBar()
-    fileMenu = wx.Menu()
-    viewMenu = wx.Menu()
-
-    parent.SetMenuBar(menuBar)
-    menuBar.Append(fileMenu, 'File')
-    menuBar.Append(viewMenu, 'View')
-
-    orthoAction        = viewMenu.Append(wx.ID_ANY, 'Ortho view')
-    lightboxAction     = viewMenu.Append(wx.ID_ANY, 'Lightbox view')
-    imageDisplayAction = viewMenu.Append(wx.ID_ANY, 'Image display properties')
-    imageListAction    = viewMenu.Append(wx.ID_ANY, 'Loaded images')
-    locationAction     = viewMenu.Append(wx.ID_ANY, 'Cursor location')
-    openFileAction     = fileMenu.Append(wx.ID_ANY, 'Open file')
-    openStandardAction = fileMenu.Append(wx.ID_ANY, 'Open standard')
-
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.addOrthoPanel(),
-                orthoAction)
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.addLightBoxPanel(),
-                lightboxAction)
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.addImageDisplayPanel(),
-                imageDisplayAction)
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.addImageListPanel(),
-                imageListAction)
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel.addLocationPanel(),
-                locationAction)
- 
-    parent.Bind(wx.EVT_MENU,
-                lambda ev: panel._imageList.addImages(),
-                openFileAction)
-
-    fsldir = os.environ.get('FSLDIR', None)
-
-    if fsldir is not None:
-        stddir = op.join(fsldir, 'data', 'standard')
-        parent.Bind(wx.EVT_MENU,
-                    lambda ev: panel._imageList.addImages(stddir),
-                    openStandardAction)
-    else:
-        openStandardAction.Enable(False)
-
-    if args.lightbox: panel.addLightBoxPanel()
-    else:             panel.addOrthoPanel()
-    
-    return panel
     
 
 FSL_TOOLNAME  = 'FSLView'

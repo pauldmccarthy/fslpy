@@ -192,7 +192,7 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     fileMenu = wx.Menu()
     
     frame.SetMenuBar(menuBar) 
-    menuBar.Append(fileMenu, 'File')
+    menuBar.Append(fileMenu, 'FSL')
 
     toolPanel = fslTool.interface(frame, args, ctx)
 
