@@ -45,7 +45,7 @@ class FslViewFrame(wx.Frame):
     :class:`~fsl.fslview.orthopanel.LightBoxPanel`) to be displayed.
     """
 
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, default=False):
         """
         """
         
@@ -74,7 +74,7 @@ class FslViewFrame(wx.Frame):
         # ortho or lightbox) is added to the panel
         self._glContext = None
 
-        self._restoreState()
+        self._restoreState(default)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
@@ -147,17 +147,25 @@ class FslViewFrame(wx.Frame):
             return []
 
         
-    def _restoreState(self):
+    def _restoreState(self, default=False):
         """Called on :meth:`__init__`. If any frame size/layout properties
         have previously been saved, they are applied to this frame.
+
+        :arg bool default: If ``True``, any saved state is ignored.
         """
         
         config = wx.Config('FSLView')
 
-        size     = self._parseSavedSize(  config.Read('size'))
-        position = self._parseSavedPoint( config.Read('position'))
-        layout   = config.Read('layout')
-        panels   = self._parseSavedLayout(layout)
+        size     = None
+        position = None
+        layout   = None
+        panels   = []
+
+        if not default:
+            size     = self._parseSavedSize(  config.Read('size'))
+            position = self._parseSavedPoint( config.Read('position'))
+            layout   = config.Read('layout')
+            panels   = self._parseSavedLayout(layout)
 
         if size is not None:
             log.debug('Restoring previous size: {}'.format(size))
@@ -227,6 +235,8 @@ class FslViewFrame(wx.Frame):
                     .MaximizeButton(False)
                     .MinimizeButton(False)
                     .PinButton(False)
+                    .Caption(title)
+                    .CaptionVisible(True)
                     .BestSize(panel.GetBestSize())
                     .Name(panel.__class__.__name__))
                     
@@ -324,7 +334,7 @@ def _makeMenuBar(frame):
     
 def interface(parent, args, imageList):
     
-    frame = FslViewFrame(parent, imageList)
+    frame = FslViewFrame(parent, imageList, args.default)
     
     _makeMenuBar(frame)
     
@@ -360,7 +370,9 @@ def parseArgs(argv, namespace):
                                          add_help=False)
 
     # Application options
-    mainParser.add_argument('-h', '--help',     action='store_true') 
+    mainParser.add_argument('-h', '--help',     action='store_true')
+    mainParser.add_argument('-d', '--default',  action='store_true',
+                            help='Default layout') 
     mainParser.add_argument('-l', '--lightbox', action='store_true',
                             help='Lightbox view')
     
@@ -383,12 +395,12 @@ def parseArgs(argv, namespace):
                 'cmap',
                 'volume']
 
-    # do not use l, v, h, or w, as they are used
+    # do not use l, v, h, d, or w, as they are used
     # either by fsl.py, or the mainParser above.
     props.addParserArguments(fslimage.ImageDisplay,
                              imgOpts,
                              cliProps=imgProps,
-                             exclude='lvhw')
+                             exclude='lvhdw')
 
     # Parse the application options
     namespace, argv = mainParser.parse_known_args(argv, namespace)
