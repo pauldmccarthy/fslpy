@@ -27,6 +27,14 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     showZCanvas = props.Boolean(default=True)
     showCursor  = props.Boolean(default=True)
 
+    
+    posSync = props.Boolean(default=True)
+    """Should the :attr:`pos` property of this :class:`OrthoPanel` class
+    be synchronised to the :class:`~fsl.data.fslimage.ImageList.location`
+    :attr:`~fsl.data.fslimage.ImageList.location` property?
+    """
+    
+
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
 
@@ -47,6 +55,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     _view = props.HGroup((
         props.VGroup(('layout',
+                      'posSync',
                       'showCursor',
                       'showXCanvas',
                       'showYCanvas',
@@ -56,6 +65,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     _labels = {
         'showCursor'  : 'Show cursor',
+        'posSync'     : 'Synchronise location',
         'showXCanvas' : 'Show X canvas',
         'showYCanvas' : 'Show Y canvas',
         'showZCanvas' : 'Show Z canvas',
@@ -104,7 +114,10 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         self.ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self.zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
-        def move(*a): self.setPosition(*self.imageList.location)
+        def move(*a):
+            if self.posSync:
+                self.setPosition(*self.imageList.location)
+                
         self.imageList.addListener('location', self.name, move) 
         
         def onDestroy(ev):
@@ -268,13 +281,22 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         my = h - my
 
         xpos, ypos = source.canvasToWorld(mx, my)
+        zpos       = source.pos.z
 
         log.debug('Mouse click on canvas {}: ({}, {} -> {}, {})'.format(
             source.name, mx, my, xpos, ypos))
 
-        if   source == self.xcanvas: self.imageList.location.yz = [xpos, ypos]
-        elif source == self.ycanvas: self.imageList.location.xz = [xpos, ypos]
-        elif source == self.zcanvas: self.imageList.location.xy = [xpos, ypos]
+        if   source == self.xcanvas: self.setPosition(zpos, xpos, ypos)
+        elif source == self.ycanvas: self.setPosition(xpos, zpos, ypos)
+        elif source == self.zcanvas: self.setPosition(xpos, ypos, zpos)
+
+        if self.posSync:
+            if   source == self.xcanvas:
+                self.imageList.location.yz = [xpos, ypos]
+            elif source == self.ycanvas:
+                self.imageList.location.xz = [xpos, ypos]
+            elif source == self.zcanvas:
+                self.imageList.location.xy = [xpos, ypos]
  
             
 class OrthoFrame(wx.Frame):

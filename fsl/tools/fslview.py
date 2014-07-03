@@ -22,12 +22,17 @@ import argparse
 import wx
 import wx.aui as aui
 
-import fsl.fslview.orthopanel        as orthopanel
-import fsl.fslview.lightboxpanel     as lightboxpanel
+import fsl.fslview.orthopanel           as orthopanel
+import fsl.fslview.lightboxpanel        as lightboxpanel
 import fsl.fslview.locationpanel     as locationpanel
 import fsl.fslview.imagelistpanel    as imagelistpanel
 import fsl.fslview.imagedisplaypanel as imagedisplaypanel
-import fsl.fslview.strings           as strings
+# import fsl.fslview.views.orthopanel           as orthopanel
+# import fsl.fslview.views.lightboxpanel        as lightboxpanel
+# import fsl.fslview.controls.locationpanel     as locationpanel
+# import fsl.fslview.controls.imagelistpanel    as imagelistpanel
+# import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel 
+import fsl.fslview.strings                    as strings
 
 import fsl.data.fslimage as fslimage
 
@@ -74,11 +79,48 @@ class FslViewFrame(wx.Frame):
         # ortho or lightbox) is added to the panel
         self._glContext = None
 
+        self._configContextMenu()
         self._restoreState(default)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
 
+    def _configContextMenu(self):
+
+        def showMenu(ev):
+
+            idx      = ev.GetSelection()
+            tabCtrl  = ev.GetEventObject()
+            mousePos = wx.GetMousePosition()
+
+            if idx == wx.NOT_FOUND: return
+
+            panel = tabCtrl.GetPage(idx).window
+            
+        
+            def showConfigDialog(ev):
+                dlg = props.buildDialog(self, panel)
+                dlg.SetPosition(mousePos)
+                dlg.Show()
+
+            def closePanel(ev):
+                self._centrePane.RemovePage(idx)
+                panel.Destroy()
+
+            menu       = wx.Menu()
+            configItem = wx.MenuItem(menu, wx.ID_ANY, 'Configure')
+            closeItem  = wx.MenuItem(menu, wx.ID_ANY, 'Close')
+
+            menu.AppendItem(configItem)
+            menu.AppendItem(closeItem)
+
+            menu.Bind(wx.EVT_MENU, showConfigDialog, configItem)
+            menu.Bind(wx.EVT_MENU, closePanel,       closeItem)
+
+            self.PopupMenu(menu, self.ScreenToClient(mousePos))
+
+        self._centrePane.Bind(aui.EVT__AUINOTEBOOK_TAB_RIGHT_DOWN, showMenu)
+ 
 
     def _onClose(self, ev):
         """Called on requests to close this :class:`FSLViewFrame`.
