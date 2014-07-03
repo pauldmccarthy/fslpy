@@ -780,10 +780,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        # if there is nothing to display, bail out early
-        if len(self.imageList) == 0:
-            return
-
         # load the shaders
         gl.glUseProgram(self.shaders)
 
