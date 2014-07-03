@@ -210,13 +210,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if len(self.imageList) > 0:
             
             self._imageBoundsChanged()
-
-            b = self.imageList.bounds
- 
+             
             self.pos.xyz = [
-                b.getLo(self.xax) + b.getLen(self.xax) / 2.0,
-                b.getLo(self.yax) + b.getLen(self.yax) / 2.0,
-                b.getLo(self.zax) + b.getLen(self.zax) / 2.0]
+                self.imageList.location.getPos(self.xax),
+                self.imageList.location.getPos(self.yax),
+                self.imageList.location.getPos(self.zax)]
 
         # when any of the properties of this
         # canvas change, we need to redraw
