@@ -34,8 +34,8 @@ import fsl.data.fslimage as fslimage
 import props
 
 
-class FslViewPanel(wx.Panel):
-    """A panel which implements a 3D image viewer.
+class FslViewFrame(wx.Frame):
+    """A frame which implements a 3D image viewer.
 
     The :class:`wx.aui.AuiManager` is used to lay out various configuration
     panels. In the :attr:`wx.CENTRE` location of the
@@ -49,7 +49,7 @@ class FslViewPanel(wx.Panel):
         """
         """
         
-        wx.Panel.__init__(self, parent, size=(800, 600))
+        wx.Frame.__init__(self, parent, title='FSLView')
         
         self._imageList = imageList
         self._auimgr    = aui.AuiManager(self)
@@ -74,48 +74,20 @@ class FslViewPanel(wx.Panel):
         # ortho or lightbox) is added to the panel
         self._glContext = None
 
-        self._configureStatePreservation()
+        self._restoreState()
 
-    def _parseSavedSize(self, size):
-        try:
-            return tuple(map(int, size[1:-1].split(',')))
-            
-        except:
-            return None
+        self.Bind(wx.EVT_CLOSE, self._onClose)
 
-    _parseSavedPoint = _parseSavedSize
 
-            
-    def _parseSavedLayout(self, layout):
-        return layout
 
-        
-    def _configureStatePreservation(self):
+    def _onClose(self, ev):
+        """Called on requests to close this :class:`FSLViewFrame`.
+
+        Saves the frame position, size, and layout, so it may be preserved the
+        next time it is opened. See the :meth:`_restoreState` method.
         """
-        """
-        
-        # check to see if any panel state
-        # has previously been saved
-        config = wx.Config('FSLView')
 
-        size     = self._parseSavedSize(  config.Read('size'))
-        position = self._parseSavedPoint( config.Read('position'))
-        layout   = self._parseSavedLayout(config.Read('layout'))
-
-        if size is not None:
-            log.debug('Restoring previous size: {}'.format(size))
-            self.SetSize(size)
-
-        if position is not None:
-            log.debug('Restoring previous position: {}'.format(position))
-            self.SetPosition(position)
-
-        if layout is not None:
-            log.debug('Restoring previous layout: {}'.format(layout))
-
-    # when this panel is destroyed, save its state
-    # so it is preserved the next time it is opened.
-    def Destroy(self):
+        ev.Skip()
 
         config = wx.Config('FSLView')
 
@@ -131,7 +103,84 @@ class FslViewPanel(wx.Panel):
         config.Write('position', str(position))
         config.Write('layout',   layout)
 
-        wx.Panel.Destroy(self)
+        
+    def _parseSavedSize(self, size):
+        """Parses the given string, which is assumed to contain a size tuple.
+        """
+        
+        try:    return tuple(map(int, size[1:-1].split(',')))
+        except: return None
+
+        
+    _parseSavedPoint = _parseSavedSize
+    """A proxy for the :meth:`_parseSavedSize` method.
+    """ 
+
+            
+    def _parseSavedLayout(self, layout):
+        """Parses the given string, which is assumed to contain an encoded
+        :class:`wx.aui.AuiManager` perspective (see
+        :meth:`~wx.aui.AuiManager.SavePerspective`).
+
+        Returns a list of class names, specifying the control panels
+        (e.g. :class:`~fsl.fslview.imagelistpanel.ImageListPanel`) which were
+        previously open, and need to be created.
+        """
+
+        try:
+
+            names    = [] 
+            sections = layout.split('|')[1:]
+
+            for section in sections:
+                
+                if section.strip() == '': continue
+                
+                attrs = section.split(';')
+                attrs = dict([tuple(nvpair.split('=')) for nvpair in attrs])
+
+                if 'name' in attrs:
+                    names.append(attrs['name'])
+
+            return names
+        except:
+            return []
+
+        
+    def _restoreState(self):
+        """Called on :meth:`__init__`. If any frame size/layout properties
+        have previously been saved, they are applied to this frame.
+        """
+        
+        config = wx.Config('FSLView')
+
+        size     = self._parseSavedSize(  config.Read('size'))
+        position = self._parseSavedPoint( config.Read('position'))
+        layout   = config.Read('layout')
+        panels   = self._parseSavedLayout(layout)
+
+        if size is not None:
+            log.debug('Restoring previous size: {}'.format(size))
+            self.SetSize(size)
+        else:
+            self.SetSize((800, 600))
+
+        if position is not None:
+            log.debug('Restoring previous position: {}'.format(position))
+            self.SetPosition(position)
+        else:
+            self.Centre()
+
+        if layout is not None:
+            log.debug('Restoring previous layout: {}'.format(layout))
+
+            for panel in panels:
+                panelMeth = getattr(self, 'add{}'.format(panel), None)
+
+                if panelMeth is not None:
+                    panelMeth()
+
+            self._auimgr.LoadPerspective(layout)
 
 
     def addOrthoPanel(self):
@@ -146,7 +195,7 @@ class FslViewPanel(wx.Panel):
         if self._glContext is None:
             self._glContext = panel.xcanvas.glContext
 
-        self._centrePane.AddPage(panel, strings.lightBoxTitle) 
+        self._centrePane.AddPage(panel, strings.orthoTitle) 
 
 
     def addLightBoxPanel(self):
@@ -184,10 +233,6 @@ class FslViewPanel(wx.Panel):
         self._auimgr.AddPane(panel, paneInfo)
         self._auimgr.Update()
 
-        print 
-        print self._auimgr.SavePerspective()
-        print
-
 
     def addImageDisplayPanel(self):
         """Adds a :class:`~fsl.fslview.imagedisplaypanel.ImageDisplayPanel`
@@ -216,10 +261,9 @@ class FslViewPanel(wx.Panel):
         self._addControlPanel(panel, strings.locationTitle)
     
 
-def _makeMenuBar(frame, viewPanel):
+def _makeMenuBar(frame):
     """Constructs a bunch of menu items for working with the given
-    :class:`~fsl.tools.fslview.FslViewPanel` (``viewPanel``), and adds
-    them to the given :class:`wx.Frame` (``frame``).
+    :class:`~fsl.tools.fslview.FslViewFrame`.
     """
 
     menuBar = frame.GetMenuBar()
@@ -246,23 +290,23 @@ def _makeMenuBar(frame, viewPanel):
     openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
 
     frame.Bind(wx.EVT_MENU,
-               lambda ev: viewPanel.addOrthoPanel(),
+               lambda ev: frame.addOrthoPanel(),
                orthoAction)
     frame.Bind(wx.EVT_MENU,
-               lambda ev: viewPanel.addLightBoxPanel(),
+               lambda ev: frame.addLightBoxPanel(),
                lightboxAction)
     frame.Bind(wx.EVT_MENU,
-               lambda ev: viewPanel.addImageDisplayPanel(),
+               lambda ev: frame.addImageDisplayPanel(),
                imageDisplayAction)
     frame.Bind(wx.EVT_MENU,
-               lambda ev: viewPanel.addImageListPanel(),
+               lambda ev: frame.addImageListPanel(),
                imageListAction)
     frame.Bind(wx.EVT_MENU,
-               lambda ev: viewPanel.addLocationPanel(),
+               lambda ev: frame.addLocationPanel(),
                locationAction)
  
     frame.Bind(wx.EVT_MENU,
-                lambda ev: viewPanel._imageList.addImages(),
+                lambda ev: frame._imageList.addImages(),
                 openFileAction)
 
     # disable the 'add standard' menu
@@ -272,7 +316,7 @@ def _makeMenuBar(frame, viewPanel):
     if fsldir is not None:
         stddir = op.join(fsldir, 'data', 'standard')
         frame.Bind(wx.EVT_MENU,
-                   lambda ev: viewPanel._imageList.addImages(stddir),
+                   lambda ev: frame._imageList.addImages(stddir),
                    openStandardAction)
     else:
         openStandardAction.Enable(False)
@@ -280,14 +324,14 @@ def _makeMenuBar(frame, viewPanel):
     
 def interface(parent, args, imageList):
     
-    panel = FslViewPanel(parent, imageList)
+    frame = FslViewFrame(parent, imageList)
     
-    _makeMenuBar(parent, panel)
+    _makeMenuBar(frame)
     
-    if args.lightbox: panel.addLightBoxPanel()
-    else:             panel.addOrthoPanel()
+    if args.lightbox: frame.addLightBoxPanel()
+    else:             frame.addOrthoPanel()
     
-    return panel
+    return frame
 
 
 def parseArgs(argv, namespace):

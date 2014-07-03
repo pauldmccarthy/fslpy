@@ -184,17 +184,16 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     """
     """
 
-    frame = wx.Frame(None, title='FSL -- {}'.format(fslTool.toolName))
+    frame = fslTool.interface(None, args, ctx)
 
-    # create the menu bar first, in case
-    # the tool wants to add things to it
-    menuBar  = wx.MenuBar()
-    fileMenu = wx.Menu()
-    
-    frame.SetMenuBar(menuBar) 
-    menuBar.Append(fileMenu, 'FSL')
+    menuBar = frame.GetMenuBar()
 
-    toolPanel = fslTool.interface(frame, args, ctx)
+    if menuBar is None:
+        menuBar  = wx.MenuBar()
+        frame.SetMenuBar(menuBar)
+        
+    fslMenu = wx.Menu()
+    menuBar.Insert(0, fslMenu, 'FSL')
 
     actions = []
 
@@ -212,11 +211,8 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
         lambda *ev: frame.Close()))
 
     for wxId, name, func in actions:
-        menuItem = fileMenu.Append(wxId, name)
+        menuItem = fslMenu.Append(wxId, name)
         frame.Bind(wx.EVT_MENU, func, menuItem)
-
-    frame.Layout()
-    frame.Fit()
 
     return frame
 
@@ -248,14 +244,16 @@ if __name__ == '__main__':
     if fslTool.context is not None: ctx = fslTool.context(args)
     else:                           ctx = None
 
-    app   = wx.App()
-    frame = buildGUI(args, fslTool, ctx, fslEnvActive)
-    frame.Show()
+    if fslTool.interface is not None:
+        
+        app   = wx.App()
+        frame = buildGUI(args, fslTool, ctx, fslEnvActive)
+        frame.Show()
 
-    wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
+        wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
 
-    if args.wxinspect:
-        import wx.lib.inspection
-        wx.lib.inspection.InspectionTool().Show()
-    
-    app.MainLoop()
+        if args.wxinspect:
+            import wx.lib.inspection
+            wx.lib.inspection.InspectionTool().Show()
+        
+        app.MainLoop()
