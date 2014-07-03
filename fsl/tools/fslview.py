@@ -5,6 +5,10 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A 3D image viewer.
+
+I'm using :mod:`wx.aui` instead of :mod:`wx.lib.agw.aui` because the
+:class:`AuiNotebook` implementation in the latter is very unstable on OSX
+Mavericks.
 """
 
 import os
@@ -13,7 +17,7 @@ import os.path as op
 import argparse
 
 import wx
-import wx.lib.agw.aui as aui
+import wx.aui as aui
 
 import fsl.fslview.orthopanel        as orthopanel
 import fsl.fslview.lightboxpanel     as lightboxpanel
@@ -28,24 +32,29 @@ import props
 
 
 class FslViewPanel(wx.Panel):
-    """
+    """A panel which implements a 3D image viewer. The
+    :class:`wx.aui.AuiManager` is used to lay out various configuration
+    panels. In the :attr:`wx.CENTER` location of the
+    :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which
+    allows multiple image perspectives (e.g.
+    :class:`~fsl.fslview.orthopanel.OrthoPanel`,
+    :class:`~fsl.fslview.orthopanel.LightBoxPanel`) to be displayed.
     """
 
     def __init__(self, parent, imageList):
         """
         """
         
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent, size=(800, 600))
         
         self._imageList = imageList
         self._auimgr    = aui.AuiManager(self)
 
         self._centrePane = aui.AuiNotebook(
             self,
-            agwStyle=aui.AUI_NB_TOP | 
+            style=aui.AUI_NB_TOP | 
             aui.AUI_NB_TAB_SPLIT | 
             aui.AUI_NB_TAB_MOVE |
-            aui.AUI_NB_TAB_FLOAT |
             aui.AUI_NB_CLOSE_ON_ALL_TABS)
 
         self._auimgr.AddPane(self._centrePane, wx.CENTRE)
@@ -55,25 +64,26 @@ class FslViewPanel(wx.Panel):
 
 
     def addOrthoPanel(self):
+        """Adds an :class:`~fsl.fslview.orthopanel.OrthoPanel` display
+        to the central :class:`~wx.aui.AuiNotebook` widget.
+        """
 
-        panel = orthopanel.OrthoPanel(self,
+        panel = orthopanel.OrthoPanel(self._centrePane,
                                       self._imageList,
                                       glContext=self._glContext)
 
-        bm = wx.Bitmap('setting.png')
-        self._centrePane.SetPageBitmap(self._centrePane.GetPageCount() - 1,
-                                       bm) 
-        
         if self._glContext is None:
             self._glContext = panel.xcanvas.glContext
             
         self._centrePane.AddPage(panel, strings.orthoTitle)
 
 
-
     def addLightBoxPanel(self):
+        """Adds a :class:`~fsl.fslview.lightboxpanel.LightBoxPanel` display
+        to the central :class:`~wx.aui.AuiNotebook` widget.
+        """ 
 
-        panel = lightboxpanel.LightBoxPanel(self,
+        panel = lightboxpanel.LightBoxPanel(self._centrePane,
                                             self._imageList,
                                             glContext=self._glContext)
         
@@ -83,25 +93,58 @@ class FslViewPanel(wx.Panel):
         self._centrePane.AddPage(panel, strings.lightBoxTitle)
 
 
+    def _addControlPanel(self, panel, title):
+        """
+        """
+        paneInfo = (aui.AuiPaneInfo()
+                    .Dock()
+                    .Bottom()
+                    .Dockable(True)
+                    .Floatable(True)
+                    .Movable(True)
+                    .CloseButton(True)
+                    .DestroyOnClose(True)
+                    .Gripper(False)
+                    .MaximizeButton(False)
+                    .MinimizeButton(False)
+                    .PinButton(False)
+                    .BestSize(panel.GetBestSize())
+                    .Name(title))
+                    
+        self._auimgr.AddPane(panel, paneInfo)
+        self._auimgr.Update()        
+
+
     def addImageDisplayPanel(self):
+        """Adds a :class:`~fsl.fslview.imagedisplaypanel.ImageDisplayPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """
         panel = imagedisplaypanel.ImageDisplayPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, strings.imageDisplayTitle)
-        self._auimgr.Update()
+        self._addControlPanel(panel, strings.imageDisplayTitle)
 
 
     def addImageListPanel(self):
+        """Adds a :class:`~fsl.fslview.imagelistpanel.ImageListPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """ 
         panel = imagelistpanel.ImageListPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, strings.imageListTitle)
-        self._auimgr.Update()
+        self._addControlPanel(panel, strings.imageListTitle)
 
 
     def addLocationPanel(self):
+        """Adds a :class:`~fsl.fslview.locationpanel.LocationPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """ 
         panel = locationpanel.LocationPanel(self, self._imageList)
-        self._auimgr.AddPane(panel, wx.BOTTOM, strings.locationTitle)
-        self._auimgr.Update()
+        self._addControlPanel(panel, strings.locationTitle)
     
 
 def _makeMenuBar(frame, viewPanel):
+    """
+    """
 
     menuBar = frame.GetMenuBar()
 
