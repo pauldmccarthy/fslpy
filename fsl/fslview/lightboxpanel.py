@@ -59,6 +59,8 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
             self.imageList.removeListener('location', self.name)
             ev.Skip()
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
         self.Layout()
 
         
