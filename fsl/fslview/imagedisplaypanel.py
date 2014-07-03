@@ -62,21 +62,11 @@ class ImageDisplayPanel(wx.Panel):
         :class:`~fsl.data.fslimage.Image` instance. 
         """
 
-        parentPanel = wx.Panel(self)
-            
-        displayPanel = props.buildGUI(parentPanel, image.display)
-        imagePanel   = props.buildGUI(parentPanel, image)
-
-        parentSizer = wx.BoxSizer(wx.HORIZONTAL)
-        parentPanel.SetSizer(parentSizer)
-        parentSizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
-        parentSizer.Add(imagePanel,   flag=wx.EXPAND)
-
-        parentSizer.Layout()
+        displayPanel = props.buildGUI(self, image.display)
         
-        self._sizer.Add(parentPanel, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
 
-        return parentPanel
+        return displayPanel
 
         
     def _imageListChanged(self, *a):
