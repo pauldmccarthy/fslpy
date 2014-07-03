@@ -50,6 +50,8 @@ class FslViewPanel(wx.Panel):
         self._imageList = imageList
         self._auimgr    = aui.AuiManager(self)
 
+        self._auimgr.SetDockSizeConstraint(50, 50)
+
         self._centrePane = aui.AuiNotebook(
             self,
             style=aui.AUI_NB_TOP | 
