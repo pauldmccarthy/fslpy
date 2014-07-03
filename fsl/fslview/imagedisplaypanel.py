@@ -13,9 +13,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-import os.path as op
 import wx
-
 import props
 
 
@@ -61,11 +59,8 @@ class ImageDisplayPanel(wx.Panel):
         the user to edit the display properties of the given
         :class:`~fsl.data.fslimage.Image` instance. 
         """
-
         displayPanel = props.buildGUI(self, image.display)
-        
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
-
         return displayPanel
 
         
