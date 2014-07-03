@@ -11,6 +11,9 @@ I'm using :mod:`wx.aui` instead of :mod:`wx.lib.agw.aui` because the
 Mavericks.
 """
 
+import logging
+log = logging.getLogger(__name__)
+
 import os
 import sys
 import os.path as op
@@ -32,11 +35,12 @@ import props
 
 
 class FslViewPanel(wx.Panel):
-    """A panel which implements a 3D image viewer. The
-    :class:`wx.aui.AuiManager` is used to lay out various configuration
-    panels. In the :attr:`wx.CENTER` location of the
-    :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which
-    allows multiple image perspectives (e.g.
+    """A panel which implements a 3D image viewer.
+
+    The :class:`wx.aui.AuiManager` is used to lay out various configuration
+    panels. In the :attr:`wx.CENTRE` location of the
+    :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which allows
+    multiple image perspectives (e.g.
     :class:`~fsl.fslview.orthopanel.OrthoPanel`,
     :class:`~fsl.fslview.orthopanel.LightBoxPanel`) to be displayed.
     """
@@ -59,10 +63,75 @@ class FslViewPanel(wx.Panel):
             aui.AUI_NB_TAB_MOVE |
             aui.AUI_NB_CLOSE_ON_ALL_TABS)
 
-        self._auimgr.AddPane(self._centrePane, wx.CENTRE)
+        paneInfo = (aui.AuiPaneInfo()
+                    .CentrePane()
+                    .Name('centre'))
+
+        self._auimgr.AddPane(self._centrePane, paneInfo)
         self._auimgr.Update()
 
+        # This attribute is set when a view panel (e.g.
+        # ortho or lightbox) is added to the panel
         self._glContext = None
+
+        self._configureStatePreservation()
+
+    def _parseSavedSize(self, size):
+        try:
+            return tuple(map(int, size[1:-1].split(',')))
+            
+        except:
+            return None
+
+    _parseSavedPoint = _parseSavedSize
+
+            
+    def _parseSavedLayout(self, layout):
+        return layout
+
+        
+    def _configureStatePreservation(self):
+        """
+        """
+        
+        # check to see if any panel state
+        # has previously been saved
+        config = wx.Config('FSLView')
+
+        size     = self._parseSavedSize(  config.Read('size'))
+        position = self._parseSavedPoint( config.Read('position'))
+        layout   = self._parseSavedLayout(config.Read('layout'))
+
+        if size is not None:
+            log.debug('Restoring previous size: {}'.format(size))
+            self.SetSize(size)
+
+        if position is not None:
+            log.debug('Restoring previous position: {}'.format(position))
+            self.SetPosition(position)
+
+        if layout is not None:
+            log.debug('Restoring previous layout: {}'.format(layout))
+
+    # when this panel is destroyed, save its state
+    # so it is preserved the next time it is opened.
+    def Destroy(self):
+
+        config = wx.Config('FSLView')
+
+        size     = self.GetSize().Get()
+        position = self.GetScreenPosition().Get()
+        layout   = self._auimgr.SavePerspective()
+
+        log.debug('Saving size: {}'    .format(str(size)))
+        log.debug('Saving position: {}'.format(str(position)))
+        log.debug('Saving layout: {}'  .format(str(layout)))
+
+        config.Write('size',     str(size))
+        config.Write('position', str(position))
+        config.Write('layout',   layout)
+
+        wx.Panel.Destroy(self)
 
 
     def addOrthoPanel(self):
@@ -76,8 +145,8 @@ class FslViewPanel(wx.Panel):
 
         if self._glContext is None:
             self._glContext = panel.xcanvas.glContext
-            
-        self._centrePane.AddPage(panel, strings.orthoTitle)
+
+        self._centrePane.AddPage(panel, strings.lightBoxTitle) 
 
 
     def addLightBoxPanel(self):
@@ -96,8 +165,7 @@ class FslViewPanel(wx.Panel):
 
 
     def _addControlPanel(self, panel, title):
-        """
-        """
+        """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
         paneInfo = (aui.AuiPaneInfo()
                     .Dock()
                     .Bottom()
@@ -111,10 +179,14 @@ class FslViewPanel(wx.Panel):
                     .MinimizeButton(False)
                     .PinButton(False)
                     .BestSize(panel.GetBestSize())
-                    .Name(title))
+                    .Name(panel.__class__.__name__))
                     
         self._auimgr.AddPane(panel, paneInfo)
-        self._auimgr.Update()        
+        self._auimgr.Update()
+
+        print 
+        print self._auimgr.SavePerspective()
+        print
 
 
     def addImageDisplayPanel(self):
@@ -145,7 +217,9 @@ class FslViewPanel(wx.Panel):
     
 
 def _makeMenuBar(frame, viewPanel):
-    """
+    """Constructs a bunch of menu items for working with the given
+    :class:`~fsl.tools.fslview.FslViewPanel` (``viewPanel``), and adds
+    them to the given :class:`wx.Frame` (``frame``).
     """
 
     menuBar = frame.GetMenuBar()
