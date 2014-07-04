@@ -229,10 +229,10 @@ if __name__ == '__main__':
         log.setLevel(logging.DEBUG)
 
         # make some noisy things quiet
-        logging.getLogger('fsl.fslview.gl.slicecanvas')   .setLevel(logging.WARNING)
-        logging.getLogger('fsl.fslview.gl.lightboxcanvas').setLevel(logging.WARNING)
-        logging.getLogger('props')                        .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets')                     .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
+        logging.getLogger('props')            .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
     elif args.verbose == 2:
         log.setLevel(logging.DEBUG)
         logging.getLogger('props')   .setLevel(logging.WARNING)
