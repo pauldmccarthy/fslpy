@@ -231,6 +231,7 @@ class FslViewFrame(wx.Frame):
             self._glContext = panel.xcanvas.glContext
 
         self._centrePane.AddPage(panel, strings.orthoTitle) 
+        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
 
 
     def addLightBoxPanel(self):
@@ -246,6 +247,7 @@ class FslViewFrame(wx.Frame):
             self._glContext = panel.canvas.glContext
 
         self._centrePane.AddPage(panel, strings.lightBoxTitle)
+        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
 
 
     def _addControlPanel(self, panel, title):
