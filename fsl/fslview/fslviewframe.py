@@ -26,7 +26,7 @@ class FSLViewFrame(wx.Frame):
     The :class:`wx.aui.AuiManager` is used to lay out various configuration
     panels. In the :attr:`wx.CENTRE` location of the
     :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which allows
-    multiple image perspectives (e.g.
+    multiple image views (e.g.
     :class:`~fsl.fslview.views.orthopanel.OrthoPanel`,
     :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`) to be displayed.
     """
@@ -55,19 +55,72 @@ class FSLViewFrame(wx.Frame):
 
         self._auimgr.AddPane(self._centrePane, paneInfo)
         self._auimgr.Update()
-
+ 
         # This attribute is set when a view panel (e.g.
         # ortho or lightbox) is added to the panel
         self._glContext = None
 
+        # we can have as many view
+        # panels as we like
+        self._viewPanels      = []
+        self._viewPanelTitles = {}
+        self._viewPanelCount  = 0
+
+        # only one of each type of
+        # control panel is allowed
+        self._controlPanels = set()
+
+        # only one view config panel
+        # for each view panel that
+        # exists
+        self._viewConfigPanels = {}
+
         self._makeMenuBar()
-        self._configContextMenu()
+        self._configViewContextMenu()
         self._restoreState(default)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
 
-    def _configContextMenu(self):
+    def _addViewPanel(self, panel, title):
+        self._viewPanelCount = self._viewPanelCount + 1
+        title = '{} {}'.format(title, self._viewPanelCount)
+        self._viewPanelTitles[id(panel)] = title
+        self._centrePane.AddPage(panel, title) 
+        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel)) 
+
+
+    def addOrthoPanel(self):
+        """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
+        to the central :class:`~wx.aui.AuiNotebook` widget.
+        """
+
+        panel = views.OrthoPanel(self._centrePane,
+                                 self._imageList,
+                                 glContext=self._glContext)
+
+        if self._glContext is None:
+            self._glContext = panel.xcanvas.glContext
+
+        self._addViewPanel(panel, strings.orthoTitle) 
+
+
+    def addLightBoxPanel(self):
+        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
+        display to the central :class:`~wx.aui.AuiNotebook` widget.
+        """ 
+
+        panel = views.LightBoxPanel(self._centrePane,
+                                    self._imageList,
+                                    glContext=self._glContext)
+        
+        if self._glContext is None:
+            self._glContext = panel.canvas.glContext
+
+        self._addViewPanel(panel, strings.orthoTitle)
+
+        
+    def _configViewContextMenu(self):
 
         def showMenu(ev):
 
@@ -76,21 +129,22 @@ class FSLViewFrame(wx.Frame):
             mousePos = wx.GetMousePosition()
 
             if idx == wx.NOT_FOUND: return
-
-            panel = tabCtrl.GetPage(idx).window
             
-        
+            tabPage = tabCtrl.GetPage(idx)
+            panel   = tabPage.window
+            title   = self._viewPanelTitles[id(panel)]
+
+            title = '{} settings'.format(title)
+
             def showConfigDialog(ev):
-                dlg = props.buildDialog(self, panel)
-                dlg.SetPosition(mousePos)
-                dlg.Show()
+                self._addViewConfigPanel(panel, title)
 
             def closePanel(ev):
                 self._centrePane.RemovePage(idx)
                 panel.Destroy()
 
             menu       = wx.Menu()
-            configItem = wx.MenuItem(menu, wx.ID_ANY, 'Configure')
+            configItem = wx.MenuItem(menu, wx.ID_ANY, 'Settings')
             closeItem  = wx.MenuItem(menu, wx.ID_ANY, 'Close')
 
             menu.AppendItem(configItem)
@@ -101,8 +155,120 @@ class FSLViewFrame(wx.Frame):
 
             self.PopupMenu(menu, self.ScreenToClient(mousePos))
 
-        self._centrePane.Bind(aui.EVT__AUINOTEBOOK_TAB_RIGHT_DOWN, showMenu)
- 
+        self._centrePane.Bind(aui.EVT__AUINOTEBOOK_TAB_RIGHT_DOWN, showMenu) 
+        
+
+    def _addViewConfigPanel(self, viewPanel, title):
+        """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
+
+        if id(viewPanel) in self._viewConfigPanels.keys():
+            return
+        
+        confPanel = props.buildGUI(self, viewPanel)
+        paneInfo = (aui.AuiPaneInfo()
+                    .Dock()
+                    .Top()
+                    .Dockable(True)
+                    .Floatable(True)
+                    .Movable(True)
+                    .CloseButton(True)
+                    .DestroyOnClose(True)
+                    .Gripper(False)
+                    .MaximizeButton(False)
+                    .MinimizeButton(False)
+                    .PinButton(False)
+                    .Caption(title)
+                    .CaptionVisible(True)
+                    .BestSize(confPanel.GetBestSize())
+                    .Name('config_{}'.format(viewPanel.__class__.__name__)))
+        
+        self._auimgr.AddPane(confPanel, paneInfo)
+        self._auimgr.Update()
+
+        self._viewConfigPanels[id(viewPanel)] = confPanel
+
+        def onViewPanelDestroy(ev):
+            ev.Skip()
+            self._auimgr.DetachPane(confPanel)
+            self._auimgr.Update()
+            confPanel.Destroy()
+
+        def onConfPanelDestroy(ev):
+            ev.Skip()
+            self._viewConfigPanels.pop(id(viewPanel))
+
+        viewPanel.Bind(wx.EVT_WINDOW_DESTROY, onViewPanelDestroy)
+        confPanel.Bind(wx.EVT_WINDOW_DESTROY, onConfPanelDestroy)
+                    
+
+    def _addControlPanel(self, panelCls, title):
+        """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
+
+        if panelCls in self._controlPanels:
+            return
+
+        panel = panelCls(self, self._imageList)
+            
+        paneInfo = (aui.AuiPaneInfo()
+                    .Dock()
+                    .Bottom()
+                    .Dockable(True)
+                    .Floatable(True)
+                    .Movable(True)
+                    .CloseButton(True)
+                    .DestroyOnClose(True)
+                    .Gripper(False)
+                    .MaximizeButton(False)
+                    .MinimizeButton(False)
+                    .PinButton(False)
+                    .Caption(title)
+                    .CaptionVisible(True)
+                    .BestSize(panel.GetBestSize())
+                    .Name(panel.__class__.__name__))
+                    
+        self._auimgr.AddPane(panel, paneInfo)
+        self._auimgr.Update()
+
+        self._controlPanels.add(panelCls)
+
+        def onDestroy(ev):
+            ev.Skip()
+            self._controlPanels.remove(panelCls)
+
+        panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
+
+    def addImageDisplayPanel(self):
+        """Adds a
+        :class:`~fsl.fslview.controls.imagedisplaypanel.ImageDisplayPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """
+        self._addControlPanel(
+            controls.ImageDisplayPanel,
+            strings.imageDisplayTitle)
+
+
+    def addImageListPanel(self):
+        """Adds a
+        :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """ 
+        self._addControlPanel(
+            controls.ImageListPanel,
+            strings.imageListTitle)
+
+
+    def addLocationPanel(self):
+        """Adds a :class:`~fsl.fslview.controls.locationpanel.LocationPanel`
+        widget to this panel (defaults to the bottom, according to the
+        :class:`wx.aui.AuiManager`).
+        """ 
+        self._addControlPanel(
+            controls.LocationPanel,
+            strings.locationTitle)
+
 
     def _onClose(self, ev):
         """Called on requests to close this :class:`FSLViewFrame`.
@@ -213,90 +379,6 @@ class FSLViewFrame(wx.Frame):
                     panelMeth()
 
             self._auimgr.LoadPerspective(layout)
-
-
-    def addOrthoPanel(self):
-        """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
-        to the central :class:`~wx.aui.AuiNotebook` widget.
-        """
-
-        panel = views.OrthoPanel(self._centrePane,
-                                 self._imageList,
-                                 glContext=self._glContext)
-
-        if self._glContext is None:
-            self._glContext = panel.xcanvas.glContext
-
-        self._centrePane.AddPage(panel, strings.orthoTitle) 
-        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
-
-
-    def addLightBoxPanel(self):
-        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
-        display to the central :class:`~wx.aui.AuiNotebook` widget.
-        """ 
-
-        panel = views.LightBoxPanel(self._centrePane,
-                                    self._imageList,
-                                    glContext=self._glContext)
-        
-        if self._glContext is None:
-            self._glContext = panel.canvas.glContext
-
-        self._centrePane.AddPage(panel, strings.lightBoxTitle)
-        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
-
-
-    def _addControlPanel(self, panel, title):
-        """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
-        paneInfo = (aui.AuiPaneInfo()
-                    .Dock()
-                    .Bottom()
-                    .Dockable(True)
-                    .Floatable(True)
-                    .Movable(True)
-                    .CloseButton(True)
-                    .DestroyOnClose(True)
-                    .Gripper(False)
-                    .MaximizeButton(False)
-                    .MinimizeButton(False)
-                    .PinButton(False)
-                    .Caption(title)
-                    .CaptionVisible(True)
-                    .BestSize(panel.GetBestSize())
-                    .Name(panel.__class__.__name__))
-                    
-        self._auimgr.AddPane(panel, paneInfo)
-        self._auimgr.Update()
-
-
-    def addImageDisplayPanel(self):
-        """Adds a
-        :class:`~fsl.fslview.controls.imagedisplaypanel.ImageDisplayPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """
-        panel = controls.ImageDisplayPanel(self, self._imageList)
-        self._addControlPanel(panel, strings.imageDisplayTitle)
-
-
-    def addImageListPanel(self):
-        """Adds a
-        :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """ 
-        panel = controls.ImageListPanel(self, self._imageList)
-        self._addControlPanel(panel, strings.imageListTitle)
-
-
-    def addLocationPanel(self):
-        """Adds a :class:`~fsl.fslview.controls.locationpanel.LocationPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """ 
-        panel = controls.LocationPanel(self, self._imageList)
-        self._addControlPanel(panel, strings.locationTitle)
     
 
     def _makeMenuBar(self):
