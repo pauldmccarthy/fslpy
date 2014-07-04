@@ -100,9 +100,11 @@ class LocationPanel(wx.Panel, props.HasProperties):
                                    self._voxelLocationChanged)
 
         def onDestroy(ev):
+            ev.Skip()
             self.imageList.removeListener('images',        lName)
             self.imageList.removeListener('selectedImage', lName)
-            self.imageList.removeListener('location',      lName)
+            self.imageList.removeListener('location',
+                                          '{}_worldToVox'.format(lName))
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
