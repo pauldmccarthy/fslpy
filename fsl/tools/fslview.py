@@ -22,16 +22,11 @@ import argparse
 import wx
 import wx.aui as aui
 
-import fsl.fslview.orthopanel           as orthopanel
-import fsl.fslview.lightboxpanel        as lightboxpanel
-import fsl.fslview.locationpanel     as locationpanel
-import fsl.fslview.imagelistpanel    as imagelistpanel
-import fsl.fslview.imagedisplaypanel as imagedisplaypanel
-# import fsl.fslview.views.orthopanel           as orthopanel
-# import fsl.fslview.views.lightboxpanel        as lightboxpanel
-# import fsl.fslview.controls.locationpanel     as locationpanel
-# import fsl.fslview.controls.imagelistpanel    as imagelistpanel
-# import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel 
+import fsl.fslview.views.orthopanel           as orthopanel
+import fsl.fslview.views.lightboxpanel        as lightboxpanel
+import fsl.fslview.controls.locationpanel     as locationpanel
+import fsl.fslview.controls.imagelistpanel    as imagelistpanel
+import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel 
 import fsl.fslview.strings                    as strings
 
 import fsl.data.fslimage as fslimage

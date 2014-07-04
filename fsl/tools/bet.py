@@ -11,10 +11,10 @@ import wx
 
 import props
 
-import fsl.data.imagefile     as imagefile
-import fsl.data.fslimage      as fslimage
-import fsl.utils.runwindow    as runwindow
-import fsl.fslview.orthopanel as orthopanel
+import fsl.data.imagefile           as imagefile
+import fsl.data.fslimage            as fslimage
+import fsl.utils.runwindow          as runwindow
+import fsl.fslview.views.orthopanel as orthopanel
 
 runChoices = OrderedDict((
 

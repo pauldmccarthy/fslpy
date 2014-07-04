@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 #
 # orthopanel.py - A wx/OpenGL widget for displaying and interacting with a
-# collection of 3D images. Displays three canvases, each of which shows the
-# same image(s) on a different orthogonal plane. The displayed location
-# is driven by the fsl.data.fslimage.ImageList.location property.
+# collection of 3D images. 
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A :mod:`wx`/:mod:`OpenGL` widget for displaying and interacting with a
+collection of 3D images (see :class:`~fsl.data.fslimage.ImageList`).
+Displays three canvases, each of which shows the same image(s) on a
+different orthogonal plane. The displayed location is driven by the
+:attr:`fsl.data.fslimage.ImageList.location` property.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -14,8 +18,8 @@ log = logging.getLogger(__name__)
 import wx
 
 import props
-import fsl.data.fslimage       as fslimage
-import fsl.fslview.slicecanvas as slicecanvas
+import fsl.data.fslimage          as fslimage
+import fsl.fslview.gl.slicecanvas as slicecanvas
 
 
 class OrthoPanel(wx.Panel, props.HasProperties):
