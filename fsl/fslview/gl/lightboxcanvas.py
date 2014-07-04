@@ -211,6 +211,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self._updateDisplayBounds()
             self._genSliceLocations()
             self._updateScrollBar()
+            self._zPosChanged()
             self.Refresh()
         sliceRangeChanged()
 
@@ -341,6 +342,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             zgap = min([i.pixdim[self.zax] for i in self.imageList])
             self.sliceSpacing = zgap
             self.setConstraint('zrange', 'minDistance', zgap)
+
+            # make sure that the cursor location is visible
+            self._zPosChanged()
             
 
     def _imageListChanged(self, *a):

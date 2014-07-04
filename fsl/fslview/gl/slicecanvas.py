@@ -286,6 +286,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             glData.genIndexBuffers(self.xax, self.yax)
             
         self._imageBoundsChanged()
+        
+        # Reset the canvas position as, because the
+        # z axis has been changed, the old coordinates
+        # will be in the wrong dimension order
+        self.pos.xyz = [self.imageList.location[self.xax],
+                        self.imageList.location[self.yax],
+                        self.imageList.location[self.zax]]
  
             
     def _imageListChanged(self, *a):
