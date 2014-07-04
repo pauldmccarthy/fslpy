@@ -16,12 +16,9 @@ import wx.aui as aui
 
 import props
 
-import fsl.fslview.views.orthopanel           as orthopanel
-import fsl.fslview.views.lightboxpanel        as lightboxpanel
-import fsl.fslview.controls.locationpanel     as locationpanel
-import fsl.fslview.controls.imagelistpanel    as imagelistpanel
-import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel 
-import fsl.fslview.strings                    as strings
+import fsl.fslview.views    as views
+import fsl.fslview.controls as controls
+import fsl.fslview.strings  as strings
 
 class FSLViewFrame(wx.Frame):
     """A frame which implements a 3D image viewer.
@@ -223,9 +220,9 @@ class FSLViewFrame(wx.Frame):
         to the central :class:`~wx.aui.AuiNotebook` widget.
         """
 
-        panel = orthopanel.OrthoPanel(self._centrePane,
-                                      self._imageList,
-                                      glContext=self._glContext)
+        panel = views.OrthoPanel(self._centrePane,
+                                 self._imageList,
+                                 glContext=self._glContext)
 
         if self._glContext is None:
             self._glContext = panel.xcanvas.glContext
@@ -239,9 +236,9 @@ class FSLViewFrame(wx.Frame):
         display to the central :class:`~wx.aui.AuiNotebook` widget.
         """ 
 
-        panel = lightboxpanel.LightBoxPanel(self._centrePane,
-                                            self._imageList,
-                                            glContext=self._glContext)
+        panel = views.LightBoxPanel(self._centrePane,
+                                    self._imageList,
+                                    glContext=self._glContext)
         
         if self._glContext is None:
             self._glContext = panel.canvas.glContext
@@ -279,7 +276,7 @@ class FSLViewFrame(wx.Frame):
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """
-        panel = imagedisplaypanel.ImageDisplayPanel(self, self._imageList)
+        panel = controls.ImageDisplayPanel(self, self._imageList)
         self._addControlPanel(panel, strings.imageDisplayTitle)
 
 
@@ -289,7 +286,7 @@ class FSLViewFrame(wx.Frame):
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """ 
-        panel = imagelistpanel.ImageListPanel(self, self._imageList)
+        panel = controls.ImageListPanel(self, self._imageList)
         self._addControlPanel(panel, strings.imageListTitle)
 
 
@@ -298,7 +295,7 @@ class FSLViewFrame(wx.Frame):
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """ 
-        panel = locationpanel.LocationPanel(self, self._imageList)
+        panel = controls.LocationPanel(self, self._imageList)
         self._addControlPanel(panel, strings.locationTitle)
     
 
