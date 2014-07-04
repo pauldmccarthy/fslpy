@@ -592,6 +592,10 @@ class ImageList(props.HasProperties):
         # initialise image bounds
         self._imageListChanged()
 
+        # select the last image in the list
+        if len(images) > 0:
+            self.selectedImage = len(images) - 1
+
         # initialise the location to be
         # the centre of the image world
         b = self.bounds

@@ -61,14 +61,31 @@ class ImageListPanel(wx.Panel):
             self._name,
             self._imageListChanged)
 
+        self._imageList.addListener(
+            'selectedImage',
+            self._name,
+            self._selectedImageChanged) 
+
         # This flag is set by the listbox listeners (bound above),
         # and read by the _imageListChanged, to ensure that user
         # actions on the list box do not trigger a list box refresh.
         self._listBoxNeedsUpdate = True
 
         self._imageListChanged()
+        self._selectedImageChanged()
 
         self.Layout()
+
+
+    def _selectedImageChanged(self, *a):
+        """Called when the :attr:`~fsl.data.fslimage.ImageList.selectedImage`
+        property changes. Updates the selected item in the list box.
+        """
+        
+        if not self._listBoxNeedsUpdate:
+            return
+            
+        self._listBox.SetSelection(self._imageList.selectedImage)
 
         
     def _imageListChanged(self, *a):
@@ -101,6 +118,7 @@ class ImageListPanel(wx.Panel):
         """
         self._listBoxNeedsUpdate = False
         self._imageList.move(ev.oldIdx, ev.newIdx)
+        self._imageList.selectedImage = ev.newIdx
         self._listBoxNeedsUpdate = True
 
         
@@ -109,7 +127,9 @@ class ImageListPanel(wx.Panel):
         :class:`~pwidgets.elistbox.EditableListBox`. Sets the
         :attr:`fsl.data.fslimage.ImageList.selectedImage property.
         """
+        self._listBoxNeedsUpdate = False
         self._imageList.selectedImage = ev.idx
+        self._listBoxNeedsUpdate = True
 
         
     def _lbAdd(self, ev):

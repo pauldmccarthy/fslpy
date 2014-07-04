@@ -37,8 +37,19 @@ class ImageDisplayPanel(wx.Panel):
         # a dictionary containing {id(image) : panel} mappings
         self._displayPanels = {}
 
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._label = wx.StaticText(self,
+                                    style=wx.ALIGN_CENTRE |
+                                          wx.ST_ELLIPSIZE_MIDDLE)
+        self._sizer = wx.BoxSizer(wx.VERTICAL)
+        
         self.SetSizer(self._sizer)
+
+        self._sizer.Add(self._label, flag=wx.EXPAND)
+
+        font = self._label.GetFont()
+        font.SetPointSize(font.GetPointSize() - 2)
+        font.SetWeight(wx.FONTWEIGHT_LIGHT)
+        self._label.SetFont(font) 
 
         self._imageList.addListener(
             'images',
@@ -119,7 +130,9 @@ class ImageDisplayPanel(wx.Panel):
             
             if i == idx:
                 log.debug('Showing display panel for '
-                          'image {}'.format(image.name))
+                          'image {} ({})'.format(image.name, idx))
+
+                self._label.SetLabel('{}'.format(image.imageFile))
             
             displayPanel.Show(i == idx)
 
