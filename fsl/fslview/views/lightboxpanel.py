@@ -147,12 +147,16 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
 
         log.debug('Mouse click on {}: '
                   '({}, {} -> {: 5.2f}, {: 5.2f}, {: 5.2f})'.format(
-                      self.canvas.name, mx, my, xpos, ypos, zpos))
+                      self.canvas.name, mx, my, *clickPos))
 
-        self.canvas.pos.xyz = (xpos, ypos, zpos)
+        cpos = [clickPos[self.canvas.xax],
+                clickPos[self.canvas.yax],
+                clickPos[self.canvas.zax]]
+
+        self.canvas.pos.xyz = cpos
         
         if self.posSync:
-            self.imageList.location.xyz = xpos, ypos, zpos
+            self.imageList.location.xyz = clickPos
         
             
     def onMouseScroll(self, ev):

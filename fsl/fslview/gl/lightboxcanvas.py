@@ -301,11 +301,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             return
 
         # figure out where we are in the canvas world
-        pos = [0] * 3
-        pos[self.xax] = self.pos.x
-        pos[self.yax] = self.pos.y
-        pos[self.zax] = self.pos.z
-        canvasX, canvasY = self.worldToCanvas(*pos)
+        canvasX, canvasY = self.worldToCanvas(*self.pos.xyz)
 
         # already in bounds
         if canvasX >= self.displayBounds.xlo and \
