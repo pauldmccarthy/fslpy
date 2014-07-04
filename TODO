@@ -10,12 +10,18 @@ regularly, too.
 ** DONE SliceCanvas bounding box calculation is also broken again.
 ** DONE Fix mouse tracking (voxel changes)
 ** DONE Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
-** Selected image sync between all the control panels is a bit iffy
-** Cursor location on lightboxcanvas, when Z is not the depth axis
+** DONE Selected image sync between all the control panels is a bit iffy
+** DONE Cursor location on lightboxcanvas, when Z is not the depth axis
 ** Min z distance on lightboxcanvas not working?
 ** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
+** OSX SegFault when all view tabs removed??
 * Little things
+** Superclasses for view/control panels.
+** Named view panels
+** View config panels should be dockable.
 ** Wild cards in image file load
+** DONE Focus/display newly opened view tabs
+** DONE Display current location on new lightboxcanvas, and when light box props change
 ** DONE Truncate long filenames in image list panel.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** DONE Labels for individual bound/point widget sliders.
@@ -31,7 +37,7 @@ regularly, too.
 ** DONE If image files were specified on the command line, make sure the open file dialog defaults to one of their paths.
 ** DONE Float formatting on range slider buttons
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
-** SliceCanvas initial location set from image list
+** DONE SliceCanvas initial location set from image list
 ** Add a 'mutable' attribute (not constraint) to List properties?
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
