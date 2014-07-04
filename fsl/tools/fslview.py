@@ -27,7 +27,7 @@ import props
     
 def interface(parent, args, imageList):
     
-    frame = fslviewframe.FslViewFrame(parent, imageList, args.default)
+    frame = fslviewframe.FSLViewFrame(parent, imageList, args.default)
     
     if args.lightbox: frame.addLightBoxPanel()
     else:             frame.addOrthoPanel()

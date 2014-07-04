@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# fslviewframe.py -
+# fslviewframe.py - A wx.Frame which implemnents a 3D image viewer.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -23,7 +23,7 @@ import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel 
 import fsl.fslview.strings                    as strings
 
-class FslViewFrame(wx.Frame):
+class FSLViewFrame(wx.Frame):
     """A frame which implements a 3D image viewer.
 
     The :class:`wx.aui.AuiManager` is used to lay out various configuration
