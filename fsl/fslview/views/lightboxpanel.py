@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 #
-# lightboxpanel.py -
+# lightboxpanel.py - A panel which contains a LightBoxCanvas, for displaying
+# multiple slices from a collection of images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module defines the :class:`LightBoxPanel, a panel which contains a
+:class:`~fsl.fslview.gl.LightBoxCanvas`, for displaying multiple slices from a
+collection of images.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -14,11 +19,12 @@ import props
 import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
 
 class LightBoxPanel(wx.Panel, props.HasProperties):
-    """
-    Convenience Panel which contains a a LightBoxCanvas and a scrollbar,
-    and sets up mouse-scrolling behaviour.
+    """Convenience Panel which contains a 
+    :class:`~fsl.fslview.gl.LightBoxCanvas` and a scrollbar, and sets up
+    mouse-scrolling behaviour.
     """
 
+    
     sliceSpacing = lightboxcanvas.LightBoxCanvas.sliceSpacing
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.sliceSpacing`.
     """
@@ -39,12 +45,33 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
     """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.zax`."""
 
     
-    _labels = lightboxcanvas.LightBoxCanvas._labels
-    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas._labels`."""
+    posSync = props.Boolean(default=True)
+    """If False, the cursor position shown in the
+    :class:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` instance, which
+    is contained in this :class:`LightBoxPanel` (the
+    :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.pos` property) will not
+    be synchronised to the :class:`~fsl.data.fslimage.ImageList.location`
+    :attr:`~fsl.data.fslimage.ImageList.location` property.
+    """ 
+
     
+    _labels = {
+        'zrange'       : 'Slice range',
+        'posSync'      : 'Synchronise position',
+        'sliceSpacing' : 'Slice spacing',
+        'ncols'        : 'Number of columns',
+        'showCursor'   : 'Show cursor',
+        'zax'          : 'Z axis'}
+    """Property labels to be used for GUI displays."""
+
     
-    _view = lightboxcanvas.LightBoxCanvas._view
-    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas._view`."""
+    _view = props.VGroup(('showCursor',
+                          'posSync',
+                          'zrange',
+                          'sliceSpacing',
+                          'ncols',
+                          'zax'))
+    """Layout to be used for GUI displays.""" 
 
     
     def __init__(self, parent, *args, **kwargs):
@@ -84,6 +111,7 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
         self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseScroll)
 
         def move(*a):
+            if not self.posSync: return
             xpos = self.imageList.location.getPos(self.canvas.xax)
             ypos = self.imageList.location.getPos(self.canvas.yax)
             zpos = self.imageList.location.getPos(self.canvas.zax)
@@ -121,7 +149,10 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
                   '({}, {} -> {: 5.2f}, {: 5.2f}, {: 5.2f})'.format(
                       self.canvas.name, mx, my, xpos, ypos, zpos))
 
-        self.imageList.location.xyz = xpos, ypos, zpos
+        self.canvas.pos.xyz = (xpos, ypos, zpos)
+        
+        if self.posSync:
+            self.imageList.location.xyz = xpos, ypos, zpos
         
             
     def onMouseScroll(self, ev):
