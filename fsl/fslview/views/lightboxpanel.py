@@ -19,6 +19,34 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
     and sets up mouse-scrolling behaviour.
     """
 
+    sliceSpacing = lightboxcanvas.LightBoxCanvas.sliceSpacing
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.sliceSpacing`.
+    """
+
+    ncols = lightboxcanvas.LightBoxCanvas.ncols
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`."""
+
+    
+    zrange = lightboxcanvas.LightBoxCanvas.zrange
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.zrange`."""
+
+    
+    showCursor = lightboxcanvas.LightBoxCanvas.showCursor
+    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.showCursor`."""
+
+    
+    zax = lightboxcanvas.LightBoxCanvas.zax
+    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.zax`."""
+
+    
+    _labels = lightboxcanvas.LightBoxCanvas._labels
+    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas._labels`."""
+    
+    
+    _view = lightboxcanvas.LightBoxCanvas._view
+    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas._view`."""
+
+    
     def __init__(self, parent, *args, **kwargs):
         """
         Accepts the same parameters as the LightBoxCanvas constructor,
@@ -26,6 +54,8 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
         """
 
         wx.Panel.__init__(self, parent)
+        props.HasProperties.__init__(self)
+
         self.name = 'LightBoxPanel_{}'.format(id(self))
 
         self.scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
@@ -33,6 +63,12 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
         kwargs['scrollbar'] = self.scrollbar
         
         self.canvas = lightboxcanvas.LightBoxCanvas(self, *args, **kwargs)
+
+        self.bindProps('sliceSpacing', self.canvas)
+        self.bindProps('ncols',        self.canvas)
+        self.bindProps('zrange',       self.canvas)
+        self.bindProps('showCursor',   self.canvas)
+        self.bindProps('zax',          self.canvas)
 
         self.imageList = self.canvas.imageList
 
