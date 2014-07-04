@@ -292,7 +292,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """This method is called once by :meth:`_initGLData`, and then again
         every time an image is added or removed to/from the image list. For
         newly added images, it creates a
-        :class:`~fsl.fslview.glimagedata.GLImageData` object, which
+        :class:`~fsl.fslview.gl.glimagedata.GLImageData` object, which
         initialises the OpenGL data necessary to render the image, and then
         triggers a refresh.
         """

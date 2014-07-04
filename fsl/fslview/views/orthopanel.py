@@ -33,7 +33,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
     
     posSync = props.Boolean(default=True)
-    """Should the :attr:`pos` property of this :class:`OrthoPanel` class
+    """Should the position shown in each of the
+    :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instances 
     be synchronised to the :class:`~fsl.data.fslimage.ImageList.location`
     :attr:`~fsl.data.fslimage.ImageList.location` property?
     """

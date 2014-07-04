@@ -89,7 +89,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         
     def canvasToWorld(self, xpos, ypos):
-        """Overrides :meth:`fsl.fslview.slicecanvas.SliceCanvas.canvasToWorld`.
+        """Overrides
+        :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas.canvasToWorld`.
 
         Given pixel x/y coordinates on this canvas, translates them into the
         real world x/y/z coordinates of the displayed slice.  Returns a
@@ -289,7 +290,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _zPosChanged(self, *a):
-        """Called when the :attr:`~fsl.fslview.slicecanvas.SliceCanvas.pos`
+        """Called when the :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.pos`
         ``z`` value changes.
 
         Makes sure that the corresponding slice is visible.
@@ -325,7 +326,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
 
     def _zAxisChanged(self, *a):
-        """Overrides :meth:`fsl.fslview.slicecanvas.SliceCanvas._zAxisChanged`.
+        """Overrides
+        :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas._zAxisChanged`.
 
         Called when the :attr:`~fsl.fslview.SliceCanvas.zax` property
         changes. Calls the superclass implementation, and then sets the slice
@@ -347,7 +349,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
     def _imageListChanged(self, *a):
         """Overrides
-        :meth:`~fsl.fslview.slicecanvas.SliceCanvas._imageListChanged`.
+        :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._imageListChanged`.
 
         Regenerates slice locations for all images, and calls the super
         implementation.
@@ -358,7 +360,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
     def _imageBoundsChanged(self, *a):
         """Overrides
-        :meth:`fsl.fslview.slicecanvas.SliceCanvas._imageBoundsChanged`.
+        :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas._imageBoundsChanged`.
 
         Called when the image bounds change. Updates the :attr:`zrange`
         min/max values.
@@ -377,7 +379,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
     def _updateDisplayBounds(self):
         """Overrides
-        :meth:`fsl.fslview.slicecanvas.SliceCanvas._updateDisplayBounds`.
+        :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas._updateDisplayBounds`.
 
         Called on canvas resizes, image bound changes and lightbox slice
         property changes. Calculates the required bounding box that is to
@@ -512,7 +514,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
     def _drawCursor(self):
         """Draws a cursor at the current canvas position (the
-        :attr:`~fsl.fslview.SliceCanvas.pos` property).
+        :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
         """
         
         sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /

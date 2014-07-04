@@ -14,7 +14,7 @@ import argparse
 # the latest version) - it calls logging.basicConfig(), and
 # thus screws up our own logging. We overcome this by configuring
 # the root logger before OpenGL.GL.shaders is imported (which
-# occurs when fsl.fslview.SliceCanvas is imported).
+# occurs when fsl.fslview.gl.slicecanvas.SliceCanvas is imported).
 logging.basicConfig(
     format='%(levelname)8.8s '
            '%(filename)20.20s '
@@ -229,9 +229,10 @@ if __name__ == '__main__':
         log.setLevel(logging.DEBUG)
 
         # make some noisy things quiet
-        logging.getLogger('fsl.fslview.slicecanvas').setLevel(logging.WARNING)
-        logging.getLogger('props')                  .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets')               .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.gl.slicecanvas')   .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.gl.lightboxcanvas').setLevel(logging.WARNING)
+        logging.getLogger('props')                        .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets')                     .setLevel(logging.WARNING)
     elif args.verbose == 2:
         log.setLevel(logging.DEBUG)
         logging.getLogger('props')   .setLevel(logging.WARNING)

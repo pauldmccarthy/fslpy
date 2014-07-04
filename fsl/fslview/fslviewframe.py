@@ -30,8 +30,8 @@ class FslViewFrame(wx.Frame):
     panels. In the :attr:`wx.CENTRE` location of the
     :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which allows
     multiple image perspectives (e.g.
-    :class:`~fsl.fslview.orthopanel.OrthoPanel`,
-    :class:`~fsl.fslview.orthopanel.LightBoxPanel`) to be displayed.
+    :class:`~fsl.fslview.views.orthopanel.OrthoPanel`,
+    :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`) to be displayed.
     """
 
     def __init__(self, parent, imageList, default=False):
@@ -150,8 +150,8 @@ class FslViewFrame(wx.Frame):
         :meth:`~wx.aui.AuiManager.SavePerspective`).
 
         Returns a list of class names, specifying the control panels
-        (e.g. :class:`~fsl.fslview.imagelistpanel.ImageListPanel`) which were
-        previously open, and need to be created.
+        (e.g. :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`)
+        which were previously open, and need to be created.
         """
 
         try:
@@ -219,7 +219,7 @@ class FslViewFrame(wx.Frame):
 
 
     def addOrthoPanel(self):
-        """Adds an :class:`~fsl.fslview.orthopanel.OrthoPanel` display
+        """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
         to the central :class:`~wx.aui.AuiNotebook` widget.
         """
 
@@ -234,8 +234,8 @@ class FslViewFrame(wx.Frame):
 
 
     def addLightBoxPanel(self):
-        """Adds a :class:`~fsl.fslview.lightboxpanel.LightBoxPanel` display
-        to the central :class:`~wx.aui.AuiNotebook` widget.
+        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
+        display to the central :class:`~wx.aui.AuiNotebook` widget.
         """ 
 
         panel = lightboxpanel.LightBoxPanel(self._centrePane,
@@ -272,7 +272,8 @@ class FslViewFrame(wx.Frame):
 
 
     def addImageDisplayPanel(self):
-        """Adds a :class:`~fsl.fslview.imagedisplaypanel.ImageDisplayPanel`
+        """Adds a
+        :class:`~fsl.fslview.controls.imagedisplaypanel.ImageDisplayPanel`
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """
@@ -281,7 +282,8 @@ class FslViewFrame(wx.Frame):
 
 
     def addImageListPanel(self):
-        """Adds a :class:`~fsl.fslview.imagelistpanel.ImageListPanel`
+        """Adds a
+        :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """ 
@@ -290,7 +292,7 @@ class FslViewFrame(wx.Frame):
 
 
     def addLocationPanel(self):
-        """Adds a :class:`~fsl.fslview.locationpanel.LocationPanel`
+        """Adds a :class:`~fsl.fslview.controls.locationpanel.LocationPanel`
         widget to this panel (defaults to the bottom, according to the
         :class:`wx.aui.AuiManager`).
         """ 
@@ -300,7 +302,7 @@ class FslViewFrame(wx.Frame):
 
     def _makeMenuBar(self):
         """Constructs a bunch of menu items for working with the given
-        :class:`~fsl.tools.fslview.FslViewFrame`.
+        :class:`~fsl.fslview.fslviewframe.FslViewFrame`.
         """
 
         menuBar = wx.MenuBar()
