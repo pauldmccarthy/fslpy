@@ -499,6 +499,27 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         ymin = self.pos.y - 0.5 * newylen
         ymax = self.pos.y + 0.5 * newylen
 
+        xlen = xmax - xmin
+        ylen = ymax - ymin
+
+        bounds = self.displayBounds
+
+        if xmin < bounds.getMin(0):
+            xmin = bounds.getMin(0)
+            xmax = xmin + xlen
+            
+        elif xmax > bounds.getMax(0):
+            xmax = bounds.getMax(0)
+            xmin = xmax - xlen
+            
+        if ymin < bounds.getMin(1):
+            ymin = bounds.getMin(1)
+            ymax = ymin + ylen
+
+        elif ymax > bounds.getMax(1):
+            ymax = bounds.getMax(1)
+            ymin = ymax - ylen
+
         return (xmin, xmax, ymin, ymax)
 
         
@@ -560,7 +581,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.displayBounds.setLimits(0, xmin, xmax)
         self.displayBounds.setLimits(1, ymin, ymax) 
 
-        self.displayBounds[:] = self._applyZoom(xmin, xmax, ymin, ymax)
+        xmin, xmax, ymin, ymax = self._applyZoom(xmin, xmax, ymin, ymax)
+
+        log.debug('Final display bounds: X: ({}, {}) Y: ({}, {})'.format(
+            xmin, xmax, ymin, ymax))
+
+        self.displayBounds[:] = (xmin, xmax, ymin, ymax)
 
         
     def _setViewport(self,
