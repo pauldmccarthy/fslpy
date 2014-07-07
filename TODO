@@ -15,6 +15,9 @@ regularly, too.
 ** Min z distance on lightboxcanvas not working?
 ** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
 ** OSX SegFault when all view tabs removed??
+** Voxel location widgets not updating properly when image is changed
+** Graceful handling of bad input filenames
+** Aspect ratio on slicecanvas zoom
 * Little things
 ** Superclasses for view/control panels.
 ** Named view panels
