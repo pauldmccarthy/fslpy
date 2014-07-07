@@ -596,7 +596,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # or no space to draw, do nothing
         width, height = self.GetClientSize().Get()
         
-        if (len(self.imageList) == 0) or (width == 0) or (height == 0):
+        if (len(self.imageList) == 0) or \
+           (width  == 0)              or \
+           (height == 0)              or \
+           (xmin   == xmax)           or \
+           (ymin   == ymax):
             return
 
         log.debug('Setting canvas bounds: '
