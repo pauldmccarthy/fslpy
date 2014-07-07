@@ -13,3 +13,6 @@ locationTitle     = 'Cursor location'
 
 openFile = 'Add image file'
 openStd  = 'Add standard'
+
+configOrtho    = '{} display'
+configLightBox = '{} display'

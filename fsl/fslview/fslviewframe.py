@@ -76,90 +76,71 @@ class FSLViewFrame(wx.Frame):
         self._viewConfigPanels = {}
 
         self._makeMenuBar()
-        self._configViewContextMenu()
         self._restoreState(default)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
 
-    def _addViewPanel(self, panel, title):
+    def _addViewPanel(self, panelCls):
+        """Adds a view panel to the centre of the frame, and a menu item
+        allowing the user to configure the view.
+        """
+        panel = panelCls(self._centrePane,
+                         self._imageList,
+                         glContext=self._glContext)
+        
+        if panelCls == views.OrthoPanel:
+            title    = strings.orthoTitle
+            menuText = strings.configOrtho
+            
+            if self._glContext is None:
+                self._glContext = panel.xcanvas.glContext
+                
+        elif panelCls == views.LightBoxPanel:
+            title    = strings.lightBoxTitle
+            menuText = strings.configLightBox
+            
+            if self._glContext is None:
+                self._glContext = panel.canvas.glContext
+        
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
+        menuText = menuText.format(title)
         self._viewPanelTitles[id(panel)] = title
         self._centrePane.AddPage(panel, title) 
-        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel)) 
+        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
 
+        configAction = self._viewMenu.Append(wx.ID_ANY, menuText)
+        
+        def onConfig(ev):
+            self._addViewConfigPanel(panel, title)        
+                  
+        def onDestroy(ev):
+            ev.Skip()
+            try: self._viewMenu.RemoveItem(configAction)
+            except wx._core.PyDeadObjectError: pass
+
+        self .Bind(wx.EVT_MENU,           onConfig, configAction)
+        panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+            
 
     def addOrthoPanel(self):
         """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
         to the central :class:`~wx.aui.AuiNotebook` widget.
         """
-
-        panel = views.OrthoPanel(self._centrePane,
-                                 self._imageList,
-                                 glContext=self._glContext)
-
-        if self._glContext is None:
-            self._glContext = panel.xcanvas.glContext
-
-        self._addViewPanel(panel, strings.orthoTitle) 
+        self._addViewPanel(views.OrthoPanel) 
 
 
     def addLightBoxPanel(self):
         """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
         display to the central :class:`~wx.aui.AuiNotebook` widget.
-        """ 
-
-        panel = views.LightBoxPanel(self._centrePane,
-                                    self._imageList,
-                                    glContext=self._glContext)
-        
-        if self._glContext is None:
-            self._glContext = panel.canvas.glContext
-
-        self._addViewPanel(panel, strings.orthoTitle)
-
-        
-    def _configViewContextMenu(self):
-
-        def showMenu(ev):
-
-            idx      = ev.GetSelection()
-            tabCtrl  = ev.GetEventObject()
-            mousePos = wx.GetMousePosition()
-
-            if idx == wx.NOT_FOUND: return
-            
-            tabPage = tabCtrl.GetPage(idx)
-            panel   = tabPage.window
-            title   = self._viewPanelTitles[id(panel)]
-
-            title = '{} settings'.format(title)
-
-            def showConfigDialog(ev):
-                self._addViewConfigPanel(panel, title)
-
-            def closePanel(ev):
-                self._centrePane.RemovePage(idx)
-                panel.Destroy()
-
-            menu       = wx.Menu()
-            configItem = wx.MenuItem(menu, wx.ID_ANY, 'Settings')
-            closeItem  = wx.MenuItem(menu, wx.ID_ANY, 'Close')
-
-            menu.AppendItem(configItem)
-            menu.AppendItem(closeItem)
-
-            menu.Bind(wx.EVT_MENU, showConfigDialog, configItem)
-            menu.Bind(wx.EVT_MENU, closePanel,       closeItem)
-
-            self.PopupMenu(menu, self.ScreenToClient(mousePos))
-
-        self._centrePane.Bind(aui.EVT__AUINOTEBOOK_TAB_RIGHT_DOWN, showMenu) 
-        
+        """
+        self._addViewPanel(views.LightBoxPanel) 
+ 
 
     def _addViewConfigPanel(self, viewPanel, title):
-        """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
+        """
+        """
 
         if id(viewPanel) in self._viewConfigPanels.keys():
             return
@@ -180,7 +161,7 @@ class FSLViewFrame(wx.Frame):
                     .Caption(title)
                     .CaptionVisible(True)
                     .BestSize(confPanel.GetBestSize())
-                    .Name('config_{}'.format(viewPanel.__class__.__name__)))
+                    .Name('config {}'.format(title)))
         
         self._auimgr.AddPane(confPanel, paneInfo)
         self._auimgr.Update()
@@ -394,6 +375,9 @@ class FSLViewFrame(wx.Frame):
 
         viewMenu = wx.Menu()
         menuBar.Append(viewMenu, 'View')
+
+        self._fileMenu = fileMenu
+        self._viewMenu = viewMenu
 
         orthoAction        = viewMenu.Append(wx.ID_ANY, strings.orthoTitle)
         lightboxAction     = viewMenu.Append(wx.ID_ANY, strings.lightBoxTitle)
