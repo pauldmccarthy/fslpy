@@ -225,9 +225,12 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self._voxelPanel.Layout()
 
         oldLoc = self.imageList.location.xyz
+        voxLoc = image.worldToVox([oldLoc])[0]
 
         for i in range(3):
             self.voxelLocation.setLimits(i, 0, image.shape[i] - 1)
+
+        self.voxelLocation.xyz = voxLoc
 
         # The voxel coordinates may have inadvertently been
         # changed due to a change in their limits. So we'll
