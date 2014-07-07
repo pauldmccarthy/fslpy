@@ -12,16 +12,17 @@ regularly, too.
 ** DONE Transformation matrix recursion is happening again, for Ludo's file with the bad affine.
 ** DONE Selected image sync between all the control panels is a bit iffy
 ** DONE Cursor location on lightboxcanvas, when Z is not the depth axis
-** Min z distance on lightboxcanvas not working?
+** DONE Voxel location widgets not updating properly when image is changed
+** DONE Min z distance on lightboxcanvas not working?
 ** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
-** OSX SegFault when all view tabs removed??
-** Voxel location widgets not updating properly when image is changed
-** Graceful handling of bad input filenames
-** Aspect ratio on slicecanvas zoom
+** DONE OSX SegFault when all view tabs removed??
+** DONE Graceful handling of bad input filenames
+** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** View config panels persist across shutdown/restart
 ** Superclasses for view/control panels.
-** Named view panels
-** View config panels should be dockable.
+** DONE Named view panels
+** DONE View config panels should be dockable.
 ** Wild cards in image file load
 ** DONE Focus/display newly opened view tabs
 ** DONE Display current location on new lightboxcanvas, and when light box props change
@@ -71,6 +72,7 @@ regularly, too.
 ** DONE have multiple views open - look at wxAUI.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
+** Other data - Diffusion
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
