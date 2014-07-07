@@ -12,6 +12,8 @@ which provide a view of an image collection (see
 
 import orthopanel
 import lightboxpanel
+import timeseriespanel
 
-OrthoPanel    = orthopanel   .OrthoPanel
-LightBoxPanel = lightboxpanel.LightBoxPanel
+OrthoPanel      = orthopanel     .OrthoPanel
+LightBoxPanel   = lightboxpanel  .LightBoxPanel
+TimeSeriesPanel = timeseriespanel.TimeSeriesPanel

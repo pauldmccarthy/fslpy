@@ -81,61 +81,74 @@ class FSLViewFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
 
-    def _addViewPanel(self, panelCls):
+    def _addViewPanel(self, panel, title, configMenuText=None):
         """Adds a view panel to the centre of the frame, and a menu item
         allowing the user to configure the view.
         """
-        panel = panelCls(self._centrePane,
-                         self._imageList,
-                         glContext=self._glContext)
-        
-        if panelCls == views.OrthoPanel:
-            title    = strings.orthoTitle
-            menuText = strings.configOrtho
-            
-            if self._glContext is None:
-                self._glContext = panel.xcanvas.glContext
-                
-        elif panelCls == views.LightBoxPanel:
-            title    = strings.lightBoxTitle
-            menuText = strings.configLightBox
-            
-            if self._glContext is None:
-                self._glContext = panel.canvas.glContext
-        
+
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
-        menuText = menuText.format(title)
+
         self._viewPanelTitles[id(panel)] = title
         self._centrePane.AddPage(panel, title) 
         self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
 
-        configAction = self._viewMenu.Append(wx.ID_ANY, menuText)
+        if configMenuText is not None:
+            configMenuText = configMenuText.format(title)
+            configAction   = self._viewMenu.Append(wx.ID_ANY, configMenuText)
         
-        def onConfig(ev):
-            self._addViewConfigPanel(panel, title)        
-                  
-        def onDestroy(ev):
-            ev.Skip()
-            try: self._viewMenu.RemoveItem(configAction)
-            except wx._core.PyDeadObjectError: pass
+            def onConfig(ev):
+                self._addViewConfigPanel(panel, title)        
 
-        self .Bind(wx.EVT_MENU,           onConfig, configAction)
-        panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+            def onDestroy(ev):
+                ev.Skip()
+                try: self._viewMenu.RemoveItem(configAction)
+                except wx._core.PyDeadObjectError: pass
+
+            self .Bind(wx.EVT_MENU,           onConfig, configAction)
+            panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
             
 
     def addOrthoPanel(self):
         """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
         to the central :class:`~wx.aui.AuiNotebook` widget.
         """
-        self._addViewPanel(views.OrthoPanel) 
+
+        panel = views.OrthoPanel(self._centrePane,
+                                 self._imageList,
+                                 glContext=self._glContext)
+            
+        if self._glContext is None:
+            self._glContext = panel.xcanvas.glContext
+        
+        self._addViewPanel(panel,
+                           strings.orthoTitle,
+                           strings.orthoConfigMenu) 
 
 
     def addLightBoxPanel(self):
         """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
         display to the central :class:`~wx.aui.AuiNotebook` widget.
         """
-        self._addViewPanel(views.LightBoxPanel) 
+        panel = views.LightBoxPanel(self._centrePane,
+                                    self._imageList,
+                                    glContext=self._glContext)
+            
+        if self._glContext is None:
+            self._glContext = panel.canvas.glContext
+        
+        self._addViewPanel(panel,
+                           strings.lightBoxTitle,
+                           strings.lightBoxConfigMenu) 
+ 
+
+    def addTimeSeriesPanel(self):
+        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
+        display to the central :class:`~wx.aui.AuiNotebook` widget.
+        """
+
+        panel = views.TimeSeriesPanel(self._centrePane, self._imageList)
+        self._addViewPanel(panel, strings.timeSeriesTitle) 
  
 
     def _addViewConfigPanel(self, viewPanel, title):
@@ -389,6 +402,8 @@ class FSLViewFrame(wx.Frame):
 
         orthoAction        = viewMenu.Append(wx.ID_ANY, strings.orthoTitle)
         lightboxAction     = viewMenu.Append(wx.ID_ANY, strings.lightBoxTitle)
+        timeSeriesAction   = viewMenu.Append(wx.ID_ANY,
+                                             strings.timeSeriesTitle)
         imageDisplayAction = viewMenu.Append(wx.ID_ANY,
                                              strings.imageDisplayTitle)
         imageListAction    = viewMenu.Append(wx.ID_ANY, strings.imageListTitle)
@@ -402,6 +417,9 @@ class FSLViewFrame(wx.Frame):
         self.Bind(wx.EVT_MENU,
                   lambda ev: self.addLightBoxPanel(),
                   lightboxAction)
+        self.Bind(wx.EVT_MENU,
+                  lambda ev: self.addTimeSeriesPanel(),
+                  timeSeriesAction) 
         self.Bind(wx.EVT_MENU,
                   lambda ev: self.addImageDisplayPanel(),
                   imageDisplayAction)

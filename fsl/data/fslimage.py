@@ -229,6 +229,12 @@ class Image(props.HasProperties):
         return self.__str__()
 
 
+    def is4DImage(self):
+        """Returns ``True`` if this image is 4D, ``False`` otherwise.
+        """
+        return len(self.shape) > 3 and self.shape[3] > 1 
+
+
     def _transformChanged(self, *a):
         """This method is called when the :attr:`transform` property value
         changes. It updates the :attr:`voxToWorldMat`, :attr:`worldToVoxMat`,
@@ -434,35 +440,44 @@ class ImageDisplay(props.HasProperties):
     the associated :class:`ImageDisplay` object.
     """
 
+    
     enabled = props.Boolean(default=True)
     """Should this image be displayed at all?"""
+
     
     alpha = props.Real(minval=0.0, maxval=1.0, default=1.0)
     """Transparency - 1.0 is fully opaque, and 0.0 is fully transparent."""
+
     
     displayRange = props.Bounds(ndims=1, editLimits=True,
                                 labels=['Min.', 'Max.'])
     """Image values which map to the minimum and maximum colour map colours."""
 
+    
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     """Only display every Nth voxel (a performance tweak)."""
 
+    
     rangeClip = props.Boolean(default=False)
     """If ``True``, don't display voxel values which are beyond the
     :attr:`displayRange`.
     """
+
     
     cmap = props.ColourMap(default=mplcm.Greys_r)
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
+
     
     volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
     """If a 4D image, the current volume to display."""
 
+    
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.
         """
-        return len(self.image.shape) > 3 and self.image.shape[3] > 1
+        return self.image.is4DImage()
 
+        
     _view = props.VGroup(('enabled',
                           props.Widget('volume', enabledWhen=is4DImage),
                           'displayRange',

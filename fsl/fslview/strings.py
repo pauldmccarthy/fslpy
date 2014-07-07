@@ -7,6 +7,7 @@
 
 orthoTitle        = 'Ortho view'
 lightBoxTitle     = 'Lightbox view'
+timeSeriesTitle   = 'Time series'
 imageDisplayTitle = 'Image display properties'
 imageListTitle    = 'Image list'
 locationTitle     = 'Cursor location'
@@ -14,5 +15,5 @@ locationTitle     = 'Cursor location'
 openFile = 'Add image file'
 openStd  = 'Add standard'
 
-configOrtho    = '{} display'
-configLightBox = '{} display'
+orthoConfigMenu    = '{} display'
+lightBoxConfigMenu = '{} display'
