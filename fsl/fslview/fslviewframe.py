@@ -170,6 +170,14 @@ class FSLViewFrame(wx.Frame):
 
         def onViewPanelDestroy(ev):
             ev.Skip()
+
+            # if the config panel has already been closed, it
+            # will have been replaced with a python wrapper
+            # around a deleted C++ object. When converted to
+            # boolean, this wrapper will evaluate to False.
+            if not confPanel:
+                return
+            
             self._auimgr.DetachPane(confPanel)
             self._auimgr.Update()
             confPanel.Destroy()
