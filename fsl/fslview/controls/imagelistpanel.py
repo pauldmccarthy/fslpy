@@ -84,8 +84,9 @@ class ImageListPanel(wx.Panel):
         
         if not self._listBoxNeedsUpdate:
             return
-            
-        self._listBox.SetSelection(self._imageList.selectedImage)
+
+        if len(self._imageList) > 0:
+            self._listBox.SetSelection(self._imageList.selectedImage)
 
         
     def _imageListChanged(self, *a):
@@ -108,7 +109,8 @@ class ImageListPanel(wx.Panel):
 
             self._listBox.Append(image.name, image, image.imageFile)
 
-        self._listBox.SetSelection(selection)
+        if len(self._imageList) > 0:
+            self._listBox.SetSelection(selection)
         
         
     def _lbMove(self, ev):
