@@ -568,7 +568,12 @@ class ImageList(props.HasProperties):
     selectedImage = props.Int(minval=0, clamped=True)
     """Index of the currently 'selected' image. This property is not used by
     the :class:`ImageList`, but is provided so that other things can control
-    and listen for changes to the currently selected image
+    and listen for changes to the currently selected image.
+
+    If you're interested in the currently selected image, you must also listen
+    for changes to the :attr:`images` list as, if the list changes, the
+    :attr:`selectedImage` index may not change, but the image to which it
+    points may be different.
     """
 
     
@@ -584,10 +589,17 @@ class ImageList(props.HasProperties):
     
     location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
     """The location property contains the currently 'selected'
-    3D location in the image list space. This property
+    3D location (xyz) in the image list space. This property
     is not used directly by the ImageList object, but it
     is here so that the location selection can be synchronised
     across multiple displays.
+    """
+
+
+    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
+    """The volume property contains the currently selected volume
+    of a 4D image. This property may not be relevant to all images
+    in the image list (i.e. it is meaningless for 3D images).
     """
 
     
@@ -703,16 +715,18 @@ class ImageList(props.HasProperties):
     def _updateImageBounds(self, *a):
         """Called whenever an item is added or removed from the
         :attr:`images` list, or an image property changes. Updates
-        the :attr:`bounds` property.
+        the :attr:`bounds` and :attr:`volume` properties.
         """
 
         if len(self.images) == 0:
             minBounds = [0.0, 0.0, 0.0]
             maxBounds = [0.0, 0.0, 0.0]
+            nvols     = 0
             
         else:
             minBounds = 3 * [ sys.float_info.max]
             maxBounds = 3 * [-sys.float_info.max]
+            nvols     = 1
 
         for img in self.images:
 
@@ -723,9 +737,16 @@ class ImageList(props.HasProperties):
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi
 
+            if len(img.shape) > 3:
+                if img.shape[3] > nvols:
+                    nvols = img.shape[3]
+
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
                           minBounds[2], maxBounds[2]]
+
+        if nvols > 0:
+            self.setConstraint('volume', 'maxval', nvols - 1)
 
         for ax in range(3):
             self.location.setLimits(ax, minBounds[ax], maxBounds[ax])
