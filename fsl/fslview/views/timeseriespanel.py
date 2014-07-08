@@ -42,21 +42,24 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
             'selectedImage',
             self._name,
             self._selectedImageChanged)
-
         self._imageList.addListener(
             'location',
             self._name,
             self._locationChanged)
+        self._imageList.addListener(
+            'volume',
+            self._name,
+            self._locationChanged) 
 
         def onDestroy(ev):
             ev.Skip()
             self._imageList.removeListener('selectedImage', self._name)
             self._imageList.removeListener('location',      self._name)
+            self._imageList.removeListener('volume',        self._name)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
         self._selectedImageChanged()
-
         
         self.Layout()
 
@@ -91,15 +94,30 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         self._voxPlot(image, *self._imageList.location.xyz) 
 
 
+
     def _voxPlot(self, image, x, y, z):
 
         x, y, z = image.worldToVox([[x, y, z]])[0]
- 
-        data = image.data[x, y, z, :]
+        t       = self._imageList.volume
 
-        print
-        print 'Plot ({}, {}, {}): {}'.format(x, y, z, data)
-        print
+        inBounds = True
+        for vox, shape in zip((x, y, z), image.shape):
+            if vox >= shape or vox < 0:
+                inBounds = False
 
-        self._axis.plot(data, 'r-', lw=2)
+        if inBounds:
+            data = image.data[x, y, z, :]
+            self._axis.plot(data, 'r-', lw=2)
+        else:
+            self._axis.text(
+                0.5,
+                0.5,
+                'Out of bounds',
+                color='#ff9090',
+                ha='center',
+                transform=self._axis.transAxes)
+
+        if t < image.shape[3]:
+            self._axis.axvline(t, lw=2, c='#000080')
+
         self._canvas.draw()
