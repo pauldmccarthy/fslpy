@@ -87,7 +87,7 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         if not image.is4DImage():
             return
 
-        self._voxPlot(image, *self._imageList.location.xyz)
+        self._drawPlot()
 
         
     def _locationChanged(self, *a):
@@ -102,63 +102,82 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         if not image.is4DImage():
             return
 
-        self._voxPlot(image, *self._imageList.location.xyz) 
+        self._drawPlot() 
 
 
 
-    def _voxPlot(self, image, x, y, z):
+    def _drawPlot(self):
 
-        x, y, z = image.worldToVox([[x, y, z]])[0]
-        t       = self._imageList.volume
+        x, y, z = self._imageList.location.xyz
+        vol     = self._imageList.volume
 
-        inBounds = True
-        for vox, shape in zip((x, y, z), image.shape):
-            if vox >= shape or vox < 0:
-                inBounds = False
+        mins = []
+        maxs = []
+        vols = []
 
-        if t < image.shape[3]:
-            self._axis.axvline(t, lw=2, c='#000080', alpha=0.6)
+        for image in self._imageList:
 
-        if not inBounds:
+            ix, iy, iz = image.worldToVox([[x, y, z]])[0]
 
-            self._axis.text(
-                0.5,
-                0.5,
-                'Out of bounds',
-                color='#ff9090',
-                ha='center',
-                transform=self._axis.transAxes)
+            minmaxvol = self._drawPlotOneImage(image, ix, iy, iz)
 
-        data = image.data[x, y, z, :]
-        self._axis.plot(data, 'r-', lw=2)
+            if minmaxvol is not None:
+                mins.append(minmaxvol[0])
+                maxs.append(minmaxvol[1])
+                vols.append(minmaxvol[2])
 
-        xmin = 0
-        xmax = image.shape[3]
-        ymin = data.min()
-        ymax = data.max()
+        self._axis.axvline(vol, c='#000080', lw=2, alpha=0.4)
 
-        xlen = xmax - xmin
-        ylen = ymax - ymin
 
-        self._axis.grid(True)
-        self._axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
-        self._axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
+        if len(mins) > 0:
 
-        yticks = np.linspace(ymin, ymax, 5)
+            xmin = 0
+            xmax = max(vols) - 1
+            ymin = min(mins)
+            ymax = max(maxs)
 
-        self._axis.set_yticks(yticks)
+            xlen = xmax - xmin
+            ylen = ymax - ymin
 
-        for tick in self._axis.yaxis.get_major_ticks():
-            tick.set_pad(-15)
-            tick.label1.set_horizontalalignment('left')
-        for tick in self._axis.xaxis.get_major_ticks():
-            tick.set_pad(-20)
+            self._axis.grid(True)
+            self._axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
+            self._axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
+
+            if ymin != ymax: yticks = np.linspace(ymin, ymax, 5)
+            else:            yticks = [ymin]
+
+            self._axis.set_yticks(yticks)
+
+            for tick in self._axis.yaxis.get_major_ticks():
+                tick.set_pad(-15)
+                tick.label1.set_horizontalalignment('left')
+            for tick in self._axis.xaxis.get_major_ticks():
+                tick.set_pad(-20)
 
         self._canvas.draw()
         self.Refresh()
 
+        
+    def _drawPlotOneImage(self, image, x, y, z):
+
+        if not image.is4DImage():     return None
+        if not image.display.enabled: return None
+
+        for vox, shape in zip((x, y, z), image.shape):
+            if vox >= shape or vox < 0:
+                return None
+
+        data = image.data[x, y, z, :]
+        self._axis.plot(data, lw=2)
+
+        return data.min(), data.max(), len(data)
+
+
     def _onPlotMouseDown(self, ev):
+        if ev.inaxes != self._axis: return
         self._mouseDown = True
+        self._imageList.volume = np.floor(ev.xdata)
+        
 
     def _onPlotMouseUp(self, ev):
         self._mouseDown = False
