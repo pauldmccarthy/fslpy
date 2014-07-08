@@ -5,6 +5,9 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
+** LocationPanel volume bounds.
+** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
+
 ** DONE Fix cursors - they go off the canvas in some cases
 ** DONE LightBoxCanvas bounding box calculation is broken again.
 ** DONE SliceCanvas bounding box calculation is also broken again.
@@ -14,13 +17,15 @@ regularly, too.
 ** DONE Cursor location on lightboxcanvas, when Z is not the depth axis
 ** DONE Voxel location widgets not updating properly when image is changed
 ** DONE Min z distance on lightboxcanvas not working?
-** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
 ** DONE OSX SegFault when all view tabs removed??
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** View config panels persist across shutdown/restart
+** Namespaces in fsl.fslview.strings
+** Separate display properties from fsl.data.fslimage classes? A separate fsl.fslview.displaycontext module?
+** View/view config panels persist across shutdown/restart
 ** Superclasses for view/control panels.
+** Rethink 4D handling - image.display.volume or imageList.volume?
 ** DONE Named view panels
 ** DONE View config panels should be dockable.
 ** Wild cards in image file load
