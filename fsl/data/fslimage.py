@@ -479,7 +479,6 @@ class ImageDisplay(props.HasProperties):
 
         
     _view = props.VGroup(('enabled',
-                          props.Widget('volume', enabledWhen=is4DImage),
                           'displayRange',
                           'alpha',
                           'rangeClip',
@@ -491,9 +490,7 @@ class ImageDisplay(props.HasProperties):
         'alpha'        : 'Opacity',
         'rangeClip'    : 'Clipping',
         'samplingRate' : 'Sampling rate',
-        'cmap'         : 'Colour map',
-        'volume'       : 'Volume'
-    }
+        'cmap'         : 'Colour map'}
 
     _tooltips = {
         'enabled'      : 'Enable/disable this image',
@@ -502,8 +499,7 @@ class ImageDisplay(props.HasProperties):
         'rangeClip'    : 'Do not show areas of the image which lie '
                          'outside of the display range',
         'samplingRate' : 'Draw every Nth voxel',
-        'cmap'         : 'Colour map',
-        'volume'       : 'Volume to display (zero-indexed, for 4D images)'}
+        'cmap'         : 'Colour map'}
 
     _propHelp = _tooltips
 
