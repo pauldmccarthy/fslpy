@@ -52,8 +52,14 @@ class LocationPanel(wx.Panel, props.HasProperties):
 
         self._locationLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
         self._locationWidget = props.makeWidget(self, imageList, 'location')
-        self._dividerLine    = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
+        
+        self._dividerLine1   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
         self._voxelWidget    = props.makeWidget(self, self, 'voxelLocation')
+        
+        self._dividerLine2   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL) 
+        self._volumeLabel    = wx.StaticText(   self, style=wx.ALIGN_LEFT)
+        self._volumeWidget   = props.makeWidget(self, imageList, 'volume')
+        
  
         self._voxelLabel = wx.StaticText(self._voxelPanel,
                                          style=wx.ALIGN_LEFT)
@@ -61,10 +67,12 @@ class LocationPanel(wx.Panel, props.HasProperties):
                                          style=wx.ALIGN_RIGHT)
 
         self._adjustFont(self._locationLabel, -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._volumeLabel,   -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._voxelLabel,    -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._valueLabel,    -2, wx.FONTWEIGHT_LIGHT)
 
         self._locationLabel.SetLabel('World location (mm)')
+        self._volumeLabel  .SetLabel('Volume (index)')
 
         self._voxelSizer = wx.BoxSizer(wx.HORIZONTAL)
         self._voxelPanel.SetSizer(self._voxelSizer)
@@ -78,9 +86,13 @@ class LocationPanel(wx.Panel, props.HasProperties):
  
         self._sizer.Add(self._locationLabel,  flag=wx.EXPAND)
         self._sizer.Add(self._locationWidget, flag=wx.EXPAND)
-        self._sizer.Add(self._dividerLine,    flag=wx.EXPAND)
+        self._sizer.Add(self._dividerLine1,   flag=wx.EXPAND)
         self._sizer.Add(self._voxelPanel,     flag=wx.EXPAND)
         self._sizer.Add(self._voxelWidget,    flag=wx.EXPAND)
+        self._sizer.Add(self._dividerLine2,   flag=wx.EXPAND) 
+        self._sizer.Add(self._volumeLabel,    flag=wx.EXPAND)
+        self._sizer.Add(self._volumeWidget,   flag=wx.EXPAND)
+
 
         self._voxelPanel.Layout()
         self.Layout()
@@ -92,6 +104,9 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self.imageList.addListener('selectedImage',
                                    lName,
                                    self._selectedImageChanged)
+        self.imageList.addListener('volume',
+                                   lName,
+                                   self._volumeChanged) 
         self.imageList.addListener('location',
                                    '{}_worldToVox'.format(lName),
                                    self._worldLocationChanged)
@@ -103,12 +118,14 @@ class LocationPanel(wx.Panel, props.HasProperties):
             ev.Skip()
             self.imageList.removeListener('images',        lName)
             self.imageList.removeListener('selectedImage', lName)
+            self.imageList.removeListener('volume',        lName)
             self.imageList.removeListener('location',
                                           '{}_worldToVox'.format(lName))
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
         self._selectedImageChanged()
+        self._volumeChanged()
         self._worldLocationChanged()
 
 
@@ -121,8 +138,9 @@ class LocationPanel(wx.Panel, props.HasProperties):
         """
         
         image  = self.imageList[self.imageList.selectedImage]
+        volume = self.imageList.volume
         voxLoc = self.voxelLocation.xyz
-
+        
         if voxVal is None:
 
             # There's a chance that the voxel location will temporarily
@@ -139,11 +157,6 @@ class LocationPanel(wx.Panel, props.HasProperties):
             # 4D image. This will crash on non-4D images,
             # which is intentional for the time being.
             else:
-
-                # This will not work if an ImageDisplay
-                # instance other than the image.display
-                # property is in use.
-                volume = image.display.volume
                 voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2], volume]
 
             if   np.isnan(voxVal): voxVal = 'NaN'
@@ -151,6 +164,21 @@ class LocationPanel(wx.Panel, props.HasProperties):
 
         self._valueLabel.SetLabel('{}'.format(voxVal))
         self._voxelPanel.Layout()
+
+        
+    def _volumeChanged(self, *a):
+        """Called when the :attr:`fsl.data.fslimage.ImageList.volume`
+        property changes. Propagates the change to the
+        :attr:`fsl.data.fslimage.ImageDisplay.volume` property, and
+        updates the voxel value.
+        """
+
+        volume = self.imageList.volume
+
+        for image in self.imageList:
+            image.display.volume = volume
+
+        self._updateVoxelValue()
 
 
     def _voxelLocationChanged(self, *a):
