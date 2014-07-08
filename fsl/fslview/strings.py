@@ -17,3 +17,6 @@ openStd  = 'Add standard'
 
 orthoConfigMenu    = '{} display'
 lightBoxConfigMenu = '{} display'
+
+
+locationPanelOutOfBounds = 'Out of bounds'

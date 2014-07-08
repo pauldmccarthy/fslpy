@@ -13,6 +13,8 @@ import numpy as np
 
 import props
 
+import fsl.fslview.strings as strings
+
 class LocationPanel(wx.Panel, props.HasProperties):
     """
     A wx.Panel which contains widgets for changing the currently displayed
@@ -157,6 +159,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
             # 4D image. This will crash on non-4D images,
             # which is intentional for the time being.
             else:
+                if volume >= image.shape[3]:
+                    return
                 voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2], volume]
 
             if   np.isnan(voxVal): voxVal = 'NaN'
@@ -178,7 +182,18 @@ class LocationPanel(wx.Panel, props.HasProperties):
         for image in self.imageList:
             image.display.volume = volume
 
-        self._updateVoxelValue()
+
+        image  = self.imageList[self.imageList.selectedImage]
+        voxVal = None
+        
+        if image.is4DImage():
+            if volume >= image.shape[3]:
+                voxVal = strings.locationPanelOutOfBounds
+            
+        elif volume > 0:
+            voxVal = strings.locationPanelOutOfBounds
+
+        self._updateVoxelValue(voxVal)
 
 
     def _voxelLocationChanged(self, *a):
@@ -232,7 +247,7 @@ class LocationPanel(wx.Panel, props.HasProperties):
                 inBounds = False
 
         if not inBounds:
-            self._updateVoxelValue(voxVal='Out of bounds')
+            self._updateVoxelValue(voxVal=strings.locationPanelOutOfBounds)
             self.voxelLocation.disableNotification()
 
         self.voxelLocation.xyz = voxLoc
