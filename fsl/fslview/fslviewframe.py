@@ -138,7 +138,7 @@ class FSLViewFrame(wx.Frame):
                                     glContext=self._glContext)
             
         if self._glContext is None:
-            self._glContext = panel.canvas.glContext
+            self._glContext = panel._canvas.glContext
         
         self._addViewPanel(panel,
                            strings.lightBoxTitle,
