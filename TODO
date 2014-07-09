@@ -5,9 +5,9 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
-** LocationPanel volume bounds.
 ** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
 
+** DONE LocationPanel volume bounds.
 ** DONE Fix cursors - they go off the canvas in some cases
 ** DONE LightBoxCanvas bounding box calculation is broken again.
 ** DONE SliceCanvas bounding box calculation is also broken again.
