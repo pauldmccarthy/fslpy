@@ -26,7 +26,7 @@ import fsl.fslview.gl.slicecanvas as slicecanvas
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
     """An OpenGL canvas which displays multiple slices from a collection of 3D
-    images (see :class:`fsl.data.fslimage.ImageList`). The slices are laid out
+    images (see :class:`fsl.data.image.ImageList`). The slices are laid out
     on the same canvas along rows and columns, with the slice at the minimum Z
     position translated to the top left of the canvas, and the slice with the
     maximum Z value translated to the bottom right.
@@ -147,7 +147,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
         :arg parent:    Parent :mod:`wx` object
         
-        :arg imageList: a :class:`~fsl.data.fslimage.ImageList` object which
+        :arg imageList: a :class:`~fsl.data.image.ImageList` object which
                         contains, or will contain, a list of images to be
                         displayed.
         

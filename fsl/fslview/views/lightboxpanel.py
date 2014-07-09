@@ -50,8 +50,8 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
     :class:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` instance, which
     is contained in this :class:`LightBoxPanel` (the
     :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.pos` property) will not
-    be synchronised to the :class:`~fsl.data.fslimage.ImageList.location`
-    :attr:`~fsl.data.fslimage.ImageList.location` property.
+    be synchronised to the :class:`~fsl.data.image.ImageList.location`
+    :attr:`~fsl.data.image.ImageList.location` property.
     """ 
 
     

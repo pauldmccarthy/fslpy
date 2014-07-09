@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 
 """A :class:`wx.panel` which shows display control optionns for the currently
-selected image - see :attr:`fsl.data.fslimage.ImageList.selectedImage.
+selected image - see :attr:`fsl.data.image.ImageList.selectedImage.
 """
 
 import logging
@@ -26,7 +26,7 @@ class ImageDisplayPanel(wx.Panel):
         """Create and lay out an :class:`ImageDisplayPanel`.
 
         :param parent:    The :mod:`wx` parent object.
-        :param imageList: A :class:`~fsl.data.fslimage.ImageList` instance.
+        :param imageList: A :class:`~fsl.data.image.ImageList` instance.
         """
 
         wx.Panel.__init__(self, parent)
@@ -68,7 +68,7 @@ class ImageDisplayPanel(wx.Panel):
     def _makeDisplayPanel(self, image):
         """Creates and returns panel containing widgets allowing
         the user to edit the display properties of the given
-        :class:`~fsl.data.fslimage.Image` instance. 
+        :class:`~fsl.data.image.Image` instance. 
         """
         displayPanel = props.buildGUI(self, image.display)
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
@@ -76,7 +76,7 @@ class ImageDisplayPanel(wx.Panel):
 
         
     def _imageListChanged(self, *a):
-        """Called when the :attr:`~fsl.data.fslimage.ImageList.images` list
+        """Called when the :attr:`~fsl.data.image.ImageList.images` list
         changes. Creates/destroys display panels for added/removed images,
         and ensures that the correct display panel is visible.
         """
@@ -118,7 +118,7 @@ class ImageDisplayPanel(wx.Panel):
 
 
     def _selectedImageChanged(self, *a):
-        """Called when the :attr:`~fsl.data.fslimage.ImageList.selectedImage`
+        """Called when the :attr:`~fsl.data.image.ImageList.selectedImage`
         index changes. Ensures that the correct display panel is visible.
         """
 

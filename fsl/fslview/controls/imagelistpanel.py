@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A panel which displays a list of image list in the image list (see
-:class:fsl.data.fslimage.ImageList), and allows the user to add/remove
+:class:fsl.data.image.ImageList), and allows the user to add/remove
 images, and to change their order.
 """
 
@@ -30,7 +30,7 @@ class ImageListPanel(wx.Panel):
         """Create and lay out an :class:`ImageListPanel`.
 
         :param parent:    The :mod:`wx` parent object.
-        :param imageList: A :class:`~fsl.data.fslimage.ImageList` instance.
+        :param imageList: A :class:`~fsl.data.image.ImageList` instance.
         """
         
         wx.Panel.__init__(self, parent)
@@ -78,7 +78,7 @@ class ImageListPanel(wx.Panel):
 
 
     def _selectedImageChanged(self, *a):
-        """Called when the :attr:`~fsl.data.fslimage.ImageList.selectedImage`
+        """Called when the :attr:`~fsl.data.image.ImageList.selectedImage`
         property changes. Updates the selected item in the list box.
         """
         
@@ -90,7 +90,7 @@ class ImageListPanel(wx.Panel):
 
         
     def _imageListChanged(self, *a):
-        """Called when the :class:`~fsl.data.fslimage.ImageList.images`
+        """Called when the :class:`~fsl.data.image.ImageList.images`
         list changes.
 
         If the change was due to user action on the
@@ -116,7 +116,7 @@ class ImageListPanel(wx.Panel):
     def _lbMove(self, ev):
         """Called when an image name is moved in the
         :class:`~pwidgets.elistbox.EditableListBox`. Reorders the
-        :class:`~fsl.data.fslimage.ImageList` to reflect the change.
+        :class:`~fsl.data.image.ImageList` to reflect the change.
         """
         self._listBoxNeedsUpdate = False
         self._imageList.move(ev.oldIdx, ev.newIdx)
@@ -127,7 +127,7 @@ class ImageListPanel(wx.Panel):
     def _lbSelect(self, ev):
         """Called when an image is selected in the
         :class:`~pwidgets.elistbox.EditableListBox`. Sets the
-        :attr:`fsl.data.fslimage.ImageList.selectedImage property.
+        :attr:`fsl.data.image.ImageList.selectedImage property.
         """
         self._listBoxNeedsUpdate = False
         self._imageList.selectedImage = ev.idx
@@ -136,7 +136,7 @@ class ImageListPanel(wx.Panel):
         
     def _lbAdd(self, ev):
         """Called when the 'add' button on the list box is pressed.
-        Calls the :meth:`~fsl.data.fslimage.ImageList.addImages` method.
+        Calls the :meth:`~fsl.data.image.ImageList.addImages` method.
         """
         self._imageList.addImages()
 
@@ -145,7 +145,7 @@ class ImageListPanel(wx.Panel):
         """Called when an item is removed from the image listbox.
 
         Removes the corresponding image from the
-        :class:`~fsl.data.fslimage.ImageList`. 
+        :class:`~fsl.data.image.ImageList`. 
         """
         self._listBoxNeedsUpdate = False
         self._imageList.pop(ev.idx)

@@ -20,7 +20,7 @@ import argparse
 
 import fsl.fslview.fslviewframe as fslviewframe
 
-import fsl.data.fslimage as fslimage
+import fsl.data.image as fslimage
 
 import props
 

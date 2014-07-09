@@ -36,7 +36,7 @@
 # The contents of all of these buffers is is dependent upon the way that
 # the image is being displayed.  They are regenerated automatically when
 # the image display properties are changed (via listeners registered on
-# the relevant fsl.data.fslimage.ImageDisplay properties).
+# the relevant fsl.data.image.ImageDisplay properties).
 # 
 # If the display orientation changes (i.e. the image dimensions that map
 # to the screen X/Y axes) the genIndexBuffers method must be called
@@ -64,16 +64,16 @@ class GLImageData(object):
         Initialise the OpenGL data buffers required to render the given image.
         Parameters:
         
-          - image:        A fsl.data.fslimage.Image object.
+          - image:        A fsl.data.image.Image object.
         
           - xax:          The image axis which maps to the screen x axis.
         
           - yax:          The image axis which maps to the screen y axis.
         
-          - imageDisplay: Optional. A fsl.data.fslimage.ImageDisplay object
+          - imageDisplay: Optional. A fsl.data.image.ImageDisplay object
                           which describes how the image is to be displayed.
                           If not provided, the default image.display instance
-                          is used (see fsl.data.fslimage.ImageDisplay for
+                          is used (see fsl.data.image.ImageDisplay for
                           details).
         """
         
@@ -453,7 +453,7 @@ class GLImageData(object):
 
     def _configDisplayListeners(self):
         """
-        Adds a bunch of listeners to the fslimage.ImageDisplay object which
+        Adds a bunch of listeners to the image.ImageDisplay object which
         defines how the given image is to be displayed. This is done so we
         can update the colour texture when image display properties are
         changed. 

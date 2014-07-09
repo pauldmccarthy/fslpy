@@ -30,7 +30,7 @@ import OpenGL.GL.ARB.draw_instanced   as arbdi
 
 import props
 
-import fsl.data.fslimage          as fslimage
+import fsl.data.image             as fslimage
 import fsl.fslview.gl.glimagedata as glimagedata
 
 
@@ -45,7 +45,7 @@ _fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     """A :class:`wx.glcanvas.GLCanvas` which may be used to display a single
     2D slice from a collection of 3D images (see
-    :class:`fsl.data.fslimage.ImageList`).
+    :class:`fsl.data.image.ImageList`).
     """
 
     pos = props.Point(ndims=3)
@@ -171,7 +171,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         
         :arg parent:    :mod:`wx` parent object
         
-        :arg imageList: A :class:`fsl.data.fslimage.ImageList` object.
+        :arg imageList: A :class:`fsl.data.image.ImageList` object.
         
         :arg zax:       Image axis perpendicular to the plane to be displayed
                         (the 'depth' axis), default 0.
@@ -182,7 +182,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
-                'imageList must be a fsl.data.fslimage.ImageList instance')
+                'imageList must be a fsl.data.image.ImageList instance')
 
         wxgl.GLCanvas.__init__(self, parent)
         props.HasProperties.__init__(self)
@@ -529,7 +529,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         Calculates the bounding box, in world coordinates, to be displayed on
         the canvas. Stores this bounding box in the displayBounds property. If
         any of the parameters are not provided, the image list
-        :attr:`fsl.data.fslimage.ImageList.bounds` are used.
+        :attr:`fsl.data.image.ImageList.bounds` are used.
 
         :arg xmin: Minimum x (horizontal) value to be in the display bounds.
         :arg xmax: Maximum x value to be in the display bounds.
@@ -601,7 +601,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         This method is called by draw(), so does not need to be called
         manually. If any of the min/max parameters are not provided,
         they are taken from the :attr:`displayBounds` (x/y), and the
-        image list :attr:`~fsl.data.fslimage.ImageList.bounds` (z).
+        image list :attr:`~fsl.data.image.ImageList.bounds` (z).
 
         :arg xmin: Minimum x (horizontal) location
         :arg xmax: Maximum x location
@@ -674,16 +674,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """Draws the specified slice from the specified image on the canvas.
 
         If ``xform`` is not provided, the
-        :class:`~fsl.data.fslimage.Image` ``voxToWorldMat`` transformation
+        :class:`~fsl.data.image.Image` ``voxToWorldMat`` transformation
         matrix is used.
 
-        :arg image:   The :class:`~fsl.data.fslimage.Image` object to draw.
+        :arg image:   The :class:`~fsl.data.image.Image` object to draw.
         
         :arg sliceno: Voxel index of the slice to be drawn.
         
         :arg xform:   A 4*4 transformation matrix to be applied to the slice
                       data (or ``None`` to use the
-                      :class:`~fsl.data.fslimage.Image` ``voxToWorldMat``
+                      :class:`~fsl.data.image.Image` ``voxToWorldMat``
                       matrix).
         """
 

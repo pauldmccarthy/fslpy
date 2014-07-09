@@ -6,8 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A :class:`wx.Panel` which plots time series/volume data from a
-collection of :class:`~fsl.data.fslimage.Image` objects stored in an
-:class:`~fsl.data.fslimage.ImageList`.
+collection of :class:`~fsl.data.image.Image` objects stored in an
+:class:`~fsl.data.image.ImageList`.
 
 :mod:`matplotlib` is used for plotting.
 """
@@ -31,9 +31,9 @@ from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 class TimeSeriesPanel(wx.Panel, props.HasProperties):
     """A panel with a :mod:`matplotlib` canvas embedded within.
 
-    The volume data for each of the :class:`~fsl.data.fslimage.Image`
-    objects in the :class:`~fsl.data.fslimage.ImageList`, at the current
-    :attr:`~fsl.data.fslimage.ImageList.location` is plotted on the canvas.
+    The volume data for each of the :class:`~fsl.data.image.Image`
+    objects in the :class:`~fsl.data.image.ImageList`, at the current
+    :attr:`~fsl.data.image.ImageList.location` is plotted on the canvas.
     """
 
     def __init__(self, parent, imageList):

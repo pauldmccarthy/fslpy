@@ -6,10 +6,10 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A :mod:`wx`/:mod:`OpenGL` widget for displaying and interacting with a
-collection of 3D images (see :class:`~fsl.data.fslimage.ImageList`).
+collection of 3D images (see :class:`~fsl.data.image.ImageList`).
 Displays three canvases, each of which shows the same image(s) on a
 different orthogonal plane. The displayed location is driven by the
-:attr:`fsl.data.fslimage.ImageList.location` property.
+:attr:`fsl.data.image.ImageList.location` property.
 """
 
 import logging
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 import wx
 
 import props
-import fsl.data.fslimage          as fslimage
+import fsl.data.image             as fslimage
 import fsl.fslview.gl.slicecanvas as slicecanvas
 
 
@@ -35,8 +35,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     posSync = props.Boolean(default=True)
     """Should the position shown in each of the
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instances 
-    be synchronised to the :class:`~fsl.data.fslimage.ImageList.location`
-    :attr:`~fsl.data.fslimage.ImageList.location` property?
+    be synchronised to the :class:`~fsl.data.image.ImageList.location`
+    :attr:`~fsl.data.image.ImageList.location` property?
     """
     
 
@@ -89,7 +89,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         if not isinstance(imageList, fslimage.ImageList):
             raise TypeError(
-                'imageList must be a fsl.data.fslimage.ImageList instance')
+                'imageList must be a fsl.data.image.ImageList instance')
 
         self.imageList = imageList
         self.name      = 'OrthoPanel_{}'.format(id(self))

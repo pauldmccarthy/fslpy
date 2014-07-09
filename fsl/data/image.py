@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# fslimage.py - Classes for representing 3D/4D images, display
+# image.py - Classes for representing 3D/4D images, display
 # properties of images, and collections of images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>

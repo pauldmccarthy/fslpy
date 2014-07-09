@@ -171,9 +171,9 @@ class LocationPanel(wx.Panel, props.HasProperties):
 
         
     def _volumeChanged(self, *a):
-        """Called when the :attr:`fsl.data.fslimage.ImageList.volume`
+        """Called when the :attr:`fsl.data.image.ImageList.volume`
         property changes. Propagates the change to the
-        :attr:`fsl.data.fslimage.ImageDisplay.volume` property, and
+        :attr:`fsl.data.image.ImageDisplay.volume` property, and
         updates the voxel value.
         """
 
