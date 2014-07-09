@@ -29,6 +29,7 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.sliceSpacing`.
     """
 
+    
     ncols = lightboxcanvas.LightBoxCanvas.ncols
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`."""
 
@@ -73,31 +74,29 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
                           'zax'))
     """Layout to be used for GUI displays.""" 
 
-    
-    def __init__(self, parent, *args, **kwargs):
+
+    def __init__(self, parent, imageList, displayCtx, glContext=None):
         """
-        Accepts the same parameters as the LightBoxCanvas constructor,
-        although if you pass in a scrollbar, it will be ignored.
         """
 
         wx.Panel.__init__(self, parent)
         props.HasProperties.__init__(self)
 
-        self.name = 'LightBoxPanel_{}'.format(id(self))
+        self.imageList  = imageList
+        self.displayCtx = displayCtx 
+        self.name       = 'LightBoxPanel_{}'.format(id(self))
 
         self.scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
-        
-        kwargs['scrollbar'] = self.scrollbar
-        
-        self.canvas = lightboxcanvas.LightBoxCanvas(self, *args, **kwargs)
+        self.canvas = lightboxcanvas.LightBoxCanvas(self,
+                                                    imageList,
+                                                    glContext=glContext,
+                                                    scrollbar=self.scrollbar)
 
         self.bindProps('sliceSpacing', self.canvas)
         self.bindProps('ncols',        self.canvas)
         self.bindProps('zrange',       self.canvas)
         self.bindProps('showCursor',   self.canvas)
         self.bindProps('zax',          self.canvas)
-
-        self.imageList = self.canvas.imageList
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
@@ -112,15 +111,15 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
 
         def move(*a):
             if not self.posSync: return
-            xpos = self.imageList.location.getPos(self.canvas.xax)
-            ypos = self.imageList.location.getPos(self.canvas.yax)
-            zpos = self.imageList.location.getPos(self.canvas.zax)
+            xpos = self.displayCtx.location.getPos(self.canvas.xax)
+            ypos = self.displayCtx.location.getPos(self.canvas.yax)
+            zpos = self.displayCtx.location.getPos(self.canvas.zax)
             self.canvas.pos.xyz = (xpos, ypos, zpos)
 
-        self.imageList.addListener('location', self.name, move)
+        self.displayCtx.addListener('location', self.name, move)
 
         def onDestroy(ev):
-            self.imageList.removeListener('location', self.name)
+            self.displayCtx.removeListener('location', self.name)
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -156,7 +155,7 @@ class LightBoxPanel(wx.Panel, props.HasProperties):
         self.canvas.pos.xyz = cpos
         
         if self.posSync:
-            self.imageList.location.xyz = clickPos
+            self.displayCtx.location.xyz = clickPos
         
             
     def onMouseScroll(self, ev):
