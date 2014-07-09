@@ -39,7 +39,7 @@ class LocationPanel(wx.Panel, props.HasProperties):
         label.SetFont(font)
 
         
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, displayCtx):
         """
         Creates and lays out the LocationPanel, and sets up a few property
         event listeners.
@@ -48,19 +48,21 @@ class LocationPanel(wx.Panel, props.HasProperties):
         wx.Panel.__init__(self, parent)
         props.HasProperties.__init__(self)
 
-        self.imageList = imageList
+        self._imageList  = imageList
+        self._displayCtx = displayCtx
+        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self._voxelPanel = wx.Panel(self)
 
         self._locationLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
-        self._locationWidget = props.makeWidget(self, imageList, 'location')
+        self._locationWidget = props.makeWidget(self, displayCtx, 'location')
         
         self._dividerLine1   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
         self._voxelWidget    = props.makeWidget(self, self, 'voxelLocation')
         
         self._dividerLine2   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL) 
         self._volumeLabel    = wx.StaticText(   self, style=wx.ALIGN_LEFT)
-        self._volumeWidget   = props.makeWidget(self, imageList, 'volume')
+        self._volumeWidget   = props.makeWidget(self, displayCtx, 'volume')
         
  
         self._voxelLabel = wx.StaticText(self._voxelPanel,
@@ -95,34 +97,32 @@ class LocationPanel(wx.Panel, props.HasProperties):
         self._sizer.Add(self._volumeLabel,    flag=wx.EXPAND)
         self._sizer.Add(self._volumeWidget,   flag=wx.EXPAND)
 
-
         self._voxelPanel.Layout()
         self.Layout()
-
-        lName = '{}_{}'.format(self.__class__.__name__, id(self))
-        self.imageList.addListener('images',
-                                   lName,
-                                   self._selectedImageChanged) 
-        self.imageList.addListener('selectedImage',
-                                   lName,
-                                   self._selectedImageChanged)
-        self.imageList.addListener('volume',
-                                   lName,
-                                   self._volumeChanged) 
-        self.imageList.addListener('location',
-                                   '{}_worldToVox'.format(lName),
-                                   self._worldLocationChanged)
-        self.addListener(          'voxelLocation',
-                                   '{}_voxToWorld'.format(lName),
-                                   self._voxelLocationChanged)
+        
+        self._imageList.addListener( 'images',
+                                     self._name,
+                                     self._selectedImageChanged) 
+        self._displayCtx.addListener('selectedImage',
+                                     self._name,
+                                     self._selectedImageChanged)
+        self._displayCtx.addListener('volume',
+                                     self._name,
+                                     self._volumeChanged) 
+        self._displayCtx.addListener('location',
+                                     '{}_worldToVox'.format(self._name),
+                                     self._worldLocationChanged)
+        self.addListener(            'voxelLocation',
+                                     '{}_voxToWorld'.format(self._name),
+                                     self._voxelLocationChanged)
 
         def onDestroy(ev):
             ev.Skip()
-            self.imageList.removeListener('images',        lName)
-            self.imageList.removeListener('selectedImage', lName)
-            self.imageList.removeListener('volume',        lName)
-            self.imageList.removeListener('location',
-                                          '{}_worldToVox'.format(lName))
+            self._imageList.removeListener( 'images',        self._name)
+            self._displayCtx.removeListener('selectedImage', self._name)
+            self._displayCtx.removeListener('volume',        self._name)
+            self._displayCtx.removeListener('location',
+                                            '{}_worldToVox'.format(self._name))
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
@@ -139,8 +139,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
         the value at the current voxel location is displayed.
         """
         
-        image  = self.imageList[self.imageList.selectedImage]
-        volume = self.imageList.volume
+        image  = self._imageList[self._displayCtx.selectedImage]
+        volume = self._displayCtx.volume
         voxLoc = self.voxelLocation.xyz
         
         if voxVal is None:
@@ -171,19 +171,14 @@ class LocationPanel(wx.Panel, props.HasProperties):
 
         
     def _volumeChanged(self, *a):
-        """Called when the :attr:`fsl.data.image.ImageList.volume`
-        property changes. Propagates the change to the
-        :attr:`fsl.fslview.displaycontext.ImageDisplay.volume` property, and
-        updates the voxel value.
+        """Called when the
+        :attr:`fsl.fslview.displaycontext.DisplayContext.volume`
+        property changes. Updates the voxel value label.
         """
 
-        volume  = self.imageList.volume
+        volume  = self._displayCtx.volume
 
-        for image in self.imageList:
-            display = image.getAttribute('display')
-            display.volume = volume
-
-        image  = self.imageList[self.imageList.selectedImage]
+        image  = self._imageList[self._displayCtx.selectedImage]
         voxVal = None
         
         if image.is4DImage():
@@ -199,13 +194,13 @@ class LocationPanel(wx.Panel, props.HasProperties):
     def _voxelLocationChanged(self, *a):
         """
         Called when the current voxel location is changed. Propagates the
-        change on to the image list world location.
+        change on to the display context world location.
         """
 
-        image       = self.imageList[self.imageList.selectedImage]
+        image       = self._imageList[self._displayCtx.selectedImage]
         voxLoc      = self.voxelLocation.xyz
         worldLoc    = image.voxToWorld([voxLoc])[0]
-        worldVoxLoc = image.worldToVox([self.imageList.location.xyz])[0]
+        worldVoxLoc = image.worldToVox([self._displayCtx.location.xyz])[0]
 
         self._updateVoxelValue()
 
@@ -217,7 +212,7 @@ class LocationPanel(wx.Panel, props.HasProperties):
         # voxel, we don't want it to be shifted to the voxel centre.
         if all([vl == wvl for (vl, wvl) in zip(voxLoc, worldVoxLoc)]): return
         
-        self.imageList.location.xyz = worldLoc
+        self._displayCtx.location.xyz = worldLoc
 
 
     def _worldLocationChanged(self, *a):
@@ -227,10 +222,10 @@ class LocationPanel(wx.Panel, props.HasProperties):
         selected image.
         """
 
-        if len(self.imageList) == 0: return
+        if len(self._imageList) == 0: return
 
-        image  = self.imageList[self.imageList.selectedImage]
-        loc    = self.imageList.location.xyz
+        image  = self._imageList[self._displayCtx.selectedImage]
+        loc    = self._displayCtx.location.xyz
         voxLoc = image.worldToVox([loc])[0]
 
         inBounds = True
@@ -260,14 +255,14 @@ class LocationPanel(wx.Panel, props.HasProperties):
         (which contains the image name), and sets the voxel location limits.
         """
 
-        if len(self.imageList) == 0: return
+        if len(self._imageList) == 0: return
 
-        image = self.imageList[self.imageList.selectedImage]
+        image = self._imageList[self._displayCtx.selectedImage]
         
         self._voxelLabel.SetLabel('Voxel coordinates ({})'.format(image.name))
         self._voxelPanel.Layout()
 
-        oldLoc = self.imageList.location.xyz
+        oldLoc = self._displayCtx.location.xyz
         voxLoc = image.worldToVox([oldLoc])[0]
 
         for i in range(3):
@@ -279,4 +274,4 @@ class LocationPanel(wx.Panel, props.HasProperties):
         # changed due to a change in their limits. So we'll
         # restore the old location from the real world
         # coordinates.
-        self.imageList.location.xyz = oldLoc
+        self._displayCtx.location.xyz = oldLoc

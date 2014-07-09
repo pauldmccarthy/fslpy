@@ -192,6 +192,7 @@ class DisplayContext(props.HasProperties):
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self._imageListChanged()
+        self._imageListBoundsChanged()
 
         # initialise the location to be
         # the centre of the image world
@@ -201,8 +202,15 @@ class DisplayContext(props.HasProperties):
             b.ylo + b.ylen / 2.0,
             b.zlo + b.zlen / 2.0] 
 
-        imageList.addListener('images', self._name, self._imageListChanged)
-        self.addListener(     'volume', self._name, self._volumeChanged)
+        imageList.addListener('images',
+                              self._name,
+                              self._imageListChanged)
+        imageList.addListener('bounds',
+                              self._name,
+                              self._imageListBoundsChanged)
+        self.addListener(     'volume',
+                              self._name,
+                              self._volumeChanged)
 
 
     def _imageListChanged(self, *a):
