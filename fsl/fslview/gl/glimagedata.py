@@ -59,7 +59,7 @@ import OpenGL.GL.ARB.texture_rg as arbrg
 
 class GLImageData(object):
 
-    def __init__(self, image, xax, yax, imageDisplay=None):
+    def __init__(self, image, xax, yax, imageDisplay):
         """
         Initialise the OpenGL data buffers required to render the given image.
         Parameters:
@@ -70,15 +70,10 @@ class GLImageData(object):
         
           - yax:          The image axis which maps to the screen y axis.
         
-          - imageDisplay: Optional. A fsl.data.image.ImageDisplay object
+          - imageDisplay: A fsl.fslview.displaycontext.ImageDisplay object
                           which describes how the image is to be displayed.
-                          If not provided, the default image.display instance
-                          is used (see fsl.data.image.ImageDisplay for
-                          details).
         """
         
-        if imageDisplay is None: imageDisplay = image.display
-
         self.image   = image
         self.display = imageDisplay
 
