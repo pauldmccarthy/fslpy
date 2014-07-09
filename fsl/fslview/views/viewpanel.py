@@ -20,6 +20,9 @@ See the following classes:
 import wx
 import props
 
+import fsl.data.image             as fslimage
+import fsl.fslview.displaycontext as displaycontext
+
 class ViewPanel(wx.Panel, props.HasProperties):
     """Superclass for FSLView view panels.
 
@@ -51,6 +54,16 @@ class ViewPanel(wx.Panel, props.HasProperties):
         
         wx.Panel.__init__(self, parent)
         props.HasProperties.__init__(self)
+
+        if not isinstance(imageList, fslimage.ImageList):
+            raise TypeError(
+                'imageList must be a fsl.data.image.ImageList instance')
+
+        if not isinstance(displayCtx, displaycontext.DisplayContext):
+            raise TypeError(
+                'displayCtx must be a '
+                'fsl.fslview.displaycontext.DisplayContext instance') 
+ 
 
         self._imageList  = imageList
         self._displayCtx = displayCtx

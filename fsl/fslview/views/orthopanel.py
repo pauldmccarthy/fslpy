@@ -17,13 +17,14 @@ import logging
 log = logging.getLogger(__name__)
 
 import wx
-
 import props
-import fsl.data.image             as fslimage
+
 import fsl.fslview.gl.slicecanvas as slicecanvas
 
+import viewpanel
 
-class OrthoPanel(wx.Panel, props.HasProperties):
+
+class OrthoPanel(viewpanel.ViewPanel):
 
     # Properties which toggle display of each of
     # the three canvases, and the cursors on them.
@@ -88,47 +89,42 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         in the given image list along a different axis. 
         """
 
-        if not isinstance(imageList, fslimage.ImageList):
-            raise TypeError(
-                'imageList must be a fsl.data.image.ImageList instance')
-
-        self.imageList  = imageList
-        self.displayCtx = displayCtx
-        self.name      = 'OrthoPanel_{}'.format(id(self))
-
-        wx.Panel.__init__(self, parent)
+        viewpanel.ViewPanel.__init__(self,
+                                     parent,
+                                     imageList,
+                                     displayCtx)
 
         self.SetBackgroundColour('black')
 
-        self.xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0,
-                                               glContext=glContext)
+        self._xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0,
+                                                glContext=glContext)
 
         if glContext is None:
-            glContext = self.xcanvas.glContext
+            glContext = self._xcanvas.glContext
         
-        self.ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
-                                               glContext=glContext)
-        self.zcanvas = slicecanvas.SliceCanvas(self, imageList, zax=2,
-                                               glContext=glContext)
+        self._ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
+                                                glContext=glContext)
+        self._zcanvas = slicecanvas.SliceCanvas(self, imageList, zax=2,
+                                                glContext=glContext)
 
-        self.addListener('layout', self.name, self._layoutChanged)
+        self.addListener('layout', self._name, self._layoutChanged)
         self._layoutChanged()
 
-        self.xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self.ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self.zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self.xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self.ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self.zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        self._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        self._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
         def move(*a):
             if self.posSync:
-                self.setPosition(*self.displayCtx.location)
+                self.setPosition(*self._displayCtx.location)
                 
-        self.displayCtx.addListener('location', self.name, move) 
+        self._displayCtx.addListener('location', self._name, move) 
         
         def onDestroy(ev):
-            self.displayCtx.removeListener('location', self.name)
+            self._displayCtx.removeListener('location', self._name)
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -145,24 +141,23 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         """
         def showCursor(*a):
             
-            self.xcanvas.showCursor = self.showCursor
-            self.ycanvas.showCursor = self.showCursor
-            self.zcanvas.showCursor = self.showCursor
+            self._xcanvas.showCursor = self.showCursor
+            self._ycanvas.showCursor = self.showCursor
+            self._zcanvas.showCursor = self.showCursor
 
         def toggle(canvas, toggle):
-            self.sizer.Show(canvas, toggle)
+            self._sizer.Show(canvas, toggle)
             if self.layout.lower() == 'grid':
                 self._configureGridSizes() 
             self.Layout()            
 
-        self.addListener('showCursor', self.name, showCursor)
-        self.addListener('showXCanvas',
-                         self.name,
-                         lambda *a: toggle(self.xcanvas, self.showXCanvas))
-        self.addListener('showYCanvas', self.name,
-                         lambda *a: toggle(self.ycanvas, self.showYCanvas))
-        self.addListener('showZCanvas', self.name,
-                         lambda *a: toggle(self.zcanvas, self.showZCanvas))
+        self.addListener('showCursor',  self._name, showCursor)
+        self.addListener('showXCanvas', self._name,
+                         lambda *a: toggle(self._xcanvas, self.showXCanvas))
+        self.addListener('showYCanvas', self._name,
+                         lambda *a: toggle(self._ycanvas, self.showYCanvas))
+        self.addListener('showZCanvas', self._name,
+                         lambda *a: toggle(self._zcanvas, self.showZCanvas))
 
             
     def _configZoomListeners(self):
@@ -171,13 +166,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         they are changed, the zoom factor on the corresponding canvas
         is changed.
         """
-        def xzoom(*a): self.xcanvas.zoom = self.xzoom
-        def yzoom(*a): self.ycanvas.zoom = self.yzoom
-        def zzoom(*a): self.zcanvas.zoom = self.zzoom
+        def xzoom(*a): self._xcanvas.zoom = self.xzoom
+        def yzoom(*a): self._ycanvas.zoom = self.yzoom
+        def zzoom(*a): self._zcanvas.zoom = self.zzoom
             
-        self.addListener('xzoom', self.name, xzoom)
-        self.addListener('yzoom', self.name, yzoom)
-        self.addListener('zzoom', self.name, zzoom)
+        self.addListener('xzoom', self._name, xzoom)
+        self.addListener('yzoom', self._name, yzoom)
+        self.addListener('zzoom', self._name, zzoom)
 
 
     def _resize(self, ev):
@@ -207,8 +202,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         # Generate a list of canvases for
         # which the 'show*Canvas' property is true
-        canvases    = [self.xcanvas,     self.ycanvas,     self.zcanvas]
-        show        = [self.showXCanvas, self.showYCanvas, self.showZCanvas]
+        canvases    = [self._xcanvas,     self._ycanvas,     self._zcanvas]
+        show        = [self.showXCanvas,  self.showYCanvas,  self.showZCanvas]
         canvases, _ = zip(*filter(lambda (c, s): s, zip(canvases, show)))
 
         if len(canvases) == 1:
@@ -230,15 +225,15 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         layout = self.layout.lower()
 
-        if   layout == 'horizontal': self.sizer = wx.BoxSizer( wx.HORIZONTAL)
-        elif layout == 'vertical':   self.sizer = wx.BoxSizer( wx.VERTICAL)
-        elif layout == 'grid':       self.sizer = wx.WrapSizer(wx.HORIZONTAL) 
+        if   layout == 'horizontal': self._sizer = wx.BoxSizer( wx.HORIZONTAL)
+        elif layout == 'vertical':   self._sizer = wx.BoxSizer( wx.VERTICAL)
+        elif layout == 'grid':       self._sizer = wx.WrapSizer(wx.HORIZONTAL) 
 
-        self.sizer.Add(self.xcanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.ycanvas, flag=wx.EXPAND, proportion=1)
-        self.sizer.Add(self.zcanvas, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._xcanvas, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._ycanvas, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._zcanvas, flag=wx.EXPAND, proportion=1)
 
-        self.SetSizer(self.sizer) 
+        self.SetSizer(self._sizer) 
 
         # for grid layout, we need to
         # manually specify canvas sizes
@@ -248,9 +243,9 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         # the other layouts automatically
         # size the canvases for us
         else:
-            self.xcanvas.SetMinSize((-1, -1))
-            self.ycanvas.SetMinSize((-1, -1))
-            self.zcanvas.SetMinSize((-1, -1))
+            self._xcanvas.SetMinSize((-1, -1))
+            self._ycanvas.SetMinSize((-1, -1))
+            self._zcanvas.SetMinSize((-1, -1))
 
         self.Layout()
 
@@ -261,13 +256,13 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         coordinates).
         """
 
-        self.xcanvas.pos.xyz = [ypos, zpos, xpos]
-        self.ycanvas.pos.xyz = [xpos, zpos, ypos]
-        self.zcanvas.pos.xyz = [xpos, ypos, zpos]
+        self._xcanvas.pos.xyz = [ypos, zpos, xpos]
+        self._ycanvas.pos.xyz = [xpos, zpos, ypos]
+        self._zcanvas.pos.xyz = [xpos, ypos, zpos]
 
-        if self.xzoom != 1: self.xcanvas.panDisplayToShow(ypos, zpos)
-        if self.yzoom != 1: self.ycanvas.panDisplayToShow(xpos, zpos)
-        if self.zzoom != 1: self.zcanvas.panDisplayToShow(xpos, ypos)
+        if self.xzoom != 1: self._xcanvas.panDisplayToShow(ypos, zpos)
+        if self.yzoom != 1: self._ycanvas.panDisplayToShow(xpos, zpos)
+        if self.zzoom != 1: self._zcanvas.panDisplayToShow(xpos, ypos)
 
 
     def _onMouseEvent(self, ev):
@@ -277,8 +272,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         canvases follow mouse clicks and drags.
         """
 
-        if not ev.LeftIsDown():      return
-        if len(self.imageList) == 0: return
+        if not ev.LeftIsDown():       return
+        if len(self._imageList) == 0: return
 
         mx, my  = ev.GetPositionTuple()
         source  = ev.GetEventObject()
@@ -292,17 +287,17 @@ class OrthoPanel(wx.Panel, props.HasProperties):
         log.debug('Mouse click on canvas {}: ({}, {} -> {}, {})'.format(
             source.name, mx, my, xpos, ypos))
 
-        if   source == self.xcanvas: self.setPosition(zpos, xpos, ypos)
-        elif source == self.ycanvas: self.setPosition(xpos, zpos, ypos)
-        elif source == self.zcanvas: self.setPosition(xpos, ypos, zpos)
+        if   source == self._xcanvas: self.setPosition(zpos, xpos, ypos)
+        elif source == self._ycanvas: self.setPosition(xpos, zpos, ypos)
+        elif source == self._zcanvas: self.setPosition(xpos, ypos, zpos)
 
         if self.posSync:
-            if   source == self.xcanvas:
-                self.displayCtx.location.yz = [xpos, ypos]
-            elif source == self.ycanvas:
-                self.displayCtx.location.xz = [xpos, ypos]
-            elif source == self.zcanvas:
-                self.displayCtx.location.xy = [xpos, ypos]
+            if   source == self._xcanvas:
+                self._displayCtx.location.yz = [xpos, ypos]
+            elif source == self._ycanvas:
+                self._displayCtx.location.xz = [xpos, ypos]
+            elif source == self._zcanvas:
+                self._displayCtx.location.xy = [xpos, ypos]
  
             
 class OrthoFrame(wx.Frame):
