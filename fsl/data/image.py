@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 #
-# image.py - Classes for representing 3D/4D images, display
-# properties of images, and collections of images.
+# image.py - Classes for representing 3D/4D images and collections of said
+# images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Classes for representing 3D/4D images, display properties of images, and
-collections of images.
-"""
+"""Classes for representing 3D/4D images and collections of said images."""
 
 import os
 import sys
@@ -106,9 +104,6 @@ class Image(props.HasProperties):
     
     :ivar data:          A reference to the image data, stored as a
                          :mod`numpy` array.
-
-    :ivar display:       A :class:`ImageDisplay` object, defining how this
-                         image should be displayed.
     
     :ivar shape:         A list/tuple containing the number of voxels
                          along each image dimension.
@@ -148,7 +143,8 @@ class Image(props.HasProperties):
         header.
     
       - ``id``: Perform no scaling or transformation - voxels will be
-        displayed as :math:`1mm^3` isotropic.
+        interpreted as :math:`1mm^3` isotropic, with the origin at voxel
+        (0,0,0).
     """
 
     
@@ -209,10 +205,6 @@ class Image(props.HasProperties):
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
-
-        # ImageDisplay instance used to describe
-        # how this image is to be displayed
-        self.display = ImageDisplay(self)
 
         # This dictionary may be used to store
         # arbitrary data associated with this image.
@@ -426,115 +418,6 @@ class Image(props.HasProperties):
             self.name, name, str(value)))
 
 
-class ImageDisplay(props.HasProperties):
-    """A class which describes how an image should be displayed.
-
-    There should be no need to manually instantiate :class:`ImageDisplay`
-    objects - one is created for each :class:`Image` object, and is accessed
-    via the :attr:`Image.display` instance attribute.  If a single image needs
-    to be displayed in different ways, then create away, and manage your own
-    :class:`ImageDisplay` objects.
-
-    This class doesn't have any functionality - it is up to things which
-    actually display an :class:`Image` to adhere to the properties stored in
-    the associated :class:`ImageDisplay` object.
-    """
-
-    
-    enabled = props.Boolean(default=True)
-    """Should this image be displayed at all?"""
-
-    
-    alpha = props.Real(minval=0.0, maxval=1.0, default=1.0)
-    """Transparency - 1.0 is fully opaque, and 0.0 is fully transparent."""
-
-    
-    displayRange = props.Bounds(ndims=1, editLimits=True,
-                                labels=['Min.', 'Max.'])
-    """Image values which map to the minimum and maximum colour map colours."""
-
-    
-    samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
-    """Only display every Nth voxel (a performance tweak)."""
-
-    
-    rangeClip = props.Boolean(default=False)
-    """If ``True``, don't display voxel values which are beyond the
-    :attr:`displayRange`.
-    """
-
-    
-    cmap = props.ColourMap(default=mplcm.Greys_r)
-    """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
-
-    
-    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """If a 4D image, the current volume to display."""
-
-    
-    def is4DImage(self):
-        """Returns ``True`` if this image is 4D, ``False`` otherwise.
-        """
-        return self.image.is4DImage()
-
-        
-    _view = props.VGroup(('enabled',
-                          'displayRange',
-                          'alpha',
-                          'rangeClip',
-                          'samplingRate',
-                          'cmap'))
-    _labels = {
-        'enabled'      : 'Enabled',
-        'displayRange' : 'Display range',
-        'alpha'        : 'Opacity',
-        'rangeClip'    : 'Clipping',
-        'samplingRate' : 'Sampling rate',
-        'cmap'         : 'Colour map'}
-
-    _tooltips = {
-        'enabled'      : 'Enable/disable this image',
-        'alpha'        : 'Opacity, between 0.0 (transparent) and 1.0 (opaque)',
-        'displayRange' : 'Minimum/maximum display values',
-        'rangeClip'    : 'Do not show areas of the image which lie '
-                         'outside of the display range',
-        'samplingRate' : 'Draw every Nth voxel',
-        'cmap'         : 'Colour map'}
-
-    _propHelp = _tooltips
-
-
-    def __init__(self, image):
-        """Create an :class:`ImageDisplay` for the specified image.
-
-        :arg image: A :class:`Image` object.
-        """
-
-        self.image = image
-
-        # Attributes controlling image display. Only
-        # determine the real min/max for small images -
-        # if it's memory mapped, we have no idea how big
-        # it may be! So we calculate the min/max of a
-        # sample (either a slice or an image, depending
-        # on whether the image is 3D or 4D)
-        if np.prod(image.shape) > 2 ** 30:
-            sample = image.data[..., image.shape[-1] / 2]
-            self.dataMin = float(sample.min())
-            self.dataMax = float(sample.max())
-        else:
-            self.dataMin = float(image.data.min())
-            self.dataMax = float(image.data.max())
-
-        dRangeLen = abs(self.dataMax - self.dataMin)
-
-        self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
-        self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
-        self.displayRange.setRange(0, self.dataMin, self.dataMax)
-
-        # is this a 4D volume?
-        if self.is4DImage():
-            self.setConstraint('volume', 'maxval', image.shape[3] - 1)
             
 
 class ImageList(props.HasProperties):
