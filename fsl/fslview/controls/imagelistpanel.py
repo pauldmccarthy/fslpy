@@ -26,15 +26,19 @@ class ImageListPanel(wx.Panel):
     added and removed from the list.
     """
     
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, displayCtx):
         """Create and lay out an :class:`ImageListPanel`.
 
-        :param parent:    The :mod:`wx` parent object.
-        :param imageList: A :class:`~fsl.data.image.ImageList` instance.
+        :param parent:     The :mod:`wx` parent object.
+        :param imageList:  A :class:`~fsl.data.image.ImageList` instance.
+        :param displayCtx: A
+                           :class:`~fsl.fslview.displaycontext.DisplayContext`
+                           instance.
         """
         
         wx.Panel.__init__(self, parent)
-        self._imageList = imageList
+        self._imageList  = imageList
+        self._displayCtx = displayCtx
 
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
@@ -61,7 +65,7 @@ class ImageListPanel(wx.Panel):
             self._name,
             self._imageListChanged)
 
-        self._imageList.addListener(
+        self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged) 
@@ -78,7 +82,8 @@ class ImageListPanel(wx.Panel):
 
 
     def _selectedImageChanged(self, *a):
-        """Called when the :attr:`~fsl.data.image.ImageList.selectedImage`
+        """Called when the
+        :attr:`~fsl.fslview.displaycontext.DisplayContext.selectedImage`
         property changes. Updates the selected item in the list box.
         """
         
@@ -86,7 +91,7 @@ class ImageListPanel(wx.Panel):
             return
 
         if len(self._imageList) > 0:
-            self._listBox.SetSelection(self._imageList.selectedImage)
+            self._listBox.SetSelection(self._displayCtx.selectedImage)
 
         
     def _imageListChanged(self, *a):
@@ -109,6 +114,14 @@ class ImageListPanel(wx.Panel):
 
             self._listBox.Append(image.name, image, image.imageFile)
 
+            def nameChanged(img):
+                idx = self._imageList.index(img)
+                self._listBox.SetString(idx, img.name)
+
+            image.addListener('name',
+                              self._name,
+                              lambda img=image, *a: nameChanged(img))
+
         if len(self._imageList) > 0:
             self._listBox.SetSelection(selection)
         
@@ -120,7 +133,7 @@ class ImageListPanel(wx.Panel):
         """
         self._listBoxNeedsUpdate = False
         self._imageList.move(ev.oldIdx, ev.newIdx)
-        self._imageList.selectedImage = ev.newIdx
+        self._displayCtx.selectedImage = ev.newIdx
         self._listBoxNeedsUpdate = True
 
         
@@ -130,7 +143,7 @@ class ImageListPanel(wx.Panel):
         :attr:`fsl.data.image.ImageList.selectedImage property.
         """
         self._listBoxNeedsUpdate = False
-        self._imageList.selectedImage = ev.idx
+        self._displayCtx.selectedImage = ev.idx
         self._listBoxNeedsUpdate = True
 
         

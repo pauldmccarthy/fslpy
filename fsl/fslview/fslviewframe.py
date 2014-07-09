@@ -214,7 +214,7 @@ class FSLViewFrame(wx.Frame):
         if panelCls in self._controlPanels:
             return
 
-        panel = panelCls(self, self._imageList)
+        panel = panelCls(self, self._imageList, self._displayCtx)
             
         paneInfo = (aui.AuiPaneInfo()
                     .Dock()
