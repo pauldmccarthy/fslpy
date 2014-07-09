@@ -117,6 +117,7 @@ class FSLViewFrame(wx.Frame):
 
         panel = views.OrthoPanel(self._centrePane,
                                  self._imageList,
+                                 self._displayCtx,
                                  glContext=self._glContext)
             
         if self._glContext is None:
@@ -133,6 +134,7 @@ class FSLViewFrame(wx.Frame):
         """
         panel = views.LightBoxPanel(self._centrePane,
                                     self._imageList,
+                                    self._displayCtx,
                                     glContext=self._glContext)
             
         if self._glContext is None:

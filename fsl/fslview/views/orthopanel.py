@@ -7,9 +7,10 @@
 #
 """A :mod:`wx`/:mod:`OpenGL` widget for displaying and interacting with a
 collection of 3D images (see :class:`~fsl.data.image.ImageList`).
+
 Displays three canvases, each of which shows the same image(s) on a
 different orthogonal plane. The displayed location is driven by the
-:attr:`fsl.data.image.ImageList.location` property.
+:attr:`fsl.fslview.displaycontext.DisplayContext.location` property.
 """
 
 import logging
@@ -81,7 +82,7 @@ class OrthoPanel(wx.Panel, props.HasProperties):
     }
 
 
-    def __init__(self, parent, imageList, glContext=None):
+    def __init__(self, parent, imageList, displayCtx, glContext=None):
         """
         Creates three SliceCanvas objects, each displaying the images
         in the given image list along a different axis. 
@@ -91,7 +92,8 @@ class OrthoPanel(wx.Panel, props.HasProperties):
             raise TypeError(
                 'imageList must be a fsl.data.image.ImageList instance')
 
-        self.imageList = imageList
+        self.imageList  = imageList
+        self.displayCtx = displayCtx
         self.name      = 'OrthoPanel_{}'.format(id(self))
 
         wx.Panel.__init__(self, parent)
@@ -121,13 +123,12 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         def move(*a):
             if self.posSync:
-                self.setPosition(*self.imageList.location)
+                self.setPosition(*self.displayCtx.location)
                 
-        self.imageList.addListener('location', self.name, move) 
+        self.displayCtx.addListener('location', self.name, move) 
         
         def onDestroy(ev):
-            self.imageList.removeListener('bounds',   self.name)
-            self.imageList.removeListener('location', self.name)
+            self.displayCtx.removeListener('location', self.name)
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -297,11 +298,11 @@ class OrthoPanel(wx.Panel, props.HasProperties):
 
         if self.posSync:
             if   source == self.xcanvas:
-                self.imageList.location.yz = [xpos, ypos]
+                self.displayCtx.location.yz = [xpos, ypos]
             elif source == self.ycanvas:
-                self.imageList.location.xz = [xpos, ypos]
+                self.displayCtx.location.xz = [xpos, ypos]
             elif source == self.zcanvas:
-                self.imageList.location.xy = [xpos, ypos]
+                self.displayCtx.location.xy = [xpos, ypos]
  
             
 class OrthoFrame(wx.Frame):
@@ -309,10 +310,10 @@ class OrthoFrame(wx.Frame):
     Convenience class for displaying an OrthoPanel in a standalone window.
     """
 
-    def __init__(self, parent, imageList, title=None):
+    def __init__(self, parent, imageList, displayCtx, title=None):
         
         wx.Frame.__init__(self, parent, title=title)
-        self.panel = OrthoPanel(self, imageList)
+        self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()
 
 
@@ -322,11 +323,11 @@ class OrthoDialog(wx.Dialog):
     dialog window.
     """
 
-    def __init__(self, parent, imageList, title=None, style=None):
+    def __init__(self, parent, imageList, displayCtx, title=None, style=None):
 
         if style is None: style =  wx.DEFAULT_DIALOG_STYLE
         else:             style |= wx.DEFAULT_DIALOG_STYLE
         
         wx.Dialog.__init__(self, parent, title=title, style=style)
-        self.panel = OrthoPanel(self, imageList)
+        self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()

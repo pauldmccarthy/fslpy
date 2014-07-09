@@ -212,15 +212,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self._zAxisChanged()
         self.addListener('zax', self.name, self._zAxisChanged)
 
-        if len(self.imageList) > 0:
-            
-            self._imageBoundsChanged()
-             
-            self.pos.xyz = [
-                self.imageList.location.getPos(self.xax),
-                self.imageList.location.getPos(self.yax),
-                self.imageList.location.getPos(self.zax)]
-
         # when any of the properties of this
         # canvas change, we need to redraw
         def refresh(*a): self.Refresh()
@@ -240,6 +231,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList.addListener('bounds',
                                    self.name,
                                    self._imageBoundsChanged)
+
+        # We don't call _imageListChanged here - it will be called on the
+        # first call to _draw (image GL data can't be initialised until we
+        # have something to draw on)
+        self._imageBoundsChanged()
 
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
