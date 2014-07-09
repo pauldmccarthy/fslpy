@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 #
-# timeseriespanel.py -
+# timeseriespanel.py - A panel which plots time series/volume data from a
+# collection of images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A :class:`wx.Panel` which plots time series/volume data from a
+collection of :class:`~fsl.data.fslimage.Image` objects stored in an
+:class:`~fsl.data.fslimage.ImageList`.
+
+:mod:`matplotlib` is used for plotting.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -20,8 +27,14 @@ mpl.use('WXAgg')
 import matplotlib.pyplot as plt
 from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
-class TimeSeriesPanel(wx.Panel, props.HasProperties):
 
+class TimeSeriesPanel(wx.Panel, props.HasProperties):
+    """A panel with a :mod:`matplotlib` canvas embedded within.
+
+    The volume data for each of the :class:`~fsl.data.fslimage.Image`
+    objects in the :class:`~fsl.data.fslimage.ImageList`, at the current
+    :attr:`~fsl.data.fslimage.ImageList.location` is plotted on the canvas.
+    """
 
     def __init__(self, parent, imageList):
 
