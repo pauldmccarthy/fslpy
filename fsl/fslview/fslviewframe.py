@@ -150,7 +150,9 @@ class FSLViewFrame(wx.Frame):
         display to the central :class:`~wx.aui.AuiNotebook` widget.
         """
 
-        panel = views.TimeSeriesPanel(self._centrePane, self._imageList)
+        panel = views.TimeSeriesPanel(self._centrePane,
+                                      self._imageList,
+                                      self._displayCtx)
         self._addViewPanel(panel, strings.timeSeriesTitle) 
  
 

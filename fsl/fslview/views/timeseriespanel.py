@@ -36,13 +36,14 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
     :attr:`~fsl.data.image.ImageList.location` is plotted on the canvas.
     """
 
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, displayCtx):
 
         wx.Panel.__init__(self, parent)
         props.HasProperties.__init__(self)
 
-        self._imageList = imageList
-        self._name      = '{}_{}'.format(self.__class__.__name__, id(self))
+        self._imageList  = imageList
+        self._displayCtx = displayCtx
+        self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self._figure = plt.Figure()
         self._axis   = self._figure.add_subplot(111)
@@ -62,24 +63,24 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         self.SetSizer(self._sizer)
         self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
 
-        self._imageList.addListener(
+        self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged)
-        self._imageList.addListener(
+        self._displayCtx.addListener(
             'location',
             self._name,
             self._locationChanged)
-        self._imageList.addListener(
+        self._displayCtx.addListener(
             'volume',
             self._name,
             self._locationChanged) 
 
         def onDestroy(ev):
             ev.Skip()
-            self._imageList.removeListener('selectedImage', self._name)
-            self._imageList.removeListener('location',      self._name)
-            self._imageList.removeListener('volume',        self._name)
+            self._displayCtx.removeListener('selectedImage', self._name)
+            self._displayCtx.removeListener('location',      self._name)
+            self._displayCtx.removeListener('volume',        self._name)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
@@ -95,7 +96,7 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         if len(self._imageList) == 0:
             return
 
-        image = self._imageList[self._imageList.selectedImage]
+        image = self._imageList[self._displayCtx.selectedImage]
 
         if not image.is4DImage():
             return
@@ -110,7 +111,7 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         if len(self._imageList) == 0:
             return 
         
-        image = self._imageList[self._imageList.selectedImage]
+        image = self._imageList[self._displayCtx.selectedImage]
 
         if not image.is4DImage():
             return
@@ -121,8 +122,8 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
 
     def _drawPlot(self):
 
-        x, y, z = self._imageList.location.xyz
-        vol     = self._imageList.volume
+        x, y, z = self._displayCtx.location.xyz
+        vol     = self._displayCtx.volume
 
         mins = []
         maxs = []
@@ -191,14 +192,14 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
     def _onPlotMouseDown(self, ev):
         if ev.inaxes != self._axis: return
         self._mouseDown = True
-        self._imageList.volume = np.floor(ev.xdata)
+        self._displayCtx.volume = np.floor(ev.xdata)
         
 
     def _onPlotMouseUp(self, ev):
         self._mouseDown = False
 
+        
     def _onPlotMouseMove(self, ev):
         if not self._mouseDown:     return
         if ev.inaxes != self._axis: return
-
-        self._imageList.volume = np.floor(ev.xdata)
+        self._displayCtx.volume = np.floor(ev.xdata)

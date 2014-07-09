@@ -188,7 +188,7 @@ class DisplayContext(props.HasProperties):
         :arg imageList: A :class:`~fsl.data.image.ImageList` instance.
         """
         
-        self.imageList = imageList
+        self._imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self._imageListChanged()
@@ -202,6 +202,7 @@ class DisplayContext(props.HasProperties):
             b.zlo + b.zlen / 2.0] 
 
         imageList.addListener('images', self._name, self._imageListChanged)
+        self.addListener(     'volume', self._name, self._volumeChanged)
 
 
     def _imageListChanged(self, *a):
@@ -213,11 +214,11 @@ class DisplayContext(props.HasProperties):
         :attr:`volume` properties.
         """
 
-        nimages = len(self.imageList)
+        nimages = len(self._imageList)
 
         # Ensure that an ImageDisplay
         # object exists for every image
-        for image in self.imageList:
+        for image in self._imageList:
             try:             image.getAttribute('display')
             except KeyError: image.setAttribute('display', ImageDisplay(image))
 
@@ -235,7 +236,7 @@ class DisplayContext(props.HasProperties):
         # image list
         maxvols = 0
 
-        for image in self.imageList:
+        for image in self._imageList:
 
             if not image.is4DImage(): continue
 
@@ -247,6 +248,21 @@ class DisplayContext(props.HasProperties):
         else:
             self.setConstraint('volume', 'maxval', 0)
 
+
+    def _volumeChanged(self, *a):
+        """Called when the :attr:`volume` property changes.
+
+        Propagates the change on to the :attr:`ImageDisplay.volume` property
+        for each image in the :class:`~fsl.data.image.ImageList`.
+        """
+        for image in self._imageList:
+            
+            # The volume property for each image should
+            # be clamped to the possible value for that
+            # image, so we don't need to check if the
+            # current volume value is valid for each image
+            image.getAttribute('display').volume = self.volume
+
             
     def _imageListBoundsChanged(self, *a):
         """Called when the :attr:`fsl.data.image.ImageList.bounds` property
@@ -254,7 +270,7 @@ class DisplayContext(props.HasProperties):
 
         Updates the constraints on the :attr:`location` property.
         """
-        bounds = self.imageList.bounds
+        bounds = self._imageList.bounds
 
         self.location.setLimits(0, bounds.xlo, bounds.xhi)
         self.location.setLimits(1, bounds.ylo, bounds.yhi)
