@@ -205,10 +205,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # shaders
         self.glReady = False
 
-        # The image axis which maps to the 'depth' axis of this
-        # canvas. The _zAxisChanged method also adds 'xax' and
-        # 'yax' attributes to this SliceCanvas object.
+        # The zax property is the image axis which maps to the
+        # 'depth' axis of this canvas. The _zAxisChanged method
+        # also fixes the values of 'xax' and 'yax'.
         self.zax = zax
+        self.xax = 0
+        self.yax = 0
         self._zAxisChanged()
         self.addListener('zax', self.name, self._zAxisChanged)
 
@@ -267,7 +269,16 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """
 
         log.debug('{}'.format(self.zax))
-        
+
+        # Store the canvas position, in the
+        # axis order of the image space
+        pos                  = [None] * 3
+        pos[self.xax]        = self.pos.x
+        pos[self.yax]        = self.pos.y
+        pos[pos.index(None)] = self.pos.z
+
+        # Figure out the new x and y axes
+        # based on the new zax value
         dims = range(3)
         dims.pop(self.zax)
         self.xax = dims[0]
@@ -291,9 +302,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # Reset the canvas position as, because the
         # z axis has been changed, the old coordinates
         # will be in the wrong dimension order
-        self.pos.xyz = [self.imageList.location[self.xax],
-                        self.imageList.location[self.yax],
-                        self.imageList.location[self.zax]]
+        self.pos.xyz = [pos[self.xax],
+                        pos[self.yax],
+                        pos[self.zax]]
  
             
     def _imageListChanged(self, *a):
