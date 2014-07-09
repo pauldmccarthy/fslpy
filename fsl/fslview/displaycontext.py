@@ -30,7 +30,8 @@ class ImageDisplay(props.HasProperties):
     """Transparency - 1.0 is fully opaque, and 0.0 is fully transparent."""
 
     
-    displayRange = props.Bounds(ndims=1, editLimits=True,
+    displayRange = props.Bounds(ndims=1,
+                                editLimits=True,
                                 labels=['Min.', 'Max.'])
     """Image values which map to the minimum and maximum colour map colours."""
 
@@ -80,6 +81,8 @@ class ImageDisplay(props.HasProperties):
                           'samplingRate',
                           'transform',
                           'cmap'))
+
+    
     _labels = {
         'name'         : 'Image name',
         'enabled'      : 'Enabled',
@@ -90,6 +93,7 @@ class ImageDisplay(props.HasProperties):
         'transform'    : 'Image transform',
         'cmap'         : 'Colour map'}
 
+    
     _tooltips = {
         'name'         : 'The name of this image',
         'enabled'      : 'Enable/disable this image',
@@ -103,6 +107,7 @@ class ImageDisplay(props.HasProperties):
                          'location',
         'cmap'         : 'Colour map'}
 
+    
     _propHelp = _tooltips
 
 
@@ -146,21 +151,109 @@ class ImageDisplay(props.HasProperties):
 
 
 class DisplayContext(props.HasProperties):
+    """Contains a number of properties defining how an
+    :class:`~fsl.dat.aimage.ImageList` is to be displayed.
+    """
+
+    
+    selectedImage = props.Int(minval=0, default=0, clamped=True)
+    """Index of the currently 'selected' image. 
+
+    If you're interested in the currently selected image, you must also listen
+    for changes to the :attr:`fsl.data.image.ImageList.images` list as, if the
+    list changes, the :attr:`selectedImage` index may not change, but the
+    image to which it points may be different.
+    """
+
+
+    location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
+    """The location property contains the currently selected
+    3D location (xyz) in the image list space. 
+    """
+
+
+    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
+    """The volume property contains the currently selected volume
+    across the 4D images in the :class:`~fsl.data.image/ImageList`.
+    This property may not be relevant to all images in the image list
+    (i.e. it is meaningless for 3D images).
+    """
 
 
     def __init__(self, imageList):
+        """Create a :class:`DisplayContext` object.
+
+        :arg imageList: A :class:`~fsl.data.image.ImageList` instance.
+        """
         
         self.imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
-        
-        for image in imageList:
-            image.setAttribute('display', ImageDisplay(image))
+
+        self._imageListChanged()
+
+        # initialise the location to be
+        # the centre of the image world
+        b = imageList.bounds
+        self.location.xyz = [
+            b.xlo + b.xlen / 2.0,
+            b.ylo + b.ylen / 2.0,
+            b.zlo + b.zlen / 2.0] 
 
         imageList.addListener('images', self._name, self._imageListChanged)
 
 
     def _imageListChanged(self, *a):
+        """Called when the :attr:`fsl.data.image.ImageList.images` property
+        changes.
 
+        Ensures that an :class:`ImageDisplay` object exists for every image,
+        and updates the constraints on the :attr:`selectedImage` and
+        :attr:`volume` properties.
+        """
+
+        nimages = len(self.imageList)
+
+        # Ensure that an ImageDisplay
+        # object exists for every image
         for image in self.imageList:
             try:             image.getAttribute('display')
             except KeyError: image.setAttribute('display', ImageDisplay(image))
+
+        # Limit the selectedImage property
+        # so it cannot take a value greater
+        # than len(imageList)-1
+        if nimages > 0:
+            self.setConstraint('selectedImage', 'maxval', nimages - 1)
+        else:
+            self.setConstraint('selectedImage', 'maxval', 0)
+
+        # Limit the volume property so it
+        # cannot take a value greater than
+        # the longest 4D volume in the
+        # image list
+        maxvols = 0
+
+        for image in self.imageList:
+
+            if not image.is4DImage(): continue
+
+            if image.shape[3] > maxvols:
+                maxvols = image.shape[3]
+
+        if maxvols > 0:
+            self.setConstraint('volume', 'maxval', maxvols - 1)
+        else:
+            self.setConstraint('volume', 'maxval', 0)
+
+            
+    def _imageListBoundsChanged(self, *a):
+        """Called when the :attr:`fsl.data.image.ImageList.bounds` property
+        changes.
+
+        Updates the constraints on the :attr:`location` property.
+        """
+        bounds = self.imageList.bounds
+
+        self.location.setLimits(0, bounds.xlo, bounds.xhi)
+        self.location.setLimits(1, bounds.ylo, bounds.yhi)
+        self.location.setLimits(2, bounds.zlo, bounds.zhi)

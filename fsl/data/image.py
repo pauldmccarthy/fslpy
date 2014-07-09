@@ -18,7 +18,6 @@ import os.path            as op
 import numpy              as np
 import numpy.linalg       as linalg
 import nibabel            as nib
-import matplotlib.cm      as mplcm
 
 import props
 
@@ -418,8 +417,6 @@ class Image(props.HasProperties):
             self.name, name, str(value)))
 
 
-            
-
 class ImageList(props.HasProperties):
     """Class representing a collection of images to be displayed together.
 
@@ -444,18 +441,6 @@ class ImageList(props.HasProperties):
     """A list of :class:`Image` objects. to be displayed"""
 
     
-    selectedImage = props.Int(minval=0, clamped=True)
-    """Index of the currently 'selected' image. This property is not used by
-    the :class:`ImageList`, but is provided so that other things can control
-    and listen for changes to the currently selected image.
-
-    If you're interested in the currently selected image, you must also listen
-    for changes to the :attr:`images` list as, if the list changes, the
-    :attr:`selectedImage` index may not change, but the image to which it
-    points may be different.
-    """
-
-    
     bounds = props.Bounds(ndims=3)
     """This property contains the min/max values of
     a bounding box (in real world coordinates) which
@@ -463,22 +448,6 @@ class ImageList(props.HasProperties):
     :attr:`images` list. This property shouid be
     read-only, but I don't have a way to enforce it
     (yet). 
-    """
-
-    
-    location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
-    """The location property contains the currently 'selected'
-    3D location (xyz) in the image list space. This property
-    is not used directly by the ImageList object, but it
-    is here so that the location selection can be synchronised
-    across multiple displays.
-    """
-
-
-    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """The volume property contains the currently selected volume
-    of a 4D image. This property may not be relevant to all images
-    in the image list (i.e. it is meaningless for 3D images).
     """
 
     
@@ -497,18 +466,6 @@ class ImageList(props.HasProperties):
 
         # initialise image bounds
         self._imageListChanged()
-
-        # select the last image in the list
-        if len(images) > 0:
-            self.selectedImage = len(images) - 1
-
-        # initialise the location to be
-        # the centre of the image world
-        b = self.bounds
-        self.location.xyz = [
-            b.xlo + b.xlen / 2.0,
-            b.ylo + b.ylen / 2.0,
-            b.zlo + b.zlen / 2.0] 
 
         # set the _lastDir attribute,
         # used by the addImages method
@@ -563,8 +520,6 @@ class ImageList(props.HasProperties):
 
         self.extend(images)
 
-        self.selectedImage = len(self) - 1 
-
 
     def _imageListChanged(self, *a):
         """Called whenever an item is added or removed from the :attr:`images`
@@ -583,29 +538,22 @@ class ImageList(props.HasProperties):
                 self.__class__.__name__,
                 self._updateImageBounds)
 
-        if len(self.images) > 0:
-            self.setConstraint('selectedImage', 'maxval', len(self.images) - 1)
-        else:
-            self.setConstraint('selectedImage', 'maxval', 0)
-
         self._updateImageBounds()
 
     
     def _updateImageBounds(self, *a):
         """Called whenever an item is added or removed from the
         :attr:`images` list, or an image property changes. Updates
-        the :attr:`bounds` and :attr:`volume` properties.
+        the :attr:`bounds` property.
         """
 
         if len(self.images) == 0:
             minBounds = [0.0, 0.0, 0.0]
             maxBounds = [0.0, 0.0, 0.0]
-            nvols     = 0
             
         else:
             minBounds = 3 * [ sys.float_info.max]
             maxBounds = 3 * [-sys.float_info.max]
-            nvols     = 1
 
         for img in self.images:
 
@@ -616,19 +564,9 @@ class ImageList(props.HasProperties):
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi
 
-            if len(img.shape) > 3:
-                if img.shape[3] > nvols:
-                    nvols = img.shape[3]
-
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
                           minBounds[2], maxBounds[2]]
-
-        if nvols > 0:
-            self.setConstraint('volume', 'maxval', nvols - 1)
-
-        for ax in range(3):
-            self.location.setLimits(ax, minBounds[ax], maxBounds[ax])
 
 
     # Wrappers around the images list property, allowing this
