@@ -77,6 +77,16 @@ class LightBoxPanel(viewpanel.ViewPanel):
     """Layout to be used for GUI displays."""
 
 
+    @classmethod
+    def isGLView(cls):
+        """Overrides
+        :meth:`~fsl.fslview.views.viewpanel.ViewPanel.isGLView`.
+
+        Returns ``True``.
+        """
+        return True
+
+
     def __init__(self, parent, imageList, displayCtx, glContext=None):
         """
         """
@@ -88,6 +98,8 @@ class LightBoxPanel(viewpanel.ViewPanel):
                                                      imageList,
                                                      glContext=glContext,
                                                      scrollbar=self._scrollbar)
+
+        self._glContext = self._canvas.glContext
 
         self.bindProps('sliceSpacing', self._canvas)
         self.bindProps('ncols',        self._canvas)

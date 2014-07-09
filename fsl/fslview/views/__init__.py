@@ -9,7 +9,11 @@
 which provide a view of an image collection (see
 :class:`~fsl.data.image.ImageList`).
 
-The :class:`ViewPanel` class is the superclass for every view panel.
+The :class:`~fsl.fslview.views.viewpanel.ViewPanel` class is the superclass
+for every view panel.
+
+A convenience function, :func:`listViewPanels`, is provided to allow
+dynamic lookup of all :class:`~fsl.fslview.views.viewpanel.ViewPanel` types.
 """
 
 import viewpanel
@@ -21,3 +25,23 @@ ViewPanel       = viewpanel      .ViewPanel
 OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
 TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
+
+
+def listViewPanels():
+    """Convenience function which returns a list containing all
+    ViewPanel classes in the views package.
+    """
+
+    atts = globals()
+
+    viewPanels = []
+
+    for name, val in atts.items():
+        
+        if not isinstance(val, type): continue
+        if val == ViewPanel:          continue
+            
+        if issubclass(val, ViewPanel):
+            viewPanels.append(val)
+            
+    return viewPanels

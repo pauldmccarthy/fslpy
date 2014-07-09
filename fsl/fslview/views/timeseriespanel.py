@@ -16,9 +16,6 @@ import logging
 log = logging.getLogger(__name__)
 
 import wx
-
-import props
-
 import numpy      as np
 import matplotlib as mpl
 
@@ -27,8 +24,10 @@ mpl.use('WXAgg')
 import matplotlib.pyplot as plt
 from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
+import viewpanel
 
-class TimeSeriesPanel(wx.Panel, props.HasProperties):
+
+class TimeSeriesPanel(viewpanel.ViewPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
 
     The volume data for each of the :class:`~fsl.data.image.Image`
@@ -38,12 +37,7 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        wx.Panel.__init__(self, parent)
-        props.HasProperties.__init__(self)
-
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
-        self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
+        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._figure = plt.Figure()
         self._axis   = self._figure.add_subplot(111)

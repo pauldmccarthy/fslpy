@@ -82,6 +82,15 @@ class OrthoPanel(viewpanel.ViewPanel):
         'layout'      : 'Layout'
     }
 
+    @classmethod
+    def isGLView(cls):
+        """Overrides
+        :meth:`~fsl.fslview.views.viewpanel.ViewPanel.isGLView`.
+
+        Returns ``True``.
+        """
+        return True
+        
 
     def __init__(self, parent, imageList, displayCtx, glContext=None):
         """
@@ -101,6 +110,8 @@ class OrthoPanel(viewpanel.ViewPanel):
 
         if glContext is None:
             glContext = self._xcanvas.glContext
+
+        self._glContext = glContext
         
         self._ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
                                                 glContext=glContext)
