@@ -12,9 +12,9 @@ within an :class:`~fsl.data.image.ImageList`.
 
 See the following classes:
 
-  - `~fsl.fslview.views.OrthoPanel`
-  - `~fsl.fslview.views.LightBoxPanel`
-  - `~fsl.fslview.views.TimeSeriesPanel`
+  - :class:`~fsl.fslview.views.OrthoPanel`
+  - :class:`~fsl.fslview.views.LightBoxPanel`
+  - :class:`~fsl.fslview.views.TimeSeriesPanel`
 """
 
 import wx
@@ -22,6 +22,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.displaycontext as displaycontext
+
 
 class ViewPanel(wx.Panel, props.HasProperties):
     """Superclass for FSLView view panels.

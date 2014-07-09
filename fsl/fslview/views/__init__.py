@@ -8,6 +8,8 @@
 """This package contains a collection of :class:`wx.Panel` subclasses
 which provide a view of an image collection (see
 :class:`~fsl.data.image.ImageList`).
+
+The :class:`ViewPanel` class is the superclass for every view panel.
 """
 
 import viewpanel
