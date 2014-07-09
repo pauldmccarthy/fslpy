@@ -91,6 +91,7 @@ class ImageDisplay(props.HasProperties):
         'rangeClip'    : 'Clipping',
         'samplingRate' : 'Sampling rate',
         'transform'    : 'Image transform',
+        'volume'       : 'Volume index',
         'cmap'         : 'Colour map'}
 
     
@@ -105,6 +106,7 @@ class ImageDisplay(props.HasProperties):
         'transform'    : 'The transformation matrix which specifies the '
                          'conversion from voxel coordinates to a real world '
                          'location',
+        'volume'       : 'Index of volume to display (for 4D images)',
         'cmap'         : 'Colour map'}
 
     

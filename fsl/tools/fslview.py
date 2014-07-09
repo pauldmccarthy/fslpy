@@ -86,7 +86,9 @@ def parseArgs(argv, namespace):
                 'displayRange',
                 'rangeClip',
                 'samplingRate',
+                'transform',
                 'cmap',
+                'name',
                 'volume']
 
     # do not use l, v, h, d, or w, as they are used
