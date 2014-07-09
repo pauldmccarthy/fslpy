@@ -36,7 +36,7 @@
 # The contents of all of these buffers is is dependent upon the way that
 # the image is being displayed.  They are regenerated automatically when
 # the image display properties are changed (via listeners registered on
-# the relevant fsl.data.image.ImageDisplay properties).
+# the relevant fsl.fslview.displaycontext.ImageDisplay properties).
 # 
 # If the display orientation changes (i.e. the image dimensions that map
 # to the screen X/Y axes) the genIndexBuffers method must be called

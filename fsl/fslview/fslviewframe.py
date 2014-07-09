@@ -31,14 +31,15 @@ class FSLViewFrame(wx.Frame):
     :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`) to be displayed.
     """
 
-    def __init__(self, parent, imageList, default=False):
+    def __init__(self, parent, imageList, displayCtx, default=False):
         """
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')
         
-        self._imageList = imageList
-        self._auimgr    = aui.AuiManager(self)
+        self._imageList  = imageList
+        self._displayCtx = displayCtx
+        self._auimgr     = aui.AuiManager(self)
 
         self._auimgr.SetDockSizeConstraint(50, 50)
 

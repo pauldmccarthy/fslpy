@@ -15,6 +15,7 @@ import fsl.data.imagefile           as imagefile
 import fsl.data.image               as fslimage
 import fsl.utils.runwindow          as runwindow
 import fsl.fslview.views.orthopanel as orthopanel
+import fsl.fslview.displaycontext   as displaycontext
 
 runChoices = OrderedDict((
 
@@ -278,9 +279,13 @@ def runBet(parent, opts):
         outImage  = fslimage.Image(opts.outputImage)
         imageList = fslimage.ImageList([inImage, outImage])
 
-        outImage.display.cmap             = 'Reds'
-        outImage.display.displayRange.xlo = 1
-        outImage.display.rangeClip        = True
+        displayCtx = displaycontext.DisplayContext(imageList)
+
+        outDisplay = outImage.getAttribute('display')
+
+        outDisplay.cmap             = 'Reds'
+        outDisplay.displayRange.xlo = 1
+        outDisplay.rangeClip        = True
 
         frame  = orthopanel.OrthoFrame(parent, imageList, opts.outputImage) 
         frame.Show()

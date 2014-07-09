@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 
 """A :class:`wx.panel` which shows display control optionns for the currently
-selected image - see :attr:`fsl.data.image.ImageList.selectedImage.
+selected image - see :attr:`fsl.data.image.ImageList.selectedImage`.
 """
 
 import logging
@@ -70,7 +70,7 @@ class ImageDisplayPanel(wx.Panel):
         the user to edit the display properties of the given
         :class:`~fsl.data.image.Image` instance. 
         """
-        displayPanel = props.buildGUI(self, image.display)
+        displayPanel = props.buildGUI(self, image.getAttribute('display'))
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
         return displayPanel
 

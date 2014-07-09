@@ -173,8 +173,10 @@ class TimeSeriesPanel(wx.Panel, props.HasProperties):
         
     def _drawPlotOneImage(self, image, x, y, z):
 
-        if not image.is4DImage():     return None
-        if not image.display.enabled: return None
+        display = image.getAttribute('display')
+
+        if not image.is4DImage(): return None
+        if not display.enabled:   return None
 
         for vox, shape in zip((x, y, z), image.shape):
             if vox >= shape or vox < 0:

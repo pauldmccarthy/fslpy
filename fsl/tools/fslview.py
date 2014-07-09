@@ -18,16 +18,19 @@ import sys
 import os.path as op
 import argparse
 
-import fsl.fslview.fslviewframe as fslviewframe
-
-import fsl.data.image as fslimage
+import fsl.fslview.fslviewframe   as fslviewframe
+import fsl.fslview.displaycontext as displaycontext
+import fsl.data.image             as fslimage
 
 import props
 
     
-def interface(parent, args, imageList):
+def interface(parent, args, ctx):
+
+    imageList, displayCtx = ctx
     
-    frame = fslviewframe.FSLViewFrame(parent, imageList, args.default)
+    frame = fslviewframe.FSLViewFrame(
+        parent, imageList, displayCtx, args.default)
     
     if args.lightbox: frame.addLightBoxPanel()
     else:             frame.addOrthoPanel()
@@ -88,7 +91,7 @@ def parseArgs(argv, namespace):
 
     # do not use l, v, h, d, or w, as they are used
     # either by fsl.py, or the mainParser above.
-    props.addParserArguments(fslimage.ImageDisplay,
+    props.addParserArguments(displaycontext.ImageDisplay,
                              imgOpts,
                              cliProps=imgProps,
                              exclude='lvhdw')
@@ -142,11 +145,15 @@ def handleArgs(args):
     for i in range(len(args.images)):
 
         image = fslimage.Image(args.images[i].image)
-        props.applyArguments(image.display, args.images[i])
         images.append(image)
         
-    imageList = fslimage.ImageList(images)
-    return imageList
+    imageList  = fslimage.ImageList(images)
+    displayCtx = displaycontext.DisplayContext(imageList)
+    
+    for i in range(len(imageList)):
+        props.applyArguments(image.getAttribute('display'), args.images[i])
+
+    return imageList, displayCtx
     
 
 FSL_TOOLNAME  = 'FSLView'

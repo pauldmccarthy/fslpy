@@ -147,4 +147,20 @@ class ImageDisplay(props.HasProperties):
 
 class DisplayContext(props.HasProperties):
 
-    pass
+
+    def __init__(self, imageList):
+        
+        self.imageList = imageList
+        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
+        
+        for image in imageList:
+            image.setAttribute('display', ImageDisplay(image))
+
+        imageList.addListener('images', self._name, self._imageListChanged)
+
+
+    def _imageListChanged(self, *a):
+
+        for image in self.imageList:
+            try:             image.getAttribute('display')
+            except KeyError: image.setAttribute('display', ImageDisplay(image))
