@@ -22,17 +22,21 @@ class ImageDisplayPanel(wx.Panel):
     image.
     """
 
-    def __init__(self, parent, imageList):
+    def __init__(self, parent, imageList, displayCtx):
         """Create and lay out an :class:`ImageDisplayPanel`.
 
-        :param parent:    The :mod:`wx` parent object.
-        :param imageList: A :class:`~fsl.data.image.ImageList` instance.
+        :param parent:     The :mod:`wx` parent object.
+        :param imageList:  A :class:`~fsl.data.image.ImageList` instance.
+        :param displayCtx: A
+                           :class:`~fsl.fslview.displaycontext.DisplayContext`
+                           instance. 
         """
 
         wx.Panel.__init__(self, parent)
 
-        self._imageList = imageList
-        self._name      = '{}_{}'.format(self.__class__.__name__, id(self))
+        self._imageList  = imageList
+        self._displayCtx = displayCtx
+        self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # a dictionary containing {id(image) : panel} mappings
         self._displayPanels = {}
@@ -56,7 +60,7 @@ class ImageDisplayPanel(wx.Panel):
             self._name,
             self._imageListChanged)
 
-        self._imageList.addListener(
+        self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged)
@@ -122,7 +126,7 @@ class ImageDisplayPanel(wx.Panel):
         index changes. Ensures that the correct display panel is visible.
         """
 
-        idx = self._imageList.selectedImage
+        idx = self._displayCtx.selectedImage
 
         for i, image in enumerate(self._imageList):
 

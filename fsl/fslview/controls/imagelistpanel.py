@@ -120,7 +120,7 @@ class ImageListPanel(wx.Panel):
 
             image.addListener('name',
                               self._name,
-                              lambda img=image, *a: nameChanged(img))
+                              lambda c, va, vi, img=image: nameChanged(img))
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(selection)
