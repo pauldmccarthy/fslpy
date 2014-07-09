@@ -168,16 +168,21 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         """Creates a canvas object. The OpenGL data buffers for each image
         in the list are set up the first time that the canvas is
         displayed/drawn.
-        
-        :arg parent:    :mod:`wx` parent object
-        
-        :arg imageList: A :class:`fsl.data.image.ImageList` object.
-        
-        :arg zax:       Image axis perpendicular to the plane to be displayed
-                        (the 'depth' axis), default 0.
 
-        :arg glContext: A :class:`wx.glcanvas.GLContext` object. If ``None``,
-                        one is created.
+        .. note:: It is assumed that each :class:`~fsl.data.image.Image`
+        contained in the ``imageList`` has an attribute called ``display``,
+        which refers to an :class:`~fsl.fslview.displaycontext.ImageDisplay`
+        instance defining how that image is to be displayed.
+        
+        :arg parent:     :mod:`wx` parent object
+        
+        :arg imageList:  An :class:`~fsl.data.image.ImageList` object.
+        
+        :arg zax:        Image axis perpendicular to the plane to be displayed
+                         (the 'depth' axis), default 0.
+
+        :arg glContext:  A :class:`wx.glcanvas.GLContext` object. If ``None``,
+                         one is created.
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -314,30 +319,37 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                 
             except KeyError:
                 pass
+
+            display = image.getAttribute('display')
                 
-            glData = glimagedata.GLImageData(image, self.xax, self.yax)
+            glData = glimagedata.GLImageData(image,
+                                             self.xax,
+                                             self.yax,
+                                             display)
             image.setAttribute(self.name, glData)
 
             def refresh( *a): self.Refresh()
 
-            image.display.addListener('enabled',      self.name, refresh)
-            image.display.addListener('alpha',        self.name, refresh)
-            image.display.addListener('displayRange', self.name, refresh)
-            image.display.addListener('rangeClip',    self.name, refresh)
-            image.display.addListener('samplingRate', self.name, refresh)
-            image.display.addListener('cmap',         self.name, refresh)
-            image.display.addListener('volume',       self.name, refresh)
+            display.addListener('enabled',      self.name, refresh)
+            display.addListener('transform',    self.name, refresh)
+            display.addListener('alpha',        self.name, refresh)
+            display.addListener('displayRange', self.name, refresh)
+            display.addListener('rangeClip',    self.name, refresh)
+            display.addListener('samplingRate', self.name, refresh)
+            display.addListener('cmap',         self.name, refresh)
+            display.addListener('volume',       self.name, refresh)
 
             # remove all those listeners when
             # this SliceCanvas is destroyed
             def onDestroy(ev):
-                image.display.removeListener('enabled',      self.name)
-                image.display.removeListener('alpha',        self.name)
-                image.display.removeListener('displayRange', self.name)
-                image.display.removeListener('rangeClip',    self.name)
-                image.display.removeListener('samplingRate', self.name)
-                image.display.removeListener('cmap',         self.name)
-                image.display.removeListener('volume',       self.name)
+                display.removeListener('enabled',      self.name)
+                display.removeListener('transform',    self.name)
+                display.removeListener('alpha',        self.name)
+                display.removeListener('displayRange', self.name)
+                display.removeListener('rangeClip',    self.name)
+                display.removeListener('samplingRate', self.name)
+                display.removeListener('cmap',         self.name)
+                display.removeListener('volume',       self.name)
                 ev.Skip()
                 
             self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -695,7 +707,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         try:    glImageData = image.getAttribute(self.name)
         except: return
         
-        imageDisplay = image.display
+        imageDisplay = image.getAttribute('display')
 
         # The number of voxels to be displayed along
         # each dimension is not necessarily equal to
