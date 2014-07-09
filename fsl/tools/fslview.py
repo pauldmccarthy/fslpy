@@ -20,6 +20,7 @@ import argparse
 
 import fsl.fslview.fslviewframe   as fslviewframe
 import fsl.fslview.displaycontext as displaycontext
+import fsl.fslview.views          as views
 import fsl.data.image             as fslimage
 
 import props
@@ -32,8 +33,8 @@ def interface(parent, args, ctx):
     frame = fslviewframe.FSLViewFrame(
         parent, imageList, displayCtx, args.default)
     
-    if args.lightbox: frame.addLightBoxPanel()
-    else:             frame.addOrthoPanel()
+    if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
+    else:             frame.addViewPanel(views.OrthoPanel)
     
     return frame
 

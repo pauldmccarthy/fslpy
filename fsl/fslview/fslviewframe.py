@@ -82,10 +82,27 @@ class FSLViewFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
 
-    def _addViewPanel(self, panel, title, configMenuText=None):
+    def addViewPanel(self, panelCls):
         """Adds a view panel to the centre of the frame, and a menu item
         allowing the user to configure the view.
         """
+
+        title    = strings.viewPanelTitles[        panelCls]
+        menuText = strings.viewPanelConfigMenuText[panelCls]
+
+        if panelCls.isGLView():
+
+            panel = panelCls(self._centrePane,
+                             self._imageList,
+                             self._displayCtx,
+                             self._glContext)
+        else:
+            panel = panelCls(self._centrePane,
+                             self._imageList,
+                             self._displayCtx) 
+
+        if self._glContext is None and panel.isGLView():
+            self._glContext = panel._glContext
 
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
@@ -94,9 +111,9 @@ class FSLViewFrame(wx.Frame):
         self._centrePane.AddPage(panel, title) 
         self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
 
-        if configMenuText is not None:
-            configMenuText = configMenuText.format(title)
-            configAction   = self._viewMenu.Append(wx.ID_ANY, configMenuText)
+        if panel.hasConfigOptions():
+            menuText     = menuText.format(title)
+            configAction = self._viewMenu.Append(wx.ID_ANY, menuText)
         
             def onConfig(ev):
                 self._addViewConfigPanel(panel, title)        
@@ -109,52 +126,6 @@ class FSLViewFrame(wx.Frame):
             self .Bind(wx.EVT_MENU,           onConfig, configAction)
             panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
             
-
-    def addOrthoPanel(self):
-        """Adds an :class:`~fsl.fslview.views.orthopanel.OrthoPanel` display
-        to the central :class:`~wx.aui.AuiNotebook` widget.
-        """
-
-        panel = views.OrthoPanel(self._centrePane,
-                                 self._imageList,
-                                 self._displayCtx,
-                                 glContext=self._glContext)
-            
-        if self._glContext is None:
-            self._glContext = panel._xcanvas.glContext
-        
-        self._addViewPanel(panel,
-                           strings.orthoTitle,
-                           strings.orthoConfigMenu) 
-
-
-    def addLightBoxPanel(self):
-        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
-        display to the central :class:`~wx.aui.AuiNotebook` widget.
-        """
-        panel = views.LightBoxPanel(self._centrePane,
-                                    self._imageList,
-                                    self._displayCtx,
-                                    glContext=self._glContext)
-            
-        if self._glContext is None:
-            self._glContext = panel._canvas.glContext
-        
-        self._addViewPanel(panel,
-                           strings.lightBoxTitle,
-                           strings.lightBoxConfigMenu) 
- 
-
-    def addTimeSeriesPanel(self):
-        """Adds a :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`
-        display to the central :class:`~wx.aui.AuiNotebook` widget.
-        """
-
-        panel = views.TimeSeriesPanel(self._centrePane,
-                                      self._imageList,
-                                      self._displayCtx)
-        self._addViewPanel(panel, strings.timeSeriesTitle) 
- 
 
     def _addViewConfigPanel(self, viewPanel, title):
         """
@@ -405,10 +376,15 @@ class FSLViewFrame(wx.Frame):
         self._fileMenu = fileMenu
         self._viewMenu = viewMenu
 
-        orthoAction        = viewMenu.Append(wx.ID_ANY, strings.orthoTitle)
-        lightboxAction     = viewMenu.Append(wx.ID_ANY, strings.lightBoxTitle)
-        timeSeriesAction   = viewMenu.Append(wx.ID_ANY,
-                                             strings.timeSeriesTitle)
+        viewPanels = views.listViewPanels()
+
+        for viewPanel in viewPanels:
+            viewAction = viewMenu.Append(wx.ID_ANY,
+                                         strings.viewPanelTitles[viewPanel]) 
+            self.Bind(wx.EVT_MENU,
+                      lambda ev, vp=viewPanel: self.addViewPanel(vp),
+                      viewAction)
+            
         imageDisplayAction = viewMenu.Append(wx.ID_ANY,
                                              strings.imageDisplayTitle)
         imageListAction    = viewMenu.Append(wx.ID_ANY, strings.imageListTitle)
@@ -416,15 +392,7 @@ class FSLViewFrame(wx.Frame):
         openFileAction     = fileMenu.Append(wx.ID_ANY, strings.openFile)
         openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
 
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addOrthoPanel(),
-                  orthoAction)
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addLightBoxPanel(),
-                  lightboxAction)
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addTimeSeriesPanel(),
-                  timeSeriesAction) 
+
         self.Bind(wx.EVT_MENU,
                   lambda ev: self.addImageDisplayPanel(),
                   imageDisplayAction)

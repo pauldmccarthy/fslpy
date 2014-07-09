@@ -5,9 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-orthoTitle        = 'Ortho view'
-lightBoxTitle     = 'Lightbox view'
-timeSeriesTitle   = 'Time series'
+import fsl.fslview.views as views
+
 imageDisplayTitle = 'Image display properties'
 imageListTitle    = 'Image list'
 locationTitle     = 'Cursor location'
@@ -20,3 +19,16 @@ lightBoxConfigMenu = '{} display'
 
 
 locationPanelOutOfBounds = 'Out of bounds'
+
+
+viewPanelTitles = {
+    views.OrthoPanel      : 'Ortho view',
+    views.LightBoxPanel   : 'Lightbox view',
+    views.TimeSeriesPanel : 'Time series'
+}
+
+viewPanelConfigMenuText = {
+    views.OrthoPanel      : '{} display properties',
+    views.LightBoxPanel   : '{} display properties',
+    views.TimeSeriesPanel : '{} display properties'
+}
