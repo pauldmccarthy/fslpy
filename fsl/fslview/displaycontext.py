@@ -67,6 +67,12 @@ class ImageDisplay(props.HasProperties):
     """
 
     
+    imageType = fslimage.Image.imageType
+    """The image data type. This property is bound to the
+    :attr:`~fsl.data.image.Image.imageType` property.
+    """
+
+    
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.
         """
@@ -80,6 +86,7 @@ class ImageDisplay(props.HasProperties):
                           'rangeClip',
                           'samplingRate',
                           'transform',
+                          'imageType',
                           'cmap'))
 
     
@@ -91,7 +98,7 @@ class ImageDisplay(props.HasProperties):
         'rangeClip'    : 'Clipping',
         'samplingRate' : 'Sampling rate',
         'transform'    : 'Image transform',
-        'volume'       : 'Volume index',
+        'imageType'    : 'Image data type',
         'cmap'         : 'Colour map'}
 
     
@@ -106,7 +113,7 @@ class ImageDisplay(props.HasProperties):
         'transform'    : 'The transformation matrix which specifies the '
                          'conversion from voxel coordinates to a real world '
                          'location',
-        'volume'       : 'Index of volume to display (for 4D images)',
+        'imageType'    : 'the type of data contained in the image',
         'cmap'         : 'Colour map'}
 
     
