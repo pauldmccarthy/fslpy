@@ -26,8 +26,9 @@ See the following for examples of :class:`ViewPanel` subclasses:
 import wx
 import props
 
-import fsl.data.image             as fslimage
-import fsl.fslview.displaycontext as displaycontext
+import fsl.data.image as fslimage
+
+import displaycontext
 
 
 class ViewPanel(wx.Panel, props.HasProperties):

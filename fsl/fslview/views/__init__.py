@@ -16,7 +16,8 @@ A convenience function, :func:`listViewPanels`, is provided to allow
 dynamic lookup of all :class:`~fsl.fslview.views.viewpanel.ViewPanel` types.
 """
 
-import viewpanel
+import fsl.fslview.viewpanel as viewpanel
+
 import orthopanel
 import lightboxpanel
 import timeseriespanel

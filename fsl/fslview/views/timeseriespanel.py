@@ -24,7 +24,7 @@ mpl.use('WXAgg')
 import matplotlib.pyplot as plt
 from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
-import viewpanel
+import fsl.fslview.viewpanel as viewpanel
 
 
 class TimeSeriesPanel(viewpanel.ViewPanel):

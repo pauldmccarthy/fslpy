@@ -13,8 +13,6 @@ import numpy as np
 
 import props
 
-import fsl.fslview.strings as strings
-
 class LocationPanel(wx.Panel, props.HasProperties):
     """
     A wx.Panel which contains widgets for changing the currently displayed
@@ -275,3 +273,7 @@ class LocationPanel(wx.Panel, props.HasProperties):
         # restore the old location from the real world
         # coordinates.
         self._displayCtx.location.xyz = oldLoc
+
+# strings imports locationpanel, so this is
+# at the bottom to avoid a circular import
+import fsl.fslview.strings as strings

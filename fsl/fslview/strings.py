@@ -5,28 +5,32 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import fsl.fslview.views    as views
-import fsl.fslview.controls as controls
+from views   .orthopanel        import OrthoPanel
+from views   .lightboxpanel     import LightBoxPanel
+from views   .timeseriespanel   import TimeSeriesPanel
+from controls.imagedisplaypanel import ImageDisplayPanel
+from controls.imagelistpanel    import ImageListPanel
+from controls.locationpanel     import LocationPanel
 
 
 viewPanelTitles = {
-    views.OrthoPanel      : 'Ortho view',
-    views.LightBoxPanel   : 'Lightbox view',
-    views.TimeSeriesPanel : 'Time series'
+    OrthoPanel      : 'Ortho view',
+    LightBoxPanel   : 'Lightbox view',
+    TimeSeriesPanel : 'Time series'
 }
 
 
 controlPanelTitles = {
-    controls.ImageDisplayPanel : 'Image display properties',
-    controls.ImageListPanel    : 'Image list',
-    controls.LocationPanel     : 'Cursor location'
+    ImageDisplayPanel : 'Image display properties',
+    ImageListPanel    : 'Image list',
+    LocationPanel     : 'Cursor location'
 }
 
 
 viewPanelConfigMenuText = {
-    views.OrthoPanel      : '{} display properties',
-    views.LightBoxPanel   : '{} display properties',
-    views.TimeSeriesPanel : '{} display properties'
+    OrthoPanel      : '{} display properties',
+    LightBoxPanel   : '{} display properties',
+    TimeSeriesPanel : '{} display properties'
 }
 
 

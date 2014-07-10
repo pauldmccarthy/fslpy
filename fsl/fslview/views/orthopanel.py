@@ -20,8 +20,7 @@ import wx
 import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
-
-import viewpanel
+import fsl.fslview.viewpanel      as viewpanel
 
 
 class OrthoPanel(viewpanel.ViewPanel):

@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 import wx
 
 import props
-import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
 
-import viewpanel
+import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
+import fsl.fslview.viewpanel         as viewpanel
 
 class LightBoxPanel(viewpanel.ViewPanel):
     """Convenience Panel which contains a 

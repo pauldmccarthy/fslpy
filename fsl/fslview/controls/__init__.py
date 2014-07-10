@@ -17,7 +17,7 @@ dynamic lookup of all :class:`~fsl.fslview.controls.controlpanel.ControlPanel`
 types.
 """
 
-import controlpanel
+import fsl.fslview.controlpanel as controlpanel 
 import locationpanel
 import imagelistpanel
 import imagedisplaypanel

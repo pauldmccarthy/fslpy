@@ -16,9 +16,10 @@ import wx.aui as aui
 
 import props
 
-import fsl.fslview.views    as views
-import fsl.fslview.controls as controls
-import fsl.fslview.strings  as strings
+import views
+import controls
+import strings
+
 
 class FSLViewFrame(wx.Frame):
     """A frame which implements a 3D image viewer.
@@ -356,23 +357,8 @@ class FSLViewFrame(wx.Frame):
                       lambda ev, vp=viewPanel: self.addViewPanel(vp),
                       viewAction)
             
-        imageDisplayAction = viewMenu.Append(wx.ID_ANY,
-                                             strings.imageDisplayTitle)
-        imageListAction    = viewMenu.Append(wx.ID_ANY, strings.imageListTitle)
-        locationAction     = viewMenu.Append(wx.ID_ANY, strings.locationTitle)
         openFileAction     = fileMenu.Append(wx.ID_ANY, strings.openFile)
         openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
-
-
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addImageDisplayPanel(),
-                  imageDisplayAction)
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addImageListPanel(),
-                  imageListAction)
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self.addLocationPanel(),
-                  locationAction)
 
         self.Bind(wx.EVT_MENU,
                   lambda ev: self._imageList.addImages(),
