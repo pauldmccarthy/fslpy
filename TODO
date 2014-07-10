@@ -5,6 +5,7 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
+** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
 ** DONE Non-FSLView tools are broken due to fsl.py Panel->Frame changes
@@ -49,34 +50,38 @@ regularly, too.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
-** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
-** DONE Location selection on LightBoxCanvas.
 ** change image dimension ordering
 ** link display properties across images
-** DONE separate out props and gui packages - they should really be separate projects
 ** mouse-based zooming in ortho panel
-** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** Image export/offscreen rendering.
-** IN PROGRESS Command line interface - build into props package?
 ** UI design
+** Custom colour maps from original FSLView
+** IN PROGRESS Command line interface - build into props package?
+
+** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
+** DONE separate out props and gui packages - they should really be separate projects
+** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
+** DONE Location selection on LightBoxCanvas.
 ** WONTFIX Rewrite GL storage/rendering
  - Calculate the proper coordinates of a real-world Z slice through the
    image. Actually, this is quite a complicated problem, and I'm not sure
    whether it's worth doing. It's really just to support images with bad
    affine transformations.
 
-** Custom colour maps from original FSLView
 * Big things
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
-** IN PROGRESS Standard for code documentation - Sphinx.
 ** OpenGL 1.4 implementation - required for running over SSH/VNC.
-** time series plotting option
-** DONE have multiple views open - look at wxAUI.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
 ** Other data - Diffusion
+** IN PROGRESS time series plotting option
+
+** IN PROGRESS Standard for code documentation - Sphinx.
+
+** DONE have multiple views open - look at wxAUI.
+
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
