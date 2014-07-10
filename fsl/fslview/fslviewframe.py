@@ -179,12 +179,15 @@ class FSLViewFrame(wx.Frame):
         confPanel.Bind(wx.EVT_WINDOW_DESTROY, onConfPanelDestroy)
                     
 
-    def _addControlPanel(self, panelCls, title):
+    def addControlPanel(self, panelCls, title):
         """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
 
+        # If the specified control panel is
+        # already open, don't open a new one.
         if panelCls in self._controlPanels:
             return
 
+        title = strings.controlPanelTitles[panelCls]
         panel = panelCls(self, self._imageList, self._displayCtx)
             
         paneInfo = (aui.AuiPaneInfo()
@@ -214,38 +217,6 @@ class FSLViewFrame(wx.Frame):
             self._controlPanels.remove(panelCls)
 
         panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-
-    def addImageDisplayPanel(self):
-        """Adds a
-        :class:`~fsl.fslview.controls.imagedisplaypanel.ImageDisplayPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """
-        self._addControlPanel(
-            controls.ImageDisplayPanel,
-            strings.imageDisplayTitle)
-
-
-    def addImageListPanel(self):
-        """Adds a
-        :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """ 
-        self._addControlPanel(
-            controls.ImageListPanel,
-            strings.imageListTitle)
-
-
-    def addLocationPanel(self):
-        """Adds a :class:`~fsl.fslview.controls.locationpanel.LocationPanel`
-        widget to this panel (defaults to the bottom, according to the
-        :class:`wx.aui.AuiManager`).
-        """ 
-        self._addControlPanel(
-            controls.LocationPanel,
-            strings.locationTitle)
 
 
     def _onClose(self, ev):

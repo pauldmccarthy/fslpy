@@ -17,10 +17,13 @@ log = logging.getLogger(__name__)
 import wx
 import pwidgets.elistbox as elistbox
 
+import controlpanel
 
-class ImageListPanel(wx.Panel):
-    """A panel which contains an :class:`~pwidgets.EditableListBox` displaying
-    the list of loaded images.
+
+class ImageListPanel(controlpanel.ControlPanel):
+    """A :class:`~fsl.fslview.controls.controlpanel.ControlPanel` which
+    contains an :class:`~pwidgets.EditableListBox` displaying the list
+    of loaded images.
     
     The list box allows the image order to be changed, and allows images to be
     added and removed from the list.
@@ -36,11 +39,7 @@ class ImageListPanel(wx.Panel):
                            instance.
         """
         
-        wx.Panel.__init__(self, parent)
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
-
-        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
+        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         # list box containing the list of images - it 
         # is populated in the _imageListChanged method

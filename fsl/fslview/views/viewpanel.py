@@ -10,12 +10,18 @@ A :class:`ViewPanel` object is a :class:`wx.Panel` which provides some sort of
 view of a collection of :class:`~fsl.data.image.Image` objects, contained
 within an :class:`~fsl.data.image.ImageList`.
 
-See the following classes:
+A :class:`ViewPanel` is also a :class:`~props.HasProperties` instance - any
+display configuration options which should be made available available to the
+user should be added as :class:`~props.PropertyBase` attributes of the
+:class:`ViewPanel` subclass.
+
+See the following for examples of :class:`ViewPanel` subclasses:
 
   - :class:`~fsl.fslview.views.OrthoPanel`
   - :class:`~fsl.fslview.views.LightBoxPanel`
   - :class:`~fsl.fslview.views.TimeSeriesPanel`
 """
+
 
 import wx
 import props

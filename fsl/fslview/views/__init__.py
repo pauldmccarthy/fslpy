@@ -29,7 +29,8 @@ TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
 
 def listViewPanels():
     """Convenience function which returns a list containing all
-    ViewPanel classes in the views package.
+    :class:`~fsl.fslview.views.viewpanel.ViewPanel` classes in
+    the :mod:`views` package.
     """
 
     atts = globals()
