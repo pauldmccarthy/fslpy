@@ -180,7 +180,7 @@ class FSLViewFrame(wx.Frame):
         confPanel.Bind(wx.EVT_WINDOW_DESTROY, onConfPanelDestroy)
                     
 
-    def addControlPanel(self, panelCls, title):
+    def addControlPanel(self, panelCls):
         """Adds the given panel to the :class:`~wx.aui.AuiManager`."""
 
         # If the specified control panel is
@@ -345,10 +345,15 @@ class FSLViewFrame(wx.Frame):
         viewMenu = wx.Menu()
         menuBar.Append(viewMenu, 'View')
 
+        ctrlMenu = wx.Menu()
+        menuBar.Append(ctrlMenu, 'Control') 
+
         self._fileMenu = fileMenu
         self._viewMenu = viewMenu
+        self._ctrlMenu = ctrlMenu
 
-        viewPanels = views.listViewPanels()
+        viewPanels = views   .listViewPanels()
+        ctrlPanels = controls.listControlPanels()
 
         for viewPanel in viewPanels:
             viewAction = viewMenu.Append(wx.ID_ANY,
@@ -356,6 +361,13 @@ class FSLViewFrame(wx.Frame):
             self.Bind(wx.EVT_MENU,
                       lambda ev, vp=viewPanel: self.addViewPanel(vp),
                       viewAction)
+
+        for ctrlPanel in ctrlPanels:
+            ctrlAction = ctrlMenu.Append(wx.ID_ANY,
+                                         strings.controlPanelTitles[ctrlPanel]) 
+            self.Bind(wx.EVT_MENU,
+                      lambda ev, cp=ctrlPanel: self.addControlPanel(cp),
+                      ctrlAction) 
             
         openFileAction     = fileMenu.Append(wx.ID_ANY, strings.openFile)
         openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
