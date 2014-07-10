@@ -5,8 +5,9 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
-** Non-FSLView tools are broken due to fsl.py Panel->Frame changes
-
+** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
+** Wild cards in image file load (WX/OSX issue)
+** DONE Non-FSLView tools are broken due to fsl.py Panel->Frame changes
 ** DONE LocationPanel volume bounds.
 ** DONE Fix cursors - they go off the canvas in some cases
 ** DONE LightBoxCanvas bounding box calculation is broken again.
@@ -21,24 +22,23 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Namespaces in fsl.fslview.strings
-** Separate display properties from fsl.data.fslimage classes? A separate fsl.fslview.displaycontext module?
+** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
-** Superclasses for view/control panels.
 ** Rethink 4D handling - image.display.volume or imageList.volume?
+** Add a 'mutable' attribute (not constraint) to List properties?
+** Ability to edit image affine transformation.
+** Orientation labels on slice canvas.
+** DONE Superclasses for view/control panels.
+** DONE Separate display properties from fsl.data.fslimage classes? A separate fsl.fslview.displaycontext module?
 ** DONE Named view panels
 ** DONE View config panels should be dockable.
-** Wild cards in image file load
 ** DONE Focus/display newly opened view tabs
 ** DONE Display current location on new lightboxcanvas, and when light box props change
 ** DONE Truncate long filenames in image list panel.
-** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** DONE Labels for individual bound/point widget sliders.
 ** DONE Vertically center widget property labels.
 ** DONE Fix image bounds calculation (for images with dodgy affines)
 ** DONE Constraint listener on Lists which is notified of changes to constraints on any of the items in the list
-** Ability to edit image affine transformation.
-** Orientation labels on slice canvas.
 ** DONE 'Add standard'/'Add Atlas' menu options.
 ** DONE Update LightBoxCanvas properties - check out funny behaviour in ncols.
 ** DONE Pan in LightBoxCanvas, so currently selected location is always on screen.
@@ -47,7 +47,6 @@ regularly, too.
 ** DONE Float formatting on range slider buttons
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
-** Add a 'mutable' attribute (not constraint) to List properties?
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
