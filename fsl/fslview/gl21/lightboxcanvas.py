@@ -21,7 +21,7 @@ import OpenGL.GL as gl
 
 import props
 
-import fsl.fslview.gl.slicecanvas as slicecanvas
+import slicecanvas
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):

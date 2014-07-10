@@ -30,8 +30,8 @@ import OpenGL.GL.ARB.draw_instanced   as arbdi
 
 import props
 
-import fsl.data.image             as fslimage
-import fsl.fslview.gl.glimagedata as glimagedata
+import fsl.data.image as fslimage
+import glimagedata
 
 
 _vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
