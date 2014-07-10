@@ -155,7 +155,7 @@ def runFlirt(parent, opts):
     pass
 
 
-def interface(parent, opts):
+def interface(parent, args, opts):
     return props.buildGUI(
         parent, opts, flirtView, labels, tooltips)
 

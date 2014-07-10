@@ -494,7 +494,7 @@ featView = props.VGroup((
     showLabels=False)
 
 
-def interface(parent, featOpts):
+def interface(parent, args, featOpts):
 
     return props.buildGUI(
         parent, featOpts, featView, labels, tooltips)
