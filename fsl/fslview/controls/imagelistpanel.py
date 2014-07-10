@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 import wx
 import pwidgets.elistbox as elistbox
 
-import controlpanel
+import fsl.fslview.controlpanel as controlpanel
 
 
 class ImageListPanel(controlpanel.ControlPanel):

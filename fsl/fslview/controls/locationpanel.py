@@ -13,7 +13,9 @@ import numpy as np
 
 import props
 
-class LocationPanel(wx.Panel, props.HasProperties):
+import fsl.fslview.controlpanel as controlpanel
+
+class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
     """
     A wx.Panel which contains widgets for changing the currently displayed
     location in both world coordinates, and voxel coordinates (in terms of the
@@ -43,12 +45,8 @@ class LocationPanel(wx.Panel, props.HasProperties):
         event listeners.
         """
 
-        wx.Panel.__init__(self, parent)
+        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
         props.HasProperties.__init__(self)
-
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
-        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self._voxelPanel = wx.Panel(self)
 
