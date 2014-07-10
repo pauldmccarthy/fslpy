@@ -188,19 +188,21 @@ def selectHeadCentre(opts, button):
     select the head centre location.
     """
 
-    image     = fslimage.Image(opts.inputImage)
-    imageList = fslimage.ImageList([image])
-    parent    = button.GetTopLevelParent()
-    frame     = orthopanel.OrthoDialog(parent,
-                                       imageList,
-                                       opts.inputImage,
-                                       style=wx.RESIZE_BORDER)
-    panel     = frame.panel
+    image      = fslimage.Image(opts.inputImage)
+    imageList  = fslimage.ImageList([image])
+    displayCtx = displaycontext.DisplayContext(imageList)
+    parent     = button.GetTopLevelParent()
+    frame      = orthopanel.OrthoDialog(parent,
+                                        imageList,
+                                        displayCtx,
+                                        opts.inputImage,
+                                        style=wx.RESIZE_BORDER)
+    panel      = frame.panel
 
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
     def updateOpts(*a):
-        x, y, z = image.worldToVox([imageList.location])[0]
+        x, y, z = image.worldToVox([displayCtx.location])[0]
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -215,7 +217,7 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = y
         opts.zCoordinate = z
 
-    imageList.addListener('location', 'BETHeadCentre', updateOpts)
+    displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
     # TODO this ain't working, as it needs to be
@@ -264,9 +266,17 @@ betView = props.NotebookGroup((
                     'zCoordinate'))))))
 
 
-def interface(parent, opts):
-    return props.buildGUI(
-        parent, opts, betView, optLabels, optTooltips)
+def interface(parent, args, opts):
+    
+    frame    = wx.Frame(parent)
+    betPanel = props.buildGUI(
+        frame, opts, betView, optLabels, optTooltips)
+
+    frame.Layout()
+    frame.Fit()
+
+    return frame
+    
 
 
 def runBet(parent, opts):
@@ -287,7 +297,10 @@ def runBet(parent, opts):
         outDisplay.displayRange.xlo = 1
         outDisplay.rangeClip        = True
 
-        frame  = orthopanel.OrthoFrame(parent, imageList, opts.outputImage) 
+        frame  = orthopanel.OrthoFrame(parent,
+                                       imageList,
+                                       displayCtx,
+                                       title=opts.outputImage)
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
