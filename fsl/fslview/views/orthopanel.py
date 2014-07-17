@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 import wx
 import props
 
-import fsl.fslview.gl21.slicecanvas as slicecanvas
+import fsl.fslview.gl14.slicecanvas as slicecanvas
 import fsl.fslview.viewpanel        as viewpanel
 
 

@@ -13,7 +13,6 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import os.path     as op
 
 import numpy       as np
 
@@ -186,6 +185,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
+
+        # This flag is set by the _initGLData method
+        # when it has finished initialising the OpenGL
+        # shaders
+        self.glReady = False 
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -600,38 +604,37 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # vertex coordinates
 
-        vertices  =          glImageData.vertexData
-        texCoords = np.array(glImageData.texCoords)
+        colourStart = xdim * ydim * sliceno * 4 * 4
+        colourEnd   = colourStart + xdim * ydim * 4 * 4
 
-        texCoords[:, glImageData.zax] = sliceno
+        vertices = glImageData.vertexData
+        colours  = glImageData.colourData
+        colours  = colours[colourStart:colourEnd]
 
-        vertices  = vertices .ravel('F')
-        texCoords = texCoords.ravel('F')
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
-        gl.glVertexPointer(xdim * ydim * 4 * 3,
-                           gl.GL_FLOAT, 0,
-                           vertices)
+        gl.glVertexPointer(3, gl.GL_FLOAT,         0, vertices)
+        gl.glColorPointer( 4, gl.GL_UNSIGNED_BYTE, 0, colours)
 
-        gl.glTexCoordPointer(xdim * ydim * 4,
-                             gl.GL_UNSIGNED_SHORT, 0,
-                             texCoords)
+        gl.glDrawArrays(gl.GL_QUADS, 0, xdim * ydim * 4)
 
-
-        gl.glBegin(gl.GL_QUADS)
-
-
-
-        gl.glEnd()
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glDisableClientState(gl.GL_COLOR_ARRAY)
         
         
-
-
         
     def _draw(self, ev):
         """Draws the currently selected slice (as specified by the ``z``
         value of the :attr:`pos` property) to the canvas."""
 
         self.glContext.SetCurrent(self)
+
+        if not self.glReady:
+            wx.CallAfter(self._imageListChanged)
+            self.glReady = True
+            return 
+
         self._setViewport()
 
         # clear the canvas
@@ -644,7 +647,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
 
-        gl.glEnable(gl.TEXTURE_3D)
+        gl.glEnable(gl.GL_TEXTURE_3D)
 
         for image in self.imageList:
 
@@ -653,6 +656,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             zi = int(image.worldToVox(self.pos.z, self.zax))
             self._drawSlice(image, zi)
+
+        gl.glDisable(gl.GL_TEXTURE_3D)
 
         if self.showCursor:
 
