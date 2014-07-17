@@ -23,12 +23,14 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Use GL_UNPACK_ALIGNMENT to avoid the need to pad texture images.
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
 ** Rethink 4D handling - image.display.volume or imageList.volume?
 ** Add a 'mutable' attribute (not constraint) to List properties?
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
+** 'Create mask image' option
 ** DONE Superclasses for view/control panels.
 ** DONE Separate display properties from fsl.data.fslimage classes? A separate fsl.fslview.displaycontext module?
 ** DONE Named view panels
