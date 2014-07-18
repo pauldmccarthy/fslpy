@@ -50,6 +50,8 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 
+import OpenGL.GL as gl
+
 class GLImageData(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
@@ -70,8 +72,8 @@ class GLImageData(object):
         self.image   = image
         self.display = imageDisplay
 
+        self.imageBuffer = self._genImageBuffer()
         self.genVertexData(xax, yax)
-        self.updateColourData()
 
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
@@ -94,15 +96,12 @@ class GLImageData(object):
         self.zax = 3 - xax - yax
         
         image = self.image
+        xdim  = image.shape[self.xax]
+        ydim  = image.shape[self.yax]
+        zdim  = image.shape[self.zax]
 
-        # vertex coordinates
-        # texture coordinates 
-
-        xdim = image.shape[self.xax]
-        ydim = image.shape[self.yax]
-
-        xidxs = np.arange(xdim)
-        yidxs = np.arange(ydim)
+        xidxs = np.arange(xdim, dtype=np.float32)
+        yidxs = np.arange(ydim, dtype=np.float32)
         
         xidxs, yidxs = np.meshgrid(xidxs, yidxs)
         
@@ -119,48 +118,211 @@ class GLImageData(object):
             geomData[i * 4:i * 4 + 4, xax] += xi
             geomData[i * 4:i * 4 + 4, yax] += yi
 
-        geomData        = image.voxToWorld(geomData)
-            
-        self.vertexData = geomData.ravel('C')
+
+        xidxs = (xidxs + 0.5) / self.fullTexShape[self.xax]
+        yidxs = (yidxs + 0.5) / self.fullTexShape[self.yax]
+
+        xidxs = xidxs.repeat(4)
+        yidxs = yidxs.repeat(4)
+        zidxs = np.zeros(len(xidxs), dtype=np.float32)
+
+        allIdxs           = [None] * 3
+        allIdxs[self.xax] = xidxs
+        allIdxs[self.yax] = yidxs
+        allIdxs[self.zax] = zidxs
+        
+        texCoords       = np.vstack(allIdxs).transpose() 
+
+        self.texCoords  = texCoords
+        self.vertexData = geomData
         self.xdim       = image.shape[self.xax]
         self.ydim       = image.shape[self.yax]
         self.zdim       = image.shape[self.zax]
 
         
-    def updateColourData(self):
+    def _calculateTextureShape(self, shape):
         """
-        Regenerates the colour buffer used to colour image voxels.
+        Calculates the size required to store an image of the given shape
+        as a GL texture. I don't know if it is a problem which affects all
+        graphics cards, but on my MacbookPro11,3 (NVIDIA GeForce GT 750M),
+        all dimensions of a texture must have length divisible by 4.
+        This method returns two values - the first is the adjusted shape,
+        and the second is the amount of padding, i.e. the difference
+        between the texture shape and the input shape.
         """
 
-        display = self.display
+        # each dimension of a texture must have length divisble by 4.
+        # I don't know why; I presume that they need to be word-aligned.
+        texShape = np.array(shape)
+        texPad   = np.zeros(len(shape))
+        
+        for i in range(len(shape)):
+            if texShape[i] % 4:
+                texPad[  i]  = 4 - (texShape[i] % 4)
+                texShape[i] += texPad[i]
+                
+        return texShape, texPad
 
-        log.debug('Generating colour buffer for '
-                  'image {} (map: {})'.format(
-                      self.image.name,
-                      display.cmap.name))
-    
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
+        
+    def _initImageBuffer(self):
+        """
+        Initialises a single-channel 3D texture which will be used
+        to store the image managed by this GLImageData object. The
+        texture is not populated with data - this is done by
+        _genImageData on an as-needed basis.
+        """
 
-        if self.image.is4DImage():
-            image = self.image.data[:, :, :, display.volume]
-        else:
-            image = self.image.data
+        texShape, _ = self._calculateTextureShape(self.image.shape)
+        imageBuffer = gl.glGenTextures(1)
 
-        image = np.transpose(image, (self.xax, self.yax, self.zax))
+        log.debug('Initialising texture buffer for {} ({})'.format(
+            self.image.name,
+            texShape))
+        
+        # Set up image texture sampling thingos
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_T,
+                           gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_R,
+                           gl.GL_CLAMP_TO_EDGE)
 
-        imin  = float(display.displayRange.xlo)
-        imax  = float(display.displayRange.xhi)
-        image = (image - imin) / (imax - imin)
+        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                        0,
+                        gl.GL_RGBA8,
+                        texShape[0], texShape[1], texShape[2],
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        None)
 
-        colourData = display.cmap(image)
-        colourData = np.floor(colourData * 255)
-        colourData = np.array(colourData, dtype=np.uint8)
-        colourData = colourData.repeat(4, 2)
-        colourData = colourData.ravel('C')
+        return imageBuffer
 
-        self.colourData = colourData
+
+    def _genImageBuffer(self):
+        """
+        (Re-)Generates the OpenGL buffer used to store the data for the given
+        image. The buffer is stored as an attribute of the image and, if it
+        has already been created (e.g. by another GLImageData object), the
+        existing buffer is returned. 
+        """
+
+        image           = self.image
+        display         = self.display
+        volume          = display.volume
+        sRate           = display.samplingRate
+        imageShape      = np.array(image.shape[:3])
+        
+        fullTexShape, _ = self._calculateTextureShape(imageShape)
+
+        # we only store a single 3D image
+        # in GPU memory at any one time
+        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
+        else:                    imageData = image.data
+
+        # resample the image according to the current sampling rate
+        start     = np.floor(0.5 * sRate)
+        imageData = imageData[start::sRate, start::sRate, start::sRate]
+
+        # calculate the required texture shape for that data
+        subTexShape, subTexPad = self._calculateTextureShape(imageData.shape)
+
+        # Store the actual image texture shape as an
+        # attribute - the vertex shader needs to know
+        # about it to perform texture lookups (see
+        # fslview/vertex_shader.glsl and
+        # slicecanvas.py:SliceCanvas_draw). If we
+        # could store textures of an arbitrary size
+        # (i.e. without the lengths having to be
+        # divisible by 4), we wouldn't need to do this.
+        self.fullTexShape  = fullTexShape
+        self.subTexShape   = subTexShape
+        self.subTexPad     = subTexPad
+
+        # Check to see if the image buffer
+        # has already been created
+        try:
+            displayHash, imageBuffer = \
+                image.getAttribute('glImageBuffer')
+        except:
+            displayHash = None
+            imageBuffer = None
+
+        if imageBuffer is None:
+            imageBuffer = self._initImageBuffer()
+
+        # The image buffer already exists, and it
+        # contains the data for the requested volume.  
+        elif displayHash == hash(display):
+            return imageBuffer
+
+        shape = np.array(imageData.shape)
+
+        log.debug('Populating texture buffer for '
+                  'image {} (data shape: {})'.format(
+                      image.name,
+                      imageData.shape))
+
+        # each dimension is padded so it has length
+        # divisible by 4. Ugh. It's a word-alignment
+        # thing, I think. This seems to be necessary
+        # using the OpenGL 2.1 API on OSX mavericks. 
+        if np.any(shape % 4):
+            log.debug('Padding image {} data '
+                      'to shape {}'.format(image.name, subTexShape))
+            pad       = zip(np.zeros(len(subTexPad)), subTexPad)
+            imageData = np.pad(imageData, pad, 'constant', constant_values=0)
+
+        # Each voxel value is converted to a RGBA 4-tuple.
+        # First we normalise the data to lie between 0.0 and 1.0
+        imin      = float(display.displayRange.xlo)
+        imax      = float(display.displayRange.xhi)
+        imageData = (imageData - imin) / (imax - imin)
+
+        # Then transform the values to RGBA
+        # using the current colour map
+        imageData = display.cmap(imageData)
+
+        # Scaled to lie between 0 and 255, cast
+        # to unsigned byte, and transposed so
+        # the dimension order is (colour, X, Y, Z)
+        imageData = np.floor(imageData * 255)
+        imageData = np.array(imageData, dtype=np.uint8)
+
+        imageData = imageData.transpose((3, 0, 1, 2))
+
+        # Then flattened, with fortran dimension ordering,
+        # so the data, as stored on the GPU, has its first
+        # dimension as the fastest changing. 
+        imageData = imageData.ravel(order='F')
+
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+        gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
+                           0,
+                           0, 0, 0,
+                           subTexShape[0], subTexShape[1], subTexShape[2],
+                           gl.GL_RGBA,
+                           gl.GL_UNSIGNED_BYTE,
+                           imageData)
+
+        # Add the index of the currently stored volume and
+        # sampling rate, and a reference to the texture as
+        # an attribute of the image, so other things which
+        # want to render the same volume of the image don't 
+        # need to duplicate all of that data.
+        image.setAttribute('glImageBuffer', (hash(self.display), imageBuffer))
+
+        return imageBuffer
 
 
     def _configDisplayListeners(self):
@@ -174,21 +336,23 @@ class GLImageData(object):
         def vertexUpdateNeeded(*a):
             self.genVertexData(self.xax, self.yax)
 
-        def colourUpdateNeeded(*a):
-            self.updateColourData()
+        def imageUpdateNeeded(*a):
+            self._genImageBuffer()
 
-        def colourAndVertexUpdateNeeded(*a):
+        def imageAndVertexUpdateNeeded(*a):
             self.genVertexData(self.xax, self.yax)
-            self.updateColourData()
+            self._genImageBuffer()
 
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
         display.addListener('transform',    lnrName, vertexUpdateNeeded)
-        display.addListener('displayRange', lnrName, colourUpdateNeeded)
-        display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
-        display.addListener('cmap',         lnrName, colourUpdateNeeded)
+        display.addListener('alpha',        lnrName, imageUpdateNeeded)
+        display.addListener('displayRange', lnrName, imageUpdateNeeded)
         display.addListener('samplingRate',
                             lnrName,
-                            colourAndVertexUpdateNeeded)
-        display.addListener('volume',       lnrName, colourUpdateNeeded)
+                            imageAndVertexUpdateNeeded) 
+        display.addListener('rangeClip',    lnrName, imageUpdateNeeded)
+        display.addListener('cmap',         lnrName, imageUpdateNeeded)
+        display.addListener('volume',       lnrName, imageUpdateNeeded)
+        display.addListener('transform',    lnrName, vertexUpdateNeeded)

@@ -277,8 +277,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             # if this lookup fails, it means that the GL data
             # for this image has not yet been generated.
             except KeyError: continue
-            
-            glData.genIndexBuffers(self.xax, self.yax) 
+
+            glData.genVertexData(self.xax, self.yax) 
 
         self._imageBoundsChanged()
         
@@ -602,25 +602,30 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # if the slice is out of range, don't draw it
         if sliceno < 0 or sliceno >= zdim: return
 
-        # vertex coordinates
+        texCoords    = np.array(glImageData.texCoords, dtype=np.float32)
+        vertices     = glImageData.vertexData
+        imageBuffer  = glImageData.imageBuffer
 
-        colourStart = xdim * ydim * sliceno * 4 * 4
-        colourEnd   = colourStart + xdim * ydim * 4 * 4
+        vertices[ :, self.zax] =  sliceno
+        texCoords[:, self.zax] = (sliceno + 0.5) / \
+                                 glImageData.fullTexShape[self.zax]
 
-        vertices = glImageData.vertexData
-        colours  = glImageData.colourData
-        colours  = colours[colourStart:colourEnd]
+        vertices  = image.voxToWorld(vertices).ravel('C')
+        texCoords = texCoords.ravel('C')
 
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
-        gl.glVertexPointer(3, gl.GL_FLOAT,         0, vertices)
-        gl.glColorPointer( 4, gl.GL_UNSIGNED_BYTE, 0, colours)
+        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
+        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
         gl.glDrawArrays(gl.GL_QUADS, 0, xdim * ydim * 4)
 
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_COLOR_ARRAY)
         
         
         
