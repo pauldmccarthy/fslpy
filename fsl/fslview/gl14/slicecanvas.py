@@ -602,25 +602,28 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # if the slice is out of range, don't draw it
         if sliceno < 0 or sliceno >= zdim: return
 
-        texCoords    = np.array(glImageData.texCoords, dtype=np.float32)
-        vertices     = glImageData.vertexData
-        imageBuffer  = glImageData.imageBuffer
+        imageData      = glImageData.imageData
+        vertices       = glImageData.vertexData
+        colourTexture  = glImageData.colourTexture
+        realSlice      = sliceno / imageDisplay.samplingRate
 
-        vertices[ :, self.zax] =  sliceno
-        texCoords[:, self.zax] = (sliceno + 0.5) / \
-                                 glImageData.fullTexShape[self.zax]
+        if   self.zax == 0: imageData = imageData[realSlice, :, :]
+        elif self.zax == 1: imageData = imageData[:, realSlice, :]
+        elif self.zax == 2: imageData = imageData[:, :, realSlice]
 
-        vertices  = image.voxToWorld(vertices).ravel('C')
-        texCoords = texCoords.ravel('C')
+        vertices[:, self.zax] = sliceno
+        vertices = image.voxToWorld(vertices).ravel('C')
+
+        imageData = imageData.ravel('F').repeat(4)
 
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
 
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
         gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
-        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+        gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
         gl.glDrawArrays(gl.GL_QUADS, 0, xdim * ydim * 4)
 
@@ -652,7 +655,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
 
-        gl.glEnable(gl.GL_TEXTURE_3D)
+        gl.glEnable(gl.GL_TEXTURE_1D)
 
         for image in self.imageList:
 
@@ -662,7 +665,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             zi = int(image.worldToVox(self.pos.z, self.zax))
             self._drawSlice(image, zi)
 
-        gl.glDisable(gl.GL_TEXTURE_3D)
+        gl.glDisable(gl.GL_TEXTURE_1D)
 
         if self.showCursor:
 
