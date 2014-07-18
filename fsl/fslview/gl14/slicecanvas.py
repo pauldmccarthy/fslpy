@@ -612,9 +612,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         elif self.zax == 2: imageData = imageData[:, :, realSlice]
 
         vertices[:, self.zax] = sliceno
-        vertices = image.voxToWorld(vertices).ravel('C')
+        vertices = vertices.ravel('C')
 
         imageData = imageData.ravel('F').repeat(4)
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPushMatrix()
+        gl.glMultMatrixf(image.voxToWorldMat)
 
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
@@ -629,6 +633,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPopMatrix()
         
         
         
