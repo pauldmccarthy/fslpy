@@ -182,11 +182,6 @@ class GLImageData(object):
         if imageData.dtype != np.float32:
             imageData = np.array(imageData, dtype=np.float32)
 
-        # First we normalise the data to lie between 0.0 and 1.0
-        imin      = imageData.min()
-        imax      = imageData.max()
-        imageData = (imageData - imin) / (imax - imin)
-
         # Add the index of the currently stored volume and
         # sampling rate, and a reference to the texture as
         # an attribute of the image, so other things which
@@ -202,6 +197,17 @@ class GLImageData(object):
         display       = self.display
         colourTexture = self.colourTexture
 
+        # First we normalise the data to lie between 0.0 and 1.0
+        imin      = display.displayRange[0]
+        imax      = display.displayRange[1]
+
+        texCoordXform = np.identity(4, dtype=np.float32)
+        texCoordXform[0, 0] = 1.0 / (imax - imin)
+        texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
+        texCoordXform = texCoordXform.transpose()
+        
+        self.texCoordXform = texCoordXform
+
         log.debug('Generating colour buffer for '
                   'image {} (map: {}; resolution: {})'.format(
                       self.image.name,
@@ -213,6 +219,7 @@ class GLImageData(object):
         # colour map
         colourRange = np.linspace(0.0, 1.0, self.colourResolution)
         colourmap   = display.cmap(colourRange)
+        colourmap[:, 3] = display.alpha
 
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples

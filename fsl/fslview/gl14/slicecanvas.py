@@ -603,6 +603,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if sliceno < 0 or sliceno >= zdim: return
 
         imageData      = glImageData.imageData
+        texCoordXform  = glImageData.texCoordXform
         vertices       = glImageData.vertexData
         colourTexture  = glImageData.colourTexture
         realSlice      = sliceno / imageDisplay.samplingRate
@@ -623,6 +624,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
 
+        gl.glMatrixMode(gl.GL_TEXTURE)
+        gl.glPushMatrix()
+        gl.glMultMatrixf(texCoordXform)
+
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
@@ -636,7 +641,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glPopMatrix()
-        
+
+        gl.glMatrixMode(gl.GL_TEXTURE)
+        gl.glPopMatrix()
         
         
     def _draw(self, ev):
