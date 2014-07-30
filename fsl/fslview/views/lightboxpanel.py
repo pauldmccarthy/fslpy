@@ -17,8 +17,8 @@ import wx
 
 import props
 
-import fsl.fslview.gl21.lightboxcanvas as lightboxcanvas
-import fsl.fslview.viewpanel           as viewpanel
+import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
+import fsl.fslview.viewpanel         as viewpanel
 
 class LightBoxPanel(viewpanel.ViewPanel):
     """Convenience Panel which contains a 
