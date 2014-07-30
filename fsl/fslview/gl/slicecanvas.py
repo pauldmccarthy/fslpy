@@ -23,8 +23,8 @@ import props
 import fsl.data.image as fslimage
 
 
-import gl21.glimagedata      as glimagedata
-import gl21.slicecanvas_draw as slicecanvas_draw
+import gl14.glimagedata      as glimagedata
+import gl14.slicecanvas_draw as slicecanvas_draw
 
 
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
