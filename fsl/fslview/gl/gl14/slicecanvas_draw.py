@@ -78,7 +78,7 @@ def _drawSlice(canvas, image, sliceno, xform=None):
     gl.glPushMatrix()
     gl.glMultMatrixf(image.voxToWorldMat)
 
-    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
+    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
 
     gl.glMatrixMode(gl.GL_TEXTURE)
