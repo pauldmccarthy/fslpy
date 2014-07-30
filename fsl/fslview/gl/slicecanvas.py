@@ -185,15 +185,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if glContext is None: self.glContext = wxgl.GLContext(self)
         else:                 self.glContext = glContext
 
-        self.glContext.SetCurrent(self)
-
-        glPkg = fslgl.getGLPackage(glVersion)
-        slicecanvas_draw = glPkg.slicecanvas_draw
-        glimagedata      = glPkg.glimagedata
-
-        sys.modules[__name__].slicecanvas_draw = slicecanvas_draw
-        sys.modules[__name__].glimagedata      = glimagedata
-
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
 
@@ -225,8 +216,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList.addListener('bounds',
                                    self.name,
                                    self._imageBoundsChanged)
-
-        self._imageListChanged()
         self._imageBoundsChanged()
 
         # the image list is probably going to outlive
@@ -246,11 +235,43 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
 
-        def draw(ev):
-            slicecanvas_draw.draw(self)
+        # We can't figure out what OpenGL version to use
+        # until the canvas is displayed on screen. 
+        def onShow(ev):
+            ev.Skip()
 
-        # All the work is done by the draw method
-        self.Bind(wx.EVT_PAINT, draw)
+            # Unbind this event handler, as it
+            # only needs to be called once
+            self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
+
+            self.glContext.SetCurrent(self)
+
+            # get the OpenGL version-specific
+            # modules  (see gl/__init__.py)
+            glPkg = fslgl.getGLPackage(glVersion)
+            slicecanvas_draw = glPkg.slicecanvas_draw
+            glimagedata      = glPkg.glimagedata
+
+            # make them available throughout this module
+            sys.modules[__name__].slicecanvas_draw = slicecanvas_draw
+            sys.modules[__name__].glimagedata      = glimagedata
+
+            # Call the _imageListChanged method - it
+            # will generate the necessary GL data for
+            # each of the images (which can't be done
+            # until the canvas is displayed).
+            self._imageListChanged()
+
+            # All the work is done by the
+            # slicecanvas_draw module.
+            def draw(ev):
+                slicecanvas_draw.draw(self)
+            self.Bind(wx.EVT_PAINT, draw)
+
+        # We have to listen for when the top level parent 
+        # e.g. the frame) is shown as, for whatever reason,
+        # wx.Panel/GLCanvas objects are always 'shown'.
+        self.GetTopLevelParent().Bind(wx.EVT_SHOW, onShow)
 
         
     def _zAxisChanged(self, *a):
