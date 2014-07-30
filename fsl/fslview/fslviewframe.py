@@ -32,13 +32,19 @@ class FSLViewFrame(wx.Frame):
     :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`) to be displayed.
     """
 
-    def __init__(self, parent, imageList, displayCtx, default=False):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 displayCtx,
+                 default=False,
+                 glVersion=None):
         """
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')
         
         self._imageList  = imageList
+        self._glVersion  = glVersion
         self._displayCtx = displayCtx
         self._auimgr     = aui.AuiManager(self)
 
@@ -96,7 +102,8 @@ class FSLViewFrame(wx.Frame):
             panel = panelCls(self._centrePane,
                              self._imageList,
                              self._displayCtx,
-                             self._glContext)
+                             self._glContext,
+                             self._glVersion)
         else:
             panel = panelCls(self._centrePane,
                              self._imageList,

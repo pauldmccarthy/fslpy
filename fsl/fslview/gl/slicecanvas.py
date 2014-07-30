@@ -9,6 +9,7 @@
 slice from a collection of 3D images.
 """
 
+import sys
 import logging
 
 log = logging.getLogger(__name__)
@@ -21,10 +22,7 @@ import OpenGL.GL   as gl
 import props
 
 import fsl.data.image as fslimage
-
-
-import gl14.glimagedata      as glimagedata
-import gl14.slicecanvas_draw as slicecanvas_draw
+import fsl.fslview.gl as fslgl
 
 
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
@@ -149,7 +147,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             self.panDisplayBy(xoff, yoff)
 
         
-    def __init__(self, parent, imageList, zax=0, glContext=None):
+    def __init__(self, parent, imageList, zax=0, glContext=None,
+                 glVersion=None):
         """Creates a canvas object. The OpenGL data buffers for each image
         in the list are set up the first time that the canvas is
         displayed/drawn.
@@ -168,6 +167,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         :arg glContext:  A :class:`wx.glcanvas.GLContext` object. If ``None``,
                          one is created.
+
+        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
+                         API version to use. If None, the best possible
+                         version is used.                  
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -183,6 +186,13 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         else:                 self.glContext = glContext
 
         self.glContext.SetCurrent(self)
+
+        glPkg = fslgl.getGLPackage(glVersion)
+        slicecanvas_draw = glPkg.slicecanvas_draw
+        glimagedata      = glPkg.glimagedata
+
+        sys.modules[__name__].slicecanvas_draw = slicecanvas_draw
+        sys.modules[__name__].glimagedata      = glimagedata
 
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))

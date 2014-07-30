@@ -31,7 +31,7 @@ def interface(parent, args, ctx):
     imageList, displayCtx = ctx
     
     frame = fslviewframe.FSLViewFrame(
-        parent, imageList, displayCtx, args.default)
+        parent, imageList, displayCtx, args.default, args.glversion)
     
     if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
     else:             frame.addViewPanel(views.OrthoPanel)
@@ -65,11 +65,14 @@ def parseArgs(argv, namespace):
                                          add_help=False)
 
     # Application options
-    mainParser.add_argument('-h', '--help',     action='store_true')
-    mainParser.add_argument('-d', '--default',  action='store_true',
-                            help='Default layout') 
-    mainParser.add_argument('-l', '--lightbox', action='store_true',
+    mainParser.add_argument('-h', '--help',      action='store_true')
+    mainParser.add_argument('-d', '--default',   action='store_true',
+                            help='Default layout')
+    mainParser.add_argument('-l', '--lightbox',  action='store_true',
                             help='Lightbox view')
+    mainParser.add_argument('-g', '--glversion',
+                            metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
+                            help='Desired (major, minor) OpenGL version') 
     
     # And the imgParser parses image display options
     # for a single image - below we're going to
@@ -92,12 +95,12 @@ def parseArgs(argv, namespace):
                 'name',
                 'volume']
 
-    # do not use l, v, h, d, or w, as they are used
+    # do not use l, v, h, d, w, or g, as they are used
     # either by fsl.py, or the mainParser above.
     props.addParserArguments(displaycontext.ImageDisplay,
                              imgOpts,
                              cliProps=imgProps,
-                             exclude='lvhdw')
+                             exclude='lvhdwg')
 
     # Parse the application options
     namespace, argv = mainParser.parse_known_args(argv, namespace)

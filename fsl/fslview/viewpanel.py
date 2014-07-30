@@ -73,7 +73,12 @@ class ViewPanel(wx.Panel, props.HasProperties):
         return len(cls.getAllProperties()[0]) > 0
  
     
-    def __init__(self, parent, imageList, displayCtx, glContext=None):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 displayCtx,
+                 glContext=None,
+                 glVersion=None):
         """Create a :class:`ViewPanel`.
 
         :arg parent:     The :mod:`wx` parent object of this panel.
@@ -90,6 +95,10 @@ class ViewPanel(wx.Panel, props.HasProperties):
                          context, and store it as an attribute called
                          :attr:`_glContext`. If this :class:`ViewPanel` does
                          not use OpenGL, this parameter can be ignored.
+
+        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
+                         API version to use. If None, the best possible
+                         version given the available hardware is used.
         """
         
         wx.Panel.__init__(self, parent)
@@ -108,5 +117,9 @@ class ViewPanel(wx.Panel, props.HasProperties):
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        if self.isGLView(): self._glContext = glContext
-        else:               self._glContext = None
+        if self.isGLView():
+            self._glContext = glContext
+            self._glVersion = glVersion
+        else:
+            self._glContext = None
+            self._glVersion = None

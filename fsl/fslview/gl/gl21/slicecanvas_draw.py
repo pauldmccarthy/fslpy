@@ -250,7 +250,6 @@ def draw(canvas):
 
     # shaders have not been initialised.
     if not hasattr(canvas, 'shaders'):
-        print 'staging init'
         wx.CallAfter(lambda : _initGL(canvas))
         return
 
