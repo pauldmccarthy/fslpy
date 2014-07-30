@@ -39,7 +39,7 @@
 # the relevant fsl.fslview.displaycontext.ImageDisplay properties).
 # 
 # If the display orientation changes (i.e. the image dimensions that map
-# to the screen X/Y axes) the genIndexBuffers method must be called
+# to the screen X/Y axes) the genVertexData method must be called
 # manually, to regenerate the voxel indices.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -82,7 +82,7 @@ class GLImageData(object):
         # Buffers for storing image data
         # and voxel coordinates
         self.imageBuffer = self._genImageBuffer()
-        self.genIndexBuffers(xax, yax)
+        self.genVertexData(xax, yax)
 
         # Maximum number of colours used to draw image data.
         # Keep this to a power of two, as some GL implementations
@@ -148,7 +148,7 @@ class GLImageData(object):
                       self.normOffset))
 
 
-    def genIndexBuffers(self, xax, yax):
+    def genVertexData(self, xax, yax):
         """
         (Re-)Generates data buffers containing X, Y, and Z coordinates,
         used for indexing into the image. Also generates the geometry
@@ -462,7 +462,7 @@ class GLImageData(object):
 
         def indexAndImageUpdateNeeded(*a):
             self._genImageBuffer()
-            self.genIndexBuffers(self.xax, self.yax)
+            self.genVertexData(self.xax, self.yax)
 
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))

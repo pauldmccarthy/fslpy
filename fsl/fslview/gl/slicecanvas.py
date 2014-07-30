@@ -13,33 +13,18 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import os.path     as op
-
-import numpy       as np
-
 import                wx
 import wx.glcanvas as wxgl
 
 import OpenGL.GL   as gl
 
-# Under OS X, I don't think I can request an OpenGL 3.2 core profile
-# using wx - I'm stuck with OpenGL 2.1 I'm using these ARB extensions
-# for functionality which is standard in 3.2.
-import OpenGL.GL.ARB.instanced_arrays as arbia
-import OpenGL.GL.ARB.draw_instanced   as arbdi
-
 import props
 
 import fsl.data.image as fslimage
-import glimagedata
 
 
-_vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
-"""Location of the GLSL vertex shader source code."""
-
-
-_fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
-"""Location of the GLSL fragment shader source code."""
+import gl21.glimagedata      as glimagedata
+import gl21.slicecanvas_draw as slicecanvas_draw
 
 
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
@@ -197,20 +182,17 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if glContext is None: self.glContext = wxgl.GLContext(self)
         else:                 self.glContext = glContext
 
+        self.glContext.SetCurrent(self)
+
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
-
-        # This flag is set by the _initGLData method
-        # when it has finished initialising the OpenGL
-        # shaders
-        self.glReady = False
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
         # also fixes the values of 'xax' and 'yax'.
         self.zax = zax
-        self.xax = 0
-        self.yax = 0
+        self.xax = (zax + 1) % 3
+        self.yax = (zax + 2) % 3
         self._zAxisChanged()
         self.addListener('zax', self.name, self._zAxisChanged)
 
@@ -234,9 +216,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                                    self.name,
                                    self._imageBoundsChanged)
 
-        # We don't call _imageListChanged here - it will be called on the
-        # first call to _draw (image GL data can't be initialised until we
-        # have something to draw on)
+        self._imageListChanged()
         self._imageBoundsChanged()
 
         # the image list is probably going to outlive
@@ -256,8 +236,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
 
+        def draw(ev):
+            slicecanvas_draw.draw(self)
+
         # All the work is done by the draw method
-        self.Bind(wx.EVT_PAINT, self._draw)
+        self.Bind(wx.EVT_PAINT, draw)
 
         
     def _zAxisChanged(self, *a):
@@ -284,9 +267,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.xax = dims[0]
         self.yax = dims[1]
 
-        if not self.glReady:
-            return
-
         for image in self.imageList:
 
             try:   glData = image.getAttribute(self.name)
@@ -294,9 +274,9 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             # if this lookup fails, it means that the GL data
             # for this image has not yet been generated.
             except KeyError: continue
-            
-            glData.genIndexBuffers(self.xax, self.yax)
-            
+
+            glData.genVertexData(self.xax, self.yax)
+
         self._imageBoundsChanged()
         
         # Reset the canvas position as, because the
@@ -320,6 +300,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # and attach a listener to their display properties
         # so we know when to refresh the canvas.
         for image in self.imageList:
+
             try:
                 glData = image.getAttribute(self.name)
                 continue
@@ -335,7 +316,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                                              display)
             image.setAttribute(self.name, glData)
 
-            def refresh( *a): self.Refresh()
+            def refresh(*a): self.Refresh()
 
             display.addListener('enabled',      self.name, refresh)
             display.addListener('transform',    self.name, refresh)
@@ -360,118 +341,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                 ev.Skip()
                 
             self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-        self.Refresh()
-
-
-    def _compileShaders(self):
-        """Compiles and links the OpenGL GLSL vertex and fragment shader
-        programs, and returns a reference to the resulting program. Raises
-        an error if compilation/linking fails.
-
-        I'm explicitly not using the PyOpenGL
-        :func:`OpenGL.GL.shaders.compileProgram` function, because it attempts
-        to validate the program after compilation, which fails due to texture
-        data not being bound at the time of validation.
-        """
-
-        with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
-        with open(_fragment_shader_file, 'rt') as f: fragShaderSrc = f.read()
-
-        # vertex shader
-        vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-        gl.glShaderSource(vertShader, vertShaderSrc)
-        gl.glCompileShader(vertShader)
-        vertResult = gl.glGetShaderiv(vertShader, gl.GL_COMPILE_STATUS)
-
-        if vertResult != gl.GL_TRUE:
-            raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(vertShader)))
-
-        # fragment shader
-        fragShader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-        gl.glShaderSource(fragShader, fragShaderSrc)
-        gl.glCompileShader(fragShader)
-        fragResult = gl.glGetShaderiv(fragShader, gl.GL_COMPILE_STATUS)
-
-        if fragResult != gl.GL_TRUE:
-            raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(fragShader)))
-
-        # link all of the shaders!
-        program = gl.glCreateProgram()
-        gl.glAttachShader(program, vertShader)
-        gl.glAttachShader(program, fragShader)
-
-        gl.glLinkProgram(program)
-
-        gl.glDeleteShader(vertShader)
-        gl.glDeleteShader(fragShader)
-
-        linkResult = gl.glGetProgramiv(program, gl.GL_LINK_STATUS)
-
-        if linkResult != gl.GL_TRUE:
-            raise RuntimeError('{}'.format(gl.glGetProgramInfoLog(program)))
-
-        return program
-
-
-    def _initGLData(self):
-        """Compiles the vertex and fragment shader programs (see
-        :meth:`_compileShaders`), and stores references to the
-        shader variables as attributes of this :class:`SliceCanvas`
-        object. This method is only called once, on the first draw.
-        """
-
-        # A bit hacky. We can only set the GL context (and create
-        # the GL data) once something is actually displayed on the
-        # screen. The _initGLData method is called (asynchronously)
-        # by the draw() method if it sees that the glReady flag has
-        # not yet been set. But draw() may be called mored than once
-        # before _initGLData is called. Here, to prevent
-        # _initGLData from running more than once, the first time
-        # it is called it simply overrides itself with a dummy method.
-        self._initGLData = lambda s: s
- 
-        self.glContext.SetCurrent(self)
-
-        self.shaders = self._compileShaders()
-
-        # Indices of all vertex/fragment shader parameters
-        self.alphaPos         = gl.glGetUniformLocation(self.shaders, 'alpha')
-        self.imageBufferPos   = gl.glGetUniformLocation(self.shaders,
-                                                        'imageBuffer')
-        self.voxToWorldMatPos = gl.glGetUniformLocation(self.shaders,
-                                                        'voxToWorldMat')
-        self.colourMapPos     = gl.glGetUniformLocation(self.shaders,
-                                                        'colourMap')
-        self.imageShapePos    = gl.glGetUniformLocation(self.shaders,
-                                                        'imageShape') 
-        self.subTexShapePos   = gl.glGetUniformLocation(self.shaders,
-                                                        'subTexShape')
-        self.subTexPadPos     = gl.glGetUniformLocation(self.shaders,
-                                                        'subTexPad')
-        self.normFactorPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'normFactor')
-        self.normOffsetPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'normOffset') 
-        self.displayMinPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'displayMin')
-        self.displayMaxPos    = gl.glGetUniformLocation(self.shaders,
-                                                        'displayMax') 
-        self.signedPos        = gl.glGetUniformLocation(self.shaders,
-                                                        'signed') 
-        self.fullTexShapePos  = gl.glGetUniformLocation(self.shaders,
-                                                        'fullTexShape')
-        self.inVertexPos      = gl.glGetAttribLocation( self.shaders,
-                                                        'inVertex')
-        self.voxXPos          = gl.glGetAttribLocation( self.shaders, 'voxX')
-        self.voxYPos          = gl.glGetAttribLocation( self.shaders, 'voxY')
-        self.voxZPos          = gl.glGetAttribLocation( self.shaders, 'voxZ')
-
-        # initialise data for the images that
-        # are already in the image list 
-        self._imageListChanged()
-
-        self.glReady = True
 
         self.Refresh()
 
@@ -687,198 +556,3 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         trans = [0, 0, 0]
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
-
-        
-    def _drawSlice(self, image, sliceno, xform=None):
-        """Draws the specified slice from the specified image on the canvas.
-
-        If ``xform`` is not provided, the
-        :class:`~fsl.data.image.Image` ``voxToWorldMat`` transformation
-        matrix is used.
-
-        :arg image:   The :class:`~fsl.data.image.Image` object to draw.
-        
-        :arg sliceno: Voxel index of the slice to be drawn.
-        
-        :arg xform:   A 4*4 transformation matrix to be applied to the slice
-                      data (or ``None`` to use the
-                      :class:`~fsl.data.image.Image` ``voxToWorldMat``
-                      matrix).
-        """
-
-        # The GL data is stored as an attribute of the image,
-        # and is created in the _imageListChanged method when
-        # images are added to the image. If there's no data
-        # here, ignore it; hopefully by the time _draw() is
-        # called again, it will have been created.
-        try:    glImageData = image.getAttribute(self.name)
-        except: return
-        
-        imageDisplay = image.getAttribute('display')
-
-        # The number of voxels to be displayed along
-        # each dimension is not necessarily equal to
-        # the actual image shape, as the image may
-        # be sampled at a lower resolution. The
-        # GLImageData object keeps track of the
-        # current image display resolution.
-        xdim = glImageData.xdim
-        ydim = glImageData.ydim
-        zdim = glImageData.zdim
-        
-        # Don't draw the slice if this
-        # image display is disabled
-        if not imageDisplay.enabled: return
-
-        # if the slice is out of range, don't draw it
-        if sliceno < 0 or sliceno >= zdim: return
-
-        # bind the current alpha value
-        # and data range to the shader
-        gl.glUniform1f(self.alphaPos,      imageDisplay.alpha)
-        gl.glUniform1f(self.normFactorPos, glImageData.normFactor)
-        gl.glUniform1f(self.normOffsetPos, glImageData.normOffset)
-        gl.glUniform1f(self.displayMinPos, imageDisplay.displayRange.xlo)
-        gl.glUniform1f(self.displayMaxPos, imageDisplay.displayRange.xhi)
-        gl.glUniform1f(self.signedPos,     glImageData.signed)
-
-        # and the image/texture shape buffers
-        gl.glUniform3fv(self.fullTexShapePos, 1, glImageData.fullTexShape)
-        gl.glUniform3fv(self.subTexShapePos,  1, glImageData.subTexShape)
-        gl.glUniform3fv(self.subTexPadPos,    1, glImageData.subTexPad)
-        gl.glUniform3fv(self.imageShapePos,   1, image.shape[:3])
-        
-        # bind the transformation matrix
-        # to the shader variable
-        if xform is None:
-            xform = np.array(image.voxToWorldMat, dtype=np.float32)
-        xform = xform.ravel('C')
-        gl.glUniformMatrix4fv(self.voxToWorldMatPos, 1, False, xform)
-
-        # Set up the colour texture
-        gl.glActiveTexture(gl.GL_TEXTURE0) 
-        gl.glBindTexture(gl.GL_TEXTURE_1D, glImageData.colourBuffer)
-        gl.glUniform1i(self.colourMapPos, 0) 
-
-        # Set up the image data texture
-        gl.glActiveTexture(gl.GL_TEXTURE1) 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageBuffer)
-        gl.glUniform1i(self.imageBufferPos, 1)
-        
-        # voxel x/y/z coordinates
-        voxOffs  = [0, 0, 0]
-        voxSteps = [1, 1, 1]
-
-        voxOffs[ self.zax] = sliceno
-        voxSteps[self.yax] = xdim
-        voxSteps[self.zax] = xdim * ydim
-        for buf, pos, step, off in zip(
-                (glImageData.voxXBuffer,
-                 glImageData.voxYBuffer,
-                 glImageData.voxZBuffer),
-                (self.voxXPos,
-                 self.voxYPos,
-                 self.voxZPos),
-                voxSteps,
-                voxOffs):
-
-            if off == 0: off = None
-            else:        off = buf + (off * 2)
-            
-            buf.bind()
-            gl.glVertexAttribPointer(
-                pos,
-                1,
-                gl.GL_UNSIGNED_SHORT,
-                gl.GL_FALSE,
-                0,
-                off)
-            gl.glEnableVertexAttribArray(pos)
-            arbia.glVertexAttribDivisorARB(pos, step)
-
-        # The geometry buffer, which defines the geometry of a
-        # single vertex (4 vertices, drawn as a triangle strip)
-        glImageData.geomBuffer.bind()
-        gl.glVertexAttribPointer(
-            self.inVertexPos,
-            3,
-            gl.GL_FLOAT,
-            gl.GL_FALSE,
-            0,
-            None)
-        gl.glEnableVertexAttribArray(self.inVertexPos)
-        arbia.glVertexAttribDivisorARB(self.inVertexPos, 0)
-
-        # Draw all of the triangles!
-        arbdi.glDrawArraysInstancedARB(
-            gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
-
-        gl.glDisableVertexAttribArray(self.inVertexPos)
-        gl.glDisableVertexAttribArray(self.voxXPos)
-        gl.glDisableVertexAttribArray(self.voxYPos)
-        gl.glDisableVertexAttribArray(self.voxZPos)
-
-        
-    def _draw(self, ev):
-        """Draws the currently selected slice (as specified by the ``z``
-        value of the :attr:`pos` property) to the canvas."""
-
-        # image data has not been initialised.
-        if not self.glReady:
-            wx.CallAfter(self._initGLData)
-            return
-
-        self.glContext.SetCurrent(self)
-        self._setViewport()
-
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        # load the shaders
-        gl.glUseProgram(self.shaders)
-
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-        # disable interpolation
-        gl.glShadeModel(gl.GL_FLAT)
-
-        for image in self.imageList:
-
-            log.debug('Drawing {} slice for image {}'.format(
-                self.zax, image.name))
-
-            zi = int(image.worldToVox(self.pos.z, self.zax))
-            self._drawSlice(image, zi)
-
-        gl.glUseProgram(0)
-
-        if self.showCursor:
-
-            # A vertical line at xpos, and a horizontal line at ypos
-            xverts = np.zeros((2, 3))
-            yverts = np.zeros((2, 3))
-
-            xmin, xmax = self.imageList.bounds.getRange(self.xax)
-            ymin, ymax = self.imageList.bounds.getRange(self.yax)
-
-            # add a little padding to the lines if they are
-            # on the boundary, so they don't get cropped
-            xverts[:, self.xax] = self.pos.x
-            yverts[:, self.yax] = self.pos.y 
-
-            xverts[:, self.yax] = [ymin, ymax]
-            xverts[:, self.zax] =  self.pos.z + 1
-            yverts[:, self.xax] = [xmin, xmax]
-            yverts[:, self.zax] =  self.pos.z + 1
-
-            gl.glBegin(gl.GL_LINES)
-            gl.glColor3f(0, 1, 0)
-            gl.glVertex3f(*xverts[0])
-            gl.glVertex3f(*xverts[1])
-            gl.glVertex3f(*yverts[0])
-            gl.glVertex3f(*yverts[1])
-            gl.glEnd()
-
-        self.SwapBuffers()
