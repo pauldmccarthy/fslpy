@@ -4,12 +4,19 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
+* Today
+** Jalapeno auto-pull
+** GL21 voxel opacity
+** GL_UNPACK_ALIGNMENT
+** Remove voxel<->world orthogonality requirement
+
 * Bugs to fix
-** Control panels no longer persistent across restarts?
 ** Check that FSLView command line arguments work properly
 ** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
+** gl21 - Voxel opacity when sampling rate > 1 is not correct.
+** DONE Control panels no longer persistent across restarts?
 ** DONE JALAPENO - Image List background colour no worky
 ** DONE JALAPENO - LightBoxCanvas mouse scroll no worky
 ** DONE gl14 - Transparent voxels are green ?!?
@@ -56,6 +63,11 @@ regularly, too.
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Rewrite GL storage/rendering
+ - Calculate the proper coordinates of a real-world Z slice through the image.
+   The image data will need to be (re-)generated/(re-)shaped on Z axis and
+   xform changes (or volume changes for 4D images). Or will it? Just generate
+   the appropriate voxel coordinates. Jeez.
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** change image dimension ordering
 ** link display properties across images
@@ -68,11 +80,6 @@ regularly, too.
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** DONE Location selection on LightBoxCanvas.
-** WONTFIX Rewrite GL storage/rendering
- - Calculate the proper coordinates of a real-world Z slice through the
-   image. Actually, this is quite a complicated problem, and I'm not sure
-   whether it's worth doing. It's really just to support images with bad
-   affine transformations.
 
 * Big things
 ** Test suite for props package
