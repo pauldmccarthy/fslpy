@@ -59,7 +59,7 @@ class FSLViewFrame(wx.Frame):
 
         paneInfo = (aui.AuiPaneInfo()
                     .CentrePane()
-                    .Name('centre'))
+                    .Name('centre pane'))
 
         self._auimgr.AddPane(self._centrePane, paneInfo)
         self._auimgr.Update()
@@ -213,7 +213,7 @@ class FSLViewFrame(wx.Frame):
                     .Caption(title)
                     .CaptionVisible(True)
                     .BestSize(panel.GetBestSize())
-                    .Name(panel.__class__.__name__))
+                    .Name('control {}'.format(panel.__class__.__name__)))
                     
         self._auimgr.AddPane(panel, paneInfo)
         self._auimgr.Update()
@@ -330,10 +330,13 @@ class FSLViewFrame(wx.Frame):
             log.debug('Restoring previous layout: {}'.format(layout))
 
             for panel in panels:
-                panelMeth = getattr(self, 'add{}'.format(panel), None)
 
-                if panelMeth is not None:
-                    panelMeth()
+                try:    panelType, panelClsName = panel.split()
+                except: continue
+
+                if panelType == 'control':
+                    panelCls  = getattr(controls, panelClsName)
+                    self.addControlPanel(panelCls)
 
             self._auimgr.LoadPerspective(layout)
     
