@@ -5,11 +5,13 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
-** JALAPENO - Image List background colour no worky
+** Control panels no longer persistent across restarts?
 ** Check that FSLView command line arguments work properly
 ** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
+** DONE JALAPENO - Image List background colour no worky
+** DONE JALAPENO - LightBoxCanvas mouse scroll no worky
 ** DONE gl14 - Transparent voxels are green ?!?
 ** DONE Non-FSLView tools are broken due to fsl.py Panel->Frame changes
 ** DONE LocationPanel volume bounds.
@@ -62,7 +64,6 @@ regularly, too.
 ** UI design
 ** Custom colour maps from original FSLView
 ** IN PROGRESS Command line interface - build into props package?
-
 ** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
@@ -77,16 +78,13 @@ regularly, too.
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
-** OpenGL 1.4 implementation - required for running over SSH/VNC.
+** IN PROGRESS OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
 ** Other data - Diffusion
 ** IN PROGRESS time series plotting option
-
 ** IN PROGRESS Standard for code documentation - Sphinx.
-
 ** DONE have multiple views open - look at wxAUI.
-
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
