@@ -25,7 +25,7 @@ _fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
 """Location of the GLSL fragment shader source code."""
 
 
-def _initGL(canvas):
+def initGL(canvas):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
     programs, and returns a reference to the resulting program. Raises
     an error if compilation/linking fails.
@@ -36,7 +36,7 @@ def _initGL(canvas):
     data not being bound at the time of validation.
     """
 
-    # _initGL has already been called for this canvas
+    # initGL has already been called for this canvas
     if hasattr(canvas, 'shaders'): return
 
     with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
@@ -114,7 +114,7 @@ def _initGL(canvas):
     canvas.voxZPos          = gl.glGetAttribLocation( canvas.shaders, 'voxZ')
 
         
-def _drawSlice(canvas, image, sliceno, xform=None):
+def drawSlice(canvas, image, sliceno, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
     If ``xform`` is not provided, the
@@ -244,13 +244,13 @@ def _drawSlice(canvas, image, sliceno, xform=None):
     gl.glDisableVertexAttribArray(canvas.voxZPos)
 
 
-def draw(canvas):
+def drawScene(canvas):
     """Draws the currently selected slice (as specified by the ``z``
     value of the :attr:`pos` property) to the canvas."""
 
     # shaders have not been initialised.
     if not hasattr(canvas, 'shaders'):
-        wx.CallAfter(lambda : _initGL(canvas))
+        wx.CallAfter(lambda : initGL(canvas))
         return
 
     canvas.glContext.SetCurrent(canvas)
@@ -275,7 +275,7 @@ def draw(canvas):
             canvas.zax, image.name))
 
         zi = int(image.worldToVox(canvas.pos.z, canvas.zax))
-        _drawSlice(canvas, image, zi)
+        drawSlice(canvas, image, zi)
 
     gl.glUseProgram(0)
 

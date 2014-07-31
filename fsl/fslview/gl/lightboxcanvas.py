@@ -13,16 +13,12 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import wx
+import              wx
+import numpy     as np
 
-import numpy as np
-
-import OpenGL.GL as gl
-
-import props
-
-import slicecanvas
-
+import                   slicecanvas
+import                   props
+import fsl.fslview.gl as fslgl
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
     """An OpenGL canvas which displays multiple slices from a collection of 3D
@@ -142,6 +138,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                  imageList,
                  zax=2,
                  glContext=None,
+                 glVersion=None,
                  scrollbar=None):
         """Create a :class:`LightBoxCanvas` object.
         
@@ -156,6 +153,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         :arg glContext: A :class:`wx.glcanvas.GLContext` object. If ``None``,
                         one will be created.
+
+        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
+                         API version to use. If None, the best possible
+                         version is used. 
 
         :arg scrollbar: A :class:`wx.ScrollBar` object. If not provided, all
                         slices will be drawn on the screen.
@@ -180,7 +181,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._rowsOnScreen = 0
 
         slicecanvas.SliceCanvas.__init__(
-            self, parent, imageList, zax, glContext)
+            self, parent, imageList, zax, glContext, glVersion)
 
         if scrollbar is not None:
 
@@ -241,6 +242,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             ev.Skip()
 
         self.Bind(wx.EVT_SIZE, onResize)
+
+
+    def draw(self, ev=None):
+        """
+        """
+        fslgl.lightboxcanvas_draw.drawScene(self)
 
 
     def _slicePropsChanged(self, *a):
@@ -510,100 +517,3 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                                      self._nrows,
                                      rowsOnScreen,
                                      True)
-
-
-    def _drawCursor(self):
-        """Draws a cursor at the current canvas position (the
-        :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
-        """
-        
-        sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
-                               self.sliceSpacing))
-        xlen    = self.imageList.bounds.getLen(self.xax)
-        ylen    = self.imageList.bounds.getLen(self.yax)
-        xmin    = self.imageList.bounds.getLo( self.xax)
-        ymin    = self.imageList.bounds.getLo( self.yax)
-        row     = self._nrows - int(np.floor(sliceno / self.ncols)) - 1
-        col     = int(np.floor(sliceno % self.ncols)) 
-
-        xpos, ypos = self.worldToCanvas(*self.pos.xyz)
-
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3)) 
-
-        xverts[:, self.xax] = xpos
-        xverts[0, self.yax] = ymin + (row)     * ylen
-        xverts[1, self.yax] = ymin + (row + 1) * ylen
-        xverts[:, self.zax] = self.pos.z + 1
-
-        yverts[:, self.yax] = ypos
-        yverts[0, self.xax] = xmin + (col)     * xlen
-        yverts[1, self.xax] = xmin + (col + 1) * xlen
-        yverts[:, self.zax] = self.pos.z + 1
-
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd() 
-
-        
-    def _draw(self, ev):
-        """Draws the currently visible slices to the canvas."""
-
-        # image data has not been initialised.
-        if not self.glReady:
-            wx.CallAfter(self._initGLData)
-            return
-
-        # No scrollbar -> draw all the slices 
-        if self._scrollbar is None:
-            startSlice = 0
-            endSlice   = self._nslices
-
-        # Scrollbar -> draw a selection of slices
-        else:
-            rowsOnScreen = self._scrollbar.GetPageSize()
-            startRow     = self._scrollbar.GetThumbPosition()
-            
-            startSlice   = self.ncols * startRow
-            endSlice     = startSlice + rowsOnScreen * self.ncols
-
-            if endSlice > self._nslices:
-                endSlice = self._nslices
-
-        self.glContext.SetCurrent(self)
-        self._setViewport()
-
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        # load the shaders
-        gl.glUseProgram(self.shaders)
-
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-        # disable interpolation
-        gl.glShadeModel(gl.GL_FLAT)
-
-        # Draw all the slices for all the images.
-        for i, image in enumerate(self.imageList):
-            
-            log.debug('Drawing {} slices ({} - {}) for image {}'.format(
-                endSlice - startSlice, startSlice, endSlice, i))
-            
-            for zi in range(startSlice, endSlice):
-                self._drawSlice(image,
-                                self._sliceIdxs[ i][zi],
-                                self._transforms[i][zi])
-
-        gl.glUseProgram(0) 
-
-        if self.showCursor:
-            self._drawCursor()
-
-        self.SwapBuffers()

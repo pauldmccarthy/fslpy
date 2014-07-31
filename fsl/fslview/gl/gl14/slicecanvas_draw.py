@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 import numpy       as np
 import OpenGL.GL   as gl
         
-def _drawSlice(canvas, image, sliceno, xform=None):
+def drawSlice(canvas, image, sliceno, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
     If ``xform`` is not provided, the
@@ -103,7 +103,7 @@ def _drawSlice(canvas, image, sliceno, xform=None):
     gl.glPopMatrix()
     
     
-def draw(canvas):
+def drawScene(canvas):
     """Draws the currently selected slice (as specified by the ``z``
     value of the :attr:`pos` property) to the canvas."""
 
@@ -129,7 +129,7 @@ def draw(canvas):
             canvas.zax, image.name))
 
         zi = int(image.worldToVox(canvas.pos.z, canvas.zax))
-        _drawSlice(canvas, image, zi)
+        drawSlice(canvas, image, zi)
 
     gl.glDisable(gl.GL_TEXTURE_1D)
 

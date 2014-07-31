@@ -9,7 +9,6 @@
 slice from a collection of 3D images.
 """
 
-import sys
 import logging
 
 log = logging.getLogger(__name__)
@@ -147,7 +146,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             self.panDisplayBy(xoff, yoff)
 
         
-    def __init__(self, parent, imageList, zax=0, glContext=None,
+    def __init__(self,
+                 parent,
+                 imageList,
+                 zax=0,
+                 glContext=None,
                  glVersion=None):
         """Creates a canvas object. The OpenGL data buffers for each image
         in the list are set up the first time that the canvas is
@@ -170,7 +173,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
                          API version to use. If None, the best possible
-                         version is used.                  
+                         version is used. 
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -185,6 +188,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         if glContext is None: self.glContext = wxgl.GLContext(self)
         else:                 self.glContext = glContext
 
+        self.glVersion = glVersion
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
 
@@ -235,43 +239,42 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
 
-        # We can't figure out what OpenGL version to use
-        # until the canvas is displayed on screen. 
-        def onShow(ev):
-            ev.Skip()
+        # The onShow method does some necessary OpenGL-related
+        # initialisation stuff. We have to listen for when the
+        # top level parent e.g. the frame) is shown as, for
+        # whatever reason, wx.Panel/GLCanvas objects are always
+        # 'shown'.
+        self.GetTopLevelParent().Bind(wx.EVT_SHOW, self.onShow)
 
-            # Unbind this event handler, as it
-            # only needs to be called once
-            self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
+        # All the work is done
+        # by the draw method.
+        self.Bind(wx.EVT_PAINT, self.draw)
 
-            self.glContext.SetCurrent(self)
 
-            # get the OpenGL version-specific
-            # modules  (see gl/__init__.py)
-            glPkg = fslgl.getGLPackage(glVersion)
-            slicecanvas_draw = glPkg.slicecanvas_draw
-            glimagedata      = glPkg.glimagedata
+    def onShow(self, ev):
+        """
+        We can't figure out what OpenGL version to use
+        until the canvas is displayed on screen.
+        """
+        ev.Skip()
+        
+        # Unbind this event handler, as it
+        # only needs to be called once
+        self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
 
-            # make them available throughout this module
-            sys.modules[__name__].slicecanvas_draw = slicecanvas_draw
-            sys.modules[__name__].glimagedata      = glimagedata
+        self.glContext.SetCurrent(self)
 
-            # Call the _imageListChanged method - it
-            # will generate the necessary GL data for
-            # each of the images (which can't be done
-            # until the canvas is displayed).
-            self._imageListChanged()
+        fslgl.bootstrap(self.glVersion)
 
-            # All the work is done by the
-            # slicecanvas_draw module.
-            def draw(ev):
-                slicecanvas_draw.draw(self)
-            self.Bind(wx.EVT_PAINT, draw)
+        # Call the _imageListChanged method - it
+        # will generate any necessary GL data for
+        # each of the images (which can't be done
+        # until the canvas is displayed).
+        self._imageListChanged()
+ 
 
-        # We have to listen for when the top level parent 
-        # e.g. the frame) is shown as, for whatever reason,
-        # wx.Panel/GLCanvas objects are always 'shown'.
-        self.GetTopLevelParent().Bind(wx.EVT_SHOW, onShow)
+    def draw(self, ev=None):
+        fslgl.slicecanvas_draw.drawScene(self)
 
         
     def _zAxisChanged(self, *a):
@@ -341,10 +344,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             display = image.getAttribute('display')
                 
-            glData = glimagedata.GLImageData(image,
-                                             self.xax,
-                                             self.yax,
-                                             display)
+            glData = fslgl.glimagedata.GLImageData(image,
+                                                   self.xax,
+                                                   self.yax,
+                                                   display)
             image.setAttribute(self.name, glData)
 
             def refresh(*a): self.Refresh()

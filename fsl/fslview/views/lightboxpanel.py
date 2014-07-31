@@ -87,7 +87,12 @@ class LightBoxPanel(viewpanel.ViewPanel):
         return True
 
 
-    def __init__(self, parent, imageList, displayCtx, glContext=None):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 displayCtx,
+                 glContext=None,
+                 glVersion=None):
         """
         """
 
@@ -97,9 +102,11 @@ class LightBoxPanel(viewpanel.ViewPanel):
         self._canvas = lightboxcanvas.LightBoxCanvas(self,
                                                      imageList,
                                                      glContext=glContext,
+                                                     glVersion=glVersion,
                                                      scrollbar=self._scrollbar)
 
         self._glContext = self._canvas.glContext
+        self._glVersion = glVersion
 
         self.bindProps('sliceSpacing', self._canvas)
         self.bindProps('ncols',        self._canvas)
