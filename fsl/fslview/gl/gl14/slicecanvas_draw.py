@@ -65,6 +65,8 @@ def drawSlice(canvas, image, sliceno, xform=None):
     colourTexture  = glImageData.colourTexture
     realSlice      = sliceno / imageDisplay.samplingRate
 
+    if xform is None: xform = image.voxToWorldMat
+
     if   canvas.zax == 0: imageData = imageData[realSlice, :, :]
     elif canvas.zax == 1: imageData = imageData[:, realSlice, :]
     elif canvas.zax == 2: imageData = imageData[:, :, realSlice]
@@ -76,7 +78,7 @@ def drawSlice(canvas, image, sliceno, xform=None):
 
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
-    gl.glMultMatrixf(image.voxToWorldMat)
+    gl.glMultMatrixf(xform)
 
     gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
