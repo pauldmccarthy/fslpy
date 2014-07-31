@@ -120,10 +120,9 @@ class LightBoxPanel(viewpanel.ViewPanel):
         self._sizer.Add(self._canvas,    flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._scrollbar, flag=wx.EXPAND)
 
-        self._canvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvas.Bind(wx.EVT_MOTION,    self._onMouseEvent) 
-
-        self.Bind(wx.EVT_MOUSEWHEEL, self._onMouseScroll)
+        self._canvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
+        self._canvas.Bind(wx.EVT_MOTION,     self._onMouseEvent) 
+        self._canvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseScroll)
 
         def move(*a):
             if not self.posSync: return
