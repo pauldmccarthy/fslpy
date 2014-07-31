@@ -2,48 +2,48 @@
 #
 # glimagedata.py - Create OpenGL data to render 2D slices of a 3D image.
 #
-# A GLImageData object encapsulates the OpenGL information necessary
-# to render 2D slices of a 3D image.
-# 
-# A slice from one image is rendered using four buffers and two textures.
-#
-# The first buffer, the 'geometry buffer' simply contains the 3D
-# coordinates (single precision floating point) of four vertices, which
-# define the geometry of a single voxel (using triangle strips).
-#
-# The remaining buffers contain the X, Y, and Z coordinates of the voxels
-# in the slice to be displayed. These coordinates are stored as unsigned
-# 16 bit integers, and used both to position a voxel, and to look up its
-# value in the 3D data texture (see below). 
-#
-# The image data itself is stored as a 3D texture. Data for signed or
-# unsigned 8 or 16 bit integer images is stored on the GPU in the same
-# format; all other data types are stored as 32 bit floating point.
-#
-# Finally, a 1D texture is used is used to store a lookup table containing
-# an RGBA8 colour map, to colour each voxel according to its value.
-#
-# All of these things are created when a GLImageData object is
-# instantiated. They are available as attributes of the object:
-#
-#  - imageBuffer
-#  - xBuffer
-#  - yBuffer
-#  - zBuffer
-#  - geomBuffer
-#  - colourBuffer
-#
-# The contents of all of these buffers is is dependent upon the way that
-# the image is being displayed.  They are regenerated automatically when
-# the image display properties are changed (via listeners registered on
-# the relevant fsl.fslview.displaycontext.ImageDisplay properties).
-# 
-# If the display orientation changes (i.e. the image dimensions that map
-# to the screen X/Y axes) the genVertexData method must be called
-# manually, to regenerate the voxel indices.
-#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A GLImageData object encapsulates the OpenGL information necessary
+ to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
+
+A slice from one image is rendered using four buffers and two textures.
+
+The first buffer, the 'geometry buffer' simply contains the 3D
+coordinates (single precision floating point) of four vertices, which
+define the geometry of a single voxel (using triangle strips).
+
+The remaining buffers contain the X, Y, and Z coordinates of the voxels
+in the slice to be displayed. These coordinates are stored as unsigned
+16 bit integers, and used both to position a voxel, and to look up its
+value in the 3D data texture (see below). 
+
+The image data itself is stored as a 3D texture. Data for signed or
+unsigned 8 or 16 bit integer images is stored on the GPU in the same
+format; all other data types are stored as 32 bit floating point.
+
+Finally, a 1D texture is used is used to store a lookup table containing
+an RGBA8 colour map, to colour each voxel according to its value.
+
+All of these things are created when a GLImageData object is
+instantiated. They are available as attributes of the object:
+
+ - imageBuffer
+ - xBuffer
+ - yBuffer
+ - zBuffer
+ - geomBuffer
+ - colourBuffer
+
+The contents of all of these buffers is is dependent upon the way that
+the image is being displayed.  They are regenerated automatically when
+the image display properties are changed (via listeners registered on
+the relevant fsl.fslview.displaycontext.ImageDisplay properties).
+
+If the display orientation changes (i.e. the image dimensions that map
+to the screen X/Y axes) the genVertexData method must be called
+manually, to regenerate the voxel indices.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -53,7 +53,8 @@ import numpy as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
 
-# This extension provides some texture data format identifiers which are 
+# This extension provides some texture data format identifiers
+# which are standard in more modern OpenGL versions.
 import OpenGL.GL.ARB.texture_rg as arbrg
 
 
@@ -223,11 +224,13 @@ class GLImageData(object):
 
         
     def _calculateTextureShape(self, shape):
-        """
-        Calculates the size required to store an image of the given shape
-        as a GL texture. I don't know if it is a problem which affects all
-        graphics cards, but on my MacbookPro11,3 (NVIDIA GeForce GT 750M),
-        all dimensions of a texture must have length divisible by 4.
+        """Calculates the size required to store an image of the given shape
+        as a GL texture.
+
+        At this point in time, all dimensions of a texture must have length
+        divisible by 4. I can remove this restriction by modifying the
+        GL_UNPACK_ALIGNMENT setting, and may do so at some stage.
+        
         This method returns two values - the first is the adjusted shape,
         and the second is the amount of padding, i.e. the difference
         between the texture shape and the input shape.
@@ -251,7 +254,7 @@ class GLImageData(object):
         Initialises a single-channel 3D texture which will be used
         to store the image managed by this GLImageData object. The
         texture is not populated with data - this is done by
-        _genImageData on an as-needed basis.
+        _genImageBuffer on an as-needed basis.
         """
 
         texShape, _ = self._calculateTextureShape(self.image.shape)
@@ -300,6 +303,7 @@ class GLImageData(object):
         """
 
         image           = self.image
+        display         = self.display
         volume          = self.display.volume
         sRate           = self.display.samplingRate
         imageShape      = np.array(self.image.shape[:3])
@@ -321,11 +325,11 @@ class GLImageData(object):
         # Store the actual image texture shape as an
         # attribute - the vertex shader needs to know
         # about it to perform texture lookups (see
-        # fslview/vertex_shader.glsl and
-        # slicecanvas.py:SliceCanvas_draw). If we
-        # could store textures of an arbitrary size
+        # fsl/fslview/gl/gl21/vertex_shader.glsl and
+        # gl21.slicecanvas_draw.drawSlice). If we
+        # store textures of an arbitrary size
         # (i.e. without the lengths having to be
-        # divisible by 4), we wouldn't need to do this.
+        # divisible by 4), we won't need to do this.
         self.fullTexShape  = fullTexShape
         self.subTexShape   = subTexShape
         self.subTexPad     = subTexPad
@@ -333,11 +337,9 @@ class GLImageData(object):
         # Check to see if the image buffer
         # has already been created
         try:
-            oldVolume, oldSRate, imageBuffer = \
-                image.getAttribute('glImageBuffer')
+            displayHash, imageBuffer = image.getAttribute('glImageBuffer')
         except:
-            oldVolume   = None
-            oldSRate    = None
+            displayHash = None
             imageBuffer = None
 
         if imageBuffer is None:
@@ -345,7 +347,7 @@ class GLImageData(object):
 
         # The image buffer already exists, and it
         # contains the data for the requested volume.  
-        elif oldVolume == volume and oldSRate == sRate:
+        elif displayHash == hash(display):
             return imageBuffer
 
         shape = np.array(imageData.shape)
@@ -356,9 +358,7 @@ class GLImageData(object):
                       imageData.shape))
 
         # each dimension is padded so it has length
-        # divisible by 4. Ugh. It's a word-alignment
-        # thing, I think. This seems to be necessary
-        # using the OpenGL 2.1 API on OSX mavericks. 
+        # divisible by 4. Ugh. 
         if np.any(shape % 4):
             log.debug('Padding image {} data '
                       'to shape {}'.format(image.name, subTexShape))
@@ -379,12 +379,11 @@ class GLImageData(object):
                            self.texExtFmt,
                            imageData)
 
-        # Add the index of the currently stored volume and
-        # sampling rate, and a reference to the texture as
-        # an attribute of the image, so other things which
-        # want to render the same volume of the image don't 
-        # need to duplicate all of that data.
-        image.setAttribute('glImageBuffer', (volume, sRate, imageBuffer))
+        # Add the ImageDisplay hash, and a reference to the
+        # texture as an attribute of the image, so other
+        # things which want to render the same volume of the
+        # image don't need to duplicate all of that data.
+        image.setAttribute('glImageBuffer', (hash(display), imageBuffer))
 
         return imageBuffer
 

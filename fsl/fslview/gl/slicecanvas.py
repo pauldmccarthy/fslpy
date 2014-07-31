@@ -10,12 +10,10 @@ slice from a collection of 3D images.
 """
 
 import logging
-
 log = logging.getLogger(__name__)
 
 import                wx
 import wx.glcanvas as wxgl
-
 import OpenGL.GL   as gl
 
 import props
@@ -152,9 +150,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                  zax=0,
                  glContext=None,
                  glVersion=None):
-        """Creates a canvas object. The OpenGL data buffers for each image
-        in the list are set up the first time that the canvas is
-        displayed/drawn.
+        """Creates a canvas object. 
 
         .. note:: It is assumed that each :class:`~fsl.data.image.Image`
         contained in the ``imageList`` has an attribute called ``display``,
@@ -262,8 +258,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # only needs to be called once
         self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
 
+        # Call the bootstrap function, which
+        # will figure out which OpenGL version
+        # to use, and do some module magic
         self.glContext.SetCurrent(self)
-
         fslgl.bootstrap(self.glVersion)
 
         # Call the _imageListChanged method - it
@@ -274,6 +272,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
  
 
     def draw(self, ev=None):
+        """Called on :attr:`wx.EVT_PAINT` events. Calls the OpenGL
+        version-dependent
+        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which
+        does the actual drawing.
+        """
         fslgl.slicecanvas_draw.drawScene(self)
 
         
@@ -322,9 +325,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
  
             
     def _imageListChanged(self, *a):
-        """This method is called once by :meth:`_initGLData`, and then again
-        every time an image is added or removed to/from the image list. For
-        newly added images, it creates a
+        """This method is called every time an image is added or removed
+        to/from the image list. For newly added images, it creates a
         :class:`~fsl.fslview.gl.glimagedata.GLImageData` object, which
         initialises the OpenGL data necessary to render the image, and then
         triggers a refresh.
@@ -520,17 +522,19 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                      zmax=None):
         """Sets up the GL canvas size, viewport, and projection.
 
-        This method is called by draw(), so does not need to be called
-        manually. If any of the min/max parameters are not provided,
-        they are taken from the :attr:`displayBounds` (x/y), and the
-        image list :attr:`~fsl.data.image.ImageList.bounds` (z).
+        This method is called by the OpenGL version-dependent
+        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function , so does
+        not need to be called manually. If any of the min/max parameters are
+        not provided, they are taken from the :attr:`displayBounds` (x/y), and
+        the image list :attr:`~fsl.data.image.ImageList.bounds` (z).
 
         :arg xmin: Minimum x (horizontal) location
         :arg xmax: Maximum x location
         :arg ymin: Minimum y (vertical) location
         :arg ymax: Maximum y location
         :arg zmin: Minimum z (depth) location
-        :arg zmax: Maximum z location 
+        :arg zmax: Maximum z location
+
         """
         
         if xmin is None: xmin = self.displayBounds.xlo

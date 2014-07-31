@@ -1,9 +1,28 @@
 #!/usr/bin/env python
 #
-# slicecanvas_draw.py -
+# slicecanvas_draw.py - Render slices from a collection of images in an OpenGL
+#                       2.1 compatible manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Render slices from a collection of images in an OpenGL 2.1 compatible
+ manner, using 3D textures, vertex buffer objects and custom vertex/fragment
+ shader programs.
+
+.. note:: This module is extremely tightly coupled to the
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and to the
+:class:`~fsl.fslview.gl.gl21.glimagedata.GLImageData` class.
+
+This module provides two functions:
+
+  - :func:`drawScene` draws slices from all of the images in an
+    :class:`~fsl.data.image.ImageList` to a
+    :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` display.
+
+  - :func:`drawSlice` (used by :func:`drawScene`) draws slices from one image
+    to the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`.
+
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -13,6 +32,7 @@ import numpy     as np
 import OpenGL.GL as gl
 import              wx
 
+# I am currently completely dependent upon these extensions.
 import OpenGL.GL.ARB.instanced_arrays as arbia
 import OpenGL.GL.ARB.draw_instanced   as arbdi
 

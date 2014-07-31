@@ -1,11 +1,25 @@
 #!/usr/bin/env python
 #
-# slicecanvas_draw.py - 
+# slicecanvas_draw.py - Render slices from a collection of images in an OpenGL
+#                       1.4 compatible manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A :class:`wx.glcanvas.GLCanvas` canvas which displays a single
-slice from a collection of 3D images.
+"""Render slices from a collection of images in an OpenGL 1.4 compatible
+ manner, using immediate mode rendering. 
+
+.. note:: This module is extremely tightly coupled to the
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and to the
+:class:`~fsl.fslview.gl.gl14.glimagedata.GLImageData` class.
+
+This module provides two functions:
+
+  - :func:`drawScene` draws slices from all of the images in an
+    :class:`~fsl.data.image.ImageList` to a
+    :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` display.
+
+  - :func:`drawSlice` (used by :func:`drawScene`) draws slices from one image
+    to the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`.
 """
 
 import logging
@@ -33,10 +47,10 @@ def drawSlice(canvas, image, sliceno, xform=None):
     """
 
     # The GL data is stored as an attribute of the image,
-    # and is created in the _imageListChanged method when
-    # images are added to the image. If there's no data
-    # here, ignore it; hopefully by the time _draw() is
-    # called again, it will have been created.
+    # and is created in the SliceCanvas._imageListChanged
+    # method when images are added to the image. If there's
+    # no data here, ignore it; hopefully by the time the
+    # image is to be drawn again, it will have been created.
     try:    glImageData = image.getAttribute(canvas.name)
     except: return
     
