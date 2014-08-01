@@ -20,7 +20,8 @@ class GLImageData(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
         """
-        Initialise the OpenGL data buffers required to render the given image.
+        Initialise the OpenGL data required to render the given image.
+        
         Parameters:
         
           - image:        A fsl.data.image.Image object.
