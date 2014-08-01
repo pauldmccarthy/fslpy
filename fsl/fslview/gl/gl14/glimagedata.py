@@ -2,48 +2,12 @@
 #
 # glimagedata.py - Create OpenGL data to render 2D slices of a 3D image.
 #
-# A GLImageData object encapsulates the OpenGL information necessary
-# to render 2D slices of a 3D image.
-# 
-# A slice from one image is rendered using four buffers and two textures.
-#
-# The first buffer, the 'geometry buffer' simply contains the 3D
-# coordinates (single precision floating point) of four vertices, which
-# define the geometry of a single voxel (using triangle strips).
-#
-# The remaining buffers contain the X, Y, and Z coordinates of the voxels
-# in the slice to be displayed. These coordinates are stored as unsigned
-# 16 bit integers, and used both to position a voxel, and to look up its
-# value in the 3D data texture (see below). 
-#
-# The image data itself is stored as a 3D texture. Data for signed or
-# unsigned 8 or 16 bit integer images is stored on the GPU in the same
-# format; all other data types are stored as 32 bit floating point.
-#
-# Finally, a 1D texture is used is used to store a lookup table containing
-# an RGBA8 colour map, to colour each voxel according to its value.
-#
-# All of these things are created when a GLImageData object is
-# instantiated. They are available as attributes of the object:
-#
-#  - imageBuffer
-#  - xBuffer
-#  - yBuffer
-#  - zBuffer
-#  - geomBuffer
-#  - colourBuffer
-#
-# The contents of all of these buffers is is dependent upon the way that
-# the image is being displayed.  They are regenerated automatically when
-# the image display properties are changed (via listeners registered on
-# the relevant fsl.fslview.displaycontext.ImageDisplay properties).
-# 
-# If the display orientation changes (i.e. the image dimensions that map
-# to the screen X/Y axes) the genIndexBuffers method must be called
-# manually, to regenerate the voxel indices.
-#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A GLImageData object encapsulates the OpenGL information necessary to
+render 2D slices of a 3D image, in an OpenGL 1.4 compatible manner (i.e. using
+immediate mode rendering).
+"""
 
 import logging
 log = logging.getLogger(__name__)
