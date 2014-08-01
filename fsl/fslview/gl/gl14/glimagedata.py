@@ -109,11 +109,10 @@ class GLImageData(object):
 
         
     def genImageData(self):
-        """
-        (Re-)Generates the OpenGL buffer used to store the data for the given
-        image. The buffer is stored as an attribute of the image and, if it
-        has already been created (e.g. by another GLImageData object), the
-        existing buffer is returned. 
+        """(Re-)Generates the image data which is passed to the GPU for
+        rendering. The data (a numpy array) is stored as an attribute of
+        the image and, if it has already been created (e.g. by another
+        GLImageData object), the existing buffer is returned.
         """
 
         image           = self.image
