@@ -158,14 +158,18 @@ class GLImageData(object):
 
 
     def genColourTexture(self):
+        """Generates a 1D texture containing the colour map used to
+        colour voxels.
+        """
         
         display       = self.display
         colourTexture = self.colourTexture
+        imin          = display.displayRange[0]
+        imax          = display.displayRange[1]
 
-        # First we normalise the data to lie between 0.0 and 1.0
-        imin      = display.displayRange[0]
-        imax      = display.displayRange[1]
-
+        # This transformation is used to transform voxel values
+        # from their native range to the range [0.0, 1.0], which
+        # is required for texture colour lookup.
         texCoordXform = np.identity(4, dtype=np.float32)
         texCoordXform[0, 0] = 1.0 / (imax - imin)
         texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
@@ -173,7 +177,7 @@ class GLImageData(object):
         
         self.texCoordXform = texCoordXform
 
-        log.debug('Generating colour buffer for '
+        log.debug('Generating colour texture for '
                   'image {} (map: {}; resolution: {})'.format(
                       self.image.name,
                       display.cmap.name,
@@ -201,6 +205,7 @@ class GLImageData(object):
                            gl.GL_TEXTURE_MIN_FILTER,
                            gl.GL_NEAREST)
 
+        # Values out of range are made transparent
         if display.rangeClip:
             gl.glTexParameteri(gl.GL_TEXTURE_1D,
                                gl.GL_TEXTURE_WRAP_S,
@@ -208,6 +213,8 @@ class GLImageData(object):
             gl.glTexParameterfv(gl.GL_TEXTURE_1D,
                                 gl.GL_TEXTURE_BORDER_COLOR,
                                 [1.0, 1.0, 1.0, 0.0])
+
+        # Or clamped to the min/max colours
         else:
             gl.glTexParameteri(gl.GL_TEXTURE_1D,
                                gl.GL_TEXTURE_WRAP_S,
@@ -224,11 +231,12 @@ class GLImageData(object):
 
 
     def _configDisplayListeners(self):
-        """
-        Adds a bunch of listeners to the image.ImageDisplay object which
-        defines how the given image is to be displayed. This is done so we
-        can update the colour texture when image display properties are
-        changed. 
+        """Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
+        how the given image is to be displayed.
+
+        This is done so we can update the colour texture and image data when
+        display properties are changed.
         """
 
         def vertexUpdate(*a):
