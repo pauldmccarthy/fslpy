@@ -5,12 +5,13 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Today
-** Jalapeno auto-pull
+** DONE Jalapeno auto-pull
 ** GL21 voxel opacity
 ** GL_UNPACK_ALIGNMENT
 ** Remove voxel<->world orthogonality requirement
 
 * Bugs to fix
+** elistbox labels not shown?
 ** Check that FSLView command line arguments work properly
 ** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
