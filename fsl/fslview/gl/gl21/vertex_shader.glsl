@@ -5,54 +5,50 @@
  */
 #version 120
 
-/* Opacity - constant for a whole image */
-uniform float alpha;
-
 /* image data texture */
 uniform sampler3D imageBuffer;
 
 /* Voxel coordinate -> world space transformation matrix */
-uniform mat4 voxToWorldMat;
+uniform mat4 worldToVoxMat;
+
+uniform int xax;
+uniform int yax;
+uniform int zax;
+uniform int samplingRate;
 
 /* Image dimensions */
 uniform vec3 imageShape;
 
-/* Image texture dimensions */
-uniform vec3 fullTexShape;
-uniform vec3 subTexShape;
-uniform vec3 subTexPad;
+/* X/Y world location */
+attribute vec2 worldCoords;
 
-/* Current vertex */
-attribute vec3 inVertex;
 
-/* Current voxel coordinates */
-attribute float voxX;
-attribute float voxY;
-attribute float voxZ;
+attribute vec2 texCoords;
+
+/* Z location*/
+uniform float zCoord;
 
 /* Voxel value passed through to fragment shader */ 
 varying float fragVoxValue;
 
 void main(void) {
 
-    vec3 vox = vec3(voxX, voxY, voxZ);  
+    vec4 worldLoc = vec4(0, 0, 0, 1);
+    vec4 texLoc   = vec4(0, 0, 0, 1);
+    worldLoc[xax] = worldCoords.x;
+    worldLoc[yax] = worldCoords.y;
+    worldLoc[zax] = zCoord;
+    texLoc[  xax] = texCoords.x;
+    texLoc[  yax] = texCoords.y;
+    texLoc[  zax] = zCoord; 
 
-    /*
-     * Offset the vertex by the current voxel position
-     * (and perform standard transformation from data
-     * coordinates to screen coordinates).
-     */
-    gl_Position = gl_ModelViewProjectionMatrix * 
-        (voxToWorldMat * vec4(inVertex + vox, 1.0));
+    worldLoc    = gl_ModelViewProjectionMatrix * worldLoc;
+    gl_Position = worldLoc;
 
-    /* Transform from voxel coordinates to sub-texture coordinates */
-    vox = ((vox + 0.5) / imageShape) * (subTexShape - subTexPad);
-
-    /* And then transform from sub-texture coords to normalised 
-       full-texture coordinates */
-    vox = vox / fullTexShape;
+    vec4 voxLoc = worldToVoxMat * texLoc;
+    voxLoc      = ((voxLoc  / samplingRate) + 0.5) / vec4(imageShape, 1.0);
 
     /* Look up the voxel value, and pass it to the fragment shader */
-    vec4 vt = texture3D(imageBuffer, vox);
+    vec4 vt = texture3D(imageBuffer, voxLoc.xyz);
     fragVoxValue = vt.r;
 }

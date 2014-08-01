@@ -276,6 +276,9 @@ class Image(props.HasProperties):
     def imageBounds(self, axis):
         """Return the bounds (min, max) of the image, in real world
         coordinates, along the specified 0-indexed axis.
+
+        The returned bounds give the coordinates, along the specified axis, of
+        a bounding box which contains the entire image.
         """
 
         x, y, z = self.shape[:3]
@@ -301,6 +304,25 @@ class Image(props.HasProperties):
         hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
 
         return (lo, hi)
+
+        
+    def axisLength(self, axis):
+        """
+        """
+
+        axisLen = self.shape[axis]
+
+        points = np.zeros((2, 3), dtype=np.float32)
+
+        points[1, axis] = axisLen - 1
+
+        tx = self.voxToWorld(points)
+
+        lo = tx[:, axis].min() - self.pixdim[axis] * 0.5
+        hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
+
+        return hi - lo
+
 
 
     def worldToVox(self, p, axes=None):

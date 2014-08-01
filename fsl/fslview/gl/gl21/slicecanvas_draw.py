@@ -32,10 +32,6 @@ import numpy     as np
 import OpenGL.GL as gl
 import              wx
 
-# I am currently completely dependent upon these extensions.
-import OpenGL.GL.ARB.instanced_arrays as arbia
-import OpenGL.GL.ARB.draw_instanced   as arbdi
-
 
 _vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
 """Location of the GLSL vertex shader source code."""
@@ -102,19 +98,14 @@ def initGL(canvas):
     canvas.glContext.SetCurrent(canvas)
 
     # Indices of all vertex/fragment shader parameters
-    canvas.alphaPos         = gl.glGetUniformLocation(canvas.shaders, 'alpha')
     canvas.imageBufferPos   = gl.glGetUniformLocation(canvas.shaders,
                                                       'imageBuffer')
-    canvas.voxToWorldMatPos = gl.glGetUniformLocation(canvas.shaders,
-                                                      'voxToWorldMat')
+    canvas.worldToVoxMatPos = gl.glGetUniformLocation(canvas.shaders,
+                                                      'worldToVoxMat')
     canvas.colourMapPos     = gl.glGetUniformLocation(canvas.shaders,
                                                       'colourMap')
     canvas.imageShapePos    = gl.glGetUniformLocation(canvas.shaders,
                                                       'imageShape') 
-    canvas.subTexShapePos   = gl.glGetUniformLocation(canvas.shaders,
-                                                      'subTexShape')
-    canvas.subTexPadPos     = gl.glGetUniformLocation(canvas.shaders,
-                                                      'subTexPad')
     canvas.normFactorPos    = gl.glGetUniformLocation(canvas.shaders,
                                                       'normFactor')
     canvas.normOffsetPos    = gl.glGetUniformLocation(canvas.shaders,
@@ -124,17 +115,24 @@ def initGL(canvas):
     canvas.displayMaxPos    = gl.glGetUniformLocation(canvas.shaders,
                                                       'displayMax') 
     canvas.signedPos        = gl.glGetUniformLocation(canvas.shaders,
-                                                      'signed') 
-    canvas.fullTexShapePos  = gl.glGetUniformLocation(canvas.shaders,
-                                                      'fullTexShape')
-    canvas.inVertexPos      = gl.glGetAttribLocation( canvas.shaders,
-                                                      'inVertex')
-    canvas.voxXPos          = gl.glGetAttribLocation( canvas.shaders, 'voxX')
-    canvas.voxYPos          = gl.glGetAttribLocation( canvas.shaders, 'voxY')
-    canvas.voxZPos          = gl.glGetAttribLocation( canvas.shaders, 'voxZ')
+                                                      'signed')
+    canvas.zCoordPos        = gl.glGetUniformLocation(canvas.shaders,
+                                                      'zCoord')
+    canvas.xaxPos           = gl.glGetUniformLocation(canvas.shaders,
+                                                      'xax')
+    canvas.yaxPos           = gl.glGetUniformLocation(canvas.shaders,
+                                                      'yax')
+    canvas.zaxPos           = gl.glGetUniformLocation(canvas.shaders,
+                                                      'zax') 
+    canvas.samplingRatePos  = gl.glGetUniformLocation(canvas.shaders,
+                                                      'samplingRate')
+    canvas.worldCoordPos    = gl.glGetAttribLocation( canvas.shaders,
+                                                      'worldCoords')
+    canvas.texCoordPos      = gl.glGetAttribLocation( canvas.shaders,
+                                                      'texCoords') 
 
-        
-def drawSlice(canvas, image, sliceno, xform=None):
+    
+def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
     If ``xform`` is not provided, the
@@ -143,7 +141,7 @@ def drawSlice(canvas, image, sliceno, xform=None):
 
     :arg image:   The :class:`~fsl.data.image.Image` object to draw.
     
-    :arg sliceno: Voxel index of the slice to be drawn.
+    :arg zpos:    World Z position of slice to be drawn.
     
     :arg xform:   A 4*4 transformation matrix to be applied to the slice
                   data (or ``None`` to use the
@@ -161,44 +159,37 @@ def drawSlice(canvas, image, sliceno, xform=None):
     
     imageDisplay = image.getAttribute('display')
 
-    # The number of voxels to be displayed along
-    # each dimension is not necessarily equal to
-    # the actual image shape, as the image may
-    # be sampled at a lower resolution. The
-    # GLImageData object keeps track of the
-    # current image display resolution.
-    xdim = glImageData.xdim
-    ydim = glImageData.ydim
-    zdim = glImageData.zdim
-    
     # Don't draw the slice if this
     # image display is disabled
     if not imageDisplay.enabled: return
 
+    sliceno = image.worldToVox(zpos, glImageData.zax)
+
     # if the slice is out of range, don't draw it
-    if sliceno < 0 or sliceno >= zdim: return
+    if sliceno < 0 or sliceno >= image.shape[glImageData.zax]:
+        return
 
     # bind the current alpha value
     # and data range to the shader
-    gl.glUniform1f(canvas.alphaPos,      imageDisplay.alpha)
-    gl.glUniform1f(canvas.normFactorPos, glImageData.normFactor)
-    gl.glUniform1f(canvas.normOffsetPos, glImageData.normOffset)
-    gl.glUniform1f(canvas.displayMinPos, imageDisplay.displayRange.xlo)
-    gl.glUniform1f(canvas.displayMaxPos, imageDisplay.displayRange.xhi)
-    gl.glUniform1f(canvas.signedPos,     glImageData.signed)
-
-    # and the image/texture shape buffers
-    gl.glUniform3fv(canvas.fullTexShapePos, 1, glImageData.fullTexShape)
-    gl.glUniform3fv(canvas.subTexShapePos,  1, glImageData.subTexShape)
-    gl.glUniform3fv(canvas.subTexPadPos,    1, glImageData.subTexPad)
-    gl.glUniform3fv(canvas.imageShapePos,   1, image.shape[:3])
+    gl.glUniform1f( canvas.normFactorPos,    glImageData.normFactor)
+    gl.glUniform1f( canvas.normOffsetPos,    glImageData.normOffset)
+    gl.glUniform1f( canvas.displayMinPos,    imageDisplay.displayRange.xlo)
+    gl.glUniform1f( canvas.displayMaxPos,    imageDisplay.displayRange.xhi)
+    gl.glUniform1f( canvas.signedPos,        glImageData.signed)
+    gl.glUniform1i( canvas.samplingRatePos,  imageDisplay.samplingRate)
+    gl.glUniform1f( canvas.zCoordPos,        zpos)
+    gl.glUniform3fv(canvas.imageShapePos, 1, np.array(glImageData.imageShape,
+                                                      dtype=np.float32))
+    gl.glUniform1i( canvas.xaxPos,           glImageData.xax)
+    gl.glUniform1i( canvas.yaxPos,           glImageData.yax)
+    gl.glUniform1i( canvas.zaxPos,           glImageData.zax)
     
     # bind the transformation matrix
     # to the shader variable
     if xform is None:
-        xform = np.array(image.voxToWorldMat, dtype=np.float32)
+        xform = np.array(image.worldToVoxMat, dtype=np.float32)
     xform = xform.ravel('C')
-    gl.glUniformMatrix4fv(canvas.voxToWorldMatPos, 1, False, xform)
+    gl.glUniformMatrix4fv(canvas.worldToVoxMatPos, 1, False, xform)
 
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
@@ -209,59 +200,37 @@ def drawSlice(canvas, image, sliceno, xform=None):
     gl.glActiveTexture(gl.GL_TEXTURE1) 
     gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageBuffer)
     gl.glUniform1i(canvas.imageBufferPos, 1)
-    
-    # voxel x/y/z coordinates
-    voxOffs  = [0, 0, 0]
-    voxSteps = [1, 1, 1]
 
-    voxOffs[ canvas.zax] = sliceno
-    voxSteps[canvas.yax] = xdim
-    voxSteps[canvas.zax] = xdim * ydim
-    for buf, pos, step, off in zip(
-            (glImageData.voxXBuffer,
-             glImageData.voxYBuffer,
-             glImageData.voxZBuffer),
-            (canvas.voxXPos,
-             canvas.voxYPos,
-             canvas.voxZPos),
-            voxSteps,
-            voxOffs):
-
-        if off == 0: off = None
-        else:        off = buf + (off * 2)
-        
-        buf.bind()
-        gl.glVertexAttribPointer(
-            pos,
-            1,
-            gl.GL_UNSIGNED_SHORT,
-            gl.GL_FALSE,
-            0,
-            off)
-        gl.glEnableVertexAttribArray(pos)
-        arbia.glVertexAttribDivisorARB(pos, step)
-
-    # The geometry buffer, which defines the geometry of a
-    # single vertex (4 vertices, drawn as a triangle strip)
-    glImageData.geomBuffer.bind()
+    # world x/y coordinates
+    glImageData.worldCoordBuffer.bind()
     gl.glVertexAttribPointer(
-        canvas.inVertexPos,
-        3,
+        canvas.worldCoordPos,
+        2,
         gl.GL_FLOAT,
         gl.GL_FALSE,
         0,
         None)
-    gl.glEnableVertexAttribArray(canvas.inVertexPos)
-    arbia.glVertexAttribDivisorARB(canvas.inVertexPos, 0)
+    gl.glEnableVertexAttribArray(canvas.worldCoordPos)
+
+    # world x/y texture coordinates
+    glImageData.texCoordBuffer.bind()
+    gl.glVertexAttribPointer(
+        canvas.texCoordPos,
+        2,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+    gl.glEnableVertexAttribArray(canvas.texCoordPos) 
 
     # Draw all of the triangles!
-    arbdi.glDrawArraysInstancedARB(
-        gl.GL_TRIANGLE_STRIP, 0, 4, xdim * ydim)
+    gl.glDrawArrays(
+        gl.GL_QUADS, 0, glImageData.nVertices)
 
-    gl.glDisableVertexAttribArray(canvas.inVertexPos)
-    gl.glDisableVertexAttribArray(canvas.voxXPos)
-    gl.glDisableVertexAttribArray(canvas.voxYPos)
-    gl.glDisableVertexAttribArray(canvas.voxZPos)
+    gl.glDisableVertexAttribArray(canvas.worldCoordPos)
+    gl.glDisableVertexAttribArray(canvas.texCoordPos)
+    glImageData.worldCoordBuffer.unbind()
+    glImageData.texCoordBuffer.unbind()
 
 
 def drawScene(canvas):
@@ -286,6 +255,11 @@ def drawScene(canvas):
     gl.glEnable(gl.GL_BLEND)
     gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
+    # Enable storage of tightly packed data
+    # of any size, for our 3D image texture 
+    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1) 
+
     # disable interpolation
     gl.glShadeModel(gl.GL_FLAT)
 
@@ -294,8 +268,7 @@ def drawScene(canvas):
         log.debug('Drawing {} slice for image {}'.format(
             canvas.zax, image.name))
 
-        zi = int(image.worldToVox(canvas.pos.z, canvas.zax))
-        drawSlice(canvas, image, zi)
+        drawSlice(canvas, image, canvas.pos.z)
 
     gl.glUseProgram(0)
 

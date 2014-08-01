@@ -5,12 +5,6 @@
  */
 #version 120
 
-/* 
- * image opacity (will be overridden by the opacity in the 
- * colour map, if it is lower) 
- */
-uniform float alpha;
-
 /*
  * Texture containing the colour map
  */
@@ -53,11 +47,5 @@ void main(void) {
     normVoxValue = normVoxValue  * normFactor - normOffset;
     normVoxValue = (normVoxValue - displayMin ) / (displayMax - displayMin);
 
-    vec4  voxTexture = texture1D(colourMap, normVoxValue);  
-    vec3  voxColour  = voxTexture.rgb;
-    float voxAlpha   = alpha;
-
-    if (voxTexture.a < voxAlpha) voxAlpha = voxTexture.a;
-
-    gl_FragColor = vec4(voxColour, voxAlpha);
+    gl_FragColor = texture1D(colourMap, normVoxValue); 
 }
