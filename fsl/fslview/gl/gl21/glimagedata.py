@@ -207,19 +207,13 @@ class GLImageData(object):
         nVoxels = len(worldX)
 
         # The geometry of a single voxel, rendered as a quad
-        voxelGeom = np.array([[0, 0],
-                              [0, 1],
-                              [1, 1],
-                              [1, 0]], dtype=np.float32)
+        voxelGeom = np.array([[-0.5, -0.5],
+                              [-0.5,  0.5],
+                              [ 0.5,  0.5],
+                              [ 0.5, -0.5]], dtype=np.float32)
 
-        # Then transformed to world space
-        # and shifted to the origin
-        voxelGeom = image.voxToWorld(voxelGeom, axes=[self.xax, self.yax])
-        voxelGeom[:, 0] -= voxelGeom[:, 0].mean() 
-        voxelGeom[:, 1] -= voxelGeom[:, 1].mean()
-
-        voxelGeom[:, 0] *= xSampleLen / xpixdim
-        voxelGeom[:, 1] *= ySampleLen / ypixdim
+        voxelGeom[:, 0] *= xSampleLen
+        voxelGeom[:, 1] *= ySampleLen
 
         worldX = worldX.repeat(4) 
         worldY = worldY.repeat(4)
