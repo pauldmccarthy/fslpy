@@ -71,41 +71,82 @@ class GLImageData(object):
         xdim       = image.shape[self.xax]
         ydim       = image.shape[self.yax]
 
-        start = np.floor(0.5 * sampleRate)
-        xidxs = np.arange(start, xdim, sampleRate, dtype=np.float32)
-        yidxs = np.arange(start, ydim, sampleRate, dtype=np.float32)
+        # These values give the min/max x/y values
+        # of a bounding box which encapsulates
+        # the entire image
+        xmin, xmax = image.imageBounds(self.xax)
+        ymin, ymax = image.imageBounds(self.yax)
 
-        xdim = len(xidxs)
-        ydim = len(yidxs)
+        # These values give the length
+        # of the image along the x/y axes
+        xlen = image.axisLength(self.xax)
+        ylen = image.axisLength(self.yax)
 
-        xidxs, yidxs = np.meshgrid(xidxs, yidxs)
+        # The length of a voxel along each x/y dimension
+        xpixdim = xlen / xdim
+        ypixdim = ylen / ydim
+
+        # The number of samples we need to draw,
+        # through the entire bounding box
+        xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
+        yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
+
+        # The length, in world space, of those samples
+        xSampleLen = (xmax - xmin) / xNumSamples
+        ySampleLen = (ymax - ymin) / yNumSamples
         
-        xidxs = xidxs.ravel()
-        yidxs = yidxs.ravel()
+        log.debug('Generating geometry and index buffers for {} '
+                  '(sample rate {})'.format(image.name, sampleRate))
 
-        geomData = np.zeros((4, 3), dtype=np.float32)
-        geomData[:, [xax, yax]] = [[-0.5, -0.5],
-                                   [-0.5,  0.5],
-                                   [ 0.5,  0.5],
-                                   [ 0.5, -0.5]]
+        worldX = np.linspace(xmin + 0.5 * xSampleLen,
+                             xmax - 0.5 * xSampleLen,
+                             xNumSamples)
+        worldY = np.linspace(ymin + 0.5 * ySampleLen,
+                             ymax - 0.5 * ySampleLen,
+                             yNumSamples)
+
+        worldX, worldY = np.meshgrid(worldX, worldY)
+
+        worldX  = worldX.flatten()
+        worldY  = worldY.flatten()
+        nVoxels = len(worldX)
+
+        # Figure out the image voxel
+        # coordinates for all those samples
+        worldZ    = np.zeros(len(worldX))
+        voxCoords = image.worldToVox(
+            np.array([worldX, worldY, worldZ]).transpose(),
+            axes=[self.xax, self.yax, self.zax]).transpose()
+
+        voxelX = voxCoords[0]
+        voxelY = voxCoords[1]
+        voxelZ = voxCoords[2] - voxCoords[2].mean()
         
-        geomData = geomData * sampleRate
+        # The geometry of a single voxel, rendered as a quad
+        voxelGeom = np.array([[-0.5, -0.5],
+                              [-0.5,  0.5],
+                              [ 0.5,  0.5],
+                              [ 0.5, -0.5]], dtype=np.float32)
 
-        vertices = np.zeros((xdim * ydim * 4, 3), dtype=np.float32)
-        
-        for i, (xi, yi) in enumerate(zip(xidxs, yidxs)):
-            
-            start = i * 4
-            end   = start + 4
-            
-            vertices[start:end, :]    = geomData
-            vertices[start:end, xax] += xi
-            vertices[start:end, yax] += yi
+        # And scaled appropriately
+        voxelGeom[:, 0] *= xSampleLen
+        voxelGeom[:, 1] *= ySampleLen
 
-        self.vertexData = vertices
-        self.xdim       = xdim
-        self.ydim       = ydim
-        self.zdim       = image.shape[self.zax]
+        worldX = worldX.repeat(4) 
+        worldY = worldY.repeat(4)
+        worldX = worldX + np.tile(voxelGeom[:, 0], nVoxels)
+        worldY = worldY + np.tile(voxelGeom[:, 1], nVoxels)
+
+        voxelX = voxelX.repeat(4)
+        voxelY = voxelY.repeat(4)
+        voxelZ = voxelZ.repeat(4) 
+
+        self.nVertices   = len(worldX)
+        self.worldX      = worldX
+        self.worldY      = worldY
+        self.voxelX      = voxelX
+        self.voxelY      = voxelY
+        self.voxelZ      = voxelZ
 
         
     def genImageData(self):

@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 import numpy       as np
 import OpenGL.GL   as gl
         
-def drawSlice(canvas, image, sliceno, xform=None):
+def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
     If ``xform`` is not provided, the
@@ -38,7 +38,7 @@ def drawSlice(canvas, image, sliceno, xform=None):
 
     :arg image:   The :class:`~fsl.data.image.Image` object to draw.
     
-    :arg sliceno: Voxel index of the slice to be drawn.
+    :arg zpos:    World Z position of slice to be drawn.
     
     :arg xform:   A 4*4 transformation matrix to be applied to the slice
                   data (or ``None`` to use the
@@ -55,44 +55,50 @@ def drawSlice(canvas, image, sliceno, xform=None):
     except: return
     
     imageDisplay = image.getAttribute('display')
-
-    # The number of voxels to be displayed along
-    # each dimension is not necessarily equal to
-    # the actual image shape, as the image may
-    # be sampled at a lower resolution. The
-    # GLImageData object keeps track of the
-    # current image display resolution.
-    xdim = glImageData.xdim
-    ydim = glImageData.ydim
-    zdim = glImageData.zdim
     
     # Don't draw the slice if this
     # image display is disabled
     if not imageDisplay.enabled: return
 
-    # if the slice is out of range, don't draw it
-    if sliceno < 0 or sliceno >= zdim: return
+    xmin, xmax = image.imageBounds(canvas.xax)
+    ymin, ymax = image.imageBounds(canvas.yax)
+    
+    xmid     = xmin + (xmax - xmin) / 2.0
+    ymid     = ymin + (ymax - ymin) / 2.0
+    midSlice = image.worldToVox(
+        [[xmid, ymid, zpos]],
+        axes=[canvas.xax, canvas.yax, canvas.zax])[0][2]
+
+    voxelX =  glImageData.voxelX             / imageDisplay.samplingRate
+    voxelY =  glImageData.voxelY             / imageDisplay.samplingRate
+    voxelZ = (glImageData.voxelZ + midSlice) / imageDisplay.samplingRate
+
+    worldX = glImageData.worldX
+    worldY = glImageData.worldY
 
     imageData      = glImageData.imageData
     texCoordXform  = glImageData.texCoordXform
-    vertices       = glImageData.vertexData
     colourTexture  = glImageData.colourTexture
-    realSlice      = sliceno / imageDisplay.samplingRate
 
-    if xform is None: xform = image.voxToWorldMat
+    voxelIdxs = [None] * 3
+    voxelIdxs[canvas.xax] = np.array(voxelX, dtype=np.int32)
+    voxelIdxs[canvas.yax] = np.array(voxelY, dtype=np.int32)
+    voxelIdxs[canvas.zax] = np.array(voxelZ, dtype=np.int32)
 
-    if   canvas.zax == 0: imageData = imageData[realSlice, :, :]
-    elif canvas.zax == 1: imageData = imageData[:, realSlice, :]
-    elif canvas.zax == 2: imageData = imageData[:, :, realSlice]
+    worldCoords = [None] * 3
+    worldCoords[canvas.xax] = worldX
+    worldCoords[canvas.yax] = worldY
+    worldCoords[canvas.zax] = np.repeat(zpos, len(worldX))
+    
+    imageData = imageData[voxelIdxs]
+    vertices  = np.vstack(worldCoords)
+    vertices  = vertices .ravel('F')
+    imageData = imageData.ravel('F')
 
-    vertices[:, canvas.zax] = sliceno
-    vertices = vertices.ravel('C')
-
-    imageData = imageData.ravel('F').repeat(4)
-
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPushMatrix()
-    gl.glMultMatrixf(xform)
+    if xform is not None: 
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPushMatrix()
+        gl.glMultMatrixf(xform)
 
     gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
@@ -107,13 +113,14 @@ def drawSlice(canvas, image, sliceno, xform=None):
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
     gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
-    gl.glDrawArrays(gl.GL_QUADS, 0, xdim * ydim * 4)
+    gl.glDrawArrays(gl.GL_QUADS, 0, glImageData.nVertices)
 
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPopMatrix()
+    if xform is not None:
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPopMatrix()
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glPopMatrix()
@@ -144,8 +151,7 @@ def drawScene(canvas):
         log.debug('Drawing {} slice for image {}'.format(
             canvas.zax, image.name))
 
-        zi = int(image.worldToVox(canvas.pos.z, canvas.zax))
-        drawSlice(canvas, image, zi)
+        drawSlice(canvas, image, canvas.pos.z)
 
     gl.glDisable(gl.GL_TEXTURE_1D)
 

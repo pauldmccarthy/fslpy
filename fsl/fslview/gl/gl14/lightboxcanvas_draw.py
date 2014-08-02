@@ -57,7 +57,7 @@ def drawScene(canvas, ev=None):
         for zi in range(startSlice, endSlice):
             fslgl.slicecanvas_draw.drawSlice(canvas,
                                              image,
-                                             canvas._sliceIdxs[ i][zi],
+                                             canvas._sliceLocs[ i][zi],
                                              canvas._transforms[i][zi])
             
     gl.glDisable(gl.GL_TEXTURE_1D)
