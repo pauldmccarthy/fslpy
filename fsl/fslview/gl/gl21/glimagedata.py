@@ -48,7 +48,6 @@ manually, to regenerate the voxel indices.
 import logging
 log = logging.getLogger(__name__)
 
-import itertools as it
 import numpy as np
 
 import OpenGL.GL         as gl
@@ -185,20 +184,20 @@ class GLImageData(object):
         xpixdim    = xlen / xdim
         ypixdim    = ylen / ydim
 
-        xSampleLen = xpixdim * sampleRate
-        ySampleLen = ypixdim * sampleRate
+        xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
+        yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
 
-        xNumSamples = (xmax - xmin) / xSampleLen
-        yNumSamples = (ymax - ymin) / ySampleLen
+        xSampleLen = (xmax - xmin) / xNumSamples
+        ySampleLen = (ymax - ymin) / yNumSamples
         
         log.debug('Generating geometry and index buffers for {} '
                   '(sample rate {})'.format(image.name, sampleRate))
 
-        worldX = np.linspace(xmin + 0.5 * xpixdim,
-                             xmax - 0.5 * xpixdim,
+        worldX = np.linspace(xmin + 0.5 * xSampleLen,
+                             xmax - 0.5 * xSampleLen,
                              xNumSamples)
-        worldY = np.linspace(ymin + 0.5 * ypixdim,
-                             ymax - 0.5 * ypixdim,
+        worldY = np.linspace(ymin + 0.5 * ySampleLen,
+                             ymax - 0.5 * ySampleLen,
                              yNumSamples)
 
         worldX, worldY = np.meshgrid(worldX, worldY)
@@ -219,8 +218,8 @@ class GLImageData(object):
         voxelGeom[:, 0] -= voxelGeom[:, 0].mean() 
         voxelGeom[:, 1] -= voxelGeom[:, 1].mean()
 
-        voxelGeom[:, 0] *= xSampleLen
-        voxelGeom[:, 1] *= ySampleLen
+        voxelGeom[:, 0] *= xSampleLen / xpixdim
+        voxelGeom[:, 1] *= ySampleLen / ypixdim
 
         worldX = worldX.repeat(4) 
         worldY = worldY.repeat(4)
