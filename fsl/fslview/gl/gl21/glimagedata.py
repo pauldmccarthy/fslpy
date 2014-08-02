@@ -166,7 +166,6 @@ class GLImageData(object):
         
         image      = self.image
         sampleRate = self.display.samplingRate
-
         xdim       = image.shape[self.xax]
         ydim       = image.shape[self.yax]
 
@@ -180,13 +179,17 @@ class GLImageData(object):
         # of the image along the x/y axes
         xlen = image.axisLength(self.xax)
         ylen = image.axisLength(self.yax)
-        
-        xpixdim    = xlen / xdim
-        ypixdim    = ylen / ydim
 
+        # The length of a voxel along each x/y dimension
+        xpixdim = xlen / xdim
+        ypixdim = ylen / ydim
+
+        # The number of samples we need to draw,
+        # through the entire bounding box
         xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
         yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
 
+        # The length, in world space, of those samples
         xSampleLen = (xmax - xmin) / xNumSamples
         ySampleLen = (ymax - ymin) / yNumSamples
         
@@ -212,12 +215,15 @@ class GLImageData(object):
                               [ 0.5,  0.5],
                               [ 0.5, -0.5]], dtype=np.float32)
 
+        # And scaled appropriately
         voxelGeom[:, 0] *= xSampleLen
         voxelGeom[:, 1] *= ySampleLen
 
         worldX = worldX.repeat(4) 
         worldY = worldY.repeat(4)
-        
+
+        # The world coordinates at which the
+        # image data should be sampled
         texCoords = np.vstack((worldX, worldY))
         texCoords = np.array(texCoords, dtype=np.float32)
  

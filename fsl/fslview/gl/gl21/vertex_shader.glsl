@@ -10,6 +10,7 @@ uniform sampler3D imageBuffer;
 
 /* Voxel coordinate -> world space transformation matrix */
 uniform mat4 worldToVoxMat;
+uniform mat4 worldToWorldMat;
 
 uniform int xax;
 uniform int yax;
@@ -42,7 +43,7 @@ void main(void) {
     texLoc[  yax] = texCoords.y;
     texLoc[  zax] = zCoord; 
 
-    worldLoc    = gl_ModelViewProjectionMatrix * worldLoc;
+    worldLoc    = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
     gl_Position = worldLoc;
 
     vec4 voxLoc = worldToVoxMat * texLoc;

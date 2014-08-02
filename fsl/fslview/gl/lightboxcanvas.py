@@ -429,7 +429,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self.zrange.xhi,
             self.sliceSpacing)
 
-        self._sliceIdxs  = []
+        self._sliceLocs  = []
         self._transforms = []
 
         # calculate the transformation for each
@@ -438,15 +438,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         for i, image in enumerate(self.imageList):
             
             self._transforms.append([])
-            self._sliceIdxs .append([])
+            self._sliceLocs .append([])
 
             for zi, zpos in enumerate(sliceLocs):
 
-                imgZi = image.worldToVox(zpos, self.zax)
                 xform = self._calculateSliceTransform(image, zi)
 
                 self._transforms[-1].append(xform)
-                self._sliceIdxs[ -1].append(imgZi)
+                self._sliceLocs[ -1].append(zpos)
 
 
     def _calculateSliceTransform(self, image, sliceno):
@@ -454,15 +453,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         (voxel index) in the given image.
 
         Each slice is displayed on the same canvas, but is translated to a
-        specific row/column.  So a copy of the voxToWorld transformation
-        matrix of the given image is made, and a translation applied to it, to
-        position the slice in the correct location on the canvas.
+        specific row/column.  So translation matrix is created, to position
+        the slice in the correct location on the canvas.
         """
 
         nrows = self._nrows
         ncols = self.ncols
-
-        xform = np.array(image.voxToWorldMat, dtype=np.float32)
 
         row = int(np.floor(sliceno / ncols))
         col = int(np.floor(sliceno % ncols))
@@ -475,7 +471,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         translate[3, self.yax] = ylen * (nrows - row - 1)
         translate[3, self.zax] = 0
         
-        return xform.dot(translate)
+        return translate
 
 
     def _updateScrollBar(self):

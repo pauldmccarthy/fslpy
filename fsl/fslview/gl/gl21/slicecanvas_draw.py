@@ -102,6 +102,8 @@ def initGL(canvas):
                                                       'imageBuffer')
     canvas.worldToVoxMatPos = gl.glGetUniformLocation(canvas.shaders,
                                                       'worldToVoxMat')
+    canvas.worldToWorldMatPos = gl.glGetUniformLocation(canvas.shaders,
+                                                        'worldToWorldMat') 
     canvas.colourMapPos     = gl.glGetUniformLocation(canvas.shaders,
                                                       'colourMap')
     canvas.imageShapePos    = gl.glGetUniformLocation(canvas.shaders,
@@ -184,12 +186,15 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glUniform1i( canvas.yaxPos,           glImageData.yax)
     gl.glUniform1i( canvas.zaxPos,           glImageData.zax)
     
-    # bind the transformation matrix
+    # bind the transformation matrices
     # to the shader variable
-    if xform is None:
-        xform = np.array(image.worldToVoxMat, dtype=np.float32)
-    xform = xform.ravel('C')
-    gl.glUniformMatrix4fv(canvas.worldToVoxMatPos, 1, False, xform)
+    if xform is None: xform = np.identity(4)
+    
+    w2w = np.array(xform,               dtype=np.float32).ravel('C')
+    w2v = np.array(image.worldToVoxMat, dtype=np.float32).ravel('C')
+    
+    gl.glUniformMatrix4fv(canvas.worldToVoxMatPos,   1, False, w2v)
+    gl.glUniformMatrix4fv(canvas.worldToWorldMatPos, 1, False, w2w)
 
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
