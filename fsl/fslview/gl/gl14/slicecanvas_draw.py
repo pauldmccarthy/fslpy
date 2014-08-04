@@ -69,12 +69,22 @@ def drawSlice(canvas, image, zpos, xform=None):
         [[xmid, ymid, zpos]],
         axes=[canvas.xax, canvas.yax, canvas.zax])[0][2]
 
-    voxelX =  glImageData.voxelX             / imageDisplay.samplingRate
-    voxelY =  glImageData.voxelY             / imageDisplay.samplingRate
-    voxelZ = (glImageData.voxelZ + midSlice) / imageDisplay.samplingRate
+    voxelX =  glImageData.voxelX 
+    voxelY =  glImageData.voxelY 
+    voxelZ = (glImageData.voxelZ + midSlice)
 
-    worldX = glImageData.worldX
-    worldY = glImageData.worldY
+    xout = (voxelX < 0) | (voxelX >= image.shape[canvas.xax])
+    yout = (voxelY < 0) | (voxelY >= image.shape[canvas.yax])
+    zout = (voxelZ < 0) | (voxelZ >= image.shape[canvas.zax])
+
+    inVoxels = ~(xout | yout | zout)
+
+    voxelX = voxelX[inVoxels] / imageDisplay.samplingRate
+    voxelY = voxelY[inVoxels] / imageDisplay.samplingRate
+    voxelZ = voxelZ[inVoxels] / imageDisplay.samplingRate
+
+    worldX = glImageData.worldX[inVoxels]
+    worldY = glImageData.worldY[inVoxels]
 
     imageData      = glImageData.imageData
     texCoordXform  = glImageData.texCoordXform
@@ -113,7 +123,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
     gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
-    gl.glDrawArrays(gl.GL_QUADS, 0, glImageData.nVertices)
+    gl.glDrawArrays(gl.GL_QUADS, 0, len(worldX))
 
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
