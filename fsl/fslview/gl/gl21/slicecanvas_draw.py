@@ -10,8 +10,10 @@
  shader programs.
 
 .. note:: This module is extremely tightly coupled to the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and to the
-:class:`~fsl.fslview.gl.gl21.glimagedata.GLImageData` class.
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, to the
+:class:`~fsl.fslview.gl.gl21.glimagedata.GLImageData` class, and
+to the vertex and fragment shader programs (`vertex_shader.glsl` and
+`fragment_shader.glsl` respectively).
 
 This module provides two functions:
 
@@ -137,18 +139,12 @@ def initGL(canvas):
 def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
-    If ``xform`` is not provided, the
-    :class:`~fsl.data.image.Image` ``voxToWorldMat`` transformation
-    matrix is used.
-
     :arg image:   The :class:`~fsl.data.image.Image` object to draw.
     
     :arg zpos:    World Z position of slice to be drawn.
     
-    :arg xform:   A 4*4 transformation matrix to be applied to the slice
-                  data (or ``None`` to use the
-                  :class:`~fsl.data.image.Image` ``voxToWorldMat``
-                  matrix).
+    :arg xform:   A 4*4 transformation matrix to be applied to the vertex
+                  data.
     """
 
     # The GL data is stored as an attribute of the image,

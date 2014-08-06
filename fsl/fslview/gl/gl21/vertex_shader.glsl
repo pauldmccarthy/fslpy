@@ -8,7 +8,7 @@
 /* image data texture */
 uniform sampler3D imageBuffer;
 
-/* Voxel coordinate -> world space transformation matrix */
+/* World coordinate -> voxel coordinate transformation matrix */
 uniform mat4 worldToVoxMat;
 uniform mat4 worldToWorldMat;
 

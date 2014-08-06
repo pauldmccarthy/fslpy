@@ -307,7 +307,7 @@ class Image(props.HasProperties):
 
         
     def axisLength(self, axis):
-        """
+        """Return the length, in real world units, of the specified axis.
         """
 
         axisLen = self.shape[axis]
@@ -322,7 +322,6 @@ class Image(props.HasProperties):
         hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
 
         return hi - lo
-
 
 
     def worldToVox(self, p, axes=None):

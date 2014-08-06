@@ -7,16 +7,23 @@
 """A GLImageData object encapsulates the OpenGL information necessary
  to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
 
-A slice from one image is rendered using four buffers and two textures.
+A slice from one image is rendered using two buffers and two textures.
 
-The first buffer, the 'geometry buffer' simply contains the 3D
-coordinates (single precision floating point) of four vertices, which
-define the geometry of a single voxel (using triangle strips).
+The first buffer, the 'world coordinate buffer' contains the 2D X/Y
+coordinates (single precision floating point, X and Y respectively correspond
+to the screen horizontal and vertical axes), in world space, for every voxel
+to be displayed. Each voxel is represented by four vertices, of four vertices,
+which are rendered as quads.
 
-The remaining buffers contain the X, Y, and Z coordinates of the voxels
-in the slice to be displayed. These coordinates are stored as unsigned
-16 bit integers, and used both to position a voxel, and to look up its
-value in the 3D data texture (see below). 
+The next buffer, the 'texture coordinate buffer' contains the, 2D X/Y
+coordinates in world space, of the center of each of those voxels. This
+duplication is an unfortunate necessity at this point in time. These
+coordinates are used to calculate the value at each of the rendered voxels.
+The vertex shader takes these world X/Y coordinates along with the Z
+coordinate of the currently displayed slice, transforms them into voxel
+coordinates using the :attr:`fsl.data.image.worldToVoxMat` transformation
+matrix, and uses these voxel coordinates to look up the value in the 3D
+image texture.
 
 The image data itself is stored as a 3D texture. Data for signed or
 unsigned 8 or 16 bit integer images is stored on the GPU in the same
@@ -29,11 +36,11 @@ All of these things are created when a GLImageData object is
 instantiated. They are available as attributes of the object:
 
  - imageBuffer
- - xBuffer
- - yBuffer
- - zBuffer
- - geomBuffer
+ - worldCoordBuffer
+ - texCoordBuffer
+ - imageBuffer
  - colourBuffer
+ - nVertices
 
 The contents of all of these buffers is is dependent upon the way that
 the image is being displayed.  They are regenerated automatically when
@@ -43,6 +50,7 @@ the relevant fsl.fslview.displaycontext.ImageDisplay properties).
 If the display orientation changes (i.e. the image dimensions that map
 to the screen X/Y axes) the genVertexData method must be called
 manually, to regenerate the voxel indices.
+
 """
 
 import logging
@@ -151,13 +159,10 @@ class GLImageData(object):
 
     def genVertexData(self, xax, yax):
         """
-        (Re-)Generates data buffers containing X, Y, and Z coordinates,
-        used for indexing into the image. Also generates the geometry
-        buffer, which defines the geometry of a single voxel. If a
-        sampling rate other than 1 is passed in, the generated index
-        buffers will contain a sampling of the full coordinate space
-        for the X and Y dimensions, and the vertices in the geometry
-        buffer will be scaled accordingly.
+        (Re-)Generates data buffers containing the vertex and texture
+        coordinates, used for rendering voxels, where the image axes
+        corresponding to screen X and Y are defined by the `xax` and
+        `yax` parameters.
         """
 
         self.xax = xax
@@ -185,7 +190,9 @@ class GLImageData(object):
         ypixdim = ylen / ydim
 
         # The number of samples we need to draw,
-        # through the entire bounding box
+        # through the entire bounding box, to
+        # maintain the display sampling rate in
+        # the image space
         xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
         yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
 
@@ -193,9 +200,11 @@ class GLImageData(object):
         xSampleLen = (xmax - xmin) / xNumSamples
         ySampleLen = (ymax - ymin) / yNumSamples
         
-        log.debug('Generating geometry and index buffers for {} '
-                  '(sample rate {})'.format(image.name, sampleRate))
+        log.debug('Generating vertex and texture buffers for {} '
+                  '(sample rate {}, num voxels {})'.format(
+                      image.name, sampleRate, xNumSamples * yNumSamples))
 
+        # X/Y coordinates for all the voxel samples
         worldX = np.linspace(xmin + 0.5 * xSampleLen,
                              xmax - 0.5 * xSampleLen,
                              xNumSamples)
@@ -203,6 +212,7 @@ class GLImageData(object):
                              ymax - 0.5 * ySampleLen,
                              yNumSamples)
 
+        # broadcast to 2 dimensions
         worldX, worldY = np.meshgrid(worldX, worldY)
 
         worldX  = worldX.flatten()
@@ -219,6 +229,7 @@ class GLImageData(object):
         voxelGeom[:, 0] *= xSampleLen
         voxelGeom[:, 1] *= ySampleLen
 
+        # 4 vertices per voxel
         worldX = worldX.repeat(4) 
         worldY = worldY.repeat(4)
 
@@ -226,7 +237,8 @@ class GLImageData(object):
         # image data should be sampled
         texCoords = np.vstack((worldX, worldY))
         texCoords = np.array(texCoords, dtype=np.float32)
- 
+
+        # Offset the vertex coordinates by the vertex geometry
         worldX = worldX + np.tile(voxelGeom[:, 0], nVoxels)
         worldY = worldY + np.tile(voxelGeom[:, 1], nVoxels)
  
@@ -243,10 +255,10 @@ class GLImageData(object):
         
     def _genImageBuffer(self):
         """
-        (Re-)Generates the OpenGL buffer used to store the data for the given
-        image. The buffer is stored as an attribute of the image and, if it
-        has already been created (e.g. by another GLImageData object), the
-        existing buffer is returned. 
+        (Re-)Generates the OpenGL image texture used to store the data for the
+        given image. The buffer is stored as an attribute of the image and, if
+        it has already been created (e.g. by another GLImageData object), the
+        existing buffer is returned.
         """
 
         image   = self.image
@@ -338,7 +350,7 @@ class GLImageData(object):
         
     def updateColourBuffer(self):
         """
-        Regenerates the colour buffer used to colour image voxels.
+        Regenerates the colour texture used to colour image voxels.
         """
 
         display      = self.display
