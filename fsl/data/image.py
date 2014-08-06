@@ -244,30 +244,34 @@ class Image(props.HasProperties):
 
         if self.transform == 'affine':
             voxToWorldMat = self.nibImage.get_affine()
-            pixdim        = self.nibImage.get_header().get_zooms()
-            
         elif self.transform == 'pixdim':
             pixdim        = self.nibImage.get_header().get_zooms()
             voxToWorldMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
-            
         elif self.transform == 'id':
             voxToWorldMat = np.identity(4)
-            pixdim        = [1.0, 1.0, 1.0]
 
         self.voxToWorldMat = np.array(voxToWorldMat, dtype=np.float32)
         self.worldToVoxMat = linalg.inv(self.voxToWorldMat)
-        self.pixdim        = pixdim
 
         self.voxToWorldMat = self.voxToWorldMat.transpose()
         self.worldToVoxMat = self.worldToVoxMat.transpose()
 
+        if self.transform == 'affine':
+            pixdim = [self.axisLength(ax) / self.shape[ax] for ax in range(3)]
+        elif self.transform == 'pixdim':
+            pixdim = self.nibImage.get_header().get_zooms()
+        elif self.transform == 'id':
+            pixdim = [1.0, 1.0, 1.0]
+
+        self.pixdim = pixdim
+ 
         # for pixdim/identity transformations, we want the world
         # location (0, 0) to map to voxel location (0, 0)
         if self.transform in ['pixdim', 'id']:
             for i in range(3):
                 self.voxToWorldMat[3, i] =  self.pixdim[i] * 0.5
                 self.worldToVoxMat[3, i] = -0.5
-                
+ 
         log.debug('Image {} transformation matrix changed: {}'.format(
             self.name, self.voxToWorldMat))
         log.debug('Inverted matrix: {}'.format(self.worldToVoxMat)) 
@@ -275,7 +279,7 @@ class Image(props.HasProperties):
 
     def imageBounds(self, axis):
         """Return the bounds (min, max) of the image, in real world
-        coordinates, along the specified 0-indexed axis.
+
 
         The returned bounds give the coordinates, along the specified axis, of
         a bounding box which contains the entire image.
@@ -283,25 +287,26 @@ class Image(props.HasProperties):
 
         x, y, z = self.shape[:3]
 
-        x = x - 1
-        y = y - 1
-        z = z - 1
+        x -= 0.5
+        y -= 0.5
+        z -= 0.5
 
         points = np.zeros((8, 3), dtype=np.float32)
 
-        points[0, :] = [0, 0, 0]
-        points[1, :] = [0, 0, z]
-        points[2, :] = [0, y, 0]
-        points[3, :] = [0, y, z]
-        points[4, :] = [x, 0, 0]
-        points[5, :] = [x, 0, z]
-        points[6, :] = [x, y, 0]
-        points[7, :] = [x, y, z] 
+        points[0, :] = [-0.5, -0.5, -0.5]
+        points[1, :] = [-0.5, -0.5,  z]
+        points[2, :] = [-0.5,  y,   -0.5]
+        points[3, :] = [-0.5,  y,    z]
+        points[4, :] = [x,    -0.5, -0.5]
+        points[5, :] = [x,    -0.5,  z]
+        points[6, :] = [x,     y,   -0.5]
+        points[7, :] = [x,     y,    z]
+
 
         tx = self.voxToWorld(points)
 
-        lo = tx[:, axis].min() - self.pixdim[axis] * 0.5
-        hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
+        lo = tx[:, axis].min()
+        hi = tx[:, axis].max()
 
         return (lo, hi)
 
@@ -309,19 +314,15 @@ class Image(props.HasProperties):
     def axisLength(self, axis):
         """Return the length, in real world units, of the specified axis.
         """
-
-        axisLen = self.shape[axis]
-
-        points = np.zeros((2, 3), dtype=np.float32)
-
-        points[1, axis] = axisLen - 1
+        
+        points          = np.zeros((2, 3), dtype=np.float32)
+        points[:]       = [-0.5, -0.5, -0.5]
+        points[1, axis] = self.shape[axis] - 0.5 
 
         tx = self.voxToWorld(points)
 
-        lo = tx[:, axis].min() - self.pixdim[axis] * 0.5
-        hi = tx[:, axis].max() + self.pixdim[axis] * 0.5
-
-        return hi - lo
+        # euclidean distance between each boundary point
+        return sum((tx[0, :] - tx[1, :]) ** 2) ** 0.5
 
 
     def worldToVox(self, p, axes=None):
