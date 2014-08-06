@@ -8,13 +8,13 @@
 """OpenGL data and rendering stuff for fslview.
 
 This package contains the OpenGL rendering code used by FSLView. It contains a
-number of modules which contain logic independent of the available OpenGL
-version (e.g. the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class), and
-also contains a number of sub-packages (currently two) which contain
-OpenGL-version-dependent modules that are used by the version independent
-ones.
+number of modules which contain logic that is independent of the available
+OpenGL version (e.g. the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`
+class), and also contains a number of sub-packages (currently two) which
+contain OpenGL-version-dependent modules that are used by the version
+independent ones.
 
-The available OpenGL API version may only be determined once an OpenGL context
+The available OpenGL API version can only be determined once an OpenGL context
 has been created, and a display is available for rendering. Therefore, the
 package-level :func:`bootstrap` function is called by the version-independent
 module classes as needed, to dynamically determine which version-dependent
@@ -27,6 +27,7 @@ other :mod:`wx` widget.
  - slicecanvas_draw
  - lightboxcanvas_draw
  - glimagedata
+
 """
 
 

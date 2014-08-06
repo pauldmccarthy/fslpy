@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 #
-# ligntboxcanavs_draw.py -
+# ligntboxcanavs_draw.py - Render multiple image slices on one canvas in an
+# OpenGL 2.1 compatible manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Render multiple image slices on a
+:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` canvas in an Open
+
+.. note:: This module is extremely tightly coupled to the
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`,
+:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` class, and to the
+:mod:`~fsl.fslview.gl.gl21.slicecanvas_draw` module.
+"""
 
 import logging
 log = logging.getLogger(__name__)
