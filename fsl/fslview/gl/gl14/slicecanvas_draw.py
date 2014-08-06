@@ -62,7 +62,9 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     xmin, xmax = image.imageBounds(canvas.xax)
     ymin, ymax = image.imageBounds(canvas.yax)
-    
+
+    # Calculate the central Z voxel coordinate
+    # at the current Z position 
     xmid     = xmin + (xmax - xmin) / 2.0
     ymid     = ymin + (ymax - ymin) / 2.0
     midSlice = image.worldToVox(
@@ -73,6 +75,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     voxelY =  glImageData.voxelY 
     voxelZ = (glImageData.voxelZ + midSlice)
 
+    # Figure out which voxels actually need to be rendered
     xout = (voxelX < 0) | (voxelX >= image.shape[canvas.xax])
     yout = (voxelY < 0) | (voxelY >= image.shape[canvas.yax])
     zout = (voxelZ < 0) | (voxelZ >= image.shape[canvas.zax])

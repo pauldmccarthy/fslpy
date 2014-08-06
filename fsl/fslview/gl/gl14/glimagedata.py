@@ -7,6 +7,10 @@
 """A GLImageData object encapsulates the OpenGL information necessary to
 render 2D slices of a 3D image, in an OpenGL 1.4 compatible manner (i.e. using
 immediate mode rendering).
+
+
+World cordinates
+Image data
 """
 
 import logging
@@ -95,8 +99,9 @@ class GLImageData(object):
         xSampleLen = (xmax - xmin) / xNumSamples
         ySampleLen = (ymax - ymin) / yNumSamples
         
-        log.debug('Generating geometry and index buffers for {} '
-                  '(sample rate {})'.format(image.name, sampleRate))
+        log.debug('Generating coordinate buffers for {} '
+                  '(sample rate {}, num samples {})'.format(
+                      image.name, sampleRate, xSampleLen * ySampleLen))
 
         worldX = np.linspace(xmin + 0.5 * xSampleLen,
                              xmax - 0.5 * xSampleLen,
