@@ -4,13 +4,11 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
-
-
-** Remove voxel<->world orthogonality requirement
-
 * Bugs to fix
+** Lightbox is broken due to all those GL updates you've been doing.
 ** elistbox labels not shown?
-** Check that FSLView command line arguments work properly
+** elistbox throwing errors randomly.
+** Image not updating/redrawing properly on transform matrix change
 ** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
@@ -34,6 +32,8 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
+** Interpolation option when displaying in real world space
 ** Clip Low/Clip High display options
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -64,11 +64,6 @@ regularly, too.
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** Rewrite GL storage/rendering
- - Calculate the proper coordinates of a real-world Z slice through the image.
-   The image data will need to be (re-)generated/(re-)shaped on Z axis and
-   xform changes (or volume changes for 4D images). Or will it? Just generate
-   the appropriate voxel coordinates. Jeez.
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
 ** change image dimension ordering
 ** link display properties across images
@@ -76,22 +71,23 @@ regularly, too.
 ** Image export/offscreen rendering.
 ** UI design
 ** Custom colour maps from original FSLView
-** IN PROGRESS Command line interface - build into props package?
+** DONE Command line interface - build into props package?
+** DONE Remove voxel<->world orthogonality requirement
+
 ** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** DONE Location selection on LightBoxCanvas.
-
 * Big things
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
-** IN PROGRESS OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
 ** Other data - Diffusion
 ** IN PROGRESS time series plotting option
 ** IN PROGRESS Standard for code documentation - Sphinx.
+** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** DONE have multiple views open - look at wxAUI.
 * Other ideas
 ** (Saad). Select regions by colour, for editing purposes
