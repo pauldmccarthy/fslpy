@@ -91,6 +91,7 @@ def parseArgs(argv, namespace):
                 'rangeClip',
                 'samplingRate',
                 'transform',
+                'interpolation',
                 'cmap',
                 'name',
                 'volume']

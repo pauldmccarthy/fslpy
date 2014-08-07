@@ -58,17 +58,16 @@ def genVertexData(image, display, xax, yax):
     # it in the resolution of said data.
     else:
         xpixdim = image.pixdim[xax]
-        ypixdim = image.pixdim[yax] 
+        ypixdim = image.pixdim[yax]
 
-    # the width/height of our sampled voxels,
-    # given the current sampling rate
-    xSampleLen = xpixdim * sampleRate
-    ySampleLen = ypixdim * sampleRate
+    # Number of samples across each dimension,
+    # given the current sample rate
+    xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
+    yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
 
-    # The number of samples we need to draw,
-    # through the entire bounding box
-    xNumSamples = np.floor((xmax - xmin)) / xSampleLen
-    yNumSamples = np.floor((ymax - ymin)) / ySampleLen
+    # the adjusted width/height of our sampled voxels
+    xpixdim = (xmax - xmin) / xNumSamples
+    ypixdim = (ymax - ymin) / yNumSamples
 
     log.debug('Generating coordinate buffers for {} '
               '(sample rate {}, num samples {})'.format(
@@ -76,11 +75,11 @@ def genVertexData(image, display, xax, yax):
 
     # The location of every displayed
     # voxel in real world space
-    worldX = np.linspace(xmin + 0.5 * xSampleLen,
-                         xmax - 0.5 * ySampleLen,
+    worldX = np.linspace(xmin + 0.5 * xpixdim,
+                         xmax - 0.5 * xpixdim,
                          xNumSamples)
-    worldY = np.linspace(ymin + 0.5 * xSampleLen,
-                         ymax - 0.5 * ySampleLen,
+    worldY = np.linspace(ymin + 0.5 * ypixdim,
+                         ymax - 0.5 * ypixdim,
                          yNumSamples)
 
     worldX, worldY = np.meshgrid(worldX, worldY)
@@ -97,8 +96,8 @@ def genVertexData(image, display, xax, yax):
                           [ 0.5, -0.5]], dtype=np.float32)
 
     # And scaled appropriately
-    voxelGeom[:, 0] *= xSampleLen
-    voxelGeom[:, 1] *= ySampleLen
+    voxelGeom[:, 0] *= xpixdim
+    voxelGeom[:, 1] *= ypixdim
 
     worldX = worldX.repeat(4) 
     worldY = worldY.repeat(4)
