@@ -60,53 +60,35 @@ def drawSlice(canvas, image, zpos, xform=None):
     # image display is disabled
     if not imageDisplay.enabled: return
 
-    xmin, xmax = image.imageBounds(canvas.xax)
-    ymin, ymax = image.imageBounds(canvas.yax)
+    worldCoords = glImageData.worldCoords
+    texCoords   = glImageData.texCoords
+    
+    worldCoords[:, canvas.zax] = zpos
+    texCoords[  :, canvas.zax] = zpos
 
-    # Calculate the central Z voxel coordinate
-    # at the current Z position 
-    xmid     = xmin + (xmax - xmin) / 2.0
-    ymid     = ymin + (ymax - ymin) / 2.0
-    midSlice = image.worldToVox(
-        [[xmid, ymid, zpos]],
-        axes=[canvas.xax, canvas.yax, canvas.zax])[0][2]
-
-    voxelX =  glImageData.voxelX 
-    voxelY =  glImageData.voxelY 
-    voxelZ = (glImageData.voxelZ + midSlice)
-
-    # Figure out which voxels actually need to be rendered
-    xout = (voxelX < 0) | (voxelX >= image.shape[canvas.xax])
-    yout = (voxelY < 0) | (voxelY >= image.shape[canvas.yax])
-    zout = (voxelZ < 0) | (voxelZ >= image.shape[canvas.zax])
-
-    inVoxels = ~(xout | yout | zout)
-
-    voxelX = voxelX[inVoxels] / imageDisplay.samplingRate
-    voxelY = voxelY[inVoxels] / imageDisplay.samplingRate
-    voxelZ = voxelZ[inVoxels] / imageDisplay.samplingRate
-
-    worldX = glImageData.worldX[inVoxels]
-    worldY = glImageData.worldY[inVoxels]
+    voxCoords  = image.worldToVox(texCoords)
 
     imageData      = glImageData.imageData
     texCoordXform  = glImageData.texCoordXform
     colourTexture  = glImageData.colourTexture
 
-    voxelIdxs = [None] * 3
-    voxelIdxs[canvas.xax] = np.array(voxelX, dtype=np.int32)
-    voxelIdxs[canvas.yax] = np.array(voxelY, dtype=np.int32)
-    voxelIdxs[canvas.zax] = np.array(voxelZ, dtype=np.int32)
+    xdim, ydim, zdim = imageData.shape
 
-    worldCoords = [None] * 3
-    worldCoords[canvas.xax] = worldX
-    worldCoords[canvas.yax] = worldY
-    worldCoords[canvas.zax] = np.repeat(zpos, len(worldX))
+    xout = np.logical_or(voxCoords[:, 0] < 0, voxCoords[:, 0] >= xdim)
+    yout = np.logical_or(voxCoords[:, 1] < 0, voxCoords[:, 1] >= ydim)
+    zout = np.logical_or(voxCoords[:, 2] < 0, voxCoords[:, 2] >= zdim)
+
+    voxin = ~(xout | yout | zout)
+
+    worldCoords = worldCoords[voxin, :]
+    voxCoords   = voxCoords[  voxin, :]
+    nVertices   = voxCoords.shape[0]
+
+    imageData    = imageData[voxCoords[:, 0],
+                             voxCoords[:, 1],
+                             voxCoords[:, 2]]
     
-    imageData = imageData[voxelIdxs]
-    vertices  = np.vstack(worldCoords)
-    vertices  = vertices .ravel('F')
-    imageData = imageData.ravel('F')
+    worldCoords  = worldCoords.ravel('C')
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -123,10 +105,10 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
     gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
-    gl.glDrawArrays(gl.GL_QUADS, 0, len(worldX))
+    gl.glDrawArrays(gl.GL_QUADS, 0, nVertices)
 
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
