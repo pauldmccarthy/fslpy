@@ -213,9 +213,9 @@ def selectHeadCentre(opts, button):
         if   z >= image.shape[2]: z = image.shape[2] - 1
         elif z <  0:              z = 0
 
-        opts.xCoordinate = x
-        opts.yCoordinate = y
-        opts.zCoordinate = z
+        opts.xCoordinate = round(x)
+        opts.yCoordinate = round(y)
+        opts.zCoordinate = round(z)
 
     displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
 

@@ -330,7 +330,7 @@ class Image(props.HasProperties):
         in world coordinates, according to the current :attr:`transform`.
 
         The returned array is either a :class:`numpy.float64` array, or a
-        single ``int`` value, depending on the input. There is no guarantee
+        single ``float`` value, depending on the input. There is no guarantee
         that the returned array of voxel coordinates is within the bounds of
         the image shape. Parameters:
         
@@ -346,14 +346,7 @@ class Image(props.HasProperties):
         """
 
         voxp = self._transform(p, self.worldToVoxMat, axes)
-
-        # we're using a signed integer type, because if we were to
-        # used unsigned, and the worldToVox transformation produced
-        # negative voxel values, they'd be re-interpreted as large
-        # positive values. This would be a bad thing. Better to 
-        # return negative voxel values, and rely on callers to
-        # check the return values.
-        voxp = np.array(voxp.round(), dtype=np.int32)
+        voxp = np.array(voxp, dtype=np.float64)
 
         if voxp.size == 1: return voxp[0]
         else:              return voxp

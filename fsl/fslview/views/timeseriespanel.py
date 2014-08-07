@@ -127,6 +127,10 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
 
             ix, iy, iz = image.worldToVox([[x, y, z]])[0]
 
+            ix = round(ix)
+            iy = round(iy)
+            iz = round(iz)
+
             minmaxvol = self._drawPlotOneImage(image, ix, iy, iz)
 
             if minmaxvol is not None:

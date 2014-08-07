@@ -197,6 +197,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         voxLoc      = self.voxelLocation.xyz
         worldLoc    = image.voxToWorld([voxLoc])[0]
         worldVoxLoc = image.worldToVox([self._displayCtx.location.xyz])[0]
+        worldVoxLoc = np.round(worldVoxLoc)
 
         self._updateVoxelValue()
 
@@ -222,7 +223,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         image  = self._imageList[self._displayCtx.selectedImage]
         loc    = self._displayCtx.location.xyz
-        voxLoc = image.worldToVox([loc])[0]
+        voxLoc = np.round(image.worldToVox([loc]))[0]
 
         inBounds = True
 
@@ -259,7 +260,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self._voxelPanel.Layout()
 
         oldLoc = self._displayCtx.location.xyz
-        voxLoc = image.worldToVox([oldLoc])[0]
+        voxLoc = np.round(image.worldToVox([oldLoc]))[0]
 
         for i in range(3):
             self.voxelLocation.setLimits(i, 0, image.shape[i] - 1)

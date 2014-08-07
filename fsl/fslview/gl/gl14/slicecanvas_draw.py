@@ -67,6 +67,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     texCoords[  :, canvas.zax] = zpos
 
     voxCoords  = image.worldToVox(texCoords)
+    voxCoords = np.array(np.round(voxCoords), dtype=np.int32)
 
     imageData      = glImageData.imageData
     texCoordXform  = glImageData.texCoordXform
