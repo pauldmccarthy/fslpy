@@ -57,10 +57,6 @@ class ImageDisplay(props.HasProperties):
     """ 
                               
     
-    samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
-    """Only display every Nth voxel (a performance tweak)."""
-
-    
     rangeClip = props.Boolean(default=False)
     """If ``True``, don't display voxel values which are beyond the
     :attr:`displayRange`.
@@ -114,7 +110,6 @@ class ImageDisplay(props.HasProperties):
         return (self.enabled         == other.enabled         and
                 self.alpha           == other.alpha           and
                 self.displayRange    == other.displayRange    and
-                self.samplingRate    == other.samplingRate    and
                 self.rangeClip       == other.rangeClip       and
                 self.cmap.name       == other.cmap.name       and
                 self.volume          == other.volume          and
@@ -132,7 +127,6 @@ class ImageDisplay(props.HasProperties):
         return (hash(self.enabled)         ^
                 hash(self.alpha)           ^
                 hash(self.displayRange)    ^
-                hash(self.samplingRate)    ^
                 hash(self.rangeClip)       ^
                 hash(self.cmap.name)       ^
                 hash(self.volume)          ^
@@ -154,7 +148,6 @@ class ImageDisplay(props.HasProperties):
         'displayRange',
         'alpha',
         'rangeClip',
-        'samplingRate',
         'interpolation',
         props.Widget('worldResolution',
                      visibleWhen=lambda i: i.transform == 'affine'),
@@ -171,7 +164,6 @@ class ImageDisplay(props.HasProperties):
         'displayRange'    : 'Display range',
         'alpha'           : 'Opacity',
         'rangeClip'       : 'Clipping',
-        'samplingRate'    : 'Sampling rate',
         'interpolation'   : 'Interpolation',
         'worldResolution' : 'Resolution (mm)',
         'voxelResolution' : 'Resolution (voxels)',
@@ -188,7 +180,6 @@ class ImageDisplay(props.HasProperties):
         'displayRange'    : 'Minimum/maximum display values',
         'rangeClip'       : 'Do not show areas of the image which lie '
                             'outside of the display range',
-        'samplingRate'    : 'Draw every Nth voxel',
         'interpolation'   : 'How to interpolation between voxel values at '
                             'each displayed real world location',
         'worldResolution' : 'Display resolution in millimetres',
