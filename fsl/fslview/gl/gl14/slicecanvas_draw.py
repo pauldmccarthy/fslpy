@@ -69,31 +69,17 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     voxCoords  = image.worldToVox(texCoords)
 
-    imageData      = glImageData.imageData
-    texCoordXform  = glImageData.texCoordXform
-    colourTexture  = glImageData.colourTexture
-
-    xdim, ydim, zdim = imageData.shape
-
-    xout = np.logical_or(voxCoords[:, 0] < 0, voxCoords[:, 0] >= xdim)
-    yout = np.logical_or(voxCoords[:, 1] < 0, voxCoords[:, 1] >= ydim)
-    zout = np.logical_or(voxCoords[:, 2] < 0, voxCoords[:, 2] >= zdim)
-
-    voxin = ~(xout | yout | zout)
-
-    worldCoords = worldCoords[voxin, :]
-    voxCoords   = voxCoords[  voxin, :]
-    nVertices   = voxCoords.shape[0]
-
-    if nVertices == 0:
-        return
+    imageData        = glImageData.imageData
+    texCoordXform    = glImageData.texCoordXform
+    colourTexture    = glImageData.colourTexture
+    nVertices        = voxCoords.shape[0]
 
     imageData = interp.interpn(map(np.arange, imageData.shape),
                                imageData,
                                voxCoords,
                                method=imageDisplay.interpolation,
                                bounds_error=False,
-                               fill_value=None)
+                               fill_value=np.array(0.0, dtype=np.float32))
     
     worldCoords = worldCoords.ravel('C')
     imageData   = imageData.ravel(  'C')
