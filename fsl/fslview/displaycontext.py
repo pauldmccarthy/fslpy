@@ -37,6 +37,25 @@ class ImageDisplay(props.HasProperties):
                                 labels=['Min.', 'Max.'])
     """Image values which map to the minimum and maximum colour map colours."""
 
+
+    worldResolution = props.Real(minval=0.5,
+                                 maxval=10.0,
+                                 clamped=True,
+                                 editLimits=False)
+    """Display resolution when the image is being displayed in
+    real world space (transform == 'affine'). 
+    """
+
+    
+    voxelResolution = props.Real(minval=1,
+                                 maxval=10,
+                                 default=1,
+                                 clamped=True,
+                                 editLimits=False)
+    """Display resolution when the image is being displayed in
+    voxel space (transform == 'id' or 'pixdim').
+    """ 
+                              
     
     samplingRate = props.Int(minval=1, maxval=16, default=1, clamped=True)
     """Only display every Nth voxel (a performance tweak)."""
@@ -92,14 +111,17 @@ class ImageDisplay(props.HasProperties):
         if not isinstance(other, ImageDisplay):
             return False
             
-        return (self.enabled      == other.enabled      and
-                self.alpha        == other.alpha        and
-                self.displayRange == other.displayRange and
-                self.samplingRate == other.samplingRate and
-                self.rangeClip    == other.rangeClip    and
-                self.cmap.name    == other.cmap.name    and
-                self.volume       == other.volume       and
-                self.transform    == other.transform)
+        return (self.enabled         == other.enabled         and
+                self.alpha           == other.alpha           and
+                self.displayRange    == other.displayRange    and
+                self.samplingRate    == other.samplingRate    and
+                self.rangeClip       == other.rangeClip       and
+                self.cmap.name       == other.cmap.name       and
+                self.volume          == other.volume          and
+                self.worldResolution == other.worldResolution and
+                self.voxelResolution == other.voxelResolution and
+                self.transform       == other.transform       and
+                self.interpolation   == other.interpolation)
 
         
     def __hash__(self):
@@ -107,14 +129,16 @@ class ImageDisplay(props.HasProperties):
         Returns a hash value based upon the display properties of this
         :class:`ImageDisplay` object.
         """
-        return (hash(self.enabled)      ^
-                hash(self.alpha)        ^
-                hash(self.displayRange) ^
-                hash(self.samplingRate) ^
-                hash(self.rangeClip)    ^
-                hash(self.cmap.name)    ^
-                hash(self.volume)       ^
-                hash(self.transform)    ^
+        return (hash(self.enabled)         ^
+                hash(self.alpha)           ^
+                hash(self.displayRange)    ^
+                hash(self.samplingRate)    ^
+                hash(self.rangeClip)       ^
+                hash(self.cmap.name)       ^
+                hash(self.volume)          ^
+                hash(self.worldResolution) ^
+                hash(self.voxelResolution) ^
+                hash(self.transform)       ^
                 hash(self.interpolation))
 
         
@@ -124,47 +148,56 @@ class ImageDisplay(props.HasProperties):
         return self.image.is4DImage()
 
         
-    _view = props.VGroup(('name',
-                          'enabled',
-                          'displayRange',
-                          'alpha',
-                          'rangeClip',
-                          'samplingRate',
-                          'interpolation',
-                          'transform',
-                          'imageType',
-                          'cmap'))
+    _view = props.VGroup((
+        'name',
+        'enabled',
+        'displayRange',
+        'alpha',
+        'rangeClip',
+        'samplingRate',
+        'interpolation',
+        props.Widget('worldResolution',
+                     visibleWhen=lambda i: i.transform == 'affine'),
+        props.Widget('voxelResolution',
+                     visibleWhen=lambda i: i.transform != 'affine'),
+        'transform',
+        'imageType',
+        'cmap'))
 
     
     _labels = {
-        'name'          : 'Image name',
-        'enabled'       : 'Enabled',
-        'displayRange'  : 'Display range',
-        'alpha'         : 'Opacity',
-        'rangeClip'     : 'Clipping',
-        'samplingRate'  : 'Sampling rate',
-        'interpolation' : 'Interpolation',
-        'transform'     : 'Image transform',
-        'imageType'     : 'Image data type',
-        'cmap'          : 'Colour map'}
+        'name'            : 'Image name',
+        'enabled'         : 'Enabled',
+        'displayRange'    : 'Display range',
+        'alpha'           : 'Opacity',
+        'rangeClip'       : 'Clipping',
+        'samplingRate'    : 'Sampling rate',
+        'interpolation'   : 'Interpolation',
+        'worldResolution' : 'Resolution (mm)',
+        'voxelResolution' : 'Resolution (voxels)',
+        'transform'       : 'Image transform',
+        'imageType'       : 'Image data type',
+        'cmap'            : 'Colour map'}
 
     
     _tooltips = {
-        'name'          : 'The name of this image',
-        'enabled'       : 'Enable/disable this image',
-        'alpha'         : 'Opacity, between 0.0 (transparent) '
-                          'and 1.0 (opaque)',
-        'displayRange'  : 'Minimum/maximum display values',
-        'rangeClip'     : 'Do not show areas of the image which lie '
-                          'outside of the display range',
-        'samplingRate'  : 'Draw every Nth voxel',
-        'interpolation' : 'How to interpolation between voxel values at '
-                          'each displayed real world location',
-        'transform'     : 'The transformation matrix which specifies the '
-                          'conversion from voxel coordinates to a real world '
-                          'location',
-        'imageType'     : 'the type of data contained in the image',
-        'cmap'          : 'Colour map'}
+        'name'            : 'The name of this image',
+        'enabled'         : 'Enable/disable this image',
+        'alpha'           : 'Opacity, between 0.0 (transparent) '
+                            'and 1.0 (opaque)',
+        'displayRange'    : 'Minimum/maximum display values',
+        'rangeClip'       : 'Do not show areas of the image which lie '
+                            'outside of the display range',
+        'samplingRate'    : 'Draw every Nth voxel',
+        'interpolation'   : 'How to interpolation between voxel values at '
+                            'each displayed real world location',
+        'worldResolution' : 'Display resolution in millimetres',
+        'voxelResolution' : 'Display resolution in voxels',
+        'transform'       : 'The transformation matrix which specifies the '
+                            'conversion from voxel coordinates to a real '
+                            'world location',
+        'imageType'       : 'the type of data contained in the image',
+        'cmap'            : 'Colour map'}
 
     
     _propHelp = _tooltips
@@ -203,6 +236,9 @@ class ImageDisplay(props.HasProperties):
         self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
+
+        self.setConstraint('worldResolution', 'minval', min(image.pixdim))
+        self.worldResolution = min(image.pixdim)
 
         # is this a 4D volume?
         if image.is4DImage():
