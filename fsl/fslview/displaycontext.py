@@ -5,6 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import collections
+
 import numpy         as np
 import matplotlib.cm as mplcm
 
@@ -60,6 +62,15 @@ class ImageDisplay(props.HasProperties):
     property of the image associated with this :class:`ImageDisplay`.
     """
 
+
+    interpolation = props.Choice((
+        collections.OrderedDict([
+            ('nn',     'Nearest Neighbour'),
+            ('linear', 'Linear')])))
+    """How the value shown at a real world location is derived from the
+    corresponding voxel value(s).
+    """
+
     
     name = fslimage.Image.name
     """The image name.  This property is bound to the
@@ -103,7 +114,8 @@ class ImageDisplay(props.HasProperties):
                 hash(self.rangeClip)    ^
                 hash(self.cmap.name)    ^
                 hash(self.volume)       ^
-                hash(self.transform))
+                hash(self.transform)    ^
+                hash(self.interpolation))
 
         
     def is4DImage(self):
@@ -118,36 +130,41 @@ class ImageDisplay(props.HasProperties):
                           'alpha',
                           'rangeClip',
                           'samplingRate',
+                          'interpolation',
                           'transform',
                           'imageType',
                           'cmap'))
 
     
     _labels = {
-        'name'         : 'Image name',
-        'enabled'      : 'Enabled',
-        'displayRange' : 'Display range',
-        'alpha'        : 'Opacity',
-        'rangeClip'    : 'Clipping',
-        'samplingRate' : 'Sampling rate',
-        'transform'    : 'Image transform',
-        'imageType'    : 'Image data type',
-        'cmap'         : 'Colour map'}
+        'name'          : 'Image name',
+        'enabled'       : 'Enabled',
+        'displayRange'  : 'Display range',
+        'alpha'         : 'Opacity',
+        'rangeClip'     : 'Clipping',
+        'samplingRate'  : 'Sampling rate',
+        'interpolation' : 'Interpolation',
+        'transform'     : 'Image transform',
+        'imageType'     : 'Image data type',
+        'cmap'          : 'Colour map'}
 
     
     _tooltips = {
-        'name'         : 'The name of this image',
-        'enabled'      : 'Enable/disable this image',
-        'alpha'        : 'Opacity, between 0.0 (transparent) and 1.0 (opaque)',
-        'displayRange' : 'Minimum/maximum display values',
-        'rangeClip'    : 'Do not show areas of the image which lie '
-                         'outside of the display range',
-        'samplingRate' : 'Draw every Nth voxel',
-        'transform'    : 'The transformation matrix which specifies the '
-                         'conversion from voxel coordinates to a real world '
-                         'location',
-        'imageType'    : 'the type of data contained in the image',
-        'cmap'         : 'Colour map'}
+        'name'          : 'The name of this image',
+        'enabled'       : 'Enable/disable this image',
+        'alpha'         : 'Opacity, between 0.0 (transparent) '
+                          'and 1.0 (opaque)',
+        'displayRange'  : 'Minimum/maximum display values',
+        'rangeClip'     : 'Do not show areas of the image which lie '
+                          'outside of the display range',
+        'samplingRate'  : 'Draw every Nth voxel',
+        'interpolation' : 'How to interpolation between voxel values at '
+                          'each displayed real world location',
+        'transform'     : 'The transformation matrix which specifies the '
+                          'conversion from voxel coordinates to a real world '
+                          'location',
+        'imageType'     : 'the type of data contained in the image',
+        'cmap'          : 'Colour map'}
 
     
     _propHelp = _tooltips

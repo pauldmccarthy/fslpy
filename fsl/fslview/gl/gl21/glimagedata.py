@@ -306,8 +306,11 @@ class GLImageData(object):
 
         image   = self.image
         display = self.display
-        volume  = self.display.volume
-        sRate   = self.display.samplingRate
+        volume  = display.volume
+        sRate   = display.samplingRate
+
+        if   display.interpolation == 'nn':     interp = gl.GL_NEAREST
+        elif display.interpolation == 'linear': interp = gl.GL_LINEAR
 
         # we only store a single 3D image
         # in GPU memory at any one time
@@ -356,10 +359,10 @@ class GLImageData(object):
         gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_S,
                            gl.GL_CLAMP_TO_BORDER)
@@ -457,26 +460,27 @@ class GLImageData(object):
         changed. 
         """
 
-        def vertexUpdateNeeded(*a):
+        def vertexUpdate(*a):
             self.genVertexData(self.xax, self.yax)
 
-        def imageUpdateNeeded(*a):
+        def imageUpdate(*a):
             self._genImageBuffer()
         
-        def colourUpdateNeeded(*a):
+        def colourUpdate(*a):
             self.updateColourBuffer()
 
-        def indexAndImageUpdateNeeded(*a):
+        def indexAndImageUpdate(*a):
             self._genImageBuffer()
             self.genVertexData(self.xax, self.yax)
 
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
-        display.addListener('transform',    lnrName, vertexUpdateNeeded)
-        display.addListener('alpha',        lnrName, colourUpdateNeeded)
-        display.addListener('displayRange', lnrName, colourUpdateNeeded)
-        display.addListener('rangeClip',    lnrName, colourUpdateNeeded)
-        display.addListener('cmap',         lnrName, colourUpdateNeeded)
-        display.addListener('samplingRate', lnrName, indexAndImageUpdateNeeded)
-        display.addListener('volume',       lnrName, imageUpdateNeeded)
+        display.addListener('transform',     lnrName, vertexUpdate)
+        display.addListener('interpolation', lnrName, imageUpdate)
+        display.addListener('alpha',         lnrName, colourUpdate)
+        display.addListener('displayRange',  lnrName, colourUpdate)
+        display.addListener('rangeClip',     lnrName, colourUpdate)
+        display.addListener('cmap',          lnrName, colourUpdate)
+        display.addListener('samplingRate',  lnrName, indexAndImageUpdate)
+        display.addListener('volume',        lnrName, imageUpdate)
