@@ -47,7 +47,7 @@ void main(void) {
     gl_Position = worldLoc;
 
     vec4 voxLoc = worldToVoxMat * texLoc;
-    voxLoc      = ((voxLoc + 0.5) / samplingRate) / vec4(imageShape, 1.0);
+    voxLoc      = (voxLoc + 0.5) / vec4(imageShape, 1.0);
 
     /* Look up the voxel value, and pass it to the fragment shader */
     vec4 vt = texture3D(imageBuffer, voxLoc.xyz);

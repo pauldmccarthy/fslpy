@@ -128,8 +128,6 @@ def initGL(canvas):
                                                       'yax')
     canvas.zaxPos           = gl.glGetUniformLocation(canvas.shaders,
                                                       'zax') 
-    canvas.samplingRatePos  = gl.glGetUniformLocation(canvas.shaders,
-                                                      'samplingRate')
     canvas.worldCoordPos    = gl.glGetAttribLocation( canvas.shaders,
                                                       'worldCoords')
     canvas.texCoordPos      = gl.glGetAttribLocation( canvas.shaders,
@@ -168,9 +166,8 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glUniform1f( canvas.displayMinPos,    imageDisplay.displayRange.xlo)
     gl.glUniform1f( canvas.displayMaxPos,    imageDisplay.displayRange.xhi)
     gl.glUniform1f( canvas.signedPos,        glImageData.signed)
-    gl.glUniform1i( canvas.samplingRatePos,  imageDisplay.samplingRate)
     gl.glUniform1f( canvas.zCoordPos,        zpos)
-    gl.glUniform3fv(canvas.imageShapePos, 1, np.array(glImageData.imageShape,
+    gl.glUniform3fv(canvas.imageShapePos, 1, np.array(image.shape,
                                                       dtype=np.float32))
     gl.glUniform1i( canvas.xaxPos,           canvas.xax)
     gl.glUniform1i( canvas.yaxPos,           canvas.yax)

@@ -22,7 +22,8 @@ def genVertexData(image, display, xax, yax):
     """
 
     zax        = 3 - xax - yax
-    sampleRate = display.samplingRate
+    worldRes   = display.worldResolution
+    voxelRes   = display.voxelResolution
     transform  = display.transform
     xdim       = image.shape[xax]
     ydim       = image.shape[yax]
@@ -40,38 +41,32 @@ def genVertexData(image, display, xax, yax):
 
     # The width/height of a displayed voxel.
     # If we are displaying in real world space,
-    # the display resolution is somewhat
-    # arbitrary.
-    if transform == 'affine':
+    # we use the world display resolution
+    if transform in ('affine'):
 
-        # This 'arbitrary' sample size selection doesn't
-        # make any sense, as there is no correspondence
-        # between image dimensions and real world
-        # dimensions. Think of a better solution.
-        xpixdim = xlen / xdim
-        ypixdim = ylen / ydim
-        xpixdim = min(xpixdim, ypixdim)
-        ypixdim = xpixdim
+        xpixdim = worldRes
+        ypixdim = worldRes
 
     # But if we're just displaying the data (the
     # transform is 'id' or 'pixdim'), we display
     # it in the resolution of said data.
     else:
-        xpixdim = image.pixdim[xax]
-        ypixdim = image.pixdim[yax]
+        xpixdim = image.pixdim[xax] * voxelRes
+        ypixdim = image.pixdim[yax] * voxelRes
 
     # Number of samples across each dimension,
     # given the current sample rate
-    xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
-    yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
+    xNumSamples = np.floor((xmax - xmin) / xpixdim)
+    yNumSamples = np.floor((ymax - ymin) / ypixdim)
 
     # the adjusted width/height of our sampled voxels
     xpixdim = (xmax - xmin) / xNumSamples
     ypixdim = (ymax - ymin) / yNumSamples
 
     log.debug('Generating coordinate buffers for {} '
-              '(sample rate {}, num samples {})'.format(
-                  image.name, sampleRate, xNumSamples * yNumSamples))
+              '({} resolution {}/{}, num samples {})'.format(
+                  image.name, transform, worldRes, voxelRes,
+                  xNumSamples * yNumSamples))
 
     # The location of every displayed
     # voxel in real world space

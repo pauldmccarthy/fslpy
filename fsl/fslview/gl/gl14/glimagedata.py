@@ -186,10 +186,11 @@ class GLImageData(object):
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
-        display.addListener('transform',    lnrName, vertexUpdate)
-        display.addListener('alpha',        lnrName, colourUpdate)
-        display.addListener('displayRange', lnrName, colourUpdate)
-        display.addListener('rangeClip',    lnrName, colourUpdate)
-        display.addListener('cmap',         lnrName, colourUpdate)
-        display.addListener('samplingRate', lnrName, imageAndVertexUpdate) 
-        display.addListener('volume',       lnrName, imageUpdate)
+        display.addListener('transform',       lnrName, vertexUpdate)
+        display.addListener('alpha',           lnrName, colourUpdate)
+        display.addListener('displayRange',    lnrName, colourUpdate)
+        display.addListener('rangeClip',       lnrName, colourUpdate)
+        display.addListener('cmap',            lnrName, colourUpdate)
+        display.addListener('worldResolution', lnrName, vertexUpdate)
+        display.addListener('voxelResolution', lnrName, vertexUpdate) 
+        display.addListener('volume',          lnrName, imageUpdate)
