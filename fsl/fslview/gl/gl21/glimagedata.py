@@ -107,6 +107,7 @@ def genVertexData(image, display, xax, yax):
         xpixdim = xlen / xdim
         ypixdim = ylen / ydim
         xpixdim = min(xpixdim, ypixdim)
+        ypixdim = xpixdim
 
     # But if we're just displaying the data (the
     # transform is 'id' or 'pixdim'), we display
@@ -309,8 +310,8 @@ class GLImageData(object):
         volume  = display.volume
         sRate   = display.samplingRate
 
-        if   display.interpolation == 'nn':     interp = gl.GL_NEAREST
-        elif display.interpolation == 'linear': interp = gl.GL_LINEAR
+        if   display.interpolation == 'nearest': interp = gl.GL_NEAREST
+        elif display.interpolation == 'linear':  interp = gl.GL_LINEAR
 
         # we only store a single 3D image
         # in GPU memory at any one time

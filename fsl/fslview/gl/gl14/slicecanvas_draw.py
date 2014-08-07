@@ -26,8 +26,9 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import numpy       as np
-import OpenGL.GL   as gl
+import scipy.interpolate as interp
+import numpy             as np
+import OpenGL.GL         as gl
         
 def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
@@ -67,7 +68,6 @@ def drawSlice(canvas, image, zpos, xform=None):
     texCoords[  :, canvas.zax] = zpos
 
     voxCoords  = image.worldToVox(texCoords)
-    voxCoords = np.array(np.round(voxCoords), dtype=np.int32)
 
     imageData      = glImageData.imageData
     texCoordXform  = glImageData.texCoordXform
@@ -85,11 +85,18 @@ def drawSlice(canvas, image, zpos, xform=None):
     voxCoords   = voxCoords[  voxin, :]
     nVertices   = voxCoords.shape[0]
 
-    imageData    = imageData[voxCoords[:, 0],
-                             voxCoords[:, 1],
-                             voxCoords[:, 2]]
+    if nVertices == 0:
+        return
+
+    imageData = interp.interpn(map(np.arange, imageData.shape),
+                               imageData,
+                               voxCoords,
+                               method=imageDisplay.interpolation,
+                               bounds_error=False,
+                               fill_value=None)
     
-    worldCoords  = worldCoords.ravel('C')
+    worldCoords = worldCoords.ravel('C')
+    imageData   = imageData.ravel(  'C')
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)

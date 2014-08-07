@@ -65,8 +65,8 @@ class ImageDisplay(props.HasProperties):
 
     interpolation = props.Choice((
         collections.OrderedDict([
-            ('nn',     'Nearest Neighbour'),
-            ('linear', 'Linear')])))
+            ('nearest', 'Nearest Neighbour'),
+            ('linear',  'Linear')])))
     """How the value shown at a real world location is derived from the
     corresponding voxel value(s).
     """

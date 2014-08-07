@@ -61,7 +61,7 @@ def genVertexData(image, display, xax, yax):
         xpixdim = xlen / xdim
         ypixdim = ylen / ydim
         xpixdim = min(xpixdim, ypixdim)
-        ypixdim = xpixdim * 2
+        ypixdim = xpixdim
 
     # But if we're just displaying the data (the
     # transform is 'id' or 'pixdim'), we display
