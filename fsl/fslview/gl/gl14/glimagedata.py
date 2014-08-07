@@ -157,14 +157,11 @@ class GLImageData(object):
                           which describes how the image is to be displayed.
         """
 
-        self.xax     = xax
-        self.yax     = yax
         self.image   = image
         self.display = imageDisplay
 
         self.genImageData()
-        self.worldCoords, self.texCoords = genVertexData(
-            image, imageDisplay, xax, yax)
+        self.genVertexData(xax, yax)
 
         # Maximum number of colours used to draw image data.
         self.colourResolution = 256 
@@ -175,6 +172,20 @@ class GLImageData(object):
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self._configDisplayListeners()
+
+
+    def genVertexData(self, xax, yax):
+        """
+        """
+        
+        self.xax = xax
+        self.yax = yax
+
+        worldCoords, texCoords = genVertexData(
+            self.image, self.display, xax, yax)
+
+        self.worldCoords = worldCoords
+        self.texCoords   = texCoords
 
         
     def genImageData(self):
@@ -277,8 +288,7 @@ class GLImageData(object):
         """
 
         def vertexUpdate(*a):
-            self.worldCoords, self.texCoords = genVertexData(
-                self.image, self.display, self.xax, self.yax)
+            self.genVertexData(self.xax, self.yax)
 
         def imageUpdate(*a):
             self.genImageData()
@@ -296,8 +306,7 @@ class GLImageData(object):
         display.addListener('transform',    lnrName, vertexUpdate)
         display.addListener('alpha',        lnrName, colourUpdate)
         display.addListener('displayRange', lnrName, colourUpdate)
-        display.addListener('samplingRate', lnrName, imageAndVertexUpdate) 
         display.addListener('rangeClip',    lnrName, colourUpdate)
         display.addListener('cmap',         lnrName, colourUpdate)
+        display.addListener('samplingRate', lnrName, imageAndVertexUpdate) 
         display.addListener('volume',       lnrName, imageUpdate)
-        display.addListener('transform',    lnrName, vertexUpdate)

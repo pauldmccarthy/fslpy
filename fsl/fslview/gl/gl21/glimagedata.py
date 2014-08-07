@@ -66,6 +66,124 @@ import OpenGL.arrays.vbo as vbo
 import OpenGL.GL.ARB.texture_rg as arbrg
 
 
+def genVertexData(image, display, xax, yax):
+    """
+    (Re-)Generates data buffers containing X, Y, and Z coordinates,
+    used for indexing into the image. Also generates the geometry
+    buffer, which defines the geometry of a single voxel. If a
+    sampling rate other than 1 is passed in, the generated index
+    buffers will contain a sampling of the full coordinate space
+    for the X and Y dimensions, and the vertices in the geometry
+    buffer will be scaled accordingly.
+    """
+
+    zax        = 3 - xax - yax
+    sampleRate = display.samplingRate
+    transform  = display.transform
+    xdim       = image.shape[xax]
+    ydim       = image.shape[yax]
+
+    # These values give the min/max x/y values
+    # of a bounding box which encapsulates
+    # the entire image
+    xmin, xmax = image.imageBounds(xax)
+    ymin, ymax = image.imageBounds(yax)
+
+    # These values give the length
+    # of the image along the x/y axes
+    xlen = image.axisLength(xax)
+    ylen = image.axisLength(yax)
+
+    # The width/height of a displayed voxel.
+    # If we are displaying in real world space,
+    # the display resolution is somewhat
+    # arbitrary.
+    if transform == 'affine':
+
+        # This 'arbitrary' sample size selection doesn't
+        # make any sense, as there is no correspondence
+        # between image dimensions and real world
+        # dimensions. Think of a better solution.
+        xpixdim = xlen / xdim
+        ypixdim = ylen / ydim
+        xpixdim = min(xpixdim, ypixdim)
+
+    # But if we're just displaying the data (the
+    # transform is 'id' or 'pixdim'), we display
+    # it in the resolution of said data.
+    else:
+        xpixdim = image.pixdim[xax]
+        ypixdim = image.pixdim[yax] 
+
+    # the width/height of our sampled voxels,
+    # given the current sampling rate
+    xSampleLen = xpixdim * sampleRate
+    ySampleLen = ypixdim * sampleRate
+
+    # The number of samples we need to draw,
+    # through the entire bounding box
+    xNumSamples = np.floor((xmax - xmin)) / xSampleLen
+    yNumSamples = np.floor((ymax - ymin)) / ySampleLen
+
+    log.debug('Generating coordinate buffers for {} '
+              '(sample rate {}, num samples {})'.format(
+                  image.name, sampleRate, xNumSamples * yNumSamples))
+
+    # The location of every displayed
+    # voxel in real world space
+    worldX = np.linspace(xmin + 0.5 * xSampleLen,
+                         xmax - 0.5 * ySampleLen,
+                         xNumSamples)
+    worldY = np.linspace(ymin + 0.5 * xSampleLen,
+                         ymax - 0.5 * ySampleLen,
+                         yNumSamples)
+
+    worldX, worldY = np.meshgrid(worldX, worldY)
+
+    worldX  = worldX.flatten()
+    worldY  = worldY.flatten()
+    nVoxels = len(worldX)
+
+    # The geometry of a single
+    # voxel, rendered as a quad
+    voxelGeom = np.array([[-0.5, -0.5],
+                          [-0.5,  0.5],
+                          [ 0.5,  0.5],
+                          [ 0.5, -0.5]], dtype=np.float32)
+
+    # And scaled appropriately
+    voxelGeom[:, 0] *= xSampleLen
+    voxelGeom[:, 1] *= ySampleLen
+
+    worldX = worldX.repeat(4) 
+    worldY = worldY.repeat(4)
+    worldZ = np.zeros(len(worldX))
+
+    worldCoords = [None] * 3
+    texCoords   = [None] * 3
+
+    # The texture coordinates are in the centre of each
+    # set of 4 vertices, so allow us to look up the
+    # colour for every vertex coordinate
+    texCoords[xax] = worldX
+    texCoords[yax] = worldY
+    texCoords[zax] = worldZ
+
+    # The world coordinates define a bunch of sets
+    # of 4 vertices, each rendered as a quad
+    worldX = worldX + np.tile(voxelGeom[:, 0], nVoxels)
+    worldY = worldY + np.tile(voxelGeom[:, 1], nVoxels)
+    
+    worldCoords[xax] = worldX
+    worldCoords[yax] = worldY
+    worldCoords[zax] = worldZ
+
+    worldCoords = np.array(worldCoords, dtype=np.float32).transpose()
+    texCoords   = np.array(texCoords,   dtype=np.float32).transpose()
+
+    return worldCoords, texCoords
+
+
 class GLImageData(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
@@ -108,6 +226,27 @@ class GLImageData(object):
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self._configDisplayListeners()
+
+
+    def genVertexData(self, xax, yax):
+        """
+        """
+
+        self.xax = xax
+        self.yax = yax
+
+        worldCoords, texCoords = genVertexData(
+            self.image, self.display, xax, yax)
+
+        worldCoords = worldCoords[:, [xax, yax]]
+        texCoords   = texCoords[  :, [xax, yax]]
+
+        worldCoordBuffer = vbo.VBO(worldCoords.ravel('C'), gl.GL_STATIC_DRAW)
+        texCoordBuffer   = vbo.VBO(texCoords  .ravel('C'), gl.GL_STATIC_DRAW)
+
+        self.worldCoordBuffer = worldCoordBuffer
+        self.texCoordBuffer   = texCoordBuffer
+        self.nVertices        = worldCoords.shape[0]
 
         
     def _checkDataType(self):
@@ -155,102 +294,6 @@ class GLImageData(object):
                       self.texExtFmt,
                       self.normFactor,
                       self.normOffset))
-
-
-    def genVertexData(self, xax, yax):
-        """
-        (Re-)Generates data buffers containing the vertex and texture
-        coordinates, used for rendering voxels, where the image axes
-        corresponding to screen X and Y are defined by the `xax` and
-        `yax` parameters.
-        """
-
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-        
-        image      = self.image
-        sampleRate = self.display.samplingRate
-        xdim       = image.shape[self.xax]
-        ydim       = image.shape[self.yax]
-
-        # These values give the min/max x/y values
-        # of a bounding box which encapsulates
-        # the entire image
-        xmin, xmax = image.imageBounds(self.xax)
-        ymin, ymax = image.imageBounds(self.yax)
-
-        # These values give the length
-        # of the image along the x/y axes
-        xlen = image.axisLength(self.xax)
-        ylen = image.axisLength(self.yax)
-
-        # The length of a voxel along each x/y dimension
-        xpixdim = xlen / xdim
-        ypixdim = ylen / ydim
-
-        # The number of samples we need to draw,
-        # through the entire bounding box, to
-        # maintain the display sampling rate in
-        # the image space
-        xNumSamples = np.floor((xmax - xmin) / (xpixdim * sampleRate))
-        yNumSamples = np.floor((ymax - ymin) / (ypixdim * sampleRate))
-
-        # The length, in world space, of those samples
-        xSampleLen = (xmax - xmin) / xNumSamples
-        ySampleLen = (ymax - ymin) / yNumSamples
-        
-        log.debug('Generating vertex and texture buffers for {} '
-                  '(sample rate {}, num voxels {})'.format(
-                      image.name, sampleRate, xNumSamples * yNumSamples))
-
-        # X/Y coordinates for all the voxel samples
-        worldX = np.linspace(xmin + 0.5 * xSampleLen,
-                             xmax - 0.5 * xSampleLen,
-                             xNumSamples)
-        worldY = np.linspace(ymin + 0.5 * ySampleLen,
-                             ymax - 0.5 * ySampleLen,
-                             yNumSamples)
-
-        # broadcast to 2 dimensions
-        worldX, worldY = np.meshgrid(worldX, worldY)
-
-        worldX  = worldX.flatten()
-        worldY  = worldY.flatten()
-        nVoxels = len(worldX)
-
-        # The geometry of a single voxel, rendered as a quad
-        voxelGeom = np.array([[-0.5, -0.5],
-                              [-0.5,  0.5],
-                              [ 0.5,  0.5],
-                              [ 0.5, -0.5]], dtype=np.float32)
-
-        # And scaled appropriately
-        voxelGeom[:, 0] *= xSampleLen
-        voxelGeom[:, 1] *= ySampleLen
-
-        # 4 vertices per voxel
-        worldX = worldX.repeat(4) 
-        worldY = worldY.repeat(4)
-
-        # The world coordinates at which the
-        # image data should be sampled
-        texCoords = np.vstack((worldX, worldY))
-        texCoords = np.array(texCoords, dtype=np.float32)
-
-        # Offset the vertex coordinates by the vertex geometry
-        worldX = worldX + np.tile(voxelGeom[:, 0], nVoxels)
-        worldY = worldY + np.tile(voxelGeom[:, 1], nVoxels)
- 
-        worldCoords = np.vstack((worldX, worldY))
-        worldCoords = np.array(worldCoords, dtype=np.float32)
-
-        worldCoordBuffer = vbo.VBO(worldCoords.ravel('F'), gl.GL_STATIC_DRAW)
-        texCoordBuffer   = vbo.VBO(texCoords  .ravel('F'), gl.GL_STATIC_DRAW)
-
-        self.nVertices        = worldCoords.shape[1]
-        self.worldCoordBuffer = worldCoordBuffer
-        self.texCoordBuffer   = texCoordBuffer
 
         
     def _genImageBuffer(self):
@@ -414,6 +457,9 @@ class GLImageData(object):
         changed. 
         """
 
+        def vertexUpdateNeeded(*a):
+            self.genVertexData(self.xax, self.yax)
+
         def imageUpdateNeeded(*a):
             self._genImageBuffer()
         
@@ -427,6 +473,7 @@ class GLImageData(object):
         display = self.display
         lnrName = 'GlImageData_{}'.format(id(self))
 
+        display.addListener('transform',    lnrName, vertexUpdateNeeded)
         display.addListener('alpha',        lnrName, colourUpdateNeeded)
         display.addListener('displayRange', lnrName, colourUpdateNeeded)
         display.addListener('rangeClip',    lnrName, colourUpdateNeeded)

@@ -161,12 +161,6 @@ def drawSlice(canvas, image, zpos, xform=None):
     # image display is disabled
     if not imageDisplay.enabled: return
 
-    sliceno = image.worldToVox(zpos, glImageData.zax)
-
-    # if the slice is out of range, don't draw it
-    if sliceno < 0 or sliceno >= image.shape[glImageData.zax]:
-        return
-
     # bind the current alpha value
     # and data range to the shader
     gl.glUniform1f( canvas.normFactorPos,    glImageData.normFactor)
@@ -178,9 +172,9 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glUniform1f( canvas.zCoordPos,        zpos)
     gl.glUniform3fv(canvas.imageShapePos, 1, np.array(glImageData.imageShape,
                                                       dtype=np.float32))
-    gl.glUniform1i( canvas.xaxPos,           glImageData.xax)
-    gl.glUniform1i( canvas.yaxPos,           glImageData.yax)
-    gl.glUniform1i( canvas.zaxPos,           glImageData.zax)
+    gl.glUniform1i( canvas.xaxPos,           canvas.xax)
+    gl.glUniform1i( canvas.yaxPos,           canvas.yax)
+    gl.glUniform1i( canvas.zaxPos,           canvas.zax)
     
     # bind the transformation matrices
     # to the shader variable
