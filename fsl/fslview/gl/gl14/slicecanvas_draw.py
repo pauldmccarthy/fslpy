@@ -69,6 +69,20 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     voxCoords  = image.worldToVox(texCoords)
 
+    voxCoords[(voxCoords[:, 0] >= -0.5) & (voxCoords[:, 0] < 0), 0] = 0
+    
+    voxCoords[(voxCoords[:, 0] >= image.shape[0] - 1) &
+              (voxCoords[:, 0] <= image.shape[0]), 0] = image.shape[0] - 1
+    
+    voxCoords[(voxCoords[:, 1] >= -0.5) & (voxCoords[:, 1] <= 0), 1] = 0
+    voxCoords[(voxCoords[:, 1] >= image.shape[1] - 1) &
+              (voxCoords[:, 1] <= image.shape[1]), 1] = image.shape[1] - 1
+    
+    voxCoords[(voxCoords[:, 2] >= -0.5) & (voxCoords[:, 2] <= 0), 2] = 0
+    voxCoords[(voxCoords[:, 2] >= image.shape[2] - 1) &
+              (voxCoords[:, 2] <= image.shape[2]), 2] = image.shape[2] - 1
+
+
     imageData        = glImageData.imageData
     texCoordXform    = glImageData.texCoordXform
     colourTexture    = glImageData.colourTexture

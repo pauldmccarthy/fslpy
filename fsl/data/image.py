@@ -266,7 +266,7 @@ class Image(props.HasProperties):
         self.pixdim = pixdim
  
         # for pixdim/identity transformations, we want the world
-        # location (0, 0) to map to voxel location (0, 0)
+        # location (0, 0, 0) to map to voxel location (0, 0, 0)
         if self.transform in ['pixdim', 'id']:
             for i in range(3):
                 self.voxToWorldMat[3, i] =  self.pixdim[i] * 0.5
