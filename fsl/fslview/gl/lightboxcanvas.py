@@ -247,6 +247,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     def draw(self, ev=None):
         """
         """
+        
+        if not self._glReady:
+            wx.CallAfter(self._initGL)
+            return
+        
         fslgl.lightboxcanvas_draw.drawScene(self)
 
 

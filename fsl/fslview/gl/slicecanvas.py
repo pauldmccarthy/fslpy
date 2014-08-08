@@ -235,25 +235,20 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
 
-        # The onShow method does some necessary OpenGL-related
-        # initialisation stuff. We have to listen for when the
-        # top level parent e.g. the frame) is shown as, for
-        # whatever reason, wx.Panel/GLCanvas objects are always
-        # 'shown'.
-        self.GetTopLevelParent().Bind(wx.EVT_SHOW, self.onShow)
-
         # All the work is done
         # by the draw method.
         self.Bind(wx.EVT_PAINT, self.draw)
 
+        # the _initGL method is called on the
+        # first draw to initialise GL stuff
+        self._glReady = False
 
-    def onShow(self, ev):
+
+    def _initGL(self):
         """
         We can't figure out what OpenGL version to use
         until the canvas is displayed on screen.
         """
-        ev.Skip()
-        
         # Unbind this event handler, as it
         # only needs to be called once
         self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
@@ -269,6 +264,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         # each of the images (which can't be done
         # until the canvas is displayed).
         self._imageListChanged()
+
+        self._glReady = True
  
 
     def draw(self, ev=None):
@@ -277,6 +274,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which
         does the actual drawing.
         """
+
+        if not self._glReady:
+            wx.CallAfter(self._initGL)
+            return
+            
         fslgl.slicecanvas_draw.drawScene(self)
 
         
