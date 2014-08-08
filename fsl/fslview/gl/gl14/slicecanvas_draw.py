@@ -26,10 +26,11 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import scipy.interpolate as interp
+import scipy.ndimage     as ndi
 import numpy             as np
 import OpenGL.GL         as gl
-        
+
+
 def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
@@ -55,11 +56,11 @@ def drawSlice(canvas, image, zpos, xform=None):
     try:    glImageData = image.getAttribute(canvas.name)
     except: return
     
-    imageDisplay = image.getAttribute('display')
+    display = image.getAttribute('display')
     
     # Don't draw the slice if this
     # image display is disabled
-    if not imageDisplay.enabled: return
+    if not display.enabled: return
 
     worldCoords = glImageData.worldCoords
     texCoords   = glImageData.texCoords
@@ -67,33 +68,18 @@ def drawSlice(canvas, image, zpos, xform=None):
     worldCoords[:, canvas.zax] = zpos
     texCoords[  :, canvas.zax] = zpos
 
-    voxCoords  = image.worldToVox(texCoords)
-
-    voxCoords[(voxCoords[:, 0] >= -0.5) & (voxCoords[:, 0] < 0), 0] = 0
-    
-    voxCoords[(voxCoords[:, 0] >= image.shape[0] - 1) &
-              (voxCoords[:, 0] <= image.shape[0]), 0] = image.shape[0] - 1
-    
-    voxCoords[(voxCoords[:, 1] >= -0.5) & (voxCoords[:, 1] <= 0), 1] = 0
-    voxCoords[(voxCoords[:, 1] >= image.shape[1] - 1) &
-              (voxCoords[:, 1] <= image.shape[1]), 1] = image.shape[1] - 1
-    
-    voxCoords[(voxCoords[:, 2] >= -0.5) & (voxCoords[:, 2] <= 0), 2] = 0
-    voxCoords[(voxCoords[:, 2] >= image.shape[2] - 1) &
-              (voxCoords[:, 2] <= image.shape[2]), 2] = image.shape[2] - 1
-
+    voxCoords        = image.worldToVox(texCoords)
 
     imageData        = glImageData.imageData
     texCoordXform    = glImageData.texCoordXform
     colourTexture    = glImageData.colourTexture
     nVertices        = voxCoords.shape[0]
 
-    imageData = interp.interpn(map(np.arange, imageData.shape),
-                               imageData,
-                               voxCoords,
-                               method=imageDisplay.interpolation,
-                               bounds_error=False,
-                               fill_value=np.array(0.0, dtype=np.float32))
+    if display.interpolation: order = 1
+    else:                     order = 0
+    
+    voxCoords   = voxCoords.transpose()
+    imageData   = ndi.map_coordinates(imageData, voxCoords, order=order)
     
     worldCoords = worldCoords.ravel('C')
     imageData   = imageData.ravel(  'C')

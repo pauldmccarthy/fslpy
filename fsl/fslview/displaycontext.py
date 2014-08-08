@@ -5,7 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import collections
 
 import numpy         as np
 import matplotlib.cm as mplcm
@@ -78,12 +77,10 @@ class ImageDisplay(props.HasProperties):
     """
 
 
-    interpolation = props.Choice((
-        collections.OrderedDict([
-            ('nearest', 'Nearest Neighbour'),
-            ('linear',  'Linear')])))
+    interpolation = props.Boolean(default=False)
     """How the value shown at a real world location is derived from the
-    corresponding voxel value(s).
+    corresponding voxel value(s). If false, nearest neighbour interpolation
+    is used.
     """
 
     
@@ -180,7 +177,7 @@ class ImageDisplay(props.HasProperties):
         'displayRange'    : 'Minimum/maximum display values',
         'rangeClip'       : 'Do not show areas of the image which lie '
                             'outside of the display range',
-        'interpolation'   : 'How to interpolation between voxel values at '
+        'interpolation'   : 'Interpolate between voxel values at '
                             'each displayed real world location',
         'worldResolution' : 'Display resolution in millimetres',
         'voxelResolution' : 'Display resolution in voxels',
