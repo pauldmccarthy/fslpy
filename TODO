@@ -4,6 +4,8 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
+- Clean up, refactor, and comment glimage/glimagedata stuff.
+
 * Bugs to fix
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
@@ -34,7 +36,6 @@ regularly, too.
 * Little things
 ** Optimisations - tune image._transform, and glimage.genVertexData functions.
 ** Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
-** Clip Low/Clip High display options
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
 ** Rethink 4D handling - image.display.volume or imageList.volume?
@@ -42,6 +43,7 @@ regularly, too.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
+** DONE Clip Low/Clip High display options
 ** DONE Clear image names on location panel and image display panel when image list is empty.
 ** DONE Interpolation option when displaying in real world space
 ** DONE Use GL_UNPACK_ALIGNMENT to avoid the need to pad texture images.
