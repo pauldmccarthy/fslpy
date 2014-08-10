@@ -295,7 +295,8 @@ def runBet(parent, opts):
 
         outDisplay.cmap             = 'Reds'
         outDisplay.displayRange.xlo = 1
-        outDisplay.rangeClip        = True
+        outDisplay.clipLow          = True
+        outDisplay.clipHigh         = True
 
         frame  = orthopanel.OrthoFrame(parent,
                                        imageList,

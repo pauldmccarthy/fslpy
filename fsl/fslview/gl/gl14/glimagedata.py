@@ -100,7 +100,10 @@ class GLImageData(object):
 
         # This transformation is used to transform voxel values
         # from their native range to the range [0.0, 1.0], which
-        # is required for texture colour lookup.
+        # is required for texture colour lookup. Values below
+        # or above the current display range will be mapped
+        # to texture coordinate values less than 0.0 or greater
+        # than 1.0 respectively.
         texCoordXform = np.identity(4, dtype=np.float32)
         texCoordXform[0, 0] = 1.0 / (imax - imin)
         texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
@@ -121,6 +124,11 @@ class GLImageData(object):
         colourmap   = display.cmap(colourRange)
         colourmap[:, 3] = display.alpha
 
+        # Make out-of-range values transparent
+        # if clipping is enabled
+        if display.clipLow:  colourmap[ 0, 3] = 0.0
+        if display.clipHigh: colourmap[-1, 3] = 0.0 
+
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
@@ -136,20 +144,9 @@ class GLImageData(object):
                            gl.GL_TEXTURE_MIN_FILTER,
                            gl.GL_NEAREST)
 
-        # Values out of range are made transparent
-        if display.rangeClip:
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_BORDER) 
-            gl.glTexParameterfv(gl.GL_TEXTURE_1D,
-                                gl.GL_TEXTURE_BORDER_COLOR,
-                                [1.0, 1.0, 1.0, 0.0])
-
-        # Or clamped to the min/max colours
-        else:
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
         
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
@@ -189,7 +186,8 @@ class GLImageData(object):
         display.addListener('transform',       lnrName, vertexUpdate)
         display.addListener('alpha',           lnrName, colourUpdate)
         display.addListener('displayRange',    lnrName, colourUpdate)
-        display.addListener('rangeClip',       lnrName, colourUpdate)
+        display.addListener('clipLow',         lnrName, colourUpdate)
+        display.addListener('clipHigh',        lnrName, colourUpdate)
         display.addListener('cmap',            lnrName, colourUpdate)
         display.addListener('worldResolution', lnrName, vertexUpdate)
         display.addListener('voxelResolution', lnrName, vertexUpdate) 

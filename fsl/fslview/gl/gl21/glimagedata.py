@@ -291,6 +291,11 @@ class GLImageData(object):
         colourmap       = display.cmap(colourRange)
         colourmap[:, 3] = display.alpha
 
+        # Make out-of-range values transparent
+        # if clipping is enabled 
+        if display.clipLow:  colourmap[ 0, 3] = 0.0
+        if display.clipHigh: colourmap[-1, 3] = 0.0 
+        
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
@@ -306,17 +311,9 @@ class GLImageData(object):
                            gl.GL_TEXTURE_MIN_FILTER,
                            gl.GL_NEAREST)
 
-        if display.rangeClip:
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_BORDER) 
-            gl.glTexParameterfv(gl.GL_TEXTURE_1D,
-                                gl.GL_TEXTURE_BORDER_COLOR,
-                                [1.0, 1.0, 1.0, 0.0])
-        else:
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
         
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
@@ -352,7 +349,8 @@ class GLImageData(object):
         display.addListener('interpolation',   lnrName, imageUpdate)
         display.addListener('alpha',           lnrName, colourUpdate)
         display.addListener('displayRange',    lnrName, colourUpdate)
-        display.addListener('rangeClip',       lnrName, colourUpdate)
+        display.addListener('clipLow',         lnrName, colourUpdate)
+        display.addListener('clipHigh',        lnrName, colourUpdate)
         display.addListener('cmap',            lnrName, colourUpdate)
         display.addListener('voxelResolution', lnrName, vertexUpdate)
         display.addListener('worldResolution', lnrName, vertexUpdate)

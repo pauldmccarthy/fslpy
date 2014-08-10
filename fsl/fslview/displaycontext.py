@@ -56,10 +56,16 @@ class ImageDisplay(props.HasProperties):
     """ 
                               
     
-    rangeClip = props.Boolean(default=False)
-    """If ``True``, don't display voxel values which are beyond the
-    :attr:`displayRange`.
+    clipLow  = props.Boolean(default=False)
+    """If ``True``, don't display voxel values which are lower than
+    the :attr:`displayRange`.
     """
+
+    
+    clipHigh = props.Boolean(default=False)
+    """If ``True``, don't display voxel values which are higher than
+    the :attr:`displayRange`.
+    """ 
 
     
     cmap = props.ColourMap(default=mplcm.Greys_r)
@@ -107,7 +113,8 @@ class ImageDisplay(props.HasProperties):
         return (self.enabled         == other.enabled         and
                 self.alpha           == other.alpha           and
                 self.displayRange    == other.displayRange    and
-                self.rangeClip       == other.rangeClip       and
+                self.clipLow         == other.clipLow         and
+                self.clipHigh        == other.clipHigh        and
                 self.cmap.name       == other.cmap.name       and
                 self.volume          == other.volume          and
                 self.worldResolution == other.worldResolution and
@@ -124,7 +131,8 @@ class ImageDisplay(props.HasProperties):
         return (hash(self.enabled)         ^
                 hash(self.alpha)           ^
                 hash(self.displayRange)    ^
-                hash(self.rangeClip)       ^
+                hash(self.clipLow)         ^
+                hash(self.clipHigh)        ^
                 hash(self.cmap.name)       ^
                 hash(self.volume)          ^
                 hash(self.worldResolution) ^
@@ -144,8 +152,7 @@ class ImageDisplay(props.HasProperties):
         'enabled',
         'displayRange',
         'alpha',
-        'rangeClip',
-        'interpolation',
+        props.HGroup(('clipLow', 'clipHigh', 'interpolation')),
         props.Widget('worldResolution',
                      visibleWhen=lambda i: i.transform == 'affine'),
         props.Widget('voxelResolution',
@@ -160,7 +167,8 @@ class ImageDisplay(props.HasProperties):
         'enabled'         : 'Enabled',
         'displayRange'    : 'Display range',
         'alpha'           : 'Opacity',
-        'rangeClip'       : 'Clipping',
+        'clipLow'         : 'Low clipping',
+        'clipHigh'        : 'High clipping',
         'interpolation'   : 'Interpolation',
         'worldResolution' : 'Resolution (mm)',
         'voxelResolution' : 'Resolution (voxels)',
@@ -175,8 +183,10 @@ class ImageDisplay(props.HasProperties):
         'alpha'           : 'Opacity, between 0.0 (transparent) '
                             'and 1.0 (opaque)',
         'displayRange'    : 'Minimum/maximum display values',
-        'rangeClip'       : 'Do not show areas of the image which lie '
-                            'outside of the display range',
+        'clipLow'         : 'Do not show image values which are '
+                            'lower than the display range',
+        'clipHigh'        : 'Do not show image values which are '
+                            'higher than the display range', 
         'interpolation'   : 'Interpolate between voxel values at '
                             'each displayed real world location',
         'worldResolution' : 'Display resolution in millimetres',
@@ -219,13 +229,14 @@ class ImageDisplay(props.HasProperties):
             self.dataMin = float(image.data.min())
             self.dataMax = float(image.data.max())
 
-        dRangeLen = abs(self.dataMax - self.dataMin)
+        dRangeLen    = abs(self.dataMax - self.dataMin)
+        dMinDistance = dRangeLen / 1000.0
 
         self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
-
-        self.setConstraint('worldResolution', 'minval', min(image.pixdim))
+        self.setConstraint('displayRange',    'minDistance', dMinDistance)
+        self.setConstraint('worldResolution', 'minval',      min(image.pixdim))
         self.worldResolution = min(image.pixdim)
 
         # is this a 4D volume?

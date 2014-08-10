@@ -88,7 +88,8 @@ def parseArgs(argv, namespace):
     # We don't expose all of the ImageDisplay properties
     imgProps = ['alpha',
                 'displayRange',
-                'rangeClip',
+                'clipLow',
+                'clipHigh',
                 'worldResolution',
                 'voxelResolution',
                 'transform',
