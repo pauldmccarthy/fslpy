@@ -142,31 +142,45 @@ class GLImageData(object):
 
         dtype = self.image.data.dtype
 
-        if   dtype == np.uint8:  self.texIntFmt = arbrg.GL_R8
-        elif dtype == np.int8:   self.texIntFmt = arbrg.GL_R8
-        elif dtype == np.uint16: self.texIntFmt = arbrg.GL_R16
-        elif dtype == np.int16:  self.texIntFmt = arbrg.GL_R16
-        else:                    self.texIntFmt = arbrg.GL_R32F
-
         if   dtype == np.uint8:  self.texExtFmt = gl.GL_UNSIGNED_BYTE
         elif dtype == np.int8:   self.texExtFmt = gl.GL_UNSIGNED_BYTE
         elif dtype == np.uint16: self.texExtFmt = gl.GL_UNSIGNED_SHORT
         elif dtype == np.int16:  self.texExtFmt = gl.GL_UNSIGNED_SHORT
+        elif dtype == np.uint32: self.texExtFmt = gl.GL_UNSIGNED_INT
+        elif dtype == np.int32:  self.texExtFmt = gl.GL_UNSIGNED_INT
         else:                    self.texExtFmt = gl.GL_FLOAT
+
+        if   dtype == np.uint8:  self.texIntFmt = gl.GL_INTENSITY
+        elif dtype == np.int8:   self.texIntFmt = gl.GL_INTENSITY
+        elif dtype == np.uint16: self.texIntFmt = gl.GL_INTENSITY
+        elif dtype == np.int16:  self.texIntFmt = gl.GL_INTENSITY
+        elif dtype == np.uint32: self.texIntFmt = gl.GL_INTENSITY
+        elif dtype == np.int32:  self.texIntFmt = gl.GL_INTENSITY
+        else:                    self.texIntFmt = arbrg.GL_R32F
 
         if   dtype == np.int8:   self.signed = True
         elif dtype == np.int16:  self.signed = True
+        elif dtype == np.int32:  self.signed = True
         else:                    self.signed = False
 
-        if   dtype == np.uint8:  self.normFactor = 255.0
-        elif dtype == np.int8:   self.normFactor = 255.0
-        elif dtype == np.uint16: self.normFactor = 65535.0
-        elif dtype == np.int16:  self.normFactor = 65535.0
-        else:                    self.normFactor = 1.0
+        if   dtype == np.uint8:  normFactor = 255.0
+        elif dtype == np.int8:   normFactor = 255.0
+        elif dtype == np.uint16: normFactor = 65535.0
+        elif dtype == np.int16:  normFactor = 65535.0
+        elif dtype == np.uint32: normFactor = 4294967295.0
+        elif dtype == np.int32:  normFactor = 4294967295.0
+        else:                    normFactor = 1.0
 
-        if   dtype == np.int8:   self.normOffset = 128.0
-        elif dtype == np.int16:  self.normOffset = 32768.0
-        else:                    self.normOffset = 0.0
+        if   dtype == np.int8:   normOffset = 128.0
+        elif dtype == np.int16:  normOffset = 32768.0
+        elif dtype == np.int32:  normOffset = 2147483648.0
+        else:                    normOffset = 0.0
+
+        xform = np.identity(4)
+        xform[0, 0] =  normFactor
+        xform[0, 3] = -normOffset
+
+        self.dataTypeXform = xform.transpose()
 
         log.debug('Image {} (data type {}) is to be '
                   'stored as a 3D texture with '
@@ -176,8 +190,8 @@ class GLImageData(object):
                       dtype,
                       self.texIntFmt,
                       self.texExtFmt,
-                      self.normFactor,
-                      self.normOffset))
+                      normFactor,
+                      normOffset))
 
         
     def _genImageBuffer(self):
@@ -277,6 +291,23 @@ class GLImageData(object):
 
         display      = self.display
         colourBuffer = self.colourBuffer
+        imin          = display.displayRange[0]
+        imax          = display.displayRange[1]
+
+        # This transformation is used to transform voxel values
+        # from their native range to the range [0.0, 1.0], which
+        # is required for texture colour lookup. Values below
+        # or above the current display range will be mapped
+        # to texture coordinate values less than 0.0 or greater
+        # than 1.0 respectively.
+        texCoordXform = np.identity(4, dtype=np.float32)
+        texCoordXform[0, 0] = 1.0 / (imax - imin)
+        texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
+        texCoordXform = texCoordXform.transpose()
+
+        texCoordXform = np.dot(self.dataTypeXform, texCoordXform)
+
+        self.texCoordXform = texCoordXform
 
         log.debug('Generating colour buffer for '
                   'image {} (map: {}; resolution: {})'.format(

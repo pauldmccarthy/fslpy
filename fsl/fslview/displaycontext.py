@@ -230,7 +230,7 @@ class ImageDisplay(props.HasProperties):
             self.dataMax = float(image.data.max())
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
-        dMinDistance = dRangeLen / 1000.0
+        dMinDistance = dRangeLen / 10000.0
 
         self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)

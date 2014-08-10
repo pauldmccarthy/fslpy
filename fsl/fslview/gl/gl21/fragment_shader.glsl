@@ -18,16 +18,7 @@ uniform sampler1D colourMap;
  */
 uniform bool signed;
 
-
-/*
- * The voxel value is multiplied and offset  by these 
- * values to  map it into texture coordinates.
- */
-uniform float normFactor;
-uniform float normOffset;
-uniform float displayMin;
-uniform float displayMax;
-
+uniform mat4 texCoordXform;
 
 /*
  * Voxel value - Might be unnormalised, or normalised to lie
@@ -44,8 +35,6 @@ void main(void) {
         else                     normVoxValue = normVoxValue + 0.5;
     }   
 
-    normVoxValue = normVoxValue  * normFactor - normOffset;
-    normVoxValue = (normVoxValue - displayMin ) / (displayMax - displayMin);
-
-    gl_FragColor = texture1D(colourMap, normVoxValue); 
+    vec4 texCoord = texCoordXform * vec4(normVoxValue, 0, 0, 1);
+    gl_FragColor  = texture1D(colourMap, texCoord.x); 
 }

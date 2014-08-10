@@ -110,14 +110,8 @@ def initGL(canvas):
                                                       'colourMap')
     canvas.imageShapePos    = gl.glGetUniformLocation(canvas.shaders,
                                                       'imageShape') 
-    canvas.normFactorPos    = gl.glGetUniformLocation(canvas.shaders,
-                                                      'normFactor')
-    canvas.normOffsetPos    = gl.glGetUniformLocation(canvas.shaders,
-                                                      'normOffset') 
-    canvas.displayMinPos    = gl.glGetUniformLocation(canvas.shaders,
-                                                      'displayMin')
-    canvas.displayMaxPos    = gl.glGetUniformLocation(canvas.shaders,
-                                                      'displayMax') 
+    canvas.texCoordXformPos = gl.glGetUniformLocation(canvas.shaders,
+                                                      'texCoordXform') 
     canvas.signedPos        = gl.glGetUniformLocation(canvas.shaders,
                                                       'signed')
     canvas.zCoordPos        = gl.glGetUniformLocation(canvas.shaders,
@@ -161,10 +155,6 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # bind the current alpha value
     # and data range to the shader
-    gl.glUniform1f( canvas.normFactorPos,    glImageData.normFactor)
-    gl.glUniform1f( canvas.normOffsetPos,    glImageData.normOffset)
-    gl.glUniform1f( canvas.displayMinPos,    imageDisplay.displayRange.xlo)
-    gl.glUniform1f( canvas.displayMaxPos,    imageDisplay.displayRange.xhi)
     gl.glUniform1f( canvas.signedPos,        glImageData.signed)
     gl.glUniform1f( canvas.zCoordPos,        zpos)
     gl.glUniform3fv(canvas.imageShapePos, 1, np.array(image.shape,
@@ -177,11 +167,13 @@ def drawSlice(canvas, image, zpos, xform=None):
     # to the shader variable
     if xform is None: xform = np.identity(4)
     
-    w2w = np.array(xform,               dtype=np.float32).ravel('C')
-    w2v = np.array(image.worldToVoxMat, dtype=np.float32).ravel('C')
+    w2w = np.array(xform,                     dtype=np.float32).ravel('C')
+    w2v = np.array(image.worldToVoxMat,       dtype=np.float32).ravel('C')
+    tcx = np.array(glImageData.texCoordXform, dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(canvas.worldToVoxMatPos,   1, False, w2v)
     gl.glUniformMatrix4fv(canvas.worldToWorldMatPos, 1, False, w2w)
+    gl.glUniformMatrix4fv(canvas.texCoordXformPos,   1, False, tcx)
 
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
