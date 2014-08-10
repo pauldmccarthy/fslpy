@@ -134,6 +134,11 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         If the voxVal argument is provided, it is displayed. Otherwise
         the value at the current voxel location is displayed.
         """
+
+        if voxVal is not None:
+            self._valueLabel.SetLabel('{}'.format(voxVal))
+            self._voxelPanel.Layout()
+            return
         
         image  = self._imageList[self._displayCtx.selectedImage]
         volume = self._displayCtx.volume
@@ -252,7 +257,11 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         (which contains the image name), and sets the voxel location limits.
         """
 
-        if len(self._imageList) == 0: return
+        if len(self._imageList) == 0:
+            self._voxelLabel.SetLabel('Voxel coordinates')
+            self._updateVoxelValue('')
+            self._voxelPanel.Layout()
+            return
 
         image = self._imageList[self._displayCtx.selectedImage]
         

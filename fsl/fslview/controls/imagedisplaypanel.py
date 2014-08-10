@@ -125,6 +125,10 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         idx = self._displayCtx.selectedImage
 
+        if len(self._imageList) == 0:
+            self._label.SetLabel('')
+            return
+
         for i, image in enumerate(self._imageList):
 
             displayPanel = self._displayPanels[id(image)]
