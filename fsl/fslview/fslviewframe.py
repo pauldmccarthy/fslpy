@@ -222,7 +222,13 @@ class FSLViewFrame(wx.Frame):
 
         def onDestroy(ev):
             ev.Skip()
-            self._controlPanels.remove(panelCls)
+
+            # this method seems to be called when children of the
+            # target panel are destroyed, and we don't want that.
+            # So we'll just double check to make sure it is *this*
+            # panel which is being destroyed.
+            if ev.GetEventObject() == panel:
+                self._controlPanels.remove(panelCls)
 
         panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
