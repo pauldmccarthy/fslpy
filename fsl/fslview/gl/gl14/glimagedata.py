@@ -16,8 +16,6 @@ Image data
 import logging
 log = logging.getLogger(__name__)
 
-import numpy as np
-
 import OpenGL.GL as gl
 
 import fsl.fslview.gl.glimage as glimage
@@ -45,9 +43,6 @@ class GLImageData(object):
 
         self.genImageData()
         self.genVertexData(xax, yax)
-
-        # Maximum number of colours used to draw image data.
-        self.colourResolution = 256 
 
         self.colourTexture = gl.glGenTextures(1)
         self.genColourTexture()
@@ -87,75 +82,15 @@ class GLImageData(object):
 
         self.imageData = imageData
 
-
     def genColourTexture(self):
-        """Generates a 1D texture containing the colour map used to
-        colour voxels.
         """
-        
-        display       = self.display
-        colourTexture = self.colourTexture
-        imin          = display.displayRange[0]
-        imax          = display.displayRange[1]
+        Regenerates the colour texture used to colour image voxels.
+        """
 
-        # This transformation is used to transform voxel values
-        # from their native range to the range [0.0, 1.0], which
-        # is required for texture colour lookup. Values below
-        # or above the current display range will be mapped
-        # to texture coordinate values less than 0.0 or greater
-        # than 1.0 respectively.
-        texCoordXform = np.identity(4, dtype=np.float32)
-        texCoordXform[0, 0] = 1.0 / (imax - imin)
-        texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
-        texCoordXform = texCoordXform.transpose()
-        
-        self.texCoordXform = texCoordXform
-
-        log.debug('Generating colour texture for '
-                  'image {} (map: {}; resolution: {})'.format(
-                      self.image.name,
-                      display.cmap.name,
-                      self.colourResolution))
-    
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
-        colourRange = np.linspace(0.0, 1.0, self.colourResolution)
-        colourmap   = display.cmap(colourRange)
-        colourmap[:, 3] = display.alpha
-
-        # Make out-of-range values transparent
-        # if clipping is enabled
-        if display.clipLow:  colourmap[ 0, 3] = 0.0
-        if display.clipHigh: colourmap[-1, 3] = 0.0 
-
-        # The colour data is stored on
-        # the GPU as 8 bit rgba tuples
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel(order='C')
-
-        # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
-
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE)
-        
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        self.colourResolution,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap) 
+        texCoordXform = glimage.genColourTexture(self.image,
+                                                 self.display,
+                                                 self.colourTexture)
+        self.texCoordXform = texCoordXform 
 
 
     def _configDisplayListeners(self):

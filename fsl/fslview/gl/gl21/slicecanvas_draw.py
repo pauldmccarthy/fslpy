@@ -177,7 +177,7 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glImageData.colourBuffer)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, glImageData.colourTexture)
     gl.glUniform1i(canvas.colourMapPos, 0) 
 
     # Set up the image data texture

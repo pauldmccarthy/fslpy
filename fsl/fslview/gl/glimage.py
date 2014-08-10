@@ -10,6 +10,9 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 
+import OpenGL.GL as gl
+
+
 def genVertexData(image, display, xax, yax):
     """
     (Re-)Generates data buffers containing X, Y, and Z coordinates,
@@ -25,19 +28,12 @@ def genVertexData(image, display, xax, yax):
     worldRes   = display.worldResolution
     voxelRes   = display.voxelResolution
     transform  = display.transform
-    xdim       = image.shape[xax]
-    ydim       = image.shape[yax]
 
     # These values give the min/max x/y values
     # of a bounding box which encapsulates
     # the entire image
     xmin, xmax = image.imageBounds(xax)
     ymin, ymax = image.imageBounds(yax)
-
-    # These values give the length
-    # of the image along the x/y axes
-    xlen = image.axisLength(xax)
-    ylen = image.axisLength(yax)
 
     # The width/height of a displayed voxel.
     # If we are displaying in real world space,
@@ -121,3 +117,80 @@ def genVertexData(image, display, xax, yax):
     texCoords   = np.array(texCoords,   dtype=np.float32).transpose()
 
     return worldCoords, texCoords
+
+
+def genColourTexture(image,
+                     display,
+                     texture,
+                     colourResolution=256,
+                     xform=None):
+    """
+    Generates the colour texture used to colour image voxels.
+    """
+
+
+
+    imin = display.displayRange[0]
+    imax = display.displayRange[1]
+
+    # This transformation is used to transform voxel values
+    # from their native range to the range [0.0, 1.0], which
+    # is required for texture colour lookup. Values below
+    # or above the current display range will be mapped
+    # to texture coordinate values less than 0.0 or greater
+    # than 1.0 respectively.
+    texCoordXform = np.identity(4, dtype=np.float32)
+    texCoordXform[0, 0] = 1.0 / (imax - imin)
+    texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
+    texCoordXform = texCoordXform.transpose()
+
+    if xform is not None:
+        texCoordXform = np.dot(xform, texCoordXform)
+
+    log.debug('Generating colour buffer for '
+              'image {} (map: {}; resolution: {})'.format(
+                  image.name,
+                  display.cmap.name,
+                  colourResolution))
+
+    # Create [self.colourResolution] rgb values,
+    # spanning the entire range of the image
+    # colour map
+    colourRange     = np.linspace(0.0, 1.0, colourResolution)
+    colourmap       = display.cmap(colourRange)
+    colourmap[:, 3] = display.alpha
+
+    # Make out-of-range values transparent
+    # if clipping is enabled 
+    if display.clipLow:  colourmap[ 0, 3] = 0.0
+    if display.clipHigh: colourmap[-1, 3] = 0.0 
+
+    # The colour data is stored on
+    # the GPU as 8 bit rgba tuples
+    colourmap = np.floor(colourmap * 255)
+    colourmap = np.array(colourmap, dtype=np.uint8)
+    colourmap = colourmap.ravel(order='C')
+
+    # GL texture creation stuff
+    gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
+    gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                       gl.GL_TEXTURE_MAG_FILTER,
+                       gl.GL_NEAREST)
+    gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                       gl.GL_TEXTURE_MIN_FILTER,
+                       gl.GL_NEAREST)
+
+    gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                       gl.GL_TEXTURE_WRAP_S,
+                       gl.GL_CLAMP_TO_EDGE)
+
+    gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                    0,
+                    gl.GL_RGBA8,
+                    colourResolution,
+                    0,
+                    gl.GL_RGBA,
+                    gl.GL_UNSIGNED_BYTE,
+                    colourmap)
+
+    return texCoordXform
