@@ -380,9 +380,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas._imageBoundsChanged(self)
 
-        zmin, zmax = self.imageList.bounds.getRange(self.zax)
-
+        zmin,    zmax    = self.imageList.bounds.getRange(self.zax)
+        oldzmin, oldzmax = self.zrange.getLimits(0)
+        
         self.zrange.setLimits(0, zmin, zmax)
+
+        # if the old limits were (0, 0) we assume
+        # that the image list was empty, and the
+        # zrange needs to be reset. 
+        if (oldzmin == 0) and (oldzmax == 0):
+            self.zrange.x = (zmin, zmax)
 
         if len(self.imageList) > 0:
             zgap = min([i.pixdim[self.zax] for i in self.imageList])
