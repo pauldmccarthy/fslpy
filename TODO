@@ -5,14 +5,14 @@ arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
 * Bugs to fix
-** Lightbox is broken due to all those GL updates you've been doing.
-** elistbox labels not shown?
-** elistbox throwing errors randomly.
-** Image not updating/redrawing properly on transform matrix change
-** KeyError in fslviewframe when control panels are removed
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
-** gl21 - Voxel opacity when sampling rate > 1 is not correct.
+** DONE Lightbox is a bit temperemental at the moment.
+** DONE KeyError in fslviewframe when control panels are removed
+** DONE elistbox labels not shown?
+** DONE elistbox throwing errors randomly.
+** DONE gl21 - Voxel opacity when sampling rate > 1 is not correct.
+** DONE Image not updating/redrawing properly on transform matrix change
 ** DONE Control panels no longer persistent across restarts?
 ** DONE JALAPENO - Image List background colour no worky
 ** DONE JALAPENO - LightBoxCanvas mouse scroll no worky
@@ -32,8 +32,8 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Optimisations - tune image._transform, and glimage.genVertexData functions.
 ** Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
-** Interpolation option when displaying in real world space
 ** Clip Low/Clip High display options
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -42,8 +42,9 @@ regularly, too.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
+** DONE Clear image names on location panel and image display panel when image list is empty.
+** DONE Interpolation option when displaying in real world space
 ** DONE Use GL_UNPACK_ALIGNMENT to avoid the need to pad texture images.
-
 ** DONE Superclasses for view/control panels.
 ** DONE Separate display properties from fsl.data.fslimage classes? A separate fsl.fslview.displaycontext module?
 ** DONE Named view panels
@@ -65,7 +66,6 @@ regularly, too.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
 ** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
-** change image dimension ordering
 ** link display properties across images
 ** mouse-based zooming in ortho panel
 ** Image export/offscreen rendering.
@@ -73,7 +73,6 @@ regularly, too.
 ** Custom colour maps from original FSLView
 ** DONE Command line interface - build into props package?
 ** DONE Remove voxel<->world orthogonality requirement
-
 ** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
