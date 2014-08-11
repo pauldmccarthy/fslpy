@@ -4,7 +4,9 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
+- is av.nii.gz being displayed properly?
 - Clean up, refactor, and comment glimage/glimagedata stuff.
+- Logging and documentation audit.
 
 * Bugs to fix
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
