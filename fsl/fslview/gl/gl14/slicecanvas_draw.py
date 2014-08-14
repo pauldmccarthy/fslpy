@@ -53,7 +53,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     # method when images are added to the image. If there's
     # no data here, ignore it; hopefully by the time the
     # image is to be drawn again, it will have been created.
-    try:    glImageData = image.getAttribute(canvas.name)
+    try:    glimg = image.getAttribute(canvas.name)
     except: return
     
     display = image.getAttribute('display')
@@ -62,8 +62,8 @@ def drawSlice(canvas, image, zpos, xform=None):
     # image display is disabled
     if not display.enabled: return
 
-    worldCoords = glImageData.worldCoords
-    texCoords   = glImageData.texCoords
+    worldCoords = glimg.worldCoords
+    texCoords   = glimg.texCoords
     
     worldCoords[:, canvas.zax] = zpos
     texCoords[  :, canvas.zax] = zpos
@@ -72,10 +72,10 @@ def drawSlice(canvas, image, zpos, xform=None):
     # to (floating point) voxel coordinates
     voxCoords        = image.worldToVox(texCoords)
 
-    imageData        = glImageData.imageData
-    texCoordXform    = glImageData.texCoordXform
-    colourTexture    = glImageData.colourTexture
-    nVertices        = voxCoords.shape[0]
+    imageData        = glimg.imageData
+    texCoordXform    = glimg.texCoordXform
+    colourTexture    = glimg.colourTexture
+    nVertices        = glimg.nVertices
 
     if display.interpolation: order = 1
     else:                     order = 0

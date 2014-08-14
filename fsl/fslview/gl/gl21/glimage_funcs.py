@@ -37,12 +37,12 @@ import OpenGL.GL.ARB.texture_rg as arbrg
 import fsl.fslview.gl.glimage as glimage
 
 
-def genVertexData(glimg, xax, yax):
+def genVertexData(glimg):
     """Generates vertex and texture coordinates required to render
     the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
     """ 
-    glimg.xax = xax
-    glimg.yax = yax
+    xax = glimg.xax
+    yax = glimg.yax
 
     worldCoords, texCoords = glimage.genVertexData(
         glimg.image, glimg.display, xax, yax)

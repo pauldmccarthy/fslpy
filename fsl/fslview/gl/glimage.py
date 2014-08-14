@@ -58,14 +58,16 @@ class GLImage(object):
                            object which describes how the image is to be
                            displayed. 
         """
-        
+
+        self.xax     = xax
+        self.yax     = yax
         self.image   = image
         self.display = imageDisplay
         
         # Initialise the image data, and
         # generate vertex/texture coordinates
         self.imageData = fslgl.glimage_funcs.genImageData( self)
-        wc, tc, nv     = fslgl.glimage_funcs.genVertexData(self, xax, yax)
+        wc, tc, nv     = fslgl.glimage_funcs.genVertexData(self)
 
         self.worldCoords = wc
         self.texCoords   = tc
@@ -83,6 +85,15 @@ class GLImage(object):
         self._configDisplayListeners()
 
 
+    def changeAxes(self, xax, yax):
+        self.xax         = xax
+        self.yax         = yax
+        wc, tc, nv       = fslgl.glimage_funcs.genVertexData(self)
+        self.worldCoords = wc
+        self.texCoords   = tc
+        self.nVertices   = nv 
+
+        
     def _configDisplayListeners(self):
         """Adds a bunch of listeners to the
         :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
@@ -93,9 +104,7 @@ class GLImage(object):
         """ 
 
         def vertexUpdate(*a):
-            wc, tc, nv = fslgl.glimage_funcs.genVertexData(self,
-                                                           self.xax,
-                                                           self.yax)
+            wc, tc, nv = fslgl.glimage_funcs.genVertexData(self)
             self.worldCoords = wc
             self.texCoords   = tc
             self.nVertices   = nv
@@ -119,7 +128,6 @@ class GLImage(object):
         display.addListener('voxelResolution', lnrName, vertexUpdate)
         display.addListener('worldResolution', lnrName, vertexUpdate)
         display.addListener('volume',          lnrName, imageUpdate)
-
 
 
 def genVertexData(image, display, xax, yax):
