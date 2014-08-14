@@ -4,13 +4,11 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
-- is av.nii.gz being displayed properly?
-- Clean up, refactor, and comment glimage/glimagedata stuff.
-- Logging and documentation audit.
 
 * Bugs to fix
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
+** DONE is av.nii.gz being displayed properly? Yep, it's interpolation causing a bit of weirdness, but it is being displayed correctly.
 ** DONE Lightbox is a bit temperemental at the moment.
 ** DONE KeyError in fslviewframe when control panels are removed
 ** DONE elistbox labels not shown?
@@ -37,16 +35,16 @@ regularly, too.
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
 ** Set cursor location via command line option.
-** Cursor bound restriction on ortho panel.
 ** Cursor location preservation when transformation option is changed.
-** Optimisations - tune image._transform, and glimage.genVertexData functions.
-** Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
+** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
 ** Add a 'mutable' attribute (not constraint) to List properties?
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
+** DONE Cursor bound restriction on ortho panel.
+** DONE Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
 ** DONE Rethink 4D handling - image.display.volume or imageList.volume?
 ** DONE Clip Low/Clip High display options
 ** DONE Clear image names on location panel and image display panel when image list is empty.
