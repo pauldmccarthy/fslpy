@@ -26,7 +26,7 @@ other :mod:`wx` widget.
 
  - slicecanvas_draw
  - lightboxcanvas_draw
- - glimagedata
+ - glimage
 
 """
 
@@ -75,5 +75,5 @@ def bootstrap(glVersion=None):
 
     thismod.slicecanvas_draw    = glpkg.slicecanvas_draw
     thismod.lightboxcanvas_draw = glpkg.lightboxcanvas_draw
-    thismod.glimagedata         = glpkg.glimagedata
+    thismod.glimage             = glpkg.glimage
     thismod._bootstrapped       = True

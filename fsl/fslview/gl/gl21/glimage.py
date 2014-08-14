@@ -37,7 +37,7 @@ import OpenGL.GL.ARB.texture_rg as arbrg
 import fsl.fslview.gl.glimage as glimage
 
 
-class GLImageData(object):
+class GLImage(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
         """Initialise the OpenGL data required to render the given image.
@@ -119,6 +119,7 @@ class GLImageData(object):
 
         self.worldCoords = worldCoordBuffer
         self.texCoords   = texCoordBuffer
+        self.nVertices   = worldCoords.shape[0]
 
         
     def _checkDataType(self):
@@ -315,7 +316,7 @@ class GLImageData(object):
             self.genVertexData(self.xax, self.yax)
 
         def imageUpdate(*a):
-            self._genImageBuffer()
+            self.genImageData()
         
         def colourUpdate(*a):
             self.genColourTexture()

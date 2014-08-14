@@ -182,11 +182,11 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageBuffer)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageTexture)
     gl.glUniform1i(canvas.imageBufferPos, 1)
 
     # world x/y coordinates
-    glImageData.worldCoordBuffer.bind()
+    glImageData.worldCoords.bind()
     gl.glVertexAttribPointer(
         canvas.worldCoordPos,
         2,
@@ -197,7 +197,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glEnableVertexAttribArray(canvas.worldCoordPos)
 
     # world x/y texture coordinates
-    glImageData.texCoordBuffer.bind()
+    glImageData.texCoords.bind()
     gl.glVertexAttribPointer(
         canvas.texCoordPos,
         2,
@@ -213,8 +213,8 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     gl.glDisableVertexAttribArray(canvas.worldCoordPos)
     gl.glDisableVertexAttribArray(canvas.texCoordPos)
-    glImageData.worldCoordBuffer.unbind()
-    glImageData.texCoordBuffer.unbind()
+    glImageData.worldCoords.unbind()
+    glImageData.texCoords.unbind()
 
 
 def drawScene(canvas):

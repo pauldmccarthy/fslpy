@@ -348,10 +348,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             display = image.getAttribute('display')
                 
-            glData = fslgl.glimagedata.GLImageData(image,
-                                                   self.xax,
-                                                   self.yax,
-                                                   display)
+            glData = fslgl.glimage.GLImage(image, self.xax, self.yax, display)
             image.setAttribute(self.name, glData)
 
             def refresh(*a): self.Refresh()
