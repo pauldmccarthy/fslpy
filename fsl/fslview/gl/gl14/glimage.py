@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 #
-# glvolume.py - A class which encapsulates the data required to render
-#               a 2D slice of a 3D volume in an OpenGL 1.4 compatible
-#               manner.
+# glimage.py - A class which encapsulates the data required to render
+#              a 2D slice of a 3D image in an OpenGL 1.4 compatible
+#              manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Defines the GLVolume object, which which encapsulates the data required to render
-#               a 2D slice of a 3D volume in an OpenGL 1.4 compatible
-#               manner.
+"""Defines the GLImage class, which which encapsulates the data required to
+render a 2D slice of a 3D image in an OpenGL 1.4 compatible manner.
 
-A GL object encapsulates the OpenGL information necessary to
-render 2D slices of a 3D image, in an OpenGL 1.4 compatible manner (i.e. using
-immediate mode rendering).
+A GLImage object encapsulates the OpenGL information necessary to render 2D
+slices of a 3D image, in an OpenGL 1.4 compatible manner (i.e. using immediate
+mode rendering).
 
-
-World cordinates
-Image data
+This class makes use of the functions in the :mod:`fsl.fslview.gl.glimage`
+module, which actually generates the vertex and texture information necessary
+to render an image.
 """
 
 import logging
@@ -26,22 +25,47 @@ import OpenGL.GL as gl
 
 import fsl.fslview.gl.glimage as glimage
 
-class GLImageData(object):
+class GLImage(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
-        """
-        Initialise the OpenGL data required to render the given image.
+        """Initialise the OpenGL data required to render the given image.
+
+        After initialisation, all of the data requirted to render a slice
+        is available as attributes of this object:
+
+          - :attr:`imageData:`     The 3D image data.
+
+          - :attr:`colourTexture`: An OpenGL texture handle to a 1D texture
+                                   containing the colour map used to colour
+                                   the image data.
         
-        Parameters:
+          - :attr:`worldCoords`:   A `(3,4*N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+          - :attr:`texCoords`:     A `(3,N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+        As part of initialisation, this object registers itself as a listener
+        on several properties of the given
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object so that, when
+        any display properties change, the image data, colour texture, and
+        vertex data are automatically updated.
         
-          - image:        A fsl.data.image.Image object.
+        :arg image:        A :class:`~fsl.data.image.Image` object.
         
-          - xax:          The image axis which maps to the screen x axis.
+        :arg xax:          The image world axis which corresponds to the
+                           horizontal screen axis.
+
+        :arg xax:          The image world axis which corresponds to the
+                           vertical screen axis.        
         
-          - yax:          The image axis which maps to the screen y axis.
-        
-          - imageDisplay: A fsl.fslview.displaycontext.ImageDisplay object
-                          which describes how the image is to be displayed.
+        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                           object which describes how the image is to be
+                           displayed.
         """
 
         self.image   = image
@@ -59,7 +83,8 @@ class GLImageData(object):
 
 
     def genVertexData(self, xax, yax):
-        """
+        """Generates vertex and texture coordinates required to render
+        the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
         """
         
         self.xax = xax
@@ -73,24 +98,22 @@ class GLImageData(object):
 
         
     def genImageData(self):
-        """(Re-)Generates the image data which is passed to the GPU for
-        rendering. The data (a numpy array) is stored as an attribute of
-        the image and, if it has already been created (e.g. by another
-        GLImageData object), the existing buffer is returned.
+        """Retrieves the image data which is to be rendered. 
         """
 
-        image           = self.image
-        display         = self.display
-        volume          = display.volume
+        image   = self.image
+        display = self.display
+        volume  = display.volume
 
         if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
         else:                    imageData = image.data
 
         self.imageData = imageData
 
+        
     def genColourTexture(self):
-        """
-        Regenerates the colour texture used to colour image voxels.
+        """Generates the colour texture used to colour image voxels. See
+        :func:`fsl.fslview.gl.glimage.genVertexData`.
         """
 
         texCoordXform = glimage.genColourTexture(self.image,
@@ -104,7 +127,7 @@ class GLImageData(object):
         :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
         how the given image is to be displayed.
 
-        This is done so we can update the colour texture and image data when
+        This is done so we can update the colour, vertex, and image data when
         display properties are changed.
         """
 

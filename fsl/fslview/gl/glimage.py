@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# glvolume.py - OpenGL vertex/texture creation for 2D rendering of a 3D
-#               volume.
+# glimage.py - OpenGL vertex/texture creation for 2D rendering of a 3D
+#              image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -28,6 +28,22 @@ def genVertexData(image, display, xax, yax):
     created, located in the centre of the four quad vertices. This
     centre vertex is used to look up the appropriate image value,
     which is then used to colour the quad.
+
+    This function returns a tuple of two objects:
+    
+      - The first object, the *world coordinate* array, is a numpy
+        array of shape `(3, 4*N)`, where `N` is the number of pixels
+        to be drawn. This array contains the world coordinates for
+        every pixel, with each pixel defined by four vertices (to be
+        rendered as an OpenGL quad). The vertex coordinates along the
+        world Z axis are all set to zero.
+
+      - The second object, the *texture coordinate* array, is a numpy
+        array of shape `(3, N)`, containing contains the coordinates of
+        the centre of every quad defined in the world coordinate array.
+        These vertices are to be used to look up the value in the image
+        data, which may then be used to determine the corresponding
+        pixel colour.
 
     :arg image:   The :class:`~fsl.data.image.Image` object to
                   generate vertex and texture coordinates for.
@@ -144,6 +160,13 @@ def genColourTexture(image,
                      colourResolution=256,
                      xform=None):
     """Generates a RGBA colour texture which is used to colour voxels.
+
+    This function initialises the given OpenGL texture according to the
+    image display properties contained in the given
+    :class:`~fsl.fslview.displaycontext.ImageDisplay` object. An affine
+    transformation matrix is returned, which is to be used to transform
+    the image data into texture coordinate space, so the correct colour
+    for a given image value is used.
 
     :arg image:            The :class:`~fsl.data.image.Image` object to
                            generate vertex and texture coordinates for.
