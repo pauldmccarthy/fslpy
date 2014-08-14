@@ -13,6 +13,114 @@ import numpy as np
 
 import OpenGL.GL as gl
 
+import fsl.fslview.gl as fslgl
+
+class GLImage(object):
+ 
+    def __init__(self, image, xax, yax, imageDisplay):
+        """Initialise the OpenGL data required to render the given image.
+
+        After initialisation, all of the data requirted to render a slice
+        is available as attributes of this object:
+
+          - :attr:`imageTexture:`  An OpenGL texture handle to a 3D texture
+                                   containing the image data.
+
+          - :attr:`colourTexture`: An OpenGL texture handle to a 1D texture
+                                   containing the colour map used to colour
+                                   the image data.
+        
+          - :attr:`worldCoords`:   A `(3,4*N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+          - :attr:`texCoords`:     A `(3,N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+        As part of initialisation, this object registers itself as a listener
+        on several properties of the given
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object so that, when
+        any display properties change, the image data, colour texture, and
+        vertex data are automatically updated.
+        
+        :arg image:        A :class:`~fsl.data.image.Image` object.
+        
+        :arg xax:          The image world axis which corresponds to the
+                           horizontal screen axis.
+
+        :arg xax:          The image world axis which corresponds to the
+                           vertical screen axis.        
+        
+        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                           object which describes how the image is to be
+                           displayed. 
+        """
+        
+        self.image   = image
+        self.display = imageDisplay
+        
+        # Initialise the image data, and
+        # generate vertex/texture coordinates
+        self.imageData = fslgl.glimage_funcs.genImageData( self)
+        wc, tc, nv     = fslgl.glimage_funcs.genVertexData(self, xax, yax)
+
+        self.worldCoords = wc
+        self.texCoords   = tc
+        self.nVertices   = nv
+
+        # The colour texture, containing a map of
+        # colours (stored on the GPU as a 1D texture)
+        # This is initialised in the updateColourBuffer
+        # method
+        self.colourTexture = gl.glGenTextures(1)
+        self.texCoordXform = fslgl.glimage_funcs.genColourTexture(self)
+
+        # Add listeners to this image so the view can be
+        # updated when its display properties are changed
+        self._configDisplayListeners()
+
+
+    def _configDisplayListeners(self):
+        """Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
+        how the given image is to be displayed.
+
+        This is done so we can update the colour, vertex, and image data when
+        display properties are changed.
+        """ 
+
+        def vertexUpdate(*a):
+            wc, tc, nv = fslgl.glimage_funcs.genVertexData(self,
+                                                           self.xax,
+                                                           self.yax)
+            self.worldCoords = wc
+            self.texCoords   = tc
+            self.nVertices   = nv
+
+        def imageUpdate(*a):
+            self.imageData = fslgl.glimage_funcs.genImageData(self)
+        
+        def colourUpdate(*a):
+            self.texCoordXform = fslgl.glimage_funcs.genColourTexture(self)
+
+        display = self.display
+        lnrName = 'GlImage_{}'.format(id(self))
+
+        display.addListener('transform',       lnrName, vertexUpdate)
+        display.addListener('interpolation',   lnrName, imageUpdate)
+        display.addListener('alpha',           lnrName, colourUpdate)
+        display.addListener('displayRange',    lnrName, colourUpdate)
+        display.addListener('clipLow',         lnrName, colourUpdate)
+        display.addListener('clipHigh',        lnrName, colourUpdate)
+        display.addListener('cmap',            lnrName, colourUpdate)
+        display.addListener('voxelResolution', lnrName, vertexUpdate)
+        display.addListener('worldResolution', lnrName, vertexUpdate)
+        display.addListener('volume',          lnrName, imageUpdate)
+
+
 
 def genVertexData(image, display, xax, yax):
     """Generates vertex coordinates (for rendering voxels) and
@@ -30,7 +138,7 @@ def genVertexData(image, display, xax, yax):
     which is then used to colour the quad.
 
     This function returns a tuple of two objects:
-    
+
       - The first object, the *world coordinate* array, is a numpy
         array of shape `(3, 4*N)`, where `N` is the number of pixels
         to be drawn. This array contains the world coordinates for
@@ -143,7 +251,7 @@ def genVertexData(image, display, xax, yax):
     # of 4 vertices, each rendered as a quad
     worldX = worldX + np.tile(voxelGeom[:, 0], nVoxels)
     worldY = worldY + np.tile(voxelGeom[:, 1], nVoxels)
-    
+
     worldCoords[xax] = worldX
     worldCoords[yax] = worldY
     worldCoords[zax] = worldZ

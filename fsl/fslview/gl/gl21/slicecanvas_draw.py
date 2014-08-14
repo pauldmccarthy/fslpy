@@ -144,7 +144,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     # images are added to the image. If there's no data
     # here, ignore it; hopefully by the time _draw() is
     # called again, it will have been created.
-    try:    glImageData = image.getAttribute(canvas.name)
+    try:    glimg = image.getAttribute(canvas.name)
     except: return
     
     imageDisplay = image.getAttribute('display')
@@ -155,7 +155,7 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # bind the current alpha value
     # and data range to the shader
-    gl.glUniform1f( canvas.signedPos,        glImageData.signed)
+    gl.glUniform1f( canvas.signedPos,        glimg.signed)
     gl.glUniform1f( canvas.zCoordPos,        zpos)
     gl.glUniform3fv(canvas.imageShapePos, 1, np.array(image.shape,
                                                       dtype=np.float32))
@@ -167,9 +167,9 @@ def drawSlice(canvas, image, zpos, xform=None):
     # to the shader variable
     if xform is None: xform = np.identity(4)
     
-    w2w = np.array(xform,                     dtype=np.float32).ravel('C')
-    w2v = np.array(image.worldToVoxMat,       dtype=np.float32).ravel('C')
-    tcx = np.array(glImageData.texCoordXform, dtype=np.float32).ravel('C')
+    w2w = np.array(xform,               dtype=np.float32).ravel('C')
+    w2v = np.array(image.worldToVoxMat, dtype=np.float32).ravel('C')
+    tcx = np.array(glimg.texCoordXform, dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(canvas.worldToVoxMatPos,   1, False, w2v)
     gl.glUniformMatrix4fv(canvas.worldToWorldMatPos, 1, False, w2w)
@@ -177,16 +177,16 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glImageData.colourTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
     gl.glUniform1i(canvas.colourMapPos, 0) 
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glImageData.imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageData)
     gl.glUniform1i(canvas.imageBufferPos, 1)
 
     # world x/y coordinates
-    glImageData.worldCoords.bind()
+    glimg.worldCoords.bind()
     gl.glVertexAttribPointer(
         canvas.worldCoordPos,
         2,
@@ -197,7 +197,7 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glEnableVertexAttribArray(canvas.worldCoordPos)
 
     # world x/y texture coordinates
-    glImageData.texCoords.bind()
+    glimg.texCoords.bind()
     gl.glVertexAttribPointer(
         canvas.texCoordPos,
         2,
@@ -208,13 +208,12 @@ def drawSlice(canvas, image, zpos, xform=None):
     gl.glEnableVertexAttribArray(canvas.texCoordPos) 
 
     # Draw all of the triangles!
-    gl.glDrawArrays(
-        gl.GL_QUADS, 0, glImageData.nVertices)
+    gl.glDrawArrays(gl.GL_QUADS, 0, glimg.nVertices)
 
     gl.glDisableVertexAttribArray(canvas.worldCoordPos)
     gl.glDisableVertexAttribArray(canvas.texCoordPos)
-    glImageData.worldCoords.unbind()
-    glImageData.texCoords.unbind()
+    glimg.worldCoords.unbind()
+    glimg.texCoords.unbind()
 
 
 def drawScene(canvas):

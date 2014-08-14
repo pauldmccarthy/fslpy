@@ -7,4 +7,4 @@
 
 import slicecanvas_draw
 import lightboxcanvas_draw
-import glimage
+import glimage_funcs
