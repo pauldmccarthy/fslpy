@@ -125,7 +125,9 @@ def initGL(canvas):
     canvas.worldCoordPos    = gl.glGetAttribLocation( canvas.shaders,
                                                       'worldCoords')
     canvas.texCoordPos      = gl.glGetAttribLocation( canvas.shaders,
-                                                      'texCoords') 
+                                                      'texCoords')
+
+    canvas.Refresh()
 
     
 def drawSlice(canvas, image, zpos, xform=None):
