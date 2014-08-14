@@ -68,6 +68,8 @@ def drawSlice(canvas, image, zpos, xform=None):
     worldCoords[:, canvas.zax] = zpos
     texCoords[  :, canvas.zax] = zpos
 
+    # Transform world texture coordinates
+    # to (floating point) voxel coordinates
     voxCoords        = image.worldToVox(texCoords)
 
     imageData        = glImageData.imageData
@@ -77,10 +79,17 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     if display.interpolation: order = 1
     else:                     order = 0
-    
-    voxCoords   = voxCoords.transpose()
-    imageData   = ndi.map_coordinates(imageData, voxCoords, order=order)
-    
+
+    # Interpolate image data at floating
+    # point voxel coordinates
+    imageData   = ndi.map_coordinates(imageData,
+                                      voxCoords.transpose(),
+                                      order=order,
+                                      prefilter=False)
+
+    # Prepare world coordinates and image data
+    # (which are used as texture coordinates
+    # on the colour map) for copy to GPU
     worldCoords = worldCoords.ravel('C')
     imageData   = imageData.ravel(  'C')
 
