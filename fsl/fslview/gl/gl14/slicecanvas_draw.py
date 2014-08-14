@@ -27,7 +27,6 @@ import logging
 log = logging.getLogger(__name__)
 
 import scipy.ndimage as ndi
-import numpy         as np
 import OpenGL.GL     as gl
 
 
@@ -148,32 +147,3 @@ def drawScene(canvas):
         drawSlice(canvas, image, canvas.pos.z)
 
     gl.glDisable(gl.GL_TEXTURE_1D)
-
-    if canvas.showCursor:
-
-        # A vertical line at xpos, and a horizontal line at ypos
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3))
-
-        xmin, xmax = canvas.imageList.bounds.getRange(canvas.xax)
-        ymin, ymax = canvas.imageList.bounds.getRange(canvas.yax)
-
-        # add a little padding to the lines if they are
-        # on the boundary, so they don't get cropped
-        xverts[:, canvas.xax] = canvas.pos.x
-        yverts[:, canvas.yax] = canvas.pos.y 
-
-        xverts[:, canvas.yax] = [ymin, ymax]
-        xverts[:, canvas.zax] =  canvas.pos.z + 1
-        yverts[:, canvas.xax] = [xmin, xmax]
-        yverts[:, canvas.zax] =  canvas.pos.z + 1
-
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd()
-
-    canvas.SwapBuffers()

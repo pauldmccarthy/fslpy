@@ -13,6 +13,7 @@ import logging
 log = logging.getLogger(__name__)
 
 import                wx
+import numpy       as np 
 import wx.glcanvas as wxgl
 import OpenGL.GL   as gl
 
@@ -280,6 +281,39 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             return
             
         fslgl.slicecanvas_draw.drawScene(self)
+        
+        if self.showCursor: self.drawCursor()
+        
+        self.SwapBuffers()
+
+
+    def drawCursor(self):
+        """Draws a green cursor at the current X/Y position.
+        """
+        
+        # A vertical line at xpos, and a horizontal line at ypos
+        xverts = np.zeros((2, 3))
+        yverts = np.zeros((2, 3))
+
+        xmin, xmax = self.imageList.bounds.getRange(self.xax)
+        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+
+        # add a little padding to the lines if they are
+        # on the boundary, so they don't get cropped
+        xverts[:, self.xax] = self.pos.x
+        yverts[:, self.yax] = self.pos.y 
+        xverts[:, self.yax] = [ymin, ymax]
+        xverts[:, self.zax] =  self.pos.z + 1
+        yverts[:, self.xax] = [xmin, xmax]
+        yverts[:, self.zax] =  self.pos.z + 1
+
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(0, 1, 0)
+        gl.glVertex3f(*xverts[0])
+        gl.glVertex3f(*xverts[1])
+        gl.glVertex3f(*yverts[0])
+        gl.glVertex3f(*yverts[1])
+        gl.glEnd()
 
         
     def _zAxisChanged(self, *a):
