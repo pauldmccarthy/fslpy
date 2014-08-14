@@ -251,9 +251,8 @@ class OrthoPanel(viewpanel.ViewPanel):
         elif layout == 'vertical':   self._sizer = wx.BoxSizer( wx.VERTICAL)
         elif layout == 'grid':       self._sizer = wx.WrapSizer(wx.HORIZONTAL) 
 
-        self._sizer.Add(self._xcanvas, flag=wx.EXPAND, proportion=1)
-        self._sizer.Add(self._ycanvas, flag=wx.EXPAND, proportion=1)
-        self._sizer.Add(self._zcanvas, flag=wx.EXPAND, proportion=1)
+        for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
+            self._sizer.Add(c, flag=wx.EXPAND, proportion=1)
 
         self.SetSizer(self._sizer) 
 

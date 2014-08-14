@@ -298,10 +298,23 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         xmin, xmax = self.imageList.bounds.getRange(self.xax)
         ymin, ymax = self.imageList.bounds.getRange(self.yax)
 
-        # add a little padding to the lines if they are
-        # on the boundary, so they don't get cropped
-        xverts[:, self.xax] = self.pos.x
-        yverts[:, self.yax] = self.pos.y 
+        x = self.pos.x
+        y = self.pos.y
+
+        # How big is one pixel in world space?
+        w, h = self.GetClientSize().Get()
+        pixx = (xmax - xmin) / float(w)
+        pixy = (ymax - ymin) / float(h)
+
+        # add a little padding to the lines if they are 
+        # on the boundary, so they don't get cropped        
+        if x <= xmin: x = xmin + 0.5 * pixx
+        if x >= xmax: x = xmax - 0.5 * pixx
+        if y <= ymin: y = ymin + 0.5 * pixy
+        if y >= ymax: y = ymax - 0.5 * pixy 
+
+        xverts[:, self.xax] = x
+        yverts[:, self.yax] = y 
         xverts[:, self.yax] = [ymin, ymax]
         xverts[:, self.zax] =  self.pos.z + 1
         yverts[:, self.xax] = [xmin, xmax]
