@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# glimage.py -
+# glvolume.py - OpenGL vertex/texture creation for 3D volume rendering.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -14,14 +14,32 @@ import OpenGL.GL as gl
 
 
 def genVertexData(image, display, xax, yax):
-    """
-    (Re-)Generates data buffers containing X, Y, and Z coordinates,
-    used for indexing into the image. Also generates the geometry
-    buffer, which defines the geometry of a single voxel. If a
-    sampling rate other than 1 is passed in, the generated index
-    buffers will contain a sampling of the full coordinate space
-    for the X and Y dimensions, and the vertices in the geometry
-    buffer will be scaled accordingly.
+    """Generates vertex coordinates (for rendering voxels) and
+    texture coordinates (for colouring voxels) in world space.
+
+    Generates X/Y vertex coordinates, in the world space of the
+    given image, which define a set of pixels for displaying the
+    image at an arbitrary position along the world Z dimension.
+    Each pixel is defined by four vertices, which are rendered
+    as an OpenGL quad primitive.
+
+    For every set of four vertices, a single vertex is also
+    created, located in the centre of the four quad vertices. This
+    centre vertex is used to look up the appropriate image value,
+    which is then used to colour the quad.
+
+    :arg image:   The :class:`~fsl.data.image.Image` object to
+                  generate vertex and texture coordinates for.
+
+    :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                  object which defines how the image is to be
+                  rendered.
+
+    :arg xax:     The world space axis which corresponds to the
+                  horizontal screen axis (0, 1, or 2).
+
+    :arg yax:     The world space axis which corresponds to the
+                  vertical screen axis (0, 1, or 2). 
     """
 
     zax        = 3 - xax - yax
@@ -124,11 +142,25 @@ def genColourTexture(image,
                      texture,
                      colourResolution=256,
                      xform=None):
-    """
-    Generates the colour texture used to colour image voxels.
-    """
+    """Generates a RGBA colour texture which is used to colour voxels.
 
+    :arg image:            The :class:`~fsl.data.image.Image` object to
+                           generate vertex and texture coordinates for.
 
+    :arg display:          A
+                           :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                           object which defines how the image is
+                           to be rendered.
+
+    :arg texture:          A handle to an already-created OpenGL
+                           1-dimensional texture (i.e. the result
+                           of a call to `gl.glGenTextures(1)`).
+
+    :arg colourResolution: Size of the texture, total number of unique
+                           colours in the colour map.
+
+    :xform:                
+    """
 
     imin = display.displayRange[0]
     imax = display.displayRange[1]
