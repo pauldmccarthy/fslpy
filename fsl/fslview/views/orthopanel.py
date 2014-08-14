@@ -223,6 +223,9 @@ class OrthoPanel(viewpanel.ViewPanel):
         # which the 'show*Canvas' property is true
         canvases    = [self._xcanvas,     self._ycanvas,     self._zcanvas]
         show        = [self.showXCanvas,  self.showYCanvas,  self.showZCanvas]
+
+        if not any(show): return
+            
         canvases, _ = zip(*filter(lambda (c, s): s, zip(canvases, show)))
 
         if len(canvases) == 1:
