@@ -29,10 +29,9 @@ log = logging.getLogger(__name__)
 import scipy.ndimage as ndi
 import OpenGL.GL     as gl
 
-
 def drawSlice(canvas, image, zpos, xform=None):
     """Draws the specified slice from the specified image onto the specified
-canvas.
+    canvas.
 
     :arg image:   The :class:`~fsl.data.image.Image` object to draw.
     
@@ -63,7 +62,7 @@ canvas.
     
     worldCoords[:, canvas.zax] = zpos
     texCoords[  :, canvas.zax] = zpos
-
+    
     # Transform world texture coordinates
     # to (floating point) voxel coordinates
     voxCoords     = image.worldToVox(texCoords)
@@ -75,26 +74,47 @@ canvas.
     if display.interpolation: order = 1
     else:                     order = 0
 
+    # Remove vertices which are out of bounds
+    outOfBounds = [None] * 3
+    for ax in range(3):
+
+        # Be lenient on voxel coordinate boundaries
+        voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
+        voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
+                  (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
+                  ax] = imageData.shape[ax] - 1
+
+        # But remove anything which is clearly
+        # outside of the image space
+        outOfBounds[ax] = ((voxCoords[:, ax] < 0) |
+                           (voxCoords[:, ax] >= imageData.shape[ax]))
+
+    outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
+    if outOfBounds.any():
+        voxCoords   = voxCoords[  ~outOfBounds, :]
+        worldCoords = worldCoords[~outOfBounds, :]
+        nVertices   = worldCoords.shape[0]
+
     # Interpolate image data at floating
     # point voxel coordinates
-    imageData   = ndi.map_coordinates(imageData,
-                                      voxCoords.transpose(),
-                                      order=order,
-                                      prefilter=False)
+    imageData = ndi.map_coordinates(imageData,
+                                    voxCoords.transpose(),
+                                    order=order,
+                                    prefilter=False)
 
     # Prepare world coordinates and image data
     # (which are used as texture coordinates
     # on the colour map) for copy to GPU
     worldCoords = worldCoords.ravel('C')
-    imageData   = imageData.ravel(  'C')
+    imageData   = imageData  .ravel('C')
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
-    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
+    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glPushMatrix()

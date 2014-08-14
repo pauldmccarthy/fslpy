@@ -1,5 +1,5 @@
 /*
- * OpenGL vertex shader used by fsl/fslview/slicecanvas.py
+ * OpenGL vertex shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -29,8 +29,16 @@ attribute vec2 texCoords;
 /* Z location*/
 uniform float zCoord;
 
-/* Voxel value passed through to fragment shader */ 
+/* 
+ * Voxel value passed through to fragment shader.
+ */ 
 varying float fragVoxValue;
+
+/* 
+ * If the world location is out of bounds, tell 
+ * the fragment shader not to draw the fragment. 
+ */
+varying float outOfBounds;
 
 void main(void) {
 
@@ -46,10 +54,31 @@ void main(void) {
     worldLoc    = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
     gl_Position = worldLoc;
 
+    /* transform the texture world coordinate into voxel coordinates */
     vec4 voxLoc = worldToVoxMat * texLoc;
-    voxLoc      = (voxLoc + 0.5) / vec4(imageShape, 1.0);
 
-    /* Look up the voxel value, and pass it to the fragment shader */
-    vec4 vt = texture3D(imageBuffer, voxLoc.xyz);
+    /*
+     * Figure out whether we are out of the image space.        
+     * Be a bit lenient at the voxel coordinate boundaries, 
+     * as otherwise the 3D texture lookup will be out of 
+     * bounds.
+     */
+    outOfBounds = 0;
+    if      (voxLoc.x < -0.5)                  outOfBounds = 1;
+    else if (voxLoc.x >  imageShape.x - 0.499) outOfBounds = 1;
+    else if (voxLoc.x >= imageShape.x - 0.5)   voxLoc.x = imageShape.x - 0.501;
+    if      (voxLoc.y < -0.5)                  outOfBounds = 1;
+    else if (voxLoc.y >  imageShape.y - 0.499) outOfBounds = 1;
+    else if (voxLoc.y >= imageShape.y - 0.5)   voxLoc.y = imageShape.y - 0.501;
+    if      (voxLoc.z < -0.5)                  outOfBounds = 1;
+    else if (voxLoc.z >  imageShape.z - 0.499) outOfBounds = 1;
+    else if (voxLoc.z >= imageShape.z - 0.5)   voxLoc.z = imageShape.z - 0.501;
+
+    /* 
+     *
+     * Look up the voxel value (centred, and scaled to lie 
+     * between 0 and 1), and pass it to the fragment shader 
+     */
+    vec4 vt = texture3D(imageBuffer, (voxLoc.xyz + 0.5) / imageShape);
     fragVoxValue = vt.r;
 }

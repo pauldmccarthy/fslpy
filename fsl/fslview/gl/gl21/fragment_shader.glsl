@@ -1,5 +1,5 @@
 /*
- * OpenGL fragment shader used by fsl/fslview/slicecanvas.py
+ * OpenGL fragment shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -26,7 +26,14 @@ uniform mat4 texCoordXform;
  */
 varying float fragVoxValue;
 
+varying float outOfBounds;
+
 void main(void) {
+
+    if (outOfBounds > 0) {
+      gl_FragColor = vec4(0, 0, 0, 0);
+      return;
+    }
 
     float normVoxValue = fragVoxValue;
 
