@@ -159,7 +159,13 @@ def genColourTexture(image,
     :arg colourResolution: Size of the texture, total number of unique
                            colours in the colour map.
 
-    :xform:                
+    :arg xform:            Optional. An affine transformation matrix to
+                           be applied to the image data before it is used
+                           to lookup a colour in the generated texture.
+                           For example, the image data may be inadvertently
+                           normalised or clamped by OpenGL - this
+                           transformation matrix may be used to transform
+                           the data back to its native range.
     """
 
     imin = display.displayRange[0]
@@ -179,7 +185,7 @@ def genColourTexture(image,
     if xform is not None:
         texCoordXform = np.dot(xform, texCoordXform)
 
-    log.debug('Generating colour buffer for '
+    log.debug('Generating colour texture for '
               'image {} (map: {}; resolution: {})'.format(
                   image.name,
                   display.cmap.name,
