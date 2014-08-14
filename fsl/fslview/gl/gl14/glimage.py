@@ -137,15 +137,11 @@ class GLImage(object):
         def imageUpdate(*a):
             self.genImageData()
 
-        def imageAndVertexUpdate(*a):
-            vertexUpdate()
-            self.genImageData()
-
         def colourUpdate(*a):
             self.genColourTexture()
 
         display = self.display
-        lnrName = 'GlImageData_{}'.format(id(self))
+        lnrName = 'GlImage_{}'.format(id(self))
 
         display.addListener('transform',       lnrName, vertexUpdate)
         display.addListener('alpha',           lnrName, colourUpdate)

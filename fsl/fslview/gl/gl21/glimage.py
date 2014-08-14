@@ -1,56 +1,25 @@
 #!/usr/bin/env python
-#
-# glimagedata.py - Create OpenGL data to render 2D slices of a 3D image.
+
+# glimage.py - A class which encapsulates the data required to render
+#              a 2D slice of a 3D image in an OpenGL 2.1 compatible
+#              manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A GLImageData object encapsulates the OpenGL information necessary
- to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
+"""A GLImage object encapsulates the OpenGL information necessary
+to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
 
-A slice from one image is rendered using two buffers and two textures.
+This class makes use of the functions in the :mod:`fsl.fslview.gl.glimage`
+module, which actually generates the vertex and texture information necessary
+to render an image.
 
-The first buffer, the 'world coordinate buffer' contains the 2D X/Y
-coordinates (single precision floating point, X and Y respectively correspond
-to the screen horizontal and vertical axes), in world space, for every voxel
-to be displayed. Each voxel is represented by four vertices, of four vertices,
-which are rendered as quads.
+The image data itself is stored as a 3D texture. Data for signed or unsigned
+8, 16, or 32 bit integer images is stored on the GPU in the same format; all
+other data types are stored as 32 bit floating point.
 
-The next buffer, the 'texture coordinate buffer' contains the, 2D X/Y
-coordinates in world space, of the center of each of those voxels. This
-duplication is an unfortunate necessity at this point in time. These
-coordinates are used to calculate the value at each of the rendered voxels.
-The vertex shader takes these world X/Y coordinates along with the Z
-coordinate of the currently displayed slice, transforms them into voxel
-coordinates using the :attr:`fsl.data.image.worldToVoxMat` transformation
-matrix, and uses these voxel coordinates to look up the value in the 3D
-image texture.
-
-The image data itself is stored as a 3D texture. Data for signed or
-unsigned 8 or 16 bit integer images is stored on the GPU in the same
-format; all other data types are stored as 32 bit floating point.
-
-Finally, a 1D texture is used is used to store a lookup table containing
-an RGBA8 colour map, to colour each voxel according to its value.
-
-All of these things are created when a GLImageData object is
-instantiated. They are available as attributes of the object:
-
- - imageBuffer
- - worldCoordBuffer
- - texCoordBuffer
- - imageBuffer
- - colourBuffer
- - nVertices
-
-The contents of all of these buffers is is dependent upon the way that
-the image is being displayed.  They are regenerated automatically when
-the image display properties are changed (via listeners registered on
-the relevant fsl.fslview.displaycontext.ImageDisplay properties).
-
-If the display orientation changes (i.e. the image dimensions that map
-to the screen X/Y axes) the genVertexData method must be called
-manually, to regenerate the voxel indices.
-
+This implementation is dependent upon one OpenGL ARB extension - `texture_rg`,
+which allows us to store and retrieve un-clamped floating point values in the
+3D image texture.
 """
 
 import logging
@@ -71,31 +40,56 @@ import fsl.fslview.gl.glimage as glimage
 class GLImageData(object):
 
     def __init__(self, image, xax, yax, imageDisplay):
-        """
-        Initialise the OpenGL data buffers required to render the given image.
-        Parameters:
+        """Initialise the OpenGL data required to render the given image.
+
+        After initialisation, all of the data requirted to render a slice
+        is available as attributes of this object:
+
+          - :attr:`imageTexture:`  An OpenGL texture handle to a 3D texture
+                                   containing the image data.
+
+          - :attr:`colourTexture`: An OpenGL texture handle to a 1D texture
+                                   containing the colour map used to colour
+                                   the image data.
         
-          - image:        A fsl.data.image.Image object.
+          - :attr:`worldCoords`:   A `(3,4*N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+          - :attr:`texCoords`:     A `(3,N)` numpy array (where `N` is the
+                                   number of pixels to be drawn). See the
+                                   :func:`fsl.fslview.gl.glimage.genVertexData`
+                                   function.
+
+        As part of initialisation, this object registers itself as a listener
+        on several properties of the given
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object so that, when
+        any display properties change, the image data, colour texture, and
+        vertex data are automatically updated.
         
-          - xax:          The image axis which maps to the screen x axis.
+        :arg image:        A :class:`~fsl.data.image.Image` object.
         
-          - yax:          The image axis which maps to the screen y axis.
+        :arg xax:          The image world axis which corresponds to the
+                           horizontal screen axis.
+
+        :arg xax:          The image world axis which corresponds to the
+                           vertical screen axis.        
         
-          - imageDisplay: A fsl.fslview.displaycontext.ImageDisplay object
-                          which describes how the image is to be displayed.
+        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                           object which describes how the image is to be
+                           displayed. 
         """
         
         self.image   = image
         self.display = imageDisplay
 
-        self._checkDataType()
-
-        # Buffers for storing image data
-        # and voxel coordinates
-        self.imageBuffer = self._genImageBuffer()
+        # Initialise the image texture, and
+        # generate vertex/texture coordinates
+        self.imageTexture = self.genImageData()
         self.genVertexData(xax, yax)
 
-        # The colour buffer, containing a map of
+        # The colour texture, containing a map of
         # colours (stored on the GPU as a 1D texture)
         # This is initialised in the updateColourBuffer
         # method
@@ -108,9 +102,9 @@ class GLImageData(object):
 
 
     def genVertexData(self, xax, yax):
-        """
-        """
-
+        """Generates vertex and texture coordinates required to render
+        the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
+        """ 
         self.xax = xax
         self.yax = yax
 
@@ -123,15 +117,13 @@ class GLImageData(object):
         worldCoordBuffer = vbo.VBO(worldCoords.ravel('C'), gl.GL_STATIC_DRAW)
         texCoordBuffer   = vbo.VBO(texCoords  .ravel('C'), gl.GL_STATIC_DRAW)
 
-        self.worldCoordBuffer = worldCoordBuffer
-        self.texCoordBuffer   = texCoordBuffer
-        self.nVertices        = worldCoords.shape[0]
+        self.worldCoords = worldCoordBuffer
+        self.texCoords   = texCoordBuffer
 
         
     def _checkDataType(self):
-        """
-        This method determines the appropriate OpenGL texture data
-        format to use for the image managed by this GLImageData
+        """This method determines the appropriate OpenGL texture data
+        format to use for the image managed by this :class`GLImage`
         object. 
         """
 
@@ -189,13 +181,17 @@ class GLImageData(object):
                       normOffset))
 
         
-    def _genImageBuffer(self):
+    def genImageData(self):
+        """Generates the OpenGL image texture used to store the data for the
+        given image. The texture handle is stored as an attribute of the image
+        and, if it has already been created (e.g. by another :class:`GLImage`
+        object which is managing the same image), the existing texture handle
+        is returned.
         """
-        (Re-)Generates the OpenGL image texture used to store the data for the
-        given image. The buffer is stored as an attribute of the image and, if
-        it has already been created (e.g. by another GLImageData object), the
-        existing buffer is returned.
-        """
+
+        # figure out how to store
+        # the image as a 3D texture.
+        self._checkDataType()
 
         image   = self.image
         display = self.display
@@ -209,23 +205,24 @@ class GLImageData(object):
         if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
         else:                    imageData = image.data
 
-        # Check to see if the image buffer
+        # Check to see if the image texture
         # has already been created
         try:
-            displayHash, imageBuffer = image.getAttribute('glImageBuffer')
+            displayHash, imageTexture = image.getAttribute('glImageTexture')
         except:
-            displayHash = None
-            imageBuffer = None
+            displayHash  = None
+            imageTexture = None
 
-        if imageBuffer is None:
-            imageBuffer = gl.glGenTextures(1)
+        # otherwise, create a new one
+        if imageTexture is None:
+            imageTexture = gl.glGenTextures(1)
 
         # The image buffer already exists, and it
         # contains the data for the requested volume.  
         elif displayHash == hash(display):
-            return imageBuffer
+            return imageTexture
 
-        log.debug('Populating texture buffer for '
+        log.debug('Creating 3D texture for '
                   'image {} (data shape: {})'.format(
                       image.name,
                       imageData.shape))
@@ -241,7 +238,8 @@ class GLImageData(object):
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
         
         # Set up image texture sampling thingos
-        gl.glBindTexture(gl.GL_TEXTURE_3D, imageBuffer)
+        # with appropriate interpolation method
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_MAG_FILTER,
                            interp)
@@ -261,6 +259,8 @@ class GLImageData(object):
                             gl.GL_TEXTURE_BORDER_COLOR,
                             [0, 0, 0, 0])
 
+        # create the texture according to the format
+        # calculated by the checkDataType method.
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
                         self.texIntFmt,
@@ -274,16 +274,27 @@ class GLImageData(object):
         # texture as an attribute of the image, so other
         # things which want to render the same volume of the
         # image don't need to duplicate all of that data.
-        image.setAttribute('glImageBuffer', (hash(display), imageBuffer))
+        image.setAttribute('glImageTexture', (hash(display), imageTexture))
 
-        return imageBuffer
+        return imageTexture
 
         
     def genColourTexture(self):
-        """
-        Regenerates the colour texture used to colour image voxels.
-        """
+        """Generates the colour texture used to colour image voxels. See
+        :func:`fsl.fslview.gl.glimage.genVertexData`.
+        """ 
 
+        # OpenGL does different things to 3D texture data
+        # depending on its type - integer types are
+        # normalised from [0, INT_MAX] to [0, 1], whereas
+        # floating point types are left un-normalised
+        # (because we are using the ARB.texture_rg.GL_R32F
+        # data format - without this, floating point data
+        # is *clamped*, not normalised, to the range
+        # [0, 1]!). The checkDataType method calculates
+        # an appropriate transformation matrix to transform
+        # the image data to the appropriate texture coordinate
+        # range.
         texCoordXform = glimage.genColourTexture(self.image,
                                                  self.display,
                                                  self.colourTexture,
@@ -292,12 +303,13 @@ class GLImageData(object):
 
 
     def _configDisplayListeners(self):
-        """
-        Adds a bunch of listeners to the image.ImageDisplay object which
-        defines how the given image is to be displayed. This is done so we
-        can update the colour texture when image display properties are
-        changed. 
-        """
+        """Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
+        how the given image is to be displayed.
+
+        This is done so we can update the colour, vertex, and image data when
+        display properties are changed.
+        """ 
 
         def vertexUpdate(*a):
             self.genVertexData(self.xax, self.yax)
@@ -309,7 +321,7 @@ class GLImageData(object):
             self.genColourTexture()
 
         display = self.display
-        lnrName = 'GlImageData_{}'.format(id(self))
+        lnrName = 'GlImage_{}'.format(id(self))
 
         display.addListener('transform',       lnrName, vertexUpdate)
         display.addListener('interpolation',   lnrName, imageUpdate)
