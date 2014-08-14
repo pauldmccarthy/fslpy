@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 #
-# glimagedata.py - Create OpenGL data to render 2D slices of a 3D image.
+# glvolume.py - A class which encapsulates the data required to render
+#               a 2D slice of a 3D volume in an OpenGL 1.4 compatible
+#               manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A GLImageData object encapsulates the OpenGL information necessary to
+"""Defines the GLVolume object, which which encapsulates the data required to render
+#               a 2D slice of a 3D volume in an OpenGL 1.4 compatible
+#               manner.
+
+A GL object encapsulates the OpenGL information necessary to
 render 2D slices of a 3D image, in an OpenGL 1.4 compatible manner (i.e. using
 immediate mode rendering).
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# glvolume.py - OpenGL vertex/texture creation for 3D volume rendering.
+# glvolume.py - OpenGL vertex/texture creation for 2D rendering of a 3D
+#               volume.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
