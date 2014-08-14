@@ -314,7 +314,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             # for this image has not yet been generated.
             except KeyError: continue
 
-            glData.genVertexData(self.xax, self.yax)
+            glData.changeAxes(self.xax, self.yax)
 
         self._imageBoundsChanged()
         

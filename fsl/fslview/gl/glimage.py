@@ -1,18 +1,30 @@
 #!/usr/bin/env python
 #
-# glimage.py - OpenGL vertex/texture creation for 2D rendering of a 3D
+# glimage.py - OpenGL vertex/texture creation for 2D slice rendering of a 3D
 #              image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""Defines the :class:`GLImage` class, which creates and encapsulates the data
+required to render 2D slice of a 3D image.
+
+Two stand-alone functions are also contained in this module, the
+:func:`genVertexData` function, and the :func:`genColourTexture`
+function. These functions contain the code to actually generate the vertex and
+texture information necessary to render an image (which is the same across
+OpenGL versions).
+
+The :class:`GLImage` class makes use of the functions defined in the
+:mod:`fsl.fslview.gl.gl14.glimage_funcs` or the
+:mod:`fsl.fslview.gl.gl21.glimage_funcs` modules, which provide OpenGL version
+specific details for creation/storage of the vertex/colour/texture data.
+"""
 
 import logging
 log = logging.getLogger(__name__)
 
-import numpy as np
-
-import OpenGL.GL as gl
-
+import numpy          as np
+import OpenGL.GL      as gl
 import fsl.fslview.gl as fslgl
 
 class GLImage(object):
@@ -23,22 +35,27 @@ class GLImage(object):
         After initialisation, all of the data requirted to render a slice
         is available as attributes of this object:
 
-          - :attr:`imageTexture:`  An OpenGL texture handle to a 3D texture
-                                   containing the image data.
+          - :attr:`imageData:`     A pointer to the image data being rendered.
+                                   Exactly what this is depends upon the OpenGL
+                                   version in use.
 
           - :attr:`colourTexture`: An OpenGL texture handle to a 1D texture
                                    containing the colour map used to colour
                                    the image data.
         
-          - :attr:`worldCoords`:   A `(3,4*N)` numpy array (where `N` is the
+          - :attr:`worldCoords`:   A `(4*N, 3)` numpy array (where `N` is the
                                    number of pixels to be drawn). See the
                                    :func:`fsl.fslview.gl.glimage.genVertexData`
                                    function.
 
-          - :attr:`texCoords`:     A `(3,N)` numpy array (where `N` is the
+          - :attr:`texCoords`:     A `(N, 3)` numpy array (where `N` is the
                                    number of pixels to be drawn). See the
                                    :func:`fsl.fslview.gl.glimage.genVertexData`
                                    function.
+
+        Other attributes, specific to the OpenGL version in use, may also be
+        present. See the :mod:`fsl.fslview.gl.gl14.glimage_funcs` and
+        :mod:`fsl.fslview.gl.gl21.glimage_funcs` modules for more details.
 
         As part of initialisation, this object registers itself as a listener
         on several properties of the given
@@ -56,7 +73,7 @@ class GLImage(object):
         
         :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
                            object which describes how the image is to be
-                           displayed. 
+                           displayed.
         """
 
         self.xax     = xax
@@ -86,6 +103,11 @@ class GLImage(object):
 
 
     def changeAxes(self, xax, yax):
+        """This method should be called when the image display axes change.
+        
+        It regenerates vertex information accordingly.
+        """
+        
         self.xax         = xax
         self.yax         = yax
         wc, tc, nv       = fslgl.glimage_funcs.genVertexData(self)
@@ -148,14 +170,14 @@ def genVertexData(image, display, xax, yax):
     This function returns a tuple of two objects:
 
       - The first object, the *world coordinate* array, is a numpy
-        array of shape `(3, 4*N)`, where `N` is the number of pixels
+        array of shape `(4*N, 3)`, where `N` is the number of pixels
         to be drawn. This array contains the world coordinates for
         every pixel, with each pixel defined by four vertices (to be
         rendered as an OpenGL quad). The vertex coordinates along the
         world Z axis are all set to zero.
 
       - The second object, the *texture coordinate* array, is a numpy
-        array of shape `(3, N)`, containing contains the coordinates of
+        array of shape `(N, 3)`, containing contains the coordinates of
         the centre of every quad defined in the world coordinate array.
         These vertices are to be used to look up the value in the image
         data, which may then be used to determine the corresponding

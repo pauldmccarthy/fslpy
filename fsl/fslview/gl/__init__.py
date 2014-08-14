@@ -23,11 +23,6 @@ about any of this - just instantiate the GUI classes provided by the
 version-independent modules (e.g. the
 :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` class) as you would any
 other :mod:`wx` widget.
-
- - slicecanvas_draw
- - lightboxcanvas_draw
- - glimage
-
 """
 
 

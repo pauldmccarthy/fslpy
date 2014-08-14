@@ -9,8 +9,9 @@
  manner, using immediate mode rendering. 
 
 .. note:: This module is extremely tightly coupled to the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and to the
-:class:`~fsl.fslview.gl.gl14.glimagedata.GLImageData` class.
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, to the
+:class:`~fsl.fslview.gl.glimage.GLImage` class, and to the
+:mod:`~fsl.fslview.gl.glimage.gl14.glimage_funcs` module.
 
 This module provides two functions:
 
@@ -23,20 +24,16 @@ This module provides two functions:
 """
 
 import logging
-
 log = logging.getLogger(__name__)
 
-import scipy.ndimage     as ndi
-import numpy             as np
-import OpenGL.GL         as gl
+import scipy.ndimage as ndi
+import numpy         as np
+import OpenGL.GL     as gl
 
 
 def drawSlice(canvas, image, zpos, xform=None):
-    """Draws the specified slice from the specified image on the canvas.
-
-    If ``xform`` is not provided, the
-    :class:`~fsl.data.image.Image` ``voxToWorldMat`` transformation
-    matrix is used.
+    """Draws the specified slice from the specified image onto the specified
+canvas.
 
     :arg image:   The :class:`~fsl.data.image.Image` object to draw.
     
@@ -70,12 +67,11 @@ def drawSlice(canvas, image, zpos, xform=None):
 
     # Transform world texture coordinates
     # to (floating point) voxel coordinates
-    voxCoords        = image.worldToVox(texCoords)
-
-    imageData        = glimg.imageData
-    texCoordXform    = glimg.texCoordXform
-    colourTexture    = glimg.colourTexture
-    nVertices        = glimg.nVertices
+    voxCoords     = image.worldToVox(texCoords)
+    imageData     = glimg.imageData
+    texCoordXform = glimg.texCoordXform
+    colourTexture = glimg.colourTexture
+    nVertices     = glimg.nVertices
 
     if display.interpolation: order = 1
     else:                     order = 0
