@@ -6,6 +6,7 @@ regularly, too.
 
 
 * Bugs to fix
+** No worky in VNC session.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
 ** DONE is av.nii.gz being displayed properly? Yep, it's interpolation causing a bit of weirdness, but it is being displayed correctly.
@@ -34,8 +35,6 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Set cursor location via command line option.
-** Cursor location preservation when transformation option is changed.
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -43,6 +42,8 @@ regularly, too.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
+** WONTFIX Cursor location preservation when transformation option is changed. The world location is preserved.
+** DONE Set cursor location via command line option.
 ** DONE Cursor bound restriction on ortho panel.
 ** DONE Refactor/merge GL14<->Gl21 image data code, as there is a lot of shared functionality.
 ** DONE Rethink 4D handling - image.display.volume or imageList.volume?
