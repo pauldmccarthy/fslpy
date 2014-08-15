@@ -6,6 +6,7 @@ regularly, too.
 
 
 * Bugs to fix
+** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
 ** No worky in VNC session.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
