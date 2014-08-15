@@ -29,7 +29,7 @@ import fsl.fslview.gl as fslgl
 
 class GLImage(object):
  
-    def __init__(self, image, xax, yax, imageDisplay):
+    def __init__(self, image, display):
         """Initialise the OpenGL data required to render the given image.
 
         After initialisation, all of the data requirted to render a slice
@@ -76,19 +76,14 @@ class GLImage(object):
                            displayed.
         """
 
-        self.xax     = xax
-        self.yax     = yax
+        self.xax     = 0
+        self.yax     = 1
         self.image   = image
-        self.display = imageDisplay
+        self.display = display
         
         # Initialise the image data, and
         # generate vertex/texture coordinates
-        self.imageData = fslgl.glimage_funcs.genImageData( self)
-        wc, tc, nv     = fslgl.glimage_funcs.genVertexData(self)
-
-        self.worldCoords = wc
-        self.texCoords   = tc
-        self.nVertices   = nv
+        self.imageData = fslgl.glimage_funcs.genImageData(self)
 
         # The colour texture, containing a map of
         # colours (stored on the GPU as a 1D texture)
@@ -102,7 +97,7 @@ class GLImage(object):
         self._configDisplayListeners()
 
 
-    def changeAxes(self, xax, yax):
+    def setAxes(self, xax, yax):
         """This method should be called when the image display axes change.
         
         It regenerates vertex information accordingly.
@@ -113,7 +108,16 @@ class GLImage(object):
         wc, tc, nv       = fslgl.glimage_funcs.genVertexData(self)
         self.worldCoords = wc
         self.texCoords   = tc
-        self.nVertices   = nv 
+        self.nVertices   = nv
+
+        
+    def draw(self, zpos):
+        fslgl.gimage_funcs.draw(self, zpos)
+
+
+    def destroy(self):
+        
+        pass
 
         
     def _configDisplayListeners(self):

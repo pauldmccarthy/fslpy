@@ -11,15 +11,24 @@ import matplotlib.cm as mplcm
 
 import props
 import fsl.data.image as fslimage
+import fsl.fslview.gl as fslgl
 
 
 class ImageDisplay(props.HasProperties):
-    """A class which describes how an :class:`~fsl.data.image.Image`  should
+    """A class which describes how an :class:`~fsl.data.image.Image` should
     be displayed.
 
-    This class doesn't have any functionality - it is up to things which
+    This class doesn't have much functionality - it is up to things which
     actually display an :class:`~fsl.data.image.Image` to adhere to the
     properties stored in the associated :class:`ImageDisplay` object.
+
+    The one real responsibility of an :class:`ImageDisplay` object is to
+    create the OpenGL data which is required to display an image. This occurs
+    whenever the :attr:`imageType` property changes, and a reference to the
+    created OpenGL object is accessible on the :class:`ImageDisplay` object as
+    an attribute called :attr:`glObject`. See the
+    :mod:`~fsl.fslview.gl.globject` module for more details on the different
+    image types and their associated OpenGL representations.
     """
 
     
@@ -242,6 +251,22 @@ class ImageDisplay(props.HasProperties):
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
+
+        # Call the _imageTypeChanged method
+        # whenever the image type changes.
+        self.addListener('imageType', id(self), self._imageTypeChanged)
+
+
+    def _imageTypeChanged(self, *a):
+        """Called when the image type changes. Initialises the OpenGL
+        data necessary to display the image.
+
+        See the :mod:`fsl.fslview.gl.globject` module for more details.
+        """
+        self.glObject = fslgl.globject.createGLObject(
+            self.imageType,
+            self.image,
+            self)
 
 
 class DisplayContext(props.HasProperties):
