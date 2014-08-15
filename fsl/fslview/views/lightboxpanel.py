@@ -131,6 +131,7 @@ class LightBoxPanel(viewpanel.ViewPanel):
             zpos = self._displayCtx.location.getPos(self._canvas.zax)
             self._canvas.pos.xyz = (xpos, ypos, zpos)
 
+        self._canvas.pos.xyz = self._displayCtx.location
         self._displayCtx.addListener('location', self._name, move)
 
         def onDestroy(ev):
