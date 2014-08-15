@@ -139,7 +139,8 @@ class OrthoPanel(viewpanel.ViewPanel):
         def move(*a):
             if self.posSync:
                 self.setPosition(*self._displayCtx.location)
-                
+
+        self.setPosition(*self._displayCtx.location)
         self._displayCtx.addListener('location', self._name, move) 
         
         def onDestroy(ev):

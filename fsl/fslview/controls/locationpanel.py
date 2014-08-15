@@ -179,6 +179,9 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         volume  = self._displayCtx.volume
 
+        if len(self._imageList) == 0:
+            return
+
         image  = self._imageList[self._displayCtx.selectedImage]
         voxVal = None
         

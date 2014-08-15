@@ -72,7 +72,15 @@ def parseArgs(argv, namespace):
                             help='Lightbox view')
     mainParser.add_argument('-g', '--glversion',
                             metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
-                            help='Desired (major, minor) OpenGL version') 
+                            help='Desired (major, minor) OpenGL version')
+    mainParser.add_argument('-o', '--voxelloc', metavar=('X', 'Y', 'Z'),
+                            type=int, nargs=3,
+                            help='Location to show (voxel coordinates of '
+                                 'first image)')
+    mainParser.add_argument('-r', '--worldloc', metavar=('X', 'Y', 'Z'),
+                            type=float, nargs=3,
+                            help='Location to show (world coordinates, '
+                                 'takes precedence over --voxelloc)') 
     
     # And the imgParser parses image display options
     # for a single image - below we're going to
@@ -98,12 +106,12 @@ def parseArgs(argv, namespace):
                 'name',
                 'volume']
 
-    # do not use l, v, h, d, w, or g, as they are used
-    # either by fsl.py, or the mainParser above.
+    # do not use any of the short argument symboles
+    # used either by fsl.py, or the mainParser above.
     props.addParserArguments(displaycontext.ImageDisplay,
                              imgOpts,
                              cliProps=imgProps,
-                             exclude='lvhdwg')
+                             exclude='lvhdwgor')
 
     # Parse the application options
     namespace, argv = mainParser.parse_known_args(argv, namespace)
@@ -158,9 +166,24 @@ def handleArgs(args):
         
     imageList  = fslimage.ImageList(images)
     displayCtx = displaycontext.DisplayContext(imageList)
-    
+
+    # per-image display arguments
     for i in range(len(imageList)):
         props.applyArguments(image.getAttribute('display'), args.images[i])
+
+    # voxel/world location
+    if len(imageList) > 0:
+        if args.worldloc:
+            loc = args.worldloc
+        elif args.voxelloc:
+            loc = imageList[0].voxToWorld([args.voxelloc])[0]
+            
+        else:
+            loc = [imageList.bounds.xlo + 0.5 * imageList.bounds.xlen,
+                   imageList.bounds.ylo + 0.5 * imageList.bounds.ylen,
+                   imageList.bounds.zlo + 0.5 * imageList.bounds.zlen]
+
+        displayCtx.location.xyz = loc
 
     return imageList, displayCtx
     
