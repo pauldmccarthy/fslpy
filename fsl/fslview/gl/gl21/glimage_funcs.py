@@ -36,6 +36,8 @@ This module provides three functions:
 import logging
 log = logging.getLogger(__name__)
 
+import os.path           as op
+
 import numpy             as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
@@ -45,6 +47,103 @@ import OpenGL.arrays.vbo as vbo
 import OpenGL.GL.ARB.texture_rg as arbrg
 
 import fsl.fslview.gl.glimage as glimage
+
+
+_vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
+"""Location of the GLSL vertex shader source code."""
+
+
+_fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
+"""Location of the GLSL fragment shader source code."""
+
+
+def _compileShaders(glimg):
+    """Compiles and links the OpenGL GLSL vertex and fragment shader
+    programs, and attaches a reference to the resulting program to
+    the given GLImage object. Raises an error if compilation/linking
+    fails.
+
+    I'm explicitly not using the PyOpenGL
+    :func:`OpenGL.GL.shaders.compileProgram` function, because it attempts
+    to validate the program after compilation, which fails due to texture
+    data not being bound at the time of validation.
+    """
+
+    with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
+    with open(_fragment_shader_file, 'rt') as f: fragShaderSrc = f.read()
+
+    # vertex shader
+    vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
+    gl.glShaderSource(vertShader, vertShaderSrc)
+    gl.glCompileShader(vertShader)
+    vertResult = gl.glGetShaderiv(vertShader, gl.GL_COMPILE_STATUS)
+
+    if vertResult != gl.GL_TRUE:
+        raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(vertShader)))
+
+    # fragment shader
+    fragShader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
+    gl.glShaderSource(fragShader, fragShaderSrc)
+    gl.glCompileShader(fragShader)
+    fragResult = gl.glGetShaderiv(fragShader, gl.GL_COMPILE_STATUS)
+
+    if fragResult != gl.GL_TRUE:
+        raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(fragShader)))
+
+    # link all of the shaders!
+    program = gl.glCreateProgram()
+    gl.glAttachShader(program, vertShader)
+    gl.glAttachShader(program, fragShader)
+
+    gl.glLinkProgram(program)
+
+    gl.glDeleteShader(vertShader)
+    gl.glDeleteShader(fragShader)
+
+    linkResult = gl.glGetProgramiv(program, gl.GL_LINK_STATUS)
+
+    if linkResult != gl.GL_TRUE:
+        raise RuntimeError('{}'.format(gl.glGetProgramInfoLog(program)))
+
+    glimg.shaders = program
+
+    # Indices of all vertex/fragment shader parameters
+    glimg.imageBufferPos     = gl.glGetUniformLocation(glimg.shaders,
+                                                       'imageBuffer')
+    glimg.worldToVoxMatPos   = gl.glGetUniformLocation(glimg.shaders,
+                                                       'worldToVoxMat')
+    glimg.worldToWorldMatPos = gl.glGetUniformLocation(glimg.shaders,
+                                                       'worldToWorldMat') 
+    glimg.colourMapPos       = gl.glGetUniformLocation(glimg.shaders,
+                                                       'colourMap')
+    glimg.imageShapePos      = gl.glGetUniformLocation(glimg.shaders,
+                                                       'imageShape') 
+    glimg.texCoordXformPos   = gl.glGetUniformLocation(glimg.shaders,
+                                                       'texCoordXform') 
+    glimg.signedPos          = gl.glGetUniformLocation(glimg.shaders,
+                                                       'signed')
+    glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
+                                                       'zCoord')
+    glimg.xaxPos             = gl.glGetUniformLocation(glimg.shaders,
+                                                       'xax')
+    glimg.yaxPos             = gl.glGetUniformLocation(glimg.shaders,
+                                                       'yax')
+    glimg.zaxPos             = gl.glGetUniformLocation(glimg.shaders,
+                                                       'zax') 
+    glimg.worldCoordPos      = gl.glGetAttribLocation( glimg.shaders,
+                                                       'worldCoords')
+    glimg.texCoordPos        = gl.glGetAttribLocation( glimg.shaders,
+                                                       'texCoords')
+
+def init(glimg, xax, yax):
+    _compileShaders(glimg)
+
+
+def destroy(glimg):
+    glimg.worldCoords.delete()
+    glimg.texCoords  .delete()
+    gl.glDeleteTextures(1, glimg.colourTexture)
+    gl.glDeleteTextures(1, glimg.imageData)
 
 
 def genVertexData(glimg):
@@ -254,3 +353,89 @@ def genColourTexture(glimg):
                                              glimg.colourTexture,
                                              xform=glimg.dataTypeXform)
     return texCoordXform
+
+
+def draw(glimg, zpos, xform=None):
+    """Draws the specified slice from the specified image on the canvas.
+
+    :arg image:   The :class:`~fsl.data.image.Image` object to draw.
+    
+    :arg zpos:    World Z position of slice to be drawn.
+    
+    :arg xform:   A 4*4 transformation matrix to be applied to the vertex
+                  data.
+    """
+
+    image   = glimg.image
+    display = glimg.display
+
+    # Don't draw the slice if this
+    # image display is disabled
+    if not display.enabled: return
+
+    # load the shaders
+    gl.glUseProgram(glimg.shaders) 
+
+    # bind the current alpha value
+    # and data range to the shader
+    gl.glUniform1f( glimg.signedPos,        glimg.signed)
+    gl.glUniform1f( glimg.zCoordPos,        zpos)
+    gl.glUniform3fv(glimg.imageShapePos, 1, np.array(image.shape,
+                                                     dtype=np.float32))
+    gl.glUniform1i( glimg.xaxPos,           glimg.xax)
+    gl.glUniform1i( glimg.yaxPos,           glimg.yax)
+    gl.glUniform1i( glimg.zaxPos,           glimg.zax)
+    
+    # bind the transformation matrices
+    # to the shader variable
+    if xform is None: xform = np.identity(4)
+    
+    w2w = np.array(xform,               dtype=np.float32).ravel('C')
+    w2v = np.array(image.worldToVoxMat, dtype=np.float32).ravel('C')
+    tcx = np.array(glimg.texCoordXform, dtype=np.float32).ravel('C')
+    
+    gl.glUniformMatrix4fv(glimg.worldToVoxMatPos,   1, False, w2v)
+    gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
+    gl.glUniformMatrix4fv(glimg.texCoordXformPos,   1, False, tcx)
+
+    # Set up the colour texture
+    gl.glActiveTexture(gl.GL_TEXTURE0) 
+    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
+    gl.glUniform1i(glimg.colourMapPos, 0) 
+
+    # Set up the image data texture
+    gl.glActiveTexture(gl.GL_TEXTURE1) 
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageData)
+    gl.glUniform1i(glimg.imageBufferPos, 1)
+
+    # world x/y coordinates
+    glimg.worldCoords.bind()
+    gl.glVertexAttribPointer(
+        glimg.worldCoordPos,
+        2,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+    gl.glEnableVertexAttribArray(glimg.worldCoordPos)
+
+    # world x/y texture coordinates
+    glimg.texCoords.bind()
+    gl.glVertexAttribPointer(
+        glimg.texCoordPos,
+        2,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+    gl.glEnableVertexAttribArray(glimg.texCoordPos) 
+
+    # Draw all of the triangles!
+    gl.glDrawArrays(gl.GL_QUADS, 0, glimg.nVertices)
+
+    gl.glDisableVertexAttribArray(glimg.worldCoordPos)
+    gl.glDisableVertexAttribArray(glimg.texCoordPos)
+    glimg.worldCoords.unbind()
+    glimg.texCoords.unbind()
+
+    gl.glUseProgram(0)

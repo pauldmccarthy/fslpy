@@ -45,6 +45,9 @@ def init(glimg, xax, yax):
     """No initialisation is necessary for OpenGL 1.4."""
     pass
 
+def destroy(glimg):
+    gl.glDeleteTextures(1, glimg.colourTexture)
+
     
 def genVertexData(glimg):
     """Generates vertex and texture coordinates required to render

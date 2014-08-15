@@ -432,6 +432,13 @@ class Image(props.HasProperties):
         """
         return self._attributes[name]
 
+    def delAttribute(self, name):
+        """Delete and return the value of the attribute with the given name.
+
+        :raise KeyError: if there is no attribute with the given name.
+        """
+        return self._attributes.pop(name)
+
         
     def setAttribute(self, name, value):
         """Set an attribute with the given name and the given value."""
