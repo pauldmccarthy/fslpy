@@ -48,7 +48,7 @@ class GLImage(object):
                                    :func:`fsl.fslview.gl.glimage.genVertexData`
                                    function.
 
-          - :attr:`texCoords`:     A `(N, 3)` numpy array (where `N` is the
+          - :attr:`texCoords`:     A `(4*N, 3)` numpy array (where `N` is the
                                    number of pixels to be drawn). See the
                                    :func:`fsl.fslview.gl.glimage.genVertexData`
                                    function.
@@ -177,7 +177,7 @@ def genVertexData(image, display, xax, yax):
         world Z axis are all set to zero.
 
       - The second object, the *texture coordinate* array, is a numpy
-        array of shape `(N, 3)`, containing contains the coordinates of
+        array of shape `(4*N, 3)`, containing contains the coordinates of
         the centre of every quad defined in the world coordinate array.
         These vertices are to be used to look up the value in the image
         data, which may then be used to determine the corresponding
