@@ -10,10 +10,12 @@
 OpenGL 1.4 compatible manner. (i.e. using immediate mode rendering).
 
 The functions in this module make use of functions in the
-:mod:`fsl.fslview.gl.glimage` module to actually generates the vertex and
+:mod:`fsl.fslview.gl.glimage` module to actually generate the vertex and
 texture information necessary to render an image.
 
-This module provides three functions:
+This module provides the following functions:
+
+ - :func:`init`: Does nothing - no initialisation is necessary for OpenGL 1.4.
 
  - :func:`genVertexData`: Generates and returns vertex and texture coordinates
    for rendering a single 2D slice of a 3D image.
@@ -23,14 +25,27 @@ This module provides three functions:
 
  - :func:`genColourTexture`: Configures an OpenGL 1D texture with a colour map,
    used for colouring the image data.
+
+ - :func:`draw`: Draws the image using OpenGL.
+
+ - :func:`destroy`: Does nothing - no clean up is necessary for OpenGL 1.4.
 """
 
 import logging
 log = logging.getLogger(__name__)
 
+import scipy.ndimage          as ndi
+
+import OpenGL.GL              as gl
+
 import fsl.fslview.gl.glimage as glimage
 
 
+def init(glimg, xax, yax):
+    """No initialisation is necessary for OpenGL 1.4."""
+    pass
+
+    
 def genVertexData(glimg):
     """Generates vertex and texture coordinates required to render
     the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
@@ -64,3 +79,100 @@ def genColourTexture(glimg):
                                              glimg.display,
                                              glimg.colourTexture)
     return texCoordXform 
+
+    
+def draw(glimg, zpos, xform=None):
+    """
+    """
+
+    image   = glimg.image
+    display = glimg.display
+    
+    # Don't draw the slice if this
+    # image display is disabled
+    if not display.enabled: return
+
+    worldCoords = glimg.worldCoords
+    texCoords   = glimg.texCoords
+    
+    worldCoords[:, glimg.zax] = zpos
+    texCoords[  :, glimg.zax] = zpos
+    
+    # Transform world texture coordinates
+    # to (floating point) voxel coordinates
+    voxCoords     = image.worldToVox(texCoords)
+    imageData     = glimg.imageData
+    texCoordXform = glimg.texCoordXform
+    colourTexture = glimg.colourTexture
+    nVertices     = glimg.nVertices
+
+    if display.interpolation: order = 1
+    else:                     order = 0
+
+    # Remove vertices which are out of bounds
+    outOfBounds = [None] * 3
+    for ax in range(3):
+
+        # Be lenient on voxel coordinate boundaries
+        voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
+        voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
+                  (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
+                  ax] = imageData.shape[ax] - 1
+
+        # But remove anything which is clearly
+        # outside of the image space
+        outOfBounds[ax] = ((voxCoords[:, ax] < 0) |
+                           (voxCoords[:, ax] >= imageData.shape[ax]))
+
+    outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
+    if outOfBounds.any():
+        voxCoords   = voxCoords[  ~outOfBounds, :]
+        worldCoords = worldCoords[~outOfBounds, :]
+        nVertices   = worldCoords.shape[0]
+
+    # Interpolate image data at floating
+    # point voxel coordinates
+    imageData = ndi.map_coordinates(imageData,
+                                    voxCoords.transpose(),
+                                    order=order,
+                                    prefilter=False)
+
+    # Prepare world coordinates and image data
+    # (which are used as texture coordinates
+    # on the colour map) for copy to GPU
+    worldCoords = worldCoords.ravel('C')
+    imageData   = imageData  .ravel('C')
+    
+    gl.glEnable(gl.GL_TEXTURE_1D) 
+
+    if xform is not None: 
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPushMatrix()
+        gl.glMultMatrixf(xform)
+
+    gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
+    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
+
+    gl.glMatrixMode(gl.GL_TEXTURE)
+    gl.glPushMatrix()
+    gl.glMultMatrixf(texCoordXform)
+
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
+
+    gl.glDrawArrays(gl.GL_QUADS, 0, nVertices)
+
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
+    if xform is not None:
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPopMatrix()
+
+    gl.glMatrixMode(gl.GL_TEXTURE)
+    gl.glPopMatrix()
+
+    gl.glDisable(gl.GL_TEXTURE_1D)

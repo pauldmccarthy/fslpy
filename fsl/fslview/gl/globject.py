@@ -7,6 +7,9 @@
 #
 """
 GL Objects must have the following methods:
+  - __init__(self, image, display)
+  - init(   self, xax, yax)
+  - ready(self)
   - setAxes(self, xax, yax)
   - destroy(self)
   - draw(self, zpos)
@@ -18,12 +21,11 @@ log = logging.getLogger(__name__)
 
 import fsl.fslview.gl.glimage as glimage
 
-def createGLObject(imageType, image, display):
+def createGLObject(image, display):
 
-    if   imageType == 'volume':
+    if   display.imageType == 'volume':
         return glimage.GLImage(image, display)
+    elif display.imageType == 'circle':
         pass
-    elif imageType == 'circle':
-        pass
-    elif imageType == 'tensor':
+    elif display.imageType == 'tensor':
         pass 

@@ -14,10 +14,19 @@ function. These functions contain the code to actually generate the vertex and
 texture information necessary to render an image (which is the same across
 OpenGL versions).
 
+
 The :class:`GLImage` class makes use of the functions defined in the
 :mod:`fsl.fslview.gl.gl14.glimage_funcs` or the
 :mod:`fsl.fslview.gl.gl21.glimage_funcs` modules, which provide OpenGL version
 specific details for creation/storage of the vertex/colour/texture data.
+
+These version dependent modules must provide the following functions:
+  - init(GLImage, xax, yax)
+  - genVertexData(GLImage)
+  - genImageData(GLImage)
+  - genColourTexture(GLImage)
+  - draw(GLImage, zpos, xform=None)
+  - destroy(GLimage)
 """
 
 import logging
@@ -30,56 +39,31 @@ import fsl.fslview.gl as fslgl
 class GLImage(object):
  
     def __init__(self, image, display):
-        """Initialise the OpenGL data required to render the given image.
+        """Creates a GLImage object bound to the given image, and associated
+        image display.
 
-        After initialisation, all of the data requirted to render a slice
-        is available as attributes of this object:
-
-          - :attr:`imageData:`     A pointer to the image data being rendered.
-                                   Exactly what this is depends upon the OpenGL
-                                   version in use.
-
-          - :attr:`colourTexture`: An OpenGL texture handle to a 1D texture
-                                   containing the colour map used to colour
-                                   the image data.
-        
-          - :attr:`worldCoords`:   A `(4*N, 3)` numpy array (where `N` is the
-                                   number of pixels to be drawn). See the
-                                   :func:`fsl.fslview.gl.glimage.genVertexData`
-                                   function.
-
-          - :attr:`texCoords`:     A `(4*N, 3)` numpy array (where `N` is the
-                                   number of pixels to be drawn). See the
-                                   :func:`fsl.fslview.gl.glimage.genVertexData`
-                                   function.
-
-        Other attributes, specific to the OpenGL version in use, may also be
-        present. See the :mod:`fsl.fslview.gl.gl14.glimage_funcs` and
-        :mod:`fsl.fslview.gl.gl21.glimage_funcs` modules for more details.
-
-        As part of initialisation, this object registers itself as a listener
-        on several properties of the given
-        :class:`~fsl.fslview.displaycontext.ImageDisplay` object so that, when
-        any display properties change, the image data, colour texture, and
-        vertex data are automatically updated.
-        
         :arg image:        A :class:`~fsl.data.image.Image` object.
-        
-        :arg xax:          The image world axis which corresponds to the
-                           horizontal screen axis.
-
-        :arg xax:          The image world axis which corresponds to the
-                           vertical screen axis.        
         
         :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
                            object which describes how the image is to be
                            displayed.
         """
 
-        self.xax     = 0
-        self.yax     = 1
         self.image   = image
         self.display = display
+        self._ready  = False
+
+
+    def ready(self):
+        return self._ready
+
+        
+    def init(self, xax, yax):
+        """Initialise the OpenGL data required to render the given image.
+
+        The real initialisation takes place in this method - it must
+        only be called after an OpenGL context has been created.
+        """
         
         # Initialise the image data, and
         # generate vertex/texture coordinates
@@ -96,6 +80,11 @@ class GLImage(object):
         # updated when its display properties are changed
         self._configDisplayListeners()
 
+        self.setAxes(xax, yax)
+        fslgl.glimage_funcs.init(self, xax, yax)
+        
+        self._ready = True
+
 
     def setAxes(self, xax, yax):
         """This method should be called when the image display axes change.
@@ -105,19 +94,19 @@ class GLImage(object):
         
         self.xax         = xax
         self.yax         = yax
+        self.zax         = 3 - xax - yax
         wc, tc, nv       = fslgl.glimage_funcs.genVertexData(self)
         self.worldCoords = wc
         self.texCoords   = tc
         self.nVertices   = nv
 
         
-    def draw(self, zpos):
-        fslgl.gimage_funcs.draw(self, zpos)
+    def draw(self, zpos, xform=None):
+        fslgl.glimage_funcs.draw(self, zpos, xform)
 
 
     def destroy(self):
-        
-        pass
+        fslgl.glimage_funcs.destroy(self)
 
         
     def _configDisplayListeners(self):

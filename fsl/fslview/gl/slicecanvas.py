@@ -19,8 +19,9 @@ import OpenGL.GL   as gl
 
 import props
 
-import fsl.data.image as fslimage
-import fsl.fslview.gl as fslgl
+import fsl.data.image          as fslimage
+import fsl.fslview.gl          as fslgl
+import fsl.fslview.gl.globject as globject
 
 
 class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
@@ -280,7 +281,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             wx.CallAfter(self._initGL)
             return
             
-        fslgl.slicecanvas_draw.drawScene(self)
+        fslgl.slicecanvas_draw.draw(self)
         
         if self.showCursor: self.drawCursor()
         
@@ -381,25 +382,32 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         triggers a refresh.
         """
 
-        # Create a GLImage object for any new images,
-        # and attach a listener to their display properties
-        # so we know when to refresh the canvas.
+        # Create a GL object for any new images,
+        # and attach a listener to their display
+        # properties so we know when to refresh
+        # the canvas.
         for image in self.imageList:
 
             try:
-                glData = image.getAttribute(self.name)
+                image.getAttribute(self.name)
                 continue
                 
             except KeyError:
                 pass
 
             display = image.getAttribute('display')
+
+            def genGLObject(ctx=None, value=None, valid=None, disp=display):
+                globj = globject.createGLObject(image, disp)
+                image.setAttribute(self.name, globj)
+
+                if globj is not None: globj.init(self.xax, self.yax)
+                self.Refresh()
+            genGLObject()
                 
-            glData = fslgl.glimage.GLImage(image, self.xax, self.yax, display)
-            image.setAttribute(self.name, glData)
-
             def refresh(*a): self.Refresh()
-
+            
+            display.addListener('imageType',       self.name, genGLObject)
             display.addListener('enabled',         self.name, refresh)
             display.addListener('transform',       self.name, refresh)
             display.addListener('interpolation',   self.name, refresh)
@@ -414,18 +422,19 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
             # remove all those listeners when
             # this SliceCanvas is destroyed
-            def onDestroy(ev):
-                display.removeListener('enabled',         self.name)
-                display.removeListener('transform',       self.name)
-                display.removeListener('interpolation',   self.name)
-                display.removeListener('alpha',           self.name)
-                display.removeListener('displayRange',    self.name)
-                display.removeListener('clipLow',         self.name)
-                display.removeListener('clipHigh',        self.name)
-                display.removeListener('worldResolution', self.name)
-                display.removeListener('voxelResolution', self.name)
-                display.removeListener('cmap',            self.name)
-                display.removeListener('volume',          self.name)
+            def onDestroy(ev, disp=display):
+                disp.removeListener('imageType',       self.name)
+                disp.removeListener('enabled',         self.name)
+                disp.removeListener('transform',       self.name)
+                disp.removeListener('interpolation',   self.name)
+                disp.removeListener('alpha',           self.name)
+                disp.removeListener('displayRange',    self.name)
+                disp.removeListener('clipLow',         self.name)
+                disp.removeListener('clipHigh',        self.name)
+                disp.removeListener('worldResolution', self.name)
+                disp.removeListener('voxelResolution', self.name)
+                disp.removeListener('cmap',            self.name)
+                disp.removeListener('volume',          self.name)
                 ev.Skip()
                 
             self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
