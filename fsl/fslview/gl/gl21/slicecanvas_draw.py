@@ -11,7 +11,7 @@
 
 .. note:: This module is extremely tightly coupled to the
 :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, to the
-:class:`~fsl.fslview.gl.gl21.glimagedata.GLImageData` class, and
+:mod:`~fsl.fslview.gl.gl21.glimage_funcs` functions, and
 to the vertex and fragment shader programs (`vertex_shader.glsl` and
 `fragment_shader.glsl` respectively).
 

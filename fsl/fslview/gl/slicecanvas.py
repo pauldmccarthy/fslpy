@@ -376,12 +376,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     def _imageListChanged(self, *a):
         """This method is called every time an image is added or removed
         to/from the image list. For newly added images, it creates a
-        :class:`~fsl.fslview.gl.glimagedata.GLImageData` object, which
+        :class:`~fsl.fslview.gl.glimage.GLImage` object, which
         initialises the OpenGL data necessary to render the image, and then
         triggers a refresh.
         """
 
-        # Create a GLImageData object for any new images,
+        # Create a GLImage object for any new images,
         # and attach a listener to their display properties
         # so we know when to refresh the canvas.
         for image in self.imageList:
