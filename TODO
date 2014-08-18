@@ -36,13 +36,15 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Ability to change selected image in image display and cursor location panels.
+** Spline interpolation
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
-** Add a 'mutable' attribute (not constraint) to List properties?
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
+** Colour bar showing image value range
 ** WONTFIX Cursor location preservation when transformation option is changed. The world location is preserved.
 ** DONE Set cursor location via command line option.
 ** DONE Cursor bound restriction on ortho panel.
@@ -72,11 +74,14 @@ regularly, too.
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** more features on image list panel - e.g. double click to show/hide, 'link' checkbox, 'lock' checkbox, edit image name..
-** link display properties across images
-** mouse-based zooming in ortho panel
+** Image List
+*** double click to show/hide
+*** Edit image name
+*** Highlight enabled/disabled images
+** Keyboard/mouse control
+*** Arrow keys to move cursor location - how to select which x/y axes are controlled?
+*** Mouse/keyboard controls for panning/zooming
 ** Image export/offscreen rendering.
-** UI design
 ** Custom colour maps from original FSLView
 ** DONE Command line interface - build into props package?
 ** DONE Remove voxel<->world orthogonality requirement
@@ -84,7 +89,7 @@ regularly, too.
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** DONE Location selection on LightBoxCanvas.
-* Big things
+* Big/ambiguous things
 ** Test suite for props package
 ** slice-wise (instead of image-wise) glimagedata implementation for very large images.
 ** Code audit - enforce conistent standards for public/private class members
