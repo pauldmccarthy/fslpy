@@ -36,7 +36,6 @@ log = logging.getLogger(__name__)
 
 import scipy.ndimage          as ndi
 import OpenGL.GL              as gl
-import fsl.fslview.gl.glimage as glimage
 
 
 def init(glimg, xax, yax):
@@ -54,8 +53,7 @@ def genVertexData(glimg):
     the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
     """
     
-    worldCoords, texCoords = glimage.genVertexData(
-        glimg.image, glimg.display, glimg.xax, glimg.yax)
+    worldCoords, texCoords = glimg.genVertexData()
 
     return worldCoords, texCoords, worldCoords.shape[0]
 
@@ -78,9 +76,7 @@ def genColourTexture(glimg):
     :func:`fsl.fslview.gl.glimage.genVertexData`.
     """
 
-    texCoordXform = glimage.genColourTexture(glimg.image,
-                                             glimg.display,
-                                             glimg.colourTexture)
+    texCoordXform = glimg.genColourTexture()
     return texCoordXform 
 
     

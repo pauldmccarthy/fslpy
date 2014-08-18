@@ -137,6 +137,18 @@ class GLImage(object):
         """
         fslgl.glimage_funcs.destroy(self)
 
+
+    def genVertexData(self):
+        return genVertexData(self.image, self.display, self.xax, self.yax)
+
+        
+    def genColourTexture(self, colourResolution=256, xform=None):
+        return genColourTexture(self.image,
+                                self.display,
+                                self.colourTexture,
+                                colourResolution,
+                                xform)
+
         
     def _configDisplayListeners(self):
         """Adds a bunch of listeners to the

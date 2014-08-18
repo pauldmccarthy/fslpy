@@ -57,8 +57,6 @@ import OpenGL.arrays.vbo as vbo
 # which is standard in more modern versions of OpenGL.
 import OpenGL.GL.ARB.texture_rg as arbrg
 
-import fsl.fslview.gl.glimage as glimage
-
 
 _vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
 """Location of the GLSL vertex shader source code."""
@@ -168,8 +166,7 @@ def genVertexData(glimg):
     xax = glimg.xax
     yax = glimg.yax
 
-    worldCoords, texCoords = glimage.genVertexData(
-        glimg.image, glimg.display, xax, yax)
+    worldCoords, texCoords = glimg.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
     texCoords   = texCoords[  :, [xax, yax]]
@@ -362,10 +359,7 @@ def genColourTexture(glimg):
     :func:`fsl.fslview.gl.glimage.genVertexData` function.
     """ 
 
-    texCoordXform = glimage.genColourTexture(glimg.image,
-                                             glimg.display,
-                                             glimg.colourTexture,
-                                             xform=glimg.dataTypeXform)
+    texCoordXform = glimg.genColourTexture(xform=glimg.dataTypeXform)
     return texCoordXform
 
 
