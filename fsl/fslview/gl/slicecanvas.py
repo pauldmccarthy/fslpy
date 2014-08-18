@@ -272,9 +272,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
     def draw(self, ev=None):
         """Called on :attr:`wx.EVT_PAINT` events. Calls the OpenGL
-        version-dependent
-        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which
-        does the actual drawing.
+        version-dependent :func:`fsl.fslview.gl.slicecanvas_draw.drawScene`
+        function, which does the actual drawing.
         """
 
         if not self._glReady:
@@ -376,8 +375,8 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             
     def _imageListChanged(self, *a):
         """This method is called every time an image is added or removed
-        to/from the image list. For newly added images, it creates a
-        :class:`~fsl.fslview.gl.glimage.GLImage` object, which
+        to/from the image list. For newly added images, it creates the
+        appropriate :mod:`~fsl.fslview.gl.globject` type, which
         initialises the OpenGL data necessary to render the image, and then
         triggers a refresh.
         """

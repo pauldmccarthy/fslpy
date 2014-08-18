@@ -13,14 +13,11 @@
 :class:`~fsl.fslview.gl.glimage.GLImage` class, and to the
 :mod:`~fsl.fslview.gl.glimage.gl14.glimage_funcs` module.
 
-This module provides two functions:
+This module provides one function:
 
-  - :func:`drawScene` draws slices from all of the images in an
+  - :func:`draw` draws slices from all of the images in an
     :class:`~fsl.data.image.ImageList` to a
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` display.
-
-  - :func:`drawSlice` (used by :func:`drawScene`) draws slices from one image
-    to the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`.
 """
 
 import logging

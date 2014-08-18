@@ -10,20 +10,14 @@
  shader programs.
 
 .. note:: This module is extremely tightly coupled to the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, to the
-:mod:`~fsl.fslview.gl.gl21.glimage_funcs` functions, and
-to the vertex and fragment shader programs (`vertex_shader.glsl` and
-`fragment_shader.glsl` respectively).
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and to the
+:mod:`~fsl.fslview.gl.gl21.glimage_funcs` functions.
 
-This module provides two functions:
+This module provides one function:
 
-  - :func:`drawScene` draws slices from all of the images in an
+  - :func:`draw` draws slices from all of the images in an
     :class:`~fsl.data.image.ImageList` to a
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` display.
-
-  - :func:`drawSlice` (used by :func:`drawScene`) draws slices from one image
-    to the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`.
-
 """
 
 import logging

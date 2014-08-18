@@ -21,6 +21,9 @@ This implementation is dependent upon one OpenGL ARB extension - `texture_rg`,
 which allows us to store and retrieve un-clamped floating point values in the
 3D image texture.
 
+This module is extremely tightly coupled to the vertex and fragment shader
+programs (`vertex_shader.glsl` and `fragment_shader.glsl` respectively).
+
 This module provides the following functions:
 
  - :func:`init`: Compiles vertex and fragment shaders.
@@ -38,6 +41,7 @@ This module provides the following functions:
 
  - :func:`destroy`: Deletes the colour map and image textures, and the vertex
    and texture coordinate VBOs.
+
 """
 
 import logging
