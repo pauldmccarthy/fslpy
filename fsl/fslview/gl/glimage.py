@@ -6,7 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """Defines the :class:`GLImage` class, which creates and encapsulates the data
-required to render 2D slice of a 3D image.
+and logic required to render 2D slice of a 3D image. The :class:`GLImage` class
+provides the interface defined in the :mod:`~fsl.fslview.gl.globject` module.
 
 Two stand-alone functions are also contained in this module, the
 :func:`genVertexData` function, and the :func:`genColourTexture`
@@ -14,19 +15,29 @@ function. These functions contain the code to actually generate the vertex and
 texture information necessary to render an image (which is the same across
 OpenGL versions).
 
-
 The :class:`GLImage` class makes use of the functions defined in the
 :mod:`fsl.fslview.gl.gl14.glimage_funcs` or the
 :mod:`fsl.fslview.gl.gl21.glimage_funcs` modules, which provide OpenGL version
 specific details for creation/storage of the vertex/colour/texture data.
 
 These version dependent modules must provide the following functions:
-  - init(GLImage, xax, yax)
-  - genVertexData(GLImage)
-  - genImageData(GLImage)
-  - genColourTexture(GLImage)
-  - draw(GLImage, zpos, xform=None)
-  - destroy(GLimage)
+
+  - `init(GLImage, xax, yax)`: Perform any necessary initialisation.
+
+  - `genVertexData(GLImage)`: Create and prepare vertex and texture
+     coordinates, using the :func:`genVertexData` function. 
+                               
+  - `genImageData(GLImage)`: Retrieve and prepare the image data to be
+    displayed.
+
+  - `genColourTexture(GLImage)`: Create and prepare the colour map used
+    to colour image voxels, using the :func:`genColourTexture` function.
+
+  - `draw(GLImage, zpos, xform=None)`: Draw a slice of the image at the given
+    Z position. If xform is not None, it must be applied as a transformation
+    on the vertex coordinates.
+
+  - `destroy(GLimage)`: Perform any necessary clean up.
 """
 
 import logging
@@ -37,6 +48,9 @@ import OpenGL.GL      as gl
 import fsl.fslview.gl as fslgl
 
 class GLImage(object):
+    """The :class:`GLImage` class encapsulates the data and logic required to
+    render 2D slices of a 3D image.
+    """
  
     def __init__(self, image, display):
         """Creates a GLImage object bound to the given image, and associated
@@ -55,6 +69,9 @@ class GLImage(object):
 
 
     def ready(self):
+        """Returns `True` when the OpenGL data/state has been initialised, and the
+        image is ready to be drawn, `False` before.
+        """
         return self._ready
 
         
@@ -102,10 +119,22 @@ class GLImage(object):
 
         
     def draw(self, zpos, xform=None):
+        """Draws a 2D slice of the image at the given real world Z location.
+        This is performed via a call to the OpenGL version-dependent `draw`
+        function, contained in one of the :mod:`~fsl.fslview.gl.gl14` or
+        :mod:`~fsl.fslview.gl.gl21` packages.
+
+        If `xform` is not None, it is applied as an affine transformation to
+        the vertex coordinates of the rendered image data.
+        """
         fslgl.glimage_funcs.draw(self, zpos, xform)
 
 
     def destroy(self):
+        """This should be called when this :class:`GLImage` object is no
+        longer needed. It performs any needed clean up of OpenGL data (e.g.
+        deleting texture handles).
+        """
         fslgl.glimage_funcs.destroy(self)
 
         

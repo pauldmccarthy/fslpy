@@ -28,16 +28,14 @@ This module provides the following functions:
 
  - :func:`draw`: Draws the image using OpenGL.
 
- - :func:`destroy`: Does nothing - no clean up is necessary for OpenGL 1.4.
+ - :func:`destroy`: Deletes the texture handle for the colour map texture.
 """
 
 import logging
 log = logging.getLogger(__name__)
 
 import scipy.ndimage          as ndi
-
 import OpenGL.GL              as gl
-
 import fsl.fslview.gl.glimage as glimage
 
 
@@ -45,7 +43,9 @@ def init(glimg, xax, yax):
     """No initialisation is necessary for OpenGL 1.4."""
     pass
 
+    
 def destroy(glimg):
+    """Deletes the colour map texture handle."""
     gl.glDeleteTextures(1, glimg.colourTexture)
 
     
@@ -85,7 +85,8 @@ def genColourTexture(glimg):
 
     
 def draw(glimg, zpos, xform=None):
-    """
+    """Draws a slice of the image at the given Z location using immediate
+    mode rendering.
     """
 
     image   = glimg.image
@@ -109,6 +110,7 @@ def draw(glimg, zpos, xform=None):
     colourTexture = glimg.colourTexture
     nVertices     = glimg.nVertices
 
+    # order 1 == linear, order 0 == nearest neighbour
     if display.interpolation: order = 1
     else:                     order = 0
 

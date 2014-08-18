@@ -21,16 +21,23 @@ This implementation is dependent upon one OpenGL ARB extension - `texture_rg`,
 which allows us to store and retrieve un-clamped floating point values in the
 3D image texture.
 
-This module provides three functions:
+This module provides the following functions:
+
+ - :func:`init`: Compiles vertex and fragment shaders.
 
  - :func:`genVertexData`: Generates and returns vertex and texture coordinates
-   for rendering a single 2D slice of a 3D image.
+   for rendering a single 2D slice of a 3D image. Actually returns handles to
+   the VBOs for the vertex and texture coordinates.
 
- - :func:`genImageData`: Prepares and returns the 3D image data to be
-   rendered.
+ - :func:`genImageData`: Prepares the 3D image data to be rendered as a 3D
+   texture, and returns a handle to it. If multiple GLImage objects are
+   rendering the same image, the 3D texture is shared between them.
 
- - :func:`genColourTexture`: Configures an OpenGL 1D texture with a colour map,
-   used for colouring the image data.
+ - :func:`genColourTexture`: Configures an OpenGL 1D texture with a colour
+   map, used for colouring the image data.
+
+ - :func:`destroy`: Deletes the colour map and image textures, and the vertex
+   and texture coordinate VBOs.
 """
 
 import logging
@@ -136,10 +143,13 @@ def _compileShaders(glimg):
                                                        'texCoords')
 
 def init(glimg, xax, yax):
+    """Compiles the vertex and fragment shaders used to render image slices.
+    """
     _compileShaders(glimg)
 
 
 def destroy(glimg):
+    """Cleans up texture and VBO handles."""
     glimg.worldCoords.delete()
     glimg.texCoords  .delete()
     gl.glDeleteTextures(1, glimg.colourTexture)
@@ -358,7 +368,8 @@ def genColourTexture(glimg):
 def draw(glimg, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
-    :arg image:   The :class:`~fsl.data.image.Image` object to draw.
+    :arg image:   The :class:`~fsl.fslview.gl..GLImage` object which is 
+                  managing the image to be drawn.
     
     :arg zpos:    World Z position of slice to be drawn.
     
