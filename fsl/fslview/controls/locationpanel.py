@@ -14,6 +14,7 @@ import numpy as np
 import props
 
 import fsl.fslview.controlpanel as controlpanel
+import imageselectpanel         as imageselect
 
 class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
     """
@@ -46,9 +47,11 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         """
 
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
-        props.HasProperties.__init__(self)
 
         self._voxelPanel = wx.Panel(self)
+
+        self._imageSelect = imageselect.ImageSelectPanel(
+            self, imageList, displayCtx)
 
         self._locationLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
         self._locationWidget = props.makeWidget(self, displayCtx, 'location')
@@ -60,7 +63,6 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self._volumeLabel    = wx.StaticText(   self, style=wx.ALIGN_LEFT)
         self._volumeWidget   = props.makeWidget(self, displayCtx, 'volume')
         
- 
         self._voxelLabel = wx.StaticText(self._voxelPanel,
                                          style=wx.ALIGN_LEFT)
         self._valueLabel = wx.StaticText(self._voxelPanel,
@@ -72,6 +74,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self._adjustFont(self._valueLabel,    -2, wx.FONTWEIGHT_LIGHT)
 
         self._locationLabel.SetLabel('World location (mm)')
+        self._voxelLabel   .SetLabel('Voxel coordinates')
         self._volumeLabel  .SetLabel('Volume (index)')
 
         self._voxelSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -83,7 +86,8 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
- 
+
+        self._sizer.Add(self._imageSelect,    flag=wx.EXPAND)
         self._sizer.Add(self._locationLabel,  flag=wx.EXPAND)
         self._sizer.Add(self._locationWidget, flag=wx.EXPAND)
         self._sizer.Add(self._dividerLine1,   flag=wx.EXPAND)
@@ -261,14 +265,12 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         """
 
         if len(self._imageList) == 0:
-            self._voxelLabel.SetLabel('Voxel coordinates')
             self._updateVoxelValue('')
             self._voxelPanel.Layout()
             return
 
         image = self._imageList[self._displayCtx.selectedImage]
         
-        self._voxelLabel.SetLabel('Voxel coordinates ({})'.format(image.name))
         self._voxelPanel.Layout()
 
         oldLoc = self._displayCtx.location.xyz
