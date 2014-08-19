@@ -252,7 +252,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             wx.CallAfter(self._initGL)
             return
         
-        fslgl.lightboxcanvas_draw.drawScene(self)
+        fslgl.lightboxcanvas_draw.draw(self)
 
 
     def _slicePropsChanged(self, *a):

@@ -19,9 +19,6 @@ log = logging.getLogger(__name__)
 
 import OpenGL.GL as gl
 import numpy     as np
-import wx
-
-import fsl.fslview.gl as fslgl
 
 
 def drawCursor(canvas):
@@ -62,13 +59,8 @@ def drawCursor(canvas):
     gl.glEnd() 
 
     
-def drawScene(canvas, ev=None):
+def draw(canvas):
     """Draws the currently visible slices to the canvas."""
-
-    # shaders have not been initialised.
-    if not hasattr(canvas, 'shaders'):
-        wx.CallAfter(lambda : fslgl.slicecanvas_draw.initGL(canvas))
-        return 
 
     # No scrollbar -> draw all the slices 
     if canvas._scrollbar is None:
@@ -92,9 +84,6 @@ def drawScene(canvas, ev=None):
     # clear the canvas
     gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-    # load the shaders
-    gl.glUseProgram(canvas.shaders)
-
     # enable transparency
     gl.glEnable(gl.GL_BLEND)
     gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
@@ -104,18 +93,21 @@ def drawScene(canvas, ev=None):
 
     # Draw all the slices for all the images.
     for i, image in enumerate(canvas.imageList):
+
+        try: globj = image.getAttribute(canvas.name)
+        except KeyError:
+            continue
+
+        if (globj is None) or (not globj.ready()):
+            continue 
         
         log.debug('Drawing {} slices ({} - {}) for image {}'.format(
             endSlice - startSlice, startSlice, endSlice, i))
         
         for zi in range(startSlice, endSlice):
-            fslgl.slicecanvas_draw.drawSlice(canvas,
-                                             image,
-                                             canvas._sliceLocs[ i][zi],
-                                             canvas._transforms[i][zi])
+            globj.draw(canvas._sliceLocs[ i][zi],
+                       canvas._transforms[i][zi])
             
-    gl.glUseProgram(0) 
-
     if canvas.showCursor:
         drawCursor(canvas)
 

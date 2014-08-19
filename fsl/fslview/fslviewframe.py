@@ -116,8 +116,7 @@ class FSLViewFrame(wx.Frame):
         title = '{} {}'.format(title, self._viewPanelCount)
 
         self._viewPanelTitles[id(panel)] = title
-        self._centrePane.AddPage(panel, title) 
-        self._centrePane.SetSelection(self._centrePane.GetPageIndex(panel))
+        self._centrePane.AddPage(panel, title, True) 
 
         if panel.hasConfigOptions():
             menuText     = menuText.format(title)

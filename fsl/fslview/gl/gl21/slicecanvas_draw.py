@@ -50,14 +50,14 @@ def draw(canvas):
 
     for image in canvas.imageList:
 
-        try: glimg = image.getAttribute(canvas.name)
+        try: globj = image.getAttribute(canvas.name)
         except KeyError:
             continue
 
-        if (glimg is None) or (not glimg.ready()):
+        if (globj is None) or (not globj.ready()):
             continue 
 
         log.debug('Drawing {} slice for image {}'.format(
             canvas.zax, image.name))
 
-        glimg.draw(canvas.pos.z)
+        globj.draw(canvas.pos.z)
