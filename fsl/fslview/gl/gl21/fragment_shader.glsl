@@ -5,6 +5,9 @@
  */
 #version 120
 
+/* image data texture */
+uniform sampler3D imageBuffer;
+
 /*
  * Texture containing the colour map
  */
@@ -21,11 +24,13 @@ uniform bool signed;
 uniform mat4 texCoordXform;
 
 /*
- * Voxel value - Might be unnormalised, or normalised to lie
- * in the range [0,1].
+ * Image texture coordinates.
  */
-varying float fragVoxValue;
+varying vec3 fragTexCoords;
 
+/*
+ * If non-zero, the fragment is not drawn.
+ */
 varying float outOfBounds;
 
 void main(void) {
@@ -35,7 +40,7 @@ void main(void) {
       return;
     }
 
-    float normVoxValue = fragVoxValue;
+    float normVoxValue = texture3D(imageBuffer, fragTexCoords).r;
 
     if (signed) {
         if (normVoxValue >= 0.5) normVoxValue = normVoxValue - 0.5;

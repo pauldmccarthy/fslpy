@@ -5,9 +5,6 @@
  */
 #version 120
 
-/* image data texture */
-uniform sampler3D imageBuffer;
-
 /* World coordinate -> voxel coordinate transformation matrix */
 uniform mat4 worldToVoxMat;
 uniform mat4 worldToWorldMat;
@@ -30,15 +27,16 @@ attribute vec2 texCoords;
 uniform float zCoord;
 
 /* 
- * Voxel value passed through to fragment shader.
+ * Image texture coordinates passed through to fragment shader.
  */ 
-varying float fragVoxValue;
+varying vec3 fragTexCoords;
 
 /* 
  * If the world location is out of bounds, tell 
  * the fragment shader not to draw the fragment. 
  */
 varying float outOfBounds;
+
 
 void main(void) {
 
@@ -74,11 +72,6 @@ void main(void) {
     else if (voxLoc.z >  imageShape.z - 0.499) outOfBounds = 1;
     else if (voxLoc.z >= imageShape.z - 0.5)   voxLoc.z = imageShape.z - 0.501;
 
-    /* 
-     *
-     * Look up the voxel value (centred, and scaled to lie 
-     * between 0 and 1), and pass it to the fragment shader 
-     */
-    vec4 vt = texture3D(imageBuffer, (voxLoc.xyz + 0.5) / imageShape);
-    fragVoxValue = vt.r;
+    /* Pass the texture coordinates to the fragment shader */
+    fragTexCoords = (voxLoc.xyz + 0.5) / imageShape;
 }
