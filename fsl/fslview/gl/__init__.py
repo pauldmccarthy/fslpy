@@ -71,4 +71,5 @@ def bootstrap(glVersion=None):
     thismod.slicecanvas_draw    = glpkg.slicecanvas_draw
     thismod.lightboxcanvas_draw = glpkg.lightboxcanvas_draw
     thismod.glimage_funcs       = glpkg.glimage_funcs
+    thismod.glcircle_funcs      = glpkg.glcircle_funcs
     thismod._bootstrapped       = True

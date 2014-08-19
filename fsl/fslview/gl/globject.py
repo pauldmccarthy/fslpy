@@ -12,20 +12,22 @@ GL Objects must have the following methods:
   - ready(self)
   - setAxes(self, xax, yax)
   - destroy(self)
-  - draw(self, zpos)
+  - draw(self, zpos, xform=None)
 """
 
 import logging
 log = logging.getLogger(__name__)
 
 
-import fsl.fslview.gl.glimage as glimage
+import fsl.fslview.gl.glimage  as glimage
+import fsl.fslview.gl.glcircle as glcircle
 
 def createGLObject(image, display):
 
     if   display.imageType == 'volume':
         return glimage.GLImage(image, display)
     elif display.imageType == 'circle':
-        pass
+        return glcircle.GLCircle(image, display)
+        
     elif display.imageType == 'tensor':
         pass 

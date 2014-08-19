@@ -102,6 +102,7 @@ def parseArgs(argv, namespace):
                 'voxelResolution',
                 'transform',
                 'interpolation',
+                'imageType',
                 'cmap',
                 'name',
                 'volume']

@@ -8,3 +8,4 @@
 import slicecanvas_draw
 import lightboxcanvas_draw
 import glimage_funcs
+import glcircle_funcs
