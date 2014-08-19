@@ -45,6 +45,7 @@ regularly, too.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
 ** Colour bar showing image value range
+** DONE Disable/enable next/prev buttons on elistbox and imageselect panel as necessary.
 ** WONTFIX Cursor location preservation when transformation option is changed. The world location is preserved.
 ** DONE Set cursor location via command line option.
 ** DONE Cursor bound restriction on ortho panel.
