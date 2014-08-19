@@ -49,6 +49,10 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         self._sizer.Add(self._imageLabel, flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._nextButton, flag=wx.EXPAND)
 
+        # bind callbacks for next/prev buttons
+        self._nextButton.Bind(wx.EVT_BUTTON, self._onNextButton)
+        self._prevButton.Bind(wx.EVT_BUTTON, self._onPrevButton)
+
         # Make the image name label font a bit smaller
         font = self._imageLabel.GetFont()
         font.SetPointSize(font.GetPointSize() - 2)
@@ -68,9 +72,41 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         self._selectedImageChanged()
 
         
+    def _onPrevButton(self, ev):
+        """Called when the previous button is pushed. Selects the previous
+        image.
+        """
+
+        selectedImage = self._displayCtx.selectedImage
+
+        if selectedImage == 0:
+            return
+
+        self._displayCtx.selectedImage = selectedImage - 1
+
+        
+    def _onNextButton(self, ev):
+        """Called when the previous button is pushed. Selects the next
+        image.
+        """
+        
+        selectedImage = self._displayCtx.selectedImage
+
+        if selectedImage == len(self._imageList) - 1:
+            return
+
+        self._displayCtx.selectedImage = selectedImage + 1 
+
+        
     def _selectedImageChanged(self, *a):
+        """Called when the selected image is changed. Updates the image name
+        label.
+        """
 
         idx = self._displayCtx.selectedImage
+
+        self._prevButton.Enable(idx != 0)
+        self._nextButton.Enable(idx != len(self._imageList) - 1)
 
         if len(self._imageList) == 0:
             self._imageLabel.SetLabel('')
