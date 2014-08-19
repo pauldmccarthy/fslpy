@@ -37,9 +37,9 @@ def draw(glimg, zpos, xform=None):
     colourTexture = glimg.colourTexture
     nVertices     = glimg.nVertices
 
-    # order 1 == linear, order 0 == nearest neighbour
-    if display.interpolation: order = 1
-    else:                     order = 0
+    if   display.interpolation == 'spline': order = 3
+    elif display.interpolation == 'linear': order = 1
+    else:                                   order = 0
 
     # Remove vertices which are out of bounds
     outOfBounds = [None] * 3

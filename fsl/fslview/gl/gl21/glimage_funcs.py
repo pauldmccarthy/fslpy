@@ -262,8 +262,9 @@ def genImageData(glimg):
     display = glimg.display
     volume  = display.volume
 
-    if display.interpolation: interp = gl.GL_LINEAR
-    else:                     interp = gl.GL_NEAREST
+    if   display.interpolation == 'spline': interp = gl.GL_LINEAR
+    elif display.interpolation == 'linear': interp = gl.GL_LINEAR
+    else:                                   interp = gl.GL_NEAREST
 
     # we only store a single 3D image
     # in GPU memory at any one time

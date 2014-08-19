@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+from collections import OrderedDict
 
 import numpy         as np
 import matplotlib.cm as mplcm
@@ -83,10 +84,13 @@ class ImageDisplay(props.HasProperties):
     """
 
 
-    interpolation = props.Boolean(default=False)
+    interpolation = props.Choice(OrderedDict([
+        ('none',   'No interpolation'),
+        ('linear', 'Linear interpolation'),
+        ('spline', 'Spline interpolation')]))
     """How the value shown at a real world location is derived from the
-    corresponding voxel value(s). If false, nearest neighbour interpolation
-    is used.
+    corresponding voxel value(s). 'No interpolation' is equivalent to nearest
+    neighbour interpolation.
     """
 
     
