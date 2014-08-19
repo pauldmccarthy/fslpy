@@ -17,6 +17,7 @@ import wx
 import props
 
 import fsl.fslview.controlpanel as controlpanel
+import imageselectpanel         as imageselect
 
 class ImageDisplayPanel(controlpanel.ControlPanel):
     """A panel which shows display control options for the currently selected
@@ -38,19 +39,14 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
         # a dictionary containing {id(image) : panel} mappings
         self._displayPanels = {}
 
-        self._label = wx.StaticText(self,
-                                    style=wx.ALIGN_CENTRE |
-                                          wx.ST_ELLIPSIZE_MIDDLE)
+        self._imageSelect = imageselect.ImageSelectPanel(
+            self, imageList, displayCtx)
+
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         
         self.SetSizer(self._sizer)
 
-        self._sizer.Add(self._label, flag=wx.EXPAND)
-
-        font = self._label.GetFont()
-        font.SetPointSize(font.GetPointSize() - 2)
-        font.SetWeight(wx.FONTWEIGHT_LIGHT)
-        self._label.SetFont(font) 
+        self._sizer.Add(self._imageSelect, flag=wx.EXPAND)
 
         self._imageList.addListener(
             'images',
@@ -125,10 +121,6 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         idx = self._displayCtx.selectedImage
 
-        if len(self._imageList) == 0:
-            self._label.SetLabel('')
-            return
-
         for i, image in enumerate(self._imageList):
 
             displayPanel = self._displayPanels[id(image)]
@@ -136,8 +128,6 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
             if i == idx:
                 log.debug('Showing display panel for '
                           'image {} ({})'.format(image.name, idx))
-
-                self._label.SetLabel('{}'.format(image.imageFile))
             
             displayPanel.Show(i == idx)
 
