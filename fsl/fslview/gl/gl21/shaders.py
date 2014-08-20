@@ -15,28 +15,55 @@ import os.path as op
 import fsl.fslview.gl.glimage  as glimage
 import fsl.fslview.gl.glcircle as glcircle
 
-def _getFilePrefix(globj):
+    
+def getVertexShader(  globj): return _getShader(globj, 'vert')
+def getFragmentShader(globj): return _getShader(globj, 'frag')
 
-    if   isinstance(globj, glimage.GLImage):
-        return 'glimage'
-    elif isinstance(globj, glcircle.GLCircle):
-        return 'glimage'
+
+def _getShader(globj, shaderType):
+    fname = _getFileName(globj, shaderType)
+    with open(fname, 'rt') as f: src = f.read()
+    return _preprocess(src)    
+
+
+def _getFileName(globj, shaderType):
+
+    if shaderType not in ('vert', 'frag'):
+        raise RuntimeError('Invalid shader type: {}'.format(shaderType))
+
+    if   isinstance(globj, glimage .GLImage):  prefix = 'glimage'
+    elif isinstance(globj, glcircle.GLCircle): prefix = 'glimage'
     else:
         raise RuntimeError('Unknown GL object type: '
                            '{}'.format(type(globj)))
-            
 
-def getVertexShader(globj):
-    prefix = _getFilePrefix(globj)
-    fname  = op.join(op.dirname(__file__), '{}_vert.glsl'.format(prefix))
+    return op.join(op.dirname(__file__), '{}_{}.glsl'.format(
+        prefix, shaderType))
+ 
 
-    with open(fname, 'rt') as f: src = f.read()
-    return src
-    
+def _preprocess(src):
 
-def getFragmentShader(globj):
-    prefix = _getFilePrefix(globj)
-    fname  = op.join(op.dirname(__file__), '{}_frag.glsl'.format(prefix))
+    lines    = src.split('\n')
+    lines    = [l.strip() for l in lines]
 
-    with open(fname, 'rt') as f: src = f.read()
-    return src 
+    pragmas = []
+    for linei, line in enumerate(lines):
+        if line.startswith('#pragma'):
+            pragmas.append(linei)
+
+    includes = []
+    for linei in pragmas:
+
+        line = lines[linei].split()
+        
+        if len(line) != 3:       continue
+        if line[1] != 'include': continue
+
+        includes.append((linei, line[2]))
+
+    for linei, fname in includes:
+        fname = op.join(op.dirname(__file__), fname)
+        with open(fname, 'rt') as f:
+            lines[linei] = f.read()
+
+    return '\n'.join(lines)
