@@ -57,13 +57,7 @@ import OpenGL.arrays.vbo as vbo
 # which is standard in more modern versions of OpenGL.
 import OpenGL.GL.ARB.texture_rg as arbrg
 
-
-_vertex_shader_file   = op.join(op.dirname(__file__), 'vertex_shader.glsl')
-"""Location of the GLSL vertex shader source code."""
-
-
-_fragment_shader_file = op.join(op.dirname(__file__), 'fragment_shader.glsl')
-"""Location of the GLSL fragment shader source code."""
+import shaders
 
 
 def _compileShaders(glimg):
@@ -78,8 +72,8 @@ def _compileShaders(glimg):
     data not being bound at the time of validation.
     """
 
-    with open(_vertex_shader_file,   'rt') as f: vertShaderSrc = f.read()
-    with open(_fragment_shader_file, 'rt') as f: fragShaderSrc = f.read()
+    vertShaderSrc = shaders.getVertexShader(  glimg)
+    fragShaderSrc = shaders.getFragmentShader(glimg)
 
     # vertex shader
     vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
