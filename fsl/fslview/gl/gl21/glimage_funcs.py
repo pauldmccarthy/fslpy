@@ -125,6 +125,8 @@ def _compileShaders(glimg):
                                                        'texCoordXform') 
     glimg.signedPos          = gl.glGetUniformLocation(glimg.shaders,
                                                        'signed')
+    glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
+                                                       'useSpline') 
     glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
                                                        'zCoord')
     glimg.xaxPos             = gl.glGetUniformLocation(glimg.shaders,
@@ -383,6 +385,7 @@ def draw(glimg, zpos, xform=None):
     # bind the current alpha value
     # and data range to the shader
     gl.glUniform1f( glimg.signedPos,        glimg.signed)
+    gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
     gl.glUniform1f( glimg.zCoordPos,        zpos)
     gl.glUniform3fv(glimg.imageShapePos, 1, np.array(image.shape,
                                                      dtype=np.float32))

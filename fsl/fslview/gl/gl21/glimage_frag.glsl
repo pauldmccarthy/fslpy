@@ -5,13 +5,23 @@
  */
 #version 120
 
+#pragma include spline_interp.glsl
+
 /* image data texture */
 uniform sampler3D imageBuffer;
+
+/* Image/texture dimensions */
+uniform vec3 imageShape;
 
 /*
  * Texture containing the colour map
  */
 uniform sampler1D colourMap;
+
+/*
+ * Use spline interpolation?
+ */
+uniform bool useSpline;
 
 /*
  * If the voxel value is a signed integer, OpenGL maps
@@ -40,7 +50,10 @@ void main(void) {
       return;
     }
 
-    float normVoxValue = texture3D(imageBuffer, fragTexCoords).r;
+    float normVoxValue;
+
+    if (useSpline) normVoxValue = spline_interp(imageBuffer, fragTexCoords, imageShape);
+    else           normVoxValue = texture3D(imageBuffer, fragTexCoords).r;
 
     if (signed) {
         if (normVoxValue >= 0.5) normVoxValue = normVoxValue - 0.5;
