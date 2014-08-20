@@ -247,6 +247,16 @@ class ImageDisplay(props.HasProperties):
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
 
+        # When transform is changed to 'affine', enable interpolation
+        # and, when changed to 'pixdim' or 'id', disable interpolation
+        def changeInterp(*a):
+            if self.transform == 'affine': self.interpolation = 'spline'
+            else:                          self.interpolation = 'none'
+            
+        self.addListener('transform',
+                         'ImageDisplay_{}'.format(id(self)),
+                         changeInterp)
+
 
 class DisplayContext(props.HasProperties):
     """Contains a number of properties defining how an
