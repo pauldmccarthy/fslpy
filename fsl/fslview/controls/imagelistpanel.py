@@ -109,7 +109,8 @@ class ImageListPanel(controlpanel.ControlPanel):
 
         for i in range(len(self._imageList)):
 
-            image = self._imageList[i]
+            image   = self._imageList[i]
+            display = image.getAttribute('display')
 
             self._listBox.Append(image.name, image, image.imageFile)
 
@@ -117,9 +118,19 @@ class ImageListPanel(controlpanel.ControlPanel):
                 idx = self._imageList.index(img)
                 self._listBox.SetString(idx, img.name)
 
-            image.addListener('name',
-                              self._name,
-                              lambda c, va, vi, img=image: nameChanged(img))
+            def enabledChanged(img):
+                idx = self._imageList.index(img)
+
+            image.addListener(
+                'name',
+                self._name,
+                lambda c, va, vi, img=image: nameChanged(img))
+
+            display.addListener(
+                'enabled',
+                self._name,
+                lambda c, va, vi, img=image: enabledChanged(img))
+                                
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(selection)
