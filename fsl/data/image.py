@@ -140,7 +140,7 @@ class Image(props.HasProperties):
             ('affine', 'Use qform/sform transformation matrix'),
             ('pixdim', 'Use pixdims only'),
             ('id',     'Do not use qform/sform or pixdims')]),
-        default='affine')
+        default='pixdim')
     """This property defines how the image should be transformd into real world
     space.
     
