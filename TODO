@@ -6,6 +6,7 @@ regularly, too.
 
 
 * Bugs to fix
+** Slice changes on ludo's bad image, when using pixdim transformation.
 ** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
 ** No worky in VNC session.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
@@ -36,7 +37,6 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Ability to change selected image in image display and cursor location panels.
 ** Spline interpolation
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
@@ -45,6 +45,7 @@ regularly, too.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
 ** Colour bar showing image value range
+** DONE Ability to change selected image in image display and cursor location panels.
 ** DONE Disable/enable next/prev buttons on elistbox and imageselect panel as necessary.
 ** WONTFIX Cursor location preservation when transformation option is changed. The world location is preserved.
 ** DONE Set cursor location via command line option.
