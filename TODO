@@ -37,7 +37,6 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Spline interpolation
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -45,6 +44,7 @@ regularly, too.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
 ** Colour bar showing image value range
+** DONE Spline interpolation
 ** DONE Ability to change selected image in image display and cursor location panels.
 ** DONE Disable/enable next/prev buttons on elistbox and imageselect panel as necessary.
 ** WONTFIX Cursor location preservation when transformation option is changed. The world location is preserved.
