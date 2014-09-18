@@ -45,7 +45,9 @@ class ImageListPanel(controlpanel.ControlPanel):
         # is populated in the _imageListChanged method
         self._listBox = elistbox.EditableListBox(
             self,
-            style=elistbox.ELB_REVERSE | elistbox.ELB_TOOLTIP)
+            style=(elistbox.ELB_REVERSE | 
+                   elistbox.ELB_TOOLTIP | 
+                   elistbox.ELB_ENABLEABLE))
 
         # listeners for when the user does
         # something with the list box
@@ -53,6 +55,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         self._listBox.Bind(elistbox.EVT_ELB_MOVE_EVENT,   self._lbMove)
         self._listBox.Bind(elistbox.EVT_ELB_REMOVE_EVENT, self._lbRemove)
         self._listBox.Bind(elistbox.EVT_ELB_ADD_EVENT,    self._lbAdd)
+        self._listBox.Bind(elistbox.EVT_ELB_ENABLE_EVENT, self._lbEnable)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)
@@ -133,6 +136,9 @@ class ImageListPanel(controlpanel.ControlPanel):
             display = image.getAttribute('display')
 
             self._listBox.Append(image.name, image, image.imageFile)
+            
+            if display.enabled: self._listBox.EnableItem( i)
+            else:               self._listBox.DisableItem(i)
 
             def nameChanged(img):
                 idx = self._imageList.index(img)
@@ -196,3 +202,14 @@ class ImageListPanel(controlpanel.ControlPanel):
         self._listBoxNeedsUpdate = False
         self._imageList.pop(ev.idx)
         self._listBoxNeedsUpdate = True
+
+
+    def _lbEnable(self, ev):
+        """Called when an item is enabled/disabled on the image list box.
+
+        Toggles the image display enabled property accordingly.
+        """
+
+        img             = self._imageList[ev.idx]
+        display         = img.getAttribute('display')
+        display.enabled = ev.enabled
