@@ -62,12 +62,22 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         self._imageList.addListener(
             'images',
             self._name,
-            self._selectedImageChanged)
+            self._imageListChanged)
 
         self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged)
+
+        def onDestroy(ev):
+            self._imageList. removeListener('images',        self._name)
+            self._displayCtx.removeListener('selectedImage', self._name)
+
+            # the _imageListChanged method registers
+            # a listener on the name of each image
+            for image in imageList:
+                image.removeListener('name', self._name)
+            ev.Skip()
 
         self._selectedImageChanged()
 
@@ -95,7 +105,30 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         if selectedImage == len(self._imageList) - 1:
             return
 
-        self._displayCtx.selectedImage = selectedImage + 1 
+        self._displayCtx.selectedImage = selectedImage + 1
+
+
+    def _imageListChanged(self, *a):
+        """Called when the :class:`~fsl.data.image.ImageList.images`
+        list changes.
+
+        Ensures that the currently selected image is displayed on the panel,
+        and that listeners are registered on the name property of each image.
+        """
+
+        def nameChanged(img):
+            
+            # if the name of the currently selected image has changed,
+            # make sure that this panel updates to reflect the change
+            if self._imageList.index(img) == self._displayCtx.selectedImage:
+                self._selectedImageChanged()
+
+        for image in self._imageList:
+            image.addListener('name',
+                              self._name,
+                              lambda c, va, vi, i=image: nameChanged(i))
+
+        self._selectedImageChanged()
 
         
     def _selectedImageChanged(self, *a):
