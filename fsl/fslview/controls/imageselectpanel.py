@@ -79,6 +79,8 @@ class ImageSelectPanel(controlpanel.ControlPanel):
                 image.removeListener('name', self._name)
             ev.Skip()
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
         self._imageListChanged()
 
         
