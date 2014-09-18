@@ -44,6 +44,7 @@ regularly, too.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
 ** Colour bar showing image value range
+** DONE Make image list navigator widget listen to image name changes.
 ** DONE Spline interpolation
 ** DONE Ability to change selected image in image display and cursor location panels.
 ** DONE Disable/enable next/prev buttons on elistbox and imageselect panel as necessary.
@@ -77,9 +78,9 @@ regularly, too.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
 ** Image List
-*** double click to show/hide
+*** DONE double click to show/hide
 *** Edit image name
-*** Highlight enabled/disabled images
+*** DONE Highlight enabled/disabled images
 ** Keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
@@ -97,7 +98,7 @@ regularly, too.
 ** Code audit - enforce conistent standards for public/private class members
 ** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display
-** Other data - Diffusion
+** Other data - Diffusion. Talk to Saad and Manu
 ** IN PROGRESS time series plotting option
 ** IN PROGRESS Standard for code documentation - Sphinx.
 ** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
