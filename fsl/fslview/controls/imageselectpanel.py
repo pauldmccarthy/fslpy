@@ -79,7 +79,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
                 image.removeListener('name', self._name)
             ev.Skip()
 
-        self._selectedImageChanged()
+        self._imageListChanged()
 
         
     def _onPrevButton(self, ev):
