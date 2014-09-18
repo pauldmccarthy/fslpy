@@ -67,7 +67,24 @@ class ImageListPanel(controlpanel.ControlPanel):
         self._displayCtx.addListener(
             'selectedImage',
             self._name,
-            self._selectedImageChanged) 
+            self._selectedImageChanged)
+
+        def onDestroy(ev):
+            
+            self._imageList .removeListener('images',        self._name)
+            self._displayCtx.removeListener('selectedImage', self._name)
+
+            # these listeners are added in the
+            # _imageListChanged method, below
+            for image in self._imageList:
+                
+                display = image.getAttribute('display')
+                image  .removeListener('name',    self._name)
+                display.removeListener('enabled', self._name)
+                
+            ev.Skip()
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
         # This flag is set by the listbox listeners (bound above),
         # and read by the _imageListChanged, to ensure that user
@@ -130,7 +147,6 @@ class ImageListPanel(controlpanel.ControlPanel):
                 'enabled',
                 self._name,
                 lambda c, va, vi, img=image: enabledChanged(img))
-                                
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(selection)
