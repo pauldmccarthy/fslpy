@@ -8,11 +8,11 @@
 from collections import OrderedDict
 
 import numpy         as np
-import matplotlib.cm as mplcm
 
 import props
 import fsl.data.image as fslimage
 
+import fsl.fslview.colourmaps as fslcm
 
 class ImageDisplay(props.HasProperties):
     """A class which describes how an :class:`~fsl.data.image.Image` should
@@ -69,7 +69,7 @@ class ImageDisplay(props.HasProperties):
     """ 
 
     
-    cmap = props.ColourMap(default=mplcm.Greys_r)
+    cmap = props.ColourMap(default=fslcm.default, cmapNames=fslcm.cmapNames)
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 
     
