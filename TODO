@@ -40,6 +40,8 @@ regularly, too.
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
+This is tough, because the old agw.AUINotebook implementation does not have
+any ability to query layout.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
@@ -77,15 +79,17 @@ regularly, too.
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** Image List
-*** DONE double click to show/hide
-*** Edit image name
-*** DONE Highlight enabled/disabled images
+** Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
+This will probably dictate how you go about implementing keyboard/mouse control
 ** Keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
 ** Image export/offscreen rendering.
-** Custom colour maps from original FSLView
+** DONE Image List functionality
+*** DONE double click to show/hide
+*** DONE Edit image name
+*** DONE Highlight enabled/disabled images
+** DONE Custom colour maps from original FSLView
 ** DONE Command line interface - build into props package?
 ** DONE Remove voxel<->world orthogonality requirement
 ** DONE Make slice canvas bounding box calculation more intelligent when zoom > 1.
@@ -94,11 +98,10 @@ regularly, too.
 ** DONE Location selection on LightBoxCanvas.
 * Big/ambiguous things
 ** Test suite for props package
-** slice-wise (instead of image-wise) glimagedata implementation for very large images.
-** Code audit - enforce conistent standards for public/private class members
+** Code audit - enforce consistent standards for public/private class members
 ** image editing (e.g. selecting, erasing, filling, mask creation)
-** Surface display
-** Other data - Diffusion. Talk to Saad and Manu
+** Surface display. Who does surface stuff?
+** Other data - Diffusion. Talk to Saad and Manu.
 ** IN PROGRESS time series plotting option
 ** IN PROGRESS Standard for code documentation - Sphinx.
 ** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
@@ -109,3 +112,5 @@ regularly, too.
 ** (Mark). That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
 ** (Mark). The ability to have separate display ranges for different volumes in one 4D image (maybe only when automatically calculated?) which would be especially useful for diffusion series where the b=0 images are way brighter than the others when using the same display range.
 ** (Ludo). Automatic cluster size thresholding (e.g. Z threshold/cluster size)
+** (Paul). Slice-wise (instead of image-wise) glimagedata implementation for very large images.
+
