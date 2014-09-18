@@ -45,9 +45,10 @@ class ImageListPanel(controlpanel.ControlPanel):
         # is populated in the _imageListChanged method
         self._listBox = elistbox.EditableListBox(
             self,
-            style=(elistbox.ELB_REVERSE | 
-                   elistbox.ELB_TOOLTIP | 
-                   elistbox.ELB_ENABLEABLE))
+            style=(elistbox.ELB_REVERSE    | 
+                   elistbox.ELB_TOOLTIP    | 
+                   elistbox.ELB_ENABLEABLE |
+                   elistbox.ELB_EDITABLE))
 
         # listeners for when the user does
         # something with the list box
@@ -56,6 +57,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         self._listBox.Bind(elistbox.EVT_ELB_REMOVE_EVENT, self._lbRemove)
         self._listBox.Bind(elistbox.EVT_ELB_ADD_EVENT,    self._lbAdd)
         self._listBox.Bind(elistbox.EVT_ELB_ENABLE_EVENT, self._lbEnable)
+        self._listBox.Bind(elistbox.EVT_ELB_EDIT_EVENT,   self._lbEdit)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)
@@ -213,3 +215,12 @@ class ImageListPanel(controlpanel.ControlPanel):
         img             = self._imageList[ev.idx]
         display         = img.getAttribute('display')
         display.enabled = ev.enabled
+
+
+    def _lbEdit(self, ev):
+        """Called when an item label is edited on the image list box.
+        Sets the corresponding image name to the new label.
+        """
+        
+        img = self._imageList[ev.idx]
+        img.name = ev.label
