@@ -70,6 +70,12 @@ class ImageListPanel(controlpanel.ControlPanel):
             self._selectedImageChanged)
 
         def onDestroy(ev):
+            ev.Skip()
+
+            # This handler gets called when child windows
+            # are destroyed (e.g. items in the embedded
+            # elistbox), so this check is necessary.
+            if ev.EventObject != self: return
             
             self._imageList .removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
@@ -77,12 +83,9 @@ class ImageListPanel(controlpanel.ControlPanel):
             # these listeners are added in the
             # _imageListChanged method, below
             for image in self._imageList:
-                
                 display = image.getAttribute('display')
                 image  .removeListener('name',    self._name)
                 display.removeListener('enabled', self._name)
-                
-            ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
@@ -136,7 +139,11 @@ class ImageListPanel(controlpanel.ControlPanel):
                 self._listBox.SetString(idx, img.name)
 
             def enabledChanged(img):
-                idx = self._imageList.index(img)
+                display = img.getAttribute('display')
+                idx     = self._imageList.index(img)
+
+                if display.enabled: self._listBox.EnableItem( idx)
+                else:               self._listBox.DisableItem(idx)
 
             image.addListener(
                 'name',
