@@ -59,7 +59,7 @@ class OrthoPanel(viewpanel.ViewPanel):
                        default=1.0,
                        clamped=True)
 
-    showColourBar = props.Boolean(default=True)
+    showColourBar = props.Boolean(default=False)
 
     colourBarLocation = props.Choice({
         'top'    : 'Top',
