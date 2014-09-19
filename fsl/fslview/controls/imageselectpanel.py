@@ -8,8 +8,9 @@
 """Defines the :class:`ImageSelectPanel` which is a little panel that allows
 the currently selected image to be changed.
 
-This panel is not directly accessible by users, but is embedded within other
-control panels.
+This panel is not directly accessible by users (see the
+:mod:`~fsl.fslview.controls` package ``__init__.py`` file), but is embedded
+within other control panels.
 """
 
 import logging

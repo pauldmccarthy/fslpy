@@ -21,7 +21,7 @@ import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
 import fsl.fslview.viewpanel      as viewpanel
-
+import colourbarpanel 
 
 class OrthoPanel(viewpanel.ViewPanel):
 
@@ -43,7 +43,7 @@ class OrthoPanel(viewpanel.ViewPanel):
 
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
-
+    
     # Properties which set the current zoom
     # factor on each of the canvases
     xzoom = props.Real(minval=1.0,
@@ -59,26 +59,41 @@ class OrthoPanel(viewpanel.ViewPanel):
                        default=1.0,
                        clamped=True)
 
+    showColourBar = props.Boolean(default=True)
+
+    colourBarLocation = props.Choice({
+        'top'    : 'Top',
+        'bottom' : 'Bottom',
+        'left'   : 'Left',
+        'right'  : 'Right'})
+    
+
     _view = props.HGroup((
         props.VGroup(('layout',
                       'posSync',
                       'showCursor',
                       'showXCanvas',
                       'showYCanvas',
-                      'showZCanvas')),
+                      'showZCanvas',
+                      'showColourBar',
+                      props.Widget(
+                          'colourBarLocation',
+                          visibleWhen=lambda i: i.showColourBar))),
         props.VGroup(('xzoom', 'yzoom', 'zzoom'))
     ))
 
     _labels = {
-        'showCursor'  : 'Show cursor',
-        'posSync'     : 'Synchronise location',
-        'showXCanvas' : 'Show X canvas',
-        'showYCanvas' : 'Show Y canvas',
-        'showZCanvas' : 'Show Z canvas',
-        'xzoom'       : 'X zoom',
-        'yzoom'       : 'Y zoom',
-        'zzoom'       : 'Z zoom',
-        'layout'      : 'Layout'
+        'showCursor'        : 'Show cursor',
+        'posSync'           : 'Synchronise location',
+        'showXCanvas'       : 'Show X canvas',
+        'showYCanvas'       : 'Show Y canvas',
+        'showZCanvas'       : 'Show Z canvas',
+        'xzoom'             : 'X zoom',
+        'yzoom'             : 'Y zoom',
+        'zzoom'             : 'Z zoom',
+        'showColourBar'     : 'Show/hide colour bar',
+        'colourBarLocation' : 'Colour bar location',
+        'layout'            : 'Layout'
     }
 
     @classmethod
@@ -109,7 +124,10 @@ class OrthoPanel(viewpanel.ViewPanel):
 
         self.SetBackgroundColour('black')
 
-        self._xcanvas = slicecanvas.SliceCanvas(self, imageList, zax=0,
+        self._canvasPanel = wx.Panel(self)
+
+        self._xcanvas = slicecanvas.SliceCanvas(self._canvasPanel,
+                                                imageList, zax=0,
                                                 glContext=glContext,
                                                 glVersion=glVersion)
 
@@ -119,14 +137,30 @@ class OrthoPanel(viewpanel.ViewPanel):
         self._glContext = glContext
         self._glVersion = glVersion
         
-        self._ycanvas = slicecanvas.SliceCanvas(self, imageList, zax=1,
+        self._ycanvas = slicecanvas.SliceCanvas(self._canvasPanel,
+                                                imageList, zax=1,
                                                 glContext=glContext,
                                                 glVersion=glVersion)
-        self._zcanvas = slicecanvas.SliceCanvas(self, imageList, zax=2,
+        self._zcanvas = slicecanvas.SliceCanvas(self._canvasPanel,
+                                                imageList, zax=2,
                                                 glContext=glContext,
                                                 glVersion=glVersion)
 
+        self._colourBar = colourbarpanel.ColourBarPanel(
+            self,
+            self._imageList,
+            self._displayCtx)
+
+        self.addListener('showColourBar',
+                         self._name,
+                         self._configColourBar)
+        self.addListener('colourBarLocation',
+                         self._name,
+                         self._configColourBar)
+
         self.addListener('layout', self._name, self._layoutChanged)
+
+        self._configColourBar()
         self._layoutChanged()
 
         self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -166,10 +200,10 @@ class OrthoPanel(viewpanel.ViewPanel):
             self._zcanvas.showCursor = self.showCursor
 
         def toggle(canvas, toggle):
-            self._sizer.Show(canvas, toggle)
+            self._canvasSizer.Show(canvas, toggle)
             if self.layout.lower() == 'grid':
                 self._configureGridSizes() 
-            self.Layout()            
+            self._canvasPanel.Layout()            
 
         self.addListener('showCursor',  self._name, showCursor)
         self.addListener('showXCanvas', self._name,
@@ -195,6 +229,39 @@ class OrthoPanel(viewpanel.ViewPanel):
         self.addListener('zzoom', self._name, zzoom)
 
 
+    def _configColourBar(self, *a):
+        """
+        """
+
+        # TODO unbind props on previous colour bar
+
+        if not self.showColourBar:
+            
+            self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+            self._sizer.Add(self._canvasPanel, flag=wx.EXPAND, proportion=1)
+            
+            self.SetSizer(self._sizer)
+            self.Layout()
+            return
+
+        if self.colourBarLocation in ('top', 'bottom'):
+            self._colourBar.orientation = 'horizontal'
+            self._sizer = wx.BoxSizer(wx.VERTICAL)
+        else:
+            self._colourBar.orientation = 'vertical'
+            self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        if self.colourBarLocation in ('top', 'left'):
+            self._sizer.Add(self._colourBar,   flag=wx.EXPAND)
+            self._sizer.Add(self._canvasPanel, flag=wx.EXPAND, proportion=1)
+        else:
+            self._sizer.Add(self._canvasPanel, flag=wx.EXPAND, proportion=1)
+            self._sizer.Add(self._colourBar,   flag=wx.EXPAND)
+                
+        self.SetSizer(self._sizer)
+        self.Layout()
+
+            
     def _resize(self, ev):
         """
         Called whenever the panel is resized. Makes sure that the canvases
@@ -218,7 +285,7 @@ class OrthoPanel(viewpanel.ViewPanel):
         # Box sizers behave nicely. WrapSizer does not.
         if self.layout.lower() != 'grid': return
         
-        width, height = self.GetClientSize().Get()
+        width, height = self._canvasPanel.GetClientSize().Get()
 
         # Generate a list of canvases for
         # which the 'show*Canvas' property is true
@@ -248,14 +315,17 @@ class OrthoPanel(viewpanel.ViewPanel):
 
         layout = self.layout.lower()
 
-        if   layout == 'horizontal': self._sizer = wx.BoxSizer( wx.HORIZONTAL)
-        elif layout == 'vertical':   self._sizer = wx.BoxSizer( wx.VERTICAL)
-        elif layout == 'grid':       self._sizer = wx.WrapSizer(wx.HORIZONTAL) 
+        if   layout == 'horizontal':
+            self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
+        elif layout == 'vertical':
+            self._canvasSizer = wx.BoxSizer(wx.VERTICAL)
+        elif layout == 'grid':
+            self._canvasSizer = wx.WrapSizer(wx.HORIZONTAL) 
 
         for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
-            self._sizer.Add(c, flag=wx.EXPAND, proportion=1)
+            self._canvasSizer.Add(c, flag=wx.EXPAND, proportion=1)
 
-        self.SetSizer(self._sizer) 
+        self._canvasPanel.SetSizer(self._canvasSizer)
 
         # for grid layout, we need to
         # manually specify canvas sizes
@@ -270,6 +340,7 @@ class OrthoPanel(viewpanel.ViewPanel):
             self._zcanvas.SetMinSize((-1, -1))
 
         self.Layout()
+        self._canvasPanel.Layout()
 
         
     def setPosition(self, xpos, ypos, zpos):
