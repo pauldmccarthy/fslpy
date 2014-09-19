@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# colourbar.py -
+# colourbar.py - Provides the ColourBarPanel, a panel for displaying a colour
+#                bar.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -21,14 +22,18 @@ import          props
 
 import fsl.fslview.viewpanel as viewpanel
 
+from fsl.fslview.widgets import TextPanel, ImagePanel
+
+
 class ColourBarPanel(viewpanel.ViewPanel):
-    """A panel which shows a colour bar, depicting the data range of the currently
-    selected image.
+    """A panel which shows a colour bar, depicting the data range of the
+    currently selected image.
     """
 
     orientation = props.Choice({
         'horizontal' : 'Horizontal',
         'vertical'   : 'Vertical'})
+    """Draw the colour bar horizontally or vertically. """
 
     def __init__(self,
                  parent,
@@ -40,26 +45,20 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._cbContainerPanel = wx.Panel(self)
-        self._cbPanel          = ImagePanel(self._cbContainerPanel)
-        
-        self._minLabel = wx.StaticText(
-            self._cbContainerPanel, style=wx.ALIGN_CENTRE_HORIZONTAL)
-        
-        self._maxLabel = wx.StaticText(
-            self._cbContainerPanel, style=wx.ALIGN_CENTRE_HORIZONTAL)
-        
-        self._imageNameLabel = wx.StaticText(
-            self, style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self._labelPanel = wx.Panel(  self)
+        self._cbPanel    = ImagePanel(self)
+        self._minLabel   = TextPanel( self._labelPanel)
+        self._maxLabel   = TextPanel( self._labelPanel)
+        self._nameLabel  = TextPanel( self._labelPanel)
 
-        self                  .SetBackgroundColour('black')
-        self._cbContainerPanel.SetBackgroundColour('black')
-        self._minLabel        .SetBackgroundColour('black')
-        self._maxLabel        .SetBackgroundColour('black')
-        self._imageNameLabel  .SetBackgroundColour('black')
-        self._imageNameLabel  .SetForegroundColour('white')
-        self._minLabel        .SetForegroundColour('white')
-        self._maxLabel        .SetForegroundColour('white')
+        self            .SetBackgroundColour('black')
+        self._labelPanel.SetBackgroundColour('black')
+        self._minLabel  .SetBackgroundColour('black')
+        self._maxLabel  .SetBackgroundColour('black')
+        self._nameLabel .SetBackgroundColour('black')
+        self._nameLabel .SetForegroundColour('white')
+        self._minLabel  .SetForegroundColour('white')
+        self._maxLabel  .SetForegroundColour('white')
 
         self.addListener('orientation', self._name, self._layout)
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
@@ -77,6 +76,10 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
 
     def _onDestroy(self, ev):
+        """Removes all registered listeners from the image list, display
+        context, and individual images.
+        """
+        
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
@@ -84,53 +87,52 @@ class ColourBarPanel(viewpanel.ViewPanel):
             image   = self._imageList[i]
             display = image.getAttribute('display')
 
+            image.removeListener(  'name',         self._name)
             display.removeListener('cmap',         self._name)
             display.removeListener('displayRange', self._name)
 
             
     def _layout(self, *a):
+        """
+        """
 
         if self.orientation == 'horizontal':
-            self._mainSizer = wx.BoxSizer(wx.VERTICAL)
-            self._cbSizer   = wx.BoxSizer(wx.HORIZONTAL)
-            rangeFlag   = wx.ALIGN_CENTRE_VERTICAL
+            self._mainSizer  = wx.BoxSizer(wx.VERTICAL)
+            self._labelSizer = wx.BoxSizer(wx.HORIZONTAL)
             rangeLabels = (self._minLabel, self._maxLabel)
-            nameFlag    = wx.EXPAND
         else:
-            self._mainSizer = wx.BoxSizer(wx.HORIZONTAL) 
-            self._cbSizer   = wx.BoxSizer(wx.VERTICAL)
-            rangeFlag   = wx.EXPAND
+            self._mainSizer  = wx.BoxSizer(wx.HORIZONTAL) 
+            self._labelSizer = wx.BoxSizer(wx.VERTICAL)
             rangeLabels = (self._maxLabel, self._minLabel)
-            nameFlag    = wx.ALIGN_CENTRE_VERTICAL
 
-        self._mainSizer.Add(self._cbContainerPanel,
-                            flag=wx.EXPAND,
-                            proportion=1)
-        self._mainSizer.Add(self._imageNameLabel, flag=nameFlag) 
- 
+        self._mainSizer.Add(self._cbPanel,    flag=wx.EXPAND, proportion=1)
+        self._mainSizer.Add(self._labelPanel, flag=wx.EXPAND) 
 
-        self._cbSizer.Add(rangeLabels[0], flag=rangeFlag)
-        self._cbSizer.Add(self._cbPanel,  flag=wx.EXPAND, proportion=1)
-        self._cbSizer.Add(rangeLabels[1], flag=rangeFlag) 
+        self._labelSizer.Add(rangeLabels[0],  flag=wx.EXPAND)
+        self._labelSizer.Add(self._nameLabel, flag=wx.EXPAND, proportion=1)
+        self._labelSizer.Add(rangeLabels[1],  flag=wx.EXPAND) 
 
+        self._nameLabel.SetOrient(self.orientation)
+        self._minLabel .SetOrient(self.orientation)
+        self._maxLabel .SetOrient(self.orientation)
 
-        # TODO: orientation of labels
+        self            .SetSizer(self._mainSizer)
+        self._labelPanel.SetSizer(self._labelSizer)
 
-        self._minLabel      .SetLabel('Min')
-        self._maxLabel      .SetLabel('Max')
-        self._imageNameLabel.SetLabel('Image Name')
+        # Fix the minor axis of the colour bar to 25 pixels
+        if self.orientation == 'horizontal':
+            self._cbPanel.SetSizeHints(-1, 25, -1, 25, -1, -1)
+        else:
+            self._cbPanel.SetSizeHints(25, -1, 25, -1, -1, -1)
 
-        self                  .SetSizer(self._mainSizer)
-        self._cbContainerPanel.SetSizer(self._cbSizer)
-
-        self._cbSizer  .Layout()
-        self._mainSizer.Layout()
-
+        self._labelPanel.Layout()
         self.Layout()
         self._refreshColourBar()
                           
 
     def _selectedImageChanged(self, *a):
+        """
+        """
 
         for i in range(len(self._imageList)):
             
@@ -141,19 +143,48 @@ class ColourBarPanel(viewpanel.ViewPanel):
                 
                 display.removeListener('displayRange', self._name)
                 display.removeListener('cmap',         self._name)
+                image  .removeListener('name',         self._name)
                 
             else:
                 display.addListener('displayRange',
                                     self._name,
-                                    self._refreshColourBar)
+                                    self._displayRangeChanged)
                 display.addListener('cmap',
                                     self._name,
                                     self._refreshColourBar)
-                
+                image  .addListener('name',
+                                    self._name,
+                                    self._imageNameChanged) 
+
+        self._imageNameChanged()
+        self._displayRangeChanged()
         self._refreshColourBar()
+
+
+    def _imageNameChanged(self, *a):
+        """
+        """
+        image = self._imageList[self._displayCtx.selectedImage]
+        self._nameLabel.SetText(image.name)
+        self._labelPanel.Layout()
+
+        
+    def _displayRangeChanged(self, *a):
+        """
+        """
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
+
+        dmin, dmax = display.displayRange.getRange(0)
+
+        self._minLabel.SetText('{:0.2f}'.format(dmin))
+        self._maxLabel.SetText('{:0.2f}'.format(dmax))
+        self._labelPanel.Layout()
         
 
     def _refreshColourBar(self, *a):
+        """
+        """
 
         width  = 256
         height = 30
@@ -182,41 +213,3 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         self._cbPanel.image = bitmap.ConvertToImage()
         self._cbPanel.Draw()
-        
-
-class ImagePanel(wx.Panel):
-    
-
-    def __init__(self, parent, image=None):
-
-        wx.Panel.__init__(self, parent)
-        
-        self.image = image
-
-        self.Bind(wx.EVT_PAINT, self.Draw)
-        self.Bind(wx.EVT_SIZE,  self._onSize)
-
-        
-    def Draw(self, ev=None):
-        
-        self.ClearBackground()
-
-        if self.image is None:
-            return
-
-        if ev is None: dc = wx.ClientDC(self)
-        else:          dc = wx.PaintDC( self)
-        
-        width, height = dc.GetSize().Get()
-
-        if width == 0 or height == 0:
-            return
-
-        bitmap = wx.BitmapFromImage(self.image.Scale(width, height))
-        
-        dc.DrawBitmap(bitmap, 0, 0, False)
-
-        
-    def _onSize(self, ev):
-        self.Refresh()
-        ev.Skip()
