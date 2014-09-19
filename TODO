@@ -6,6 +6,7 @@ regularly, too.
 
 
 * Bugs to fix
+** Exceptions thrown on empty image name
 ** Slice changes on ludo's bad image, when using pixdim transformation.
 ** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
 ** No worky in VNC session.
@@ -37,6 +38,7 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Make ColourBarPanel generic.
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -45,7 +47,7 @@ any ability to query layout.
 ** Ability to edit image affine transformation.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
-** Colour bar showing image value range
+** DONE Colour bar showing image value range
 ** DONE Make image list navigator widget listen to image name changes.
 ** DONE Spline interpolation
 ** DONE Ability to change selected image in image display and cursor location panels.
