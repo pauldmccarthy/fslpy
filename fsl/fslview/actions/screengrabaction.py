@@ -44,6 +44,21 @@ def screengrab(wxObj, filename=None):
 class ScreenGrabAction(action.Action):
 
     def doAction(self, activeViewPanel):
-        print 'ScreenGrab!!!'
+
         if activeViewPanel is None:
             return
+
+        app = wx.GetApp()
+
+        if app is None:
+            raise RuntimeError('A wx.App has not been created')
+
+        dlg = wx.FileDialog(app.GetTopWindow(),
+                            message='Save screenshot',
+                            style=wx.FD_SAVE)
+
+        if dlg.ShowModal() != wx.ID_OK: return
+
+        filename = dlg.GetPath()
+
+        wx.CallAfter(lambda: screengrab(activeViewPanel, filename))
