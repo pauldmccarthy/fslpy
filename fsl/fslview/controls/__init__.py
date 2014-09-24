@@ -30,7 +30,7 @@ ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
 
 def listControlPanels():
     """Convenience function which returns a list containing all
-    :class:`~fsl.fslview.controls.controlpanelControlPanel` classes
+    :class:`~fsl.fslview.controlpanel.ControlPanel` classes
     in the :mod:`controls` package.
     """
 

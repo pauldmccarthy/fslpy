@@ -8,9 +8,6 @@
 import logging
 log = logging.getLogger(__name__)
 
-import os
-import os.path as op
-
 import wx
 import wx.aui as aui
 
@@ -18,6 +15,7 @@ import props
 
 import views
 import controls
+import actions
 import strings
 
 
@@ -234,7 +232,7 @@ class FSLViewFrame(wx.Frame):
 
         panel.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
-
+        
     def _onClose(self, ev):
         """Called on requests to close this :class:`FSLViewFrame`.
 
@@ -372,6 +370,16 @@ class FSLViewFrame(wx.Frame):
 
         viewPanels = views   .listViewPanels()
         ctrlPanels = controls.listControlPanels()
+        actionz    = actions .listActions()
+
+        for action in actionz:
+            menuItem = fileMenu.Append(wx.ID_ANY,
+                                         strings.actionTitles[action])
+            actionObj = action(menuItem, self._imageList, self._displayCtx)
+            # TODO pass active view panel
+            self.Bind(wx.EVT_MENU,
+                      lambda ev, ao=actionObj: ao.doAction(None),
+                      menuItem)
 
         for viewPanel in viewPanels:
             viewAction = viewMenu.Append(wx.ID_ANY,
@@ -385,23 +393,4 @@ class FSLViewFrame(wx.Frame):
                                          strings.controlPanelTitles[ctrlPanel]) 
             self.Bind(wx.EVT_MENU,
                       lambda ev, cp=ctrlPanel: self.addControlPanel(cp),
-                      ctrlAction) 
-            
-        openFileAction     = fileMenu.Append(wx.ID_ANY, strings.openFile)
-        openStandardAction = fileMenu.Append(wx.ID_ANY, strings.openStd)
-
-        self.Bind(wx.EVT_MENU,
-                  lambda ev: self._imageList.addImages(),
-                  openFileAction)
-
-        # disable the 'add standard' menu
-        # item if $FSLDIR is not set
-        fsldir = os.environ.get('FSLDIR', None)
-
-        if fsldir is not None:
-            stddir = op.join(fsldir, 'data', 'standard')
-            self.Bind(wx.EVT_MENU,
-                       lambda ev: self._imageList.addImages(stddir),
-                       openStandardAction)
-        else:
-            openStandardAction.Enable(False)
+                      ctrlAction)

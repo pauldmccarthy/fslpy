@@ -5,12 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from views   .orthopanel        import OrthoPanel
-from views   .lightboxpanel     import LightBoxPanel
-from views   .timeseriespanel   import TimeSeriesPanel
-from controls.imagedisplaypanel import ImageDisplayPanel
-from controls.imagelistpanel    import ImageListPanel
-from controls.locationpanel     import LocationPanel
+from views   .orthopanel         import OrthoPanel
+from views   .lightboxpanel      import LightBoxPanel
+from views   .timeseriespanel    import TimeSeriesPanel
+
+from controls.imagedisplaypanel  import ImageDisplayPanel
+from controls.imagelistpanel     import ImageListPanel
+from controls.locationpanel      import LocationPanel
+
+from actions .screengrabaction   import ScreenGrabAction
+from actions .openfileaction     import OpenFileAction
+from actions .openstandardaction import OpenStandardAction
 
 
 viewPanelTitles = {
@@ -26,17 +31,17 @@ controlPanelTitles = {
     LocationPanel     : 'Cursor location'
 }
 
+actionTitles = {
+    OpenFileAction     : 'Add image file',
+    OpenStandardAction : 'Add standard',
+    ScreenGrabAction   : 'Take screenshot'
+}
 
 viewPanelConfigMenuText = {
     OrthoPanel      : '{} display properties',
     LightBoxPanel   : '{} display properties',
     TimeSeriesPanel : '{} display properties'
 }
-
-
-openFile = 'Add image file'
-openStd  = 'Add standard'
-
 
 orthoConfigMenu    = '{} display'
 lightBoxConfigMenu = '{} display'
