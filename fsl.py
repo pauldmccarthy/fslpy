@@ -68,13 +68,21 @@ def loadFSLTool(moduleName, module):
     parseArgs = getattr(module, 'FSL_PARSEARGS', None)
     context   = getattr(module, 'FSL_CONTEXT',   None)
     interface = getattr(module, 'FSL_INTERFACE', None)
+    execute   = getattr(module, 'FSL_EXECUTE',   None)
     actions   = getattr(module, 'FSL_ACTIONS',   [])
 
     # But at the very least, must specify a name, and
-    # a function which will create an interface
-    if not all((toolName, interface)):
+    # either a function which will create an interface,
+    # or a function which can be called to do some work
+    if not all((toolName, any((interface, execute)))):
         raise TypeError('"{}" does not appear to be a valid FSL tool'.format(
             moduleName))
+
+    # The tool must either provide an interface,
+    # or do some non-interactive work.
+    if interface and execute:
+        raise TypeError('"{}" does not appear to be a valid FSL tool'.format(
+            moduleName))    
 
     class FSLTool(object):
         pass
@@ -88,6 +96,7 @@ def loadFSLTool(moduleName, module):
     fsltool.parseArgs  = parseArgs
     fsltool.context    = context
     fsltool.interface  = interface
+    fsltool.execute    = execute
     fsltool.actions    = actions
 
     return fsltool
@@ -246,7 +255,6 @@ if __name__ == '__main__':
     else:                           ctx = None
 
     if fslTool.interface is not None:
-        
         app   = wx.App()
         frame = buildGUI(args, fslTool, ctx, fslEnvActive)
         frame.Show()
@@ -258,3 +266,7 @@ if __name__ == '__main__':
             wx.lib.inspection.InspectionTool().Show()
         
         app.MainLoop()
+        
+    elif fslTool.execute is not None:
+        fslDirWarning( None, fslTool.toolName, fslEnvActive)
+        fslTool.execute(args, ctx)
