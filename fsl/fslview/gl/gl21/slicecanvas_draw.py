@@ -30,9 +30,6 @@ def draw(canvas):
     """Draws the currently selected slice (as specified by the ``z``
     value of the :attr:`pos` property) to the canvas."""
 
-    canvas.glContext.SetCurrent(canvas)
-    canvas._setViewport()
-
     # clear the canvas
     gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 

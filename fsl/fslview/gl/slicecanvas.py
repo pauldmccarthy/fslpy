@@ -24,7 +24,7 @@ import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
 
 
-class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
+class SliceCanvas(props.HasProperties):
     """A :class:`wx.glcanvas.GLCanvas` which may be used to display a single
     2D slice from a collection of 3D images (see
     :class:`fsl.data.image.ImageList`).
@@ -67,16 +67,21 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
     """The image axis to be used as the screen 'depth' axis."""
 
-        
+
+    def _getSize(      self): raise NotImplementedError()
+    def _makeGLContext(self): raise NotImplementedError()
+    def _setGLContext( self): raise NotImplementedError()
+    def _refresh(      self): raise NotImplementedError()
+
+    
     def canvasToWorld(self, xpos, ypos):
         """Given pixel x/y coordinates on this canvas, translates them
         into the real world coordinates of the displayed slice.
         """
 
-        realWidth    = self.displayBounds.xlen
-        realHeight   = self.displayBounds.ylen
-        canvasWidth  = float(self.GetClientSize().GetWidth())
-        canvasHeight = float(self.GetClientSize().GetHeight()) 
+        realWidth                 = self.displayBounds.xlen
+        realHeight                = self.displayBounds.ylen
+        canvasWidth, canvasHeight = map(float, self._getSize())
 
         if realWidth    == 0 or \
            canvasWidth  == 0 or \
@@ -147,7 +152,6 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         
     def __init__(self,
-                 parent,
                  imageList,
                  zax=0,
                  glContext=None,
@@ -178,12 +182,11 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             raise TypeError(
                 'imageList must be a fsl.data.image.ImageList instance')
 
-        wxgl.GLCanvas.__init__(self, parent)
         props.HasProperties.__init__(self)
 
         # Use the provided shared GL
         # context, or create a new one
-        if glContext is None: self.glContext = wxgl.GLContext(self)
+        if glContext is None: self.glContext = self._makeGLContext()
         else:                 self.glContext = glContext
 
         self.glVersion = glVersion
@@ -197,12 +200,12 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
         self._zAxisChanged()
-        self.addListener('zax', self.name, self._zAxisChanged)
 
         # when any of the properties of this
         # canvas change, we need to redraw
-        def refresh(*a): self.Refresh()
-            
+        def refresh(*a): self._refresh()
+
+        self.addListener('zax',           self.name, self._zAxisChanged)
         self.addListener('pos',           self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
@@ -218,29 +221,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self.imageList.addListener('bounds',
                                    self.name,
                                    self._imageBoundsChanged)
-        self._imageBoundsChanged()
-
-        # the image list is probably going to outlive
-        # this SliceCanvas object, so we do the right
-        # thing and remove our listeners when we die
-        def onDestroy(ev):
-            self.imageList.removeListener('images', self.name)
-            self.imageList.removeListener('bounds', self.name)
-            ev.Skip()
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-        # When the canvas is resized, we have to update
-        # the display bounds to preserve the aspect ratio
-        def onResize(ev):
-            self._updateDisplayBounds()
-            ev.Skip()
-        self.Bind(wx.EVT_SIZE, onResize)
-
-        # All the work is done
-        # by the draw method.
-        self.Bind(wx.EVT_PAINT, self.draw)
-
+ 
         # the _initGL method is called on the
         # first draw to initialise GL stuff
         self._glReady = False
@@ -251,14 +232,10 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         We can't figure out what OpenGL version to use
         until the canvas is displayed on screen.
         """
-        # Unbind this event handler, as it
-        # only needs to be called once
-        self.GetTopLevelParent().Unbind(wx.EVT_SHOW)
-
         # Call the bootstrap function, which
         # will figure out which OpenGL version
         # to use, and do some module magic
-        self.glContext.SetCurrent(self)
+        self._setGLContext()
         fslgl.bootstrap(self.glVersion)
 
         # Call the _imageListChanged method - it
@@ -270,20 +247,20 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         self._glReady = True
  
 
-    def draw(self, ev=None):
+    def draw(self, *a):
         """Called on :attr:`wx.EVT_PAINT` events. Calls the OpenGL
         version-dependent :func:`fsl.fslview.gl.slicecanvas_draw.drawScene`
         function, which does the actual drawing.
         """
 
         if not self._glReady:
-            wx.CallAfter(self._initGL)
+            self._initGL()
             return
-            
+
+        self._setGLContext()
+        self._setViewport() 
         fslgl.slicecanvas_draw.draw(self)
-        
         if self.showCursor: self.drawCursor()
-        
         self.SwapBuffers()
 
 
@@ -302,7 +279,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         y = self.pos.y
 
         # How big is one pixel in world space?
-        w, h = self.GetClientSize().Get()
+        w, h = self._getSize()
         pixx = (xmax - xmin) / float(w)
         pixy = (ymax - ymin) / float(h)
 
@@ -404,7 +381,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
                 self.Refresh()
             genGLObject()
                 
-            def refresh(*a): self.Refresh()
+            def refresh(*a): self._refresh()
             
             display.addListener('imageType',       self.name, genGLObject)
             display.addListener('enabled',         self.name, refresh)
@@ -419,26 +396,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
             display.addListener('cmap',            self.name, refresh)
             display.addListener('volume',          self.name, refresh)
 
-            # remove all those listeners when
-            # this SliceCanvas is destroyed
-            def onDestroy(ev, disp=display):
-                disp.removeListener('imageType',       self.name)
-                disp.removeListener('enabled',         self.name)
-                disp.removeListener('transform',       self.name)
-                disp.removeListener('interpolation',   self.name)
-                disp.removeListener('alpha',           self.name)
-                disp.removeListener('displayRange',    self.name)
-                disp.removeListener('clipLow',         self.name)
-                disp.removeListener('clipHigh',        self.name)
-                disp.removeListener('worldResolution', self.name)
-                disp.removeListener('voxelResolution', self.name)
-                disp.removeListener('cmap',            self.name)
-                disp.removeListener('volume',          self.name)
-                ev.Skip()
-                
-            self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-        self.Refresh()
+        self._refresh()
 
 
     def _imageBoundsChanged(self, *a):
@@ -529,7 +487,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         log.debug('Required display bounds: X: ({}, {}) Y: ({}, {})'.format(
             xmin, xmax, ymin, ymax))
 
-        canvasWidth, canvasHeight = self.GetClientSize().Get()
+        canvasWidth, canvasHeight = self._getSize()
         dispWidth                 = float(xmax - xmin)
         dispHeight                = float(ymax - ymin)
 
@@ -606,7 +564,7 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
-        width, height = self.GetClientSize().Get()
+        width, height = self._getSize()
         
         if (len(self.imageList) == 0) or \
            (width  == 0)              or \
@@ -654,3 +612,82 @@ class SliceCanvas(wxgl.GLCanvas, props.HasProperties):
         trans = [0, 0, 0]
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
+
+
+class WXGLSliceCanvas(wxgl.GLCanvas, SliceCanvas):
+
+    def __init__(self,
+                 parent,
+                 imageList,
+                 zax=0,
+                 glContext=None,
+                 glVersion=None):
+
+        wxgl.GLCanvas.__init__(self, parent)
+        SliceCanvas  .__init__(self, imageList, zax, glContext, glVersion) 
+        
+        # the image list is probably going to outlive
+        # this SliceCanvas object, so we do the right
+        # thing and remove our listeners when we die
+        def onDestroy(ev):
+            self.imageList.removeListener('images', self.name)
+            self.imageList.removeListener('bounds', self.name)
+            for image in self.imageList:
+                disp = image.getAttribute('display')
+                disp.removeListener('imageType',       self.name)
+                disp.removeListener('enabled',         self.name)
+                disp.removeListener('transform',       self.name)
+                disp.removeListener('interpolation',   self.name)
+                disp.removeListener('alpha',           self.name)
+                disp.removeListener('displayRange',    self.name)
+                disp.removeListener('clipLow',         self.name)
+                disp.removeListener('clipHigh',        self.name)
+                disp.removeListener('worldResolution', self.name)
+                disp.removeListener('voxelResolution', self.name)
+                disp.removeListener('cmap',            self.name)
+                disp.removeListener('volume',          self.name)
+            ev.Skip()
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
+        # When the canvas is resized, we have to update
+        # the display bounds to preserve the aspect ratio
+        def onResize(ev):
+            self._updateDisplayBounds()
+            ev.Skip()
+        self.Bind(wx.EVT_SIZE, onResize)
+
+        # All the work is done
+        # by the draw method.
+        self.Bind(wx.EVT_PAINT, self.draw)
+
+
+    def _initGL(       self): wx.CallAfter(SliceCanvas._initGL, self)
+    def _getSize(      self): return self.GetClientSize().Get()
+    def _makeGLContext(self): return wxgl.GLContext(self)
+    def _setGLContext( self): self.glContext.SetCurrent(self)
+    def _refresh(      self): self.Refresh()
+        
+
+class OSMesaSliceCanvas(SliceCanvas):
+    
+    def __init__(self,
+                 imageList,
+                 zax=0,
+                 glContext=None,
+                 glVersion=None,
+                 width=0,
+                 height=0):
+
+        SliceCanvas.__init__(self, imageList, zax, glContext, glVersion)
+
+        self._width  = width
+        self._height = height 
+
+        self._initGL()
+
+
+    def _getSize(      self): return self._width, self._height
+    def _makeGLContext(self): pass
+    def _setGLContext( self): pass 
+    def _refresh(      self): pass

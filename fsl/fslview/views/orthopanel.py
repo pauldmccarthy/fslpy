@@ -126,10 +126,10 @@ class OrthoPanel(viewpanel.ViewPanel):
 
         self._canvasPanel = wx.Panel(self)
 
-        self._xcanvas = slicecanvas.SliceCanvas(self._canvasPanel,
-                                                imageList, zax=0,
-                                                glContext=glContext,
-                                                glVersion=glVersion)
+        self._xcanvas = slicecanvas.WXGLSliceCanvas(self._canvasPanel,
+                                                    imageList, zax=0,
+                                                    glContext=glContext,
+                                                    glVersion=glVersion)
 
         if glContext is None:
             glContext = self._xcanvas.glContext
@@ -137,14 +137,14 @@ class OrthoPanel(viewpanel.ViewPanel):
         self._glContext = glContext
         self._glVersion = glVersion
         
-        self._ycanvas = slicecanvas.SliceCanvas(self._canvasPanel,
-                                                imageList, zax=1,
-                                                glContext=glContext,
-                                                glVersion=glVersion)
-        self._zcanvas = slicecanvas.SliceCanvas(self._canvasPanel,
-                                                imageList, zax=2,
-                                                glContext=glContext,
-                                                glVersion=glVersion)
+        self._ycanvas = slicecanvas.WXGLSliceCanvas(self._canvasPanel,
+                                                    imageList, zax=1,
+                                                    glContext=glContext,
+                                                    glVersion=glVersion)
+        self._zcanvas = slicecanvas.WXGLSliceCanvas(self._canvasPanel,
+                                                    imageList, zax=2,
+                                                    glContext=glContext,
+                                                    glVersion=glVersion)
 
         self._colourBar = colourbarpanel.ColourBarPanel(
             self,
