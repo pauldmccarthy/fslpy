@@ -34,8 +34,9 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import scipy.ndimage          as ndi
-import OpenGL.GL              as gl
+import numpy         as np 
+import scipy.ndimage as ndi
+import OpenGL.GL     as gl
 
 
 def init(glimg, xax, yax):
@@ -141,8 +142,9 @@ def draw(glimg, zpos, xform=None):
     # Prepare world coordinates and image data
     # (which are used as texture coordinates
     # on the colour map) for copy to GPU
-    worldCoords = worldCoords.ravel('C')
-    imageData   = imageData  .ravel('C')
+    worldCoords   = worldCoords  .ravel('C')
+    imageData     = np.array(imageData, dtype=np.float32)    .ravel('C')
+    texCoordXform = texCoordXform.ravel('C')
     
     gl.glEnable(gl.GL_TEXTURE_1D) 
 
