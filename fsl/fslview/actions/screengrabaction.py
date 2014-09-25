@@ -27,14 +27,20 @@ def _copyToClipboard(bitmap):
 def screengrab(wxObj, filename=None):
     """
     """
-    rect     = wxObj.GetRect()
-    dcScreen = wx.ScreenDC()
-    bmp      = wx.EmptyBitmap(rect.width, rect.height)
-    memDC    = wx.MemoryDC()
+    screenDC         = wx.ScreenDC()
+    screenX, screenY = screenDC.Size
+    screenbmp        = wx.EmptyBitmap(screenX, screenY)
+    memDC            = wx.MemoryDC(screenbmp)
 
-    memDC.SelectObject(bmp)
-    memDC.Blit(0, 0, rect.width, rect.height, dcScreen, rect.x, rect.y)
+    # Create a bitmap of the entire screen
+    memDC.Blit(0, 0, screenX, screenY, screenDC, 0, 0)
     memDC.SelectObject(wx.NullBitmap)
+
+    # extract the relevant portion from that bitmap
+    bbox       = wxObj.GetRect()
+    offx, offy = wxObj.GetParent().ClientToScreen(wx.Point(bbox.x, bbox.y))
+
+    bmp = screenbmp.GetSubBitmap(wx.Rect(offx, offy, bbox.width, bbox.height))
 
     if filename is None: _copyToClipboard(bmp)
     else:                _saveToFile(     bmp, filename)
@@ -61,4 +67,6 @@ class ScreenGrabAction(action.Action):
 
         filename = dlg.GetPath()
 
+        dlg.Destroy()
+        wx.Yield()
         wx.CallAfter(lambda: screengrab(activeViewPanel, filename))
