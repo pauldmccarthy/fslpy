@@ -38,6 +38,7 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Don't draw LightBoxCanvas cursor when out of Z range
 ** Remove duplicate argument parsing code between tools/render.py and tools/fslview.py
 ** Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
 ** Refactor wxglslicecanvas/wxgllightboxcanvas - duplicate code... ?
