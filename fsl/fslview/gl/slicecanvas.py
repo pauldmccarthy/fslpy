@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 #
-# slicecanvas.py - A wx.GLCanvas canvas which displays a single
-# slice from a collection of 3D images.
+# slicecanvas.py - Provides the SliceCanvas class, which contains the
+# functionality to display a single slice from a collection of 3D images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A :class:`wx.glcanvas.GLCanvas` canvas which displays a single
-slice from a collection of 3D images.
+"""Provides the :class:`SliceCanvas` class, which contains the functionality
+to display a single slice from a collection of 3D images.
+
+The :class:`SliceCanvas` class is not intended to be instantiated - use one
+of the subclasses:
+
+  - :class:`~fsl.fslview.gl.osmesaslicecanvas.OSMesaSliceCanvas` for static
+    off-screen rendering of a scene.
+    
+  - :class:`~fsl.fslview.gl.wxglslicecanvas.WXGLSliceCanvas` for interactive
+    rendering on a :class:`wx.glcanvas.GLCanvas` canvas.
 """
 
 import logging
@@ -23,9 +32,8 @@ import fsl.fslview.gl.globject as globject
 
 
 class SliceCanvas(props.HasProperties):
-    """A :class:`wx.glcanvas.GLCanvas` which may be used to display a single
-    2D slice from a collection of 3D images (see
-    :class:`fsl.data.image.ImageList`).
+    """Represens a canvas which may be used to display a single 2D slice from a
+    collection of 3D images (see :class:`fsl.data.image.ImageList`).
     """
 
     pos = props.Point(ndims=3)
@@ -66,10 +74,53 @@ class SliceCanvas(props.HasProperties):
     """The image axis to be used as the screen 'depth' axis."""
 
 
-    def _getSize(      self): raise NotImplementedError()
-    def _makeGLContext(self): raise NotImplementedError()
-    def _setGLContext( self): raise NotImplementedError()
-    def _refresh(      self): raise NotImplementedError()
+    def _getSize(self):
+        """Must be provided by subclasses of :class:`SliceCanvas`. The default
+        implementation raises a :class:`NotImplementedError`.
+
+        Subclass implementations must return a tuple containing the current
+        canvas width and height.
+        """
+        raise NotImplementedError()
+
+        
+    def _makeGLContext(self):
+        """Must be provided by subclasses of :class:`SliceCanvas`. The default
+        implementation raises a :class:`NotImplementedError`.
+
+        Subclass implementations must create and return a handle to an OpenGL
+        context. This context will be stored as an object attribute called
+        `glContext`.
+        """
+        raise NotImplementedError()
+
+        
+    def _setGLContext(self):
+        """Must be provided by subclasses of :class:`SliceCanvas`. The default
+        implementation raises a :class:`NotImplementedError`.
+
+        Subclass implementations must set the current context.
+        """
+        raise NotImplementedError()
+
+        
+    def _refresh(self):
+        """Must be provided by subclasses of :class:`SliceCanvas`. The default
+        implementation raises a :class:`NotImplementedError`.
+
+        Subclass implementations must refresh the canvas.
+        """
+        raise NotImplementedError()
+
+        
+    def _postDraw(self):
+        """Must be provided by subclasses of :class:`SliceCanvas`. The default
+        implementation raises a :class:`NotImplementedError`.
+
+        Subclass implementations can do anything that must be done after the
+        canvas has been drawn to (e.g. swapping buffers for double buffering).
+        """
+        raise NotImplementedError()
 
     
     def canvasToWorld(self, xpos, ypos):
@@ -161,8 +212,6 @@ class SliceCanvas(props.HasProperties):
         which refers to an :class:`~fsl.fslview.displaycontext.ImageDisplay`
         instance defining how that image is to be displayed.
         
-        :arg parent:     :mod:`wx` parent object
-        
         :arg imageList:  An :class:`~fsl.data.image.ImageList` object.
         
         :arg zax:        Image axis perpendicular to the plane to be displayed
@@ -226,10 +275,13 @@ class SliceCanvas(props.HasProperties):
 
 
     def _initGL(self):
+        """We can't figure out what OpenGL version to use until a GL context
+        has been created. So this method is called on the first draw.
+
+        It initialises the :mod:`fsl.fslview.gl` package, and ensures that
+        OpenGL data has been created for each image in the image list.
         """
-        We can't figure out what OpenGL version to use
-        until the canvas is displayed on screen.
-        """
+        
         # Call the bootstrap function, which
         # will figure out which OpenGL version
         # to use, and do some module magic
@@ -246,9 +298,11 @@ class SliceCanvas(props.HasProperties):
  
 
     def draw(self, *a):
-        """Called on :attr:`wx.EVT_PAINT` events. Calls the OpenGL
-        version-dependent :func:`fsl.fslview.gl.slicecanvas_draw.drawScene`
-        function, which does the actual drawing.
+        """Draws the current scene to the canvas. 
+
+        Ths actual drawing is managed by the OpenGL version-dependent
+        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
+        the actual drawing.
         """
 
         if not self._glReady:
@@ -259,12 +313,11 @@ class SliceCanvas(props.HasProperties):
         self._setViewport() 
         fslgl.slicecanvas_draw.draw(self)
         if self.showCursor: self.drawCursor()
-        # self.SwapBuffers()
+        self._postDraw()
 
 
     def drawCursor(self):
-        """Draws a green cursor at the current X/Y position.
-        """
+        """Draws a green cursor at the current X/Y position."""
         
         # A vertical line at xpos, and a horizontal line at ypos
         xverts = np.zeros((2, 3))
@@ -538,11 +591,9 @@ class SliceCanvas(props.HasProperties):
                      zmax=None):
         """Sets up the GL canvas size, viewport, and projection.
 
-        This method is called by the OpenGL version-dependent
-        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function , so does
-        not need to be called manually. If any of the min/max parameters are
-        not provided, they are taken from the :attr:`displayBounds` (x/y), and
-        the image list :attr:`~fsl.data.image.ImageList.bounds` (z).
+        If any of the min/max parameters are not provided, they are
+        taken from the :attr:`displayBounds` (x/y), and the image
+        list :attr:`~fsl.data.image.ImageList.bounds` (z).
 
         :arg xmin: Minimum x (horizontal) location
         :arg xmax: Maximum x location
@@ -550,7 +601,6 @@ class SliceCanvas(props.HasProperties):
         :arg ymax: Maximum y location
         :arg zmin: Minimum z (depth) location
         :arg zmax: Maximum z location
-
         """
         
         if xmin is None: xmin = self.displayBounds.xlo
