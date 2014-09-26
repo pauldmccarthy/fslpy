@@ -39,6 +39,8 @@ regularly, too.
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
 ** Remove duplicate argument parsing code between tools/render.py and tools/fslview.py
+** Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
+** Refactor wxglslicecanvas/wxgllightboxcanvas - duplicate code... ?
 ** Make ColourBarPanel generic.
 ** Make ColourBarPanel superclass/mixin thingo, so we can use it in LightBoxPanel as well as OrthoPanel.
 ** 'Actions'? - Make 'Add File' and 'Add Std' menu items actions.
@@ -51,6 +53,7 @@ any ability to query layout.
 ** Orientation labels on slice canvas.
 ** 'Create mask image' option
 ** 'Mask' image type
+** 'Outline' image type
 ** DONE Make fsl.py support non-GUI tools.
 ** DONE Colour bar showing image value range
 ** DONE Make image list navigator widget listen to image name changes.
