@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 import wx
 import props
 
-import fsl.fslview.gl.slicecanvas as slicecanvas
-import fsl.fslview.viewpanel      as viewpanel
+import fsl.fslview.gl.wxglslicecanvas as slicecanvas
+import fsl.fslview.viewpanel          as viewpanel
 import colourbarpanel 
 
 class OrthoPanel(viewpanel.ViewPanel):

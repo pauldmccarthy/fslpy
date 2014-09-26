@@ -99,7 +99,8 @@ class SliceCanvas(props.HasProperties):
         """Must be provided by subclasses of :class:`SliceCanvas`. The default
         implementation raises a :class:`NotImplementedError`.
 
-        Subclass implementations must set the current context.
+        Subclass implementations must configure the GL context for drawing to
+        this canvas.
         """
         raise NotImplementedError()
 
