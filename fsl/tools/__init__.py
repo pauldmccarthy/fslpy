@@ -8,4 +8,5 @@
 import bet
 import feat
 import flirt
+import render
 import fslview

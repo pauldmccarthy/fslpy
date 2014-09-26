@@ -18,15 +18,16 @@ import sys
 import os.path as op
 import argparse
 
-import fsl.fslview.fslviewframe   as fslviewframe
 import fsl.fslview.displaycontext as displaycontext
-import fsl.fslview.views          as views
 import fsl.data.image             as fslimage
 
 import props
 
     
 def interface(parent, args, ctx):
+
+    import fsl.fslview.fslviewframe   as fslviewframe
+    import fsl.fslview.views          as views
 
     imageList, displayCtx = ctx
     
@@ -39,7 +40,7 @@ def interface(parent, args, ctx):
     return frame
 
 
-def parseArgs(argv, namespace):
+def parseArgs(argv, namespace, altMainParser=None, altExclude=None):
     """
     Parses the given command line arguments. Parameters:
     
@@ -107,12 +108,17 @@ def parseArgs(argv, namespace):
                 'name',
                 'volume']
 
+    if altMainParser is not None: mainParser = altMainParser
+    if altExclude    is     None: exclude    = 'lvhdwgor'
+    else:                         exclude    = altExclude
+ 
+
     # do not use any of the short argument symboles
     # used either by fsl.py, or the mainParser above.
     props.addParserArguments(displaycontext.ImageDisplay,
                              imgOpts,
                              cliProps=imgProps,
-                             exclude='lvhdwgor')
+                             exclude=exclude)
 
     # Parse the application options
     namespace, argv = mainParser.parse_known_args(argv, namespace)
@@ -125,6 +131,7 @@ def parseArgs(argv, namespace):
         # Did I mention that I hate argparse?  Why
         # can't we customise the help text?
         imgHelp = imgParser.format_help()
+        print 
         print imgHelp[imgHelp.index('Image display options'):]
         sys.exit(0)
 
@@ -135,7 +142,8 @@ def parseArgs(argv, namespace):
     # NOTE This approach means that we cannot
     # support any image display options which
     # accept file names as arguments.
-    imageIdxs = [i for i in range(len(argv)) if op.isfile(argv[i])]
+    imageIdxs = [i for i in range(len(argv))
+                 if op.isfile(op.expanduser(argv[i]))]
     imageIdxs.append(len(argv))
 
     # Then parse each block of display options one by one
@@ -143,6 +151,7 @@ def parseArgs(argv, namespace):
     for i in range(len(imageIdxs) - 1):
 
         imgArgv      = argv[imageIdxs[i]:imageIdxs[i + 1]]
+        imgArgv[0]   = op.expanduser(imgArgv[0])
         imgNamespace = imgParser.parse_args(imgArgv)
 
         # We just add a list of argparse.Namespace
@@ -170,7 +179,8 @@ def handleArgs(args):
 
     # per-image display arguments
     for i in range(len(imageList)):
-        props.applyArguments(image.getAttribute('display'), args.images[i])
+        props.applyArguments(imageList[i].getAttribute('display'),
+                             args.images[i])
 
     # voxel/world location
     if len(imageList) > 0:

@@ -12,6 +12,9 @@ rendering.
 import logging
 log = logging.getLogger(__name__)
 
+import numpy            as np
+import matplotlib.image as mplimg
+
 import OpenGL
 
 # Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
@@ -55,6 +58,22 @@ class OSMesaSliceCanvas(sc.SliceCanvas):
         # We're doing off-screen rendering, so we
         # can initialise the GL data immediately
         self._initGL()
+
+
+    def saveToFile(self, filename):
+        """Saves the contents of this canvas as an image, to the specified
+        file.
+        """
+        ia  = gl.glReadPixels(
+            0, 0,
+            self._width, self._height,
+            gl.GL_RGBA,
+            gl.GL_UNSIGNED_BYTE)
+        
+        img = np.fromstring(ia, dtype=np.uint8)
+        img = img.reshape((self._height, self._width, 4))
+        img = np.flipud(img)
+        mplimg.imsave(filename, img) 
 
 
     def _getSize(self):

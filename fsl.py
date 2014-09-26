@@ -28,8 +28,7 @@ try:
 except:
     log.warn('Could not import wx - GUI functionality is not available')
 
-import fsl.tools         as tools
-import fsl.utils.webpage as webpage
+import fsl.tools as tools
 
 
 def loadAllFSLTools():
@@ -152,7 +151,7 @@ def parseArgs(argv, allTools):
             
         # otherwise, get help from the tool
         else:
-            fslTool.parseArgs([namespace.tool, '-h'], namespace)
+            fslTool.parseArgs([argv[0], '-h'], namespace)
         sys.exit(0)
 
     # Unknown tool name supplied
@@ -192,6 +191,8 @@ def fslDirWarning(frame, toolName, fslEnvActive):
 def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     """
     """
+
+    import fsl.utils.webpage as webpage
 
     frame = fslTool.interface(None, args, ctx)
 

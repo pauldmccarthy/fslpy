@@ -7,14 +7,10 @@
 
 from collections import OrderedDict
 
-import wx
-
 import props
 
 import fsl.data.imagefile           as imagefile
 import fsl.data.image               as fslimage
-import fsl.utils.runwindow          as runwindow
-import fsl.fslview.views.orthopanel as orthopanel
 import fsl.fslview.displaycontext   as displaycontext
 
 runChoices = OrderedDict((
@@ -187,6 +183,8 @@ def selectHeadCentre(opts, button):
     Pops up a little dialog window allowing the user to interactively
     select the head centre location.
     """
+    import                                 wx
+    import fsl.fslview.views.orthopanel as orthopanel
 
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
@@ -268,6 +266,8 @@ betView = props.NotebookGroup((
 
 def interface(parent, args, opts):
     
+    import wx
+    
     frame    = wx.Frame(parent)
     betPanel = props.buildGUI(
         frame, opts, betView, optLabels, optTooltips)
@@ -280,6 +280,9 @@ def interface(parent, args, opts):
 
 
 def runBet(parent, opts):
+
+    import fsl.utils.runwindow          as runwindow
+    import fsl.fslview.views.orthopanel as orthopanel 
 
     def onFinish(window, exitCode):
 
