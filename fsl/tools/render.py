@@ -14,7 +14,8 @@ import fslview
 
 def run(args, context):
 
-    import fsl.fslview.gl.osmesaslicecanvas as slicecanvas
+    import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
+    import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
 
 
     imageList, displayCtx = context
@@ -23,12 +24,21 @@ def run(args, context):
 
     width, height = args.size
 
-    canvas = slicecanvas.OSMesaSliceCanvas(
-        imageList,
-        zax=axis,
-        glVersion=(1, 4),
-        width=width,
-        height=height)
+    if args.lightbox:
+        canvas = lightboxcanvas.OSMesaLightBoxCanvas(
+            imageList,
+            zax=axis,
+            glVersion=(1, 4),
+            width=width,
+            height=height) 
+    else:
+
+        canvas = slicecanvas.OSMesaSliceCanvas(
+            imageList,
+            zax=axis,
+            glVersion=(1, 4),
+            width=width,
+            height=height)
 
     if   axis == 0: canvas.pos.xyz = displayCtx.location.yzx
     elif axis == 1: canvas.pos.xyz = displayCtx.location.xzy
