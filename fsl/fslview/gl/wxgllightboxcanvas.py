@@ -1,27 +1,18 @@
 #!/usr/bin/env python
 #
-# wxglslicecanvas.py - A SliceCanvas which is rendered using a
-# wx.glcanvas.GLCanvas panel.
+# wxgllightboxcanvas.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""The :class:`WXGLSliceCanvas` class both is a
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` and a
-:class:`wx.glcanvas.GLCanvas` panel.
-
-It is the main class used for on-screen orthographic rendering of 3D image
-data (although most of the functionality is provided by the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class).
-"""
 
 import logging
 log = logging.getLogger(__name__)
 
 import wx
-import wx.glcanvas as wxgl
-import slicecanvas as slicecanvas
+import wx.glcanvas    as wxgl
+import lightboxcanvas as lightboxcanvas
 
-class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
+class WXGLLightBoxCanvas(wxgl.GLCanvas, lightboxcanvas.LightBoxCanvas):
     """A :class:`wx.glcanvas.GLCanvas` and a
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`, for on-screen
     interactive 2D slice rendering from a collection of 3D images.
@@ -39,11 +30,11 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         """
 
         wxgl.GLCanvas .__init__(self, parent)
-        slicecanvas.SliceCanvas.__init__(self,
-                                         imageList,
-                                         zax,
-                                         glContext,
-                                         glVersion) 
+        lightboxcanvas.LightBoxCanvas.__init__(self,
+                                               imageList,
+                                               zax,
+                                               glContext,
+                                               glVersion) 
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
@@ -85,7 +76,7 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         """Calls the :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._initGL`
         method, but ensures that it is done asynchronously.
         """
-        wx.CallAfter(slicecanvas.SliceCanvas._initGL, self)
+        wx.CallAfter(lightboxcanvas.LightBoxCanvas._initGL, self)
 
         
     def _getSize(self):
@@ -113,3 +104,5 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         buffers. 
         """
         self.SwapBuffers()
+
+LightBoxCanvas = WXGLLightBoxCanvas

@@ -17,8 +17,8 @@ import wx
 
 import props
 
-import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
-import fsl.fslview.viewpanel         as viewpanel
+import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
+import fsl.fslview.viewpanel             as viewpanel
 
 class LightBoxPanel(viewpanel.ViewPanel):
     """Convenience Panel which contains a 
@@ -34,6 +34,14 @@ class LightBoxPanel(viewpanel.ViewPanel):
     
     ncols = lightboxcanvas.LightBoxCanvas.ncols
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`."""
+
+    
+    nrows = lightboxcanvas.LightBoxCanvas.nrows
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.nrows`."""
+
+    
+    topRow = lightboxcanvas.LightBoxCanvas.topRow
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.topRow`.""" 
 
     
     zrange = lightboxcanvas.LightBoxCanvas.zrange
@@ -63,6 +71,8 @@ class LightBoxPanel(viewpanel.ViewPanel):
         'posSync'      : 'Synchronise position',
         'sliceSpacing' : 'Slice spacing',
         'ncols'        : 'Number of columns',
+        'nrows'        : 'Number of rows',
+        'topRow'       : 'Top row',
         'showCursor'   : 'Show cursor',
         'zax'          : 'Z axis'}
     """Property labels to be used for GUI displays."""
@@ -73,6 +83,8 @@ class LightBoxPanel(viewpanel.ViewPanel):
                           'zrange',
                           'sliceSpacing',
                           'ncols',
+                          'nrows',
+                          'topRow',
                           'zax'))
     """Layout to be used for GUI displays."""
 
@@ -102,14 +114,15 @@ class LightBoxPanel(viewpanel.ViewPanel):
         self._canvas = lightboxcanvas.LightBoxCanvas(self,
                                                      imageList,
                                                      glContext=glContext,
-                                                     glVersion=glVersion,
-                                                     scrollbar=self._scrollbar)
+                                                     glVersion=glVersion)
 
         self._glContext = self._canvas.glContext
         self._glVersion = glVersion
 
         self.bindProps('sliceSpacing', self._canvas)
         self.bindProps('ncols',        self._canvas)
+        self.bindProps('nrows',        self._canvas)
+        self.bindProps('topRow',       self._canvas)
         self.bindProps('zrange',       self._canvas)
         self.bindProps('showCursor',   self._canvas)
         self.bindProps('zax',          self._canvas)
@@ -118,11 +131,9 @@ class LightBoxPanel(viewpanel.ViewPanel):
         self.SetSizer(self._sizer)
 
         self._sizer.Add(self._canvas,    flag=wx.EXPAND, proportion=1)
-        self._sizer.Add(self._scrollbar, flag=wx.EXPAND)
 
         self._canvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
         self._canvas.Bind(wx.EVT_MOTION,     self._onMouseEvent) 
-        self._canvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseScroll)
 
         def move(*a):
             if not self.posSync: return
@@ -172,25 +183,3 @@ class LightBoxPanel(viewpanel.ViewPanel):
         
         if self.posSync:
             self._displayCtx.location.xyz = clickPos
-        
-            
-    def _onMouseScroll(self, ev):
-
-        wheelDir = ev.GetWheelRotation()
-
-        if   wheelDir > 0: wheelDir = -1
-        elif wheelDir < 0: wheelDir =  1
-
-        curPos       = self._scrollbar.GetThumbPosition()
-        newPos       = curPos + wheelDir
-        sbRange      = self._scrollbar.GetRange()
-        rowsOnScreen = self._scrollbar.GetPageSize()
-
-        if self._scrollbar.GetPageSize() >= self._scrollbar.GetRange():
-            return
-        if newPos < 0 or newPos + rowsOnScreen > sbRange:
-            return
-
-        self._scrollbar.SetThumbPosition(curPos + wheelDir)
-        self._canvas._updateDisplayBounds()
-        self._canvas.Refresh()

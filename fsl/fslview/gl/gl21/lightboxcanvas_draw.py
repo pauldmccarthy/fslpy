@@ -32,7 +32,7 @@ def drawCursor(canvas):
     ylen    = canvas.imageList.bounds.getLen(canvas.yax)
     xmin    = canvas.imageList.bounds.getLo( canvas.xax)
     ymin    = canvas.imageList.bounds.getLo( canvas.yax)
-    row     = canvas._nrows - int(np.floor(sliceno / canvas.ncols)) - 1
+    row     = canvas._totalRows - int(np.floor(sliceno / canvas.ncols)) - 1
     col     = int(np.floor(sliceno % canvas.ncols)) 
 
     xpos, ypos = canvas.worldToCanvas(*canvas.pos.xyz)
@@ -62,24 +62,11 @@ def drawCursor(canvas):
 def draw(canvas):
     """Draws the currently visible slices to the canvas."""
 
-    # No scrollbar -> draw all the slices 
-    if canvas._scrollbar is None:
-        startSlice = 0
-        endSlice   = canvas._nslices
+    startSlice   = canvas.ncols * canvas.topRow
+    endSlice     = startSlice + canvas.nrows * canvas.ncols
 
-    # Scrollbar -> draw a selection of slices
-    else:
-        rowsOnScreen = canvas._scrollbar.GetPageSize()
-        startRow     = canvas._scrollbar.GetThumbPosition()
-        
-        startSlice   = canvas.ncols * startRow
-        endSlice     = startSlice + rowsOnScreen * canvas.ncols
-
-        if endSlice > canvas._nslices:
-            endSlice = canvas._nslices
-
-    canvas.glContext.SetCurrent(canvas)
-    canvas._setViewport()
+    if endSlice > canvas._nslices:
+        endSlice = canvas._nslices    
 
     # clear the canvas
     gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -110,5 +97,3 @@ def draw(canvas):
             
     if canvas.showCursor:
         drawCursor(canvas)
-
-    canvas.SwapBuffers()
