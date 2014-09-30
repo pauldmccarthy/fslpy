@@ -119,10 +119,13 @@ This will probably dictate how you go about implementing keyboard/mouse control
 ** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** DONE have multiple views open - look at wxAUI.
 * Other ideas
-** (Saad). Select regions by colour, for editing purposes
+** (Saad).   Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
-** (Mark). That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
-** (Mark). The ability to have separate display ranges for different volumes in one 4D image (maybe only when automatically calculated?) which would be especially useful for diffusion series where the b=0 images are way brighter than the others when using the same display range.
-** (Ludo). Automatic cluster size thresholding (e.g. Z threshold/cluster size)
-** (Paul). Slice-wise (instead of image-wise) glimagedata implementation for very large images.
-
+** (Mark).   That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
+** (Mark).   The ability to have separate display ranges for different volumes in one 4D image (maybe only when automatically calculated?) which would be especially useful for diffusion series where the b=0 images are way brighter than the others when using the same display range.
+** (Ludo).   Automatic cluster size thresholding (e.g. Z threshold/cluster size)
+** (Paul).   Slice-wise (instead of image-wise) glimagedata implementation for very large images.
+** (Paul).   Statistics/info panel (e.g. mean/med/std/volume size/etc).
+** (Manu).   Statistics (e.g. histogram) on hand-selected ROIs.
+** (Ged).    Multiple colour bars
+** (Ged).    Colouring of unions/intersections for combinations of mask images
