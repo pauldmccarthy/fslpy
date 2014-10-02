@@ -69,6 +69,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
          ('zrange',       'Slice range')])
     """Labels for the properties which are intended to be user editable."""
 
+
+    _tooltips = dict(
+        slicecanvas.SliceCanvas._tooltips.items() +
+        [('sliceSpacing', 'Distance (mm) between consecutive slices'),
+         ('ncols',        'Number of slices to display on one row'),
+         ('nrows',        'Number of rows to display on the canvas'),
+         ('topRow',       'Index number of top row (from '
+                          '0 to nrows-1) to display'),
+         ('zrange',       'Range (mm) along Z axis of slices to display')])
+    """Tooltips to be used as help text."""
+
+    _propHelp = _tooltips
+    
     
     def worldToCanvas(self, xpos, ypos, zpos):
         """Given an x/y/z location in the image list world (with xpos

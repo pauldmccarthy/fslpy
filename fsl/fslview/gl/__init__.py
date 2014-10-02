@@ -26,6 +26,17 @@ other :mod:`wx` widget.
 """
 
 
+import os
+
+# Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
+# OpenGL.contextdata.setValue method throws 'unhashable type' TypeErrors
+# unless we set these constants. I don't know why.
+if os.environ.get('PYOPENGL_PLATFORM', None) == 'osmesa':
+    import OpenGL
+    OpenGL.ERROR_ON_COPY  = True 
+    OpenGL.STORE_POINTERS = False 
+
+
 def bootstrap(glVersion=None):
     """Imports modules appropriate to the specified OpenGL version.
 

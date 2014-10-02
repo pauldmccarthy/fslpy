@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 import argparse
 
 import fslview
+import props
 
 def run(args, context):
 
-    env = os.environ.copy()
-
     # If this process is not configured for off-screen
-    # rendering using osmesa, start a new process 
+    # rendering using osmesa, start a new process
+    env = os.environ.copy()
     if env.get('PYOPENGL_PLATFORM', None) != 'osmesa':
 
         # Tell PyOpenGL that it should use
@@ -53,7 +53,9 @@ def run(args, context):
             zax=axis,
             glVersion=(1, 4),
             width=width,
-            height=height) 
+            height=height)
+
+        props.applyArguments(canvas, args)
     else:
 
         canvas = slicecanvas.OSMesaSliceCanvas(
@@ -62,6 +64,8 @@ def run(args, context):
             glVersion=(1, 4),
             width=width,
             height=height)
+
+    canvas.showCursor = args.showCursor
 
     if   axis == 0: canvas.pos.xyz = displayCtx.location.yzx
     elif axis == 1: canvas.pos.xyz = displayCtx.location.xzy
@@ -113,12 +117,26 @@ def parseArgs(argv, namespace):
                             help='Size in pixels (width, height)',
                             default=(800, 600))
 
-    # TODO
-    # lightbox display options
-    # ortho (slice canvas) display options
-    # Show colour bar
+    mainParser.add_argument('-z', '--zoom', type=float,
+                            help='Zoom (ortho view only)')
 
-    exclude = 'vwfhorlas'
+    lbOpts    = ['sliceSpacing',
+                 'ncols',
+                 'nrows',
+                 'topRow',
+                 'zrange',
+                 'showCursor']
+    shortArgs = ['p', 'n', 'x', 't', 'g', 'c']
+    shortArgs = dict(zip(lbOpts, shortArgs))
+
+    exclude = 'vwfhorlaszpnxtgc'
+
+    import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
+    props.addParserArguments(lightboxcanvas.LightBoxCanvas,
+                             mainParser,
+                             cliProps=lbOpts,
+                             shortArgs=shortArgs,
+                             exclude=exclude)
 
     return fslview.parseArgs(argv, namespace, mainParser, exclude)
  

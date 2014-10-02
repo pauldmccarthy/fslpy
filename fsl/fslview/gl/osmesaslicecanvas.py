@@ -17,12 +17,6 @@ import matplotlib.image as mplimg
 
 import OpenGL
 
-# Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
-# OpenGL.contextdata.setValue method throws 'unhashable type' TypeErrors
-# unless we set these constants. I don't know why.
-OpenGL.ERROR_ON_COPY  = True 
-OpenGL.STORE_POINTERS = False 
-
 import OpenGL.GL              as gl
 import OpenGL.arrays          as glarrays
 import OpenGL.raw.osmesa.mesa as osmesa

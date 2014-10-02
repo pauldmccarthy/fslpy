@@ -82,6 +82,17 @@ class SliceCanvas(props.HasProperties):
         'zax'        : 'Z axis'}
     """Labels for the properties which are intended to be user editable."""
 
+    
+    _tooltips = {
+        'zoom'       : 'Zoom level (min: 1, max: 10)',
+        'showCursor' : 'Show/hide a green cursor indicating '
+                       'the currently displayed location',
+        'zax'        : 'Image axis which is used as the \'depth\' axis'}
+    """Property descriptions to be used as help text."""
+
+    
+    _propHelp = _tooltips
+
 
     def _getSize(self):
         """Must be provided by subclasses of :class:`SliceCanvas`. The default
