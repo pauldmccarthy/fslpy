@@ -252,11 +252,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # figure out where we are in the canvas world
         canvasX, canvasY = self.worldToCanvas(*self.pos.xyz)
 
+        # See the _updateDisplayBounds method for an
+        # explanation of the _realBounds attribute
+        xlo, xhi, ylo, yhi = self._realBounds
+
         # already in bounds
-        if canvasX >= self.displayBounds.xlo and \
-           canvasX <= self.displayBounds.xhi and \
-           canvasY >= self.displayBounds.ylo and \
-           canvasY <= self.displayBounds.yhi:
+        if canvasX >= xlo and \
+           canvasX <= xhi and \
+           canvasY >= ylo and \
+           canvasY <= yhi:
             return
 
         # figure out what row we're on
@@ -358,6 +362,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         ymin = ymin + ylen * off
         xmax = xmin + xlen * self.ncols
         ymax = ymin + ylen * self.nrows
+
+        # The final display bounds calculated by
+        # SliceCanvas._updateDisplayBounds is not
+        # necessarily the same as the actual bounds,
+        # as they are  adjusted to preserve  the
+        # image aspect ratio. But the real bounds
+        # are of use in the _zPosChangedmethod, so
+        # we save them here as an attribute
+        self._realBounds = (xmin, xmax, ymin, ymax)
 
         slicecanvas.SliceCanvas._updateDisplayBounds(
             self, xmin, xmax, ymin, ymax)
