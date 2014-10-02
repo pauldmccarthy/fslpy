@@ -4,7 +4,6 @@ A mixture of things to do, and things which might be nice to do.  Order is
 arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
 regularly, too.
 
-
 * Bugs to fix
 ** Exceptions thrown on empty image name
 ** Slice changes on ludo's bad image, when using pixdim transformation.
@@ -54,6 +53,7 @@ any ability to query layout.
 ** 'Create mask image' option
 ** 'Mask' image type
 ** 'Outline' image type
+** Make display range limit-edit-widget less crappy.
 ** IN PROGRESS 'Actions'? - Make 'Add File' and 'Add Std' menu items actions.
 Need to be able to specify the order that actions appear in the menu - perhaps 
 just hard code in fsl/fslview/actions/__init__.py
