@@ -278,27 +278,29 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
 
-        # Changing the zrange property will, in most cases, trigger
-        # a call to _slicePropsChanged. But for images which have
-        # the same range across more than one dimension, the call
-        # might not happen. So we do a check and, if the dimension
-        # ranges are the same, manually call _slicePropsChanged.
-        # Bringing out the ugly side of event driven programming.
-        newRange = self.imageList.bounds.getRange(self.zax)
-        if self.zrange.x == newRange: self._slicePropsChanged()
-        else:                         self.zrange.x = newRange
 
-        # Update slice spacing and distance between zrange min/max
+        newZRange = self.imageList.bounds.getRange(self.zax)
+        newZGap   = self.sliceSpacing
+
         # Pick a sensible default for the
         # slice spacing - the smallest pixdim
-        # across all images in the list 
+        # across all images in the list
         if len(self.imageList) > 0:
-            zgap = min([i.pixdim[self.zax] for i in self.imageList])
-            self.sliceSpacing = zgap
-            self.setConstraint('zrange', 'minDistance', zgap)
+            newZGap = min([i.pixdim[self.zax] for i in self.imageList])
 
-            # make sure that the cursor location is visible
-            self._zPosChanged()
+        # Changing the zrange/sliceSpacing properties will, in most cases,
+        # trigger a call to _slicePropsChanged. But for images which have the
+        # same range across more than one dimension, the call might not
+        # happen. So we do a check and, if the dimension ranges are the same,
+        # manually call _slicePropsChanged.  Bringing out the ugly side of
+        # event driven programming.
+        
+        if self.zrange.x == newZRange and self.sliceSpacing == newZGap:
+            self._slicePropsChanged()
+        else:
+            self.zrange.x     = newZRange
+            self.sliceSpacing = newZGap
+            self.setConstraint('zrange', 'minDistance', newZGap)
             
 
     def _imageListChanged(self, *a):
