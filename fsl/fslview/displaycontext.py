@@ -205,6 +205,34 @@ class ImageDisplay(props.HasProperties):
     _propHelp = _tooltips
 
 
+    _cliProps = ['alpha',
+                 'displayRange',
+                 'clipLow',
+                 'clipHigh',
+                 'worldResolution',
+                 'voxelResolution',
+                 'transform',
+                 'interpolation',
+                 'imageType',
+                 'cmap',
+                 'name',
+                 'volume']
+
+    _shortArgs = {
+        'alpha'           : 'alpha',
+        'displayRange'    : 'dr',
+        'clipLow'         : 'cl',
+        'clipHigh'        : 'ch',
+        'interpolation'   : 'interp',
+        'worldResolution' : 'wr',
+        'voxelResolution' : 'vr',
+        'transform'       : 'trans',
+        'imageType'       : 'it',
+        'cmap'            : 'cmap',
+        'name'            : 'name',
+        'volume'          : 'vol'}
+
+
     def __init__(self, image):
         """Create an :class:`ImageDisplay` for the specified image.
 

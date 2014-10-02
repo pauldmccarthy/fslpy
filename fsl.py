@@ -119,10 +119,10 @@ def parseArgs(argv, allTools):
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
-        '-v', '--verbose', action='count',
+        '-V', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
     parser.add_argument(
-        '-w', '--wxinspect', action='store_true',
+        '-W', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
     parser.add_argument('tool', help='FSL program to run')
 

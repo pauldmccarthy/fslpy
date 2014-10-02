@@ -40,7 +40,7 @@ def interface(parent, args, ctx):
     return frame
 
 
-def parseArgs(argv, namespace, altMainParser=None, altExclude=None):
+def parseArgs(argv, namespace, altMainParser=None):
     """
     Parses the given command line arguments. Parameters:
     
@@ -67,18 +67,18 @@ def parseArgs(argv, namespace, altMainParser=None, altExclude=None):
 
     # Application options
     mainParser.add_argument('-h', '--help',      action='store_true')
-    mainParser.add_argument('-d', '--default',   action='store_true',
+    mainParser.add_argument('-def', '--default',   action='store_true',
                             help='Default layout')
     mainParser.add_argument('-l', '--lightbox',  action='store_true',
                             help='Lightbox view')
-    mainParser.add_argument('-g', '--glversion',
+    mainParser.add_argument('-gl', '--glversion',
                             metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
                             help='Desired (major, minor) OpenGL version')
-    mainParser.add_argument('-o', '--voxelloc', metavar=('X', 'Y', 'Z'),
+    mainParser.add_argument('-vl', '--voxelloc', metavar=('X', 'Y', 'Z'),
                             type=int, nargs=3,
                             help='Location to show (voxel coordinates of '
                                  'first image)')
-    mainParser.add_argument('-r', '--worldloc', metavar=('X', 'Y', 'Z'),
+    mainParser.add_argument('-wl', '--worldloc', metavar=('X', 'Y', 'Z'),
                             type=float, nargs=3,
                             help='Location to show (world coordinates, '
                                  'takes precedence over --voxelloc)') 
@@ -94,31 +94,12 @@ def parseArgs(argv, namespace, altMainParser=None, altExclude=None):
     imgOpts = imgParser.add_argument_group('Image display options')
     imgOpts.add_argument('image', help='image file')
 
-    # We don't expose all of the ImageDisplay properties
-    imgProps = ['alpha',
-                'displayRange',
-                'clipLow',
-                'clipHigh',
-                'worldResolution',
-                'voxelResolution',
-                'transform',
-                'interpolation',
-                'imageType',
-                'cmap',
-                'name',
-                'volume']
 
     if altMainParser is not None: mainParser = altMainParser
-    if altExclude    is     None: exclude    = 'lvhdwgor'
-    else:                         exclude    = altExclude
- 
 
     # do not use any of the short argument symboles
     # used either by fsl.py, or the mainParser above.
-    props.addParserArguments(displaycontext.ImageDisplay,
-                             imgOpts,
-                             cliProps=imgProps,
-                             exclude=exclude)
+    props.addParserArguments(displaycontext.ImageDisplay, imgOpts)
 
     # Parse the application options
     namespace, argv = mainParser.parse_known_args(argv, namespace)
