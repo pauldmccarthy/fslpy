@@ -66,15 +66,8 @@ class LightBoxPanel(viewpanel.ViewPanel):
     """ 
 
     
-    _labels = {
-        'zrange'       : 'Slice range',
-        'posSync'      : 'Synchronise position',
-        'sliceSpacing' : 'Slice spacing',
-        'ncols'        : 'Number of columns',
-        'nrows'        : 'Number of rows',
-        'topRow'       : 'Top row',
-        'showCursor'   : 'Show cursor',
-        'zax'          : 'Z axis'}
+    _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
+                   [('posSync', 'Synchronise position')])
     """Property labels to be used for GUI displays."""
 
     

@@ -60,6 +60,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
     
+    _labels = dict(
+        slicecanvas.SliceCanvas._labels.items() +
+        [('sliceSpacing', 'Slice spacing'),
+         ('ncols',        'Number of columns'),
+         ('nrows',        'Number of rows'),
+         ('topRow',       'Top row'),
+         ('zrange',       'Slice range')])
+    """Labels for the properties which are intended to be user editable."""
+
+    
     def worldToCanvas(self, xpos, ypos, zpos):
         """Given an x/y/z location in the image list world (with xpos
         corresponding to the horizontal screen axis, ypos to the vertical

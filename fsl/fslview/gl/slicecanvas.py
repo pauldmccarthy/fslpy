@@ -76,6 +76,13 @@ class SliceCanvas(props.HasProperties):
     """The image axis to be used as the screen 'depth' axis."""
 
 
+    _labels = {
+        'zoom'       : 'Zoom level',
+        'showCursor' : 'Show cursor',
+        'zax'        : 'Z axis'}
+    """Labels for the properties which are intended to be user editable."""
+
+
     def _getSize(self):
         """Must be provided by subclasses of :class:`SliceCanvas`. The default
         implementation raises a :class:`NotImplementedError`.
