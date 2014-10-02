@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-# render.py -
+# render.py - Generate screenshots of images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+
+import os
+import sys
+import subprocess
 
 import logging
 log = logging.getLogger(__name__)
@@ -14,9 +18,28 @@ import fslview
 
 def run(args, context):
 
+    env = os.environ.copy()
+
+    # If this process is not configured for off-screen
+    # rendering using osmesa, start a new process 
+    if env.get('PYOPENGL_PLATFORM', None) != 'osmesa':
+
+        # Tell PyOpenGL that it should use
+        # osmesa for off-screen rendering
+        env['PYOPENGL_PLATFORM'] = 'osmesa'
+
+        # I need to figure out a better method
+        # of linking to the mesa libraries
+        env['DYLD_LIBRARY_PATH'] = '/Users/paulmc/mesa/build/Mesa-6.5.3/lib'
+
+        log.warning('Restarting render.py with '
+                    'off-screen rendering configured...')
+
+        subprocess.call(sys.argv, env=env)
+        sys.exit(0)
+
     import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
     import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
-
 
     imageList, displayCtx = context
 
