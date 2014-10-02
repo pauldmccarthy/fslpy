@@ -376,11 +376,9 @@ class FSLViewFrame(wx.Frame):
             menuItem = fileMenu.Append(wx.ID_ANY,
                                          strings.actionTitles[action])
             actionObj = action(menuItem, self._imageList, self._displayCtx)
-            # TODO pass active view panel
+            
             self.Bind(wx.EVT_MENU,
-                      lambda ev, ao=actionObj: ao.doAction(
-                          self._centrePane.GetPage(
-                              self._centrePane.GetSelection())),
+                      lambda ev, ao=actionObj: ao.doAction(),
                       menuItem)
 
         for viewPanel in viewPanels:

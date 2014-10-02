@@ -13,60 +13,39 @@ import wx
 
 import fsl.fslview.action as action
 
-def _saveToFile(bitmap, filename):
-    img = bitmap.ConvertToImage()
-    img.SaveFile(filename, wx.BITMAP_TYPE_PNG)
-
-def _copyToClipboard(bitmap):
-    bmpObj = wx.BitmapDataObject(bitmap)
-
-    with wx.Clipboard.Get() as cb:
-        cb.SetData(bmpObj)
-        cb.Flush()
-
-def screengrab(wxObj, filename=None):
-    """
-    """
-    screenDC         = wx.ScreenDC()
-    screenX, screenY = screenDC.Size
-    screenbmp        = wx.EmptyBitmap(screenX, screenY)
-    memDC            = wx.MemoryDC(screenbmp)
-
-    # Create a bitmap of the entire screen
-    memDC.Blit(0, 0, screenX, screenY, screenDC, 0, 0)
-    memDC.SelectObject(wx.NullBitmap)
-
-    # extract the relevant portion from that bitmap
-    bbox       = wxObj.GetRect()
-    offx, offy = wxObj.GetParent().ClientToScreen(wx.Point(bbox.x, bbox.y))
-
-    bmp = screenbmp.GetSubBitmap(wx.Rect(offx, offy, bbox.width, bbox.height))
-
-    if filename is None: _copyToClipboard(bmp)
-    else:                _saveToFile(     bmp, filename)
-
+import props
 
 
 class ScreenGrabAction(action.Action):
 
-    def doAction(self, activeViewPanel):
+    def doAction(self, *args):
 
-        if activeViewPanel is None:
-            return
+        # app = wx.GetApp()
 
-        app = wx.GetApp()
+        # if app is None:
+        #     raise RuntimeError('A wx.App has not been created')
 
-        if app is None:
-            raise RuntimeError('A wx.App has not been created')
+        # dlg = wx.FileDialog(app.GetTopWindow(),
+        #                     message='Save screenshot',
+        #                     style=wx.FD_SAVE)
 
-        dlg = wx.FileDialog(app.GetTopWindow(),
-                            message='Save screenshot',
-                            style=wx.FD_SAVE)
+        # if dlg.ShowModal() != wx.ID_OK: return
 
-        if dlg.ShowModal() != wx.ID_OK: return
+        # filename = dlg.GetPath()
 
-        filename = dlg.GetPath()
+        # dlg.Destroy()
+        # wx.Yield()
 
-        dlg.Destroy()
-        wx.Yield()
-        wx.CallAfter(lambda: screengrab(activeViewPanel, filename))
+        # TODO In-memory-only images will not be
+        # rendered - will need to save them to a temp file
+        for image in self._imageList:
+
+            fname = image.nibImage.get_filename()
+
+            # No support for in-memory images just yet
+            if fname is None:
+                continue
+
+            display = image.getAttribute('display')
+            
+            print fname, props.generateArguments(display)
