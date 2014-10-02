@@ -58,6 +58,13 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
             self._name,
             self._selectedImageChanged)
 
+        def onDestroy(ev):
+            self._imageList .removeListener('images',        self._name)
+            self._displayCtx.removeListener('selectedImage', self._name)
+            ev.Skip()
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
+
         # trigger initial display panel creation
         self._imageListChanged()
 
