@@ -16,6 +16,8 @@ of the subclasses:
     
   - :class:`~fsl.fslview.gl.wxglslicecanvas.WXGLSliceCanvas` for interactive
     rendering on a :class:`wx.glcanvas.GLCanvas` canvas.
+
+See also the :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`.
 """
 
 import logging

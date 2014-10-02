@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
-# lightboxcanvas.py - A wx.GLCanvas canvas which displays multiple slices
-# along a single axis from a collection of 3D images.
+# lightboxcanvas.py - A SliceCanvas which displays multiple slices along a
+# single axis from a collection of 3D images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A :class:`SliceCanvas` which displays multiple slices along a single axis
-from a collection of 3D images.
+"""A :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` which displays multiple
+slices along a single axis from a collection of 3D images.
 """
 
 import logging
@@ -20,11 +20,11 @@ import fsl.fslview.gl as fslgl
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
-    """An OpenGL canvas which displays multiple slices from a collection of 3D
-    images (see :class:`fsl.data.image.ImageList`). The slices are laid out
-    on the same canvas along rows and columns, with the slice at the minimum Z
-    position translated to the top left of the canvas, and the slice with the
-    maximum Z value translated to the bottom right.
+    """Represents an OpenGL canvas which displays multiple slices from a
+    collection of 3D images (see :class:`fsl.data.image.ImageList`). The
+    slices are laid out on the same canvas along rows and columns, with the
+    slice at the minimum Z position translated to the top left of the canvas,
+    and the slice with the maximum Z value translated to the bottom right.
     """
 
     
@@ -48,7 +48,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     
     topRow = props.Int(clamped=True, minval=0, maxval=20, default=0)
     """This property controls the (0-indexed) row
-    to be displayed at the top of the canvas.
+    to be displayed at the top of the canvas, thus
+    providing the ability to scroll through the
+    slices.
     """
 
     
@@ -161,21 +163,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # default to showing the entire slice range
         self.zrange.x = imageList.bounds.getRange(self.zax)
 
-        # Called when any of the slice properties
-        # change. Regenerates slice locations and
-        # display bounds, and redraws
-        def sliceRangeChanged(*a):
-            self._slicePropsChanged()
-            self._updateDisplayBounds()
-            self._genSliceLocations()
-            self._zPosChanged()
-            self._refresh()
-        sliceRangeChanged()
+        self._slicePropsChanged()
 
-        self.addListener('sliceSpacing',  self.name, sliceRangeChanged)
-        self.addListener('ncols',         self.name, sliceRangeChanged)
-        self.addListener('nrows',         self.name, sliceRangeChanged)
-        self.addListener('zrange',        self.name, sliceRangeChanged)
+        self.addListener('sliceSpacing',  self.name, self._slicePropsChanged)
+        self.addListener('ncols',         self.name, self._slicePropsChanged)
+        self.addListener('nrows',         self.name, self._slicePropsChanged)
+        self.addListener('zrange',        self.name, self._slicePropsChanged)
 
         # Called when the top row changes -
         # adjusts display range and refreshes
@@ -213,10 +206,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
 
     def _slicePropsChanged(self, *a):
-        """Gets called whenever any of the properties which define the number
-        and layout of the lightbox slices, change.
+        """Called when any of the slice properties change. Regenerates slice
+        locations and display bounds, and redraws
+        """
+        
+        self._calcNumSlices()
+        self._updateDisplayBounds()
+        self._genSliceLocations()
+        self._zPosChanged()
+        self._refresh()
 
-        Calculates the total number of slices to be displayed and
+
+    def _calcNumSlices(self, *a):
+        """Calculates the total number of slices to be displayed and
         the total number of rows.
         """
         
@@ -275,8 +277,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         :attr:`zrange` bounds to the image bounds.
         """
         slicecanvas.SliceCanvas._zAxisChanged(self, *a)
-        
-        self.zrange.x = self.imageList.bounds.getRange(self.zax)
+
+        # Changing the zrange property will, in most cases, trigger
+        # a call to _slicePropsChanged. But for images which have
+        # the same range across more than one dimension, the call
+        # might not happen. So we do a check and, if the dimension
+        # ranges are the same, manually call _slicePropsChanged.
+        # Bringing out the ugly side of event driven programming.
+        newRange = self.imageList.bounds.getRange(self.zax)
+        if self.zrange.x == newRange: self._slicePropsChanged()
+        else:                         self.zrange.x = newRange
 
         # Update slice spacing and distance between zrange min/max
         # Pick a sensible default for the
