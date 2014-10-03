@@ -78,6 +78,9 @@ class TextPanel(wx.Panel):
         if ev is None: dc = wx.ClientDC(self)
         else:          dc = wx.PaintDC( self)
 
+        if not dc.IsOk():
+            return
+
         paneW, paneH = dc.GetSize().Get()
         textW, textH = self._textExtent
 
