@@ -61,4 +61,4 @@ class ScreenGrabAction(action.Action):
 
             args = props.generateArguments(display)
             
-            print fname, ' '.join(['{}'.format(a) for a in args])
+            print fname, ' '.join(['{}'.format(a) for a in args]),
