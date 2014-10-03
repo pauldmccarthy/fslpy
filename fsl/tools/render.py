@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 import argparse
 
-import fslview
+import fslview_parseargs
 import props
 
 def run(args, context):
@@ -65,7 +65,7 @@ def run(args, context):
             width=width,
             height=height)
 
-    canvas.showCursor = args.showCursor
+    canvas.showCursor = not args.hideCursor
 
     if   axis == 0: canvas.pos.xyz = displayCtx.location.yzx
     elif axis == 1: canvas.pos.xyz = displayCtx.location.xzy
@@ -81,71 +81,26 @@ def parseArgs(argv, namespace):
     """
     """
 
-    usageStr   = 'render [options] [image [displayOpts]] '\
-                 '[image [displayOpts]] ...'
-    epilogStr  = 'Each display option will be applied to the '\
-                 'image which is listed before that option.'
-    descStr    = 'Scene renderer'
-
-    mainParser = argparse.ArgumentParser('render',
-                                         usage=usageStr,
-                                         description=descStr,
-                                         epilog=epilogStr,
-                                         add_help=False)
+    mainParser = argparse.ArgumentParser(add_help=False)
 
     mainParser.add_argument('-f', '--outfile',  metavar='FILE',
                             help='Output image file name')
-    mainParser.add_argument('-h', '--help',     action='store_true')
-    mainParser.add_argument('-o', '--voxelloc', metavar=('X', 'Y', 'Z'),
-                            type=int, nargs=3,
-                            help='Location to show (voxel coordinates of '
-                                 'first image)')
-    mainParser.add_argument('-r', '--worldloc', metavar=('X', 'Y', 'Z'),
-                            type=float, nargs=3,
-                            help='Location to show (world coordinates, '
-                                 'takes precedence over --voxelloc)')
-    
-    mainParser.add_argument('-l', '--lightbox',  action='store_true',
-                            help='Lightbox view')
-
     mainParser.add_argument('-a', '--axis', 
                             help='Display axis',
                             choices=('X', 'Y', 'Z'), default='X')
-
     mainParser.add_argument('-s', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
 
-    mainParser.add_argument('-z', '--zoom', type=float,
-                            help='Zoom (ortho view only)')
-
-    lbOpts    = ['sliceSpacing',
-                 'ncols',
-                 'nrows',
-                 'topRow',
-                 'zrange',
-                 'showCursor']
-    shortArgs = ['p', 'n', 'x', 't', 'g', 'c']
-    shortArgs = dict(zip(lbOpts, shortArgs))
-
-    exclude = 'vwfhorlaszpnxtgc'
-
-    import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
-    props.addParserArguments(lightboxcanvas.LightBoxCanvas,
-                             mainParser,
-                             cliProps=lbOpts,
-                             shortArgs=shortArgs,
-                             exclude=exclude)
-
-    return fslview.parseArgs(argv, namespace, mainParser, exclude)
+    return fslview_parseargs.parseArgs(mainParser,
+                                       argv,
+                                       namespace,
+                                       'render',
+                                       'Scene renderer')
  
-
-def handleArgs(args):
-    return fslview.handleArgs(args)
-    
 
 FSL_TOOLNAME  = 'Render'
 FSL_EXECUTE   = run
-FSL_CONTEXT   = handleArgs
+FSL_CONTEXT   = fslview_parseargs.handleImageArgs
 FSL_PARSEARGS = parseArgs

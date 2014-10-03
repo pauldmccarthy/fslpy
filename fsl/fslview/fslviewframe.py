@@ -86,6 +86,14 @@ class FSLViewFrame(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
+        
+    def getViewPanels(self):
+        """Returns a list of all view panels that currently exist, and a list
+        of their titles.
+        """
+        return (self._viewPanels,
+                [self._viewPanelTitles[id(vp)] for vp in self._viewPanels])
+
 
     def addViewPanel(self, panelCls):
         """Adds a view panel to the centre of the frame, and a menu item
@@ -113,6 +121,7 @@ class FSLViewFrame(wx.Frame):
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
 
+        self._viewPanels.append(panel)
         self._viewPanelTitles[id(panel)] = title
         self._centrePane.AddPage(panel, title, True)
         self._centrePane.Split(
