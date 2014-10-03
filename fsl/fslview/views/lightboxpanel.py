@@ -86,7 +86,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                          glContext,
                                          glVersion)
 
-        # self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
+        self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
         self._lbCanvas  = lightboxcanvas.LightBoxCanvas(self.getCanvasPanel(),
                                                         imageList,
                                                         glContext=glContext,
@@ -95,6 +95,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._glContext = self._lbCanvas.glContext
         self._glVersion = glVersion
 
+        # My properties are the canvas properties
         self.bindProps('sliceSpacing', self._lbCanvas)
         self.bindProps('ncols',        self._lbCanvas)
         self.bindProps('nrows',        self._lbCanvas)
@@ -106,31 +107,99 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.getCanvasPanel().SetSizer(self._canvasSizer)
 
-        self._canvasSizer.Add(self._lbCanvas, flag=wx.EXPAND, proportion=1)
+        self._canvasSizer.Add(self._lbCanvas,  flag=wx.EXPAND, proportion=1)
+        self._canvasSizer.Add(self._scrollbar, flag=wx.EXPAND)
 
+        # Change the display context location on mouse clicks/drags,
+        # and change the displayed row on mouse wheel movement
         self._lbCanvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
-        self._lbCanvas.Bind(wx.EVT_MOTION,     self._onMouseEvent) 
+        self._lbCanvas.Bind(wx.EVT_MOTION,     self._onMouseEvent)
+        self._lbCanvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseWheel) 
 
-        def move(*a):
-            if not self.posSync: return
-            xpos = self._displayCtx.location.getPos(self._lbCanvas.xax)
-            ypos = self._displayCtx.location.getPos(self._lbCanvas.yax)
-            zpos = self._displayCtx.location.getPos(self._lbCanvas.zax)
-            self._lbCanvas.pos.xyz = (xpos, ypos, zpos)
-
+        # When the display context location changes,
+        # make sure the location is shown on the canvas
         self._lbCanvas.pos.xyz = self._displayCtx.location
-        self._displayCtx.addListener('location', self._name, move)
+        self._displayCtx.addListener('location',
+                                     self._name,
+                                     self._onLocationChange)
 
+        # And remove that listener when
+        # this panel is destroyed
         def onDestroy(ev):
             self._displayCtx.removeListener('location', self._name)
             ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
+        # When any lightbox properties change,
+        # make sure the scrollbar is updated
+        self.addListener('sliceSpacing', self._name, self._onLightBoxChange)
+        self.addListener('ncols',        self._name, self._onLightBoxChange)
+        self.addListener('nrows',        self._name, self._onLightBoxChange)
+        self.addListener('topRow',       self._name, self._onLightBoxChange)
+        self.addListener('zrange',       self._name, self._onLightBoxChange)
+        self.addListener('zax',          self._name, self._onLightBoxChange)
+        self._onLightBoxChange()
+
+        # When the scrollbar is moved,
+        # update the canvas display
+        self._scrollbar.Bind(wx.EVT_SCROLL, self._onScroll)
+
         self.Layout()
+
+
+    def _onLocationChange(self, *a):
+        """Called when the display context location changes.
+
+        Updates the canvas location.
+        """
+        
+        if not self.posSync: return
+        xpos = self._displayCtx.location.getPos(self._lbCanvas.xax)
+        ypos = self._displayCtx.location.getPos(self._lbCanvas.yax)
+        zpos = self._displayCtx.location.getPos(self._lbCanvas.zax)
+        self._lbCanvas.pos.xyz = (xpos, ypos, zpos)
+ 
+
+
+    def _onLightBoxChange(self, *a):
+        """Called when any lightbox display properties change.
+
+        Updates the scrollbar to reflect the change.
+        """
+        self._scrollbar.SetScrollbar(self.topRow,
+                                     self.nrows,
+                                     self._lbCanvas.getTotalRows(),
+                                     self.nrows,
+                                     True)
+
+        
+    def _onScroll(self, *a):
+        """Called when the scrollbar is moved.
+
+        Updates the top row displayed on the canvas.
+        """
+        self.topRow = self._scrollbar.GetThumbPosition()
+
+
+    def _onMouseWheel(self, ev):
+        """Called when the mouse wheel is moved.
+
+        Updates the top row displayed on the canvas.
+        """
+        wheelDir = ev.GetWheelRotation()
+
+        if   wheelDir > 0: wheelDir = -1
+        elif wheelDir < 0: wheelDir =  1
+
+        self.topRow += wheelDir
 
         
     def _onMouseEvent(self, ev):
+        """Called when the mouse is clicked or dragged on the canvas.
+
+        Updates the canvas and display context location.
+        """
 
         if not ev.LeftIsDown():       return
         if len(self._imageList) == 0: return

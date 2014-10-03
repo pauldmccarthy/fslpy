@@ -114,5 +114,3 @@ class CanvasPanel(viewpanel.ViewPanel):
                 
         self.SetSizer(self.__sizer)
         self.Layout()
-
- 

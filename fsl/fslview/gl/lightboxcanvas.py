@@ -213,7 +213,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                          '{}_zPosChanged'.format(self.name),
                          self._zPosChanged)
 
+        
+    def getTotalRows(self):
+        """Returns the total number of rows that may be displayed.
+        """
+        return self._totalRows
 
+        
     def draw(self, *a):
         """
         """
