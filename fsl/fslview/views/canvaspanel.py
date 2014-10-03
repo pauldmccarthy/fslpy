@@ -90,6 +90,7 @@ class CanvasPanel(viewpanel.ViewPanel):
 
 
         if not self.showColourBar:
+            self.__colourBar.Show(False)
             
             self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
             self.__sizer.Add(self.__canvasPanel, flag=wx.EXPAND, proportion=1)
@@ -97,6 +98,8 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.SetSizer(self.__sizer)
             self.Layout()
             return
+            
+        self.__colourBar.Show(True) 
 
         if self.colourBarLocation in ('top', 'bottom'):
             self.__colourBar.orientation = 'horizontal'

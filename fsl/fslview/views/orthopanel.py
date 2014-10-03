@@ -119,7 +119,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.bindProps('yzoom',      self._ycanvas, 'zoom')
         self.bindProps('zzoom',      self._zcanvas, 'zoom')
 
-        self.addListener('layout', self._name, self._layoutChanged)
+        llName = '{}_layout'.format(self._name)
+        
+        self.addListener('layout',            llName, self._layoutChanged)
+        self.addListener('showColourBar',     llName, self._layoutChanged)
+        self.addListener('colourBarLocation', llName, self._layoutChanged)
 
         self._layoutChanged()
 
