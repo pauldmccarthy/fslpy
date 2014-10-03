@@ -40,9 +40,14 @@ class ScreenGrabAction(action.Action):
         # rendered - will need to save them to a temp file
 
         print
-        print 'The screenshot feature has not yet been implemented - ' \
-              'use "~paulmc/fslpy render" for the time being!'
+        print 'The screenshot feature has not yet been ' \
+              'implemented - try using "~paulmc/fslpy render" '\
+              'with something like the following:'
         print
+
+        print '~paulmc/fslpy render -f out.png -s 2048 2048 ',
+        print '-wl {}'.format(
+            ' '.join(['{}'.format(v) for v in self._displayCtx.location.xyz])),
         
         for image in self._imageList:
 
@@ -53,5 +58,7 @@ class ScreenGrabAction(action.Action):
                 continue
 
             display = image.getAttribute('display')
+
+            args = props.generateArguments(display)
             
-            print fname, props.generateArguments(display)
+            print fname, ' '.join(['{}'.format(a) for a in args])
