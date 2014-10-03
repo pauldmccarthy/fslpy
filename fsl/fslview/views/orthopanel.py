@@ -29,7 +29,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     showXCanvas = props.Boolean(default=True)
     showYCanvas = props.Boolean(default=True)
     showZCanvas = props.Boolean(default=True)
-
     
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
@@ -113,6 +112,13 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                                     glContext=glContext,
                                                     glVersion=glVersion)
 
+        self.bindProps('showCursor', self._xcanvas)
+        self.bindProps('showCursor', self._ycanvas)
+        self.bindProps('showCursor', self._zcanvas)
+        self.bindProps('xzoom',      self._xcanvas, 'zoom')
+        self.bindProps('yzoom',      self._ycanvas, 'zoom')
+        self.bindProps('zzoom',      self._zcanvas, 'zoom')
+
         self.addListener('layout', self._name, self._layoutChanged)
 
         self._layoutChanged()
@@ -138,49 +144,18 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
         self.Bind(wx.EVT_SIZE, self._resize)
 
-        self._configShowListeners()
-        self._configZoomListeners()
-
-
-    def _configShowListeners(self):
-        """
-        Configures listeners on the show* properties, so they can
-        be used to toggle visibility of various things.
-        """
-        def showCursor(*a):
-            
-            self._xcanvas.showCursor = self.showCursor
-            self._ycanvas.showCursor = self.showCursor
-            self._zcanvas.showCursor = self.showCursor
-
         def toggle(canvas, toggle):
             self._canvasSizer.Show(canvas, toggle)
             if self.layout.lower() == 'grid':
                 self._configureGridSizes() 
             self.getCanvasPanel().Layout()            
 
-        self.addListener('showCursor',  self._name, showCursor)
         self.addListener('showXCanvas', self._name,
                          lambda *a: toggle(self._xcanvas, self.showXCanvas))
         self.addListener('showYCanvas', self._name,
                          lambda *a: toggle(self._ycanvas, self.showYCanvas))
         self.addListener('showZCanvas', self._name,
                          lambda *a: toggle(self._zcanvas, self.showZCanvas))
-
-            
-    def _configZoomListeners(self):
-        """
-        Configures listeners on the x/y/zzoom properties so when
-        they are changed, the zoom factor on the corresponding canvas
-        is changed.
-        """
-        def xzoom(*a): self._xcanvas.zoom = self.xzoom
-        def yzoom(*a): self._ycanvas.zoom = self.yzoom
-        def zzoom(*a): self._zcanvas.zoom = self.zzoom
-            
-        self.addListener('xzoom', self._name, xzoom)
-        self.addListener('yzoom', self._name, yzoom)
-        self.addListener('zzoom', self._name, zzoom)
 
             
     def _resize(self, ev):
