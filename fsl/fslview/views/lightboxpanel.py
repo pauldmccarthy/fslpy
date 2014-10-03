@@ -18,9 +18,9 @@ import wx
 import props
 
 import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
-import fsl.fslview.viewpanel             as viewpanel
+import canvaspanel
 
-class LightBoxPanel(viewpanel.ViewPanel):
+class LightBoxPanel(canvaspanel.CanvasPanel):
     """Convenience Panel which contains a 
     :class:`~fsl.fslview.gl.LightBoxCanvas` and a scrollbar, and sets up
     mouse-scrolling behaviour.
@@ -48,26 +48,12 @@ class LightBoxPanel(viewpanel.ViewPanel):
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.zrange`."""
 
     
-    showCursor = lightboxcanvas.LightBoxCanvas.showCursor
-    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.showCursor`."""
-
-    
     zax = lightboxcanvas.LightBoxCanvas.zax
     """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.zax`."""
 
     
-    posSync = props.Boolean(default=True)
-    """If False, the cursor position shown in the
-    :class:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` instance, which
-    is contained in this :class:`LightBoxPanel` (the
-    :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.pos` property) will not
-    be synchronised to the :class:`~fsl.data.image.ImageList.location`
-    :attr:`~fsl.data.image.ImageList.location` property.
-    """ 
-
-    
     _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
-                   [('posSync', 'Synchronise position')])
+                   canvaspanel   .CanvasPanel   ._labels.items())
     """Property labels to be used for GUI displays."""
 
     
@@ -78,18 +64,10 @@ class LightBoxPanel(viewpanel.ViewPanel):
                           'ncols',
                           'nrows',
                           'topRow',
-                          'zax'))
+                          'zax',
+                          'showColourBar',
+                          'colourBarLocation'))
     """Layout to be used for GUI displays."""
-
-
-    @classmethod
-    def isGLView(cls):
-        """Overrides
-        :meth:`~fsl.fslview.views.viewpanel.ViewPanel.isGLView`.
-
-        Returns ``True``.
-        """
-        return True
 
 
     def __init__(self,
@@ -101,41 +79,46 @@ class LightBoxPanel(viewpanel.ViewPanel):
         """
         """
 
-        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        canvaspanel.CanvasPanel.__init__(self,
+                                         parent,
+                                         imageList,
+                                         displayCtx,
+                                         glContext,
+                                         glVersion)
 
-        self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
-        self._canvas = lightboxcanvas.LightBoxCanvas(self,
-                                                     imageList,
-                                                     glContext=glContext,
-                                                     glVersion=glVersion)
+        # self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
+        self._lbCanvas  = lightboxcanvas.LightBoxCanvas(self.getCanvasPanel(),
+                                                        imageList,
+                                                        glContext=glContext,
+                                                        glVersion=glVersion)
 
-        self._glContext = self._canvas.glContext
+        self._glContext = self._lbCanvas.glContext
         self._glVersion = glVersion
 
-        self.bindProps('sliceSpacing', self._canvas)
-        self.bindProps('ncols',        self._canvas)
-        self.bindProps('nrows',        self._canvas)
-        self.bindProps('topRow',       self._canvas)
-        self.bindProps('zrange',       self._canvas)
-        self.bindProps('showCursor',   self._canvas)
-        self.bindProps('zax',          self._canvas)
+        self.bindProps('sliceSpacing', self._lbCanvas)
+        self.bindProps('ncols',        self._lbCanvas)
+        self.bindProps('nrows',        self._lbCanvas)
+        self.bindProps('topRow',       self._lbCanvas)
+        self.bindProps('zrange',       self._lbCanvas)
+        self.bindProps('showCursor',   self._lbCanvas)
+        self.bindProps('zax',          self._lbCanvas)
 
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self._sizer)
+        self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.getCanvasPanel().SetSizer(self._canvasSizer)
 
-        self._sizer.Add(self._canvas,    flag=wx.EXPAND, proportion=1)
+        self._canvasSizer.Add(self._lbCanvas, flag=wx.EXPAND, proportion=1)
 
-        self._canvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
-        self._canvas.Bind(wx.EVT_MOTION,     self._onMouseEvent) 
+        self._lbCanvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
+        self._lbCanvas.Bind(wx.EVT_MOTION,     self._onMouseEvent) 
 
         def move(*a):
             if not self.posSync: return
-            xpos = self._displayCtx.location.getPos(self._canvas.xax)
-            ypos = self._displayCtx.location.getPos(self._canvas.yax)
-            zpos = self._displayCtx.location.getPos(self._canvas.zax)
-            self._canvas.pos.xyz = (xpos, ypos, zpos)
+            xpos = self._displayCtx.location.getPos(self._lbCanvas.xax)
+            ypos = self._displayCtx.location.getPos(self._lbCanvas.yax)
+            zpos = self._displayCtx.location.getPos(self._lbCanvas.zax)
+            self._lbCanvas.pos.xyz = (xpos, ypos, zpos)
 
-        self._canvas.pos.xyz = self._displayCtx.location
+        self._lbCanvas.pos.xyz = self._displayCtx.location
         self._displayCtx.addListener('location', self._name, move)
 
         def onDestroy(ev):
@@ -153,11 +136,11 @@ class LightBoxPanel(viewpanel.ViewPanel):
         if len(self._imageList) == 0: return
 
         mx, my  = ev.GetPositionTuple()
-        w, h    = self._canvas.GetClientSize()
+        w, h    = self._lbCanvas.GetClientSize()
 
         my = h - my
 
-        clickPos = self._canvas.canvasToWorld(mx, my)
+        clickPos = self._lbCanvas.canvasToWorld(mx, my)
 
         if clickPos is None:
             return
@@ -166,13 +149,13 @@ class LightBoxPanel(viewpanel.ViewPanel):
 
         log.debug('Mouse click on {}: '
                   '({}, {} -> {: 5.2f}, {: 5.2f}, {: 5.2f})'.format(
-                      self._canvas.name, mx, my, *clickPos))
+                      self._lbCanvas.name, mx, my, *clickPos))
 
-        cpos = [clickPos[self._canvas.xax],
-                clickPos[self._canvas.yax],
-                clickPos[self._canvas.zax]]
+        cpos = [clickPos[self._lbCanvas.xax],
+                clickPos[self._lbCanvas.yax],
+                clickPos[self._lbCanvas.zax]]
 
-        self._canvas.pos.xyz = cpos
+        self._lbCanvas.pos.xyz = cpos
         
         if self.posSync:
             self._displayCtx.location.xyz = clickPos
