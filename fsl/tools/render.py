@@ -17,20 +17,28 @@ import argparse
 import fslview_parseargs
 import props
 
+if  sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
+elif sys.platform == 'darwin':        _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
+
 def run(args, context):
 
     # If this process is not configured for off-screen
     # rendering using osmesa, start a new process
     env = os.environ.copy()
+
+    if env.get('FSL_OSMESA_PATH', None) is None:
+        
+        log.error('The FSL_OSMESA_PATH environment variable is not set - '
+                  'I need to know where the OSMESA libraries are. Set this '
+                  'variable and rerun render.')
+        sys.exit(1)
+    
     if env.get('PYOPENGL_PLATFORM', None) != 'osmesa':
 
         # Tell PyOpenGL that it should use
         # osmesa for off-screen rendering
         env['PYOPENGL_PLATFORM'] = 'osmesa'
-
-        # I need to figure out a better method
-        # of linking to the mesa libraries
-        env['DYLD_LIBRARY_PATH'] = '/Users/paulmc/mesa/build/Mesa-6.5.3/lib'
+        env[_LD_LIBRARY_PATH]    = env['FSL_OSMESA_PATH']
 
         log.warning('Restarting render.py with '
                     'off-screen rendering configured...')

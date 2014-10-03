@@ -38,6 +38,12 @@ class ScreenGrabAction(action.Action):
 
         # TODO In-memory-only images will not be
         # rendered - will need to save them to a temp file
+
+        print
+        print 'The screenshot feature has not yet been implemented - ' \
+              'use "~paulmc/fslpy render" for the time being!'
+        print
+        
         for image in self._imageList:
 
             fname = image.nibImage.get_filename()
