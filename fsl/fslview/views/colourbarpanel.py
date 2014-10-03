@@ -212,4 +212,5 @@ class ColourBarPanel(viewpanel.ViewPanel):
         bitmap  = wx.BitmapFromBuffer(width, height, colours)
 
         self._cbPanel.image = bitmap.ConvertToImage()
-        self._cbPanel.Draw()
+
+        wx.CallAfter(self._cbPanel.Draw)
