@@ -18,68 +18,165 @@ import OpenGL.GL         as gl
 import numpy             as np
 
 
-import matplotlib.backends.backend_agg as mplagg
-import matplotlib.figure               as mplfig
-import matplotlib.image                as mplimg
-
 import props
 
+import fsl.fslview.gl                as fslgl
+import fsl.utils.colourbarbitmap     as cbarbmp
 
-def plotColourBar(cmap,
-                  vmin,
-                  vmax,
-                  label,
-                  orient,
-                  width,
-                  height,
-                  alpha=1.0,
-                  textColour='#ffffff'):
-    """Plots a colour bar using matplotlib, and returns a RGBA bitmap
-    of the specified width/height.
-    """
 
-    dpi = 96.0
-    pad = (vmax - vmin) * 0.075
-
-    data = np.array([[vmin - pad, vmax + pad]])
-
-    fig    = mplfig.Figure(figsize=(width / dpi, height / dpi), dpi=dpi)
-    canvas = mplagg.FigureCanvasAgg(fig)
-    ax     = fig.add_subplot(111)
-
-    ax.plot([1, 2, 3], [4, 5, 6])
-    
-#    ax.imshow(data, cmap=cmap, alpha=alpha)
-    
-#    cbax = fig.axes([0.005, 0.001, 0.45, 0.998])
-    
-#    cbar = plt.colorbar(orientation="vertical", cax=cbax)
-#    cbar.set_ticks((vmin,vmax))
-#    cbar.set_ticklabels(('%u' % vmin, '%u' % vmax))
-#    cbar.set_label(label, fontsize=24, ha='center', va='bottom')
-#    cbax.tick_params(labelsize=24)
-
-    canvas.draw()
-
-    buf = canvas.tostring_argb()
-    ncols, nrows = canvas.get_width_height()
-
-    bitmap = np.fromstring(buf, dtype=np.uint8)
-    bitmap = bitmap.reshape(nrows, ncols, 4)
-
-    rgb = bitmap[:, :, 1:]
-    a   = bitmap[:, :, 0]
-    bitmap = np.dstack((rgb, a))
-
-    mplimg.imsave('bob.png', bitmap)
-    
-
-plotColourBar(0, 0, 1, 0, 0, 800, 800)
 class ColourBarCanvas(props.HasProperties):
 
-
-    def __init__(self):
-        pass
+    cmap   = props.ColourMap()
+    vrange = props.Bounds(ndims=1)
+    label  = props.String()
+    orient = props.Choice({
+        'horizontal' : 'Horizontal',
+        'vertical'   : 'Vertical'})
 
     
-    pass
+    def _getSize(      self): raise NotImplementedError()
+    def _makeGLContext(self): raise NotImplementedError()
+    def _setGLContext( self): raise NotImplementedError()
+    def _refresh(      self): raise NotImplementedError()
+    def _postDraw(     self): raise NotImplementedError()
+
+
+    def __init__(self,
+                 glContext=None,
+                 glVersion=None):
+
+        if glContext is None: self.glContext = self._makeGLContext()
+        else:                 self.glContext = glContext
+
+        self.glVersion = glVersion 
+        self._glReady  = False
+        self._tex      = None
+        self._name     = '{}_{}'.format(self.__class__.__name__, id(self)) 
+
+        def _update(*a):
+            self._createColourBarTexture()
+            self._refresh()
+
+        for prop in ('cmap', 'vrange', 'label', 'orient'):
+            self.addListener(prop, self._name, _update)
+            
+
+    def _initGL(self):
+        self._setGLContext()
+        fslgl.bootstrap(self.glVersion)
+        self._createColourBarTexture()
+        self._glReady = True
+
+
+    def _createColourBarTexture(self):
+
+        w, h = self._getSize()
+
+        if w == 0 or h == 0:
+            if self.orient == 'horizontal': w, h = 600, 200
+            else:                           w, h = 200, 600
+        
+        bitmap = cbarbmp.colourBarBitmap(
+            self.cmap,
+            self.vrange.xlo,
+            self.vrange.xhi,
+            w, h,
+            self.label,
+            self.orient,
+            'bottom')
+        bitmap = np.flipud(bitmap)
+
+        if self._tex is None:
+            self._tex = gl.glGenTextures(1)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(  gl.GL_TEXTURE_2D, self._tex)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_BORDER)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_WRAP_T,
+                           gl.GL_CLAMP_TO_BORDER)
+
+        gl.glTexImage2D(gl.GL_TEXTURE_2D,
+                        0,
+                        gl.GL_RGBA8,
+                        w,
+                        h,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        bitmap)
+
+
+    def draw(self, ev):
+        if not self._glReady:
+            self._initGL()
+            return
+
+        self._setGLContext()
+        
+        width, height = self.GetClientSize().Get()
+
+        # viewport
+        gl.glViewport(0, 0, width, height)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(-0.1, 1.1, -0.1, 1.1, -1.0, 1.0)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gl.glShadeModel(gl.GL_FLAT)
+
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self._tex) 
+
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(0, 0)
+        gl.glVertex3f(  0, 0, 0)
+        gl.glTexCoord2f(0, 1)
+        gl.glVertex3f(  0, 1, 0)
+        gl.glTexCoord2f(1, 1)
+        gl.glVertex3f(  1, 1, 0)
+        gl.glTexCoord2f(1, 0)
+        gl.glVertex3f(  1, 0, 0)
+
+        gl.glEnd()
+
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+        self._postDraw()
+
+
+import wx
+import wx.glcanvas as wxgl
+ 
+class WXGLColourBarCanvas(ColourBarCanvas, wxgl.GLCanvas):
+    def __init__(self, parent, glContext, glVersion):
+        wxgl.GLCanvas.__init__(self, parent)
+        ColourBarCanvas.__init__(self, glContext, glVersion)
+
+        def onsize(*a):
+            self._createColourBarTexture()
+            self.Refresh() 
+
+        self.Bind(wx.EVT_PAINT, self.draw)
+        self.Bind(wx.EVT_SIZE, onsize)
+
+    def _initGL(self):
+        wx.CallAfter(ColourBarCanvas._initGL, self)
+
+    def _getSize(      self): return self.GetClientSize().Get()
+    def _makeGLContext(self): return wxgl.GLContext(self)
+    def _setGLContext( self): return self.glContext.SetCurrent(self)
+    def _refresh(      self): self.Refresh()
+    def _postDraw(     self): self.SwapBuffers()

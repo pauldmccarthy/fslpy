@@ -20,17 +20,17 @@ import matplotlib.figure               as mplfig
 import matplotlib.cm                   as cm
 
 
-def plotColourBar(cmap,
-                  vmin,
-                  vmax,
-                  width,
-                  height,
-                  label=None,
-                  orientation='vertical',
-                  labelside='top',
-                  alpha=1.0,
-                  fontsize=32,
-                  textColour='#ffffff'):
+def colourBarBitmap(cmap,
+                    vmin,
+                    vmax,
+                    width,
+                    height,
+                    label=None,
+                    orientation='vertical',
+                    labelside='top',
+                    alpha=1.0,
+                    fontsize=10,
+                    textColour='#ffffff'):
     """Plots a colour bar using matplotlib, and returns a RGBA bitmap
     of the specified width/height.
     """
@@ -81,6 +81,11 @@ def plotColourBar(cmap,
     ax.set_xticklabels(('{}'.format(vmin), '{}'.format(vmax)))
     ax.tick_params(colors=textColour, labelsize=fontsize)
 
+    minlbl, maxlbl = ax.get_xticklabels()
+
+    minlbl.set_horizontalalignment('left')
+    maxlbl.set_horizontalalignment('right')
+
     if labelside == 'top':
         ax.xaxis.tick_top()
         ax.xaxis.set_label_position('top')
@@ -96,7 +101,8 @@ def plotColourBar(cmap,
                       color=textColour,
                       va=va)
 
-    fig.tight_layout()
+    try:    fig.tight_layout()
+    except: pass
     canvas.draw()
 
     buf = canvas.tostring_argb()
@@ -108,7 +114,6 @@ def plotColourBar(cmap,
     rgb = bitmap[:, :, 1:]
     a   = bitmap[:, :, 0]
     bitmap = np.dstack((rgb, a))
-
 
     if orientation == 'vertical':
         bitmap = np.flipud(bitmap.transpose([1, 0, 2]))
