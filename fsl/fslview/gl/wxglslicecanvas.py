@@ -74,13 +74,6 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         self.Bind(wx.EVT_PAINT, self.draw)
 
         
-    def _initGL(self):
-        """Calls the :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._initGL`
-        method, but ensures that it is done asynchronously.
-        """
-        wx.CallAfter(slicecanvas.SliceCanvas._initGL, self)
-
-        
     def _getSize(self):
         """Returns the current canvas size. """
         return self.GetClientSize().Get()

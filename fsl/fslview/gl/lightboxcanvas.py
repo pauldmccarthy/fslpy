@@ -18,7 +18,6 @@ import numpy          as np
 
 import                   slicecanvas
 import                   props
-import fsl.fslview.gl as fslgl
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
@@ -484,10 +483,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         """
         
-        if not self._glReady:
-            self._initGL()
-            return
-            
         self._setGLContext()
         self._setViewport()
 

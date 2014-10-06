@@ -65,13 +65,6 @@ class WXGLLightBoxCanvas(wxgl.GLCanvas, lightboxcanvas.LightBoxCanvas):
         self.Bind(wx.EVT_PAINT, self.draw)
 
         
-    def _initGL(self):
-        """Calls the :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._initGL`
-        method, but ensures that it is done asynchronously.
-        """
-        wx.CallAfter(lightboxcanvas.LightBoxCanvas._initGL, self)
-
-        
     def _getSize(self):
         """Returns the current canvas size. """
         return self.GetClientSize().Get()

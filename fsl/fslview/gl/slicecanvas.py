@@ -261,27 +261,10 @@ class SliceCanvas(props.HasProperties):
                                    self.name,
                                    self._imageBoundsChanged)
  
-        # the _initGL method is called on the
-        # first draw to initialise GL stuff
-        self._glReady = False
-
-
-    def _initGL(self):
-        """We can't figure out what OpenGL version to use until a GL context
-        has been created. So this method is called on the first draw.
-
-        It initialises the :mod:`fsl.fslview.gl` package, and ensures that
-        OpenGL data has been created for each image in the image list.
-        """
-
-        # Call the _imageListChanged method - it
-        # will generate any necessary GL data for
-        # each of the images (which can't be done
-        # until the canvas is displayed).
+        # Call the _imageListChanged method - it  will generate
+        # any necessary GL data for each of the images
         self._setGLContext()
         self._imageListChanged()
-
-        self._glReady = True
  
 
     def _zAxisChanged(self, *a):
@@ -637,10 +620,6 @@ class SliceCanvas(props.HasProperties):
         :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
         the actual drawing.
         """
-
-        if not self._glReady:
-            self._initGL()
-            return
 
         self._setGLContext()
         self._setViewport()
