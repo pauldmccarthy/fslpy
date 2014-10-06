@@ -145,14 +145,13 @@ def draw(glimg, zpos, xform=None):
     worldCoords   = worldCoords  .ravel('C')
     imageData     = np.array(imageData, dtype=np.float32)    .ravel('C')
     texCoordXform = texCoordXform.ravel('C')
-    
-    gl.glEnable(gl.GL_TEXTURE_1D) 
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
+    gl.glEnable(gl.GL_TEXTURE_1D) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
     gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
 
@@ -178,4 +177,5 @@ def draw(glimg, zpos, xform=None):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glPopMatrix()
 
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     gl.glDisable(gl.GL_TEXTURE_1D)

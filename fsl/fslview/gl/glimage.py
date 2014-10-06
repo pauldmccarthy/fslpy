@@ -413,7 +413,6 @@ def genColourTexture(image,
     gl.glTexParameteri(gl.GL_TEXTURE_1D,
                        gl.GL_TEXTURE_MIN_FILTER,
                        gl.GL_NEAREST)
-
     gl.glTexParameteri(gl.GL_TEXTURE_1D,
                        gl.GL_TEXTURE_WRAP_S,
                        gl.GL_CLAMP_TO_EDGE)
@@ -426,5 +425,6 @@ def genColourTexture(image,
                     gl.GL_RGBA,
                     gl.GL_UNSIGNED_BYTE,
                     colourmap)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0) 
 
     return texCoordXform

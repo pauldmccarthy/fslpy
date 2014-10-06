@@ -89,7 +89,10 @@ class ColourBarCanvas(props.HasProperties):
         if self._tex is None:
             self._tex = gl.glGenTextures(1)
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
+        print 'Updating colour bar texture ' \
+            '({}) to {} ({:0.2f} - {:0.2f})'.format(
+                self._tex, self.cmap.name, self.vrange.xlo, self.vrange.xhi)
+
         gl.glBindTexture(  gl.GL_TEXTURE_2D, self._tex)
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
                            gl.GL_TEXTURE_MAG_FILTER,
@@ -113,6 +116,7 @@ class ColourBarCanvas(props.HasProperties):
                         gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,
                         bitmap)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
 
     def draw(self, ev):
@@ -137,6 +141,9 @@ class ColourBarCanvas(props.HasProperties):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glShadeModel(gl.GL_FLAT)
 
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
+        
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self._tex) 
 
@@ -149,9 +156,9 @@ class ColourBarCanvas(props.HasProperties):
         gl.glVertex3f(  1, 1, 0)
         gl.glTexCoord2f(1, 0)
         gl.glVertex3f(  1, 0, 0)
-
         gl.glEnd()
 
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
         gl.glDisable(gl.GL_TEXTURE_2D)
 
         self._postDraw()
