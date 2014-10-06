@@ -13,7 +13,9 @@ import logging
 
 log = logging.getLogger(__name__)
 
+import OpenGL.GL      as gl
 import numpy          as np
+
 import                   slicecanvas
 import                   props
 import fsl.fslview.gl as fslgl
@@ -206,20 +208,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """Returns the total number of rows that may be displayed.
         """
         return self._totalRows
-
-        
-    def draw(self, *a):
-        """
-        """
-        
-        if not self._glReady:
-            self._initGL()
-            return
-            
-        self._setGLContext()
-        self._setViewport()         
-        fslgl.lightboxcanvas_draw.draw(self)
-        self._postDraw()
 
 
     def _slicePropsChanged(self, *a):
@@ -452,3 +440,91 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         translate[3, self.zax] = 0
         
         return translate
+
+
+    def drawCursor(self):
+        """Draws a cursor at the current canvas position (the
+        :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
+        """
+
+        sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
+                               self.sliceSpacing))
+        xlen    = self.imageList.bounds.getLen(self.xax)
+        ylen    = self.imageList.bounds.getLen(self.yax)
+        xmin    = self.imageList.bounds.getLo( self.xax)
+        ymin    = self.imageList.bounds.getLo( self.yax)
+        row     = self._totalRows - int(np.floor(sliceno / self.ncols)) - 1
+        col     = int(np.floor(sliceno % self.ncols)) 
+
+        xpos, ypos = self.worldToCanvas(*self.pos.xyz)
+
+        xverts = np.zeros((2, 3))
+        yverts = np.zeros((2, 3)) 
+
+        xverts[:, self.xax] = xpos
+        xverts[0, self.yax] = ymin + (row)     * ylen
+        xverts[1, self.yax] = ymin + (row + 1) * ylen
+        xverts[:, self.zax] = self.pos.z + 1
+
+        yverts[:, self.yax] = ypos
+        yverts[0, self.xax] = xmin + (col)     * xlen
+        yverts[1, self.xax] = xmin + (col + 1) * xlen
+        yverts[:, self.zax] = self.pos.z + 1
+
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(0, 1, 0)
+        gl.glVertex3f(*xverts[0])
+        gl.glVertex3f(*xverts[1])
+        gl.glVertex3f(*yverts[0])
+        gl.glVertex3f(*yverts[1])
+        gl.glEnd() 
+
+        
+    def draw(self, *a):
+        """
+        """
+        
+        if not self._glReady:
+            self._initGL()
+            return
+            
+        self._setGLContext()
+        self._setViewport()
+
+        startSlice   = self.ncols * self.topRow
+        endSlice     = startSlice + self.nrows * self.ncols
+
+        if endSlice > self._nslices:
+            endSlice = self._nslices    
+
+        # clear the canvas
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        # disable interpolation
+        gl.glShadeModel(gl.GL_FLAT)
+
+        # Draw all the slices for all the images.
+        for i, image in enumerate(self.imageList):
+
+            try: globj = image.getAttribute(self.name)
+            except KeyError:
+                continue
+
+            if (globj is None) or (not globj.ready()):
+                continue 
+
+            log.debug('Drawing {} slices ({} - {}) for image {}'.format(
+                endSlice - startSlice, startSlice, endSlice, i))
+
+            for zi in range(startSlice, endSlice):
+                globj.draw(self._sliceLocs[ i][zi],
+                           self._transforms[i][zi])
+
+        if self.showCursor:
+            self.drawCursor()
+
+        self._postDraw()
