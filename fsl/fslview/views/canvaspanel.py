@@ -38,6 +38,8 @@ class CanvasPanel(viewpanel.ViewPanel):
         'left'   : 'Left',
         'right'  : 'Right'})
 
+    colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
+
     
     _labels = {
         'showCursor'        : 'Show cursor',
@@ -63,6 +65,9 @@ class CanvasPanel(viewpanel.ViewPanel):
             self._imageList,
             self._displayCtx)
 
+
+        self.bindProps('colourBarLabelSide', self.__colourBar, 'labelSide')
+
         self._configColourBar()
  
         self.addListener('showColourBar',
@@ -75,6 +80,7 @@ class CanvasPanel(viewpanel.ViewPanel):
     def getCanvasPanel(self):
         return self.__canvasPanel
 
+        
     def _configColourBar(self, *a):
         """
         """
@@ -90,14 +96,20 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.Layout()
             return
             
-        self.__colourBar.Show(True) 
+        self.__colourBar.Show(True)
+
+
+        if self.colourBarLocation in ('top', 'bottom'):
+            self.__sizer = wx.BoxSizer(wx.VERTICAL)
+        else:
+            self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         if self.colourBarLocation in ('top', 'bottom'):
             self.__colourBar.orientation = 'horizontal'
-            self.__sizer = wx.BoxSizer(wx.VERTICAL)
-        else:
+        elif self.colourBarLocation == 'left':
             self.__colourBar.orientation = 'vertical'
-            self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
+        elif self.colourBarLocation == 'right':
+            self.__colourBar.orientation = 'vertical'
 
         if self.colourBarLocation in ('top', 'left'):
             self.__sizer.Add(self.__colourBar,   flag=wx.EXPAND)

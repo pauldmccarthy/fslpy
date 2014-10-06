@@ -27,12 +27,12 @@ class ColourBarPanel(viewpanel.ViewPanel):
     currently selected image.
     """
 
-    orientation = cbarcanvas.ColourBarCanvas.orient
+    orientation = cbarcanvas.ColourBarCanvas.orientation
     """Draw the colour bar horizontally or vertically. """
 
-    @classmethod
-    def isGLView(cls):
-        return True
+    labelSide   = cbarcanvas.ColourBarCanvas.labelSide
+    """Draw colour bar labels on the top/left/right/bottom."""
+                  
 
     def __init__(self,
                  parent,
@@ -48,7 +48,8 @@ class ColourBarPanel(viewpanel.ViewPanel):
         self.SetSizer(self._sizer)
         self._sizer.Add(self._cbPanel, flag=wx.EXPAND, proportion=1)
 
-        self.bindProps('orientation', self._cbPanel, 'orient')
+        self.bindProps('orientation', self._cbPanel)
+        self.bindProps('labelSide'  , self._cbPanel)
 
         self.SetBackgroundColour('black')
 

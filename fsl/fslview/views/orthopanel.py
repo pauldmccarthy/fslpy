@@ -57,9 +57,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                       'showYCanvas',
                       'showZCanvas',
                       'showColourBar',
-                      props.Widget(
-                          'colourBarLocation',
-                          visibleWhen=lambda i: i.showColourBar))),
+                      props.Widget('colourBarLocation',
+                                   visibleWhen=lambda i: i.showColourBar),
+                      props.Widget('colourBarLabelSide',
+                                   visibleWhen=lambda i: i.showColourBar))),
         props.VGroup(('xzoom', 'yzoom', 'zzoom'))
     ))
 

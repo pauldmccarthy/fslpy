@@ -26,13 +26,16 @@ import fsl.utils.colourbarbitmap     as cbarbmp
 
 class ColourBarCanvas(props.HasProperties):
 
-    cmap   = props.ColourMap()
-    vrange = props.Bounds(ndims=1)
-    label  = props.String()
-    orient = props.Choice({
+    cmap        = props.ColourMap()
+    vrange      = props.Bounds(ndims=1)
+    label       = props.String()
+    orientation = props.Choice({
         'horizontal' : 'Horizontal',
         'vertical'   : 'Vertical'})
 
+    labelSide   = props.Choice({
+        'top-left'     : 'Top / left',
+        'bottom-right' : 'Bottom / right'})
     
     def _getSize(      self): raise NotImplementedError()
     def _setGLContext( self): raise NotImplementedError()
@@ -50,7 +53,7 @@ class ColourBarCanvas(props.HasProperties):
             self._createColourBarTexture()
             self._refresh()
 
-        for prop in ('cmap', 'vrange', 'label', 'orient'):
+        for prop in ('cmap', 'vrange', 'label', 'orientation', 'labelSide'):
             self.addListener(prop, self._name, _update)
             
 
@@ -65,8 +68,15 @@ class ColourBarCanvas(props.HasProperties):
         w, h = self._getSize()
 
         if w == 0 or h == 0:
-            if self.orient == 'horizontal': w, h = 600, 200
-            else:                           w, h = 200, 600
+            if self.orientation == 'horizontal': w, h = 600, 200
+            else:                                w, h = 200, 600
+
+        if self.orientation == 'horizontal':
+            if  self.labelSide == 'top-left': labelSide = 'top'
+            else:                             labelSide = 'bottom'
+        else:
+            if  self.labelSide == 'top-left': labelSide = 'left'
+            else:                             labelSide = 'right' 
         
         bitmap = cbarbmp.colourBarBitmap(
             self.cmap,
@@ -74,8 +84,8 @@ class ColourBarCanvas(props.HasProperties):
             self.vrange.xhi,
             w, h,
             self.label,
-            self.orient,
-            'bottom')
+            self.orientation,
+            labelSide)
         bitmap = np.flipud(bitmap)
 
         if self._tex is None:

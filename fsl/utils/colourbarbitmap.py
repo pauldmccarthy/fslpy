@@ -5,7 +5,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides a single function, :func:`plotColourBar`, which uses
+"""This module provides a single function, :func:`colourBarBitmap`, which uses
 :mod:`matplotlib` to plot a colour bar. The colour bar is rendered off-screen
 and returned as an rgba bitmap.
 """
@@ -81,11 +81,6 @@ def colourBarBitmap(cmap,
     ax.set_xticklabels(('{}'.format(vmin), '{}'.format(vmax)))
     ax.tick_params(colors=textColour, labelsize=fontsize)
 
-    minlbl, maxlbl = ax.get_xticklabels()
-
-    minlbl.set_horizontalalignment('left')
-    maxlbl.set_horizontalalignment('right')
-
     if labelside == 'top':
         ax.xaxis.tick_top()
         ax.xaxis.set_label_position('top')
@@ -94,6 +89,11 @@ def colourBarBitmap(cmap,
         ax.xaxis.tick_bottom()
         ax.xaxis.set_label_position('bottom') 
         va = 'bottom'
+
+    minlbl, maxlbl = ax.get_xticklabels()
+
+    minlbl.set_horizontalalignment('left')
+    maxlbl.set_horizontalalignment('right')
     
     if label is not None:
         ax.set_xlabel(label,
