@@ -46,8 +46,12 @@ def run(args, context):
         subprocess.call(sys.argv, env=env)
         sys.exit(0)
 
+    import fsl.fslview.gl                      as fslgl
     import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
     import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
+
+    fslgl.getOSMesaContext()
+    fslgl.bootstrap((1, 4))
 
     imageList, displayCtx = context
 
@@ -59,7 +63,6 @@ def run(args, context):
         canvas = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
             zax=axis,
-            glVersion=(1, 4),
             width=width,
             height=height)
 
@@ -69,7 +72,6 @@ def run(args, context):
         canvas = slicecanvas.OSMesaSliceCanvas(
             imageList,
             zax=axis,
-            glVersion=(1, 4),
             width=width,
             height=height)
 

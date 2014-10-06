@@ -104,3 +104,27 @@ def getWXGLContext():
         dummy.Destroy()
 
     return thismod._wxGLContext
+
+    
+def getOSMesaContext():
+
+    import sys    
+    import OpenGL.GL              as gl
+    import OpenGL.raw.osmesa.mesa as osmesa
+    import OpenGL.arrays          as glarrays
+
+    thismod = sys.modules[__name__]
+    
+    if not hasattr(thismod, '_osmesaGLContext'):
+
+        # We follow the same process as for the
+        # wx.glcanvas.GLContext, described above
+        dummy = glarrays.GLubyteArray.zeros((640, 480, 43))
+        thismod._osmesaGLContext = osmesa.OSMesaCreateContext(gl.GL_RGBA, None)
+        osmesa.OSMesaMakeCurrent(thismod._osmesaGLContext,
+                                 dummy,
+                                 gl.GL_UNSIGNED_BYTE,
+                                 640,
+                                 480) 
+
+    return thismod._osmesaGLContext 

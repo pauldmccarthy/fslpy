@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 import numpy            as np
 import matplotlib.image as mplimg
 
-import OpenGL
 
 import OpenGL.GL              as gl
 import OpenGL.arrays          as glarrays
 import OpenGL.raw.osmesa.mesa as osmesa
 
-import slicecanvas as sc
+import fsl.fslview.gl as fslgl
+import slicecanvas    as sc
        
 
 class OSMesaSliceCanvas(sc.SliceCanvas):
@@ -32,8 +32,6 @@ class OSMesaSliceCanvas(sc.SliceCanvas):
     def __init__(self,
                  imageList,
                  zax=0,
-                 glContext=None,
-                 glVersion=None,
                  width=0,
                  height=0):
         """See the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` constructor
@@ -45,13 +43,10 @@ class OSMesaSliceCanvas(sc.SliceCanvas):
         """
 
         self._width  = width
-        self._height = height 
+        self._height = height
+        self._buffer = glarrays.GLubyteArray.zeros((height, width, 4)) 
  
-        sc.SliceCanvas.__init__(self, imageList, zax, glContext, glVersion)
-
-        # We're doing off-screen rendering, so we
-        # can initialise the GL data immediately
-        self._initGL()
+        sc.SliceCanvas.__init__(self, imageList, zax)
 
 
     def saveToFile(self, filename):
@@ -76,21 +71,10 @@ class OSMesaSliceCanvas(sc.SliceCanvas):
         return self._width, self._height
 
         
-    def _makeGLContext(self):
-        """Creates and returns a OSMesa OpenGL context. Also creates the
-        buffer which is to be used as the 'screen'.
-        """
-        ctx       = osmesa.OSMesaCreateContext(gl.GL_RGBA, None)
-        targetBuf = glarrays.GLubyteArray.zeros((self._height, self._width, 4))
-        
-        self._targetBuf = targetBuf
-        return ctx
-
-        
     def _setGLContext(self):
         """Configures the GL context to render to this canvas. """
-        osmesa.OSMesaMakeCurrent(self.glContext,
-                                 self._targetBuf,
+        osmesa.OSMesaMakeCurrent(fslgl.getOSMesaContext(),
+                                 self._buffer,
                                  gl.GL_UNSIGNED_BYTE,
                                  self._width,
                                  self._height)
