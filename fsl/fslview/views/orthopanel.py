@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 import wx
 import props
 
+import fsl.fslview.gl                 as fslgl
 import fsl.fslview.gl.wxglslicecanvas as slicecanvas
 import canvaspanel
 
@@ -287,6 +288,10 @@ class OrthoFrame(wx.Frame):
     def __init__(self, parent, imageList, displayCtx, title=None):
         
         wx.Frame.__init__(self, parent, title=title)
+
+        fslgl.getWXGLContext() 
+        fslgl.bootstrap()
+        
         self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()
 
@@ -301,7 +306,11 @@ class OrthoDialog(wx.Dialog):
 
         if style is None: style =  wx.DEFAULT_DIALOG_STYLE
         else:             style |= wx.DEFAULT_DIALOG_STYLE
-        
+
         wx.Dialog.__init__(self, parent, title=title, style=style)
+
+        fslgl.getWXGLContext()
+        fslgl.bootstrap()
+        
         self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()

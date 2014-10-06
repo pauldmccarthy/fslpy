@@ -32,8 +32,8 @@ def interface(parent, args, ctx):
 
     # initialise OpenGL version-specific module loads, and
     # force the creation of a wx.glcanvas.GLContext object
-    fslgl.bootstrap(args.glversion)
     fslgl.getWXGLContext()
+    fslgl.bootstrap(args.glversion)
     
     if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
     else:             frame.addViewPanel(views.OrthoPanel)

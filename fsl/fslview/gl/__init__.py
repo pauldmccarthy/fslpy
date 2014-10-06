@@ -100,6 +100,7 @@ def getWXGLContext():
         # the context has been created
         dummy                = wxgl.GLCanvas(wx.GetTopLevelWindows()[0])
         thismod._wxGLContext = wxgl.GLContext(dummy)
+        thismod._wxGLContext.SetCurrent(dummy)
         dummy.Destroy()
 
     return thismod._wxGLContext
