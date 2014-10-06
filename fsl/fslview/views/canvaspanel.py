@@ -46,24 +46,15 @@ class CanvasPanel(viewpanel.ViewPanel):
         'colourBarLocation' : 'Colour bar location'
     } 
 
-    
-    @classmethod
-    def isGLView(cls):
-        return True
-
 
     def __init__(self,
                  parent,
                  imageList,
-                 displayCtx,
-                 glContext=None,
-                 glVersion=None):
+                 displayCtx):
         viewpanel.ViewPanel.__init__(self,
                                      parent,
                                      imageList,
-                                     displayCtx,
-                                     glContext,
-                                     glVersion)
+                                     displayCtx)
 
         self.__canvasPanel = wx.Panel(self)
 

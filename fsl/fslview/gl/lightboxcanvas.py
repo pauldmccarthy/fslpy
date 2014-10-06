@@ -152,11 +152,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return tuple(pos)
 
         
-    def __init__(self,
-                 imageList,
-                 zax=2,
-                 glContext=None,
-                 glVersion=None):
+    def __init__(self, imageList, zax=2):
         """Create a :class:`LightBoxCanvas` object.
         
         :arg imageList: a :class:`~fsl.data.image.ImageList` object which
@@ -165,13 +161,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
         :arg zax:       Image axis to be used as the 'depth' axis. Can be
                         changed via the :attr:`LightBoxCanvas.zax` property.
-
-        :arg glContext: A :class:`wx.glcanvas.GLContext` object. If ``None``,
-                        one will be created.
-
-        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
-                         API version to use. If None, the best possible
-                         version is used.
         """
 
         # These attributes are used to keep track of
@@ -180,8 +169,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._nslices   = 0
         self._totalRows = 0
 
-        slicecanvas.SliceCanvas.__init__(
-            self, imageList, zax, glContext, glVersion)
+        slicecanvas.SliceCanvas.__init__(self, imageList, zax)
 
         # default to showing the entire slice range
         self.zrange.x = imageList.bounds.getRange(self.zax)

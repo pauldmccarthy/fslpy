@@ -103,18 +103,7 @@ class SliceCanvas(props.HasProperties):
         """
         raise NotImplementedError()
 
-        
-    def _makeGLContext(self):
-        """Must be provided by subclasses of :class:`SliceCanvas`. The default
-        implementation raises a :class:`NotImplementedError`.
 
-        Subclass implementations must create and return a handle to an OpenGL
-        context. This context will be stored as an object attribute called
-        `glContext`.
-        """
-        raise NotImplementedError()
-
-        
     def _setGLContext(self):
         """Must be provided by subclasses of :class:`SliceCanvas`. The default
         implementation raises a :class:`NotImplementedError`.
@@ -221,11 +210,7 @@ class SliceCanvas(props.HasProperties):
             self.panDisplayBy(xoff, yoff)
 
         
-    def __init__(self,
-                 imageList,
-                 zax=0,
-                 glContext=None,
-                 glVersion=None):
+    def __init__(self, imageList, zax=0):
         """Creates a canvas object. 
 
         .. note:: It is assumed that each :class:`~fsl.data.image.Image`
@@ -237,13 +222,6 @@ class SliceCanvas(props.HasProperties):
         
         :arg zax:        Image axis perpendicular to the plane to be displayed
                          (the 'depth' axis), default 0.
-
-        :arg glContext:  A :class:`wx.glcanvas.GLContext` object. If ``None``,
-                         one is created.
-
-        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
-                         API version to use. If None, the best possible
-                         version is used. 
         """
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -252,12 +230,6 @@ class SliceCanvas(props.HasProperties):
 
         props.HasProperties.__init__(self)
 
-        # Use the provided shared GL
-        # context, or create a new one
-        if glContext is None: self.glContext = self._makeGLContext()
-        else:                 self.glContext = glContext
-
-        self.glVersion = glVersion
         self.imageList = imageList
         self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
 
@@ -302,17 +274,12 @@ class SliceCanvas(props.HasProperties):
         It initialises the :mod:`fsl.fslview.gl` package, and ensures that
         OpenGL data has been created for each image in the image list.
         """
-        
-        # Call the bootstrap function, which
-        # will figure out which OpenGL version
-        # to use, and do some module magic
-        self._setGLContext()
-        fslgl.bootstrap(self.glVersion)
 
         # Call the _imageListChanged method - it
         # will generate any necessary GL data for
         # each of the images (which can't be done
         # until the canvas is displayed).
+        self._setGLContext()
         self._imageListChanged()
 
         self._glReady = True

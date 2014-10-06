@@ -18,8 +18,10 @@ import logging
 log = logging.getLogger(__name__)
 
 import wx
-import wx.glcanvas as wxgl
-import slicecanvas as slicecanvas
+import wx.glcanvas    as wxgl
+import slicecanvas    as slicecanvas
+
+import fsl.fslview.gl as fslgl
 
 class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
     """A :class:`wx.glcanvas.GLCanvas` and a
@@ -27,23 +29,14 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
     interactive 2D slice rendering from a collection of 3D images.
     """
 
-    def __init__(self,
-                 parent,
-                 imageList,
-                 zax=0,
-                 glContext=None,
-                 glVersion=None):
+    def __init__(self, parent, imageList, zax=0):
         """Configures a few event handlers for cleaning up property
         listeners when the canvas is destroyed, and for redrawing on
         paint/resize events.
         """
 
-        wxgl.GLCanvas .__init__(self, parent)
-        slicecanvas.SliceCanvas.__init__(self,
-                                         imageList,
-                                         zax,
-                                         glContext,
-                                         glVersion) 
+        wxgl.GLCanvas          .__init__(self, parent)
+        slicecanvas.SliceCanvas.__init__(self, imageList, zax) 
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
@@ -93,14 +86,9 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         return self.GetClientSize().Get()
 
         
-    def _makeGLContext(self):
-        """Creates and returns a :class:`wx.glcanvas.GLContext` object."""
-        return wxgl.GLContext(self)
-
-        
     def _setGLContext(self):
         """Configures the GL context for drawing to this canvas."""
-        self.glContext.SetCurrent(self)
+        fslgl.getWXGLContext().SetCurrent(self)
 
         
     def _refresh(self):

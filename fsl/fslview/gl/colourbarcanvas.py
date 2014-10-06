@@ -35,20 +35,13 @@ class ColourBarCanvas(props.HasProperties):
 
     
     def _getSize(      self): raise NotImplementedError()
-    def _makeGLContext(self): raise NotImplementedError()
     def _setGLContext( self): raise NotImplementedError()
     def _refresh(      self): raise NotImplementedError()
     def _postDraw(     self): raise NotImplementedError()
 
 
-    def __init__(self,
-                 glContext=None,
-                 glVersion=None):
+    def __init__(self):
 
-        if glContext is None: self.glContext = self._makeGLContext()
-        else:                 self.glContext = glContext
-
-        self.glVersion = glVersion 
         self._glReady  = False
         self._tex      = None
         self._name     = '{}_{}'.format(self.__class__.__name__, id(self)) 
@@ -63,7 +56,6 @@ class ColourBarCanvas(props.HasProperties):
 
     def _initGL(self):
         self._setGLContext()
-        fslgl.bootstrap(self.glVersion)
         self._createColourBarTexture()
         self._glReady = True
 
@@ -88,10 +80,6 @@ class ColourBarCanvas(props.HasProperties):
 
         if self._tex is None:
             self._tex = gl.glGenTextures(1)
-
-        print 'Updating colour bar texture ' \
-            '({}) to {} ({:0.2f} - {:0.2f})'.format(
-                self._tex, self.cmap.name, self.vrange.xlo, self.vrange.xhi)
 
         gl.glBindTexture(  gl.GL_TEXTURE_2D, self._tex)
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
@@ -126,7 +114,7 @@ class ColourBarCanvas(props.HasProperties):
 
         self._setGLContext()
         
-        width, height = self.GetClientSize().Get()
+        width, height = self._getSize()
 
         # viewport
         gl.glViewport(0, 0, width, height)
@@ -168,9 +156,9 @@ import wx
 import wx.glcanvas as wxgl
  
 class WXGLColourBarCanvas(ColourBarCanvas, wxgl.GLCanvas):
-    def __init__(self, parent, glContext, glVersion):
+    def __init__(self, parent):
         wxgl.GLCanvas.__init__(self, parent)
-        ColourBarCanvas.__init__(self, glContext, glVersion)
+        ColourBarCanvas.__init__(self)
 
         def onsize(*a):
             self._createColourBarTexture()
@@ -183,7 +171,6 @@ class WXGLColourBarCanvas(ColourBarCanvas, wxgl.GLCanvas):
         wx.CallAfter(ColourBarCanvas._initGL, self)
 
     def _getSize(      self): return self.GetClientSize().Get()
-    def _makeGLContext(self): return wxgl.GLContext(self)
-    def _setGLContext( self): return self.glContext.SetCurrent(self)
+    def _setGLContext( self): fslgl.getWXGLContext().SetCurrent(self)
     def _refresh(      self): self.Refresh()
     def _postDraw(     self): self.SwapBuffers()

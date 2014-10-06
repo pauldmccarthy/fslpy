@@ -34,7 +34,7 @@ import os
 if os.environ.get('PYOPENGL_PLATFORM', None) == 'osmesa':
     import OpenGL
     OpenGL.ERROR_ON_COPY  = True 
-    OpenGL.STORE_POINTERS = False 
+    OpenGL.STORE_POINTERS = False
 
 
 def bootstrap(glVersion=None):
@@ -65,7 +65,7 @@ def bootstrap(glVersion=None):
     thismod = sys.modules[__name__]
 
     if hasattr(thismod, '_bootstrapped'):
-        return
+        return 
 
     if glVersion is None:
         glVer        = gl.glGetString(gl.GL_VERSION).split()[0]
@@ -84,3 +84,24 @@ def bootstrap(glVersion=None):
     thismod.glimage_funcs       = glpkg.glimage_funcs
     thismod.glcircle_funcs      = glpkg.glcircle_funcs
     thismod._bootstrapped       = True
+
+
+def getWXGLContext():
+
+    import sys
+    import wx
+    import wx.glcanvas as wxgl
+
+    thismod = sys.modules[__name__]
+    
+    if not hasattr(thismod, '_wxGLContext'):
+        # We can't create a wx GLContext
+        # without a wx GLCanvas. But we
+        # can create a dummy one, and
+        # destroy it immediately after
+        # the context has been created
+        dummy                = wxgl.GLCanvas(wx.GetTopLevelWindows()[0])
+        thismod._wxGLContext = wxgl.GLContext(dummy)
+        dummy.Destroy()
+
+    return thismod._wxGLContext

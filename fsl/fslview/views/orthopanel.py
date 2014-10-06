@@ -77,9 +77,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     def __init__(self,
                  parent,
                  imageList,
-                 displayCtx,
-                 glContext=None,
-                 glVersion=None):
+                 displayCtx):
         """
         Creates three SliceCanvas objects, each displaying the images
         in the given image list along a different axis. 
@@ -93,24 +91,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.SetBackgroundColour('black')
 
         self._xcanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
-                                                    imageList, zax=0,
-                                                    glContext=glContext,
-                                                    glVersion=glVersion)
-
-        if glContext is None:
-            glContext = self._xcanvas.glContext
-
-        self._glContext = glContext
-        self._glVersion = glVersion
-        
+                                                    imageList, zax=0)
         self._ycanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
-                                                    imageList, zax=1,
-                                                    glContext=glContext,
-                                                    glVersion=glVersion)
+                                                    imageList, zax=1)
         self._zcanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
-                                                    imageList, zax=2,
-                                                    glContext=glContext,
-                                                    glVersion=glVersion)
+                                                    imageList, zax=2)
 
         self.bindProps('showCursor', self._xcanvas)
         self.bindProps('showCursor', self._ycanvas)

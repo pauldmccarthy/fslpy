@@ -34,15 +34,13 @@ class FSLViewFrame(wx.Frame):
                  parent,
                  imageList,
                  displayCtx,
-                 default=False,
-                 glVersion=None):
+                 default=False):
         """
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')
         
         self._imageList  = imageList
-        self._glVersion  = glVersion
         self._displayCtx = displayCtx
         self._auimgr     = aui.AuiManager(self)
 
@@ -61,10 +59,6 @@ class FSLViewFrame(wx.Frame):
 
         self._auimgr.AddPane(self._centrePane, paneInfo)
         self._auimgr.Update()
- 
-        # This attribute is set when a view panel (e.g.
-        # ortho or lightbox) is added to the panel
-        self._glContext = None
 
         # we can have as many view
         # panels as we like
@@ -103,20 +97,9 @@ class FSLViewFrame(wx.Frame):
         title    = strings.viewPanelTitles[        panelCls]
         menuText = strings.viewPanelConfigMenuText[panelCls]
 
-        if panelCls.isGLView():
-
-            panel = panelCls(self._centrePane,
-                             self._imageList,
-                             self._displayCtx,
-                             self._glContext,
-                             self._glVersion)
-        else:
-            panel = panelCls(self._centrePane,
-                             self._imageList,
-                             self._displayCtx) 
-
-        if self._glContext is None and panel.isGLView():
-            self._glContext = panel._glContext
+        panel    = panelCls(self._centrePane,
+                            self._imageList,
+                            self._displayCtx) 
 
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)

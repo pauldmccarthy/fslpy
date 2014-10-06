@@ -16,9 +16,7 @@ within other control panels.
 import logging
 log = logging.getLogger(__name__)
 
-import numpy as np
-import          wx
-import          props 
+import wx
 
 import fsl.fslview.viewpanel          as viewpanel
 import fsl.fslview.gl.colourbarcanvas as cbarcanvas
@@ -40,15 +38,11 @@ class ColourBarPanel(viewpanel.ViewPanel):
                  parent,
                  imageList,
                  displayCtx,
-                 glContext=None,
-                 glVersion=None,
                  orientation='horizontal'):
 
         viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._cbPanel = cbarcanvas.WXGLColourBarCanvas(self,
-                                                       self._glContext,
-                                                       self._glVersion)
+        self._cbPanel = cbarcanvas.WXGLColourBarCanvas(self)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)

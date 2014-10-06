@@ -23,11 +23,15 @@ def interface(parent, args, ctx):
 
     import fsl.fslview.fslviewframe   as fslviewframe
     import fsl.fslview.views          as views
+    import fsl.fslview.gl             as fslgl
 
     imageList, displayCtx = ctx
     
     frame = fslviewframe.FSLViewFrame(
-        parent, imageList, displayCtx, args.default, args.glversion)
+        parent, imageList, displayCtx, args.default)
+
+    fslgl.bootstrap(args.glversion)
+    fslgl.getWXGLContext()
     
     if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
     else:             frame.addViewPanel(views.OrthoPanel)

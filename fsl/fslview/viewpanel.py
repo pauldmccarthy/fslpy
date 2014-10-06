@@ -55,17 +55,6 @@ class ViewPanel(wx.Panel, props.HasProperties):
     """ 
    
     @classmethod
-    def isGLView(cls):
-        """Method which returns ``True`` or ``False``, depending upon whether
-        this :class:`ViewPanel` uses OpenGL.
-
-        The default implementation returns ``False``. Subclasses which use
-        OpenGL must override this subclass to return ``True``. 
-        """
-        return False
-
-        
-    @classmethod
     def hasConfigOptions(cls):
         """Method which returns ``True`` or ``False``, depending upon whether
         this :class:`ViewPanel` has any user-configurable properties.
@@ -76,9 +65,7 @@ class ViewPanel(wx.Panel, props.HasProperties):
     def __init__(self,
                  parent,
                  imageList,
-                 displayCtx,
-                 glContext=None,
-                 glVersion=None):
+                 displayCtx):
         """Create a :class:`ViewPanel`.
 
         :arg parent:     The :mod:`wx` parent object of this panel.
@@ -87,18 +74,6 @@ class ViewPanel(wx.Panel, props.HasProperties):
         
         :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
                          instance.
-        
-        :arg glContext:  A :class:`wx.glcanvas.GLContext` instance. If this
-                         :class:`ViewPanel` uses OpenGL, it should use the
-                         provided context. If the provided context is ``None``
-                         this :class:`ViewPanel` should create its own
-                         context, and store it as an attribute called
-                         :attr:`_glContext`. If this :class:`ViewPanel` does
-                         not use OpenGL, this parameter can be ignored.
-
-        :arg glVersion:  A tuple containing the desired (major, minor) OpenGL
-                         API version to use. If None, the best possible
-                         version given the available hardware is used.
         """
         
         wx.Panel.__init__(self, parent)
@@ -116,10 +91,3 @@ class ViewPanel(wx.Panel, props.HasProperties):
         self._imageList  = imageList
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
-
-        if self.isGLView():
-            self._glContext = glContext
-            self._glVersion = glVersion
-        else:
-            self._glContext = None
-            self._glVersion = None

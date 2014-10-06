@@ -73,27 +73,18 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     def __init__(self,
                  parent,
                  imageList,
-                 displayCtx,
-                 glContext=None,
-                 glVersion=None):
+                 displayCtx):
         """
         """
 
         canvaspanel.CanvasPanel.__init__(self,
                                          parent,
                                          imageList,
-                                         displayCtx,
-                                         glContext,
-                                         glVersion)
+                                         displayCtx)
 
         self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
         self._lbCanvas  = lightboxcanvas.LightBoxCanvas(self.getCanvasPanel(),
-                                                        imageList,
-                                                        glContext=glContext,
-                                                        glVersion=glVersion)
-
-        self._glContext = self._lbCanvas.glContext
-        self._glVersion = glVersion
+                                                        imageList)
 
         # My properties are the canvas properties
         self.bindProps('sliceSpacing', self._lbCanvas)
