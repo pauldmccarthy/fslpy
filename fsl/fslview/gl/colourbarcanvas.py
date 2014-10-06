@@ -36,12 +36,6 @@ class ColourBarCanvas(props.HasProperties):
     labelSide   = props.Choice({
         'top-left'     : 'Top / left',
         'bottom-right' : 'Bottom / right'})
-    
-    def _getSize(      self): raise NotImplementedError()
-    def _setGLContext( self): raise NotImplementedError()
-    def _refresh(      self): raise NotImplementedError()
-    def _postDraw(     self): raise NotImplementedError()
-
 
     def __init__(self):
 
@@ -160,10 +154,14 @@ class ColourBarCanvas(props.HasProperties):
 import wx
 import wx.glcanvas as wxgl
  
-class WXGLColourBarCanvas(ColourBarCanvas, wxgl.GLCanvas):
+class WXGLColourBarCanvas(ColourBarCanvas,
+                          fslgl.WXGLCanvasTarget,
+                          wxgl.GLCanvas):
     def __init__(self, parent):
-        wxgl.GLCanvas.__init__(self, parent)
-        ColourBarCanvas.__init__(self)
+        
+        wxgl.GLCanvas         .__init__(self, parent)
+        fslgl.WXGLCanvasTarget.__init__(self)
+        ColourBarCanvas       .__init__(self)
 
         def onsize(ev):
             self._createColourBarTexture()
@@ -172,8 +170,3 @@ class WXGLColourBarCanvas(ColourBarCanvas, wxgl.GLCanvas):
 
         self.Bind(wx.EVT_PAINT, self.draw)
         self.Bind(wx.EVT_SIZE, onsize)
-        
-    def _getSize(      self): return self.GetClientSize().Get()
-    def _setGLContext( self): fslgl.getWXGLContext().SetCurrent(self)
-    def _refresh(      self): self.Refresh()
-    def _postDraw(     self): self.SwapBuffers()
