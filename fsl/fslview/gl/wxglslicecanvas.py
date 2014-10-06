@@ -19,11 +19,13 @@ log = logging.getLogger(__name__)
 
 import wx
 import wx.glcanvas    as wxgl
-import slicecanvas    as slicecanvas
 
+import slicecanvas    as slicecanvas
 import fsl.fslview.gl as fslgl
 
-class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
+class WXGLSliceCanvas(slicecanvas.SliceCanvas,
+                      wxgl.GLCanvas,
+                      fslgl.WXGLCanvasTarget):
     """A :class:`wx.glcanvas.GLCanvas` and a
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`, for on-screen
     interactive 2D slice rendering from a collection of 3D images.
@@ -36,7 +38,8 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         """
 
         wxgl.GLCanvas          .__init__(self, parent)
-        slicecanvas.SliceCanvas.__init__(self, imageList, zax) 
+        fslgl.WXGLCanvasTarget .__init__(self)
+        slicecanvas.SliceCanvas.__init__(self, imageList, zax)
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
@@ -72,25 +75,3 @@ class WXGLSliceCanvas(wxgl.GLCanvas, slicecanvas.SliceCanvas):
         # All the work is done
         # by the draw method.
         self.Bind(wx.EVT_PAINT, self.draw)
-
-        
-    def _getSize(self):
-        """Returns the current canvas size. """
-        return self.GetClientSize().Get()
-
-        
-    def _setGLContext(self):
-        """Configures the GL context for drawing to this canvas."""
-        fslgl.getWXGLContext().SetCurrent(self)
-
-        
-    def _refresh(self):
-        """Triggers a redraw via the :mod:`wx` `Refresh` method."""
-        self.Refresh()
-
-        
-    def _postDraw(self):
-        """Called after the scene has been rendered. Swaps the front/back
-        buffers. 
-        """
-        self.SwapBuffers()

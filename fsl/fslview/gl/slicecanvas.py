@@ -92,45 +92,6 @@ class SliceCanvas(props.HasProperties):
     
     _propHelp = _tooltips
 
-
-    def _getSize(self):
-        """Must be provided by subclasses of :class:`SliceCanvas`. The default
-        implementation raises a :class:`NotImplementedError`.
-
-        Subclass implementations must return a tuple containing the current
-        canvas width and height.
-        """
-        raise NotImplementedError()
-
-
-    def _setGLContext(self):
-        """Must be provided by subclasses of :class:`SliceCanvas`. The default
-        implementation raises a :class:`NotImplementedError`.
-
-        Subclass implementations must configure the GL context for drawing to
-        this canvas.
-        """
-        raise NotImplementedError()
-
-        
-    def _refresh(self):
-        """Must be provided by subclasses of :class:`SliceCanvas`. The default
-        implementation raises a :class:`NotImplementedError`.
-
-        Subclass implementations must refresh the canvas.
-        """
-        raise NotImplementedError()
-
-        
-    def _postDraw(self):
-        """Must be provided by subclasses of :class:`SliceCanvas`. The default
-        implementation raises a :class:`NotImplementedError`.
-
-        Subclass implementations can do anything that must be done after the
-        canvas has been drawn to (e.g. swapping buffers for double buffering).
-        """
-        raise NotImplementedError()
-
     
     def canvasToWorld(self, xpos, ypos):
         """Given pixel x/y coordinates on this canvas, translates them

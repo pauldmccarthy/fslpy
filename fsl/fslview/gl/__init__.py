@@ -128,3 +128,84 @@ def getOSMesaContext():
                                  480) 
 
     return thismod._osmesaGLContext 
+
+
+class OSMesaCanvasTarget(object):
+    
+    def __init__(self, width, height):
+        import OpenGL.arrays as glarrays 
+        self._width  = width
+        self._height = height
+        self._buffer = glarrays.GLubyteArray.zeros((height, width, 4))
+
+    def _getSize(self):
+        """Returns a tuple containing the canvas width and height."""
+        return self._width, self._height
+
+        
+    def _setGLContext(self):
+        import OpenGL.GL              as gl
+        import OpenGL.raw.osmesa.mesa as osmesa
+ 
+        """Configures the GL context to render to this canvas. """
+        osmesa.OSMesaMakeCurrent(getOSMesaContext(),
+                                 self._buffer,
+                                 gl.GL_UNSIGNED_BYTE,
+                                 self._width,
+                                 self._height)
+
+        
+    def _refresh(self):
+        """Does nothing. This canvas is for static (i.e. unchanging) rendering.
+        """
+        pass
+
+        
+    def _postDraw(self):
+        """Does nothing, see :method:`_refresh`."""
+        pass
+
+
+
+    def saveToFile(self, filename):
+        """Saves the contents of this canvas as an image, to the specified
+        file.
+        """
+        import OpenGL.GL        as gl
+        import numpy            as np
+        import matplotlib.image as mplimg
+        
+        ia  = gl.glReadPixels(
+            0, 0,
+            self._width, self._height,
+            gl.GL_RGBA,
+            gl.GL_UNSIGNED_BYTE)
+        
+        img = np.fromstring(ia, dtype=np.uint8)
+        img = img.reshape((self._height, self._width, 4))
+        img = np.flipud(img)
+        mplimg.imsave(filename, img) 
+
+
+class WXGLCanvasTarget(object):
+    
+    def _getSize(self):
+        """Returns the current canvas size. """
+        return self.GetClientSize().Get()
+
+        
+    def _setGLContext(self):
+        """Configures the GL context for drawing to this canvas."""
+        getWXGLContext().SetCurrent(self)
+
+        
+    def _refresh(self):
+        """Triggers a redraw via the :mod:`wx` `Refresh` method."""
+        self.Refresh()
+
+        
+    def _postDraw(self):
+        """Called after the scene has been rendered. Swaps the front/back
+        buffers. 
+        """
+        self.SwapBuffers()

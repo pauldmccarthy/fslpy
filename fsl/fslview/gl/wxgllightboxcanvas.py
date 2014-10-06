@@ -14,7 +14,9 @@ import wx.glcanvas    as wxgl
 import lightboxcanvas as lightboxcanvas
 import fsl.fslview.gl as fslgl
 
-class WXGLLightBoxCanvas(wxgl.GLCanvas, lightboxcanvas.LightBoxCanvas):
+class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
+                         wxgl.GLCanvas,
+                         fslgl.WXGLCanvasTarget):
     """A :class:`wx.glcanvas.GLCanvas` and a
     :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`, for on-screen
     interactive 2D slice rendering from a collection of 3D images.
@@ -27,6 +29,7 @@ class WXGLLightBoxCanvas(wxgl.GLCanvas, lightboxcanvas.LightBoxCanvas):
         """
 
         wxgl.GLCanvas                .__init__(self, parent)
+        fslgl.WXGLCanvasTarget       .__init__(self)
         lightboxcanvas.LightBoxCanvas.__init__(self, imageList, zax) 
         
         # the image list is probably going to outlive
@@ -64,26 +67,5 @@ class WXGLLightBoxCanvas(wxgl.GLCanvas, lightboxcanvas.LightBoxCanvas):
         # by the draw method.
         self.Bind(wx.EVT_PAINT, self.draw)
 
-        
-    def _getSize(self):
-        """Returns the current canvas size. """
-        return self.GetClientSize().Get()
-
-        
-    def _setGLContext(self):
-        """Configures the GL context for drawing to this canvas."""
-        fslgl.getWXGLContext().SetCurrent(self)
-
-        
-    def _refresh(self):
-        """Triggers a redraw via the :mod:`wx` `Refresh` method."""
-        self.Refresh()
-
-        
-    def _postDraw(self):
-        """Called after the scene has been rendered. Swaps the front/back
-        buffers. 
-        """
-        self.SwapBuffers()
-
+# A convenient alias
 LightBoxCanvas = WXGLLightBoxCanvas
