@@ -30,6 +30,8 @@ def interface(parent, args, ctx):
     frame = fslviewframe.FSLViewFrame(
         parent, imageList, displayCtx, args.default)
 
+    # initialise OpenGL version-specific module loads, and
+    # force the creation of a wx.glcanvas.GLContext object
     fslgl.bootstrap(args.glversion)
     fslgl.getWXGLContext()
     

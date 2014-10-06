@@ -46,12 +46,6 @@ class ViewPanel(wx.Panel, props.HasProperties):
         contains display related properties about the :attr:`_imageList`.
     
       - :attr:`_name`: A unique name for this :class:`ViewPanel`.
-
-      - :attr:`_glContext: A :class:`wx.glcanvas.GLContext` instance, if
-        this :class:`ViewPanel` uses OpenGL, or ``None`` if it doesn't.
-
-    Subclasses which use OpenGL to render their view must override the
-    :meth:`isGLView` method to return ``True``.
     """ 
    
     @classmethod

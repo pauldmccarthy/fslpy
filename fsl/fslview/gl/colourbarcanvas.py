@@ -120,7 +120,7 @@ class ColourBarCanvas(props.HasProperties):
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(-0.1, 1.1, -0.1, 1.1, -1.0, 1.0)
+        gl.glOrtho(0, 1, 0, 1, -1, 1)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
@@ -131,9 +131,11 @@ class ColourBarCanvas(props.HasProperties):
 
         gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-        
+
+        gl.glActiveTexture(gl.GL_TEXTURE0) 
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self._tex) 
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE) 
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self._tex)
 
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0, 0)
