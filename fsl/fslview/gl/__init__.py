@@ -79,7 +79,6 @@ def bootstrap(glVersion=None):
     elif major >= 1 and minor >= 4: glpkg = gl14
     else: raise RuntimeError('OpenGL 1.4 or newer is required')
 
-    thismod.slicecanvas_draw    = glpkg.slicecanvas_draw
     thismod.lightboxcanvas_draw = glpkg.lightboxcanvas_draw
     thismod.glimage_funcs       = glpkg.glimage_funcs
     thismod.glcircle_funcs      = glpkg.glcircle_funcs

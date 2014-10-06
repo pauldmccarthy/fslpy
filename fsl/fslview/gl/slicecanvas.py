@@ -29,7 +29,6 @@ import OpenGL.GL              as gl
 import props
 
 import fsl.data.image          as fslimage
-import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
 
 
@@ -285,66 +284,6 @@ class SliceCanvas(props.HasProperties):
         self._glReady = True
  
 
-    def draw(self, *a):
-        """Draws the current scene to the canvas. 
-
-        Ths actual drawing is managed by the OpenGL version-dependent
-        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
-        the actual drawing.
-        """
-
-        if not self._glReady:
-            self._initGL()
-            return
-
-        self._setGLContext()
-        self._setViewport() 
-        fslgl.slicecanvas_draw.draw(self)
-        if self.showCursor: self.drawCursor()
-        self._postDraw()
-
-
-    def drawCursor(self):
-        """Draws a green cursor at the current X/Y position."""
-        
-        # A vertical line at xpos, and a horizontal line at ypos
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3))
-
-        xmin, xmax = self.imageList.bounds.getRange(self.xax)
-        ymin, ymax = self.imageList.bounds.getRange(self.yax)
-
-        x = self.pos.x
-        y = self.pos.y
-
-        # How big is one pixel in world space?
-        w, h = self._getSize()
-        pixx = (xmax - xmin) / float(w)
-        pixy = (ymax - ymin) / float(h)
-
-        # add a little padding to the lines if they are 
-        # on the boundary, so they don't get cropped        
-        if x <= xmin: x = xmin + 0.5 * pixx
-        if x >= xmax: x = xmax - 0.5 * pixx
-        if y <= ymin: y = ymin + 0.5 * pixy
-        if y >= ymax: y = ymax - 0.5 * pixy 
-
-        xverts[:, self.xax] = x
-        yverts[:, self.yax] = y 
-        xverts[:, self.yax] = [ymin, ymax]
-        xverts[:, self.zax] =  self.pos.z + 1
-        yverts[:, self.xax] = [xmin, xmax]
-        yverts[:, self.zax] =  self.pos.z + 1
-
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd()
-
-        
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
         the corresponding X and Y axes, and saves them as attributes of
@@ -648,3 +587,92 @@ class SliceCanvas(props.HasProperties):
         trans = [0, 0, 0]
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
+
+        
+    def drawCursor(self):
+        """Draws a green cursor at the current X/Y position."""
+        
+        # A vertical line at xpos, and a horizontal line at ypos
+        xverts = np.zeros((2, 3))
+        yverts = np.zeros((2, 3))
+
+        xmin, xmax = self.imageList.bounds.getRange(self.xax)
+        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+
+        x = self.pos.x
+        y = self.pos.y
+
+        # How big is one pixel in world space?
+        w, h = self._getSize()
+        pixx = (xmax - xmin) / float(w)
+        pixy = (ymax - ymin) / float(h)
+
+        # add a little padding to the lines if they are 
+        # on the boundary, so they don't get cropped        
+        if x <= xmin: x = xmin + 0.5 * pixx
+        if x >= xmax: x = xmax - 0.5 * pixx
+        if y <= ymin: y = ymin + 0.5 * pixy
+        if y >= ymax: y = ymax - 0.5 * pixy 
+
+        xverts[:, self.xax] = x
+        yverts[:, self.yax] = y 
+        xverts[:, self.yax] = [ymin, ymax]
+        xverts[:, self.zax] =  self.pos.z + 1
+        yverts[:, self.xax] = [xmin, xmax]
+        yverts[:, self.zax] =  self.pos.z + 1
+
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(0, 1, 0)
+        gl.glVertex3f(*xverts[0])
+        gl.glVertex3f(*xverts[1])
+        gl.glVertex3f(*yverts[0])
+        gl.glVertex3f(*yverts[1])
+        gl.glEnd()
+ 
+
+    def draw(self, *a):
+        """Draws the current scene to the canvas. 
+
+        Ths actual drawing is managed by the OpenGL version-dependent
+        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
+        the actual drawing.
+        """
+
+        if not self._glReady:
+            self._initGL()
+            return
+
+        self._setGLContext()
+        self._setViewport()
+
+        # clear the canvas
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        # Enable storage of tightly packed data
+        # of any size, for our 3D image texture 
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1) 
+
+        # disable interpolation
+        gl.glShadeModel(gl.GL_FLAT)
+
+        for image in self.imageList:
+
+            try: globj = image.getAttribute(self.name)
+            except KeyError:
+                continue
+
+            if (globj is None) or (not globj.ready()):
+                continue 
+
+            log.debug('Drawing {} slice for image {}'.format(
+                self.zax, image.name))
+
+            globj.draw(self.pos.z)
+        
+        if self.showCursor: self.drawCursor()
+        self._postDraw()
