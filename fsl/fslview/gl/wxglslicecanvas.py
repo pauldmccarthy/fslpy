@@ -71,7 +71,3 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
             self._updateDisplayBounds()
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
-
-        # All the work is done
-        # by the draw method.
-        self.Bind(wx.EVT_PAINT, self.draw)

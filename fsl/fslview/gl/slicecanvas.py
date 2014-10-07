@@ -226,7 +226,6 @@ class SliceCanvas(props.HasProperties):
     def _initGL(self):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
-        self._setGLContext()
         self._imageListChanged()
  
 
@@ -576,7 +575,7 @@ class SliceCanvas(props.HasProperties):
         gl.glEnd()
  
 
-    def draw(self, *a):
+    def _draw(self):
         """Draws the current scene to the canvas. 
 
         Ths actual drawing is managed by the OpenGL version-dependent
@@ -584,7 +583,6 @@ class SliceCanvas(props.HasProperties):
         the actual drawing.
         """
 
-        self._setGLContext()
         self._setViewport()
 
         # clear the canvas

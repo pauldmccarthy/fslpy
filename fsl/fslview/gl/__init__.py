@@ -200,20 +200,36 @@ class WXGLCanvasTarget(object):
 
         import wx
 
-        def initGL(*a):
-            print 'Init {}'.format(self)
-            self._initGL() 
-
-        if self.IsShownOnScreen():
-            print 'ISShown'
-            initGL()
-        else:
-            print 'Will call on show'
-            self.Bind(wx.EVT_SHOW, initGL)
+        self._glReady = False
+        self.Bind(wx.EVT_PAINT, self._mainDraw)
     
 
     def _initGL(self):
         raise NotImplementedError()
+
+
+    def _draw(self):
+        raise NotImplementedError()
+ 
+        
+    def _mainDraw(self, *a):
+
+        import wx
+
+        def doInit(*a):
+            self._setGLContext()
+            self._initGL()
+            self._glReady = True
+            self._draw()
+
+        if not self._glReady:
+            wx.CallAfter(doInit)
+            return
+
+        if not self._setGLContext():
+            return
+
+        self._draw()
 
         
     def _getSize(self):

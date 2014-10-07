@@ -479,11 +479,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         gl.glEnd() 
 
         
-    def draw(self, *a):
+    def _draw(self):
         """
         """
         
-        self._setGLContext()
         self._setViewport()
 
         startSlice   = self.ncols * self.topRow

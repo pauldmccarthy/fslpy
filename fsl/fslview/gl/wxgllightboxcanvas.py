@@ -29,8 +29,8 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
         """
 
         wxgl.GLCanvas                .__init__(self, parent)
+        lightboxcanvas.LightBoxCanvas.__init__(self, imageList, zax)
         fslgl.WXGLCanvasTarget       .__init__(self)
-        lightboxcanvas.LightBoxCanvas.__init__(self, imageList, zax) 
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
@@ -62,10 +62,6 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             self._updateDisplayBounds()
             ev.Skip()
         self.Bind(wx.EVT_SIZE, onResize)
-
-        # All the work is done
-        # by the draw method.
-        self.Bind(wx.EVT_PAINT, self.draw)
 
 # A convenient alias
 LightBoxCanvas = WXGLLightBoxCanvas
