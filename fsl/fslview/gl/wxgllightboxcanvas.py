@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-# wxgllightboxcanvas.py -
+# wxgllightboxcanvas.py - A wx.glcanvas.GLCanvas LightBoxCanvas.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides the :class:`WXGLLightBoxCanvas`, which is both a
+:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`, and a 
+:class:`wx.glcanvas.GLCanvas`. 
+"""
 
 import logging
 log = logging.getLogger(__name__)

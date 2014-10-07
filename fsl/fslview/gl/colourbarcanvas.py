@@ -6,9 +6,11 @@
 #
 """This module provides the :class:`ColourBarCanvas`.
 
-The :class:`ColourBarCanvas` contains logic which uses :mod:`matplotlib` to
-draw a colour bar (with labels), and then renders said colour bar using
-OpenGL.
+The :class:`ColourBarCanvas` contains logic to draw a colour bar (with
+labels), and then renders said colour bar as a texture using OpenGL.
+
+See the :mod:`~fsl.utils.colourbarbitmap` module for details on how
+the colour bar is created.
 """
 
 import logging
@@ -20,27 +22,46 @@ import numpy             as np
 
 import props
 
-import fsl.fslview.gl                as fslgl
-import fsl.utils.colourbarbitmap     as cbarbmp
+import fsl.utils.colourbarbitmap as cbarbmp
 
 
 class ColourBarCanvas(props.HasProperties):
+    """Contains logic to render a colour bar as an OpenGL texture.
+    """
 
-    cmap        = props.ColourMap()
-    vrange      = props.Bounds(ndims=1)
-    label       = props.String()
+    cmap = props.ColourMap()
+    """The :mod:`matplotlib` colour map to use."""
+
+    
+    vrange = props.Bounds(ndims=1)
+    """The minimum/maximum values to display."""
+
+    
+    label = props.String()
+    """A label to display under the centre of the colour bar."""
+
+    
     orientation = props.Choice({
         'horizontal' : 'Horizontal',
         'vertical'   : 'Vertical'})
+    """Whether the colour bar should be vertical or horizontal. """
 
-    labelSide   = props.Choice({
+    
+    labelSide = props.Choice({
         'top-left'     : 'Top / left',
         'bottom-right' : 'Bottom / right'})
+    """Whether the colour bar labels should be on the top/left, or bottom/right
+    of the colour bar (depending upon whether the colour bar orientation is
+    horizontal/vertical).
+    """
 
     def __init__(self):
+        """Adds a few listeners to the properties of this object, to update
+        the colour bar when they change.
+        """
 
-        self._tex      = None
-        self._name     = '{}_{}'.format(self.__class__.__name__, id(self)) 
+        self._tex  = None
+        self._name = '{}_{}'.format(self.__class__.__name__, id(self)) 
 
         def _update(*a):
             self._genColourBarTexture()
@@ -51,10 +72,19 @@ class ColourBarCanvas(props.HasProperties):
 
 
     def _initGL(self):
+        """Called automatically by the OpenGL canvas target superclass (see
+        the :class:`~fsl.fslview.gl.WXGLCanvasTarget` and
+        :class:`~fsl.fslview.gl.OSMesaCanvasTarget` for details).
+
+        Generates the colour bar texture.
+        """
         self._genColourBarTexture()
 
 
     def _genColourBarTexture(self):
+        """Generates a texture containing an image of the colour bar,
+        according to the current property values.
+        """
 
         self._setGLContext()
 
@@ -118,6 +148,7 @@ class ColourBarCanvas(props.HasProperties):
 
 
     def _draw(self):
+        """Renders the colour bar texture using all available canvas space."""
 
         self._setGLContext()
         
@@ -159,23 +190,3 @@ class ColourBarCanvas(props.HasProperties):
         gl.glDisable(gl.GL_TEXTURE_2D)
 
         self._postDraw()
-
-
-import wx
-import wx.glcanvas as wxgl
- 
-class WXGLColourBarCanvas(ColourBarCanvas,
-                          fslgl.WXGLCanvasTarget,
-                          wxgl.GLCanvas):
-    def __init__(self, parent):
-        
-        wxgl.GLCanvas         .__init__(self, parent)
-        ColourBarCanvas       .__init__(self)
-        fslgl.WXGLCanvasTarget.__init__(self)
-
-        def onsize(ev):
-            self._genColourBarTexture()
-            self.Refresh()
-            ev.Skip()
-
-        self.Bind(wx.EVT_SIZE, onsize)

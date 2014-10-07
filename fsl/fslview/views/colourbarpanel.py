@@ -18,8 +18,8 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.fslview.viewpanel          as viewpanel
-import fsl.fslview.gl.colourbarcanvas as cbarcanvas
+import fsl.fslview.viewpanel              as viewpanel
+import fsl.fslview.gl.wxglcolourbarcanvas as cbarcanvas
 
 
 class ColourBarPanel(viewpanel.ViewPanel):
@@ -42,7 +42,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._cbPanel = cbarcanvas.WXGLColourBarCanvas(self)
+        self._cbPanel = cbarcanvas.ColourBarCanvas(self)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)

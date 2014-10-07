@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# CanvasPanel.py -
+# canvaspanel.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
