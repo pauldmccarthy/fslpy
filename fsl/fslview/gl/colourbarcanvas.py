@@ -67,17 +67,20 @@ class ColourBarCanvas(props.HasProperties):
             else:                             labelSide = 'bottom'
         else:
             if  self.labelSide == 'top-left': labelSide = 'left'
-            else:                             labelSide = 'right' 
-        
-        bitmap = cbarbmp.colourBarBitmap(
-            self.cmap,
-            self.vrange.xlo,
-            self.vrange.xhi,
-            w, h,
-            self.label,
-            self.orientation,
-            labelSide)
-        bitmap = np.flipud(bitmap)
+            else:                             labelSide = 'right'
+
+        if self.cmap is None:
+            bitmap = np.zeros((w, h, 4), dtype=np.uint8)
+        else:
+            bitmap = cbarbmp.colourBarBitmap(
+                self.cmap,
+                self.vrange.xlo,
+                self.vrange.xhi,
+                w, h,
+                self.label,
+                self.orientation,
+                labelSide)
+            bitmap = np.flipud(bitmap)
 
         if self._tex is None:
             self._tex = gl.glGenTextures(1)

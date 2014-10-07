@@ -133,17 +133,23 @@ class ColourBarPanel(viewpanel.ViewPanel):
     def _imageNameChanged(self, *a):
         """
         """
-        image = self._imageList[self._displayCtx.selectedImage]
-        self._cbPanel.label = image.name
+        if len(self._imageList) > 0:
+            label = self._imageList[self._displayCtx.selectedImage].name
+        else:
+            label = ''
+        self._cbPanel.label = label
 
         
     def _displayRangeChanged(self, *a):
         """
         """
-        image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
 
-        dmin, dmax = display.displayRange.getRange(0)
+        if len(self._imageList) > 0:
+            image      = self._imageList[self._displayCtx.selectedImage]
+            display    = image.getAttribute('display')
+            dmin, dmax = display.displayRange.getRange(0)
+        else:
+            dmin, dmax = 0.0, 0.0
 
         self._cbPanel.vrange.x = (dmin, dmax)
 
@@ -152,8 +158,12 @@ class ColourBarPanel(viewpanel.ViewPanel):
         """
         """
 
-        image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
-        cmap    = display.cmap
+        if len(self._imageList) > 0:
+
+            image   = self._imageList[self._displayCtx.selectedImage]
+            display = image.getAttribute('display')
+            cmap    = display.cmap
+        else:
+            cmap = None
 
         self._cbPanel.cmap = cmap
