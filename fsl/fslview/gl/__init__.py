@@ -23,6 +23,20 @@ about any of this - just instantiate the GUI classes provided by the
 version-independent modules (e.g. the
 :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` class) as you would any
 other :mod:`wx` widget.
+
+Two methods of OpenGL usage are supported:
+
+  - On-screen display of a scene using a :class:`wx.glcanvas.GLCanvas` canvas.
+
+  - Off-screen renering of a scene using OSMesa.
+
+Two helper classes are provided for each of these cases:
+
+ - The :class:`WXGLCanvasTarget` class for on-screen rendering using
+   :mod:`wx`.
+
+ - The :class:`OSMesaCanvasTarget` class for off-screen rendering using
+   OSMesa.
 """
 
 import logging
@@ -93,6 +107,12 @@ def bootstrap(glVersion=None):
 
 
 def getWXGLContext():
+    """Create and return a GL context object for rendering to a
+    :class:`wx.glcanvas.GLCanvas` canvas.
+
+    If a context object has already been created, it is returned.
+    Otherwise, one is created and returned.
+    """
 
     import sys
     import wx
@@ -129,6 +149,9 @@ def getWXGLContext():
 
     
 def getOSMesaContext():
+    """Create and return a GL context object for off-screen rendering using
+    OSMesa.
+    """
 
     import sys    
     import OpenGL.GL              as gl
@@ -140,7 +163,7 @@ def getOSMesaContext():
     if not hasattr(thismod, '_osmesaGLContext'):
 
         # We follow the same process as for the
-        # wx.glcanvas.GLContext, described above
+        # wx.glcanvas.GLContext, described above 
         dummy = glarrays.GLubyteArray.zeros((640, 480, 43))
         thismod._osmesaGLContext = osmesa.OSMesaCreateContext(gl.GL_RGBA, None)
         osmesa.OSMesaMakeCurrent(thismod._osmesaGLContext,
@@ -153,13 +176,22 @@ def getOSMesaContext():
 
 
 class OSMesaCanvasTarget(object):
+    """Superclass for canvas objects which support off-screen rendering using
+    OSMesa.
+    """
     
     def __init__(self, width, height):
+        """Creates an off-screen buffer to be used as the render target.
+
+        :arg width:  Width in pixels
+        :arg height: Height in pixels
+        """
         import OpenGL.arrays as glarrays 
         self._width  = width
         self._height = height
         self._buffer = glarrays.GLubyteArray.zeros((height, width, 4))
 
+        
     def _getSize(self):
         """Returns a tuple containing the canvas width and height."""
         return self._width, self._height
@@ -168,7 +200,6 @@ class OSMesaCanvasTarget(object):
     def _setGLContext(self):
         import OpenGL.GL              as gl
         import OpenGL.raw.osmesa.mesa as osmesa
- 
         """Configures the GL context to render to this canvas. """
         osmesa.OSMesaMakeCurrent(getOSMesaContext(),
                                  self._buffer,
@@ -186,7 +217,6 @@ class OSMesaCanvasTarget(object):
     def _postDraw(self):
         """Does nothing, see :method:`_refresh`."""
         pass
-
 
 
     def saveToFile(self, filename):
@@ -210,9 +240,16 @@ class OSMesaCanvasTarget(object):
 
 
 class WXGLCanvasTarget(object):
+    """Superclass for :class:`wx.glcanvas.GLCanvas` objects objects.
+
+    It is assumed that subclasses of this superclass are also subclasses of
+    :class:`wx.glcanvas.GLCanvas`
+    """
 
 
     def __init__(self):
+        """Binds :attr:`wx.EVT_PAINT` events to the :meth:`_mainDraw` method.
+        """
 
         import wx
 
@@ -221,28 +258,38 @@ class WXGLCanvasTarget(object):
     
 
     def _initGL(self):
+        """Must be implemented by subclasses.
+
+        This method should perform any OpenGL data initialisation required for
+        rendering.
+        """
         raise NotImplementedError()
 
 
     def _draw(self):
+        """Must be implemented by subclasses.
+
+        This method should implement the OpenGL drawing logic.
+        """
         raise NotImplementedError()
  
         
     def _mainDraw(self, *a):
+        """Called on :attr:`wx.EVT_PAINT` events.
+
+        This method calls :meth:`_initGL` if it has not already been called.
+        Otherwise, it calls the subclass :meth:`_draw` method.
+        """
 
         import wx
 
         def doInit(*a):
-            self._setGLContext()
             self._initGL()
             self._glReady = True
             self._draw()
 
         if not self._glReady:
             wx.CallAfter(doInit)
-            return
-
-        if not self._setGLContext():
             return
 
         self._draw()
@@ -254,8 +301,11 @@ class WXGLCanvasTarget(object):
 
         
     def _setGLContext(self):
-        """Configures the GL context for drawing to this canvas."""
-        
+        """Configures the GL context for drawing to this canvas.
+
+        This method should be called before any OpenGL operations related to
+        this canvas take place (e.g. texture/data creation, drawing, etc).
+        """
         if not self.IsShownOnScreen(): return False
         getWXGLContext().SetCurrent(self)
         return True

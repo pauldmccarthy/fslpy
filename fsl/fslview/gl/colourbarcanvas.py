@@ -56,6 +56,8 @@ class ColourBarCanvas(props.HasProperties):
 
     def _genColourBarTexture(self):
 
+        self._setGLContext()
+
         w, h = self._getSize()
 
         if w == 0 or h == 0:
@@ -117,6 +119,8 @@ class ColourBarCanvas(props.HasProperties):
 
     def _draw(self):
 
+        self._setGLContext()
+        
         width, height = self._getSize()
 
         # viewport

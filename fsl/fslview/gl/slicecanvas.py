@@ -281,6 +281,8 @@ class SliceCanvas(props.HasProperties):
         triggers a refresh.
         """
 
+        self._setGLContext()
+
         # Create a GL object for any new images,
         # and attach a listener to their display
         # properties so we know when to refresh
@@ -534,7 +536,7 @@ class SliceCanvas(props.HasProperties):
         gl.glTranslatef(*trans)
 
         
-    def drawCursor(self):
+    def _drawCursor(self):
         """Draws a green cursor at the current X/Y position."""
         
         # A vertical line at xpos, and a horizontal line at ypos
@@ -583,6 +585,7 @@ class SliceCanvas(props.HasProperties):
         the actual drawing.
         """
 
+        self._setGLContext()
         self._setViewport()
 
         # clear the canvas
@@ -609,5 +612,5 @@ class SliceCanvas(props.HasProperties):
 
             globj.draw(self.pos.z)
         
-        if self.showCursor: self.drawCursor()
+        if self.showCursor: self._drawCursor()
         self._postDraw()

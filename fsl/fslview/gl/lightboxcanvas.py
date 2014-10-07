@@ -441,7 +441,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return translate
 
 
-    def drawCursor(self):
+    def _drawCursor(self):
         """Draws a cursor at the current canvas position (the
         :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
         """
@@ -482,7 +482,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     def _draw(self):
         """
         """
-        
+
+        self._setGLContext()
         self._setViewport()
 
         startSlice   = self.ncols * self.topRow
@@ -519,6 +520,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                            self._transforms[i][zi])
 
         if self.showCursor:
-            self.drawCursor()
+            self._drawCursor()
 
         self._postDraw()
