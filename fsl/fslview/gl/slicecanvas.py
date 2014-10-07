@@ -227,7 +227,6 @@ class SliceCanvas(props.HasProperties):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._imageListChanged()
-        self._imageBoundsChanged()
  
 
     def _zAxisChanged(self, *a):
