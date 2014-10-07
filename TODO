@@ -6,13 +6,13 @@ regularly, too.
 
 * Bugs to fix
 ** Linux/Jalapeno Bad window crash
-** Exceptions thrown on empty image name
 ** Slice changes on ludo's bad image, when using pixdim transformation.
 ** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
 ** No worky in VNC session.
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in image file load (WX/OSX issue)
 ** OSMesa render doesn't like circle voxels
+** DONE Exceptions thrown on empty image name
 ** DONE ColourBarPanel assumes that len(imageList) > 0
 ** DONE is av.nii.gz being displayed properly? Yep, it's interpolation causing a bit of weirdness, but it is being displayed correctly.
 ** DONE Lightbox is a bit temperemental at the moment.
@@ -40,16 +40,8 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Why is the SliceCanvas responsible for creating GL contexts?
-Maybe I should define a 'GLManager' which has a bunch of methods on it
-(e.g. create context, set current, etc), and is passed to all the GL things
-that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
 ** Background colour option in render.py
-** Remove duplicate argument parsing code between tools/render.py and tools/fslview.py
-** Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
-** Refactor wxglslicecanvas/wxgllightboxcanvas - duplicate code... ?
-** Make ColourBarPanel generic.
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -61,9 +53,18 @@ any ability to query layout.
 ** 'Mask' image type
 ** 'Outline' image type
 ** Make display range limit-edit-widget less crappy.
+** Improve colour bar - more options, better rendering, multiple/customisable ticks, etc.
 ** IN PROGRESS 'Actions'? - Make 'Add File' and 'Add Std' menu items actions.
 Need to be able to specify the order that actions appear in the menu - perhaps 
 just hard code in fsl/fslview/actions/__init__.py
+** DONE Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
+** DONE Refactor wxglslicecanvas/wxgllightboxcanvas - duplicate code... ?
+** DONE Make ColourBarPanel generic.
+** DONE Remove duplicate argument parsing code between tools/render.py and tools/fslview.py
+** DONE Why is the SliceCanvas responsible for creating GL contexts?
+Maybe I should define a 'GLManager' which has a bunch of methods on it
+(e.g. create context, set current, etc), and is passed to all the GL things
+that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Make ColourBarPanel superclass/mixin thingo, so we can use it in LightBoxPanel as well as OrthoPanel.
 ** DONE Come up with a nicer way of specifying short CLI argument characters for fslview/render properties
 ** DONE Don't draw LightBoxCanvas cursor when out of Z range
