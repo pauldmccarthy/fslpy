@@ -219,6 +219,19 @@ class OSMesaCanvasTarget(object):
         pass
 
 
+    def _draw(self):
+        """Must be provided by subclasses."""
+        raise NotImplementedError()
+
+
+    def draw(self):
+        """Calls the :meth:`_draw` method, which must be provided by
+        subclasses.
+        """
+        self._initGL()
+        self._draw()
+
+
     def saveToFile(self, filename):
         """Saves the contents of this canvas as an image, to the specified
         file.
