@@ -405,6 +405,11 @@ def draw(glimg, zpos, xform=None):
     gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
     gl.glUniformMatrix4fv(glimg.texCoordXformPos,   1, False, tcx)
 
+    # Enable storage of tightly packed data
+    # of any size, for our 3D image texture 
+    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1) 
+    
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)

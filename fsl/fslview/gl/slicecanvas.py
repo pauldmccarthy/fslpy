@@ -592,11 +592,6 @@ class SliceCanvas(props.HasProperties):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        # Enable storage of tightly packed data
-        # of any size, for our 3D image texture 
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1) 
-
         # disable interpolation
         gl.glShadeModel(gl.GL_FLAT)
 

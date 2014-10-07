@@ -85,6 +85,10 @@ class ColourBarCanvas(props.HasProperties):
         if self._tex is None:
             self._tex = gl.glGenTextures(1)
 
+        # Allow textures of any size
+        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+
         gl.glBindTexture(  gl.GL_TEXTURE_2D, self._tex)
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
                            gl.GL_TEXTURE_MAG_FILTER,

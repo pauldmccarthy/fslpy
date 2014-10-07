@@ -25,6 +25,8 @@ version-independent modules (e.g. the
 other :mod:`wx` widget.
 """
 
+import logging
+log = logging.getLogger(__name__)
 
 import os
 
@@ -75,9 +77,15 @@ def bootstrap(glVersion=None):
 
     glpkg = None
 
-    if   major >= 2 and minor >= 1: glpkg = gl21
-    elif major >= 1 and minor >= 4: glpkg = gl14
+    if   major >= 2 and minor >= 1:
+        verstr = '2.1'
+        glpkg  = gl21
+    elif major >= 1 and minor >= 4:
+        verstr = '1.4'
+        glpkg  = gl14
     else: raise RuntimeError('OpenGL 1.4 or newer is required')
+
+    log.debug('Using OpenGL {} implementation'.format(verstr))
 
     thismod.glimage_funcs  = glpkg.glimage_funcs
     thismod.glcircle_funcs = glpkg.glcircle_funcs
@@ -93,14 +101,17 @@ def getWXGLContext():
     thismod = sys.modules[__name__]
     
     if not hasattr(thismod, '_wxGLContext'):
-        # We can't create a wx GLContext
-        # without a wx GLCanvas. But we
-        # can create a dummy one, and
-        # destroy it immediately after
-        # the context has been created
+
+        # This is a ridiculous problem.  We can't create a
+        # wx GLContext without a wx GLCanvas. But we can
+        # create a dummy one, and destroy it immediately
+        # after the context has been created. 
         frame  = wx.Frame(None)
         canvas = wxgl.GLCanvas(frame)
 
+        # Even worse - on Linux/GTK,the canvas
+        # has to visible before we are able to
+        # set it as the target of the GL context
         frame.Show()
         frame.Update()
         wx.Yield()
@@ -108,8 +119,11 @@ def getWXGLContext():
         thismod._wxGLContext = wxgl.GLContext(canvas)
         thismod._wxGLContext.SetCurrent(canvas)
 
+        # Hopefully the frame won't be visible
+        # for a noticeable period of time 
+        frame.Show(False)
         wx.Yield()
-        wx.CallAfter(frame.Destroy)
+        wx.CallAfter(frame.Close)
 
     return thismod._wxGLContext
 
