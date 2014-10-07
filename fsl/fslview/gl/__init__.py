@@ -107,7 +107,9 @@ def getWXGLContext():
         
         thismod._wxGLContext = wxgl.GLContext(canvas)
         thismod._wxGLContext.SetCurrent(canvas)
-        frame.Destroy()
+
+        wx.Yield()
+        wx.CallAfter(frame.Destroy)
 
     return thismod._wxGLContext
 
