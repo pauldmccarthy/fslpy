@@ -136,15 +136,19 @@ class ImageListPanel(controlpanel.ControlPanel):
 
             image   = self._imageList[i]
             display = image.getAttribute('display')
+            name    = image.name
+            if name is None: name = ''
 
-            self._listBox.Append(image.name, image, image.imageFile)
+            self._listBox.Append(name, image, image.imageFile)
             
             if display.enabled: self._listBox.EnableItem( i)
             else:               self._listBox.DisableItem(i)
 
             def nameChanged(img):
                 idx = self._imageList.index(img)
-                self._listBox.SetString(idx, img.name)
+                name = img.name 
+                if name is None: name = '' 
+                self._listBox.SetString(idx, name)
 
             def enabledChanged(img):
                 display = img.getAttribute('display')

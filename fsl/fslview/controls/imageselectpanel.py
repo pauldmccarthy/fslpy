@@ -149,7 +149,10 @@ class ImageSelectPanel(controlpanel.ControlPanel):
             return
 
         image = self._imageList[idx]
-        self._imageLabel.SetLabel('{}'.format(image.name))
+        name = image.name
+        
+        if name == None: name = ''
+        self._imageLabel.SetLabel('{}'.format(name))
 
         self.Layout()
         self.Refresh() 
