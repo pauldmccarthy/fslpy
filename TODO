@@ -43,6 +43,7 @@ regularly, too.
 Maybe I should define a 'GLManager' which has a bunch of methods on it
 (e.g. create context, set current, etc), and is passed to all the GL things
 that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
+** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
 ** Background colour option in render.py
 ** Remove duplicate argument parsing code between tools/render.py and tools/fslview.py
 ** Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
