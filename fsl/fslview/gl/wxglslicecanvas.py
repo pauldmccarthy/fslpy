@@ -38,8 +38,8 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
         """
 
         wxgl.GLCanvas          .__init__(self, parent)
-        fslgl.WXGLCanvasTarget .__init__(self)
         slicecanvas.SliceCanvas.__init__(self, imageList, zax)
+        fslgl.WXGLCanvasTarget .__init__(self)
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right

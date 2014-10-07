@@ -221,7 +221,9 @@ class SliceCanvas(props.HasProperties):
         self.imageList.addListener('bounds',
                                    self.name,
                                    self._imageBoundsChanged)
- 
+
+
+    def _initGL(self):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._setGLContext()

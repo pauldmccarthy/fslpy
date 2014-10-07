@@ -44,17 +44,17 @@ class ColourBarCanvas(props.HasProperties):
         self._name     = '{}_{}'.format(self.__class__.__name__, id(self)) 
 
         def _update(*a):
-            self._createColourBarTexture()
+            self._initGL()
             self._refresh()
 
         for prop in ('cmap', 'vrange', 'label', 'orientation', 'labelSide'):
             self.addListener(prop, self._name, _update)
-            
-        self._setGLContext()
-        self._createColourBarTexture()
 
 
-    def _createColourBarTexture(self):
+    def _initGL(self):
+
+        if not self._setGLContext():
+            return
 
         w, h = self._getSize()
 
@@ -160,11 +160,11 @@ class WXGLColourBarCanvas(ColourBarCanvas,
     def __init__(self, parent):
         
         wxgl.GLCanvas         .__init__(self, parent)
-        fslgl.WXGLCanvasTarget.__init__(self)
         ColourBarCanvas       .__init__(self)
+        fslgl.WXGLCanvasTarget.__init__(self)
 
         def onsize(ev):
-            self._createColourBarTexture()
+            self._initGL()
             self.Refresh()
             ev.Skip()
 

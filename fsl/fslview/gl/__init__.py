@@ -98,10 +98,16 @@ def getWXGLContext():
         # can create a dummy one, and
         # destroy it immediately after
         # the context has been created
-        dummy                = wxgl.GLCanvas(wx.GetTopLevelWindows()[0])
-        thismod._wxGLContext = wxgl.GLContext(dummy)
-        thismod._wxGLContext.SetCurrent(dummy)
-        dummy.Destroy()
+        frame  = wx.Frame(None)
+        canvas = wxgl.GLCanvas(frame)
+
+        frame.Show()
+        frame.Update()
+        wx.Yield()
+        
+        thismod._wxGLContext = wxgl.GLContext(canvas)
+        thismod._wxGLContext.SetCurrent(canvas)
+        frame.Destroy()
 
     return thismod._wxGLContext
 
@@ -188,7 +194,28 @@ class OSMesaCanvasTarget(object):
 
 
 class WXGLCanvasTarget(object):
+
+
+    def __init__(self):
+
+        import wx
+
+        def initGL(*a):
+            print 'Init {}'.format(self)
+            self._initGL() 
+
+        if self.IsShownOnScreen():
+            print 'ISShown'
+            initGL()
+        else:
+            print 'Will call on show'
+            self.Bind(wx.EVT_SHOW, initGL)
     
+
+    def _initGL(self):
+        raise NotImplementedError()
+
+        
     def _getSize(self):
         """Returns the current canvas size. """
         return self.GetClientSize().Get()
@@ -196,7 +223,10 @@ class WXGLCanvasTarget(object):
         
     def _setGLContext(self):
         """Configures the GL context for drawing to this canvas."""
+        
+        if not self.IsShownOnScreen(): return False
         getWXGLContext().SetCurrent(self)
+        return True
 
         
     def _refresh(self):
