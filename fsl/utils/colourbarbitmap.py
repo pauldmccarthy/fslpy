@@ -30,6 +30,7 @@ def colourBarBitmap(cmap,
                     labelside='top',
                     alpha=1.0,
                     fontsize=10,
+                    bgColour=None,
                     textColour='#ffffff'):
     """Plots a colour bar using matplotlib, and returns a RGBA bitmap
     of the specified width/height.
@@ -64,9 +65,11 @@ def colourBarBitmap(cmap,
     fig    = mplfig.Figure(figsize=(width / dpi, height / dpi), dpi=dpi)
     canvas = mplagg.FigureCanvasAgg(fig)
     ax     = fig.add_subplot(111)
-
-    # make figure background invisible
-    fig.patch.set_alpha(0)
+    
+    if bgColour is not None:
+        fig.patch.set_facecolor(bgColour)
+    else:
+        fig.patch.set_alpha(0)
 
     # draw the colour bar
     ax.imshow(data,

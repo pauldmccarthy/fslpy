@@ -92,10 +92,12 @@ def _configMainParser(mainParser):
                             help='Show colour bar')
     cbarParser.add_argument('-bl', '--colourBarLocation',
                             choices=('top', 'bottom', 'left', 'right'),
-                            help='Colour bar location')
+                            help='Colour bar location',
+                            default='top')
     cbarParser.add_argument('-bt', '--colourBarLabelSide',
                             choices=('top-left', 'bottom-right'),
-                            help='Colour bar label orientation') 
+                            help='Colour bar label orientation',
+                            default='top-left') 
 
 
 def _configImageParser(imgParser):

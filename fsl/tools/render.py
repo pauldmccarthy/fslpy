@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 #
-# render.py - Generate screenshots of images.
+# render.py - Generate screenshots of images using OpenGL.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module implements an application which provides off-screen rendering
+capability for scenes which can otherwise be displayed via fslview.
+
+See:
+  - :mod:`fsl.tools.fslview`
+  - :mod:`fsl.tools.fslview_parseargs`
+"""
+
 
 import os
 import sys
@@ -17,23 +25,80 @@ import argparse
 import numpy            as np
 import matplotlib.image as mplimg
 
-import fslview_parseargs
 import props
+import fslview_parseargs
+import fsl.utils.colourbarbitmap as cbarbitmap
 
 if  sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
 elif sys.platform == 'darwin':        _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
 
 
-def saveRender(canvases, filename):
-
-    bitmaps  = map(lambda c: c.getBitmap(), canvases)
-    combined = np.hstack(bitmaps)
-    print combined.shape
+def saveRender(args, canvases, cbarbmp):
+    """Saves the scene to the file specified by `args.outfile`.
     
-    mplimg.imsave(filename, combined)
+    :arg args:     The :mod:`argparse` namespace containing all the command
+                   line arguments.
+    
+    :arg canvases: A list of all the canvases which have been rendered.
+    
+    :arg cbarbmp:  An rgba bitmap (W*H*4) containing a rendering of a colour
+                   bar, if it was specified.
+    """
+
+    canvasbmps = map(lambda c: c.getBitmap(), canvases)
+    bmp        = np.hstack(canvasbmps)
+
+    if args.showColourBar:
+
+        if   args.colourBarLocation == 'top':
+            bmp = np.vstack((cbarbmp, bmp))
+        elif args.colourBarLocation == 'bottom':
+            bmp = np.vstack((bmp, cbarbmp))
+        elif args.colourBarLocation == 'left':
+            bmp = np.hstack((bmp, cbarbmp))
+        elif args.colourBarLocation == 'right':
+            bmp = np.hstack((cbarbmp, bmp))
+    
+    mplimg.imsave(args.outfile, bmp)
+
+
+def calcSizes(args):
+    """Calculates the widths and heights of the image display canvases, and the
+    colour bar if it is enabled.
+
+    Returns two tuples - the first tuple contains the (width, height) of one
+    canvas, and the second contains the (width, height) of the colour bar.
+    """
+
+    width, height = args.size
+
+    if args.showColourBar:
+
+        cbarWidth = 75
+        if args.colourBarLocation in ('top', 'bottom'):
+            height     = height - cbarWidth
+            cbarHeight = cbarWidth
+            cbarWidth  = width
+        else:
+            width      = width  - cbarWidth
+            cbarHeight = height
+    else:
+        cbarWidth  = 0
+        cbarHeight = 0
+
+    if not args.lightbox:
+        
+        hides = [args.hidex, args.hidey, args.hidez]
+        count = sum([not h for h in hides])
+        width = width / count
+
+    return (width, height), (cbarWidth, cbarHeight)
 
 
 def run(args, context):
+    """Creates and renders an OpenGL scene, and saves it to a file, according
+    to the specified command line arguments.
+    """
 
     # If this process is not configured for off-screen
     # rendering using osmesa, start a new process
@@ -68,10 +133,14 @@ def run(args, context):
 
     imageList, displayCtx = context
 
-    width, height = args.size
+    # Calculate canvas and colour bar sizes
+    # so that the entire scene will fit in
+    # the width/height specified by the user
+    (width, height), (cbarWidth, cbarHeight) = calcSizes(args)
     
     canvases = []
 
+    # Lightbox view -> only one canvas
     if args.lightbox:
         c = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
@@ -82,14 +151,11 @@ def run(args, context):
 
         props.applyArguments(c, args)
         canvases.append(c)
-        
+
+    # Ortho view -> up to three canvases
     else:
         hides = [args.hidex, args.hidey, args.hidez]
         zooms = [args.xzoom, args.yzoom, args.zzoom]
-
-        
-        count  = sum([not h for h in hides])
-        cwidth = width / count
 
         for i, (hide, zoom) in enumerate(zip(hides, zooms)):
             if hide: continue
@@ -97,12 +163,15 @@ def run(args, context):
             c = slicecanvas.OSMesaSliceCanvas(
                 imageList,
                 zax=i,
-                width=cwidth,
+                width=width,
                 height=height,
                 bgColour=args.background)
             if zoom is not None: c.zoom = zoom
             canvases.append(c)
 
+    # Configure each of the canvases (with those
+    # properties that are common to both ortho and
+    # lightbox canvases) and render them one by one
     for c in canvases:
         
         c.showCursor = not args.hideCursor
@@ -112,12 +181,44 @@ def run(args, context):
 
         c.draw()
 
+    # Render a colour bar if requested
+    if args.showColourBar:
+        display = imageList[-1].getAttribute('display')
+        if   args.colourBarLocation in ('top', 'bottom'):
+            orient = 'horizontal'
+        elif args.colourBarLocation in ('left', 'right'):
+            orient = 'vertical'
+        
+        if   args.colourBarLabelSide == 'top-left':
+            if orient == 'horizontal': labelSide = 'top'
+            else:                      labelSide = 'left'
+        elif args.colourBarLabelSide == 'bottom-right':
+            if orient == 'horizontal': labelSide = 'bottom'
+            else:                      labelSide = 'right'            
+        
+        cbarbmp = cbarbitmap.colourBarBitmap(
+            display.cmap,
+            display.displayRange.xlo,
+            display.displayRange.xhi,
+            cbarWidth,
+            cbarHeight,
+            display.name,
+            orient,
+            labelSide,
+            bgColour=map(lambda c: c / 255.0, args.background))
+    else:
+        cbarbmp = None
+
     if args.outfile is not None:
-        saveRender(canvases, args.outfile)
+        saveRender(args, canvases, cbarbmp)
 
     
 def parseArgs(argv):
-    """
+    """Creates an argument parser which accepts options for off-screen
+    rendering.
+    
+    Uses the :mod:`fsl.tools.fslview_parseargs` module to peform the actual
+    parsing.
     """
 
     mainParser = argparse.ArgumentParser(add_help=False)
