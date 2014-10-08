@@ -268,8 +268,8 @@ class ImageDisplay(props.HasProperties):
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange',    'minDistance', dMinDistance)
-        self.setConstraint('worldResolution', 'minval',      min(image.pixdim))
-        self.worldResolution = min(image.pixdim)
+        self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
+        self.worldResolution = min(image.pixdim[:3])
 
         # is this a 4D volume?
         if image.is4DImage():
