@@ -63,11 +63,11 @@ def _configMainParser(mainParser):
                              help='Y axis zoom')
     orthoParser.add_argument('-zz', '--zzoom', type=float,
                              help='Z axis zoom')
-    orthoParser.add_argument('-hx', '--hidex', action='store_true',
+    orthoParser.add_argument('-xh', '--hidex', action='store_true',
                              help='Hide the X axis')
-    orthoParser.add_argument('-hy', '--hidey', action='store_true',
+    orthoParser.add_argument('-yh', '--hidey', action='store_true',
                              help='Hide the Y axis')
-    orthoParser.add_argument('-hz', '--hidez', action='store_true',
+    orthoParser.add_argument('-zh', '--hidez', action='store_true',
                              help='Hide the Z axis') 
     
     # Lightbox display options
@@ -76,7 +76,7 @@ def _configMainParser(mainParser):
               'nrows',
               'zrange',
               'zax']
-    lbArgs = ['ss', 'nc', 'nr', 'zr', 'z']
+    lbArgs = ['ss', 'nc', 'nr', 'zr', 'a']
 
     # Use the properties module to automatically generate
     # arguments - property labels and help strings are
@@ -88,6 +88,14 @@ def _configMainParser(mainParser):
                              shortArgs=dict(zip(lbOpts, lbArgs)))
 
     # Colour bar
+    cbarParser.add_argument('-bs', '--showColourBar', action='store_true',
+                            help='Show colour bar')
+    cbarParser.add_argument('-bl', '--colourBarLocation',
+                            choices=('top', 'bottom', 'left', 'right'),
+                            help='Colour bar location')
+    cbarParser.add_argument('-bt', '--colourBarLabelSide',
+                            choices=('top-left', 'bottom-right'),
+                            help='Colour bar label orientation') 
 
 
 def _configImageParser(imgParser):

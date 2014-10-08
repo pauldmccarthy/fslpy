@@ -42,10 +42,11 @@ class CanvasPanel(viewpanel.ViewPanel):
 
     
     _labels = {
-        'showCursor'        : 'Show cursor',
-        'posSync'           : 'Synchronise location',
-        'showColourBar'     : 'Show/hide colour bar',
-        'colourBarLocation' : 'Colour bar location'
+        'showCursor'         : 'Show cursor',
+        'posSync'            : 'Synchronise location',
+        'showColourBar'      : 'Show/hide colour bar',
+        'colourBarLocation'  : 'Colour bar location',
+        'colourBarLabelSide' : 'Colour bar label side'
     } 
 
 

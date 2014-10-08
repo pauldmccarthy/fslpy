@@ -60,6 +60,14 @@ def interface(parent, args, ctx):
         if args.xzoom is not None: viewPanel.xzoom       = args.xzoom
         if args.yzoom is not None: viewPanel.yzoom       = args.yzoom
         if args.zzoom is not None: viewPanel.zzoom       = args.zzoom
+
+    if args.showColourBar:
+        viewPanel.showColourBar = True
+
+        if args.colourBarLocation is not None:
+            viewPanel.colourBarLocation = args.colourBarLocation
+        if args.colourBarLabelSide is not None:
+            viewPanel.colourBarLabelSide = args.colourBarLabelSide 
     
     return frame
 
