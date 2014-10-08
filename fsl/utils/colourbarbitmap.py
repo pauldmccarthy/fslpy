@@ -77,11 +77,11 @@ def colourBarBitmap(cmap,
               origin='lower',
               interpolation='bilinear')
 
-    ax.set_xlim((0, ncols))
+    ax.set_xlim((0, ncols - 1))
         
     ax.set_yticks([])
-    ax.set_xticks((0, ncols))
-    ax.set_xticklabels(('{}'.format(vmin), '{}'.format(vmax)))
+    ax.set_xticks((0, ncols - 1))
+    ax.set_xticklabels(('{:0.2f}'.format(vmin), '{:0.2f}'.format(vmax)))
     ax.tick_params(colors=textColour, labelsize=fontsize)
 
     if labelside == 'top':
