@@ -74,10 +74,9 @@ def _configMainParser(mainParser):
     lbOpts = ['sliceSpacing',
               'ncols',
               'nrows',
-              'topRow',
               'zrange',
               'zax']
-    lbArgs = ['ss', 'nc', 'nr', 'tr', 'zr', 'z']
+    lbArgs = ['ss', 'nc', 'nr', 'zr', 'z']
 
     # Use the properties module to automatically generate
     # arguments - property labels and help strings are

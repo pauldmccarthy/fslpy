@@ -36,8 +36,30 @@ def interface(parent, args, ctx):
     else:             frame.addViewPanel(views.OrthoPanel)
 
     viewPanel = frame.getViewPanels()[0][0]
-    
+
+    # Look in fslview_parseargs to see all
+    # of the possible display options 
     viewPanel.showCursor = not args.hideCursor
+
+    if args.lightbox:
+
+        for prop in ['sliceSpacing',
+                     'ncols',
+                     'nrows',
+                     'zrange',
+                     'zax']:
+            val = getattr(args, prop, None)
+
+            if val is not None:
+                setattr(viewPanel, prop, val)
+
+    else:
+        if args.hidex:             viewPanel.showXCanvas = False
+        if args.hidey:             viewPanel.showYCanvas = False
+        if args.hidez:             viewPanel.showZCanvas = False
+        if args.xzoom is not None: viewPanel.xzoom       = args.xzoom
+        if args.yzoom is not None: viewPanel.yzoom       = args.yzoom
+        if args.zzoom is not None: viewPanel.zzoom       = args.zzoom
     
     return frame
 
