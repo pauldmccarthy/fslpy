@@ -45,7 +45,8 @@ def _configMainParser(mainParser):
                              type=float, nargs=3,
                              help='Location to show (world coordinates, '
                              'takes precedence over --voxelloc)')
-
+    sceneParser.add_argument('-si', '--selectedImage', type=int,
+                             help='Selected image (default: last)')
     sceneParser.add_argument('-c', '--hideCursor', action='store_true',
                              help='Do not display the green cursor '
                              'highlighting the current location')
@@ -258,5 +259,9 @@ def handleImageArgs(args):
                    imageList.bounds.zlo + 0.5 * imageList.bounds.zlen]
 
         displayCtx.location.xyz = loc
+
+    if args.selectedImage is not None:
+        if args.selectedImage < len(imageList):
+            displayCtx.selectedImage = args.selectedImage
 
     return imageList, displayCtx

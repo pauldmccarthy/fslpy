@@ -183,7 +183,9 @@ def run(args, context):
 
     # Render a colour bar if requested
     if args.showColourBar:
-        display = imageList[-1].getAttribute('display')
+        
+        display = imageList[displayCtx.selectedImage].getAttribute('display')
+        
         if   args.colourBarLocation in ('top', 'bottom'):
             orient = 'horizontal'
         elif args.colourBarLocation in ('left', 'right'):
