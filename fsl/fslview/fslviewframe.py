@@ -4,6 +4,16 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""A 3D image viewer.
+
+This module provides the :class:`FSLViewFrame` which is the top level frame
+for the FSLView application, which provides functionality to view 3D/4D
+MR images.
+
+I'm using :mod:`wx.aui` instead of :mod:`wx.lib.agw.aui` because the
+:class:`AuiNotebook` implementation in the latter is very unstable on OSX
+Mavericks.
+"""
 
 import logging
 log = logging.getLogger(__name__)

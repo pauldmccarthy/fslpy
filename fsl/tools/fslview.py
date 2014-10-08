@@ -4,11 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A 3D image viewer.
-
-I'm using :mod:`wx.aui` instead of :mod:`wx.lib.agw.aui` because the
-:class:`AuiNotebook` implementation in the latter is very unstable on OSX
-Mavericks.
+"""A 3D image viewer. See the :mod:`~fsl.fslview.fslviewframe` module for more
+details.
 """
 
 import logging
@@ -53,7 +50,6 @@ def parseArgs(argv, namespace):
       - namespace: argparse.Namespace object to store the parsed arguments
     """
 
-
     parser = argparse.ArgumentParser(add_help=False)
 
     # FSLView application options
@@ -70,7 +66,6 @@ def parseArgs(argv, namespace):
                                        namespace,
                                        'fslview',
                                        'Image viewer')
-
 
 
 FSL_TOOLNAME  = 'FSLView'

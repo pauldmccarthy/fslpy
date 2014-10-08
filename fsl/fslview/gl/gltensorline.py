@@ -169,6 +169,7 @@ class GLTensorLine(object):
             gl.glMatrixMode(gl.GL_MODELVIEW)
             gl.glPopMatrix()
 
+            
     def _configDisplayListeners(self):
         """Adds a bunch of listeners to the
         :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
