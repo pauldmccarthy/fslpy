@@ -191,11 +191,12 @@ def genVertexData(image, display, xax, yax):
     """Generates vertex coordinates (for rendering voxels) and
     texture coordinates (for colouring voxels) in world space.
 
-    Generates X/Y vertex coordinates, in the world space of the
-    given image, which define a set of pixels for displaying the
-    image at an arbitrary position along the world Z dimension.
-    Each pixel is defined by four vertices, which are rendered
-    as an OpenGL quad primitive.
+    Generates X/Y vertex coordinates, in the world space of the given image,
+    which define a set of pixels for displaying the image at an arbitrary
+    position along the world Z dimension.  Each pixel is defined by four
+    vertices, which are rendered as an OpenGL quad primitive. The
+    :func:`~fsl.fslview.gl.globject.calculateSamplePoints` function is used
+    to calculate the coordinate locations.
 
     For every set of four vertices, a single vertex is also
     created, located in the centre of the four quad vertices. This
