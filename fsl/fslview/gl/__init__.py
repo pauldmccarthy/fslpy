@@ -180,16 +180,19 @@ class OSMesaCanvasTarget(object):
     OSMesa.
     """
     
-    def __init__(self, width, height):
+    def __init__(self, width, height, bgColour=(0, 0, 0, 255)):
         """Creates an off-screen buffer to be used as the render target.
 
-        :arg width:  Width in pixels
-        :arg height: Height in pixels
+        :arg width:    Width in pixels
+        :arg height:   Height in pixels
+        :arg bgColour: Background colour as an RGBA tuple
+                       (e.g. (255, 255, 255, 255))
         """
         import OpenGL.arrays as glarrays 
-        self._width  = width
-        self._height = height
-        self._buffer = glarrays.GLubyteArray.zeros((height, width, 4))
+        self._width    = width
+        self._height   = height 
+        self._bgColour = bgColour 
+        self._buffer   = glarrays.GLubyteArray.zeros((height, width, 4))
 
         
     def _getSize(self):
@@ -228,28 +231,45 @@ class OSMesaCanvasTarget(object):
         """Calls the :meth:`_draw` method, which must be provided by
         subclasses.
         """
+
+        import OpenGL.GL as gl
+        
         self._initGL()
+        self._setGLContext()
+        gl.glClearColor(*self._bgColour)
         self._draw()
+
+        
+    def getBitmap(self):
+        """Return a (width*height*4) shaped numpy array containing the
+        rendered scene as an RGBA bitmap. The bitmap will be full of
+        zeros if the scene has not been drawn (via a call to
+        :meth:`draw`).
+        """
+        import OpenGL.GL        as gl
+        import numpy            as np
+
+        self._setGLContext()
+        
+        bmp = gl.glReadPixels(
+            0, 0,
+            self._width, self._height,
+            gl.GL_RGBA,
+            gl.GL_UNSIGNED_BYTE)
+        
+        bmp = np.fromstring(bmp, dtype=np.uint8)
+        bmp = bmp.reshape((self._height, self._width, 4))
+        bmp = np.flipud(bmp)
+
+        return bmp
 
 
     def saveToFile(self, filename):
         """Saves the contents of this canvas as an image, to the specified
         file.
         """
-        import OpenGL.GL        as gl
-        import numpy            as np
         import matplotlib.image as mplimg
-        
-        ia  = gl.glReadPixels(
-            0, 0,
-            self._width, self._height,
-            gl.GL_RGBA,
-            gl.GL_UNSIGNED_BYTE)
-        
-        img = np.fromstring(ia, dtype=np.uint8)
-        img = img.reshape((self._height, self._width, 4))
-        img = np.flipud(img)
-        mplimg.imsave(filename, img) 
+        mplimg.imsave(filename, self.getBitmap()) 
 
 
 class WXGLCanvasTarget(object):

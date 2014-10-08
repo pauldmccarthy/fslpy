@@ -27,14 +27,17 @@ class OSMesaSliceCanvas(sc.SliceCanvas,
                  imageList,
                  zax=0,
                  width=0,
-                 height=0):
+                 height=0,
+                 bgColour=(0, 0, 0, 255)):
         """See the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` constructor
         for details on the other parameters.
 
-        :arg width:  Canvas width in pixels
+        :arg width:    Canvas width in pixels
         
-        :arg height: Canvas height in pixels
+        :arg height:   Canvas height in pixels
+
+        :arg bgColour: Canvas background colour
         """
 
-        fslgl.OSMesaCanvasTarget.__init__(self, width, height)
+        fslgl.OSMesaCanvasTarget.__init__(self, width, height, bgColour)
         sc.SliceCanvas          .__init__(self, imageList, zax)

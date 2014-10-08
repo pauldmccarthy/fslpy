@@ -14,11 +14,24 @@ log = logging.getLogger(__name__)
 
 import argparse
 
+import numpy            as np
+import matplotlib.image as mplimg
+
 import fslview_parseargs
 import props
 
 if  sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
 elif sys.platform == 'darwin':        _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
+
+
+def saveRender(canvases, filename):
+
+    bitmaps  = map(lambda c: c.getBitmap(), canvases)
+    combined = np.hstack(bitmaps)
+    print combined.shape
+    
+    mplimg.imsave(filename, combined)
+
 
 def run(args, context):
 
@@ -55,36 +68,52 @@ def run(args, context):
 
     imageList, displayCtx = context
 
-    axis = ['X', 'Y', 'Z'].index(args.axis)
-
     width, height = args.size
+    
+    canvases = []
 
     if args.lightbox:
-        canvas = lightboxcanvas.OSMesaLightBoxCanvas(
+        c = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
-            zax=axis,
+            zax=args.zax,
             width=width,
-            height=height)
+            height=height,
+            bgColour=args.background)
 
-        props.applyArguments(canvas, args)
+        props.applyArguments(c, args)
+        canvases.append(c)
+        
     else:
+        hides = [args.hidex, args.hidey, args.hidez]
+        zooms = [args.xzoom, args.yzoom, args.zzoom]
 
-        canvas = slicecanvas.OSMesaSliceCanvas(
-            imageList,
-            zax=axis,
-            width=width,
-            height=height)
+        
+        count  = sum([not h for h in hides])
+        cwidth = width / count
 
-    canvas.showCursor = not args.hideCursor
+        for i, (hide, zoom) in enumerate(zip(hides, zooms)):
+            if hide: continue
+            
+            c = slicecanvas.OSMesaSliceCanvas(
+                imageList,
+                zax=i,
+                width=cwidth,
+                height=height,
+                bgColour=args.background)
+            if zoom is not None: c.zoom = zoom
+            canvases.append(c)
 
-    if   axis == 0: canvas.pos.xyz = displayCtx.location.yzx
-    elif axis == 1: canvas.pos.xyz = displayCtx.location.xzy
-    elif axis == 2: canvas.pos.xyz = displayCtx.location.xyz
+    for c in canvases:
+        
+        c.showCursor = not args.hideCursor
+        if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
+        elif c.zax == 1: c.pos.xyz = displayCtx.location.xzy
+        elif c.zax == 2: c.pos.xyz = displayCtx.location.xyz
 
-    canvas.draw()
+        c.draw()
 
     if args.outfile is not None:
-        canvas.saveToFile(args.outfile)
+        saveRender(canvases, args.outfile)
 
     
 def parseArgs(argv):
@@ -93,12 +122,16 @@ def parseArgs(argv):
 
     mainParser = argparse.ArgumentParser(add_help=False)
 
-    mainParser.add_argument('-f', '--outfile',  metavar='FILE',
+    mainParser.add_argument('-of', '--outfile',  metavar='FILE',
                             help='Output image file name')
-    mainParser.add_argument('-s', '--size', type=int, nargs=2,
+    mainParser.add_argument('-sz', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
+    mainParser.add_argument('-bg', '--background', type=int, nargs=4,
+                            metavar=('R', 'G', 'B', 'A'),
+                            help='Background colour', 
+                            default=(0, 0, 0, 255)) 
     
     return fslview_parseargs.parseArgs(mainParser,
                                        argv,
