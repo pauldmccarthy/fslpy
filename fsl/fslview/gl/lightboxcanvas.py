@@ -470,6 +470,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         yverts[1, self.xax] = xmin + (col + 1) * xlen
         yverts[:, self.zax] = self.pos.z + 1
 
+        gl.glLineWidth(1)
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
         gl.glVertex3f(*xverts[0])

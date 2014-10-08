@@ -568,6 +568,7 @@ class SliceCanvas(props.HasProperties):
         yverts[:, self.xax] = [xmin, xmax]
         yverts[:, self.zax] =  self.pos.z + 1
 
+        gl.glLineWidth(1)
         gl.glBegin(gl.GL_LINES)
         gl.glColor3f(0, 1, 0)
         gl.glVertex3f(*xverts[0])
