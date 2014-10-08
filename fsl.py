@@ -23,13 +23,7 @@ logging.basicConfig(
            '%(message)s') 
 log = logging.getLogger('fsl')
 
-try:
-    import wx
-except:
-    log.warn('Could not import wx - GUI functionality is not available')
-
 import fsl.tools as tools
-
 
 def loadAllFSLTools():
     """
@@ -119,52 +113,65 @@ def parseArgs(argv, allTools):
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
-        '-V', '--verbose', action='count',
+        '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
     parser.add_argument(
-        '-W', '--wxinspect', action='store_true',
+        '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
     parser.add_argument('tool', help='FSL program to run')
 
-    namespace, argv = parser.parse_known_args(argv)
+    # find the index of the first positional argument
+    try:
+        firstPos = map(lambda a: not a.startswith('-'), argv).index(True)
+    except ValueError:
+        firstPos = len(argv)
+
+    # Separate the top level arguments
+    # from the tool arguments, and parse
+    # the top level args
+    fslArgv   = argv[:firstPos + 1]
+    toolArgv  = argv[ firstPos + 1:]
+    namespace = parser.parse_args(fslArgv)
 
     # if the specified tool is 'help', it should be followed by
     # one more argument, the name of the tool to print help for
     if namespace.tool == 'help':
         
         # no tool name supplied
-        if len(argv) == 0:
+        if len(toolArgv) == 0:
             parser.print_help()
             sys.exit(1)
 
         # unknown tool name supplied
-        if argv[0] not in allTools:
-            raise argparse.ArgumentError(
-                'tool',
-                'Unknown FSL tool: {}'.format(namespace.tool))
+        if toolArgv[0] not in allTools:
+            print '\nUnknown FSL tool: {}\n'.format(namespace.tool) 
+            parser.print_help()
+            sys.exit(1)
 
-        fslTool = allTools[argv[0]]
+        fslTool = allTools[toolArgv[0]]
 
         # no tool specific argument parser
         if fslTool.parseArgs is None:
-            print 'No help for {}'.format(argv[0])
+            print 'No help for {}'.format(toolArgv[0])
             
-        # otherwise, get help from the tool
+        # Otherwise, get help from the tool. We assume that
+        # all the argument parser for every  tool will interpret
+        # '-h' as '--help', and will print some help
         else:
-            fslTool.parseArgs([argv[0], '-h'], namespace)
+            fslTool.parseArgs([toolArgv[0], '-h'], namespace)
         sys.exit(0)
 
     # Unknown tool name supplied
     elif namespace.tool not in allTools:
-        raise argparse.ArgumentError(
-            'tool',
-            'Unknown FSL tool: {}'.format(namespace.tool))
+        print '\nUnknown FSL tool: {}\n'.format(namespace.tool)
+        parser.print_help()
+        sys.exit(1)
 
     # otherwise, give the remaining arguments to the tool parser
     fslTool = allTools[namespace.tool] 
     
     if fslTool.parseArgs is not None:
-        return fslTool, fslTool.parseArgs(argv, namespace)
+        return fslTool, fslTool.parseArgs(toolArgv, namespace)
     else:
         return fslTool, namespace
 
@@ -180,6 +187,7 @@ def fslDirWarning(frame, toolName, fslEnvActive):
           '{} may not behave correctly.'.format(toolName)
 
     if frame is not None:
+        import wx
         wx.MessageDialog(
             frame,
             message=msg,
@@ -192,6 +200,7 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     """
     """
 
+    import wx
     import fsl.utils.webpage as webpage
 
     frame = fslTool.interface(None, args, ctx)
@@ -256,6 +265,7 @@ if __name__ == '__main__':
     else:                           ctx = None
 
     if fslTool.interface is not None:
+        import wx
         app   = wx.App()
         frame = buildGUI(args, fslTool, ctx, fslEnvActive)
         frame.Show()
