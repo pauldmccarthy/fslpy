@@ -22,53 +22,76 @@ import fsl.fslview.displaycontext as displaycontext
 
 
 def _configMainParser(mainParser):
-    mainParser.add_argument('-h',  '--help',    action='store_true')
 
-    mainParser.add_argument('-lb', '--lightbox',  action='store_true',
-                            help='Display lightbox view '
-                                 'instead of ortho view')
-    mainParser.add_argument('-vl', '--voxelloc', metavar=('X', 'Y', 'Z'),
-                            type=int, nargs=3,
-                            help='Location to show (voxel coordinates of '
-                                 'first image)')
-    mainParser.add_argument('-wl', '--worldloc', metavar=('X', 'Y', 'Z'),
-                            type=float, nargs=3,
-                            help='Location to show (world coordinates, '
-                                 'takes precedence over --voxelloc)')
+    # We're assuming that the fsl tool (e.g. render.py or fslview.py)
+    # has not added/used up any of these short or long arguments
+    mainParser.add_argument('-h',  '--help',    action='store_true',
+                            help='Display this help and exit')
 
-    # show/hide cursor (common to both ortho and lightbox)
-    mainParser.add_argument('-hc', '--hideCursor', action='store_true',
-                            help='Do not display the green cursor '
-                                 'highlighting the current location')
+    mainParser.add_argument('-i', '--image', metavar='IMAGE',
+                            help='Image file to display')
 
-#    mainParser.add_argument('-z', '--zoom', type=float,
-#                            help='Zoom (ortho view only)')
+    # Options defining the overall scene
+    sceneParser = mainParser.add_argument_group('Scene options')
+ 
+    sceneParser.add_argument('-l', '--lightbox',  action='store_true',
+                             help='Display lightbox view '
+                             'instead of ortho view')
+    sceneParser.add_argument('-v', '--voxelloc', metavar=('X', 'Y', 'Z'),
+                             type=int, nargs=3,
+                             help='Location to show (voxel coordinates of '
+                             'first image)')
+    sceneParser.add_argument('-w', '--worldloc', metavar=('X', 'Y', 'Z'),
+                             type=float, nargs=3,
+                             help='Location to show (world coordinates, '
+                             'takes precedence over --voxelloc)')
 
-    # TODO colour bar
+    sceneParser.add_argument('-c', '--hideCursor', action='store_true',
+                             help='Do not display the green cursor '
+                             'highlighting the current location')
+
+
+    # Separate parser groups for ortho/lightbox options
+    orthoParser =  mainParser.add_argument_group('Ortho options')
+    lbParser    =  mainParser.add_argument_group('Lightbox options')
+    cbarParser  =  mainParser.add_argument_group('Colour bar options')
+
+    # Ortho options
+    orthoParser.add_argument('-xz', '--xzoom', type=float,
+                             help='X axis zoom')
+    orthoParser.add_argument('-yz', '--yzoom', type=float,
+                             help='Y axis zoom')
+    orthoParser.add_argument('-zz', '--zzoom', type=float,
+                             help='Z axis zoom')
+    orthoParser.add_argument('-hx', '--hidex', action='store_true',
+                             help='Hide the X axis')
+    orthoParser.add_argument('-hy', '--hidey', action='store_true',
+                             help='Hide the Y axis')
+    orthoParser.add_argument('-hz', '--hidez', action='store_true',
+                             help='Hide the Z axis') 
     
     # Lightbox display options
     lbOpts = ['sliceSpacing',
               'ncols',
               'nrows',
               'topRow',
-              'zrange']
-    lbArgs = ['ss', 'nc', 'nr', 'tr', 'zr']
+              'zrange',
+              'zax']
+    lbArgs = ['ss', 'nc', 'nr', 'tr', 'zr', 'z']
 
     # Use the properties module to automatically generate
     # arguments - property labels and help strings are
     # embedded inside the LightBoxCanvas class.
     import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
     props.addParserArguments(lightboxcanvas.LightBoxCanvas,
-                             mainParser.add_argument_group('Lightbox options'),
+                             lbParser,
                              cliProps=lbOpts,
-                             shortArgs=dict(zip(lbOpts, lbArgs))) 
+                             shortArgs=dict(zip(lbOpts, lbArgs)))
+
+    # Colour bar
 
 
 def _configImageParser(imgParser):
-
-    # The image file name is a positional
-    # argument which must come first
-    imgParser.add_argument('image', help='image file')
 
     imgOpts = ['alpha',
                'clipLow',
@@ -93,22 +116,22 @@ def _configImageParser(imgParser):
                              shortArgs=dict(zip(imgOpts, imgArgs))) 
 
 
-def parseArgs(mainParser, argv, namespace, name, desc):
+def parseArgs(mainParser, argv, name, desc):
     """
     Parses the given command line arguments. Parameters:
 
       - mainParser: 
       - argv:       command line arguments for fslview.
-      - namespace:  argparse.Namespace object to store the parsed arguments
       - name:
       - desc:
     """
 
     # I hate argparse. By default, it does not support
     # the command line interface that I want to provide,
-    # as demonstrated in this usage string:
-    usageStr   = '{} [options] [image [displayOpts]] '\
-                 '[image [displayOpts]] ...'.format(name)
+    # as demonstrated in this usage string. I also hate
+    # the fact that I have to delimit image files with '-i':
+    usageStr   = '{} [options] [-i image [displayOpts]] '\
+                 '[-i image [displayOpts]] ...'.format(name)
     imgOptDesc = 'Each display option will be applied to the '\
                  'image which is listed before that option.'
 
@@ -127,16 +150,24 @@ def parseArgs(mainParser, argv, namespace, name, desc):
     # one at a time
     imgParser = argparse.ArgumentParser(add_help=False) 
 
-    # Image display options
     _configImageParser(imgParser.add_argument_group(
         'Image display options', imgOptDesc))
 
-    # Parse the application options with the mainParser
-    namespace, argv = mainParser.parse_known_args(argv, namespace)
+    # Figure out where the image files
+    # are in the argument list.
+    imageIdxs = [i for i in range(len(argv)) if argv[i] in ('-i', '--image')]
+    imageIdxs.append(len(argv))
 
-    # If the user asked for help, print some help and exit 
-    if namespace.help:
-        
+    # Separate the program arguments 
+    # from the image display arguments
+    progArgv = argv[:imageIdxs[0]]
+    imgArgv  = argv[ imageIdxs[0]:]
+
+    # Parse the application options with the mainParser
+    namespace = mainParser.parse_args(progArgv)
+
+    # If the user asked for help, print some help and exit
+    def print_help():
         mainParser.print_help()
 
         # Did I mention that I hate argparse?  Why
@@ -146,24 +177,36 @@ def parseArgs(mainParser, argv, namespace, name, desc):
         print imgHelp[imgHelp.index('Image display options'):]
         sys.exit(0)
 
-    # Otherwise we parse the image options.
-    # Figure out where the image files are
-    # in the argument list.
-    # 
-    # NOTE This approach means that we cannot
-    # support any image display options which
-    # accept file names as arguments.
-    imageIdxs = [i for i in range(len(argv))
-                 if op.isfile(op.expanduser(argv[i]))]
-    imageIdxs.append(len(argv))
-
-    # Then parse each block of display options one by one
+    if namespace.help:
+        print_help()
+        sys.exit(0)
+ 
+    # Then parse each block of
+    # display options one by one.
+    # This will probably explode
+    # if the user forgets to add
+    # an image file name after '-i'
     namespace.images = []
     for i in range(len(imageIdxs) - 1):
 
-        imgArgv      = argv[imageIdxs[i]:imageIdxs[i + 1]]
-        imgArgv[0]   = op.expanduser(imgArgv[0])
-        imgNamespace = imgParser.parse_args(imgArgv)
+        imgArgv = argv[imageIdxs[i] + 1:imageIdxs[i + 1]]
+
+        # an '-i' with nothing following it
+        if len(imgArgv) == 0:
+            print_help()
+            sys.argv(1)
+
+        imgFile = op.expanduser(imgArgv[0])
+        imgArgv = imgArgv[1:]
+
+        # an -i with something that is
+        # not a file following it
+        if not op.isfile(imgFile):
+            print_help()
+            sys.argv(1)            
+
+        imgNamespace       = imgParser.parse_args(imgArgv)
+        imgNamespace.image = imgFile
 
         # We just add a list of argparse.Namespace
         # objects, one for each image, to the
@@ -174,8 +217,8 @@ def parseArgs(mainParser, argv, namespace, name, desc):
 
 
 def handleImageArgs(args):
-    """
-    Loads and configures any images which were specified on the command line.
+    """Loads and configures any images which were specified on the
+    command line.
     """
     
     images = []

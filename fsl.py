@@ -158,7 +158,7 @@ def parseArgs(argv, allTools):
         # all the argument parser for every  tool will interpret
         # '-h' as '--help', and will print some help
         else:
-            fslTool.parseArgs([toolArgv[0], '-h'], namespace)
+            fslTool.parseArgs(['-h'])
         sys.exit(0)
 
     # Unknown tool name supplied
@@ -168,12 +168,12 @@ def parseArgs(argv, allTools):
         sys.exit(1)
 
     # otherwise, give the remaining arguments to the tool parser
-    fslTool = allTools[namespace.tool] 
+    fslTool = allTools[namespace.tool]
+
+    if fslTool.parseArgs is not None: toolArgs = fslTool.parseArgs(toolArgv)
+    else:                             toolArgs = None
     
-    if fslTool.parseArgs is not None:
-        return fslTool, fslTool.parseArgs(toolArgv, namespace)
-    else:
-        return fslTool, namespace
+    return fslTool, namespace, toolArgs
 
 
 def fslDirWarning(frame, toolName, fslEnvActive):
@@ -241,8 +241,8 @@ if __name__ == '__main__':
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None
 
-    allTools      = loadAllFSLTools()
-    fslTool, args = parseArgs(sys.argv[1:], allTools)
+    allTools                = loadAllFSLTools()
+    fslTool, args, toolArgs = parseArgs(sys.argv[1:], allTools)
 
     if args.verbose == 1:
         log.setLevel(logging.DEBUG)
@@ -261,13 +261,13 @@ if __name__ == '__main__':
         logging.getLogger('props')   .setLevel(logging.DEBUG)
         logging.getLogger('pwidgets').setLevel(logging.DEBUG) 
 
-    if fslTool.context is not None: ctx = fslTool.context(args)
+    if fslTool.context is not None: ctx = fslTool.context(toolArgs)
     else:                           ctx = None
 
     if fslTool.interface is not None:
         import wx
         app   = wx.App()
-        frame = buildGUI(args, fslTool, ctx, fslEnvActive)
+        frame = buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
         frame.Show()
 
         wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
@@ -280,4 +280,4 @@ if __name__ == '__main__':
         
     elif fslTool.execute is not None:
         fslDirWarning( None, fslTool.toolName, fslEnvActive)
-        fslTool.execute(args, ctx)
+        fslTool.execute(toolArgs, ctx)

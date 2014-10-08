@@ -87,7 +87,7 @@ def run(args, context):
         canvas.saveToFile(args.outfile)
 
     
-def parseArgs(argv, namespace):
+def parseArgs(argv):
     """
     """
 
@@ -95,17 +95,13 @@ def parseArgs(argv, namespace):
 
     mainParser.add_argument('-f', '--outfile',  metavar='FILE',
                             help='Output image file name')
-    mainParser.add_argument('-a', '--axis', 
-                            help='Display axis',
-                            choices=('X', 'Y', 'Z'), default='X')
     mainParser.add_argument('-s', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
-
+    
     return fslview_parseargs.parseArgs(mainParser,
                                        argv,
-                                       namespace,
                                        'render',
                                        'Scene renderer')
  

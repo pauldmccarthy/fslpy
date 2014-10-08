@@ -42,12 +42,11 @@ def interface(parent, args, ctx):
     return frame
 
 
-def parseArgs(argv, namespace):
+def parseArgs(argv):
     """
     Parses the given command line arguments. Parameters:
     
       - argv:      command line arguments for fslview.
-      - namespace: argparse.Namespace object to store the parsed arguments
     """
 
     parser = argparse.ArgumentParser(add_help=False)
@@ -63,7 +62,6 @@ def parseArgs(argv, namespace):
     # managed by the fslview_parseargs module
     return fslview_parseargs.parseArgs(parser,
                                        argv,
-                                       namespace,
                                        'fslview',
                                        'Image viewer')
 
