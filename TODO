@@ -5,7 +5,7 @@ have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * Bugs to fix
-** Floating panels get moved about when opening a new floating panel.
+** OSX: Floating panels get moved about when opening a new floating panel.
 ** Linux/Jalapeno Bad window crash
 ** Slice changes on ludo's bad image, when using pixdim transformation.
 ** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
