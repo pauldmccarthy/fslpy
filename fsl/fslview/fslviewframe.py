@@ -146,8 +146,7 @@ class FSLViewFrame(wx.Frame):
         
         confPanel = props.buildGUI(self, viewPanel)
         paneInfo = (aui.AuiPaneInfo()
-                    .Dock()
-                    .Top()
+                    .Float()
                     .Dockable(True)
                     .Floatable(True)
                     .Movable(True)
@@ -201,8 +200,7 @@ class FSLViewFrame(wx.Frame):
         panel = panelCls(self, self._imageList, self._displayCtx)
             
         paneInfo = (aui.AuiPaneInfo()
-                    .Dock()
-                    .Bottom()
+                    .Float()
                     .Dockable(True)
                     .Floatable(True)
                     .Movable(True)

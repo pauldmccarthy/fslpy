@@ -1,10 +1,11 @@
 TODO LIST -*- mode: org; -*-
 
-A mixture of things to do, and things which might be nice to do.  Order is
-arbitrary. Check https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView
-regularly, too.
+A mixture of things to do, things which might be nice to do, and things which
+have been done.  Order is arbitrary. Check
+https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * Bugs to fix
+** Floating panels get moved about when opening a new floating panel.
 ** Linux/Jalapeno Bad window crash
 ** Slice changes on ludo's bad image, when using pixdim transformation.
 ** Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
@@ -40,8 +41,9 @@ regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Grid line option on lightbox canvas
+** 'Centre view' option on slice canvases
 ** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
-** Background colour option in render.py
 ** Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
@@ -53,10 +55,20 @@ any ability to query layout.
 ** 'Mask' image type
 ** 'Outline' image type
 ** Make display range limit-edit-widget less crappy.
-** Improve colour bar - more options, better rendering, multiple/customisable ticks, etc.
+** Improve colour bar
+*** ColourBarCanvas - make it smarter
+Display either the cbar for the current image, or cbars for all images. 
+'Stacking' of multipl cbars - stack cbars along the main axis, or along the secondary axi
+*** Better layout
+*** Multiple/customisable ticks
+*** Adjustable font size
+*** DONE Tick label floating point formatting
+*** DONE Remove white gap on max side of colour bar
 ** IN PROGRESS 'Actions'? - Make 'Add File' and 'Add Std' menu items actions.
 Need to be able to specify the order that actions appear in the menu - perhaps 
 just hard code in fsl/fslview/actions/__init__.py
+** DONE render.py supports ortho/lightbox command line configuration
+** DONE Background colour option in render.py
 ** DONE Refactor slicecanvas_draw/lightboxcanvas_draw modules - loads of duplicate code that can probably be put in the GL-version independent modules.
 ** DONE Refactor wxglslicecanvas/wxgllightboxcanvas - duplicate code... ?
 ** DONE Make ColourBarPanel generic.
@@ -109,6 +121,7 @@ This will probably dictate how you go about implementing keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
 ** Link display properties across all images
+** 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
 ** IN PROGRESS Image export/offscreen rendering.
 ** DONE Image List functionality
 *** DONE double click to show/hide
@@ -146,3 +159,4 @@ could create a new ViewPanel which allows the user to configure for which
 images a colour bar should be displayed. Or I could have a 'showColourBar' property
 on the image display object.
 ** (Ged).    Colouring of unions/intersections for combinations of mask images
+** (Fidel).  Diffusion data - show acquisition direction for each volume (from bvec text file) when displaying raw diffusion data. Could have a little display (a separate ViewPanel) which has a 3D compass-like thing.
