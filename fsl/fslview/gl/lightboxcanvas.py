@@ -478,14 +478,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         colLines[:, self.yax] = np.tile(np.array([
             ymin + btmRow * ylen,
             ymin + topRow * ylen]), self.ncols - 1)
-        
-        gl.glLineWidth(1)
+
+        gl.glLineWidth(2)
         gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(1, 1, 1)
 
-        for vertex in rowLines: gl.glVertex3f(*vertex)
-        for vertex in colLines: gl.glVertex3f(*vertex)
-
+        gl.glColor4f(0.3, 0.9, 1.0, 0.8)
+        for v in rowLines: gl.glVertex3f(*v)
+        for v in colLines: gl.glVertex3f(*v)
+        
         gl.glEnd() 
 
 

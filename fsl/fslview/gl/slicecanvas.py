@@ -92,6 +92,21 @@ class SliceCanvas(props.HasProperties):
     
     _propHelp = _tooltips
 
+
+    def calcPixelDims(self):
+        """Calculate and return the approximate size (width, height) of one
+        pixel in world space.
+        """
+        
+        xmin, xmax = self.imageList.bounds.getRange(self.xax)
+        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+        
+        w, h = self._getSize()
+        pixx = (xmax - xmin) / float(w)
+        pixy = (ymax - ymin) / float(h) 
+
+        return pixx, pixy
+
     
     def canvasToWorld(self, xpos, ypos):
         """Given pixel x/y coordinates on this canvas, translates them
@@ -550,9 +565,7 @@ class SliceCanvas(props.HasProperties):
         y = self.pos.y
 
         # How big is one pixel in world space?
-        w, h = self._getSize()
-        pixx = (xmax - xmin) / float(w)
-        pixy = (ymax - ymin) / float(h)
+        pixx, pixy = self.calcPixelDims()
 
         # add a little padding to the lines if they are 
         # on the boundary, so they don't get cropped        
