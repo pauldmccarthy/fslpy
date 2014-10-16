@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# imagedisplaypanel.py - A panel which shows display control optionns for the
+# imagedisplaypanel.py - A panel which shows display control options for the
 #                        currently selected image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -59,9 +59,15 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
             self._selectedImageChanged)
 
         def onDestroy(ev):
+            ev.Skip()
+
+            # Stupid. Window destroy handlers of a panel
+            # get called when children of said panel are
+            # destroyed.
+            if ev.GetEventObject() != self: return
+            
             self._imageList .removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
-            ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
