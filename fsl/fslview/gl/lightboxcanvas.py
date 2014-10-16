@@ -153,7 +153,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return tuple(pos)
 
         
-    def __init__(self, imageList, zax=2):
+    def __init__(self, imageList, zax=0):
         """Create a :class:`LightBoxCanvas` object.
         
         :arg imageList: a :class:`~fsl.data.image.ImageList` object which

@@ -139,10 +139,11 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         label.
         """
 
-        idx = self._displayCtx.selectedImage
+        idx   = self._displayCtx.selectedImage
+        nimgs = len(self._imageList)
 
-        self._prevButton.Enable(idx != 0)
-        self._nextButton.Enable(idx != len(self._imageList) - 1)
+        self._prevButton.Enable(nimgs > 0 and idx != 0)
+        self._nextButton.Enable(nimgs > 0 and idx != len(self._imageList) - 1)
 
         if len(self._imageList) == 0:
             self._imageLabel.SetLabel('')
@@ -151,7 +152,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         image = self._imageList[idx]
         name = image.name
         
-        if name == None: name = ''
+        if name is None: name = ''
         self._imageLabel.SetLabel('{}'.format(name))
 
         self.Layout()
