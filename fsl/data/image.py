@@ -504,7 +504,7 @@ class ImageList(props.HasProperties):
         else:                self._lastDir = op.dirname(images[-1].imageFile)
 
 
-    def addImages(self, fromDir=None):
+    def addImages(self, fromDir=None, addToEnd=True):
         """Convenience method for interactively adding images to this
         :class:`ImageList`.
 
@@ -512,14 +512,22 @@ class ImageList(props.HasProperties):
         prompting the user to select one or more images to append to the
         image list.
 
-        :param str fromDir: Directory in which the file dialog should start.
-                            If ``None``, the most recently visited directory
-                            (via this method) is used, or a directory from
-                            an already loaded image, or the current working
-                            directory.
+        :param str fromDir:   Directory in which the file dialog should start.
+                              If ``None``, the most recently visited directory
+                              (via this method) is used, or a directory from
+                              an already loaded image, or the current working
+                              directory.
+
+        :param bool addToEnd: If True (the default), the new images are added
+                              to the end of the list. Otherwise, they are added
+                              to the beginning of the list.
+
+        Returns: True if images were successfully added, False if no images
+        were added.
         
         :raise ImportError:  if :mod:`wx` is not present.
         :raise RuntimeError: if a :class:`wx.App` has not been created.
+
         """
         import wx
 
@@ -542,14 +550,17 @@ class ImageList(props.HasProperties):
                             # wildcard=wildcard,
                             style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
-        if dlg.ShowModal() != wx.ID_OK: return
+        if dlg.ShowModal() != wx.ID_OK: return False
 
         paths         = dlg.GetPaths()
         images        = map(Image, paths)
 
         if saveLastDir: self._lastDir = op.dirname(paths[-1])
 
-        self.extend(images)
+        if addToEnd: self.extend(      images)
+        else:        self.insertAll(0, images)
+
+        return True
 
 
     def _imageListChanged(self, *a):
@@ -602,15 +613,20 @@ class ImageList(props.HasProperties):
 
     # Wrappers around the images list property, allowing this
     # ImageList object to be used as if it is actually a list.
-    def __len__(     self):            return self.images.__len__()
-    def __getitem__( self, key):       return self.images.__getitem__(key)
-    def __iter__(    self):            return self.images.__iter__()
-    def __contains__(self, item):      return self.images.__contains__(item)
-    def __setitem__( self, key, val):  return self.images.__setitem__(key, val)
-    def __delitem__( self, key):       return self.images.__delitem__(key)
-    def index(       self, item):      return self.images.index(item)
-    def count(       self, item):      return self.images.count(item)
-    def append(      self, item):      return self.images.append(item)
-    def extend(      self, iterable):  return self.images.extend(iterable)
-    def pop(         self, index=-1):  return self.images.pop(index)
-    def move(        self, from_, to): return self.images.move(from_, to) 
+    def __len__(     self):               return self.images.__len__()
+    def __getitem__( self, key):          return self.images.__getitem__(key)
+    def __iter__(    self):               return self.images.__iter__()
+    def __contains__(self, item):         return self.images.__contains__(item)
+    def __setitem__( self, key, val):     return self.images.__setitem__(key,
+                                                                         val)
+    def __delitem__( self, key):          return self.images.__delitem__(key)
+    def index(       self, item):         return self.images.index(item)
+    def count(       self, item):         return self.images.count(item)
+    def append(      self, item):         return self.images.append(item)
+    def extend(      self, iterable):     return self.images.extend(iterable)
+    def pop(         self, index=-1):     return self.images.pop(index)
+    def move(        self, from_, to):    return self.images.move(from_, to)
+    def insert(      self, index, item):  return self.images.insertAll(index,
+                                                                       item)
+    def insertAll(   self, index, items): return self.images.insertAll(index,
+                                                                       items) 
