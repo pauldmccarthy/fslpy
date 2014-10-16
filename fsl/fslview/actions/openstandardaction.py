@@ -29,4 +29,5 @@ class OpenStandardAction(action.Action):
         
         
     def doAction(self, *args):
-        self._imageList.addImages(self._stddir)
+        if self._imageList.addImages(self._stddir, addToEnd=False):
+            self._displayCtx.selectedImage = 0

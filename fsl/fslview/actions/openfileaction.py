@@ -12,4 +12,6 @@ import fsl.fslview.action as action
 
 class OpenFileAction(action.Action):
     def doAction(self, *args):
-        self._imageList.addImages()
+        
+        if self._imageList.addImages():
+            self._displayCtx.selectedImage = len(self._imageList) - 1

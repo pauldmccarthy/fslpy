@@ -196,7 +196,8 @@ class ImageListPanel(controlpanel.ControlPanel):
         """Called when the 'add' button on the list box is pressed.
         Calls the :meth:`~fsl.data.image.ImageList.addImages` method.
         """
-        self._imageList.addImages()
+        if self._imageList.addImages():
+            self._displayCtx.selectedImage = len(self._imageList) - 1
 
 
     def _lbRemove(self, ev):
