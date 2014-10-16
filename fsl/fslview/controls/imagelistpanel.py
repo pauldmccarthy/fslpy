@@ -80,7 +80,7 @@ class ImageListPanel(controlpanel.ControlPanel):
             # This handler gets called when child windows
             # are destroyed (e.g. items in the embedded
             # elistbox), so this check is necessary.
-            if ev.EventObject != self: return
+            if ev.GetEventObject() != self: return
             
             self._imageList .removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
@@ -196,8 +196,14 @@ class ImageListPanel(controlpanel.ControlPanel):
         """Called when the 'add' button on the list box is pressed.
         Calls the :meth:`~fsl.data.image.ImageList.addImages` method.
         """
+
         if self._imageList.addImages():
             self._displayCtx.selectedImage = len(self._imageList) - 1
+            
+            # Double check that the list box has been updated,
+            # as even though the selected image may have changed,
+            # the index of that selected image may be the same.
+            self._listBox.SetSelection(self._displayCtx.selectedImage)
 
 
     def _lbRemove(self, ev):
