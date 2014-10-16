@@ -52,12 +52,18 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.zax`."""
 
     
+    showGridLines = lightboxcanvas.LightBoxCanvas.showGridLines
+    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.showGridLines`.
+    """ 
+
+    
     _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
                    canvaspanel   .CanvasPanel   ._labels.items())
     """Property labels to be used for GUI displays."""
 
     
     _view = props.VGroup(('showCursor',
+                          'showGridLines',
                           'posSync',
                           'zrange',
                           'sliceSpacing',
@@ -87,13 +93,14 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                                         imageList)
 
         # My properties are the canvas properties
-        self.bindProps('sliceSpacing', self._lbCanvas)
-        self.bindProps('ncols',        self._lbCanvas)
-        self.bindProps('nrows',        self._lbCanvas)
-        self.bindProps('topRow',       self._lbCanvas)
-        self.bindProps('zrange',       self._lbCanvas)
-        self.bindProps('showCursor',   self._lbCanvas)
-        self.bindProps('zax',          self._lbCanvas)
+        self.bindProps('sliceSpacing',  self._lbCanvas)
+        self.bindProps('ncols',         self._lbCanvas)
+        self.bindProps('nrows',         self._lbCanvas)
+        self.bindProps('topRow',        self._lbCanvas)
+        self.bindProps('zrange',        self._lbCanvas)
+        self.bindProps('showCursor',    self._lbCanvas)
+        self.bindProps('showGridLines', self._lbCanvas)
+        self.bindProps('zax',           self._lbCanvas)
 
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.getCanvasPanel().SetSizer(self._canvasSizer)

@@ -60,25 +60,31 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     coordinates, of the slices to be displayed.
     """
 
+
+    showGridLines = props.Boolean(default=True)
+    """If True, grid lines are drawn between the displayed slices. """
+
     
     _labels = dict(
         slicecanvas.SliceCanvas._labels.items() +
-        [('sliceSpacing', 'Slice spacing'),
-         ('ncols',        'Number of columns'),
-         ('nrows',        'Number of rows'),
-         ('topRow',       'Top row'),
-         ('zrange',       'Slice range')])
+        [('sliceSpacing',  'Slice spacing'),
+         ('ncols',         'Number of columns'),
+         ('nrows',         'Number of rows'),
+         ('topRow',        'Top row'),
+         ('zrange',        'Slice range'),
+         ('showGridLines', 'Show grid lines')])
     """Labels for the properties which are intended to be user editable."""
 
 
     _tooltips = dict(
         slicecanvas.SliceCanvas._tooltips.items() +
-        [('sliceSpacing', 'Distance (mm) between consecutive slices'),
-         ('ncols',        'Number of slices to display on one row'),
-         ('nrows',        'Number of rows to display on the canvas'),
-         ('topRow',       'Index number of top row (from '
-                          '0 to nrows-1) to display'),
-         ('zrange',       'Range (mm) along Z axis of slices to display')])
+        [('sliceSpacing',  'Distance (mm) between consecutive slices'),
+         ('ncols',         'Number of slices to display on one row'),
+         ('nrows',         'Number of rows to display on the canvas'),
+         ('topRow',        'Index number of top row (from '
+                           '0 to nrows-1) to display'),
+         ('zrange',        'Range (mm) along Z axis of slices to display'),
+         ('showGridLines', 'Show grid lines between slices')])
     """Tooltips to be used as help text."""
 
     _propHelp = _tooltips
@@ -181,6 +187,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.addListener('ncols',         self.name, self._slicePropsChanged)
         self.addListener('nrows',         self.name, self._slicePropsChanged)
         self.addListener('zrange',        self.name, self._slicePropsChanged)
+        self.addListener('showGridLines', self.name,
+                         lambda *a: self._refresh())
 
         # Called when the top row changes -
         # adjusts display range and refreshes
@@ -441,6 +449,46 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return translate
 
 
+    def _drawGridLines(self):
+        """Draws grid lines between all the displayed slices."""
+
+        xlen = self.imageList.bounds.getLen(self.xax)
+        ylen = self.imageList.bounds.getLen(self.yax)
+        xmin = self.imageList.bounds.getLo( self.xax)
+        ymin = self.imageList.bounds.getLo( self.yax)
+
+        rowLines = np.zeros(((self.nrows - 1) * 2, 3), dtype=np.float32)
+        colLines = np.zeros(((self.ncols - 1) * 2, 3), dtype=np.float32)
+        
+        topRow = self._totalRows - self.topRow 
+        btmRow = topRow          - self.nrows
+        
+        rowLines[:, self.yax] = np.arange(
+            ymin + (btmRow + 1) * ylen,
+            ymin +  topRow      * ylen, ylen).repeat(2)
+
+        rowLines[:, self.xax] = np.tile(
+            np.array([xmin, xmin + self.ncols * xlen]),
+            self.nrows - 1)
+        
+        colLines[:, self.xax] = np.arange(
+            xmin + xlen,
+            xmin + xlen * self.ncols, xlen).repeat(2) 
+        
+        colLines[:, self.yax] = np.tile(np.array([
+            ymin + btmRow * ylen,
+            ymin + topRow * ylen]), self.ncols - 1)
+        
+        gl.glLineWidth(1)
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(1, 1, 1)
+
+        for vertex in rowLines: gl.glVertex3f(*vertex)
+        for vertex in colLines: gl.glVertex3f(*vertex)
+
+        gl.glEnd() 
+
+
     def _drawCursor(self):
         """Draws a cursor at the current canvas position (the
         :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
@@ -453,7 +501,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         xmin    = self.imageList.bounds.getLo( self.xax)
         ymin    = self.imageList.bounds.getLo( self.yax)
         row     = self._totalRows - int(np.floor(sliceno / self.ncols)) - 1
-        col     = int(np.floor(sliceno % self.ncols)) 
+        col     = int(np.floor(sliceno % self.ncols))
 
         xpos, ypos = self.worldToCanvas(*self.pos.xyz)
 
@@ -520,7 +568,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 globj.draw(self._sliceLocs[ i][zi],
                            self._transforms[i][zi])
 
-        if self.showCursor:
-            self._drawCursor()
+        if self.showCursor:    self._drawCursor()
+        if self.showGridLines: self._drawGridLines() 
 
         self._postDraw()
