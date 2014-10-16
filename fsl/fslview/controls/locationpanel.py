@@ -219,8 +219,10 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         # voxel. But the world location can be anywhere within a
         # voxel. So if the world location is already in the correct
         # voxel, we don't want it to be shifted to the voxel centre.
-        if all([vl == wvl for (vl, wvl) in zip(voxLoc, worldVoxLoc)]): return
-        
+        diffs = map(lambda vl, wvl: vl - wvl, voxLoc, worldVoxLoc)
+
+        if not any(map(lambda d: d > 0.001, diffs)): return
+
         self._displayCtx.location.xyz = worldLoc
 
 
