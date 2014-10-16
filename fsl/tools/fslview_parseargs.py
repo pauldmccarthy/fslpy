@@ -263,5 +263,8 @@ def handleImageArgs(args):
     if args.selectedImage is not None:
         if args.selectedImage < len(imageList):
             displayCtx.selectedImage = args.selectedImage
+    else:
+        if len(imageList) > 0:
+            displayCtx.selectedImage = len(imageList) - 1
 
     return imageList, displayCtx
