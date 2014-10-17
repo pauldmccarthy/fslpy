@@ -18,20 +18,20 @@ GL Objects must have the following methods:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy                       as np
+import numpy as np
 
-import fsl.fslview.gl.glimage      as glimage
-import fsl.fslview.gl.glcircle     as glcircle
-import fsl.fslview.gl.gltensorline as gltensorline
-
-
-_objectmap = {
-    'volume' : glimage     .GLImage,
-    'circle' : glcircle    .GLCircle,
-    'tensor' : gltensorline.GLTensorLine
-}
 
 def createGLObject(image, display):
+
+    import fsl.fslview.gl.glimage      as glimage
+    import fsl.fslview.gl.glcircle     as glcircle
+    import fsl.fslview.gl.gltensorline as gltensorline
+
+    _objectmap = {
+        'volume' : glimage     .GLImage,
+        'circle' : glcircle    .GLCircle,
+        'tensor' : gltensorline.GLTensorLine
+    } 
 
     ctr = _objectmap.get(display.imageType, None)
 
@@ -46,8 +46,8 @@ def calculateSamplePoints(image, display, xax, yax):
 
     This function returns a tuple containing:
 
-     - a numpy array of shape `(N, 3)`, containing the coordinates of the centre
-       of every sampling point in real worl space.
+     - a numpy array of shape `(N, 3)`, containing the coordinates of the
+       centre of every sampling point in real world space.
 
      - the horizontal distance (along xax) between adjacent points
 
