@@ -26,6 +26,22 @@ import fsl.data.imagefile as imagefile
 
 log = logging.getLogger(__name__)
 
+L2R = 0
+R2L = 1
+P2A = 2
+A2P = 3
+I2S = 4
+S2I = 5
+
+orientationLabels = {
+    L2R : ('L', 'R'),
+    R2L : ('R', 'L'),
+    P2A : ('P', 'A'),
+    A2P : ('A', 'P'),
+    S2I : ('S', 'I'),
+    I2S : ('I', 'S')
+}
+
 
 def _loadImageFile(filename):
     """Given the name of an image file, loads it using nibabel.
@@ -366,6 +382,17 @@ class Image(props.HasProperties):
 
         if worldp.size == 1: return float(worldp)
         else:                return worldp
+
+
+    def getOrientation(self, axis):
+        # the aff2axcodes returns one code for each 
+        # axis in the image array (i.e. in voxel space),
+        # which denotes the real world direction
+        code = nib.orientations.aff2axcodes(self.nibImage.get_affine(),
+                                            ((R2L, L2R),
+                                             (A2P, P2A),
+                                             (S2I, I2S)))[axis]
+        return orientationLabels[code]
 
         
     def _transform(self, p, a, axes):
