@@ -35,7 +35,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
     
-    ncols = props.Int(clamped=True, minval=1, maxval=15, default=5)
+    ncols = props.Int(clamped=True, minval=1, maxval=20, default=5)
     """This property controls the number of 
     slices to be displayed on a single row.
     """
@@ -250,9 +250,20 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         if self._nslices == 0 or self._totalRows == 0:
             return
+        
+        # All slices are going to be displayed, so
+        # we'll 'disable' the topRow property
+        if self._totalRows < self.nrows:
+            self.setConstraint('topRow', 'minval', 0)
+            self.setConstraint('topRow', 'maxval', 0)
 
-        self.setConstraint('nrows',  'maxval', self._totalRows)
-        self.setConstraint('topRow', 'maxval', self._totalRows - self.nrows)
+        # nrows slices are going to be displayed,
+        # and the topRow property can be used to
+        # scroll through all available rows.
+        else:
+            self.setConstraint('topRow',
+                               'maxval',
+                               self._totalRows - self.nrows)
 
 
     def _zPosChanged(self, *a):
