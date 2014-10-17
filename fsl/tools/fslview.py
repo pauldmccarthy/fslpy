@@ -47,6 +47,7 @@ def interface(parent, args, ctx):
                      'ncols',
                      'nrows',
                      'zrange',
+                     'showGridLines',
                      'zax']:
             val = getattr(args, prop, None)
 

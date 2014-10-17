@@ -61,7 +61,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
 
-    showGridLines = props.Boolean(default=True)
+    showGridLines = props.Boolean(default=False)
     """If True, grid lines are drawn between the displayed slices. """
 
     
@@ -568,7 +568,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 globj.draw(self._sliceLocs[ i][zi],
                            self._transforms[i][zi])
 
-        if self.showCursor:    self._drawCursor()
-        if self.showGridLines: self._drawGridLines() 
+        if len(self.imageList) > 0:
+            if self.showCursor:    self._drawCursor()
+            if self.showGridLines: self._drawGridLines() 
 
         self._postDraw()
