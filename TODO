@@ -9,10 +9,11 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 *** OSX: Floating panels get moved about when opening a new floating panel.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 *** Wild cards in image file load (WX/OSX issue)
-** Cursor location in lightbox can be out of the slices
 ** Linux/Jalapeno Bad window crash
 ** No worky in VNC session.
 ** OSMesa render doesn't like circle voxels
+** DONE Cursor location in lightbox can be out of the slices
+** DONE LightBox screwy on image transformation change
 ** DONE Slice changes on ludo's bad image, when using pixdim transformation.
 ** DONE Cursor location moving along other dimensions on X canvas mouse movement in Ludo's bad image.
 ** DONE ImageListPanel checkbox background colour not resetting
@@ -47,6 +48,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Turn your test_gl14_coords.py script into a fslview ViewPanel; it might come in handy.
 ** ColourBarPanel should only do stuff if it is being displayed
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
@@ -174,3 +176,4 @@ on the image display object.
 ** (Ged).    Colouring of unions/intersections for combinations of mask images
 ** (Fidel).  Diffusion data - show acquisition direction for each volume (from bvec text file) when displaying raw diffusion data. Could have a little display (a separate ViewPanel) which has a 3D compass-like thing.
 ** (Ged).    Intensity contour lines (cool idea!).
+** (Ged).    First/third angle orthographic projection. Related, should I be displaying each slice canvas at the same scale? Currently they are simply sized to use the maximum available space..
