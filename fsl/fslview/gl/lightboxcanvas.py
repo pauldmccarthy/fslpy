@@ -162,6 +162,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return tuple(pos)
 
         
+    def getTotalRows(self):
+        """Returns the total number of rows that may be displayed.
+        """
+        return self._totalRows
+
+        
     def __init__(self, imageList, zax=0):
         """Create a :class:`LightBoxCanvas` object.
         
@@ -212,12 +218,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.addListener('pos',
                          '{}_zPosChanged'.format(self.name),
                          self._zPosChanged)
-
-        
-    def getTotalRows(self):
-        """Returns the total number of rows that may be displayed.
-        """
-        return self._totalRows
 
 
     def _slicePropsChanged(self, *a):
@@ -515,8 +515,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         ylen    = self.imageList.bounds.getLen(self.yax)
         xmin    = self.imageList.bounds.getLo( self.xax)
         ymin    = self.imageList.bounds.getLo( self.yax)
-        row     = self._totalRows - int(np.floor(sliceno / self.ncols)) - 1
+        row     = int(np.floor(sliceno / self.ncols))
         col     = int(np.floor(sliceno % self.ncols))
+
+        # don't draw the cursor if it is on a
+        # non-existent or non-displayed slice
+        if sliceno > self._nslices:            return
+        if row     < self.topRow:              return
+        if row     > self.topRow + self.nrows: return
+
+        # in GL space, the top row is actually the bottom row
+        row = self._totalRows - row - 1
 
         xpos, ypos = self.worldToCanvas(*self.pos.xyz)
 
