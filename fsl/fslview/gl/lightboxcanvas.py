@@ -29,7 +29,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
     
-    sliceSpacing = props.Real(clamped=True, minval=0.1, default=1.0)
+    sliceSpacing = props.Real(clamped=True,
+                              minval=0.1,
+                              maxval=30.0,
+                              default=1.0)
     """This property controls the spacing
     between slices (in real world coordinates).
     """
@@ -293,19 +296,28 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # and make sure that row is visible
         self.topRow = row
-        
 
-    def _zAxisChanged(self, *a):
+
+    def _imageListChanged(self, *a):
         """Overrides
-        :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas._zAxisChanged`.
+        :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._imageListChanged`.
 
-        Called when the :attr:`~fsl.fslview.SliceCanvas.zax` property
-        changes. Calls the superclass implementation, and then sets the slice
-        :attr:`zrange` bounds to the image bounds.
+        Regenerates slice locations for all images, and calls the super
+        implementation.
         """
-        slicecanvas.SliceCanvas._zAxisChanged(self, *a)
+        self._genSliceLocations()
+        slicecanvas.SliceCanvas._imageListChanged(self, *a)
 
 
+    def _updateZAxisProperties(self):
+        """Called by the :meth:`_imageBoundsChanged` method.
+
+        The purpose of this method is to set the slice spacing and displayed Z
+        range to something sensible when the Z axis, or Z image bounds are
+        changed (e.g. due to images being added/removed, or to image
+        transformation matrices being changed).
+
+        """
         newZRange = self.imageList.bounds.getRange(self.zax)
         newZGap   = self.sliceSpacing
 
@@ -321,26 +333,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # happen. So we do a check and, if the dimension ranges are the same,
         # manually call _slicePropsChanged.  Bringing out the ugly side of
         # event driven programming.
-        
         if self.zrange.x == newZRange and self.sliceSpacing == newZGap:
             self._slicePropsChanged()
         else:
             self.zrange.x     = newZRange
             self.sliceSpacing = newZGap
             self.setConstraint('zrange', 'minDistance', newZGap)
-            
 
-    def _imageListChanged(self, *a):
-        """Overrides
-        :meth:`~fsl.fslview.gl.slicecanvas.SliceCanvas._imageListChanged`.
 
-        Regenerates slice locations for all images, and calls the super
-        implementation.
-        """
-        self._genSliceLocations()
-        slicecanvas.SliceCanvas._imageListChanged(self, *a)
-
-        
     def _imageBoundsChanged(self, *a):
         """Overrides
         :meth:`fsl.fslview.gl.slicecanvas.SliceCanvas._imageBoundsChanged`.
@@ -366,6 +366,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             zgap = min([i.pixdim[self.zax] for i in self.imageList])
             self.setConstraint('zrange', 'minDistance', zgap)
 
+        self._updateZAxisProperties()
         self._calcNumSlices()
         self._genSliceLocations()
         
