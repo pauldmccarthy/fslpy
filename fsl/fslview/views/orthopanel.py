@@ -30,6 +30,14 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     showXCanvas = props.Boolean(default=True)
     showYCanvas = props.Boolean(default=True)
     showZCanvas = props.Boolean(default=True)
+
+
+    invertX_X   = props.Boolean(default=False)
+    invertX_Y   = props.Boolean(default=False)
+    invertY_X   = props.Boolean(default=False)
+    invertY_Y   = props.Boolean(default=False)
+    invertZ_X   = props.Boolean(default=False)
+    invertZ_Y   = props.Boolean(default=False) 
     
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
@@ -58,6 +66,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                       'showYCanvas',
                       'showZCanvas',
                       'showColourBar',
+                      props.HGroup(('invertX_X', 'invertX_Y')),
+                      props.HGroup(('invertY_X', 'invertY_Y')),
+                      props.HGroup(('invertZ_X', 'invertZ_Y')),
                       props.Widget('colourBarLocation',
                                    visibleWhen=lambda i: i.showColourBar),
                       props.Widget('colourBarLabelSide',
@@ -105,6 +116,14 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.bindProps('xzoom',      self._xcanvas, 'zoom')
         self.bindProps('yzoom',      self._ycanvas, 'zoom')
         self.bindProps('zzoom',      self._zcanvas, 'zoom')
+
+
+        self.bindProps('invertX_X', self._xcanvas, 'invertX')
+        self.bindProps('invertX_Y', self._xcanvas, 'invertY')
+        self.bindProps('invertY_X', self._ycanvas, 'invertX')
+        self.bindProps('invertY_Y', self._ycanvas, 'invertY')
+        self.bindProps('invertZ_X', self._zcanvas, 'invertX')
+        self.bindProps('invertZ_Y', self._zcanvas, 'invertY') 
 
         llName = '{}_layout'.format(self._name)
         
@@ -202,14 +221,17 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         layout = self.layout.lower()
 
+        canvases = [self._xcanvas, self._ycanvas, self._zcanvas]
+
         if   layout == 'horizontal':
             self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         elif layout == 'vertical':
             self._canvasSizer = wx.BoxSizer(wx.VERTICAL)
         elif layout == 'grid':
-            self._canvasSizer = wx.WrapSizer(wx.HORIZONTAL) 
+            self._canvasSizer = wx.WrapSizer(wx.HORIZONTAL)
+            canvases = [self._ycanvas, self._xcanvas, self._zcanvas]
 
-        for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
+        for c in canvases:
             self._canvasSizer.Add(c, flag=wx.EXPAND, proportion=1)
 
         self.getCanvasPanel().SetSizer(self._canvasSizer)

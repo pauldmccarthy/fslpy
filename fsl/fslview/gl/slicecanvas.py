@@ -74,11 +74,23 @@ class SliceCanvas(props.HasProperties):
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
     """The image axis to be used as the screen 'depth' axis."""
 
+    
+    invertX = props.Boolean(default=False)
+    """If True, the display is inverted along the X (horizontal screen) axis.
+    """
 
+    
+    invertY = props.Boolean(default=False)
+    """If True, the display is inverted along the Y (vertical screen) axis.
+    """ 
+
+    
     _labels = {
         'zoom'       : 'Zoom level',
         'showCursor' : 'Show cursor',
-        'zax'        : 'Z axis'}
+        'zax'        : 'Z axis',
+        'invertX'    : 'Invert X axis',
+        'invertY'    : 'Invert Y axis'}
     """Labels for the properties which are intended to be user editable."""
 
     
@@ -116,6 +128,9 @@ class SliceCanvas(props.HasProperties):
         realWidth                 = self.displayBounds.xlen
         realHeight                = self.displayBounds.ylen
         canvasWidth, canvasHeight = map(float, self._getSize())
+
+        if self.invertX: xpos = canvasWidth  - xpos
+        if self.invertY: ypos = canvasHeight - ypos
 
         if realWidth    == 0 or \
            canvasWidth  == 0 or \
@@ -224,6 +239,8 @@ class SliceCanvas(props.HasProperties):
         self.addListener('pos',           self.name, refresh)
         self.addListener('showCursor',    self.name, refresh)
         self.addListener('displayBounds', self.name, refresh)
+        self.addListener('invertX',       self.name, refresh)
+        self.addListener('invertY',       self.name, refresh)
         self.addListener('zoom',
                          self.name,
                          lambda *a: self._updateDisplayBounds())
@@ -518,6 +535,11 @@ class SliceCanvas(props.HasProperties):
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
+
+        # Flip the viewport if necessary
+        if self.invertX: xmin, xmax = xmax, xmin
+        if self.invertY: ymin, ymax = ymax, ymin
+        
         gl.glOrtho(xmin,        xmax,
                    ymin,        ymax,
                    zmin - 1000, zmax + 1000)
