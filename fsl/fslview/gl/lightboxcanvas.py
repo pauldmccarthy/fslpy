@@ -353,8 +353,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         if len(self.imageList) > 0:
             zgap = min([i.pixdim[self.zax] for i in self.imageList])
-            self.setConstraint('zrange', 'minDistance', zgap) 
+            self.setConstraint('zrange', 'minDistance', zgap)
 
+        self._calcNumSlices()
+        self._genSliceLocations()
+        
         
     def _updateDisplayBounds(self):
         """Overrides
