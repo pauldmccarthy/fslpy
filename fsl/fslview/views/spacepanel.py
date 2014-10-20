@@ -30,7 +30,8 @@ class SpacePanel(viewpanel.ViewPanel):
 
         self._axis.mouse_init()
 
-        # the canvas doesn't seem to refresh itself
+        # the canvas doesn't seem to refresh itself,
+        # so we'll do it manually on mouse events
         def draw(*a):
             self._canvas.draw()
 
@@ -57,16 +58,26 @@ class SpacePanel(viewpanel.ViewPanel):
 
     def _selectedImageChanged(self, *a):
 
+        self._axis.clear()
+
+        if len(self._imageList) == 0:
+            return
+
         image = self._imageList[self._displayCtx.selectedImage]
 
         image.addListener('transform', self._name, self._selectedImageChanged)
-        
-        self._axis.clear()
+
+        self._axis.set_title(image.name)
+        self._axis.set_xlabel('X')
+        self._axis.set_ylabel('Y')
+        self._axis.set_zlabel('Z')
 
         self._plotImageCorners()
         self._plotImageBounds()
         self._plotImageLabels()
         self._plotAxisLengths()
+
+        self._axis.legend()
         self._canvas.draw()
 
 
@@ -127,7 +138,9 @@ class SpacePanel(viewpanel.ViewPanel):
 
         image = self._imageList[self._displayCtx.selectedImage]
 
-        for ax, colour in zip(range(3), ['r', 'g', 'b']):
+        for ax, colour, label in zip(range(3),
+                                     ['r', 'g', 'b'],
+                                     ['X', 'Y', 'Z']):
 
             points = np.zeros((2, 3), dtype=np.float32)
             points[:]     = [-0.5, -0.5, -0.5]
@@ -142,7 +155,7 @@ class SpacePanel(viewpanel.ViewPanel):
                             color=colour,
                             alpha=0.5,
                             label='Axis {} (length {:0.2f})'.format(
-                                ax, image.axisLength(ax)))
+                                label, image.axisLength(ax)))
 
 
     def _plotImageCorners(self):
