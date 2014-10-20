@@ -61,6 +61,7 @@ class SpacePanel(viewpanel.ViewPanel):
         self._axis.clear()
 
         if len(self._imageList) == 0:
+            self._canvas.draw()
             return
 
         image = self._imageList[self._displayCtx.selectedImage]
@@ -113,16 +114,13 @@ class SpacePanel(viewpanel.ViewPanel):
         for ax, colour in zip(range(3), ['r', 'g', 'b']):
 
             voxSpan = np.vstack((centre, centre))
-
-            # image.tranasform = 'affine'
+            
             voxSpan[0, ax] = 0
             voxSpan[1, ax] = image.shape[ax]
 
             lblLo, lblHi = image.getOrientation(ax)
 
-            # image.transform = 'affine'
             wldSpan = image.voxToWorld(voxSpan)
-            # image.transform = xform
 
             self._axis.plot(wldSpan[:, 0],
                             wldSpan[:, 1],
