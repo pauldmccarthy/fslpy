@@ -26,22 +26,23 @@ import fsl.data.imagefile as imagefile
 
 log = logging.getLogger(__name__)
 
-L2R = 0
-R2L = 1
-P2A = 2
-A2P = 3
-I2S = 4
-S2I = 5
+# Constants which represent the orientation of an axis,
+# in either voxel or world space.
+ORIENT_UNKNOWN = -1
+ORIENT_L2R     = 0
+ORIENT_R2L     = 1
+ORIENT_P2A     = 2
+ORIENT_A2P     = 3
+ORIENT_I2S     = 4
+ORIENT_S2I     = 5
 
-orientationLabels = {
-    L2R : ('L', 'R'),
-    R2L : ('R', 'L'),
-    P2A : ('P', 'A'),
-    A2P : ('A', 'P'),
-    S2I : ('S', 'I'),
-    I2S : ('I', 'S')
-}
-
+# Constants from the NIFTI1 specification that define
+# the 'space' in which an image is assumed to be.
+NIFTI_XFORM_UNKNOWN      = 0
+NIFTI_XFORM_SCANNER_ANAT = 1
+NIFTI_XFORM_ALIGNED_ANAT = 2
+NIFTI_XFORM_TALAIRACH    = 3
+NIFTI_XFORM_MNI_152      = 4
 
 def _loadImageFile(filename):
     """Given the name of an image file, loads it using nibabel.
@@ -384,15 +385,78 @@ class Image(props.HasProperties):
         else:                return worldp
 
 
-    def getOrientation(self, axis):
+    def getXFormCode(self):
+        """This method returns the code contained in the NIFTI1 header,
+        indicating the space to which the (transformed) image is oriented.
+        
+        """
+        sform_code = self.nibImage.get_header()['sform_code']
+        qform_code = self.nibImage.get_header()['qform_code']
+
+        # if the qform and sform codes don't
+        # match, I don't know what to do
+        if   sform_code != qform_code: return NIFTI_XFORM_UNKNOWN
+
+        # Invalid values
+        elif sform_code > 4:           return NIFTI_XFORM_UNKNOWN
+        elif sform_code < 0:           return NIFTI_XFORM_UNKNOWN
+
+        # All is well
+        else:                          return sform_code
+
+
+    def getWorldOrientation(self, axis):
+        """Returns a code representing the orientation of the specified axis
+        in world space.
+
+        This method returns one of the following values, indicating the
+        direction in which coordinates along the specified axis increase:
+          - :attr:`~fsl.data.image.ORIENT_L2R`:     Left to right
+          - :attr:`~fsl.data.image.ORIENT_R2L`:     Right to left
+          - :attr:`~fsl.data.image.ORIENT_A2P`:     Anterior to posterior
+          - :attr:`~fsl.data.image.ORIENT_P2A`:     Posterior to anterior
+          - :attr:`~fsl.data.image.ORIENT_I2S`:     Inferior to superior
+          - :attr:`~fsl.data.image.ORIENT_S2I`:     Superior to inferior
+          - :attr:`~fsl.data.image.ORIENT_UNKNOWN`: Orientation is unknown
+
+        The returned value is dictated by the XForm code contained in the
+        image file header (see the :meth:`getXFormCode` method). Basically,
+        if the XForm code is 'unknown', this method will return -1 for all
+        axes. Otherwise, it is assumed that the image is in RAS orientation
+        (i.e. the X axis increases from left to right, the Y axis increases
+        from  posterior to anterior, and the Z axis increases from inferior
+        to superior).
+        """
+
+        if self.getXFormCode() == NIFTI_XFORM_UNKNOWN:
+            return -1
+
+        if   axis == 0: return ORIENT_L2R
+        elif axis == 1: return ORIENT_P2A
+        elif axis == 2: return ORIENT_I2S
+
+        else: return -1
+
+
+    def getVoxelOrientation(self, axis):
+        """Returns a code representing the (estimated) orientation of the
+        specified voxelwise axis.
+
+        See the :meth:`getWorldOrientation` method for a description
+        of the return value.
+        """
+        
+        if self.getXFormCode() == NIFTI_XFORM_UNKNOWN:
+            return -1 
+        
         # the aff2axcodes returns one code for each 
         # axis in the image array (i.e. in voxel space),
         # which denotes the real world direction
         code = nib.orientations.aff2axcodes(self.nibImage.get_affine(),
-                                            ((R2L, L2R),
-                                             (A2P, P2A),
-                                             (S2I, I2S)))[axis]
-        return orientationLabels[code]
+                                            ((ORIENT_R2L, ORIENT_L2R),
+                                             (ORIENT_A2P, ORIENT_P2A),
+                                             (ORIENT_S2I, ORIENT_I2S)))[axis]
+        return code
 
         
     def _transform(self, p, a, axes):

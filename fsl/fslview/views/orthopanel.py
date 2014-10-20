@@ -19,6 +19,8 @@ log = logging.getLogger(__name__)
 import wx
 import props
 
+import fsl.data.image                 as fslimage
+
 import fsl.fslview.gl                 as fslgl
 import fsl.fslview.gl.wxglslicecanvas as slicecanvas
 import canvaspanel
@@ -221,16 +223,25 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.bindProps('invertZ_X', self._zcanvas, 'invertX')
         self.bindProps('invertZ_Y', self._zcanvas, 'invertY') 
 
-        llName = '{}_layout'.format(self._name)
-        
-        self.addListener('layout',            llName, self._layoutChanged)
-        self.addListener('showColourBar',     llName, self._layoutChanged)
-        self.addListener('colourBarLocation', llName, self._layoutChanged)
-        self.addListener('showLabels',        llName, self._toggleLabels)
+        # Callbacks for ortho panel layout options
+        self.addListener('layout',            self._name, self._layoutChanged)
+        self.addListener('showColourBar',     self._name, self._layoutChanged)
+        self.addListener('colourBarLocation', self._name, self._layoutChanged)
+        self.addListener('showLabels',        self._name, self._toggleLabels)
 
+        # Callbacks for image list/selected image changes
+        self._imageList.addListener( 'images',
+                                     self._name,
+                                     self._imageListChanged)
+        self._displayCtx.addListener('selectedImage',
+                                     self._name,
+                                     self._imageListChanged)
+
+        self._imageListChanged()
         self._layoutChanged()
         self._toggleLabels()
 
+        # Callbacks for mouse events on the three xcanvases
         self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
         self._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
         self._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -238,20 +249,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
+        # Callback for the display context location - when it
+        # changes, update the displayed canvas locations
         def move(*a):
             if self.posSync:
                 self.setPosition(*self._displayCtx.location)
 
         self.setPosition(*self._displayCtx.location)
         self._displayCtx.addListener('location', self._name, move) 
-        
-        def onDestroy(ev):
-            self._displayCtx.removeListener('location', self._name)
-            ev.Skip()
 
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-        self.Bind(wx.EVT_SIZE, self._resize)
-
+        # Callbacks for toggling x/y/z canvas display
         def toggle(canvas, toggle):
             self._canvasSizer.Show(canvas, toggle)
             if self.layout.lower() == 'grid':
@@ -268,6 +275,55 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                          lambda *a: toggle(self._zCanvasPanel,
                                            self.showZCanvas))
 
+        # Do some cleaning up if/when this panel is destroyed
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
+
+        # And finally, call the _resize method to
+        # re-layout things when this panel is resized
+        self.Bind(wx.EVT_SIZE, self._resize)
+
+
+    def _imageListChanged(self, *a):
+        """Called when the image list or selected image is changed.
+
+        Adds a listener to the currently selected image, to listen
+        for changes on its affine transformation matrix.
+        """
+        if len(self._imageList) == 0: return
+
+        for i, img in enumerate(self._imageList):
+
+            # Update anatomy labels when the image
+            # transformation matrix changes
+            if i == self._displayCtx.selectedImage:
+                img.addListener('transform', self._name, self._toggleLabels)
+            else:
+                img.removeListener('transform', self._name)
+
+
+    def _onDestroy(self, ev):
+        """Called when this panel is destroyed. 
+        
+        The display context and image list will probably live longer than
+        this OrthoPanel. So when this panel is destroyed, all those
+        registered listeners are removed.
+        """
+        ev.Skip()
+
+        # Do nothing if the destroyed window is not
+        # this panel (i.e. it is a child of this panel)
+        if ev.GetEventObject() != self: return
+
+        self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._imageList .removeListener('images',        self._name)
+
+        # The _imageListChanged method adds
+        # listeners to individual images,
+        # so we have to remove them too
+        for img in self._imageList:
+            img.removeListener('transform', self._name)
+        
             
     def _resize(self, ev):
         """
@@ -284,34 +340,79 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     def _toggleLabels(self, *a):
         """Shows/hides labels depicting anatomical orientation on each canvas.
         """
+
+        allLabels =  [self._xLeftLabel, self._xRightLabel,
+                      self._xTopLabel,  self._xBottomLabel,
+                      self._yLeftLabel, self._yRightLabel,
+                      self._yTopLabel,  self._yBottomLabel,
+                      self._zLeftLabel, self._zRightLabel,
+                      self._zTopLabel,  self._zBottomLabel]
+
+
+        # Are we showing or hiding the labels?
         if self.showLabels: show = True
         else:               show = False
 
-        self._xLeftLabel  .Show(show)
-        self._xRightLabel .Show(show) 
-        self._xTopLabel   .Show(show)
-        self._xBottomLabel.Show(show)
-        self._yLeftLabel  .Show(show)
-        self._yRightLabel .Show(show) 
-        self._yTopLabel   .Show(show)
-        self._yBottomLabel.Show(show)
-        self._zLeftLabel  .Show(show)
-        self._zRightLabel .Show(show) 
-        self._zTopLabel   .Show(show)
-        self._zBottomLabel.Show(show)
+        for lbl in allLabels:
+            lbl.Show(show)
 
-        self._xLeftLabel  .SetLabel('?')
-        self._xRightLabel .SetLabel('?')
-        self._xTopLabel   .SetLabel('?')
-        self._xBottomLabel.SetLabel('?')
-        self._yLeftLabel  .SetLabel('?')
-        self._yRightLabel .SetLabel('?')
-        self._yTopLabel   .SetLabel('?')
-        self._yBottomLabel.SetLabel('?')
-        self._zLeftLabel  .SetLabel('?')
-        self._zRightLabel .SetLabel('?')
-        self._zTopLabel   .SetLabel('?')
-        self._zBottomLabel.SetLabel('?')
+        # If we're hiding the labels, do no more
+        if not show:
+            return
+
+        # Default colour is white - if the orientation labels
+        # cannot be determined, the background colour will be
+        # changed to red
+        colour = 'white'
+
+        if len(self._imageList) > 0:
+            image = self._imageList[self._displayCtx.selectedImage]
+
+            # The image is being displayed as it is stored on
+            # disk - the image.getOrientation method calculates
+            # and returns labels for each voxelwise axis.
+            if image.transform in ('pixdim', 'id'):
+                xorient = image.getVoxelOrientation(0)
+                yorient = image.getVoxelOrientation(1)
+                zorient = image.getVoxelOrientation(2)
+
+            # The image is being displayed in 'real world' space -
+            # the definition of this space may be present in the
+            # image meta data
+            else:
+                xorient = image.getWorldOrientation(0)
+                yorient = image.getWorldOrientation(1)
+                zorient = image.getWorldOrientation(2)
+
+                
+        if fslimage.ORIENT_UNKNOWN in (xorient, yorient, zorient):
+            colour = 'red'
+ 
+        # Imported here to avoid circular import issues
+        import fsl.fslview.strings as strings 
+
+        xlo = strings.imageAxisLowShortLabels[ xorient]
+        ylo = strings.imageAxisLowShortLabels[ yorient]
+        zlo = strings.imageAxisLowShortLabels[ zorient]
+        xhi = strings.imageAxisHighShortLabels[xorient]
+        yhi = strings.imageAxisHighShortLabels[yorient]
+        zhi = strings.imageAxisHighShortLabels[zorient]
+
+        for lbl in allLabels:
+            lbl.SetForegroundColour(colour)
+
+        self._xLeftLabel  .SetLabel(ylo)
+        self._xRightLabel .SetLabel(yhi)
+        self._xBottomLabel.SetLabel(zlo)
+        self._xTopLabel   .SetLabel(zhi)
+        self._yLeftLabel  .SetLabel(xlo)
+        self._yRightLabel .SetLabel(xhi)
+        self._yBottomLabel.SetLabel(zlo)
+        self._yTopLabel   .SetLabel(zhi)
+        self._zLeftLabel  .SetLabel(xlo)
+        self._zRightLabel .SetLabel(xhi)
+        self._zBottomLabel.SetLabel(ylo)
+        self._zTopLabel   .SetLabel(yhi)
 
         self._xCanvasPanel.Layout()
         self._yCanvasPanel.Layout()
