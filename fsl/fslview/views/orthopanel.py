@@ -25,11 +25,17 @@ import canvaspanel
 
 class OrthoPanel(canvaspanel.CanvasPanel):
 
-    # Properties which toggle display of each of
-    # the three canvases, and the cursors on them.
+    
     showXCanvas = props.Boolean(default=True)
+    """Toggles display of the X canvas."""
+
+    
     showYCanvas = props.Boolean(default=True)
+    """Toggles display of the Y canvas."""
+
+    
     showZCanvas = props.Boolean(default=True)
+    """Toggles display of the Z canvas."""
 
 
     invertX_X   = props.Boolean(default=False)
@@ -37,7 +43,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     invertY_X   = props.Boolean(default=False)
     invertY_Y   = props.Boolean(default=False)
     invertZ_X   = props.Boolean(default=False)
-    invertZ_Y   = props.Boolean(default=False) 
+    invertZ_Y   = props.Boolean(default=False)
+
+    showLabels = props.Boolean(default=True)
+    """If ``True``, labels showing anatomical orientation are displayed on
+    each of the canvases.
+    """
     
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
@@ -62,6 +73,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         props.VGroup(('layout',
                       'posSync',
                       'showCursor',
+                      'showLabels', 
                       'showXCanvas',
                       'showYCanvas',
                       'showZCanvas',
@@ -103,20 +115,104 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         self.SetBackgroundColour('black')
 
-        self._xcanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
+        # Container panels for each canvas
+        self._xCanvasPanel = wx.Panel(self.getCanvasPanel())
+        self._yCanvasPanel = wx.Panel(self.getCanvasPanel())
+        self._zCanvasPanel = wx.Panel(self.getCanvasPanel())
+
+        # The canvases themselves - each one displays a
+        # slice along each of the three world axes
+        self._xcanvas = slicecanvas.WXGLSliceCanvas(self._xCanvasPanel,
                                                     imageList, zax=0)
-        self._ycanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
+        self._ycanvas = slicecanvas.WXGLSliceCanvas(self._yCanvasPanel,
                                                     imageList, zax=1)
-        self._zcanvas = slicecanvas.WXGLSliceCanvas(self.getCanvasPanel(),
+        self._zcanvas = slicecanvas.WXGLSliceCanvas(self._zCanvasPanel,
                                                     imageList, zax=2)
 
+        
+        # Labels to show anatomical orientation
+        self._xLeftLabel   = wx.StaticText(self._xCanvasPanel)
+        self._xRightLabel  = wx.StaticText(self._xCanvasPanel)
+        self._xTopLabel    = wx.StaticText(self._xCanvasPanel)
+        self._xBottomLabel = wx.StaticText(self._xCanvasPanel)
+        self._yLeftLabel   = wx.StaticText(self._yCanvasPanel)
+        self._yRightLabel  = wx.StaticText(self._yCanvasPanel)
+        self._yTopLabel    = wx.StaticText(self._yCanvasPanel)
+        self._yBottomLabel = wx.StaticText(self._yCanvasPanel)
+        self._zLeftLabel   = wx.StaticText(self._zCanvasPanel)
+        self._zRightLabel  = wx.StaticText(self._zCanvasPanel)
+        self._zTopLabel    = wx.StaticText(self._zCanvasPanel)
+        self._zBottomLabel = wx.StaticText(self._zCanvasPanel)
+
+        self._xLeftLabel  .SetForegroundColour('white')
+        self._xRightLabel .SetForegroundColour('white')
+        self._xTopLabel   .SetForegroundColour('white')
+        self._xBottomLabel.SetForegroundColour('white')
+        self._yLeftLabel  .SetForegroundColour('white')
+        self._yRightLabel .SetForegroundColour('white')
+        self._yTopLabel   .SetForegroundColour('white')
+        self._yBottomLabel.SetForegroundColour('white')
+        self._zLeftLabel  .SetForegroundColour('white')
+        self._zRightLabel .SetForegroundColour('white')
+        self._zTopLabel   .SetForegroundColour('white')
+        self._zBottomLabel.SetForegroundColour('white') 
+
+        # Each canvas and its labels are laid out in
+        # a 9*9 grid, with the canvas in the middle,
+        # and taking up most of the space
+        self._xCanvasSizer = wx.FlexGridSizer(3, 3, 0, 0)
+        self._yCanvasSizer = wx.FlexGridSizer(3, 3, 0, 0)
+        self._zCanvasSizer = wx.FlexGridSizer(3, 3, 0, 0)
+
+        self._xCanvasPanel.SetSizer(self._xCanvasSizer)
+        self._yCanvasPanel.SetSizer(self._yCanvasSizer)
+        self._zCanvasPanel.SetSizer(self._zCanvasSizer)
+        
+        self._xCanvasSizer.AddGrowableRow(1, 1)
+        self._xCanvasSizer.AddGrowableCol(1, 1)
+        self._yCanvasSizer.AddGrowableRow(1, 1)
+        self._yCanvasSizer.AddGrowableCol(1, 1)
+        self._zCanvasSizer.AddGrowableRow(1, 1)
+        self._zCanvasSizer.AddGrowableCol(1, 1)
+
+        labelFlag = wx.ALIGN_CENTRE_VERTICAL | wx.ALIGN_CENTRE_HORIZONTAL
+
+        self._xCanvasSizer.AddStretchSpacer()
+        self._xCanvasSizer.Add(self._xTopLabel,    flag=labelFlag)
+        self._xCanvasSizer.AddStretchSpacer()
+        self._xCanvasSizer.Add(self._xLeftLabel,   flag=labelFlag)
+        self._xCanvasSizer.Add(self._xcanvas,      flag=wx.EXPAND)
+        self._xCanvasSizer.Add(self._xRightLabel,  flag=labelFlag)
+        self._xCanvasSizer.AddStretchSpacer()
+        self._xCanvasSizer.Add(self._xBottomLabel, flag=labelFlag)
+        self._xCanvasSizer.AddStretchSpacer()
+        
+        self._yCanvasSizer.AddStretchSpacer()
+        self._yCanvasSizer.Add(self._yTopLabel,    flag=labelFlag)
+        self._yCanvasSizer.AddStretchSpacer()
+        self._yCanvasSizer.Add(self._yLeftLabel,   flag=labelFlag)
+        self._yCanvasSizer.Add(self._ycanvas,      flag=wx.EXPAND)
+        self._yCanvasSizer.Add(self._yRightLabel,  flag=labelFlag)
+        self._yCanvasSizer.AddStretchSpacer()
+        self._yCanvasSizer.Add(self._yBottomLabel, flag=labelFlag)
+        self._yCanvasSizer.AddStretchSpacer()
+        
+        self._zCanvasSizer.AddStretchSpacer()
+        self._zCanvasSizer.Add(self._zTopLabel,    flag=labelFlag)
+        self._zCanvasSizer.AddStretchSpacer()
+        self._zCanvasSizer.Add(self._zLeftLabel,   flag=labelFlag)
+        self._zCanvasSizer.Add(self._zcanvas,      flag=wx.EXPAND)
+        self._zCanvasSizer.Add(self._zRightLabel,  flag=labelFlag)
+        self._zCanvasSizer.AddStretchSpacer()
+        self._zCanvasSizer.Add(self._zBottomLabel, flag=labelFlag)
+        self._zCanvasSizer.AddStretchSpacer() 
+        
         self.bindProps('showCursor', self._xcanvas)
         self.bindProps('showCursor', self._ycanvas)
         self.bindProps('showCursor', self._zcanvas)
         self.bindProps('xzoom',      self._xcanvas, 'zoom')
         self.bindProps('yzoom',      self._ycanvas, 'zoom')
         self.bindProps('zzoom',      self._zcanvas, 'zoom')
-
 
         self.bindProps('invertX_X', self._xcanvas, 'invertX')
         self.bindProps('invertX_Y', self._xcanvas, 'invertY')
@@ -130,8 +226,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.addListener('layout',            llName, self._layoutChanged)
         self.addListener('showColourBar',     llName, self._layoutChanged)
         self.addListener('colourBarLocation', llName, self._layoutChanged)
+        self.addListener('showLabels',        llName, self._toggleLabels)
 
         self._layoutChanged()
+        self._toggleLabels()
 
         self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
         self._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -161,11 +259,14 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self.getCanvasPanel().Layout()            
 
         self.addListener('showXCanvas', self._name,
-                         lambda *a: toggle(self._xcanvas, self.showXCanvas))
+                         lambda *a: toggle(self._xCanvasPanel,
+                                           self.showXCanvas))
         self.addListener('showYCanvas', self._name,
-                         lambda *a: toggle(self._ycanvas, self.showYCanvas))
+                         lambda *a: toggle(self._yCanvasPanel,
+                                           self.showYCanvas))
         self.addListener('showZCanvas', self._name,
-                         lambda *a: toggle(self._zcanvas, self.showZCanvas))
+                         lambda *a: toggle(self._zCanvasPanel,
+                                           self.showZCanvas))
 
             
     def _resize(self, ev):
@@ -178,6 +279,43 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         ev.Skip()
         self._configureGridSizes()
         self.Layout()
+
+
+    def _toggleLabels(self, *a):
+        """Shows/hides labels depicting anatomical orientation on each canvas.
+        """
+        if self.showLabels: show = True
+        else:               show = False
+
+        self._xLeftLabel  .Show(show)
+        self._xRightLabel .Show(show) 
+        self._xTopLabel   .Show(show)
+        self._xBottomLabel.Show(show)
+        self._yLeftLabel  .Show(show)
+        self._yRightLabel .Show(show) 
+        self._yTopLabel   .Show(show)
+        self._yBottomLabel.Show(show)
+        self._zLeftLabel  .Show(show)
+        self._zRightLabel .Show(show) 
+        self._zTopLabel   .Show(show)
+        self._zBottomLabel.Show(show)
+
+        self._xLeftLabel  .SetLabel('?')
+        self._xRightLabel .SetLabel('?')
+        self._xTopLabel   .SetLabel('?')
+        self._xBottomLabel.SetLabel('?')
+        self._yLeftLabel  .SetLabel('?')
+        self._yRightLabel .SetLabel('?')
+        self._yTopLabel   .SetLabel('?')
+        self._yBottomLabel.SetLabel('?')
+        self._zLeftLabel  .SetLabel('?')
+        self._zRightLabel .SetLabel('?')
+        self._zTopLabel   .SetLabel('?')
+        self._zBottomLabel.SetLabel('?')
+
+        self._xCanvasPanel.Layout()
+        self._yCanvasPanel.Layout()
+        self._zCanvasPanel.Layout()
 
         
     def _configureGridSizes(self):
@@ -195,8 +333,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Generate a list of canvases for
         # which the 'show*Canvas' property is true
-        canvases    = [self._xcanvas,     self._ycanvas,     self._zcanvas]
-        show        = [self.showXCanvas,  self.showYCanvas,  self.showZCanvas]
+        canvases = [self._xCanvasPanel, self._yCanvasPanel, self._zCanvasPanel]
+        show     = [self.showXCanvas,   self.showYCanvas,   self.showZCanvas]
 
         if not any(show): return
             
@@ -221,7 +359,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         layout = self.layout.lower()
 
-        canvases = [self._xcanvas, self._ycanvas, self._zcanvas]
+        canvases = [self._xCanvasPanel, self._yCanvasPanel, self._zCanvasPanel]
 
         if   layout == 'horizontal':
             self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -229,7 +367,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._canvasSizer = wx.BoxSizer(wx.VERTICAL)
         elif layout == 'grid':
             self._canvasSizer = wx.WrapSizer(wx.HORIZONTAL)
-            canvases = [self._ycanvas, self._xcanvas, self._zcanvas]
+            canvases = [self._yCanvasPanel,
+                        self._xCanvasPanel,
+                        self._zCanvasPanel]
 
         for c in canvases:
             self._canvasSizer.Add(c, flag=wx.EXPAND, proportion=1)
@@ -244,14 +384,14 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # the other layouts automatically
         # size the canvases for us
         else:
-            self._xcanvas.SetMinSize((-1, -1))
-            self._ycanvas.SetMinSize((-1, -1))
-            self._zcanvas.SetMinSize((-1, -1))
+            self._xCanvasPanel.SetMinSize((-1, -1))
+            self._yCanvasPanel.SetMinSize((-1, -1))
+            self._zCanvasPanel.SetMinSize((-1, -1))
 
         self.Layout()
         self.getCanvasPanel().Layout()
 
-        
+
     def setPosition(self, xpos, ypos, zpos):
         """
         Sets the currently displayed x/y/z position (in real world
