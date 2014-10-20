@@ -78,7 +78,7 @@ def _configMainParser(mainParser):
               'zrange',
               'showGridLines',
               'zax']
-    lbArgs = ['ss', 'nc', 'nr', 'zr', 'sg', 'a']
+    lbArgs = ['ss', 'nc', 'nr', 'zr', 'sg', 'ax']
 
     # Use the properties module to automatically generate
     # arguments - property labels and help strings are

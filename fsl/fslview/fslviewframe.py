@@ -104,12 +104,10 @@ class FSLViewFrame(wx.Frame):
         allowing the user to configure the view.
         """
 
-        title    = strings.viewPanelTitles[        panelCls]
-        menuText = strings.viewPanelConfigMenuText[panelCls]
-
-        panel    = panelCls(self._centrePane,
-                            self._imageList,
-                            self._displayCtx) 
+        title = strings.viewPanelTitles[panelCls]
+        panel = panelCls(self._centrePane,
+                         self._imageList,
+                         self._displayCtx) 
 
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
@@ -122,6 +120,8 @@ class FSLViewFrame(wx.Frame):
             wx.RIGHT)
 
         if panel.hasConfigOptions():
+
+            menuText     = strings.viewPanelConfigMenuText[panelCls]
             menuText     = menuText.format(title)
             configAction = self._viewMenu.Append(wx.ID_ANY, menuText)
         
