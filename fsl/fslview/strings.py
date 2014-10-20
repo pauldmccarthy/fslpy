@@ -8,6 +8,7 @@
 from views   .orthopanel         import OrthoPanel
 from views   .lightboxpanel      import LightBoxPanel
 from views   .timeseriespanel    import TimeSeriesPanel
+from views   .spacepanel         import SpacePanel
 
 from controls.imagedisplaypanel  import ImageDisplayPanel
 from controls.imagelistpanel     import ImageListPanel
@@ -21,7 +22,8 @@ from actions .openstandardaction import OpenStandardAction
 viewPanelTitles = {
     OrthoPanel      : 'Ortho view',
     LightBoxPanel   : 'Lightbox view',
-    TimeSeriesPanel : 'Time series'
+    TimeSeriesPanel : 'Time series',
+    SpacePanel      : 'Space inspector',
 }
 
 

@@ -21,11 +21,13 @@ import fsl.fslview.viewpanel as viewpanel
 import orthopanel
 import lightboxpanel
 import timeseriespanel
+import spacepanel
 
 ViewPanel       = viewpanel      .ViewPanel
 OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
 TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
+SpacePanel      = spacepanel     .SpacePanel
 
 
 def listViewPanels():
