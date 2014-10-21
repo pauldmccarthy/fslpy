@@ -119,8 +119,8 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.__colourBar.orientation = 'vertical'
 
         if self.colourBarLocation in ('top', 'left'):
-            self.__sizer.Add(self.__colourBar,   flag=flag)
-            self.__sizer.Add(self.__canvasPanel, flag=wx.EXPAND, proportion=1)
+            self.__sizer.Add(self.__colourBar,   flag=wx.EXPAND)
+            self.__sizer.Add(self.__canvasPanel, flag=flag, proportion=1)
         else:
             self.__sizer.Add(self.__canvasPanel, flag=flag, proportion=1)
             self.__sizer.Add(self.__colourBar,   flag=wx.EXPAND)

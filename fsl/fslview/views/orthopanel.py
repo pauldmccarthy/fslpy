@@ -264,19 +264,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx.addListener('location', self._name, move) 
 
         # Callbacks for toggling x/y/z canvas display
-        def toggle(canvas, toggle):
-            self._canvasSizer.Show(canvas, toggle)
-            self._layoutChanged()
-
-        self.addListener('showXCanvas', self._name,
-                         lambda *a: toggle(self._xCanvasPanel,
-                                           self.showXCanvas))
-        self.addListener('showYCanvas', self._name,
-                         lambda *a: toggle(self._yCanvasPanel,
-                                           self.showYCanvas))
-        self.addListener('showZCanvas', self._name,
-                         lambda *a: toggle(self._zCanvasPanel,
-                                           self.showZCanvas))
+        self.addListener('showXCanvas', self._name, self._layoutChanged)
+        self.addListener('showYCanvas', self._name, self._layoutChanged)
+        self.addListener('showZCanvas', self._name, self._layoutChanged)
 
         # Do some cleaning up if/when this panel is destroyed
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
@@ -292,6 +282,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         Adds a listener to the currently selected image, to listen
         for changes on its affine transformation matrix.
         """
+        
+        self._refreshLabels()
+
         if len(self._imageList) == 0: return
 
         for i, img in enumerate(self._imageList):
@@ -302,8 +295,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             # transformation matrix changes
             if i == self._displayCtx.selectedImage:
                 img.addListener('transform', self._name, self._refreshLabels)
-
-        self._refreshLabels()
 
 
     def _onDestroy(self, ev):
@@ -543,11 +534,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # TODO This assumes RAS orientation - we could
         # automaticaly generate the canvas order from 
         # anatomical orientation labels
-        self._xcanvas.invertX = layout == 'grid'
+        self._zcanvas.invertY = layout == 'grid'
         if layout == 'grid':
             canvases = [self._yCanvasPanel,
                         self._xCanvasPanel,
                         self._zCanvasPanel]
+            show     = [self.showYCanvas,
+                        self.showXCanvas,
+                        self.showZCanvas] 
+                        
 
         # For vertical/horizontal
         # layouts, we just go with XYZ
@@ -555,16 +550,22 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             canvases = [self._xCanvasPanel,
                         self._yCanvasPanel,
                         self._zCanvasPanel]
+            show     = [self.showXCanvas,
+                        self.showYCanvas,
+                        self.showZCanvas] 
 
-        # Generate a list of canvases for which
+        # Pick out the canvases for which
         # the 'show*Canvas' property is true 
-        show = [self.showXCanvas, self.showYCanvas, self.showZCanvas]
 
         if any(show): 
             canvases = list(
                 zip(*filter(lambda (c, s): s, zip(canvases, show)))[0])
         else:
             canvases = []
+
+        self._xCanvasPanel.Show(self.showXCanvas)
+        self._yCanvasPanel.Show(self.showYCanvas)
+        self._zCanvasPanel.Show(self.showZCanvas)
 
         if len(canvases) == 0:
             return
@@ -619,9 +620,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         widgets += [space] * (ncols + 2)
 
         # Add all those widgets to the grid sizer
-        for w in widgets:
-            self._canvasSizer.Add( w, flag=wx.ALIGN_CENTRE_HORIZONTAL |
-                                           wx.ALIGN_CENTRE_VERTICAL)
+        for i, w in enumerate(widgets):
+            self._canvasSizer.Add(w, flag=wx.ALIGN_CENTRE_HORIZONTAL |
+                                          wx.ALIGN_CENTRE_VERTICAL)
 
         self.getCanvasPanel().SetSizer(self._canvasSizer)
 

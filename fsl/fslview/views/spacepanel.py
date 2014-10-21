@@ -53,7 +53,17 @@ class SpacePanel(viewpanel.ViewPanel):
         self.SetSizer(self._sizer)
         self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
+        
         self._selectedImageChanged()
+
+
+    def _onDestroy(self, ev):
+        ev.Skip()
+        self._iamgeList.removeListener('images',        self._name)
+        self._iamgeList.removeListener('selectedImage', self._name)
+
+        
 
 
     def _selectedImageChanged(self, *a):
