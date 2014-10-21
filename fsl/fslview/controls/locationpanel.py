@@ -46,6 +46,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         Creates and lays out the LocationPanel, and sets up a few property
         event listeners.
         """
+        import fsl.fslview.strings as strings
 
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
@@ -193,6 +194,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         :attr:`fsl.fslview.displaycontext.DisplayContext.volume`
         property changes. Updates the voxel value label.
         """
+        import fsl.fslview.strings as strings
 
         volume  = self._displayCtx.volume
 
@@ -245,6 +247,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         Propagates the change on to the voxel location in the currently
         selected image.
         """
+        import fsl.fslview.strings as strings
 
         if len(self._imageList) == 0: return
 
@@ -316,6 +319,8 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         image changes. Updates the 'space' label to reflect the change.
         """
 
+        import fsl.fslview.strings as strings
+
         if len(self._imageList) == 0:
             self._spaceLabel.SetLabel('')
             self._locationPanel.Layout()
@@ -333,8 +338,3 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self._spaceLabel.SetLabel(spaceLabel)
 
         self._locationPanel.Layout()
-
-
-# strings imports locationpanel, so this is
-# at the bottom to avoid a circular import
-import fsl.fslview.strings as strings
