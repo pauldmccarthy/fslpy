@@ -39,14 +39,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     showZCanvas = props.Boolean(default=True)
     """Toggles display of the Z canvas."""
 
-
-    invertX_X   = props.Boolean(default=False)
-    invertX_Y   = props.Boolean(default=False)
-    invertY_X   = props.Boolean(default=False)
-    invertY_Y   = props.Boolean(default=False)
-    invertZ_X   = props.Boolean(default=False)
-    invertZ_Y   = props.Boolean(default=False)
-
     showLabels = props.Boolean(default=True)
     """If ``True``, labels showing anatomical orientation are displayed on
     each of the canvases.
@@ -80,9 +72,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                       'showYCanvas',
                       'showZCanvas',
                       'showColourBar',
-                      props.HGroup(('invertX_X', 'invertX_Y')),
-                      props.HGroup(('invertY_X', 'invertY_Y')),
-                      props.HGroup(('invertZ_X', 'invertZ_Y')),
                       props.Widget('colourBarLocation',
                                    visibleWhen=lambda i: i.showColourBar),
                       props.Widget('colourBarLabelSide',
@@ -239,18 +228,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.bindProps('yzoom',      self._ycanvas, 'zoom')
         self.bindProps('zzoom',      self._zcanvas, 'zoom')
 
-        self.bindProps('invertX_X', self._xcanvas, 'invertX')
-        self.bindProps('invertX_Y', self._xcanvas, 'invertY')
-        self.bindProps('invertY_X', self._ycanvas, 'invertX')
-        self.bindProps('invertY_Y', self._ycanvas, 'invertY')
-        self.bindProps('invertZ_X', self._zcanvas, 'invertX')
-        self.bindProps('invertZ_Y', self._zcanvas, 'invertY') 
-
         # Callbacks for ortho panel layout options
         self.addListener('layout',            self._name, self._layoutChanged)
         self.addListener('showColourBar',     self._name, self._layoutChanged)
         self.addListener('colourBarLocation', self._name, self._layoutChanged)
-        self.addListener('showLabels',        self._name, self._toggleLabels)
+        self.addListener('showLabels',        self._name, self._refreshLabels)
 
         # Callbacks for image list/selected image changes
         self._imageList.addListener( 'images',
@@ -262,7 +244,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         self._imageListChanged()
         self._layoutChanged()
-        self._toggleLabels()
+        self._refreshLabels()
 
         # Callbacks for mouse events on the three xcanvases
         self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -319,7 +301,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             # Update anatomy labels when the image
             # transformation matrix changes
             if i == self._displayCtx.selectedImage:
-                img.addListener('transform', self._name, self._toggleLabels)
+                img.addListener('transform', self._name, self._refreshLabels)
+
+        self._refreshLabels()
 
 
     def _onDestroy(self, ev):
@@ -357,7 +341,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._layoutChanged()
 
 
-    def _toggleLabels(self, *a):
+    def _refreshLabels(self, *a):
         """Shows/hides labels depicting anatomical orientation on each canvas.
         """
 
@@ -559,6 +543,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # TODO This assumes RAS orientation - we could
         # automaticaly generate the canvas order from 
         # anatomical orientation labels
+        self._xcanvas.invertX = layout == 'grid'
         if layout == 'grid':
             canvases = [self._yCanvasPanel,
                         self._xCanvasPanel,
