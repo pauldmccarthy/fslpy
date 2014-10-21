@@ -4,12 +4,9 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
-* Questions
-** Anatomical labels
-** Should I be displaying each slice canvas at the same scale? Currently they 
-   are simply sized to use the maximum available space.
 
 * Bugs to fix
+** Ortho anatomical labels not being refreshed
 ** Tensor angles are in real world space, so are currently being displayed incorrectly for non isotropic voxels 
 ** 'World location' should always be defined by the NIFTI affine transformation
 Currently your 'world coordinate system is equivalent to the display
