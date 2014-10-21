@@ -669,7 +669,8 @@ class ImageList(props.HasProperties):
             img.addListener(
                 'transform',
                 self.__class__.__name__,
-                self._updateImageBounds)
+                self._updateImageBounds,
+                overwrite=True)
 
         self._updateImageBounds()
 

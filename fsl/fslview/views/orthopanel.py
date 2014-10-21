@@ -293,12 +293,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         for i, img in enumerate(self._imageList):
 
+            img.removeListener('transform', self._name)
+
             # Update anatomy labels when the image
             # transformation matrix changes
             if i == self._displayCtx.selectedImage:
                 img.addListener('transform', self._name, self._toggleLabels)
-            else:
-                img.removeListener('transform', self._name)
 
 
     def _onDestroy(self, ev):

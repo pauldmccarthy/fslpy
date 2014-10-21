@@ -66,7 +66,10 @@ class SpacePanel(viewpanel.ViewPanel):
 
         image = self._imageList[self._displayCtx.selectedImage]
 
-        image.addListener('transform', self._name, self._selectedImageChanged)
+        image.addListener('transform',
+                          self._name,
+                          self._selectedImageChanged,
+                          overwrite=True)
 
         self._axis.set_title(image.name)
         self._axis.set_xlabel('X')
@@ -106,7 +109,9 @@ class SpacePanel(viewpanel.ViewPanel):
         
     def _plotImageLabels(self):
 
-
+        # Imported here to avoid circular import issues
+        import fsl.fslview.strings as strings
+        
         image = self._imageList[self._displayCtx.selectedImage]
         
         centre = np.array(image.shape) / 2.0
@@ -118,7 +123,10 @@ class SpacePanel(viewpanel.ViewPanel):
             voxSpan[0, ax] = 0
             voxSpan[1, ax] = image.shape[ax]
 
-            lblLo, lblHi = image.getOrientation(ax)
+            orient = image.getVoxelOrientation(ax)
+
+            lblLo = strings.imageAxisLowShortLabels[ orient]
+            lblHi = strings.imageAxisHighShortLabels[orient]
 
             wldSpan = image.voxToWorld(voxSpan)
 

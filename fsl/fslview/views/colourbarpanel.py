@@ -108,13 +108,11 @@ class ColourBarPanel(viewpanel.ViewPanel):
             image   = self._imageList[i]
             display = image.getAttribute('display')
 
-            if i != self._displayCtx.selectedImage:
+            display.removeListener('displayRange', self._name)
+            display.removeListener('cmap',         self._name)
+            image  .removeListener('name',         self._name)
                 
-                display.removeListener('displayRange', self._name)
-                display.removeListener('cmap',         self._name)
-                image  .removeListener('name',         self._name)
-                
-            else:
+            if i == self._displayCtx.selectedImage:
                 display.addListener('displayRange',
                                     self._name,
                                     self._displayRangeChanged)
