@@ -395,18 +395,13 @@ class Image(props.HasProperties):
         
         """
         sform_code = self.nibImage.get_header()['sform_code']
-        qform_code = self.nibImage.get_header()['qform_code']
-
-        # if the qform and sform codes don't
-        # match, I don't know what to do
-        if   sform_code != qform_code: code = NIFTI_XFORM_UNKNOWN
 
         # Invalid values
-        elif sform_code > 4:           code = NIFTI_XFORM_UNKNOWN
-        elif sform_code < 0:           code = NIFTI_XFORM_UNKNOWN
+        if   sform_code > 4: code = NIFTI_XFORM_UNKNOWN
+        elif sform_code < 0: code = NIFTI_XFORM_UNKNOWN
 
         # All is well
-        else:                          code = sform_code
+        else:                code = sform_code
 
         return int(code)
 
