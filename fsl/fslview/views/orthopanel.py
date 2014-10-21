@@ -326,10 +326,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         Called whenever the panel is resized. Makes sure that the canvases
         are laid out nicely.
         """
-        
-        # allow default resize event handler to run
         ev.Skip()
-        self._layoutChanged()
+        
+        # Re-layout the canvases asynchronously as,
+        # in some cases, resizes to this panel
+        # aren't immediately applied to child panels
+        wx.CallAfter(self._layoutChanged)
 
 
     def _refreshLabels(self, *a):
