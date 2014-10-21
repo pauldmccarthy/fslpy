@@ -94,6 +94,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         'showXCanvas'       : 'Show X canvas',
         'showYCanvas'       : 'Show Y canvas',
         'showZCanvas'       : 'Show Z canvas',
+        'showLabels'        : 'Show orientation labels',
         'xzoom'             : 'X zoom',
         'yzoom'             : 'Y zoom',
         'zzoom'             : 'Z zoom',
@@ -115,8 +116,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                          imageList,
                                          displayCtx)
 
-        self.SetBackgroundColour('black')
-
         # Container panels for each canvas
         self._xCanvasPanel = wx.Panel(self.getCanvasPanel())
         self._yCanvasPanel = wx.Panel(self.getCanvasPanel())
@@ -131,6 +130,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zcanvas = slicecanvas.WXGLSliceCanvas(self._zCanvasPanel,
                                                     imageList, zax=2)
 
+        # Attach each canvas as an attribute of its parent -
+        # see the _configureGridLayout/_configureFlatLayout
+        # methods
+        self._xCanvasPanel._canvas = self._xcanvas
+        self._yCanvasPanel._canvas = self._ycanvas
+        self._zCanvasPanel._canvas = self._zcanvas
         
         # Labels to show anatomical orientation
         self._xLeftLabel   = wx.StaticText(self._xCanvasPanel)
@@ -146,6 +151,24 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zTopLabel    = wx.StaticText(self._zCanvasPanel)
         self._zBottomLabel = wx.StaticText(self._zCanvasPanel)
 
+        self              .SetBackgroundColour('black')
+        self._xCanvasPanel.SetBackgroundColour('black')
+        self._yCanvasPanel.SetBackgroundColour('black')
+        self._zCanvasPanel.SetBackgroundColour('black')
+        
+        self._xLeftLabel  .SetBackgroundColour('black')
+        self._xRightLabel .SetBackgroundColour('black')
+        self._xTopLabel   .SetBackgroundColour('black')
+        self._xBottomLabel.SetBackgroundColour('black')
+        self._yLeftLabel  .SetBackgroundColour('black')
+        self._yRightLabel .SetBackgroundColour('black')
+        self._yTopLabel   .SetBackgroundColour('black')
+        self._yBottomLabel.SetBackgroundColour('black')
+        self._zLeftLabel  .SetBackgroundColour('black')
+        self._zRightLabel .SetBackgroundColour('black')
+        self._zTopLabel   .SetBackgroundColour('black')
+        self._zBottomLabel.SetBackgroundColour('black') 
+        
         self._xLeftLabel  .SetForegroundColour('white')
         self._xRightLabel .SetForegroundColour('white')
         self._xTopLabel   .SetForegroundColour('white')
@@ -261,9 +284,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # Callbacks for toggling x/y/z canvas display
         def toggle(canvas, toggle):
             self._canvasSizer.Show(canvas, toggle)
-            if self.layout.lower() == 'grid':
-                self._configureGridSizes() 
-            self.getCanvasPanel().Layout()            
+            self._layoutChanged()
 
         self.addListener('showXCanvas', self._name,
                          lambda *a: toggle(self._xCanvasPanel,
@@ -333,8 +354,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         
         # allow default resize event handler to run
         ev.Skip()
-        self._configureGridSizes()
-        self.Layout()
+        self._layoutChanged()
 
 
     def _toggleLabels(self, *a):
@@ -358,6 +378,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # If we're hiding the labels, do no more
         if not show:
+            self._layoutChanged()
             return
 
         # Default colour is white - if the orientation labels
@@ -414,12 +435,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zBottomLabel.SetLabel(ylo)
         self._zTopLabel   .SetLabel(yhi)
 
-        self._xCanvasPanel.Layout()
-        self._yCanvasPanel.Layout()
-        self._zCanvasPanel.Layout()
+        self._layoutChanged()
 
         
-    def _configureGridSizes(self):
+    def _configureGridLayout(self, width, height, canvases):
         """
         If the 'Grid' layout has been selected, we have to manually specify
         sizes for each canvas, as the wx.WrapSizer doesn't know how big
@@ -427,70 +446,215 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         just fill the available space, and give each canvas an equal share.
         """
 
-        # Box sizers behave nicely. WrapSizer does not.
-        if self.layout.lower() != 'grid': return
-        
-        width, height = self.getCanvasPanel().GetClientSize().Get()
+        if len(canvases) <= 2:
+            self._configureFlatLayout(width, height, canvases, False)
+            return
 
-        # Generate a list of canvases for
-        # which the 'show*Canvas' property is true
-        canvases = [self._xCanvasPanel, self._yCanvasPanel, self._zCanvasPanel]
-        show     = [self.showXCanvas,   self.showYCanvas,   self.showZCanvas]
+        bounds = self._imageList.bounds
 
-        if not any(show): return
+        canvasWidths  = [bounds.getLen(c._canvas.xax) for c in canvases]
+        canvasHeights = [bounds.getLen(c._canvas.yax) for c in canvases]
+        ttlWidth      = float(canvasWidths[ 0] + canvasWidths[ 1])
+        ttlHeight     = float(canvasHeights[0] + canvasHeights[2])
+
+        width, height = self._adjustPixelSize(ttlWidth,
+                                              ttlHeight,
+                                              width,
+                                              height)
+
+        for i, canvas in enumerate(canvases):
+
+            cw = width  * (canvasWidths[ i] / ttlWidth)
+            ch = height * (canvasHeights[i] / ttlHeight) 
+
+            cw, ch = self._adjustPixelSize(canvasWidths[ i],
+                                           canvasHeights[i],
+                                           cw,
+                                           ch)
+            canvas.SetMinSize((cw, ch))
+            canvas.SetMaxSize((cw, ch))
+
             
-        canvases, _ = zip(*filter(lambda (c, s): s, zip(canvases, show)))
+    def _configureFlatLayout(self, width, height, canvases, vert=True):
+        """Calculates sizes for each displayed canvas such that the aspect
+        ratio is maintained across them when laid out vertically
+        (``vert=True``) or horizontally (``vert=False``).
+        """
+        bounds = self._imageList.bounds
 
-        if len(canvases) == 1:
-            canvases[0].SetMinSize((width, height))
-        elif len(canvases) == 2:
-            canvases[0].SetMinSize((width / 2, height))
-            canvases[1].SetMinSize((width / 2, height))
-        elif len(canvases) == 3:
-            canvases[0].SetMinSize((width / 2, height / 2))
-            canvases[1].SetMinSize((width / 2, height / 2))
-            canvases[2].SetMinSize((width / 2, height / 2))
+        # Get the canvas dimensions in world space
+        canvasWidths  = [bounds.getLen(c._canvas.xax) for c in canvases]
+        canvasHeights = [bounds.getLen(c._canvas.yax) for c in canvases]
+
+        maxWidth  = float(max(canvasWidths))
+        maxHeight = float(max(canvasHeights))
+        ttlWidth  = float(sum(canvasWidths))
+        ttlHeight = float(sum(canvasHeights))
+
+        for i, canvas in enumerate(canvases):
+
+            # Give each canvas a size, along the major
+            # axis, so that its length is proportional
+            # to the other canvases
+            if vert: cw = width
+            else:    cw = width  * (canvasWidths[ i] / ttlWidth)
+ 
+            if vert: ch = height * (canvasHeights[i] / ttlHeight)
+            else:    ch = height
+
+            # Scale the canvas along the
+            # minor axis in the same manner
+            if vert: cw = cw * canvasWidths[ i] / maxWidth
+            else:    ch = ch * canvasHeights[i] / maxHeight
+
+            cw, ch = self._adjustPixelSize(canvasWidths[ i],
+                                           canvasHeights[i],
+                                           cw,
+                                           ch)
+
+            canvas.SetMinSize((cw, ch))
+            canvas.SetMaxSize((cw, ch))
+
+        
+    def _adjustPixelSize(self, wldWidth, wldHeight, pixWidth, pixHeight):
+        """Adjusts the pixel width/height for the given canvas such that
+        the world space aspect ratio is maintained.
+        """        
+
+        pixRatio = float(pixWidth) / pixHeight
+        wldRatio = float(wldWidth) / wldHeight
+
+        if   pixRatio > wldRatio:
+            pixWidth  = wldWidth  * (pixHeight / wldHeight)
+                
+        elif pixRatio < wldRatio:
+            pixHeight = wldHeight * (pixWidth  / wldWidth)
+
+        return pixWidth, pixHeight
 
         
     def _layoutChanged(self, *a):
+        """Called when the layout property changes, or the canvas layout needs
+        to be refreshed. Updates the orthopanel layout accordingly.
         """
-        Called when the layout property changes. Updates the orthopanel layout
-        accordingly.
-        """
 
-        layout = self.layout.lower()
+        layout        = self.layout.lower()
+        width, height = self.getCanvasPanel().GetClientSize().Get()
 
-        canvases = [self._xCanvasPanel, self._yCanvasPanel, self._zCanvasPanel]
+        if width == 0 or height == 0:
+            return
 
-        if   layout == 'horizontal':
-            self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
-        elif layout == 'vertical':
-            self._canvasSizer = wx.BoxSizer(wx.VERTICAL)
-        elif layout == 'grid':
-            self._canvasSizer = wx.WrapSizer(wx.HORIZONTAL)
+        # The canvases are laid out in a different order
+        # for orthographic, or 'grid' layout.  Assuming
+        # that world axis X is left<->right, Y is
+        # posterior<->anterior, and Z is inferior<->superior,
+        # in order to achieve first angle orthographic
+        # layout, we're laying out the canvases in the
+        # following manner (the letter denotes the depth
+        # axis for the respective canvas):
+        #
+        #    Y  X
+        #    Z  -
+        #
+        # TODO This assumes RAS orientation - we could
+        # automaticaly generate the canvas order from 
+        # anatomical orientation labels
+        if layout == 'grid':
             canvases = [self._yCanvasPanel,
                         self._xCanvasPanel,
                         self._zCanvasPanel]
 
-        for c in canvases:
-            self._canvasSizer.Add(c, flag=wx.EXPAND, proportion=1)
+        # For vertical/horizontal
+        # layouts, we just go with XYZ
+        else:
+            canvases = [self._xCanvasPanel,
+                        self._yCanvasPanel,
+                        self._zCanvasPanel]
+
+        # Generate a list of canvases for which
+        # the 'show*Canvas' property is true 
+        show = [self.showXCanvas, self.showYCanvas, self.showZCanvas]
+
+        if any(show): 
+            canvases = list(
+                zip(*filter(lambda (c, s): s, zip(canvases, show)))[0])
+        else:
+            canvases = []
+
+        if len(canvases) == 0:
+            return
+
+        # Regardless of the layout, we use a
+        # FlexGridSizer with varying numbers
+        # of rows/columns, depending upon the
+        # layout strategy, and the number of
+        # visible canvases
+        if   layout == 'horizontal':
+            nrows = 1
+            ncols = len(canvases)
+        elif layout == 'vertical':
+            nrows = len(canvases)
+            ncols = 1
+        elif layout == 'grid':
+            if len(canvases) <= 2:
+                nrows = 1
+                ncols = len(canvases)
+            else:      
+                nrows = 2
+                ncols = 2
+
+        # Two dummy rows/cols on each side of the
+        # canvas cells are filled with empty space,
+        # to ensure that the canvases are centered
+        # in the available space
+        self._canvasSizer = wx.FlexGridSizer(nrows + 2, ncols + 2)
+        self._canvasSizer.AddGrowableRow(0)
+        self._canvasSizer.AddGrowableRow(nrows + 1)
+        self._canvasSizer.AddGrowableCol(0)
+        self._canvasSizer.AddGrowableCol(ncols + 1) 
+
+        # Make a list of widgets - spacers and canvases
+        space   = (1, 1)
+        widgets = [space] * (ncols + 2)
+        
+        if layout == 'vertical':
+            for c in canvases:
+                widgets += [space, c, space]
+                
+        elif layout == 'horizontal':
+            widgets += [space] + canvases + [space]
+            
+        else:
+            if len(canvases) <= 2:
+                widgets += [space] + canvases + [space]
+            else:
+                widgets += [space] + canvases[:2]  + [space]
+                widgets += [space] + canvases[ 2:] + [space, space]
+                
+        widgets += [space] * (ncols + 2)
+
+        # Add all those widgets to the grid sizer
+        for w in widgets:
+            self._canvasSizer.Add( w, flag=wx.ALIGN_CENTRE_HORIZONTAL |
+                                           wx.ALIGN_CENTRE_VERTICAL)
 
         self.getCanvasPanel().SetSizer(self._canvasSizer)
 
-        # for grid layout, we need to
-        # manually specify canvas sizes
+        # Calculate/ adjust the appropriate sizes
+        # for each canvas, such that they are scaled
+        # appropriately relative to each other, and
+        # the displayed world space aspect ratio is
+        # maintained
         if layout == 'grid':
-            self._configureGridSizes()
-
-        # the other layouts automatically
-        # size the canvases for us
-        else:
-            self._xCanvasPanel.SetMinSize((-1, -1))
-            self._yCanvasPanel.SetMinSize((-1, -1))
-            self._zCanvasPanel.SetMinSize((-1, -1))
+            self._configureGridLayout(width, height, canvases)
+        elif layout == 'horizontal':
+            self._configureFlatLayout(width, height, canvases, False)
+        elif layout == 'vertical':
+            self._configureFlatLayout(width, height, canvases, True)
 
         self.Layout()
         self.getCanvasPanel().Layout()
+        self.Refresh()
 
 
     def setPosition(self, xpos, ypos, zpos):
