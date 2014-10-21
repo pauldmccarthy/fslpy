@@ -160,12 +160,14 @@ class ImageListPanel(controlpanel.ControlPanel):
             image.addListener(
                 'name',
                 self._name,
-                lambda c, va, vi, img=image: nameChanged(img))
+                lambda c, va, vi, img=image: nameChanged(img),
+                overwrite=True)
 
             display.addListener(
                 'enabled',
                 self._name,
-                lambda c, va, vi, img=image: enabledChanged(img))
+                lambda c, va, vi, img=image: enabledChanged(img),
+                overwrite=True)
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(selection)

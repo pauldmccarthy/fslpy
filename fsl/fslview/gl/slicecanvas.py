@@ -330,6 +330,8 @@ class SliceCanvas(props.HasProperties):
 
             display = image.getAttribute('display')
 
+            # Called when the GL object representation
+            # of the image needs to be re-created
             def genGLObject(ctx=None, value=None, valid=None, disp=display):
                 globj = globject.createGLObject(image, disp)
                 image.setAttribute(self.name, globj)

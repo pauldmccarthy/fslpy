@@ -129,7 +129,8 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         for image in self._imageList:
             image.addListener('name',
                               self._name,
-                              lambda c, va, vi, i=image: nameChanged(i))
+                              lambda c, va, vi, i=image: nameChanged(i),
+                              overwrite=True)
 
         self._selectedImageChanged()
 
