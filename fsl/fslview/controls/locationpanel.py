@@ -13,6 +13,7 @@ import numpy as np
 
 import props
 
+import fsl.data.image           as fslimage
 import fsl.fslview.controlpanel as controlpanel
 import imageselectpanel         as imageselect
 
@@ -48,12 +49,16 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._voxelPanel = wx.Panel(self)
+        self._voxelPanel    = wx.Panel(self)
+        self._locationPanel = wx.Panel(self)
 
         self._imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx)
 
-        self._locationLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
+        self._locationLabel  = wx.StaticText(   self._locationPanel,
+                                                style=wx.ALIGN_LEFT)
+        self._spaceLabel     = wx.StaticText(   self._locationPanel,
+                                                style=wx.ALIGN_LEFT)
         self._locationWidget = props.makeWidget(self, displayCtx, 'location')
         
         self._dividerLine1   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
@@ -69,13 +74,21 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
                                          style=wx.ALIGN_RIGHT)
 
         self._adjustFont(self._locationLabel, -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._spaceLabel,    -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._volumeLabel,   -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._voxelLabel,    -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._valueLabel,    -2, wx.FONTWEIGHT_LIGHT)
 
-        self._locationLabel.SetLabel('World location (mm)')
-        self._voxelLabel   .SetLabel('Voxel coordinates')
-        self._volumeLabel  .SetLabel('Volume (index)')
+        self._locationLabel.SetLabel(strings.locationPanelLocationLabel)
+        self._voxelLabel   .SetLabel(strings.locationPanelVoxelLabel)
+        self._volumeLabel  .SetLabel(strings.locationPanelVolumeLabel)
+
+        self._locationSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._locationPanel.SetSizer(self._locationSizer)
+
+        self._locationSizer.Add(self._locationLabel, flag=wx.EXPAND)
+        self._locationSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
+        self._locationSizer.Add(self._spaceLabel, flag=wx.EXPAND)
 
         self._voxelSizer = wx.BoxSizer(wx.HORIZONTAL)
         self._voxelPanel.SetSizer(self._voxelSizer)
@@ -88,7 +101,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self.SetSizer(self._sizer)
 
         self._sizer.Add(self._imageSelect,    flag=wx.EXPAND)
-        self._sizer.Add(self._locationLabel,  flag=wx.EXPAND)
+        self._sizer.Add(self._locationPanel,  flag=wx.EXPAND)
         self._sizer.Add(self._locationWidget, flag=wx.EXPAND)
         self._sizer.Add(self._dividerLine1,   flag=wx.EXPAND)
         self._sizer.Add(self._voxelPanel,     flag=wx.EXPAND)
@@ -266,14 +279,22 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         (which contains the image name), and sets the voxel location limits.
         """
 
+        # Make sure that a listener is registered on the
+        # selected image, so that the space label can be
+        # updated when its transformation matrix is changed
+        for i, img in enumerate(self._imageList):
+            img.removeListener('transform', self._name)
+            if i == self._displayCtx.selectedImage:
+                img.addListener('transform', self._name, self._spaceChanged)
+
+        self._spaceChanged()
+
         if len(self._imageList) == 0:
             self._updateVoxelValue('')
             self._voxelPanel.Layout()
             return
 
         image = self._imageList[self._displayCtx.selectedImage]
-        
-        self._voxelPanel.Layout()
 
         oldLoc = self._displayCtx.location.xyz
         voxLoc = np.round(image.worldToVox([oldLoc]))[0]
@@ -288,6 +309,31 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         # restore the old location from the real world
         # coordinates.
         self._displayCtx.location.xyz = oldLoc
+
+
+    def _spaceChanged(self, *a):
+        """Called when the transformation matrix of the currently selected
+        image changes. Updates the 'space' label to reflect the change.
+        """
+
+        if len(self._imageList) == 0:
+            self._spaceLabel.SetLabel('')
+            self._locationPanel.Layout()
+            return
+
+        image = self._imageList[self._displayCtx.selectedImage]
+
+        if image.transform == 'affine':
+            spaceLabel = strings.imageSpaceLabels[image.getXFormCode()]
+        else:
+            spaceLabel = strings.imageSpaceLabels[fslimage.NIFTI_XFORM_VOXEL]
+            
+        spaceLabel = strings.locationPanelSpaceLabel.format(spaceLabel)
+
+        self._spaceLabel.SetLabel(spaceLabel)
+
+        self._locationPanel.Layout()
+
 
 # strings imports locationpanel, so this is
 # at the bottom to avoid a circular import

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# strings.py - Labels used throughout FSLView.
+# strings.py - Labels used throughout various parts of FSLView.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -50,8 +50,11 @@ viewPanelConfigMenuText = {
 orthoConfigMenu    = '{} display'
 lightBoxConfigMenu = '{} display'
 
-locationPanelOutOfBounds = 'Out of bounds'
-
+locationPanelOutOfBounds   = 'Out of bounds'
+locationPanelSpaceLabel    = '{} space'
+locationPanelLocationLabel = 'World location (mm)'
+locationPanelVoxelLabel    = 'Voxel coordinates'
+locationPanelVolumeLabel   = 'Volume (index)'
 
 
 imageAxisLowLongLabels = {
@@ -91,6 +94,7 @@ imageAxisHighShortLabels = {
     fslimage.ORIENT_UNKNOWN : '?'}
 
 imageSpaceLabels = {
+    fslimage.NIFTI_XFORM_VOXEL        : 'Voxel',
     fslimage.NIFTI_XFORM_UNKNOWN      : 'Unknown',
     fslimage.NIFTI_XFORM_SCANNER_ANAT : 'Scanner anatomical',
     fslimage.NIFTI_XFORM_ALIGNED_ANAT : 'Aligned anatomical',

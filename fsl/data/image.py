@@ -44,6 +44,10 @@ NIFTI_XFORM_ALIGNED_ANAT = 2
 NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
 
+# My own code, used to indicate that the
+# image is being displayed in voxel space
+NIFTI_XFORM_VOXEL        = 5
+
 def _loadImageFile(filename):
     """Given the name of an image file, loads it using nibabel.
 
@@ -395,14 +399,16 @@ class Image(props.HasProperties):
 
         # if the qform and sform codes don't
         # match, I don't know what to do
-        if   sform_code != qform_code: return NIFTI_XFORM_UNKNOWN
+        if   sform_code != qform_code: code = NIFTI_XFORM_UNKNOWN
 
         # Invalid values
-        elif sform_code > 4:           return NIFTI_XFORM_UNKNOWN
-        elif sform_code < 0:           return NIFTI_XFORM_UNKNOWN
+        elif sform_code > 4:           code = NIFTI_XFORM_UNKNOWN
+        elif sform_code < 0:           code = NIFTI_XFORM_UNKNOWN
 
         # All is well
-        else:                          return sform_code
+        else:                          code = sform_code
+
+        return int(code)
 
 
     def getWorldOrientation(self, axis):
