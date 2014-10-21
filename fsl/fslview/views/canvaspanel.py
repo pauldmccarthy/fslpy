@@ -70,12 +70,15 @@ class CanvasPanel(viewpanel.ViewPanel):
         self.bindProps('colourBarLabelSide', self.__colourBar, 'labelSide')
 
         self._configColourBar()
- 
+
+        # Use a different listener name so that subclasses
+        # can register on the same properties with self._name
+        lName = 'CanvasPanel_{}'.format(self._name)
         self.addListener('showColourBar',
-                         self._name,
+                         lName,
                          self._configColourBar)
         self.addListener('colourBarLocation',
-                         self._name,
+                         lName,
                          self._configColourBar)
 
     def getCanvasPanel(self):
