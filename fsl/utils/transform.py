@@ -60,7 +60,7 @@ def axisLength(shape, x, axis):
     return sum((tx[0, :] - tx[1, :]) ** 2) ** 0.5 
 
         
-def transform(p, x, axes):
+def transform(p, x, axes=None):
     """Transforms the given set of points ``p`` according to the given affine
     transformation ``x``. The transformed points are returned as a
     :class:``numpy.float64`` array.

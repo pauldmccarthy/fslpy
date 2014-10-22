@@ -18,7 +18,8 @@ GL Objects must have the following methods:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy as np
+import numpy               as np
+import fsl.utils.transform as transform
 
 
 def createGLObject(image, display):
@@ -68,20 +69,21 @@ def calculateSamplePoints(image, display, xax, yax):
 
     """
 
-    worldRes   = display.worldResolution
-    voxelRes   = display.voxelResolution
-    transform  = display.transform
+    worldRes       = display.worldResolution
+    voxelRes       = display.voxelResolution
+    transformCode  = display.transform
+    transformMat   = display.voxToDisplayMat
 
     # These values give the min/max x/y values
     # of a bounding box which encapsulates
     # the entire image
-    xmin, xmax = image.imageBounds(xax)
-    ymin, ymax = image.imageBounds(yax)
+    xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
+    ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
 
     # The width/height of a displayed voxel.
     # If we are displaying in real world space,
     # we use the world display resolution
-    if transform in ('affine'):
+    if transformCode in ('affine'):
 
         xpixdim = worldRes
         ypixdim = worldRes
@@ -104,7 +106,7 @@ def calculateSamplePoints(image, display, xax, yax):
 
     log.debug('Generating coordinate buffers for {} '
               '({} resolution {}/{}, num samples {})'.format(
-                  image.name, transform, worldRes, voxelRes,
+                  image.name, transformCode, worldRes, voxelRes,
                   xNumSamples * yNumSamples))
 
     # The location of every displayed
