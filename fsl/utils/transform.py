@@ -19,7 +19,7 @@ def invert(x):
     return linalg.inv(x)
 
 
-def axisBounds(shape, x, axis):
+def axisBounds(shape, xform, axis):
     """Returns the (lo, hi) bounds of the specified axis."""
     x, y, z = shape
 
@@ -38,7 +38,7 @@ def axisBounds(shape, x, axis):
     points[6, :] = [x,     y,   -0.5]
     points[7, :] = [x,     y,    z]
 
-    tx = transform(points, x)
+    tx = transform(points, xform)
 
     lo = tx[:, axis].min()
     hi = tx[:, axis].max()
@@ -46,7 +46,7 @@ def axisBounds(shape, x, axis):
     return (lo, hi)
 
 
-def axisLength(shape, x, axis):
+def axisLength(shape, xform, axis):
     """Return the length, in real world units, of the specified axis.
     """
         
@@ -54,13 +54,13 @@ def axisLength(shape, x, axis):
     points[:]       = [-0.5, -0.5, -0.5]
     points[1, axis] = shape[axis] - 0.5 
 
-    tx = transform(points, x)
+    tx = transform(points, xform)
 
     # euclidean distance between each boundary point
     return sum((tx[0, :] - tx[1, :]) ** 2) ** 0.5 
 
         
-def transform(p, x, axes=None):
+def transform(p, xform, axes=None):
     """Transforms the given set of points ``p`` according to the given affine
     transformation ``x``. The transformed points are returned as a
     :class:``numpy.float64`` array.
@@ -73,9 +73,9 @@ def transform(p, x, axes=None):
     y = p[:, 1]
     z = p[:, 2]
 
-    t[:, 0] = x * x[0, 0] + y * x[1, 0] + z * x[2, 0] + x[3, 0]
-    t[:, 1] = x * x[0, 1] + y * x[1, 1] + z * x[2, 1] + x[3, 1]
-    t[:, 2] = x * x[0, 2] + y * x[1, 2] + z * x[2, 2] + x[3, 2]
+    t[:, 0] = x * xform[0, 0] + y * xform[1, 0] + z * xform[2, 0] + xform[3, 0]
+    t[:, 1] = x * xform[0, 1] + y * xform[1, 1] + z * xform[2, 1] + xform[3, 1]
+    t[:, 2] = x * xform[0, 2] + y * xform[1, 2] + z * xform[2, 2] + xform[3, 2]
 
     if axes is None: axes = [0, 1, 2]
 

@@ -8,7 +8,6 @@
 """Classes for representing 3D/4D images and collections of said images."""
 
 import os
-import sys
 import logging
 import tempfile
 import collections
@@ -322,9 +321,7 @@ class ImageList(props.HasProperties):
     """Class representing a collection of images to be displayed together.
 
     Contains a :class:`props.properties_types.List` property containing
-    :class:`Image` objects, and some other properties on which listeners may
-    register themselves to be notified when the properties of the image
-    collection changes (e.g. image bounds).
+    :class:`Image` objects.
 
     An :class:`ImageList` object has a few wrapper methods around the
     :attr:`images` property, allowing the :class:`ImageList` to be used
@@ -349,14 +346,6 @@ class ImageList(props.HasProperties):
         if images is None: images = []
 
         self.images = images
-
-        self.addListener(
-            'images',
-            self.__class__.__name__,
-            self._imageListChanged)
-
-        # initialise image bounds
-        self._imageListChanged()
 
         # set the _lastDir attribute,
         # used by the addImages method
@@ -421,55 +410,6 @@ class ImageList(props.HasProperties):
         else:        self.insertAll(0, images)
 
         return True
-
-
-    def _imageListChanged(self, *a):
-        """Called whenever an item is added or removed from the :attr:`images`
-        list. Registers listeners with the properties of each image, and
-        calls the :meth:`_updateImageBounds` method.
-        """ 
-        
-        for img in self.images:
-
-            # This may be called multiple times on each image,
-            # but it doesn't matter, as any listener which has
-            # previously been registered with an image will
-            # just be replaced by the new one here.
-            img.addListener(
-                'transform',
-                self.__class__.__name__,
-                self._updateImageBounds,
-                overwrite=True)
-
-        self._updateImageBounds()
-
-    
-    def _updateImageBounds(self, *a):
-        """Called whenever an item is added or removed from the
-        :attr:`images` list, or an image property changes. Updates
-        the :attr:`bounds` property.
-        """
-
-        if len(self.images) == 0:
-            minBounds = [0.0, 0.0, 0.0]
-            maxBounds = [0.0, 0.0, 0.0]
-            
-        else:
-            minBounds = 3 * [ sys.float_info.max]
-            maxBounds = 3 * [-sys.float_info.max]
-
-        for img in self.images:
-
-            for ax in range(3):
-
-                lo, hi = img.imageBounds(ax)
-
-                if lo < minBounds[ax]: minBounds[ax] = lo
-                if hi > maxBounds[ax]: maxBounds[ax] = hi
-
-        self.bounds[:] = [minBounds[0], maxBounds[0],
-                          minBounds[1], maxBounds[1],
-                          minBounds[2], maxBounds[2]]
 
 
     # Wrappers around the images list property, allowing this

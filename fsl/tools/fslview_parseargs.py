@@ -255,9 +255,9 @@ def handleImageArgs(args):
             loc = imageList[0].voxToWorld([args.voxelloc])[0]
             
         else:
-            loc = [imageList.bounds.xlo + 0.5 * imageList.bounds.xlen,
-                   imageList.bounds.ylo + 0.5 * imageList.bounds.ylen,
-                   imageList.bounds.zlo + 0.5 * imageList.bounds.zlen]
+            loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
+                   displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
+                   displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
 
         displayCtx.location.xyz = loc
 

@@ -325,9 +325,10 @@ class ImageDisplay(props.HasProperties):
 
         # for pixdim/identity transformations, we want the world
         # location (0, 0, 0) to map to voxel location (0, 0, 0)
-        for i in range(3):
-            self.voxToDisplayMat[3, i] =  pixdim[i] * 0.5
-            self.displayToVoxMat[3, i] = -0.5
+        if self.transform in ('id', 'pixdim'):
+            for i in range(3):
+                self.voxToDisplayMat[3, i] =  pixdim[i] * 0.5
+                self.displayToVoxMat[3, i] = -0.5
 
         # When transform is changed to 'affine', enable interpolation
         # and, when changed to 'pixdim' or 'id', disable interpolation
@@ -483,7 +484,7 @@ class DisplayContext(props.HasProperties):
             minBounds = 3 * [ sys.float_info.max]
             maxBounds = 3 * [-sys.float_info.max]
 
-        for img in self.images:
+        for img in self._imageList.images:
 
             display = img.getAttribute('display')
             xform   = display.voxToDisplayMat
