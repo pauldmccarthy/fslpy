@@ -26,22 +26,25 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
     interactive 2D slice rendering from a collection of 3D images.
     """
 
-    def __init__(self, parent, imageList, zax=0):
+    def __init__(self, parent, imageList, displayCtx, zax=0):
         """Configures a few event handlers for cleaning up property
         listeners when the canvas is destroyed, and for redrawing on
         paint/resize events.
         """
 
         wxgl.GLCanvas                .__init__(self, parent)
-        lightboxcanvas.LightBoxCanvas.__init__(self, imageList, zax)
+        lightboxcanvas.LightBoxCanvas.__init__(self,
+                                               imageList,
+                                               displayCtx,
+                                               zax)
         fslgl.WXGLCanvasTarget       .__init__(self)
         
         # the image list is probably going to outlive
         # this SliceCanvas object, so we do the right
         # thing and remove our listeners when we die
         def onDestroy(ev):
-            self.imageList.removeListener('images', self.name)
-            self.imageList.removeListener('bounds', self.name)
+            self.imageList .removeListener('images', self.name)
+            self.displayCtx.removeListener('bounds', self.name)
             for image in self.imageList:
                 disp = image.getAttribute('display')
                 disp.removeListener('imageType',       self.name)
