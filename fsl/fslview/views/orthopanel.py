@@ -359,8 +359,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
 
         # Are we showing or hiding the labels?
-        if self.showLabels: show = True
-        else:               show = False
+        if   len(self._imageList) == 0: show = False
+        elif self.showLabels:           show = True
+        else:                           show = False
 
         for lbl in allLabels:
             lbl.Show(show)
@@ -375,26 +376,24 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # changed to red
         colour = 'white'
 
-        if len(self._imageList) > 0:
-            image = self._imageList[self._displayCtx.selectedImage]
-            display = image.getAttribute('display')
+        image = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
 
-            # The image is being displayed as it is stored on
-            # disk - the image.getOrientation method calculates
-            # and returns labels for each voxelwise axis.
-            if display.transform in ('pixdim', 'id'):
-                xorient = image.getVoxelOrientation(0)
-                yorient = image.getVoxelOrientation(1)
-                zorient = image.getVoxelOrientation(2)
+        # The image is being displayed as it is stored on
+        # disk - the image.getOrientation method calculates
+        # and returns labels for each voxelwise axis.
+        if display.transform in ('pixdim', 'id'):
+            xorient = image.getVoxelOrientation(0)
+            yorient = image.getVoxelOrientation(1)
+            zorient = image.getVoxelOrientation(2)
 
-            # The image is being displayed in 'real world' space -
-            # the definition of this space may be present in the
-            # image meta data
-            else:
-                xorient = image.getWorldOrientation(0)
-                yorient = image.getWorldOrientation(1)
-                zorient = image.getWorldOrientation(2)
-
+        # The image is being displayed in 'real world' space -
+        # the definition of this space may be present in the
+        # image meta data
+        else:
+            xorient = image.getWorldOrientation(0)
+            yorient = image.getWorldOrientation(1)
+            zorient = image.getWorldOrientation(2)
                 
         if fslimage.ORIENT_UNKNOWN in (xorient, yorient, zorient):
             colour = 'red'
@@ -567,7 +566,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                         self._zCanvasPanel]
             show     = [self.showXCanvas,
                         self.showYCanvas,
-                        self.showZCanvas] 
+                        self.showZCanvas]
+
+        if len(self._imageList) == 0:
+            show = [False] * 3
 
         # Pick out the canvases for which
         # the 'show*Canvas' property is true 
