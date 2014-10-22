@@ -25,6 +25,7 @@ class OSMesaSliceCanvas(sc.SliceCanvas,
     
     def __init__(self,
                  imageList,
+                 displayCtx,
                  zax=0,
                  width=0,
                  height=0,
