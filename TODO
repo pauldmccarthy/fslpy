@@ -59,6 +59,10 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** CLI options
+*** Show/hide labels
+*** Ortho layout (horiz/vert/grid)
+*** Check that show/hide cursor is being applied correctly
 ** ColourBarPanel should only do stuff if it is being displayed
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
