@@ -11,6 +11,7 @@ import props
 
 import fsl.data.imagefile           as imagefile
 import fsl.data.image               as fslimage
+import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
 
 runChoices = OrderedDict((
@@ -189,6 +190,7 @@ def selectHeadCentre(opts, button):
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
+    display    = image.getAttribute('display')
     parent     = button.GetTopLevelParent()
     frame      = orthopanel.OrthoDialog(parent,
                                         imageList,
@@ -196,11 +198,13 @@ def selectHeadCentre(opts, button):
                                         opts.inputImage,
                                         style=wx.RESIZE_BORDER)
     panel      = frame.panel
+    v2dMat     = display.voxToDisplayMat
+    d2vMat     = display.displayToVoxMat
 
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
     def updateOpts(*a):
-        x, y, z = image.worldToVox([displayCtx.location])[0]
+        x, y, z = transform.transform([displayCtx.location], d2vMat)[0]
 
         if   x >= image.shape[0]: x = image.shape[0] - 1
         elif x <  0:              x = 0
@@ -222,7 +226,7 @@ def selectHeadCentre(opts, button):
     # done after the frame has been displayed, i.e
     # via wx.CallAfter or similar. 
     voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
-    worldCoords = image.voxToWorld([voxCoords])[0]
+    worldCoords = transform.transform([voxCoords], v2dMat)[0]
     panel.pos   = worldCoords
 
     # Position the dialog by the button that was clicked

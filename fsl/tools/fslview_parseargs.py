@@ -18,6 +18,7 @@ import argparse
 
 import props
 import fsl.data.image             as fslimage
+import fsl.utils.transform        as transform 
 import fsl.fslview.displaycontext as displaycontext
 
 
@@ -252,7 +253,9 @@ def handleImageArgs(args):
         if args.worldloc:
             loc = args.worldloc
         elif args.voxelloc:
-            loc = imageList[0].voxToWorld([args.voxelloc])[0]
+            display = imageList[0].getAttribute('display')
+            xform   = display.voxToDisplayMat
+            loc     = transform.transform([[args.voxelloc]], xform)[0]
             
         else:
             loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
