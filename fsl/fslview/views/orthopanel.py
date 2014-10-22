@@ -140,10 +140,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zTopLabel    = wx.StaticText(self._zCanvasPanel)
         self._zBottomLabel = wx.StaticText(self._zCanvasPanel)
 
-        self              .SetBackgroundColour('black')
-        self._xCanvasPanel.SetBackgroundColour('black')
-        self._yCanvasPanel.SetBackgroundColour('black')
-        self._zCanvasPanel.SetBackgroundColour('black')
+        self                 .SetBackgroundColour('black')
+        self.getCanvasPanel().SetBackgroundColour('black')
+        self._xCanvasPanel   .SetBackgroundColour('black')
+        self._yCanvasPanel   .SetBackgroundColour('black')
+        self._zCanvasPanel   .SetBackgroundColour('black')
         
         self._xLeftLabel  .SetBackgroundColour('black')
         self._xRightLabel .SetBackgroundColour('black')
