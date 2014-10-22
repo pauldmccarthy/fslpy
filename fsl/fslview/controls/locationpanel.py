@@ -14,6 +14,7 @@ import numpy as np
 import props
 
 import fsl.data.image           as fslimage
+import fsl.utils.transform      as transform
 import fsl.fslview.controlpanel as controlpanel
 import imageselectpanel         as imageselect
 
@@ -27,6 +28,9 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
     """
 
     voxelLocation = props.Point(ndims=3, real=False, labels=('X', 'Y', 'Z'))
+
+    
+    worldLocation = props.Point(ndims=3, real=True,  labels=('X', 'Y', 'Z'))
 
 
     def _adjustFont(self, label, by, weight):
@@ -50,46 +54,46 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._voxelPanel    = wx.Panel(self)
-        self._locationPanel = wx.Panel(self)
+        self._voxelPanel = wx.Panel(self)
+        self._worldPanel = wx.Panel(self)
 
         self._imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx)
 
-        self._locationLabel  = wx.StaticText(   self._locationPanel,
-                                                style=wx.ALIGN_LEFT)
-        self._spaceLabel     = wx.StaticText(   self._locationPanel,
-                                                style=wx.ALIGN_LEFT)
-        self._locationWidget = props.makeWidget(self, displayCtx, 'location')
+        self._worldLabel   = wx.StaticText(   self._worldPanel,
+                                              style=wx.ALIGN_LEFT)
+        self._spaceLabel   = wx.StaticText(   self._worldPanel,
+                                              style=wx.ALIGN_LEFT)
+        self._worldWidget  = props.makeWidget(self, self, 'worldLocation')
         
-        self._dividerLine1   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
-        self._voxelWidget    = props.makeWidget(self, self, 'voxelLocation')
+        self._dividerLine1 = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
+        self._voxelWidget  = props.makeWidget(self, self, 'voxelLocation')
         
-        self._dividerLine2   = wx.StaticLine(   self, style=wx.LI_HORIZONTAL) 
-        self._volumeLabel    = wx.StaticText(   self, style=wx.ALIGN_LEFT)
-        self._volumeWidget   = props.makeWidget(self, displayCtx, 'volume')
+        self._dividerLine2 = wx.StaticLine(   self, style=wx.LI_HORIZONTAL) 
+        self._volumeLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
+        self._volumeWidget = props.makeWidget(self, displayCtx, 'volume')
         
         self._voxelLabel = wx.StaticText(self._voxelPanel,
                                          style=wx.ALIGN_LEFT)
         self._valueLabel = wx.StaticText(self._voxelPanel,
                                          style=wx.ALIGN_RIGHT)
 
-        self._adjustFont(self._locationLabel, -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._spaceLabel,    -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._volumeLabel,   -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._voxelLabel,    -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._valueLabel,    -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._worldLabel,  -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._spaceLabel,  -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._volumeLabel, -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._voxelLabel,  -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self._valueLabel,  -2, wx.FONTWEIGHT_LIGHT)
 
-        self._locationLabel.SetLabel(strings.locationPanelLocationLabel)
-        self._voxelLabel   .SetLabel(strings.locationPanelVoxelLabel)
-        self._volumeLabel  .SetLabel(strings.locationPanelVolumeLabel)
+        self._worldLabel .SetLabel(strings.locationPanelWorldLabel)
+        self._voxelLabel .SetLabel(strings.locationPanelVoxelLabel)
+        self._volumeLabel.SetLabel(strings.locationPanelVolumeLabel)
 
-        self._locationSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._locationPanel.SetSizer(self._locationSizer)
+        self._worldSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._worldPanel.SetSizer(self._worldSizer)
 
-        self._locationSizer.Add(self._locationLabel, flag=wx.EXPAND)
-        self._locationSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
-        self._locationSizer.Add(self._spaceLabel, flag=wx.EXPAND)
+        self._worldSizer.Add(self._worldLabel, flag=wx.EXPAND)
+        self._worldSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
+        self._worldSizer.Add(self._spaceLabel, flag=wx.EXPAND)
 
         self._voxelSizer = wx.BoxSizer(wx.HORIZONTAL)
         self._voxelPanel.SetSizer(self._voxelSizer)
@@ -101,15 +105,15 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
 
-        self._sizer.Add(self._imageSelect,    flag=wx.EXPAND)
-        self._sizer.Add(self._locationPanel,  flag=wx.EXPAND)
-        self._sizer.Add(self._locationWidget, flag=wx.EXPAND)
-        self._sizer.Add(self._dividerLine1,   flag=wx.EXPAND)
-        self._sizer.Add(self._voxelPanel,     flag=wx.EXPAND)
-        self._sizer.Add(self._voxelWidget,    flag=wx.EXPAND)
-        self._sizer.Add(self._dividerLine2,   flag=wx.EXPAND) 
-        self._sizer.Add(self._volumeLabel,    flag=wx.EXPAND)
-        self._sizer.Add(self._volumeWidget,   flag=wx.EXPAND)
+        self._sizer.Add(self._imageSelect,  flag=wx.EXPAND)
+        self._sizer.Add(self._worldPanel,   flag=wx.EXPAND)
+        self._sizer.Add(self._worldWidget,  flag=wx.EXPAND)
+        self._sizer.Add(self._dividerLine1, flag=wx.EXPAND)
+        self._sizer.Add(self._voxelPanel,   flag=wx.EXPAND)
+        self._sizer.Add(self._voxelWidget,  flag=wx.EXPAND)
+        self._sizer.Add(self._dividerLine2, flag=wx.EXPAND) 
+        self._sizer.Add(self._volumeLabel,  flag=wx.EXPAND)
+        self._sizer.Add(self._volumeWidget, flag=wx.EXPAND)
 
         self._voxelPanel.Layout()
         self.Layout()
@@ -124,19 +128,21 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
                                      self._name,
                                      self._volumeChanged) 
         self._displayCtx.addListener('location',
-                                     '{}_worldToVox'.format(self._name),
-                                     self._worldLocationChanged)
+                                     self._name,
+                                     self._displayLocationChanged)
         self.addListener(            'voxelLocation',
                                      '{}_voxToWorld'.format(self._name),
                                      self._voxelLocationChanged)
+        self.addListener(            'worldLocation',
+                                     '{}_worldToVox'.format(self._name),
+                                     self._worldLocationChanged) 
 
         def onDestroy(ev):
             ev.Skip()
             self._imageList.removeListener( 'images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
             self._displayCtx.removeListener('volume',        self._name)
-            self._displayCtx.removeListener('location',
-                                            '{}_worldToVox'.format(self._name))
+            self._displayCtx.removeListener('location',      self._name)
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
@@ -212,6 +218,12 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             voxVal = strings.locationPanelOutOfBounds
 
         self._updateVoxelValue(voxVal)
+
+
+    def _displayLocationChanged(self, *a):
+
+        
+        pass
 
 
     def _voxelLocationChanged(self, *a):

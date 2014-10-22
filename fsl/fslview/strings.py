@@ -50,11 +50,11 @@ viewPanelConfigMenuText = {
 orthoConfigMenu    = '{} display'
 lightBoxConfigMenu = '{} display'
 
-locationPanelOutOfBounds   = 'Out of bounds'
-locationPanelSpaceLabel    = '{} space'
-locationPanelLocationLabel = 'World location (mm)'
-locationPanelVoxelLabel    = 'Voxel coordinates'
-locationPanelVolumeLabel   = 'Volume (index)'
+locationPanelOutOfBounds = 'Out of bounds'
+locationPanelSpaceLabel  = '{} space'
+locationPanelWorldLabel  = 'World location (mm)'
+locationPanelVoxelLabel  = 'Voxel coordinates'
+locationPanelVolumeLabel = 'Volume (index)'
 
 
 imageAxisLowLongLabels = {
