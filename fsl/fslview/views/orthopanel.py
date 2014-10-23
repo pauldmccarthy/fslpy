@@ -290,10 +290,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         for changes on its affine transformation matrix.
         """
         
-        self._refreshLabels()
-
-        if len(self._imageList) == 0: return
-
         for i, img in enumerate(self._imageList):
 
             display = img.getAttribute('display')
@@ -306,6 +302,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                 display.addListener('transform',
                                     self._name,
                                     self._refreshLabels)
+
+        # _refreshLabels will in turn call
+        # _layoutChanged, which is needed
+        # in case the display bounds have
+        # changed
+        self._refreshLabels()
 
 
     def _onDestroy(self, ev):
@@ -585,6 +587,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zCanvasPanel.Show(self.showZCanvas)
 
         if len(canvases) == 0:
+            self.Layout()
+            self.getCanvasPanel().Layout()
+            self.Refresh() 
             return
 
         # Regardless of the layout, we use a

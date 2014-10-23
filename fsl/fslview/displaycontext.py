@@ -318,15 +318,15 @@ class ImageDisplay(props.HasProperties):
             pixdim = self.image.pixdim
             voxToDisplayMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
         elif self.transform == 'affine':
-            voxToDisplayMat = self.image.voxToWorldMat
+            voxToDisplayMat = self.voxToWorldMat
 
         voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
         displayToVoxMat = transform.invert(voxToDisplayMat)
 
         # Transformation matrices for moving between the voxel
         # coordinate system and the display coordinate system
-        self.voxToDisplayMat = voxToDisplayMat.transpose()
-        self.displayToVoxMat = displayToVoxMat.transpose()
+        self.voxToDisplayMat = voxToDisplayMat
+        self.displayToVoxMat = displayToVoxMat
 
         # Matrices for moving between the display coordinate
         # system, and the image world coordinate system

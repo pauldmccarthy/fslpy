@@ -20,7 +20,7 @@ def invert(x):
 
 def concat(x1, x2):
     """Combines the two matrices (returns the dot product)."""
-    return linalg.dot(x1, x2)
+    return np.dot(x1, x2)
 
 
 def axisBounds(shape, xform, axis):
