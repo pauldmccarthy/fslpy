@@ -18,13 +18,14 @@ import numpy      as np
 import nibabel    as nib
 
 import props
-import fsl.data.imagefile  as imagefile
+import fsl.data.imagefile   as imagefile
+import fsl.utils.transform  as transform
 
 
 log = logging.getLogger(__name__)
 
-# Constants which represent the orientation of an axis,
-# in either voxel or world space.
+# Constants which represent the orientation
+# of an axis, in either voxel or world space.
 ORIENT_UNKNOWN = -1
 ORIENT_L2R     = 0
 ORIENT_R2L     = 1
@@ -40,10 +41,6 @@ NIFTI_XFORM_SCANNER_ANAT = 1
 NIFTI_XFORM_ALIGNED_ANAT = 2
 NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
-
-# My own code, used to indicate that the
-# image is being displayed in voxel space
-NIFTI_XFORM_VOXEL        = 5
 
 
 def _loadImageFile(filename):
@@ -133,6 +130,10 @@ class Image(props.HasProperties):
                           for transforming voxel coordinates into real world
                           coordinates.
 
+    :ivar worldToVoxMat:  A 4*4 array specifying the affine transformation
+                          for transforming real world coordinates into voxel
+                          coordinates. 
+
     :ivar imageFile:      The name of the file that the image was loaded from.
     
     :ivar tempFile:       The name of the temporary file which was created (in
@@ -198,6 +199,7 @@ class Image(props.HasProperties):
         self.shape         = self.nibImage.get_shape()
         self.pixdim        = self.nibImage.get_header().get_zooms()
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
+        self.worldToVoxMat = transform.invert(self.voxToWorldMat)
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
@@ -301,6 +303,7 @@ class Image(props.HasProperties):
         """
         return self._attributes[name]
 
+    
     def delAttribute(self, name):
         """Delete and return the value of the attribute with the given name.
 

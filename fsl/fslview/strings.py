@@ -94,7 +94,6 @@ imageAxisHighShortLabels = {
     fslimage.ORIENT_UNKNOWN : '?'}
 
 imageSpaceLabels = {
-    fslimage.NIFTI_XFORM_VOXEL        : 'Voxel',
     fslimage.NIFTI_XFORM_UNKNOWN      : 'Unknown',
     fslimage.NIFTI_XFORM_SCANNER_ANAT : 'Scanner anatomical',
     fslimage.NIFTI_XFORM_ALIGNED_ANAT : 'Aligned anatomical',

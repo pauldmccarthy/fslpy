@@ -286,6 +286,9 @@ class ImageDisplay(props.HasProperties):
         self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
         self.worldResolution = min(image.pixdim[:3])
 
+        self.voxToWorldMat = image.voxToWorldMat.transpose()
+        self.worldToVoxMat = image.worldToVoxMat.transpose()
+
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
@@ -320,8 +323,17 @@ class ImageDisplay(props.HasProperties):
         voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
         displayToVoxMat = transform.invert(voxToDisplayMat)
 
+        # Transformation matrices for moving between the voxel
+        # coordinate system and the display coordinate system
         self.voxToDisplayMat = voxToDisplayMat.transpose()
         self.displayToVoxMat = displayToVoxMat.transpose()
+
+        # Matrices for moving between the display coordinate
+        # system, and the image world coordinate system
+        self.displayToWorldMat = transform.concat(self.displayToVoxMat,
+                                                  self.voxToWorldMat)
+        self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
+        
 
         # for pixdim/identity transformations, we want the world
         # location (0, 0, 0) to map to voxel location (0, 0, 0)

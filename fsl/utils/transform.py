@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# transform.py - Functions for applying affine transformations to
-# coordinates.
+# transform.py - Functions for working with affine transformation matrices.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -17,6 +16,11 @@ import collections
 def invert(x):
     """Inverts the given matrix. """
     return linalg.inv(x)
+
+
+def concat(x1, x2):
+    """Combines the two matrices (returns the dot product)."""
+    return linalg.dot(x1, x2)
 
 
 def axisBounds(shape, xform, axis):
