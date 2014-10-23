@@ -83,7 +83,7 @@ def calculateSamplePoints(image, display, xax, yax):
     # The width/height of a displayed voxel.
     # If we are displaying in real world space,
     # we use the world display resolution
-    if transformCode in ('affine'):
+    if transformCode == 'affine':
 
         xpixdim = worldRes
         ypixdim = worldRes
@@ -91,9 +91,13 @@ def calculateSamplePoints(image, display, xax, yax):
     # But if we're just displaying the data (the
     # transform is 'id' or 'pixdim'), we display
     # it in the resolution of said data.
-    else:
+    elif transformCode == 'pixdim':
         xpixdim = image.pixdim[xax] * voxelRes
         ypixdim = image.pixdim[yax] * voxelRes
+        
+    elif transformCode == 'id':
+        xpixdim = 1.0 * voxelRes
+        ypixdim = 1.0 * voxelRes
 
     # Number of samples across each dimension,
     # given the current sample rate
