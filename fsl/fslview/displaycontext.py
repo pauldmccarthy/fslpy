@@ -295,21 +295,6 @@ class ImageDisplay(props.HasProperties):
         self.worldToDisplayMat = None
         self.displayToWorldMat = None
 
-        # When the transform property changes,
-        # the display<->* transformation matrices
-        # are recalculated. References to the
-        # previous matrices are stored here, just
-        # in case anything (hint the DisplayContext
-        # object) needs them for any particular
-        # reason (hint: so the DisplayContext can
-        # preserve the current display location,
-        # in terms of image world space, when the
-        # transform of the selected  changes)
-        self._oldVoxToDisplayMat   = None
-        self._oldDisplayToVoxMat   = None
-        self._oldWorldToDisplayMat = None
-        self._oldDisplayToWOrldMat = None
-
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
@@ -322,6 +307,20 @@ class ImageDisplay(props.HasProperties):
             self._transformChanged)
 
         self._transformChanged()
+        # When the transform property changes,
+        # the display<->* transformation matrices
+        # are recalculated. References to the
+        # previous matrices are stored here, just
+        # in case anything (hint the DisplayContext
+        # object) needs them for any particular
+        # reason (hint: so the DisplayContext can
+        # preserve the current display location,
+        # in terms of image world space, when the
+        # transform of the selected changes)
+        self._oldVoxToDisplayMat   = self.voxToDisplayMat
+        self._oldDisplayToVoxMat   = self.displayToVoxMat
+        self._oldWorldToDisplayMat = self.worldToDisplayMat
+        self._oldDisplayToWorldMat = self.displayToWorldMat
 
         
     def _transformChanged(self, *a):
@@ -472,7 +471,10 @@ class DisplayContext(props.HasProperties):
 
             # Register a listener with the transform property
             # of every image display so that when they change,
-            # we can update the display bounds.
+            # we can update the display bounds, and preserve
+            # the current display location so that it is in
+            # terms of the world location of the currently
+            # selected image
             # 
             # This may be called multiple times on each image,
             # but it doesn't matter, as any listener which has
@@ -481,7 +483,7 @@ class DisplayContext(props.HasProperties):
             display.addListener(
                 'transform',
                 self.__class__.__name__,
-                self._updateBounds,
+                self._transformChanged,
                 overwrite=True)
 
         # Ensure that the bounds property is accurate
@@ -512,6 +514,22 @@ class DisplayContext(props.HasProperties):
             self.setConstraint('volume', 'maxval', maxvols - 1)
         else:
             self.setConstraint('volume', 'maxval', 0)
+
+
+    def _transformChanged(self, xform, valid, display):
+        """
+        """
+
+        self._updateBounds()
+
+        if display.image != self._imageList[self.selectedImage]:
+            return
+
+        imgWorldLoc = transform.transform([self.location.xyz],
+                                          display._oldDisplayToWorldMat)[0]
+        newDispLoc  = transform.transform([imgWorldLoc],
+                                          display.worldToDisplayMat)[0]
+        self.location.xyz = newDispLoc
 
 
     def _updateBounds(self, *a):
