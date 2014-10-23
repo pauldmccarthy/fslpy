@@ -63,6 +63,7 @@ perhaps into a standalone module...
 *** Show/hide labels
 *** Ortho layout (horiz/vert/grid)
 *** Check that show/hide cursor is being applied correctly
+** Scale values in colour map according to largest value?
 ** ColourBarPanel should only do stuff if it is being displayed
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
@@ -152,6 +153,7 @@ This will probably dictate how you go about implementing keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
 ** Link display properties across all images
+** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
 ** Tensors
 *** RGB display
 *** Tensor angles are in real world space, so are currently being displayed incorrectly for non isotropic voxels 
@@ -159,6 +161,7 @@ This will probably dictate how you go about implementing keyboard/mouse control
 *** 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
+** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
 ** IN PROGRESS Image export/offscreen rendering.
 ** DONE Image List functionality
 *** DONE double click to show/hide
