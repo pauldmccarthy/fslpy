@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 #
 # locationpanel.py - Panel which displays controls allowing the user to change
-# the currently displayed location in both real world and voxel coordinates
-# (with the latter in terms of the currently selected image)
+# the currently displayed location in both real world and voxel coordinates,
+# both in the space of the currently selected image. These changes are
+# propagated to the current display coordinate system location, managed by the
+# display context (and external changes to the display context location are
+# propagated back to the voxel/world location properties managed by a
+# Location Panel).
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -142,8 +146,6 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
                                      self._name,
                                      self._worldLocationChanged)
 
-        self._internalLocationChange = False
-
         def onDestroy(ev):
             ev.Skip()
             self._imageList.removeListener( 'images',        self._name)
@@ -152,8 +154,10 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             self._displayCtx.removeListener('location',      self._name)
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
+ 
+        self._internalLocationChange = False
         self._selectedImageChanged()
+        self._displayLocationChanged()
         self._volumeChanged()
 
 
@@ -235,7 +239,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         wloc = transform.transform([dloc], display.displayToWorldMat)[0]
 
         self._internalLocationChange = True
-        self.voxelLocation.xyz       = vloc
+        self.voxelLocation.xyz       = np.round(vloc)
         self.worldLocation.xyz       = wloc
         self._internalLocationChange = False
         self._updateVoxelValue()
@@ -283,7 +287,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         self._internalLocationChange  = True
         self._displayCtx.location.xyz = dloc
-        self.voxelLocation       .xyz = vloc
+        self.voxelLocation       .xyz = np.round(vloc)
         self._internalLocationChange  = False
         self._updateVoxelValue()
 
