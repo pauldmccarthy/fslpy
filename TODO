@@ -7,6 +7,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** Canvases are not displayed properly when labels are shown.
 ** World location is clamped to voxel centre when voxel location changes. And the voxel location seems to be changing incorrectly.
 ** Linux/Jalapeno Bad window crash
 ** No worky in VNC session.
@@ -61,8 +62,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Preserve image world location when transformation changed.
-You're almost there, but I think the display location is being updated (probably by the cursor location panel) before the DisplayContext has a chance to update the display location.
+** Allow display resolution greater than image resolution
 ** CLI options
 *** Show/hide labels
 *** Ortho layout (horiz/vert/grid)
@@ -99,6 +99,7 @@ Display either the cbar for the current image, or cbars for all images.
 ** IN PROGRESS 'Actions'? - Make 'Add File' and 'Add Std' menu items actions.
 Need to be able to specify the order that actions appear in the menu - perhaps 
 just hard code in fsl/fslview/actions/__init__.py
+** DONE Preserve image world location when transformation changed.
 ** DONE Orientation labels on slice canvas.
 ** DONE Display image space code in cursor panel
 ** DONE Turn your test_gl14_coords.py script into a fslview ViewPanel; it might come in handy.
