@@ -517,18 +517,32 @@ class DisplayContext(props.HasProperties):
 
 
     def _transformChanged(self, xform, valid, display):
+        """Called when the
+        :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform property
+        changes on any image in the :attr:`images` list. Sets the 
+        :attr:`location` property, so that the selected image world location
+        is preserved, in the new display coordinate system.
         """
-        """
-
-        self._updateBounds()
 
         if display.image != self._imageList[self.selectedImage]:
+            self._updateBounds()
             return
 
+        # Calculate the image world location using
+        # the old display<-> world transform, then
+        # transform it back to the new world->display
+        # transform
         imgWorldLoc = transform.transform([self.location.xyz],
                                           display._oldDisplayToWorldMat)[0]
         newDispLoc  = transform.transform([imgWorldLoc],
                                           display.worldToDisplayMat)[0]
+
+        # Update the display coordinate system bounds -
+        # this will also update the constraints on the
+        # location property, so we have to do this first
+        # before setting said location property.
+        self._updateBounds()
+        
         self.location.xyz = newDispLoc
 
 
