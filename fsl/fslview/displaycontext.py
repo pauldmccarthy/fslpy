@@ -286,13 +286,36 @@ class ImageDisplay(props.HasProperties):
         self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
         self.worldResolution = min(image.pixdim[:3])
 
-        self.voxToWorldMat = image.voxToWorldMat.transpose()
-        self.worldToVoxMat = image.worldToVoxMat.transpose()
+        # The display<->* transformation matrices
+        # are created in the _transformChanged method
+        self.voxToWorldMat     = image.voxToWorldMat.transpose()
+        self.worldToVoxMat     = image.worldToVoxMat.transpose()
+        self.voxToDisplayMat   = None
+        self.displayToVoxMat   = None
+        self.worldToDisplayMat = None
+        self.displayToWorldMat = None
+
+        # When the transform property changes,
+        # the display<->* transformation matrices
+        # are recalculated. References to the
+        # previous matrices are stored here, just
+        # in case anything (hint the DisplayContext
+        # object) needs them for any particular
+        # reason (hint: so the DisplayContext can
+        # preserve the current display location,
+        # in terms of image world space, when the
+        # transform of the selected  changes)
+        self._oldVoxToDisplayMat   = None
+        self._oldDisplayToVoxMat   = None
+        self._oldWorldToDisplayMat = None
+        self._oldDisplayToWOrldMat = None
 
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
 
+        # Update transformation matrices when
+        # the transform property changes
         self.addListener(
             'transform',
             'ImageDisplay_{}'.format(id(self)),
@@ -311,29 +334,37 @@ class ImageDisplay(props.HasProperties):
         property is changed to ``spline. Otherwise, it is set to ``none``.
         """
 
+        # Store references to the previous display related
+        # transformation matrices (see comments in __init__)
+        self._oldVoxToDisplayMat   = self.voxToDisplayMat
+        self._oldDisplayToVoxMat   = self.displayToVoxMat
+        self._oldWorldToDisplayMat = self.worldToDisplayMat
+        self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        # The transform property defines the way
+        # in which image voxel coordinates map
+        # to the display coordinate system
         if self.transform == 'id':
             pixdim          = [1.0, 1.0, 1.0]
             voxToDisplayMat = np.eye(4)
+            
         elif self.transform == 'pixdim':
-            pixdim = self.image.pixdim
+            pixdim          = self.image.pixdim
             voxToDisplayMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
+            
         elif self.transform == 'affine':
             voxToDisplayMat = self.voxToWorldMat
 
-        voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
-        displayToVoxMat = transform.invert(voxToDisplayMat)
-
         # Transformation matrices for moving between the voxel
         # coordinate system and the display coordinate system
-        self.voxToDisplayMat = voxToDisplayMat
-        self.displayToVoxMat = displayToVoxMat
+        self.voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
+        self.displayToVoxMat = transform.invert(self.voxToDisplayMat)
 
         # Matrices for moving between the display coordinate
         # system, and the image world coordinate system
         self.displayToWorldMat = transform.concat(self.displayToVoxMat,
                                                   self.voxToWorldMat)
         self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
-        
 
         # for pixdim/identity transformations, we want the world
         # location (0, 0, 0) to map to voxel location (0, 0, 0)
