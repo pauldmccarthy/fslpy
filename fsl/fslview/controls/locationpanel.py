@@ -7,16 +7,20 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
 import wx
 
 import numpy as np
 
 import props
 
-import fsl.data.image           as fslimage
 import fsl.utils.transform      as transform
 import fsl.fslview.controlpanel as controlpanel
 import imageselectpanel         as imageselect
+
+log = logging.getLogger(__name__)
+
 
 class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
     """
@@ -27,6 +31,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
     currently selected voxel.
     """
 
+    
     voxelLocation = props.Point(ndims=3, real=False, labels=('X', 'Y', 'Z'))
 
     
@@ -131,11 +136,13 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
                                      self._name,
                                      self._displayLocationChanged)
         self.addListener(            'voxelLocation',
-                                     '{}_voxToWorld'.format(self._name),
+                                     self._name,
                                      self._voxelLocationChanged)
         self.addListener(            'worldLocation',
-                                     '{}_worldToVox'.format(self._name),
-                                     self._worldLocationChanged) 
+                                     self._name,
+                                     self._worldLocationChanged)
+
+        self._internalLocationChange = False
 
         def onDestroy(ev):
             ev.Skip()
@@ -148,7 +155,6 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         self._selectedImageChanged()
         self._volumeChanged()
-        self._worldLocationChanged()
 
 
     def _updateVoxelValue(self, voxVal=None):
@@ -159,34 +165,47 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         the value at the current voxel location is displayed.
         """
 
+        import fsl.fslview.strings as strings
+
         if voxVal is not None:
             self._valueLabel.SetLabel('{}'.format(voxVal))
             self._voxelPanel.Layout()
             return
-        
-        image  = self._imageList[self._displayCtx.selectedImage]
+
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
+
+        dloc   = self._displayCtx.location.xyz
+        vloc   = transform.transform([dloc], display.displayToVoxMat)[0]
+        vloc   = np.round(vloc)
         volume = self._displayCtx.volume
-        voxLoc = self.voxelLocation.xyz
-        
-        if voxVal is None:
 
-            # There's a chance that the voxel location will temporarily
-            # be out of bounds when the selected image is changed.
-            # So we'll be safe and check them.
-            for i in range(3):
-                if voxLoc[i] < 0 or voxLoc[i] >= image.shape[i]:
-                    return
+        # Test to see if the voxel
+        # location/volume is out of bounds
+        inBounds = True
+        for i in range(3):
+            if vloc[i] < 0 or vloc[i] >= image.shape[i]:
+                inBounds = False
 
+        if image.is4DImage():
+            if volume >= image.shape[3]:
+                inBounds = False
+
+        # If the value is out of the voxel bounds,
+        # display some appropriate text
+        if not inBounds:
+            voxVal = strings.locationPanelOutOfBounds
+            
+        else:
+            
             # 3D image
             if len(image.shape) == 3:
-                voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2]]
+                voxVal = image.data[vloc[0], vloc[1], vloc[2]]
 
-            # 4D image. This will crash on non-4D images,
-            # which is intentional for the time being.
+            # No support for images of more
+            # than 4 dimensions at the moment
             else:
-                if volume >= image.shape[3]:
-                    return
-                voxVal = image.data[voxLoc[0], voxLoc[1], voxLoc[2], volume]
+                voxVal = image.data[vloc[0], vloc[1], vloc[2], volume]
 
             if   np.isnan(voxVal): voxVal = 'NaN'
             elif np.isinf(voxVal): voxVal = 'Inf'
@@ -200,30 +219,26 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         :attr:`fsl.fslview.displaycontext.DisplayContext.volume`
         property changes. Updates the voxel value label.
         """
-        import fsl.fslview.strings as strings
-
-        volume  = self._displayCtx.volume
-
-        if len(self._imageList) == 0:
-            return
-
-        image  = self._imageList[self._displayCtx.selectedImage]
-        voxVal = None
+        self._updateVoxelValue()
         
-        if image.is4DImage():
-            if volume >= image.shape[3]:
-                voxVal = strings.locationPanelOutOfBounds
-            
-        elif volume > 0:
-            voxVal = strings.locationPanelOutOfBounds
-
-        self._updateVoxelValue(voxVal)
-
 
     def _displayLocationChanged(self, *a):
 
-        
-        pass
+        if len(self._imageList) == 0:    return
+        if self._internalLocationChange: return
+
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display') 
+
+        dloc = self._displayCtx.location.xyz
+        vloc = transform.transform([dloc], display.displayToVoxMat)[  0]
+        wloc = transform.transform([dloc], display.displayToWorldMat)[0]
+
+        self._internalLocationChange = True
+        self.voxelLocation.xyz       = vloc
+        self.worldLocation.xyz       = wloc
+        self._internalLocationChange = False
+        self._updateVoxelValue()
 
 
     def _voxelLocationChanged(self, *a):
@@ -232,25 +247,21 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         change on to the display context world location.
         """
 
-        image       = self._imageList[self._displayCtx.selectedImage]
-        voxLoc      = self.voxelLocation.xyz
-        worldLoc    = image.voxToWorld([voxLoc])[0]
-        worldVoxLoc = image.worldToVox([self._displayCtx.location.xyz])[0]
-        worldVoxLoc = np.round(worldVoxLoc)
+        if len(self._imageList) == 0:    return
+        if self._internalLocationChange: return
+        
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
+        
+        vloc = self.voxelLocation.xyz
+        dloc = transform.transform([vloc], display.voxToDisplayMat)[0]
+        wloc = transform.transform([vloc], display.voxToWorldMat)[  0]
 
+        self._internalLocationChange  = True
+        self._displayCtx.location.xyz = dloc
+        self.worldLocation       .xyz = wloc
+        self._internalLocationChange  = False
         self._updateVoxelValue()
-
-        # if the current image list location is already equal to the
-        # new voxel location, don't change it. The voxel location,
-        # transformed to world coordinates, will be in the centre of
-        # voxel. But the world location can be anywhere within a
-        # voxel. So if the world location is already in the correct
-        # voxel, we don't want it to be shifted to the voxel centre.
-        diffs = map(lambda vl, wvl: vl - wvl, voxLoc, worldVoxLoc)
-
-        if not any(map(lambda d: d > 0.001, diffs)): return
-
-        self._displayCtx.location.xyz = worldLoc
 
 
     def _worldLocationChanged(self, *a):
@@ -259,33 +270,22 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         Propagates the change on to the voxel location in the currently
         selected image.
         """
-        import fsl.fslview.strings as strings
 
-        if len(self._imageList) == 0: return
+        if len(self._imageList) == 0:    return
+        if self._internalLocationChange: return
 
-        image  = self._imageList[self._displayCtx.selectedImage]
-        loc    = self._displayCtx.location.xyz
-        voxLoc = np.round(image.worldToVox([loc]))[0]
+        image    = self._imageList[self._displayCtx.selectedImage]
+        display  = image.getAttribute('display')
+        
+        wloc = self.worldLocation.xyz
+        dloc = transform.transform([wloc], display.worldToDisplayMat)[0]
+        vloc = transform.transform([wloc], display.worldToVoxMat)[    0]
 
-        inBounds = True
-
-        # If the selected world location is not within the selected
-        # image, we're going to temporarily disable notification on
-        # the voxel location property, because this would otherwise
-        # cause some infinite-property-listener-callback-recursion
-        # nastiness.
-        for i in range(3):
-
-            # allow the voxel location values to be equal to the image
-            if voxLoc[i] < 0 or voxLoc[i] > image.shape[i]:
-                inBounds = False
-
-        if not inBounds:
-            self._updateVoxelValue(voxVal=strings.locationPanelOutOfBounds)
-            self.voxelLocation.disableNotification()
-
-        self.voxelLocation.xyz = voxLoc
-        self.voxelLocation.enableNotification()
+        self._internalLocationChange  = True
+        self._displayCtx.location.xyz = dloc
+        self.voxelLocation       .xyz = vloc
+        self._internalLocationChange  = False
+        self._updateVoxelValue()
 
         
     def _selectedImageChanged(self, *a):
@@ -294,59 +294,35 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         (which contains the image name), and sets the voxel location limits.
         """
 
-        # Make sure that a listener is registered on the
-        # selected image, so that the space label can be
-        # updated when its transformation matrix is changed
-        for i, img in enumerate(self._imageList):
-            img.removeListener('transform', self._name)
-            if i == self._displayCtx.selectedImage:
-                img.addListener('transform', self._name, self._spaceChanged)
-
-        self._spaceChanged()
-
-        if len(self._imageList) == 0:
-            self._updateVoxelValue('')
-            self._voxelPanel.Layout()
-            return
-
-        image = self._imageList[self._displayCtx.selectedImage]
-
-        oldLoc = self._displayCtx.location.xyz
-        voxLoc = np.round(image.worldToVox([oldLoc]))[0]
-
-        for i in range(3):
-            self.voxelLocation.setLimits(i, 0, image.shape[i] - 1)
-
-        self.voxelLocation.xyz = voxLoc
-
-        # The voxel coordinates may have inadvertently been
-        # changed due to a change in their limits. So we'll
-        # restore the old location from the real world
-        # coordinates.
-        self._displayCtx.location.xyz = oldLoc
-
-
-    def _spaceChanged(self, *a):
-        """Called when the transformation matrix of the currently selected
-        image changes. Updates the 'space' label to reflect the change.
-        """
-
         import fsl.fslview.strings as strings
 
         if len(self._imageList) == 0:
+            self._updateVoxelValue(   '')
             self._spaceLabel.SetLabel('')
-            self._locationPanel.Layout()
+            self._worldPanel.Layout()
             return
 
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
 
-        if image.transform == 'affine':
-            spaceLabel = strings.imageSpaceLabels[image.getXFormCode()]
-        else:
-            spaceLabel = strings.imageSpaceLabels[fslimage.NIFTI_XFORM_VOXEL]
-            
+        # Update the label which
+        # displays the image space 
+        spaceLabel = strings.imageSpaceLabels[image.getXFormCode()]
         spaceLabel = strings.locationPanelSpaceLabel.format(spaceLabel)
-
         self._spaceLabel.SetLabel(spaceLabel)
+        self._worldPanel.Layout()
 
-        self._locationPanel.Layout()
+        # Update the voxel and world location limits,
+        # but don't trigger a listener callback, as
+        # this would change the display location
+        self._internalLocationChange = True
+        for i in range(3):
+            vlo, vhi = 0, image.shape[i] - 1
+            wlo, whi = transform.axisBounds(image.shape,
+                                            display.voxToWorldMat,
+                                            i)
+            
+            self.voxelLocation.setLimits(i, vlo, vhi)
+            self.worldLocation.setLimits(i, wlo, whi)
+        self._internalLocationChange = False
+        self._updateVoxelValue()
