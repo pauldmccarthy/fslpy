@@ -7,7 +7,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
-** Canvases are not displayed properly when labels are shown.
+** Ortho horiz/vert layout - labels are getting pushed off the window.
 ** World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed ...
 ** Linux/Jalapeno Bad window crash
 ** No worky in VNC session.
@@ -16,6 +16,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 *** Wild cards in image file load (WX/OSX issue)
 ** OSMesa render doesn't like circle voxels
+** DONE Canvases are not displayed properly when labels are shown.
 ** DONE 'World location' should always be defined by the NIFTI affine transformation
 Currently your 'world coordinate system is equivalent to the display
 coordinate system. You need to ensure that all displayed 'world coordinates'
@@ -70,7 +71,6 @@ perhaps into a standalone module...
 *** A switch to automatically choose colour maps/clipping thresholds for a provided set of images (like Eugene's fast fslview startup script)
 ** Scale values in colour map according to largest value?
 ** ColourBarPanel should only do stuff if it is being displayed
-** ImageDisplay objects could be managed by DisplayContetx, rather than being tacked on as an image attribute. The same could be said of GLObjects.
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
 ** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
@@ -155,6 +155,14 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Ability to display images in a different order for different view panels.
+Keep a 'master' image list, but mainain an index list in separate view
+panels - make it editable as a view panel property.
+** Separate image displays for each view panel - this needs to be possible.
+And the ability to link/unlink said display properties
+ImageDisplay objects could be managed by DisplayContetx, rather than being
+tacked on as an image attribute (the same could be said of GLObjects, but
+that's irrelevant).
 ** Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
 This will probably dictate how you go about implementing keyboard/mouse control
 ** Keyboard/mouse control
