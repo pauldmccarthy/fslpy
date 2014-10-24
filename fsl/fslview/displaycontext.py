@@ -565,7 +565,7 @@ class DisplayContext(props.HasProperties):
 
             for ax in range(3):
 
-                lo, hi = transform.axisBounds(img.shape, xform, ax)
+                lo, hi = transform.axisBounds(img.shape[:3], xform, ax)
 
                 if lo < minBounds[ax]: minBounds[ax] = lo
                 if hi > maxBounds[ax]: maxBounds[ax] = hi

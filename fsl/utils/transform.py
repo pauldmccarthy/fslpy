@@ -25,7 +25,7 @@ def concat(x1, x2):
 
 def axisBounds(shape, xform, axis):
     """Returns the (lo, hi) bounds of the specified axis."""
-    x, y, z = shape
+    x, y, z = shape[:3]
 
     x -= 0.5
     y -= 0.5
