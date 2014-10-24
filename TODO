@@ -8,7 +8,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * Bugs to fix
 ** Canvases are not displayed properly when labels are shown.
-** World location is clamped to voxel centre when voxel location changes. And the voxel location seems to be changing incorrectly.
+** World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed ...
 ** Linux/Jalapeno Bad window crash
 ** No worky in VNC session.
 ** WX Bugs
