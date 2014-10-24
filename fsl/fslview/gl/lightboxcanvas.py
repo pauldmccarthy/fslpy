@@ -101,8 +101,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         sliceno = int(np.floor((zpos - self.zrange.xlo) / self.sliceSpacing))
 
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
         
         row = self._totalRows - int(np.floor(sliceno / self.ncols)) - 1
         col =                   int(np.floor(sliceno % self.ncols))
@@ -130,10 +130,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         screenx, screeny = slicecanvas.SliceCanvas.canvasToWorld(
             self, xpos, ypos)
 
-        xmin = self.imageList.bounds.getLo( self.xax)
-        ymin = self.imageList.bounds.getLo( self.yax)
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
+        xmin = self.displayCtx.bounds.getLo( self.xax)
+        ymin = self.displayCtx.bounds.getLo( self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
 
         xmax = xmin + ncols * xlen
         ymax = ymin + nrows * ylen
@@ -168,15 +168,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         return self._totalRows
 
         
-    def __init__(self, imageList, zax=0):
+    def __init__(self, imageList, displayCtx, zax=0):
         """Create a :class:`LightBoxCanvas` object.
         
-        :arg imageList: a :class:`~fsl.data.image.ImageList` object which
-                        contains, or will contain, a list of images to be
-                        displayed.
+        :arg imageList:  a :class:`~fsl.data.image.ImageList` object which
+                         contains, or will contain, a list of images to be
+                         displayed.
+
+        :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
+                         object which defines how that image list is to be
+                         displayed.
         
-        :arg zax:       Image axis to be used as the 'depth' axis. Can be
-                        changed via the :attr:`LightBoxCanvas.zax` property.
+        :arg zax:        Image axis to be used as the 'depth' axis. Can be
+                         changed via the :attr:`LightBoxCanvas.zax` property.
         """
 
         # These attributes are used to keep track of
@@ -185,10 +189,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._nslices   = 0
         self._totalRows = 0
 
-        slicecanvas.SliceCanvas.__init__(self, imageList, zax)
+        slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
 
         # default to showing the entire slice range
-        self.zrange.x = imageList.bounds.getRange(self.zax)
+        self.zrange.x = displayCtx.bounds.getRange(self.zax)
 
         self._slicePropsChanged()
 
@@ -237,8 +241,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         the total number of rows.
         """
         
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
         zlen = self.zrange.xlen
         width, height = self._getSize()
 
@@ -318,7 +322,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         transformation matrices being changed).
 
         """
-        newZRange = self.imageList.bounds.getRange(self.zax)
+        newZRange = self.displayCtx.bounds.getRange(self.zax)
         newZGap   = self.sliceSpacing
 
         # Pick a sensible default for the
@@ -351,7 +355,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas._imageBoundsChanged(self)
 
-        zmin,    zmax    = self.imageList.bounds.getRange(self.zax)
+        zmin,    zmax    = self.displayCtx.bounds.getRange(self.zax)
         oldzmin, oldzmax = self.zrange.getLimits(0)
         
         self.zrange.setLimits(0, zmin, zmax)
@@ -380,10 +384,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         be displayed, in real world coordinates.
         """
 
-        xmin = self.imageList.bounds.getLo( self.xax)
-        ymin = self.imageList.bounds.getLo( self.yax)
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
+        xmin = self.displayCtx.bounds.getLo( self.xax)
+        ymin = self.displayCtx.bounds.getLo( self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
 
         off  = self._totalRows - self.nrows - self.topRow
         ymin = ymin + ylen * off
@@ -453,8 +457,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         row = int(np.floor(sliceno / ncols))
         col = int(np.floor(sliceno % ncols))
 
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
 
         translate              = np.identity(4, dtype=np.float32)
         translate[3, self.xax] = xlen * col
@@ -467,10 +471,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     def _drawGridLines(self):
         """Draws grid lines between all the displayed slices."""
 
-        xlen = self.imageList.bounds.getLen(self.xax)
-        ylen = self.imageList.bounds.getLen(self.yax)
-        xmin = self.imageList.bounds.getLo( self.xax)
-        ymin = self.imageList.bounds.getLo( self.yax)
+        xlen = self.displayCtx.bounds.getLen(self.xax)
+        ylen = self.displayCtx.bounds.getLen(self.yax)
+        xmin = self.displayCtx.bounds.getLo( self.xax)
+        ymin = self.displayCtx.bounds.getLo( self.yax)
 
         rowLines = np.zeros(((self.nrows - 1) * 2, 3), dtype=np.float32)
         colLines = np.zeros(((self.ncols - 1) * 2, 3), dtype=np.float32)
@@ -511,10 +515,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
                                self.sliceSpacing))
-        xlen    = self.imageList.bounds.getLen(self.xax)
-        ylen    = self.imageList.bounds.getLen(self.yax)
-        xmin    = self.imageList.bounds.getLo( self.xax)
-        ymin    = self.imageList.bounds.getLo( self.yax)
+        xlen    = self.displayCtx.bounds.getLen(self.xax)
+        ylen    = self.displayCtx.bounds.getLen(self.yax)
+        xmin    = self.displayCtx.bounds.getLo( self.xax)
+        ymin    = self.displayCtx.bounds.getLo( self.yax)
         row     = int(np.floor(sliceno / self.ncols))
         col     = int(np.floor(sliceno % self.ncols))
 

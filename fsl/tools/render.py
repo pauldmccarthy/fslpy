@@ -162,6 +162,7 @@ def run(args, context):
             
             c = slicecanvas.OSMesaSliceCanvas(
                 imageList,
+                displayCtx,
                 zax=i,
                 width=width,
                 height=height,

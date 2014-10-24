@@ -113,11 +113,17 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # The canvases themselves - each one displays a
         # slice along each of the three world axes
         self._xcanvas = slicecanvas.WXGLSliceCanvas(self._xCanvasPanel,
-                                                    imageList, zax=0)
+                                                    imageList,
+                                                    displayCtx,
+                                                    zax=0)
         self._ycanvas = slicecanvas.WXGLSliceCanvas(self._yCanvasPanel,
-                                                    imageList, zax=1)
+                                                    imageList,
+                                                    displayCtx,
+                                                    zax=1)
         self._zcanvas = slicecanvas.WXGLSliceCanvas(self._zCanvasPanel,
-                                                    imageList, zax=2)
+                                                    imageList,
+                                                    displayCtx,
+                                                    zax=2)
 
         # Attach each canvas as an attribute of its parent -
         # see the _configureGridLayout/_configureFlatLayout
@@ -284,18 +290,24 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         for changes on its affine transformation matrix.
         """
         
-        self._refreshLabels()
-
-        if len(self._imageList) == 0: return
-
         for i, img in enumerate(self._imageList):
 
-            img.removeListener('transform', self._name)
+            display = img.getAttribute('display')
+
+            display.removeListener('transform', self._name)
 
             # Update anatomy labels when the image
             # transformation matrix changes
             if i == self._displayCtx.selectedImage:
-                img.addListener('transform', self._name, self._refreshLabels)
+                display.addListener('transform',
+                                    self._name,
+                                    self._refreshLabels)
+
+        # _refreshLabels will in turn call
+        # _layoutChanged, which is needed
+        # in case the display bounds have
+        # changed
+        self._refreshLabels()
 
 
     def _onDestroy(self, ev):
@@ -319,7 +331,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # listeners to individual images,
         # so we have to remove them too
         for img in self._imageList:
-            img.removeListener('transform', self._name)
+            display = img.getAttribute('display')
+            display.removeListener('transform', self._name)
         
             
     def _resize(self, ev):
@@ -348,8 +361,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
 
         # Are we showing or hiding the labels?
-        if self.showLabels: show = True
-        else:               show = False
+        if   len(self._imageList) == 0: show = False
+        elif self.showLabels:           show = True
+        else:                           show = False
 
         for lbl in allLabels:
             lbl.Show(show)
@@ -364,25 +378,24 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # changed to red
         colour = 'white'
 
-        if len(self._imageList) > 0:
-            image = self._imageList[self._displayCtx.selectedImage]
+        image = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
 
-            # The image is being displayed as it is stored on
-            # disk - the image.getOrientation method calculates
-            # and returns labels for each voxelwise axis.
-            if image.transform in ('pixdim', 'id'):
-                xorient = image.getVoxelOrientation(0)
-                yorient = image.getVoxelOrientation(1)
-                zorient = image.getVoxelOrientation(2)
+        # The image is being displayed as it is stored on
+        # disk - the image.getOrientation method calculates
+        # and returns labels for each voxelwise axis.
+        if display.transform in ('pixdim', 'id'):
+            xorient = image.getVoxelOrientation(0)
+            yorient = image.getVoxelOrientation(1)
+            zorient = image.getVoxelOrientation(2)
 
-            # The image is being displayed in 'real world' space -
-            # the definition of this space may be present in the
-            # image meta data
-            else:
-                xorient = image.getWorldOrientation(0)
-                yorient = image.getWorldOrientation(1)
-                zorient = image.getWorldOrientation(2)
-
+        # The image is being displayed in 'real world' space -
+        # the definition of this space may be present in the
+        # image meta data
+        else:
+            xorient = image.getWorldOrientation(0)
+            yorient = image.getWorldOrientation(1)
+            zorient = image.getWorldOrientation(2)
                 
         if fslimage.ORIENT_UNKNOWN in (xorient, yorient, zorient):
             colour = 'red'
@@ -428,7 +441,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._configureFlatLayout(width, height, canvases, False)
             return
 
-        bounds = self._imageList.bounds
+        bounds = self._displayCtx.bounds
 
         canvasWidths  = [bounds.getLen(c._canvas.xax) for c in canvases]
         canvasHeights = [bounds.getLen(c._canvas.yax) for c in canvases]
@@ -458,7 +471,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         ratio is maintained across them when laid out vertically
         (``vert=True``) or horizontally (``vert=False``).
         """
-        bounds = self._imageList.bounds
+        bounds = self._displayCtx.bounds
 
         # Get the canvas dimensions in world space
         canvasWidths  = [bounds.getLen(c._canvas.xax) for c in canvases]
@@ -556,7 +569,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                         self._zCanvasPanel]
             show     = [self.showXCanvas,
                         self.showYCanvas,
-                        self.showZCanvas] 
+                        self.showZCanvas]
+
+        if len(self._imageList) == 0:
+            show = [False] * 3
 
         # Pick out the canvases for which
         # the 'show*Canvas' property is true 
@@ -572,6 +588,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zCanvasPanel.Show(self.showZCanvas)
 
         if len(canvases) == 0:
+            self.Layout()
+            self.getCanvasPanel().Layout()
+            self.Refresh() 
             return
 
         # Regardless of the layout, we use a

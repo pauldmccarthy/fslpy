@@ -47,8 +47,6 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import os.path           as op
-
 import numpy             as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
@@ -397,9 +395,9 @@ def draw(glimg, zpos, xform=None):
     # to the shader variable
     if xform is None: xform = np.identity(4)
     
-    w2w = np.array(xform,               dtype=np.float32).ravel('C')
-    w2v = np.array(image.worldToVoxMat, dtype=np.float32).ravel('C')
-    tcx = np.array(glimg.texCoordXform, dtype=np.float32).ravel('C')
+    w2w = np.array(xform,                   dtype=np.float32).ravel('C')
+    w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
+    tcx = np.array(glimg.texCoordXform,     dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(glimg.worldToVoxMatPos,   1, False, w2v)
     gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)

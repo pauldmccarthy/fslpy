@@ -41,10 +41,11 @@ class SliceCanvas(props.HasProperties):
     """The currently displayed position. The ``pos.x`` and ``pos.y`` positions
     denote the position of a 'cursor', which is highlighted with green
     crosshairs. The ``pos.z`` position specifies the currently displayed
-    slice. While the values of this point are in the image list world
-    coordinates, the dimension ordering may not be the same as the image list
-    dimension ordering. For this position, the x and y dimensions correspond
-    to horizontal and vertical on the screen, and the z dimension to 'depth'.
+    slice. While the values of this point are in the display coordinate
+    system, the dimension ordering may not be the same as the display
+    coordinate dimension ordering. For this position, the x and y dimensions
+    correspond to horizontal and vertical on the screen, and the z dimension
+    to 'depth'.
     """
 
 
@@ -59,7 +60,7 @@ class SliceCanvas(props.HasProperties):
     
     displayBounds = props.Bounds(ndims=2)
     """The display bound x/y values specify the horizontal/vertical display
-    range of the canvas, in world coordinates. This may be a larger area
+    range of the canvas, in display coordinates. This may be a larger area
     than the size of the displayed images, as it is adjusted to preserve the
     aspect ratio.
     """
@@ -107,11 +108,11 @@ class SliceCanvas(props.HasProperties):
 
     def calcPixelDims(self):
         """Calculate and return the approximate size (width, height) of one
-        pixel in world space.
+        pixel in display space.
         """
         
-        xmin, xmax = self.imageList.bounds.getRange(self.xax)
-        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+        xmin, xmax = self.displayCtx.bounds.getRange(self.xax)
+        ymin, ymax = self.displayCtx.bounds.getRange(self.yax)
         
         w, h = self._getSize()
         pixx = (xmax - xmin) / float(w)
@@ -122,7 +123,7 @@ class SliceCanvas(props.HasProperties):
     
     def canvasToWorld(self, xpos, ypos):
         """Given pixel x/y coordinates on this canvas, translates them
-        into the real world coordinates of the displayed slice.
+        into the display coordinates of the displayed slice.
         """
 
         realWidth                 = self.displayBounds.xlen
@@ -146,7 +147,7 @@ class SliceCanvas(props.HasProperties):
 
     def panDisplayBy(self, xoff, yoff):
         """Pans the canvas display by the given x/y offsets (specified in
-        world coordinates).
+        display coordinates).
         """
         
         bounds = self.displayBounds
@@ -178,7 +179,7 @@ class SliceCanvas(props.HasProperties):
 
 
     def panDisplayToShow(self, xpos, ypos):
-        """Pans the display so that the given x/y position (in world
+        """Pans the display so that the given x/y position (in display
         coordinates) is visible.
         """
 
@@ -200,7 +201,7 @@ class SliceCanvas(props.HasProperties):
             self.panDisplayBy(xoff, yoff)
 
         
-    def __init__(self, imageList, zax=0):
+    def __init__(self, imageList, displayCtx, zax=0):
         """Creates a canvas object. 
 
         .. note:: It is assumed that each :class:`~fsl.data.image.Image`
@@ -208,7 +209,10 @@ class SliceCanvas(props.HasProperties):
         which refers to an :class:`~fsl.fslview.displaycontext.ImageDisplay`
         instance defining how that image is to be displayed.
         
-        :arg imageList:  An :class:`~fsl.data.image.ImageList` object.
+        :arg imageList:   An :class:`~fsl.data.image.ImageList` object.
+        
+        :arg displayCtx:  A :class:`~fsl.fslview.displaycontext.DisplayContext`
+                          object.
         
         :arg zax:        Image axis perpendicular to the plane to be displayed
                          (the 'depth' axis), default 0.
@@ -220,8 +224,9 @@ class SliceCanvas(props.HasProperties):
 
         props.HasProperties.__init__(self)
 
-        self.imageList = imageList
-        self.name      = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.imageList  = imageList
+        self.displayCtx = displayCtx
+        self.name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -247,12 +252,12 @@ class SliceCanvas(props.HasProperties):
 
         # When the image list changes, refresh the
         # display, and update the display bounds
-        self.imageList.addListener('images',
-                                   self.name,
-                                   self._imageListChanged)
-        self.imageList.addListener('bounds',
-                                   self.name,
-                                   self._imageBoundsChanged)
+        self.imageList.addListener( 'images',
+                                    self.name,
+                                    self._imageListChanged)
+        self.displayCtx.addListener('bounds',
+                                    self.name,
+                                    self._imageBoundsChanged)
 
 
     def _initGL(self):
@@ -359,14 +364,14 @@ class SliceCanvas(props.HasProperties):
 
 
     def _imageBoundsChanged(self, *a):
-        """Called when the image list bounds are changed.
+        """Called when the display bounds are changed.
 
         Updates the constraints on the :attr:`pos` property so it is
         limited to stay within a valid range, and then calls the
         :meth:`_updateDisplayBounds` method.
         """
 
-        imgBounds = self.imageList.bounds
+        imgBounds = self.displayCtx.bounds
 
         self.pos.setMin(0, imgBounds.getLo(self.xax))
         self.pos.setMax(0, imgBounds.getHi(self.xax))
@@ -438,10 +443,10 @@ class SliceCanvas(props.HasProperties):
         :arg ymax: Maximum y value to be in the display bounds.
         """
 
-        if xmin is None: xmin = self.imageList.bounds.getLo(self.xax)
-        if xmax is None: xmax = self.imageList.bounds.getHi(self.xax)
-        if ymin is None: ymin = self.imageList.bounds.getLo(self.yax)
-        if ymax is None: ymax = self.imageList.bounds.getHi(self.yax)
+        if xmin is None: xmin = self.displayCtx.bounds.getLo(self.xax)
+        if xmax is None: xmax = self.displayCtx.bounds.getHi(self.xax)
+        if ymin is None: ymin = self.displayCtx.bounds.getLo(self.yax)
+        if ymax is None: ymax = self.displayCtx.bounds.getHi(self.yax)
 
         log.debug('Required display bounds: X: ({}, {}) Y: ({}, {})'.format(
             xmin, xmax, ymin, ymax))
@@ -515,8 +520,8 @@ class SliceCanvas(props.HasProperties):
         if xmax is None: xmax = self.displayBounds.xhi
         if ymin is None: ymin = self.displayBounds.ylo
         if ymax is None: ymax = self.displayBounds.yhi
-        if zmin is None: zmin = self.imageList.bounds.getLo(self.zax)
-        if zmax is None: zmax = self.imageList.bounds.getHi(self.zax)
+        if zmin is None: zmin = self.displayCtx.bounds.getLo(self.zax)
+        if zmax is None: zmax = self.displayCtx.bounds.getHi(self.zax)
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
@@ -582,8 +587,8 @@ class SliceCanvas(props.HasProperties):
         xverts = np.zeros((2, 3))
         yverts = np.zeros((2, 3))
 
-        xmin, xmax = self.imageList.bounds.getRange(self.xax)
-        ymin, ymax = self.imageList.bounds.getRange(self.yax)
+        xmin, xmax = self.displayCtx.bounds.getRange(self.xax)
+        ymin, ymax = self.displayCtx.bounds.getRange(self.yax)
 
         x = self.pos.x
         y = self.pos.y

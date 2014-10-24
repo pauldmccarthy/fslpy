@@ -90,7 +90,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
         self._lbCanvas  = lightboxcanvas.LightBoxCanvas(self.getCanvasPanel(),
-                                                        imageList)
+                                                        imageList,
+                                                        displayCtx)
 
         # My properties are the canvas properties
         self.bindProps('sliceSpacing',  self._lbCanvas)

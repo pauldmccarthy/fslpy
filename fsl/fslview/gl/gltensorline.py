@@ -18,6 +18,8 @@ import scipy.ndimage as ndi
 
 import globject
 
+import fsl.utils.transform as transform
+
 class GLTensorLine(object):
     """The :class:`GLTensorLine` class encapsulates the data and logic required to
     render 2D slices of a X*Y*Z*3 image as tensor lines.
@@ -104,7 +106,9 @@ class GLTensorLine(object):
 
         # Transform the world coordinates to
         # floating point voxel coordinates
-        voxCoords  = image.worldToVox(worldCoords).transpose()
+        dToVMat = display.displayToVoxMat
+        
+        voxCoords  = transform.transform(worldCoords, dToVMat).transpose()
         imageData  = image.data
         nVoxels    = worldCoords.shape[0]
 

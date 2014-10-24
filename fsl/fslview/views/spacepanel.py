@@ -17,6 +17,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from mpl_toolkits.mplot3d              import Axes3D
 
 import fsl.fslview.viewpanel as viewpanel
+import fsl.utils.transform   as transform
 
 class SpacePanel(viewpanel.ViewPanel):
 
@@ -60,7 +61,7 @@ class SpacePanel(viewpanel.ViewPanel):
 
     def _onDestroy(self, ev):
         ev.Skip()
-        self._iamgeList.removeListener('images',        self._name)
+        self._imageList.removeListener('images',        self._name)
         self._iamgeList.removeListener('selectedImage', self._name)
 
         
@@ -74,12 +75,13 @@ class SpacePanel(viewpanel.ViewPanel):
             self._canvas.draw()
             return
 
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
 
-        image.addListener('transform',
-                          self._name,
-                          self._selectedImageChanged,
-                          overwrite=True)
+        display.addListener('transform',
+                            self._name,
+                            self._selectedImageChanged,
+                            overwrite=True)
 
         self._axis.set_title(image.name)
         self._axis.set_xlabel('X')
@@ -97,11 +99,13 @@ class SpacePanel(viewpanel.ViewPanel):
 
     def _plotImageBounds(self):
 
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
+        v2DMat  = display.voxToDisplayMat
 
-        xlo, xhi = image.imageBounds(0)
-        ylo, yhi = image.imageBounds(1)
-        zlo, zhi = image.imageBounds(2)
+        xlo, xhi = transform.axisBounds(image.shape, v2DMat, 0)
+        ylo, yhi = transform.axisBounds(image.shape, v2DMat, 1)
+        zlo, zhi = transform.axisBounds(image.shape, v2DMat, 2)
 
         points = np.zeros((8, 3), dtype=np.float32)
         points[0, :] = [xlo, ylo, zlo]
@@ -122,7 +126,8 @@ class SpacePanel(viewpanel.ViewPanel):
         # Imported here to avoid circular import issues
         import fsl.fslview.strings as strings
         
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
         
         centre = np.array(image.shape) / 2.0
 
@@ -138,7 +143,7 @@ class SpacePanel(viewpanel.ViewPanel):
             lblLo = strings.imageAxisLowShortLabels[ orient]
             lblHi = strings.imageAxisHighShortLabels[orient]
 
-            wldSpan = image.voxToWorld(voxSpan)
+            wldSpan = transform.transform(voxSpan, display.voxToDisplayMat)
 
             self._axis.plot(wldSpan[:, 0],
                             wldSpan[:, 1],
@@ -152,7 +157,8 @@ class SpacePanel(viewpanel.ViewPanel):
 
     def _plotAxisLengths(self):
 
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
 
         for ax, colour, label in zip(range(3),
                                      ['r', 'g', 'b'],
@@ -162,7 +168,11 @@ class SpacePanel(viewpanel.ViewPanel):
             points[:]     = [-0.5, -0.5, -0.5]
             points[1, ax] = image.shape[ax] - 0.5
 
-            tx = image.voxToWorld(points)
+            tx = transform.transform(points, display.voxToDisplayMat)
+
+            axlen = transform.axisLength(image.shape,
+                                         display.voxToDisplayMat,
+                                         ax)
 
             self._axis.plot(tx[:, 0],
                             tx[:, 1],
@@ -170,13 +180,14 @@ class SpacePanel(viewpanel.ViewPanel):
                             lw=1,
                             color=colour,
                             alpha=0.5,
-                            label='Axis {} (length {:0.2f})'.format(
-                                label, image.axisLength(ax)))
+                            label='Axis {} (length {:0.2f})'.format(label,
+                                                                    axlen))
 
 
     def _plotImageCorners(self):
         
-        image = self._imageList[self._displayCtx.selectedImage]
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = image.getAttribute('display')
         
         x, y, z = image.shape[:3]
 
@@ -195,7 +206,7 @@ class SpacePanel(viewpanel.ViewPanel):
         points[6, :] = [x,     y,   -0.5]
         points[7, :] = [x,     y,    z] 
 
-        points = image.voxToWorld(points)
+        points = transform.transform(points, display.voxToDisplayMat)
 
         self._axis.scatter(points[:, 0], points[:, 1], points[:, 2],
                            color='b', s=40)

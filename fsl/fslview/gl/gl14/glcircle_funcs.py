@@ -8,15 +8,16 @@
 import logging
 log = logging.getLogger(__name__)
 
-import scipy.ndimage as ndi
-import OpenGL.GL     as gl
+import scipy.ndimage       as ndi
+import OpenGL.GL           as gl
+
+import fsl.utils.transform as transform
     
 def draw(glimg, zpos, xform=None):
     """Draws a slice of the image at the given Z location using immediate
     mode rendering.
     """
 
-    image   = glimg.image
     display = glimg.display
     
     # Don't draw the slice if this
@@ -31,7 +32,7 @@ def draw(glimg, zpos, xform=None):
     
     # Transform world texture coordinates
     # to (floating point) voxel coordinates
-    voxCoords     = image.worldToVox(texCoords)
+    voxCoords     = transform.transform(texCoords, display.displayToVoxMat)
     imageData     = glimg.imageData
     texCoordXform = glimg.texCoordXform
     colourTexture = glimg.colourTexture

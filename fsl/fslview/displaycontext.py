@@ -5,13 +5,16 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from collections import OrderedDict
+import sys
+import collections
+from   collections import OrderedDict
 
 import numpy         as np
 
 import props
-import fsl.data.image as fslimage
 
+import fsl.data.image         as fslimage
+import fsl.utils.transform    as transform
 import fsl.fslview.colourmaps as fslcm
 
 class ImageDisplay(props.HasProperties):
@@ -76,11 +79,25 @@ class ImageDisplay(props.HasProperties):
     volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
     """If a 4D image, the current volume to display."""
 
-
-    transform = fslimage.Image.transform
-    """How the image is transformed from voxel to real world coordinates.
-    This property is bound to the :attr:`~fsl.data.image.Image.transform`
-    property of the image associated with this :class:`ImageDisplay`.
+    
+    transform = props.Choice(
+        collections.OrderedDict([
+            ('affine', 'Use qform/sform transformation matrix'),
+            ('pixdim', 'Use pixdims only'),
+            ('id',     'Do not use qform/sform or pixdims')]),
+        default='pixdim')
+    """This property defines how the image should be transformd into the display
+    coordinate system.
+    
+      - ``affine``: Use the affine transformation matrix stored in the image
+        (the ``qform``/``sform`` fields in NIFTI1 headers).
+                    
+      - ``pixdim``: Scale voxel sizes by the ``pixdim`` fields in the image
+        header.
+    
+      - ``id``: Perform no scaling or transformation - voxels will be
+        interpreted as :math:`1mm^3` isotropic, with the origin at voxel
+        (0,0,0).
     """
 
 
@@ -241,11 +258,9 @@ class ImageDisplay(props.HasProperties):
 
         self.image = image
 
-        # bind self.transform and self.name to 
-        # image.transform/image.name, so changes
+        # bind self.name to # image.name, so changes
         # in one are propagated to the other
-        self.bindProps('transform', image)
-        self.bindProps('name',      image)
+        self.bindProps('name', image)
 
         # Attributes controlling image display. Only
         # determine the real min/max for small images -
@@ -271,19 +286,95 @@ class ImageDisplay(props.HasProperties):
         self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
         self.worldResolution = min(image.pixdim[:3])
 
+        # The display<->* transformation matrices
+        # are created in the _transformChanged method
+        self.voxToWorldMat     = image.voxToWorldMat.transpose()
+        self.worldToVoxMat     = image.worldToVoxMat.transpose()
+        self.voxToDisplayMat   = None
+        self.displayToVoxMat   = None
+        self.worldToDisplayMat = None
+        self.displayToWorldMat = None
+
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
 
+        # Update transformation matrices when
+        # the transform property changes
+        self.addListener(
+            'transform',
+            'ImageDisplay_{}'.format(id(self)),
+            self._transformChanged)
+
+        self._transformChanged()
+        # When the transform property changes,
+        # the display<->* transformation matrices
+        # are recalculated. References to the
+        # previous matrices are stored here, just
+        # in case anything (hint the DisplayContext
+        # object) needs them for any particular
+        # reason (hint: so the DisplayContext can
+        # preserve the current display location,
+        # in terms of image world space, when the
+        # transform of the selected changes)
+        self._oldVoxToDisplayMat   = self.voxToDisplayMat
+        self._oldDisplayToVoxMat   = self.displayToVoxMat
+        self._oldWorldToDisplayMat = self.worldToDisplayMat
+        self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        
+    def _transformChanged(self, *a):
+        """Called when the :attr:`transform` property is changed.
+
+        Generates transformation matrices for transforming between voxel and
+        display coordinate space.
+
+        If :attr:`transform` is set to ``affine``, the :attr:`interpolation`
+        property is changed to ``spline. Otherwise, it is set to ``none``.
+        """
+
+        # Store references to the previous display related
+        # transformation matrices (see comments in __init__)
+        self._oldVoxToDisplayMat   = self.voxToDisplayMat
+        self._oldDisplayToVoxMat   = self.displayToVoxMat
+        self._oldWorldToDisplayMat = self.worldToDisplayMat
+        self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        # The transform property defines the way
+        # in which image voxel coordinates map
+        # to the display coordinate system
+        if self.transform == 'id':
+            pixdim          = [1.0, 1.0, 1.0]
+            voxToDisplayMat = np.eye(4)
+            
+        elif self.transform == 'pixdim':
+            pixdim          = self.image.pixdim
+            voxToDisplayMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
+            
+        elif self.transform == 'affine':
+            voxToDisplayMat = self.voxToWorldMat
+
+        # for pixdim/identity transformations, we want the world
+        # location (0, 0, 0) to map to voxel location (0, 0, 0)
+        if self.transform in ('id', 'pixdim'):
+            for i in range(3):
+                voxToDisplayMat[3, i] =  pixdim[i] * 0.5
+
+        # Transformation matrices for moving between the voxel
+        # coordinate system and the display coordinate system
+        self.voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
+        self.displayToVoxMat = transform.invert(self.voxToDisplayMat)
+
+        # Matrices for moving between the display coordinate
+        # system, and the image world coordinate system
+        self.displayToWorldMat = transform.concat(self.displayToVoxMat,
+                                                  self.voxToWorldMat)
+        self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
+
         # When transform is changed to 'affine', enable interpolation
         # and, when changed to 'pixdim' or 'id', disable interpolation
-        def changeInterp(*a):
-            if self.transform == 'affine': self.interpolation = 'spline'
-            else:                          self.interpolation = 'none'
-            
-        self.addListener('transform',
-                         'ImageDisplay_{}'.format(id(self)),
-                         changeInterp)
+        if self.transform == 'affine': self.interpolation = 'spline'
+        else:                          self.interpolation = 'none'
 
 
 class DisplayContext(props.HasProperties):
@@ -307,6 +398,14 @@ class DisplayContext(props.HasProperties):
     3D location (xyz) in the image list space. 
     """
 
+    
+    bounds = props.Bounds(ndims=3)
+    """This property contains the min/max values of a bounding box (in display
+    coordinates) which is big enough to contain all of the images in the
+    :attr:`images` list. This property shouid be read-only, but I don't have a
+    way to enforce it (yet).
+    """
+
 
     volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
     """The volume property contains the currently selected volume
@@ -325,12 +424,14 @@ class DisplayContext(props.HasProperties):
         self._imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
+        # Ensure that an ImageDisplay object exists for
+        # every image, and that the display bounds
+        # property is initialised
         self._imageListChanged()
-        self._imageListBoundsChanged()
 
         # initialise the location to be
         # the centre of the image world
-        b = imageList.bounds
+        b = self.bounds
         self.location.xyz = [
             b.xlo + b.xlen / 2.0,
             b.ylo + b.ylen / 2.0,
@@ -339,9 +440,9 @@ class DisplayContext(props.HasProperties):
         imageList.addListener('images',
                               self._name,
                               self._imageListChanged)
-        imageList.addListener('bounds',
+        self.addListener(     'bounds',
                               self._name,
-                              self._imageListBoundsChanged)
+                              self._boundsChanged)
         self.addListener(     'volume',
                               self._name,
                               self._volumeChanged)
@@ -361,9 +462,32 @@ class DisplayContext(props.HasProperties):
         # Ensure that an ImageDisplay
         # object exists for every image
         for image in self._imageList:
-            try:             image.getAttribute('display')
-            except KeyError: image.setAttribute('display', ImageDisplay(image))
+            try:
+                display = image.getAttribute('display')
+            except KeyError:
+                display = ImageDisplay(image)
+                image.setAttribute('display', display)
 
+            # Register a listener with the transform property
+            # of every image display so that when they change,
+            # we can update the display bounds, and preserve
+            # the current display location so that it is in
+            # terms of the world location of the currently
+            # selected image
+            # 
+            # This may be called multiple times on each image,
+            # but it doesn't matter, as any listener which has
+            # previously been registered with an image will
+            # just be replaced by the new one here.
+            display.addListener(
+                'transform',
+                self.__class__.__name__,
+                self._transformChanged,
+                overwrite=True)
+
+        # Ensure that the bounds property is accurate
+        self._updateBounds()
+ 
         # Limit the selectedImage property
         # so it cannot take a value greater
         # than len(imageList)-1
@@ -391,6 +515,66 @@ class DisplayContext(props.HasProperties):
             self.setConstraint('volume', 'maxval', 0)
 
 
+    def _transformChanged(self, xform, valid, display):
+        """Called when the
+        :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform property
+        changes on any image in the :attr:`images` list. Sets the 
+        :attr:`location` property, so that the selected image world location
+        is preserved, in the new display coordinate system.
+        """
+
+        if display.image != self._imageList[self.selectedImage]:
+            self._updateBounds()
+            return
+
+        # Calculate the image world location using
+        # the old display<-> world transform, then
+        # transform it back to the new world->display
+        # transform
+        imgWorldLoc = transform.transform([self.location.xyz],
+                                          display._oldDisplayToWorldMat)[0]
+        newDispLoc  = transform.transform([imgWorldLoc],
+                                          display.worldToDisplayMat)[0]
+
+        # Update the display coordinate system bounds -
+        # this will also update the constraints on the
+        # location property, so we have to do this first
+        # before setting said location property.
+        self._updateBounds()
+        
+        self.location.xyz = newDispLoc
+
+
+    def _updateBounds(self, *a):
+        """Called when the image list changes, or when any image display
+        transform is changed. Updates the :attr:`bounds` property.
+        """
+
+        if len(self._imageList) == 0:
+            minBounds = [0.0, 0.0, 0.0]
+            maxBounds = [0.0, 0.0, 0.0]
+            
+        else:
+            minBounds = 3 * [ sys.float_info.max]
+            maxBounds = 3 * [-sys.float_info.max]
+
+        for img in self._imageList.images:
+
+            display = img.getAttribute('display')
+            xform   = display.voxToDisplayMat
+
+            for ax in range(3):
+
+                lo, hi = transform.axisBounds(img.shape, xform, ax)
+
+                if lo < minBounds[ax]: minBounds[ax] = lo
+                if hi > maxBounds[ax]: maxBounds[ax] = hi
+
+        self.bounds[:] = [minBounds[0], maxBounds[0],
+                          minBounds[1], maxBounds[1],
+                          minBounds[2], maxBounds[2]] 
+ 
+    
     def _volumeChanged(self, *a):
         """Called when the :attr:`volume` property changes.
 
@@ -406,14 +590,12 @@ class DisplayContext(props.HasProperties):
             image.getAttribute('display').volume = self.volume
 
             
-    def _imageListBoundsChanged(self, *a):
-        """Called when the :attr:`fsl.data.image.ImageList.bounds` property
-        changes.
+    def _boundsChanged(self, *a):
+        """Called when the :attr:`bounds` property changes.
 
         Updates the constraints on the :attr:`location` property.
         """
-        bounds = self._imageList.bounds
 
-        self.location.setLimits(0, bounds.xlo, bounds.xhi)
-        self.location.setLimits(1, bounds.ylo, bounds.yhi)
-        self.location.setLimits(2, bounds.zlo, bounds.zhi)
+        self.location.setLimits(0, self.bounds.xlo, self.bounds.xhi)
+        self.location.setLimits(1, self.bounds.ylo, self.bounds.yhi)
+        self.location.setLimits(2, self.bounds.zlo, self.bounds.zhi)

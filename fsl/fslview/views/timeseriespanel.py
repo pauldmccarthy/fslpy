@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
 import fsl.fslview.viewpanel as viewpanel
+import fsl.utils.transform   as transform
 
 
 class TimeSeriesPanel(viewpanel.ViewPanel):
@@ -125,7 +126,10 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
 
         for image in self._imageList:
 
-            ix, iy, iz = image.worldToVox([[x, y, z]])[0]
+            display = image.getAttribute('display')
+            xform   = display.displayToVoxMat
+
+            ix, iy, iz = transform.transform([[x, y, z]], xform)[0]
 
             ix = round(ix)
             iy = round(iy)
