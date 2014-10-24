@@ -354,6 +354,12 @@ class ImageDisplay(props.HasProperties):
         elif self.transform == 'affine':
             voxToDisplayMat = self.voxToWorldMat
 
+        # for pixdim/identity transformations, we want the world
+        # location (0, 0, 0) to map to voxel location (0, 0, 0)
+        if self.transform in ('id', 'pixdim'):
+            for i in range(3):
+                voxToDisplayMat[3, i] =  pixdim[i] * 0.5
+
         # Transformation matrices for moving between the voxel
         # coordinate system and the display coordinate system
         self.voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
@@ -364,13 +370,6 @@ class ImageDisplay(props.HasProperties):
         self.displayToWorldMat = transform.concat(self.displayToVoxMat,
                                                   self.voxToWorldMat)
         self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
-
-        # for pixdim/identity transformations, we want the world
-        # location (0, 0, 0) to map to voxel location (0, 0, 0)
-        if self.transform in ('id', 'pixdim'):
-            for i in range(3):
-                self.voxToDisplayMat[3, i] =  pixdim[i] * 0.5
-                self.displayToVoxMat[3, i] = -0.5
 
         # When transform is changed to 'affine', enable interpolation
         # and, when changed to 'pixdim' or 'id', disable interpolation
