@@ -62,7 +62,7 @@ class SpacePanel(viewpanel.ViewPanel):
     def _onDestroy(self, ev):
         ev.Skip()
         self._imageList.removeListener('images',        self._name)
-        self._iamgeList.removeListener('selectedImage', self._name)
+        self._imageList.removeListener('selectedImage', self._name)
 
         
 
