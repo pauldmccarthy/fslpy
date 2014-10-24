@@ -547,11 +547,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         #    Y  X
         #    Z  -
         #
-        # TODO This assumes RAS orientation (which should be 
-        # a safe assumption to make when displaying in NIFTI/world
-        # coordinates). But we could alternately, automaticaly
-        # generate the canvas order from anatomical orientation
-        # labels.
+        # The X canvas may then be inverted along its
+        # horizontal axis. I'm not doing this for the time
+        # being, as I think I need a more pragmatic way
+        # to approach this.
         if layout == 'grid':
             canvases = [self._yCanvasPanel,
                         self._xCanvasPanel,
