@@ -41,4 +41,7 @@ class OSMesaLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
         """
 
         fslgl.OSMesaCanvasTarget     .__init__(self, width, height, bgColour)
-        lightboxcanvas.LightBoxCanvas.__init__(self, imageList, zax)
+        lightboxcanvas.LightBoxCanvas.__init__(self,
+                                               imageList,
+                                               displayCtx,
+                                               zax)
