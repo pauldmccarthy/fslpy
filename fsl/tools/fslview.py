@@ -27,6 +27,11 @@ def interface(parent, args, ctx):
     frame = fslviewframe.FSLViewFrame(
         parent, imageList, displayCtx, args.default)
 
+    # Some platforms will crash if the GL Canvas is not
+    # visible before the GL context is set (which occurs
+    # in the fslgl.getWXGLContext call below).
+    frame.Show()
+
     # initialise OpenGL version-specific module loads, and
     # force the creation of a wx.glcanvas.GLContext object
     fslgl.getWXGLContext()
