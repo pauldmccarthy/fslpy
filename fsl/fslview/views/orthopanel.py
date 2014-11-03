@@ -384,6 +384,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         width, height = self.getCanvasPanel().GetClientSize().Get()
 
         if width == 0 or height == 0: return
+        if len(self._imageList) == 0: return
 
         show     = [self.showXCanvas, self.showYCanvas, self.showZCanvas]
         canvases = [self._xcanvas,    self._ycanvas,    self._zcanvas]
