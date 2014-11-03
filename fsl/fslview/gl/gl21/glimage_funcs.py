@@ -160,15 +160,17 @@ def genVertexData(glimg):
     xax = glimg.xax
     yax = glimg.yax
 
-    worldCoords, texCoords = glimg.genVertexData()
+    worldCoords, texCoords, indices = glimg.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
     texCoords   = texCoords[  :, [xax, yax]]
 
     worldCoordBuffer = vbo.VBO(worldCoords.ravel('C'), gl.GL_STATIC_DRAW)
     texCoordBuffer   = vbo.VBO(texCoords  .ravel('C'), gl.GL_STATIC_DRAW)
+    indexBuffer      = vbo.VBO(indices    .ravel('C'), gl.GL_STATIC_DRAW,
+                               gl.GL_ELEMENT_ARRAY_BUFFER)
 
-    return worldCoordBuffer, texCoordBuffer, worldCoords.shape[0]
+    return worldCoordBuffer, texCoordBuffer, indexBuffer, len(indices)
 
         
 def _checkDataType(glimg):
@@ -438,13 +440,18 @@ def draw(glimg, zpos, xform=None):
         gl.GL_FALSE,
         0,
         None)
-    gl.glEnableVertexAttribArray(glimg.texCoordPos) 
+    gl.glEnableVertexAttribArray(glimg.texCoordPos)
 
     # Draw all of the triangles!
-    gl.glDrawArrays(gl.GL_QUADS, 0, glimg.nVertices)
+    glimg.indices.bind()
+    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+                      glimg.nVertices,
+                      gl.GL_UNSIGNED_INT,
+                      None)
 
     gl.glDisableVertexAttribArray(glimg.worldCoordPos)
     gl.glDisableVertexAttribArray(glimg.texCoordPos)
+    glimg.indices.unbind()
     glimg.worldCoords.unbind()
     glimg.texCoords.unbind()
 

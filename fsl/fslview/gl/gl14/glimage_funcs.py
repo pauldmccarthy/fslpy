@@ -107,7 +107,6 @@ def draw(glimg, zpos, xform=None):
     imageData     = glimg.imageData
     texCoordXform = glimg.texCoordXform
     colourTexture = glimg.colourTexture
-    nVertices     = glimg.nVertices
 
     if   display.interpolation == 'spline': order = 3
     elif display.interpolation == 'linear': order = 1
@@ -132,7 +131,7 @@ def draw(glimg, zpos, xform=None):
     if outOfBounds.any():
         voxCoords   = voxCoords[  ~outOfBounds, :]
         worldCoords = worldCoords[~outOfBounds, :]
-        nVertices   = worldCoords.shape[0]
+        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
 
     # Interpolate image data at floating
     # point voxel coordinates
@@ -165,14 +164,13 @@ def draw(glimg, zpos, xform=None):
 
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-#     gl.glEnableClientState(gl.GL_INDEX_ARRAY)
 
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
     gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
-    # gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, nVertices)
-
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP, len(indices), gl.GL_UNSIGNED_INT,
+    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+                      len(indices),
+                      gl.GL_UNSIGNED_INT,
                       indices)
 
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
