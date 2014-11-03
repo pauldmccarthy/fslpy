@@ -18,6 +18,7 @@ GL Objects must have the following methods:
 import logging
 log = logging.getLogger(__name__)
 
+import itertools           as it
 import numpy               as np
 import fsl.utils.transform as transform
 
@@ -133,3 +134,61 @@ def calculateSamplePoints(image, display, xax, yax):
     coords[:, yax] = worldY.flatten()
 
     return coords, xpixdim, ypixdim, xNumSamples, yNumSamples
+
+
+def samplePointsToTriangleStrip(coords,
+                                xpixdim,
+                                ypixdim,
+                                xlen,
+                                ylen,
+                                xax,
+                                yax):
+    """
+    """
+
+    coords = coords.reshape(ylen, xlen, 3)
+
+    xlen = int(xlen)
+    ylen = int(ylen)
+
+    worldCoords = np.array(coords, dtype=np.float32)
+    texCoords   = np.array(coords, dtype=np.float32)
+
+    worldCoords[:, :, xax] -= 0.5 * xpixdim
+    worldCoords[:, :, yax] -= 0.5 * ypixdim
+
+    # add an extra row on the top
+    worldCoords = np.append(worldCoords, worldCoords[-1:, :, :], 0)
+    texCoords   = np.append(texCoords,   texCoords[  -1:, :, :], 0)
+
+    worldCoords[-1, :, yax] += ypixdim
+
+    # and an extra column on the right
+    worldCoords = np.append(worldCoords, worldCoords[:, -1:, :], 1)
+    texCoords   = np.append(texCoords,   texCoords[  :, -1:, :], 1)
+
+    worldCoords[:, -1, xax] += xpixdim
+
+    rowlen   = 2 * (xlen + 1) + 2
+    nindices = ylen * rowlen - 2
+
+    indices = np.zeros(nindices, dtype=np.uint32)
+
+    for yi, xi in it.product(range(ylen), range(xlen + 1)):
+
+        ii = rowlen * yi + 2 * xi
+
+        indices[ii]     = xi + (xlen + 1) * yi
+        indices[ii + 1] = indices[ii] + xlen + 1
+
+        # add degenerate vertices at the end
+        # every row (but not needed for last
+        # row)
+        if xi == xlen and yi < ylen - 1:
+            indices[ii + 2] = indices[ii] + xlen + 1
+            indices[ii + 3] = (xlen + 1) * (yi + 1)
+
+    worldCoords = worldCoords.reshape((xlen + 1) * (ylen + 1), 3)
+    texCoords   = texCoords  .reshape((xlen + 1) * (ylen + 1), 3)
+
+    return worldCoords, texCoords, indices

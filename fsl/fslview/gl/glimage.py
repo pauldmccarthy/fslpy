@@ -113,9 +113,10 @@ class GLImage(object):
         self.xax         = xax
         self.yax         = yax
         self.zax         = 3 - xax - yax
-        wc, tc, nv       = fslgl.glimage_funcs.genVertexData(self)
+        wc, tc, idxs, nv = fslgl.glimage_funcs.genVertexData(self)
         self.worldCoords = wc
         self.texCoords   = tc
+        self.indices     = idxs
         self.nVertices   = nv
 
         
@@ -161,9 +162,10 @@ class GLImage(object):
         """ 
 
         def vertexUpdate(*a):
-            wc, tc, nv = fslgl.glimage_funcs.genVertexData(self)
+            wc, tc, idx, nv = fslgl.glimage_funcs.genVertexData(self)
             self.worldCoords = wc
             self.texCoords   = tc
+            self.indices     = idx
             self.nVertices   = nv
 
         def imageUpdate(*a):
@@ -233,41 +235,20 @@ def genVertexData(image, display, xax, yax):
                   vertical screen axis (0, 1, or 2). 
     """
     
-    worldCoords, xpixdim, ypixdim, lenx, leny = \
+    worldCoords, xpixdim, ypixdim, xlen, ylen = \
       globject.calculateSamplePoints(
           image, display, xax, yax)
 
     # All voxels are rendered using a triangle strip,
     # with rows connected via degenerate vertices
-
-    # The geometry of a single
-    # voxel, rendered as a quad
-    voxelGeom = np.array([[-0.5, -0.5],
-                          [-0.5,  0.5],
-                          [ 0.5,  0.5],
-                          [ 0.5, -0.5]], dtype=np.float32)
-
-    # And scaled appropriately
-    voxelGeom[:, 0] *= xpixdim
-    voxelGeom[:, 1] *= ypixdim
-
-    nVoxels     = worldCoords.shape[0]
-    worldCoords = worldCoords.repeat(4, 0)
-
-    # The texture coordinates are in the centre of each
-    # set of 4 vertices, so allow us to look up the
-    # colour for every vertex coordinate 
-    texCoords = np.copy(worldCoords)
-
-    # The world coordinates define a bunch of sets
-    # of 4 vertices, each rendered as a quad
-    worldCoords[:, xax] += np.tile(voxelGeom[:, 0], nVoxels)
-    worldCoords[:, yax] += np.tile(voxelGeom[:, 1], nVoxels)
+    worldCoords, texCoords, indices = globject.samplePointsToTriangleStrip(
+        worldCoords, xpixdim, ypixdim, xlen, ylen, xax, yax)
 
     worldCoords = np.array(worldCoords, dtype=np.float32)
     texCoords   = np.array(texCoords,   dtype=np.float32)
+    indices     = np.array(indices,     dtype=np.uint32)
 
-    return worldCoords, texCoords
+    return worldCoords, texCoords, indices
 
 
 def genColourTexture(image,

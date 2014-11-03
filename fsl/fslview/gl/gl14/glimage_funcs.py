@@ -56,9 +56,9 @@ def genVertexData(glimg):
     the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
     """
     
-    worldCoords, texCoords = glimg.genVertexData()
+    worldCoords, texCoords, indices = glimg.genVertexData()
 
-    return worldCoords, texCoords, worldCoords.shape[0]
+    return worldCoords, texCoords, indices, indices.shape[0]
 
         
 def genImageData(glimg):
@@ -96,6 +96,7 @@ def draw(glimg, zpos, xform=None):
 
     worldCoords = glimg.worldCoords
     texCoords   = glimg.texCoords
+    indices     = glimg.indices
     
     worldCoords[:, glimg.zax] = zpos
     texCoords[  :, glimg.zax] = zpos
@@ -152,6 +153,8 @@ def draw(glimg, zpos, xform=None):
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
+    gl.glShadeModel(gl.GL_FLAT)
+
     gl.glEnable(gl.GL_TEXTURE_1D) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
     gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
@@ -162,11 +165,15 @@ def draw(glimg, zpos, xform=None):
 
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+#     gl.glEnableClientState(gl.GL_INDEX_ARRAY)
 
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
     gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
 
-    gl.glDrawArrays(gl.GL_QUADS, 0, nVertices)
+    # gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, nVertices)
+
+    gl.glDrawElements(gl.GL_TRIANGLE_STRIP, len(indices), gl.GL_UNSIGNED_INT,
+                      indices)
 
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
