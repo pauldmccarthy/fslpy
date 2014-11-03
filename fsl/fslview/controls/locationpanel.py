@@ -171,6 +171,9 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         import fsl.fslview.strings as strings
 
+        if len(self._imageList) == 0:
+            voxVal = ''
+
         if voxVal is not None:
             self._valueLabel.SetLabel('{}'.format(voxVal))
             self._voxelPanel.Layout()
