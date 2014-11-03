@@ -54,6 +54,10 @@ def calculateSamplePoints(image, display, xax, yax):
 
      - the vertical distance (along yax) between adjacent points
 
+     - The number of samples along the horizontal axis (xax)
+
+     - The number of samples along the vertical axis (yax)
+
     :arg image:   The :class:`~fsl.data.image.Image` object to
                   generate vertex and texture coordinates for.
 
@@ -128,4 +132,4 @@ def calculateSamplePoints(image, display, xax, yax):
     coords[:, xax] = worldX.flatten()
     coords[:, yax] = worldY.flatten()
 
-    return coords, xpixdim, ypixdim
+    return coords, xpixdim, ypixdim, xNumSamples, yNumSamples

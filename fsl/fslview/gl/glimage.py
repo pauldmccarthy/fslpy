@@ -233,8 +233,12 @@ def genVertexData(image, display, xax, yax):
                   vertical screen axis (0, 1, or 2). 
     """
     
-    worldCoords, xpixdim, ypixdim = globject.calculateSamplePoints(
-        image, display, xax, yax)
+    worldCoords, xpixdim, ypixdim, lenx, leny = \
+      globject.calculateSamplePoints(
+          image, display, xax, yax)
+
+    # All voxels are rendered using a triangle strip,
+    # with rows connected via degenerate vertices
 
     # The geometry of a single
     # voxel, rendered as a quad

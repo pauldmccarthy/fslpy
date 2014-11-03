@@ -62,11 +62,12 @@ class GLTensorLine(object):
         self.yax = yax
         self.zax = 3 - xax - yax
         
-        worldCoords, xpixdim, ypixdim = globject.calculateSamplePoints(
-            self.image,
-            self.display,
-            self.xax,
-            self.yax)
+        worldCoords, xpixdim, ypixdim, lenx, leny = \
+          globject.calculateSamplePoints(
+              self.image,
+              self.display,
+              self.xax,
+              self.yax)
 
         self.worldCoords = worldCoords
         self.xpixdim     = xpixdim
