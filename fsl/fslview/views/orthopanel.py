@@ -39,13 +39,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     showZCanvas = props.Boolean(default=True)
     """Toggles display of the Z canvas."""
 
+    
     showLabels = props.Boolean(default=True)
     """If ``True``, labels showing anatomical orientation are displayed on
     each of the canvases.
     """
+
     
     # How should we lay out each of the three slice panels?
     layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
+
     
     # Properties which set the current zoom
     # factor on each of the canvases
@@ -122,7 +125,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                                     displayCtx,
                                                     zax=2)
 
-        # Labels to show anatomical orientation
+        # Labels to show anatomical orientation,
+        # stored in a dict for each canvas
         self._xLabels = {}
         self._yLabels = {}
         self._zLabels = {}
@@ -131,8 +135,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side] = wx.StaticText(canvasPanel)
             self._zLabels[side] = wx.StaticText(canvasPanel)
 
-        self              .SetBackgroundColour('black')
-        canvasPanel       .SetBackgroundColour('black')
+        self       .SetBackgroundColour('black')
+        canvasPanel.SetBackgroundColour('black')
 
         for side in ('left', 'right', 'top', 'bottom'):
             self._xLabels[side].SetBackgroundColour('black')
@@ -198,10 +202,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # And finally, call the _resize method to
         # refresh things when this panel is resized
-        self.Bind(wx.EVT_SIZE, self._resize)
+        self.Bind(wx.EVT_SIZE, self._onResize)
 
 
     def _toggleCanvas(self, canvas):
+        """Called when any of  show*Canvas properties are changed.
+        
+        Shows/hides the specified canvas ('x', 'y', or 'z') - this callback
+        is configured in __init__ above.
+        """
 
         if canvas == 'x':
             canvas = self._xcanvas
@@ -275,7 +284,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             display.removeListener('transform', self._name)
         
             
-    def _resize(self, ev):
+    def _onResize(self, ev):
         """
         Called whenever the panel is resized. Makes sure that the canvases
         are laid out nicely.
@@ -308,7 +317,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             return
 
         # Default colour is white - if the orientation labels
-        # cannot be determined, the background colour will be
+        # cannot be determined, the foreground colour will be
         # changed to red
         colour = 'white'
 
@@ -365,6 +374,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
 
     def _calcCanvasSizes(self, *a):
+        """Fixes the size for each displayed canvas (by setting their minimum
+        and maximum sizes), so that they are scaled proportionally to each
+        other.
+        """
 
         layout = self.layout.lower()
 
@@ -376,17 +389,21 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         canvases = [self._xcanvas,    self._ycanvas,    self._zcanvas]
         labels   = [self._xLabels,    self._yLabels,    self._zLabels]
 
-        canvases, labels, _ = zip(*filter(lambda (c, l, s): s, zip(canvases,
-                                                                   labels,
-                                                                   show)))
+        canvases, labels, _ = zip(*filter(lambda (c, l, s): s,
+                                          zip(canvases, labels, show)))
 
         canvases = list(canvases)
         labels   = list(labels)
-        
+
+        # Grid layout with 2 or less canvases displayed
+        # is identical to horizontal layout
         if layout == 'grid' and len(canvases) <= 2:
             layout = 'horizontal'
 
-
+        # Calculate the width/height (in pixels) which
+        # is available to lay out all of the canvases
+        # (taking into account anatomical orientation
+        # labels).
         if layout == 'horizontal':
             maxh = 0
             sumw = 0
@@ -398,8 +415,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                 sumw = sumw + lw + rw
                 if th > maxh: maxh = th
                 if bh > maxh: maxh = bh
-            height = height - maxh
-            width  = width  - sumw
+            width  = width  -     sumw
+            height = height - 2 * maxh
             
         elif layout == 'vertical':
             maxw = 0
@@ -412,8 +429,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                 sumh = sumh + th + bh
                 if lw > maxw: maxw = lw
                 if rw > maxw: maxw = rw
-            width  = width  - maxw
-            height = height - sumh
+            width  = width  - 2 * maxw
+            height = height -     sumh
             
         else:
             canvases = [self._ycanvas, self._xcanvas, self._zcanvas]
@@ -434,7 +451,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             width  = width  - max(xlw, zlw) - max(xrw, zrw) - ylw - yrw
             height = height - max(xth, yth) - max(xbh, ybh) - zth - zbh
 
-
+        # Distribute the available width/height
+        # to each of the displayed canvases
         if layout == 'grid':
             self._calcGridSizes(width, height, canvases)
         elif layout == 'horizontal':
@@ -446,11 +464,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         
     def _calcGridSizes(self, width, height, canvases):
-        """
-        If the 'Grid' layout has been selected, we have to manually specify
-        sizes for each canvas, as the wx.WrapSizer doesn't know how big
-        they should be. This is not a problem for wx.BoxSizers, as they
-        just fill the available space, and give each canvas an equal share.
+        """Fixes the size of each canvas so that aspect ratio is
+        preserved, and the canvases are scaled relative to each other.
         """
 
         if len(canvases) <= 2:
