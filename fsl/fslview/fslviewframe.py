@@ -307,14 +307,13 @@ class FSLViewFrame(wx.Frame):
         :arg bool default: If ``True``, any saved state is ignored.
         """
         
-        config = wx.Config('FSLView')
-
         size     = None
         position = None
         layout   = None
         panels   = []
 
         if not default:
+            config   = wx.Config('FSLView')
             size     = self._parseSavedSize(  config.Read('size'))
             position = self._parseSavedPoint( config.Read('position'))
             layout   = config.Read('layout')

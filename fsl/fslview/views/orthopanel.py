@@ -290,7 +290,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         are laid out nicely.
         """
         ev.Skip()
-        
+
+        # Lay out this panel, so the
+        # canvas panel size is up to
+        # date 
+        self.Layout()
         self._calcCanvasSizes()
 
 
