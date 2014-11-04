@@ -36,6 +36,8 @@ log = logging.getLogger(__name__)
 
 import numpy               as np 
 import scipy.ndimage       as ndi
+import matplotlib.cm       as mplcm
+import matplotlib.colors   as mplcolors
 import OpenGL.GL           as gl
 
 import fsl.utils.transform as transform
@@ -74,13 +76,24 @@ def genImageData(glimg):
     return imageData
 
         
-def genColourTexture(glimg):
-    """Generates the colour texture used to colour image voxels. See
-    :func:`fsl.fslview.gl.glimage.genVertexData`.
+def genColourMap(glimg, display, colourResolution):
+    """Generates a colour map which is used to generate colours
+    for each rendered voxel.
     """
 
-    texCoordXform = glimg.genColourTexture()
-    return texCoordXform 
+    dmin = display.displayRange[0]
+    dmax = display.displayRange[1]
+    cmap = display.cmap
+    
+    def applyCmap(data):
+        
+        rgba = cmap((data - dmin) / (dmax - dmin), alpha=display.alpha)
+        
+        if display.clipLow:  rgba[data < dmin, 3] = 0.0
+        if display.clipHigh: rgba[data > dmax, 3] = 0.0
+        return rgba
+
+    return applyCmap
 
     
 def draw(glimg, zpos, xform=None):
@@ -103,35 +116,41 @@ def draw(glimg, zpos, xform=None):
     
     # Transform world texture coordinates
     # to (floating point) voxel coordinates
-    voxCoords     = transform.transform(texCoords, display.displayToVoxMat) 
-    imageData     = glimg.imageData
-    texCoordXform = glimg.texCoordXform
-    colourTexture = glimg.colourTexture
+    voxCoords = transform.transform(texCoords, display.displayToVoxMat) 
+    imageData = glimg.imageData
+    colourMap = glimg.colourMap
 
     if   display.interpolation == 'spline': order = 3
     elif display.interpolation == 'linear': order = 1
     else:                                   order = 0
 
-    # Remove vertices which are out of bounds
-    outOfBounds = [None] * 3
-    for ax in range(3):
+    # Remove vertices which are out of bounds. Not necessary
+    # if we're displaying in ID or pixdim space.
+    # 
+    # TODO We could also peek in the transform matrix values
+    # to see if any shearing/rotation has been applied - if
+    # not, this bounds check is also unnecessary in world
+    # ('affine') space.
+    if display.transform == 'affine':
+        outOfBounds = [None] * 3
+        for ax in range(3):
 
-        # Be lenient on voxel coordinate boundaries
-        voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
-        voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
-                  (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
-                  ax] = imageData.shape[ax] - 1
+            # Be lenient on voxel coordinate boundaries
+            voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
+            voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
+                      (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
+                      ax] = imageData.shape[ax] - 1
 
-        # But remove anything which is clearly
-        # outside of the image space
-        outOfBounds[ax] = ((voxCoords[:, ax] < 0) |
-                           (voxCoords[:, ax] >= imageData.shape[ax]))
+            # But remove anything which is clearly
+            # outside of the image space
+            outOfBounds[ax] = ((voxCoords[:, ax] < 0) |
+                               (voxCoords[:, ax] >= imageData.shape[ax]))
 
-    outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
-#    if outOfBounds.any():
-#        voxCoords   = voxCoords[  ~outOfBounds, :]
-#        worldCoords = worldCoords[~outOfBounds, :]
-#        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
+    #    outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
+    #    if outOfBounds.any():
+    #        voxCoords   = voxCoords[  ~outOfBounds, :]
+    #        worldCoords = worldCoords[~outOfBounds, :]
+    #        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
 
     # Interpolate image data at floating
     # point voxel coordinates
@@ -140,12 +159,10 @@ def draw(glimg, zpos, xform=None):
                                     order=order,
                                     prefilter=False)
 
-    # Prepare world coordinates and image data
-    # (which are used as texture coordinates
-    # on the colour map) for copy to GPU
-    worldCoords   = worldCoords  .ravel('C')
-    imageData     = np.array(imageData, dtype=np.float32)    .ravel('C')
-    texCoordXform = texCoordXform.ravel('C')
+    # Prepare world coordinates
+    # and vertex colours
+    worldCoords   = worldCoords         .ravel('C')
+    colours       = colourMap(imageData).ravel('C')
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -154,34 +171,20 @@ def draw(glimg, zpos, xform=None):
 
     gl.glShadeModel(gl.GL_FLAT)
 
-    gl.glEnable(gl.GL_TEXTURE_1D) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, colourTexture)
-    gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE)
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glPushMatrix()
-    gl.glMultMatrixf(texCoordXform)
-
-    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    gl.glEnableClientState(gl.GL_COLOR_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glTexCoordPointer(1, gl.GL_FLOAT, 0, imageData)
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glColorPointer( 4, gl.GL_FLOAT, 0, colours)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
 
-    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    gl.glDisableClientState(gl.GL_COLOR_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
     if xform is not None:
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glPopMatrix()
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glPopMatrix()
-
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-    gl.glDisable(gl.GL_TEXTURE_1D)

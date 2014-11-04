@@ -9,11 +9,10 @@
 and logic required to render 2D slice of a 3D image. The :class:`GLImage` class
 provides the interface defined in the :mod:`~fsl.fslview.gl.globject` module.
 
-Two stand-alone functions are also contained in this module, the
-:func:`genVertexData` function, and the :func:`genColourTexture`
-function. These functions contain the code to actually generate the vertex and
-texture information necessary to render an image (which is the same across
-OpenGL versions).
+One stand-alone function is also contained in this module, the
+:func:`genVertexData` function. This function contains the code to actually
+generate the vertex information necessary to render an image (which is the
+same across OpenGL versions).
 
 The :class:`GLImage` class makes use of the functions defined in the
 :mod:`fsl.fslview.gl.gl14.glimage_funcs` or the
@@ -30,14 +29,15 @@ These version dependent modules must provide the following functions:
   - `genImageData(GLImage)`: Retrieve and prepare the image data to be
     displayed.
 
-  - `genColourTexture(GLImage)`: Create and prepare the colour map used
-    to colour image voxels, using the :func:`genColourTexture` function.
+  - `genColourMap(GLImage)`: Create and prepare the colour map used to
+    colour image voxels.
 
   - `draw(GLImage, zpos, xform=None)`: Draw a slice of the image at the given
     Z position. If xform is not None, it must be applied as a transformation
     on the vertex coordinates.
 
   - `destroy(GLimage)`: Perform any necessary clean up.
+
 """
 
 import logging
@@ -83,23 +83,21 @@ class GLImage(object):
         only be called after an OpenGL context has been created.
         """
         
-        # Initialise the image data, and
-        # generate vertex/texture coordinates
-        self.imageData = fslgl.glimage_funcs.genImageData(self)
-
-        # The colour texture, containing a map of
-        # colours (stored on the GPU as a 1D texture)
-        # This is initialised in the updateColourBuffer
-        # method
-        self.colourTexture = gl.glGenTextures(1)
-        self.texCoordXform = fslgl.glimage_funcs.genColourTexture(self)
-
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self._configDisplayListeners()
 
         self.setAxes(xax, yax)
         fslgl.glimage_funcs.init(self, xax, yax)
+
+        # Initialise the image data, and
+        # generate vertex/texture coordinates
+        self.imageData = fslgl.glimage_funcs.genImageData(self)
+
+        # The colour map, used for converting 
+        # image data to a RGBA colour.
+        self.colourResolution = 256
+        self.colourMap        = self.genColourMap(self.colourResolution)
         
         self._ready = True
 
@@ -144,12 +142,10 @@ class GLImage(object):
         return genVertexData(self.image, self.display, self.xax, self.yax)
 
         
-    def genColourTexture(self, colourResolution=256, xform=None):
-        return genColourTexture(self.image,
-                                self.display,
-                                self.colourTexture,
-                                colourResolution,
-                                xform)
+    def genColourMap(self, colourResolution=256):
+        return fslgl.glimage_funcs.genColourMap(self,
+                                                self.display,
+                                                colourResolution)
 
         
     def _configDisplayListeners(self):
@@ -172,7 +168,10 @@ class GLImage(object):
             self.imageData = fslgl.glimage_funcs.genImageData(self)
         
         def colourUpdate(*a):
-            self.texCoordXform = fslgl.glimage_funcs.genColourTexture(self)
+            self.colourMap = fslgl.glimage_funcs.genColourMap(
+                self,
+                self.display,
+                self.colourResolution)
 
         display = self.display
         lnrName = 'GlImage_{}'.format(id(self))
@@ -249,107 +248,3 @@ def genVertexData(image, display, xax, yax):
     indices     = np.array(indices,     dtype=np.uint32)
 
     return worldCoords, texCoords, indices
-
-
-def genColourTexture(image,
-                     display,
-                     texture,
-                     colourResolution=256,
-                     xform=None):
-    """Generates a RGBA colour texture which is used to colour voxels.
-
-    This function initialises the given OpenGL texture according to the
-    image display properties contained in the given
-    :class:`~fsl.fslview.displaycontext.ImageDisplay` object. An affine
-    transformation matrix is returned, which is to be used to transform
-    the image data into texture coordinate space, so the correct colour
-    for a given image value is used.
-
-    :arg image:            The :class:`~fsl.data.image.Image` object to
-                           generate vertex and texture coordinates for.
-
-    :arg display:          A
-                           :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                           object which defines how the image is
-                           to be rendered.
-
-    :arg texture:          A handle to an already-created OpenGL
-                           1-dimensional texture (i.e. the result
-                           of a call to `gl.glGenTextures(1)`).
-
-    :arg colourResolution: Size of the texture, total number of unique
-                           colours in the colour map.
-
-    :arg xform:            Optional. An affine transformation matrix to
-                           be applied to the image data before it is used
-                           to lookup a colour in the generated texture.
-                           For example, the image data may be inadvertently
-                           normalised or clamped by OpenGL - this
-                           transformation matrix may be used to transform
-                           the data back to its native range.
-    """
-
-    imin = display.displayRange[0]
-    imax = display.displayRange[1]
-
-    # This transformation is used to transform voxel values
-    # from their native range to the range [0.0, 1.0], which
-    # is required for texture colour lookup. Values below
-    # or above the current display range will be mapped
-    # to texture coordinate values less than 0.0 or greater
-    # than 1.0 respectively.
-    texCoordXform = np.identity(4, dtype=np.float32)
-    texCoordXform[0, 0] = 1.0 / (imax - imin)
-    texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
-    texCoordXform = texCoordXform.transpose()
-
-    if xform is not None:
-        texCoordXform = np.dot(xform, texCoordXform)
-
-    log.debug('Generating colour texture for '
-              'image {} (map: {}; resolution: {})'.format(
-                  image.name,
-                  display.cmap.name,
-                  colourResolution))
-
-    # Create [self.colourResolution] rgb values,
-    # spanning the entire range of the image
-    # colour map
-    colourRange     = np.linspace(0.0, 1.0, colourResolution)
-    colourmap       = display.cmap(colourRange)
-    colourmap[:, 3] = display.alpha
-
-    # Make out-of-range values transparent
-    # if clipping is enabled 
-    if display.clipLow:  colourmap[ 0, 3] = 0.0
-    if display.clipHigh: colourmap[-1, 3] = 0.0 
-
-    # The colour data is stored on
-    # the GPU as 8 bit rgba tuples
-    colourmap = np.floor(colourmap * 255)
-    colourmap = np.array(colourmap, dtype=np.uint8)
-    colourmap = colourmap.ravel(order='C')
-
-    # GL texture creation stuff
-    gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_EDGE)
-
-    gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                    0,
-                    gl.GL_RGBA8,
-                    colourResolution,
-                    0,
-                    gl.GL_RGBA,
-                    gl.GL_UNSIGNED_BYTE,
-                    colourmap)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0) 
-
-    return texCoordXform
