@@ -71,22 +71,13 @@ def transform(p, xform, axes=None):
     """
 
     p = _fillPoints(p, axes)
-    t = np.zeros((len(p), 3), dtype=np.float64)
+    t = np.dot(xform[:3, :3].T, p.T).T  + xform[3, :3]
 
-    x = p[:, 0]
-    y = p[:, 1]
-    z = p[:, 2]
+    if axes is not None:
+        t = t[:, axes]
 
-    t[:, 0] = x * xform[0, 0] + y * xform[1, 0] + z * xform[2, 0] + xform[3, 0]
-    t[:, 1] = x * xform[0, 1] + y * xform[1, 1] + z * xform[2, 1] + xform[3, 1]
-    t[:, 2] = x * xform[0, 2] + y * xform[1, 2] + z * xform[2, 2] + xform[3, 2]
-
-    if axes is None: axes = [0, 1, 2]
-
-    tx = np.array(t[:, axes], dtype=np.float64)
-
-    if tx.size == 1: return tx[0]
-    else:            return tx
+    if t.size == 1: return t[0]
+    else:           return t
 
 
 def _fillPoints(p, axes):
