@@ -151,8 +151,12 @@ def draw(glimg, zpos, xform=None):
 
     # Interpolate image data at floating
     # point voxel coordinates
+    #
+    # TODO This is *the* rendering bottleneck.
+    # If this can be made faster in any way,
+    # do it.
     imageData = ndi.map_coordinates(imageData,
-                                    voxCoords.transpose(),
+                                    voxCoords.T,
                                     order=order,
                                     prefilter=False)
 
