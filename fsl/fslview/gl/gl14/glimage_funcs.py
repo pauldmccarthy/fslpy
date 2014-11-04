@@ -34,10 +34,7 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy               as np 
 import scipy.ndimage       as ndi
-import matplotlib.cm       as mplcm
-import matplotlib.colors   as mplcolors
 import OpenGL.GL           as gl
 
 import fsl.utils.transform as transform
@@ -95,7 +92,7 @@ def genColourMap(glimg, display, colourResolution):
 
     return applyCmap
 
-    
+
 def draw(glimg, zpos, xform=None):
     """Draws a slice of the image at the given Z location using immediate
     mode rendering.
@@ -124,6 +121,15 @@ def draw(glimg, zpos, xform=None):
     elif display.interpolation == 'linear': order = 1
     else:                                   order = 0
 
+    # Be lenient on voxel coordinate boundaries -
+    # any voxcoords which are within 0.5 of the min/max
+    # voxel boundaries are clamped to said boundaries
+    for ax in range(3):
+        voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
+        voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
+                  (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
+                  ax] = imageData.shape[ax] - 1 
+
     # Remove vertices which are out of bounds. Not necessary
     # if we're displaying in ID or pixdim space.
     # 
@@ -131,26 +137,17 @@ def draw(glimg, zpos, xform=None):
     # to see if any shearing/rotation has been applied - if
     # not, this bounds check is also unnecessary in world
     # ('affine') space.
+    outOfBounds = []
     if display.transform == 'affine':
         outOfBounds = [None] * 3
         for ax in range(3):
 
-            # Be lenient on voxel coordinate boundaries
-            voxCoords[(voxCoords[:, ax] >= -0.5) & (voxCoords[:, ax] < 0), ax] = 0
-            voxCoords[(voxCoords[:, ax] >  imageData.shape[ax] - 1) &
-                      (voxCoords[:, ax] <= imageData.shape[ax] - 0.5),
-                      ax] = imageData.shape[ax] - 1
-
-            # But remove anything which is clearly
+            # Mark coordinates which are
             # outside of the image space
             outOfBounds[ax] = ((voxCoords[:, ax] < 0) |
                                (voxCoords[:, ax] >= imageData.shape[ax]))
 
-    #    outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
-    #    if outOfBounds.any():
-    #        voxCoords   = voxCoords[  ~outOfBounds, :]
-    #        worldCoords = worldCoords[~outOfBounds, :]
-    #        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
+        outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
 
     # Interpolate image data at floating
     # point voxel coordinates
@@ -161,8 +158,11 @@ def draw(glimg, zpos, xform=None):
 
     # Prepare world coordinates
     # and vertex colours
-    worldCoords   = worldCoords         .ravel('C')
-    colours       = colourMap(imageData).ravel('C')
+    colours = colourMap(imageData)
+    colours[outOfBounds, 3] = 0.0
+
+    worldCoords = worldCoords.ravel('C')
+    colours     = colours    .ravel('C')
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
