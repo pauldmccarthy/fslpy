@@ -128,10 +128,10 @@ def draw(glimg, zpos, xform=None):
                            (voxCoords[:, ax] >= imageData.shape[ax]))
 
     outOfBounds = (outOfBounds[0]) | (outOfBounds[1]) | (outOfBounds[2])
-    if outOfBounds.any():
-        voxCoords   = voxCoords[  ~outOfBounds, :]
-        worldCoords = worldCoords[~outOfBounds, :]
-        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
+#    if outOfBounds.any():
+#        voxCoords   = voxCoords[  ~outOfBounds, :]
+#        worldCoords = worldCoords[~outOfBounds, :]
+#        indices     = np.delete(indices, indices == np.where(outOfBounds)[0])
 
     # Interpolate image data at floating
     # point voxel coordinates

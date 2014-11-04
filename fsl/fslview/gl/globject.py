@@ -143,7 +143,9 @@ def samplePointsToTriangleStrip(coords,
                                 ylen,
                                 xax,
                                 yax):
-    """
+    """Given a regular 2D grid of points at which an image is to be
+    sampled, converts those points into an OpenGL vertextriangle
+    strip.
     """
 
     coords = coords.reshape(ylen, xlen, 3)
@@ -151,44 +153,51 @@ def samplePointsToTriangleStrip(coords,
     xlen = int(xlen)
     ylen = int(ylen)
 
-    worldCoords = np.array(coords, dtype=np.float32)
-    texCoords   = np.array(coords, dtype=np.float32)
+    # Duplicate every row - each voxel
+    # is defined by two vertices 
+    coords = coords.repeat(2, 0)
 
-    worldCoords[:, :, xax] -= 0.5 * xpixdim
-    worldCoords[:, :, yax] -= 0.5 * ypixdim
+    texCoords   = np.array(coords)
+    worldCoords = np.array(coords)
 
-    # add an extra row on the top
-    worldCoords = np.append(worldCoords, worldCoords[-1:, :, :], 0)
-    texCoords   = np.append(texCoords,   texCoords[  -1:, :, :], 0)
-
-    worldCoords[-1, :, yax] += ypixdim
-
-    # and an extra column on the right
+    # Add an extra column at the end
+    # of the world coordinates
     worldCoords = np.append(worldCoords, worldCoords[:, -1:, :], 1)
-    texCoords   = np.append(texCoords,   texCoords[  :, -1:, :], 1)
-
     worldCoords[:, -1, xax] += xpixdim
 
-    rowlen   = 2 * (xlen + 1) + 2
-    nindices = ylen * rowlen - 2
+    # Add an extra column at the start
+    # of the texture coordinates
+    texCoords = np.append(texCoords[:, :1, :], texCoords, 1)
+
+    # Move the x/y world coordinates to the
+    # sampling point corners (the texture
+    # coordinates remain in the voxel centres)
+    worldCoords[   :, :, xax] -= 0.5 * xpixdim
+    worldCoords[ ::2, :, yax] -= 0.5 * ypixdim
+    worldCoords[1::2, :, yax] += 0.5 * ypixdim 
+
+    vertsPerRow  = 2 * (xlen + 1) 
+    dVertsPerRow = 2 * (xlen + 1) + 2
+    nindices     = ylen * dVertsPerRow - 2
 
     indices = np.zeros(nindices, dtype=np.uint32)
 
     for yi, xi in it.product(range(ylen), range(xlen + 1)):
-
-        ii = rowlen * yi + 2 * xi
-
-        indices[ii]     = xi + (xlen + 1) * yi
-        indices[ii + 1] = indices[ii] + xlen + 1
+        
+        ii = yi * dVertsPerRow + 2 * xi
+        vi = yi *  vertsPerRow + xi
+        
+        indices[ii]     = vi
+        indices[ii + 1] = vi + xlen + 1
 
         # add degenerate vertices at the end
         # every row (but not needed for last
         # row)
         if xi == xlen and yi < ylen - 1:
-            indices[ii + 2] = indices[ii] + xlen + 1
-            indices[ii + 3] = (xlen + 1) * (yi + 1)
+            indices[ii + 2] = vi + xlen + 1
+            indices[ii + 3] = (yi + 1) * vertsPerRow
 
-    worldCoords = worldCoords.reshape((xlen + 1) * (ylen + 1), 3)
-    texCoords   = texCoords  .reshape((xlen + 1) * (ylen + 1), 3)
+    worldCoords = worldCoords.reshape((xlen + 1) * (2 * ylen), 3)
+    texCoords   = texCoords  .reshape((xlen + 1) * (2 * ylen), 3)
 
     return worldCoords, texCoords, indices
