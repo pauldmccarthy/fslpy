@@ -7,6 +7,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** gl14_optimisation branch - GL21 voxels are off by 0.5
 ** World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
 
 ** WX Bugs
