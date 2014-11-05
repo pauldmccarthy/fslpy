@@ -69,7 +69,8 @@ perhaps into a standalone module...
 * Little things
 ** Put some introductory documentation up on git.fmrib wiki pages (for props package as well - installation, usage, etc)
 ** Proportional scaling of slice canvases in render.py - they're currently just given equal space.
-** Allow display resolution greater than image resolution
+** Show labels in render.py
+** Allow display resolution greater than image resolution?
 ** CLI options
 *** Show/hide labels
 *** Ortho layout (horiz/vert/grid)
@@ -162,6 +163,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Experiment with rolling your own coordinate interpolator in C (replacing map_coordinates).
 ** Ability to display images in a different order for different view panels.
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
