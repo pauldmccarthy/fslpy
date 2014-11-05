@@ -34,6 +34,7 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
+import numpy               as np
 import scipy.ndimage       as ndi
 import OpenGL.GL           as gl
 
@@ -88,7 +89,7 @@ def genColourMap(glimg, display, colourResolution):
         
         if display.clipLow:  rgba[data < dmin, 3] = 0.0
         if display.clipHigh: rgba[data > dmax, 3] = 0.0
-        return rgba
+        return np.array(rgba, dtype=np.float32)
 
     return applyCmap
 
