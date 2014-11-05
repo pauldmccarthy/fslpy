@@ -351,7 +351,6 @@ class SliceCanvas(props.HasProperties):
             display.addListener('enabled',         self.name, refresh)
             display.addListener('transform',       self.name, refresh)
             display.addListener('interpolation',   self.name, refresh)
-            display.addListener('voxelSmoothing',  self.name, refresh)
             display.addListener('alpha',           self.name, refresh)
             display.addListener('displayRange',    self.name, refresh)
             display.addListener('clipLow',         self.name, refresh)

@@ -111,19 +111,19 @@ def draw(glimg, zpos, xform=None):
     worldCoords[:, glimg.zax] = zpos
     texCoords[  :, glimg.zax] = zpos
     
-    # Transform world texture coordinates
-    # to (floating point) voxel coordinates.
-    # The texCoords coordinates are at the
-    # centre of every rendered voxel. If
-    # voxelSmoothing is enabled, use the
-    # voxel corners to lookup values, so the
-    # each voxel is smoothed across its entire
-    # extent
-    if display.voxelSmoothing:
-        voxCoords = transform.transform(worldCoords, display.displayToVoxMat)
+    # Transform world texture coordinates to (floating
+    # point) voxel coordinates.  The texCoords coordinates
+    # are at the centre of every rendered voxel. If
+    # interpolation is disabled, we use said texture
+    # coordinates to determine the colour of each voxel.
+    # But if interpolation is enabled, we'll use the
+    # vertex coordinates, which are located at voxel
+    # corners, so the rendered voxel colour is smoothed
+    # throughout the voxel.
+    if display.interpolation == 'none':
+        voxCoords = transform.transform(texCoords,   display.displayToVoxMat) 
     else:
-        voxCoords = transform.transform(texCoords,   display.displayToVoxMat)
-        
+        voxCoords = transform.transform(worldCoords, display.displayToVoxMat)
         
     imageData = glimg.imageData
     colourMap = glimg.colourMap
@@ -184,9 +184,10 @@ def draw(glimg, zpos, xform=None):
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
-    # Disable colour smoothing between vertices
-    if display.voxelSmoothing: gl.glShadeModel(gl.GL_SMOOTH)
-    else:                      gl.glShadeModel(gl.GL_FLAT)
+    # Select the shade model based on
+    # whether interpolation is enabled/disabled
+    if display.interpolation == 'none': gl.glShadeModel(gl.GL_FLAT)
+    else:                               gl.glShadeModel(gl.GL_SMOOTH)
         
 
     gl.glEnableClientState(gl.GL_COLOR_ARRAY)

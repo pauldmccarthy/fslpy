@@ -29,8 +29,12 @@ uniform float zCoord;
 
 /* 
  * Image texture coordinates passed through to fragment shader.
+ * The fragment shader will use one of flatFragTexCoords, or
+ * fragTexCoords, depending upon whether voxel smoothing is
+ * enabled.
  */ 
-flat varying vec3 fragTexCoords;
+flat varying vec3 flatFragTexCoords;
+varying      vec3 fragTexCoords;
 
 /* 
  * If the world location is out of bounds, tell 
@@ -48,13 +52,14 @@ void main(void) {
     worldLoc[zax] = zCoord;
     texLoc[  xax] = texCoords.x;
     texLoc[  yax] = texCoords.y;
-    texLoc[  zax] = zCoord; 
+    texLoc[  zax] = zCoord;
+
+    /* transform the texture world coordinate into voxel coordinates */
+    vec4 voxLoc      = worldToVoxMat * texLoc;
+    vec4 worldVoxLoc = worldToVoxMat * worldLoc;
 
     worldLoc    = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
     gl_Position = worldLoc;
-
-    /* transform the texture world coordinate into voxel coordinates */
-    vec4 voxLoc = worldToVoxMat * texLoc;
 
     /*
      * Figure out whether we are out of the image space.        
@@ -75,5 +80,6 @@ void main(void) {
     else if (voxLoc.z >= imageShape.z - 0.5)   voxLoc.z = imageShape.z - 0.501;
 
     /* Pass the texture coordinates to the fragment shader */
-    fragTexCoords = (voxLoc.xyz + 0.5) / imageShape;
+    flatFragTexCoords = (voxLoc.xyz      + 0.5) / imageShape;
+    fragTexCoords     = (worldVoxLoc.xyz + 0.5) / imageShape;
 }

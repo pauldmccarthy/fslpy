@@ -24,6 +24,13 @@ uniform sampler1D colourMap;
  */
 uniform bool useSpline;
 
+
+/*
+ * Use flat texture coordinates or smoothed
+ * texture coordinates?
+ */
+uniform bool voxSmooth;
+
 /*
  * If the voxel value is a signed integer, OpenGL maps
  * positive values to [0, 0.5], and negative values to 
@@ -32,12 +39,16 @@ uniform bool useSpline;
  */
 uniform bool signed;
 
+/*
+ * Transformation matrix to apply to the 1D texture coordinate.
+ */
 uniform mat4 texCoordXform;
 
 /*
- * Image texture coordinates.
+ * Image texture coordinates. 
  */
-flat varying vec3 fragTexCoords;
+flat varying vec3 flatFragTexCoords;
+varying      vec3 fragTexCoords;
 
 /*
  * If non-zero, the fragment is not drawn.
@@ -51,10 +62,14 @@ void main(void) {
       return;
     }
 
+    vec3 texCoords;
+    if (voxSmooth) texCoords = fragTexCoords;
+    else           texCoords = flatFragTexCoords;
+
     float normVoxValue;
 
-    if (useSpline) normVoxValue = spline_interp(imageBuffer, fragTexCoords, imageShape);
-    else           normVoxValue = texture3D(    imageBuffer, fragTexCoords).r;
+    if (useSpline) normVoxValue = spline_interp(imageBuffer, texCoords, imageShape);
+    else           normVoxValue = texture3D(    imageBuffer, texCoords).r;
 
     if (signed) {
         if (normVoxValue >= 0.5) normVoxValue = normVoxValue - 0.5;

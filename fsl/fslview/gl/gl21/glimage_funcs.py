@@ -124,7 +124,9 @@ def _compileShaders(glimg):
     glimg.signedPos          = gl.glGetUniformLocation(glimg.shaders,
                                                        'signed')
     glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
-                                                       'useSpline') 
+                                                       'useSpline')
+    glimg.voxSmoothPos       = gl.glGetUniformLocation(glimg.shaders,
+                                                       'voxSmooth') 
     glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
                                                        'zCoord')
     glimg.xaxPos             = gl.glGetUniformLocation(glimg.shaders,
@@ -449,6 +451,7 @@ def draw(glimg, zpos, xform=None):
     # and data range to the shader
     gl.glUniform1f( glimg.signedPos,        glimg.signed)
     gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
+    gl.glUniform1f( glimg.voxSmoothPos,     display.interpolation != 'none')
     gl.glUniform1f( glimg.zCoordPos,        zpos)
     gl.glUniform3fv(glimg.imageShapePos, 1, np.array(image.shape,
                                                      dtype=np.float32))
