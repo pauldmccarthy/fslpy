@@ -63,6 +63,7 @@ def interface(parent, args, ctx):
         if args.hidex:             viewPanel.showXCanvas = False
         if args.hidey:             viewPanel.showYCanvas = False
         if args.hidez:             viewPanel.showZCanvas = False
+        if args.hidelabels:        viewPanel.showLabels  = False
         if args.xzoom is not None: viewPanel.xzoom       = args.xzoom
         if args.yzoom is not None: viewPanel.yzoom       = args.yzoom
         if args.zzoom is not None: viewPanel.zzoom       = args.zzoom

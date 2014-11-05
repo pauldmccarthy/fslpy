@@ -45,8 +45,8 @@ class ScreenGrabAction(action.Action):
               'with something like the following:'
         print
 
-        print '~paulmc/fslpy render -f out.png -s 2048 2048 ',
-        print '-wl {}'.format(
+        print '~paulmc/fslpy render -of out.png -sz 2048 2048 ',
+        print '-w {}'.format(
             ' '.join(['{}'.format(v) for v in self._displayCtx.location.xyz])),
         
         for image in self._imageList:
@@ -61,4 +61,4 @@ class ScreenGrabAction(action.Action):
 
             args = props.generateArguments(display)
             
-            print fname, ' '.join(['{}'.format(a) for a in args]),
+            print '-i', fname, ' '.join(['{}'.format(a) for a in args]),
