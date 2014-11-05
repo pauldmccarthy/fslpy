@@ -47,7 +47,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
     
     # How should we lay out each of the three slice panels?
-    layout = props.Choice(['Horizontal', 'Vertical', 'Grid'])
+    layout = props.Choice(
+        ['horizontal', 'vertical', 'grid'],
+        ['Horizontal', 'Vertical', 'Grid'])
 
     
     # Properties which set the current zoom
@@ -378,7 +380,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         other.
         """
 
-        layout = self.layout.lower()
+        layout = self.layout
 
         # Lay out this panel, so the canvas
         # panel size is up to date 
@@ -558,7 +560,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         to be refreshed. Updates the orthopanel layout accordingly.
         """
 
-        layout = self.layout.lower()
+        layout = self.layout
 
         # For the grid layout if only one or two
         # canvases are being displayed, the layout

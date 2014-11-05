@@ -72,7 +72,10 @@ def _configMainParser(mainParser):
     orthoParser.add_argument('-zh', '--hidez', action='store_true',
                              help='Hide the Z axis')
     orthoParser.add_argument('-lh', '--hidelabels', action='store_true',
-                             help='Hide orientation labels') 
+                             help='Hide orientation labels')
+    orthoParser.add_argument('-lo', '--layout', 
+                             choices=('vertical', 'horizontal', 'grid'),
+                             help='Canvas layout') 
     
     # Lightbox display options
     lbOpts = ['sliceSpacing',
