@@ -20,7 +20,7 @@ import wx
 import props
 
 import fsl.data.image                 as fslimage
-
+import fsl.utils.layout               as fsllayout
 import fsl.fslview.gl                 as fslgl
 import fsl.fslview.gl.wxglslicecanvas as slicecanvas
 import canvaspanel
@@ -459,100 +459,21 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Distribute the available width/height
         # to each of the displayed canvases
-        if layout == 'grid':
-            self._calcGridSizes(width, height, canvases)
-        elif layout == 'horizontal':
-            self._calcFlatSizes(width, height, canvases, False)
-        elif layout == 'vertical':
-            self._calcFlatSizes(width, height, canvases, True)
+        canvasaxes = [(c.xax, c.yax) for c in canvases]
+        if layout == 'grid':       layoutFunc = fsllayout.calcGridLayout
+        if layout == 'horizontal': layoutFunc = fsllayout.calcHorizontalLayout
+        if layout == 'vertical':   layoutFunc = fsllayout.calcVerticalLayout
+        
+        sizes = layoutFunc(canvasaxes,
+                           self._displayCtx.bounds,
+                           width,
+                           height)
+
+        for canvas, size in zip(canvases, sizes):
+            canvas.SetMinSize(size)
+            canvas.SetMaxSize(size)
 
         self.getCanvasPanel().Layout()
-
-        
-    def _calcGridSizes(self, width, height, canvases):
-        """Fixes the size of each canvas so that aspect ratio is
-        preserved, and the canvases are scaled relative to each other.
-        """
-
-        if len(canvases) <= 2:
-            self._configureFlatLayout(width, height, canvases, False)
-            return
-
-        bounds = self._displayCtx.bounds
-
-        canvasWidths  = [bounds.getLen(c.xax) for c in canvases]
-        canvasHeights = [bounds.getLen(c.yax) for c in canvases]
-        ttlWidth      = float(canvasWidths[ 0] + canvasWidths[ 1])
-        ttlHeight     = float(canvasHeights[0] + canvasHeights[2])
-
-        for i, canvas in enumerate(canvases):
-
-            cw = width  * (canvasWidths[ i] / ttlWidth)
-            ch = height * (canvasHeights[i] / ttlHeight) 
-
-            acw, ach = self._adjustPixelSize(canvasWidths[ i],
-                                             canvasHeights[i],
-                                             cw,
-                                             ch)
-
-            if (float(cw) / ch) > (float(acw) / ach): cw, ch = cw, ach
-            else:                                     cw, ch = acw, ch
-            
-            canvas.SetMinSize((cw, ch))
-            canvas.SetMaxSize((cw, ch))
-
-            
-    def _calcFlatSizes(self, width, height, canvases, vert=True):
-        """Calculates sizes for each displayed canvas such that the aspect
-        ratio is maintained across them when laid out vertically
-        (``vert=True``) or horizontally (``vert=False``).
-        """
-        bounds = self._displayCtx.bounds
-
-        # Get the canvas dimensions in world space
-        canvasWidths  = [bounds.getLen(c.xax) for c in canvases]
-        canvasHeights = [bounds.getLen(c.yax) for c in canvases]
-
-        maxWidth  = float(max(canvasWidths))
-        maxHeight = float(max(canvasHeights))
-        ttlWidth  = float(sum(canvasWidths))
-        ttlHeight = float(sum(canvasHeights))
-
-        if vert: ttlWidth  = maxWidth
-        else:    ttlHeight = maxHeight
-
-        for i, canvas in enumerate(canvases):
-
-            cw = width  * (canvasWidths[ i] / ttlWidth)
-            ch = height * (canvasHeights[i] / ttlHeight)
-
-            acw, ach = self._adjustPixelSize(canvasWidths[ i],
-                                             canvasHeights[i],
-                                             cw,
-                                             ch)
-
-            if vert: ch, cw = ach, width
-            else:    cw, ch = acw, height
-
-            canvas.SetMinSize((cw, ch))
-            canvas.SetMaxSize((cw, ch))
-
-        
-    def _adjustPixelSize(self, wldWidth, wldHeight, pixWidth, pixHeight):
-        """Adjusts the pixel width/height for the given canvas such that
-        the world space aspect ratio is maintained.
-        """        
-
-        pixRatio = float(pixWidth) / pixHeight
-        wldRatio = float(wldWidth) / wldHeight
-
-        if   pixRatio > wldRatio:
-            pixWidth  = wldWidth  * (pixHeight / wldHeight)
-                
-        elif pixRatio < wldRatio:
-            pixHeight = wldHeight * (pixWidth  / wldWidth)
-
-        return pixWidth, pixHeight
 
         
     def _refreshLayout(self, *a):
