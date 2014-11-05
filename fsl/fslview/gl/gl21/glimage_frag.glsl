@@ -4,6 +4,7 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
+#extension GL_EXT_gpu_shader4 : require
 
 #pragma include spline_interp.glsl
 
@@ -36,7 +37,7 @@ uniform mat4 texCoordXform;
 /*
  * Image texture coordinates.
  */
-varying vec3 fragTexCoords;
+flat varying vec3 fragTexCoords;
 
 /*
  * If non-zero, the fragment is not drawn.
@@ -53,7 +54,7 @@ void main(void) {
     float normVoxValue;
 
     if (useSpline) normVoxValue = spline_interp(imageBuffer, fragTexCoords, imageShape);
-    else           normVoxValue = texture3D(imageBuffer, fragTexCoords).r;
+    else           normVoxValue = texture3D(    imageBuffer, fragTexCoords).r;
 
     if (signed) {
         if (normVoxValue >= 0.5) normVoxValue = normVoxValue - 0.5;

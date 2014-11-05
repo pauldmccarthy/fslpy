@@ -4,6 +4,7 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
+#extension GL_EXT_gpu_shader4 : require
 
 /* World coordinate -> voxel coordinate transformation matrix */
 uniform mat4 worldToVoxMat;
@@ -20,7 +21,7 @@ uniform vec3 imageShape;
 /* X/Y world location */
 attribute vec2 worldCoords;
 
-
+/* Texture coordinate used to look up the voxel value for this vertex */
 attribute vec2 texCoords;
 
 /* Z location*/
@@ -29,7 +30,7 @@ uniform float zCoord;
 /* 
  * Image texture coordinates passed through to fragment shader.
  */ 
-varying vec3 fragTexCoords;
+flat varying vec3 fragTexCoords;
 
 /* 
  * If the world location is out of bounds, tell 
@@ -62,6 +63,7 @@ void main(void) {
      * bounds.
      */
     outOfBounds = 0;
+
     if      (voxLoc.x < -0.5)                  outOfBounds = 1;
     else if (voxLoc.x >  imageShape.x - 0.499) outOfBounds = 1;
     else if (voxLoc.x >= imageShape.x - 0.5)   voxLoc.x = imageShape.x - 0.501;
