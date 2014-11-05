@@ -356,8 +356,8 @@ def genColourMap(glimg, display, colourResolution):
     *clamped*, not normalised, to the range [0, 1]!). The
     :func:`_checkDataType` method calculates an appropriate transformation
     matrix to transform the image data to the appropriate texture coordinate
-    range, which is then passed by this function to the
-    :func:`fsl.fslview.gl.glimage.genVertexData` function.
+    range, which is then returned by this function, and subsequently used in
+    the :func:`draw` function.
     """
 
     imin = display.displayRange[0]

@@ -216,18 +216,18 @@ def samplePointsToTriangleStrip(coords,
 
     A tuple is returned containing:
 
-      - A 2D numpy array of shape `(2 * (xlen + 1) * ylen), 3)`, containing
-        the coordinates of all triangle strip vertices which represent the
-        entire grid of sample points.
+      - A 2D `numpy.float32` array of shape `(2 * (xlen + 1) * ylen), 3)`,
+        containing the coordinates of all triangle strip vertices which
+        represent the entire grid of sample points.
     
-      - A 2D numpy array of shape `(2 * (xlen + 1) * ylen), 3)`, containing
-        the centre of every grid, to be used for texture coordinates/colour
-        lookup.
+      - A 2D `numpy.float32` array of shape `(2 * (xlen + 1) * ylen), 3)`,
+        containing the centre of every grid, to be used for texture
+        coordinates/colour lookup.
     
-      - A 1D numpy array of size `ylen * (2 * (xlen + 1) + 2) - 2` containing
-        indices into the first array, defining the order in which the vertices
-        need to be rendered. There are more indices than vertex coordinates due
-        to the inclusion of repeated/degenerate vertices.
+      - A 1D `numpy.uint32` array of size `ylen * (2 * (xlen + 1) + 2) - 2`
+        containing indices into the first array, defining the order in which
+        the vertices need to be rendered. There are more indices than vertex
+        coordinates due to the inclusion of repeated/degenerate vertices.
 
     :arg coords:  N*3 array of points, the sampling locations.
     
@@ -255,8 +255,8 @@ def samplePointsToTriangleStrip(coords,
     # is defined by two vertices 
     coords = coords.repeat(2, 0)
 
-    texCoords   = np.array(coords)
-    worldCoords = np.array(coords)
+    texCoords   = np.array(coords, dtype=np.float32)
+    worldCoords = np.array(coords, dtype=np.float32)
 
     # Add an extra column at the end
     # of the world coordinates

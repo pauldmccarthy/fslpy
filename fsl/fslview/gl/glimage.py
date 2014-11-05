@@ -43,8 +43,6 @@ These version dependent modules must provide the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy          as np
-import OpenGL.GL      as gl
 import fsl.fslview.gl as fslgl
 import                   globject
 
@@ -192,33 +190,13 @@ def genVertexData(image, display, xax, yax):
     """Generates vertex coordinates (for rendering voxels) and
     texture coordinates (for colouring voxels) in world space.
 
-    Generates X/Y vertex coordinates, in the world space of the given image,
-    which define a set of pixels for displaying the image at an arbitrary
-    position along the world Z dimension.  Each pixel is defined by four
-    vertices, which are rendered as an OpenGL quad primitive. The
-    :func:`~fsl.fslview.gl.globject.calculateSamplePoints` function is used
-    to calculate the coordinate locations.
-
-    For every set of four vertices, a single vertex is also
-    created, located in the centre of the four quad vertices. This
-    centre vertex is used to look up the appropriate image value,
-    which is then used to colour the quad.
-
-    This function returns a tuple of two objects:
-
-      - The first object, the *world coordinate* array, is a numpy
-        array of shape `(4*N, 3)`, where `N` is the number of pixels
-        to be drawn. This array contains the world coordinates for
-        every pixel, with each pixel defined by four vertices (to be
-        rendered as an OpenGL quad). The vertex coordinates along the
-        world Z axis are all set to zero.
-
-      - The second object, the *texture coordinate* array, is a numpy
-        array of shape `(4*N, 3)`, containing contains the coordinates of
-        the centre of every quad defined in the world coordinate array.
-        These vertices are to be used to look up the value in the image
-        data, which may then be used to determine the corresponding
-        pixel colour.
+    Generates X/Y vertex coordinates, in the display coordinate system for the
+    given image, which define a set of pixels for displaying the image at an
+    arbitrary position along the world Z dimension.  These pixels are
+    represented by an OpenGL triangle strip. See the
+    :func:`~fsl.fslview.gl.globject.calculateSamplePoints` and
+    :func:`~fsl.fslview.gl.globject.samplePointsToTriangleStrip` functions
+    for more details.
 
     :arg image:   The :class:`~fsl.data.image.Image` object to
                   generate vertex and texture coordinates for.
@@ -231,7 +209,8 @@ def genVertexData(image, display, xax, yax):
                   horizontal screen axis (0, 1, or 2).
 
     :arg yax:     The world space axis which corresponds to the
-                  vertical screen axis (0, 1, or 2). 
+                  vertical screen axis (0, 1, or 2).
+
     """
     
     worldCoords, xpixdim, ypixdim, xlen, ylen = \
@@ -242,9 +221,5 @@ def genVertexData(image, display, xax, yax):
     # with rows connected via degenerate vertices
     worldCoords, texCoords, indices = globject.samplePointsToTriangleStrip(
         worldCoords, xpixdim, ypixdim, xlen, ylen, xax, yax)
-
-    worldCoords = np.array(worldCoords, dtype=np.float32)
-    texCoords   = np.array(texCoords,   dtype=np.float32)
-    indices     = np.array(indices,     dtype=np.uint32)
-
+    
     return worldCoords, texCoords, indices

@@ -23,8 +23,8 @@ This module provides the following functions:
  - :func:`genImageData`: Prepares and returns the 3D image data to be
    rendered.
 
- - :func:`genColourTexture`: Configures an OpenGL 1D texture with a colour map,
-   used for colouring the image data.
+ - :func:`genColourMap`: Configures a `matplotlib.colors.Colormap` instance
+   for generating voxel colours from image data.
 
  - :func:`draw`: Draws the image using OpenGL.
 
