@@ -99,6 +99,22 @@ def bootstrap(glVersion=None):
         glpkg  = gl14
     else: raise RuntimeError('OpenGL 1.4 or newer is required')
 
+    # The gl21 implementation depends on a
+    # few extensions - if they're not present,
+    # fall back to the gl14 implementation
+    if glpkg == gl21:
+
+        import OpenGL.extensions as glexts
+
+        exts = ['GL_ARB_texture_rg',
+                'GL_EXT_gpu_shader4']
+        
+        exts = map(glexts.hasExtension, exts)
+        
+        if not all(exts):
+            verstr = '1.4'
+            glpkg = gl14
+
     log.debug('Using OpenGL {} implementation'.format(verstr))
 
     thismod.glimage_funcs  = glpkg.glimage_funcs
