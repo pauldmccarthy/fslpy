@@ -351,6 +351,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('enabled',         self.name, refresh)
             display.addListener('transform',       self.name, refresh)
             display.addListener('interpolation',   self.name, refresh)
+            display.addListener('voxelSmoothing',  self.name, refresh)
             display.addListener('alpha',           self.name, refresh)
             display.addListener('displayRange',    self.name, refresh)
             display.addListener('clipLow',         self.name, refresh)
@@ -637,9 +638,6 @@ class SliceCanvas(props.HasProperties):
         # enable transparency
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-        # disable interpolation
-        gl.glShadeModel(gl.GL_FLAT)
 
         for image in self.imageList:
 

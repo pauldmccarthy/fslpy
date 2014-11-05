@@ -112,8 +112,19 @@ def draw(glimg, zpos, xform=None):
     texCoords[  :, glimg.zax] = zpos
     
     # Transform world texture coordinates
-    # to (floating point) voxel coordinates
-    voxCoords = transform.transform(texCoords, display.displayToVoxMat) 
+    # to (floating point) voxel coordinates.
+    # The texCoords coordinates are at the
+    # centre of every rendered voxel. If
+    # voxelSmoothing is enabled, use the
+    # voxel corners to lookup values, so the
+    # each voxel is smoothed across its entire
+    # extent
+    if display.voxelSmoothing:
+        voxCoords = transform.transform(worldCoords, display.displayToVoxMat)
+    else:
+        voxCoords = transform.transform(texCoords,   display.displayToVoxMat)
+        
+        
     imageData = glimg.imageData
     colourMap = glimg.colourMap
 
@@ -173,7 +184,10 @@ def draw(glimg, zpos, xform=None):
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
-    gl.glShadeModel(gl.GL_FLAT)
+    # Disable colour smoothing between vertices
+    if display.voxelSmoothing: gl.glShadeModel(gl.GL_SMOOTH)
+    else:                      gl.glShadeModel(gl.GL_FLAT)
+        
 
     gl.glEnableClientState(gl.GL_COLOR_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)

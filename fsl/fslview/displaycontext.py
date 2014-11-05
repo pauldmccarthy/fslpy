@@ -110,6 +110,9 @@ class ImageDisplay(props.HasProperties):
     neighbour interpolation.
     """
 
+
+    voxelSmoothing = props.Boolean(default=False)
+
     
     name = fslimage.Image.name
     """The image name.  This property is bound to the
@@ -180,7 +183,8 @@ class ImageDisplay(props.HasProperties):
                      visibleWhen=lambda i: i.transform != 'affine'),
         'transform',
         'imageType',
-        'cmap'))
+        'cmap',
+        'voxelSmoothing'))
 
     
     _labels = {
@@ -191,6 +195,7 @@ class ImageDisplay(props.HasProperties):
         'clipLow'         : 'Low clipping',
         'clipHigh'        : 'High clipping',
         'interpolation'   : 'Interpolation',
+        'voxelSmoothing'  : 'Smooth across voxels',
         'worldResolution' : 'Resolution (mm)',
         'voxelResolution' : 'Resolution (voxels)',
         'transform'       : 'Image transform',
@@ -210,6 +215,7 @@ class ImageDisplay(props.HasProperties):
                             'higher than the display range', 
         'interpolation'   : 'Interpolate between voxel values at '
                             'each displayed real world location',
+        'voxelSmoothing'  : 'Smooth intensity across voxel boundaries',
         'worldResolution' : 'Display resolution in millimetres',
         'voxelResolution' : 'Display resolution in voxels',
         'transform'       : 'The transformation matrix which specifies the '
@@ -230,6 +236,7 @@ class ImageDisplay(props.HasProperties):
                  'voxelResolution',
                  'transform',
                  'interpolation',
+                 'voxelSmoothing',
                  'imageType',
                  'cmap',
                  'name',
@@ -241,6 +248,7 @@ class ImageDisplay(props.HasProperties):
         'clipLow'         : 'cl',
         'clipHigh'        : 'ch',
         'interpolation'   : 'interp',
+        'voxelSmoothing'  : 'vs',
         'worldResolution' : 'wr',
         'voxelResolution' : 'vr',
         'transform'       : 'trans',
