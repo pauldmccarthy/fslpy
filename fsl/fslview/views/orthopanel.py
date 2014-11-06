@@ -458,16 +458,19 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             height = height - max(xth, yth) - max(xbh, ybh) - zth - zbh
 
         # Distribute the available width/height
-        # to each of the displayed canvases
+        # to each of the displayed canvases -
+        # fsl.utils.layout (a.k.a. fsllayout)
+        # provides functions to do this for us
         canvasaxes = [(c.xax, c.yax) for c in canvases]
+        axisLens   = [self._displayCtx.bounds.xlen,
+                      self._displayCtx.bounds.ylen,
+                      self._displayCtx.bounds.zlen]
+        
         if layout == 'grid':       layoutFunc = fsllayout.calcGridLayout
         if layout == 'horizontal': layoutFunc = fsllayout.calcHorizontalLayout
         if layout == 'vertical':   layoutFunc = fsllayout.calcVerticalLayout
-        
-        sizes = layoutFunc(canvasaxes,
-                           self._displayCtx.bounds,
-                           width,
-                           height)
+
+        sizes = layoutFunc(canvasaxes, axisLens, width, height)
 
         for canvas, size in zip(canvases, sizes):
             canvas.SetMinSize(size)
