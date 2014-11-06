@@ -22,60 +22,85 @@ log = logging.getLogger(__name__)
 
 import argparse
 
-import numpy            as np
 import matplotlib.image as mplimg
 
 import props
 import fslview_parseargs
+import fsl.utils.layout          as fsllayout
 import fsl.utils.colourbarbitmap as cbarbitmap
 
-if  sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
-elif sys.platform == 'darwin':        _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
+if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
+elif sys.platform         == 'darwin': _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
 
 
-def saveRender(args, canvases, cbarbmp):
-    """Saves the scene to the file specified by `args.outfile`.
+CBAR_SIZE   = 75
+LABEL_SIZE  = 20
+
+
+def buildColourBarBitmap(imageList,
+                         displayCtx,
+                         width,
+                         height,
+                         cbarLocation,
+                         cbarLabelSide,
+                         bgColour):
     
-    :arg args:     The :mod:`argparse` namespace containing all the command
-                   line arguments.
+    display = imageList[displayCtx.selectedImage].getAttribute('display')
     
-    :arg canvases: A list of all the canvases which have been rendered.
+    if   cbarLocation in ('top', 'bottom'): orient = 'horizontal'
+    elif cbarLocation in ('left', 'right'): orient = 'vertical'
     
-    :arg cbarbmp:  An rgba bitmap (W*H*4) containing a rendering of a colour
-                   bar, if it was specified.
+    if   cbarLabelSide == 'top-left':
+        if orient == 'horizontal': labelSide = 'top'
+        else:                      labelSide = 'left'
+    elif cbarLabelSide == 'bottom-right':
+        if orient == 'horizontal': labelSide = 'bottom'
+        else:                      labelSide = 'right'            
+    
+    cbarBmp = cbarbitmap.colourBarBitmap(
+        display.cmap,
+        display.displayRange.xlo,
+        display.displayRange.xhi,
+        width,
+        height,
+        display.name,
+        orient,
+        labelSide,
+        bgColour=map(lambda c: c / 255.0, bgColour))
+    
+    return cbarBmp
+
+ 
+def buildColourBarLayout(canvasLayout,
+                         cbarBmp,
+                         cbarLocation,
+                         cbarLabelSide):
+    """Given a layout object containing the rendered canvas bitmaps,
+    creates a new layout which incorporates the given colour bar bitmap.
     """
 
-    canvasbmps = map(lambda c: c.getBitmap(), canvases)
-    bmp        = np.hstack(canvasbmps)
+    cbarBmp = fsllayout.Bitmap(cbarBmp)
 
-    if args.showColourBar:
-
-        if   args.colourBarLocation == 'top':
-            bmp = np.vstack((cbarbmp, bmp))
-        elif args.colourBarLocation == 'bottom':
-            bmp = np.vstack((bmp, cbarbmp))
-        elif args.colourBarLocation == 'left':
-            bmp = np.hstack((bmp, cbarbmp))
-        elif args.colourBarLocation == 'right':
-            bmp = np.hstack((cbarbmp, bmp))
-    
-    mplimg.imsave(args.outfile, bmp)
+    if   cbarLabelSide == 'top-left':     items = [cbarBmp, canvasLayout]
+    elif cbarLabelSide == 'bottom-right': items = [canvasLayout, cbarBmp]
+        
+    if   cbarLocation in ('top', 'bottom'): return fsllayout.VBox(items)
+    elif cbarLocation in ('left', 'right'): return fsllayout.HBox(items)
 
 
-def calcSizes(args):
-    """Calculates the widths and heights of the image display canvases, and the
+def adjustSizeForColourBar(width, height, showColourBar, colourBarLocation):
+    """Calculates the widths and heights of the image display space, and the
     colour bar if it is enabled.
 
-    Returns two tuples - the first tuple contains the (width, height) of one
-    canvas, and the second contains the (width, height) of the colour bar.
+    Returns two tuples - the first tuple contains the (width, height) of the
+    available canvas space, and the second contains the (width, height) of
+    the colour bar.
     """
 
-    width, height = args.size
+    if showColourBar:
 
-    if args.showColourBar:
-
-        cbarWidth = 75
-        if args.colourBarLocation in ('top', 'bottom'):
+        cbarWidth = CBAR_SIZE
+        if colourBarLocation in ('top', 'bottom'):
             height     = height - cbarWidth
             cbarHeight = cbarWidth
             cbarWidth  = width
@@ -86,13 +111,46 @@ def calcSizes(args):
         cbarWidth  = 0
         cbarHeight = 0
 
-    if not args.lightbox:
-        
-        hides = [args.hidex, args.hidey, args.hidez]
-        count = sum([not h for h in hides])
-        width = width / count
-
     return (width, height), (cbarWidth, cbarHeight)
+
+
+def calculateOrthoCanvasSizes(
+        imageList,
+        displayCtx,
+        width,
+        height,
+        canvasAxes,
+        showLabels,
+        layout):
+
+    bounds   = displayCtx.bounds
+    axisLens = [bounds.xlen, bounds.ylen, bounds.zlen]
+
+    # Grid layout only makes sense if we're
+    # displaying all three canvases
+    if layout == 'grid' and len(canvasAxes) <= 2:
+        raise ValueError('Grid layout only supports 3 canvases')
+
+    # If we're displaying orientation labels,
+    # reduce the available width and height
+    # by a fixed amount
+    if showLabels:
+        if layout == 'horizontal':
+            width  -= 2 * LABEL_SIZE * len(canvasAxes)
+            height -= 2 * LABEL_SIZE
+        elif layout == 'vertical':
+            width  -= 2 * LABEL_SIZE
+            height -= 2 * LABEL_SIZE * len(canvasAxes)
+        elif layout == 'grid':
+            width  -= 4 * LABEL_SIZE
+            height -= 4 * LABEL_SIZE
+
+    # Distribute the height across canvas heights
+    return fsllayout.calcSizes(layout,
+                               canvasAxes,
+                               axisLens,
+                               width,
+                               height)
 
 
 def run(args, context):
@@ -136,7 +194,12 @@ def run(args, context):
     # Calculate canvas and colour bar sizes
     # so that the entire scene will fit in
     # the width/height specified by the user
-    (width, height), (cbarWidth, cbarHeight) = calcSizes(args)
+    width, height = args.size
+    (width, height), (cbarWidth, cbarHeight) = \
+        adjustSizeForColourBar(width,
+                               height,
+                               args.showColourBar,
+                               args.colourBarLocation)
     
     canvases = []
 
@@ -154,18 +217,49 @@ def run(args, context):
 
     # Ortho view -> up to three canvases
     else:
-        hides = [args.hidex, args.hidey, args.hidez]
-        zooms = [args.xzoom, args.yzoom, args.zzoom]
+ 
+        # Build a list containing the horizontal 
+        # and vertical axes for each canvas
+        canvasAxes = []
+        zooms      = []
+        if not args.hidex:
+            canvasAxes.append((1, 2))
+            zooms     .append(args.xzoom)
+        if not args.hidey:
+            canvasAxes.append((0, 2))
+            zooms     .append(args.yzoom)
+        if not args.hidez:
+            canvasAxes.append((0, 1))
+            zooms     .append(args.zzoom)
 
-        for i, (hide, zoom) in enumerate(zip(hides, zooms)):
-            if hide: continue
-            
+        # Grid only makes sense if
+        # we're displaying 3 canvases
+        if args.layout == 'grid' and len(canvasAxes) <= 2:
+            args.layout = 'horizontal'
+
+        if args.layout == 'grid':
+            canvasAxes = [canvasAxes[1], canvasAxes[0], canvasAxes[2]]
+        
+        sizes = calculateOrthoCanvasSizes(imageList,
+                                          displayCtx,
+                                          width,
+                                          height,
+                                          canvasAxes,
+                                          not args.hideLabels,
+                                          args.layout)
+
+        for ((width, height), (xax, yax), zoom) in zip(sizes,
+                                                       canvasAxes,
+                                                       zooms):
+
+            zax = 3 - xax - yax
+
             c = slicecanvas.OSMesaSliceCanvas(
                 imageList,
                 displayCtx,
-                zax=i,
-                width=width,
-                height=height,
+                zax=zax,
+                width=int(width),
+                height=int(height),
                 bgColour=args.background)
             if zoom is not None: c.zoom = zoom
             canvases.append(c)
@@ -173,7 +267,7 @@ def run(args, context):
     # Configure each of the canvases (with those
     # properties that are common to both ortho and
     # lightbox canvases) and render them one by one
-    for c in canvases:
+    for i, c in enumerate(canvases):
         
         c.showCursor = not args.hideCursor
         if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
@@ -182,38 +276,36 @@ def run(args, context):
 
         c.draw()
 
-    # Render a colour bar if requested
-    if args.showColourBar:
-        
-        display = imageList[displayCtx.selectedImage].getAttribute('display')
-        
-        if   args.colourBarLocation in ('top', 'bottom'):
-            orient = 'horizontal'
-        elif args.colourBarLocation in ('left', 'right'):
-            orient = 'vertical'
-        
-        if   args.colourBarLabelSide == 'top-left':
-            if orient == 'horizontal': labelSide = 'top'
-            else:                      labelSide = 'left'
-        elif args.colourBarLabelSide == 'bottom-right':
-            if orient == 'horizontal': labelSide = 'bottom'
-            else:                      labelSide = 'right'            
-        
-        cbarbmp = cbarbitmap.colourBarBitmap(
-            display.cmap,
-            display.displayRange.xlo,
-            display.displayRange.xhi,
-            cbarWidth,
-            cbarHeight,
-            display.name,
-            orient,
-            labelSide,
-            bgColour=map(lambda c: c / 255.0, args.background))
-    else:
-        cbarbmp = None
+        canvases[i] = c.getBitmap()
 
+    # Disable labels for now
+    labelbmps = None
+    if not args.hideLabels:
+        args.hideLabels = True
+
+    # layout
+    if args.lightbox: layout = fsllayout.Bitmap(canvases[0])
+    else:             layout = fsllayout.buildOrthoLayout(canvases,
+                                                          labelbmps,
+                                                          args.layout,
+                                                          not args.hideLabels,
+                                                          LABEL_SIZE)
+
+    # Render a colour bar if required
+    if args.showColourBar:
+        cbarBmp = buildColourBarBitmap(imageList,
+                                       displayCtx,
+                                       cbarWidth,
+                                       cbarHeight,
+                                       args.colourBarLocation,
+                                       args.colourBarLabelSide,
+                                       args.background)
+        layout  = buildColourBarLayout(layout, cbarBmp, args)
+
+ 
     if args.outfile is not None:
-        saveRender(args, canvases, cbarbmp)
+        bitmap = fsllayout.layoutToBitmap(layout, args.background)
+        mplimg.imsave(args.outfile, bitmap)
 
     
 def parseArgs(argv):

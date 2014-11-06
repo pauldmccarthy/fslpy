@@ -466,11 +466,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                       self._displayCtx.bounds.ylen,
                       self._displayCtx.bounds.zlen]
         
-        if layout == 'grid':       layoutFunc = fsllayout.calcGridLayout
-        if layout == 'horizontal': layoutFunc = fsllayout.calcHorizontalLayout
-        if layout == 'vertical':   layoutFunc = fsllayout.calcVerticalLayout
-
-        sizes = layoutFunc(canvasaxes, axisLens, width, height)
+        sizes = fsllayout.calcSizes(layout,
+                                    canvasaxes,
+                                    axisLens,
+                                    width,
+                                    height)
 
         for canvas, size in zip(canvases, sizes):
             canvas.SetMinSize(size)

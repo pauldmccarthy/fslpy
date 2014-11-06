@@ -71,10 +71,11 @@ def _configMainParser(mainParser):
                              help='Hide the Y axis')
     orthoParser.add_argument('-zh', '--hidez', action='store_true',
                              help='Hide the Z axis')
-    orthoParser.add_argument('-lh', '--hidelabels', action='store_true',
+    orthoParser.add_argument('-lh', '--hideLabels', action='store_true',
                              help='Hide orientation labels')
     orthoParser.add_argument('-lo', '--layout', 
-                             choices=('vertical', 'horizontal', 'grid'),
+                             choices=('horizontal', 'vertical', 'grid'),
+                             default='horizontal',
                              help='Canvas layout') 
     
     # Lightbox display options
