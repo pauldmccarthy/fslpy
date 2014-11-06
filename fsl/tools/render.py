@@ -162,9 +162,9 @@ def buildColourBarLayout(canvasLayout,
 
     cbarBmp = fsllayout.Bitmap(cbarBmp)
 
-    if   cbarLabelSide == 'top-left':     items = [cbarBmp, canvasLayout]
-    elif cbarLabelSide == 'bottom-right': items = [canvasLayout, cbarBmp]
-        
+    if   cbarLocation in ('top',    'left'):  items = [cbarBmp, canvasLayout]
+    elif cbarLocation in ('bottom', 'right'): items = [canvasLayout, cbarBmp]
+
     if   cbarLocation in ('top', 'bottom'): return fsllayout.VBox(items)
     elif cbarLocation in ('left', 'right'): return fsllayout.HBox(items)
 
