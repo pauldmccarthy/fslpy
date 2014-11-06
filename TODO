@@ -7,6 +7,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
+** OrthoPanel - need to re-layout when colour bar is displayed
 ** WX Bugs
 *** Floating panels get moved about when opening a new floating panel.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
