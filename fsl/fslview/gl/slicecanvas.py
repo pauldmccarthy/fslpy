@@ -178,6 +178,19 @@ class SliceCanvas(props.HasProperties):
         self.displayBounds[:] = [xmin, xmax, ymin, ymax]
 
 
+    def centreDisplayAt(self, xpos, ypos):
+        """Pans the display so the given x/y position is in the centre.
+        """
+
+        # work out current display centre
+        bounds  = self.displayBounds
+        xcentre = bounds.xlo + (bounds.xhi - bounds.xlo) * 0.5
+        ycentre = bounds.ylo + (bounds.yhi - bounds.ylo) * 0.5
+
+        # move to the new centre
+        self.panDisplayBy(xpos - xcentre, ypos - ycentre)
+
+
     def panDisplayToShow(self, xpos, ypos):
         """Pans the display so that the given x/y position (in display
         coordinates) is visible.
