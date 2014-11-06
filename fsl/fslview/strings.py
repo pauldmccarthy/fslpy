@@ -7,54 +7,57 @@
 
 import fsl.data.image as fslimage
 
-from views   .orthopanel         import OrthoPanel
-from views   .lightboxpanel      import LightBoxPanel
-from views   .timeseriespanel    import TimeSeriesPanel
-from views   .spacepanel         import SpacePanel
+try:
+    from views   .orthopanel         import OrthoPanel
+    from views   .lightboxpanel      import LightBoxPanel
+    from views   .timeseriespanel    import TimeSeriesPanel
+    from views   .spacepanel         import SpacePanel
 
-from controls.imagedisplaypanel  import ImageDisplayPanel
-from controls.imagelistpanel     import ImageListPanel
-from controls.locationpanel      import LocationPanel
+    from controls.imagedisplaypanel  import ImageDisplayPanel
+    from controls.imagelistpanel     import ImageListPanel
+    from controls.locationpanel      import LocationPanel
 
-from actions .screengrabaction   import ScreenGrabAction
-from actions .openfileaction     import OpenFileAction
-from actions .openstandardaction import OpenStandardAction
-
-
-viewPanelTitles = {
-    OrthoPanel      : 'Ortho view',
-    LightBoxPanel   : 'Lightbox view',
-    TimeSeriesPanel : 'Time series',
-    SpacePanel      : 'Space inspector',
-}
+    from actions .screengrabaction   import ScreenGrabAction
+    from actions .openfileaction     import OpenFileAction
+    from actions .openstandardaction import OpenStandardAction
 
 
-controlPanelTitles = {
-    ImageDisplayPanel : 'Image display properties',
-    ImageListPanel    : 'Image list',
-    LocationPanel     : 'Cursor location'
-}
+    viewPanelTitles = {
+        OrthoPanel      : 'Ortho view',
+        LightBoxPanel   : 'Lightbox view',
+        TimeSeriesPanel : 'Time series',
+        SpacePanel      : 'Space inspector',
+    }
 
-actionTitles = {
-    OpenFileAction     : 'Add image file',
-    OpenStandardAction : 'Add standard',
-    ScreenGrabAction   : 'Take screenshot'
-}
 
-viewPanelConfigMenuText = {
-    OrthoPanel      : '{} display properties',
-    LightBoxPanel   : '{} display properties',
-    TimeSeriesPanel : '{} display properties'
-}
+    controlPanelTitles = {
+        ImageDisplayPanel : 'Image display properties',
+        ImageListPanel    : 'Image list',
+        LocationPanel     : 'Cursor location'
+    }
 
-orthoConfigMenu    = '{} display'
-lightBoxConfigMenu = '{} display'
+    actionTitles = {
+        OpenFileAction     : 'Add image file',
+        OpenStandardAction : 'Add standard',
+        ScreenGrabAction   : 'Take screenshot'
+    }
 
-locationPanelOutOfBounds = 'Out of bounds'
-locationPanelSpaceLabel  = '{} space'
-locationPanelWorldLabel  = 'World location (mm)'
-locationPanelVoxelLabel  = 'Voxel coordinates'
-locationPanelVolumeLabel = 'Volume (index)'
+    viewPanelConfigMenuText = {
+        OrthoPanel      : '{} display properties',
+        LightBoxPanel   : '{} display properties',
+        TimeSeriesPanel : '{} display properties'
+    }
+
+    orthoConfigMenu    = '{} display'
+    lightBoxConfigMenu = '{} display'
+
+    locationPanelOutOfBounds = 'Out of bounds'
+    locationPanelSpaceLabel  = '{} space'
+    locationPanelWorldLabel  = 'World location (mm)'
+    locationPanelVoxelLabel  = 'Voxel coordinates'
+    locationPanelVolumeLabel = 'Volume (index)'
+except:
+    pass
 
 
 imageAxisLowLongLabels = {
