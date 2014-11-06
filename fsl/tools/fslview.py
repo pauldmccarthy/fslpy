@@ -64,10 +64,22 @@ def interface(parent, args, ctx):
         if args.hidey:              viewPanel.showYCanvas = False
         if args.hidez:              viewPanel.showZCanvas = False
         if args.hideLabels:         viewPanel.showLabels  = False
-        if args.xzoom is not None:  viewPanel.xzoom       = args.xzoom
-        if args.yzoom is not None:  viewPanel.yzoom       = args.yzoom
-        if args.zzoom is not None:  viewPanel.zzoom       = args.zzoom
-        if args.layout is not None: viewPanel.layout      = args.layout
+        if args.layout is not None: viewPanel.layout      = args.layout 
+        if args.xzoom  is not None: viewPanel.xzoom       = args.xzoom
+        if args.yzoom  is not None: viewPanel.yzoom       = args.yzoom
+        if args.zzoom  is not None: viewPanel.zzoom       = args.zzoom
+
+        xcentre = args.xcentre
+        ycentre = args.ycentre
+        zcentre = args.zcentre
+
+        if xcentre is None: xcentre = displayCtx.location.yz
+        if ycentre is None: ycentre = displayCtx.location.xz
+        if zcentre is None: zcentre = displayCtx.location.xy
+
+        viewPanel._xcanvas.centreDisplayAt(*xcentre)
+        viewPanel._ycanvas.centreDisplayAt(*ycentre)
+        viewPanel._zcanvas.centreDisplayAt(*zcentre)
 
     if args.showColourBar:
         viewPanel.showColourBar = True
