@@ -48,7 +48,7 @@ def _configMainParser(mainParser):
                              'takes precedence over --voxelloc)')
     sceneParser.add_argument('-si', '--selectedImage', type=int,
                              help='Selected image (default: last)')
-    sceneParser.add_argument('-c', '--hideCursor', action='store_true',
+    sceneParser.add_argument('-hc', '--hideCursor', action='store_true',
                              help='Do not display the green cursor '
                              'highlighting the current location')
 

@@ -28,6 +28,10 @@ import props
 import fslview_parseargs
 import fsl.utils.layout          as fsllayout
 import fsl.utils.colourbarbitmap as cbarbitmap
+import fsl.utils.textbitmap      as textbitmap
+import fsl.fslview.strings       as strings 
+import fsl.data.image            as fslimage
+
 
 if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
 elif sys.platform         == 'darwin': _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
@@ -36,6 +40,83 @@ elif sys.platform         == 'darwin': _LD_LIBRARY_PATH = 'DYLD_LIBRARY_PATH'
 CBAR_SIZE   = 75
 LABEL_SIZE  = 20
 
+
+def buildLabelBitmaps(imageList,
+                      displayCtx,
+                      canvasAxes, 
+                      canvasBmps,
+                      bgColour,
+                      alpha):
+    
+    # Default colour is white - if the orientation labels
+    # cannot be determined, the foreground colour will be
+    # changed to red
+    fgColour = 'white'
+
+    image   = imageList[displayCtx.selectedImage]
+    display = image.getAttribute('display')
+
+    # The image is being displayed as it is stored on
+    # disk - the image.getOrientation method calculates
+    # and returns labels for each voxelwise axis.
+    if display.transform in ('pixdim', 'id'):
+        xorient = image.getVoxelOrientation(0)
+        yorient = image.getVoxelOrientation(1)
+        zorient = image.getVoxelOrientation(2)
+
+    # The image is being displayed in 'real world' space -
+    # the definition of this space may be present in the
+    # image meta data
+    else:
+        xorient = image.getWorldOrientation(0)
+        yorient = image.getWorldOrientation(1)
+        zorient = image.getWorldOrientation(2)
+
+    if fslimage.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
+        fgColour = 'red'
+
+    xlo = strings.imageAxisLowShortLabels[ xorient]
+    ylo = strings.imageAxisLowShortLabels[ yorient]
+    zlo = strings.imageAxisLowShortLabels[ zorient]
+    xhi = strings.imageAxisHighShortLabels[xorient]
+    yhi = strings.imageAxisHighShortLabels[yorient]
+    zhi = strings.imageAxisHighShortLabels[zorient]
+
+    loLabels = [xlo, ylo, zlo]
+    hiLabels = [xhi, yhi, zhi]
+
+    labelBmps = []
+
+    for (xax, yax), canvasBmp in zip(canvasAxes, canvasBmps):
+
+        width        = canvasBmp.shape[1]
+        height       = canvasBmp.shape[0]
+
+        allLabels    = {}
+        labelKeys    = ['left', 'right', 'top', 'bottom']
+        labelTexts   = [loLabels[xax], hiLabels[xax],
+                        loLabels[yax], hiLabels[yax]]
+        labelWidths  = [LABEL_SIZE, LABEL_SIZE, width,      width]
+        labelHeights = [height,     height,     LABEL_SIZE, LABEL_SIZE]
+
+
+        for key, text, width, height in zip(labelKeys,
+                                            labelTexts,
+                                            labelWidths,
+                                            labelHeights):
+
+            allLabels[key] = textbitmap.textBitmap(
+                text=text,
+                width=width,
+                height=height,
+                fontSize=12,
+                fgColour=fgColour,
+                bgColour=map(lambda c: c / 255.0, bgColour),
+                alpha=alpha)
+
+        labelBmps.append(allLabels)
+            
+    return labelBmps
 
 def buildColourBarBitmap(imageList,
                          displayCtx,
@@ -279,14 +360,19 @@ def run(args, context):
         canvases[i] = c.getBitmap()
 
     # Disable labels for now
-    labelbmps = None
+    labelBmps = None
     if not args.hideLabels:
-        args.hideLabels = True
+        labelBmps = buildLabelBitmaps(imageList,
+                                      displayCtx,
+                                      canvasAxes,
+                                      canvases,
+                                      args.background[:3],
+                                      args.background[ 3])
 
     # layout
     if args.lightbox: layout = fsllayout.Bitmap(canvases[0])
     else:             layout = fsllayout.buildOrthoLayout(canvases,
-                                                          labelbmps,
+                                                          labelBmps,
                                                           args.layout,
                                                           not args.hideLabels,
                                                           LABEL_SIZE)
@@ -300,7 +386,10 @@ def run(args, context):
                                        args.colourBarLocation,
                                        args.colourBarLabelSide,
                                        args.background)
-        layout  = buildColourBarLayout(layout, cbarBmp, args)
+        layout  = buildColourBarLayout(layout,
+                                       cbarBmp,
+                                       args.colourBarLocation,
+                                       args.colourBarLabelSide)
 
  
     if args.outfile is not None:
