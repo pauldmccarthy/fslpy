@@ -303,15 +303,19 @@ def run(args, context):
         # and vertical axes for each canvas
         canvasAxes = []
         zooms      = []
+        centres    = []
         if not args.hidex:
             canvasAxes.append((1, 2))
             zooms     .append(args.xzoom)
+            centres   .append(args.xcentre)
         if not args.hidey:
             canvasAxes.append((0, 2))
             zooms     .append(args.yzoom)
+            centres   .append(args.ycentre)
         if not args.hidez:
             canvasAxes.append((0, 1))
             zooms     .append(args.zzoom)
+            centres   .append(args.zcentre)
 
         # Grid only makes sense if
         # we're displaying 3 canvases
@@ -329,11 +333,15 @@ def run(args, context):
                                           not args.hideLabels,
                                           args.layout)
 
-        for ((width, height), (xax, yax), zoom) in zip(sizes,
-                                                       canvasAxes,
-                                                       zooms):
+        for ((width, height), (xax, yax), zoom, centre) in zip(sizes,
+                                                               canvasAxes,
+                                                               zooms,
+                                                               centres):
 
             zax = 3 - xax - yax
+
+            if centre is None:
+                centre = (displayCtx.location[xax], displayCtx.location[yax])
 
             c = slicecanvas.OSMesaSliceCanvas(
                 imageList,
@@ -342,7 +350,9 @@ def run(args, context):
                 width=int(width),
                 height=int(height),
                 bgColour=args.background)
+            
             if zoom is not None: c.zoom = zoom
+            c.centreDisplayAt(*centre)
             canvases.append(c)
 
     # Configure each of the canvases (with those

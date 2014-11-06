@@ -65,6 +65,18 @@ def _configMainParser(mainParser):
                              help='Y axis zoom')
     orthoParser.add_argument('-zz', '--zzoom', type=float,
                              help='Z axis zoom')
+    orthoParser.add_argument('-xc', '--xcentre', metavar=('Y', 'Z'),
+                             type=float, nargs=2,
+                             help='X canvas display centre '
+                                  '(world coordinates)') 
+    orthoParser.add_argument('-yc', '--ycentre', metavar=('X', 'Z'),
+                             type=float, nargs=2,
+                             help='Y canvas display centre '
+                                  '(world coordinates)')     
+    orthoParser.add_argument('-zc', '--zcentre', metavar=('X', 'Y'),
+                             type=float, nargs=2,
+                             help='Z canvas display centre '
+                                  '(world coordinates)') 
     orthoParser.add_argument('-xh', '--hidex', action='store_true',
                              help='Hide the X axis')
     orthoParser.add_argument('-yh', '--hidey', action='store_true',
