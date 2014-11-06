@@ -67,7 +67,6 @@ perhaps into a standalone module...
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
 ** Put some introductory documentation up on git.fmrib wiki pages (for props package as well - installation, usage, etc)
-** Show labels in render.py
 ** CLI options
 *** DONE Show/hide labels
 *** DONE Ortho layout (horiz/vert/grid)
@@ -104,6 +103,7 @@ Need to be able to specify the order that actions appear in the menu - perhaps
 just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE Show labels in render.py
 ** DONE Props package - floating point property equality - if difference is < some small value, the property should be considered unchanged, and listeners should not be notified.
 ** DONE Proportional scaling of slice canvases in render.py - they're currently just given equal space.
 ** DONE Optimisations - tune image._transform, and glimage.genVertexData functions. Go back to using triangle strips?
