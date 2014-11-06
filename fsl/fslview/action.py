@@ -12,10 +12,11 @@ import wx
 
 class Action(wx.MenuItem):
 
-    def __init__(self, menuItem, imageList, displayCtx):
-        self._menuItem   = menuItem
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
+    def __init__(self, menuItem, imageList, displayCtx, fslviewframe):
+        self._menuItem     = menuItem
+        self._imageList    = imageList
+        self._displayCtx   = displayCtx
+        self._fslviewframe = fslviewframe
 
     def enable(self):
         self._menuItem.Enable(True)

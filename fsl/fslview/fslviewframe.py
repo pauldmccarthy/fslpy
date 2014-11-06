@@ -374,7 +374,10 @@ class FSLViewFrame(wx.Frame):
         for action in actionz:
             menuItem = fileMenu.Append(wx.ID_ANY,
                                          strings.actionTitles[action])
-            actionObj = action(menuItem, self._imageList, self._displayCtx)
+            actionObj = action(menuItem,
+                               self._imageList,
+                               self._displayCtx,
+                               self)
             
             self.Bind(wx.EVT_MENU,
                       lambda ev, ao=actionObj: ao.doAction(),

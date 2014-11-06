@@ -14,8 +14,12 @@ log = logging.getLogger(__name__)
 import fsl.fslview.action as action
 
 class OpenStandardAction(action.Action):
-    def __init__(self, menuItem, displayCtx, imageList):
-        action.Action.__init__(self, menuItem, displayCtx, imageList)
+    def __init__(self, menuItem, displayCtx, imageList, fslviewframe):
+        action.Action.__init__(self,
+                               menuItem,
+                               displayCtx,
+                               imageList,
+                               fslviewframe)
         
         # disable the 'add standard' menu
         # item if $FSLDIR is not set
