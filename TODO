@@ -78,6 +78,7 @@ perhaps into a standalone module...
 ** ColourBarPanel should only do stuff if it is being displayed
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
+Maybe things like this need to wait until I start getting into the interface design
 ** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
