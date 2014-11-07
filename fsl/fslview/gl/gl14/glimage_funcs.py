@@ -85,11 +85,11 @@ def genColourMap(glimg, display, colourResolution):
     
     def applyCmap(data):
         
-        rgba = cmap((data - dmin) / (dmax - dmin), alpha=display.alpha)
+        rgba = cmap((data - dmin) / (dmax - dmin), alpha=display.alpha) * 255
         
         if display.clipLow:  rgba[data < dmin, 3] = 0.0
         if display.clipHigh: rgba[data > dmax, 3] = 0.0
-        return np.array(rgba, dtype=np.float32)
+        return np.array(rgba, dtype=np.uint8)
 
     return applyCmap
 
@@ -194,8 +194,8 @@ def draw(glimg, zpos, xform=None):
     gl.glEnableClientState(gl.GL_COLOR_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glColorPointer( 4, gl.GL_FLOAT, 0, colours)
+    gl.glVertexPointer(3, gl.GL_FLOAT,         0, worldCoords)
+    gl.glColorPointer( 4, gl.GL_UNSIGNED_BYTE, 0, colours)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
