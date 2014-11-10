@@ -38,11 +38,26 @@ import numpy                          as np
 import scipy.ndimage                  as ndi
 import OpenGL.GL                      as gl
 import OpenGL.GL.ARB.fragment_program as arbfp
+import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform as transform
 
+_glimage_vertex_program = """!!ARBvp1.0
+
+TEMP vertexClip;
+DP4 vertexClip.x, state.matrix.mvp.row[0], vertex.position;
+DP4 vertexClip.y, state.matrix.mvp.row[1], vertex.position;
+DP4 vertexClip.z, state.matrix.mvp.row[2], vertex.position;
+DP4 vertexClip.w, state.matrix.mvp.row[3], vertex.position;
+
+MOV result.position,    vertexClip;
+MOV result.texcoord[0], vertex.position;
+
+END
+"""
 
 _glimage_fragment_program = """!!ARBfp1.0
+TEMP dispTexCoord;
 TEMP voxTexCoord;
 TEMP voxValue;
 
@@ -51,8 +66,16 @@ TEMP voxValue;
 # the current display range 
 PARAM voxValXform[ 4] = { state.matrix.texture[1] };
 
+PARAM dispToVoxMat[ 4] = { state.matrix.texture[0] };
+
 # retrieve texture coordinates into 3D image
-MOV voxTexCoord, fragment.texcoord[0];
+MOV dispTexCoord, fragment.texcoord[0];
+
+#MOV voxTexCoord, dispTexCoord;
+
+DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
+DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
+DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
 
 # look up image voxel value from 3D image texture
 TEX voxValue, voxTexCoord, texture[0], 3D;
@@ -71,8 +94,11 @@ def init(glimg, xax, yax):
     """No initialisation is necessary for OpenGL 1.4."""
     glimg.colourTexture = gl.glGenTextures(1)
 
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    
     glimg.fragmentProgram = arbfp.glGenProgramsARB(1)
+    glimg.vertexProgram   = arbvp.glGenProgramsARB(1) 
 
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            glimg.fragmentProgram)
@@ -82,7 +108,6 @@ def init(glimg, xax, yax):
                              len(_glimage_fragment_program),
                              _glimage_fragment_program)
 
-
     if (gl.glGetError() == gl.GL_INVALID_OPERATION):
 
         position = gl.glGetIntegerv(arbfp.GL_PROGRAM_ERROR_POSITION_ARB)
@@ -90,9 +115,26 @@ def init(glimg, xax, yax):
 
         raise RuntimeError('Error compiling fragment program '
                            '({}): {}'.format(position, message))
+
+
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           glimg.vertexProgram)
+
+    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                             len(_glimage_vertex_program),
+                             _glimage_vertex_program)
+
+    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
+
+        position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
+        message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
+
+        raise RuntimeError('Error compiling vertex program '
+                           '({}): {}'.format(position, message)) 
                   
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
-    
+    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
 
     
 def destroy(glimg):
@@ -349,16 +391,15 @@ def draw(glimg, zpos, xform=None):
     worldCoords = glimg.worldCoords
     indices     = glimg.indices
 
-    if display.interpolation == 'none': texCoords = glimg.texCoords
-    else:                               texCoords = glimg.worldCoords
-    
     worldCoords[:, glimg.zax] = zpos
-    texCoords[  :, glimg.zax] = zpos
 
     # enable the fragment program
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            glimg.fragmentProgram)
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           glimg.vertexProgram) 
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE0)
@@ -391,7 +432,7 @@ def draw(glimg, zpos, xform=None):
     gl.glLoadMatrixf(mat)
     
     worldCoords = worldCoords.ravel('C')
-    texCoords   = texCoords  .ravel('C')
+
 
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -403,21 +444,22 @@ def draw(glimg, zpos, xform=None):
     if display.interpolation == 'none': gl.glShadeModel(gl.GL_FLAT)
     else:                               gl.glShadeModel(gl.GL_SMOOTH)
 
-    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+#    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+#    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
 
-    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+#    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
