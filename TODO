@@ -7,6 +7,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** GL21 - are uint32/int32 images supported?!?
 ** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** OrthoPanel - need to re-layout when colour bar is displayed
 ** WX Bugs
