@@ -35,44 +35,56 @@ import logging
 log = logging.getLogger(__name__)
 
 import numpy                          as np
-import scipy.ndimage                  as ndi
 import OpenGL.GL                      as gl
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform as transform
 
+
 _glimage_vertex_program = """!!ARBvp1.0
 
-TEMP vertexClip;
-DP4 vertexClip.x, state.matrix.mvp.row[0], vertex.position;
-DP4 vertexClip.y, state.matrix.mvp.row[1], vertex.position;
-DP4 vertexClip.z, state.matrix.mvp.row[2], vertex.position;
-DP4 vertexClip.w, state.matrix.mvp.row[3], vertex.position;
+# Transform the vertex coordinates from the display
+# coordinate system to the screen coordinate system
+TEMP vertexPos;
+DP4 vertexPos.x, state.matrix.mvp.row[0], vertex.position;
+DP4 vertexPos.y, state.matrix.mvp.row[1], vertex.position;
+DP4 vertexPos.z, state.matrix.mvp.row[2], vertex.position;
+DP4 vertexPos.w, state.matrix.mvp.row[3], vertex.position;
 
-MOV result.position,    vertexClip;
+MOV result.position, vertexPos;
+
+# Set the vertex texture coordinate
+# to the vertex position
 MOV result.texcoord[0], vertex.position;
 
 END
 """
 
+
 _glimage_fragment_program = """!!ARBfp1.0
 TEMP dispTexCoord;
 TEMP voxTexCoord;
 TEMP voxValue;
+TEMP babs;
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
 # the current display range 
-PARAM voxValXform[ 4] = { state.matrix.texture[1] };
+PARAM voxValXform[4] = { state.matrix.texture[1] };
 
-PARAM dispToVoxMat[ 4] = { state.matrix.texture[0] };
+# This matrix transforms coordinates
+# from the display coordinate system
+# to image voxel coordinates
+PARAM dispToVoxMat[4] = { state.matrix.texture[0] };
 
-# retrieve texture coordinates into 3D image
+# retrieve the 3D texture coordinates
+# (which are in terms of the display
+# coordinate system)
 MOV dispTexCoord, fragment.texcoord[0];
 
-#MOV voxTexCoord, dispTexCoord;
-
+# Transform said coordinates
+# into voxel coordinates
 DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
 DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
 DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
@@ -80,7 +92,12 @@ DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
 # look up image voxel value from 3D image texture
 TEX voxValue, voxTexCoord, texture[0], 3D;
 
-# Scale voxel value 
+# The texture is an ALPHA texture, so
+# put the alpha value at the front
+MOV voxValue, voxValue.wxyz;
+
+# Scale voxel value according
+# to the current display range
 DP4 voxValue, voxValXform[0], voxValue;
 
 # look up the appropriate colour in the 1D colour map
@@ -162,12 +179,12 @@ def _prepareImageTextureData(glimg, data):
     elif dtype == np.int16:  texExtFmt = gl.GL_UNSIGNED_SHORT
     else:                    texExtFmt = gl.GL_UNSIGNED_SHORT
 
-    if   dtype == np.uint8:  texIntFmt = gl.GL_INTENSITY8
-    elif dtype == np.int8:   texIntFmt = gl.GL_INTENSITY8
-    elif dtype == np.uint16: texIntFmt = gl.GL_INTENSITY16
-    elif dtype == np.int16:  texIntFmt = gl.GL_INTENSITY16
-    else:                    texIntFmt = gl.GL_INTENSITY16
-    
+    if   dtype == np.uint8:  texIntFmt = gl.GL_ALPHA8
+    elif dtype == np.int8:   texIntFmt = gl.GL_ALPHA8
+    elif dtype == np.uint16: texIntFmt = gl.GL_ALPHA16
+    elif dtype == np.int16:  texIntFmt = gl.GL_ALPHA16
+    else:                    texIntFmt = gl.GL_ALPHA16
+
     if   dtype == np.uint8:  pass
     elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
     elif dtype == np.uint16: pass
@@ -194,7 +211,7 @@ def _prepareImageTextureData(glimg, data):
     voxValXform[0, 0] =  scale
     voxValXform[3, 0] = -offset
 
-    return data, texIntFmt, texExtFmt, voxValXform
+    return data, texIntFmt, texExtFmt, voxValXform.T
 
 
 def genImageData(glimg):
@@ -286,7 +303,7 @@ def genImageData(glimg):
                     texIntFmt,
                     image.shape[0], image.shape[1], image.shape[2],
                     0,
-                    gl.GL_LUMINANCE, 
+                    gl.GL_ALPHA, 
                     texExtFmt,
                     imageData)
 
@@ -393,7 +410,7 @@ def draw(glimg, zpos, xform=None):
 
     worldCoords[:, glimg.zax] = zpos
 
-    # enable the fragment program
+    # enable the vertex and fragment programs
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
@@ -433,29 +450,19 @@ def draw(glimg, zpos, xform=None):
     
     worldCoords = worldCoords.ravel('C')
 
-
     if xform is not None: 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glPushMatrix()
         gl.glMultMatrixf(xform)
 
-    # Select the shade model based on
-    # whether interpolation is enabled/disabled
-    if display.interpolation == 'none': gl.glShadeModel(gl.GL_FLAT)
-    else:                               gl.glShadeModel(gl.GL_SMOOTH)
-
-#    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-
-    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-#    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
 
-#    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
