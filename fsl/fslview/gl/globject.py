@@ -55,7 +55,7 @@ def createGLObject(image, display):
     else:               return None
 
 
-def calculateSamplePoints(image, display, xax, yax):
+def calculateSamplePoints(image, display, xax, yax, **kwargs):
     """Calculates a uniform grid of points, in the display coordinate system (as
     specified by the given :class:`~fsl.fslview.displaycontext.ImageDisplay`
     object properties) along the x-y plane (as specified by the xax/yax
@@ -87,12 +87,19 @@ def calculateSamplePoints(image, display, xax, yax):
     :arg yax:     The world space axis which corresponds to the
                   vertical screen axis (0, 1, or 2).
 
+    :arg kwargs:  Any :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                  properties may be overridden (only ``worldResolution``,
+                  ``voxelResolution`` and ``transform`` are used).
     """
 
     worldRes       = display.worldResolution
     voxelRes       = display.voxelResolution
     transformCode  = display.transform
     transformMat   = display.voxToDisplayMat
+
+    if 'worldResolution' in kwargs: worldRes      = kwargs['worldResolution']
+    if 'voxelResolution' in kwargs: voxelRes      = kwargs['voxelResolution']
+    if 'transform'       in kwargs: transformCode = kwargs['transform']
 
     # These values give the min/max x/y values
     # of a bounding box which encapsulates

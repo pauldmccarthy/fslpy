@@ -67,7 +67,9 @@ class GLTensorLine(object):
               self.image,
               self.display,
               self.xax,
-              self.yax)
+              self.yax,
+              voxelResolution=1,
+              worldResolution=min(self.image.pixdim[:3]))
 
         self.worldCoords = worldCoords
         self.xpixdim     = xpixdim
