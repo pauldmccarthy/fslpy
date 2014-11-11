@@ -25,12 +25,6 @@ These version dependent modules must provide the following functions:
 
   - `genVertexData(GLImage)`: Create and prepare vertex and texture
      coordinates, using the :func:`genVertexData` function. 
-                               
-  - `genImageData(GLImage)`: Retrieve and prepare the image data to be
-    displayed.
-
-  - `genColourMap(GLImage)`: Create and prepare the colour map used to
-    colour image voxels.
 
   - `draw(GLImage, zpos, xform=None)`: Draw a slice of the image at the given
     Z position. If xform is not None, it must be applied as a transformation
@@ -48,6 +42,7 @@ import numpy          as np
 
 import fsl.fslview.gl as fslgl
 import                   globject
+
 
 class GLImage(object):
     """The :class:`GLImage` class encapsulates the data and logic required to
@@ -93,7 +88,7 @@ class GLImage(object):
 
         # Initialise the image data, and
         # generate vertex/texture coordinates
-        self.imageData = fslgl.glimage_funcs.genImageData(self)
+        self.genImageTexture()
 
         # The colour map, used for converting 
         # image data to a RGBA colour.
@@ -138,6 +133,17 @@ class GLImage(object):
         deleting texture handles).
         """
         gl.glDeleteTextures(1, self.colourTexture)
+
+        # Another GLImage object may have
+        # already deleted the image texture
+        try:
+            displayHash, imageTexture = \
+                self.image.delAttribute('glImageTexture')
+            gl.glDeleteTextures(1, imageTexture)
+            
+        except KeyError:
+            pass
+        
         fslgl.glimage_funcs.destroy(self)
 
 
@@ -177,6 +183,181 @@ class GLImage(object):
             worldCoords, xpixdim, ypixdim, xlen, ylen, self.xax, self.yax)
 
         return worldCoords, texCoords, indices
+
+    
+    def _prepareImageTextureData(self, data):
+        """Figures out how the image data should be stored as an OpenGL 3D
+        texture, and what transformation, if any, will be required to map
+        the data into the range (0, 1) for subsequent colour map texture
+        lookup.
+
+        Returns a tuple containing the following:
+        
+          - The image data, possibly converted to a different type
+        
+          - An OpenGL identifier to be used as the internal texture type.
+        
+          - An OpenGL identifier to be used as the external texture type.
+        
+          - A transformation matrix which should be applied to individual
+            voxel values before they are used as lookup values into the
+            colour map texture.
+        """
+
+        dtype = data.dtype
+
+        # Signed data types are a pain in the arse.
+        # TODO It would be nice if you didn't have
+        # to perform the data conversion/offset
+        # for signed types.
+        if   dtype == np.uint8:  texExtFmt = gl.GL_UNSIGNED_BYTE
+        elif dtype == np.int8:   texExtFmt = gl.GL_UNSIGNED_BYTE
+        elif dtype == np.uint16: texExtFmt = gl.GL_UNSIGNED_SHORT
+        elif dtype == np.int16:  texExtFmt = gl.GL_UNSIGNED_SHORT
+        else:                    texExtFmt = gl.GL_UNSIGNED_SHORT
+
+        if   dtype == np.uint8:  texIntFmt = gl.GL_LUMINANCE8
+        elif dtype == np.int8:   texIntFmt = gl.GL_LUMINANCE8
+        elif dtype == np.uint16: texIntFmt = gl.GL_LUMINANCE16
+        elif dtype == np.int16:  texIntFmt = gl.GL_LUMINANCE16
+        else:                    texIntFmt = gl.GL_LUMINANCE16
+
+        if   dtype == np.uint8:  pass
+        elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
+        elif dtype == np.uint16: pass
+        elif dtype == np.int16:  data = np.array(data + 32768, dtype=np.uint16)
+        else:
+            dmin = float(data.min())
+            dmax = float(data.max())
+            data = (data - dmin) / (dmax - dmin) * 65535
+            data = np.round(data)
+            data = np.array(data, dtype=np.uint16)
+
+        if   dtype == np.uint8:  offset =  0
+        elif dtype == np.int8:   offset = -128
+        elif dtype == np.uint16: offset =  0
+        elif dtype == np.int16:  offset = -32768
+        else:                    offset = -dmin
+
+        if   dtype == np.uint8:  scale = 255
+        elif dtype == np.int8:   scale = 255
+        elif dtype == np.uint16: scale = 65535
+        elif dtype == np.int16:  scale = 65535
+        else:                    scale = dmax - dmin
+
+        voxValXform = np.eye(4, dtype=np.float32)
+        voxValXform[0, 0] = scale
+        voxValXform[3, 0] = offset
+
+        return data, texIntFmt, texExtFmt, voxValXform
+
+
+    def getImageTexture(self):
+        displayHash, imageTexture = self.image.getAttribute('glImageTexture')
+        return imageTexture
+
+
+    def genImageTexture(self):
+        """Generates the OpenGL image texture used to store the data for the
+        given image.
+
+        The texture handle is stored as an attribute of the image and returned.
+        If a texture handle has already been created (e.g. by another
+        :class:`GLImage` object which is managing the same image), the existing
+        texture handle is returned.
+        """
+
+        image   = self.image 
+        display = self.display
+        volume  = display.volume
+
+        # we only store a single 3D image
+        # in GPU memory at any one time
+        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
+        else:                    imageData = image.data
+
+        imageData, texIntFmt, texExtFmt, voxValXform = \
+            self._prepareImageTextureData(imageData)
+        self.voxValXform = voxValXform 
+
+        # Check to see if the image texture
+        # has already been created
+        try:
+            displayHash, imageTexture = image.getAttribute('glImageTexture')
+        except:
+            displayHash  = None
+            imageTexture = None
+
+        # otherwise, create a new one
+        if imageTexture is None:
+            imageTexture = gl.glGenTextures(1)
+
+        # The image buffer already exists, and it
+        # contains the data for the current display
+        # configuration
+        elif displayHash == hash(display):
+            return
+
+        log.debug('Creating 3D texture for '
+                  'image {} (data shape: {})'.format(
+                      image.name,
+                      imageData.shape))
+
+        # The image data is flattened, with fortran dimension
+        # ordering, so the data, as stored on the GPU, has its
+        # first dimension as the fastest changing.
+        imageData = imageData.ravel(order='F')
+
+        # Enable storage of tightly packed data of any size (i.e.
+        # our texture shape does not have to be divisible by 4).
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
+
+        # Set up image texture sampling thingos
+        # with appropriate interpolation method
+        if display.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                               interp = gl.GL_LINEAR
+ 
+        gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           interp)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           interp)
+
+        # Make everything outside
+        # of the image transparent
+        gl.glTexParameterfv(gl.GL_TEXTURE_3D,
+                            gl.GL_TEXTURE_BORDER_COLOR,
+                            [0, 0, 0, 0])
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_BORDER)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_T,
+                           gl.GL_CLAMP_TO_BORDER)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_R,
+                           gl.GL_CLAMP_TO_BORDER)
+
+        # create the texture according to
+        # the format determined by the
+        # _prepareImageTextureData method.
+        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                        0,
+                        texIntFmt,
+                        image.shape[0], image.shape[1], image.shape[2],
+                        0,
+                        gl.GL_LUMINANCE, 
+                        texExtFmt,
+                        imageData)
+
+        # Add the ImageDisplay hash, and a reference to the
+        # texture as an attribute of the image, so other
+        # things which want to render the same volume of the
+        # image don't need to duplicate all of that data.
+        image.setAttribute('glImageTexture', (hash(display), imageTexture))
 
     
     def genColourTexture(self, colourResolution):
@@ -276,7 +457,7 @@ class GLImage(object):
             self.nVertices   = nv
 
         def imageUpdate(*a):
-            self.imageData = fslgl.glimage_funcs.genImageData(self)
+            self.genImageTexture()
         
         def colourUpdate(*a):
             self.genColourTexture(self.colourResolution)
