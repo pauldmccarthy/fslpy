@@ -66,7 +66,6 @@ _glimage_fragment_program = """!!ARBfp1.0
 TEMP dispTexCoord;
 TEMP voxTexCoord;
 TEMP voxValue;
-TEMP babs;
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -92,17 +91,14 @@ DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
 # look up image voxel value from 3D image texture
 TEX voxValue, voxTexCoord, texture[0], 3D;
 
-# The texture is an ALPHA texture, so
-# put the alpha value at the front
-MOV voxValue, voxValue.wxyz;
-
 # Scale voxel value according
 # to the current display range
-DP4 voxValue, voxValXform[0], voxValue;
+MUL voxValue, voxValue, voxValXform[0].x;
+ADD voxValue, voxValue, voxValXform[0].w;
 
 # look up the appropriate colour in the 1D colour map
 # texture, and apply it to the fragment output colour
-TEX result.color, voxValue, texture[1], 1D;
+TEX result.color, voxValue.x, texture[1], 1D;
 END
 """
 
@@ -179,11 +175,11 @@ def _prepareImageTextureData(glimg, data):
     elif dtype == np.int16:  texExtFmt = gl.GL_UNSIGNED_SHORT
     else:                    texExtFmt = gl.GL_UNSIGNED_SHORT
 
-    if   dtype == np.uint8:  texIntFmt = gl.GL_ALPHA8
-    elif dtype == np.int8:   texIntFmt = gl.GL_ALPHA8
-    elif dtype == np.uint16: texIntFmt = gl.GL_ALPHA16
-    elif dtype == np.int16:  texIntFmt = gl.GL_ALPHA16
-    else:                    texIntFmt = gl.GL_ALPHA16
+    if   dtype == np.uint8:  texIntFmt = gl.GL_LUMINANCE8
+    elif dtype == np.int8:   texIntFmt = gl.GL_LUMINANCE8
+    elif dtype == np.uint16: texIntFmt = gl.GL_LUMINANCE16
+    elif dtype == np.int16:  texIntFmt = gl.GL_LUMINANCE16
+    else:                    texIntFmt = gl.GL_LUMINANCE16
 
     if   dtype == np.uint8:  pass
     elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
@@ -193,25 +189,26 @@ def _prepareImageTextureData(glimg, data):
         dmin = float(data.min())
         dmax = float(data.max())
         data = (data - dmin) / (dmax - dmin) * 65535
+        data = np.round(data)
         data = np.array(data, dtype=np.uint16)
 
     if   dtype == np.uint8:  offset = 0
-    elif dtype == np.int8:   offset = 128
+    elif dtype == np.int8:   offset = -128
     elif dtype == np.uint16: offset = 0
-    elif dtype == np.int16:  offset = 32768
-    else:                    offset = 0
+    elif dtype == np.int16:  offset = -32768
+    else:                    offset = -dmin
 
     if   dtype == np.uint8:  scale = 255
     elif dtype == np.int8:   scale = 255
     elif dtype == np.uint16: scale = 65535
     elif dtype == np.int16:  scale = 65535
-    else:                    scale = 65535
+    else:                    scale = dmax - dmin
 
     voxValXform = np.eye(4, dtype=np.float32)
-    voxValXform[0, 0] =  scale
-    voxValXform[3, 0] = -offset
+    voxValXform[0, 0] = scale
+    voxValXform[3, 0] = offset
 
-    return data, texIntFmt, texExtFmt, voxValXform.T
+    return data, texIntFmt, texExtFmt, voxValXform
 
 
 def genImageData(glimg):
@@ -303,7 +300,7 @@ def genImageData(glimg):
                     texIntFmt,
                     image.shape[0], image.shape[1], image.shape[2],
                     0,
-                    gl.GL_ALPHA, 
+                    gl.GL_LUMINANCE, 
                     texExtFmt,
                     imageData)
 
@@ -342,8 +339,7 @@ def genColourMap(glimg, display, colourResolution):
     # than 1.0 respectively.
     texCoordXform = np.identity(4, dtype=np.float32)
     texCoordXform[0, 0] = 1.0 / (imax - imin)
-    texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
-    texCoordXform = texCoordXform.transpose()
+    texCoordXform[3, 0] = -imin * texCoordXform[0, 0]
 
     log.debug('Generating colour texture for '
               'image {} (map: {}; resolution: {})'.format(
@@ -431,9 +427,7 @@ def draw(glimg, zpos, xform=None):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
-
     colourXForm = transform.concat(glimg.voxValXform, glimg.colourMap)
-
     gl.glLoadMatrixf(colourXForm)
     
     # And for the image texture
