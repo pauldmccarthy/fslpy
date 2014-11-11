@@ -143,4 +143,6 @@ def genVertexData(image, display, xax, yax):
     worldCoords = np.array(worldCoords, dtype=np.float32).transpose()
     texCoords   = np.array(texCoords,   dtype=np.float32).transpose()
 
-    return worldCoords, texCoords
+    indices = np.array(np.arange(worldCoords.shape[0], dtype=np.uint32))
+
+    return worldCoords, texCoords, indices
