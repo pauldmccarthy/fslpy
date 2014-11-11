@@ -36,9 +36,6 @@ This module provides the following functions:
    texture, and returns a handle to it. If multiple GLImage objects are
    rendering the same image, the 3D texture is shared between them.
 
- - :func:`genColourMap`: Configures an OpenGL 1D texture with a colour map,
-   used for colouring the image data.
-
  - :func:`destroy`: Deletes the colour map and image textures, and the vertex
    and texture coordinate VBOs.
 
@@ -56,6 +53,7 @@ import OpenGL.arrays.vbo as vbo
 import OpenGL.GL.ARB.texture_rg as arbrg
 
 import shaders
+import fsl.utils.transform as transform
 
 
 def _compileShaders(glimg):
@@ -143,8 +141,6 @@ def _compileShaders(glimg):
 def init(glimg, xax, yax):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
-    
-    glimg.colourTexture = gl.glGenTextures(1)
     _compileShaders(glimg)
 
 
@@ -152,7 +148,6 @@ def destroy(glimg):
     """Cleans up texture and VBO handles."""
     glimg.worldCoords.delete()
     glimg.texCoords  .delete()
-    gl.glDeleteTextures(1, glimg.colourTexture)
     gl.glDeleteTextures(1, glimg.imageData)
 
 
@@ -344,86 +339,6 @@ def genImageData(glimg):
 
     return imageTexture
 
-    
-def genColourMap(glimg, display, colourResolution):
-    """Generates the colour texture used to colour image voxels. See
-    :func:`fsl.fslview.gl.glimage.genVertexData`.
-
-    OpenGL does different things to 3D texture data depending on its type -
-    integer types are normalised from [0, INT_MAX] to [0, 1], whereas floating
-    point types are left un-normalised (because we are using the
-    ARB.texture_rg.GL_R32F data format - without this, floating point data is
-    *clamped*, not normalised, to the range [0, 1]!). The
-    :func:`_checkDataType` method calculates an appropriate transformation
-    matrix to transform the image data to the appropriate texture coordinate
-    range, which is then returned by this function, and subsequently used in
-    the :func:`draw` function.
-    """
-
-    imin = display.displayRange[0]
-    imax = display.displayRange[1]
-
-    # This transformation is used to transform voxel values
-    # from their native range to the range [0.0, 1.0], which
-    # is required for texture colour lookup. Values below
-    # or above the current display range will be mapped
-    # to texture coordinate values less than 0.0 or greater
-    # than 1.0 respectively.
-    texCoordXform = np.identity(4, dtype=np.float32)
-    texCoordXform[0, 0] = 1.0 / (imax - imin)
-    texCoordXform[0, 3] = -imin * texCoordXform[0, 0]
-    texCoordXform = texCoordXform.transpose()
-
-    texCoordXform = np.dot(glimg.dataTypeXform, texCoordXform)
-
-    log.debug('Generating colour texture for '
-              'image {} (map: {}; resolution: {})'.format(
-                  glimg.image.name,
-                  display.cmap.name,
-                  colourResolution))
-
-    # Create [self.colourResolution] rgb values,
-    # spanning the entire range of the image
-    # colour map
-    colourRange     = np.linspace(0.0, 1.0, colourResolution)
-    colourmap       = display.cmap(colourRange)
-    colourmap[:, 3] = display.alpha
-
-    # Make out-of-range values transparent
-    # if clipping is enabled 
-    if display.clipLow:  colourmap[ 0, 3] = 0.0
-    if display.clipHigh: colourmap[-1, 3] = 0.0 
-
-    # The colour data is stored on
-    # the GPU as 8 bit rgba tuples
-    colourmap = np.floor(colourmap * 255)
-    colourmap = np.array(colourmap, dtype=np.uint8)
-    colourmap = colourmap.ravel(order='C')
-
-    # GL texture creation stuff
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_EDGE)
-
-    gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                    0,
-                    gl.GL_RGBA8,
-                    colourResolution,
-                    0,
-                    gl.GL_RGBA,
-                    gl.GL_UNSIGNED_BYTE,
-                    colourmap)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-
-    return texCoordXform
-
 
 def draw(glimg, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
@@ -462,10 +377,11 @@ def draw(glimg, zpos, xform=None):
     # bind the transformation matrices
     # to the shader variable
     if xform is None: xform = np.identity(4)
-    
+
+    tcx = transform.concat(glimg.dataTypeXform, glimg.colourMapXForm)
     w2w = np.array(xform,                   dtype=np.float32).ravel('C')
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
-    tcx = np.array(glimg.colourMap,         dtype=np.float32).ravel('C')
+    tcx = np.array(tcx,                     dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(glimg.worldToVoxMatPos,   1, False, w2v)
     gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
