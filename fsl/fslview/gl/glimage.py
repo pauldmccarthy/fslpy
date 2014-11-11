@@ -142,7 +142,41 @@ class GLImage(object):
 
 
     def genVertexData(self):
-        return genVertexData(self.image, self.display, self.xax, self.yax)
+        """Generates vertex coordinates (for rendering voxels) and
+        texture coordinates (for colouring voxels) in world space.
+
+        Generates X/Y vertex coordinates, in the display coordinate system for
+        the given image, which define a set of pixels for displaying the image
+        at an arbitrary position along the world Z dimension.  These pixels
+        are represented by an OpenGL triangle strip. See the
+        :func:`~fsl.fslview.gl.globject.calculateSamplePoints` and
+        :func:`~fsl.fslview.gl.globject.samplePointsToTriangleStrip` functions
+        for more details.
+
+        :arg image:   The :class:`~fsl.data.image.Image` object to
+                      generate vertex and texture coordinates for.
+
+        :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+                      object which defines how the image is to be
+                      rendered.
+
+        :arg xax:     The world space axis which corresponds to the
+                      horizontal screen axis (0, 1, or 2).
+
+        :arg yax:     The world space axis which corresponds to the
+                      vertical screen axis (0, 1, or 2).
+        """
+
+        worldCoords, xpixdim, ypixdim, xlen, ylen = \
+          globject.calculateSamplePoints(
+              self.image, self.display, self.xax, self.yax)
+
+        # All voxels are rendered using a triangle strip,
+        # with rows connected via degenerate vertices
+        worldCoords, texCoords, indices = globject.samplePointsToTriangleStrip(
+            worldCoords, xpixdim, ypixdim, xlen, ylen, self.xax, self.yax)
+
+        return worldCoords, texCoords, indices
 
     
     def genColourTexture(self, colourResolution):
@@ -260,42 +294,3 @@ class GLImage(object):
         display.addListener('voxelResolution', lnrName, vertexUpdate)
         display.addListener('worldResolution', lnrName, vertexUpdate)
         display.addListener('volume',          lnrName, imageUpdate)
-
-
-def genVertexData(image, display, xax, yax):
-    """Generates vertex coordinates (for rendering voxels) and
-    texture coordinates (for colouring voxels) in world space.
-
-    Generates X/Y vertex coordinates, in the display coordinate system for the
-    given image, which define a set of pixels for displaying the image at an
-    arbitrary position along the world Z dimension.  These pixels are
-    represented by an OpenGL triangle strip. See the
-    :func:`~fsl.fslview.gl.globject.calculateSamplePoints` and
-    :func:`~fsl.fslview.gl.globject.samplePointsToTriangleStrip` functions
-    for more details.
-
-    :arg image:   The :class:`~fsl.data.image.Image` object to
-                  generate vertex and texture coordinates for.
-
-    :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                  object which defines how the image is to be
-                  rendered.
-
-    :arg xax:     The world space axis which corresponds to the
-                  horizontal screen axis (0, 1, or 2).
-
-    :arg yax:     The world space axis which corresponds to the
-                  vertical screen axis (0, 1, or 2).
-
-    """
-    
-    worldCoords, xpixdim, ypixdim, xlen, ylen = \
-      globject.calculateSamplePoints(
-          image, display, xax, yax)
-
-    # All voxels are rendered using a triangle strip,
-    # with rows connected via degenerate vertices
-    worldCoords, texCoords, indices = globject.samplePointsToTriangleStrip(
-        worldCoords, xpixdim, ypixdim, xlen, ylen, xax, yax)
-    
-    return worldCoords, texCoords, indices
