@@ -188,17 +188,13 @@ def draw(glimg, zpos, xform=None):
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            glimg.vertexProgram)
 
-
-    cmapTexture  = glimg.colourTexture
-    imageTexture = glimg.getImageTexture()
-
     # Set up the image data texture 
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageTexture)
 
     # Set up the colour map texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, cmapTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
 
     # Configure the texture coordinate
     # transformation for the colour map
@@ -206,7 +202,7 @@ def draw(glimg, zpos, xform=None):
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
     
-    cmapXForm = transform.concat(glimg.voxValXform, glimg.colourMapXForm)
+    cmapXForm = transform.concat(glimg.voxValXform, glimg.colourMapXform)
     gl.glLoadMatrixf(cmapXForm)
     
     # And the image data transformation

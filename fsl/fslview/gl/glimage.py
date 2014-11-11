@@ -252,11 +252,6 @@ class GLImage(object):
         return data, texIntFmt, texExtFmt, voxValXform
 
 
-    def getImageTexture(self):
-        displayHash, imageTexture = self.image.getAttribute('glImageTexture')
-        return imageTexture
-
-
     def genImageTexture(self):
         """Generates the OpenGL image texture used to store the data for the
         given image.
@@ -296,7 +291,10 @@ class GLImage(object):
         # contains the data for the current display
         # configuration
         elif displayHash == hash(display):
+            self.imageTexture = imageTexture
             return
+        
+        self.imageTexture = imageTexture
 
         log.debug('Creating 3D texture for '
                   'image {} (data shape: {})'.format(
@@ -397,7 +395,7 @@ class GLImage(object):
         cmapXform[0, 0] = 1.0 / (imax - imin)
         cmapXform[3, 0] = -imin * cmapXform[0, 0]
 
-        self.colourMapXForm = cmapXform
+        self.colourMapXform = cmapXform
 
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image

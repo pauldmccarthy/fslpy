@@ -32,10 +32,6 @@ This module provides the following functions:
    for rendering a single 2D slice of a 3D image. Actually returns handles to
    the VBOs for the vertex and texture coordinates.
 
- - :func:`genImageData`: Prepares the 3D image data to be rendered as a 3D
-   texture, and returns a handle to it. If multiple GLImage objects are
-   rendering the same image, the 3D texture is shared between them.
-
  - :func:`destroy`: Deletes the colour map and image textures, and the vertex
    and texture coordinate VBOs.
 
@@ -119,8 +115,6 @@ def _compileShaders(glimg):
                                                        'imageShape') 
     glimg.texCoordXformPos   = gl.glGetUniformLocation(glimg.shaders,
                                                        'texCoordXform') 
-    glimg.signedPos          = gl.glGetUniformLocation(glimg.shaders,
-                                                       'signed')
     glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
                                                        'useSpline')
     glimg.voxSmoothPos       = gl.glGetUniformLocation(glimg.shaders,
@@ -148,7 +142,7 @@ def destroy(glimg):
     """Cleans up texture and VBO handles."""
     glimg.worldCoords.delete()
     glimg.texCoords  .delete()
-    gl.glDeleteTextures(1, glimg.imageData)
+    glimg.indices    .delete()
 
 
 def genVertexData(glimg):
@@ -170,174 +164,6 @@ def genVertexData(glimg):
                                gl.GL_ELEMENT_ARRAY_BUFFER)
 
     return worldCoordBuffer, texCoordBuffer, indexBuffer, len(indices)
-
-        
-def _checkDataType(glimg):
-    """This method determines the appropriate OpenGL texture data
-    format to use for the image managed by this :class`GLImage`
-    object. 
-    """
-
-    dtype = glimg.image.data.dtype
-
-    if   dtype == np.uint8:  texExtFmt = gl.GL_UNSIGNED_BYTE
-    elif dtype == np.int8:   texExtFmt = gl.GL_UNSIGNED_BYTE
-    elif dtype == np.uint16: texExtFmt = gl.GL_UNSIGNED_SHORT
-    elif dtype == np.int16:  texExtFmt = gl.GL_UNSIGNED_SHORT
-    elif dtype == np.uint32: texExtFmt = gl.GL_UNSIGNED_INT
-    elif dtype == np.int32:  texExtFmt = gl.GL_UNSIGNED_INT
-    else:                    texExtFmt = gl.GL_FLOAT
-
-    if   dtype == np.uint8:  texIntFmt = gl.GL_INTENSITY
-    elif dtype == np.int8:   texIntFmt = gl.GL_INTENSITY
-    elif dtype == np.uint16: texIntFmt = gl.GL_INTENSITY
-    elif dtype == np.int16:  texIntFmt = gl.GL_INTENSITY
-    elif dtype == np.uint32: texIntFmt = gl.GL_INTENSITY
-    elif dtype == np.int32:  texIntFmt = gl.GL_INTENSITY
-    else:                    texIntFmt = arbrg.GL_R32F
-
-    if   dtype == np.int8:   signed = True
-    elif dtype == np.int16:  signed = True
-    elif dtype == np.int32:  signed = True
-    else:                    signed = False
-
-    if   dtype == np.uint8:  normFactor = 255.0
-    elif dtype == np.int8:   normFactor = 255.0
-    elif dtype == np.uint16: normFactor = 65535.0
-    elif dtype == np.int16:  normFactor = 65535.0
-    elif dtype == np.uint32: normFactor = 4294967295.0
-    elif dtype == np.int32:  normFactor = 4294967295.0
-    else:                    normFactor = 1.0
-
-    if   dtype == np.int8:   normOffset = 128.0
-    elif dtype == np.int16:  normOffset = 32768.0
-    elif dtype == np.int32:  normOffset = 2147483648.0
-    else:                    normOffset = 0.0
-
-    xform = np.identity(4)
-    xform[0, 0] =  normFactor
-    xform[0, 3] = -normOffset
-
-    # The fragment shader needs to know whether the data is signed
-    # or unsigned, so it can perform texture coordinate transformation
-    # correctly. The transformation matrix from image data range to
-    # [0, 1] is used by the genColourTexture function.
-    glimg.signed        = signed
-    glimg.dataTypeXform = xform.transpose()
-
-    log.debug('Image {} (data type {}) is to be '
-              'stored as a 3D texture with '
-              'internal format {}, external format {}, '
-              'norm factor {}, norm offset {}'.format(
-                  glimg.image.name,
-                  dtype,
-                  texIntFmt,
-                  texExtFmt,
-                  normFactor,
-                  normOffset))
-
-    return texIntFmt, texExtFmt
-
-        
-def genImageData(glimg):
-    """Generates the OpenGL image texture used to store the data for the
-    given image.
-
-    The texture handle is stored as an attribute of the image and returned.
-    If a texture handle has already been created (e.g. by another
-    :class:`GLImage` object which is managing the same image), the existing
-    texture handle is returned.
-    """
-
-    # figure out how to store
-    # the image as a 3D texture.
-    texIntFmt, texExtFmt = _checkDataType(glimg)
-
-    image   = glimg.image 
-    display = glimg.display
-    volume  = display.volume
-
-    if   display.interpolation == 'spline': interp = gl.GL_LINEAR
-    elif display.interpolation == 'linear': interp = gl.GL_LINEAR
-    else:                                   interp = gl.GL_NEAREST
-
-    # we only store a single 3D image
-    # in GPU memory at any one time
-    if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
-    else:                    imageData = image.data
-
-    # Check to see if the image texture
-    # has already been created
-    try:
-        displayHash, imageTexture = image.getAttribute('glImageTexture')
-    except:
-        displayHash  = None
-        imageTexture = None
-
-    # otherwise, create a new one
-    if imageTexture is None:
-        imageTexture = gl.glGenTextures(1)
-
-    # The image buffer already exists, and it
-    # contains the data for the requested volume.  
-    elif displayHash == hash(display):
-        return imageTexture
-
-    log.debug('Creating 3D texture for '
-              'image {} (data shape: {})'.format(
-                  image.name,
-                  imageData.shape))
-
-    # The image data is flattened, with fortran dimension
-    # ordering, so the data, as stored on the GPU, has its
-    # first dimension as the fastest changing.
-    imageData = imageData.ravel(order='F')
-
-    # Enable storage of tightly packed data of any size (i.e.
-    # our texture shape does not have to be divisible by 4).
-    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-    
-    # Set up image texture sampling thingos
-    # with appropriate interpolation method
-    gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       interp)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       interp)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_T,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_R,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameterfv(gl.GL_TEXTURE_3D,
-                        gl.GL_TEXTURE_BORDER_COLOR,
-                        [0, 0, 0, 0])
-
-    # create the texture according to the format
-    # calculated by the checkDataType method.
-    gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                    0,
-                    texIntFmt,
-                    image.shape[0], image.shape[1], image.shape[2],
-                    0,
-                    gl.GL_RED,
-                    texExtFmt,
-                    imageData)
-
-    # Add the ImageDisplay hash, and a reference to the
-    # texture as an attribute of the image, so other
-    # things which want to render the same volume of the
-    # image don't need to duplicate all of that data.
-    image.setAttribute('glImageTexture', (hash(display), imageTexture))
-
-    return imageTexture
 
 
 def draw(glimg, zpos, xform=None):
@@ -364,7 +190,6 @@ def draw(glimg, zpos, xform=None):
 
     # bind the current alpha value
     # and data range to the shader
-    gl.glUniform1f( glimg.signedPos,        glimg.signed)
     gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
     gl.glUniform1f( glimg.voxSmoothPos,     display.interpolation != 'none')
     gl.glUniform1f( glimg.zCoordPos,        zpos)
@@ -378,7 +203,7 @@ def draw(glimg, zpos, xform=None):
     # to the shader variable
     if xform is None: xform = np.identity(4)
 
-    tcx = transform.concat(glimg.dataTypeXform, glimg.colourMapXForm)
+    tcx = transform.concat(glimg.voxValXform, glimg.colourMapXform)
     w2w = np.array(xform,                   dtype=np.float32).ravel('C')
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
     tcx = np.array(tcx,                     dtype=np.float32).ravel('C')
@@ -399,7 +224,7 @@ def draw(glimg, zpos, xform=None):
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageData)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageTexture)
     gl.glUniform1i(glimg.imageBufferPos, 1)
 
     # world x/y coordinates

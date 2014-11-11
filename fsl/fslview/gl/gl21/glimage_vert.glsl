@@ -13,7 +13,6 @@ uniform mat4 worldToWorldMat;
 uniform int xax;
 uniform int yax;
 uniform int zax;
-uniform int samplingRate;
 
 /* Image dimensions */
 uniform vec3 imageShape;
