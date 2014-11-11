@@ -207,16 +207,33 @@ def draw(glimg, zpos, xform=None):
     
     # And the image data transformation
     # for the image texture
-    mat = np.eye(4, dtype=np.float32)
-    mat[0, 0] = 1.0 / glimg.image.shape[0]
-    mat[1, 1] = 1.0 / glimg.image.shape[1]
-    mat[2, 2] = 1.0 / glimg.image.shape[2]
-    mat = transform.concat(display.displayToVoxMat, mat)
+
+    # The image texture coordinates first
+    # need to be transformed from display
+    # space to voxel coordinates
+    dataXform = display.displayToVoxMat
+
+    # Then they need to be normalised to
+    # lie between 0.0 and 1.0, for the
+    # texture lookup.
+    norm = np.eye(4, dtype=np.float32)
+
+    # Divide by the image shape along each axis
+    norm[0, 0] = 1.0 / glimg.image.shape[0]
+    norm[1, 1] = 1.0 / glimg.image.shape[1]
+    norm[2, 2] = 1.0 / glimg.image.shape[2]
+
+    # Centre coordinates within a voxel
+    norm[3, 0] = 0.5 / glimg.image.shape[0]
+    norm[3, 1] = 0.5 / glimg.image.shape[1]
+    norm[3, 2] = 0.5 / glimg.image.shape[2]
+    
+    dataXform = transform.concat(display.displayToVoxMat, norm)
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
-    gl.glLoadMatrixf(mat)
+    gl.glLoadMatrixf(dataXform)
     
     worldCoords = worldCoords.ravel('C')
 
