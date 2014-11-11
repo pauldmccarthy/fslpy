@@ -174,10 +174,6 @@ class ImageDisplay(props.HasProperties):
         'displayRange',
         'alpha',
         props.HGroup(('clipLow', 'clipHigh', 'interpolation')),
-        props.Widget('worldResolution',
-                     visibleWhen=lambda i: i.transform == 'affine'),
-        props.Widget('voxelResolution',
-                     visibleWhen=lambda i: i.transform != 'affine'),
         'transform',
         'imageType',
         'cmap'))
@@ -284,7 +280,12 @@ class ImageDisplay(props.HasProperties):
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange',    'minDistance', dMinDistance)
         self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
-        self.worldResolution = min(image.pixdim[:3])
+
+        # Images are displayed at full resolution,
+        # regardless of these values, as the data
+        # is just pulled from the 3D image texture
+        self.worldResolution = min(image.pixdim[:3]) * 10
+        self.voxelResolution = 10
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
