@@ -8,19 +8,6 @@
 """A GLImage object encapsulates the OpenGL information necessary
 to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
 
-The functions in this module make use of functions in the
-:mod:`fsl.fslview.gl.glimage` module to actually generates the vertex and
-texture information necessary to render an image.
-
-Vertex and texture coordinates are stored on the GPU as vertex buffer
-objects. The image data itself is stored as a 3D texture. Data for signed or
-unsigned 8, 16, or 32 bit integer images is stored on the GPU in the same
-format; all other data types are stored as 32 bit floating point.
-
-This implementation is dependent upon one OpenGL ARB extension - `texture_rg`,
-which allows us to store and retrieve un-clamped floating point values in the
-3D image texture.
-
 This module is extremely tightly coupled to the vertex and fragment shader
 programs (`vertex_shader.glsl` and `fragment_shader.glsl` respectively).
 
@@ -30,11 +17,9 @@ This module provides the following functions:
 
  - :func:`genVertexData`: Generates and returns vertex and texture coordinates
    for rendering a single 2D slice of a 3D image. Actually returns handles to
-   the VBOs for the vertex and texture coordinates.
+   VBOs which encapsulate the vertex and texture coordinates.
 
- - :func:`destroy`: Deletes the colour map and image textures, and the vertex
-   and texture coordinate VBOs.
-
+ - :func:`destroy`: Deletes the vertex and texture coordinate VBOs.
 """
 
 import logging
@@ -131,7 +116,7 @@ def init(glimg, xax, yax):
 
 
 def destroy(glimg):
-    """Cleans up texture and VBO handles."""
+    """Cleans up VBO handles."""
     glimg.worldCoords.delete()
     glimg.indices    .delete()
 

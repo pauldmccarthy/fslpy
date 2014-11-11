@@ -6,13 +6,27 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """
+This module provides the :func:`createGLObject` function, which provides
+mappings between :class:`~fsl.data.image.Image` types, and their
+corresponding OpenGL representation.
+
+Some other convenience functions are also provided, for generating
+OpenGL vertex data.
+
+
 GL Objects must have the following methods:
-  - __init__(self, image, display)
-  - init(   self, xax, yax)
-  - ready(self)
-  - setAxes(self, xax, yax)
-  - destroy(self)
-  - draw(self, zpos, xform=None)
+  - ``__init__(self, image, display)``
+
+  - ``init(   self, xax, yax)``
+
+  - ``ready(self)``
+
+  - ``setAxes(self, xax, yax)``
+
+  - ``destroy(self)``
+
+  - ``draw(self, zpos, xform=None)``
+
 """
 
 import logging

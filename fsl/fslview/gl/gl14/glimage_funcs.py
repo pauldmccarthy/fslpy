@@ -7,28 +7,22 @@
 #
 """Provides functions which are used by the
 :class:`~fsl.fslview.gl.glimage.GLImage` class to render 3D images in an
-OpenGL 1.4 compatible manner. (i.e. using immediate mode rendering).
+OpenGL 1.4 compatible manner.
 
-The functions in this module make use of functions in the
-:mod:`fsl.fslview.gl.glimage` module to actually generate the vertex and
-texture information necessary to render an image.
+This module depends upon two OpenGL ARB extensions, ARB_vertex_program and
+ARB_fragment_program which, being ancient (2002) technology, should be
+available on pretty much any graphics card in the wild today.
 
 This module provides the following functions:
 
- - :func:`init`: Does nothing - no initialisation is necessary for OpenGL 1.4.
+ - :func:`init`: Compiles the vertex/fragment programs used in rendering.
 
  - :func:`genVertexData`: Generates and returns vertex and texture coordinates
    for rendering a single 2D slice of a 3D image.
 
- - :func:`genImageData`: Prepares and returns the 3D image data to be
-   rendered.
+ - :func:`draw`: Renders the current image slice.
 
- - :func:`genColourMap`: Configures a `matplotlib.colors.Colormap` instance
-   for generating voxel colours from image data.
-
- - :func:`draw`: Draws the image using OpenGL.
-
- - :func:`destroy`: Deletes the texture handle for the colour map texture.
+ - :func:`destroy`: Deletes handles to the vertex/fragment programs
 """
 
 import logging
@@ -40,7 +34,6 @@ import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform as transform
-
 
 _glimage_vertex_program = """!!ARBvp1.0
 
@@ -59,6 +52,12 @@ MOV result.position, vertexPos;
 MOV result.texcoord[0], vertex.position;
 
 END
+"""
+"""The vertex program does two things:
+
+  - Transforms vertex coordinates from display space into screen space
+
+  - Sets the vertex texture coordinate from its diusplay coordinate
 """
 
 
@@ -101,10 +100,25 @@ ADD voxValue, voxValue, voxValXform[0].w;
 TEX result.color, voxValue.x, texture[1], 1D;
 END
 """
+"""
+The fragment shader does the following:
+
+ 1. Retrieves the texture coordinates corresponding to the fragment
+
+ 2. Transforms those coordinates into voxel coordinates
+
+ 3. Uses those voxel coordinates to look up the corresponding voxel
+    value in the 3D image texture.
+
+ 4. Uses that voxel value to look up the corresponding colour in the
+    1D colour map texture.
+
+ 5. Sets the fragment colour.
+"""
 
 
 def init(glimg, xax, yax):
-    """No initialisation is necessary for OpenGL 1.4."""
+    """Compiles the vertex and fragment programs used for rendering."""
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -112,6 +126,24 @@ def init(glimg, xax, yax):
     glimg.fragmentProgram = arbfp.glGenProgramsARB(1)
     glimg.vertexProgram   = arbvp.glGenProgramsARB(1) 
 
+    # vertex program
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           glimg.vertexProgram)
+
+    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                             len(_glimage_vertex_program),
+                             _glimage_vertex_program)
+
+    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
+
+        position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
+        message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
+
+        raise RuntimeError('Error compiling vertex program '
+                           '({}): {}'.format(position, message)) 
+
+    # fragment program
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            glimg.fragmentProgram)
 
@@ -128,31 +160,14 @@ def init(glimg, xax, yax):
         raise RuntimeError('Error compiling fragment program '
                            '({}): {}'.format(position, message))
 
-
-    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           glimg.vertexProgram)
-
-    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(_glimage_vertex_program),
-                             _glimage_vertex_program)
-
-    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
-
-        position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
-        message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
-
-        raise RuntimeError('Error compiling vertex program '
-                           '({}): {}'.format(position, message)) 
-                  
-    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
+    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB) 
 
     
 def destroy(glimg):
-    """"""
+    """Deletes handles to the vertex/fragment programs."""
+    arbvp.glDeleteProgramsARB(glimg.vertexProgram) 
     arbfp.glDeleteProgramsARB(glimg.fragmentProgram)
-    arbvp.glDeleteProgramsARB(glimg.vertexProgram)
 
     
 def genVertexData(glimg):
@@ -166,9 +181,7 @@ def genVertexData(glimg):
 
 
 def draw(glimg, zpos, xform=None):
-    """Draws a slice of the image at the given Z location using immediate
-    mode rendering.
-    """
+    """Draws a slice of the image at the given Z location. """
 
     display = glimg.display
     
@@ -181,12 +194,13 @@ def draw(glimg, zpos, xform=None):
     worldCoords[:, glimg.zax] = zpos
 
     # enable the vertex and fragment programs
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
-    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB)
-    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           glimg.fragmentProgram)
+
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            glimg.vertexProgram)
+    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                           glimg.fragmentProgram) 
 
     # Set up the image data texture 
     gl.glActiveTexture(gl.GL_TEXTURE0)
@@ -198,16 +212,25 @@ def draw(glimg, zpos, xform=None):
 
     # Configure the texture coordinate
     # transformation for the colour map
+    # 
+    # The voxValXform transformation turns
+    # an image texture value into a raw
+    # voxel value. The colourMapXform
+    # transformation turns a raw voxel value
+    # into a value between 0 and 1, suitable
+    # for looking up an appropriate colour
+    # in the 1D colour map texture
+    cmapXForm = transform.concat(glimg.voxValXform,
+                                 glimg.colourMapXform)
+ 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
-    
-    cmapXForm = transform.concat(glimg.voxValXform, glimg.colourMapXform)
     gl.glLoadMatrixf(cmapXForm)
     
-    # And the image data transformation
-    # for the image texture
-
+    # And configure the image data
+    # transformation for the image texture
+    # 
     # The image texture coordinates first
     # need to be transformed from display
     # space to voxel coordinates
@@ -230,6 +253,8 @@ def draw(glimg, zpos, xform=None):
     
     dataXform = transform.concat(display.displayToVoxMat, norm)
 
+    # Save that transformation so it can
+    # be used by the fragment shader
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
