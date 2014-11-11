@@ -6,4 +6,3 @@
 #
 
 import glimage_funcs
-import glcircle_funcs
