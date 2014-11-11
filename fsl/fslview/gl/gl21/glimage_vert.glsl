@@ -4,7 +4,6 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
-#extension GL_EXT_gpu_shader4 : require
 
 /* World coordinate -> voxel coordinate transformation matrix */
 uniform mat4 worldToVoxMat;
@@ -20,20 +19,13 @@ uniform vec3 imageShape;
 /* X/Y world location */
 attribute vec2 worldCoords;
 
-/* Texture coordinate used to look up the voxel value for this vertex */
-attribute vec2 texCoords;
-
 /* Z location*/
 uniform float zCoord;
 
 /* 
  * Image texture coordinates passed through to fragment shader.
- * The fragment shader will use one of flatFragTexCoords, or
- * fragTexCoords, depending upon whether voxel smoothing is
- * enabled.
  */ 
-flat varying vec3 flatFragTexCoords;
-varying      vec3 fragTexCoords;
+varying vec3 fragTexCoords;
 
 /* 
  * If the world location is out of bounds, tell 
@@ -49,13 +41,12 @@ void main(void) {
     worldLoc[xax] = worldCoords.x;
     worldLoc[yax] = worldCoords.y;
     worldLoc[zax] = zCoord;
-    texLoc[  xax] = texCoords.x;
-    texLoc[  yax] = texCoords.y;
+    texLoc[  xax] = worldCoords.x;
+    texLoc[  yax] = worldCoords.y;
     texLoc[  zax] = zCoord;
 
     /* transform the texture world coordinate into voxel coordinates */
-    vec4 voxLoc      = worldToVoxMat * texLoc;
-    vec4 worldVoxLoc = worldToVoxMat * worldLoc;
+    vec4 voxLoc = worldToVoxMat * texLoc;
 
     worldLoc    = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
     gl_Position = worldLoc;
@@ -79,6 +70,5 @@ void main(void) {
     else if (voxLoc.z >= imageShape.z - 0.5)   voxLoc.z = imageShape.z - 0.501;
 
     /* Pass the texture coordinates to the fragment shader */
-    flatFragTexCoords = (voxLoc.xyz      + 0.5) / imageShape;
-    fragTexCoords     = (worldVoxLoc.xyz + 0.5) / imageShape;
+    fragTexCoords = (voxLoc.xyz + 0.5) / imageShape;
 }

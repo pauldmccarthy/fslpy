@@ -4,7 +4,6 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
-#extension GL_EXT_gpu_shader4 : require
 
 #pragma include spline_interp.glsl
 
@@ -24,13 +23,6 @@ uniform sampler1D colourMap;
  */
 uniform bool useSpline;
 
-
-/*
- * Use flat texture coordinates or smoothed
- * texture coordinates?
- */
-uniform bool voxSmooth;
-
 /*
  * Transformation matrix to apply to the 1D texture coordinate.
  */
@@ -39,8 +31,7 @@ uniform mat4 texCoordXform;
 /*
  * Image texture coordinates. 
  */
-flat varying vec3 flatFragTexCoords;
-varying      vec3 fragTexCoords;
+varying vec3 fragTexCoords;
 
 /*
  * If non-zero, the fragment is not drawn.
@@ -54,14 +45,13 @@ void main(void) {
       return;
     }
 
-    vec3 texCoords;
-    if (voxSmooth) texCoords = fragTexCoords;
-    else           texCoords = flatFragTexCoords;
-
     float normVoxValue;
 
-    if (useSpline) normVoxValue = spline_interp(imageBuffer, texCoords, imageShape);
-    else           normVoxValue = texture3D(    imageBuffer, texCoords).r;
+    if (useSpline) normVoxValue = spline_interp(imageBuffer,
+                                                fragTexCoords,
+                                                imageShape);
+    else           normVoxValue = texture3D(    imageBuffer,
+                                                fragTexCoords).r;
 
     vec4 texCoord = texCoordXform * vec4(normVoxValue, 0, 0, 1);
     gl_FragColor  = texture1D(colourMap, texCoord.x); 

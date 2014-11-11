@@ -44,10 +44,6 @@ import numpy             as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
 
-# This extension provides the GL_R32F texture data format,
-# which is standard in more modern versions of OpenGL.
-import OpenGL.GL.ARB.texture_rg as arbrg
-
 import shaders
 import fsl.utils.transform as transform
 
@@ -117,8 +113,6 @@ def _compileShaders(glimg):
                                                        'texCoordXform') 
     glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
                                                        'useSpline')
-    glimg.voxSmoothPos       = gl.glGetUniformLocation(glimg.shaders,
-                                                       'voxSmooth') 
     glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
                                                        'zCoord')
     glimg.xaxPos             = gl.glGetUniformLocation(glimg.shaders,
@@ -129,8 +123,6 @@ def _compileShaders(glimg):
                                                        'zax') 
     glimg.worldCoordPos      = gl.glGetAttribLocation( glimg.shaders,
                                                        'worldCoords')
-    glimg.texCoordPos        = gl.glGetAttribLocation( glimg.shaders,
-                                                       'texCoords')
 
 def init(glimg, xax, yax):
     """Compiles the vertex and fragment shaders used to render image slices.
@@ -141,7 +133,6 @@ def init(glimg, xax, yax):
 def destroy(glimg):
     """Cleans up texture and VBO handles."""
     glimg.worldCoords.delete()
-    glimg.texCoords  .delete()
     glimg.indices    .delete()
 
 
@@ -156,14 +147,12 @@ def genVertexData(glimg):
     worldCoords, texCoords, indices = glimg.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
-    texCoords   = texCoords[  :, [xax, yax]]
 
     worldCoordBuffer = vbo.VBO(worldCoords.ravel('C'), gl.GL_STATIC_DRAW)
-    texCoordBuffer   = vbo.VBO(texCoords  .ravel('C'), gl.GL_STATIC_DRAW)
     indexBuffer      = vbo.VBO(indices    .ravel('C'), gl.GL_STATIC_DRAW,
                                gl.GL_ELEMENT_ARRAY_BUFFER)
 
-    return worldCoordBuffer, texCoordBuffer, indexBuffer, len(indices)
+    return worldCoordBuffer, texCoords, indexBuffer, len(indices)
 
 
 def draw(glimg, zpos, xform=None):
@@ -191,7 +180,6 @@ def draw(glimg, zpos, xform=None):
     # bind the current alpha value
     # and data range to the shader
     gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
-    gl.glUniform1f( glimg.voxSmoothPos,     display.interpolation != 'none')
     gl.glUniform1f( glimg.zCoordPos,        zpos)
     gl.glUniform3fv(glimg.imageShapePos, 1, np.array(image.shape,
                                                      dtype=np.float32))
@@ -238,17 +226,6 @@ def draw(glimg, zpos, xform=None):
         None)
     gl.glEnableVertexAttribArray(glimg.worldCoordPos)
 
-    # world x/y texture coordinates
-    glimg.texCoords.bind()
-    gl.glVertexAttribPointer(
-        glimg.texCoordPos,
-        2,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
-    gl.glEnableVertexAttribArray(glimg.texCoordPos)
-
     # Draw all of the triangles!
     glimg.indices.bind()
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
@@ -257,9 +234,8 @@ def draw(glimg, zpos, xform=None):
                       None)
 
     gl.glDisableVertexAttribArray(glimg.worldCoordPos)
-    gl.glDisableVertexAttribArray(glimg.texCoordPos)
+
     glimg.indices.unbind()
     glimg.worldCoords.unbind()
-    glimg.texCoords.unbind()
 
     gl.glUseProgram(0)
