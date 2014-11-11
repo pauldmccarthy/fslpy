@@ -105,7 +105,6 @@ END
 
 def init(glimg, xax, yax):
     """No initialisation is necessary for OpenGL 1.4."""
-    glimg.colourTexture = gl.glGenTextures(1)
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -151,8 +150,8 @@ def init(glimg, xax, yax):
 
     
 def destroy(glimg):
-    """Deletes the colour map texture handle."""
-    gl.glDeleteTextures(1, glimg.colourTexture)
+    """"""
+    pass
 
     
 def genVertexData(glimg):
@@ -312,83 +311,6 @@ def genImageData(glimg):
 
     return imageTexture
 
-    
-def genColourMap(glimg, display, colourResolution):
-    """Generates the colour texture used to colour image voxels. See
-    :func:`fsl.fslview.gl.glimage.genVertexData`.
-
-    OpenGL does different things to 3D texture data depending on its type -
-    integer types are normalised from [0, INT_MAX] to [0, 1], whereas floating
-    point types are left un-normalised (because we are using the
-    ARB.texture_rg.GL_R32F data format - without this, floating point data is
-    *clamped*, not normalised, to the range [0, 1]!). The
-    :func:`_checkDataType` method calculates an appropriate transformation
-    matrix to transform the image data to the appropriate texture coordinate
-    range, which is then returned by this function, and subsequently used in
-    the :func:`draw` function.
-    """
-
-    imin = display.displayRange[0]
-    imax = display.displayRange[1]
-
-    # This transformation is used to transform voxel values
-    # from their native range to the range [0.0, 1.0], which
-    # is required for texture colour lookup. Values below
-    # or above the current display range will be mapped
-    # to texture coordinate values less than 0.0 or greater
-    # than 1.0 respectively.
-    texCoordXform = np.identity(4, dtype=np.float32)
-    texCoordXform[0, 0] = 1.0 / (imax - imin)
-    texCoordXform[3, 0] = -imin * texCoordXform[0, 0]
-
-    log.debug('Generating colour texture for '
-              'image {} (map: {}; resolution: {})'.format(
-                  glimg.image.name,
-                  display.cmap.name,
-                  colourResolution))
-
-    # Create [self.colourResolution] rgb values,
-    # spanning the entire range of the image
-    # colour map
-    colourRange     = np.linspace(0.0, 1.0, colourResolution)
-    colourmap       = display.cmap(colourRange)
-    colourmap[:, 3] = display.alpha
-
-    # Make out-of-range values transparent
-    # if clipping is enabled 
-    if display.clipLow:  colourmap[ 0, 3] = 0.0
-    if display.clipHigh: colourmap[-1, 3] = 0.0 
-
-    # The colour data is stored on
-    # the GPU as 8 bit rgba tuples
-    colourmap = np.floor(colourmap * 255)
-    colourmap = np.array(colourmap, dtype=np.uint8)
-    colourmap = colourmap.ravel(order='C')
-
-    # GL texture creation stuff
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_EDGE)
-
-    gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                    0,
-                    gl.GL_RGBA8,
-                    colourResolution,
-                    0,
-                    gl.GL_RGBA,
-                    gl.GL_UNSIGNED_BYTE,
-                    colourmap)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-
-    return texCoordXform
-
 
 def draw(glimg, zpos, xform=None):
     """Draws a slice of the image at the given Z location using immediate
@@ -427,8 +349,9 @@ def draw(glimg, zpos, xform=None):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
-    colourXForm = transform.concat(glimg.voxValXform, glimg.colourMap)
-    gl.glLoadMatrixf(colourXForm)
+    
+    cmapXForm = transform.concat(glimg.voxValXform, glimg.colourMapXForm)
+    gl.glLoadMatrixf(cmapXForm)
     
     # And for the image texture
     mat = np.eye(4, dtype=np.float32)

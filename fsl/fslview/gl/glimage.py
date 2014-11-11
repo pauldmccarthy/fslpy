@@ -43,6 +43,9 @@ These version dependent modules must provide the following functions:
 import logging
 log = logging.getLogger(__name__)
 
+import OpenGL.GL      as gl
+import numpy          as np
+
 import fsl.fslview.gl as fslgl
 import                   globject
 
@@ -94,8 +97,9 @@ class GLImage(object):
 
         # The colour map, used for converting 
         # image data to a RGBA colour.
+        self.colourTexture    = gl.glGenTextures(1)
         self.colourResolution = 256
-        self.colourMap        = self.genColourMap(self.colourResolution)
+        self.genColourTexture(self.colourResolution)
         
         self._ready = True
 
@@ -133,17 +137,92 @@ class GLImage(object):
         longer needed. It performs any needed clean up of OpenGL data (e.g.
         deleting texture handles).
         """
+        gl.glDeleteTextures(1, self.colourTexture)
         fslgl.glimage_funcs.destroy(self)
 
 
     def genVertexData(self):
         return genVertexData(self.image, self.display, self.xax, self.yax)
 
-        
-    def genColourMap(self, colourResolution=256):
-        return fslgl.glimage_funcs.genColourMap(self,
-                                                self.display,
-                                                colourResolution)
+    
+    def genColourTexture(self, colourResolution):
+        """Configures the colour texture used to colour image voxels.
+
+        Also createss a transformation matrix which transforms an image data
+        value to the range (0-1), which may then be used as a texture
+        coordinate into the colour map texture. This matrix is stored as an
+        attribute of this :class:`GLImage` object called
+        :attr:`colourMapXForm`.
+
+        OpenGL does different things to 3D texture data depending on its type
+        - integer types are normalised from [0, INT_MAX] to [0, 1], The
+        :func:`_checkDataType` method calculates an appropriate transformation
+        matrix to transform the image data to the appropriate texture
+        coordinate range, which is then returned by this function, and
+        subsequently used in the :func:`draw` function.
+
+        As an aside, floating point texture data types are, by default,
+        *clamped*, to the range [0, 1]! This can be overcome by using a more
+        recent versions of OpenGL, or by using the ARB.texture_rg.GL_R32F data
+        format.
+        """
+
+        display = self.display
+
+        imin = display.displayRange[0]
+        imax = display.displayRange[1]
+
+        # This transformation is used to transform voxel values
+        # from their native range to the range [0.0, 1.0], which
+        # is required for texture colour lookup. Values below
+        # or above the current display range will be mapped
+        # to texture coordinate values less than 0.0 or greater
+        # than 1.0 respectively.
+        cmapXform = np.identity(4, dtype=np.float32)
+        cmapXform[0, 0] = 1.0 / (imax - imin)
+        cmapXform[3, 0] = -imin * cmapXform[0, 0]
+
+        self.colourMapXForm = cmapXform
+
+        # Create [self.colourResolution] rgb values,
+        # spanning the entire range of the image
+        # colour map
+        colourRange     = np.linspace(0.0, 1.0, colourResolution)
+        colourmap       = display.cmap(colourRange)
+        colourmap[:, 3] = display.alpha
+
+        # Make out-of-range values transparent
+        # if clipping is enabled 
+        if display.clipLow:  colourmap[ 0, 3] = 0.0
+        if display.clipHigh: colourmap[-1, 3] = 0.0 
+
+        # The colour data is stored on
+        # the GPU as 8 bit rgba tuples
+        colourmap = np.floor(colourmap * 255)
+        colourmap = np.array(colourmap, dtype=np.uint8)
+        colourmap = colourmap.ravel(order='C')
+
+        # GL texture creation stuff
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
+
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                        0,
+                        gl.GL_RGBA8,
+                        colourResolution,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        colourmap)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
 
         
     def _configDisplayListeners(self):
@@ -166,10 +245,7 @@ class GLImage(object):
             self.imageData = fslgl.glimage_funcs.genImageData(self)
         
         def colourUpdate(*a):
-            self.colourMap = fslgl.glimage_funcs.genColourMap(
-                self,
-                self.display,
-                self.colourResolution)
+            self.genColourTexture(self.colourResolution)
 
         display = self.display
         lnrName = 'GlImage_{}'.format(id(self))
