@@ -7,7 +7,6 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
-** GL21 - are uint32/int32 images supported?!?
 ** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** OrthoPanel - need to re-layout when colour bar is displayed
 ** WX Bugs
@@ -16,6 +15,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 *** Wild cards in image file load (WX/OSX issue)
 ** OSMesa render doesn't work with circle voxels
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE GL21 - are uint32/int32 images supported?!?
+Changed image texture data format logic
 ** DONE gl14_optimisation branch - GL21 voxels are off by 0.5
 ** DONE Linux/Jalapeno Bad window crash
 Can't reproduce
@@ -167,12 +168,15 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** GL14 optimisation again
-Could you store image data as a 3D texture, and colour map as a 1D texture,
-and confiure a texture chain type thing.
-See GLSpec 1.4 page 152/section 3.8.13
-And look at examples on https://www.opengl.org/wiki/Texture_Combiners
-** Experiment with rolling your own coordinate interpolator in C (replacing map_coordinates). And maybe you could do the same for transform.transform.
+** Re-work image display resolution options.
+Now that I'm using real texture mapping in both GL14 and GL21, I could
+possibly go back to sub-sampling the image texture data when the display
+resolution is changed. This would allow us to get good performance for large
+4D time series data (reducing the amount of data that needs to be paged in and
+out of the GPU)..
+
+And I could possibly render entire slices using only four vertices - the
+canvas corners!
 ** Ability to display images in a different order for different view panels.
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
@@ -197,6 +201,13 @@ This will probably dictate how you go about implementing keyboard/mouse control
 ** Display fnirt warp images
 ** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
 ** IN PROGRESS Image export/offscreen rendering.
+** DONE GL14 optimisation again
+Could you store image data as a 3D texture, and colour map as a 1D texture,
+and confiure a texture chain type thing.
+See GLSpec 1.4 page 152/section 3.8.13
+And look at examples on https://www.opengl.org/wiki/Texture_Combiners
+----
+No no no, that didn't work at all. But what did work was to write a bit of GL assembler, ala the ARB_vertex_program and ARB_fragment_program extensions. Sweet!
 ** DONE Image List functionality
 *** DONE double click to show/hide
 *** DONE Edit image name
@@ -208,6 +219,8 @@ This will probably dictate how you go about implementing keyboard/mouse control
 ** DONE separate out props and gui packages - they should really be separate projects
 ** DONE location panel (information about currently selected location) - add a 'location' property to the imagelist so we can link across different views.
 ** DONE Location selection on LightBoxCanvas.
+** WONTFIX Experiment with rolling your own coordinate interpolator in C (replacing map_coordinates). And maybe you could do the same for transform.transform.
+No longer necessary, as I'm using ARB_vertex/fragment_program extensions in GL14 implementation.
 * Big/ambiguous things
 ** Test suite for props package
 ** Code audit - enforce consistent standards for public/private class members
