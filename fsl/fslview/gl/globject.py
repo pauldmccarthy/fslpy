@@ -88,10 +88,15 @@ def calculateSamplePoints(image, display, xax, yax):
                   vertical screen axis (0, 1, or 2).
     """
 
-    voxelRes       = display.resolution
-    worldRes       = voxelRes * min(image.pixdim[:3])
-    transformCode  = display.transform
-    transformMat   = display.voxToDisplayMat
+    transformCode = display.transform
+    transformMat  = display.voxToDisplayMat 
+    worldRes      = display.resolution
+    
+    xVoxelRes     = np.round(worldRes / image.pixdim[xax])
+    yVoxelRes     = np.round(worldRes / image.pixdim[yax])
+
+    if xVoxelRes < 1: xVoxelRes = 1
+    if yVoxelRes < 1: yVoxelRes = 1
 
     # These values give the min/max x/y values
     # of a bounding box which encapsulates
@@ -112,12 +117,12 @@ def calculateSamplePoints(image, display, xax, yax):
     # transform is 'id' or 'pixdim'), we display
     # it in the resolution of said data.
     elif transformCode == 'pixdim':
-        xpixdim = image.pixdim[xax] * voxelRes
-        ypixdim = image.pixdim[yax] * voxelRes
+        xpixdim = image.pixdim[xax] * xVoxelRes
+        ypixdim = image.pixdim[yax] * yVoxelRes
         
     elif transformCode == 'id':
-        xpixdim = 1.0 * voxelRes
-        ypixdim = 1.0 * voxelRes
+        xpixdim = 1.0 * xVoxelRes
+        ypixdim = 1.0 * yVoxelRes
 
     # Number of samples across each dimension,
     # given the current sample rate
@@ -129,8 +134,8 @@ def calculateSamplePoints(image, display, xax, yax):
     ypixdim = (ymax - ymin) / yNumSamples
 
     log.debug('Generating coordinate buffers for {} '
-              '({} resolution {}/{}, num samples {})'.format(
-                  image.name, transformCode, worldRes, voxelRes,
+              '({} resolution {}/({}, {}), num samples {})'.format(
+                  image.name, transformCode, worldRes, xVoxelRes, yVoxelRes,
                   xNumSamples * yNumSamples))
 
     # The location of every displayed
