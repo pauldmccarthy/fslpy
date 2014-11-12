@@ -244,7 +244,7 @@ def draw(glimg, zpos, xform=None):
     # the image shape (and its inverse,
     # because there's no division operation,
     # and the RCP operation works on scalars)
-    shape    = glimg.imageShape
+    shape = glimg.imageShape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                                        0,
                                        shape[0],
