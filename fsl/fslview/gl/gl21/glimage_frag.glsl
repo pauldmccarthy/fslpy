@@ -58,13 +58,23 @@ void main(void) {
     /*
      * Don't render the fragment if it's outside the image space
      */
-    if (voxCoords.x < 0.0 || voxCoords.x >= imageShape.x ||
-        voxCoords.y < 0.0 || voxCoords.y >= imageShape.y ||
-        voxCoords.z < 0.0 || voxCoords.z >= imageShape.z) {
+    if (voxCoords.x < -0.01 || voxCoords.x >= imageShape.x + 0.01 ||
+        voxCoords.y < -0.01 || voxCoords.y >= imageShape.y + 0.01 ||
+        voxCoords.z < -0.01 || voxCoords.z >= imageShape.z + 0.01) {
         
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
     }
+
+    /*
+     * Be lenient at voxel boundaries
+     */
+    if (voxCoords.x <  0.0)          voxCoords.x = 0.01;
+    if (voxCoords.y <  0.0)          voxCoords.y = 0.01;
+    if (voxCoords.z <  0.0)          voxCoords.z = 0.01; 
+    if (voxCoords.x >= imageShape.x) voxCoords.x = imageShape.x - 0.01;
+    if (voxCoords.y >= imageShape.y) voxCoords.y = imageShape.y - 0.01;
+    if (voxCoords.z >= imageShape.z) voxCoords.z = imageShape.z - 0.01;
 
     /* 
      * Normalise voxel coordinates to (0.0, 1.0)
