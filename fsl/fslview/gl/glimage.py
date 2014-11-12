@@ -351,7 +351,7 @@ class GLImage(object):
         # of the image transparent
         gl.glTexParameterfv(gl.GL_TEXTURE_3D,
                             gl.GL_TEXTURE_BORDER_COLOR,
-                            [0, 0, 0, 0])
+                            np.array([0, 0, 0, 0], dtype=np.float32))
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_S,
                            gl.GL_CLAMP_TO_BORDER)
