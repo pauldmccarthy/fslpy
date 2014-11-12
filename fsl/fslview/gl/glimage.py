@@ -41,11 +41,11 @@ colour.
 import logging
 log = logging.getLogger(__name__)
 
-import OpenGL.GL      as gl
-import numpy          as np
+import OpenGL.GL           as gl
+import numpy               as np
 
-import fsl.fslview.gl as fslgl
-import                   globject
+import fsl.fslview.gl      as fslgl
+import fsl.utils.transform as transform
 
 
 class GLImage(object):
@@ -177,16 +177,24 @@ class GLImage(object):
                       vertical screen axis (0, 1, or 2).
         """
 
-        worldCoords, xpixdim, ypixdim, xlen, ylen = \
-          globject.calculateSamplePoints(
-              self.image, self.display, self.xax, self.yax)
+        image        = self.image
+        xax          = self.xax
+        yax          = self.yax
+        transformMat = self.display.voxToDisplayMat 
+        
+        xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
+        ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
 
-        # All voxels are rendered using a triangle strip,
-        # with rows connected via degenerate vertices
-        worldCoords, texCoords, indices = globject.samplePointsToTriangleStrip(
-            worldCoords, xpixdim, ypixdim, xlen, ylen, self.xax, self.yax)
+        worldCoords = np.zeros((4, 3), dtype=np.float32)
 
-        return worldCoords, texCoords, indices
+        worldCoords[0, [xax, yax]] = (xmin, ymin)
+        worldCoords[1, [xax, yax]] = (xmin, ymax)
+        worldCoords[2, [xax, yax]] = (xmax, ymin)
+        worldCoords[3, [xax, yax]] = (xmax, ymax)
+
+        indices = np.arange(0, 4, dtype=np.uint32)
+
+        return worldCoords, None, indices
 
     
     def _prepareImageTextureData(self, data):
