@@ -28,7 +28,6 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy                          as np
 import OpenGL.GL                      as gl
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
@@ -57,14 +56,18 @@ END
 
   - Transforms vertex coordinates from display space into screen space
 
-  - Sets the vertex texture coordinate from its diusplay coordinate
+  - Sets the vertex texture coordinate from its display coordinate
 """
 
 
 _glimage_fragment_program = """!!ARBfp1.0
-TEMP dispTexCoord;
-TEMP voxTexCoord;
-TEMP voxValue;
+TEMP  dispTexCoord;
+TEMP  voxTexCoord;
+TEMP  normVoxTexCoord;
+TEMP  voxValue;
+TEMP  voxColour;
+PARAM imageShape    = program.local[0];
+PARAM imageShapeInv = program.local[1];
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -87,17 +90,44 @@ DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
 DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
 DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
 
-# look up image voxel value from 3D image texture
-TEX voxValue, voxTexCoord, texture[0], 3D;
+# Offset voxel coordinates by 0.5 
+# so they are centred within a voxel
+ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
+
+# Normalise voxel coordinates to 
+# lie in the range (0, 1), so they 
+# can be used for texture lookup
+MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
+
+# look up image voxel value
+# from 3D image texture
+TEX voxValue, normVoxTexCoord, texture[0], 3D;
 
 # Scale voxel value according
 # to the current display range
 MUL voxValue, voxValue, voxValXform[0].x;
 ADD voxValue, voxValue, voxValXform[0].w;
 
-# look up the appropriate colour in the 1D colour map
-# texture, and apply it to the fragment output colour
-TEX result.color, voxValue.x, texture[1], 1D;
+# look up the appropriate colour
+# in the 1D colour map texture
+TEX voxColour, voxValue.x, texture[1], 1D;
+
+# If any of the voxel coordinates are
+# less than 0, clear the voxel colour
+CMP voxColour.w, voxTexCoord.x, 0.0, voxColour.w;
+CMP voxColour.w, voxTexCoord.y, 0.0, voxColour.w;
+CMP voxColour.w, voxTexCoord.z, 0.0, voxColour.w;
+
+# If any voxel coordinates are greater than
+# the image shape, clear the voxel colour
+SUB voxTexCoord, voxTexCoord, imageShape;
+CMP voxColour.w, voxTexCoord.x, voxColour.w, 0.0;
+CMP voxColour.w, voxTexCoord.y, voxColour.w, 0.0;
+CMP voxColour.w, voxTexCoord.z, voxColour.w, 0.0;
+
+# Colour the pixel!
+MOV result.color, voxColour;
+
 END
 """
 """
@@ -210,6 +240,24 @@ def draw(glimg, zpos, xform=None):
     gl.glActiveTexture(gl.GL_TEXTURE1) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
 
+    # The fragment program needs to know
+    # the image shape (and its inverse,
+    # because there's no division operation,
+    # and the RCP operation works on scalars)
+    shape = glimg.image.shape[:3]
+    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                       0,
+                                       shape[0],
+                                       shape[1],
+                                       shape[2],
+                                       0)
+    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                       1,
+                                       1.0 / shape[0],
+                                       1.0 / shape[1],
+                                       1.0 / shape[2],
+                                       0)
+
     # Configure the texture coordinate
     # transformation for the colour map
     # 
@@ -222,43 +270,20 @@ def draw(glimg, zpos, xform=None):
     # in the 1D colour map texture
     cmapXForm = transform.concat(glimg.voxValXform,
                                  glimg.colourMapXform)
- 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
     gl.glLoadMatrixf(cmapXForm)
     
     # And configure the image data
-    # transformation for the image texture
-    # 
-    # The image texture coordinates first
-    # need to be transformed from display
-    # space to voxel coordinates
-    dataXform = display.displayToVoxMat
-
-    # Then they need to be normalised to
-    # lie between 0.0 and 1.0, for the
-    # texture lookup.
-    norm = np.eye(4, dtype=np.float32)
-
-    # Divide by the image shape along each axis
-    norm[0, 0] = 1.0 / glimg.image.shape[0]
-    norm[1, 1] = 1.0 / glimg.image.shape[1]
-    norm[2, 2] = 1.0 / glimg.image.shape[2]
-
-    # Centre coordinates within a voxel
-    norm[3, 0] = 0.5 / glimg.image.shape[0]
-    norm[3, 1] = 0.5 / glimg.image.shape[1]
-    norm[3, 2] = 0.5 / glimg.image.shape[2]
-    
-    dataXform = transform.concat(display.displayToVoxMat, norm)
-
-    # Save that transformation so it can
-    # be used by the fragment shader
+    # transformation for the image texture.
+    # The image texture coordinates need
+    # to be transformed from display space
+    # to voxel coordinates
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
-    gl.glLoadMatrixf(dataXform)
+    gl.glLoadMatrixf(display.displayToVoxMat)
     
     worldCoords = worldCoords.ravel('C')
 
