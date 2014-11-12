@@ -167,7 +167,7 @@ def draw(glimg, zpos, xform=None):
     # and data range to the shader
     gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
     gl.glUniform1f( glimg.zCoordPos,        zpos)
-    gl.glUniform3fv(glimg.imageShapePos, 1, np.array(glimg.imageTextureShape,
+    gl.glUniform3fv(glimg.imageShapePos, 1, np.array(glimg.imageShape,
                                                      dtype=np.float32))
     gl.glUniform1i( glimg.xaxPos,           glimg.xax)
     gl.glUniform1i( glimg.yaxPos,           glimg.yax)
