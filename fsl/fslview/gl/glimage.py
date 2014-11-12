@@ -496,6 +496,5 @@ class GLImage(object):
         display.addListener('clipLow',         lnrName, colourUpdate)
         display.addListener('clipHigh',        lnrName, colourUpdate)
         display.addListener('cmap',            lnrName, colourUpdate)
-        display.addListener('voxelResolution', lnrName, vertexUpdate)
-        display.addListener('worldResolution', lnrName, vertexUpdate)
+        display.addListener('resolution',      lnrName, imageUpdate)
         display.addListener('volume',          lnrName, imageUpdate)

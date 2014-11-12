@@ -67,9 +67,7 @@ class GLTensorLine(object):
               self.image,
               self.display,
               self.xax,
-              self.yax,
-              voxelResolution=1,
-              worldResolution=min(self.image.pixdim[:3]))
+              self.yax)
 
         self.worldCoords = worldCoords
         self.xpixdim     = xpixdim
@@ -189,7 +187,6 @@ class GLTensorLine(object):
         display = self.display
         lnrName = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        display.addListener('transform',       lnrName, coordUpdate)
-        display.addListener('interpolation',   lnrName, coordUpdate)
-        display.addListener('voxelResolution', lnrName, coordUpdate)
-        display.addListener('worldResolution', lnrName, coordUpdate)
+        display.addListener('transform',     lnrName, coordUpdate)
+        display.addListener('interpolation', lnrName, coordUpdate)
+        display.addListener('resolution',    lnrName, coordUpdate)

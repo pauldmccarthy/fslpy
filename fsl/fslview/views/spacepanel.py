@@ -222,8 +222,7 @@ class SpacePanel(viewpanel.ViewPanel):
 
             disp = dc.ImageDisplay(image)
 
-            disp.worldResolution *= 2
-            disp.voxelResolution *= 2
+            disp.resolution *= 2
 
             dims = range(3)
             dims.pop(zax)

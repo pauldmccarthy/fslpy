@@ -129,14 +129,13 @@ def _configImageParser(imgParser):
                'name',
                'displayRange',
                'interpolation',
-               'worldResolution',
-               'voxelResolution',
+               'resolution',
                'transform',
                'imageType',
                'cmap',
                'volume']
     imgArgs = ['a', 'cl', 'ch', 'n', 'dr', 'int',
-               'wr', 'vr', 'tf', 'it', 'cm', 'vol']
+               'vr', 'tf', 'it', 'cm', 'vol']
 
     # As above - labels and help text are embedded in the
     # ImageDisplay class

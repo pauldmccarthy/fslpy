@@ -30,8 +30,8 @@ class GLCircle(glimage.GLImage):
 def genVertexData(image, display, xax, yax):
 
     zax           = 3 - xax - yax
-    worldRes      = display.worldResolution
-    voxelRes      = display.voxelResolution
+    voxelRes      = display.resolution
+    worldRes      = min(image.pixdim[:3]) * voxelRes
     transformCode = display.transform
     transformMat  = display.voxToDisplayMat
 

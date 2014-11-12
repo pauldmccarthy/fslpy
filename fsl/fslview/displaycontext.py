@@ -40,24 +40,13 @@ class ImageDisplay(props.HasProperties):
                                 labels=['Min.', 'Max.'])
     """Image values which map to the minimum and maximum colour map colours."""
 
-
-    worldResolution = props.Real(minval=0.5,
-                                 maxval=10.0,
-                                 clamped=True,
-                                 editLimits=False)
-    """Display resolution when the image is being displayed in
-    real world space (transform == 'affine'). 
-    """
-
     
-    voxelResolution = props.Real(minval=1,
-                                 maxval=10,
-                                 default=1,
-                                 clamped=True,
-                                 editLimits=False)
-    """Display resolution when the image is being displayed in
-    voxel space (transform == 'id' or 'pixdim').
-    """ 
+    resolution = props.Real(minval=1,
+                            maxval=10,
+                            default=1,
+                            clamped=True,
+                            editLimits=False)
+    """Data resolution.""" 
                               
     
     clipLow  = props.Boolean(default=False)
@@ -131,17 +120,16 @@ class ImageDisplay(props.HasProperties):
         if not isinstance(other, ImageDisplay):
             return False
             
-        return (self.enabled         == other.enabled         and
-                self.alpha           == other.alpha           and
-                self.displayRange    == other.displayRange    and
-                self.clipLow         == other.clipLow         and
-                self.clipHigh        == other.clipHigh        and
-                self.cmap.name       == other.cmap.name       and
-                self.volume          == other.volume          and
-                self.worldResolution == other.worldResolution and
-                self.voxelResolution == other.voxelResolution and
-                self.transform       == other.transform       and
-                self.interpolation   == other.interpolation)
+        return (self.enabled       == other.enabled      and
+                self.alpha         == other.alpha        and
+                self.displayRange  == other.displayRange and
+                self.clipLow       == other.clipLow      and
+                self.clipHigh      == other.clipHigh     and
+                self.cmap.name     == other.cmap.name    and
+                self.volume        == other.volume       and
+                self.resolution    == other.resolution   and
+                self.transform     == other.transform    and
+                self.interpolation == other.interpolation)
 
         
     def __hash__(self):
@@ -149,16 +137,15 @@ class ImageDisplay(props.HasProperties):
         Returns a hash value based upon the display properties of this
         :class:`ImageDisplay` object.
         """
-        return (hash(self.enabled)         ^
-                hash(self.alpha)           ^
-                hash(self.displayRange)    ^
-                hash(self.clipLow)         ^
-                hash(self.clipHigh)        ^
-                hash(self.cmap.name)       ^
-                hash(self.volume)          ^
-                hash(self.worldResolution) ^
-                hash(self.voxelResolution) ^
-                hash(self.transform)       ^
+        return (hash(self.enabled)      ^
+                hash(self.alpha)        ^
+                hash(self.displayRange) ^
+                hash(self.clipLow)      ^
+                hash(self.clipHigh)     ^
+                hash(self.cmap.name)    ^
+                hash(self.volume)       ^
+                hash(self.resolution)   ^
+                hash(self.transform)    ^
                 hash(self.interpolation))
 
         
@@ -174,45 +161,44 @@ class ImageDisplay(props.HasProperties):
         'displayRange',
         'alpha',
         props.HGroup(('clipLow', 'clipHigh', 'interpolation')),
+        'resolution',
         'transform',
         'imageType',
         'cmap'))
 
     
     _labels = {
-        'name'            : 'Image name',
-        'enabled'         : 'Enabled',
-        'displayRange'    : 'Display range',
-        'alpha'           : 'Opacity',
-        'clipLow'         : 'Low clipping',
-        'clipHigh'        : 'High clipping',
-        'interpolation'   : 'Interpolation',
-        'worldResolution' : 'Resolution (mm)',
-        'voxelResolution' : 'Resolution (voxels)',
-        'transform'       : 'Image transform',
-        'imageType'       : 'Image data type',
-        'cmap'            : 'Colour map'}
+        'name'           : 'Image name',
+        'enabled'        : 'Enabled',
+        'displayRange'   : 'Display range',
+        'alpha'          : 'Opacity',
+        'clipLow'        : 'Low clipping',
+        'clipHigh'       : 'High clipping',
+        'interpolation'  : 'Interpolation',
+        'Resolution'     : 'Resolution',
+        'transform'      : 'Image transform',
+        'imageType'      : 'Image data type',
+        'cmap'           : 'Colour map'}
 
     
     _tooltips = {
-        'name'            : 'The name of this image',
-        'enabled'         : 'Enable/disable this image',
-        'alpha'           : 'Opacity, between 0.0 (transparent) '
-                            'and 1.0 (opaque)',
-        'displayRange'    : 'Minimum/maximum display values',
-        'clipLow'         : 'Do not show image values which are '
-                            'lower than the display range',
-        'clipHigh'        : 'Do not show image values which are '
-                            'higher than the display range', 
-        'interpolation'   : 'Interpolate between voxel values at '
-                            'each displayed real world location',
-        'worldResolution' : 'Display resolution in millimetres',
-        'voxelResolution' : 'Display resolution in voxels',
-        'transform'       : 'The transformation matrix which specifies the '
-                            'conversion from voxel coordinates to a real '
-                            'world location',
-        'imageType'       : 'the type of data contained in the image',
-        'cmap'            : 'Colour map'}
+        'name'          : 'The name of this image',
+        'enabled'       : 'Enable/disable this image',
+        'alpha'         : 'Opacity, between 0.0 (transparent) '
+                          'and 1.0 (opaque)',
+        'displayRange'  : 'Minimum/maximum display values',
+        'clipLow'       : 'Do not show image values which are '
+                          'lower than the display range',
+        'clipHigh'      : 'Do not show image values which are '
+                          'higher than the display range', 
+        'interpolation' : 'Interpolate between voxel values at '
+                          'each displayed real world location',
+        'resolution'    : 'Data resolution in voxels',
+        'transform'     : 'The transformation matrix which specifies the '
+                          'conversion from voxel coordinates to a real '
+                          'world location',
+        'imageType'     : 'the type of data contained in the image',
+        'cmap'          : 'Colour map'}
 
     
     _propHelp = _tooltips
@@ -222,8 +208,7 @@ class ImageDisplay(props.HasProperties):
                  'displayRange',
                  'clipLow',
                  'clipHigh',
-                 'worldResolution',
-                 'voxelResolution',
+                 'resolution',
                  'transform',
                  'interpolation',
                  'imageType',
@@ -232,18 +217,17 @@ class ImageDisplay(props.HasProperties):
                  'volume']
 
     _shortArgs = {
-        'alpha'           : 'alpha',
-        'displayRange'    : 'dr',
-        'clipLow'         : 'cl',
-        'clipHigh'        : 'ch',
-        'interpolation'   : 'interp',
-        'worldResolution' : 'wr',
-        'voxelResolution' : 'vr',
-        'transform'       : 'trans',
-        'imageType'       : 'it',
-        'cmap'            : 'cmap',
-        'name'            : 'name',
-        'volume'          : 'vol'}
+        'alpha'         : 'alpha',
+        'displayRange'  : 'dr',
+        'clipLow'       : 'cl',
+        'clipHigh'      : 'ch',
+        'interpolation' : 'interp',
+        'resolution'    : 'vr',
+        'transform'     : 'trans',
+        'imageType'     : 'it',
+        'cmap'          : 'cmap',
+        'name'          : 'name',
+        'volume'        : 'vol'}
 
 
     def __init__(self, image):
@@ -278,14 +262,7 @@ class ImageDisplay(props.HasProperties):
         self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
-        self.setConstraint('displayRange',    'minDistance', dMinDistance)
-        self.setConstraint('worldResolution', 'minval', min(image.pixdim[:3]))
-
-        # Images are displayed at full resolution,
-        # regardless of these values, as the data
-        # is just pulled from the 3D image texture
-        self.worldResolution = min(image.pixdim[:3]) * 10
-        self.voxelResolution = 10
+        self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
