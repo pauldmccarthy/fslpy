@@ -322,10 +322,13 @@ class GLImage(object):
         # contains the data for the current display
         # configuration
         elif displayHash == hash(display):
-            self.imageTexture = imageTexture
+            self.imageTexture      = imageTexture
+            self.imageTextureShape = imageData.shape
             return
         
-        self.imageTexture = imageTexture
+        self.imageTexture      = imageTexture
+        self.imageTextureShape = imageData.shape
+        
 
         log.debug('Creating 3D texture for '
                   'image {} (data shape: {})'.format(
@@ -335,6 +338,7 @@ class GLImage(object):
         # The image data is flattened, with fortran dimension
         # ordering, so the data, as stored on the GPU, has its
         # first dimension as the fastest changing.
+        shape     = imageData.shape
         imageData = imageData.ravel(order='F')
 
         # Enable storage of tightly packed data of any size (i.e.
@@ -376,7 +380,9 @@ class GLImage(object):
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
                         texIntFmt,
-                        image.shape[0], image.shape[1], image.shape[2],
+                        shape[0],
+                        shape[1],
+                        shape[2],
                         0,
                         gl.GL_LUMINANCE, 
                         texExtFmt,
