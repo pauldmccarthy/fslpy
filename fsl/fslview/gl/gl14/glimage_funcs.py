@@ -66,8 +66,9 @@ TEMP  voxTexCoord;
 TEMP  normVoxTexCoord;
 TEMP  voxValue;
 TEMP  voxColour;
-PARAM imageShape    = program.local[0];
-PARAM imageShapeInv = program.local[1];
+PARAM imageShape       = program.local[0];
+PARAM imageShapeInv    = program.local[1];
+PARAM imageTexShapeInv = program.local[2];
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -97,6 +98,7 @@ ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
 # Normalise voxel coordinates to 
 # lie in the range (0, 1), so they 
 # can be used for texture lookup
+MUL normVoxTexCoord, voxTexCoord, imageTexShapeInv;
 MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
 
 # look up image voxel value
@@ -244,7 +246,8 @@ def draw(glimg, zpos, xform=None):
     # the image shape (and its inverse,
     # because there's no division operation,
     # and the RCP operation works on scalars)
-    shape = glimg.imageTextureShape
+    shape    = glimg.imageShape
+    texShape = glimg.imageTextureShape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                                        0,
                                        shape[0],
@@ -256,6 +259,12 @@ def draw(glimg, zpos, xform=None):
                                        1.0 / shape[0],
                                        1.0 / shape[1],
                                        1.0 / shape[2],
+                                       0) 
+    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                       2,
+                                       1.0 / texShape[0],
+                                       1.0 / texShape[1],
+                                       1.0 / texShape[2],
                                        0)
 
     # Configure the texture coordinate

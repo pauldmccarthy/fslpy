@@ -41,12 +41,11 @@ class ImageDisplay(props.HasProperties):
     """Image values which map to the minimum and maximum colour map colours."""
 
     
-    resolution = props.Real(minval=1,
-                            maxval=10,
+    resolution = props.Real(maxval=10,
                             default=1,
                             clamped=True,
                             editLimits=False)
-    """Data resolution.""" 
+    """Data resolution in world space. The minimum value is set in __init__.""" 
                               
     
     clipLow  = props.Boolean(default=False)
@@ -263,6 +262,10 @@ class ImageDisplay(props.HasProperties):
         self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
+
+        self.resolution = min(image.pixdim[:3])
+        self.setConstraint('resolution',   'minval', self.resolution)
+        
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
