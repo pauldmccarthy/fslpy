@@ -135,6 +135,8 @@ class ColourBarCanvas(props.HasProperties):
                            gl.GL_TEXTURE_WRAP_T,
                            gl.GL_CLAMP_TO_BORDER)
 
+        bitmap = bitmap.ravel('C')
+
         gl.glTexImage2D(gl.GL_TEXTURE_2D,
                         0,
                         gl.GL_RGBA8,

@@ -43,16 +43,20 @@ import logging
 log = logging.getLogger(__name__)
 
 import os
+import OpenGL
+
+# Make PyOpenGL throw an error, instead of implicitly
+# converting, if we pass incorrect types to OpenGL functions.
+OpenGL.ERROR_ON_COPY = True 
+
 
 # Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
 # OpenGL.contextdata.setValue method throws 'unhashable type' TypeErrors
-# unless we set these constants. I don't know why.
+# unless we set STORE_POINTERS to False. I don't know why.
 if os.environ.get('PYOPENGL_PLATFORM', None) == 'osmesa':
-    import OpenGL
-    OpenGL.ERROR_ON_COPY  = True 
     OpenGL.STORE_POINTERS = False
 
-
+    
 def bootstrap(glVersion=None):
     """Imports modules appropriate to the specified OpenGL version.
 
