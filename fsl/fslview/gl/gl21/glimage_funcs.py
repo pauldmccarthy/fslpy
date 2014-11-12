@@ -84,30 +84,32 @@ def _compileShaders(glimg):
     glimg.shaders = program
 
     # Indices of all vertex/fragment shader parameters
-    glimg.imageBufferPos     = gl.glGetUniformLocation(glimg.shaders,
-                                                       'imageBuffer')
-    glimg.worldToVoxMatPos   = gl.glGetUniformLocation(glimg.shaders,
-                                                       'worldToVoxMat')
     glimg.worldToWorldMatPos = gl.glGetUniformLocation(glimg.shaders,
-                                                       'worldToWorldMat') 
-    glimg.colourMapPos       = gl.glGetUniformLocation(glimg.shaders,
-                                                       'colourMap')
-    glimg.imageShapePos      = gl.glGetUniformLocation(glimg.shaders,
-                                                       'imageShape') 
-    glimg.texCoordXformPos   = gl.glGetUniformLocation(glimg.shaders,
-                                                       'texCoordXform') 
-    glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
-                                                       'useSpline')
-    glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
-                                                       'zCoord')
+                                                       'worldToWorldMat')
     glimg.xaxPos             = gl.glGetUniformLocation(glimg.shaders,
                                                        'xax')
     glimg.yaxPos             = gl.glGetUniformLocation(glimg.shaders,
                                                        'yax')
     glimg.zaxPos             = gl.glGetUniformLocation(glimg.shaders,
-                                                       'zax') 
+                                                       'zax')
     glimg.worldCoordPos      = gl.glGetAttribLocation( glimg.shaders,
-                                                       'worldCoords')
+                                                       'worldCoords') 
+    glimg.zCoordPos          = gl.glGetUniformLocation(glimg.shaders,
+                                                       'zCoord')
+    
+    glimg.imageTexturePos    = gl.glGetUniformLocation(glimg.shaders,
+                                                       'imageTexture')
+    glimg.imageShapePos      = gl.glGetUniformLocation(glimg.shaders,
+                                                       'imageShape')
+    glimg.colourTexturePos   = gl.glGetUniformLocation(glimg.shaders,
+                                                       'colourTexture') 
+    glimg.useSplinePos       = gl.glGetUniformLocation(glimg.shaders,
+                                                       'useSpline')
+    glimg.displayToVoxMatPos  = gl.glGetUniformLocation(glimg.shaders,
+                                                        'displayToVoxMat')
+    glimg.voxValXformPos      = gl.glGetUniformLocation(glimg.shaders,
+                                                        'voxValXform') 
+
 
 def init(glimg, xax, yax):
     """Compiles the vertex and fragment shaders used to render image slices.
@@ -179,11 +181,11 @@ def draw(glimg, zpos, xform=None):
     tcx = transform.concat(glimg.voxValXform, glimg.colourMapXform)
     w2w = np.array(xform,                   dtype=np.float32).ravel('C')
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
-    tcx = np.array(tcx,                     dtype=np.float32).ravel('C')
+    vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
     
-    gl.glUniformMatrix4fv(glimg.worldToVoxMatPos,   1, False, w2v)
+    gl.glUniformMatrix4fv(glimg.displayToVoxMatPos, 1, False, w2v)
     gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
-    gl.glUniformMatrix4fv(glimg.texCoordXformPos,   1, False, tcx)
+    gl.glUniformMatrix4fv(glimg.voxValXformPos,     1, False, vvx)
 
     # Enable storage of tightly packed data
     # of any size, for our 3D image texture 
@@ -193,12 +195,12 @@ def draw(glimg, zpos, xform=None):
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
-    gl.glUniform1i(glimg.colourMapPos, 0) 
+    gl.glUniform1i(glimg.colourTexturePos, 0) 
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
     gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageTexture)
-    gl.glUniform1i(glimg.imageBufferPos, 1)
+    gl.glUniform1i(glimg.imageTexturePos, 1)
 
     # world x/y coordinates
     glimg.worldCoords.bind()

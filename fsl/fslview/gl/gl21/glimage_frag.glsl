@@ -7,16 +7,20 @@
 
 #pragma include spline_interp.glsl
 
-/* image data texture */
-uniform sampler3D imageBuffer;
+/*
+ * image data texture
+ */
+uniform sampler3D imageTexture;
 
-/* Image/texture dimensions */
+/*
+ * Image/texture dimensions
+ */
 uniform vec3 imageShape;
 
 /*
  * Texture containing the colour map
  */
-uniform sampler1D colourMap;
+uniform sampler1D colourTexture;
 
 /*
  * Use spline interpolation?
@@ -24,35 +28,63 @@ uniform sampler1D colourMap;
 uniform bool useSpline;
 
 /*
+ * Transformation from display space to voxel coordinates.
+ */
+uniform mat4 displayToVoxMat;
+
+/*
  * Transformation matrix to apply to the 1D texture coordinate.
  */
-uniform mat4 texCoordXform;
+uniform mat4 voxValXform;
 
 /*
  * Image texture coordinates. 
  */
 varying vec3 fragTexCoords;
 
-/*
- * If non-zero, the fragment is not drawn.
- */
-varying float outOfBounds;
 
 void main(void) {
 
-    if (outOfBounds > 0) {
-      gl_FragColor = vec4(0, 0, 0, 0);
-      return;
+    /*
+     * Transform the texture coordinates into voxel coordinates
+     */
+    vec4 voxCoords = displayToVoxMat * vec4(fragTexCoords, 1);
+
+    /*
+     * Centre voxel coordinates
+     */
+    voxCoords.xyz = voxCoords.xyz + 0.5;
+
+    /*
+     * Don't render the fragment if it's outside the image space
+     */
+    if (voxCoords.x < 0.0 || voxCoords.x >= imageShape.x ||
+        voxCoords.y < 0.0 || voxCoords.y >= imageShape.y ||
+        voxCoords.z < 0.0 || voxCoords.z >= imageShape.z) {
+        
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        return;
     }
 
-    float normVoxValue;
+    /* 
+     * Normalise voxel coordinates to (0.0, 1.0)
+     */
+    voxCoords.xyz = voxCoords.xyz / imageShape.xyz;
 
-    if (useSpline) normVoxValue = spline_interp(imageBuffer,
-                                                fragTexCoords,
-                                                imageShape);
-    else           normVoxValue = texture3D(    imageBuffer,
-                                                fragTexCoords).r;
+    /*
+     * Look up the voxel value 
+     */
+    float voxValue;
+    if (useSpline) voxValue = spline_interp(imageTexture,
+                                            voxCoords.xyz,
+                                            imageShape);
+    else           voxValue = texture3D(    imageTexture,
+                                            voxCoords.xyz).r;
 
-    vec4 texCoord = texCoordXform * vec4(normVoxValue, 0, 0, 1);
-    gl_FragColor  = texture1D(colourMap, texCoord.x); 
+    /*
+     * Transform the voxel value to a colour map texture
+     * coordinate, and look up the colour for the voxel value
+     */
+    vec4 normVoxValue = voxValXform * vec4(voxValue, 0, 0, 1);
+    gl_FragColor      = texture1D(colourTexture, normVoxValue.x); 
 }

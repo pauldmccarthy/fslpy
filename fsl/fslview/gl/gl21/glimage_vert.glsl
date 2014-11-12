@@ -1,25 +1,35 @@
 /*
  * OpenGL vertex shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
  *
+ * All this shader does is transfer  texture coordinates through
+ * to the fragment shader.
+ *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
 
-/* World coordinate -> voxel coordinate transformation matrix */
-uniform mat4 worldToVoxMat;
+/*
+ * Optional transformation matrix which is applied to all
+ * vertex coordinates (used by the e.g. lightbox canvas to
+ * organise individual slices in a row/column fashion).
+ */
 uniform mat4 worldToWorldMat;
 
+/*
+ * Display axes (xax = horizontal, yax = vertical, zax = depth)
+ */
 uniform int xax;
 uniform int yax;
 uniform int zax;
 
-/* Image dimensions */
-uniform vec3 imageShape;
-
-/* X/Y world location */
+/*
+ * X/Y vertex location
+ */
 attribute vec2 worldCoords;
 
-/* Z location*/
+/*
+ * Z location
+ */
 uniform float zCoord;
 
 /* 
@@ -37,38 +47,16 @@ varying float outOfBounds;
 void main(void) {
 
     vec4 worldLoc = vec4(0, 0, 0, 1);
-    vec4 texLoc   = vec4(0, 0, 0, 1);
     worldLoc[xax] = worldCoords.x;
     worldLoc[yax] = worldCoords.y;
     worldLoc[zax] = zCoord;
-    texLoc[  xax] = worldCoords.x;
-    texLoc[  yax] = worldCoords.y;
-    texLoc[  zax] = zCoord;
-
-    /* transform the texture world coordinate into voxel coordinates */
-    vec4 voxLoc = worldToVoxMat * texLoc;
-
-    worldLoc    = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
-    gl_Position = worldLoc;
 
     /*
-     * Figure out whether we are out of the image space.        
-     * Be a bit lenient at the voxel coordinate boundaries, 
-     * as otherwise the 3D texture lookup will be out of 
-     * bounds.
+     * Pass the vertex coordinates as texture
+     * coordinates to the fragment shader
      */
-    outOfBounds = 0;
+    fragTexCoords = worldLoc.xyz; 
 
-    if      (voxLoc.x < -0.5)                  outOfBounds = 1;
-    else if (voxLoc.x >  imageShape.x - 0.499) outOfBounds = 1;
-    else if (voxLoc.x >= imageShape.x - 0.5)   voxLoc.x = imageShape.x - 0.501;
-    if      (voxLoc.y < -0.5)                  outOfBounds = 1;
-    else if (voxLoc.y >  imageShape.y - 0.499) outOfBounds = 1;
-    else if (voxLoc.y >= imageShape.y - 0.5)   voxLoc.y = imageShape.y - 0.501;
-    if      (voxLoc.z < -0.5)                  outOfBounds = 1;
-    else if (voxLoc.z >  imageShape.z - 0.499) outOfBounds = 1;
-    else if (voxLoc.z >= imageShape.z - 0.5)   voxLoc.z = imageShape.z - 0.501;
-
-    /* Pass the texture coordinates to the fragment shader */
-    fragTexCoords = (voxLoc.xyz + 0.5) / imageShape;
+    /* Transform the vertex coordinates to display space */
+    gl_Position = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
 }
