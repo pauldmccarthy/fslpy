@@ -29,13 +29,9 @@ These version dependent modules must provide the following functions:
 
 Images rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
-as a 3D texture, and the current colour map as a 1D texture. A single triangle
-strip (of a configurable resolution) defines the geometry of a rendered slice.
-
-The location of each vertex in the triangle strip is transformed into voxel
-coordinates, and the corresponding voxel value is looked up in the 3D image
-texture. This value is then used as to look up the corresponding vertex
-colour.
+as a 3D texture, and the current colour map as a 1D texture. A slice through
+the texture is rendered using four vertices, located at the respective corners
+of the image bounds.
 """
 
 import logging
@@ -152,16 +148,8 @@ class GLImage(object):
 
 
     def genVertexData(self):
-        """Generates vertex coordinates (for rendering voxels) and
-        texture coordinates (for colouring voxels) in world space.
-
-        Generates X/Y vertex coordinates, in the display coordinate system for
-        the given image, which define a set of pixels for displaying the image
-        at an arbitrary position along the world Z dimension.  These pixels
-        are represented by an OpenGL triangle strip. See the
-        :func:`~fsl.fslview.gl.globject.calculateSamplePoints` and
-        :func:`~fsl.fslview.gl.globject.samplePointsToTriangleStrip` functions
-        for more details.
+        """Generates coordinates at the corners of the image bounds, along the
+        xax/yax plane, which define a slice through the 3D image.
 
         :arg image:   The :class:`~fsl.data.image.Image` object to
                       generate vertex and texture coordinates for.
