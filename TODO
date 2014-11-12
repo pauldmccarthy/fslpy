@@ -70,7 +70,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Put some introductory documentation up on git.fmrib wiki pages (for props package as well - installation, usage, etc)
+** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
 *** DONE Show/hide labels
 *** DONE Ortho layout (horiz/vert/grid)
@@ -108,6 +108,7 @@ Need to be able to specify the order that actions appear in the menu - perhaps
 just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE Put some introductory documentation up on git.fmrib wiki pages (for props package as well - installation, usage, etc)
 ** DONE Show labels in render.py
 ** DONE Props package - floating point property equality - if difference is < some small value, the property should be considered unchanged, and listeners should not be notified.
 ** DONE Proportional scaling of slice canvases in render.py - they're currently just given equal space.
@@ -168,15 +169,6 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** Re-work image display resolution options.
-Now that I'm using real texture mapping in both GL14 and GL21, I could
-possibly go back to sub-sampling the image texture data when the display
-resolution is changed. This would allow us to get good performance for large
-4D time series data (reducing the amount of data that needs to be paged in and
-out of the GPU)..
-
-And I could possibly render entire slices using only four vertices - the
-canvas corners!
 ** Ability to display images in a different order for different view panels.
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
@@ -201,6 +193,15 @@ This will probably dictate how you go about implementing keyboard/mouse control
 ** Display fnirt warp images
 ** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
 ** IN PROGRESS Image export/offscreen rendering.
+** DONE Re-work image display resolution options.
+Now that I'm using real texture mapping in both GL14 and GL21, I could
+possibly go back to sub-sampling the image texture data when the display
+resolution is changed. This would allow us to get good performance for large
+4D time series data (reducing the amount of data that needs to be paged in and
+out of the GPU)..
+
+And I could possibly render entire slices using only four vertices - the
+canvas corners!
 ** DONE GL14 optimisation again
 Could you store image data as a 3D texture, and colour map as a 1D texture,
 and confiure a texture chain type thing.
