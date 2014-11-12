@@ -293,18 +293,41 @@ class GLImage(object):
         voxel value.
         """
 
-        image   = self.image 
+        image   = self.image
         display = self.display
         volume  = display.volume
 
+        resolution = display.resolution
+
+        xstep = np.round(resolution / image.pixdim[0])
+        ystep = np.round(resolution / image.pixdim[1])
+        zstep = np.round(resolution / image.pixdim[2])
+
+        if xstep < 1: xstep = 1
+        if ystep < 1: ystep = 1
+        if zstep < 1: zstep = 1
+
+        xstart = xstep / 2
+        ystart = ystep / 2
+        zstart = zstep / 2
+
         # we only store a single 3D image
         # in GPU memory at any one time
-        if len(image.shape) > 3: imageData = image.data[:, :, :, volume]
-        else:                    imageData = image.data
+        if len(image.shape) > 3: imageData = image.data[xstart::xstep,
+                                                        ystart::ystep,
+                                                        zstart::zstep,
+                                                        volume]
+        else:                    imageData = image.data[xstart::xstep,
+                                                        ystart::ystep,
+                                                        zstart::zstep]
 
         imageData, texIntFmt, texExtFmt, voxValXform = \
             self._prepareImageTextureData(imageData)
-        self.voxValXform = voxValXform 
+
+        shape                  = imageData.shape
+        self.voxValXform       = voxValXform
+        self.imageTextureShape = imageData.shape
+        self.imageShape        = image.data.shape
 
         # Check to see if the image texture
         # has already been created
@@ -323,13 +346,12 @@ class GLImage(object):
         # configuration
         elif displayHash == hash(display):
             self.imageTexture      = imageTexture
-            self.imageTextureShape = imageData.shape
+            self.imageTextureShape = shape
             return
         
         self.imageTexture      = imageTexture
-        self.imageTextureShape = imageData.shape
+        self.imageTextureShape = shape
         
-
         log.debug('Creating 3D texture for '
                   'image {} (data shape: {})'.format(
                       image.name,
@@ -338,7 +360,6 @@ class GLImage(object):
         # The image data is flattened, with fortran dimension
         # ordering, so the data, as stored on the GPU, has its
         # first dimension as the fastest changing.
-        shape     = imageData.shape
         imageData = imageData.ravel(order='F')
 
         # Enable storage of tightly packed data of any size (i.e.
