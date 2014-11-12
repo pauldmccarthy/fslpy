@@ -46,7 +46,9 @@ class ViewPanel(wx.Panel, props.HasProperties):
         contains display related properties about the :attr:`_imageList`.
     
       - :attr:`_name`: A unique name for this :class:`ViewPanel`.
-    """ 
+    """
+
+    imageListOrder = props.List(props.Int())
    
     @classmethod
     def hasConfigOptions(cls):
@@ -54,7 +56,7 @@ class ViewPanel(wx.Panel, props.HasProperties):
         this :class:`ViewPanel` has any user-configurable properties.
         """
         return len(cls.getAllProperties()[0]) > 0
- 
+
     
     def __init__(self,
                  parent,
@@ -85,3 +87,24 @@ class ViewPanel(wx.Panel, props.HasProperties):
         self._imageList  = imageList
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
+
+        self._imageList.addListener('images',
+                                    'ViewPanel_{}'.format(self._name),
+                                    self._imageListChanged)
+
+
+    def _imageListChanged(self, *a):
+        """
+        """
+
+        # Images have been removed - remove the
+        # corresponding indices from the index list
+        if len(self._imageList) < len(self.imageListOrder):
+            idxs = range(len(self._imageList), len(self.imageListOrder))
+            self.imageListOrder.removeAll(idxs)
+
+        # Images have been added - add the new
+        # image indices to the index list
+        elif len(self._imageList) > len(self.imageListOrder):
+            idxs = range(len(self.imageListOrder), len(self._imageList))
+            self.imageListOrder.extend(idxs)
