@@ -42,5 +42,12 @@ setup(
         'nibabel>=1.3.0',
         'Pillow>=2.5.3'],
 
+    package_data={
+        'fslpy' : [
+            'fsl/fslview/gl/gl21/*glsl',
+            'fsl/fslview/colourmaps/*cmap'
+        ]
+    },
+
     entry_points={'console_scripts' : ['fslpy = fsl:main']}
 )

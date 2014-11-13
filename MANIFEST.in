@@ -1,2 +1,0 @@
-include fsl/fslview/gl/gl21/*.glsl
-include fsl/fslview/colourmaps/*.cmap
