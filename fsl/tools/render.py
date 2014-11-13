@@ -54,7 +54,7 @@ def buildLabelBitmaps(imageList,
     fgColour = 'white'
 
     image   = imageList[displayCtx.selectedImage]
-    display = image.getAttribute('display')
+    display = displayCtx.getDisplayProperties(image)
 
     # The image is being displayed as it is stored on
     # disk - the image.getOrientation method calculates
@@ -126,7 +126,7 @@ def buildColourBarBitmap(imageList,
                          cbarLabelSide,
                          bgColour):
     
-    display = imageList[displayCtx.selectedImage].getAttribute('display')
+    display = displayCtx.getDisplayProperties(displayCtx.selectedImage)
     
     if   cbarLocation in ('top', 'bottom'): orient = 'horizontal'
     elif cbarLocation in ('left', 'right'): orient = 'vertical'

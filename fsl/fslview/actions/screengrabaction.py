@@ -122,8 +122,8 @@ class ScreenGrabAction(action.Action):
             if fname is None:
                 continue
 
-            display  = image.getAttribute('display')
-            imgArgv  = props.generateArguments(display)
+            display = self._displayCtx.getDisplayProperties(image)
+            imgArgv = props.generateArguments(display)
 
             argv += ['--image', fname] + imgArgv
 

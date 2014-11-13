@@ -74,7 +74,7 @@ class SpacePanel(viewpanel.ViewPanel):
             return
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
 
         display.addListener('transform',
                             self._name,
@@ -98,7 +98,7 @@ class SpacePanel(viewpanel.ViewPanel):
     def _plotImageBounds(self):
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
         v2DMat  = display.voxToDisplayMat
 
         xlo, xhi = transform.axisBounds(image.shape, v2DMat, 0)
@@ -125,7 +125,7 @@ class SpacePanel(viewpanel.ViewPanel):
         import fsl.fslview.strings as strings
         
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
         
         centre = np.array(image.shape) / 2.0
 
@@ -156,7 +156,7 @@ class SpacePanel(viewpanel.ViewPanel):
     def _plotAxisLengths(self):
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
 
         for ax, colour, label in zip(range(3),
                                      ['r', 'g', 'b'],
@@ -185,7 +185,7 @@ class SpacePanel(viewpanel.ViewPanel):
     def _plotImageCorners(self):
         
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
         
         x, y, z = image.shape[:3]
 

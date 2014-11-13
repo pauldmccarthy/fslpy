@@ -88,7 +88,7 @@ class ImageListPanel(controlpanel.ControlPanel):
             # these listeners are added in the
             # _imageListChanged method, below
             for image in self._imageList:
-                display = image.getAttribute('display')
+                display = self._displayCtx.getDisplayProperties(image)
                 image  .removeListener('name',    self._name)
                 display.removeListener('enabled', self._name)
 
@@ -135,7 +135,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         for i in range(len(self._imageList)):
 
             image   = self._imageList[i]
-            display = image.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(image)
             name    = image.name
             if name is None: name = ''
 
@@ -151,7 +151,7 @@ class ImageListPanel(controlpanel.ControlPanel):
                 self._listBox.SetString(idx, name)
 
             def enabledChanged(img):
-                display = img.getAttribute('display')
+                display = self._displayCtx.getDisplayProperties(image)
                 idx     = self._imageList.index(img)
 
                 if display.enabled: self._listBox.EnableItem( idx)
@@ -226,7 +226,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         """
 
         img             = self._imageList[ev.idx]
-        display         = img.getAttribute('display')
+        display         = self._displayCtx.getDisplayProperties(img)
         display.enabled = ev.enabled
 
 

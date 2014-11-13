@@ -126,7 +126,7 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
 
         for image in self._imageList:
 
-            display = image.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(image)
             xform   = display.displayToVoxMat
 
             ix, iy, iz = transform.transform([[x, y, z]], xform)[0]
@@ -176,7 +176,7 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
         
     def _drawPlotOneImage(self, image, x, y, z):
 
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
 
         if not image.is4DImage(): return None
         if not display.enabled:   return None

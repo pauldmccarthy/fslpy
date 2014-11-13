@@ -190,7 +190,7 @@ def selectHeadCentre(opts, button):
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
-    display    = image.getAttribute('display')
+    display    = displayCtx.getDisplayProperties(image)
     parent     = button.GetTopLevelParent()
     frame      = orthopanel.OrthoDialog(parent,
                                         imageList,
@@ -297,8 +297,7 @@ def runBet(parent, opts):
         imageList = fslimage.ImageList([inImage, outImage])
 
         displayCtx = displaycontext.DisplayContext(imageList)
-
-        outDisplay = outImage.getAttribute('display')
+        outDisplay = displayCtx.getDisplayProperties(outImage)
 
         outDisplay.cmap             = 'Reds'
         outDisplay.displayRange.xlo = 1

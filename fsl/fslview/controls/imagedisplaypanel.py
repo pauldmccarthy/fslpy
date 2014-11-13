@@ -80,7 +80,8 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
         the user to edit the display properties of the given
         :class:`~fsl.data.image.Image` instance. 
         """
-        displayPanel = props.buildGUI(self, image.getAttribute('display'))
+        display      = self._displayCtx.getDisplayProperties(image)
+        displayPanel = props.buildGUI(self, display)
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
         return displayPanel
 

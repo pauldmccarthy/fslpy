@@ -180,7 +180,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             return
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
 
         dloc   = self._displayCtx.location.xyz
         vloc   = transform.transform([dloc], display.displayToVoxMat)[0]
@@ -235,7 +235,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if self._internalLocationChange: return
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display') 
+        display = self._displayCtx.getDisplayProperties(image)
 
         dloc = self._displayCtx.location.xyz
         vloc = transform.transform([dloc], display.displayToVoxMat)[  0]
@@ -258,7 +258,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if self._internalLocationChange: return
         
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
         
         vloc = self.voxelLocation.xyz
         dloc = transform.transform([vloc], display.voxToDisplayMat)[0]
@@ -281,8 +281,8 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if len(self._imageList) == 0:    return
         if self._internalLocationChange: return
 
-        image    = self._imageList[self._displayCtx.selectedImage]
-        display  = image.getAttribute('display')
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = self._displayCtx.getDisplayProperties(image)
         
         wloc = self.worldLocation.xyz
         dloc = transform.transform([wloc], display.worldToDisplayMat)[0]
@@ -310,7 +310,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             return
 
         image   = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        display = self._displayCtx.getDisplayProperties(image)
 
         # Update the label which
         # displays the image space 
