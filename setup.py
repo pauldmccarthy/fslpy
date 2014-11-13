@@ -42,5 +42,5 @@ setup(
         'nibabel>=1.3.0',
         'Pillow>=2.5.3'],
 
-    entry_points={'console_scripts' : ['fslpy = fsl.main']}
+    entry_points={'console_scripts' : ['fslpy = fsl:main']}
 )
