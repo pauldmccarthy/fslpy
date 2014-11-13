@@ -229,11 +229,30 @@ class ImageDisplay(props.HasProperties):
         'volume'        : 'vol'}
 
 
-    def __init__(self, image):
+    def __init__(self, image, parent=None):
         """Create an :class:`ImageDisplay` for the specified image.
 
         :arg image: A :class:`~fsl.data.image.Image` object.
+
+        :arg parent: 
         """
+
+        props.HasProperties.__init__(
+            self,
+            parent,
+            
+            # The name property is implicitly bound
+            # through the image object so it doesn't
+            # need to be linked between ImageDisplays 
+            nobind=['name'],
+            
+            # These properties cannot be unbound, as
+            # they affect the OpenGL representation
+            nounbind=['interpolation',
+                      'volume',
+                      'resolution',
+                      'transform',
+                      'imageType'])
 
         self.image = image
 
@@ -396,11 +415,20 @@ class DisplayContext(props.HasProperties):
     """
 
 
-    def __init__(self, imageList):
+    imageOrder = props.List(props.Int())
+    """
+    """
+
+
+    def __init__(self, imageList, parent=None):
         """Create a :class:`DisplayContext` object.
 
         :arg imageList: A :class:`~fsl.data.image.ImageList` instance.
+
+        :arg parent: 
         """
+
+        props.HasProperties.__init__(self, parent, nounbind=('volume'))
         
         self._imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -456,8 +484,15 @@ class DisplayContext(props.HasProperties):
         for image in self._imageList:
             try:
                 display = self._imageDisplays[image]
+                
             except KeyError:
-                display = ImageDisplay(image)
+                
+                if self.getParent() is None:
+                    dParent = None
+                else:
+                    dParent = self.getParent().getDisplayProperties(image)
+
+                display = ImageDisplay(image, dParent)
                 self._imageDisplays[image] = display
 
             # Register a listener with the transform property
