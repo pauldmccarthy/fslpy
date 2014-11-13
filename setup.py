@@ -43,9 +43,9 @@ setup(
         'Pillow>=2.5.3'],
 
     package_data={
-        'fslpy' : [
-            'fsl/fslview/gl/gl21/*glsl',
-            'fsl/fslview/colourmaps/*cmap'
+        'fsl' : [
+            'fslview/gl/gl21/*glsl',
+            'fslview/colourmaps/*cmap'
         ]
     },
 
