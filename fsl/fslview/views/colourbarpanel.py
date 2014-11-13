@@ -78,7 +78,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         for i in range(len(self._imageList)):
             image   = self._imageList[i]
-            display = image.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(image)
 
             image.removeListener(  'name',         self._name)
             display.removeListener('cmap',         self._name)
@@ -106,7 +106,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
         for i in range(len(self._imageList)):
             
             image   = self._imageList[i]
-            display = image.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(image)
 
             display.removeListener('displayRange', self._name)
             display.removeListener('cmap',         self._name)
@@ -144,7 +144,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         if len(self._imageList) > 0:
             image      = self._imageList[self._displayCtx.selectedImage]
-            display    = image.getAttribute('display')
+            display    = self._displayCtx.getDisplayProperties(image)
             dmin, dmax = display.displayRange.getRange(0)
         else:
             dmin, dmax = 0.0, 0.0
@@ -159,7 +159,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
         if len(self._imageList) > 0:
 
             image   = self._imageList[self._displayCtx.selectedImage]
-            display = image.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(image)
             cmap    = display.cmap
         else:
             cmap = None

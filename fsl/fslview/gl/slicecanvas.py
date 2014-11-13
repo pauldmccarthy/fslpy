@@ -348,7 +348,7 @@ class SliceCanvas(props.HasProperties):
             except KeyError:
                 pass
 
-            display = image.getAttribute('display')
+            display = self.displayCtx.getDisplayProperties(image)
 
             # Called when the GL object representation
             # of the image needs to be re-created

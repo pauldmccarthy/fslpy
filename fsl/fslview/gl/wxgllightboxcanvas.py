@@ -46,7 +46,7 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             self.imageList .removeListener('images', self.name)
             self.displayCtx.removeListener('bounds', self.name)
             for image in self.imageList:
-                disp = image.getAttribute('display')
+                disp = self.displayCtx.getDisplayProperties(image)
                 disp.removeListener('imageType',     self.name)
                 disp.removeListener('enabled',       self.name)
                 disp.removeListener('transform',     self.name)

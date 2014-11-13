@@ -246,7 +246,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         
         for i, img in enumerate(self._imageList):
 
-            display = img.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(img)
 
             display.removeListener('transform', self._name)
 
@@ -282,7 +282,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # listeners to individual images,
         # so we have to remove them too
         for img in self._imageList:
-            display = img.getAttribute('display')
+            display = self._displayCtx.getDisplayProperties(img)
             display.removeListener('transform', self._name)
         
             
@@ -322,8 +322,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # changed to red
         colour = 'white'
 
-        image = self._imageList[self._displayCtx.selectedImage]
-        display = image.getAttribute('display')
+        image   = self._imageList[self._displayCtx.selectedImage]
+        display = self._displayCtx.getDisplayProperties(image)
 
         # The image is being displayed as it is stored on
         # disk - the image.getOrientation method calculates

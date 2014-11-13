@@ -262,7 +262,7 @@ def handleImageArgs(args):
 
     # per-image display arguments
     for i in range(len(imageList)):
-        props.applyArguments(imageList[i].getAttribute('display'),
+        props.applyArguments(displayCtx.getDisplayProperties(imageList[i]),
                              args.images[i])
 
     # voxel/world location
@@ -270,7 +270,7 @@ def handleImageArgs(args):
         if args.worldloc:
             loc = args.worldloc
         elif args.voxelloc:
-            display = imageList[0].getAttribute('display')
+            display = displayCtx.getDisplayProperties(imageList[0])
             xform   = display.voxToDisplayMat
             loc     = transform.transform([[args.voxelloc]], xform)[0]
             

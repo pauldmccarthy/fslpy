@@ -408,6 +408,8 @@ class DisplayContext(props.HasProperties):
         # Ensure that an ImageDisplay object exists for
         # every image, and that the display bounds
         # property is initialised
+
+        self._imageDisplays = {}
         self._imageListChanged()
 
         # initialise the location to be
@@ -429,6 +431,15 @@ class DisplayContext(props.HasProperties):
                               self._volumeChanged)
 
 
+    def getDisplayProperties(self, image):
+        """Returns the display property object (e.g. an :class:`ImageDisplay`
+        object) for the specified image (or image index).
+        """
+        if isinstance(image, int):
+            image = self._imageList[image]
+        return self._imageDisplays[image]
+
+
     def _imageListChanged(self, *a):
         """Called when the :attr:`fsl.data.image.ImageList.images` property
         changes.
@@ -444,10 +455,10 @@ class DisplayContext(props.HasProperties):
         # object exists for every image
         for image in self._imageList:
             try:
-                display = image.getAttribute('display')
+                display = self._imageDisplays[image]
             except KeyError:
                 display = ImageDisplay(image)
-                image.setAttribute('display', display)
+                self._imageDisplays[image] = display
 
             # Register a listener with the transform property
             # of every image display so that when they change,
@@ -541,7 +552,7 @@ class DisplayContext(props.HasProperties):
 
         for img in self._imageList.images:
 
-            display = img.getAttribute('display')
+            display = self._imageDisplays[img]
             xform   = display.voxToDisplayMat
 
             for ax in range(3):
@@ -568,7 +579,7 @@ class DisplayContext(props.HasProperties):
             # be clamped to the possible value for that
             # image, so we don't need to check if the
             # current volume value is valid for each image
-            image.getAttribute('display').volume = self.volume
+            self._imageDisplays[image].volume = self.volume
 
             
     def _boundsChanged(self, *a):
