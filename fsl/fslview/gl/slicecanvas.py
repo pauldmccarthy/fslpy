@@ -149,6 +149,8 @@ class SliceCanvas(props.HasProperties):
         """Pans the canvas display by the given x/y offsets (specified in
         display coordinates).
         """
+
+        if len(self.imageList) == 0: return
         
         bounds = self.displayBounds
 
