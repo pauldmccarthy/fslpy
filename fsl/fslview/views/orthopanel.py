@@ -163,6 +163,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._imageList.addListener( 'images',
                                      self._name,
                                      self._imageListChanged)
+        self._displayCtx.addListener('bounds',
+                                     self._name,
+                                     self._refreshLayout) 
         self._displayCtx.addListener('selectedImage',
                                      self._name,
                                      self._imageListChanged)
