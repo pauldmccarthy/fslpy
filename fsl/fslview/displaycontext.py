@@ -405,18 +405,15 @@ class DisplayContext(props.HasProperties):
         self._imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))
 
+        # Keep track of the image list length
+        # so we can do some things in the
+        # _imageListChanged method
+        self._prevImageListLen = 0
+
         # Ensure that an ImageDisplay object exists for
         # every image, and that the display bounds
         # property is initialised
         self._imageListChanged()
-
-        # initialise the location to be
-        # the centre of the image world
-        b = self.bounds
-        self.location.xyz = [
-            b.xlo + b.xlen / 2.0,
-            b.ylo + b.ylen / 2.0,
-            b.zlo + b.zlen / 2.0] 
 
         imageList.addListener('images',
                               self._name,
@@ -468,6 +465,21 @@ class DisplayContext(props.HasProperties):
 
         # Ensure that the bounds property is accurate
         self._updateBounds()
+
+        # If the image list was empty,
+        # and is now non-empty, centre
+        # the currently selected location
+        if (self._prevImageListLen == 0) and (len(self._imageList) > 0):
+            
+            # initialise the location to be
+            # the centre of the image world
+            b = self.bounds
+            self.location.xyz = [
+                b.xlo + b.xlen / 2.0,
+                b.ylo + b.ylen / 2.0,
+                b.zlo + b.zlen / 2.0]
+            
+        self._prevImageListLen = len(self._imageList)
  
         # Limit the selectedImage property
         # so it cannot take a value greater
