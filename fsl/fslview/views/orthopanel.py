@@ -278,6 +278,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         if ev.GetEventObject() != self: return
 
         self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('bounds',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
         self._imageList .removeListener('images',        self._name)
 
