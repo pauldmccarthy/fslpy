@@ -64,6 +64,10 @@ class SpacePanel(viewpanel.ViewPanel):
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
+        for image in self._imageList:
+            display = self._displayCtx.getDisplayProperties(image)
+            display.removeListener('transform', self._name)
+
 
     def _selectedImageChanged(self, *a):
 
