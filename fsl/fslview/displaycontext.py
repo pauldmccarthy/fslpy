@@ -17,7 +17,7 @@ import fsl.data.image         as fslimage
 import fsl.utils.transform    as transform
 import fsl.fslview.colourmaps as fslcm
 
-class ImageDisplay(props.HasProperties):
+class ImageDisplay(props.BindableHasProperties):
     """A class which describes how an :class:`~fsl.data.image.Image` should
     be displayed.
 
@@ -237,7 +237,7 @@ class ImageDisplay(props.HasProperties):
         :arg parent: 
         """
 
-        props.HasProperties.__init__(
+        props.BindableHasProperties.__init__(
             self,
             parent,
             
@@ -377,7 +377,7 @@ class ImageDisplay(props.HasProperties):
         else:                          self.interpolation = 'none'
 
 
-class DisplayContext(props.HasProperties):
+class DisplayContext(props.BindableHasProperties):
     """Contains a number of properties defining how an
     :class:`~fsl.dat.aimage.ImageList` is to be displayed.
     """
@@ -415,7 +415,7 @@ class DisplayContext(props.HasProperties):
     """
 
 
-    imageOrder = props.List(props.Int())
+    # imageOrder = props.List(props.Int())
     """
     """
 
@@ -428,7 +428,7 @@ class DisplayContext(props.HasProperties):
         :arg parent: 
         """
 
-        props.HasProperties.__init__(self, parent, nounbind=('volume'))
+        props.BindableHasProperties.__init__(self, parent, nounbind=('volume'))
         
         self._imageList = imageList
         self._name = '{}_{}'.format(self.__class__.__name__, id(self))

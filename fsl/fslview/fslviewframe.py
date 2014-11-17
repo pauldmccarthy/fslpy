@@ -27,6 +27,7 @@ import views
 import controls
 import actions
 import strings
+import displaycontext
 
 
 class FSLViewFrame(wx.Frame):
@@ -104,10 +105,12 @@ class FSLViewFrame(wx.Frame):
         allowing the user to configure the view.
         """
 
-        title = strings.viewPanelTitles[panelCls]
-        panel = panelCls(self._centrePane,
-                         self._imageList,
-                         self._displayCtx) 
+        title   = strings.viewPanelTitles[panelCls]
+        childDC = displaycontext.DisplayContext(self._imageList,
+                                                self._displayCtx)
+        panel   = panelCls(self._centrePane,
+                           self._imageList,
+                           childDC) 
 
         self._viewPanelCount = self._viewPanelCount + 1
         title = '{} {}'.format(title, self._viewPanelCount)
