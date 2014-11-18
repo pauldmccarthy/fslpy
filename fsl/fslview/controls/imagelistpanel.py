@@ -151,7 +151,7 @@ class ImageListPanel(controlpanel.ControlPanel):
                 self._listBox.SetString(idx, name)
 
             def enabledChanged(img):
-                display = self._displayCtx.getDisplayProperties(image)
+                display = self._displayCtx.getDisplayProperties(img)
                 idx     = self._imageList.index(img)
 
                 if display.enabled: self._listBox.EnableItem( idx)
