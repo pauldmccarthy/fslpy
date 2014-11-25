@@ -384,7 +384,10 @@ class DisplayContext(props.SyncableHasProperties):
 
     
     selectedImage = props.Int(minval=0, default=0, clamped=True)
-    """Index of the currently 'selected' image. 
+    """Index of the currently 'selected' image.
+
+    Actually, this is the index of the currently selected image index,
+    in the :attr:`imageOrder` property.
 
     If you're interested in the currently selected image, you must also listen
     for changes to the :attr:`fsl.data.image.ImageList.images` list as, if the

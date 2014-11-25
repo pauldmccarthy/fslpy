@@ -66,6 +66,11 @@ class ImageSelectPanel(controlpanel.ControlPanel):
             self._imageListChanged)
 
         self._displayCtx.addListener(
+            'imageOrder',
+            self._name,
+            self._imageListChanged) 
+
+        self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged)
@@ -73,6 +78,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         def onDestroy(ev):
             self._imageList. removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
+            self._displayCtx.removeListener('imageOrder',    self._name)
 
             # the _imageListChanged method registers
             # a listener on the name of each image
@@ -120,10 +126,13 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         """
 
         def nameChanged(img):
+
+            idx = self._imageList.index(img)
+            idx = self._displayCtx.imageOrder[idx]
             
             # if the name of the currently selected image has changed,
             # make sure that this panel updates to reflect the change
-            if self._imageList.index(img) == self._displayCtx.selectedImage:
+            if idx == self._displayCtx.selectedImage:
                 self._selectedImageChanged()
 
         for image in self._imageList:
