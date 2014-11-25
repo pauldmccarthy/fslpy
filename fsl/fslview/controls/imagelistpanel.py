@@ -121,7 +121,8 @@ class ImageListPanel(controlpanel.ControlPanel):
             return
 
         if len(self._imageList) > 0:
-            self._listBox.SetSelection(self._displayCtx.selectedImage)
+            self._listBox.SetSelection(
+                self._displayCtx.getSelectedImageIndex())
 
         
     def _imageListChanged(self, *a):
@@ -138,9 +139,8 @@ class ImageListPanel(controlpanel.ControlPanel):
         selection = self._listBox.GetSelection()
         self._listBox.Clear()
 
-        for i in self._displayCtx.imageOrder:
+        for i, image in enumerate(self._displayCtx.getOrderedImages()):
 
-            image    = self._imageList[i]
             display  = self._displayCtx.getDisplayProperties(image)
             name     = image.name
             if name is None: name = ''
@@ -151,19 +151,14 @@ class ImageListPanel(controlpanel.ControlPanel):
             else:               self._listBox.DisableItem(i)
 
             def nameChanged(img):
-                
-                idx  = self._imageList.index(img)
-                idx  = self._displayCtx.imageOrder[idx]
-                
+                idx  = self._displayCtx.getImageOrder(img)
                 name = img.name 
                 if name is None: name = ''
-                
                 self._listBox.SetString(idx, name)
 
             def enabledChanged(img):
                 display = self._displayCtx.getDisplayProperties(img)
-                idx     = self._imageList.index(img)
-                idx     = self._displayCtx.imageOrder[idx]
+                idx     = self._displayCtx.getImageOrder(img)
 
                 if display.enabled: self._listBox.EnableItem( idx)
                 else:               self._listBox.DisableItem(idx)
@@ -200,9 +195,9 @@ class ImageListPanel(controlpanel.ControlPanel):
         :class:`~pwidgets.elistbox.EditableListBox`. Sets the
         :attr:`fsl.data.image.ImageList.selectedImage property.
         """
-        self._listBoxNeedsUpdate = False
+        self._listBoxNeedsUpdate       = False
         self._displayCtx.selectedImage = ev.idx
-        self._listBoxNeedsUpdate = True
+        self._listBoxNeedsUpdate       = True
 
         
     def _lbAdd(self, ev):
@@ -216,7 +211,8 @@ class ImageListPanel(controlpanel.ControlPanel):
             # Double check that the list box has been updated,
             # as even though the selected image may have changed,
             # the index of that selected image may be the same.
-            self._listBox.SetSelection(self._displayCtx.selectedImage)
+            self._listBox.SetSelection(
+                self._displayCtx.getSelectedImageIndex())
 
 
     def _lbRemove(self, ev):
@@ -225,9 +221,9 @@ class ImageListPanel(controlpanel.ControlPanel):
         Removes the corresponding image from the
         :class:`~fsl.data.image.ImageList`. 
         """
-        idx = self._displayCtx.imageOrder.index(ev.idx)
-        self._listBoxNeedsUpdate = False
-        self._imageList.pop(idx)
+
+        self._listBoxNeedsUpdate = False 
+        self._imageList.pop(self._displayCtx.imageOrder[ev.idx])
         self._listBoxNeedsUpdate = True
 
 
@@ -237,7 +233,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         Toggles the image display enabled property accordingly.
         """
 
-        idx             = self._displayCtx.imageOrder.index(ev.idx)
+        idx             = self._displayCtx.imageOrder[ev.idx]
         img             = self._imageList[idx]
         display         = self._displayCtx.getDisplayProperties(img)
         display.enabled = ev.enabled
@@ -247,6 +243,6 @@ class ImageListPanel(controlpanel.ControlPanel):
         """Called when an item label is edited on the image list box.
         Sets the corresponding image name to the new label.
         """
-        idx      = self._displayCtx.imageOrder.index(ev.idx)
+        idx      = self._displayCtx.imageOrder[ev.idx]
         img      = self._imageList[idx]
         img.name = ev.label
