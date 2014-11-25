@@ -71,6 +71,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** EListBox - Mouse drag to move items
 ** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
 *** DONE Show/hide labels
