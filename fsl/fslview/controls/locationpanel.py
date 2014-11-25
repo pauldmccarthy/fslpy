@@ -179,7 +179,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             self._voxelPanel.Layout()
             return
 
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
         dloc   = self._displayCtx.location.xyz
@@ -234,7 +234,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if len(self._imageList) == 0:    return
         if self._internalLocationChange: return
 
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
         dloc = self._displayCtx.location.xyz
@@ -257,7 +257,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if len(self._imageList) == 0:    return
         if self._internalLocationChange: return
         
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
         vloc = self.voxelLocation.xyz
@@ -281,7 +281,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         if len(self._imageList) == 0:    return
         if self._internalLocationChange: return
 
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
         wloc = self.worldLocation.xyz
@@ -309,7 +309,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             self._worldPanel.Layout()
             return
 
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
         # Update the label which

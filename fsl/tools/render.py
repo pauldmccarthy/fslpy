@@ -53,7 +53,7 @@ def buildLabelBitmaps(imageList,
     # changed to red
     fgColour = 'white'
 
-    image   = imageList[displayCtx.selectedImage]
+    image   = displayCtx.getSelectedImage()
     display = displayCtx.getDisplayProperties(image)
 
     # The image is being displayed as it is stored on

@@ -91,7 +91,7 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
         if len(self._imageList) == 0:
             return
 
-        image = self._imageList[self._displayCtx.selectedImage]
+        image = self._displayCtx.getSelectedImage()
 
         if not image.is4DImage():
             return
@@ -106,7 +106,7 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
         if len(self._imageList) == 0:
             return 
         
-        image = self._imageList[self._displayCtx.selectedImage]
+        image = self._displayCtx.getSelectedImage()
 
         if not image.is4DImage():
             return

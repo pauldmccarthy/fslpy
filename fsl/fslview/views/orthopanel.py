@@ -326,7 +326,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # changed to red
         colour = 'white'
 
-        image   = self._imageList[self._displayCtx.selectedImage]
+        image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
         # The image is being displayed as it is stored on

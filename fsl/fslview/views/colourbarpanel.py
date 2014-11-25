@@ -132,7 +132,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
         """
         """
         if len(self._imageList) > 0:
-            label = self._imageList[self._displayCtx.selectedImage].name
+            label = self._displayCtx.getSelectedImage().name
         else:
             label = ''
         self._cbPanel.label = label
@@ -143,7 +143,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
         """
 
         if len(self._imageList) > 0:
-            image      = self._imageList[self._displayCtx.selectedImage]
+            image      = self._displayCtx.getSelectedImage()
             display    = self._displayCtx.getDisplayProperties(image)
             dmin, dmax = display.displayRange.getRange(0)
         else:
@@ -158,7 +158,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
 
         if len(self._imageList) > 0:
 
-            image   = self._imageList[self._displayCtx.selectedImage]
+            image   = self._displayCtx.getSelectedImage()
             display = self._displayCtx.getDisplayProperties(image)
             cmap    = display.cmap
         else:
