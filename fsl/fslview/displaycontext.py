@@ -482,7 +482,7 @@ class DisplayContext(props.SyncableHasProperties):
         """Returns the currently selected :class:`~fsl.data.image.Image`
         object.
         """
-        return self._imageList[self.getSelectedImageIndex()]
+        return self._imageList[self.imageOrder[self.selectedImage]]
 
     
     def getImageOrder(self, image):
