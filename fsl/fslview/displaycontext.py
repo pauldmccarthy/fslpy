@@ -386,9 +386,14 @@ class DisplayContext(props.SyncableHasProperties):
     selectedImage = props.Int(minval=0, default=0, clamped=True)
     """Index of the currently 'selected' image.
 
-    Actually, this is the index of the currently selected image index,
-    in the :attr:`imageOrder` property.
-
+    This value is used as an index into the :attr:`imageOrder` list, which
+    defines the order in which images are to be displayed. The value stored at
+    this index in the :attr:`imageOrder` list gives the index of the the
+    actual image (i.e. into the :cass:`~fsl.data.image.ImageList`).  Rather
+    than accessing this value directly, and performing this necessary
+    transformation manually, it is easier to use the :meth:`getSelectedImage`
+    and :meth:`getSelectedImageIndex` methods.
+    
     If you're interested in the currently selected image, you must also listen
     for changes to the :attr:`fsl.data.image.ImageList.images` list as, if the
     list changes, the :attr:`selectedImage` index may not change, but the
@@ -420,7 +425,8 @@ class DisplayContext(props.SyncableHasProperties):
 
     imageOrder = props.List(props.Int())
     """A list of indices into the :attr:`~fsl.data.image.ImageList.images`
-    list, defining the order in which the images are to be displayed.
+    list, defining the order in which the images are to be displayed. See
+    comments for the :attr:`selectedImage` property for useful information.
     """
 
 
@@ -467,6 +473,20 @@ class DisplayContext(props.SyncableHasProperties):
         if isinstance(image, int):
             image = self._imageList[image]
         return self._imageDisplays[image]
+
+    
+    def getSelectedImageIndex(self):
+        return self.imageOrder[self.selectedImage]
+
+    
+    def getSelectedImage(self):
+        return self._imageList[self.getSelectedImageIndex()]
+
+    
+    def getImageOrder(self, image):
+        if isinstance(image, fslimage.Image):
+            image = self._imageList.index(image)
+        return self.imageOrder.index(image)
 
 
     def _imageListChanged(self, *a):
@@ -585,7 +605,7 @@ class DisplayContext(props.SyncableHasProperties):
         is preserved, in the new display coordinate system.
         """
 
-        if display.image != self._imageList[self.selectedImage]:
+        if display.image != self.getSelectedImage():
             self._updateBounds()
             return
 
