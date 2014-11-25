@@ -415,8 +415,9 @@ class DisplayContext(props.SyncableHasProperties):
     """
 
 
-    # imageOrder = props.List(props.Int())
-    """
+    imageOrder = props.List(props.Int())
+    """A list of indices into the :attr:`~fsl.data.image.ImageList.images`
+    list, defining the order in which the images are to be displayed.
     """
 
 
@@ -508,6 +509,25 @@ class DisplayContext(props.SyncableHasProperties):
                 self.__class__.__name__,
                 self._transformChanged,
                 overwrite=True)
+
+
+        # Ensure that the imageOrder
+        # property is valid ...
+        # 
+        # If images have been added to
+        # the image list, add indices
+        # for them to the imageOrder list
+        if len(self.imageOrder) < len(self._imageList):
+            self.imageOrder.extend(range(len(self.imageOrder),
+                                         len(self._imageList)))
+
+        # Otherwise, if images have been removed
+        # from the image list, remove the corresponding
+        # indices from the imageOrder list
+        elif len(self.imageOrder) > len(self._imageList):
+            for idx in range(len(self._imageList),
+                             len(self.imageOrder)):
+                self.imageOrder.remove(idx)
 
         # Ensure that the bounds property is accurate
         self._updateBounds()
