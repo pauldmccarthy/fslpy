@@ -43,8 +43,9 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
         # this SliceCanvas object, so we do the right
         # thing and remove our listeners when we die
         def onDestroy(ev):
-            self.imageList .removeListener('images', self.name)
-            self.displayCtx.removeListener('bounds', self.name)
+            self.imageList .removeListener('images',     self.name)
+            self.displayCtx.removeListener('bounds',     self.name)
+            self.displayCtx.removeListener('imageOrder', self.name)
             for image in self.imageList:
                 disp = self.displayCtx.getDisplayProperties(image)
                 disp.removeListener('imageType',     self.name)

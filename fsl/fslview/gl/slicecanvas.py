@@ -270,6 +270,9 @@ class SliceCanvas(props.HasProperties):
         self.imageList.addListener( 'images',
                                     self.name,
                                     self._imageListChanged)
+        self.displayCtx.addListener('imageOrder',
+                                    self.name,
+                                    self._imageListChanged) 
         self.displayCtx.addListener('bounds',
                                     self.name,
                                     self._imageBoundsChanged)
