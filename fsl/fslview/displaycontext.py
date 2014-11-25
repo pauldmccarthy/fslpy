@@ -479,16 +479,27 @@ class DisplayContext(props.SyncableHasProperties):
 
     
     def getSelectedImage(self):
+        """Returns the currently selected :class:`~fsl.data.image.Image`
+        object.
+        """
         return self._imageList[self.getSelectedImageIndex()]
 
     
     def getImageOrder(self, image):
+        """Returns the order in which the given image (or an index into
+        the :class:`~fsl.data.image.ImageList` list) should be displayed
+        (see the :attr:`imageOrder property).
+        """
         if isinstance(image, fslimage.Image):
             image = self._imageList.index(image)
         return self.imageOrder.index(image)
 
     
     def getOrderedImages(self):
+        """Returns a list of :class:`~fsl.data.image.Image` objects from
+        the :class:`~fsl.data.image.ImageList` list, sorted into the order
+        that they are to be displayed.
+        """
         return [self._imageList[idx] for idx in self.imageOrder]
 
 

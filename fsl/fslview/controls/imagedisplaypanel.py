@@ -36,7 +36,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
-        # a dictionary containing {id(image) : panel} mappings
+        # a dictionary containing {image : panel} mappings
         self._displayPanels = {}
 
         self._imageSelect = imageselect.ImageSelectPanel(
@@ -52,11 +52,17 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
             'images',
             self._name,
             self._imageListChanged)
-
+ 
+        self._displayCtx.addListener(
+            'imageOrder',
+            self._name,
+            self._selectedImageChanged)
+        
         self._displayCtx.addListener(
             'selectedImage',
             self._name,
             self._selectedImageChanged)
+        
 
         def onDestroy(ev):
             ev.Skip()
@@ -67,6 +73,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
             if ev.GetEventObject() != self: return
             
             self._imageList .removeListener('images',        self._name)
+            self._displayCtx.removeListener('imageOrder',    self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
@@ -91,18 +98,16 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
         changes. Creates/destroys display panels for added/removed images,
         and ensures that the correct display panel is visible.
         """
-        
-        imgIds = map(id, self._imageList)
 
         # First check to see if there are any display
         # panels for which the corresponding image is
         # no longer present in the list.
-        for imgId, displayPanel in self._displayPanels.items():
+        for img, displayPanel in self._displayPanels.items():
 
-            if imgId not in imgIds:
+            if img not in self._imageList:
                 self._sizer.Detach(displayPanel)
                 displayPanel.Destroy()
-                self._displayPanels.pop(imgId)
+                self._displayPanels.pop(img)
         
         # Now check to see if any images have been added,
         # and we need to create a display panel for them
@@ -110,7 +115,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
             # check to see if a display
             # panel exists for this image
-            try: self._displayPanels[id(image)]
+            try: self._displayPanels[image]
 
             # if one doesn't, make one and 
             # add the image to the list box
@@ -119,7 +124,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
                 log.debug('Creating display panel for '
                           'image: {}'.format(image.name))
                 panel = self._makeDisplayPanel(image)
-                self._displayPanels[id(image)] = panel
+                self._displayPanels[image] = panel
 
         # When images are added/removed, the selected image
         # index may not have changed, but the image which
@@ -135,11 +140,12 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         idx = self._displayCtx.selectedImage
 
-        for i, image in enumerate(self._imageList):
 
-            displayPanel = self._displayPanels[id(image)]
+        for i, image in enumerate(self._displayCtx.getOrderedImages()):
+
+            displayPanel = self._displayPanels[image]
             
-            if i == idx:
+            if i == self._displayCtx.selectedImage:
                 log.debug('Showing display panel for '
                           'image {} ({})'.format(image.name, idx))
             
