@@ -121,8 +121,7 @@ class ImageListPanel(controlpanel.ControlPanel):
             return
 
         if len(self._imageList) > 0:
-            self._listBox.SetSelection(
-                self._displayCtx.getSelectedImageIndex())
+            self._listBox.SetSelection(self._displayCtx.selectedImage)
 
         
     def _imageListChanged(self, *a):
@@ -211,8 +210,7 @@ class ImageListPanel(controlpanel.ControlPanel):
             # Double check that the list box has been updated,
             # as even though the selected image may have changed,
             # the index of that selected image may be the same.
-            self._listBox.SetSelection(
-                self._displayCtx.getSelectedImageIndex())
+            self._listBox.SetSelection(self._displayCtx.selectedImage)
 
 
     def _lbRemove(self, ev):

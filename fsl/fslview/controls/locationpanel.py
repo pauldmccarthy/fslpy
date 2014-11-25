@@ -129,6 +129,9 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         
         self._imageList.addListener( 'images',
                                      self._name,
+                                     self._selectedImageChanged)
+        self._displayCtx.addListener('imageOrder',
+                                     self._name,
                                      self._selectedImageChanged) 
         self._displayCtx.addListener('selectedImage',
                                      self._name,
@@ -150,6 +153,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             ev.Skip()
             self._imageList.removeListener( 'images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
+            self._displayCtx.removeListener('imageOrder',    self._name)
             self._displayCtx.removeListener('volume',        self._name)
             self._displayCtx.removeListener('location',      self._name)
             

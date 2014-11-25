@@ -127,8 +127,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
 
         def nameChanged(img):
 
-            idx = self._imageList.index(img)
-            idx = self._displayCtx.imageOrder[idx]
+            idx = self._displayCtx.getImageOrder(img)
             
             # if the name of the currently selected image has changed,
             # make sure that this panel updates to reflect the change
@@ -150,6 +149,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
         """
 
         idx   = self._displayCtx.selectedImage
+        image = self._displayCtx.getSelectedImage()
         nimgs = len(self._imageList)
 
         self._prevButton.Enable(nimgs > 0 and idx != 0)
@@ -159,7 +159,6 @@ class ImageSelectPanel(controlpanel.ControlPanel):
             self._imageLabel.SetLabel('')
             return
 
-        image = self._imageList[idx]
         name = image.name
         
         if name is None: name = ''
