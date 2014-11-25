@@ -423,23 +423,26 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self.zrange.xhi,
             self.sliceSpacing)
 
-        self._sliceLocs  = []
-        self._transforms = []
+        self._sliceLocs  = {}
+        self._transforms = {}
 
         # calculate the transformation for each
         # slice in each image, and the index of
         # each slice to be displayed
         for i, image in enumerate(self.imageList):
-            
-            self._transforms.append([])
-            self._sliceLocs .append([])
 
+            iSliceLocs  = []
+            iTransforms = []
+            
             for zi, zpos in enumerate(sliceLocs):
 
                 xform = self._calculateSliceTransform(image, zi)
 
-                self._transforms[-1].append(xform)
-                self._sliceLocs[ -1].append(zpos)
+                iTransforms.append(xform)
+                iSliceLocs .append(zpos)
+
+            self._transforms[image] = iTransforms
+            self._sliceLocs[ image] = iSliceLocs
 
 
     def _calculateSliceTransform(self, image, sliceno):
@@ -580,7 +583,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         gl.glShadeModel(gl.GL_FLAT)
 
         # Draw all the slices for all the images.
-        for i, image in enumerate(self.imageList):
+        for image in self.displayCtx.getOrderedImages():
 
             try: globj = image.getAttribute(self.name)
             except KeyError:
@@ -590,11 +593,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 continue 
 
             log.debug('Drawing {} slices ({} - {}) for image {}'.format(
-                endSlice - startSlice, startSlice, endSlice, i))
+                endSlice - startSlice, startSlice, endSlice, image))
 
             for zi in range(startSlice, endSlice):
-                globj.draw(self._sliceLocs[ i][zi],
-                           self._transforms[i][zi])
+                globj.draw(self._sliceLocs[ image][zi],
+                           self._transforms[image][zi])
 
         if len(self.imageList) > 0:
             if self.showCursor:    self._drawCursor()

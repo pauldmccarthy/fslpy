@@ -209,6 +209,13 @@ class Image(props.HasProperties):
         self._attributes = {}
 
 
+    def __hash__(self):
+        """Returns a number which uniquely idenfities this :class:`Image`
+        object (the result of ``id(self)``).
+        """
+        return id(self)
+
+
     def __str__(self):
         """Return a string representation of this :class:`Image`."""
         return '{}("{}")'.format(self.__class__.__name__, self.imageFile)

@@ -488,6 +488,9 @@ class DisplayContext(props.SyncableHasProperties):
             image = self._imageList.index(image)
         return self.imageOrder.index(image)
 
+    def getOrderedImages(self):
+        return [self._imageList[idx] for idx in self.imageOrder]
+
 
     def _imageListChanged(self, *a):
         """Called when the :attr:`fsl.data.image.ImageList.images` property
