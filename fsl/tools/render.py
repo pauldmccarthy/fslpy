@@ -260,7 +260,16 @@ def run(args, context):
         log.warning('Restarting render.py with '
                     'off-screen rendering configured...')
 
-        subprocess.call(sys.argv, env=env)
+        # If fslpy has been called via
+        # 'python -c "import fsl; fsl.main()",
+        # python passes '-c' as the first
+        # argument.
+        argv = list(sys.argv)
+        if argv[0] == '-c': argv = argv[1:]
+        
+        argv = ['fslpy'] + argv
+        
+        subprocess.call(argv, env=env)
         sys.exit(0)
 
     import fsl.fslview.gl                      as fslgl
@@ -324,6 +333,8 @@ def run(args, context):
 
         if args.layout == 'grid':
             canvasAxes = [canvasAxes[1], canvasAxes[0], canvasAxes[2]]
+            centres    = [centres[   1], centres[   0], centres[   2]]
+            zooms      = [zooms[     1], zooms[     0], zooms[     2]]
         
         sizes = calculateOrthoCanvasSizes(imageList,
                                           displayCtx,
@@ -418,7 +429,7 @@ def parseArgs(argv):
     mainParser = argparse.ArgumentParser(add_help=False)
 
     mainParser.add_argument('-of', '--outfile',  metavar='FILE',
-                            help='Output image file name')
+                            help='Output image file name', required=True)
     mainParser.add_argument('-sz', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',

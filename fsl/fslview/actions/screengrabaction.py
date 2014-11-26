@@ -24,21 +24,21 @@ class ScreenGrabAction(action.Action):
 
     def doAction(self, *args):
         
-        # app = wx.GetApp()
+        app = wx.GetApp()
 
-        # if app is None:
-        #     raise RuntimeError('A wx.App has not been created')
+        if app is None:
+            raise RuntimeError('A wx.App has not been created')
 
-        # dlg = wx.FileDialog(app.GetTopWindow(),
-        #                     message='Save screenshot',
-        #                     style=wx.FD_SAVE)
+        dlg = wx.FileDialog(app.GetTopWindow(),
+                            message='Save screenshot',
+                            style=wx.FD_SAVE)
 
-        # if dlg.ShowModal() != wx.ID_OK: return
+        if dlg.ShowModal() != wx.ID_OK: return
 
-        # filename = dlg.GetPath()
+        filename = dlg.GetPath()
 
-        # dlg.Destroy()
-        # wx.Yield()
+        dlg.Destroy()
+        wx.Yield()
 
         # TODO In-memory-only images will not be
         # rendered - will need to save them to a temp file
@@ -56,7 +56,7 @@ class ScreenGrabAction(action.Action):
         width, height = viewPanel.GetClientSize().Get()
 
         argv  = []
-        argv += ['--outfile', 'out.png']
+        argv += ['--outfile', filename]
         argv += ['--size', '{}'.format(width), '{}'.format(height)]
         argv += ['--background', '0', '0', '0', '255']
 
@@ -116,7 +116,7 @@ class ScreenGrabAction(action.Action):
         
         for image in self._imageList:
 
-            fname = image.nibImage.get_filename()
+            fname = image.imageFile
 
             # No support for in-memory images just yet
             if fname is None:
@@ -128,6 +128,6 @@ class ScreenGrabAction(action.Action):
             argv += ['--image', fname] + imgArgv
 
         argv = ' '.join(argv).split()
-        print argv
-
-        subprocess.call(['fsl.py', 'render'] + argv)
+        argv = ['fslpy', 'render'] + argv
+        
+        subprocess.call(argv)
