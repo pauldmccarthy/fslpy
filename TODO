@@ -7,6 +7,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
+** Float32 images not working?
 ** Lightbox scrollbar under linux not visible?
 ** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** OrthoPanel - need to re-layout when colour bar is displayed
@@ -76,7 +78,7 @@ perhaps into a standalone module...
 ** CLI options
 *** DONE Show/hide labels
 *** DONE Ortho layout (horiz/vert/grid)
-*** Check that show/hide cursor is being applied correctly
+*** DONE Check that show/hide cursor is being applied correctly
 *** A switch to automatically choose colour maps/clipping thresholds for a provided set of images (like Eugene's fast fslview startup script)
 ** Scale values in colour map according to largest value?
 ** ColourBarPanel should only do stuff if it is being displayed
@@ -171,20 +173,21 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
-** Ability to display images in a different order for different view panels.
+** IN PROGRESS Different settings for each view
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
-** Separate image displays for each view panel - this needs to be possible.
+*** IN PROGRESS Ability to display images in a different order for different view panels.
+*** IN PROGRESS Separate image displays for each view panel - this needs to be possible.
 And the ability to link/unlink said display properties
 ImageDisplay objects could be managed by DisplayContetx, rather than being
 tacked on as an image attribute (the same could be said of GLObjects, but
 that's irrelevant).
+*** IN PROGRESS Link display properties across all images
 ** Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
 This will probably dictate how you go about implementing keyboard/mouse control
 ** Keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
-** Link display properties across all images
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
 ** Tensors
 *** RGB display
@@ -194,7 +197,7 @@ This will probably dictate how you go about implementing keyboard/mouse control
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
 ** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
-** IN PROGRESS Image export/offscreen rendering.
+** DONE Image export/offscreen rendering.
 ** DONE Re-work image display resolution options.
 Now that I'm using real texture mapping in both GL14 and GL21, I could
 possibly go back to sub-sampling the image texture data when the display
