@@ -92,6 +92,26 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
         return displayPanel
 
+    
+    def _getDisplayPanel(self, image):
+        """Returns a display panel for the given image. One is created
+        if it does not already exist.
+        """
+        # check to see if a display
+        # panel exists for this image
+        try: panel = self._displayPanels[image]
+
+        # if one doesn't, make one and 
+        # add the image to the list box
+        except KeyError:
+                
+            log.debug('Creating display panel for '
+                      'image: {}'.format(image.name))
+            panel = self._makeDisplayPanel(image)
+            self._displayPanels[image] = panel
+
+        return panel
+
         
     def _imageListChanged(self, *a):
         """Called when the :attr:`~fsl.data.image.ImageList.images` list
@@ -112,19 +132,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
         # Now check to see if any images have been added,
         # and we need to create a display panel for them
         for i, image in enumerate(self._imageList):
-
-            # check to see if a display
-            # panel exists for this image
-            try: self._displayPanels[image]
-
-            # if one doesn't, make one and 
-            # add the image to the list box
-            except KeyError:
-                
-                log.debug('Creating display panel for '
-                          'image: {}'.format(image.name))
-                panel = self._makeDisplayPanel(image)
-                self._displayPanels[image] = panel
+            self._getDisplayPanel(image)
 
         # When images are added/removed, the selected image
         # index may not have changed, but the image which
@@ -140,10 +148,9 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         idx = self._displayCtx.selectedImage
 
-
         for i, image in enumerate(self._displayCtx.getOrderedImages()):
 
-            displayPanel = self._displayPanels[image]
+            displayPanel = self._getDisplayPanel(image)
             
             if i == self._displayCtx.selectedImage:
                 log.debug('Showing display panel for '
