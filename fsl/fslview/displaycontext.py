@@ -472,10 +472,27 @@ class DisplayContext(props.SyncableHasProperties):
     def getDisplayProperties(self, image):
         """Returns the display property object (e.g. an :class:`ImageDisplay`
         object) for the specified image (or image index).
+
+        If an :class:`ImageDisplay` object does not exist for the given image,
+        one is created.
         """
         if isinstance(image, int):
             image = self._imageList[image]
-        return self._imageDisplays[image]
+
+        try:
+            display = self._imageDisplays[image]
+                
+        except KeyError:
+                
+            if self.getParent() is None:
+                dParent = None
+            else:
+                dParent = self.getParent().getDisplayProperties(image)
+
+            display = ImageDisplay(image, dParent)
+            self._imageDisplays[image] = display
+        
+        return display
 
     
     def getSelectedImage(self):
@@ -517,18 +534,11 @@ class DisplayContext(props.SyncableHasProperties):
         # Ensure that an ImageDisplay
         # object exists for every image
         for image in self._imageList:
-            try:
-                display = self._imageDisplays[image]
-                
-            except KeyError:
-                
-                if self.getParent() is None:
-                    dParent = None
-                else:
-                    dParent = self.getParent().getDisplayProperties(image)
 
-                display = ImageDisplay(image, dParent)
-                self._imageDisplays[image] = display
+            # The getDisplayProperties method
+            # will create an ImageDisplay object
+            # if one does not already exist
+            display = self.getDisplayProperties(image)
 
             # Register a listener with the transform property
             # of every image display so that when they change,
