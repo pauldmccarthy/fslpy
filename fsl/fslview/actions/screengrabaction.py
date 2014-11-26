@@ -114,7 +114,7 @@ class ScreenGrabAction(action.Action):
             argv += ['--showGridLines', '{}'.format(viewPanel.showGridLines)]
             argv += ['--zax',           '{}'.format(viewPanel.zax)]
         
-        for image in self._imageList:
+        for image in self._displayCtx.getOrderedImages():
 
             fname = image.imageFile
 
