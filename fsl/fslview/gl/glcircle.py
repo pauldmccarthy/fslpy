@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 import numpy                  as np
 
 import fsl.utils.transform    as transform
-import fsl.fslview.gl         as fslgl
 import fsl.fslview.gl.glimage as glimage
 
 class GLCircle(glimage.GLImage):
@@ -23,9 +22,6 @@ class GLCircle(glimage.GLImage):
     def genVertexData(self):
         return genVertexData(self.image, self.display, self.xax, self.yax)
 
-    def draw(self, zpos, xform=None):
-        fslgl.glcircle_funcs.draw(self, zpos, xform)
-        
 
 def genVertexData(image, display, xax, yax):
 
