@@ -362,8 +362,11 @@ def _calcFlatSizes(canvasaxes, bounds, width, height, vert=True):
     sizes = []
     for i in range(len(canvasaxes)):
 
-        cw = width  * (canvasWidths[ i] / ttlWidth)
-        ch = height * (canvasHeights[i] / ttlHeight)
+        if ttlWidth  == 0: cw = 0
+        else:              cw = width  * (canvasWidths[ i] / ttlWidth)
+
+        if ttlHeight == 0: ch = 0
+        else:              ch = height * (canvasHeights[i] / ttlHeight)
 
         acw, ach = _adjustPixelSize(canvasWidths[ i],
                                     canvasHeights[i],
@@ -381,7 +384,10 @@ def _calcFlatSizes(canvasaxes, bounds, width, height, vert=True):
 def _adjustPixelSize(wldWidth, wldHeight, pixWidth, pixHeight):
     """Potentially reduces the given pixel width/height such that the
     display space aspect ratio is maintained.
-    """        
+    """
+
+    if pixWidth == 0 or pixHeight == 0:
+        return 0, 0
 
     pixRatio = float(pixWidth) / pixHeight
     wldRatio = float(wldWidth) / wldHeight
