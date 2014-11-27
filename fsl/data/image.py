@@ -355,7 +355,7 @@ class ImageList(props.HasProperties):
         
         if images is None: images = []
 
-        self.images = images
+        self.images.extend(images)
 
         # set the _lastDir attribute,
         # used by the addImages method
