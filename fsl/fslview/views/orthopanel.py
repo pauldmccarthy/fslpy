@@ -137,7 +137,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side] = wx.StaticText(canvasPanel)
             self._zLabels[side] = wx.StaticText(canvasPanel)
 
-        self       .SetBackgroundColour('black')
         canvasPanel.SetBackgroundColour('black')
 
         for side in ('left', 'right', 'top', 'bottom'):

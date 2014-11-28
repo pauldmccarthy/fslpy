@@ -497,8 +497,9 @@ class DisplayContext(props.SyncableHasProperties):
     
     def getSelectedImage(self):
         """Returns the currently selected :class:`~fsl.data.image.Image`
-        object.
+        object, or ``None`` if there are no images.
         """
+        if len(self._imageList) == 0: return None
         return self._imageList[self.imageOrder[self.selectedImage]]
 
     
