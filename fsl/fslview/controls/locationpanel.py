@@ -350,14 +350,23 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         self.disableNotification('worldLocation')
         self.disableNotification('voxelLocation')
 
+        voxelPropVals = self.voxelLocation.getPropertyValueList()
+        worldPropVals = self.worldLocation.getPropertyValueList()
+
+        for vpv in voxelPropVals: vpv.disableNotification()
+        for wpv in worldPropVals: wpv.disableNotification()
+
         for i in range(3):
             vlo, vhi = 0, image.shape[i] - 1
             wlo, whi = transform.axisBounds(image.shape,
                                             display.voxToWorldMat,
                                             i)
-            
+
             self.voxelLocation.setLimits(i, vlo, vhi)
             self.worldLocation.setLimits(i, wlo, whi)
+
+        for vpv in voxelPropVals: vpv.enableNotification()
+        for wpv in worldPropVals: wpv.enableNotification() 
 
         self.enableNotification('worldLocation')
         self.enableNotification('voxelLocation')
