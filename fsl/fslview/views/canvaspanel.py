@@ -26,14 +26,6 @@ class CanvasPanel(viewpanel.ViewPanel):
     
     showCursor = props.Boolean(default=True)
 
-    
-    posSync = props.Boolean(default=True)
-    """Should the position shown in each of the
-    :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instances 
-    be synchronised to the :class:`~fsl.data.image.ImageList.location`
-    :attr:`~fsl.data.image.ImageList.location` property?
-    """
-    
     showColourBar         = props.Boolean(default=False)
     showImageList         = props.Boolean(default=False)
     showLocationPanel     = props.Boolean(default=False)
@@ -50,7 +42,6 @@ class CanvasPanel(viewpanel.ViewPanel):
     
     _labels = {
         'showCursor'         : 'Show cursor',
-        'posSync'            : 'Synchronise location',
         'showColourBar'      : 'Show/hide colour bar',
         'colourBarLocation'  : 'Colour bar location',
         'colourBarLabelSide' : 'Colour bar label side'

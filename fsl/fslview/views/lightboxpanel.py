@@ -64,7 +64,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     
     _view = props.VGroup(('showCursor',
                           'showGridLines',
-                          'posSync',
                           'zrange',
                           'sliceSpacing',
                           'ncols',
@@ -153,7 +152,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         Updates the canvas location.
         """
         
-        if not self.posSync: return
         xpos = self._displayCtx.location.getPos(self._lbCanvas.xax)
         ypos = self._displayCtx.location.getPos(self._lbCanvas.yax)
         zpos = self._displayCtx.location.getPos(self._lbCanvas.zax)
@@ -225,5 +223,4 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self._lbCanvas.pos.xyz = cpos
         
-        if self.posSync:
-            self._displayCtx.location.xyz = clickPos
+        self._displayCtx.location.xyz = clickPos

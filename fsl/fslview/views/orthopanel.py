@@ -70,7 +70,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
     _view = props.HGroup((
         props.VGroup(('layout',
-                      'posSync',
                       'showCursor',
                       'showLabels', 
                       'showXCanvas',
@@ -181,10 +180,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
+        # Prevent the display context location callback 
+        # (below) from doing anything if the change
+        # was caused by this OrthoPanel (in the
+        # _onMouseEvent method)
+        self._internalLocationChange = False
+
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
         def move(*a):
-            if self.posSync:
+            if not self._internalLocationChange: 
                 self.setPosition(*self._displayCtx.location)
 
         self.setPosition(*self._displayCtx.location)
@@ -656,13 +661,14 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         elif source == self._ycanvas: self.setPosition(xpos, zpos, ypos)
         elif source == self._zcanvas: self.setPosition(xpos, ypos, zpos)
 
-        if self.posSync:
-            if   source == self._xcanvas:
-                self._displayCtx.location.yz = [xpos, ypos]
-            elif source == self._ycanvas:
-                self._displayCtx.location.xz = [xpos, ypos]
-            elif source == self._zcanvas:
-                self._displayCtx.location.xy = [xpos, ypos]
+        self._internalLocationChange = True
+        if   source == self._xcanvas:
+            self._displayCtx.location.yz = [xpos, ypos]
+        elif source == self._ycanvas:
+            self._displayCtx.location.xz = [xpos, ypos]
+        elif source == self._zcanvas:
+            self._displayCtx.location.xy = [xpos, ypos]
+        self._internalLocationChange = False
  
             
 class OrthoFrame(wx.Frame):
