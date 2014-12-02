@@ -14,4 +14,4 @@ class OpenFileAction(action.Action):
     def doAction(self, *args):
         
         if self._imageList.addImages():
-            self._displayCtx.selectedImage = len(self._imageList) - 1
+            self._displayCtx.selectedImage = self._displayCtx.imageOrder[-1]

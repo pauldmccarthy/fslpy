@@ -34,4 +34,4 @@ class OpenStandardAction(action.Action):
         
     def doAction(self, *args):
         if self._imageList.addImages(self._stddir, addToEnd=False):
-            self._displayCtx.selectedImage = 0
+            self._displayCtx.selectedImage = self._displayCtx.imageOrder[0]

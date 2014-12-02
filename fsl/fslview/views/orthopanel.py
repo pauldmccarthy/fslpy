@@ -255,14 +255,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
             display = self._displayCtx.getDisplayProperties(img)
 
-            display.removeListener('transform', self._name)
-
             # Update anatomy labels when the image
             # transformation matrix changes
             if i == self._displayCtx.selectedImage:
                 display.addListener('transform',
                                     self._name,
                                     self._refreshLabels)
+            else:
+                display.removeListener('transform', self._name)
+                
 
         # anatomical orientation may have changed with an image change
         self._refreshLabels()

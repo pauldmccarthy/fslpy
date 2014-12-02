@@ -386,14 +386,10 @@ class DisplayContext(props.SyncableHasProperties):
     selectedImage = props.Int(minval=0, default=0, clamped=True)
     """Index of the currently 'selected' image.
 
-    This value is used as an index into the :attr:`imageOrder` list, which
-    defines the order in which images are to be displayed. The value stored at
-    this index in the :attr:`imageOrder` list gives the index of the the
-    actual image (i.e. into the :cass:`~fsl.data.image.ImageList`).  Rather
-    than accessing this value directly, and performing this necessary
-    transformation manually, it is easier to use the :meth:`getSelectedImage`
-    method.
-    
+    Note that this index is in relation to the
+    :class:`~fsl.data.image.ImageList`, rather than to the :attr:`imageOrder`
+    list.
+
     If you're interested in the currently selected image, you must also listen
     for changes to the :attr:`fsl.data.image.ImageList.images` list as, if the
     list changes, the :attr:`selectedImage` index may not change, but the
@@ -427,9 +423,7 @@ class DisplayContext(props.SyncableHasProperties):
     """A list of indices into the :attr:`~fsl.data.image.ImageList.images`
     list, defining the order in which the images are to be displayed.
 
-    See comments for the :attr:`selectedImage` property for useful
-    information, and the :meth:`getSelectedImage`, :meth:`getImageOrder`,
-    and :meth:`getOrderedImages` methods.
+    See the :meth:`getOrderedImages` method.
     """
 
 
@@ -500,7 +494,7 @@ class DisplayContext(props.SyncableHasProperties):
         object, or ``None`` if there are no images.
         """
         if len(self._imageList) == 0: return None
-        return self._imageList[self.imageOrder[self.selectedImage]]
+        return self._imageList[self.selectedImage]
 
     
     def getImageOrder(self, image):

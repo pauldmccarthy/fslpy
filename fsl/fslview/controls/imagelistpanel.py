@@ -121,7 +121,9 @@ class ImageListPanel(controlpanel.ControlPanel):
             return
 
         if len(self._imageList) > 0:
-            self._listBox.SetSelection(self._displayCtx.selectedImage)
+            self._listBox.SetSelection(
+                self._displayCtx.getImageOrder(
+                    self._displayCtx.selectedImage))
 
         
     def _imageListChanged(self, *a):
@@ -185,7 +187,6 @@ class ImageListPanel(controlpanel.ControlPanel):
         """
         self._listBoxNeedsUpdate = False
         self._displayCtx.imageOrder.move(ev.oldIdx, ev.newIdx)
-        self._displayCtx.selectedImage = ev.newIdx
         self._listBoxNeedsUpdate = True
 
         
@@ -195,7 +196,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         :attr:`fsl.data.image.ImageList.selectedImage property.
         """
         self._listBoxNeedsUpdate       = False
-        self._displayCtx.selectedImage = ev.idx
+        self._displayCtx.selectedImage = self._displayCxt.imageOrder[ev.idx]
         self._listBoxNeedsUpdate       = True
 
         
@@ -210,7 +211,9 @@ class ImageListPanel(controlpanel.ControlPanel):
             # Double check that the list box has been updated,
             # as even though the selected image may have changed,
             # the index of that selected image may be the same.
-            self._listBox.SetSelection(self._displayCtx.selectedImage)
+            self._listBox.SetSelection(
+                self._displayCtx.getImageOrder(
+                    self._displayCtx.selectedImage))
 
 
     def _lbRemove(self, ev):
