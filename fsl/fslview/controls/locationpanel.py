@@ -158,12 +158,6 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             self._displayCtx.removeListener('location',      self._name)
             
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-        # This flag is set when the voxel/world locations
-        # are changed by the user - it prevents recursive
-        # updates between the display context location
-        # and the voxel/world locations
-        self._internalLocationChange = False
         
         self._selectedImageChanged()
         self._displayLocationChanged()
@@ -240,8 +234,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
     def _displayLocationChanged(self, *a):
 
-        if len(self._imageList) == 0:    return
-        if self._internalLocationChange: return
+        if len(self._imageList) == 0: return
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
@@ -250,14 +243,17 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         vloc = transform.transform([dloc], display.displayToVoxMat)[  0]
         wloc = transform.transform([dloc], display.displayToWorldMat)[0]
 
-        self.disableNotification('voxelLocation')
-        self.disableNotification('worldLocation')
+        self            .disableListener('voxelLocation', self._name)
+        self            .disableListener('worldLocation', self._name)
+        self._displayCtx.disableListener('location',      self._name)
         
         self.voxelLocation.xyz       = np.round(vloc)
         self.worldLocation.xyz       = wloc
-        
-        self.enableNotification('voxelLocation')
-        self.enableNotification('worldLocation') 
+
+        self            .enableListener('voxelLocation', self._name)
+        self            .enableListener('worldLocation', self._name)
+        self._displayCtx.enableListener('location',      self._name)
+
         self._updateVoxelValue()
 
 
@@ -276,16 +272,17 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         dloc = transform.transform([vloc], display.voxToDisplayMat)[0]
         wloc = transform.transform([vloc], display.voxToWorldMat)[  0]
 
-        self._internalLocationChange = True
-        self.disableNotification('worldLocation')
-        self.disableNotification('voxelLocation')
+        self            .disableListener('voxelLocation', self._name)
+        self            .disableListener('worldLocation', self._name)
+        self._displayCtx.disableListener('location',      self._name) 
         
         self._displayCtx.location.xyz = dloc
         self.worldLocation       .xyz = wloc
-        
-        self.enableNotification('worldLocation')
-        self.enableNotification('voxelLocation')
-        self._internalLocationChange = False
+
+        self            .enableListener('voxelLocation', self._name)
+        self            .enableListener('worldLocation', self._name)
+        self._displayCtx.enableListener('location',      self._name) 
+
         self._updateVoxelValue()
         
 
@@ -297,7 +294,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         """
 
         if len(self._imageList) == 0: return
-        
+
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
@@ -305,16 +302,16 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         dloc = transform.transform([wloc], display.worldToDisplayMat)[0]
         vloc = transform.transform([wloc], display.worldToVoxMat)[    0]
 
-        self._internalLocationChange = True
-        self.disableNotification('voxelLocation')
-        self.disableNotification('worldLocation')
+        self            .disableListener('voxelLocation', self._name)
+        self            .disableListener('worldLocation', self._name)
+        self._displayCtx.disableListener('location',      self._name)
         
         self._displayCtx.location.xyz = dloc
         self.voxelLocation       .xyz = np.round(vloc)
-        
-        self.enableNotification('voxelLocation')
-        self.enableNotification('worldLocation')
-        self._internalLocationChange = False
+
+        self            .enableListener('voxelLocation', self._name)
+        self            .enableListener('worldLocation', self._name)
+        self._displayCtx.enableListener('location',      self._name)
         
         self._updateVoxelValue()
 
@@ -345,17 +342,12 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
 
         # Update the voxel and world location limits,
         # but don't trigger a listener callback, as
-        # this would change the display location
-        self._internalLocationChange = True
+        # this would change the display location.
         self.disableNotification('worldLocation')
         self.disableNotification('voxelLocation')
 
-        voxelPropVals = self.voxelLocation.getPropertyValueList()
-        worldPropVals = self.worldLocation.getPropertyValueList()
-
-        for vpv in voxelPropVals: vpv.disableNotification()
-        for wpv in worldPropVals: wpv.disableNotification()
-
+        self._displayCtx.disableListener('location', self._name)
+        
         for i in range(3):
             vlo, vhi = 0, image.shape[i] - 1
             wlo, whi = transform.axisBounds(image.shape,
@@ -365,10 +357,10 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
             self.voxelLocation.setLimits(i, vlo, vhi)
             self.worldLocation.setLimits(i, wlo, whi)
 
-        for vpv in voxelPropVals: vpv.enableNotification()
-        for wpv in worldPropVals: wpv.enableNotification() 
+        self._displayCtx.enableListener('location', self._name) 
 
         self.enableNotification('worldLocation')
         self.enableNotification('voxelLocation')
-        self._internalLocationChange = False
-        self._updateVoxelValue()
+
+        # Refresh the world/voxel location properties
+        self._displayLocationChanged()

@@ -196,7 +196,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         :attr:`fsl.data.image.ImageList.selectedImage property.
         """
         self._listBoxNeedsUpdate       = False
-        self._displayCtx.selectedImage = self._displayCxt.imageOrder[ev.idx]
+        self._displayCtx.selectedImage = self._displayCtx.imageOrder[ev.idx]
         self._listBoxNeedsUpdate       = True
 
         
