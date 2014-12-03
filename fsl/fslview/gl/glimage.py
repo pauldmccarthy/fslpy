@@ -242,15 +242,15 @@ class GLImage(object):
         else:
             dmin = float(data.min())
             dmax = float(data.max())
-            data = (data - dmin) / (dmax - dmin) * 65535
-            data = np.round(data)
+            data = (data - dmin) / (dmax - dmin)
+            data = np.round(data * 65535)
             data = np.array(data, dtype=np.uint16)
 
         if   dtype == np.uint8:  offset =  0
         elif dtype == np.int8:   offset = -128
         elif dtype == np.uint16: offset =  0
         elif dtype == np.int16:  offset = -32768
-        else:                    offset = -dmin
+        else:                    offset =  dmin
 
         if   dtype == np.uint8:  scale = 255
         elif dtype == np.int8:   scale = 255
