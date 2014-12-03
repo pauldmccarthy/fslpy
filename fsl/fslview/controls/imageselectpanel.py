@@ -127,7 +127,7 @@ class ImageSelectPanel(controlpanel.ControlPanel):
 
         def nameChanged(img):
 
-            idx = self._displayCtx.getImageOrder(img)
+            idx = self._imageList.index(img)
             
             # if the name of the currently selected image has changed,
             # make sure that this panel updates to reflect the change
