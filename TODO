@@ -7,11 +7,13 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** Lightbox is not scrolling through full image ?
+** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Float32 images not working?
 ** Lightbox scrollbar under linux not visible?
 ** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
-** OrthoPanel - need to re-layout when colour bar is displayed
+** OrthoPanel - need to refresh slice canvases when view changes
 ** WX Bugs
 *** Floating panels get moved about when opening a new floating panel.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
@@ -73,6 +75,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** LightBox - link  number of cols to zoom, and auto calculate number of rows?
 ** EListBox - Mouse drag to move items
 ** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
