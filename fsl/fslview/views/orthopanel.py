@@ -260,7 +260,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             if i == self._displayCtx.selectedImage:
                 display.addListener('transform',
                                     self._name,
-                                    self._refreshLabels)
+                                    self._refreshLabels,
+                                    overwrite=True)
             else:
                 display.removeListener('transform', self._name)
                 
