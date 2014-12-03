@@ -100,11 +100,6 @@ class ImageListPanel(controlpanel.ControlPanel):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
-        # This flag is set by the listbox listeners (bound above),
-        # and read by the _imageListChanged, to ensure that user
-        # actions on the list box do not trigger a list box refresh.
-        self._listBoxNeedsUpdate = True
-
         self._imageListChanged()
         self._selectedImageChanged()
 
@@ -116,9 +111,6 @@ class ImageListPanel(controlpanel.ControlPanel):
         :attr:`~fsl.fslview.displaycontext.DisplayContext.selectedImage`
         property changes. Updates the selected item in the list box.
         """
-        
-        if not self._listBoxNeedsUpdate:
-            return
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(
@@ -134,10 +126,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         :class:`~pwidgets.EditableListBox`, this method does nothing.
         Otherwise, this method updates the :class:`~pwidgets.EditableListBox`
         """
-        if not self._listBoxNeedsUpdate:
-            return
-
-        selection = self._listBox.GetSelection()
+        
         self._listBox.Clear()
 
         for i, image in enumerate(self._displayCtx.getOrderedImages()):
@@ -177,7 +166,9 @@ class ImageListPanel(controlpanel.ControlPanel):
                 overwrite=True)
 
         if len(self._imageList) > 0:
-            self._listBox.SetSelection(selection)
+            self._listBox.SetSelection(
+                self._displayCtx.getImageOrder(
+                    self._displayCtx.selectedImage))
         
         
     def _lbMove(self, ev):
@@ -185,9 +176,9 @@ class ImageListPanel(controlpanel.ControlPanel):
         :class:`~pwidgets.elistbox.EditableListBox`. Reorders the
         :class:`~fsl.data.image.ImageList` to reflect the change.
         """
-        self._listBoxNeedsUpdate = False
+        self._displayCtx.disableListener('imageOrder', self._name)
         self._displayCtx.imageOrder.move(ev.oldIdx, ev.newIdx)
-        self._listBoxNeedsUpdate = True
+        self._displayCtx.enableListener('imageOrder', self._name)
 
         
     def _lbSelect(self, ev):
@@ -195,25 +186,17 @@ class ImageListPanel(controlpanel.ControlPanel):
         :class:`~pwidgets.elistbox.EditableListBox`. Sets the
         :attr:`fsl.data.image.ImageList.selectedImage property.
         """
-        self._listBoxNeedsUpdate       = False
+        self._displayCtx.disableListener('selectedImage', self._name)
         self._displayCtx.selectedImage = self._displayCtx.imageOrder[ev.idx]
-        self._listBoxNeedsUpdate       = True
+        self._displayCtx.enableListener('selectedImage', self._name)
 
         
     def _lbAdd(self, ev):
         """Called when the 'add' button on the list box is pressed.
         Calls the :meth:`~fsl.data.image.ImageList.addImages` method.
         """
-
         if self._imageList.addImages():
             self._displayCtx.selectedImage = len(self._imageList) - 1
-            
-            # Double check that the list box has been updated,
-            # as even though the selected image may have changed,
-            # the index of that selected image may be the same.
-            self._listBox.SetSelection(
-                self._displayCtx.getImageOrder(
-                    self._displayCtx.selectedImage))
 
 
     def _lbRemove(self, ev):
@@ -222,10 +205,7 @@ class ImageListPanel(controlpanel.ControlPanel):
         Removes the corresponding image from the
         :class:`~fsl.data.image.ImageList`. 
         """
-
-        self._listBoxNeedsUpdate = False 
         self._imageList.pop(self._displayCtx.imageOrder[ev.idx])
-        self._listBoxNeedsUpdate = True
 
 
     def _lbEnable(self, ev):
@@ -233,7 +213,6 @@ class ImageListPanel(controlpanel.ControlPanel):
 
         Toggles the image display enabled property accordingly.
         """
-
         idx             = self._displayCtx.imageOrder[ev.idx]
         img             = self._imageList[idx]
         display         = self._displayCtx.getDisplayProperties(img)
