@@ -7,10 +7,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
-** Lightbox is not scrolling through full image ?
 ** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
-** Float32 images not working?
 ** Lightbox scrollbar under linux not visible?
 ** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** OrthoPanel - need to refresh slice canvases when view changes
@@ -20,6 +18,10 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 *** Wild cards in image file load (WX/OSX issue)
 ** OSMesa render doesn't work with circle voxels
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE Lightbox is not scrolling through full image ?
+Due to property value binding refactor - attributes not being synced on bind 
+** DONE Float32 images not working?
+Voxel value -> [0.0, 1.0] transform was wrong for float/uint32/int32/etc data types
 ** DONE GL21 - are uint32/int32 images supported?!?
 Changed image texture data format logic
 ** DONE gl14_optimisation branch - GL21 voxels are off by 0.5
@@ -89,6 +91,7 @@ perhaps into a standalone module...
 ** 'Centre view' option on slice canvases
 Maybe things like this need to wait until I start getting into the interface design
 ** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
+** Props package - have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
 This is tough, because the old agw.AUINotebook implementation does not have
