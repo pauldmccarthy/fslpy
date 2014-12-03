@@ -148,7 +148,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
 
         idx = self._displayCtx.selectedImage
 
-        for i, image in enumerate(self._displayCtx.getOrderedImages()):
+        for i, image in enumerate(self._imageList):
 
             displayPanel = self._getDisplayPanel(image)
             
