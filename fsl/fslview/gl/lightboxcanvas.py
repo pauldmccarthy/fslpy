@@ -253,7 +253,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             return
 
         self._nslices   = int(np.floor(zlen / self.sliceSpacing))
-        self._totalRows = np.ceil(self._nslices / float(self.ncols))
+        self._totalRows = int(np.ceil(self._nslices / float(self.ncols)))
 
         if self._nslices == 0 or self._totalRows == 0:
             return
