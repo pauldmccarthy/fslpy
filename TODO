@@ -7,6 +7,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Bugs to fix
+** Lightbox scrollbar positioned incorrectly - goes over location panel
+** LocationPanel in lightbox view - voxel value lookup is wrong
 ** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
