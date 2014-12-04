@@ -327,6 +327,28 @@ def calcGridSizes(canvasaxes, bounds, width, height):
     return sizes
 
 
+def calcPixWidth(wldWidth, wldHeight, pixHeight):
+    """Given the dimensions of a 'world' space to be displayed,
+    and the available height in pixels, calculates and returns
+    the required pixel width.
+    """
+    return _adjustPixelSize(wldWidth,
+                            wldHeight,
+                            pixHeight * (2 ** 32),
+                            pixHeight)[0]
+
+
+def calcPixHeight(wldWidth, wldHeight, pixWidth):
+    """Given the dimensions of a 'world' space to be displayed,
+    and the available width in pixels, calculates and returns
+    the required pixel height.
+    """ 
+    return _adjustPixelSize(wldWidth,
+                            wldHeight,
+                            pixWidth,
+                            pixWidth * (2 ** 32))[1]
+
+
 def calcVerticalSizes(canvasaxes, bounds, width, height):
     """Calculates the size of up to three canvases so  they are laid out
     vertically.
