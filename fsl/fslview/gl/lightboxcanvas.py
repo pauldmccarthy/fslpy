@@ -38,13 +38,13 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
     
-    ncols = props.Int(clamped=True, minval=1, maxval=20, default=5)
+    ncols = props.Int(clamped=True, minval=1, maxval=100, default=5)
     """This property controls the number of 
     slices to be displayed on a single row.
     """
 
     
-    nrows = props.Int(clamped=True, minval=1, maxval=20, default=4)
+    nrows = props.Int(clamped=True, minval=1, maxval=100, default=4)
     """This property controls the number of 
     rows to be displayed on the canvas.
     """ 

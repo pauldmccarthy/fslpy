@@ -15,6 +15,11 @@ log = logging.getLogger(__name__)
 
 import wx
 
+import numpy as np
+
+import props
+
+import fsl.utils.layout                  as fsllayout
 import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
 import canvaspanel
 
@@ -29,17 +34,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.sliceSpacing`.
     """
 
-    
-    ncols = lightboxcanvas.LightBoxCanvas.ncols
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`."""
 
-    
-    nrows = lightboxcanvas.LightBoxCanvas.nrows
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.nrows`."""
-
-    
-    topRow = lightboxcanvas.LightBoxCanvas.topRow
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.topRow`.""" 
+    zoom = props.Percentage(minval=10, maxval=500.0, default=350.0)
+    """A property which allows the user to 'zoom' into the lightbox view. Is
+    actually a proxy for the
+    :attr:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`, with the
+    zoom range (10, 500) linearly mapping to number of columns (30, 1).
+    """
 
     
     zrange = lightboxcanvas.LightBoxCanvas.zrange
@@ -72,16 +73,17 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                          imageList,
                                          displayCtx)
 
-        self._scrollbar = wx.ScrollBar(self, style=wx.SB_VERTICAL)
-        self._lbCanvas  = lightboxcanvas.LightBoxCanvas(self.getCanvasPanel(),
-                                                        imageList,
-                                                        displayCtx)
+        self._scrollbar = wx.ScrollBar(
+            self.getCanvasPanel(),
+            style=wx.SB_VERTICAL)
+        
+        self._lbCanvas  = lightboxcanvas.LightBoxCanvas(
+            self.getCanvasPanel(),
+            imageList,
+            displayCtx)
 
         # My properties are the canvas properties
         self.bindProps('sliceSpacing',  self._lbCanvas)
-        self.bindProps('ncols',         self._lbCanvas)
-        self.bindProps('nrows',         self._lbCanvas)
-        self.bindProps('topRow',        self._lbCanvas)
         self.bindProps('zrange',        self._lbCanvas)
         self.bindProps('showCursor',    self._lbCanvas)
         self.bindProps('showGridLines', self._lbCanvas)
@@ -114,21 +116,73 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
+        self._onLightBoxChange()
+        self._onZoom()
+
         # When any lightbox properties change,
         # make sure the scrollbar is updated
-        self.addListener('sliceSpacing', self._name, self._onLightBoxChange)
-        self.addListener('ncols',        self._name, self._onLightBoxChange)
-        self.addListener('nrows',        self._name, self._onLightBoxChange)
-        self.addListener('topRow',       self._name, self._onLightBoxChange)
-        self.addListener('zrange',       self._name, self._onLightBoxChange)
-        self.addListener('zax',          self._name, self._onLightBoxChange)
-        self._onLightBoxChange()
+        self._lbCanvas.addListener('ncols',
+                                   self._name,
+                                   self._ncolsChanged)
+        self._lbCanvas.addListener('nrows',
+                                   self._name,
+                                   self._onLightBoxChange)
+        self._lbCanvas.addListener('topRow',
+                                   self._name,
+                                   self._onLightBoxChange)
+        self          .addListener('sliceSpacing',
+                                   self._name,
+                                   self._onLightBoxChange)
+        self          .addListener('zrange',
+                                   self._name,
+                                   self._onLightBoxChange)
+        self          .addListener('zax',
+                                   self._name,
+                                   self._onLightBoxChange)
+        self          .addListener('zoom',
+                                   self._name,
+                                   self._onZoom)
 
         # When the scrollbar is moved,
         # update the canvas display
         self._scrollbar.Bind(wx.EVT_SCROLL, self._onScroll)
 
+        self.Bind(wx.EVT_SIZE, self._onResize)
+
         self.Layout()
+
+        
+    def _onZoom(self, *a):
+        """Called when the :attr:`zoom` property changes. Updates the
+        number of columns on the lightbox canvas.
+        """
+        normZoom = 1.0 - (self.zoom - 10) / 490.0
+        self._lbCanvas.ncols = int(1 + np.round(normZoom * 29))
+
+
+    def _onResize(self, ev=None):
+        """Called when the panel is resized. Automatically adjusts the
+        number of lightbox rows to the maximum displayable number (given
+        that the number of columns is fixed).
+        """
+        if ev is not None: ev.Skip()
+
+        # Lay this panel out, so the
+        # canvas panel size is up to date
+        self.Layout()
+
+        width,   height   = self._lbCanvas .GetClientSize().Get()
+        sbWidth, sbHeight = self._scrollbar.GetClientSize().Get()
+
+        width = width - sbWidth
+
+        xlen = self._displayCtx.bounds.getLen(self._lbCanvas.xax)
+        ylen = self._displayCtx.bounds.getLen(self._lbCanvas.yax)
+
+        sliceWidth  = width / float(self._lbCanvas.ncols)
+        sliceHeight = fsllayout.calcPixHeight(xlen, ylen, sliceWidth)
+
+        self._lbCanvas.nrows = int(height / sliceHeight)
 
 
     def _onLocationChange(self, *a):
@@ -141,7 +195,15 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         ypos = self._displayCtx.location.getPos(self._lbCanvas.yax)
         zpos = self._displayCtx.location.getPos(self._lbCanvas.zax)
         self._lbCanvas.pos.xyz = (xpos, ypos, zpos)
- 
+
+
+    def _ncolsChanged(self, *a):
+        """Called when the lightbox canvas ``ncols`` property changes.
+        Calculates the number of rows to display, and updates the
+        scrollbar.
+        """
+        self._onResize()
+        self._onLightBoxChange()
 
 
     def _onLightBoxChange(self, *a):
@@ -149,10 +211,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         Updates the scrollbar to reflect the change.
         """
-        self._scrollbar.SetScrollbar(self.topRow,
-                                     self.nrows,
+        self._scrollbar.SetScrollbar(self._lbCanvas.topRow,
+                                     self._lbCanvas.nrows,
                                      self._lbCanvas.getTotalRows(),
-                                     self.nrows,
+                                     self._lbCanvas.nrows,
                                      True)
 
         
@@ -161,7 +223,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         Updates the top row displayed on the canvas.
         """
-        self.topRow = self._scrollbar.GetThumbPosition()
+        self._lbCanvas.topRow = self._scrollbar.GetThumbPosition()
 
 
     def _onMouseWheel(self, ev):
@@ -174,7 +236,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         if   wheelDir > 0: wheelDir = -1
         elif wheelDir < 0: wheelDir =  1
 
-        self.topRow += wheelDir
+        self._lbCanvas.topRow += wheelDir
 
         
     def _onMouseEvent(self, ev):
