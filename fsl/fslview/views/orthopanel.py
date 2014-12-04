@@ -165,17 +165,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         self._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
-        # Prevent the display context location callback 
-        # (below) from doing anything if the change
-        # was caused by this OrthoPanel (in the
-        # _onMouseEvent method)
-        self._internalLocationChange = False
-
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
         def move(*a):
-            if not self._internalLocationChange: 
-                self.setPosition(*self._displayCtx.location)
+            self.setPosition(*self._displayCtx.location)
 
         self.setPosition(*self._displayCtx.location)
         self._displayCtx.addListener('location', self._name, move) 
@@ -648,14 +641,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         elif source == self._ycanvas: self.setPosition(xpos, zpos, ypos)
         elif source == self._zcanvas: self.setPosition(xpos, ypos, zpos)
 
-        self._internalLocationChange = True
+        self._displayCtx.disableListener('location', self._name)
+        
         if   source == self._xcanvas:
             self._displayCtx.location.yz = [xpos, ypos]
         elif source == self._ycanvas:
             self._displayCtx.location.xz = [xpos, ypos]
         elif source == self._zcanvas:
             self._displayCtx.location.xy = [xpos, ypos]
-        self._internalLocationChange = False
+            
+        self._displayCtx.enableListener('location', self._name)
  
             
 class OrthoFrame(wx.Frame):
