@@ -211,15 +211,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             canvas = self._zcanvas
             show   = self.showZCanvas
             labels = self._zLabels
-            
+
         self._canvasSizer.Show(canvas, show)
         for label in labels.values():
-            self._canvasSizer.Show(label, show)
+            if (not show) or (show and self.showLabels):
+                self._canvasSizer.Show(label, show)
 
         if self.layout == 'grid':
             self._refreshLayout()
 
-        self.getCanvasPanel().Layout()
+        self.PostSizeEvent()
 
 
     def _imageListChanged(self, *a):
@@ -243,7 +244,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             else:
                 display.removeListener('transform', self._name)
                 
-
         # anatomical orientation may have changed with an image change
         self._refreshLabels()
 
@@ -301,8 +301,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # If we're hiding the labels, do no more
         if not show:
-            self.getCanvasPanel().Layout()
-            self.Refresh()
+            self.PostSizeEvent()
             return
 
         # Default colour is white - if the orientation labels
@@ -358,8 +357,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zLabels['top']   .SetLabel(ylo)
         self._zLabels['bottom'].SetLabel(yhi)
 
-        self.getCanvasPanel().Layout()
-        self.Refresh()
+        self.PostSizeEvent()
 
 
     def _calcCanvasSizes(self, *a):
@@ -402,10 +400,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             maxh = 0
             sumw = 0
             for l in labels:
-                lw, lh = l['left']  .GetClientSize().Get()
-                rw, rh = l['right'] .GetClientSize().Get()
-                tw, th = l['top']   .GetClientSize().Get()
-                bw, bh = l['bottom'].GetClientSize().Get()
+
+                if self.showLabels:
+                    lw, lh = l['left']  .GetClientSize().Get()
+                    rw, rh = l['right'] .GetClientSize().Get()
+                    tw, th = l['top']   .GetClientSize().Get()
+                    bw, bh = l['bottom'].GetClientSize().Get()
+                else:
+                    lw = rw = th = bh = 0
+
                 sumw = sumw + lw + rw
                 if th > maxh: maxh = th
                 if bh > maxh: maxh = bh
@@ -416,31 +419,41 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             maxw = 0
             sumh = 0
             for l in labels:
-                lw, lh = l['left']  .GetClientSize().Get()
-                rw, rh = l['right'] .GetClientSize().Get()
-                tw, th = l['top']   .GetClientSize().Get()
-                bw, bh = l['bottom'].GetClientSize().Get()
+                if self.showLabels:
+                    lw, lh = l['left']  .GetClientSize().Get()
+                    rw, rh = l['right'] .GetClientSize().Get()
+                    tw, th = l['top']   .GetClientSize().Get()
+                    bw, bh = l['bottom'].GetClientSize().Get()
+                else:
+                    lw = rw = th = bh = 0
+                    
                 sumh = sumh + th + bh
                 if lw > maxw: maxw = lw
                 if rw > maxw: maxw = rw
+                
             width  = width  - 2 * maxw
             height = height -     sumh
             
         else:
             canvases = [self._ycanvas, self._xcanvas, self._zcanvas]
 
-            xlw = self._xLabels['left']  .GetClientSize().GetWidth()
-            xrw = self._xLabels['right'] .GetClientSize().GetWidth()
-            ylw = self._yLabels['left']  .GetClientSize().GetWidth()
-            yrw = self._yLabels['right'] .GetClientSize().GetWidth()
-            zlw = self._zLabels['left']  .GetClientSize().GetWidth()
-            zrw = self._zLabels['right'] .GetClientSize().GetWidth()             
-            xth = self._xLabels['top']   .GetClientSize().GetHeight()
-            xbh = self._xLabels['bottom'].GetClientSize().GetHeight()
-            yth = self._yLabels['top']   .GetClientSize().GetHeight()
-            ybh = self._yLabels['bottom'].GetClientSize().GetHeight()
-            zth = self._zLabels['top']   .GetClientSize().GetHeight()
-            zbh = self._zLabels['bottom'].GetClientSize().GetHeight()
+            if self.showLabels:
+                xlw = self._xLabels['left']  .GetClientSize().GetWidth()
+                xrw = self._xLabels['right'] .GetClientSize().GetWidth()
+                ylw = self._yLabels['left']  .GetClientSize().GetWidth()
+                yrw = self._yLabels['right'] .GetClientSize().GetWidth()
+                zlw = self._zLabels['left']  .GetClientSize().GetWidth()
+                zrw = self._zLabels['right'] .GetClientSize().GetWidth()             
+                xth = self._xLabels['top']   .GetClientSize().GetHeight()
+                xbh = self._xLabels['bottom'].GetClientSize().GetHeight()
+                yth = self._yLabels['top']   .GetClientSize().GetHeight()
+                ybh = self._yLabels['bottom'].GetClientSize().GetHeight()
+                zth = self._zLabels['top']   .GetClientSize().GetHeight()
+                zbh = self._zLabels['bottom'].GetClientSize().GetHeight()
+            else:
+                xlw = xrw = xth = xbh = 0
+                ylw = yrw = yth = ybh = 0
+                zlw = zrw = zth = zbh = 0
 
             width  = width  - max(xlw, zlw) - max(xrw, zrw) - ylw - yrw
             height = height - max(xth, yth) - max(xbh, ybh) - zth - zbh

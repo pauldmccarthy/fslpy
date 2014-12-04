@@ -216,10 +216,7 @@ class CanvasPanel(viewpanel.ViewPanel):
         if self.showSettingsPanel:     self.__settingsPanel    .Show(True)
         else:                          self.__settingsPanel    .Show(False) 
 
-        self.__listLocContainer.Layout()
-        self.__dispSetContainer.Layout()
-        self.__canvasContainer .Layout()
-        self                   .Layout()
+        self.PostSizeEvent()
 
 
     def __toggleColourBar(self):
