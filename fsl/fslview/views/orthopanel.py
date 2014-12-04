@@ -68,21 +68,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                        clamped=True)
 
 
-    _view = props.HGroup((
-        props.VGroup(('layout',
-                      'showCursor',
-                      'showLabels', 
-                      'showXCanvas',
-                      'showYCanvas',
-                      'showZCanvas',
-                      'showColourBar',
-                      props.Widget('colourBarLocation',
-                                   visibleWhen=lambda i: i.showColourBar),
-                      props.Widget('colourBarLabelSide',
-                                   visibleWhen=lambda i: i.showColourBar))),
-        props.VGroup(('xzoom', 'yzoom', 'zzoom'))
-    ))
-
     _labels = dict({
         'showXCanvas'       : 'Show X canvas',
         'showYCanvas'       : 'Show Y canvas',

@@ -15,8 +15,6 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import props
-
 import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
 import canvaspanel
 
@@ -60,19 +58,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
                    canvaspanel   .CanvasPanel   ._labels.items())
     """Property labels to be used for GUI displays."""
-
-    
-    _view = props.VGroup(('showCursor',
-                          'showGridLines',
-                          'zrange',
-                          'sliceSpacing',
-                          'ncols',
-                          'nrows',
-                          'topRow',
-                          'zax',
-                          'showColourBar',
-                          'colourBarLocation'))
-    """Layout to be used for GUI displays."""
 
 
     def __init__(self,

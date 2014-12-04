@@ -67,6 +67,9 @@ class ImageDisplay(props.SyncableHasProperties):
     volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
     """If a 4D image, the current volume to display."""
 
+
+    syncVolume = props.Boolean(default=True)
+
     
     transform = props.Choice(
         collections.OrderedDict([
@@ -153,18 +156,6 @@ class ImageDisplay(props.SyncableHasProperties):
         """
         return self.image.is4DImage()
 
-        
-    _view = props.VGroup((
-        'name',
-        'enabled',
-        'displayRange',
-        'alpha',
-        props.HGroup(('clipLow', 'clipHigh', 'interpolation')),
-        'resolution',
-        'transform',
-        'imageType',
-        'cmap'))
-
     
     _labels = {
         'name'           : 'Image name',
@@ -175,6 +166,8 @@ class ImageDisplay(props.SyncableHasProperties):
         'clipHigh'       : 'High clipping',
         'interpolation'  : 'Interpolation',
         'Resolution'     : 'Resolution',
+        'volume'         : 'Volume',
+        'syncVolume'     : 'Synchronise volume',
         'transform'      : 'Image transform',
         'imageType'      : 'Image data type',
         'cmap'           : 'Colour map'}
@@ -193,6 +186,8 @@ class ImageDisplay(props.SyncableHasProperties):
         'interpolation' : 'Interpolate between voxel values at '
                           'each displayed real world location',
         'resolution'    : 'Data resolution in voxels',
+        'volume'        : 'Volume number (for 4D images)',
+        'syncVolume'    : 'Synchronise to global volume number',
         'transform'     : 'The transformation matrix which specifies the '
                           'conversion from voxel coordinates to a real '
                           'world location',
@@ -432,7 +427,8 @@ class DisplayContext(props.SyncableHasProperties):
 
         :arg imageList: A :class:`~fsl.data.image.ImageList` instance.
 
-        :arg parent: 
+        :arg parent: Another :class`DisplayContext` instance to be used
+        as the parent of this instance.
         """
 
         props.SyncableHasProperties.__init__(self, parent, nounbind=('volume'))
@@ -682,13 +678,17 @@ class DisplayContext(props.SyncableHasProperties):
         Propagates the change on to the :attr:`ImageDisplay.volume` property
         for each image in the :class:`~fsl.data.image.ImageList`.
         """
+
         for image in self._imageList:
+
+            display = self._imageDisplays[image]
             
             # The volume property for each image should
             # be clamped to the possible value for that
             # image, so we don't need to check if the
             # current volume value is valid for each image
-            self._imageDisplays[image].volume = self.volume
+            if display.syncVolume:
+                display.volume = self.volume
 
             
     def _boundsChanged(self, *a):
