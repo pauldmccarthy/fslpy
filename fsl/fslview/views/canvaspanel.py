@@ -225,7 +225,7 @@ class CanvasPanel(viewpanel.ViewPanel):
 
             if self.__colourBar is not None:
                 self.unbindProps('colourBarLabelSide',
-                                 self._colourBar,
+                                 self.__colourBar,
                                  'labelSide')
                 self.__colourBar.Destroy()
                 self.__colourBar = None
