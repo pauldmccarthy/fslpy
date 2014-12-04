@@ -109,15 +109,11 @@ class CanvasPanel(viewpanel.ViewPanel):
     }
 
 
-    def _createSettingsPanel(self, parent, imageList, displayCtx):
+    def __createSettingsPanel(self, parent, imageList, displayCtx):
         """
         """
 
-        return props.buildGUI(self._dispSetContainer, self)
-        # raise NotImplementedError(
-        #     'Subclasses of {} must implement the {} method'.format(
-        #         self.__class__.__name__,
-        #         '_createSettingsPanel'))
+        return props.buildGUI(self.__dispSetContainer, self)
 
 
     def __init__(self,
@@ -136,138 +132,139 @@ class CanvasPanel(viewpanel.ViewPanel):
                        displayCtx,
                        displayCtx.getSyncPropertyName('volume')) 
 
-        self._canvasContainer  = wx.Panel(self)
-        self._listLocContainer = wx.Panel(self)
-        self._dispSetContainer = wx.Panel(self)
+        self.__canvasContainer  = wx.Panel(self)
+        self.__listLocContainer = wx.Panel(self)
+        self.__dispSetContainer = wx.Panel(self)
 
-        self._canvasPanel = wx.Panel(self._canvasContainer)
+        self.__canvasPanel = wx.Panel(self.__canvasContainer)
         
-        self._controlPanel = ControlStrip(
+        self.__controlPanel = ControlStrip(
             self, imageList, displayCtx, self)
         
-        self._imageListPanel = imagelistpanel.ImageListPanel(
-            self._listLocContainer, imageList, displayCtx)
+        self.__imageListPanel = imagelistpanel.ImageListPanel(
+            self.__listLocContainer, imageList, displayCtx)
 
-        self._locationPanel = locationpanel.LocationPanel(
-            self._listLocContainer, imageList, displayCtx) 
+        self.__locationPanel = locationpanel.LocationPanel(
+            self.__listLocContainer, imageList, displayCtx) 
         
-        self._imageDisplayPanel = imagedisplaypanel.ImageDisplayPanel(
-            self._dispSetContainer, imageList, displayCtx)
+        self.__imageDisplayPanel = imagedisplaypanel.ImageDisplayPanel(
+            self.__dispSetContainer, imageList, displayCtx)
         
-        self._settingsPanel = self._createSettingsPanel(
-            self._dispSetContainer, imageList, displayCtx)
+        self.__settingsPanel = self.__createSettingsPanel(
+            self.__dispSetContainer, imageList, displayCtx)
 
-        self._listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._listLocContainer.SetSizer(self._listLocSizer)
+        self.__listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.__listLocContainer.SetSizer(self.__listLocSizer)
 
-        self._listLocSizer.Add(self._imageListPanel,
-                               flag=wx.EXPAND,
-                               proportion=0.5)
-        self._listLocSizer.Add(self._locationPanel,
-                               flag=wx.EXPAND,
-                               proportion=1)
+        self.__listLocSizer.Add(self.__imageListPanel,
+                                flag=wx.EXPAND,
+                                proportion=0.5)
+        self.__listLocSizer.Add(self.__locationPanel,
+                                flag=wx.EXPAND,
+                                proportion=1)
 
-        self._dispSetSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._dispSetContainer.SetSizer(self._dispSetSizer)
+        self.__dispSetSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.__dispSetContainer.SetSizer(self.__dispSetSizer)
 
-        self._dispSetSizer.Add(self._imageDisplayPanel,
-                               flag=wx.EXPAND,
-                               proportion=1)
-        self._dispSetSizer.Add(self._settingsPanel,
-                               flag=wx.EXPAND,
-                               proportion=0.75)
+        self.__dispSetSizer.Add(self.__imageDisplayPanel,
+                                flag=wx.EXPAND,
+                                proportion=1)
+        self.__dispSetSizer.Add(self.__settingsPanel,
+                                flag=wx.EXPAND,
+                                proportion=0.75)
 
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
-        self._canvasSizer = None
-        self._colourBar   = None
+        self.__canvasSizer = None
+        self.__colourBar   = None
 
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-        self._sizer.Add(self._controlPanel,      flag=wx.EXPAND)
-        self._sizer.Add(self._listLocContainer,  flag=wx.EXPAND)
-        self._sizer.Add(self._canvasContainer,   flag=wx.EXPAND, proportion=1)
-        self._sizer.Add(self._dispSetContainer,  flag=wx.EXPAND)
+        self.__sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.__sizer)
+        self.__sizer.Add(self.__controlPanel,      flag=wx.EXPAND)
+        self.__sizer.Add(self.__listLocContainer,  flag=wx.EXPAND)
+        self.__sizer.Add(self.__canvasContainer,   flag=wx.EXPAND,
+                         proportion=1)
+        self.__sizer.Add(self.__dispSetContainer,  flag=wx.EXPAND)
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
         lName = 'CanvasPanel_{}'.format(self._name)
-        self.addListener('showColourBar',         lName, self._layout)
-        self.addListener('colourBarLocation',     lName, self._layout)
-        self.addListener('showImageList',         lName, self._layout)
-        self.addListener('showLocationPanel',     lName, self._layout)
-        self.addListener('showImageDisplayPanel', lName, self._layout)
-        self.addListener('showSettingsPanel',     lName, self._layout)
+        self.addListener('showColourBar',         lName, self.__layout)
+        self.addListener('colourBarLocation',     lName, self.__layout)
+        self.addListener('showImageList',         lName, self.__layout)
+        self.addListener('showLocationPanel',     lName, self.__layout)
+        self.addListener('showImageDisplayPanel', lName, self.__layout)
+        self.addListener('showSettingsPanel',     lName, self.__layout)
 
-        self._layout()
+        self.__layout()
 
         
     def getCanvasPanel(self):
-        return self._canvasPanel
+        return self.__canvasPanel
 
     
-    def _layout(self, *a):
+    def __layout(self, *a):
 
-        self._toggleColourBar()
+        self.__toggleColourBar()
 
-        if self.showImageList:         self._imageListPanel   .Show(True)
-        else:                          self._imageListPanel   .Show(False)
-        if self.showLocationPanel:     self._locationPanel    .Show(True)
-        else:                          self._locationPanel    .Show(False)
-        if self.showImageDisplayPanel: self._imageDisplayPanel.Show(True)
-        else:                          self._imageDisplayPanel.Show(False)
-        if self.showSettingsPanel:     self._settingsPanel    .Show(True)
-        else:                          self._settingsPanel    .Show(False) 
+        if self.showImageList:         self.__imageListPanel   .Show(True)
+        else:                          self.__imageListPanel   .Show(False)
+        if self.showLocationPanel:     self.__locationPanel    .Show(True)
+        else:                          self.__locationPanel    .Show(False)
+        if self.showImageDisplayPanel: self.__imageDisplayPanel.Show(True)
+        else:                          self.__imageDisplayPanel.Show(False)
+        if self.showSettingsPanel:     self.__settingsPanel    .Show(True)
+        else:                          self.__settingsPanel    .Show(False) 
 
-        self._listLocContainer.Layout()
-        self._dispSetContainer.Layout()
-        self._canvasContainer .Layout()
-        self                  .Layout()
+        self.__listLocContainer.Layout()
+        self.__dispSetContainer.Layout()
+        self.__canvasContainer .Layout()
+        self                   .Layout()
 
 
-    def _toggleColourBar(self):
+    def __toggleColourBar(self):
 
         if not self.showColourBar:
 
-            if self._colourBar is not None:
+            if self.__colourBar is not None:
                 self.unbindProps('colourBarLabelSide',
                                  self._colourBar,
                                  'labelSide')
-                self._colourBar.Destroy()
-                self._colourBar = None
+                self.__colourBar.Destroy()
+                self.__colourBar = None
                 
-            self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
-            self._canvasSizer.Add(self._canvasPanel,
-                                  flag=wx.EXPAND,
-                                  proportion=1)
+            self.__canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.__canvasSizer.Add(self.__canvasPanel,
+                                   flag=wx.EXPAND,
+                                   proportion=1)
 
-            self._canvasContainer.SetSizer(self._canvasSizer)
+            self.__canvasContainer.SetSizer(self.__canvasSizer)
             return
 
 
-        if self._colourBar is None:
-            self._colourBar = colourbarpanel.ColourBarPanel(
-                self._canvasContainer, self._imageList, self._displayCtx)
+        if self.__colourBar is None:
+            self.__colourBar = colourbarpanel.ColourBarPanel(
+                self.__canvasContainer, self._imageList, self._displayCtx)
 
-        self.bindProps('colourBarLabelSide', self._colourBar, 'labelSide') 
+        self.bindProps('colourBarLabelSide', self.__colourBar, 'labelSide') 
             
         if   self.colourBarLocation in ('top', 'bottom'):
-            self._colourBar.orientation = 'horizontal'
+            self.__colourBar.orientation = 'horizontal'
         elif self.colourBarLocation in ('left', 'right'):
-            self._colourBar.orientation = 'vertical'
+            self.__colourBar.orientation = 'vertical'
         
         if self.colourBarLocation in ('top', 'bottom'):
-            self._canvasSizer = wx.BoxSizer(wx.VERTICAL)
+            self.__canvasSizer = wx.BoxSizer(wx.VERTICAL)
         else:
-            self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.__canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self._canvasContainer.SetSizer(self._canvasSizer)
+        self.__canvasContainer.SetSizer(self.__canvasSizer)
 
         if self.colourBarLocation in ('top', 'left'):
-            self._canvasSizer.Add(self._colourBar,   flag=wx.EXPAND)
-            self._canvasSizer.Add(self._canvasPanel, flag=wx.EXPAND,
-                                  proportion=1)
+            self.__canvasSizer.Add(self.__colourBar,   flag=wx.EXPAND)
+            self.__canvasSizer.Add(self.__canvasPanel, flag=wx.EXPAND,
+                                   proportion=1)
         else:
-            self._canvasSizer.Add(self._canvasPanel, flag=wx.EXPAND,
-                                  proportion=1)
-            self._canvasSizer.Add(self._colourBar,   flag=wx.EXPAND)
+            self.__canvasSizer.Add(self.__canvasPanel, flag=wx.EXPAND,
+                                   proportion=1)
+            self.__canvasSizer.Add(self.__colourBar,   flag=wx.EXPAND)
