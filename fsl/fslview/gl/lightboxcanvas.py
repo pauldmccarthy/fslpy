@@ -67,27 +67,35 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     showGridLines = props.Boolean(default=False)
     """If True, grid lines are drawn between the displayed slices. """
 
+
+    highlightSlice = props.Boolean(default=False)
+    """If True, a box will be drawn around the slice containing the current
+    location.
+    """
+
     
     _labels = dict(
         slicecanvas.SliceCanvas._labels.items() +
-        [('sliceSpacing',  'Slice spacing'),
-         ('ncols',         'Number of columns'),
-         ('nrows',         'Number of rows'),
-         ('topRow',        'Top row'),
-         ('zrange',        'Slice range'),
-         ('showGridLines', 'Show grid lines')])
+        [('sliceSpacing',   'Slice spacing'),
+         ('ncols',          'Number of columns'),
+         ('nrows',          'Number of rows'),
+         ('topRow',         'Top row'),
+         ('zrange',         'Slice range'),
+         ('showGridLines',  'Show grid lines'),
+         ('highlightSlice', 'Highlight current slice')])
     """Labels for the properties which are intended to be user editable."""
 
 
     _tooltips = dict(
         slicecanvas.SliceCanvas._tooltips.items() +
-        [('sliceSpacing',  'Distance (mm) between consecutive slices'),
-         ('ncols',         'Number of slices to display on one row'),
-         ('nrows',         'Number of rows to display on the canvas'),
-         ('topRow',        'Index number of top row (from '
-                           '0 to nrows-1) to display'),
-         ('zrange',        'Range (mm) along Z axis of slices to display'),
-         ('showGridLines', 'Show grid lines between slices')])
+        [('sliceSpacing',   'Distance (mm) between consecutive slices'),
+         ('ncols',          'Number of slices to display on one row'),
+         ('nrows',          'Number of rows to display on the canvas'),
+         ('topRow',         'Index number of top row (from '
+                            '0 to nrows-1) to display'),
+         ('zrange',         'Range (mm) along Z axis of slices to display'),
+         ('showGridLines',  'Show grid lines between slices'),
+         ('highlightSlice', 'Highlights the currently selected slice')])
     """Tooltips to be used as help text."""
 
     _propHelp = _tooltips
@@ -196,12 +204,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         self._slicePropsChanged()
 
-        self.addListener('sliceSpacing',  self.name, self._slicePropsChanged)
-        self.addListener('ncols',         self.name, self._slicePropsChanged)
-        self.addListener('nrows',         self.name, self._slicePropsChanged)
-        self.addListener('zrange',        self.name, self._slicePropsChanged)
-        self.addListener('showGridLines', self.name,
-                         lambda *a: self._refresh())
+        def _refresh(*a): self._refresh()
+
+        self.addListener('sliceSpacing',   self.name, self._slicePropsChanged)
+        self.addListener('ncols',          self.name, self._slicePropsChanged)
+        self.addListener('nrows',          self.name, self._slicePropsChanged)
+        self.addListener('zrange',         self.name, self._slicePropsChanged)
+        self.addListener('showGridLines',  self.name, _refresh)
+        self.addListener('highlightSlice', self.name, _refresh)
 
         # Called when the top row changes -
         # adjusts display range and refreshes
@@ -508,9 +518,65 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         for v in rowLines: gl.glVertex3f(*v)
         for v in colLines: gl.glVertex3f(*v)
         
+        gl.glEnd()
+
+        
+    def _drawSliceHighlight(self):
+        """Draws a box around the slice which contains the current cursor location.
+        """
+        
+        sliceno = int(np.floor((self.pos.z - self.zrange.xlo) /
+                               self.sliceSpacing))
+
+        xlen    = self.displayCtx.bounds.getLen(self.xax)
+        ylen    = self.displayCtx.bounds.getLen(self.yax)
+        row     = int(np.floor(sliceno / self.ncols))
+        col     = int(np.floor(sliceno % self.ncols))
+
+        # don't draw the cursor if it is on a
+        # non-existent or non-displayed slice
+        if sliceno >  self._nslices:            return
+        if row     <  self.topRow:              return
+        if row     >= self.topRow + self.nrows: return
+
+        # in GL space, the top row is actually the bottom row
+        row = self._totalRows - row - 1
+
+        verts = np.zeros((8, 3))
+        verts[:, self.zax] =  self.pos.z + 2
+
+        # left line
+        verts[0, self.xax] = xlen *  col
+        verts[0, self.yax] = ylen *  row
+        verts[1, self.xax] = xlen *  col
+        verts[1, self.yax] = ylen * (row + 1)
+
+        # right line
+        verts[2, self.xax] = xlen * (col + 1)
+        verts[2, self.yax] = ylen *  row
+        verts[3, self.xax] = xlen * (col + 1)
+        verts[3, self.yax] = ylen * (row + 1)
+
+        # bottom line
+        verts[4, self.xax] = xlen *  col
+        verts[4, self.yax] = ylen *  row
+        verts[5, self.xax] = xlen * (col + 1)
+        verts[5, self.yax] = ylen *  row 
+
+        # top line
+        verts[6, self.xax] = xlen *  col
+        verts[6, self.yax] = ylen * (row + 1)
+        verts[7, self.xax] = xlen * (col + 1)
+        verts[7, self.yax] = ylen * (row + 1)
+        
+        gl.glLineWidth(1)
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(1, 0, 0)
+        for i in range(8):
+            gl.glVertex3f(*verts[i])
         gl.glEnd() 
 
-
+        
     def _drawCursor(self):
         """Draws a cursor at the current canvas position (the
         :attr:`~fsl.fslview.gl.SliceCanvas.pos` property).
@@ -527,9 +593,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # don't draw the cursor if it is on a
         # non-existent or non-displayed slice
-        if sliceno > self._nslices:            return
-        if row     < self.topRow:              return
-        if row     > self.topRow + self.nrows: return
+        if sliceno >  self._nslices:            return
+        if row     <  self.topRow:              return
+        if row     >= self.topRow + self.nrows: return
 
         # in GL space, the top row is actually the bottom row
         row = self._totalRows - row - 1
@@ -600,7 +666,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                            self._transforms[image][zi])
 
         if len(self.imageList) > 0:
-            if self.showCursor:    self._drawCursor()
-            if self.showGridLines: self._drawGridLines() 
+            if self.showCursor:     self._drawCursor()
+            if self.showGridLines:  self._drawGridLines()
+            if self.highlightSlice: self._drawSliceHighlight()
 
         self._postDraw()

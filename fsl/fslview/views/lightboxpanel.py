@@ -29,13 +29,14 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     mouse-scrolling behaviour.
     """
 
-    nrows         = lightboxcanvas.LightBoxCanvas.nrows
-    ncols         = lightboxcanvas.LightBoxCanvas.ncols
-    topRow        = lightboxcanvas.LightBoxCanvas.topRow
-    sliceSpacing  = lightboxcanvas.LightBoxCanvas.sliceSpacing
-    zrange        = lightboxcanvas.LightBoxCanvas.zrange
-    zax           = lightboxcanvas.LightBoxCanvas.zax
-    showGridLines = lightboxcanvas.LightBoxCanvas.showGridLines    
+    nrows          = lightboxcanvas.LightBoxCanvas.nrows
+    ncols          = lightboxcanvas.LightBoxCanvas.ncols
+    topRow         = lightboxcanvas.LightBoxCanvas.topRow
+    sliceSpacing   = lightboxcanvas.LightBoxCanvas.sliceSpacing
+    zrange         = lightboxcanvas.LightBoxCanvas.zrange
+    zax            = lightboxcanvas.LightBoxCanvas.zax
+    showGridLines  = lightboxcanvas.LightBoxCanvas.showGridLines
+    highlightSlice = lightboxcanvas.LightBoxCanvas.highlightSlice 
 
     zoom = props.Percentage(minval=10, maxval=500.0, default=350.0)
     """A property which allows the user to 'zoom' into the lightbox view. Is
@@ -74,14 +75,15 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             displayCtx)
 
         # My properties are the canvas properties
-        self.bindProps('nrows',         self._lbCanvas)
-        self.bindProps('ncols',         self._lbCanvas)
-        self.bindProps('topRow',        self._lbCanvas)
-        self.bindProps('sliceSpacing',  self._lbCanvas)
-        self.bindProps('zrange',        self._lbCanvas)
-        self.bindProps('showCursor',    self._lbCanvas)
-        self.bindProps('showGridLines', self._lbCanvas)
-        self.bindProps('zax',           self._lbCanvas)
+        self.bindProps('zax',            self._lbCanvas)
+        self.bindProps('nrows',          self._lbCanvas)
+        self.bindProps('ncols',          self._lbCanvas)
+        self.bindProps('topRow',         self._lbCanvas)
+        self.bindProps('sliceSpacing',   self._lbCanvas)
+        self.bindProps('zrange',         self._lbCanvas)
+        self.bindProps('showCursor',     self._lbCanvas)
+        self.bindProps('showGridLines',  self._lbCanvas)
+        self.bindProps('highlightSlice', self._lbCanvas)
 
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.getCanvasPanel().SetSizer(self._canvasSizer)
