@@ -17,8 +17,6 @@ import wx
 
 import numpy as np
 
-import props
-
 import fsl.utils.layout                  as fsllayout
 import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
 import canvaspanel
@@ -37,15 +35,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     zax            = lightboxcanvas.LightBoxCanvas.zax
     showGridLines  = lightboxcanvas.LightBoxCanvas.showGridLines
     highlightSlice = lightboxcanvas.LightBoxCanvas.highlightSlice 
-
-    zoom = props.Percentage(minval=10, maxval=500.0, default=350.0)
-    """A property which allows the user to 'zoom' into the lightbox view. Is
-    actually a proxy for the
-    :attr:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.ncols`, with the
-    zoom range (10, 500) linearly mapping to number of columns (30, 1).
-    """
-
-
 
     
     _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
@@ -112,6 +101,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 
+        self.zoom = 500
+
         self._onLightBoxChange()
         self._onZoom()
 
@@ -138,7 +129,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """Called when the :attr:`zoom` property changes. Updates the
         number of columns on the lightbox canvas.
         """
-        normZoom = 1.0 - (self.zoom - 10) / 490.0
+        minval   = self.getConstraint('zoom', 'minval')
+        maxval   = self.getConstraint('zoom', 'maxval')
+        normZoom = 1.0 - (self.zoom - minval) / float(maxval)
+        
         self._lbCanvas.ncols = int(1 + np.round(normZoom * 29))
 
 

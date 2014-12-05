@@ -54,19 +54,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     
     # Properties which set the current zoom
     # factor on each of the canvases
-    xzoom = props.Real(minval=1.0,
-                       maxval=10.0, 
-                       default=1.0,
-                       clamped=True)
-    yzoom = props.Real(minval=1.0,
-                       maxval=10.0, 
-                       default=1.0,
-                       clamped=True)
-    zzoom = props.Real(minval=1.0,
-                       maxval=10.0, 
-                       default=1.0,
-                       clamped=True)
-
+    xzoom = props.Percentage(minval=10,
+                             maxval=800, 
+                             clamped=True)
+    yzoom = props.Percentage(minval=10,
+                             maxval=800, 
+                             clamped=True)
+    zzoom = props.Percentage(minval=10,
+                             maxval=800, 
+                             clamped=True) 
 
     _labels = dict({
         'showXCanvas'       : 'Show X canvas',
@@ -134,13 +130,22 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.bindProps('showCursor', self._xcanvas)
         self.bindProps('showCursor', self._ycanvas)
         self.bindProps('showCursor', self._zcanvas)
-        self.bindProps('xzoom',      self._xcanvas, 'zoom')
-        self.bindProps('yzoom',      self._ycanvas, 'zoom')
-        self.bindProps('zzoom',      self._zcanvas, 'zoom')
 
         # Callbacks for ortho panel layout options
         self.addListener('layout',     self._name, self._refreshLayout)
         self.addListener('showLabels', self._name, self._refreshLabels)
+
+        self.addListener('zoom', self._name, self._onZoom)
+        self.addListener('xzoom',
+                         self._name,
+                         lambda *a: self._onZoom(self._xcanvas, *a))
+        self.addListener('yzoom',
+                         self._name,
+                         lambda *a: self._onZoom(self._ycanvas, *a))
+        self.addListener('zzoom',
+                         self._name,
+                         lambda *a: self._onZoom(self._zcanvas, *a)) 
+        
 
         # Callbacks for image list/selected image changes
         self._imageList.addListener( 'images',
@@ -190,6 +195,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # And finally, call the _resize method to
         # refresh things when this panel is resized
         self.Bind(wx.EVT_SIZE, self._onResize)
+
+        
+    def _onZoom(self, canvas=None, *a):
+        pass
 
 
     def _toggleCanvas(self, canvas):
@@ -623,9 +632,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.pos.xyz = [xpos, zpos, ypos]
         self._zcanvas.pos.xyz = [xpos, ypos, zpos]
 
-        if self.xzoom != 1: self._xcanvas.panDisplayToShow(ypos, zpos)
-        if self.yzoom != 1: self._ycanvas.panDisplayToShow(xpos, zpos)
-        if self.zzoom != 1: self._zcanvas.panDisplayToShow(xpos, ypos)
+        if self.xzoom != 100.0: self._xcanvas.panDisplayToShow(ypos, zpos)
+        if self.yzoom != 100.0: self._ycanvas.panDisplayToShow(xpos, zpos)
+        if self.zzoom != 100.0: self._zcanvas.panDisplayToShow(xpos, ypos)
 
 
     def _onMouseEvent(self, ev):

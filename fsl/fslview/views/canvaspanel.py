@@ -200,6 +200,9 @@ class CanvasPanel(viewpanel.ViewPanel):
     syncLocation   = displayctx.DisplayContext.getSyncProperty('location')
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
+
+
+    zoom = props.Percentage(minval=10, maxval=800, clamped=True)
     
     colourBarLocation = props.Choice({
         'top'    : 'Top',
