@@ -145,22 +145,25 @@ def _configImageParser(imgParser):
                              shortArgs=dict(zip(imgOpts, imgArgs))) 
 
 
-def parseArgs(mainParser, argv, name, desc):
+def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     """
     Parses the given command line arguments. Parameters:
 
       - mainParser: 
-      - argv:       command line arguments for fslview.
+      - argv:         command line arguments for fslview.
       - name:
       - desc:
+      - toolOptsDesc:
     """
 
     # I hate argparse. By default, it does not support
     # the command line interface that I want to provide,
     # as demonstrated in this usage string. I also hate
     # the fact that I have to delimit image files with '-i':
-    usageStr   = '{} [options] [-i image [displayOpts]] '\
-                 '[-i image [displayOpts]] ...'.format(name)
+    usageStr   = '{} {} [-i image [displayOpts]] '\
+                 '[-i image [displayOpts]] ...'.format(
+                     name,
+                     toolOptsDesc)
     imgOptDesc = 'Each display option will be applied to the '\
                  'image which is listed before that option.'
 

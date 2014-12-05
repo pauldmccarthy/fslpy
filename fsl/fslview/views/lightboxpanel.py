@@ -29,11 +29,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     mouse-scrolling behaviour.
     """
 
-    
-    sliceSpacing = lightboxcanvas.LightBoxCanvas.sliceSpacing
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.sliceSpacing`.
-    """
-
+    nrows         = lightboxcanvas.LightBoxCanvas.nrows
+    ncols         = lightboxcanvas.LightBoxCanvas.ncols
+    topRow        = lightboxcanvas.LightBoxCanvas.topRow
+    sliceSpacing  = lightboxcanvas.LightBoxCanvas.sliceSpacing
+    zrange        = lightboxcanvas.LightBoxCanvas.zrange
+    zax           = lightboxcanvas.LightBoxCanvas.zax
+    showGridLines = lightboxcanvas.LightBoxCanvas.showGridLines    
 
     zoom = props.Percentage(minval=10, maxval=500.0, default=350.0)
     """A property which allows the user to 'zoom' into the lightbox view. Is
@@ -42,18 +44,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     zoom range (10, 500) linearly mapping to number of columns (30, 1).
     """
 
-    
-    zrange = lightboxcanvas.LightBoxCanvas.zrange
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.zrange`."""
 
-    
-    zax = lightboxcanvas.LightBoxCanvas.zax
-    """See :attr:`fsl.fslview.gl.slicecanvas.SliceCanvas.zax`."""
-
-    
-    showGridLines = lightboxcanvas.LightBoxCanvas.showGridLines
-    """See :attr:`fsl.fslview.gl.lightboxcanvas.LightBoxCanvas.showGridLines`.
-    """ 
 
     
     _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
@@ -83,6 +74,9 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             displayCtx)
 
         # My properties are the canvas properties
+        self.bindProps('nrows',         self._lbCanvas)
+        self.bindProps('ncols',         self._lbCanvas)
+        self.bindProps('topRow',        self._lbCanvas)
         self.bindProps('sliceSpacing',  self._lbCanvas)
         self.bindProps('zrange',        self._lbCanvas)
         self.bindProps('showCursor',    self._lbCanvas)
@@ -121,27 +115,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         # When any lightbox properties change,
         # make sure the scrollbar is updated
-        self._lbCanvas.addListener('ncols',
-                                   self._name,
-                                   self._ncolsChanged)
-        self._lbCanvas.addListener('nrows',
-                                   self._name,
-                                   self._onLightBoxChange)
-        self._lbCanvas.addListener('topRow',
-                                   self._name,
-                                   self._onLightBoxChange)
-        self          .addListener('sliceSpacing',
-                                   self._name,
-                                   self._onLightBoxChange)
-        self          .addListener('zrange',
-                                   self._name,
-                                   self._onLightBoxChange)
-        self          .addListener('zax',
-                                   self._name,
-                                   self._onLightBoxChange)
-        self          .addListener('zoom',
-                                   self._name,
-                                   self._onZoom)
+        self.addListener('ncols',        self._name, self._ncolsChanged)
+        self.addListener('nrows',        self._name, self._onLightBoxChange)
+        self.addListener('topRow',       self._name, self._onLightBoxChange)
+        self.addListener('sliceSpacing', self._name, self._onLightBoxChange)
+        self.addListener('zrange',       self._name, self._onLightBoxChange)
+        self.addListener('zax',          self._name, self._onLightBoxChange)
+        self.addListener('zoom',         self._name, self._onZoom)
 
         # When the scrollbar is moved,
         # update the canvas display

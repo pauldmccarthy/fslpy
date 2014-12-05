@@ -10,12 +10,10 @@ log = logging.getLogger(__name__)
 
 import fsl.fslview.action as action
 
-import screengrabaction
 import openfileaction
 import openstandardaction
 
 Action             = action            .Action
-ScreenGrabAction   = screengrabaction  .ScreenGrabAction
 OpenFileAction     = openfileaction    .OpenFileAction
 OpenStandardAction = openstandardaction.OpenStandardAction
 

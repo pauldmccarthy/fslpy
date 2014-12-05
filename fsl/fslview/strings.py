@@ -5,6 +5,10 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
+log = logging.getLogger(__name__)
+
 import fsl.data.image as fslimage
 
 try:
@@ -17,7 +21,6 @@ try:
     from controls.imagelistpanel     import ImageListPanel
     from controls.locationpanel      import LocationPanel
 
-    from actions .screengrabaction   import ScreenGrabAction
     from actions .openfileaction     import OpenFileAction
     from actions .openstandardaction import OpenStandardAction
 
@@ -38,8 +41,7 @@ try:
 
     actionTitles = {
         OpenFileAction     : 'Add image file',
-        OpenStandardAction : 'Add standard',
-        ScreenGrabAction   : 'Take screenshot'
+        OpenStandardAction : 'Add standard'
     }
 
     viewPanelConfigMenuText = {
@@ -56,8 +58,8 @@ try:
     locationPanelWorldLabel  = 'World location (mm)'
     locationPanelVoxelLabel  = 'Voxel coordinates'
     locationPanelVolumeLabel = 'Volume (index)'
-except:
-    pass
+except Exception as e:
+    log.warn('Error importing modules for strings: {}'.format(e))
 
 
 imageAxisLowLongLabels = {

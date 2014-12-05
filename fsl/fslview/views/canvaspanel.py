@@ -17,6 +17,8 @@ instance.
 import logging
 log = logging.getLogger(__name__)
 
+import subprocess
+
 import wx
 
 import props
@@ -30,6 +32,115 @@ import fsl.fslview.controls.locationpanel      as locationpanel
 import                                            colourbarpanel
 
 
+def _takeScreenShot(imageList, displayCtx, canvas):
+
+    import fsl.fslview.views.orthopanel    as orthopanel
+    import fsl.fslview.views.lightboxpanel as lightboxpanel
+    
+    dlg = wx.FileDialog(canvas,
+                        message='Save screenshot',
+                        style=wx.FD_SAVE)
+
+    if dlg.ShowModal() != wx.ID_OK: return
+
+    filename = dlg.GetPath()
+
+    dlg.Destroy()
+    wx.Yield()
+
+    # TODO In-memory-only images will not be
+    # rendered - will need to save them to a temp file
+
+    # TODO support view panels other than lightbox/ortho? 
+    if not isinstance(canvas, CanvasPanel):
+        return
+
+    width, height = canvas.GetClientSize().Get()
+
+    argv  = []
+    argv += ['--outfile', filename]
+    argv += ['--size', '{}'.format(width), '{}'.format(height)]
+    argv += ['--background', '0', '0', '0', '255']
+
+    # TODO get location from panel - if possync
+    # is false, this will be wrong
+    argv += ['--worldloc']
+    argv += ['{}'.format(c) for c in displayCtx.location.xyz]
+    argv += ['--selectedImage']
+    argv += ['{}'.format(displayCtx.selectedImage)]
+
+    if not canvas.showCursor:
+        argv += ['--hideCursor']
+
+    if canvas.showColourBar:
+        argv += ['--showColourBar']
+        argv += ['--colourBarLocation']
+        argv += [canvas.colourBarLocation]
+        argv += ['--colourBarLabelSide']
+        argv += [canvas.colourBarLabelSide] 
+
+    #
+    if isinstance(canvas, orthopanel.OrthoPanel):
+        if not canvas.showXCanvas: argv += ['--hidex']
+        if not canvas.showYCanvas: argv += ['--hidey']
+        if not canvas.showZCanvas: argv += ['--hidez']
+        if not canvas.showLabels:  argv += ['--hideLabels']
+
+        argv += ['--xzoom', '{}'.format(canvas.xzoom)]
+        argv += ['--yzoom', '{}'.format(canvas.yzoom)]
+        argv += ['--zzoom', '{}'.format(canvas.zzoom)]
+        argv += ['--layout',            canvas.layout]
+
+        xbounds = canvas._xcanvas.displayBounds
+        ybounds = canvas._ycanvas.displayBounds
+        zbounds = canvas._zcanvas.displayBounds
+
+        xx = xbounds.xlo + (xbounds.xhi - xbounds.xlo) * 0.5
+        xy = xbounds.ylo + (xbounds.yhi - xbounds.ylo) * 0.5
+        yx = ybounds.xlo + (ybounds.xhi - ybounds.xlo) * 0.5
+        yy = ybounds.ylo + (ybounds.yhi - ybounds.ylo) * 0.5
+        zx = zbounds.xlo + (zbounds.xhi - zbounds.xlo) * 0.5
+        zy = zbounds.ylo + (zbounds.yhi - zbounds.ylo) * 0.5
+
+        argv += ['--xcentre', '{}'.format(xx), '{}'.format(xy)]
+        argv += ['--ycentre', '{}'.format(yx), '{}'.format(yy)]
+        argv += ['--zcentre', '{}'.format(zx), '{}'.format(zy)]
+
+
+    elif isinstance(canvas, lightboxpanel.LightBoxPanel):
+        argv += ['--lightbox']
+        argv += ['--sliceSpacing',  '{}'.format(canvas.sliceSpacing)]
+        argv += ['--nrows',         '{}'.format(canvas.nrows)]
+        argv += ['--ncols',         '{}'.format(canvas.ncols)]
+        argv += ['--zax',           '{}'.format(canvas.zax)]
+        argv += ['--zrange',        '{}'.format(canvas.zrange[0]),
+                                    '{}'.format(canvas.zrange[1])]
+
+        if canvas.showGridLines:
+            argv += ['--showGridLines']
+
+    for image in displayCtx.getOrderedImages():
+
+        fname = image.imageFile
+
+        # No support for in-memory images just yet
+        if fname is None:
+            continue
+
+        display = displayCtx.getDisplayProperties(image)
+        imgArgv = props.generateArguments(display)
+
+        argv += ['--image', fname] + imgArgv
+
+    argv = ' '.join(argv).split()
+    argv = ['fslpy', 'render'] + argv
+
+    log.debug('Generating screenshot with '
+              'call to render: {}'.format(' '.join(argv)))
+
+    subprocess.call(argv)
+
+
 class ControlStrip(controlpanel.ControlPanel):
     """
     """
@@ -41,6 +152,7 @@ class ControlStrip(controlpanel.ControlPanel):
         self._displayPropsButton = wx.Button(self, label='ID')
         self._locationButton     = wx.Button(self, label='LOC')
         self._settingsButton     = wx.Button(self, label='DS')
+        self._screenShotButton   = wx.Button(self, label='SS')
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -48,6 +160,7 @@ class ControlStrip(controlpanel.ControlPanel):
         self._sizer.Add(self._displayPropsButton)
         self._sizer.Add(self._locationButton)
         self._sizer.Add(self._settingsButton)
+        self._sizer.Add(self._screenShotButton)
 
         self.SetSizer(self._sizer)
         self.Layout()
@@ -60,12 +173,15 @@ class ControlStrip(controlpanel.ControlPanel):
         def toggleLocation(ev):
             canvasPanel.showLocationPanel = not canvasPanel.showLocationPanel
         def toggleSettings(ev):
-            canvasPanel.showSettingsPanel = not canvasPanel.showSettingsPanel 
+            canvasPanel.showSettingsPanel = not canvasPanel.showSettingsPanel
+        def screenShot(ev):
+            _takeScreenShot(imageList, displayCtx, canvasPanel)
 
         self._imageListButton   .Bind(wx.EVT_BUTTON, toggleImageList)
         self._displayPropsButton.Bind(wx.EVT_BUTTON, toggleDisplayProps)
         self._locationButton    .Bind(wx.EVT_BUTTON, toggleLocation)
         self._settingsButton    .Bind(wx.EVT_BUTTON, toggleSettings)
+        self._screenShotButton  .Bind(wx.EVT_BUTTON, screenShot)
             
 
 class CanvasPanel(viewpanel.ViewPanel):

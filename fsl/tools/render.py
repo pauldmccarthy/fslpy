@@ -297,6 +297,7 @@ def run(args, context):
     if args.lightbox:
         c = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
+            displayCtx,
             zax=args.zax,
             width=width,
             height=height,
@@ -381,8 +382,9 @@ def run(args, context):
         canvases[i] = c.getBitmap()
 
     # Disable labels for now
-    labelBmps = None
-    if not args.hideLabels:
+    if args.lightbox or args.hideLabels:
+        labelBmps = None
+    else:
         labelBmps = buildLabelBitmaps(imageList,
                                       displayCtx,
                                       canvasAxes,
@@ -429,7 +431,7 @@ def parseArgs(argv):
     mainParser = argparse.ArgumentParser(add_help=False)
 
     mainParser.add_argument('-of', '--outfile',  metavar='FILE',
-                            help='Output image file name', required=True)
+                            help='Output image file name')
     mainParser.add_argument('-sz', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
@@ -439,10 +441,18 @@ def parseArgs(argv):
                             help='Background colour', 
                             default=(0, 0, 0, 255)) 
     
-    return fslview_parseargs.parseArgs(mainParser,
-                                       argv,
-                                       'render',
-                                       'Scene renderer')
+    namespace = fslview_parseargs.parseArgs(mainParser,
+                                            argv,
+                                            'render',
+                                            'Scene renderer',
+                                            '-of outfile [options]')
+
+    if namespace.outfile is None:
+        print 'Error: outfile is required'
+        mainParser.print_usage()
+        sys.exit(1)
+ 
+    return namespace
  
 
 FSL_TOOLNAME  = 'Render'
