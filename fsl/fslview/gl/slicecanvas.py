@@ -48,11 +48,10 @@ class SliceCanvas(props.HasProperties):
     to 'depth'.
     """
 
-
-    zoom = props.Real(minval=1.0,
-                      maxval=10.0, 
-                      default=1.0,
-                      clamped=True)
+    zoom = props.Percentage(minval=10.0,
+                            maxval=1000.0,
+                            default=100.0,
+                            clamped=True)
     """The image bounds are divided by this zoom
     factor to produce the display bounds.
     """
@@ -406,10 +405,10 @@ class SliceCanvas(props.HasProperties):
         containing the updated bound values.
         """
 
-        if self.zoom == 1.0:
+        if self.zoom == 100.0:
             return (xmin, xmax, ymin, ymax)
-        
-        zoomFactor  = 1.0 / self.zoom
+
+        zoomFactor = 100.0 / self.zoom
 
         xlen = xmax - xmin
         ylen = ymax - ymin

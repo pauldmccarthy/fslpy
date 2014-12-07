@@ -16,6 +16,8 @@ different orthogonal plane. The displayed location is driven by the
 import logging
 log = logging.getLogger(__name__)
 
+import copy
+
 import wx
 import props
 
@@ -54,15 +56,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     
     # Properties which set the current zoom
     # factor on each of the canvases
-    xzoom = props.Percentage(minval=10,
-                             maxval=800, 
-                             clamped=True)
-    yzoom = props.Percentage(minval=10,
-                             maxval=800, 
-                             clamped=True)
-    zzoom = props.Percentage(minval=10,
-                             maxval=800, 
-                             clamped=True) 
+    xzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
+    yzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
+    zzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
 
     _labels = dict({
         'showXCanvas'       : 'Show X canvas',
@@ -135,17 +131,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.addListener('layout',     self._name, self._refreshLayout)
         self.addListener('showLabels', self._name, self._refreshLabels)
 
-        self.addListener('zoom', self._name, self._onZoom)
-        self.addListener('xzoom',
-                         self._name,
-                         lambda *a: self._onZoom(self._xcanvas, *a))
-        self.addListener('yzoom',
-                         self._name,
-                         lambda *a: self._onZoom(self._ycanvas, *a))
-        self.addListener('zzoom',
-                         self._name,
-                         lambda *a: self._onZoom(self._zcanvas, *a)) 
-        
+        self.bindProps('xzoom', self._xcanvas, 'zoom')
+        self.bindProps('yzoom', self._ycanvas, 'zoom')
+        self.bindProps('zzoom', self._zcanvas, 'zoom')
+
+        def onZoom(*a):
+            self.xzoom = self.zoom
+            self.yzoom = self.zoom
+            self.zzoom = self.zoom
+
+        self.addListener('zoom', self._name, onZoom)
 
         # Callbacks for image list/selected image changes
         self._imageList.addListener( 'images',
@@ -195,10 +190,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # And finally, call the _resize method to
         # refresh things when this panel is resized
         self.Bind(wx.EVT_SIZE, self._onResize)
-
-        
-    def _onZoom(self, canvas=None, *a):
-        pass
 
 
     def _toggleCanvas(self, canvas):
