@@ -661,9 +661,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             log.debug('Drawing {} slices ({} - {}) for image {}'.format(
                 endSlice - startSlice, startSlice, endSlice, image))
 
+
+            globj.preDraw()
+
             for zi in range(startSlice, endSlice):
                 globj.draw(self._sliceLocs[ image][zi],
                            self._transforms[image][zi])
+
+            globj.postDraw()
 
         if len(self.imageList) > 0:
             if self.showCursor:     self._drawCursor()

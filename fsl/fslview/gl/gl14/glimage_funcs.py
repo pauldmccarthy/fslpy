@@ -210,19 +210,17 @@ def genVertexData(glimg):
     return worldCoords, texCoords, indices, indices.shape[0]
 
 
-def draw(glimg, zpos, xform=None):
-    """Draws a slice of the image at the given Z location. """
+def preDraw(glimg):
+    """Prepares to draw a slice from the given
+    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
+    """
 
     display = glimg.display
-    
+
     # Don't draw the slice if this
     # image display is disabled
-    if not display.enabled: return
-
-    worldCoords  = glimg.worldCoords
-    indices      = glimg.indices
-    worldCoords[:, glimg.zax] = zpos
-
+    if not display.enabled: return 
+    
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -284,7 +282,21 @@ def draw(glimg, zpos, xform=None):
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
     gl.glLoadMatrixf(display.displayToVoxMat)
+
+
+def draw(glimg, zpos, xform=None):
+    """Draws a slice of the image at the given Z location. """
+
+    display = glimg.display
     
+    # Don't draw the slice if this
+    # image display is disabled
+    if not display.enabled: return
+
+    worldCoords  = glimg.worldCoords
+    indices      = glimg.indices
+    worldCoords[:, glimg.zax] = zpos
+
     worldCoords = worldCoords.ravel('C')
 
     if xform is not None: 
@@ -302,6 +314,20 @@ def draw(glimg, zpos, xform=None):
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
+
+    if xform is not None:
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPopMatrix()
+
+
+def postDraw(glimg):
+    """Cleans up the GL state after drawing from the given
+    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
+    """
+
+    display = glimg.display
+    if not display.enabled: return
+
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
 
@@ -312,7 +338,3 @@ def draw(glimg, zpos, xform=None):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPopMatrix() 
-
-    if xform is not None:
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glPopMatrix()

@@ -666,7 +666,9 @@ class SliceCanvas(props.HasProperties):
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
 
+            globj.preDraw()
             globj.draw(self.pos.z)
+            globj.postDraw()
         
         if self.showCursor: self._drawCursor()
         self._postDraw()

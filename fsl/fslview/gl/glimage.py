@@ -114,6 +114,13 @@ class GLImage(object):
         self.indices     = idxs
         self.nVertices   = nv
 
+
+    def preDraw(self):
+        """Sets up the GL state to draw a slice from this :class:`GLImage`
+        instance.
+        """
+        fslgl.glimage_funcs.preDraw(self)
+
         
     def draw(self, zpos, xform=None):
         """Draws a 2D slice of the image at the given real world Z location.
@@ -123,8 +130,18 @@ class GLImage(object):
 
         If `xform` is not None, it is applied as an affine transformation to
         the vertex coordinates of the rendered image data.
+
+        Note: Calls to this method must be preceded by a call to
+        :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
         """
         fslgl.glimage_funcs.draw(self, zpos, xform)
+
+        
+    def postDraw(self):
+        """Clears the GL state after drawing from this :class:`GLImage`
+        instance.
+        """ 
+        fslgl.glimage_funcs.postDraw(self) 
 
 
     def destroy(self):

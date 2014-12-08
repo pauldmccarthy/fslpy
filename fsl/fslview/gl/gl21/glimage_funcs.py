@@ -142,48 +142,37 @@ def genVertexData(glimg):
     return worldCoordBuffer, texCoords, indexBuffer, len(indices)
 
 
-def draw(glimg, zpos, xform=None):
-    """Draws the specified slice from the specified image on the canvas.
-
-    :arg image:   The :class:`~fsl.fslview.gl..GLImage` object which is 
-                  managing the image to be drawn.
-    
-    :arg zpos:    World Z position of slice to be drawn.
-    
-    :arg xform:   A 4*4 transformation matrix to be applied to the vertex
-                  data.
+def preDraw(glimg):
+    """Sets up the GL state to draw a slice from the given
+    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
     """
 
     display = glimg.display
-
-    # Don't draw the slice if this
-    # image display is disabled
     if not display.enabled: return
 
     # load the shaders
     gl.glUseProgram(glimg.shaders) 
 
-    # bind the current alpha value
-    # and data range to the shader
+    # bind the current interpolation setting,
+    # image shape, and image->screen axis
+    # mappings
     gl.glUniform1f( glimg.useSplinePos,     display.interpolation == 'spline')
-    gl.glUniform1f( glimg.zCoordPos,        zpos)
+    
     gl.glUniform3fv(glimg.imageShapePos, 1, np.array(glimg.imageShape,
                                                      dtype=np.float32))
     gl.glUniform1i( glimg.xaxPos,           glimg.xax)
     gl.glUniform1i( glimg.yaxPos,           glimg.yax)
     gl.glUniform1i( glimg.zaxPos,           glimg.zax)
-    
-    # bind the transformation matrices
-    # to the shader variable
-    if xform is None: xform = np.identity(4)
 
+    # Bind transformation matrices to transform
+    # display coordinates to voxel coordinates,
+    # and to scale voxel values to colour map
+    # texture coordinates
     tcx = transform.concat(glimg.voxValXform, glimg.colourMapXform)
-    w2w = np.array(xform,                   dtype=np.float32).ravel('C')
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
     vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(glimg.displayToVoxMatPos, 1, False, w2v)
-    gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
     gl.glUniformMatrix4fv(glimg.voxValXformPos,     1, False, vvx)
 
     # Enable storage of tightly packed data
@@ -201,7 +190,7 @@ def draw(glimg, zpos, xform=None):
     gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageTexture)
     gl.glUniform1i(glimg.imageTexturePos, 1)
 
-    # world x/y coordinates
+    # Bind the world x/y coordinate buffer
     glimg.worldCoords.bind()
     gl.glVertexAttribPointer(
         glimg.worldCoordPos,
@@ -212,16 +201,50 @@ def draw(glimg, zpos, xform=None):
         None)
     gl.glEnableVertexAttribArray(glimg.worldCoordPos)
 
-    # Draw all of the triangles!
+    # Bind the vertex index buffer
     glimg.indices.bind()
+
+
+def draw(glimg, zpos, xform=None):
+    """Draws the specified slice from the specified image on the canvas.
+
+    :arg image:   The :class:`~fsl.fslview.gl.glimage.GLImage` object which
+                  is managing the image to be drawn.
+    
+    :arg zpos:    World Z position of slice to be drawn.
+    
+    :arg xform:   A 4*4 transformation matrix to be applied to the vertex
+                  data.
+    """
+    display = glimg.display
+    if not display.enabled: return 
+    
+    if xform is None: xform = np.identity(4)
+    
+    w2w = np.array(xform, dtype=np.float32).ravel('C')
+
+    # Bind the current world z position, and
+    # the xform transformation matrix
+    gl.glUniform1f(       glimg.zCoordPos,                    zpos)
+    gl.glUniformMatrix4fv(glimg.worldToWorldMatPos, 1, False, w2w)
+
+    # Draw all of the triangles!
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       glimg.nVertices,
                       gl.GL_UNSIGNED_INT,
                       None)
 
+
+def postDraw(glimg):
+    """Cleans up the GL state after drawing from the given
+    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
+    """
+
+    if not glimg.display.enabled: return
+
     gl.glDisableVertexAttribArray(glimg.worldCoordPos)
 
-    glimg.indices.unbind()
+    glimg.indices    .unbind()
     glimg.worldCoords.unbind()
 
     gl.glUseProgram(0)
