@@ -48,18 +48,31 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     """
 
     
-    # How should we lay out each of the three slice panels?
     layout = props.Choice(
         ['horizontal', 'vertical', 'grid'],
         ['Horizontal', 'Vertical', 'Grid'])
+    """How should we lay out each of the three canvases?"""
 
     
-    # Properties which set the current zoom
-    # factor on each of the canvases
-    xzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
-    yzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
-    zzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
 
+    xzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
+    """Controls zoom on the X canvas."""
+
+    
+    yzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
+    """Controls zoom on the Y canvas."""
+
+    
+    zzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
+    """Controls zoom on the Z canvas.
+
+    Note that the :class:`OrthoPanel` class also inherits a ``zoom`` property
+    from the :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` class - this
+    'global' property can be used to adjust all canvas zoom levels
+    simultaneously.
+    """
+
+    
     _labels = dict({
         'showXCanvas'       : 'Show X canvas',
         'showYCanvas'       : 'Show Y canvas',
@@ -70,6 +83,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         'zzoom'             : 'Z zoom',
         'layout'            : 'Layout'
     }.items() + canvaspanel.CanvasPanel._labels.items())
+    """Labels for each of the user-editable :class:`OrthoPanel` properties."""
 
 
     def __init__(self,
@@ -131,10 +145,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.addListener('layout',     self._name, self._refreshLayout)
         self.addListener('showLabels', self._name, self._refreshLabels)
 
+        # Individual zoom control for each canvas
         self.bindProps('xzoom', self._xcanvas, 'zoom')
         self.bindProps('yzoom', self._ycanvas, 'zoom')
         self.bindProps('zzoom', self._zcanvas, 'zoom')
 
+        # And a global zoom which controls all canvases at once
         def onZoom(*a):
             self.xzoom = self.zoom
             self.yzoom = self.zoom
@@ -153,10 +169,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                      self._name,
                                      self._imageListChanged)
 
-        self._refreshLayout()
-        self._imageListChanged()
-        self._refreshLabels()
-
         # Callbacks for mouse events on the three xcanvases
         self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
         self._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
@@ -170,7 +182,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         def move(*a):
             self.setPosition(*self._displayCtx.location)
 
-        self.setPosition(*self._displayCtx.location)
         self._displayCtx.addListener('location', self._name, move) 
 
         # Callbacks for toggling x/y/z canvas display
@@ -190,6 +201,13 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # And finally, call the _resize method to
         # refresh things when this panel is resized
         self.Bind(wx.EVT_SIZE, self._onResize)
+
+        # Initialise the panel
+        self._refreshLayout()
+        self._imageListChanged()
+        self._refreshLabels()
+        self.setPosition(*self._displayCtx.location) 
+        
 
 
     def _toggleCanvas(self, canvas):
