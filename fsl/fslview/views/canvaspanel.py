@@ -138,6 +138,9 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     log.debug('Generating screenshot with '
               'call to render: {}'.format(' '.join(argv)))
 
+    print 'Generate this scene from the command ' \
+          'line with: {}'.format(' '.join(argv))
+
     subprocess.call(argv)
 
 
