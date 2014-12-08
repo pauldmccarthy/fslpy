@@ -286,7 +286,13 @@ def preDraw(glimg):
 
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
+    # Save a copy of the current MV matrix.
+    # We do this to minimise the number of GL
+    # calls in the draw function (see inline
+    # comments in draw)
     gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glPushMatrix()
+    glimg.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
 
 
 def draw(glimg, zpos, xform=None):
@@ -302,11 +308,25 @@ def draw(glimg, zpos, xform=None):
     indices      = glimg.indices
     worldCoords[:, glimg.zax] = zpos
 
-    worldCoords = worldCoords.ravel('C')
-
+    # Apply the custom xform if provided.
+    # I'm doing this on CPU to minimise
+    # the number of GL calls (which, when
+    # running over a network, is the major
+    # performance bottleneck). Doing this
+    # on the GPU would require three calls:
+    # 
+    #   gl.glPushMatrix
+    #   gl.glMultiMatrixf
+    #   ...
+    #   gl.glPopMatrix
+    #
+    # as opposed to the single call to
+    # glLoadMatrixf required here
     if xform is not None:
-        gl.glPushMatrix()
-        gl.glMultMatrixf(xform)
+        xform = transform.concat(xform, glimg.mvmat)
+        gl.glLoadMatrixf(xform)
+
+    worldCoords = worldCoords.ravel('C')
 
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
@@ -314,10 +334,6 @@ def draw(glimg, zpos, xform=None):
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
-    
-    if xform is not None:
-        gl.glPopMatrix()
- 
 
 
 def postDraw(glimg):
@@ -327,6 +343,8 @@ def postDraw(glimg):
 
     display = glimg.display
     if not display.enabled: return
+
+    gl.glPopMatrix()
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
