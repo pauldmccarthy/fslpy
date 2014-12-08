@@ -156,6 +156,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self.yzoom = self.zoom
             self.zzoom = self.zoom
 
+        minZoom = self.getConstraint('xzoom', 'minval')
+        maxZoom = self.getConstraint('xzoom', 'maxval')
+
+        self.setConstraint('zoom', 'minval', minZoom)
+        self.setConstraint('zoom', 'maxval', maxZoom)
+
         self.addListener('zoom', self._name, onZoom)
 
         # Callbacks for image list/selected image changes
@@ -208,7 +214,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._refreshLabels()
         self.setPosition(*self._displayCtx.location) 
         
-
 
     def _toggleCanvas(self, canvas):
         """Called when any of  show*Canvas properties are changed.

@@ -48,7 +48,7 @@ class SliceCanvas(props.HasProperties):
     to 'depth'.
     """
 
-    zoom = props.Percentage(minval=10.0,
+    zoom = props.Percentage(minval=100.0,
                             maxval=1000.0,
                             default=100.0,
                             clamped=True)

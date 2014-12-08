@@ -188,7 +188,6 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-    
     showCursor = props.Boolean(default=True)
 
     showColourBar         = props.Boolean(default=False)
@@ -202,7 +201,8 @@ class CanvasPanel(viewpanel.ViewPanel):
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
 
 
-    zoom = props.Percentage(minval=10, maxval=800, clamped=True)
+    zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
+
     
     colourBarLocation = props.Choice({
         'top'    : 'Top',
@@ -210,6 +210,7 @@ class CanvasPanel(viewpanel.ViewPanel):
         'left'   : 'Left',
         'right'  : 'Right'})
 
+    
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
     
