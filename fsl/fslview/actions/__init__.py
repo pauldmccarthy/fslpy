@@ -10,12 +10,14 @@ log = logging.getLogger(__name__)
 
 import fsl.fslview.action as action
 
-import openfileaction
-import openstandardaction
+import openfile
+import openstandard
+import loadcolourmap
 
-Action             = action            .Action
-OpenFileAction     = openfileaction    .OpenFileAction
-OpenStandardAction = openstandardaction.OpenStandardAction
+Action              = action       .Action
+OpenFileAction      = openfile     .OpenFileAction
+OpenStandardAction  = openstandard .OpenStandardAction
+LoadColourMapAction = loadcolourmap.LoadColourMapAction
 
 def listActions():
     """Convenience function which returns a list containing all

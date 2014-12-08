@@ -26,10 +26,17 @@ This module provides two attributes:
 
   - :data:`cmapNames`: A list of all colour maps which should be used for
                        rendering images.
+
+And one function:
+
+ - :func:`registerColourMap`: Given a text file containing RGB values,
+                              loads the data and registers it  with
+                              :mod:`matplotlib`.
 """
 
 import os.path as op
 import glob
+import copy
 
 import numpy             as np
 import matplotlib.colors as colors
@@ -39,25 +46,54 @@ import logging
 log = logging.getLogger(__name__)
 
 
-default   =  'Greys_r'
-cmapNames = ['Greys_r',
-             'Greys',
-             'Reds',
-             'Reds_r',
-             'Blues',
-             'Blues_r',
-             'Greens',
-             'Greens_r',
-             'pink',
-             'pink_r',
-             'hot',
-             'hot_r',
-             'cool',
-             'cool_r', 
-             'autumn',
-             'autumn_r',
-             'copper',
-             'copper_r']
+_default   =  'Greys_r'
+_cmapNames = ['Greys_r',
+              'Greys',
+              'Reds',
+              'Reds_r',
+              'Blues',
+              'Blues_r',
+              'Greens',
+              'Greens_r',
+              'pink',
+              'pink_r',
+              'hot',
+              'hot_r',
+              'cool',
+              'cool_r', 
+              'autumn',
+              'autumn_r',
+              'copper',
+              'copper_r']
+
+def getDefault():
+    return _default
+
+def getColourMaps():
+    return  copy.copy(_cmapNames)
+
+
+def registerColourMap(cmapFile, name=None):
+    """Loads RGB data from the given file, and registers
+    it as a :mod:`matplotlib` :class:`~matplotlib.colors.ListedColormap`
+    instance.
+
+    :arg cmapFile: Name of a file containing RGB values
+    
+    :arg name:     Name to give the colour map. If ``None``, defaults
+                   to the file name prefix.
+    """
+    if name is None:
+        name = op.basename(cmapFile).split('.')[0]
+
+    data = np.loadtxt(cmapFile)
+    cmap = colors.ListedColormap(data, name)
+
+    log.debug('Loading and registering custom '
+              'colour map: {}'.format(cmapFile))
+
+    mplcm.register_cmap(name, cmap)
+    _cmapNames.append(name)
 
 
 # Load all custom colour maps from the colourmaps/*.cmap files.
@@ -66,15 +102,7 @@ for cmapFile in glob.glob(op.join(op.dirname(__file__),
                                   '*.cmap')):
 
     try:
-        name = op.basename(cmapFile).split('.')[0]
-        data = np.loadtxt(cmapFile)
-        cmap = colors.ListedColormap(data, name)
-
-        log.debug('Loading and registering custom '
-                  'colour map: {}'.format(cmapFile))
-
-        mplcm.register_cmap(name, cmap)
-        cmapNames.append(name)
+        registerColourMap(cmapFile)
         
     except:
         log.warn('Error processing custom colour '

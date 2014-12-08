@@ -60,7 +60,8 @@ class ImageDisplay(props.SyncableHasProperties):
     """ 
 
     
-    cmap = props.ColourMap(default=fslcm.default, cmapNames=fslcm.cmapNames)
+    cmap = props.ColourMap(default=fslcm.getDefault(),
+                           cmapNames=fslcm.getColourMaps())
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 
     

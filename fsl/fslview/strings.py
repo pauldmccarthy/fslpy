@@ -21,8 +21,9 @@ try:
     from controls.imagelistpanel     import ImageListPanel
     from controls.locationpanel      import LocationPanel
 
-    from actions .openfileaction     import OpenFileAction
-    from actions .openstandardaction import OpenStandardAction
+    from actions .openfile           import OpenFileAction
+    from actions .openstandard       import OpenStandardAction
+    from actions .loadcolourmap      import LoadColourMapAction
 
 
     viewPanelTitles = {
@@ -40,8 +41,9 @@ try:
     }
 
     actionTitles = {
-        OpenFileAction     : 'Add image file',
-        OpenStandardAction : 'Add standard'
+        OpenFileAction      : 'Add image file',
+        OpenStandardAction  : 'Add standard',
+        LoadColourMapAction : 'Load custom colour map'
     }
 
     viewPanelConfigMenuText = {
