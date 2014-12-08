@@ -28,6 +28,8 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
+import numpy as np
+
 import OpenGL.GL                      as gl
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
@@ -36,15 +38,27 @@ import fsl.utils.transform as transform
 
 _glimage_vertex_program = """!!ARBvp1.0
 
+PARAM xform0 = program.local[0];
+PARAM xform1 = program.local[1];
+PARAM xform2 = program.local[2];
+PARAM xform3 = program.local[3];
+
 # Transform the vertex coordinates from the display
 # coordinate system to the screen coordinate system
-TEMP vertexPos;
-DP4 vertexPos.x, state.matrix.mvp.row[0], vertex.position;
-DP4 vertexPos.y, state.matrix.mvp.row[1], vertex.position;
-DP4 vertexPos.z, state.matrix.mvp.row[2], vertex.position;
-DP4 vertexPos.w, state.matrix.mvp.row[3], vertex.position;
+TEMP vertexPos1;
+TEMP vertexPos2;
 
-MOV result.position, vertexPos;
+DP4 vertexPos1.x, xform0, vertex.position;
+DP4 vertexPos1.y, xform1, vertex.position;
+DP4 vertexPos1.z, xform2, vertex.position;
+DP4 vertexPos1.w, xform3, vertex.position;
+
+DP4 vertexPos2.x, state.matrix.mvp.row[0], vertexPos1;
+DP4 vertexPos2.y, state.matrix.mvp.row[1], vertexPos1;
+DP4 vertexPos2.z, state.matrix.mvp.row[2], vertexPos1;
+DP4 vertexPos2.w, state.matrix.mvp.row[3], vertexPos1;
+
+MOV result.position, vertexPos2;
 
 # Set the vertex texture coordinate
 # to the vertex position
@@ -66,8 +80,8 @@ TEMP  voxTexCoord;
 TEMP  normVoxTexCoord;
 TEMP  voxValue;
 TEMP  voxColour;
-PARAM imageShape    = program.local[0];
-PARAM imageShapeInv = program.local[1];
+PARAM imageShape    = program.local[4];
+PARAM imageShapeInv = program.local[5];
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -244,13 +258,13 @@ def preDraw(glimg):
     # and the RCP operation works on scalars)
     shape = glimg.imageShape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       0,
+                                       4,
                                        shape[0],
                                        shape[1],
                                        shape[2],
                                        0)
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       1,
+                                       5,
                                        1.0 / shape[0],
                                        1.0 / shape[1],
                                        1.0 / shape[2],
@@ -283,6 +297,8 @@ def preDraw(glimg):
     gl.glPushMatrix()
     gl.glLoadMatrixf(display.displayToVoxMat)
 
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY) 
+
 
 def draw(glimg, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
@@ -299,25 +315,43 @@ def draw(glimg, zpos, xform=None):
 
     worldCoords = worldCoords.ravel('C')
 
-    if xform is not None: 
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glPushMatrix()
-        gl.glMultMatrixf(xform)
+    if xform is None:
+        xform = np.identity(4, dtype=np.float32)
 
-    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    xform = xform.transpose()
+        
+    arbvp.glProgramLocalParameter4fARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                                       0,
+                                       xform[0, 0],
+                                       xform[0, 1],
+                                       xform[0, 2],
+                                       xform[0, 3])
+    arbvp.glProgramLocalParameter4fARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                                       1,
+                                       xform[1, 0],
+                                       xform[1, 1],
+                                       xform[1, 2],
+                                       xform[1, 3])
+    arbvp.glProgramLocalParameter4fARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                                       2,
+                                       xform[2, 0],
+                                       xform[2, 1],
+                                       xform[2, 2],
+                                       xform[2, 3])
+    arbvp.glProgramLocalParameter4fARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                                       3,
+                                       xform[3, 0],
+                                       xform[3, 1],
+                                       xform[3, 2],
+                                       xform[3, 3])
+
+
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
-
-    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-
-
-    if xform is not None:
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glPopMatrix()
 
 
 def postDraw(glimg):
@@ -327,6 +361,8 @@ def postDraw(glimg):
 
     display = glimg.display
     if not display.enabled: return
+
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
