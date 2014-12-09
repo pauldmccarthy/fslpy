@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 import os.path as op
 
 import fsl.fslview.gl.glimage  as glimage
-import fsl.fslview.gl.glcircle as glcircle
 
     
 def getVertexShader(globj):
@@ -55,7 +54,6 @@ def _getFileName(globj, shaderType):
         raise RuntimeError('Invalid shader type: {}'.format(shaderType))
 
     if   isinstance(globj, glimage .GLImage):  prefix = 'glimage'
-    elif isinstance(globj, glcircle.GLCircle): prefix = 'glimage'
     else:
         raise RuntimeError('Unknown GL object type: '
                            '{}'.format(type(globj)))

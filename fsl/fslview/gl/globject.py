@@ -25,7 +25,11 @@ GL Objects must have the following methods:
 
   - ``destroy(self)``
 
+  - ``preDraw(self)``
+
   - ``draw(self, zpos, xform=None)``
+
+  - ``postDraw(self)``
 
 """
 
@@ -40,12 +44,10 @@ import fsl.utils.transform as transform
 def createGLObject(image, display):
 
     import fsl.fslview.gl.glimage      as glimage
-    import fsl.fslview.gl.glcircle     as glcircle
     import fsl.fslview.gl.gltensorline as gltensorline
 
     _objectmap = {
         'volume' : glimage     .GLImage,
-        'circle' : glcircle    .GLCircle,
         'tensor' : gltensorline.GLTensorLine
     } 
 

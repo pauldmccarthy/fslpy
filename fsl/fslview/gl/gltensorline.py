@@ -88,6 +88,12 @@ class GLTensorLine(object):
         """Does nothing - nothing needs to be cleaned up. """
         pass
 
+    def preDraw(self):
+        pass
+
+    def postDraw(self):
+        pass 
+
         
     def draw(self, zpos, xform=None):
         """Calculates tensor orientations for the specified Z-axis location, and
