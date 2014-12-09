@@ -86,12 +86,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._canvasSizer.Add(self._lbCanvas,  flag=wx.EXPAND, proportion=1)
         self._canvasSizer.Add(self._scrollbar, flag=wx.EXPAND)
 
-        # Change the display context location on mouse clicks/drags,
-        # and change the displayed row on mouse wheel movement
-        self._lbCanvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
-        self._lbCanvas.Bind(wx.EVT_MOTION,     self._onMouseEvent)
-        self._lbCanvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseWheel) 
-
         # When the display context location changes,
         # make sure the location is shown on the canvas
         self._lbCanvas.pos.xyz = self._displayCtx.location
@@ -206,50 +200,3 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         Updates the top row displayed on the canvas.
         """
         self._lbCanvas.topRow = self._scrollbar.GetThumbPosition()
-
-
-    def _onMouseWheel(self, ev):
-        """Called when the mouse wheel is moved.
-
-        Updates the top row displayed on the canvas.
-        """
-        wheelDir = ev.GetWheelRotation()
-
-        if   wheelDir > 0: wheelDir = -1
-        elif wheelDir < 0: wheelDir =  1
-
-        self._lbCanvas.topRow += wheelDir
-
-        
-    def _onMouseEvent(self, ev):
-        """Called when the mouse is clicked or dragged on the canvas.
-
-        Updates the canvas and display context location.
-        """
-
-        if not ev.LeftIsDown():       return
-        if len(self._imageList) == 0: return
-
-        mx, my  = ev.GetPositionTuple()
-        w, h    = self._lbCanvas.GetClientSize()
-
-        my = h - my
-
-        clickPos = self._lbCanvas.canvasToWorld(mx, my)
-
-        if clickPos is None:
-            return
-
-        xpos, ypos, zpos = clickPos
-
-        log.debug('Mouse click on {}: '
-                  '({}, {} -> {: 5.2f}, {: 5.2f}, {: 5.2f})'.format(
-                      self._lbCanvas.name, mx, my, *clickPos))
-
-        cpos = [clickPos[self._lbCanvas.xax],
-                clickPos[self._lbCanvas.yax],
-                clickPos[self._lbCanvas.zax]]
-
-        self._lbCanvas.pos.xyz = cpos
-        
-        self._displayCtx.location.xyz = clickPos

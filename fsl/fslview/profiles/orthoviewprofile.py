@@ -25,10 +25,27 @@ class OrthoViewProfile(object):
         self._canvasPanel = canvasPanel
         self._imageList   = imageList
         self._displayCtx  = displayCtx
-
-        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
+        self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
 
         self.register()
+
+        
+    def register(self):
+        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+
+
+    def deregister(self):
+        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    None)
+        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    None)
+        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    None)
 
         
     def _onMouseEvent(self, ev):
@@ -71,21 +88,3 @@ class OrthoViewProfile(object):
             self._displayCtx.location.xy = [xpos, ypos]
 
         self._displayCtx.enableListener('location', self._name)
-
-        
-    def register(self):
-        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-
-
-    def deregister(self):
-        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    None)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    None)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    None)
