@@ -19,10 +19,13 @@ log = logging.getLogger(__name__)
 
 import subprocess
 
+from collections import OrderedDict
+
 import wx
 
 import props
 
+import fsl.fslview.profiles                    as profiles
 import fsl.fslview.controlpanel                as controlpanel 
 import fsl.fslview.displaycontext              as displayctx
 import fsl.fslview.viewpanel                   as viewpanel
@@ -203,6 +206,10 @@ class CanvasPanel(viewpanel.ViewPanel):
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
 
+    profile = props.Choice(
+        OrderedDict([('view', 'View'),
+                     ('edit', 'Edit')]),
+        default='view')
 
     zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
 
@@ -228,7 +235,8 @@ class CanvasPanel(viewpanel.ViewPanel):
         'syncImageOrder'         : 'Synchronise image order',
         'syncVolume'             : 'Synchronise volume number',
         'colourBarLocation'      : 'Colour bar location',
-        'colourBarLabelSide'     : 'Colour bar label side'
+        'colourBarLabelSide'     : 'Colour bar label side',
+        'profile'                : 'Profile'
     }
 
 
@@ -245,6 +253,9 @@ class CanvasPanel(viewpanel.ViewPanel):
                  displayCtx):
         viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
+        self.__profileManager = profiles.ProfileManager(
+            self, imageList, displayCtx)
+        
         self.bindProps('syncLocation',
                        displayCtx,
                        displayCtx.getSyncPropertyName('location'))
@@ -320,6 +331,19 @@ class CanvasPanel(viewpanel.ViewPanel):
         self.addListener('showSettingsPanel',     lName, self.__layout)
 
         self.__layout()
+        self._init()
+
+        self.addListener('profile', lName, self.__profileChanged)
+        self.__profileChanged()
+
+
+    def _init(self):
+        raise NotImplementedError('CanvasPanel._init must be '
+                                  'provided by subclasses')
+
+
+    def __profileChanged(self, *a):
+        self.__profileManager.changeProfile(self.profile)
 
         
     def getCanvasPanel(self):

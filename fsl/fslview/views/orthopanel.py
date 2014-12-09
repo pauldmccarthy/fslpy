@@ -100,7 +100,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                          imageList,
                                          displayCtx)
 
+    def _init(self):
+
         canvasPanel = self.getCanvasPanel()
+        imageList   = self._imageList
+        displayCtx  = self._displayCtx
 
         # The canvases themselves - each one displays a
         # slice along each of the three world axes
@@ -174,14 +178,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx.addListener('selectedImage',
                                      self._name,
                                      self._imageListChanged)
-
-        # Callbacks for mouse events on the three xcanvases
-        self._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
@@ -651,44 +647,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         if self.zzoom != 100.0: self._zcanvas.panDisplayToShow(xpos, ypos)
 
 
-    def _onMouseEvent(self, ev):
-        """
-        Called on mouse movement and left clicks. The currently
-        displayed slices and cursor positions on each of the
-        canvases follow mouse clicks and drags.
-        """
-
-        if not ev.LeftIsDown():       return
-        if len(self._imageList) == 0: return
-
-        mx, my  = ev.GetPositionTuple()
-        source  = ev.GetEventObject()
-        w, h    = source.GetClientSize()
-
-        my = h - my
-
-        xpos, ypos = source.canvasToWorld(mx, my)
-        zpos       = source.pos.z
-
-        log.debug('Mouse click on canvas {}: ({}, {} -> {}, {})'.format(
-            source.name, mx, my, xpos, ypos))
-
-        if   source == self._xcanvas: self.setPosition(zpos, xpos, ypos)
-        elif source == self._ycanvas: self.setPosition(xpos, zpos, ypos)
-        elif source == self._zcanvas: self.setPosition(xpos, ypos, zpos)
-
-        self._displayCtx.disableListener('location', self._name)
-        
-        if   source == self._xcanvas:
-            self._displayCtx.location.yz = [xpos, ypos]
-        elif source == self._ycanvas:
-            self._displayCtx.location.xz = [xpos, ypos]
-        elif source == self._zcanvas:
-            self._displayCtx.location.xy = [xpos, ypos]
-            
-        self._displayCtx.enableListener('location', self._name)
- 
-            
 class OrthoFrame(wx.Frame):
     """
     Convenience class for displaying an OrthoPanel in a standalone window.

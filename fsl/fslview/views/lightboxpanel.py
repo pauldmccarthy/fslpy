@@ -54,6 +54,12 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                          imageList,
                                          displayCtx)
 
+
+    def _init(self):
+
+        imageList  = self._imageList
+        displayCtx = self._displayCtx
+
         self._scrollbar = wx.ScrollBar(
             self.getCanvasPanel(),
             style=wx.SB_VERTICAL)
