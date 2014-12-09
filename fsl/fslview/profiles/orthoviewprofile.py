@@ -10,6 +10,15 @@ log = logging.getLogger(__name__)
 
 import wx
 
+"""
+Behaviour to implement
+ - Left mouse click+drag to move location (as already implemented)
+ - Arrow keys move location ... on which canvas?
+ - Ctrl/Cmd+mouse wheel zooms into/out of all canvases
+ - Alt+left mouse click pans display (if zoom > 100%)
+ - Right mouse click+drag zooms into rectangle
+"""
+
 
 def register(canvasPanel, imageList, displayCtx):
     return OrthoViewProfile(canvasPanel, imageList, displayCtx)

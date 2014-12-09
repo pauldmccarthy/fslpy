@@ -675,4 +675,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             if self.showGridLines:  self._drawGridLines()
             if self.highlightSlice: self._drawSliceHighlight()
 
+        self._annotations.draw()
+
         self._postDraw()

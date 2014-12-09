@@ -28,8 +28,9 @@ import OpenGL.GL              as gl
 
 import props
 
-import fsl.data.image          as fslimage
-import fsl.fslview.gl.globject as globject
+import fsl.data.image             as fslimage
+import fsl.fslview.gl.globject    as globject
+import fsl.fslview.gl.annotations as annotations
 
 
 class SliceCanvas(props.HasProperties):
@@ -214,6 +215,13 @@ class SliceCanvas(props.HasProperties):
         if xoff != 0 or yoff != 0:
             self.panDisplayBy(xoff, yoff)
 
+
+    def getAnnotations(self):
+        """Returns a :class:`~fsl.fslview.gl.annotations.Annotations`
+        instance, which can be used to annotate the canvas. 
+        """
+        return self._annotations
+
         
     def __init__(self, imageList, displayCtx, zax=0):
         """Creates a canvas object. 
@@ -249,6 +257,8 @@ class SliceCanvas(props.HasProperties):
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
         self._zAxisChanged()
+
+        self._annotations = annotations.Annotations()
 
         # when any of the properties of this
         # canvas change, we need to redraw
@@ -671,4 +681,6 @@ class SliceCanvas(props.HasProperties):
             globj.postDraw()
         
         if self.showCursor: self._drawCursor()
+
+        self._annotations.draw()
         self._postDraw()

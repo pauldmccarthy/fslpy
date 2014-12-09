@@ -21,7 +21,9 @@ class ProfileManager(object):
         import fsl.fslview.views.lightboxpanel as lightboxpanel
 
         import orthoviewprofile
+        import orthoeditprofile
         import lightboxviewprofile
+        # import lightboxeditprofile
                 
         self._canvasPanel = canvasPanel
         self._imageList   = imageList
@@ -29,9 +31,11 @@ class ProfileManager(object):
 
         if isinstance(canvasPanel, orthopanel.OrthoPanel):
             self._viewProfile = orthoviewprofile
+            self._editProfile = orthoeditprofile
             
         elif isinstance(canvasPanel, lightboxpanel.LightBoxPanel):
             self._viewProfile = lightboxviewprofile
+            # self._editProfile = lightboxeditprofile
 
         self._currentProfile = None
         self._profileCtx     = None
@@ -41,8 +45,8 @@ class ProfileManager(object):
 
         if   profile == 'view':
             newProfile = self._viewProfile
-            # elif profile == 'edit':
-            #     pass
+        elif profile == 'edit':
+            newProfile = self._editProfile
         else:
             raise ValueError('Invalid profile specified: {}'.format(profile))
         
