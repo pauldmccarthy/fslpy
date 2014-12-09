@@ -151,11 +151,11 @@ class ControlStrip(controlpanel.ControlPanel):
     def __init__(self, parent, imageList, displayCtx, canvasPanel):
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._imageListButton    = wx.Button(self, label='IL')
-        self._displayPropsButton = wx.Button(self, label='ID')
-        self._locationButton     = wx.Button(self, label='LOC')
-        self._settingsButton     = wx.Button(self, label='DS')
-        self._screenShotButton   = wx.Button(self, label='SS')
+        self._imageListButton    = wx.Button(self, label='Image list')
+        self._displayPropsButton = wx.Button(self, label='Image display')
+        self._locationButton     = wx.Button(self, label='Location')
+        self._settingsButton     = wx.Button(self, label='Display settings')
+        self._screenShotButton   = wx.Button(self, label='Screen shot')
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
