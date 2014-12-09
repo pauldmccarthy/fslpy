@@ -627,7 +627,7 @@ class SliceCanvas(props.HasProperties):
         if x <= xmin: x = xmin + 0.5 * pixx
         if x >= xmax: x = xmax - 0.5 * pixx
         if y <= ymin: y = ymin + 0.5 * pixy
-        if y >= ymax: y = ymax - 0.5 * pixy 
+        if y >= ymax: y = ymax - 0.5 * pixy
 
         xverts[:, self.xax] = x
         yverts[:, self.yax] = y 
@@ -636,15 +636,9 @@ class SliceCanvas(props.HasProperties):
         yverts[:, self.xax] = [xmin, xmax]
         yverts[:, self.zax] =  self.pos.z + 1
 
-        gl.glLineWidth(1)
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd()
- 
+        self._annotations.line(xverts[0], xverts[1], (0, 1, 0), 1)
+        self._annotations.line(yverts[0], yverts[1], (0, 1, 0), 1)
+
 
     def _draw(self):
         """Draws the current scene to the canvas. 
