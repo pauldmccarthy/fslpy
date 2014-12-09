@@ -31,21 +31,27 @@ class OrthoViewProfile(object):
 
         
     def register(self):
-        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
-        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        xcanvas = self._canvasPanel.getXCanvas()
+        ycanvas = self._canvasPanel.getYCanvas()
+        zcanvas = self._canvasPanel.getZCanvas()
+        xcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        ycanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        zcanvas.Bind(wx.EVT_LEFT_DOWN, self._onMouseEvent)
+        xcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
+        zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
 
     def deregister(self):
-        self._canvasPanel._xcanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_LEFT_DOWN, None)
-        self._canvasPanel._xcanvas.Bind(wx.EVT_MOTION,    None)
-        self._canvasPanel._ycanvas.Bind(wx.EVT_MOTION,    None)
-        self._canvasPanel._zcanvas.Bind(wx.EVT_MOTION,    None)
+        xcanvas = self._canvasPanel.getXCanvas()
+        ycanvas = self._canvasPanel.getYCanvas()
+        zcanvas = self._canvasPanel.getZCanvas() 
+        xcanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        ycanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        zcanvas.Bind(wx.EVT_LEFT_DOWN, None)
+        xcanvas.Bind(wx.EVT_MOTION,    None)
+        ycanvas.Bind(wx.EVT_MOTION,    None)
+        zcanvas.Bind(wx.EVT_MOTION,    None)
 
         
     def _onMouseEvent(self, ev):
@@ -58,9 +64,9 @@ class OrthoViewProfile(object):
         if len(self._imageList) == 0: return
 
         orthoPanel = self._canvasPanel
-        xcanvas    = orthoPanel._xcanvas
-        ycanvas    = orthoPanel._ycanvas
-        zcanvas    = orthoPanel._zcanvas
+        xcanvas    = self._canvasPanel.getXCanvas()
+        ycanvas    = self._canvasPanel.getYCanvas()
+        zcanvas    = self._canvasPanel.getZCanvas() 
 
         mx, my  = ev.GetPositionTuple()
         source  = ev.GetEventObject()

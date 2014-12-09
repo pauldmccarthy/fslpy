@@ -32,19 +32,20 @@ class LightBoxViewProfile(object):
 
     def register(self):
 
-        canvasPanel = self._canvasPanel
+        canvas = self._canvasPanel.getCanvas()
 
-        canvasPanel._lbCanvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
-        canvasPanel._lbCanvas.Bind(wx.EVT_MOTION,     self._onMouseEvent)
-        canvasPanel._lbCanvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseWheel) 
+        canvas.Bind(wx.EVT_LEFT_DOWN,  self._onMouseEvent)
+        canvas.Bind(wx.EVT_MOTION,     self._onMouseEvent)
+        canvas.Bind(wx.EVT_MOUSEWHEEL, self._onMouseWheel) 
 
 
     def deregister(self):
-        canvasPanel = self._canvasPanel
 
-        canvasPanel._lbCanvas.Bind(wx.EVT_LEFT_DOWN,  None)
-        canvasPanel._lbCanvas.Bind(wx.EVT_MOTION,     None)
-        canvasPanel._lbCanvas.Bind(wx.EVT_MOUSEWHEEL, None)
+        canvas = self._canvasPanel.getCanvas()
+
+        canvas.Bind(wx.EVT_LEFT_DOWN,  None)
+        canvas.Bind(wx.EVT_MOTION,     None)
+        canvas.Bind(wx.EVT_MOUSEWHEEL, None)
         
 
     def _onMouseWheel(self, ev):
@@ -57,7 +58,7 @@ class LightBoxViewProfile(object):
         if   wheelDir > 0: wheelDir = -1
         elif wheelDir < 0: wheelDir =  1
 
-        self._canvasPanel._lbCanvas.topRow += wheelDir
+        self._canvasPanel.getCanvas().topRow += wheelDir
 
         
     def _onMouseEvent(self, ev):
@@ -69,7 +70,7 @@ class LightBoxViewProfile(object):
         if not ev.LeftIsDown():       return
         if len(self._imageList) == 0: return
 
-        canvas = self._canvasPanel._lbCanvas
+        canvas = self._canvasPanel.getCanvas()
 
         mx, my  = ev.GetPositionTuple()
         w, h    = canvas.GetClientSize()

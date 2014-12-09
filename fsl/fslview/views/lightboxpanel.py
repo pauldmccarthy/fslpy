@@ -124,6 +124,14 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self.Layout()
 
+
+    def getCanvas(self):
+        """Returns a reference to the
+        :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` instance
+        (which is actually a :class:`~fsl.fslview.gl.WXGLLightBoxCanvas`).
+        """
+        return self._lbCanvas
+
         
     def _onZoom(self, *a):
         """Called when the :attr:`zoom` property changes. Updates the

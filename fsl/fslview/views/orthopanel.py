@@ -208,7 +208,31 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._refreshLayout()
         self._imageListChanged()
         self._refreshLabels()
-        self.setPosition(*self._displayCtx.location) 
+        self.setPosition(*self._displayCtx.location)
+
+
+    def getXCanvas(self):
+        """Returns a reference to the
+        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instance displaying
+        the X axis.
+        """
+        return self._xcanvas
+
+    
+    def getYCanvas(self):
+        """Returns a reference to the
+        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instance displaying
+        the Y axis.
+        """ 
+        return self._ycanvas
+
+    
+    def getZCanvas(self):
+        """Returns a reference to the
+        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` instance displaying
+        the Z axis.
+        """ 
+        return self._zcanvas 
         
 
     def _toggleCanvas(self, canvas):
