@@ -511,14 +511,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             ymin + btmRow * ylen,
             ymin + topRow * ylen]), self.ncols - 1)
 
-        gl.glLineWidth(2)
-        gl.glBegin(gl.GL_LINES)
+        colour = (0.3, 0.9, 1.0, 0.8)
 
-        gl.glColor4f(0.3, 0.9, 1.0, 0.8)
-        for v in rowLines: gl.glVertex3f(*v)
-        for v in colLines: gl.glVertex3f(*v)
-        
-        gl.glEnd()
+        for i in range(0, len(rowLines), 2):
+            self._annotations.line(rowLines[i],  rowLines[i + 1], colour, 2)
+        for i in range(0, len(colLines), 2):
+            self._annotations.line(colLines[i],  colLines[i + 1], colour, 2) 
 
         
     def _drawSliceHighlight(self):
@@ -542,39 +540,15 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # in GL space, the top row is actually the bottom row
         row = self._totalRows - row - 1
 
-        verts = np.zeros((8, 3))
-        verts[:, self.zax] =  self.pos.z + 2
+        corner = np.zeros(3)
 
-        # left line
-        verts[0, self.xax] = xlen *  col
-        verts[0, self.yax] = ylen *  row
-        verts[1, self.xax] = xlen *  col
-        verts[1, self.yax] = ylen * (row + 1)
+        corner[self.xax] = xlen * col
+        corner[self.yax] = ylen * row
+        corner[self.zax] = self.pos.z + 2
 
-        # right line
-        verts[2, self.xax] = xlen * (col + 1)
-        verts[2, self.yax] = ylen *  row
-        verts[3, self.xax] = xlen * (col + 1)
-        verts[3, self.yax] = ylen * (row + 1)
+        corner = [corner[self.xax], corner[self.yax], corner[self.zax]]
 
-        # bottom line
-        verts[4, self.xax] = xlen *  col
-        verts[4, self.yax] = ylen *  row
-        verts[5, self.xax] = xlen * (col + 1)
-        verts[5, self.yax] = ylen *  row 
-
-        # top line
-        verts[6, self.xax] = xlen *  col
-        verts[6, self.yax] = ylen * (row + 1)
-        verts[7, self.xax] = xlen * (col + 1)
-        verts[7, self.yax] = ylen * (row + 1)
-        
-        gl.glLineWidth(1)
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(1, 0, 0)
-        for i in range(8):
-            gl.glVertex3f(*verts[i])
-        gl.glEnd() 
+        self._annotations.rect(corner, xlen, ylen, (1, 0, 0))
 
         
     def _drawCursor(self):

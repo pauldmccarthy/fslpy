@@ -35,18 +35,23 @@ class Annotations(object):
                 break
 
 
+def _adjustColour(colour):
+    if len(colour) == 3: return (colour[0], colour[1], colour[2], 1.0)
+    else:                return colour
+
+
 class Line(object):
 
     def __init__(self, xyz1, xyz2, colour, width=1):
         self.xyz1   = xyz1
         self.xyz2   = xyz2
-        self.colour = colour
+        self.colour = _adjustColour(colour)
         self.width  = width
 
     def draw(self):
         gl.glLineWidth(self.width)
         gl.glBegin(gl.GL_LINES)
-        gl.glColor3f( *self.colour)
+        gl.glColor4f( *self.colour)
         gl.glVertex3f(*self.xyz1)
         gl.glVertex3f(*self.xyz2)
         gl.glEnd() 
@@ -58,7 +63,7 @@ class Rect(object):
         self.xyz       = xyz
         self.width     = width
         self.height    = height
-        self.colour    = colour
+        self.colour    = _adjustColour(colour)
         self.lineWidth = lineWidth
 
     def draw(self):
@@ -96,7 +101,7 @@ class Rect(object):
         
         gl.glLineWidth(self.lineWidth)
         gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(*self.colour)
+        gl.glColor4f(*self.colour)
         for i in range(8):
             gl.glVertex3f(*verts[i])
         gl.glEnd() 
