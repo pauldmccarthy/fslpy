@@ -494,6 +494,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         
         topRow = self._totalRows - self.topRow 
         btmRow = topRow          - self.nrows
+
+        rowLines[:, self.zax] = self.pos.z
+        colLines[:, self.zax] = self.pos.z
         
         rowLines[:, self.yax] = np.arange(
             ymin + (btmRow + 1) * ylen,
@@ -540,15 +543,31 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # in GL space, the top row is actually the bottom row
         row = self._totalRows - row - 1
 
-        corner = np.zeros(3)
+        corners = np.zeros((4, 3))
 
-        corner[self.xax] = xlen * col
-        corner[self.yax] = ylen * row
-        corner[self.zax] = self.pos.z + 2
+        corners[:, self.zax] = self.pos.z
 
-        corner = [corner[self.xax], corner[self.yax], corner[self.zax]]
+        # bottom left
+        corners[0, self.xax] = xlen * col
+        corners[0, self.yax] = ylen * row
 
-        self._annotations.rect(corner, xlen, ylen, (1, 0, 0))
+        # bottom right
+        corners[1, self.xax] = xlen * (col + 1)
+        corners[1, self.yax] = ylen *  row
+
+        # top left
+        corners[2, self.xax] = xlen *  col
+        corners[2, self.yax] = ylen * (row + 1)
+        
+        # top right
+        corners[3, self.xax] = xlen * (col + 1)
+        corners[3, self.yax] = ylen * (row + 1) 
+
+        self._annotations.rect(corners[0],
+                               corners[1],
+                               corners[2],
+                               corners[3],
+                               (1, 0, 0))
 
         
     def _drawCursor(self):
@@ -582,12 +601,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         xverts[:, self.xax] = xpos
         xverts[0, self.yax] = ymin + (row)     * ylen
         xverts[1, self.yax] = ymin + (row + 1) * ylen
-        xverts[:, self.zax] = self.pos.z + 1
+        xverts[:, self.zax] = self.pos.z
 
         yverts[:, self.yax] = ypos
         yverts[0, self.xax] = xmin + (col)     * xlen
         yverts[1, self.xax] = xmin + (col + 1) * xlen
-        yverts[:, self.zax] = self.pos.z + 1
+        yverts[:, self.zax] = self.pos.z
 
         gl.glLineWidth(1)
         gl.glBegin(gl.GL_LINES)

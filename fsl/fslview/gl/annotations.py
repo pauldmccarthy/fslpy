@@ -59,45 +59,25 @@ class Line(object):
         
 class Rect(object):
 
-    def __init__(self, xyz, width, height, colour, lineWidth=1):
-        self.xyz       = xyz
-        self.width     = width
-        self.height    = height
+    def __init__(self, bl, br, tl, tr, colour, lineWidth=1):
+        self.bl        = bl
+        self.br        = br
+        self.tl        = tl
+        self.tr        = tr
         self.colour    = _adjustColour(colour)
         self.lineWidth = lineWidth
 
     def draw(self):
 
-        x, y, z = self.xyz
-        width   = self.width
-        height  = self.height
-
         verts = np.zeros((8, 3))
-        verts[:, 2] = z
-
-        # left line
-        verts[0, 0] = x
-        verts[0, 1] = y
-        verts[1, 0] = x
-        verts[1, 1] = y + height
-
-        # right line
-        verts[2, 0] = x + width
-        verts[2, 1] = y
-        verts[3, 0] = x + width
-        verts[3, 1] = y + height
-
-        # bottom line
-        verts[4, 0] = x
-        verts[4, 1] = y
-        verts[5, 0] = x + width
-        verts[5, 1] = y
-
-        # top line
-        verts[6, 0] = x
-        verts[6, 1] = y + height
-        verts[7, 0] = x + width
-        verts[7, 1] = y + height
+        verts[0, :] = self.bl
+        verts[1, :] = self.br
+        verts[2, :] = self.tl
+        verts[3, :] = self.tr
+        verts[4, :] = self.bl
+        verts[5, :] = self.tl
+        verts[6, :] = self.br
+        verts[7, :] = self.tr 
         
         gl.glLineWidth(self.lineWidth)
         gl.glBegin(gl.GL_LINES)
