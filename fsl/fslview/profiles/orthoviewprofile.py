@@ -92,14 +92,3 @@ class OrthoViewProfile(object):
         if   source == xcanvas: orthoPanel.setPosition(zpos, xpos, ypos)
         elif source == ycanvas: orthoPanel.setPosition(xpos, zpos, ypos)
         elif source == zcanvas: orthoPanel.setPosition(xpos, ypos, zpos)
-
-        self._displayCtx.disableListener('location', self._name)
-
-        if   source == xcanvas:
-            self._displayCtx.location.yz = [xpos, ypos]
-        elif source == ycanvas:
-            self._displayCtx.location.xz = [xpos, ypos]
-        elif source == zcanvas:
-            self._displayCtx.location.xy = [xpos, ypos]
-
-        self._displayCtx.enableListener('location', self._name)

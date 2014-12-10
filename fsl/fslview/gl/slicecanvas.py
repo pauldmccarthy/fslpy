@@ -256,9 +256,14 @@ class SliceCanvas(props.HasProperties):
         self.zax = zax
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
-        self._zAxisChanged()
 
-        self._annotations = annotations.Annotations()
+        self._annotations = annotations.Annotations(imageList,
+                                                    displayCtx,
+                                                    self.xax,
+                                                    self.yax,
+                                                    self.zax)
+
+        self._zAxisChanged()
 
         # when any of the properties of this
         # canvas change, we need to redraw
@@ -328,6 +333,8 @@ class SliceCanvas(props.HasProperties):
             glData.setAxes(self.xax, self.yax)
 
         self._imageBoundsChanged()
+
+        self._annotations.changeAxes(self.xax, self.yax, self.zax)
         
         # Reset the canvas position as, because the
         # z axis has been changed, the old coordinates
