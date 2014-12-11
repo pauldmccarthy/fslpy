@@ -320,3 +320,53 @@ def samplePointsToTriangleStrip(coords,
     texCoords   = texCoords  .reshape((xlen + 1) * (2 * ylen), 3)
 
     return worldCoords, texCoords, indices
+
+
+def voxelGrid(points, xax, yax, xpixdim, ypixdim):
+    """Given a ``N*3`` array of ``points`` (assumed to be voxel
+    coordinates), creates an array of vertices which can be used
+    to render each point as an unfilled rectangle.
+
+    :arg points:  An ``N*3`` array of voxel xyz coordinates
+
+    :arg xax:     XYZ axis index that maps to the horizontal scren axis
+    
+    :arg yax:     XYZ axis index that maps to the vertical scren axis
+    
+    :arg xpixdim: Length of a voxel along the x axis.
+    
+    :arg ypixdim: Length of a voxel along the y axis.
+    """
+
+    if len(points.shape) == 1:
+        points = points.reshape(1, 3)
+
+    npoints  = points.shape[0]
+    vertices = np.repeat(np.array(points, dtype=np.float32), 4, axis=0)
+
+    xpixdim = xpixdim / 2.0
+    ypixdim = ypixdim / 2.0
+
+    # bottom left corner
+    vertices[ ::4, xax] -= xpixdim 
+    vertices[ ::4, yax] -= ypixdim
+
+    # bottom right
+    vertices[1::4, xax] += xpixdim
+    vertices[1::4, yax] -= ypixdim
+    
+    # top left
+    vertices[2::4, xax] -= xpixdim
+    vertices[2::4, yax] += ypixdim
+
+    # top right
+    vertices[3::4, xax] += xpixdim
+    vertices[3::4, yax] += ypixdim
+
+    # each square is rendered as four lines
+    indices = np.array([0, 1, 0, 2, 1, 3, 2, 3], dtype=np.uint32)
+    indices = np.tile(indices, npoints)
+    
+    indices = (indices.T + np.repeat(np.arange(0, npoints * 4, 4), 8)).T
+    
+    return vertices, indices

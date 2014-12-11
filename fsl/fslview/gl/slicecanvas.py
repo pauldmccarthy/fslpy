@@ -257,11 +257,7 @@ class SliceCanvas(props.HasProperties):
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
 
-        self._annotations = annotations.Annotations(imageList,
-                                                    displayCtx,
-                                                    self.xax,
-                                                    self.yax,
-                                                    self.zax)
+        self._annotations = annotations.Annotations(imageList, displayCtx)
 
         self._zAxisChanged()
 
@@ -334,8 +330,6 @@ class SliceCanvas(props.HasProperties):
 
         self._imageBoundsChanged()
 
-        self._annotations.changeAxes(self.xax, self.yax, self.zax)
-        
         # Reset the canvas position as, because the
         # z axis has been changed, the old coordinates
         # will be in the wrong dimension order
@@ -617,8 +611,8 @@ class SliceCanvas(props.HasProperties):
         """Draws a green cursor at the current X/Y position."""
         
         # A vertical line at xpos, and a horizontal line at ypos
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3))
+        xverts = np.zeros((2, 2))
+        yverts = np.zeros((2, 2))
 
         xmin, xmax = self.displayCtx.bounds.getRange(self.xax)
         ymin, ymax = self.displayCtx.bounds.getRange(self.yax)
@@ -636,15 +630,13 @@ class SliceCanvas(props.HasProperties):
         if y <= ymin: y = ymin + 0.5 * pixy
         if y >= ymax: y = ymax - 0.5 * pixy
 
-        xverts[:, self.xax] = x
-        yverts[:, self.yax] = y 
-        xverts[:, self.yax] = [ymin, ymax]
-        xverts[:, self.zax] =  self.pos.z + 1
-        yverts[:, self.xax] = [xmin, xmax]
-        yverts[:, self.zax] =  self.pos.z + 1
-
-        self._annotations.line(xverts[0], xverts[1], (0, 1, 0), 1)
-        self._annotations.line(yverts[0], yverts[1], (0, 1, 0), 1)
+        xverts[:, 0] = x
+        xverts[:, 1] = [ymin, ymax]
+        yverts[:, 0] = [xmin, xmax]
+        yverts[:, 1] = y 
+        
+        self._annotations.line(xverts[0], xverts[1], colour=(0, 1, 0))
+        self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0))
 
 
     def _draw(self):
@@ -683,5 +675,5 @@ class SliceCanvas(props.HasProperties):
         
         if self.showCursor: self._drawCursor()
 
-        self._annotations.draw()
+        self._annotations.draw(self.xax, self.yax, self.zax, self.pos.z)
         self._postDraw()

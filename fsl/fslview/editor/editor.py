@@ -13,9 +13,6 @@ import collections
 import numpy as np
 
 
-import fsl.fslview.gl.annotations as annotations
-
-
 class Change(object):
     
     def __init__(self, image, selection, oldVals, newVals):
@@ -32,6 +29,9 @@ class Selection(object):
         self.image     = image
         self.selection = np.zeros(image.shape, dtype=np.bool)
 
+        self._selectedCache = None
+        
+
         
     def addToSelection(self, xyzs):
         xyzs = xyzs.T
@@ -40,15 +40,23 @@ class Selection(object):
         zs   = xyzs[2]
 
         self.selection[xs, ys, zs] = True
+        self._selectedCache        = None
 
     
     def clearSelection(self):
-        self.selection[:] = False
+        self.selection[:]   = False
+        self._selectedCache = None
+
 
 
     def getSelection(self):
-        xs, ys, zs = np.where(self.selection)
-        return np.array([xs, ys, zs]).T
+        
+        if self._selectedCache is None:
+            xs, ys, zs          = np.where(self.selection)
+            self._selectedCache = np.vstack((xs, ys, zs)).T
+
+        return self._selectedCache
+
 
         
     def getSelectionSize(self):
@@ -88,7 +96,7 @@ class Editor(object):
 
         if len(self._imageList) == 0:
             self._selection       = None
-            self.addToSelection   = None
+            self.addToSelection   = None 
             self.clearSelection   = None
             self.getSelection     = None
             self.getSelectionSize = None
@@ -96,8 +104,7 @@ class Editor(object):
         
         image = self._displayCtx.getSelectedImage()
         
-        self._selection = Selection(image)
-
+        self._selection       = Selection(image)
         self.addToSelection   = self._selection.addToSelection
         self.clearSelection   = self._selection.clearSelection
         self.getSelection     = self._selection.getSelection

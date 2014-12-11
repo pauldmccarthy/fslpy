@@ -50,14 +50,6 @@ class OrthoEditProfile(object):
         ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
-
-        # Do this on image changed
-        image   = self._imageList[0]
-        display = self._displayCtx.getDisplayProperties(image)
-
-        self._region = annotations.VoxelRegion(display.voxToDisplayMat)
- 
-
     
     def deregister(self):
         xcanvas = self._canvasPanel.getXCanvas()
@@ -70,7 +62,7 @@ class OrthoEditProfile(object):
         ycanvas.Bind(wx.EVT_MOTION,    None)
         zcanvas.Bind(wx.EVT_MOTION,    None) 
 
-
+    @profile
     def _onMouseEvent(self, ev):
 
         if not ev.LeftIsDown():       return
@@ -99,26 +91,28 @@ class OrthoEditProfile(object):
 
         voxel = np.array(np.round(voxel), dtype=np.int32)
 
-        block = np.tile(voxel, (9, 1))
+        blockSize = 25
+        halfBlock = int(blockSize / 2)
 
-        block[  :3, source.yax] += 1
-        block[6:,   source.yax] -= 1
-        block[ ::3, source.xax] -= 1
-        block[2::3, source.xax] += 1
+        blockx, blocky = np.meshgrid(
+            np.arange(voxel[source.xax] - halfBlock,
+                      voxel[source.xax] + halfBlock + 1),
+            np.arange(voxel[source.yax] - halfBlock,
+                      voxel[source.yax] + halfBlock + 1))
 
+        blockx = blockx.flat
+        blocky = blocky.flat
+        blockz = np.repeat(voxel[source.zax], blockSize * blockSize)
+
+        block  = [None] * 3
+        block[source.xax] = blockx
+        block[source.yax] = blocky
+        block[source.zax] = blockz
+        
+        block = np.vstack(block).T
         self._editor.addToSelection(block)
-        self._region.addVoxels(     block)
 
-        xcanvas = self._canvasPanel.getXCanvas()
-        ycanvas = self._canvasPanel.getYCanvas()
-        zcanvas = self._canvasPanel.getZCanvas()
+        selected = self._editor.getSelection()
 
-        # selected = self._editor.getSelection()
-
-        xcanvas.getAnnotations().obj(self._region)
-        ycanvas.getAnnotations().obj(self._region)
-        zcanvas.getAnnotations().obj(self._region)
-
-        xcanvas.Refresh()
-        ycanvas.Refresh()
-        zcanvas.Refresh()
+        source.getAnnotations().selection(selected)
+        source.Refresh()
