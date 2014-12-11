@@ -181,10 +181,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
-        def move(*a):
-            self.setPosition(*self._displayCtx.location)
-
-        self._displayCtx.addListener('location', self._name, move) 
+        self._displayCtx.addListener('location',
+                                     self._name,
+                                     self._locationChanged) 
 
         # Callbacks for toggling x/y/z canvas display
         self.addListener('showXCanvas',
@@ -208,7 +207,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._refreshLayout()
         self._imageListChanged()
         self._refreshLabels()
-        self.setPosition(*self._displayCtx.location)
+        self._locationChanged()
 
 
     def getXCanvas(self):
@@ -656,11 +655,13 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self.Refresh()
 
 
-    def setPosition(self, xpos, ypos, zpos):
+    def _locationChanged(self, *a):
         """
-        Sets the currently displayed x/y/z position (in real world
+        Sets the currently displayed x/y/z position (in display
         coordinates).
         """
+
+        xpos, ypos, zpos = self._displayCtx.location.xyz
 
         self._xcanvas.pos.xyz = [ypos, zpos, xpos]
         self._ycanvas.pos.xyz = [xpos, zpos, ypos]

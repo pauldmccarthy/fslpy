@@ -8,13 +8,13 @@
 functionality to draw 2D OpenGL annotations on a canvas
 
 The :class:`Annotations` class is used by the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class.
+:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and users of that
+class, to annotate the canvas.
 """
 
 import logging
 log = logging.getLogger(__name__)
 
-import Queue
 
 import numpy     as np
 import OpenGL.GL as gl
