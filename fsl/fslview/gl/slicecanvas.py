@@ -152,30 +152,39 @@ class SliceCanvas(props.HasProperties):
 
         if len(self.imageList) == 0: return
         
-        bounds = self.displayBounds
+        dispBounds = self.displayBounds
+        imgBounds  = self.displayCtx.bounds
 
-        xmin, xmax, ymin, ymax = bounds[:]
+        xmin, xmax, ymin, ymax = self.displayBounds[:]
 
         xmin = xmin + xoff
         xmax = xmax + xoff
         ymin = ymin + yoff
         ymax = ymax + yoff
 
-        if xmin < bounds.getMin(0):
-            xmin = bounds.getMin(0)
-            xmax = xmin + bounds.getLen(0)
+        if dispBounds.xlen > imgBounds.getLen(self.xax):
+            xmin = dispBounds.xlo
+            xmax = dispBounds.xhi
             
-        elif xmax > bounds.getMax(0):
-            xmax = bounds.getMax(0)
-            xmin = xmax - bounds.getLen(0)
+        elif xmin < imgBounds.getLo(self.xax):
+            xmin = imgBounds.getLo(self.xax)
+            xmax = xmin + self.displayBounds.getLen(0)
             
-        if ymin < bounds.getMin(1):
-            ymin = bounds.getMin(1)
-            ymax = ymin + bounds.getLen(1)
+        elif xmax > imgBounds.getHi(self.xax):
+            xmax = imgBounds.getHi(self.xax)
+            xmin = xmax - self.displayBounds.getLen(0)
+            
+        if dispBounds.ylen > imgBounds.getLen(self.yax):
+            ymin = dispBounds.ylo
+            ymax = dispBounds.yhi
+            
+        elif ymin < imgBounds.getLo(self.yax):
+            ymin = imgBounds.getLo(self.yax)
+            ymax = ymin + self.displayBounds.getLen(1)
 
-        elif ymax > bounds.getMax(1):
-            ymax = bounds.getMax(1)
-            ymin = ymax - bounds.getLen(1) 
+        elif ymax > imgBounds.getHi(self.yax):
+            ymax = imgBounds.getHi(self.yax)
+            ymin = ymax - self.displayBounds.getLen(1)
 
         self.displayBounds[:] = [xmin, xmax, ymin, ymax]
 
@@ -674,7 +683,6 @@ class SliceCanvas(props.HasProperties):
             globj.postDraw()
         
         if self.showCursor: self._drawCursor()
-#         print 'SliceCanvas Z={} pos: {}'.format(self.zax, self.pos.xyz)
 
         self._annotations.draw(self.xax, self.yax, self.zax, self.pos.z)
         self._postDraw()
