@@ -29,7 +29,8 @@ class Annotations(object):
     
     def __init__(self, imageList, displayCtx):
         
-        self._q          = Queue.Queue()
+        self._q          = []
+        self._holdq      = []
         self._imageList  = imageList
         self._displayCtx = displayCtx
 
@@ -39,8 +40,15 @@ class Annotations(object):
         else:                return colour
 
         
-    def line(self, *args, **kwargs): self._q.put(Line(*args, **kwargs))
-    def rect(self, *args, **kwargs): self._q.put(Rect(*args, **kwargs))
+    def line(self, *args, **kwargs):
+        
+        hold = kwargs.pop('hold', False)
+        self.obj(Line(*args, **kwargs), hold)
+
+        
+    def rect(self, *args, **kwargs):
+        hold = kwargs.pop('hold', False)
+        self.obj(Rect(*args, **kwargs), hold)
 
 
     def selection(self, voxels, imageIdx=None, *args, **kwargs):
@@ -54,53 +62,59 @@ class Annotations(object):
         image   = self._imageList[imageIdx]
         display = self._displayCtx.getDisplayProperties(image)
 
-        self._q.put(VoxelSelection(voxels,
-                                   xform=display.voxToDisplayMat,
-                                   *args, **kwargs))
+        hold = kwargs.pop('hold', False)
+        self.obj(VoxelSelection(voxels,
+                                xform=display.voxToDisplayMat,
+                                *args, **kwargs), hold)
 
         
-    def obj(self, obj):
-        self._q.put(obj)
+    def obj(self, obj, hold=False):
+        
+        if hold: self._holdq.append(obj)
+        else:    self._q    .append(obj)
+
+
+    def clear(self):
+        self._q     = []
+        self._holdq = []
         
 
     def draw(self, xax, yax, zax, zpos):
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-        while True:
+        objs = self._holdq + self._q
 
-            zpos = zpos + 1
-            try:
-                
-                obj            = self._q.get_nowait()
-                verts, indices = obj.vertices(xax, yax)
+        for obj in objs:
 
-                verts[:, zax] = zpos
+            verts, indices = obj.vertices(xax, yax, zax, zpos)
 
-                verts   = np.array(verts,   dtype=np.float32).ravel('C')
-                indices = np.array(indices, dtype=np.uint32)
-                
-                if obj.xform is not None:
-                    gl.glMatrixMode(gl.GL_MODELVIEW)
-                    gl.glPushMatrix()
-                    gl.glMultMatrixf(obj.xform.ravel('C'))
-                
-                gl.glColor4f(*self._adjustColour(obj.colour))
-                gl.glLineWidth(obj.width)
+            verts[:, zax] = zpos
 
-                gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts)
+            verts   = np.array(verts,   dtype=np.float32).ravel('C')
+            indices = np.array(indices, dtype=np.uint32)
 
-                gl.glDrawElements(gl.GL_LINES,
-                                  len(indices),
-                                  gl.GL_UNSIGNED_INT,
-                                  indices)
+            if obj.xform is not None:
+                gl.glMatrixMode(gl.GL_MODELVIEW)
+                gl.glPushMatrix()
+                gl.glMultMatrixf(obj.xform.ravel('C'))
 
-                if obj.xform is not None:
-                    gl.glPopMatrix()
-                
-            except Queue.Empty:
-                break
+            gl.glColor4f(*self._adjustColour(obj.colour))
+            gl.glLineWidth(obj.width)
+
+            gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts)
+
+            gl.glDrawElements(gl.GL_LINES,
+                              len(indices),
+                              gl.GL_UNSIGNED_INT,
+                              indices)
+
+            if obj.xform is not None:
+                gl.glPopMatrix()
+            
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
+        self._q = []
 
 
 class AnnotationObject(object):
@@ -122,7 +136,7 @@ class Line(AnnotationObject):
         self.xy1       = xy1
         self.xy2       = xy2
         
-    def vertices(self, xax, yax):
+    def vertices(self, xax, yax, zax, zpos):
         
         verts                = np.zeros((2, 3))
         verts[0, [xax, yax]] = self.xy1
@@ -141,7 +155,7 @@ class Rect(AnnotationObject):
         self.tr        = tr
 
         
-    def vertices(self, xax, yax):
+    def vertices(self, xax, yax, zax, zpos):
 
         verts                = np.zeros((8, 3))
         verts[0, [xax, yax]] = self.bl
@@ -159,16 +173,30 @@ class Rect(AnnotationObject):
 class VoxelSelection(AnnotationObject):
 
     
-    def __init__(self, voxels, *args, **kwargs):
+    def __init__(self, selection, displayToVoxMat, *args, **kwargs):
         AnnotationObject.__init__(self, *args, **kwargs)
 
-        
-        self.voxels = voxels
+        self.displayToVoxMat = displayToVoxMat
+        self.selection       = selection
 
 
-    def vertices(self, xax, yax):
+    def vertices(self, xax, yax, zax, zpos):
 
-        return globject.voxelGrid(self.voxels, xax, yax, 1, 1)
+        dispLoc = [0] * 3
+        dispLoc[zax] = zpos
+        voxLoc = transform.transform([dispLoc], self.displayToVoxMat)[0]
+
+        vox = int(round(voxLoc[zax]))
+
+        restrictions = [None] * 3
+
+        restrictions[xax] = slice(None)
+        restrictions[yax] = slice(None)
+        restrictions[zax] = slice(vox, vox + 1)
+
+        voxels = self.selection.getSelection(restrictions)
+
+        return globject.voxelGrid(voxels, xax, yax, 1, 1)
 
 # class Text(AnnotationObject) ?
 # class Circle(AnnotationObject) ?

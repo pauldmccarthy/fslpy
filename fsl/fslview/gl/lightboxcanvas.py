@@ -489,37 +489,37 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         xmin = self.displayCtx.bounds.getLo( self.xax)
         ymin = self.displayCtx.bounds.getLo( self.yax)
 
-        rowLines = np.zeros(((self.nrows - 1) * 2, 3), dtype=np.float32)
-        colLines = np.zeros(((self.ncols - 1) * 2, 3), dtype=np.float32)
+        rowLines = np.zeros(((self.nrows - 1) * 2, 2), dtype=np.float32)
+        colLines = np.zeros(((self.ncols - 1) * 2, 2), dtype=np.float32)
         
         topRow = self._totalRows - self.topRow 
         btmRow = topRow          - self.nrows
 
-        rowLines[:, self.zax] = self.pos.z
-        colLines[:, self.zax] = self.pos.z
-        
-        rowLines[:, self.yax] = np.arange(
+        rowLines[:, 1] = np.arange(
             ymin + (btmRow + 1) * ylen,
             ymin +  topRow      * ylen, ylen).repeat(2)
 
-        rowLines[:, self.xax] = np.tile(
+        rowLines[:, 0] = np.tile(
             np.array([xmin, xmin + self.ncols * xlen]),
             self.nrows - 1)
         
-        colLines[:, self.xax] = np.arange(
+        colLines[:, 0] = np.arange(
             xmin + xlen,
             xmin + xlen * self.ncols, xlen).repeat(2) 
         
-        colLines[:, self.yax] = np.tile(np.array([
+        colLines[:, 1] = np.tile(np.array([
             ymin + btmRow * ylen,
             ymin + topRow * ylen]), self.ncols - 1)
 
         colour = (0.3, 0.9, 1.0, 0.8)
 
-        for i in range(0, len(rowLines), 2):
-            self._annotations.line(rowLines[i],  rowLines[i + 1], colour, 2)
-        for i in range(0, len(colLines), 2):
-            self._annotations.line(colLines[i],  colLines[i + 1], colour, 2) 
+        for lines in (rowLines, colLines):
+            for i in range(0, len(lines), 2):
+                self.getAnnotations().line(lines[i],
+                                           lines[i + 1],
+                                           colour=colour,
+                                           width=2)
+
 
         
     def _drawSliceHighlight(self):
@@ -543,31 +543,30 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # in GL space, the top row is actually the bottom row
         row = self._totalRows - row - 1
 
-        corners = np.zeros((4, 3))
-
-        corners[:, self.zax] = self.pos.z
+        corners = np.zeros((4, 2))
 
         # bottom left
-        corners[0, self.xax] = xlen * col
-        corners[0, self.yax] = ylen * row
+        corners[0, 0] = xlen * col
+        corners[0, 1] = ylen * row
 
         # bottom right
-        corners[1, self.xax] = xlen * (col + 1)
-        corners[1, self.yax] = ylen *  row
+        corners[1, 0] = xlen * (col + 1)
+        corners[1, 1] = ylen *  row
 
         # top left
-        corners[2, self.xax] = xlen *  col
-        corners[2, self.yax] = ylen * (row + 1)
+        corners[2, 0] = xlen *  col
+        corners[2, 1] = ylen * (row + 1)
         
         # top right
-        corners[3, self.xax] = xlen * (col + 1)
-        corners[3, self.yax] = ylen * (row + 1) 
+        corners[3, 0] = xlen * (col + 1)
+        corners[3, 1] = ylen * (row + 1) 
 
-        self._annotations.rect(corners[0],
-                               corners[1],
-                               corners[2],
-                               corners[3],
-                               (1, 0, 0))
+        self.getAnnotations().rect(corners[0],
+                                   corners[1],
+                                   corners[2],
+                                   corners[3],
+                                   colour=(1, 0, 0),
+                                   width=2)
 
         
     def _drawCursor(self):
@@ -595,27 +594,19 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         xpos, ypos = self.worldToCanvas(*self.pos.xyz)
 
-        xverts = np.zeros((2, 3))
-        yverts = np.zeros((2, 3)) 
+        xverts = np.zeros((2, 2))
+        yverts = np.zeros((2, 2)) 
 
-        xverts[:, self.xax] = xpos
-        xverts[0, self.yax] = ymin + (row)     * ylen
-        xverts[1, self.yax] = ymin + (row + 1) * ylen
-        xverts[:, self.zax] = self.pos.z
+        xverts[:, 0] = xpos
+        xverts[0, 1] = ymin + (row)     * ylen
+        xverts[1, 1] = ymin + (row + 1) * ylen
 
-        yverts[:, self.yax] = ypos
-        yverts[0, self.xax] = xmin + (col)     * xlen
-        yverts[1, self.xax] = xmin + (col + 1) * xlen
-        yverts[:, self.zax] = self.pos.z
+        yverts[:, 1] = ypos
+        yverts[0, 0] = xmin + (col)     * xlen
+        yverts[1, 0] = xmin + (col + 1) * xlen
 
-        gl.glLineWidth(1)
-        gl.glBegin(gl.GL_LINES)
-        gl.glColor3f(0, 1, 0)
-        gl.glVertex3f(*xverts[0])
-        gl.glVertex3f(*xverts[1])
-        gl.glVertex3f(*yverts[0])
-        gl.glVertex3f(*yverts[1])
-        gl.glEnd() 
+        self.getAnnotations().line(xverts[0], xverts[1], colour=(0, 1, 0))
+        self.getAnnotations().line(yverts[0], yverts[1], colour=(0, 1, 0))
 
         
     def _draw(self):
@@ -668,6 +659,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             if self.showGridLines:  self._drawGridLines()
             if self.highlightSlice: self._drawSliceHighlight()
 
-        self._annotations.draw()
+        self.getAnnotations().draw(self.xax, self.yax, self.zax, self.pos.z)
 
         self._postDraw()

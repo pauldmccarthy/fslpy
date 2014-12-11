@@ -50,6 +50,20 @@ class OrthoEditProfile(object):
         ycanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
         zcanvas.Bind(wx.EVT_MOTION,    self._onMouseEvent)
 
+        selection = self._editor._selection
+
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        voxelSelection = annotations.VoxelSelection(
+            selection,
+            displayToVoxMat=display.displayToVoxMat,
+            xform=display.voxToDisplayMat)
+
+        xcanvas.getAnnotations().obj(voxelSelection, hold=True)
+        ycanvas.getAnnotations().obj(voxelSelection, hold=True)
+        zcanvas.getAnnotations().obj(voxelSelection, hold=True)
+
     
     def deregister(self):
         xcanvas = self._canvasPanel.getXCanvas()
@@ -60,9 +74,13 @@ class OrthoEditProfile(object):
         zcanvas.Bind(wx.EVT_LEFT_DOWN, None)
         xcanvas.Bind(wx.EVT_MOTION,    None)
         ycanvas.Bind(wx.EVT_MOTION,    None)
-        zcanvas.Bind(wx.EVT_MOTION,    None) 
+        zcanvas.Bind(wx.EVT_MOTION,    None)
 
-    @profile
+        xcanvas.getAnnotations().clear()
+        ycanvas.getAnnotations().clear()
+        zcanvas.getAnnotations().clear()
+
+        
     def _onMouseEvent(self, ev):
 
         if not ev.LeftIsDown():       return
@@ -91,28 +109,12 @@ class OrthoEditProfile(object):
 
         voxel = np.array(np.round(voxel), dtype=np.int32)
 
-        blockSize = 25
-        halfBlock = int(blockSize / 2)
+        if wx.GetKeyState(wx.WXK_CONTROL):
+            value = image.data[voxel[0], voxel[1], voxel[2]]
+            self._editor.getSelection().clearSelection()
+            self._editor.getSelection().selectByValue(value, precision=100)
+        else:
+            self._editor.getSelection().selectBlock(
+                voxel, 25) # , [source.xax, source.yax])
 
-        blockx, blocky = np.meshgrid(
-            np.arange(voxel[source.xax] - halfBlock,
-                      voxel[source.xax] + halfBlock + 1),
-            np.arange(voxel[source.yax] - halfBlock,
-                      voxel[source.yax] + halfBlock + 1))
-
-        blockx = blockx.flat
-        blocky = blocky.flat
-        blockz = np.repeat(voxel[source.zax], blockSize * blockSize)
-
-        block  = [None] * 3
-        block[source.xax] = blockx
-        block[source.yax] = blocky
-        block[source.zax] = blockz
-        
-        block = np.vstack(block).T
-        self._editor.addToSelection(block)
-
-        selected = self._editor.getSelection()
-
-        source.getAnnotations().selection(selected)
-        source.Refresh()
+        self._canvasPanel.Refresh()

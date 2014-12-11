@@ -674,6 +674,7 @@ class SliceCanvas(props.HasProperties):
             globj.postDraw()
         
         if self.showCursor: self._drawCursor()
+#         print 'SliceCanvas Z={} pos: {}'.format(self.zax, self.pos.xyz)
 
         self._annotations.draw(self.xax, self.yax, self.zax, self.pos.z)
         self._postDraw()
