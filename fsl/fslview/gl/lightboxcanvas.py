@@ -531,6 +531,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         xlen    = self.displayCtx.bounds.getLen(self.xax)
         ylen    = self.displayCtx.bounds.getLen(self.yax)
+        xmin    = self.displayCtx.bounds.getLo( self.xax)
+        ymin    = self.displayCtx.bounds.getLo( self.yax) 
         row     = int(np.floor(sliceno / self.ncols))
         col     = int(np.floor(sliceno % self.ncols))
 
@@ -543,28 +545,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # in GL space, the top row is actually the bottom row
         row = self._totalRows - row - 1
 
-        corners = np.zeros((4, 2))
-
-        # bottom left
-        corners[0, 0] = xlen * col
-        corners[0, 1] = ylen * row
-
-        # bottom right
-        corners[1, 0] = xlen * (col + 1)
-        corners[1, 1] = ylen *  row
-
-        # top left
-        corners[2, 0] = xlen *  col
-        corners[2, 1] = ylen * (row + 1)
-        
-        # top right
-        corners[3, 0] = xlen * (col + 1)
-        corners[3, 1] = ylen * (row + 1) 
-
-        self.getAnnotations().rect(corners[0],
-                                   corners[1],
-                                   corners[2],
-                                   corners[3],
+        self.getAnnotations().rect((xmin + xlen * col,
+                                    ymin + ylen * row),
+                                   xlen,
+                                   ylen,
                                    colour=(1, 0, 0),
                                    width=2)
 

@@ -147,25 +147,33 @@ class Line(AnnotationObject):
         
 class Rect(AnnotationObject):
 
-    def __init__(self, bl, br, tl, tr, *args, **kwargs):
+    def __init__(self, xy, w, h, *args, **kwargs):
         AnnotationObject.__init__(self, *args, **kwargs)
-        self.bl        = bl
-        self.br        = br
-        self.tl        = tl
-        self.tr        = tr
+        self.xy = xy
+        self.w  = w
+        self.h  = h
 
         
     def vertices(self, xax, yax, zax, zpos):
 
+        xy = self.xy
+        w  = self.w
+        h  = self.h
+
+        bl = [xy[0],     xy[1]]
+        br = [xy[0] + w, xy[1]]
+        tl = [xy[0],     xy[1] + h]
+        tr = [xy[0] + w, xy[1] + h]
+
         verts                = np.zeros((8, 3))
-        verts[0, [xax, yax]] = self.bl
-        verts[1, [xax, yax]] = self.br
-        verts[2, [xax, yax]] = self.tl
-        verts[3, [xax, yax]] = self.tr
-        verts[4, [xax, yax]] = self.bl
-        verts[5, [xax, yax]] = self.tl
-        verts[6, [xax, yax]] = self.br
-        verts[7, [xax, yax]] = self.tr
+        verts[0, [xax, yax]] = bl
+        verts[1, [xax, yax]] = br
+        verts[2, [xax, yax]] = tl
+        verts[3, [xax, yax]] = tr
+        verts[4, [xax, yax]] = bl
+        verts[5, [xax, yax]] = tl
+        verts[6, [xax, yax]] = br
+        verts[7, [xax, yax]] = tr
 
         return verts, np.arange(8)
 
