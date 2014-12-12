@@ -12,47 +12,85 @@ import logging
 log = logging.getLogger(__name__)
 
 
+import props
+
+
+class Profile(props.HasProperties):
+    """
+    Subclasses must define a props.Choice property called 'mode'.
+    """
+
+    def __init__(self, canvasPanel, imageList, displayCtx):
+        self._canvasPanel = canvasPanel
+        self._imageList   = imageList
+        self._displayCtx  = displayCtx
+        self._name        = '{}_{}'.format(self.__class__.__name__, id(self)) 
+
+        # check that the subclass has
+        # defined a 'mode' property
+        try:
+            self.getProp('mode')
+        except KeyError:
+            raise NotImplementedError('Profile subclasses must provide '
+                                      'a property called mode')
+
+
+    def register(self):
+        raise NotImplementedError('Profile subclasses must implement '
+                                  'a methocd called register')
+
+    
+    def deregister(self):
+        raise NotImplementedError('Profile subclasses must implement '
+                                  'a methocd called deregister') 
+
+
 class ProfileManager(object):
 
 
     def __init__(self, canvasPanel, imageList, displayCtx):
 
-        import fsl.fslview.views.orthopanel    as orthopanel
-        import fsl.fslview.views.lightboxpanel as lightboxpanel
+        from fsl.fslview.views.orthopanel    import OrthoPanel
+        from fsl.fslview.views.lightboxpanel import LightBoxPanel
 
-        import orthoviewprofile
-        import orthoeditprofile
-        import lightboxviewprofile
-        # import lightboxeditprofile
+        from orthoviewprofile    import OrthoViewProfile
+        from orthoeditprofile    import OrthoEditProfile
+        from lightboxviewprofile import LightBoxViewProfile
+        # from lightboxeditprofile import LightBoxEditProfile
+
+        self._profileMap = {
+            ('view', OrthoPanel)    : OrthoViewProfile,
+            ('edit', OrthoPanel)    : OrthoEditProfile,
+            ('view', LightBoxPanel) : LightBoxViewProfile,
+        }
                 
-        self._canvasPanel = canvasPanel
-        self._imageList   = imageList
-        self._displayCtx  = displayCtx
-
-        if isinstance(canvasPanel, orthopanel.OrthoPanel):
-            self._viewProfile = orthoviewprofile
-            self._editProfile = orthoeditprofile
-            
-        elif isinstance(canvasPanel, lightboxpanel.LightBoxPanel):
-            self._viewProfile = lightboxviewprofile
-            # self._editProfile = lightboxeditprofile
-
+        self._canvasPanel    = canvasPanel
+        self._canvasCls      = canvasPanel.__class__
+        self._imageList      = imageList
+        self._displayCtx     = displayCtx
         self._currentProfile = None
-        self._profileCtx     = None
+
+
+    def getCurrentProfile(self):
+        return self._currentProfile
 
         
     def changeProfile(self, profile):
 
-        if   profile == 'view':
-            newProfile = self._viewProfile
-        elif profile == 'edit':
-            newProfile = self._editProfile
-        else:
-            raise ValueError('Invalid profile specified: {}'.format(profile))
-        
+        profileCls = self._profileMap[profile, self._canvasCls]
+
         if self._currentProfile is not None:
-            self._currentProfile.deregister(self._profileCtx)
+            log.debug('Deregistering {} profile from {}'.format(
+                self._currentProfile.__class__.__name__,
+                self._canvasCls.__name__))
+            self._currentProfile.deregister()
                
-        self._currentProfile = newProfile
-        self._profileCtx     = self._currentProfile.register(
-            self._canvasPanel, self._imageList, self._displayCtx)
+        self._currentProfile = profileCls(self._canvasPanel,
+                                          self._imageList,
+                                          self._displayCtx)
+        
+        log.debug('Registering {} profile with {}'.format(
+            self._currentProfile.__class__.__name__,
+            self._canvasCls.__name__))
+        
+        self._currentProfile.register()

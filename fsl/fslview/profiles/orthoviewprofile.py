@@ -6,6 +6,24 @@
 #
 """This module defines a mouse/keyboard interaction 'view' profile for the
 :class:`~fsl.fslview.views.orthopanel.OrthoPanel'` class.
+
+There are four view 'modes' available in this profile:
+
+ - Location mode:  The user can change the currently displayed location.
+
+ - Zoom mode:      The user can zoom in/out of a canvas.
+
+ - Pan mode:       The user can pan around a canvas (if the canvas is
+                   zoomed in).
+
+ - Rectangle mode: The user can draw a rectangle on a canvas in which to
+                   zoom.
+
+The :attr:`OrthoViewProfile.mode` property controls the current mode.
+Alternately, keyboard modifier keys (e.g. shift) may be used to temporarily
+switch into one mode from another; these temporary modes are defined in the
+:attr:`OrthoViewProfile._tempModeMap` class attribute.
+
 """
 
 import logging
@@ -17,16 +35,10 @@ import wx
 
 import props
 
-
-def register(canvasPanel, imageList, displayCtx):
-    return OrthoViewProfile(canvasPanel, imageList, displayCtx)
+import fsl.fslview.profiles as profiles
 
 
-def deregister(orthoViewProf):
-    orthoViewProf.deregister()
-
-
-class OrthoViewProfile(props.HasProperties):
+class OrthoViewProfile(profiles.Profile):
 
     mode = props.Choice(
         OrderedDict([
@@ -36,25 +48,27 @@ class OrthoViewProfile(props.HasProperties):
             ('rect', 'Rectangle Zoom')]))
 
     def __init__(self, canvasPanel, imageList, displayCtx):
-        self._canvasPanel = canvasPanel
-        self._imageList   = imageList
-        self._displayCtx  = displayCtx
-        self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
+        """Creates an :class:`OrthoViewProfile`, which can be registered
+        with the given ``canvasPanel`` which is assumed to be a
+        :class:`~fsl.fslview.views.orthopanel.OrthoPanel` instance.
+        """
+        profiles.Profile.__init__(self, canvasPanel, imageList, displayCtx)
 
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas()
 
-        self._lastMode      = self.mode
-        self._inTempMode    = False
+        # some attributes to keep track
+        # of mouse event locations, 
         self._lastMousePos  = None
         self._mouseDownPos  = None
         self._canvasDownPos = None
 
-        self.register()
-
         
     def register(self):
+        """Registers mouse/keyboard event listeners with the GL canvases
+        contained in the :class:`~fsl.fslview.views.orthopanel.OrthoPanel`.
+        """
         for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
             c.Bind(wx.EVT_LEFT_DOWN,   self._onMouseDown)
             c.Bind(wx.EVT_MIDDLE_DOWN, self._onMouseDown)
@@ -65,11 +79,12 @@ class OrthoViewProfile(props.HasProperties):
             c.Bind(wx.EVT_MOTION,      self._onMouseDrag)
             c.Bind(wx.EVT_MOUSEWHEEL,  self._onMouseWheel)
             c.Bind(wx.EVT_CHAR,        self._onChar)
-            c.Bind(wx.EVT_KEY_DOWN,    self._onKeyDown)
-            c.Bind(wx.EVT_KEY_UP,      self._onKeyUp)
 
             
     def deregister(self):
+        """Deregisters all of the handlers that were registered by the
+        :meth:`register` method.
+        """
         for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
             c.Bind(wx.EVT_LEFT_DOWN,  None)
             c.Bind(wx.EVT_MIDDLE_UP,  None)
@@ -80,21 +95,20 @@ class OrthoViewProfile(props.HasProperties):
             c.Bind(wx.EVT_MOTION,     None)
             c.Bind(wx.EVT_MOUSEWHEEL, None)
             c.Bind(wx.EVT_CHAR,       None)
-            c.Bind(wx.EVT_KEY_DOWN,   None)
-            c.Bind(wx.EVT_KEY_UP,     None)
             
 
-    _keyModMap = {
+    _tempModeMap = {
         ('loc', wx.WXK_SHIFT)   : 'pan',
         ('loc', wx.WXK_CONTROL) : 'zoom',
         ('loc', wx.WXK_ALT)     : 'rect',
     }
-    """When in a particular mode, keyboard modifier keys can be held
-    down to temporarily switch to a different mode.
+    """This map is used by the :meth:`_getTempMode` method to determine
+    whether a temporary mode should be enabled, based on any keyboard
+    modifier keys that are held down.
     """
-    
 
-    _altModMap = {
+    
+    _altHandlerMap = {
         ('loc',  'RightMouseDrag')   : ('loc',  'LeftMouseDrag'),
         ('loc',  'MiddleMouseDrag')  : ('pan',  'LeftMouseDrag'),
 
@@ -111,10 +125,27 @@ class OrthoViewProfile(props.HasProperties):
         ('zoom', 'MiddleMouseDrag')  : ('pan',  'LeftMouseDrag'),
     }
     """If a handler is not present for a particular mouse event type, this
-    map is checked to see an alternate handler has been defined
+    map is checked to see an alternate handler has been defined.
     """
 
+    
+    def _getTempMode(self, ev):
+        """When in a particular mode, keyboard modifier keys can be held
+        down to temporarily switch to a different mode.
+        """
 
+        mode  = self.mode
+        shift = ev.ShiftDown()
+        ctrl  = ev.ControlDown()
+        alt   = ev.AltDown()
+
+        if shift: return self._tempModeMap.get((mode, wx.WXK_SHIFT),   None)
+        if ctrl:  return self._tempModeMap.get((mode, wx.WXK_CONTROL), None)
+        if alt:   return self._tempModeMap.get((mode, wx.WXK_ALT),     None)
+        
+        return None
+
+    
     def _getMouseLocation(self, ev):
         """Returns two tuples; the first contains the x/y coordinates of the
         given :class:`wx.MouseEvent`, and the second contains the x/y/z
@@ -179,23 +210,29 @@ class OrthoViewProfile(props.HasProperties):
 
         return None
 
-                
+
     def _getHandler(self, ev, mode=None, evType=None):
         """Returns a reference to a method of this :class:`OrthoViewProfile`
         instance which can handle the given :class:`wx.MouseEvent` or
-        :class:`wx.KeyEvent` (the `ev` argument).
+        :class:`wx.KeyEvent` (the ``ev`` argument).
 
-        The `mode` and `evType` arguments may be used to force the lookup
+        The ``mode`` and ``evType`` arguments may be used to force the lookup
         of a handler for the specified mode (see the :attr:`mode` property)
         or event type (see the :meth:`_getEventType` method).
 
-        If a handler is not found, the :attr:`_altModMap` map is checked to
-        see if an alternate handler for the mode/event type has been
+        If a handler is not found, the :attr:`_altHandlerMap` map is checked
+        to see if an alternate handler for the mode/event type has been
         specified.
         """
 
-        if mode   is None: mode   = self.mode
-        if evType is None: evType = self._getEventType(ev)
+        tempMode = self._getTempMode(ev)
+
+        if mode is None:
+            if tempMode is None: mode = self.mode
+            else:                mode = tempMode
+        
+        if evType is None:
+            evType = self._getEventType(ev)
 
         # Search for a method which can
         # handle the specified mode/evtype
@@ -209,7 +246,7 @@ class OrthoViewProfile(props.HasProperties):
         
         # No handler found - search 
         # the alternate handler map
-        alt = self._altModMap.get((mode, evType), None)
+        alt = self._altHandlerMap.get((mode, evType), None)
 
         # An alternate handler has
         # been specified - look it up
@@ -218,56 +255,12 @@ class OrthoViewProfile(props.HasProperties):
 
         return None
 
-            
-    def _onKeyDown(self, ev):
-        """Handles presses of modifier keys (e.g. SHIFT, CTRL).
-
-        If a temporary mode has been specified in the :attr:`_keyModMap`, the
-        :attr:`mode` property is changed to that mode (and then changed back
-        when the modifier key is released - see the :meth:`_onKeyUp` method).
-        """
-        
-        key      = ev.GetKeyCode()
-        tempMode = self._keyModMap.get((self.mode, key), None)
-
-        if self._inTempMode or (tempMode is None):
-            ev.Skip()
-        else:
-            
-            log.debug('Setting temporary mode from '
-                      'keyboard modifier {} -> {}'.format(
-                          self.mode, tempMode))
-            
-            self._inTempMode = True
-            self._lastMode   = self.mode
-            self.mode        = tempMode
-
-    
-    def _onKeyUp(self, ev):
-        """Handles modifier key releases (e.g. SHIFT).
-
-        If the :attr:`mode` has been temporarily changed to a different
-        mode (see :meth:`_onKeyDown`), it is changed back to the previous
-        mode.
-        """
-        
-        key      = ev.GetKeyCode()
-        tempMode = self._keyModMap.get((self._lastMode, key), None)
-
-        if (not self._inTempMode) or (tempMode is None):
-            ev.Skip()
-        else:
-            
-            log.debug('Clearing temporary mode from '
-                      'keyboard modifier {} -> {}'.format(
-                          self.mode, self._lastMode))
-            
-            self._inTempMode = False
-            self.mode        = self._lastMode
-
         
     def _onMouseWheel(self, ev):
-        """Called when the mouse wheel is moved."""
+        """Called when the mouse wheel is moved.
+
+        Delegates to a mode specific handler if one is present.
+        """
 
         handler = self._getHandler(ev)
         if handler is None:
@@ -283,7 +276,10 @@ class OrthoViewProfile(props.HasProperties):
 
         
     def _onMouseDown(self, ev):
-        """Called when any mouse button is pushed. """
+        """Called when any mouse button is pushed.
+
+        Delegates to a mode specific handler if one is present.
+        """
         
         mouseLoc, canvasLoc = self._getMouseLocation(ev)
         canvas              = ev.GetEventObject()
@@ -302,7 +298,10 @@ class OrthoViewProfile(props.HasProperties):
 
     
     def _onMouseUp(self, ev):
-        """Called when any mouse button is released. """
+        """Called when any mouse button is released.
+
+        Delegates to a mode specific handler if one is present.
+        """
         
         handler = self._getHandler(ev)
 
@@ -323,7 +322,10 @@ class OrthoViewProfile(props.HasProperties):
 
     
     def _onMouseDrag(self, ev):
-        """Called on mouse drags."""
+        """Called on mouse drags.
+        
+        Delegates to a mode specific handler if one is present.
+        """
         ev.Skip()
 
         canvas              = ev.GetEventObject()
@@ -345,8 +347,10 @@ class OrthoViewProfile(props.HasProperties):
 
         
     def _onChar(self, ev):
-        """Called on keyboard key presses (modifier keys are handled by the
-        :meth:`_onKeyDown` and :meth:`_onKeyUp` methods)."""
+        """Called on keyboard key presses .
+
+        Delegates to a mode specific handler if one is present.
+        """
 
         handler = self._getHandler(ev)
         if handler is None:
@@ -366,13 +370,24 @@ class OrthoViewProfile(props.HasProperties):
 
 
     def _locModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """Left mouse drags in location mode update the
+        :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
+        the mouse location.
+        """
         if   canvas == self._xcanvas: pos = (zpos, xpos, ypos)
         elif canvas == self._ycanvas: pos = (xpos, zpos, ypos)
         elif canvas == self._zcanvas: pos = (xpos, ypos, zpos)
+        
         self._displayCtx.location = pos
 
         
     def _locModeChar(self, canvas, key):
+        """Left mouse drags in location mode update the
+        :attr:`~fsl.fslview.displaycontext.DisplayContext.location`.
+
+        Arrow keys map to the horizontal/vertical axes, and -/+ keys map
+        to the depth axis of the canvas which was the target of the event.
+        """ 
 
         pos = canvas.pos.xyz
 
@@ -401,17 +416,26 @@ class OrthoViewProfile(props.HasProperties):
 
         
     def _zoomModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """Left mouse drags in zoom mode increase (drag up) or decrease (drag
+        down) the zoom level of the target canvas.
+        """
         ydiff = my - self._lastMousePos[1]
         self._zoomModeMouseWheel(canvas, ydiff)
 
         
     def _zoomModeMouseWheel(self, canvas, wheel):
+        """Mouse wheel motion in zoom mode increases/decreases the zoom level
+        of the target canvas.
+        """
         if   wheel > 0: wheel =  10
         elif wheel < 0: wheel = -10
         canvas.zoom += wheel
 
     
     def _zoomModeChar(self, canvas, key):
+        """The +/- keys in zoom mode increase/decrease the zoom level
+        of the target canvas.
+        """
 
         try:    ch = chr(key)
         except: ch = None
@@ -435,6 +459,11 @@ class OrthoViewProfile(props.HasProperties):
     
         
     def _panModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """Left mouse drags in pan mode move the target canvas display about
+        to follow the mouse.
+
+        If the target canvas is not zoomed in, this has no effect.
+        """
 
         xoff = xpos - self._canvasDownPos[0]
         yoff = ypos - self._canvasDownPos[1]
@@ -443,6 +472,9 @@ class OrthoViewProfile(props.HasProperties):
 
     
     def _panModeChar(self, canvas, key):
+        """The arrow keys in pan mode move the target canvas display around
+        (unless the canvas is not zoomed in).
+        """
 
         xoff = 0
         yoff = 0
@@ -462,6 +494,12 @@ class OrthoViewProfile(props.HasProperties):
         
     
     def _rectModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """Left mouse drags in rectangle mode draw a rectangle on the target
+        canvas.
+
+        When the user releases the mouse (see :meth:`_rectModeLeftMouseUp`),
+        the canvas will be zoomed in to the drawn rectangle.
+        """
 
         corner = [self._canvasDownPos[0],
                   self._canvasDownPos[1]]
@@ -476,9 +514,18 @@ class OrthoViewProfile(props.HasProperties):
 
         
     def _rectModeLeftMouseUp(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """When the left mouse is released in rectangle mode, the target
+        canvas is zoomed in to the rectangle region that was drawn by the
+        user.
+        """
+
+        canvas.getAnnotations().dequeue(self._lastRect)
 
         rectXlen = abs(xpos - self._canvasDownPos[0])
         rectYlen = abs(ypos - self._canvasDownPos[1])
+
+        if rectXlen == 0: return
+        if rectYlen == 0: return
 
         rectXmid = (xpos + self._canvasDownPos[0]) / 2.0
         rectYmid = (ypos + self._canvasDownPos[1]) / 2.0
@@ -486,13 +533,16 @@ class OrthoViewProfile(props.HasProperties):
         xlen = self._displayCtx.bounds.getLen(canvas.xax)
         ylen = self._displayCtx.bounds.getLen(canvas.yax)
 
-        xzoom = xlen / rectXlen
-        yzoom = ylen / rectYlen
-        zoom  = min(xzoom, yzoom) * 100.0
+        xzoom   = xlen / rectXlen
+        yzoom   = ylen / rectYlen
+        zoom    = min(xzoom, yzoom) * 100.0
+        maxzoom = canvas.getConstraint('zoom', 'maxval')
 
-        if zoom <= canvas.getConstraint('zoom', 'maxval'):
+        if zoom >= maxzoom:
+            zoom = maxzoom
+
+        if zoom > canvas.zoom:
             canvas.zoom = zoom
             canvas.centreDisplayAt(rectXmid, rectYmid)
 
-        canvas.getAnnotations().dequeue(self._lastRect)
         canvas.Refresh()
