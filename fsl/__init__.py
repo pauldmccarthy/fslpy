@@ -120,22 +120,35 @@ def parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
+    parser.add_argument('-n', '--noisy', metavar='MODULE', action='append',
+                        help='Make the specified module noisy')
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
     parser.add_argument('tool', help='FSL program to run')
 
-    # find the index of the first positional argument
-    try:
-        firstPos = map(lambda a: not a.startswith('-'), argv).index(True)
-    except ValueError:
-        firstPos = len(argv)
+    # find the index of the first positional
+    # argument, i.e. the tool name
+    i = -1
+    while True:
 
+        i = i + 1
+            
+        if argv[i].startswith('-'):
+            continue
+            
+        if i > 0 and argv[i - 1] in ('-n', '--noisy'):
+            continue
+        break
+        
+    firstPos = i
+    
     # Separate the top level arguments
     # from the tool arguments, and parse
     # the top level args
     fslArgv   = argv[:firstPos + 1]
     toolArgv  = argv[ firstPos + 1:]
+
     namespace = parser.parse_args(fslArgv)
 
     # if the specified tool is 'help', it should be followed by
@@ -264,7 +277,11 @@ def main():
     elif args.verbose == 3:
         log.setLevel(logging.DEBUG)
         logging.getLogger('props')   .setLevel(logging.DEBUG)
-        logging.getLogger('pwidgets').setLevel(logging.DEBUG) 
+        logging.getLogger('pwidgets').setLevel(logging.DEBUG)
+
+    if args.noisy is not None:
+        for mod in args.noisy:
+            logging.getLogger(mod).setLevel(logging.DEBUG)
 
     if fslTool.context is not None: ctx = fslTool.context(toolArgs)
     else:                           ctx = None
