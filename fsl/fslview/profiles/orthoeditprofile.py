@@ -55,14 +55,14 @@ class OrthoEditProfile(object):
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
-        voxelSelection = annotations.VoxelSelection(
+        self.voxelSelection = annotations.VoxelSelection(
             selection,
-            displayToVoxMat=display.displayToVoxMat,
-            xform=display.voxToDisplayMat)
+            display.displayToVoxMat,
+            display.voxToDisplayMat)
 
-        xcanvas.getAnnotations().obj(voxelSelection, hold=True)
-        ycanvas.getAnnotations().obj(voxelSelection, hold=True)
-        zcanvas.getAnnotations().obj(voxelSelection, hold=True)
+        xcanvas.getAnnotations().obj(self.voxelSelection, hold=True)
+        ycanvas.getAnnotations().obj(self.voxelSelection, hold=True)
+        zcanvas.getAnnotations().obj(self.voxelSelection, hold=True)
 
     
     def deregister(self):
@@ -76,9 +76,9 @@ class OrthoEditProfile(object):
         ycanvas.Bind(wx.EVT_MOTION,    None)
         zcanvas.Bind(wx.EVT_MOTION,    None)
 
-        xcanvas.getAnnotations().clear()
-        ycanvas.getAnnotations().clear()
-        zcanvas.getAnnotations().clear()
+        xcanvas.getAnnotations().dequeue(self.voxelSelection)
+        ycanvas.getAnnotations().dequeue(self.voxelSelection)
+        zcanvas.getAnnotations().dequeue(self.voxelSelection)
 
         
     def _onMouseEvent(self, ev):

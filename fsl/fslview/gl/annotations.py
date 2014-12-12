@@ -25,14 +25,26 @@ import fsl.utils.transform     as transform
 
 
 class Annotations(object):
+    """An :class:`Annotations` object provides functionality to draw 2D
+    annotations on a 3D OpenGL canvas. Annotations may be enqueued via any
+    of the :meth:`line`, :meth:`rect`, :meth:`selection` or :meth:`obj`,
+    methods.
+
+    A call to :meth:`draw` will then draw each of the queued annotations,
+    and clear the queue.
+
+    If an annotation is to be persistent, it can be enqueued, as above, but
+    passing ``hold=True`` to the queueing method.  The annotation will then
+    remain in the queue until it is removed via :meth:`dequeue`, or the
+    entire annotations queue is cleared via :meth:`clear`.
+    """
 
     
-    def __init__(self, imageList, displayCtx):
+    def __init__(self):
+        """Creates an :class:`Annotations` object."""
         
-        self._q          = []
-        self._holdq      = []
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
+        self._q     = []
+        self._holdq = []
 
         
     def _adjustColour(self, colour):
@@ -51,20 +63,20 @@ class Annotations(object):
         return self.obj(Rect(*args, **kwargs), hold)
 
 
-    def selection(self, voxels, imageIdx=None, *args, **kwargs):
+    def selection(self,
+                  voxels,
+                  displayToVoxMat,
+                  voxToDisplayMat,
+                  *args,
+                  **kwargs):
         """
         Voxels must be an N*3 array of xyz values
         """
-        
-        if imageIdx is None:
-            imageIdx = self._displayCtx.selectedImage
-
-        image   = self._imageList[imageIdx]
-        display = self._displayCtx.getDisplayProperties(image)
 
         hold = kwargs.pop('hold', False)
         return self.obj(VoxelSelection(voxels,
-                                       xform=display.voxToDisplayMat,
+                                       displayToVoxMat,
+                                       voxToDisplayMat,
                                        *args, **kwargs), hold)
 
         
@@ -193,8 +205,14 @@ class Rect(AnnotationObject):
 class VoxelSelection(AnnotationObject):
 
     
-    def __init__(self, selection, displayToVoxMat, *args, **kwargs):
-        AnnotationObject.__init__(self, *args, **kwargs)
+    def __init__(self,
+                 selection,
+                 displayToVoxMat,
+                 voxToDisplayMat,
+                 **kwargs):
+        
+        kwargs['xform'] = voxToDisplayMat
+        AnnotationObject.__init__(self, **kwargs)
 
         self.displayToVoxMat = displayToVoxMat
         self.selection       = selection

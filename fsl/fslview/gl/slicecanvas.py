@@ -266,7 +266,7 @@ class SliceCanvas(props.HasProperties):
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
 
-        self._annotations = annotations.Annotations(imageList, displayCtx)
+        self._annotations = annotations.Annotations()
 
         self._zAxisChanged()
 
