@@ -43,12 +43,12 @@ class Annotations(object):
     def line(self, *args, **kwargs):
         
         hold = kwargs.pop('hold', False)
-        self.obj(Line(*args, **kwargs), hold)
+        return self.obj(Line(*args, **kwargs), hold)
 
         
     def rect(self, *args, **kwargs):
         hold = kwargs.pop('hold', False)
-        self.obj(Rect(*args, **kwargs), hold)
+        return self.obj(Rect(*args, **kwargs), hold)
 
 
     def selection(self, voxels, imageIdx=None, *args, **kwargs):
@@ -63,15 +63,27 @@ class Annotations(object):
         display = self._displayCtx.getDisplayProperties(image)
 
         hold = kwargs.pop('hold', False)
-        self.obj(VoxelSelection(voxels,
-                                xform=display.voxToDisplayMat,
-                                *args, **kwargs), hold)
+        return self.obj(VoxelSelection(voxels,
+                                       xform=display.voxToDisplayMat,
+                                       *args, **kwargs), hold)
 
         
     def obj(self, obj, hold=False):
         
         if hold: self._holdq.append(obj)
         else:    self._q    .append(obj)
+
+        return obj
+
+
+    def dequeue(self, obj, hold=False):
+
+        if hold:
+            try:    self._holdq.remove(obj)
+            except: pass
+        else:
+            try:    self._q.remove(obj)
+            except: pass
 
 
     def clear(self):
