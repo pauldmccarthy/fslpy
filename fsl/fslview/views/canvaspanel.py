@@ -162,6 +162,7 @@ class ControlStrip(controlpanel.ControlPanel):
         self._profileBox         = props.makeWidget(self,
                                                     canvasPanel,
                                                     'profile')
+        self._profileModeBox     = None
         
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -188,6 +189,11 @@ class ControlStrip(controlpanel.ControlPanel):
             _takeScreenShot(imageList, displayCtx, canvasPanel)
 
         def profileChanged(*a):
+
+            if self._profileModeBox is not None:
+                self._sizer.Detach(self._profileModeBox)
+                self._profileModeBox.Destroy()
+                
             self._profileModeBox = props.makeWidget(
                 self,
                 canvasPanel.getCurrentProfile(),

@@ -45,6 +45,7 @@ class OrthoViewProfile(profiles.Profile):
             ('zoom', 'Zoom'),
             ('pan',  'Pan')]))
 
+
     def __init__(self, canvasPanel, imageList, displayCtx):
         """Creates an :class:`OrthoViewProfile`, which can be registered
         with the given ``canvasPanel`` which is assumed to be a
@@ -56,307 +57,25 @@ class OrthoViewProfile(profiles.Profile):
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas()
 
-        # some attributes to keep track
-        # of mouse event locations, 
-        self._lastMousePos  = None
-        self._mouseDownPos  = None
-        self._canvasDownPos = None
-
+        self.addTempMode('loc', wx.WXK_ALT,     'pan')
+        self.addTempMode('loc', wx.WXK_CONTROL, 'zoom')
         
-    def register(self):
-        """Registers mouse/keyboard event listeners with the GL canvases
-        contained in the :class:`~fsl.fslview.views.orthopanel.OrthoPanel`.
+        self.addAltHandler('loc',  'RightMouseDrag',  'loc',  'LeftMouseDrag')
+        self.addAltHandler('loc',  'MiddleMouseDrag', 'pan',  'LeftMouseDrag')
+        self.addAltHandler('loc',  'RightMouseDown',  'loc',  'RightMouseDrag')
+        self.addAltHandler('pan',  'RightMouseDown',  'pan',  'RightMouseDrag')
+        self.addAltHandler('zoom', 'RightMouseDown',  'zoom', 'RightMouseDrag')
+        self.addAltHandler('loc',  'LeftMouseDown',   'loc',  'LeftMouseDrag')
+        self.addAltHandler('pan',  'LeftMouseDown',   'pan',  'LeftMouseDrag')
+        self.addAltHandler('zoom', 'LeftMouseDown',   'zoom', 'LeftMouseDrag')
+        self.addAltHandler('zoom', 'RightMouseDrag',  'loc',  'LeftMouseDrag')
+        self.addAltHandler('zoom', 'MiddleMouseDrag', 'pan',  'LeftMouseDrag')        
+
+
+    def getEventTargets(self):
         """
-        for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
-            c.Bind(wx.EVT_LEFT_DOWN,   self._onMouseDown)
-            c.Bind(wx.EVT_MIDDLE_DOWN, self._onMouseDown)
-            c.Bind(wx.EVT_RIGHT_DOWN,  self._onMouseDown)
-            c.Bind(wx.EVT_LEFT_UP,     self._onMouseUp)
-            c.Bind(wx.EVT_MIDDLE_UP,   self._onMouseUp)
-            c.Bind(wx.EVT_RIGHT_UP,    self._onMouseUp) 
-            c.Bind(wx.EVT_MOTION,      self._onMouseDrag)
-            c.Bind(wx.EVT_MOUSEWHEEL,  self._onMouseWheel)
-            c.Bind(wx.EVT_CHAR,        self._onChar)
-
-            
-    def deregister(self):
-        """Deregisters all of the handlers that were registered by the
-        :meth:`register` method.
         """
-        for c in [self._xcanvas, self._ycanvas, self._zcanvas]:
-            c.Bind(wx.EVT_LEFT_DOWN,  None)
-            c.Bind(wx.EVT_MIDDLE_UP,  None)
-            c.Bind(wx.EVT_RIGHT_DOWN, None)
-            c.Bind(wx.EVT_LEFT_UP,    None)
-            c.Bind(wx.EVT_MIDDLE_UP,  None)
-            c.Bind(wx.EVT_RIGHT_UP,   None)
-            c.Bind(wx.EVT_MOTION,     None)
-            c.Bind(wx.EVT_MOUSEWHEEL, None)
-            c.Bind(wx.EVT_CHAR,       None)
-            
-
-    _tempModeMap = {
-        ('loc', wx.WXK_SHIFT)   : 'pan',
-        ('loc', wx.WXK_CONTROL) : 'zoom',
-    }
-    """This map is used by the :meth:`_getTempMode` method to determine
-    whether a temporary mode should be enabled, based on any keyboard
-    modifier keys that are held down.
-    """
-
-    
-    _altHandlerMap = {
-        ('loc',  'RightMouseDrag')   : ('loc',  'LeftMouseDrag'),
-        ('loc',  'MiddleMouseDrag')  : ('pan',  'LeftMouseDrag'),
-
-        ('loc',  'RightMouseDown')   : ('loc',  'RightMouseDrag'),
-        ('pan',  'RightMouseDown')   : ('pan',  'RightMouseDrag'),
-        ('zoom', 'RightMouseDown')   : ('zoom', 'RightMouseDrag'),
-        ('loc',  'LeftMouseDown')    : ('loc',  'LeftMouseDrag'),
-        ('pan',  'LeftMouseDown')    : ('pan',  'LeftMouseDrag'),
-        ('zoom', 'LeftMouseDown')    : ('zoom', 'LeftMouseDrag'),
-
-        ('zoom', 'RightMouseDrag')   : ('loc',  'LeftMouseDrag'),
-        ('zoom', 'MiddleMouseDrag')  : ('pan',  'LeftMouseDrag'),
-    }
-    """If a handler is not present for a particular mouse event type, this
-    map is checked to see an alternate handler has been defined.
-    """
-
-    
-    def _getTempMode(self, ev):
-        """When in a particular mode, keyboard modifier keys can be held
-        down to temporarily switch to a different mode.
-        """
-
-        mode  = self.mode
-        shift = ev.ShiftDown()
-        ctrl  = ev.ControlDown()
-        alt   = ev.AltDown()
-
-        if shift: return self._tempModeMap.get((mode, wx.WXK_SHIFT),   None)
-        if ctrl:  return self._tempModeMap.get((mode, wx.WXK_CONTROL), None)
-        if alt:   return self._tempModeMap.get((mode, wx.WXK_ALT),     None)
-        
-        return None
-
-    
-    def _getMouseLocation(self, ev):
-        """Returns two tuples; the first contains the x/y coordinates of the
-        given :class:`wx.MouseEvent`, and the second contains the x/y/z
-        display system coordinates of the
-        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` associated with the
-        event.
-        """
-
-        mx, my  = ev.GetPositionTuple()
-        canvas  = ev.GetEventObject()
-        w, h    = canvas.GetClientSize()
-        my      = h - my
-
-        xpos, ypos = canvas.canvasToWorld(mx, my)
-        zpos       = canvas.pos.z 
-        
-        return (mx, my), (xpos, ypos, zpos)
-                                
-
-    def _getMouseButton(self, ev):
-        """Returns a string describing the mouse button associated with the
-        given :class:`wx.MouseEvent`.
-        """
-        
-        btn = ev.GetButton()
-        if   btn == wx.MOUSE_BTN_LEFT:   return 'Left'
-        elif btn == wx.MOUSE_BTN_RIGHT:  return 'Right'
-        elif btn == wx.MOUSE_BTN_MIDDLE: return 'Middle'
-        elif ev.LeftIsDown():            return 'Left'  
-        elif ev.RightIsDown():           return 'Right' 
-        elif ev.MiddleIsDown():          return 'Middle'
-        else:                            return  None
-
-        
-    def _getEventType(self, ev):
-        """Returns a string describing the given :class:`wx.MouseEvent` or
-        :class:`wx.KeyEvent`.
-
-        This string is then used by the :meth:`_getHandler` method to look up
-        a method on this :class:`OrthoViewProfile` instance which can handle
-        the event.
-        """
-
-        if isinstance(ev, wx.MouseEvent):
-            
-            btn = self._getMouseButton(ev)
-            if btn is None:
-                btn = ''
-
-            # mouse motion (without dragging)
-            # is currently not supported
-            if   ev.ButtonUp():              evType = 'Up'
-            elif ev.ButtonDown():            evType = 'Down'
-            elif ev.Dragging():              evType = 'Drag'
-            elif ev.GetWheelRotation() != 0: evType = 'Wheel'
-            else:                            return None
-            
-            return '{}Mouse{}'.format(btn, evType)
-
-        elif isinstance(ev, wx.KeyEvent):
-            return 'Char'
-
-        return None
-
-
-    def _getHandler(self, ev, mode=None, evType=None):
-        """Returns a reference to a method of this :class:`OrthoViewProfile`
-        instance which can handle the given :class:`wx.MouseEvent` or
-        :class:`wx.KeyEvent` (the ``ev`` argument).
-
-        The ``mode`` and ``evType`` arguments may be used to force the lookup
-        of a handler for the specified mode (see the :attr:`mode` property)
-        or event type (see the :meth:`_getEventType` method).
-
-        If a handler is not found, the :attr:`_altHandlerMap` map is checked
-        to see if an alternate handler for the mode/event type has been
-        specified.
-        """
-
-        tempMode = self._getTempMode(ev)
-
-        if mode is None:
-            if tempMode is None: mode = self.mode
-            else:                mode = tempMode
-        
-        if evType is None:
-            evType = self._getEventType(ev)
-
-        # Search for a method which can
-        # handle the specified mode/evtype
-        handlerName = '_{}Mode{}'.format(mode, evType)
-        handler     = getattr(self, handlerName, None)
-
-        if handler is not None:
-            log.debug('Handler found for mode {}, event {}'.format(mode,
-                                                                   evType))
-            return handler
-        
-        # No handler found - search 
-        # the alternate handler map
-        alt = self._altHandlerMap.get((mode, evType), None)
-
-        # An alternate handler has
-        # been specified - look it up
-        if alt is not None:
-            return self._getHandler(ev, *alt)
-
-        return None
-
-        
-    def _onMouseWheel(self, ev):
-        """Called when the mouse wheel is moved.
-
-        Delegates to a mode specific handler if one is present.
-        """
-
-        handler = self._getHandler(ev)
-        if handler is None:
-            return
-
-        canvas = ev.GetEventObject()
-        wheel  = ev.GetWheelRotation()
-
-        log.debug('Mouse wheel event ({}) on canvas {}'.format(
-            wheel, canvas.name))
-
-        handler(canvas, wheel)
-
-        
-    def _onMouseDown(self, ev):
-        """Called when any mouse button is pushed.
-
-        Delegates to a mode specific handler if one is present.
-        """
-        
-        mouseLoc, canvasLoc = self._getMouseLocation(ev)
-        canvas              = ev.GetEventObject()
-
-        self._mouseDownPos  = mouseLoc
-        self._canvasDownPos = canvasLoc
-
-        handler = self._getHandler(ev)
-        if handler is None:
-            return
-
-        log.debug('Mouse down event ({}, {}) on canvas {}'.format(
-            mouseLoc, canvasLoc, canvas.name))
-
-        handler(canvas, mouseLoc, canvasLoc)
-
-    
-    def _onMouseUp(self, ev):
-        """Called when any mouse button is released.
-
-        Delegates to a mode specific handler if one is present.
-        """
-        
-        handler = self._getHandler(ev)
-
-        if handler is None:
-            self._mouseDownPos  = None
-            self._canvasDownPos = None
-            return
-
-        canvas              = ev.GetEventObject()
-        mouseLoc, canvasLoc = self._getMouseLocation(ev)
-
-        log.debug('Mouse up event ({}, {}) on canvas {}'.format(
-            mouseLoc, canvasLoc, canvas.name))
-
-        handler(canvas, mouseLoc, canvasLoc)
-        self._mouseDownPos  = None
-        self._canvasDownPos = None 
-
-    
-    def _onMouseDrag(self, ev):
-        """Called on mouse drags.
-        
-        Delegates to a mode specific handler if one is present.
-        """
-        ev.Skip()
-
-        canvas              = ev.GetEventObject()
-        mouseLoc, canvasLoc = self._getMouseLocation(ev)
-        
-        if self._lastMousePos is None:
-            self._lastMousePos = mouseLoc
-
-        handler = self._getHandler(ev)
-        if handler is None:
-            return 
-
-        log.debug('Mouse drag event ({}, {}) on canvas {}'.format(
-            mouseLoc, canvasLoc, canvas.name))
-
-        handler(canvas, mouseLoc, canvasLoc)
-
-        self._lastMousePos = mouseLoc
-
-        
-    def _onChar(self, ev):
-        """Called on keyboard key presses .
-
-        Delegates to a mode specific handler if one is present.
-        """
-
-        handler = self._getHandler(ev)
-        if handler is None:
-            return 
-
-        canvas = ev.GetEventObject()
-        key    = ev.GetKeyCode()
-
-        log.debug('Keyboard event ({}) on canvas {}'.format(key, canvas.name))
-
-        handler(canvas, key)
+        return [self._xcanvas, self._ycanvas, self._zcanvas]
 
 
     ########################
@@ -364,16 +83,13 @@ class OrthoViewProfile(profiles.Profile):
     ########################
 
 
-    def _locModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+    def _locModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
         the mouse location.
         """
-        if   canvas == self._xcanvas: pos = (zpos, xpos, ypos)
-        elif canvas == self._ycanvas: pos = (xpos, zpos, ypos)
-        elif canvas == self._zcanvas: pos = (xpos, ypos, zpos)
         
-        self._displayCtx.location = pos
+        self._displayCtx.location = canvasPos
 
         
     def _locModeChar(self, canvas, key):
@@ -384,23 +100,17 @@ class OrthoViewProfile(profiles.Profile):
         to the depth axis of the canvas which was the target of the event.
         """ 
 
-        pos = canvas.pos.xyz
+        pos = self._displayCtx.location.xyz
 
         try:    ch = chr(key)
         except: ch = None
 
-        if   key == wx.WXK_LEFT:  pos[0] -= 2
-        elif key == wx.WXK_RIGHT: pos[0] += 2
-        elif key == wx.WXK_UP:    pos[1] += 2
-        elif key == wx.WXK_DOWN:  pos[1] -= 2
-        elif ch  == '-':          pos[2] -= 2
-        elif ch  in ('+', '='):   pos[2] += 2
-
-        x, y, z = pos
-
-        if   canvas == self._xcanvas: pos = (z, x, y)
-        elif canvas == self._ycanvas: pos = (x, z, y)
-        elif canvas == self._zcanvas: pos = (x, y, z)
+        if   key == wx.WXK_LEFT:  pos[canvas.xax] -= 2
+        elif key == wx.WXK_RIGHT: pos[canvas.xax] += 2
+        elif key == wx.WXK_UP:    pos[canvas.yax] += 2
+        elif key == wx.WXK_DOWN:  pos[canvas.yax] -= 2
+        elif ch  in ('-', '_'):   pos[canvas.zax] -= 2
+        elif ch  in ('+', '='):   pos[canvas.zax] += 2
 
         self._displayCtx.location = pos
 
@@ -437,10 +147,10 @@ class OrthoViewProfile(profiles.Profile):
         if zoom == 0:
             return
 
-        self._zoomModeWheelEvent(canvas, zoom)
+        self._zoomModeMouseWheel(canvas, zoom)
 
         
-    def _zoomModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+    def _zoomModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         """Left mouse drags in zoom mode draw a rectangle on the target
         canvas.
 
@@ -448,10 +158,11 @@ class OrthoViewProfile(profiles.Profile):
         the canvas will be zoomed in to the drawn rectangle.
         """
 
-        corner = [self._canvasDownPos[0],
-                  self._canvasDownPos[1]]
-        width  = xpos - corner[0]
-        height = ypos - corner[1]
+        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
+
+        corner = [canvasDownPos[canvas.xax], canvasDownPos[canvas.yax]]
+        width  = canvasPos[canvas.xax] - corner[0]
+        height = canvasPos[canvas.yax] - corner[1]
 
         self._lastRect = canvas.getAnnotations().rect(corner,
                                                       width,
@@ -460,22 +171,24 @@ class OrthoViewProfile(profiles.Profile):
         canvas.Refresh()
 
         
-    def _zoomModeLeftMouseUp(self, canvas, (mx, my), (xpos, ypos, zpos)):
+    def _zoomModeLeftMouseUp(self, canvas, mousePos, canvasPos):
         """When the left mouse is released in zoom mode, the target
         canvas is zoomed in to the rectangle region that was drawn by the
         user.
         """
 
+        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
+
         canvas.getAnnotations().dequeue(self._lastRect)
 
-        rectXlen = abs(xpos - self._canvasDownPos[0])
-        rectYlen = abs(ypos - self._canvasDownPos[1])
+        rectXlen = abs(canvasPos[canvas.xax] - canvasDownPos[canvas.xax])
+        rectYlen = abs(canvasPos[canvas.yax] - canvasDownPos[canvas.yax])
 
         if rectXlen == 0: return
         if rectYlen == 0: return
 
-        rectXmid = (xpos + self._canvasDownPos[0]) / 2.0
-        rectYmid = (ypos + self._canvasDownPos[1]) / 2.0
+        rectXmid = (canvasPos[canvas.xax] + canvasDownPos[canvas.xax]) / 2.0
+        rectYmid = (canvasPos[canvas.yax] + canvasDownPos[canvas.yax]) / 2.0
 
         xlen = self._displayCtx.bounds.getLen(canvas.xax)
         ylen = self._displayCtx.bounds.getLen(canvas.yax)
@@ -494,22 +207,23 @@ class OrthoViewProfile(profiles.Profile):
 
         canvas.Refresh()
         
-
         
     ###################
     # Pan mode handlers
     ###################
     
         
-    def _panModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+    def _panModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         """Left mouse drags in pan mode move the target canvas display about
         to follow the mouse.
 
         If the target canvas is not zoomed in, this has no effect.
         """
+        
+        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
 
-        xoff = xpos - self._canvasDownPos[0]
-        yoff = ypos - self._canvasDownPos[1]
+        xoff = canvasPos[canvas.xax] - canvasDownPos[canvas.xax]
+        yoff = canvasPos[canvas.yax] - canvasDownPos[canvas.yax]
 
         canvas.panDisplayBy(-xoff, -yoff)
 
