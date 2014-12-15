@@ -23,17 +23,17 @@ class Selection(object):
     def _filterVoxels(self, xyzs):
 
         if len(xyzs.shape) == 1:
-            xyzs = xyzs.reshape(1, 3)        
+            xyzs = xyzs.reshape(1, 3) 
         
-        xs   = xyzs[0]
-        ys   = xyzs[1]
-        zs   = xyzs[2]
-        xyzs = xyzs[:, (xs >= 0)                   & 
-                       (xs <  self.image.shape[0]) & 
-                       (ys >= 0)                   & 
-                       (ys <  self.image.shape[1]) & 
-                       (zs >= 0)                   & 
-                       (zs <  self.image.shape[2])]
+        xs   = xyzs[:, 0]
+        ys   = xyzs[:, 1]
+        zs   = xyzs[:, 2]
+        xyzs = xyzs[(xs >= 0)                   & 
+                    (xs <  self.image.shape[0]) & 
+                    (ys >= 0)                   & 
+                    (ys <  self.image.shape[1]) & 
+                    (zs >= 0)                   & 
+                    (zs <  self.image.shape[2]), :]
 
         return xyzs
 
@@ -44,20 +44,20 @@ class Selection(object):
         
     def addToSelection(self, xyzs):
 
-        xyzs = self._filterVoxels(xyzs.T)
-        xs   = xyzs[0]
-        ys   = xyzs[1]
-        zs   = xyzs[2]
+        xyzs = self._filterVoxels(xyzs)
+        xs   = xyzs[:, 0]
+        ys   = xyzs[:, 1]
+        zs   = xyzs[:, 2]
 
         self.selection[xs, ys, zs] = True
 
 
     def removeFromSelection(self, xyzs):
         
-        xyzs = self._filterVoxels(xyzs.T)
-        xs   = xyzs[0]
-        ys   = xyzs[1]
-        zs   = xyzs[2]
+        xyzs = self._filterVoxels(xyzs)
+        xs   = xyzs[:, 0]
+        ys   = xyzs[:, 1]
+        zs   = xyzs[:, 2]
 
         self.selection[xs, ys, zs] = False
     
@@ -87,19 +87,17 @@ class Selection(object):
 
     def selectBlock(self, voxel, blockSize, axes=(0, 1, 2)):
 
-        if blockSize % 2 == 0:
-            blockSize = blockSize - 1
-
         if blockSize == 1:
             self.addToSelection(voxel)
             return
 
-        blockSize = int(blockSize / 2)
+        blockLo = int(np.floor(blockSize / 2.0))
+        blockHi = int(np.ceil( blockSize / 2.0))
         
         ranges = list(voxel)
         for ax in axes:
-            ranges[ax] = np.arange(voxel[ax] - blockSize,
-                                   voxel[ax] + blockSize + 1)
+            ranges[ax] = np.arange(voxel[ax] - blockLo,
+                                   voxel[ax] + blockHi)
 
         blockx, blocky, blockz = np.meshgrid(*ranges)
 
