@@ -12,10 +12,8 @@ log = logging.getLogger(__name__)
 from collections import OrderedDict
 
 import numpy                      as np
-import                               wx
 
 import                               props
-import fsl.fslview.profiles       as profiles
 import fsl.utils.transform        as transform
 import fsl.fslview.editor.editor  as editor
 import fsl.fslview.gl.annotations as annotations
@@ -32,9 +30,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             ('selint', 'Select by intensity')]))
 
 
-    selectionSize = props.Int(minval=1, maxval=15, default=3, clamped=True)
-    selectionIs3D = props.Boolean(default=False)
-
+    selectionSize  = props.Int(minval=1, maxval=30, default=3, clamped=True)
+    selectionIs3D  = props.Boolean(default=False)
     intensityThres = props.Real(default=10)
     
     def __init__(self, canvasPanel, imageList, displayCtx):
@@ -49,7 +46,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas() 
         
-        self._editor = editor.Editor(imageList, displayCtx)
+        self._editor         = editor.Editor(imageList, displayCtx)
+        self._voxelSelection = None
 
         self.addAltHandler('sel', 'LeftMouseDown', 'sel', 'LeftMouseDrag')
         self.addAltHandler('selint', 'LeftMouseDown',
@@ -72,21 +70,30 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
-        self.voxelSelection = annotations.VoxelSelection(
+        if self._voxelSelection is not None:
+            self._xcanvas.getAnnotations().dequeue(self._voxelSelection,
+                                                   hold=True)
+            self._ycanvas.getAnnotations().dequeue(self._voxelSelection,
+                                                   hold=True)
+            self._zcanvas.getAnnotations().dequeue(self._voxelSelection,
+                                                   hold=True) 
+
+        self._voxelSelection = annotations.VoxelSelection(
             selection,
             display.displayToVoxMat,
             display.voxToDisplayMat)
 
-        self._xcanvas.getAnnotations().obj(self.voxelSelection, hold=True)
-        self._ycanvas.getAnnotations().obj(self.voxelSelection, hold=True)
-        self._zcanvas.getAnnotations().obj(self.voxelSelection, hold=True)
+        self._xcanvas.getAnnotations().obj(self._voxelSelection, hold=True)
+        self._ycanvas.getAnnotations().obj(self._voxelSelection, hold=True)
+        self._zcanvas.getAnnotations().obj(self._voxelSelection, hold=True)
+        self._canvasPanel.Refresh()
 
     
     def deregister(self):
-        profiles.Profile.deregister(self)
-        self._xcanvas.getAnnotations().dequeue(self.voxelSelection)
-        self._ycanvas.getAnnotations().dequeue(self.voxelSelection)
-        self._zcanvas.getAnnotations().dequeue(self.voxelSelection)
+        self._xcanvas.getAnnotations().dequeue(self._voxelSelection, hold=True)
+        self._ycanvas.getAnnotations().dequeue(self._voxelSelection, hold=True)
+        self._zcanvas.getAnnotations().dequeue(self._voxelSelection, hold=True)
+        orthoviewprofile.OrthoViewProfile.deregister(self)
 
 
     def _selModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
@@ -108,8 +115,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                                     self.selectionSize,
                                                     (canvas.xax, canvas.yax))
 
-        self._canvasPanel.Refresh()
-
         
     def _selintModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         
@@ -123,8 +128,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._editor.getSelection().clearSelection()
         self._editor.getSelection().selectByValue(
             value, precision=self.intensityThres)
-
-        self._canvasPanel.Refresh()
 
         
     def _selintModeMouseWheel(self, canvas, wheel):

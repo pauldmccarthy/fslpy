@@ -118,6 +118,7 @@ class Profile(props.HasProperties):
             t.Bind(wx.EVT_MOTION,     None)
             t.Bind(wx.EVT_MOUSEWHEEL, None)
             t.Bind(wx.EVT_CHAR,       None)
+        self._canvasPanel.Refresh()
 
     
     def __getTempMode(self, ev):
@@ -270,6 +271,7 @@ class Profile(props.HasProperties):
             wheel, canvas.name))
 
         handler(canvas, wheel)
+        self._canvasPanel.Refresh()
 
         
     def __onMouseDown(self, ev):
@@ -295,6 +297,7 @@ class Profile(props.HasProperties):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(canvas, mouseLoc, canvasLoc)
+        self._canvasPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc        
@@ -320,6 +323,7 @@ class Profile(props.HasProperties):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(canvas, mouseLoc, canvasLoc)
+        self._canvasPanel.Refresh()
         self.__mouseDownPos  = None
         self.__canvasDownPos = None 
 
@@ -342,6 +346,7 @@ class Profile(props.HasProperties):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(canvas, mouseLoc, canvasLoc)
+        self._canvasPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc
@@ -363,6 +368,7 @@ class Profile(props.HasProperties):
         log.debug('Keyboard event ({}) on canvas {}'.format(key, canvas.name))
 
         handler(canvas, key)
+        self._canvasPanel.Refresh()
 
 
 class ProfileManager(object):
