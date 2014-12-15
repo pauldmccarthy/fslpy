@@ -16,8 +16,11 @@ import props
 
 
 class Profile(props.HasProperties):
-    """
-    Subclasses must define a props.Choice property called 'mode'.
+    """A :class:`Profile` class implements keyboard/mouse interaction behaviour
+    for a :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance.
+    
+    Subclasses must define a :class:`~props.properties_types.Choice` property
+    called ``mode``.
     """
 
     def __init__(self, canvasPanel, imageList, displayCtx):
@@ -36,19 +39,33 @@ class Profile(props.HasProperties):
 
 
     def register(self):
+        """Profile subclasses must override this method.
+
+        The purpose of ``register`` is to configure any mouse/keyboard event
+        listeners that the :class:`Profile` object must listen for.
+        """
         raise NotImplementedError('Profile subclasses must implement '
                                   'a methocd called register')
 
     
     def deregister(self):
+        """Profile subclasses must override this method.
+
+        The purpose of ``deregister`` is to unbind any mouse/keyboard event
+        listeners that were configured in :meth:`register`.
+        """ 
         raise NotImplementedError('Profile subclasses must implement '
                                   'a methocd called deregister') 
 
 
 class ProfileManager(object):
+    """
+    """
 
 
     def __init__(self, canvasPanel, imageList, displayCtx):
+        """
+        """
 
         from fsl.fslview.views.orthopanel    import OrthoPanel
         from fsl.fslview.views.lightboxpanel import LightBoxPanel
@@ -72,10 +89,14 @@ class ProfileManager(object):
 
 
     def getCurrentProfile(self):
+        """
+        """
         return self._currentProfile
 
         
     def changeProfile(self, profile):
+        """
+        """
 
         profileCls = self._profileMap[profile, self._canvasCls]
 

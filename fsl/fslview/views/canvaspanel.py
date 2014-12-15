@@ -159,7 +159,10 @@ class ControlStrip(controlpanel.ControlPanel):
         self._locationButton     = wx.Button(self, label='Location')
         self._settingsButton     = wx.Button(self, label='Display settings')
         self._screenShotButton   = wx.Button(self, label='Screen shot')
-
+        self._profileBox         = props.makeWidget(self,
+                                                    canvasPanel,
+                                                    'profile')
+        
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self._sizer.Add(self._imageListButton)
@@ -167,6 +170,7 @@ class ControlStrip(controlpanel.ControlPanel):
         self._sizer.Add(self._locationButton)
         self._sizer.Add(self._settingsButton)
         self._sizer.Add(self._screenShotButton)
+        self._sizer.Add(self._profileBox)
 
         self.SetSizer(self._sizer)
         self.Layout()
@@ -182,6 +186,17 @@ class ControlStrip(controlpanel.ControlPanel):
             canvasPanel.showSettingsPanel = not canvasPanel.showSettingsPanel
         def screenShot(ev):
             _takeScreenShot(imageList, displayCtx, canvasPanel)
+
+        def profileChanged(*a):
+            self._profileModeBox = props.makeWidget(
+                self,
+                canvasPanel.getCurrentProfile(),
+                'mode')
+            self._sizer.Add(self._profileModeBox)
+            self.Layout()
+
+        canvasPanel.addListener('profile', self._name, profileChanged)
+        profileChanged()
 
         self._imageListButton   .Bind(wx.EVT_BUTTON, toggleImageList)
         self._displayPropsButton.Bind(wx.EVT_BUTTON, toggleDisplayProps)
@@ -271,10 +286,7 @@ class CanvasPanel(viewpanel.ViewPanel):
         self.__dispSetContainer = wx.Panel(self)
 
         self.__canvasPanel = wx.Panel(self.__canvasContainer)
-        
-        self.__controlPanel = ControlStrip(
-            self, imageList, displayCtx, self)
-        
+ 
         self.__imageListPanel = imagelistpanel.ImageListPanel(
             self.__listLocContainer, imageList, displayCtx)
 
@@ -314,7 +326,6 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
-        self.__sizer.Add(self.__controlPanel,      flag=wx.EXPAND)
         self.__sizer.Add(self.__listLocContainer,  flag=wx.EXPAND)
         self.__sizer.Add(self.__canvasContainer,   flag=wx.EXPAND,
                          proportion=1)
@@ -329,12 +340,27 @@ class CanvasPanel(viewpanel.ViewPanel):
         self.addListener('showLocationPanel',     lName, self.__layout)
         self.addListener('showImageDisplayPanel', lName, self.__layout)
         self.addListener('showSettingsPanel',     lName, self.__layout)
-
+        self.addListener('profile',               lName, self.__profileChanged)
+        
         self.__layout()
         self._init()
-
-        self.addListener('profile', lName, self.__profileChanged)
         self.__profileChanged()
+
+        # Create the ControlStrip last, as it needs to access
+        # the Profile instance of this canvas panel, which is
+        # not created until _profileChanged is called above.
+        # _profileChanged must be called after self._init, as
+        # the profile logic may depend upon CanvasPanel
+        # subclass-specific attributes (e.g. xcanvas/ycanvas/
+        # zcanvas for the OrthoPanel). 
+        #
+        # And I think (but I can't remember why exactly) that
+        # self._init needs to be called after self.__layout.
+        # and self.__layout can only be called after all the
+        # stuff contained in this panel has been created.
+        self.__controlPanel = ControlStrip(
+            self, imageList, displayCtx, self)
+        self.__sizer.Insert(0, self.__controlPanel, flag=wx.EXPAND)
 
 
     def _init(self):
@@ -348,6 +374,10 @@ class CanvasPanel(viewpanel.ViewPanel):
         
     def getCanvasPanel(self):
         return self.__canvasPanel
+
+
+    def getCurrentProfile(self):
+        return self.__profileManager.getCurrentProfile()
 
     
     def __layout(self, *a):

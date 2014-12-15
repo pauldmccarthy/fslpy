@@ -7,17 +7,16 @@
 """This module defines a mouse/keyboard interaction 'view' profile for the
 :class:`~fsl.fslview.views.orthopanel.OrthoPanel'` class.
 
-There are four view 'modes' available in this profile:
+There are three view 'modes' available in this profile:
 
  - Location mode:  The user can change the currently displayed location.
 
- - Zoom mode:      The user can zoom in/out of a canvas.
+ - Zoom mode:      The user can zoom in/out of a canvas with the mouse 
+                   wheel, and draw a rectangle on a canvas in which to
+                   zoom.
 
  - Pan mode:       The user can pan around a canvas (if the canvas is
                    zoomed in).
-
- - Rectangle mode: The user can draw a rectangle on a canvas in which to
-                   zoom.
 
 The :attr:`OrthoViewProfile.mode` property controls the current mode.
 Alternately, keyboard modifier keys (e.g. shift) may be used to temporarily
@@ -44,8 +43,7 @@ class OrthoViewProfile(profiles.Profile):
         OrderedDict([
             ('loc',  'Location'),
             ('zoom', 'Zoom'),
-            ('pan',  'Pan'),
-            ('rect', 'Rectangle Zoom')]))
+            ('pan',  'Pan')]))
 
     def __init__(self, canvasPanel, imageList, displayCtx):
         """Creates an :class:`OrthoViewProfile`, which can be registered
@@ -100,7 +98,6 @@ class OrthoViewProfile(profiles.Profile):
     _tempModeMap = {
         ('loc', wx.WXK_SHIFT)   : 'pan',
         ('loc', wx.WXK_CONTROL) : 'zoom',
-        ('loc', wx.WXK_ALT)     : 'rect',
     }
     """This map is used by the :meth:`_getTempMode` method to determine
     whether a temporary mode should be enabled, based on any keyboard
@@ -115,11 +112,9 @@ class OrthoViewProfile(profiles.Profile):
         ('loc',  'RightMouseDown')   : ('loc',  'RightMouseDrag'),
         ('pan',  'RightMouseDown')   : ('pan',  'RightMouseDrag'),
         ('zoom', 'RightMouseDown')   : ('zoom', 'RightMouseDrag'),
-        ('rect', 'RightMouseDown')   : ('rect', 'RightMouseDrag'),
         ('loc',  'LeftMouseDown')    : ('loc',  'LeftMouseDrag'),
         ('pan',  'LeftMouseDown')    : ('pan',  'LeftMouseDrag'),
         ('zoom', 'LeftMouseDown')    : ('zoom', 'LeftMouseDrag'),
-        ('rect', 'LeftMouseDown')    : ('rect', 'LeftMouseDrag'),
 
         ('zoom', 'RightMouseDrag')   : ('loc',  'LeftMouseDrag'),
         ('zoom', 'MiddleMouseDrag')  : ('pan',  'LeftMouseDrag'),
@@ -415,14 +410,6 @@ class OrthoViewProfile(profiles.Profile):
     ####################
 
         
-    def _zoomModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
-        """Left mouse drags in zoom mode increase (drag up) or decrease (drag
-        down) the zoom level of the target canvas.
-        """
-        ydiff = my - self._lastMousePos[1]
-        self._zoomModeMouseWheel(canvas, ydiff)
-
-        
     def _zoomModeMouseWheel(self, canvas, wheel):
         """Mouse wheel motion in zoom mode increases/decreases the zoom level
         of the target canvas.
@@ -431,7 +418,7 @@ class OrthoViewProfile(profiles.Profile):
         elif wheel < 0: wheel = -10
         canvas.zoom += wheel
 
-    
+        
     def _zoomModeChar(self, canvas, key):
         """The +/- keys in zoom mode increase/decrease the zoom level
         of the target canvas.
@@ -451,6 +438,62 @@ class OrthoViewProfile(profiles.Profile):
             return
 
         self._zoomModeWheelEvent(canvas, zoom)
+
+        
+    def _zoomModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """Left mouse drags in zoom mode draw a rectangle on the target
+        canvas.
+
+        When the user releases the mouse (see :meth:`_zoomModeLeftMouseUp`),
+        the canvas will be zoomed in to the drawn rectangle.
+        """
+
+        corner = [self._canvasDownPos[0],
+                  self._canvasDownPos[1]]
+        width  = xpos - corner[0]
+        height = ypos - corner[1]
+
+        self._lastRect = canvas.getAnnotations().rect(corner,
+                                                      width,
+                                                      height,
+                                                      colour=(1, 1, 0))
+        canvas.Refresh()
+
+        
+    def _zoomModeLeftMouseUp(self, canvas, (mx, my), (xpos, ypos, zpos)):
+        """When the left mouse is released in zoom mode, the target
+        canvas is zoomed in to the rectangle region that was drawn by the
+        user.
+        """
+
+        canvas.getAnnotations().dequeue(self._lastRect)
+
+        rectXlen = abs(xpos - self._canvasDownPos[0])
+        rectYlen = abs(ypos - self._canvasDownPos[1])
+
+        if rectXlen == 0: return
+        if rectYlen == 0: return
+
+        rectXmid = (xpos + self._canvasDownPos[0]) / 2.0
+        rectYmid = (ypos + self._canvasDownPos[1]) / 2.0
+
+        xlen = self._displayCtx.bounds.getLen(canvas.xax)
+        ylen = self._displayCtx.bounds.getLen(canvas.yax)
+
+        xzoom   = xlen / rectXlen
+        yzoom   = ylen / rectYlen
+        zoom    = min(xzoom, yzoom) * 100.0
+        maxzoom = canvas.getConstraint('zoom', 'maxval')
+
+        if zoom >= maxzoom:
+            zoom = maxzoom
+
+        if zoom > canvas.zoom:
+            canvas.zoom = zoom
+            canvas.centreDisplayAt(rectXmid, rectYmid)
+
+        canvas.Refresh()
+        
 
         
     ###################
@@ -486,63 +529,3 @@ class OrthoViewProfile(profiles.Profile):
         else:                     return
 
         canvas.panDisplayBy(xoff, yoff)
-
-
-    #########################
-    # Rectangle mode handlers
-    #########################
-        
-    
-    def _rectModeLeftMouseDrag(self, canvas, (mx, my), (xpos, ypos, zpos)):
-        """Left mouse drags in rectangle mode draw a rectangle on the target
-        canvas.
-
-        When the user releases the mouse (see :meth:`_rectModeLeftMouseUp`),
-        the canvas will be zoomed in to the drawn rectangle.
-        """
-
-        corner = [self._canvasDownPos[0],
-                  self._canvasDownPos[1]]
-        width  = xpos - corner[0]
-        height = ypos - corner[1]
-
-        self._lastRect = canvas.getAnnotations().rect(corner,
-                                                      width,
-                                                      height,
-                                                      colour=(1, 1, 0))
-        canvas.Refresh()
-
-        
-    def _rectModeLeftMouseUp(self, canvas, (mx, my), (xpos, ypos, zpos)):
-        """When the left mouse is released in rectangle mode, the target
-        canvas is zoomed in to the rectangle region that was drawn by the
-        user.
-        """
-
-        canvas.getAnnotations().dequeue(self._lastRect)
-
-        rectXlen = abs(xpos - self._canvasDownPos[0])
-        rectYlen = abs(ypos - self._canvasDownPos[1])
-
-        if rectXlen == 0: return
-        if rectYlen == 0: return
-
-        rectXmid = (xpos + self._canvasDownPos[0]) / 2.0
-        rectYmid = (ypos + self._canvasDownPos[1]) / 2.0
-
-        xlen = self._displayCtx.bounds.getLen(canvas.xax)
-        ylen = self._displayCtx.bounds.getLen(canvas.yax)
-
-        xzoom   = xlen / rectXlen
-        yzoom   = ylen / rectYlen
-        zoom    = min(xzoom, yzoom) * 100.0
-        maxzoom = canvas.getConstraint('zoom', 'maxval')
-
-        if zoom >= maxzoom:
-            zoom = maxzoom
-
-        if zoom > canvas.zoom:
-            canvas.zoom = zoom
-            canvas.centreDisplayAt(rectXmid, rectYmid)
-
-        canvas.Refresh()
