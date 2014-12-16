@@ -26,6 +26,7 @@ import wx
 import props
 
 import fsl.fslview.profiles                    as profiles
+import fsl.fslview.profiles.profilepanel       as profilepanel
 import fsl.fslview.controlpanel                as controlpanel 
 import fsl.fslview.displaycontext              as displayctx
 import fsl.fslview.viewpanel                   as viewpanel
@@ -154,26 +155,38 @@ class ControlStrip(controlpanel.ControlPanel):
     def __init__(self, parent, imageList, displayCtx, canvasPanel):
         controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._imageListButton    = wx.Button(self, label='Image list')
-        self._displayPropsButton = wx.Button(self, label='Image display')
-        self._locationButton     = wx.Button(self, label='Location')
-        self._settingsButton     = wx.Button(self, label='Display settings')
-        self._screenShotButton   = wx.Button(self, label='Screen shot')
-        self._profileBox         = props.makeWidget(self,
+        self._topPanel           = wx.Panel(self)
+        self._imageListButton    = wx.Button(self._topPanel,
+                                             label='Image list')
+        self._displayPropsButton = wx.Button(self._topPanel,
+                                             label='Image display')
+        self._locationButton     = wx.Button(self._topPanel,
+                                             label='Location')
+        self._settingsButton     = wx.Button(self._topPanel,
+                                             label='Display settings')
+        self._screenShotButton   = wx.Button(self._topPanel,
+                                             label='Screen shot')
+        self._profileBox         = props.makeWidget(self._topPanel,
                                                     canvasPanel,
                                                     'profile')
-        self._profileModeBox     = None
+        self._profileOptPanel    = wx.Panel(self)
+
+        self._sizer    = wx.BoxSizer(wx.VERTICAL)
+        self._topSizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._topSizer.Add(self._imageListButton)
+        self._topSizer.Add(self._displayPropsButton)
+        self._topSizer.Add(self._locationButton)
+        self._topSizer.Add(self._settingsButton)
+        self._topSizer.Add(self._screenShotButton)
+        self._topSizer.Add(self._profileBox)
+        self._sizer   .Add(self._topPanel)
+        self._sizer   .Add(self._profileOptPanel)
 
-        self._sizer.Add(self._imageListButton)
-        self._sizer.Add(self._displayPropsButton)
-        self._sizer.Add(self._locationButton)
-        self._sizer.Add(self._settingsButton)
-        self._sizer.Add(self._screenShotButton)
-        self._sizer.Add(self._profileBox)
-
-        self.SetSizer(self._sizer)
+        self._topPanel.SetSizer(self._topSizer)
+        self          .SetSizer(self._sizer)
+        
+        self._profileOptPanel.SetAutoLayout(True)
         self.Layout()
 
         def toggleImageList(ev):
@@ -189,16 +202,14 @@ class ControlStrip(controlpanel.ControlPanel):
             _takeScreenShot(imageList, displayCtx, canvasPanel)
 
         def profileChanged(*a):
-
-            if self._profileModeBox is not None:
-                self._sizer.Detach(self._profileModeBox)
-                self._profileModeBox.Destroy()
-                
-            self._profileModeBox = props.makeWidget(
-                self,
-                canvasPanel.getCurrentProfile(),
-                'mode')
-            self._sizer.Add(self._profileModeBox)
+            self._profileOptPanel.DestroyChildren()
+            self._profileSizer = wx.BoxSizer(wx.HORIZONTAL)
+            self._profilePanel = profilepanel.ProfilePanel(
+                self._profileOptPanel, canvasPanel.getCurrentProfile())
+            self._profileSizer.Add(self._profilePanel,
+                                   flag=wx.EXPAND,
+                                   proportion=1)
+            self._profileOptPanel.SetSizer(self._profileSizer)
             self.Layout()
 
         canvasPanel.addListener('profile', self._name, profileChanged)
