@@ -210,7 +210,7 @@ class ControlStrip(controlpanel.ControlPanel):
                                    flag=wx.EXPAND,
                                    proportion=1)
             self._profileOptPanel.SetSizer(self._profileSizer)
-            self.Layout()
+            canvasPanel.Layout()
 
         canvasPanel.addListener('profile', self._name, profileChanged)
         profileChanged()
