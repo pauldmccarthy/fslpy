@@ -421,31 +421,39 @@ class SliceCanvas(props.HasProperties):
 
     def _applyZoom(self, xmin, xmax, ymin, ymax):
         """'Zooms' in to the given rectangle according to the
-        current value of the zoom property. Returns a 4-tuple
-        containing the updated bound values.
+        current value of the zoom property, keeping the view
+        centre consistent with regards to the current value
+        of the :attr:`displayBounds` property. Returns a
+        4-tuple containing the updated bound values.
         """
 
         if self.zoom == 100.0:
             return (xmin, xmax, ymin, ymax)
 
+        bounds     = self.displayBounds
         zoomFactor = 100.0 / self.zoom
 
-        xlen = xmax - xmin
-        ylen = ymax - ymin
-
+        xlen    = xmax - xmin
+        ylen    = ymax - ymin
         newxlen = xlen * zoomFactor
         newylen = ylen * zoomFactor
+ 
+        # centre the zoomed-in rectangle on
+        # the current displayBounds centre
+        xmid = bounds.xlo + 0.5 * bounds.xlen
+        ymid = bounds.ylo + 0.5 * bounds.ylen
 
-        xmin = self.pos.x - 0.5 * newxlen
-        xmax = self.pos.x + 0.5 * newxlen
-        ymin = self.pos.y - 0.5 * newylen
-        ymax = self.pos.y + 0.5 * newylen
+        # new x/y min/max bounds
+        xmin = xmid - 0.5 * newxlen
+        xmax = xmid + 0.5 * newxlen
+        ymin = ymid - 0.5 * newylen
+        ymax = ymid + 0.5 * newylen
 
         xlen = xmax - xmin
         ylen = ymax - ymin
 
-        bounds = self.displayBounds
-
+        # clamp x/y min/max values to the
+        # displayBounds constraints
         if xmin < bounds.getMin(0):
             xmin = bounds.getMin(0)
             xmax = xmin + xlen
