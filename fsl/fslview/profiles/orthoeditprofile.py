@@ -11,12 +11,14 @@ log = logging.getLogger(__name__)
 
 from collections import OrderedDict
 
-import numpy                      as np
+import                                 wx
+import numpy                        as np
 
-import                               props
-import fsl.utils.transform        as transform
-import fsl.fslview.editor.editor  as editor
-import fsl.fslview.gl.annotations as annotations
+import                                 props
+import fsl.utils.transform          as transform
+import fsl.fslview.editor.editor    as editor
+import fsl.fslview.editor.selection as editorselection
+import fsl.fslview.gl.annotations   as annotations
 
 import orthoviewprofile
 
@@ -27,6 +29,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         OrderedDict([
             ('loc',    'Location'),
             ('sel',    'Select'),
+            ('desel',  'Deselect'),
             ('selint', 'Select by intensity')]))
 
 
@@ -41,6 +44,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             canvasPanel,
             imageList,
             displayCtx)
+
+        self.addTempMode('sel', wx.WXK_ALT, 'desel')
         
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
@@ -49,9 +54,12 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._editor         = editor.Editor(imageList, displayCtx)
         self._voxelSelection = None
 
-        self.addAltHandler('sel', 'LeftMouseDown', 'sel', 'LeftMouseDrag')
+        self.addAltHandler('sel',   'LeftMouseDown', 'sel',   'LeftMouseDrag')
+        self.addAltHandler('desel', 'LeftMouseDown', 'desel', 'LeftMouseDrag')
+        self.addAltHandler('desel', 'MouseMove',     'sel',   'MouseMove')
         self.addAltHandler('selint', 'LeftMouseDown',
                            'selint', 'LeftMouseDrag')
+
 
         displayCtx.addListener('selectedImage',
                                self._name,
@@ -61,6 +69,23 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                self._selectedImageChanged)
 
         self._selectedImageChanged()
+
+
+    def _getVoxelLocation(self, canvasPos):
+        """Returns the voxel location, for the currently selected image,
+        which corresponds to the specified canvas position.
+        """
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        voxel = transform.transform([canvasPos], display.displayToVoxMat)[0]
+
+        # Using floor(voxel+0.5) because, when at the
+        # midpoint, I want to round up. np.round rounds
+        # to the nearest even number, which is not ideal
+        voxel = np.array(np.floor(voxel + 0.5), dtype=np.int32)
+
+        return voxel
 
 
     def _selectedImageChanged(self, *a):
@@ -96,41 +121,98 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         orthoviewprofile.OrthoViewProfile.deregister(self)
 
 
-    def _selModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _makeSelectionAnnotation(self, canvas, voxel, blockSize=None):
+        """Highlights the specified voxel with a selection annotation.
+        This is used by mouse motion event handlers, so the user can
+        see the possible selection, and thus what would happen if they
+        were to click.
+        """
 
         image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(image) 
+        
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)
 
-        voxel = transform.transform([canvasPos], display.displayToVoxMat)[0]
+        if blockSize is None:
+            blockSize = self.selectionSize
 
-        # Using floor(voxel+0.5) because, when at the
-        # midpoint, I want to round up. np.round rounds
-        # to the nearest even number, which is not ideal
-        voxel = np.array(np.floor(voxel + 0.5), dtype=np.int32)
+        block = self._editor.getSelection().generateBlock(
+            voxel,
+            blockSize,
+            axes)
 
-        if self.selectionIs3D:
-            self._editor.getSelection().selectBlock(voxel, self.selectionSize)
-        else:
-            self._editor.getSelection().selectBlock(voxel,
-                                                    self.selectionSize,
-                                                    (canvas.xax, canvas.yax))
+        selection = editorselection.Selection(image)
+        selection.addToSelection(block)
+
+        for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
+            canvas.getAnnotations().selection(
+                selection,
+                display.displayToVoxMat,
+                display.voxToDisplayMat,
+                colour=(1, 1, 0))
+
+            
+    def _selModeMouseWheel(self, canvas, wheelDir, mousePos, canvasPos):
+
+        if   wheelDir > 0: self.selectionSize += 1
+        elif wheelDir < 0: self.selectionSize -= 1
+
+        voxel = self._getVoxelLocation(canvasPos)
+        self._makeSelectionAnnotation(canvas, voxel)
+
+
+    def _selModeMouseMove(self, canvas, mousePos, canvasPos):
+
+        voxel = self._getVoxelLocation(canvasPos)
+        self._makeSelectionAnnotation(canvas, voxel)
+
+
+    def _selModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+
+        voxel = self._getVoxelLocation(canvasPos)
+
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)
+                  
+        self._editor.getSelection().selectBlock(voxel,
+                                                self.selectionSize,
+                                                axes)
+        self._makeSelectionAnnotation(canvas, voxel) 
+
+
+    def _deselModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+        
+        voxel = self._getVoxelLocation(canvasPos)
+
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)
+                  
+        self._editor.getSelection().deselectBlock(voxel,
+                                                  self.selectionSize,
+                                                  axes)
+        self._makeSelectionAnnotation(canvas, voxel)
+
+
+    def _selintModeMouseMove(self, canvas, mousePos, canvasPos):
+        voxel = self._getVoxelLocation(canvasPos)
+        self._makeSelectionAnnotation(canvas, voxel, 1)
 
         
     def _selintModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        
-        voxel = transform.transform([canvasPos], display.displayToVoxMat)[0]
-        voxel = np.array(np.floor(voxel + 0.5), dtype=np.int32)
+        image = self._displayCtx.getSelectedImage()
+        voxel = self._getVoxelLocation(canvasPos)
         value = image.data[voxel[0], voxel[1], voxel[2]]
         
         self._editor.getSelection().clearSelection()
         self._editor.getSelection().selectByValue(
             value, precision=self.intensityThres)
+        
+        self._makeSelectionAnnotation(canvas, voxel, 1) 
 
         
-    def _selintModeMouseWheel(self, canvas, wheel):
+    def _selintModeMouseWheel(self, canvas, wheel, mousePos, canvasPos):
 
         if wheel > 0: self.intensityThres += 10
         else:         self.intensityThres -= 10

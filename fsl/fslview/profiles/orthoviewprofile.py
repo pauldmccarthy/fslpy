@@ -120,7 +120,11 @@ class OrthoViewProfile(profiles.Profile):
     ####################
 
         
-    def _zoomModeMouseWheel(self, canvas, wheel):
+    def _zoomModeMouseWheel(self,
+                            canvas,
+                            wheel,
+                            mousePos=None,
+                            canvasPos=None):
         """Mouse wheel motion in zoom mode increases/decreases the zoom level
         of the target canvas.
         """
