@@ -36,6 +36,30 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     selectionSize  = props.Int(minval=1, maxval=30, default=3, clamped=True)
     selectionIs3D  = props.Boolean(default=False)
     intensityThres = props.Real(default=10)
+    fillValue      = props.Real(default=0)
+
+
+    def createMaskFromSelection(self):
+        pass
+
+
+    def clearSelection(self):
+        self._editor.getSelection().clearSelection()
+
+
+    def fillSelection(self):
+        self._editor.fillSelection(self.fillValue)
+
+
+    def undo(self):
+        if self._editor.canUndo():
+            self._editor.undo() 
+
+
+    def redo(self):
+        if self._editor.canRedo():
+            self._editor.redo()
+
     
     def __init__(self, canvasPanel, imageList, displayCtx):
 
@@ -44,6 +68,22 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             canvasPanel,
             imageList,
             displayCtx)
+
+        self.addAction('undo',
+                       'Undo',
+                       self.undo)
+        self.addAction('redo',
+                       'Redo',
+                       self.redo)
+        self.addAction('fillSelection',
+                       'Fill selection',
+                       self.fillSelection)
+        self.addAction('clearSelection',
+                       'Clear selection',
+                       self.clearSelection)
+        self.addAction('createMaskFromSelection',
+                       'Create mask',
+                       self.createMaskFromSelection) 
 
         self.addTempMode('sel', wx.WXK_ALT, 'desel')
         

@@ -6,6 +6,23 @@
 #
 """The :mod:`profiles` module contains logic for mouse/keyboard interaction
 with :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` panels.
+
+This logic is encapsulated in two classes:
+
+ - The :class:`Profile` class is intended to be subclassed. A :class:`Profile`
+   instance contains the mouse/keyboard event handlers for a particular type
+   of ``CanvasPanel`` to allow the user to interact with the canvas in a
+   particular way. For example, the
+   :class:`~fsl.fslview.profiles.orthoviewprofile.OrthoViewProfile` class
+   allows the user to navigate through the image space in an
+   :class:`~fsl.fslview.views.orthopanel.OrthoPanel` canvas, wherease the
+   :class:`~fsl.fslview.profiles.orthoeditprofile.OrthoEditProfile` class
+   contains interaction logic for selecting and editing image voxels in an
+   ``OrthoPanel``.
+
+
+ - The :class:`ProfileManager` class is used by ``CanvasPanel`` instances to
+   create and change the ``Profile`` instance currently in use.
 """
 
 import logging
@@ -24,6 +41,12 @@ class Profile(props.HasProperties):
     
     Subclasses must define a :class:`~props.properties_types.Choice` property
     called ``mode``.
+
+    Things to discuss:
+     - tempmodes
+     - althandlers
+     - actions
+     - handler naming convention
     """
 
     def __init__(self, canvasPanel, imageList, displayCtx):
@@ -35,11 +58,17 @@ class Profile(props.HasProperties):
 
         # Maps which define temporarymodes/alternate
         # handlers when keyboard modifiers are used,
-        # or when a handler for a particular event is
-        # not defined
+        # or when a handler for a particular event
+        # is not defined
         self.__tempModeMap   = {}
         self.__altHandlerMap = {}
-
+        
+        # A dict containing name -> (label, function)
+        # mappings, which are actions exposed to the
+        # user, and can be used to perform some sort
+        # of action on the view
+        self.__actions = {}
+        
         # some attributes to keep track
         # of mouse event locations
         self.__lastMousePos  = None
@@ -73,6 +102,19 @@ class Profile(props.HasProperties):
         """
         """
         return self.__lastMousePos, self.__lastCanvasPos
+
+
+    def addAction(self, name, label, function):
+
+        def funcWrapper():
+            function()
+            self._canvasPanel.Refresh()
+            
+        self.__actions[name] = (label, funcWrapper)
+
+
+    def getActions(self):
+        return dict(self.__actions)
 
 
     def addTempMode(self, mode, modifier, tempMode):
