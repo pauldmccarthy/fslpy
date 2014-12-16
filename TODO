@@ -12,13 +12,14 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
-** OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** WX Bugs
 *** Floating panels get moved about when opening a new floating panel.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 *** Wild cards in image file load (WX/OSX issue)
-** OSMesa render doesn't work with circle voxels
+** WONTFIX OSMesa render doesn't work with circle voxels
+Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** DONE OrthoPanel - need to refresh slice canvases when view changes
 ** DONE Lightbox scrollbar positioned incorrectly - goes over location panel
 ** DONE Lightbox is not scrolling through full image ?
