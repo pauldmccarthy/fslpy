@@ -63,7 +63,7 @@ class Selection(object):
     
     
     def clearSelection(self):
-        self.selection[:]   = False
+        self.selection[:] = False
 
 
     def getSelection(self, restrict=None):
@@ -85,11 +85,10 @@ class Selection(object):
         return result
 
 
-    def selectBlock(self, voxel, blockSize, axes=(0, 1, 2)):
-
+    def generateBlock(self, voxel, blockSize, axes=(0, 1, 2)):
+        
         if blockSize == 1:
-            self.addToSelection(voxel)
-            return
+            return voxel
 
         blockLo = int(np.floor(blockSize / 2.0))
         blockHi = int(np.ceil( blockSize / 2.0))
@@ -105,8 +104,16 @@ class Selection(object):
         blocky = blocky.flat
         blockz = blockz.flat
         block  = np.vstack((blockx, blocky, blockz)).T
+
+        return block
+
+
+    def selectBlock(self, voxel, blockSize, axes=(0, 1, 2)):
+        self.addToSelection(self.generateBlock(voxel, blockSize, axes))
+
         
-        self.addToSelection(block)         
+    def deselectBlock(self, voxel, blockSize, axes=(0, 1, 2)):
+        self.removeFromSelection(self.generateBlock(voxel, blockSize, axes)) 
 
     
     def selectByValue(self, value, precision=None):

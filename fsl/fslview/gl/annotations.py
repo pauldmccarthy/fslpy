@@ -64,7 +64,7 @@ class Annotations(object):
 
 
     def selection(self,
-                  voxels,
+                  selection,
                   displayToVoxMat,
                   voxToDisplayMat,
                   *args,
@@ -74,7 +74,8 @@ class Annotations(object):
         """
 
         hold = kwargs.pop('hold', False)
-        return self.obj(VoxelSelection(voxels,
+
+        return self.obj(VoxelSelection(selection,
                                        displayToVoxMat,
                                        voxToDisplayMat,
                                        *args, **kwargs), hold)

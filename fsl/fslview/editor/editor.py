@@ -68,7 +68,7 @@ class Editor(object):
         return self._selection
 
 
-    def makeChange(self, newVals):
+    def fillSelection(self, newVals):
 
         image = self._displayCtx.getSelectedImage().data
         nvox  = self.getSelectionSize()
