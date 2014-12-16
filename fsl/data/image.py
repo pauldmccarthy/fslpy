@@ -152,8 +152,14 @@ class Image(props.HasProperties):
     
     name = props.String()
     """The name of this image."""
+
+
+    data = props.Object()
+    """The image data. This is a read-only :mod:`numpy` array - all changes
+       to the image data must be via the :meth:`applyChange` method.
+    """
+
     
-        
     def __init__(self, image):
         """Initialise an Image object with the given image data or file name.
 
@@ -199,6 +205,10 @@ class Image(props.HasProperties):
         self.pixdim        = self.nibImage.get_header().get_zooms()
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
+        
+        self.changed       = False
+
+        self.data.flags.writeable = False
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
@@ -207,6 +217,44 @@ class Image(props.HasProperties):
         # arbitrary data associated with this image.
         self._attributes = {}
 
+        
+    def applyChange(self, indices, newVals, volume=None):
+        """Changes the image data according to the indices and new values.
+        Any listeners registered on the :attr:`data` property will be
+        notified of the change.
+
+        :arg indices: A :mod:`numpy` array  of shape ``N*3`` containing
+                      the indices of the voxels to be changed.
+        
+        :arg newVals: A sequence of values of length ``N`` containing the
+                      new voxel values. Or a scalar value, in which case
+                      all of the voxels specified by ``indices`` will be
+                      set to the scalar.
+        
+        :arg volume:  If this is a 4D image, the volume index.
+        """
+
+        if self.is4DImage() and volume is None:
+            raise ValueError('Volume must be specified for 4D images')
+        
+        xs = indices[:, 0]
+        ys = indices[:, 1]
+        zs = indices[:, 2]
+
+        data = self.data
+
+        try:
+            data.flags.writeable = True
+            if self.is4DImage(): data[xs, ys, zs, volume] = newVals
+            else:                data[xs, ys, zs]         = newVals
+            data.flags.writeable = False
+        except:
+            data.flags.writeable = False
+            raise
+
+        self.changed = True
+        self.data    = data
+        
 
     def __hash__(self):
         """Returns a number which uniquely idenfities this :class:`Image`
