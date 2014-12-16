@@ -43,6 +43,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         pass
 
 
+    def createROIFromSelection(self):
+        pass
+
+
     def clearSelection(self):
         self._editor.getSelection().clearSelection()
 
@@ -83,7 +87,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                        self.clearSelection)
         self.addAction('createMaskFromSelection',
                        'Create mask',
-                       self.createMaskFromSelection) 
+                       self.createMaskFromSelection)
+        self.addAction('createROIFromSelection',
+                       'Create ROI',
+                       self.createROIFromSelection) 
 
         self.addTempMode('sel', wx.WXK_ALT, 'desel')
         
