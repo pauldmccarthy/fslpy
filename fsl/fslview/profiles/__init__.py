@@ -99,8 +99,8 @@ class Profile(props.HasProperties):
             t.Bind(wx.EVT_RIGHT_DOWN,  self.__onMouseDown)
             t.Bind(wx.EVT_LEFT_UP,     self.__onMouseUp)
             t.Bind(wx.EVT_MIDDLE_UP,   self.__onMouseUp)
-            t.Bind(wx.EVT_RIGHT_UP,    self.__onMouseUp) 
-            t.Bind(wx.EVT_MOTION,      self.__onMouseDrag)
+            t.Bind(wx.EVT_RIGHT_UP,    self.__onMouseUp)
+            t.Bind(wx.EVT_MOTION,      self.__onMouseMove)
             t.Bind(wx.EVT_MOUSEWHEEL,  self.__onMouseWheel)
             t.Bind(wx.EVT_CHAR,        self.__onChar)
 
@@ -193,13 +193,13 @@ class Profile(props.HasProperties):
             if btn is None:
                 btn = ''
 
-            # mouse motion (without dragging)
-            # is currently not supported
             if   ev.ButtonUp():              evType = 'Up'
             elif ev.ButtonDown():            evType = 'Down'
             elif ev.Dragging():              evType = 'Drag'
             elif ev.GetWheelRotation() != 0: evType = 'Wheel'
-            else:                            return None
+
+            # Do I need to consider any other mouse event types?
+            else:                            evType = 'Move'
             
             return '{}Mouse{}'.format(btn, evType)
 
@@ -264,13 +264,14 @@ class Profile(props.HasProperties):
         if handler is None:
             return
 
-        canvas = ev.GetEventObject()
-        wheel  = ev.GetWheelRotation()
+        mouseLoc, canvasLoc = self.__getMouseLocation(ev)
+        canvas              = ev.GetEventObject()
+        wheel               = ev.GetWheelRotation()
 
         log.debug('Mouse wheel event ({}) on canvas {}'.format(
             wheel, canvas.name))
 
-        handler(canvas, wheel)
+        handler(canvas, wheel, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
 
         
@@ -325,7 +326,33 @@ class Profile(props.HasProperties):
         handler(canvas, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
         self.__mouseDownPos  = None
-        self.__canvasDownPos = None 
+        self.__canvasDownPos = None
+
+
+    def __onMouseMove(self, ev):
+        """Called on mouse motion. If a mouse button is down, delegates to
+        :meth:`__onMouseDrag`.
+
+        Otherwise, delegates to a mode specific handler if one is present.
+        """
+
+        if ev.Dragging():
+            self.__onMouseDrag(ev)
+            return
+
+        handler = self.__getHandler(ev)
+
+        if handler is None:
+            return
+        
+        canvas              = ev.GetEventObject()
+        mouseLoc, canvasLoc = self.__getMouseLocation(ev)
+
+        log.debug('Mouse move event ({}, {}) on canvas {}'.format(
+            mouseLoc, canvasLoc, canvas.name))
+
+        handler(canvas, mouseLoc, canvasLoc)
+        self._canvasPanel.Refresh()
 
     
     def __onMouseDrag(self, ev):
