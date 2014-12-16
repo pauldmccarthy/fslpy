@@ -114,43 +114,6 @@ class ImageDisplay(props.SyncableHasProperties):
     :attr:`~fsl.data.image.Image.imageType` property.
     """
 
-
-    def __eq__(self, other):
-        """
-        Returns true if the given object is an :class:`ImageDisplay`, and
-        has the same display values as this one.
-        """
-        if not isinstance(other, ImageDisplay):
-            return False
-            
-        return (self.enabled       == other.enabled      and
-                self.alpha         == other.alpha        and
-                self.displayRange  == other.displayRange and
-                self.clipLow       == other.clipLow      and
-                self.clipHigh      == other.clipHigh     and
-                self.cmap.name     == other.cmap.name    and
-                self.volume        == other.volume       and
-                self.resolution    == other.resolution   and
-                self.transform     == other.transform    and
-                self.interpolation == other.interpolation)
-
-        
-    def __hash__(self):
-        """
-        Returns a hash value based upon the display properties of this
-        :class:`ImageDisplay` object.
-        """
-        return (hash(self.enabled)      ^
-                hash(self.alpha)        ^
-                hash(self.displayRange) ^
-                hash(self.clipLow)      ^
-                hash(self.clipHigh)     ^
-                hash(self.cmap.name)    ^
-                hash(self.volume)       ^
-                hash(self.resolution)   ^
-                hash(self.transform)    ^
-                hash(self.interpolation))
-
         
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.

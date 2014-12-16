@@ -383,7 +383,8 @@ class SliceCanvas(props.HasProperties):
             genGLObject()
                 
             def refresh(*a): self._refresh()
-            
+
+            image  .addListener('data',          self.name, refresh)
             display.addListener('imageType',     self.name, genGLObject)
             display.addListener('enabled',       self.name, refresh)
             display.addListener('transform',     self.name, refresh)

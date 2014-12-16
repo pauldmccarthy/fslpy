@@ -64,6 +64,26 @@ class GLImage(object):
         self.display = display
         self._ready  = False
 
+        # Whenever some specific display/image properties
+        # change, the 3D image texture must be updated.
+        # An attribute is set on the image object so the
+        # genImageTexture method can figure out whether
+        # or not the image texture needs to be updated
+        def markImage(*a):
+            image.setAttribute('GLImageDirty', True)
+
+        # Only one 'GLImageDirty' listener, for all GLImage
+        # instances, is registered on ecah image/display,
+        # so the GLImageDirty attribute is only set once.
+        try:    display.addListener('interpolation', 'GLImageDirty', markImage)
+        except: pass
+        try:    display.addListener('volume',        'GLImageDirty', markImage)
+        except: pass
+        try:    display.addListener('resolution',    'GLImageDirty', markImage)
+        except: pass
+        try:    image  .addListener('data',          'GLImageDirty', markImage)
+        except: pass
+
 
     def ready(self):
         """Returns `True` when the OpenGL data/state has been initialised, and the
@@ -88,6 +108,7 @@ class GLImage(object):
         # Initialise the image data, and
         # generate vertex/texture coordinates
         self.setAxes(xax, yax)
+
         self.genImageTexture()
 
         # The colour map, used for converting 
@@ -154,8 +175,7 @@ class GLImage(object):
         # Another GLImage object may have
         # already deleted the image texture
         try:
-            displayHash, imageTexture = \
-                self.image.delAttribute('glImageTexture')
+            imageTexture = self.image.delAttribute('glImageTexture')
             gl.glDeleteTextures(1, imageTexture)
             
         except KeyError:
@@ -336,20 +356,15 @@ class GLImage(object):
 
         # Check to see if the image texture
         # has already been created
-        try:
-            displayHash, imageTexture = image.getAttribute('glImageTexture')
-        except:
-            displayHash  = None
-            imageTexture = None
+        try:    imageTexture = image.getAttribute('GLImageTexture')
+        except: imageTexture = None
 
         # otherwise, create a new one
         if imageTexture is None:
             imageTexture = gl.glGenTextures(1)
 
-        # The image buffer already exists, and it
-        # contains the data for the current display
-        # configuration
-        elif displayHash == hash(display):
+        # The image buffer already exists, and is valid
+        elif not image.getAttribute('GLImageDirty'):
             self.imageTexture      = imageTexture
             self.imageTextureShape = shape
             return
@@ -414,11 +429,12 @@ class GLImage(object):
                         texExtFmt,
                         imageData)
 
-        # Add the ImageDisplay hash, and a reference to the
-        # texture as an attribute of the image, so other
-        # things which want to render the same volume of the
-        # image don't need to duplicate all of that data.
-        image.setAttribute('glImageTexture', (hash(display), imageTexture))
+        # Add a reference to the texture as an attribute
+        # of the image, and mark it as up to date, so other
+        # things which want to render the same image data
+        # don't need to regenerate the texture
+        image.setAttribute('GLImageTexture', imageTexture)
+        image.setAttribute('GLImageDirty',   False)
 
     
     def genColourTexture(self, colourResolution):
@@ -512,6 +528,7 @@ class GLImage(object):
         def colourUpdate(*a):
             self.genColourTexture(self.colourResolution)
 
+        image   = self.image
         display = self.display
         lnrName = 'GlImage_{}'.format(id(self))
 
@@ -524,3 +541,4 @@ class GLImage(object):
         display.addListener('cmap',            lnrName, colourUpdate)
         display.addListener('resolution',      lnrName, imageUpdate)
         display.addListener('volume',          lnrName, imageUpdate)
+        image  .addListener('data',            lnrName, imageUpdate)
