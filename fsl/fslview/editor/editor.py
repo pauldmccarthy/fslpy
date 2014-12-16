@@ -70,21 +70,23 @@ class Editor(object):
 
     def fillSelection(self, newVals):
 
-        image = self._displayCtx.getSelectedImage().data
-        nvox  = self.getSelectionSize()
+        image = self._displayCtx.getSelectedImage()
+        nvox  = self._selection.getSelectionSize()
 
         if not isinstance(newVals, collections.Sequence):
-            newVals = [newVals] * nvox
+            nv = np.zeros(nvox, dtype=np.float32)
+            nv.fill(newVals)
+            newVals = nv
         else:
             newVals = np.array(newVals)
 
-        xyzs    = self.getSelection()
-        oldVals = image[self._selection.selection]
+        xyzs    = self._selection.getSelection()
+        xyzt    = xyzs.T
+        oldVals = image.data[xyzt[0], xyzt[1], xyzt[2]]
         
-        image[self._selection.selection] = newVals
-
         change = Change(image, xyzs, oldVals, newVals)
 
+        self._applyChange(change)
         self._doneStack.append(change)
 
 
@@ -113,8 +115,8 @@ class Editor(object):
 
 
     def _applyChange(self, change):
-        change.image[change.selection] = change.newVals
+        change.image.applyChange(change.selection, change.newVals)
 
         
     def _revertChange(self, change):
-        change.image[change.selection] = change.oldVals
+        change.image.applyChange(change.selection, change.oldVals)

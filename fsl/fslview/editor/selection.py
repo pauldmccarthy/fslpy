@@ -16,8 +16,8 @@ class Selection(object):
     
     def __init__(self, image):
         
-        self.image     = image
-        self.selection = np.zeros(image.shape, dtype=np.bool)
+        self._image     = image
+        self._selection = np.zeros(image.shape, dtype=np.bool)
 
 
     def _filterVoxels(self, xyzs):
@@ -28,18 +28,18 @@ class Selection(object):
         xs   = xyzs[:, 0]
         ys   = xyzs[:, 1]
         zs   = xyzs[:, 2]
-        xyzs = xyzs[(xs >= 0)                   & 
-                    (xs <  self.image.shape[0]) & 
-                    (ys >= 0)                   & 
-                    (ys <  self.image.shape[1]) & 
-                    (zs >= 0)                   & 
-                    (zs <  self.image.shape[2]), :]
+        xyzs = xyzs[(xs >= 0)                    & 
+                    (xs <  self._image.shape[0]) & 
+                    (ys >= 0)                    & 
+                    (ys <  self._image.shape[1]) & 
+                    (zs >= 0)                    & 
+                    (zs <  self._image.shape[2]), :]
 
         return xyzs
 
     
     def getSelectionSize(self):
-        return self.selection.sum()
+        return self._selection.sum()
     
         
     def addToSelection(self, xyzs):
@@ -49,7 +49,7 @@ class Selection(object):
         ys   = xyzs[:, 1]
         zs   = xyzs[:, 2]
 
-        self.selection[xs, ys, zs] = True
+        self._selection[xs, ys, zs] = True
 
 
     def removeFromSelection(self, xyzs):
@@ -59,17 +59,17 @@ class Selection(object):
         ys   = xyzs[:, 1]
         zs   = xyzs[:, 2]
 
-        self.selection[xs, ys, zs] = False
+        self._selection[xs, ys, zs] = False
     
     
     def clearSelection(self):
-        self.selection[:] = False
+        self._selection[:] = False
 
 
     def getSelection(self, restrict=None):
 
-        if restrict is None: selection = self.selection
-        else:                selection = self.selection[restrict]
+        if restrict is None: selection = self._selection
+        else:                selection = self._selection[restrict]
 
         xs, ys, zs = np.where(selection)
 
@@ -119,9 +119,9 @@ class Selection(object):
     def selectByValue(self, value, precision=None):
 
         if precision is None:
-            block = np.where(self.image == value)
+            block = np.where(self._image == value)
         else:
-            block = np.where(np.abs(self.image - value) < precision)
+            block = np.where(np.abs(self._image - value) < precision)
 
         if len(block[0]) == 0:
             return
