@@ -159,8 +159,14 @@ class Image(props.HasProperties):
        to the image data must be via the :meth:`applyChange` method.
     """
 
+
+    saved = props.Boolean(default=False)
+    """A read only property (not enforced) which is ``True`` if the image,
+    as stored in memory, is saved to disk, ``False`` otherwise.
+    """
+
     
-    def __init__(self, image):
+    def __init__(self, image, xform=None, name=None):
         """Initialise an Image object with the given image data or file name.
 
         :arg image: A string containing the name of an image file to load, or
@@ -182,21 +188,29 @@ class Image(props.HasProperties):
                 self.tempFile = nibImage.get_filename()
             else:
                 self.name     = op.basename(self.imageFile)
+
+            self.saved = True
                 
         # Or a numpy array - we wrap it in a nibabel image,
         # with an identity transformation (each voxel maps
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
+
+            if xform is None: xform = np.identity(4)
+            if name  is None: name = 'Numpy array'
             
-            self.nibImage  = nib.nifti1.Nifti1Image(image, np.identity(4))
-            self.name      = 'Numpy array'
+            self.nibImage  = nib.nifti1.Nifti1Image(image, xform)
+            self.name      = name
             self.tempFile  = None
             self.imageFile = None
             
         # otherwise, we assume that it is a nibabel image
         else:
+            if name  is None:
+                name = 'Nibabel image'
+            
             self.nibImage  = image
-            self.name      = 'Nibabel image'
+            self.name      = name
             self.tempFile  = None
             self.imageFile = None 
 
@@ -206,8 +220,6 @@ class Image(props.HasProperties):
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
         
-        self.changed       = False
-
         self.data.flags.writeable = False
 
         if len(self.shape) < 3 or len(self.shape) > 4:
@@ -252,8 +264,8 @@ class Image(props.HasProperties):
             data.flags.writeable = False
             raise
 
-        self.changed = True
-        self.data    = data
+        self.data  = data
+        self.saved = False
         
 
     def __hash__(self):
@@ -484,7 +496,7 @@ class ImageList(props.HasProperties):
     def extend(      self, iterable):     return self.images.extend(iterable)
     def pop(         self, index=-1):     return self.images.pop(index)
     def move(        self, from_, to):    return self.images.move(from_, to)
-    def insert(      self, index, item):  return self.images.insertAll(index,
-                                                                       item)
+    def insert(      self, index, item):  return self.images.insert(index,
+                                                                    item)
     def insertAll(   self, index, items): return self.images.insertAll(index,
                                                                        items) 
