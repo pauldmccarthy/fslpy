@@ -11,6 +11,8 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 
+import scipy.ndimage.measurements as ndimeas
+
 
 class Selection(object):
     
@@ -116,12 +118,19 @@ class Selection(object):
         self.removeFromSelection(self.generateBlock(voxel, blockSize, axes)) 
 
     
-    def selectByValue(self, value, precision=None):
+    def selectByValue(self, seedLoc, precision=None, local=False):
 
-        if precision is None:
-            block = np.where(self._image == value)
+        value = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
+
+        if precision is None: mask = self._image == value
+        else:                 mask = np.abs(self._image - value) < precision 
+
+        if local:
+            mask, _ = ndimeas.label(mask)
+            seedLabel = mask[seedLoc[0], seedLoc[1], seedLoc[2]]
+            block     = np.where(mask == seedLabel) 
         else:
-            block = np.where(np.abs(self._image - value) < precision)
+            block = np.where(mask)
 
         if len(block[0]) == 0:
             return

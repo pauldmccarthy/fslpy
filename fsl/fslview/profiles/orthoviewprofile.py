@@ -9,7 +9,7 @@
 
 There are three view 'modes' available in this profile:
 
- - Location mode:  The user can change the currently displayed location.
+ - Navigate mode:  The user can change the currently displayed location.
 
  - Zoom mode:      The user can zoom in/out of a canvas with the mouse 
                    wheel, and draw a rectangle on a canvas in which to
@@ -39,37 +39,30 @@ import fsl.fslview.profiles as profiles
 
 class OrthoViewProfile(profiles.Profile):
 
-    mode = props.Choice(
-        OrderedDict([
-            ('loc',  'Location'),
-            ('zoom', 'Zoom'),
-            ('pan',  'Pan')]))
 
-
-    def __init__(self, canvasPanel, imageList, displayCtx):
+    def __init__(self,
+                 canvasPanel,
+                 imageList,
+                 displayCtx,
+                 extraModes=None,
+                 extraActions=None):
         """Creates an :class:`OrthoViewProfile`, which can be registered
         with the given ``canvasPanel`` which is assumed to be a
         :class:`~fsl.fslview.views.orthopanel.OrthoPanel` instance.
         """
-        profiles.Profile.__init__(self, canvasPanel, imageList, displayCtx)
+
+        if extraModes is None: extraModes = []
+
+        profiles.Profile.__init__(self,
+                                  canvasPanel,
+                                  imageList,
+                                  displayCtx,
+                                  ['nav', 'pan', 'zoom'] + extraModes,
+                                  extraActions)
 
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas()
-
-        self.addTempMode('loc', wx.WXK_ALT,     'pan')
-        self.addTempMode('loc', wx.WXK_CONTROL, 'zoom')
-        
-        self.addAltHandler('loc',  'RightMouseDrag',  'loc',  'LeftMouseDrag')
-        self.addAltHandler('loc',  'MiddleMouseDrag', 'pan',  'LeftMouseDrag')
-        self.addAltHandler('loc',  'RightMouseDown',  'loc',  'RightMouseDrag')
-        self.addAltHandler('pan',  'RightMouseDown',  'pan',  'RightMouseDrag')
-        self.addAltHandler('zoom', 'RightMouseDown',  'zoom', 'RightMouseDrag')
-        self.addAltHandler('loc',  'LeftMouseDown',   'loc',  'LeftMouseDrag')
-        self.addAltHandler('pan',  'LeftMouseDown',   'pan',  'LeftMouseDrag')
-        self.addAltHandler('zoom', 'LeftMouseDown',   'zoom', 'LeftMouseDrag')
-        self.addAltHandler('zoom', 'RightMouseDrag',  'loc',  'LeftMouseDrag')
-        self.addAltHandler('zoom', 'MiddleMouseDrag', 'pan',  'LeftMouseDrag')        
 
 
     def getEventTargets(self):
@@ -79,11 +72,11 @@ class OrthoViewProfile(profiles.Profile):
 
 
     ########################
-    # Location mode handlers
+    # Navigate mode handlers
     ########################
 
 
-    def _locModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _navModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
         the mouse location.
@@ -92,7 +85,7 @@ class OrthoViewProfile(profiles.Profile):
         self._displayCtx.location = canvasPos
 
         
-    def _locModeChar(self, canvas, key):
+    def _navModeChar(self, canvas, key):
         """Left mouse drags in location mode update the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location`.
 
@@ -128,8 +121,8 @@ class OrthoViewProfile(profiles.Profile):
         """Mouse wheel motion in zoom mode increases/decreases the zoom level
         of the target canvas.
         """
-        if   wheel > 0: wheel =  10
-        elif wheel < 0: wheel = -10
+        if   wheel > 0: wheel =  50
+        elif wheel < 0: wheel = -50
         canvas.zoom += wheel
 
         

@@ -27,15 +27,19 @@ class ProfilePanel(wx.Panel):
 
         propNames.remove('mode')
 
-        view = props.HGroup(['mode'] + propNames)
+        modeProp = profile.getProp('mode')
+        if len(modeProp.getChoices(profile)) > 0:
+            propNames = ['mode'] + propNames
+
+        view = props.HGroup(propNames)
 
         props.buildGUI(self._propPanel, profile, view)
 
         actions = profile.getActions()
 
-        for name, (label, func) in actions.items():
+        for (name, func) in actions.items():
 
-            btn = wx.Button(self._actionPanel, label=label)
+            btn = wx.Button(self._actionPanel, label=name)
             self._actionSizer.Add(btn)
             btn.Bind(wx.EVT_BUTTON, lambda ev, f=func: f())
 

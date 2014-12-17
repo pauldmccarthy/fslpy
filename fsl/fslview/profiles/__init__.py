@@ -28,19 +28,67 @@ This logic is encapsulated in two classes:
 import logging
 log = logging.getLogger(__name__)
 
-
+import inspect
 import wx
-
-
 import props
 
 
-class Profile(props.HasProperties):
+class ActionProvider(props.HasProperties):
+
+    def __init__(self, actions=None):
+
+        if actions is None:
+            actions = {}
+
+        self.__actions = {}
+
+        for name, func in actions.items():
+
+            self.addProperty(
+                self.__toggleName(name),
+                props.Boolean(default=True))
+
+            def wrap(n=name, f=func):
+                if not self.isEnabled(n):
+                    raise RuntimeError('{} is disabled'.format(name))
+                f()
+
+            self.__actions[name] = wrap
+
+
+    def __toggleName(self, name):
+        return '_toggle_{}'.format(name)
+
+
+    def getActions(self):
+        return dict(self.__actions)
+
+
+    def isEnabled(self, name):
+        return getattr(self, self.__toggleName(name))
+
+    
+    def enable(self, name):
+        setattr(self, self.__toggleName(name))
+
+        
+    def disable(self, name):
+        setattr(self, self.__toggleName(name))
+
+
+    def toggle(self, name):
+        name = self.__toggleName(name)
+        setattr(self, name, not getattr(self, name))
+
+
+    def run(self, name):
+        self.__actions[name]()
+
+
+class Profile(ActionProvider):
     """A :class:`Profile` class implements keyboard/mouse interaction behaviour
     for a :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance.
     
-    Subclasses must define a :class:`~props.properties_types.Choice` property
-    called ``mode``.
 
     Things to discuss:
      - tempmodes
@@ -49,7 +97,25 @@ class Profile(props.HasProperties):
      - handler naming convention
     """
 
-    def __init__(self, canvasPanel, imageList, displayCtx):
+
+    mode = props.Choice()
+    
+
+    def __init__(self,
+                 canvasPanel,
+                 imageList,
+                 displayCtx,
+                 modes=None,
+                 actions=None):
+
+        if actions is not None:
+            for name, func in actions.items():
+                def wrap(f=func):
+                    f()
+                    canvasPanel.Refresh()
+            actions[name] = wrap
+
+        ActionProvider.__init__(self, actions)
         
         self._canvasPanel = canvasPanel
         self._imageList   = imageList
@@ -63,26 +129,44 @@ class Profile(props.HasProperties):
         self.__tempModeMap   = {}
         self.__altHandlerMap = {}
         
-        # A dict containing name -> (label, function)
-        # mappings, which are actions exposed to the
-        # user, and can be used to perform some sort
-        # of action on the view
-        self.__actions = {}
-        
         # some attributes to keep track
         # of mouse event locations
         self.__lastMousePos  = None
         self.__lastCanvasPos = None
         self.__mouseDownPos  = None
         self.__canvasDownPos = None
- 
-        # check that the subclass has
-        # defined a 'mode' property
-        try:
-            self.getProp('mode')
-        except KeyError:
-            raise NotImplementedError('Profile subclasses must provide '
-                                      'a property called mode')
+
+        # Add all of the provided modes
+        # as options to the mode property
+        if modes is None:
+            modes = []
+
+        modeProp = self.getProp('mode')
+
+        import fsl.fslview.profilemap as profilemap
+        import fsl.fslview.strings    as strings
+        for mode in modes:
+            modeProp.addChoice(
+                mode,
+                strings.profileModeTitles[self.__class__][mode],
+                self)
+
+        if len(modes) > 0:
+            self.mode = modes[0]
+
+        # Configure temporary modes and alternate
+        # event handlers - see the profilemap
+        # module
+        for cls in inspect.getmro(self.__class__):
+            
+            tempModes   = profilemap.tempModeMap  .get(cls, {})
+            altHandlers = profilemap.altHandlerMap.get(cls, {})
+
+            for (mode, keymod), tempMode in tempModes.items():
+                self.addTempMode(mode, keymod, tempMode)
+
+            for (mode, handler), (altMode, altHandler) in altHandlers.items():
+                self.addAltHandler(mode, handler, altMode, altHandler)
 
 
     def getEventTargets(self):
@@ -102,19 +186,6 @@ class Profile(props.HasProperties):
         """
         """
         return self.__lastMousePos, self.__lastCanvasPos
-
-
-    def addAction(self, name, label, function):
-
-        def funcWrapper():
-            function()
-            self._canvasPanel.Refresh()
-            
-        self.__actions[name] = (label, funcWrapper)
-
-
-    def getActions(self):
-        return dict(self.__actions)
 
 
     def addTempMode(self, mode, modifier, tempMode):

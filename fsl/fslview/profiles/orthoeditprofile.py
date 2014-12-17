@@ -9,12 +9,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
-from collections import OrderedDict
-
-import                                 wx
 import numpy                        as np
 
 import                                 props
+import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform
 import fsl.fslview.editor.editor    as editor
 import fsl.fslview.editor.selection as editorselection
@@ -25,26 +23,61 @@ import orthoviewprofile
 
 class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
-    mode = props.Choice(
-        OrderedDict([
-            ('loc',    'Location'),
-            ('sel',    'Select'),
-            ('desel',  'Deselect'),
-            ('selint', 'Select by intensity')]))
-
-
     selectionSize  = props.Int(minval=1, maxval=30, default=3, clamped=True)
     selectionIs3D  = props.Boolean(default=False)
-    intensityThres = props.Real(default=10)
     fillValue      = props.Real(default=0)
 
+    intensityThres = props.Real(default=10)
+    localFill      = props.Boolean(default=False)
 
     def createMaskFromSelection(self):
-        pass
+
+        selection = self._editor.getSelection()
+        
+        if selection.getSelectionSize() == 0:
+            return
+        
+        imageIdx = self._displayCtx.selectedImage
+        image    = self._imageList[imageIdx]
+        xyzs     = selection.getSelection()
+
+        xs = xyzs[:, 0]
+        ys = xyzs[:, 1]
+        zs = xyzs[:, 2]
+        
+        roi             = np.zeros(image.shape, image.data.dtype)
+        roi[xs, ys, zs] = 1
+
+        xform = image.voxToWorldMat
+        name  = '{}_mask'.format(image.name)
+
+        roiImage = fslimage.Image(roi, xform, name)
+        self._imageList.insert(imageIdx + 1, roiImage) 
 
 
     def createROIFromSelection(self):
-        pass
+
+        selection = self._editor.getSelection()
+
+        if selection.getSelectionSize() == 0:
+            return
+
+        imageIdx = self._displayCtx.selectedImage
+        image    = self._imageList[imageIdx]
+        xyzs     = selection.getSelection()
+
+        xs = xyzs[:, 0]
+        ys = xyzs[:, 1]
+        zs = xyzs[:, 2]
+        
+        roi             = np.zeros(image.shape, image.data.dtype)
+        roi[xs, ys, zs] = image.data[xs, ys, zs]
+
+        xform = image.voxToWorldMat
+        name  = '{}_roi'.format(image.name)
+
+        roiImage = fslimage.Image(roi, xform, name)
+        self._imageList.insert(imageIdx + 1, roiImage)
 
 
     def clearSelection(self):
@@ -52,6 +85,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def fillSelection(self):
+        if self._editor.getSelection().getSelectionSize() == 0:
+            return
         self._editor.fillSelection(self.fillValue)
 
 
@@ -67,46 +102,29 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     
     def __init__(self, canvasPanel, imageList, displayCtx):
 
+        actions = {
+            'undo'                    : self.undo,
+            'redo'                    : self.redo,
+            'fillSelection'           : self.fillSelection,
+            'clearSelection'          : self.clearSelection,
+            'createMaskFromSelection' : self.createMaskFromSelection,
+            'createROIFromSelection'  : self.createROIFromSelection}
+        
+
         orthoviewprofile.OrthoViewProfile.__init__(
             self,
             canvasPanel,
             imageList,
-            displayCtx)
+            displayCtx,
+            ['sel', 'desel', 'selint'],
+            actions)
 
-        self.addAction('undo',
-                       'Undo',
-                       self.undo)
-        self.addAction('redo',
-                       'Redo',
-                       self.redo)
-        self.addAction('fillSelection',
-                       'Fill selection',
-                       self.fillSelection)
-        self.addAction('clearSelection',
-                       'Clear selection',
-                       self.clearSelection)
-        self.addAction('createMaskFromSelection',
-                       'Create mask',
-                       self.createMaskFromSelection)
-        self.addAction('createROIFromSelection',
-                       'Create ROI',
-                       self.createROIFromSelection) 
-
-        self.addTempMode('sel', wx.WXK_ALT, 'desel')
-        
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas() 
         
         self._editor         = editor.Editor(imageList, displayCtx)
         self._voxelSelection = None
-
-        self.addAltHandler('sel',   'LeftMouseDown', 'sel',   'LeftMouseDrag')
-        self.addAltHandler('desel', 'LeftMouseDown', 'desel', 'LeftMouseDrag')
-        self.addAltHandler('desel', 'MouseMove',     'sel',   'MouseMove')
-        self.addAltHandler('selint', 'LeftMouseDown',
-                           'selint', 'LeftMouseDrag')
-
 
         displayCtx.addListener('selectedImage',
                                self._name,
@@ -248,13 +266,11 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
     def _selintModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
         
-        image = self._displayCtx.getSelectedImage()
         voxel = self._getVoxelLocation(canvasPos)
-        value = image.data[voxel[0], voxel[1], voxel[2]]
         
         self._editor.getSelection().clearSelection()
         self._editor.getSelection().selectByValue(
-            value, precision=self.intensityThres)
+            voxel, precision=self.intensityThres, local=self.localFill)
         
         self._makeSelectionAnnotation(canvas, voxel, 1) 
 

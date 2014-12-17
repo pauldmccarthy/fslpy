@@ -12,19 +12,11 @@ log = logging.getLogger(__name__)
 import fsl.data.image as fslimage
 
 try:
-    from views   .orthopanel         import OrthoPanel
-    from views   .lightboxpanel      import LightBoxPanel
-    from views   .timeseriespanel    import TimeSeriesPanel
-    from views   .spacepanel         import SpacePanel
-
-    from controls.imagedisplaypanel  import ImageDisplayPanel
-    from controls.imagelistpanel     import ImageListPanel
-    from controls.locationpanel      import LocationPanel
-
-    from actions .openfile           import OpenFileAction
-    from actions .openstandard       import OpenStandardAction
-    from actions .loadcolourmap      import LoadColourMapAction
-
+    
+    from views.orthopanel      import OrthoPanel
+    from views.lightboxpanel   import LightBoxPanel
+    from views.timeseriespanel import TimeSeriesPanel
+    from views.spacepanel      import SpacePanel
 
     viewPanelTitles = {
         OrthoPanel      : 'Ortho view',
@@ -33,6 +25,10 @@ try:
         SpacePanel      : 'Space inspector',
     }
 
+    
+    from controls.imagedisplaypanel import ImageDisplayPanel
+    from controls.imagelistpanel    import ImageListPanel
+    from controls.locationpanel     import LocationPanel
 
     controlPanelTitles = {
         ImageDisplayPanel : 'Image display properties',
@@ -40,26 +36,43 @@ try:
         LocationPanel     : 'Cursor location'
     }
 
+    locationPanelOutOfBounds = 'Out of bounds'
+    locationPanelSpaceLabel  = '{} space'
+    locationPanelWorldLabel  = 'World location (mm)'
+    locationPanelVoxelLabel  = 'Voxel coordinates'
+    locationPanelVolumeLabel = 'Volume (index)'
+
+    
+    from actions .openfile           import OpenFileAction
+    from actions .openstandard       import OpenStandardAction
+    from actions .loadcolourmap      import LoadColourMapAction    
+
     actionTitles = {
         OpenFileAction      : 'Add image file',
         OpenStandardAction  : 'Add standard',
         LoadColourMapAction : 'Load custom colour map'
     }
 
-    viewPanelConfigMenuText = {
-        OrthoPanel      : '{} display properties',
-        LightBoxPanel   : '{} display properties',
-        TimeSeriesPanel : '{} display properties'
+
+    from profiles.orthoviewprofile import OrthoViewProfile
+    from profiles.orthoeditprofile import OrthoEditProfile
+
+    profileModeTitles = {
+        OrthoViewProfile : {
+            'nav'  : 'Navigate',
+            'pan'  : 'Pan',
+            'zoom' : 'Zoom'},
+
+        OrthoEditProfile : {
+            'nav'    : 'Navigate',
+            'pan'    : 'Pan',
+            'zoom'   : 'Zoom',
+            'sel'    : 'Select',
+            'desel'  : 'Deselect',
+            'selint' : 'Select by intensity'}
     }
 
-    orthoConfigMenu    = '{} display'
-    lightBoxConfigMenu = '{} display'
-
-    locationPanelOutOfBounds = 'Out of bounds'
-    locationPanelSpaceLabel  = '{} space'
-    locationPanelWorldLabel  = 'World location (mm)'
-    locationPanelVoxelLabel  = 'Voxel coordinates'
-    locationPanelVolumeLabel = 'Volume (index)'
+    
 except Exception as e:
     log.warn('Error importing modules for strings: {}'.format(e))
 
