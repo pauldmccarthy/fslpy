@@ -15,14 +15,19 @@ import numpy as np
 import selection
 
 
-class Change(object):
-    
+class ValueChange(object):
     def __init__(self, image, selection, oldVals, newVals):
         self.image     = image
         self.selection = selection
         self.oldVals   = oldVals
         self.newVals   = newVals
 
+class SelectionChange(object):
+    def __init__(self, image, oldSelection, newSelection):
+        self.image        = image
+        self.oldSelection = oldSelection
+        self.newSelection = newSelection
+        
 
 class Editor(object):
 
@@ -63,6 +68,20 @@ class Editor(object):
         
         self._selection = selection.Selection(image.data)
 
+        self._selection.addListener('selection',
+                                    self._name,
+                                    self._selectionChanged)
+
+
+    def _selectionChanged(self, *a):
+
+        image  = self._displayCtx.getSelectedImage()
+        oldSel = self._selection.getPreviousIndices()
+        newSel = self._selection.getIndices()
+
+        change = SelectionChange(image, oldSel, newSel)
+        self._doneStack.append(change)
+
         
     def getSelection(self):
         return self._selection
@@ -84,7 +103,7 @@ class Editor(object):
         xyzt    = xyzs.T
         oldVals = image.data[xyzt[0], xyzt[1], xyzt[2]]
         
-        change = Change(image, xyzs, oldVals, newVals)
+        change = ValueChange(image, xyzs, oldVals, newVals)
 
         self._applyChange(change)
         self._doneStack.append(change)
@@ -115,8 +134,29 @@ class Editor(object):
 
 
     def _applyChange(self, change):
-        change.image.applyChange(change.selection, change.newVals)
+        image = change.image
+        if self._displayCtx.getSelectedImage() != image:
+            self._displayCtx.selectImage(image)
+        
+        if isinstance(change, ValueChange):
+            change.image.applyChange(change.selection, change.newVals)
+        elif isinstance(change, SelectionChange):
+            
+            self._selection.disableListener('selection', self._name)
+            self._selection.setSelection(change.newSelection)
+            self._selection.enableListener('selection', self._name)
+
 
         
     def _revertChange(self, change):
-        change.image.applyChange(change.selection, change.oldVals)
+        image = change.image
+        if self._displayCtx.getSelectedImage() != image:
+            self._displayCtx.selectImage(image)
+        
+        if isinstance(change, ValueChange):
+            change.image.applyChange(change.selection, change.oldVals)
+            
+        elif isinstance(change, SelectionChange):
+            self._selection.disableListener('selection', self._name)
+            self._selection.setSelection(change.oldSelection)
+            self._selection.enableListener('selection', self._name) 

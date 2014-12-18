@@ -59,6 +59,8 @@ class ActionProvider(props.HasProperties):
     def __toggleName(self, name):
         return '_toggle_{}'.format(name)
 
+    def addActionToggleListener(self, name, listenerName, func):
+        self.addListener(self.__toggleName(name), listenerName, func)
 
     def getActions(self):
         return dict(self.__actions)
@@ -68,12 +70,12 @@ class ActionProvider(props.HasProperties):
         return getattr(self, self.__toggleName(name))
 
     
-    def enable(self, name):
-        setattr(self, self.__toggleName(name))
+    def enable(self, name, enable=True):
+        setattr(self, self.__toggleName(name), enable)
 
         
     def disable(self, name):
-        setattr(self, self.__toggleName(name))
+        setattr(self, self.__toggleName(name), False)
 
 
     def toggle(self, name):
@@ -113,7 +115,7 @@ class Profile(ActionProvider):
                 def wrap(f=func):
                     f()
                     canvasPanel.Refresh()
-            actions[name] = wrap
+                actions[name] = wrap
 
         ActionProvider.__init__(self, actions)
         

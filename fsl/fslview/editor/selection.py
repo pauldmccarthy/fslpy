@@ -13,13 +13,19 @@ import numpy as np
 
 import scipy.ndimage.measurements as ndimeas
 
+import props
 
-class Selection(object):
+
+class Selection(props.HasProperties):
+
+
+    selection = props.Object()
     
     def __init__(self, image):
-        
-        self._image     = image
-        self._selection = np.zeros(image.shape, dtype=np.bool)
+        self._image            = image
+        self._lastSelection    = None
+        self._currentSelection = None
+        self.selection         = np.zeros(image.shape, dtype=np.bool)
 
 
     def _filterVoxels(self, xyzs):
@@ -41,37 +47,57 @@ class Selection(object):
 
     
     def getSelectionSize(self):
-        return self._selection.sum()
-    
+        return self.selection.sum()
+
+
+    def _updateSelection(self, selected, xyzs=None):
+
+        lastSelection = self._realGetIndices()
+
+        if xyzs is not None:
+            xyzs = self._filterVoxels(xyzs)
+            xs   = xyzs[:, 0]
+            ys   = xyzs[:, 1]
+            zs   = xyzs[:, 2]
+            self.selection[xs, ys, zs] = selected
+        else:
+            self.selection[:] = selected
+
+        self._lastSelection    = lastSelection
+        self._currentSelection = self._realGetIndices()
+        self.notify('selection')
+
+
+    def setSelection(self, xyzs):
+        self.selection[:] = False
+        self._updateSelection(True, xyzs)
+
         
     def addToSelection(self, xyzs):
-
-        xyzs = self._filterVoxels(xyzs)
-        xs   = xyzs[:, 0]
-        ys   = xyzs[:, 1]
-        zs   = xyzs[:, 2]
-
-        self._selection[xs, ys, zs] = True
+        self._updateSelection(True, xyzs)
 
 
     def removeFromSelection(self, xyzs):
-        
-        xyzs = self._filterVoxels(xyzs)
-        xs   = xyzs[:, 0]
-        ys   = xyzs[:, 1]
-        zs   = xyzs[:, 2]
-
-        self._selection[xs, ys, zs] = False
+        self._updateSelection(False, xyzs)
     
     
     def clearSelection(self):
-        self._selection[:] = False
+        self._updateSelection(False)
 
 
-    def getSelection(self, restrict=None):
+    def getPreviousIndices(self):
+        return self._lastSelection
 
-        if restrict is None: selection = self._selection
-        else:                selection = self._selection[restrict]
+
+    def getIndices(self, restrict=None):
+        if restrict is None: return self._currentSelection
+        else:                return self._realGetIndices(restrict)
+
+
+    def _realGetIndices(self, restrict=None):
+
+        if restrict is None: selection = self.selection
+        else:                selection = self.selection[restrict]
 
         xs, ys, zs = np.where(selection)
 

@@ -34,9 +34,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         selection = self._editor.getSelection()
         
-        if selection.getSelectionSize() == 0:
-            return
-        
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
         xyzs     = selection.getSelection()
@@ -58,9 +55,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def createROIFromSelection(self):
 
         selection = self._editor.getSelection()
-
-        if selection.getSelectionSize() == 0:
-            return
 
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
@@ -85,19 +79,15 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def fillSelection(self):
-        if self._editor.getSelection().getSelectionSize() == 0:
-            return
         self._editor.fillSelection(self.fillValue)
 
 
     def undo(self):
-        if self._editor.canUndo():
-            self._editor.undo() 
+        self._editor.undo() 
 
 
     def redo(self):
-        if self._editor.canRedo():
-            self._editor.redo()
+        self._editor.redo()
 
     
     def __init__(self, canvasPanel, imageList, displayCtx):
@@ -134,8 +124,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                self._selectedImageChanged)
 
         self._selectedImageChanged()
+        self._selectionChanged()
 
-
+        
     def _getVoxelLocation(self, canvasPos):
         """Returns the voxel location, for the currently selected image,
         which corresponds to the specified canvas position.
@@ -155,7 +146,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
     def _selectedImageChanged(self, *a):
         
-        selection = self._editor._selection
+        selection = self._editor.getSelection()
+
+        selection.addListener('selection', self._name, self._selectionChanged)
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
@@ -169,7 +162,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                                    hold=True) 
 
         self._voxelSelection = annotations.VoxelSelection(
-            selection,
+            selection.selection,
             display.displayToVoxMat,
             display.voxToDisplayMat)
 
@@ -177,6 +170,16 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._ycanvas.getAnnotations().obj(self._voxelSelection, hold=True)
         self._zcanvas.getAnnotations().obj(self._voxelSelection, hold=True)
         self._canvasPanel.Refresh()
+
+
+    def _selectionChanged(self, *a):
+        selection = self._editor.getSelection()
+        selSize   = selection.getSelectionSize()
+
+        self.enable('createMaskFromSelection', selSize > 0)
+        self.enable('createROIFromSelection',  selSize > 0)
+        self.enable('clearSelection',          selSize > 0)
+        self.enable('fillSelection',           selSize > 0)
 
     
     def deregister(self):
@@ -212,7 +215,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().selection(
-                selection,
+                selection.selection,
                 display.displayToVoxMat,
                 display.voxToDisplayMat,
                 colour=(1, 1, 0))
