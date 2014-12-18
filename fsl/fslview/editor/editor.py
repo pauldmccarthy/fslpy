@@ -12,7 +12,10 @@ import collections
 
 import numpy as np
 
+import props
 import selection
+
+import fsl.data.image as fslimage
 
 
 class ValueChange(object):
@@ -22,14 +25,18 @@ class ValueChange(object):
         self.oldVals   = oldVals
         self.newVals   = newVals
 
+
 class SelectionChange(object):
     def __init__(self, image, oldSelection, newSelection):
         self.image        = image
         self.oldSelection = oldSelection
         self.newSelection = newSelection
-        
 
-class Editor(object):
+
+class Editor(props.HasProperties):
+
+    canUndo = props.Boolean(default=False)
+    canRedo = props.Boolean(default=False)
 
     def __init__(self, imageList, displayCtx):
 
@@ -78,9 +85,8 @@ class Editor(object):
         image  = self._displayCtx.getSelectedImage()
         oldSel = self._selection.getPreviousIndices()
         newSel = self._selection.getIndices()
-
         change = SelectionChange(image, oldSel, newSel)
-        self._doneStack.append(change)
+        self._applyChange(change, True)
 
         
     def getSelection(self):
@@ -99,64 +105,117 @@ class Editor(object):
         else:
             newVals = np.array(newVals)
 
-        xyzs    = self._selection.getSelection()
+        xyzs    = self._selection.getIndices()
         xyzt    = xyzs.T
         oldVals = image.data[xyzt[0], xyzt[1], xyzt[2]]
         
         change = ValueChange(image, xyzs, oldVals, newVals)
-
         self._applyChange(change)
-        self._doneStack.append(change)
-
-
-    def canUndo(self):
-        return len(self._doneStack) > 0
-
-    
-    def canRedo(self):
-        return len(self._undoneStack) > 0 
 
 
     def undo(self):
-        if not self.canUndo():
+        if len(self._doneStack) == 0:
             return
-        change = self._doneStack.pop()
-        self._revertChange(change)
-        self._undoneStack.append(change)
+        
+        self._revertChange()
         
 
     def redo(self):
-        if not self.canRedo():
-            return        
-        change = self._undoneStack.pop()
-        self._applyChange(change)
-        self._doneStack.append(change)
+        if len(self._undoneStack) == 0:
+            return
+        
+        self._applyChange()
 
 
-    def _applyChange(self, change):
+    def _applyChange(self, change=None, alreadyApplied=False):
+
+        if change is None: change = self._undoneStack.pop()
+        else:              self._undoneStack = []
+
+        if len(self._undoneStack) == 0:
+            self.canRedo = False 
+            
         image = change.image
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
+
+        self._doneStack.append(change)
+        self.canUndo = True
+
+        if alreadyApplied:
+            return
         
         if isinstance(change, ValueChange):
             change.image.applyChange(change.selection, change.newVals)
-        elif isinstance(change, SelectionChange):
             
+        elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
             self._selection.setSelection(change.newSelection)
             self._selection.enableListener('selection', self._name)
 
-
         
-    def _revertChange(self, change):
+    def _revertChange(self, change=None, alreadyApplied=False):
+
+        if change is None: change = self._doneStack.pop()
+        else:              self._doneStack = []
+
+        if len(self._doneStack) == 0:
+            self.canUndo = False 
+         
         image = change.image
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
-        
+
+        self._undoneStack.append(change)
+        self.canRedo = True
+
+        if alreadyApplied:
+            return
+
         if isinstance(change, ValueChange):
             change.image.applyChange(change.selection, change.oldVals)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
             self._selection.setSelection(change.oldSelection)
-            self._selection.enableListener('selection', self._name) 
+            self._selection.enableListener('selection', self._name)
+
+
+    def createMaskFromSelection(self):
+
+        imageIdx = self._displayCtx.selectedImage
+        image    = self._imageList[imageIdx]
+        xyzs     = self._selection.getIndices()
+
+        xs = xyzs[:, 0]
+        ys = xyzs[:, 1]
+        zs = xyzs[:, 2]
+        
+        roi             = np.zeros(image.shape, image.data.dtype)
+        roi[xs, ys, zs] = 1
+
+        xform = image.voxToWorldMat
+        name  = '{}_mask'.format(image.name)
+
+        roiImage = fslimage.Image(roi, xform, name)
+        self._imageList.insert(imageIdx + 1, roiImage) 
+
+
+    def createROIFromSelection(self):
+
+        imageIdx = self._displayCtx.selectedImage
+        image    = self._imageList[imageIdx]
+        xyzs     = self._selection.getIndices()
+
+        xs = xyzs[:, 0]
+        ys = xyzs[:, 1]
+        zs = xyzs[:, 2]
+        
+        roi             = np.zeros(image.shape, image.data.dtype)
+        roi[xs, ys, zs] = image.data[xs, ys, zs]
+
+        xform = image.voxToWorldMat
+        name  = '{}_roi'.format(image.name)
+
+        roiImage = fslimage.Image(roi, xform, name)
+        self._imageList.insert(imageIdx + 1, roiImage)

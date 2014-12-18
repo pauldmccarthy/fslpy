@@ -17,6 +17,7 @@ class ProfilePanel(wx.Panel):
     def __init__(self, parent, profile):
         wx.Panel.__init__(self, parent)
 
+        self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
         self._profile     = profile
         self._propPanel   = wx.Panel(self)
         self._actionPanel = wx.Panel(self)
@@ -42,6 +43,12 @@ class ProfilePanel(wx.Panel):
             btn = wx.Button(self._actionPanel, label=name)
             self._actionSizer.Add(btn)
             btn.Bind(wx.EVT_BUTTON, lambda ev, f=func: f())
+            btn.Enable(profile.isEnabled(name))
+
+            def toggle(val, valid, ctx, n=name, b=btn):
+                b.Enable(profile.isEnabled(n))
+                           
+            profile.addActionToggleListener(name, self._name, toggle)
 
 
         self._sizer.Add(self._propPanel)

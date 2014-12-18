@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 import numpy                        as np
 
 import                                 props
-import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform
 import fsl.fslview.editor.editor    as editor
 import fsl.fslview.editor.selection as editorselection
@@ -30,49 +29,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     intensityThres = props.Real(default=10)
     localFill      = props.Boolean(default=False)
 
-    def createMaskFromSelection(self):
-
-        selection = self._editor.getSelection()
-        
-        imageIdx = self._displayCtx.selectedImage
-        image    = self._imageList[imageIdx]
-        xyzs     = selection.getSelection()
-
-        xs = xyzs[:, 0]
-        ys = xyzs[:, 1]
-        zs = xyzs[:, 2]
-        
-        roi             = np.zeros(image.shape, image.data.dtype)
-        roi[xs, ys, zs] = 1
-
-        xform = image.voxToWorldMat
-        name  = '{}_mask'.format(image.name)
-
-        roiImage = fslimage.Image(roi, xform, name)
-        self._imageList.insert(imageIdx + 1, roiImage) 
-
-
-    def createROIFromSelection(self):
-
-        selection = self._editor.getSelection()
-
-        imageIdx = self._displayCtx.selectedImage
-        image    = self._imageList[imageIdx]
-        xyzs     = selection.getSelection()
-
-        xs = xyzs[:, 0]
-        ys = xyzs[:, 1]
-        zs = xyzs[:, 2]
-        
-        roi             = np.zeros(image.shape, image.data.dtype)
-        roi[xs, ys, zs] = image.data[xs, ys, zs]
-
-        xform = image.voxToWorldMat
-        name  = '{}_roi'.format(image.name)
-
-        roiImage = fslimage.Image(roi, xform, name)
-        self._imageList.insert(imageIdx + 1, roiImage)
-
 
     def clearSelection(self):
         self._editor.getSelection().clearSelection()
@@ -88,18 +44,19 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
     def redo(self):
         self._editor.redo()
+ 
 
-    
     def __init__(self, canvasPanel, imageList, displayCtx):
+
+        self._editor = editor.Editor(imageList, displayCtx) 
 
         actions = {
             'undo'                    : self.undo,
             'redo'                    : self.redo,
             'fillSelection'           : self.fillSelection,
             'clearSelection'          : self.clearSelection,
-            'createMaskFromSelection' : self.createMaskFromSelection,
-            'createROIFromSelection'  : self.createROIFromSelection}
-        
+            'createMaskFromSelection' : self._editor.createMaskFromSelection,
+            'createROIFromSelection'  : self._editor.createROIFromSelection}
 
         orthoviewprofile.OrthoViewProfile.__init__(
             self,
@@ -109,11 +66,11 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             ['sel', 'desel', 'selint'],
             actions)
 
+        
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas() 
-        
-        self._editor         = editor.Editor(imageList, displayCtx)
+
         self._voxelSelection = None
 
         displayCtx.addListener('selectedImage',
@@ -123,8 +80,21 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                self._name,
                                self._selectedImageChanged)
 
+        self._editor.addListener('canUndo',
+                                 self._name,
+                                 self._undoStateChanged)
+        self._editor.addListener('canRedo',
+                                 self._name,
+                                 self._undoStateChanged) 
+
         self._selectedImageChanged()
         self._selectionChanged()
+        self._undoStateChanged()
+
+
+    def _undoStateChanged(self, *a):
+        self.enable('undo', self._editor.canUndo)
+        self.enable('redo', self._editor.canRedo)
 
         
     def _getVoxelLocation(self, canvasPos):
