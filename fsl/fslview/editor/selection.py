@@ -144,15 +144,43 @@ class Selection(props.HasProperties):
         self.removeFromSelection(self.generateBlock(voxel, blockSize, axes)) 
 
     
-    def selectByValue(self, seedLoc, precision=None, local=False):
+    def selectByValue(self,
+                      seedLoc,
+                      precision=None,
+                      searchRadius=(0, 0, 0),
+                      local=False):
 
         value = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
 
-        if precision is None: mask = self._image == value
-        else:                 mask = np.abs(self._image - value) < precision 
+
+        restrict = [None, None, None]
+        starts   = [0,    0,    0]
+        
+        for ax in range(3):
+
+            idx = seedLoc[     ax]
+            rad = searchRadius[ax]
+
+            if   rad <= 0:
+                slc = slice(None)
+            else:
+                slc = slice(idx - rad, idx + rad)
+                starts[ax] = idx - rad
+
+            restrict[ax] = slc
+
+        seedLoc[0] -= starts[0]
+        seedLoc[1] -= starts[1]
+        seedLoc[2] -= starts[2]
+
+        searchSpace = self._image[restrict]
+        
+
+        if precision is None: mask = searchSpace == value
+        else:                 mask = np.abs(searchSpace - value) < precision
 
         if local:
-            mask, _ = ndimeas.label(mask)
+            mask, _   = ndimeas.label(mask)
             seedLabel = mask[seedLoc[0], seedLoc[1], seedLoc[2]]
             block     = np.where(mask == seedLabel) 
         else:
@@ -161,4 +189,11 @@ class Selection(props.HasProperties):
         if len(block[0]) == 0:
             return
 
-        self.addToSelection(np.vstack(block).T)
+        block = np.vstack(block).T
+        block.flags.writeable = True
+
+        block[:, 0] += starts[0]
+        block[:, 1] += starts[1]
+        block[:, 2] += starts[2]
+
+        self.addToSelection(block)

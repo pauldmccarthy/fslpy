@@ -29,6 +29,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     intensityThres = props.Real(default=10)
     localFill      = props.Boolean(default=False)
 
+    selintRadius   = props.Real(minval=0.0, default=1.0)
+
 
     def clearSelection(self):
         self._editor.getSelection().clearSelection()
@@ -303,10 +305,12 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
         voxel = self._getVoxelLocation(canvasPos)
 
-        self.intensityThres = 0
         self._tempSelection.clearSelection()
         self._tempSelection.selectByValue(
-            voxel, precision=self.intensityThres, local=self.localFill)
+            voxel,
+            precision=self.intensityThres,
+            searchRadius=(10, 10, 10),
+            local=self.localFill)
 
         
     def _selintModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
@@ -323,7 +327,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         self._tempSelection.clearSelection()
         self._tempSelection.selectByValue(
-            voxel, precision=self.intensityThres, local=self.localFill) 
+            voxel,
+            precision=self.intensityThres,
+            searchRadius=(10, 10, 10),
+            local=self.localFill) 
         
 
     def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
