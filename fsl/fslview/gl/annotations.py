@@ -64,7 +64,7 @@ class Annotations(object):
 
 
     def selection(self,
-                  selection,
+                  selectMask,
                   displayToVoxMat,
                   voxToDisplayMat,
                   *args,
@@ -75,7 +75,7 @@ class Annotations(object):
 
         hold = kwargs.pop('hold', False)
 
-        return self.obj(VoxelSelection(selection,
+        return self.obj(VoxelSelection(selectMask,
                                        displayToVoxMat,
                                        voxToDisplayMat,
                                        *args, **kwargs), hold)
@@ -207,7 +207,7 @@ class VoxelSelection(AnnotationObject):
 
     
     def __init__(self,
-                 selection,
+                 selectMask,
                  displayToVoxMat,
                  voxToDisplayMat,
                  **kwargs):
@@ -216,7 +216,7 @@ class VoxelSelection(AnnotationObject):
         AnnotationObject.__init__(self, **kwargs)
 
         self.displayToVoxMat = displayToVoxMat
-        self.selection       = selection
+        self.selectMask      = selectMask
 
 
     def vertices(self, xax, yax, zax, zpos):
@@ -233,7 +233,13 @@ class VoxelSelection(AnnotationObject):
         restrictions[yax] = slice(None)
         restrictions[zax] = slice(vox, vox + 1)
 
-        voxels = self.selection.getSelection(restrictions)
+        xs, ys, zs = np.where(self.selectMask[restrictions])
+        voxels     = np.vstack((xs, ys, zs)).T
+
+        for ax in range(3):
+            off = restrictions[ax].start
+            if off is None: off = 0
+            voxels[:, ax] += off
 
         return globject.voxelGrid(voxels, xax, yax, 1, 1)
 
