@@ -76,7 +76,7 @@ class OrthoViewProfile(profiles.Profile):
     ########################
 
 
-    def _navModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _navModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
         the mouse location.
@@ -85,7 +85,7 @@ class OrthoViewProfile(profiles.Profile):
         self._displayCtx.location = canvasPos
 
         
-    def _navModeChar(self, canvas, key):
+    def _navModeChar(self, ev, canvas, key):
         """Left mouse drags in location mode update the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location`.
 
@@ -114,6 +114,7 @@ class OrthoViewProfile(profiles.Profile):
 
         
     def _zoomModeMouseWheel(self,
+                            ev, 
                             canvas,
                             wheel,
                             mousePos=None,
@@ -126,7 +127,7 @@ class OrthoViewProfile(profiles.Profile):
         canvas.zoom += wheel
 
         
-    def _zoomModeChar(self, canvas, key):
+    def _zoomModeChar(self, ev, canvas, key):
         """The +/- keys in zoom mode increase/decrease the zoom level
         of the target canvas.
         """
@@ -147,7 +148,7 @@ class OrthoViewProfile(profiles.Profile):
         self._zoomModeMouseWheel(canvas, zoom)
 
         
-    def _zoomModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _zoomModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in zoom mode draw a rectangle on the target
         canvas.
 
@@ -168,7 +169,7 @@ class OrthoViewProfile(profiles.Profile):
         canvas.Refresh()
 
         
-    def _zoomModeLeftMouseUp(self, canvas, mousePos, canvasPos):
+    def _zoomModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
         """When the left mouse is released in zoom mode, the target
         canvas is zoomed in to the rectangle region that was drawn by the
         user.
@@ -210,7 +211,7 @@ class OrthoViewProfile(profiles.Profile):
     ###################
     
         
-    def _panModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _panModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in pan mode move the target canvas display about
         to follow the mouse.
 
@@ -225,7 +226,7 @@ class OrthoViewProfile(profiles.Profile):
         canvas.panDisplayBy(-xoff, -yoff)
 
     
-    def _panModeChar(self, canvas, key):
+    def _panModeChar(self, ev, canvas, key):
         """The arrow keys in pan mode move the target canvas display around
         (unless the canvas is not zoomed in).
         """

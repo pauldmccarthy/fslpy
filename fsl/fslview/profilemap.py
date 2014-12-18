@@ -74,9 +74,9 @@ altHandlerMap = {
         (('zoom', 'MiddleMouseDrag'), ('pan',  'LeftMouseDrag')))),
 
     OrthoEditProfile : OrderedDict((
-        (('sel',    'LeftMouseDown'),   ('sel',    'LeftMouseDrag')),
         (('sel',    'RightMouseDown'),  ('desel',  'LeftMouseDown')),
         (('sel',    'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
+        (('sel',    'RightMouseUp'),    ('desel',  'LeftMouseUp')),
         
         (('sel',    'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('sel',    'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
@@ -84,10 +84,9 @@ altHandlerMap = {
         (('selint', 'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('selint', 'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
          
-        (('desel',  'LeftMouseDown'),   ('desel',  'LeftMouseDrag')),
         (('desel',  'MouseMove'),       ('sel',    'MouseMove')),
         
-        (('selint', 'LeftMouseDown'),   ('selint', 'LeftMouseDrag')),
         (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
-        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag'))))
+        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
+        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp'))))
 }

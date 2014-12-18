@@ -129,13 +129,20 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             self._ycanvas.getAnnotations().dequeue(self._voxelSelection,
                                                    hold=True)
             self._zcanvas.getAnnotations().dequeue(self._voxelSelection,
-                                                   hold=True) 
+                                                   hold=True)
 
         self._voxelSelection = annotations.VoxelSelection(
             selection.selection,
             display.displayToVoxMat,
             display.voxToDisplayMat)
 
+        self._tempSelection  = editorselection.Selection(image.data)
+        self._tempAnnotation = annotations.VoxelSelection(
+            self._tempSelection.selection,
+            display.displayToVoxMat,
+            display.voxToDisplayMat,
+            colour=(1, 1, 0, 0.7))
+        
         self._xcanvas.getAnnotations().obj(self._voxelSelection, hold=True)
         self._ycanvas.getAnnotations().obj(self._voxelSelection, hold=True)
         self._zcanvas.getAnnotations().obj(self._voxelSelection, hold=True)
@@ -180,7 +187,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             blockSize,
             axes)
 
-        selection = editorselection.Selection(image)
+        selection = editorselection.Selection(image.data)
         selection.addToSelection(block)
 
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
@@ -191,7 +198,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                 colour=(1, 1, 0))
 
             
-    def _selModeMouseWheel(self, canvas, wheelDir, mousePos, canvasPos):
+    def _selModeMouseWheel(self, ev, canvas, wheelDir, mousePos, canvasPos):
 
         if   wheelDir > 0: self.selectionSize += 1
         elif wheelDir < 0: self.selectionSize -= 1
@@ -200,57 +207,133 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._makeSelectionAnnotation(canvas, voxel)
 
 
-    def _selModeMouseMove(self, canvas, mousePos, canvasPos):
+    def _selModeMouseMove(self, ev, canvas, mousePos, canvasPos):
 
         voxel = self._getVoxelLocation(canvasPos)
         self._makeSelectionAnnotation(canvas, voxel)
 
 
-    def _selModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _selModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
 
         voxel = self._getVoxelLocation(canvasPos)
 
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)
-                  
-        self._editor.getSelection().selectBlock(voxel,
-                                                self.selectionSize,
-                                                axes)
+
+        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
+
+        self._xcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+
         self._makeSelectionAnnotation(canvas, voxel) 
 
 
-    def _deselModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _selModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
+
+        voxel = self._getVoxelLocation(canvasPos)
+
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)
+
+        self._tempSelection.selectBlock(voxel, self.selectionSize, axes) 
+        self._makeSelectionAnnotation(canvas, voxel)
+
+        
+    def _selModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+        self._xcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        
+        self._editor.getSelection().addToSelection(
+            self._tempSelection.getIndices())
+
+        self._tempSelection.clearSelection()
+
+
+    def _deselModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+
+        voxel = self._getVoxelLocation(canvasPos)
+
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)
+        
+        self._tempSelection.clearSelection()
+        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
+
+        self._xcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+
+        self._makeSelectionAnnotation(canvas, voxel) 
+
+
+    def _deselModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         
         voxel = self._getVoxelLocation(canvasPos)
 
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)
                   
-        self._editor.getSelection().deselectBlock(voxel,
-                                                  self.selectionSize,
-                                                  axes)
+        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
         self._makeSelectionAnnotation(canvas, voxel)
 
+        
+    def _deselModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+        self._xcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        
+        self._editor.getSelection().removeFromSelection(
+            self._tempSelection.getIndices())
 
-    def _selintModeMouseMove(self, canvas, mousePos, canvasPos):
+        self._tempSelection.clearSelection() 
+
+
+    def _selintModeMouseMove(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
         self._makeSelectionAnnotation(canvas, voxel, 1)
 
         
-    def _selintModeLeftMouseDrag(self, canvas, mousePos, canvasPos):
+    def _selintModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+
+        self._xcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True) 
         
         voxel = self._getVoxelLocation(canvasPos)
-        
-        self._editor.getSelection().clearSelection()
-        self._editor.getSelection().selectByValue(
+
+        self.intensityThres = 0
+        self._tempSelection.clearSelection()
+        self._tempSelection.selectByValue(
             voxel, precision=self.intensityThres, local=self.localFill)
-        
-        self._makeSelectionAnnotation(canvas, voxel, 1) 
 
         
-    def _selintModeMouseWheel(self, canvas, wheel, mousePos, canvasPos):
+    def _selintModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
 
-        if wheel > 0: self.intensityThres += 10
-        else:         self.intensityThres -= 10
+        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
+        voxel                      = self._getVoxelLocation(canvasDownPos)
 
-        self._selintModeLeftMouseDrag(canvas, *self.getLastMouseLocation())
+        xdiff = mousePos[0] - mouseDownPos[0]
+        ydiff = mousePos[1] - mouseDownPos[1]
+
+        dist = np.sqrt(xdiff * xdiff + ydiff * ydiff)
+
+        self.intensityThres = dist
+
+        self._tempSelection.clearSelection()
+        self._tempSelection.selectByValue(
+            voxel, precision=self.intensityThres, local=self.localFill) 
+        
+
+    def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+
+        self._xcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._ycanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+        self._zcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
+
+        self._editor.getSelection().clearSelection()
+        self._editor.getSelection().addToSelection(
+            self._tempSelection.getIndices())
+
+        self._tempSelection.clearSelection() 

@@ -386,7 +386,7 @@ class Profile(ActionProvider):
         log.debug('Mouse wheel event ({}) on canvas {}'.format(
             wheel, canvas.name))
 
-        handler(canvas, wheel, mouseLoc, canvasLoc)
+        handler(ev, canvas, wheel, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
 
         
@@ -412,7 +412,7 @@ class Profile(ActionProvider):
         log.debug('Mouse down event ({}, {}) on canvas {}'.format(
             mouseLoc, canvasLoc, canvas.name))
 
-        handler(canvas, mouseLoc, canvasLoc)
+        handler(ev, canvas, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
@@ -438,7 +438,7 @@ class Profile(ActionProvider):
         log.debug('Mouse up event ({}, {}) on canvas {}'.format(
             mouseLoc, canvasLoc, canvas.name))
 
-        handler(canvas, mouseLoc, canvasLoc)
+        handler(ev, canvas, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
         self.__mouseDownPos  = None
         self.__canvasDownPos = None
@@ -466,7 +466,7 @@ class Profile(ActionProvider):
         log.debug('Mouse move event ({}, {}) on canvas {}'.format(
             mouseLoc, canvasLoc, canvas.name))
 
-        handler(canvas, mouseLoc, canvasLoc)
+        handler(ev, canvas, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
 
     
@@ -487,7 +487,7 @@ class Profile(ActionProvider):
         log.debug('Mouse drag event ({}, {}) on canvas {}'.format(
             mouseLoc, canvasLoc, canvas.name))
 
-        handler(canvas, mouseLoc, canvasLoc)
+        handler(ev, canvas, mouseLoc, canvasLoc)
         self._canvasPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
@@ -509,7 +509,7 @@ class Profile(ActionProvider):
 
         log.debug('Keyboard event ({}) on canvas {}'.format(key, canvas.name))
 
-        handler(canvas, key)
+        handler(ev, canvas, key)
         self._canvasPanel.Refresh()
 
 
