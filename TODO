@@ -5,10 +5,17 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
-
+* Things to do in props package
+** Add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
+Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
+** Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
+** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
+Is there anything stopping me from making the constraints, for each property, properties themselves?
+** Remove PropertyOwner metaclass?
+I think that all the work performed by the PropertyOwner metaclass can be done in HasProps.__new__, and HasProps.addProperty.
 * Bugs to fix
 ** LightBox - updated nrows/ncols when image list changes
-** LocationPanel in lightbox view - voxel value lookup is wrong
+** LocationPanel in lightbox view - voxel value lookup is wrong?
 ** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
@@ -93,8 +100,6 @@ perhaps into a standalone module...
 ** Arrow keys on image list change selected image
 ** 'Centre view' option on slice canvases
 Maybe things like this need to wait until I start getting into the interface design
-** Props package - add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
-** Props package - have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 ** Get rid of imagefile module, put functionality in image module.
 ** View/view config panels persist across shutdown/restart
 This is tough, because the old agw.AUINotebook implementation does not have
