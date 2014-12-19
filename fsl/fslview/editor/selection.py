@@ -163,6 +163,8 @@ class Selection(props.HasProperties):
         elif not isinstance(searchRadius, collections.Sequence):
             searchRadius = np.array([searchRadius] * 3)
 
+        searchRadius = np.floor(searchRadius)
+
         # No search radius - search
         # through the entire image
         if np.any(searchRadius == 0):
@@ -179,16 +181,22 @@ class Selection(props.HasProperties):
 
             # Calculate xyz indices 
             # of the search space
-            searchRadius = np.floor(searchRadius)
+            shape = self._image.shape
             for ax in range(3):
 
                 idx = seedLoc[     ax]
                 rad = searchRadius[ax]
 
-                ranges[ax] = np.arange(idx - rad, idx + rad + 1)
-                slices[ax] = slice(    idx - rad, idx + rad + 1)
+                lo = idx - rad
+                hi = idx + rad + 1
 
-            xs, ys, zs = np.meshgrid(*ranges)
+                if lo < 0:             lo = 0
+                if hi > shape[ax] - 1: hi = shape[ax] - 1
+
+                ranges[ax] = np.arange(lo, hi)
+                slices[ax] = slice(    lo, hi)
+
+            xs, ys, zs = np.meshgrid(*ranges, indexing='ij')
 
             # Centre those indices and tyhe
             # seed location at (0, 0, 0)
@@ -209,7 +217,7 @@ class Selection(props.HasProperties):
             # create the ellipsoid mask
             searchSpace = self._image[slices]
             searchMask  = dists <= 1
-
+            
         if precision is None: hits = searchSpace == value
         else:                 hits = np.abs(searchSpace - value) < precision
 

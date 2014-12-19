@@ -302,10 +302,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._xcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
         self._ycanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
         self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
+
+        self._selecting = True
         
-        voxel = self._getVoxelLocation(canvasPos)
-        
-        self._selintSelect(voxel)
+        self._selintSelect(self._getVoxelLocation(canvasPos))
 
         
     def _selintModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
@@ -313,14 +313,34 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
         voxel                       = self._getVoxelLocation(canvasDownPos)
 
-        xdiff = mousePos[0] - mouseDownPos[0]
-        ydiff = mousePos[1] - mouseDownPos[1]
-        dist  = np.sqrt(xdiff * xdiff + ydiff * ydiff)
+        cx,  cy,  cz  = canvasPos
+        cdx, cdy, cdz = canvasDownPos
 
-        self.intensityThres = dist
+        dist = np.sqrt((cx - cdx) ** 2 + (cy - cdy) ** 2 + (cz - cdz) ** 2)
+        self.searchRadius = dist
+        
         self._selintSelect(voxel)
 
+        
+    def _selintModeMouseWheel(self, ev, canvas, wheel, mousePos, canvasPos):
 
+        if not self._selecting:
+            return
+
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        step = display.displayRange.xlen / 50.0
+
+        if   wheel > 0: self.intensityThres += step
+        elif wheel < 0: self.intensityThres -= step
+
+        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
+        voxel                       = self._getVoxelLocation(canvasDownPos) 
+
+        self._selintSelect(voxel)
+        
+            
     def _selintSelect(self, voxel):
         image = self._displayCtx.getSelectedImage()
         if self.searchRadius == 0:
@@ -348,4 +368,5 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._editor.getSelection().addToSelection(
             self._tempSelection.getIndices())
 
-        self._tempSelection.clearSelection() 
+        self._tempSelection.clearSelection()
+        self._selecting = False
