@@ -53,7 +53,6 @@ class Annotations(object):
 
         
     def line(self, *args, **kwargs):
-        
         hold = kwargs.pop('hold', False)
         return self.obj(Line(*args, **kwargs), hold)
 
@@ -63,22 +62,9 @@ class Annotations(object):
         return self.obj(Rect(*args, **kwargs), hold)
 
 
-    def selection(self,
-                  selectMask,
-                  displayToVoxMat,
-                  voxToDisplayMat,
-                  *args,
-                  **kwargs):
-        """
-        Voxels must be an N*3 array of xyz values
-        """
-
+    def selection(self, *args, **kwargs):
         hold = kwargs.pop('hold', False)
-
-        return self.obj(VoxelSelection(selectMask,
-                                       displayToVoxMat,
-                                       voxToDisplayMat,
-                                       *args, **kwargs), hold)
+        return self.obj(VoxelSelection(*args, **kwargs), hold)
 
         
     def obj(self, obj, hold=False):
@@ -210,13 +196,19 @@ class VoxelSelection(AnnotationObject):
                  selectMask,
                  displayToVoxMat,
                  voxToDisplayMat,
+                 offsets=None,
+                 *args,
                  **kwargs):
         
         kwargs['xform'] = voxToDisplayMat
-        AnnotationObject.__init__(self, **kwargs)
+        AnnotationObject.__init__(self, *args, **kwargs)
+        
+        if offsets is None:
+            offsets = [0, 0, 0]
 
         self.displayToVoxMat = displayToVoxMat
         self.selectMask      = selectMask
+        self.offsets         = offsets
 
 
     def vertices(self, xax, yax, zax, zpos):
@@ -227,19 +219,18 @@ class VoxelSelection(AnnotationObject):
 
         vox = int(round(voxLoc[zax]))
 
-        restrictions = [None] * 3
-
-        restrictions[xax] = slice(None)
-        restrictions[yax] = slice(None)
-        restrictions[zax] = slice(vox, vox + 1)
+        restrictions = [slice(None)] * 3
+        restrictions[zax] = slice(vox - self.offsets[zax],
+                                  vox - self.offsets[zax] + 1)
 
         xs, ys, zs = np.where(self.selectMask[restrictions])
         voxels     = np.vstack((xs, ys, zs)).T
 
         for ax in range(3):
             off = restrictions[ax].start
-            if off is None: off = 0
-            voxels[:, ax] += off
+            if off is None:
+                off = 0
+            voxels[:, ax] += off + self.offsets[ax]
 
         return globject.voxelGrid(voxels, xax, yax, 1, 1)
 

@@ -40,10 +40,11 @@ class Editor(props.HasProperties):
 
     def __init__(self, imageList, displayCtx):
 
-        self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
-        self._selection  = None
+        self._name         = '{}_{}'.format(self.__class__.__name__, id(self))
+        self._imageList    = imageList
+        self._displayCtx   = displayCtx
+        self._selection    = None
+        self._currentImage = None
  
         # Two stacks of Change objects, providing
         # records of what has been done and undone
@@ -66,14 +67,18 @@ class Editor(props.HasProperties):
 
 
     def _selectedImageChanged(self, *a):
-
-        if len(self._imageList) == 0:
-            self._selection = None
-            return
-        
         image = self._displayCtx.getSelectedImage()
-        
-        self._selection = selection.Selection(image.data)
+
+        if image is None:
+            self._currentImage = None
+            self._selection    = None
+            return
+
+        if self._currentImage == image:
+            return
+
+        self._currentImage = image
+        self._selection    = selection.Selection(image.data)
 
         self._selection.addListener('selection',
                                     self._name,

@@ -28,11 +28,8 @@ switch into one mode from another; these temporary modes are defined in the
 import logging
 log = logging.getLogger(__name__)
 
-from collections import OrderedDict
 
 import wx
-
-import props
 
 import fsl.fslview.profiles as profiles
 

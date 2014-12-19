@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 #
-# selection.py - 
+# selection.py - Provides the Selection class, which represents a
+# selection on a 3D image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides the :class:`Selection` class.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -113,11 +116,11 @@ class Selection(props.HasProperties):
 
         return result
 
-
-    def generateBlock(self, voxel, blockSize, axes=(0, 1, 2)):
+    @classmethod
+    def generateBlock(cls, voxel, blockSize, axes=(0, 1, 2)):
         
         if blockSize == 1:
-            return voxel
+            return np.array(voxel).reshape(1, 3)
 
         blockLo = int(np.floor(blockSize / 2.0))
         blockHi = int(np.ceil( blockSize / 2.0))
