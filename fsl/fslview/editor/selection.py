@@ -151,22 +151,34 @@ class Selection(props.HasProperties):
                       searchRadius=None,
                       local=False):
 
-        seedLoc = list(seedLoc)
+        seedLoc = np.array(seedLoc)
         value   = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
 
+        # Search radius may be either None, a scalar value,
+        # or a sequence of three values (one for each axis).
+        # If it is one of the first two options (None/scalar),
+        # turn it into the third.
         if searchRadius is None:
             searchRadius = np.array([0, 0, 0])
-            
         elif not isinstance(searchRadius, collections.Sequence):
             searchRadius = np.array([searchRadius] * 3)
 
-        if np.all(searchRadius == 0):
+        # No search radius - search
+        # through the entire image
+        if np.any(searchRadius == 0):
             searchSpace = self._image
             searchMask  = None
+
+        # Search radius specified - limit
+        # the search space, and specify
+        # an ellipsoid mask with the
+        # specified per-axis radii
         else:            
             ranges = [None, None, None]
             slices = [None, None, None]
 
+            # Calculate xyz indices 
+            # of the search space
             searchRadius = np.floor(searchRadius)
             for ax in range(3):
 
@@ -178,6 +190,8 @@ class Selection(props.HasProperties):
 
             xs, ys, zs = np.meshgrid(*ranges)
 
+            # Centre those indices and tyhe
+            # seed location at (0, 0, 0)
             xs         -= seedLoc[0]
             ys         -= seedLoc[1]
             zs         -= seedLoc[2]
@@ -185,10 +199,14 @@ class Selection(props.HasProperties):
             seedLoc[1] -= ranges[1][0]
             seedLoc[2] -= ranges[2][0]
 
+            # Distances from each point in the search
+            # space to the centre of the search space
             dists = ((xs / searchRadius[0]) ** 2 +
                      (ys / searchRadius[1]) ** 2 +
                      (zs / searchRadius[2]) ** 2)
-            
+
+            # Extract the search space, and
+            # create the ellipsoid mask
             searchSpace = self._image[slices]
             searchMask  = dists <= 1
 
@@ -198,10 +216,16 @@ class Selection(props.HasProperties):
         if searchMask is not None:
             hits[~searchMask] = False
 
+        # If local is true, limit the selection to
+        # adjacent points with the same/similar value
+        # (using scipy.ndimage.measurements.label)
         if local:
             hits, _   = ndimeas.label(hits)
             seedLabel = hits[seedLoc[0], seedLoc[1], seedLoc[2]]
-            block     = np.where(hits == seedLabel) 
+            block     = np.where(hits == seedLabel)
+
+        # Otherwise, any same or similar 
+        # values are part of the selection
         else:
             block = np.where(hits)
 
@@ -209,8 +233,10 @@ class Selection(props.HasProperties):
             return
 
         block = np.vstack(block).T
-        block.flags.writeable = True
 
+        # If the search space was restricted,
+        # move the coordinates back to be
+        # relative to the entire image
         if np.any(searchRadius > 0):
             block[:, 0] += ranges[0][0]
             block[:, 1] += ranges[1][0]
