@@ -8,6 +8,7 @@
 import logging
 log = logging.getLogger(__name__)
 
+import collections
 
 import numpy as np
 
@@ -147,44 +148,62 @@ class Selection(props.HasProperties):
     def selectByValue(self,
                       seedLoc,
                       precision=None,
-                      searchRadius=(0, 0, 0),
+                      searchRadius=None,
                       local=False):
 
-        value = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
+        seedLoc = list(seedLoc)
+        value   = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
 
+        if searchRadius is None:
+            searchRadius = np.array([0, 0, 0])
+            
+        elif not isinstance(searchRadius, collections.Sequence):
+            searchRadius = np.array([searchRadius] * 3)
 
-        restrict = [None, None, None]
-        starts   = [0,    0,    0]
-        
-        for ax in range(3):
+        if np.all(searchRadius == 0):
+            searchSpace = self._image
+            searchMask  = None
+        else:            
+            ranges = [None, None, None]
+            slices = [None, None, None]
 
-            idx = seedLoc[     ax]
-            rad = searchRadius[ax]
+            searchRadius = np.floor(searchRadius)
+            for ax in range(3):
 
-            if   rad <= 0:
-                slc = slice(None)
-            else:
-                slc = slice(idx - rad, idx + rad)
-                starts[ax] = idx - rad
+                idx = seedLoc[     ax]
+                rad = searchRadius[ax]
 
-            restrict[ax] = slc
+                ranges[ax] = np.arange(idx - rad, idx + rad + 1)
+                slices[ax] = slice(    idx - rad, idx + rad + 1)
 
-        seedLoc[0] -= starts[0]
-        seedLoc[1] -= starts[1]
-        seedLoc[2] -= starts[2]
+            xs, ys, zs = np.meshgrid(*ranges)
 
-        searchSpace = self._image[restrict]
-        
+            xs         -= seedLoc[0]
+            ys         -= seedLoc[1]
+            zs         -= seedLoc[2]
+            seedLoc[0] -= ranges[0][0]
+            seedLoc[1] -= ranges[1][0]
+            seedLoc[2] -= ranges[2][0]
 
-        if precision is None: mask = searchSpace == value
-        else:                 mask = np.abs(searchSpace - value) < precision
+            dists = ((xs / searchRadius[0]) ** 2 +
+                     (ys / searchRadius[1]) ** 2 +
+                     (zs / searchRadius[2]) ** 2)
+            
+            searchSpace = self._image[slices]
+            searchMask  = dists <= 1
+
+        if precision is None: hits = searchSpace == value
+        else:                 hits = np.abs(searchSpace - value) < precision
+
+        if searchMask is not None:
+            hits[~searchMask] = False
 
         if local:
-            mask, _   = ndimeas.label(mask)
-            seedLabel = mask[seedLoc[0], seedLoc[1], seedLoc[2]]
-            block     = np.where(mask == seedLabel) 
+            hits, _   = ndimeas.label(hits)
+            seedLabel = hits[seedLoc[0], seedLoc[1], seedLoc[2]]
+            block     = np.where(hits == seedLabel) 
         else:
-            block = np.where(mask)
+            block = np.where(hits)
 
         if len(block[0]) == 0:
             return
@@ -192,8 +211,9 @@ class Selection(props.HasProperties):
         block = np.vstack(block).T
         block.flags.writeable = True
 
-        block[:, 0] += starts[0]
-        block[:, 1] += starts[1]
-        block[:, 2] += starts[2]
+        if np.any(searchRadius > 0):
+            block[:, 0] += ranges[0][0]
+            block[:, 1] += ranges[1][0]
+            block[:, 2] += ranges[2][0]
 
         self.addToSelection(block)

@@ -29,7 +29,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     intensityThres = props.Real(default=10)
     localFill      = props.Boolean(default=False)
 
-    selintRadius   = props.Real(minval=0.0, default=1.0)
+    searchRadius   = props.Real(minval=0.0, default=0.0, maxval=100.0)
 
 
     def clearSelection(self):
@@ -301,38 +301,43 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         self._xcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
         self._ycanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
-        self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True) 
+        self._zcanvas.getAnnotations().obj(self._tempAnnotation, hold=True)
         
         voxel = self._getVoxelLocation(canvasPos)
-
-        self._tempSelection.clearSelection()
-        self._tempSelection.selectByValue(
-            voxel,
-            precision=self.intensityThres,
-            searchRadius=(10, 10, 10),
-            local=self.localFill)
+        
+        self._selintSelect(voxel)
 
         
     def _selintModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
 
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
-        voxel                      = self._getVoxelLocation(canvasDownPos)
+        voxel                       = self._getVoxelLocation(canvasDownPos)
 
         xdiff = mousePos[0] - mouseDownPos[0]
         ydiff = mousePos[1] - mouseDownPos[1]
-
-        dist = np.sqrt(xdiff * xdiff + ydiff * ydiff)
+        dist  = np.sqrt(xdiff * xdiff + ydiff * ydiff)
 
         self.intensityThres = dist
+        self._selintSelect(voxel)
+
+
+    def _selintSelect(self, voxel):
+        image = self._displayCtx.getSelectedImage()
+        if self.searchRadius == 0:
+            searchRadius = None
+        else:
+            searchRadius = (self.searchRadius / image.pixdim[0],
+                            self.searchRadius / image.pixdim[1],
+                            self.searchRadius / image.pixdim[2])
 
         self._tempSelection.clearSelection()
         self._tempSelection.selectByValue(
             voxel,
             precision=self.intensityThres,
-            searchRadius=(10, 10, 10),
+            searchRadius=searchRadius,
             local=self.localFill) 
-        
 
+        
     def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
 
         self._xcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
