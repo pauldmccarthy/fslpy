@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 #
-# profilemap.py - This module defines couple of dictionaries which define
-# temporary mouse/keyboard interaction modes, and alternate mode handlers
-# for the profiles contained in the profiles package.
+# profilemap.py - CanvasPanel -> Profile mappings.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module is used by the :class:`~fsl.fslview.proflies.Profile` and
+:class:`~fsl.fslview.proflies.ProfileManager` classes.
+
+It defines a few dictionaries which define the profile type to use for each
+:class:`~fsl.fslview.views.canvaspanel.CanvasPanel` type, temporary
+mouse/keyboard interaction modes, and alternate mode handlers for the
+profiles contained in the profiles package.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -14,8 +20,24 @@ from collections import OrderedDict
 
 import wx
 
-from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
-from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
+from fsl.fslview.views.orthopanel             import OrthoPanel
+from fsl.fslview.views.lightboxpanel          import LightBoxPanel
+
+from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
+from fsl.fslview.profiles.lightboxviewprofile import LightBoxViewProfile
+
+
+profiles = {
+    (OrthoPanel,    'view') : OrthoViewProfile,
+    (OrthoPanel,    'edit') : OrthoEditProfile,
+    (LightBoxPanel, 'view') : LightBoxViewProfile
+}
+"""This dictionary is used by the :class:`~fsl.fslview.profiles.ProfileManager`
+class to figure out which :class:`~fsl.fslview.profiles.Profile` instance to
+create for a given :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance
+and profile identifier.
+"""
 
 
 tempModeMap = {
