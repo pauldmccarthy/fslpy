@@ -5,6 +5,50 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""The :mod:`fsl` package contains front ends to various FSL tools,
+including 'FSLView2', the Python based image viewer.
+
+This file contains the function :func:`main`, the application entry
+point. When invoked with the name of a tool, the :mod:`fsl.tools` package
+is searched for a module which has that name. All valid tool modules must
+also provide the following module level attributes:
+
+ - ``FSL_TOOLNAME``  - Mandatory. String providing the name of the tool.
+
+ - ``FSL_HELPPAGE``  - Optional. A URL to a web page providing
+                       help/documentation.
+
+ - ``FSL_PARSEARGS`` - Optional. A function which is given a list of
+                       command line arguments specific to the tool. The
+                       function should parse the arguments and return,
+                       for example, an :mod:`argparse` namespace object.
+
+ - ``FSL_CONTEXT``   - Optional. A function which is passed the output of
+                       the ``FSL_PARSEARGS`` function. It should perform
+                       any necessary initialisation, and may optionally
+                       return a value which will be passed to the
+                       functions described below.
+              
+ - ``FSL_INTERFACE`` - Mandatory for GUI applications. A function which
+                       accepts three parameters - a GUI parent object,
+                       the value returned by the ``FSL_PARSEARGS``
+                       function, and the value returned by the
+                       ``FSL_CONTEXT`` function. Creates a :mod:`wx` GUI,
+                       and returns the top level GUI object.
+
+ - ``FSL_EXECUTE``   - Mandatory for non-GUI applications. A function
+                       which accepts two parameters - the value returned
+                       by the ``FSL_PARSEARGS`` function, and the value
+                       returned by the ``FSL_CONTEXT`` function. Does
+                       whatever the tool is supposed to do.
+
+ - ``FSL_ACTIONS``   - Optional. Only relevant to GUI applications. A
+                       list of (name, function) tuples, which will be
+                       added as GUI menu items for the user to execute. 
+                       An action function must accept two parameters - 
+                       a parent GUI object, and the value returned by the
+                       ``FSL_CONTEXT`` function.
+"""
 
 import logging
 log = logging.getLogger(__name__)
@@ -27,13 +71,15 @@ logging.basicConfig(
            '%(message)s') 
 log = logging.getLogger('fsl')
 
+
 import fsl.tools as tools
 
+
 def loadAllFSLTools():
-    """
-    Looks in the fsl.tools package, loads a description for
-    every FSL tool present, and returns all descriptions in
-    a {toolName->toolObj} dictionary. See loadFSLTool.
+    """Looks in the :mod:`fsl.tools` package, loads a description for
+    every FSL tool present, and returns all descriptions in a
+    ``{toolName->toolObj}`` dictionary. See the :func:`loadFSLTool`
+    function.
     """
 
     allTools = {}
@@ -50,10 +96,8 @@ def loadAllFSLTools():
     return allTools
 
 
-
 def loadFSLTool(moduleName, module):
-    """
-    Inspects the given module to see if it looks like a valid
+    """Inspects the given module to see if it looks like a valid
     FSL tool. If it is not, a TypeError is raised. If it is,
     a container object is created and returned, containing
     all of the elements of the tool.
@@ -100,12 +144,11 @@ def loadFSLTool(moduleName, module):
 
 
 def parseArgs(argv, allTools):
-    """
-    Creates a command line ArgumentParser which will process general
-    arguments for fsl.py (this script) and, arguments for all FSL
-    tools which have defined their own command line arguments (see
-    loadFSLTool). Returns an object containing values for all of the
-    arguments that were passed in.
+    """Creates a command line :class:`argparse.ArgumentParser` which will
+    process general arguments for fsl.py (this script) and, arguments for
+    all FSL tools which have defined their own command line arguments.
+    Returns an object containing values for all of the arguments that were
+    passed in.
     """
 
     epilog = 'Type fslpy help <tool> for program-specific help. ' \
@@ -195,8 +238,9 @@ def parseArgs(argv, allTools):
 
 
 def fslDirWarning(frame, toolName, fslEnvActive):
-    """
-    If fslEnvActive is False, displays a warning.
+    """If ``fslEnvActive`` is False, displays a warning that the ``FSLDIR``
+    environment variable is not set. The warning is displayed either on
+    stdout, or via a GUI dialog (if ``frame`` is not ``None``).
     """
 
     if fslEnvActive: return
@@ -215,8 +259,7 @@ def fslDirWarning(frame, toolName, fslEnvActive):
         
 
 def buildGUI(args, fslTool, toolCtx, fslEnvActive):
-    """
-    """
+    """Builds a :mod:`wx` GUI for the tool."""
 
     import wx
     import fsl.utils.webpage as webpage
@@ -255,6 +298,11 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
 
     
 def main():
+    """Entry point.
+
+    Parses command line arguments, loads the appropriate tool module, builds
+    and displays a GUI (if the tool has one), or executes the tool.
+    """
 
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None

@@ -113,13 +113,11 @@ class Image(props.HasProperties):
     :meth:`getAttribute` and :meth:`setAttribute` methods (which are just
     front end wrappers around an internal ``dict`` object).
 
-    The following attributes are present on an :class:`Image` object:
+    In addition to the class-level properties defined below, the following
+    attributes are present on an :class:`Image` object:
 
     :ivar nibImage:       The :mod:`nibabel` image object.
-    
-    :ivar data:           A reference to the image data, stored as a
-                          :mod`numpy` array.
-    
+
     :ivar shape:          A list/tuple containing the number of voxels
                           along each image dimension.
     
@@ -161,7 +159,7 @@ class Image(props.HasProperties):
 
 
     saved = props.Boolean(default=False)
-    """A read only property (not enforced) which is ``True`` if the image,
+    """A read-only property (not enforced) which is ``True`` if the image,
     as stored in memory, is saved to disk, ``False`` otherwise.
     """
 

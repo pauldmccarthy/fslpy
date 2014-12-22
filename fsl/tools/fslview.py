@@ -5,7 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A 3D image viewer. See the :mod:`~fsl.fslview.fslviewframe` module for more
-details.
+details. The command line interface is defined (and parsed) by the
+:mod:`fslview_parseargs` module.
 """
 
 import logging

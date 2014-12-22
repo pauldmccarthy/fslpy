@@ -60,7 +60,6 @@ A convenience function :func:`calcSizes` is also available which, in addition
 to the above parameters, accepts a string as its first parameter which must be
 equal to one of ``horizontal``, ``vertical``, or ``grid``. It will then call
 the appropriate layout-specific function.
-
 """
 
 import logging
@@ -68,7 +67,6 @@ log = logging.getLogger(__name__)
 
 
 import numpy as np
-
 
 
 #
