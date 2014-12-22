@@ -25,15 +25,14 @@ import wx
 
 import props
 
-import fsl.fslview.profiles                    as profiles
-import fsl.fslview.profiles.profilepanel       as profilepanel
-import fsl.fslview.controlpanel                as controlpanel 
-import fsl.fslview.displaycontext              as displayctx
-import fsl.fslview.viewpanel                   as viewpanel
-import fsl.fslview.controls.imagelistpanel     as imagelistpanel
-import fsl.fslview.controls.imagedisplaypanel  as imagedisplaypanel
-import fsl.fslview.controls.locationpanel      as locationpanel
-import                                            colourbarpanel
+import fsl.fslview.profiles                   as profiles
+import fsl.fslview.profiles.profilepanel      as profilepanel
+import fsl.fslview.panel                      as fslpanel 
+import fsl.fslview.displaycontext             as displayctx
+import fsl.fslview.controls.imagelistpanel    as imagelistpanel
+import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
+import fsl.fslview.controls.locationpanel     as locationpanel
+import                                           colourbarpanel
 
 
 def _takeScreenShot(imageList, displayCtx, canvas):
@@ -148,12 +147,12 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     subprocess.call(argv)
 
 
-class ControlStrip(controlpanel.ControlPanel):
+class ControlStrip(fslpanel.ControlPanel):
     """
     """
 
     def __init__(self, parent, imageList, displayCtx, canvasPanel):
-        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         self._topPanel           = wx.Panel(self)
         self._imageListButton    = wx.Button(self._topPanel,
@@ -222,7 +221,7 @@ class ControlStrip(controlpanel.ControlPanel):
         self._screenShotButton  .Bind(wx.EVT_BUTTON, screenShot)
             
 
-class CanvasPanel(viewpanel.ViewPanel):
+class CanvasPanel(fslpanel.ViewPanel):
     """
     """
 
@@ -283,7 +282,7 @@ class CanvasPanel(viewpanel.ViewPanel):
                  parent,
                  imageList,
                  displayCtx):
-        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self.__profileManager = profiles.ProfileManager(
             self, imageList, displayCtx)

@@ -5,12 +5,12 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A :class:`~fsl.fslview.viewpanel.ViewPanel` which renders a colour bar
+"""A :class:`~fsl.fslview.panel.ViewPanel` which renders a colour bar
 depicting the colour range of the currently selected image.
 
 This panel is not directly accessible by users (see the
 :mod:`~fsl.fslview.views` package ``__init__.py`` file), but is embedded
-within other control panels.
+within other view panels.
 """
 
 import logging
@@ -18,11 +18,11 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.fslview.viewpanel              as viewpanel
+import fsl.fslview.panel                  as fslpanel
 import fsl.fslview.gl.wxglcolourbarcanvas as cbarcanvas
 
 
-class ColourBarPanel(viewpanel.ViewPanel):
+class ColourBarPanel(fslpanel.ViewPanel):
     """A panel which shows a colour bar, depicting the data range of the
     currently selected image.
     """
@@ -40,7 +40,7 @@ class ColourBarPanel(viewpanel.ViewPanel):
                  displayCtx,
                  orientation='horizontal'):
 
-        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._cbPanel = cbarcanvas.ColourBarCanvas(self)
 

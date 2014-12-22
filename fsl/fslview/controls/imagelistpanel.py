@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A panel which displays a list of image list in the image list (see
-:class:fsl.data.image.ImageList), and allows the user to add/remove
+:class:`~fsl.data.image.ImageList`), and allows the user to add/remove
 images, and to change their order.
 """
 
@@ -17,13 +17,12 @@ log = logging.getLogger(__name__)
 import wx
 import pwidgets.elistbox as elistbox
 
-import fsl.fslview.controlpanel as controlpanel
+import fsl.fslview.panel as fslpanel
 
 
-class ImageListPanel(controlpanel.ControlPanel):
-    """A :class:`~fsl.fslview.controls.controlpanel.ControlPanel` which
-    contains an :class:`~pwidgets.EditableListBox` displaying the list
-    of loaded images.
+class ImageListPanel(fslpanel.ControlPanel):
+    """A :class:`~fsl.fslview.panel.ControlPanel` which contains an
+    :class:`~pwidgets.EditableListBox` displaying the list of loaded images.
     
     The list box allows the image order to be changed, and allows images to be
     added and removed from the list.
@@ -39,7 +38,7 @@ class ImageListPanel(controlpanel.ControlPanel):
                            instance.
         """
         
-        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         # list box containing the list of images - it 
         # is populated in the _imageListChanged method

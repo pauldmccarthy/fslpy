@@ -1,18 +1,29 @@
 #!/usr/bin/env python
 #
-# fslviewframe.py - A wx.Frame which implemnents a 3D image viewer.
+# fslviewframe.py - A wx.Frame which implements a 3D image viewer.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """A 3D image viewer.
 
 This module provides the :class:`FSLViewFrame` which is the top level frame
-for the FSLView application, which provides functionality to view 3D/4D
-MR images.
+for the FSLView application, providing functionality to view 3D/4D MR images.
 
-I'm using :mod:`wx.aui` instead of :mod:`wx.lib.agw.aui` because the
-:class:`AuiNotebook` implementation in the latter is very unstable on OSX
-Mavericks.
+The application logic is spread across several sub-packages:
+
+ - :mod:`controls`  - 
+
+ - :mod:`views`
+
+ - :mod:`profiles`
+
+ - :mod:`editor`
+
+ - :mod:`actions`
+
+ - :mod:`gl`
+
+ - :mod:`widgets`   - General purpose custom :mod:`wx` widgets.
 """
 
 import logging
@@ -21,25 +32,14 @@ log = logging.getLogger(__name__)
 import wx
 import wx.aui as aui
 
-import props
-
 import views
-import controls
 import actions
 import strings
 import displaycontext
 
 
 class FSLViewFrame(wx.Frame):
-    """A frame which implements a 3D image viewer.
-
-    The :class:`wx.aui.AuiManager` is used to lay out various configuration
-    panels. In the :attr:`wx.CENTRE` location of the
-    :class:`~wx.aui.AuiManager` is a :class:`wx.aui.AuiNotebook` which allows
-    multiple image views (e.g.
-    :class:`~fsl.fslview.views.orthopanel.OrthoPanel`,
-    :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`) to be displayed.
-    """
+    """A frame which implements a 3D image viewer."""
 
     def __init__(self,
                  parent,
@@ -47,6 +47,13 @@ class FSLViewFrame(wx.Frame):
                  displayCtx,
                  default=False):
         """
+        :arg parent:
+        
+        :arg imageList:
+        
+        :arg displayCtx:
+        
+        :arg default:
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')

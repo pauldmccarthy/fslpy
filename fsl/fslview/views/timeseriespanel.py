@@ -24,11 +24,11 @@ mpl.use('WXAgg')
 import matplotlib.pyplot as plt
 from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
-import fsl.fslview.viewpanel as viewpanel
-import fsl.utils.transform   as transform
+import fsl.fslview.panel   as fslpanel
+import fsl.utils.transform as transform
 
 
-class TimeSeriesPanel(viewpanel.ViewPanel):
+class TimeSeriesPanel(fslpanel.ViewPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
 
     The volume data for each of the :class:`~fsl.data.image.Image`
@@ -38,7 +38,7 @@ class TimeSeriesPanel(viewpanel.ViewPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._figure = plt.Figure()
         self._axis   = self._figure.add_subplot(111)

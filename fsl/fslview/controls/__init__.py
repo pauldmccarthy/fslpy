@@ -9,20 +9,19 @@
 """This package contains a collection of :class:`wx.Panel` subclasses which
 provide some sort of interface for controlling aspects of image display.
 
-The :class:`~fsl.fslview.controls.controlpanel.ControlPanel` class is the
-superclass for every control panel.
+The :class:`~fsl.fslview.panel.ControlPanel` class is the superclass for
+every control panel.
 
 A convenience function, :func:`listControlPanels`, is provided to allow
-dynamic lookup of all :class:`~fsl.fslview.controls.controlpanel.ControlPanel`
-types.
+dynamic lookup of all :class:`~fsl.fslview.panel.ControlPanel` types.
 """
 
-import fsl.fslview.controlpanel as controlpanel 
+import fsl.fslview.panel as fslpanel 
 import locationpanel
 import imagelistpanel
 import imagedisplaypanel
 
-ControlPanel      = controlpanel     .ControlPanel
+ControlPanel      = fslpanel         .ControlPanel
 LocationPanel     = locationpanel    .LocationPanel
 ImageListPanel    = imagelistpanel   .ImageListPanel
 ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
@@ -30,8 +29,8 @@ ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
 
 def listControlPanels():
     """Convenience function which returns a list containing all
-    :class:`~fsl.fslview.controlpanel.ControlPanel` classes
-    in the :mod:`controls` package.
+    :class:`~fsl.fslview.panel.ControlPanel` classes in the
+    :mod:`controls` package.
     """
 
     atts = globals()

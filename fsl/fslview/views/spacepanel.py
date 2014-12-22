@@ -16,14 +16,14 @@ import wx
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from mpl_toolkits.mplot3d              import Axes3D
 
-import fsl.fslview.viewpanel as viewpanel
-import fsl.utils.transform   as transform
+import fsl.fslview.panel   as fslpanel
+import fsl.utils.transform as transform
 
-class SpacePanel(viewpanel.ViewPanel):
+class SpacePanel(fslpanel.ViewPanel):
 
     
     def __init__(self, parent, imageList, displayCtx):
-        viewpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._figure = plt.Figure()
         self._canvas = Canvas(self, -1, self._figure)

@@ -8,9 +8,7 @@
 """Defines the :class:`ImageSelectPanel` which is a little panel that allows
 the currently selected image to be changed.
 
-This panel is not directly accessible by users (see the
-:mod:`~fsl.fslview.controls` package ``__init__.py`` file), but is embedded
-within other control panels.
+This panel is generally embedded within other control panels.
 """
 
 import logging
@@ -18,17 +16,17 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.fslview.controlpanel as controlpanel
+import fsl.fslview.panel as fslpanel
 
 
-class ImageSelectPanel(controlpanel.ControlPanel):
+class ImageSelectPanel(fslpanel.ControlPanel):
     """A panel which displays the currently selected image,
     and allows it to be changed.
     """
 
     def __init__(self, parent, imageList, displayCtx):
 
-        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         # A button to select the previous image
         self._prevButton = wx.Button(self, label=u'\u25C0',

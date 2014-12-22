@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 #
-# locationpanel.py - Panel which displays controls allowing the user to change
-# the currently displayed location in both real world and voxel coordinates,
-# both in the space of the currently selected image. These changes are
-# propagated to the current display coordinate system location, managed by the
-# display context (and external changes to the display context location are
-# propagated back to the voxel/world location properties managed by a
-# Location Panel).
+# locationpanel.py - provides the LocationPanel class.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides the :class:`LocationPanel` class, a panel which
+displays controls allowing the user to change the currently displayed location
+in both real world and voxel coordinates, both in the space of the currently
+selected image.
+
+These changes are propagated to the current display coordinate system
+location, managed by the display context (and external changes to the display
+context location are propagated back to the voxel/world location properties
+managed by a :class:`LocationPanel`).
+"""
 
 import logging
 
@@ -19,14 +23,14 @@ import numpy as np
 
 import props
 
-import fsl.utils.transform      as transform
-import fsl.fslview.controlpanel as controlpanel
-import imageselectpanel         as imageselect
+import fsl.utils.transform as transform
+import fsl.fslview.panel   as fslpanel
+import imageselectpanel    as imageselect
 
 log = logging.getLogger(__name__)
 
 
-class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
+class LocationPanel(fslpanel.ControlPanel, props.HasProperties):
     """
     A wx.Panel which contains widgets for changing the currently displayed
     location in both world coordinates, and voxel coordinates (in terms of the
@@ -61,7 +65,7 @@ class LocationPanel(controlpanel.ControlPanel, props.HasProperties):
         """
         import fsl.fslview.strings as strings
 
-        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         self._voxelPanel = wx.Panel(self)
         self._worldPanel = wx.Panel(self)

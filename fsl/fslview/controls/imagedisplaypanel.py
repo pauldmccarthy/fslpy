@@ -16,10 +16,10 @@ log = logging.getLogger(__name__)
 import wx
 import props
 
-import fsl.fslview.controlpanel as controlpanel
-import imageselectpanel         as imageselect
+import fsl.fslview.panel as fslpanel
+import imageselectpanel  as imageselect
 
-class ImageDisplayPanel(controlpanel.ControlPanel):
+class ImageDisplayPanel(fslpanel.ControlPanel):
     """A panel which shows display control options for the currently selected
     image.
     """
@@ -34,7 +34,7 @@ class ImageDisplayPanel(controlpanel.ControlPanel):
                            instance. 
         """
 
-        controlpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
 
         # a dictionary containing {image : panel} mappings
         self._displayPanels = {}
