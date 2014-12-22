@@ -37,6 +37,14 @@ class Annotations(object):
     passing ``hold=True`` to the queueing method.  The annotation will then
     remain in the queue until it is removed via :meth:`dequeue`, or the
     entire annotations queue is cleared via :meth:`clear`.
+
+    Annotations can be queued by one of the helper methods on the
+    :class:`Annotations` object (e.g. :meth:`line`, :meth:`rect` or
+    :meth:`selection`), or by manually creating an :class:`AnnotationObject`
+    and passing it to the :meth:`obj` method.
+
+    The :class:`AnnotationObject` defines a set of parameters which are
+    shared by all annotations (e.g. colour and linewidth).
     """
 
     
@@ -48,26 +56,35 @@ class Annotations(object):
 
         
     def _adjustColour(self, colour):
+        """Turns RGB colour tuples into RGBA tuples, if necessary."""
         if len(colour) == 3: return (colour[0], colour[1], colour[2], 1.0)
         else:                return colour
 
         
     def line(self, *args, **kwargs):
+        """Queues a line for drawing - see the :class:`Line` class. """
         hold = kwargs.pop('hold', False)
         return self.obj(Line(*args, **kwargs), hold)
 
         
     def rect(self, *args, **kwargs):
+        """Queues a rectangle for drawing - see the :class:`Rectangle` class.
+        """
         hold = kwargs.pop('hold', False)
         return self.obj(Rect(*args, **kwargs), hold)
 
 
     def selection(self, *args, **kwargs):
+        """Queues a selection for drawing - see the :class:`VoxelSelection`
+        class.
+        """ 
         hold = kwargs.pop('hold', False)
         return self.obj(VoxelSelection(*args, **kwargs), hold)
 
         
     def obj(self, obj, hold=False):
+        """Queues the given :class:`AnnotationObject` for drawing."""
+
         
         if hold: self._holdq.append(obj)
         else:    self._q    .append(obj)
@@ -76,6 +93,8 @@ class Annotations(object):
 
 
     def dequeue(self, obj, hold=False):
+        """Removes the given :class:`AnnotationObject` from the queue.
+        """
 
         if hold:
             try:    self._holdq.remove(obj)
@@ -86,11 +105,25 @@ class Annotations(object):
 
 
     def clear(self):
+        """Clears both the normal queue and the persistent (a.k.a. ``hold``)
+        queue.
+        """
         self._q     = []
         self._holdq = []
         
 
     def draw(self, xax, yax, zax, zpos):
+        """Draws all enqueued annotations.
+
+        :arg xax:  Data axis which corresponds to the horizontal screen axis.
+        
+        :arg yax:  Data axis which corresponds to the vertical screen axis.
+        
+        :arg zax:  Data axis which corresponds to the depth screen axis.
+        
+        :arg zpos: Position along the Z axis, above which all annotations
+                   should be drawn.
+        """
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
@@ -129,8 +162,20 @@ class Annotations(object):
 
 
 class AnnotationObject(object):
+    """Superclass for all annotation objects. Subclasses must override the
+    :meth:`vertices` method.
+    """
     
     def __init__(self, xform=None, colour=None, width=None):
+        """Create an AnnotationObject.
+
+        :arg xform:  Transformation matrix which will be applied to all
+                     vertex coordinates.
+        
+        :arg colour: RGB/RGBA tuple specifying the annotation.
+        
+        :arg width:  Line width to use for the annotation.
+        """
         
         if colour is None: colour = (1, 1, 1, 1)
         if width  is None: width  = 1
@@ -140,15 +185,52 @@ class AnnotationObject(object):
         self.xform  = xform
 
         
+    def vertices(self, xax, yax, zax, zpos):
+        """Generate/return vertices to render this :class:`AnnotationObject`.
+
+        This method must be overridden by subclasses, and must return two
+        values:
+
+          - A 2D ``float32`` numpy array of shape ``(N, 3)`` (where ``N`` is
+            the number of vertices), containing the xyz coordinates of every
+            vertex.
+
+          - A 1D ``uint32`` numpy array containing the indices of all
+            vertices to be rendered.
+
+        :arg xax:  The axis which corresponds to the horizontal screen axis.
+        
+        :arg yax:  The axis which corresponds to the horizontal screen axis.
+        
+        :arg zax:  The axis which corresponds to the depth screen axis.
+        
+        :arg zpos: The position along the depth axis.
+        """
+        raise NotImplementedError('Subclasses must implement '
+                                  'the vertices method')
+
+        
 class Line(AnnotationObject):
+    """Annotation object which represents a 2D line.
+    """
 
     def __init__(self, xy1, xy2, *args, **kwargs):
+        """Create a :class:`Line`. The (x, y) coordinate tuples should be in
+        relation to the axes which map to the horizontal/vertical screen axes
+        on the target canvas.
+
+        :arg xy1: Tuple containing the (x, y) coordinates of one endpoint.
+        
+        :arg xy2: Tuple containing the (x, y) coordinates of the second
+                  endpoint.
+
+        """
         AnnotationObject.__init__(self, *args, **kwargs)
         self.xy1       = xy1
         self.xy2       = xy2
+
         
     def vertices(self, xax, yax, zax, zpos):
-        
         verts                = np.zeros((2, 3))
         verts[0, [xax, yax]] = self.xy1
         verts[1, [xax, yax]] = self.xy2
@@ -157,8 +239,14 @@ class Line(AnnotationObject):
 
         
 class Rect(AnnotationObject):
+    """Annotation object which represents a 2D rectangle."""
 
     def __init__(self, xy, w, h, *args, **kwargs):
+        """Create a :class:`Rect` annotation. The `xy` parameter should
+        be a tuple specifying the bottom left of the rectangle, and the `w`
+        and `h` parameters specifying the rectangle width and height
+        respectively.
+        """
         AnnotationObject.__init__(self, *args, **kwargs)
         self.xy = xy
         self.w  = w
@@ -190,6 +278,10 @@ class Rect(AnnotationObject):
 
 
 class VoxelSelection(AnnotationObject):
+    """Annotation object which represents a collection of 'selected' voxels.
+
+    Each selected voxel is highlighted with a rectangle around its border.
+    """
 
     
     def __init__(self,
@@ -199,6 +291,30 @@ class VoxelSelection(AnnotationObject):
                  offsets=None,
                  *args,
                  **kwargs):
+        """Create a :class:`VoxelSelection` object.
+
+        :arg selectMask:      A 3D numpy array, the same shape as the image
+                              being annotated (or a sub-space of the image - 
+                              see the ``offsets`` argument),  which is 
+                              interpreted as a mask array - values which are 
+                              ``True`` denote selected voxels. 
+
+        :arg displayToVoxMat: A transformation matrix which transforms from
+                              display space coordinates into voxel space
+                              coordinates.
+
+        :arg voxToDisplayMat: A transformation matrix which transforms from
+                              voxel coordinates into display space
+                              coordinates.
+
+        :arg offsets:         If ``None`` (the default), the ``selectMask``
+                              must have the same shape as the image data
+                              being annotated. Alternately, you may set
+                              ``offsets`` to a sequence of three values,
+                              which are used as offsets for the xyz voxel
+                              values. This is to allow for a sub-space of
+                              the full image space to be annotated.
+        """
         
         kwargs['xform'] = voxToDisplayMat
         AnnotationObject.__init__(self, *args, **kwargs)

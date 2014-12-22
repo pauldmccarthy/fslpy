@@ -30,10 +30,11 @@ The application logic is spread across several sub-packages:
 
 
 A :class:`FSLViewFrame` is a container for one or more 'views' - all of the
-possible views are contained within the :mod:`views` sub-package, and the are
-defined by the :func:`views.listViewPanels` function. View panels may contain
-one or more 'control' panels (all defined in the :mod:controls` sub-package),
-which provide an interface allowing the user to control the view.
+possible views are contained within the :mod:`views` sub-package, and the
+views which may be opened by the user are defined by the
+:func:`views.listViewPanels` function. View panels may contain one or more
+'control' panels (all defined in the :mod:controls` sub-package), which
+provide an interface allowing the user to control the view.
 
 
 All view (and control) panels are derived from the :class:`panel.FSLViewPanel`

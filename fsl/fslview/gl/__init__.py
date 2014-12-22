@@ -30,7 +30,7 @@ Two methods of OpenGL usage are supported:
 
   - Off-screen renering of a scene using OSMesa.
 
-Two helper classes are provided for each of these cases:
+Two super classes are provided for each of these cases:
 
  - The :class:`WXGLCanvasTarget` class for on-screen rendering using
    :mod:`wx`.
