@@ -23,7 +23,7 @@ import lightboxpanel
 import timeseriespanel
 import spacepanel
 
-ViewPanel       = fslpanel       .ViewPanel
+FSLViewPanel    = fslpanel       .FSLViewPanel
 OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
 TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
@@ -43,9 +43,9 @@ def listViewPanels():
     for name, val in atts.items():
         
         if not isinstance(val, type): continue
-        if val == ViewPanel:          continue
+        if val == FSLViewPanel:       continue
             
-        if issubclass(val, ViewPanel):
+        if issubclass(val, FSLViewPanel):
             viewPanels.append(val)
             
     return viewPanels

@@ -19,11 +19,11 @@ from mpl_toolkits.mplot3d              import Axes3D
 import fsl.fslview.panel   as fslpanel
 import fsl.utils.transform as transform
 
-class SpacePanel(fslpanel.ViewPanel):
+class SpacePanel(fslpanel.FSLViewPanel):
 
     
     def __init__(self, parent, imageList, displayCtx):
-        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._figure = plt.Figure()
         self._canvas = Canvas(self, -1, self._figure)

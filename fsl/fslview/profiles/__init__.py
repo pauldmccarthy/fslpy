@@ -32,62 +32,10 @@ import inspect
 import wx
 import props
 
-
-class ActionProvider(props.HasProperties):
-
-    def __init__(self, actions=None):
-
-        if actions is None:
-            actions = {}
-
-        self.__actions = {}
-
-        for name, func in actions.items():
-
-            self.addProperty(
-                self.__toggleName(name),
-                props.Boolean(default=True))
-
-            def wrap(n=name, f=func):
-                if not self.isEnabled(n):
-                    raise RuntimeError('{} is disabled'.format(name))
-                f()
-
-            self.__actions[name] = wrap
+import fsl.fslview.actions as actions
 
 
-    def __toggleName(self, name):
-        return '_toggle_{}'.format(name)
-
-    def addActionToggleListener(self, name, listenerName, func):
-        self.addListener(self.__toggleName(name), listenerName, func)
-
-    def getActions(self):
-        return dict(self.__actions)
-
-
-    def isEnabled(self, name):
-        return getattr(self, self.__toggleName(name))
-
-    
-    def enable(self, name, enable=True):
-        setattr(self, self.__toggleName(name), enable)
-
-        
-    def disable(self, name):
-        setattr(self, self.__toggleName(name), False)
-
-
-    def toggle(self, name):
-        name = self.__toggleName(name)
-        setattr(self, name, not getattr(self, name))
-
-
-    def run(self, name):
-        self.__actions[name]()
-
-
-class Profile(ActionProvider):
+class Profile(actions.ActionProvider):
     """A :class:`Profile` class implements keyboard/mouse interaction behaviour
     for a :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance.
     
@@ -108,16 +56,16 @@ class Profile(ActionProvider):
                  imageList,
                  displayCtx,
                  modes=None,
-                 actions=None):
+                 actionz=None):
 
-        if actions is not None:
-            for name, func in actions.items():
+        if actionz is not None:
+            for name, func in actionz.items():
                 def wrap(f=func):
                     f()
                     canvasPanel.Refresh()
-                actions[name] = wrap
+                actionz[name] = wrap
 
-        ActionProvider.__init__(self, actions)
+        actions.ActionProvider.__init__(self, imageList, displayCtx, actionz)
         
         self._canvasPanel = canvasPanel
         self._imageList   = imageList

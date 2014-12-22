@@ -8,10 +8,10 @@
 import logging
 log = logging.getLogger(__name__)
 
-import fsl.fslview.action as action
+import fsl.fslview.actions as actions
 
-class OpenFileAction(action.Action):
-    def doAction(self, *args):
+class OpenFileAction(actions.Action):
+    def doAction(self):
         
         if self._imageList.addImages():
             self._displayCtx.selectedImage = self._displayCtx.imageOrder[-1]

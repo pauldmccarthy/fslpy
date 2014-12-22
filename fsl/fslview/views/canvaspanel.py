@@ -147,12 +147,12 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     subprocess.call(argv)
 
 
-class ControlStrip(fslpanel.ControlPanel):
+class ControlStrip(fslpanel.FSLViewPanel):
     """
     """
 
     def __init__(self, parent, imageList, displayCtx, canvasPanel):
-        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._topPanel           = wx.Panel(self)
         self._imageListButton    = wx.Button(self._topPanel,
@@ -221,7 +221,7 @@ class ControlStrip(fslpanel.ControlPanel):
         self._screenShotButton  .Bind(wx.EVT_BUTTON, screenShot)
             
 
-class CanvasPanel(fslpanel.ViewPanel):
+class CanvasPanel(fslpanel.FSLViewPanel):
     """
     """
 
@@ -282,7 +282,7 @@ class CanvasPanel(fslpanel.ViewPanel):
                  parent,
                  imageList,
                  displayCtx):
-        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self.__profileManager = profiles.ProfileManager(
             self, imageList, displayCtx)

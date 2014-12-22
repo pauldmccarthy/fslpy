@@ -20,7 +20,7 @@ import pwidgets.elistbox as elistbox
 import fsl.fslview.panel as fslpanel
 
 
-class ImageListPanel(fslpanel.ControlPanel):
+class ImageListPanel(fslpanel.FSLViewPanel):
     """A :class:`~fsl.fslview.panel.ControlPanel` which contains an
     :class:`~pwidgets.EditableListBox` displaying the list of loaded images.
     
@@ -38,7 +38,7 @@ class ImageListPanel(fslpanel.ControlPanel):
                            instance.
         """
         
-        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         # list box containing the list of images - it 
         # is populated in the _imageListChanged method

@@ -19,14 +19,14 @@ import wx
 import fsl.fslview.panel as fslpanel
 
 
-class ImageSelectPanel(fslpanel.ControlPanel):
+class ImageSelectPanel(fslpanel.FSLViewPanel):
     """A panel which displays the currently selected image,
     and allows it to be changed.
     """
 
     def __init__(self, parent, imageList, displayCtx):
 
-        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         # A button to select the previous image
         self._prevButton = wx.Button(self, label=u'\u25C0',

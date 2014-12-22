@@ -9,14 +9,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
-import fsl.fslview.action         as action
+import fsl.fslview.actions        as actions
 import fsl.fslview.colourmaps     as fslcmap
 import fsl.fslview.displaycontext as displaycontext
 
 
-class LoadColourMapAction(action.Action):
+class LoadColourMapAction(actions.Action):
     
-    def doAction(self, *args):
+    def doAction(self):
 
         import wx
 
@@ -30,7 +30,6 @@ class LoadColourMapAction(action.Action):
 
         fslcmap.registerColourMap(dlg.GetPath())
 
-        print 'Updating cmapNames constraint for ImageDisplay class ...'
 
         displaycontext.ImageDisplay.cmap.setConstraint(
             None,

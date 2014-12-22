@@ -42,7 +42,7 @@ class ProfilePanel(wx.Panel):
 
             btn = wx.Button(self._actionPanel, label=name)
             self._actionSizer.Add(btn)
-            btn.Bind(wx.EVT_BUTTON, lambda ev, f=func: f())
+            btn.Bind(wx.EVT_BUTTON, lambda ev, f=func: f.doAction())
             btn.Enable(profile.isEnabled(name))
 
             def toggle(val, valid, ctx, n=name, b=btn):

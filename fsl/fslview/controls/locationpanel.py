@@ -30,7 +30,7 @@ import imageselectpanel    as imageselect
 log = logging.getLogger(__name__)
 
 
-class LocationPanel(fslpanel.ControlPanel, props.HasProperties):
+class LocationPanel(fslpanel.FSLViewPanel):
     """
     A wx.Panel which contains widgets for changing the currently displayed
     location in both world coordinates, and voxel coordinates (in terms of the
@@ -65,7 +65,7 @@ class LocationPanel(fslpanel.ControlPanel, props.HasProperties):
         """
         import fsl.fslview.strings as strings
 
-        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._voxelPanel = wx.Panel(self)
         self._worldPanel = wx.Panel(self)

@@ -11,19 +11,35 @@ for the FSLView application, providing functionality to view 3D/4D MR images.
 
 The application logic is spread across several sub-packages:
 
- - :mod:`controls`  - 
+ - :mod:`actions`   - Global actions (e.g. load file), and abstract base
+                      classes for other actions, and entities which provide
+                      actions.
 
- - :mod:`views`
+ - :mod:`controls`  - GUI panels which provide an interface to control the
+                      display of a single view.
 
- - :mod:`profiles`
+ - :mod:`views`     - GUI panels which display image data.
 
- - :mod:`editor`
+ - :mod:`gl`        - OpenGL visualisation logic.
 
- - :mod:`actions`
+ - :mod:`profiles`  - Mouse/keyboard interaction profiles.
 
- - :mod:`gl`
+ - :mod:`editor`    - Image editing functionality.
 
  - :mod:`widgets`   - General purpose custom :mod:`wx` widgets.
+
+
+A :class:`FSLViewFrame` is a container for one or more 'views' - all of the
+possible views are contained within the :mod:`views` sub-package, and the are
+defined by the :func:`views.listViewPanels` function. View panels may contain
+one or more 'control' panels (all defined in the :mod:controls` sub-package),
+which provide an interface allowing the user to control the view.
+
+
+All view (and control) panels are derived from the :class:`panel.FSLViewPanel`
+which, in turn, is derived from the :class:`actions.ActionProvider` class.
+As such, view panels may expose both actions, and properties, which can be
+performed or modified by the user.
 """
 
 import logging
@@ -220,19 +236,16 @@ class FSLViewFrame(wx.Frame):
         self._viewMenu = viewMenu
 
         viewPanels = views   .listViewPanels()
-        actionz    = actions .listActions()
+        actionz    = actions .listGlobalActions()
 
         for action in actionz:
             menuItem = fileMenu.Append(wx.ID_ANY,
                                          strings.actionTitles[action])
-            actionObj = action(menuItem,
-                               self._imageList,
-                               self._displayCtx,
-                               self)
             
-            self.Bind(wx.EVT_MENU,
-                      lambda ev, ao=actionObj: ao.doAction(),
-                      menuItem)
+            actionObj = action(self._imageList, self._displayCtx)
+
+            actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
+            
 
         for viewPanel in viewPanels:
             viewAction = viewMenu.Append(wx.ID_ANY,

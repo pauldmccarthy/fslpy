@@ -19,7 +19,7 @@ import props
 import fsl.fslview.panel as fslpanel
 import imageselectpanel  as imageselect
 
-class ImageDisplayPanel(fslpanel.ControlPanel):
+class ImageDisplayPanel(fslpanel.FSLViewPanel):
     """A panel which shows display control options for the currently selected
     image.
     """
@@ -34,7 +34,7 @@ class ImageDisplayPanel(fslpanel.ControlPanel):
                            instance. 
         """
 
-        fslpanel.ControlPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         # a dictionary containing {image : panel} mappings
         self._displayPanels = {}

@@ -21,7 +21,7 @@ import locationpanel
 import imagelistpanel
 import imagedisplaypanel
 
-ControlPanel      = fslpanel         .ControlPanel
+FSLViewPanel      = fslpanel         .FSLViewPanel
 LocationPanel     = locationpanel    .LocationPanel
 ImageListPanel    = imagelistpanel   .ImageListPanel
 ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
@@ -40,9 +40,9 @@ def listControlPanels():
     for name, val in atts.items():
         
         if not isinstance(val, type): continue
-        if val == ControlPanel:       continue
+        if val == FSLViewPanel:       continue
             
-        if issubclass(val, ControlPanel):
+        if issubclass(val, FSLViewPanel):
             ctrlPanels.append(val)
             
     return ctrlPanels

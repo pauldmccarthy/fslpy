@@ -22,7 +22,7 @@ import fsl.fslview.panel                  as fslpanel
 import fsl.fslview.gl.wxglcolourbarcanvas as cbarcanvas
 
 
-class ColourBarPanel(fslpanel.ViewPanel):
+class ColourBarPanel(fslpanel.FSLViewPanel):
     """A panel which shows a colour bar, depicting the data range of the
     currently selected image.
     """
@@ -40,7 +40,7 @@ class ColourBarPanel(fslpanel.ViewPanel):
                  displayCtx,
                  orientation='horizontal'):
 
-        fslpanel.ViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
         self._cbPanel = cbarcanvas.ColourBarCanvas(self)
 

@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A 3D image viewer. See the :mod:`~fsl.fslview.fslviewframe` module for more
+"""A 3D image viewer. See the :mod:`~fsl.fslview.frame` module for more
 details. The command line interface is defined (and parsed) by the
 :mod:`fslview_parseargs` module.
 """
@@ -19,9 +19,9 @@ import fslview_parseargs
     
 def interface(parent, args, ctx):
 
-    import fsl.fslview.fslviewframe   as fslviewframe
-    import fsl.fslview.views          as views
-    import fsl.fslview.gl             as fslgl
+    import fsl.fslview.frame as fslviewframe
+    import fsl.fslview.views as views
+    import fsl.fslview.gl    as fslgl
 
     imageList, displayCtx = ctx
     
