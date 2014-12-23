@@ -292,7 +292,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        sizer.Add(realProfilePanel)
+        sizer.Add(realProfilePanel, flag=wx.EXPAND, proportion=1)
         self.__profilePanel.SetSizer(sizer)
 
         self.__layout()

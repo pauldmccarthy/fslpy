@@ -22,7 +22,6 @@ The :attr:`OrthoViewProfile.mode` property controls the current mode.
 Alternately, keyboard modifier keys (e.g. shift) may be used to temporarily
 switch into one mode from another; these temporary modes are defined in the
 :attr:`OrthoViewProfile._tempModeMap` class attribute.
-
 """
 
 import logging
@@ -48,14 +47,24 @@ class OrthoViewProfile(profiles.Profile):
         :class:`~fsl.fslview.views.orthopanel.OrthoPanel` instance.
         """
 
-        if extraModes is None: extraModes = []
+        if extraModes   is None: extraModes   = []
+        if extraActions is None: extraActions = {}
+
+        modes   = ['nav', 'pan', 'zoom']
+        actionz = {
+            'resetZoom'    : self.resetZoom,
+            'centreCursor' : self.centreCursor,
+        }
+
+        modes   = modes + extraModes
+        actionz = dict(actionz.items() + extraActions.items())
 
         profiles.Profile.__init__(self,
                                   canvasPanel,
                                   imageList,
                                   displayCtx,
-                                  ['nav', 'pan', 'zoom'] + extraModes,
-                                  extraActions)
+                                  modes,
+                                  actionz)
 
         self._xcanvas = canvasPanel.getXCanvas()
         self._ycanvas = canvasPanel.getYCanvas()
@@ -66,6 +75,25 @@ class OrthoViewProfile(profiles.Profile):
         """
         """
         return [self._xcanvas, self._ycanvas, self._zcanvas]
+
+
+    def resetZoom(self):
+
+        self._canvasPanel.zoom  = 100
+        self._canvasPanel.xzoom = 100
+        self._canvasPanel.yzoom = 100
+        self._canvasPanel.zzoom = 100
+
+
+    def centreCursor(self):
+
+        bounds = self._displayCtx.bounds
+
+        xmid = bounds.xlo + 0.5 * bounds.xlen
+        ymid = bounds.ylo + 0.5 * bounds.ylen
+        zmid = bounds.zlo + 0.5 * bounds.zlen
+
+        self._displayCtx.location.xyz = [xmid, ymid, zmid]
 
 
     ########################
