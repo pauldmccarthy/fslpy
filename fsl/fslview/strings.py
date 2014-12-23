@@ -14,13 +14,13 @@ import fsl.data.image as fslimage
 """Refactorings are afoot. One big dictionary where keys must be strings.
 
 [className]
-[className.propName]
-[className.propName.optName]
+[className, propName]
+[className, propName, optName]
 
-[className.attName]
+[className, attName]
 
 [actionClassName]
-[className.actionName]
+[className, actionName]
 
 And a second dictionary for tooltips
 """
@@ -113,7 +113,34 @@ labels = _TypeDict({
 
     'OpenFileAction'      : 'Add image file',
     'OpenStandardAction'  : 'Add standard',
-    'LoadColourMapAction' : 'Load custom colour map'
+    'LoadColourMapAction' : 'Load custom colour map',
+
+
+    ('CanvasPanel', 'screenshot')              : 'Take screenshot',
+    ('CanvasPanel', 'toggleColourBar')         : 'Show/hide colour bar',
+    ('CanvasPanel', 'toggleImageList')         : 'Show/hide image list',
+    ('CanvasPanel', 'toggleDisplayProperties') : 'Show/hide display properties',
+    ('CanvasPanel', 'toggleLocationPanel')     : 'Show/hide location panel',
+    ('CanvasPanel', 'toggleCanvasProperties')  : 'Show/hide canvas properties',
+
+
+    ('CanvasPanel', 'showCursor')         : 'Show location cursor',
+    ('CanvasPanel', 'syncLocation')       : 'Sync location',
+    ('CanvasPanel', 'syncImageOrder')     : 'Sync image order',
+    ('CanvasPanel', 'syncVolume')         : 'Sync volume',
+    ('CanvasPanel', 'profile')            : 'Profile',
+    ('CanvasPanel', 'zoom')               : 'Zoom',
+    ('CanvasPanel', 'colourBarLocation')  : 'Colour bar location',
+    ('CanvasPanel', 'colourBarLabelSide') : 'Colour bar label side',
+
+    ('OrthoPanel', 'showXCanvas') : 'Show X canvas',
+    ('OrthoPanel', 'showYCanvas') : 'Show Y canvas',
+    ('OrthoPanel', 'showZCanvas') : 'Show Z canvas',
+    ('OrthoPanel', 'showLabels')  : 'Show labels',
+    ('OrthoPanel', 'layout')      : 'Layout',
+    ('OrthoPanel', 'xzoom')       : 'X zoom',
+    ('OrthoPanel', 'yzoom')       : 'Y zoom',
+    ('OrthoPanel', 'zzoom')       : 'Z zoom',
 })
 
 try:

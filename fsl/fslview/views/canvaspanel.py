@@ -177,13 +177,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
 
-    def __createSettingsPanel(self, parent, imageList, displayCtx):
-        """
-        """
-
-        return props.buildGUI(self.__dispSetContainer, self)
-
-
     def __init__(self, parent, imageList, displayCtx):
 
         actionz = {
@@ -211,7 +204,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                        displayCtx.getSyncPropertyName('volume')) 
 
         self.__actionPanel      = actionpanel.ActionPanel(
-            self, self, propz=['profile'])
+            self, self, propz=[])
         self.__profilePanel     = wx.Panel(self)
         self.__canvasContainer  = wx.Panel(self)
         self.__listLocContainer = wx.Panel(self)
@@ -228,8 +221,8 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__displayPropsPanel = imagedisplaypanel.ImageDisplayPanel(
             self.__dispSetContainer, imageList, displayCtx)
         
-        self.__canvasPropsPanel = self.__createSettingsPanel(
-            self.__dispSetContainer, imageList, displayCtx)
+        self.__canvasPropsPanel = actionpanel.ActionPanel(
+            self.__dispSetContainer, self, actionz=[])
 
         self.__listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__listLocContainer.SetSizer(self.__listLocSizer)
@@ -354,6 +347,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                                    proportion=1)
 
             self.__canvasContainer.SetSizer(self.__canvasSizer)
+            self.PostSizeEvent()
             return
 
         if self.__colourBar is None:

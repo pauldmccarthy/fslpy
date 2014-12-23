@@ -18,6 +18,8 @@ import wx
 
 import props
 
+import fsl.fslview.strings as strings
+
 class ActionPanel(wx.Panel):
     """
     """
@@ -34,7 +36,7 @@ class ActionPanel(wx.Panel):
         self._propPanel   = wx.Panel(self)
         self._actionPanel = wx.Panel(self)
 
-        self._propSizer   = wx.BoxSizer(wx.HORIZONTAL)
+        self._propSizer   = wx.GridSizer(len(propz), 2)
         self._actionSizer = wx.BoxSizer(wx.HORIZONTAL)
         self._mainSizer   = wx.BoxSizer(wx.VERTICAL)
 
@@ -43,12 +45,18 @@ class ActionPanel(wx.Panel):
         self._actionPanel.SetSizer(self._actionSizer)
 
         for prop in propz:
+            
+            label  = wx.StaticText(self._propPanel,
+                                   label=strings.labels[provider, prop])
             widget = props.makeWidget(self._propPanel, provider, prop)
+
+            self._propSizer.Add(label, flag=wx.EXPAND)
             self._propSizer.Add(widget, flag=wx.EXPAND)
 
         for action in actionz:
 
-            button = wx.Button(self._actionPanel, label=action)
+            button = wx.Button(self._actionPanel,
+                               label=strings.labels[provider, action])
             self._actionSizer.Add(button, flag=wx.EXPAND)
 
             self._provider.getAction(action).bindToWidget(
