@@ -165,6 +165,12 @@ class ActionProvider(props.HasProperties):
 
         self.__actions[name].addListener('enabled', listenerName, func)
 
+
+    def getAction(self, name):
+        """Return the :class:`Action` object of the given name.
+        """
+        return self.__actions[name]
+
         
     def getActions(self):
         """Return a dictionary containing ``{name -> function}`` mappings for

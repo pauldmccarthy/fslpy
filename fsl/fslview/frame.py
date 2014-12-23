@@ -110,7 +110,7 @@ class FSLViewFrame(wx.Frame):
         allowing the user to configure the view.
         """
 
-        title   = strings.viewPanelTitles[panelCls]
+        title   = strings.labels[panelCls]
         childDC = displaycontext.DisplayContext(self._imageList,
                                                 self._displayCtx)
         panel   = panelCls(self._centrePane,
@@ -240,17 +240,14 @@ class FSLViewFrame(wx.Frame):
         actionz    = actions .listGlobalActions()
 
         for action in actionz:
-            menuItem = fileMenu.Append(wx.ID_ANY,
-                                         strings.actionTitles[action])
+            menuItem = fileMenu.Append(wx.ID_ANY, strings.labels[action])
             
             actionObj = action(self._imageList, self._displayCtx)
 
             actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
-            
 
         for viewPanel in viewPanels:
-            viewAction = viewMenu.Append(wx.ID_ANY,
-                                         strings.viewPanelTitles[viewPanel]) 
+            viewAction = viewMenu.Append(wx.ID_ANY, strings.labels[viewPanel]) 
             self.Bind(wx.EVT_MENU,
                       lambda ev, vp=viewPanel: self.addViewPanel(vp),
                       viewAction)

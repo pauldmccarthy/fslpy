@@ -11,31 +11,42 @@ log = logging.getLogger(__name__)
 
 import fsl.data.image as fslimage
 
+"""Refactorings are afoot. One big dictionary where keys must be strings.
+
+[className]
+[className.propName]
+[className.propName.optName]
+
+[className.attName]
+
+[actionClassName]
+[className.actionName]
+
+And a second dictionary for tooltips
+"""
+
+class _TypeDict(dict):
+    def __getitem__(self, key):
+        
+        if isinstance(key, type):
+            key = key.__name__
+            
+        return dict.__getitem__(self, key)
+
+
+labels = _TypeDict({
+    'OrthoPanel'      : 'Ortho View',
+    'LightBoxPanel'   : 'Lightbox View',
+    'TimeSeriesPanel' : 'Time series',
+    'SpacePanel'      : 'Space inspector',
+
+    'OpenFileAction'      : 'Add image file',
+    'OpenStandardAction'  : 'Add standard',
+    'LoadColourMapAction' : 'Load custom colour map'
+})
+
 try:
     
-    from views.orthopanel      import OrthoPanel
-    from views.lightboxpanel   import LightBoxPanel
-    from views.timeseriespanel import TimeSeriesPanel
-    from views.spacepanel      import SpacePanel
-
-    viewPanelTitles = {
-        OrthoPanel      : 'Ortho view',
-        LightBoxPanel   : 'Lightbox view',
-        TimeSeriesPanel : 'Time series',
-        SpacePanel      : 'Space inspector',
-    }
-
-    
-    from controls.imagedisplaypanel import ImageDisplayPanel
-    from controls.imagelistpanel    import ImageListPanel
-    from controls.locationpanel     import LocationPanel
-
-    controlPanelTitles = {
-        ImageDisplayPanel : 'Image display properties',
-        ImageListPanel    : 'Image list',
-        LocationPanel     : 'Cursor location'
-    }
-
     locationPanelOutOfBounds = 'Out of bounds'
     locationPanelSpaceLabel  = '{} space'
     locationPanelWorldLabel  = 'World location (mm)'
@@ -43,17 +54,6 @@ try:
     locationPanelVolumeLabel = 'Volume (index)'
 
     
-    from actions .openfile           import OpenFileAction
-    from actions .openstandard       import OpenStandardAction
-    from actions .loadcolourmap      import LoadColourMapAction    
-
-    actionTitles = {
-        OpenFileAction      : 'Add image file',
-        OpenStandardAction  : 'Add standard',
-        LoadColourMapAction : 'Load custom colour map'
-    }
-
-
     from profiles.orthoviewprofile import OrthoViewProfile
     from profiles.orthoeditprofile import OrthoEditProfile
 

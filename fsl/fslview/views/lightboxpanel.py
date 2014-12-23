@@ -36,11 +36,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     showGridLines  = lightboxcanvas.LightBoxCanvas.showGridLines
     highlightSlice = lightboxcanvas.LightBoxCanvas.highlightSlice 
 
-    
-    _labels = dict(lightboxcanvas.LightBoxCanvas._labels.items() +
-                   canvaspanel   .CanvasPanel   ._labels.items())
-    """Property labels to be used for GUI displays."""
-
 
     def __init__(self,
                  parent,

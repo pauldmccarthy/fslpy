@@ -60,14 +60,6 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
     """ 
 
     
-    @classmethod
-    def hasConfigOptions(cls):
-        """Method which returns ``True`` or ``False``, depending upon whether
-        this :class:`ViewPanel` has any user-configurable properties.
-        """
-        return len(cls.getAllProperties()[0]) > 0
- 
-    
     def __init__(self,
                  parent,
                  imageList,

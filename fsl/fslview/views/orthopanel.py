@@ -72,19 +72,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     simultaneously.
     """
 
-    
-    _labels = dict({
-        'showXCanvas'       : 'Show X canvas',
-        'showYCanvas'       : 'Show Y canvas',
-        'showZCanvas'       : 'Show Z canvas',
-        'showLabels'        : 'Show orientation labels',
-        'xzoom'             : 'X zoom',
-        'yzoom'             : 'Y zoom',
-        'zzoom'             : 'Z zoom',
-        'layout'            : 'Layout'
-    }.items() + canvaspanel.CanvasPanel._labels.items())
-    """Labels for each of the user-editable :class:`OrthoPanel` properties."""
-
 
     def __init__(self,
                  parent,
