@@ -57,7 +57,7 @@ class _TypeDict(dict):
                 newKey.append(elem.__name__)
                 bases .append(elem.__bases__)
                 
-            elif not isinstance(elem, str):
+            elif not isinstance(elem, (str, int)):
                 newKey.append(elem.__class__.__name__)
                 bases .append(elem.__class__.__bases__)
                 
@@ -106,6 +106,7 @@ class _TypeDict(dict):
 
         
 labels = _TypeDict({
+    
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
@@ -141,15 +142,53 @@ labels = _TypeDict({
     ('OrthoPanel', 'xzoom')       : 'X zoom',
     ('OrthoPanel', 'yzoom')       : 'Y zoom',
     ('OrthoPanel', 'zzoom')       : 'Z zoom',
+
+    ('Image', 'lowlong',   fslimage.ORIENT_A2P)               : 'Anterior',
+    ('Image', 'lowlong',   fslimage.ORIENT_P2A)               : 'Posterior',
+    ('Image', 'lowlong',   fslimage.ORIENT_L2R)               : 'Left',
+    ('Image', 'lowlong',   fslimage.ORIENT_R2L)               : 'Right',
+    ('Image', 'lowlong',   fslimage.ORIENT_I2S)               : 'Inferior',
+    ('Image', 'lowlong',   fslimage.ORIENT_S2I)               : 'Superior',
+    ('Image', 'lowlong',   fslimage.ORIENT_UNKNOWN)           : 'Unknown',
+    ('Image', 'highlong',  fslimage.ORIENT_A2P)               : 'Posterior',
+    ('Image', 'highlong',  fslimage.ORIENT_P2A)               : 'Anterior',
+    ('Image', 'highlong',  fslimage.ORIENT_L2R)               : 'Right',
+    ('Image', 'highlong',  fslimage.ORIENT_R2L)               : 'Left',
+    ('Image', 'highlong',  fslimage.ORIENT_I2S)               : 'Superior',
+    ('Image', 'highlong',  fslimage.ORIENT_S2I)               : 'Inferior',
+    ('Image', 'highlong',  fslimage.ORIENT_UNKNOWN)           : 'Unknown',
+    ('Image', 'lowshort',  fslimage.ORIENT_A2P)               : 'A',
+    ('Image', 'lowshort',  fslimage.ORIENT_P2A)               : 'P',
+    ('Image', 'lowshort',  fslimage.ORIENT_L2R)               : 'L',
+    ('Image', 'lowshort',  fslimage.ORIENT_R2L)               : 'R',
+    ('Image', 'lowshort',  fslimage.ORIENT_I2S)               : 'I',
+    ('Image', 'lowshort',  fslimage.ORIENT_S2I)               : 'S',
+    ('Image', 'lowshort',  fslimage.ORIENT_UNKNOWN)           : '?',
+    ('Image', 'highshort', fslimage.ORIENT_A2P)               : 'P',
+    ('Image', 'highshort', fslimage.ORIENT_P2A)               : 'A',
+    ('Image', 'highshort', fslimage.ORIENT_L2R)               : 'R',
+    ('Image', 'highshort', fslimage.ORIENT_R2L)               : 'L',
+    ('Image', 'highshort', fslimage.ORIENT_I2S)               : 'S',
+    ('Image', 'highshort', fslimage.ORIENT_S2I)               : 'I',
+    ('Image', 'highshort', fslimage.ORIENT_UNKNOWN)           : '?',
+    ('Image', 'space',     fslimage.NIFTI_XFORM_UNKNOWN)      : 'Unknown',
+    ('Image', 'space',     fslimage.NIFTI_XFORM_SCANNER_ANAT) : 'Scanner anatomical',
+    ('Image', 'space',     fslimage.NIFTI_XFORM_ALIGNED_ANAT) : 'Aligned anatomical',
+    ('Image', 'space',     fslimage.NIFTI_XFORM_TALAIRACH)    : 'Talairach', 
+    ('Image', 'space',     fslimage.NIFTI_XFORM_MNI_152)      : 'MNI152',
+
+
+
+    ('LocationPanel', 'outOfBounds') : 'Out of bounds',
+    ('LocationPanel', 'spaceLabel')  : 'space',
+    ('LocationPanel', 'worldLabel')  : 'World location (mm)',
+    ('LocationPanel', 'voxelLabel')  : 'Voxel coordinates',
+    ('LocationPanel', 'volumeLabel') : 'Volume (index)' ,
 })
 
 try:
     
-    locationPanelOutOfBounds = 'Out of bounds'
-    locationPanelSpaceLabel  = '{} space'
-    locationPanelWorldLabel  = 'World location (mm)'
-    locationPanelVoxelLabel  = 'Voxel coordinates'
-    locationPanelVolumeLabel = 'Volume (index)'
+
 
     
     from profiles.orthoviewprofile import OrthoViewProfile
@@ -173,47 +212,3 @@ try:
     
 except Exception as e:
     log.warn('Error importing modules for strings: {}'.format(e))
-
-
-imageAxisLowLongLabels = {
-    fslimage.ORIENT_A2P     : 'Anterior',
-    fslimage.ORIENT_P2A     : 'Posterior',
-    fslimage.ORIENT_L2R     : 'Left',
-    fslimage.ORIENT_R2L     : 'Right',
-    fslimage.ORIENT_I2S     : 'Inferior',
-    fslimage.ORIENT_S2I     : 'Superior',
-    fslimage.ORIENT_UNKNOWN : 'Unknown'}
-
-imageAxisHighLongLabels = {
-    fslimage.ORIENT_A2P     : 'Posterior',
-    fslimage.ORIENT_P2A     : 'Anterior',
-    fslimage.ORIENT_L2R     : 'Right',
-    fslimage.ORIENT_R2L     : 'Left',
-    fslimage.ORIENT_I2S     : 'Superior',
-    fslimage.ORIENT_S2I     : 'Inferior',
-    fslimage.ORIENT_UNKNOWN : 'Unknown'}
-
-imageAxisLowShortLabels = {
-    fslimage.ORIENT_A2P     : 'A',
-    fslimage.ORIENT_P2A     : 'P',
-    fslimage.ORIENT_L2R     : 'L',
-    fslimage.ORIENT_R2L     : 'R',
-    fslimage.ORIENT_I2S     : 'I',
-    fslimage.ORIENT_S2I     : 'S',
-    fslimage.ORIENT_UNKNOWN : '?'}
-
-imageAxisHighShortLabels = {
-    fslimage.ORIENT_A2P     : 'P',
-    fslimage.ORIENT_P2A     : 'A',
-    fslimage.ORIENT_L2R     : 'R',
-    fslimage.ORIENT_R2L     : 'L',
-    fslimage.ORIENT_I2S     : 'S',
-    fslimage.ORIENT_S2I     : 'I',
-    fslimage.ORIENT_UNKNOWN : '?'}
-
-imageSpaceLabels = {
-    fslimage.NIFTI_XFORM_UNKNOWN      : 'Unknown',
-    fslimage.NIFTI_XFORM_SCANNER_ANAT : 'Scanner anatomical',
-    fslimage.NIFTI_XFORM_ALIGNED_ANAT : 'Aligned anatomical',
-    fslimage.NIFTI_XFORM_TALAIRACH    : 'Talairach', 
-    fslimage.NIFTI_XFORM_MNI_152      : 'MNI152'}

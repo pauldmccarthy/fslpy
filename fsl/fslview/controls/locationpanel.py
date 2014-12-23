@@ -24,6 +24,7 @@ import numpy as np
 import props
 
 import fsl.utils.transform as transform
+import fsl.fslview.strings as strings
 import fsl.fslview.panel   as fslpanel
 import imageselectpanel    as imageselect
 
@@ -63,7 +64,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         Creates and lays out the LocationPanel, and sets up a few property
         event listeners.
         """
-        import fsl.fslview.strings as strings
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
@@ -97,9 +97,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._adjustFont(self._voxelLabel,  -2, wx.FONTWEIGHT_LIGHT)
         self._adjustFont(self._valueLabel,  -2, wx.FONTWEIGHT_LIGHT)
 
-        self._worldLabel .SetLabel(strings.locationPanelWorldLabel)
-        self._voxelLabel .SetLabel(strings.locationPanelVoxelLabel)
-        self._volumeLabel.SetLabel(strings.locationPanelVolumeLabel)
+        self._worldLabel .SetLabel(strings.labels[self, 'worldLabel'])
+        self._voxelLabel .SetLabel(strings.labels[self, 'voxelLabel'])
+        self._volumeLabel.SetLabel(strings.labels[self, 'volumeLabel'])
 
         self._worldSizer = wx.BoxSizer(wx.HORIZONTAL)
         self._worldPanel.SetSizer(self._worldSizer)
@@ -176,8 +176,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         the value at the current voxel location is displayed.
         """
 
-        import fsl.fslview.strings as strings
-
         if len(self._imageList) == 0:
             voxVal = ''
 
@@ -208,7 +206,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # If the value is out of the voxel bounds,
         # display some appropriate text
         if not inBounds:
-            voxVal = strings.locationPanelOutOfBounds
+            voxVal = strings.labels[self, 'outOfBounds']
             
         else:
             
@@ -326,8 +324,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         (which contains the image name), and sets the voxel location limits.
         """
 
-        import fsl.fslview.strings as strings
-
         if len(self._imageList) == 0:
             self._updateVoxelValue(   '')
             self._spaceLabel.SetLabel('')
@@ -339,8 +335,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         # Update the label which
         # displays the image space 
-        spaceLabel = strings.imageSpaceLabels[image.getXFormCode()]
-        spaceLabel = strings.locationPanelSpaceLabel.format(spaceLabel)
+        spaceLabel = strings.labels['Image', 'space', image.getXFormCode()]
+        spaceLabel = '{} {}'.format(spaceLabel,
+                                    strings.labels[self, 'spaceLabel'])
         self._spaceLabel.SetLabel(spaceLabel)
         self._worldPanel.Layout()
 

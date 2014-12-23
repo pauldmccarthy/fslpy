@@ -23,6 +23,7 @@ import props
 
 import fsl.data.image                 as fslimage
 import fsl.utils.layout               as fsllayout
+import fsl.fslview.strings            as strings 
 import fsl.fslview.gl                 as fslgl
 import fsl.fslview.gl.wxglslicecanvas as slicecanvas
 import canvaspanel
@@ -359,16 +360,13 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                 
         if fslimage.ORIENT_UNKNOWN in (xorient, yorient, zorient):
             colour = 'red'
- 
-        # Imported here to avoid circular import issues
-        import fsl.fslview.strings as strings 
 
-        xlo = strings.imageAxisLowShortLabels[ xorient]
-        ylo = strings.imageAxisLowShortLabels[ yorient]
-        zlo = strings.imageAxisLowShortLabels[ zorient]
-        xhi = strings.imageAxisHighShortLabels[xorient]
-        yhi = strings.imageAxisHighShortLabels[yorient]
-        zhi = strings.imageAxisHighShortLabels[zorient]
+        xlo = strings.labels['Image', 'lowshort',  xorient]
+        ylo = strings.labels['Image', 'lowshort',  yorient]
+        zlo = strings.labels['Image', 'lowshort',  zorient]
+        xhi = strings.labels['Image', 'highshort', xorient]
+        yhi = strings.labels['Image', 'highshort', yorient]
+        zhi = strings.labels['Image', 'highshort', zorient]
 
         for lbl in allLabels:
             lbl.SetForegroundColour(colour)
