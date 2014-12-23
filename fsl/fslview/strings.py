@@ -4,26 +4,19 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module is a home for labels and tooltips used throughout FSLView.
+
+ - labels
+
+ - tooltips
+"""
 
 import logging
 
 log = logging.getLogger(__name__)
 
+
 import fsl.data.image as fslimage
-
-"""Refactorings are afoot. One big dictionary where keys must be strings.
-
-[className]
-[className, propName]
-[className, propName, optName]
-
-[className, attName]
-
-[actionClassName]
-[className, actionName]
-
-And a second dictionary for tooltips
-"""
 
 
 class _TypeDict(dict):
@@ -184,31 +177,16 @@ labels = _TypeDict({
     ('LocationPanel', 'worldLabel')  : 'World location (mm)',
     ('LocationPanel', 'voxelLabel')  : 'Voxel coordinates',
     ('LocationPanel', 'volumeLabel') : 'Volume (index)' ,
+
+
+    ('OrthoViewProfile', 'nav')    : 'Navigate',
+    ('OrthoViewProfile', 'pan')    : 'Pan',
+    ('OrthoViewProfile', 'zoom')   : 'Zoom',
+
+    ('OrthoEditProfile', 'nav')    : 'Navigate',
+    ('OrthoEditProfile', 'pan')    : 'Pan',
+    ('OrthoEditProfile', 'zoom')   : 'Zoom',
+    ('OrthoEditProfile', 'sel')    : 'Select',
+    ('OrthoEditProfile', 'desel')  : 'Deselect',
+    ('OrthoEditProfile', 'selint') : 'Select by intensity',
 })
-
-try:
-    
-
-
-    
-    from profiles.orthoviewprofile import OrthoViewProfile
-    from profiles.orthoeditprofile import OrthoEditProfile
-
-    profileModeTitles = {
-        OrthoViewProfile : {
-            'nav'  : 'Navigate',
-            'pan'  : 'Pan',
-            'zoom' : 'Zoom'},
-
-        OrthoEditProfile : {
-            'nav'    : 'Navigate',
-            'pan'    : 'Pan',
-            'zoom'   : 'Zoom',
-            'sel'    : 'Select',
-            'desel'  : 'Deselect',
-            'selint' : 'Select by intensity'}
-    }
-
-    
-except Exception as e:
-    log.warn('Error importing modules for strings: {}'.format(e))

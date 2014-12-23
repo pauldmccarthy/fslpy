@@ -31,6 +31,7 @@ import inspect
 import wx
 import props
 
+import fsl.fslview.strings as strings
 import fsl.fslview.actions as actions
 
 
@@ -160,8 +161,6 @@ class Profile(actions.ActionProvider):
 
         # Add all of the provided modes
         # as options to the mode property
-
-        import fsl.fslview.strings as strings
  
         if modes is None:
             modes = []
@@ -169,10 +168,7 @@ class Profile(actions.ActionProvider):
         modeProp = self.getProp('mode')
         
         for mode in modes:
-            modeProp.addChoice(
-                mode,
-                strings.profileModeTitles[self.__class__][mode],
-                self)
+            modeProp.addChoice(mode, strings.labels[self, mode], self)
 
         if len(modes) > 0:
             self.mode = modes[0]
