@@ -320,39 +320,8 @@ class Profile(actions.ActionProvider):
         elif ev.MiddleIsDown():          return 'Middle'
         else:                            return  None
 
-        
-    def __getEventType(self, ev):
-        """Returns a string describing the given :class:`wx.MouseEvent` or
-        :class:`wx.KeyEvent`.
 
-        This string is then used by the :meth:`_getHandler` method to look up
-        a method on this :class:`OrthoViewProfile` instance which can handle
-        the event.
-        """
-
-        if isinstance(ev, wx.MouseEvent):
-            
-            btn = self.__getMouseButton(ev)
-            if btn is None:
-                btn = ''
-
-            if   ev.ButtonUp():              evType = 'Up'
-            elif ev.ButtonDown():            evType = 'Down'
-            elif ev.Dragging():              evType = 'Drag'
-            elif ev.GetWheelRotation() != 0: evType = 'Wheel'
-
-            # Do I need to consider any other mouse event types?
-            else:                            evType = 'Move'
-            
-            return '{}Mouse{}'.format(btn, evType)
-
-        elif isinstance(ev, wx.KeyEvent):
-            return 'Char'
-
-        return None
-
-
-    def __getHandler(self, ev, mode=None, evType=None):
+    def __getHandler(self, ev, evType, mode=None):
         """Returns a reference to a method of this :class:`Profile`
         instance which can handle the given :class:`wx.MouseEvent` or
         :class:`wx.KeyEvent` (the ``ev`` argument).
@@ -371,9 +340,6 @@ class Profile(actions.ActionProvider):
         if mode is None:
             if tempMode is None: mode = self.mode
             else:                mode = tempMode
-        
-        if evType is None:
-            evType = self.__getEventType(ev)
 
         # Search for a method which can
         # handle the specified mode/evtype
@@ -403,7 +369,7 @@ class Profile(actions.ActionProvider):
         Delegates to a mode specific handler if one is present.
         """
 
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(ev, 'MouseWheel')
         if handler is None:
             return
 
@@ -433,7 +399,8 @@ class Profile(actions.ActionProvider):
         if self.__lastMousePos  is None: self.__lastMousePos  = mouseLoc
         if self.__lastCanvasPos is None: self.__lastCanvasPos = canvasLoc
 
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(
+            ev, '{}MouseDown'.format(self.__getMouseButton(ev)))
         if handler is None:
             return
 
@@ -453,7 +420,8 @@ class Profile(actions.ActionProvider):
         Delegates to a mode specific handler if one is present.
         """
         
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(
+            ev, '{}MouseUp'.format(self.__getMouseButton(ev)))
 
         if handler is None:
             self.__mouseDownPos  = None
@@ -483,7 +451,7 @@ class Profile(actions.ActionProvider):
             self.__onMouseDrag(ev)
             return
 
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(ev, 'MouseMove')
 
         if handler is None:
             return
@@ -511,7 +479,8 @@ class Profile(actions.ActionProvider):
         canvas              = ev.GetEventObject()
         mouseLoc, canvasLoc = self.__getMouseLocation(ev)
 
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(
+            ev, '{}MouseDrag'.format(self.__getMouseButton(ev)))
         if handler is None:
             return 
 
@@ -531,7 +500,7 @@ class Profile(actions.ActionProvider):
         Delegates to a mode specific handler if one is present.
         """
 
-        handler = self.__getHandler(ev)
+        handler = self.__getHandler(ev, 'Char')
         if handler is None:
             return 
 
