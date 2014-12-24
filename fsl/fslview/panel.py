@@ -41,6 +41,8 @@ import fsl.fslview.actions as actions
 
 import displaycontext
 
+import props
+
 
 class FSLViewPanel(wx.Panel, actions.ActionProvider):
     """Superclass for FSLView view panels.
@@ -94,3 +96,25 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
         self._imageList  = imageList
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
+
+
+class ConfigPanel(wx.Panel):
+
+    def __init__(self, parent, target, layout=None):
+
+        import fsl.fslview.layouts as layouts
+        
+        wx.Panel.__init__(self, parent)
+        self._name   = '{}_{}'.format(self.__class__.__name__, id(self))
+        self._target = target
+        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        if layout is None:
+            layout = layouts.layouts[target]
+            
+        self._propPanel = props.buildGUI(self, target, view=layout)
+
+        self._sizer.Add(self._propPanel, flag=wx.EXPAND, proportion=1)
+
+        self.SetSizer(self._sizer)
+        self.Layout()

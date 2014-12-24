@@ -16,6 +16,7 @@ import fsl.fslview.strings as strings
 
 from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
+from fsl.fslview.views.canvaspanel         import CanvasPanel
 
 
 OrthoEditProfileLayout = props.HGroup(
@@ -33,9 +34,26 @@ OrthoEditProfileLayout = props.HGroup(
 
 OrthoViewProfileLayout = props.HGroup(('mode', ))
 
+
+
+CanvasPanelActionLayout = props.HGroup(
+    (props.Button('screenshot',              text=strings.labels[CanvasPanel, 'screenshot'],              callback=CanvasPanel.screenshot),
+     props.Button('toggleColourBar',         text=strings.labels[CanvasPanel, 'toggleColourBar'],         callback=CanvasPanel.toggleColourBar),
+     props.Button('toggleImageList',         text=strings.labels[CanvasPanel, 'toggleImageList'],         callback=CanvasPanel.toggleImageList),
+     props.Button('toggleDisplayProperties', text=strings.labels[CanvasPanel, 'toggleDisplayProperties'], callback=CanvasPanel.toggleDisplayProperties),
+     props.Button('toggleLocationPanel',     text=strings.labels[CanvasPanel, 'toggleLocationPanel'],     callback=CanvasPanel.toggleLocationPanel),
+     props.Button('toggleCanvasProperties',  text=strings.labels[CanvasPanel, 'toggleCanvasProperties'],  callback=CanvasPanel.toggleCanvasProperties)),
+    wrap=True,
+    showLabels=False)
+
+
+
+
 layouts = td.TypeDict({
 
-    'OrthoViewProfile' : OrthoViewProfileLayout,
-    'OrthoEditProfile' : OrthoEditProfileLayout
+    'OrthoViewProfile'         : OrthoViewProfileLayout,
+    'OrthoEditProfile'         : OrthoEditProfileLayout,
+
+    ('CanvasPanel', 'actions') : CanvasPanelActionLayout,
+#    ('CanvasPanel', 'props')   : CanvasPanelTopLayout,
 })
-    

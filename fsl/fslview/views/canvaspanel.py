@@ -27,8 +27,6 @@ import props
 
 import fsl.fslview.panel                      as fslpanel 
 import fsl.fslview.profiles                   as profiles
-import fsl.fslview.actions.actionpanel        as actionpanel
-import fsl.fslview.profiles.profilepanel      as profilepanel
 import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
@@ -201,10 +199,13 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                        displayCtx.getSyncPropertyName('imageOrder'))
         self.bindProps('syncVolume',
                        displayCtx,
-                       displayCtx.getSyncPropertyName('volume')) 
+                       displayCtx.getSyncPropertyName('volume'))
 
-        self.__actionPanel      = actionpanel.ActionPanel(
-            self, self, propz=[])
+        import fsl.fslview.layouts as layouts
+
+        self.__actionPanel = fslpanel.ConfigPanel(
+            self, self, layout=layouts.layouts[CanvasPanel, 'actions'])
+
         self.__profilePanel     = wx.Panel(self)
         self.__canvasContainer  = wx.Panel(self)
         self.__listLocContainer = wx.Panel(self)
@@ -221,8 +222,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__displayPropsPanel = imagedisplaypanel.ImageDisplayPanel(
             self.__dispSetContainer, imageList, displayCtx)
         
-        self.__canvasPropsPanel = actionpanel.ActionPanel(
-            self.__dispSetContainer, self, actionz=[])
+        self.__canvasPropsPanel = wx.Panel(self.__dispSetContainer)
 
         self.__listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__listLocContainer.SetSizer(self.__listLocSizer)
@@ -287,7 +287,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         if self.__profilePanel is not None:
             self.__profilePanel.DestroyChildren()
 
-        realProfilePanel = profilepanel.ProfilePanel(
+        realProfilePanel = fslpanel.ConfigPanel(
             self.__profilePanel, self.getCurrentProfile())
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -298,27 +298,27 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__layout()
 
 
-    def toggleImageList(self):
+    def toggleImageList(self, *a):
         self.__imageListPanel.Show(not self.__imageListPanel.IsShown())
         self.__layout()
         
-    def toggleLocationPanel(self):
+    def toggleLocationPanel(self, *a):
         self.__locationPanel.Show(not self.__locationPanel.IsShown())
         self.__layout()
         
-    def toggleDisplayProperties(self):
+    def toggleDisplayProperties(self, *a):
         self.__displayPropsPanel.Show(not self.__displayPropsPanel.IsShown())
         self.__layout()
         
-    def toggleCanvasProperties(self):
+    def toggleCanvasProperties(self, *a):
         self.__canvasPropsPanel .Show(not self.__canvasPropsPanel.IsShown())
         self.__layout()
 
-    def toggleColourBar(self):
+    def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar
         self.__layout()
 
-    def screenshot(self):
+    def screenshot(self, *a):
         _takeScreenShot(self._imageList, self._displayCtx, self)
 
         
