@@ -102,16 +102,12 @@ class ConfigPanel(wx.Panel):
 
     def __init__(self, parent, target, layout=None):
 
-        import fsl.fslview.layouts as layouts
         
         wx.Panel.__init__(self, parent)
         self._name   = '{}_{}'.format(self.__class__.__name__, id(self))
         self._target = target
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        if layout is None:
-            layout = layouts.layouts[target]
-            
         self._propPanel = props.buildGUI(self, target, view=layout)
 
         self._sizer.Add(self._propPanel, flag=wx.EXPAND, proportion=1)

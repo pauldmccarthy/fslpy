@@ -201,15 +201,22 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                        displayCtx,
                        displayCtx.getSyncPropertyName('volume'))
 
-        import fsl.fslview.layouts as layouts
-
-        self.__actionPanel = fslpanel.ConfigPanel(
-            self, self, layout=layouts.layouts[CanvasPanel, 'actions'])
-
         self.__profilePanel     = wx.Panel(self)
         self.__canvasContainer  = wx.Panel(self)
         self.__listLocContainer = wx.Panel(self)
         self.__dispSetContainer = wx.Panel(self)
+
+        import fsl.fslview.layouts as layouts
+        
+        self.__actionPanel = fslpanel.ConfigPanel(
+            self,
+            self,
+            layout=layouts.layouts.get((type(self), 'actions'), None))
+        
+        self.__canvasPropsPanel = fslpanel.ConfigPanel(
+            self.__dispSetContainer,
+            self,
+            layout=layouts.layouts.get((type(self), 'props'), None))
 
         self.__canvasPanel = wx.Panel(self.__canvasContainer)
  
@@ -221,8 +228,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         
         self.__displayPropsPanel = imagedisplaypanel.ImageDisplayPanel(
             self.__dispSetContainer, imageList, displayCtx)
-        
-        self.__canvasPropsPanel = wx.Panel(self.__dispSetContainer)
 
         self.__listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__listLocContainer.SetSizer(self.__listLocSizer)
