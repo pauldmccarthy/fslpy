@@ -24,6 +24,7 @@ import wx
 import props
 
 import fsl.fslview.panel                      as fslpanel
+import fsl.fslview.strings                    as strings
 import fsl.fslview.profiles                   as profiles
 import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
@@ -160,7 +161,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
     zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
 
-    colourBarLocation  = props.Choice(('top', 'bottom', 'left', 'right'))
+    colourBarLocation  = props.Choice(
+        ('top', 'bottom', 'left', 'right'),
+        labels=strings.labels['CanvasPanel', 'colourBarLocation', 'labels'])
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
 

@@ -66,6 +66,22 @@ CanvasPanelActionLayout = props.HGroup(
     wrap=True,
     showLabels=False)
 
+CanvasPanelLayout = props.VGroup((
+    props.Widget('zax',                label=strings.labels[CanvasPanel, 'zax']),
+    props.Widget('syncImageOrder',     label=strings.labels[CanvasPanel, 'syncImageOrder']),
+    props.Widget('syncLocation',       label=strings.labels[CanvasPanel, 'syncLocation']),
+    props.Widget('syncVolume',         label=strings.labels[CanvasPanel, 'syncVolume']),
+    props.Widget('colourBarLabelSide', label=strings.labels[CanvasPanel, 'colourBarLabelSide']),
+    props.Widget('colourBarLocation',  label=strings.labels[CanvasPanel, 'colourBarLocation'])))
+
+LightBoxPanelLayout = props.VGroup((
+    props.Widget('zax',            label=strings.labels[CanvasPanel, 'zax']),
+    props.Widget('zoom',           label=strings.labels[CanvasPanel, 'zoom']),
+    props.Widget('highlightSlice', label=strings.labels[CanvasPanel, 'highlightSlice']),
+    props.Widget('showCursor',     label=strings.labels[CanvasPanel, 'showCursor']),
+    props.Widget('showGridLines',  label=strings.labels[CanvasPanel, 'showGridLines']),
+    props.Widget('sliceSpacing',   label=strings.labels[CanvasPanel, 'sliceSpacing']),
+    props.Widget('zrange',         label=strings.labels[CanvasPanel, 'zrange'])))
 
 
 
@@ -76,5 +92,6 @@ layouts = td.TypeDict({
     ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
     ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
 
-    ('CanvasPanel', 'actions') : CanvasPanelActionLayout,
+    ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
+    ('LightBoxPanel',    'props')   : CanvasPanelActionLayout,
 })

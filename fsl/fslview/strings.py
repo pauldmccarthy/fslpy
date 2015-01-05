@@ -29,6 +29,8 @@ labels = td.TypeDict({
     'OpenStandardAction'  : 'Add standard',
     'LoadColourMapAction' : 'Load custom colour map',
 
+    ('Profile', 'mode') : 'Mode',
+    
     ('CanvasPanel', 'profile', 'view') : 'View',
     ('OrthoPanel',  'profile', 'edit') : 'Edit',
 
@@ -39,7 +41,11 @@ labels = td.TypeDict({
     ('CanvasPanel', 'toggleLocationPanel')     : 'Show/hide location panel',
     ('CanvasPanel', 'toggleCanvasProperties')  : 'Show/hide canvas properties',
 
+    ('CanvasPanel',     'colourBarLocation', 'labels') : ('Top', 'Bottom', 'Left', 'Right'),
+    ('ColourBarCanvas', 'orientation',       'labels') : ('Horizontal', 'Vertical'),
+    ('ColourBarCanvas', 'labelSide',         'labels') : ('Top / Left', 'Bottom / Right'), 
 
+    ('CanvasPanel', 'zax')                : 'Z axis',
     ('CanvasPanel', 'showCursor')         : 'Show location cursor',
     ('CanvasPanel', 'syncLocation')       : 'Sync location',
     ('CanvasPanel', 'syncImageOrder')     : 'Sync image order',
@@ -48,6 +54,11 @@ labels = td.TypeDict({
     ('CanvasPanel', 'zoom')               : 'Zoom',
     ('CanvasPanel', 'colourBarLocation')  : 'Colour bar location',
     ('CanvasPanel', 'colourBarLabelSide') : 'Colour bar label side',
+
+    ('LightBoxPanel', 'highlightSlice') : 'Highlight slice',
+    ('LightBoxPanel', 'showGridLines')  : 'Show grid lines',
+    ('LightBoxPanel', 'sliceSpacing')   : 'Slice spacing',
+    ('LightBoxPanel', 'zrange')         : 'Z range',
 
     ('OrthoPanel', 'showXCanvas') : 'Show X canvas',
     ('OrthoPanel', 'showYCanvas') : 'Show Y canvas',
@@ -120,8 +131,6 @@ labels = td.TypeDict({
     ('OrthoEditProfile', 'clearSelection')          : 'Clear selection',
     ('OrthoEditProfile', 'createMaskFromSelection') : 'Create mask from selected region',
     ('OrthoEditProfile', 'createROIFromSelection')  : 'Create ROI from selected region',
-
-    ('Profile', 'mode') : 'Mode',
 
     ('OrthoEditProfile', 'selectionMode')  : 'Selection mode',
     ('OrthoEditProfile', 'selectionSize')  : 'Selection size',
