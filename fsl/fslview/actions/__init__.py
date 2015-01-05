@@ -94,7 +94,7 @@ class Action(props.HasProperties):
         self._boundWidgets.append(widget)
 
 
-    def _enabledChanged(self, *a):
+    def _enabledChanged(self, *args):
         """Internal method which is called when the :attr:`enabled` property
         changes. Enables/disables the action, and any bound widgets.
         """
@@ -105,18 +105,18 @@ class Action(props.HasProperties):
             widget.Enable(self.enabled)
 
 
-    def __disabledDoAction(self):
+    def __disabledDoAction(self, *args):
         """This method gets called when the action is disabled."""
         raise RuntimeError('{} is disabled'.format(self.__class__.__name__))
     
 
-    def __enabledDoAction(self):
+    def __enabledDoAction(self, *args):
         """This method is set in :meth:`__init__`; it gets called when the
         action is enabled."""
         pass
 
     
-    def doAction(self):
+    def doAction(self, *args):
         """This method must be overridden by subclasses.
 
         It performs the action, or raises a ``RuntimeError`` if the action
@@ -200,6 +200,6 @@ class ActionProvider(props.HasProperties):
         self.__actions[name].enabled = not self.__actions[name].enabled
 
 
-    def run(self, name):
+    def run(self, name, *args):
         """Performs the named action."""
-        self.__actions[name].doAction()
+        self.__actions[name].doAction(*args)

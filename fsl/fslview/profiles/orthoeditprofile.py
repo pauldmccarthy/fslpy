@@ -42,19 +42,19 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         ('subtract', 'Subtract from current selection'))))
 
 
-    def clearSelection(self):
+    def clearSelection(self, *a):
         self._editor.getSelection().clearSelection()
 
 
-    def fillSelection(self):
+    def fillSelection(self, *a):
         self._editor.fillSelection(self.fillValue)
 
 
-    def undo(self):
+    def undo(self, *a):
         self._editor.undo() 
 
 
-    def redo(self):
+    def redo(self, *a):
         self._editor.redo()
  
 
