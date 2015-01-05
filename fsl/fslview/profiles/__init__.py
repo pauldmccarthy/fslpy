@@ -358,7 +358,8 @@ class Profile(actions.ActionProvider):
         # An alternate handler has
         # been specified - look it up
         if alt is not None:
-            return self.__getHandler(ev, *alt)
+            altMode, altEvType = alt
+            return self.__getHandler(ev, altEvType, altMode)
 
         return None
 
