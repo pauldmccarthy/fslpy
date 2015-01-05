@@ -53,8 +53,10 @@ OrthoEditProfileActionLayout = props.HGroup(
     wrap=True,
     showLabels=False)
 
+
 CanvasPanelActionLayout = props.HGroup(
-    (props.Widget('profile',                 label=strings.labels[CanvasPanel, 'profile']),
+    (props.Widget('profile',                 label=strings.labels[CanvasPanel, 'profile'],
+                  visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1),
      props.Button('screenshot',               text=strings.labels[CanvasPanel, 'screenshot'],              callback=CanvasPanel.screenshot),
      props.Button('toggleColourBar',          text=strings.labels[CanvasPanel, 'toggleColourBar'],         callback=CanvasPanel.toggleColourBar),
      props.Button('toggleImageList',          text=strings.labels[CanvasPanel, 'toggleImageList'],         callback=CanvasPanel.toggleImageList),

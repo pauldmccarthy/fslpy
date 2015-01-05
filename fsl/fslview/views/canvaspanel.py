@@ -19,13 +19,11 @@ log = logging.getLogger(__name__)
 
 import subprocess
 
-from collections import OrderedDict
-
 import wx
 
 import props
 
-import fsl.fslview.panel                      as fslpanel 
+import fsl.fslview.panel                      as fslpanel
 import fsl.fslview.profiles                   as profiles
 import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
@@ -158,20 +156,11 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
 
-    profile = props.Choice(
-        OrderedDict([('view', 'View'),
-                     ('edit', 'Edit')]),
-        default='view')
+    profile = props.Choice()
 
     zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
 
-    colourBarLocation = props.Choice({
-        'top'    : 'Top',
-        'bottom' : 'Bottom',
-        'left'   : 'Left',
-        'right'  : 'Right'})
-
-    
+    colourBarLocation  = props.Choice(('top', 'bottom', 'left', 'right'))
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
 

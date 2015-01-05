@@ -27,8 +27,17 @@ from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
 from fsl.fslview.profiles.lightboxviewprofile import LightBoxViewProfile
 
+profiles  = {
+    OrthoPanel    : ['view', 'edit'],
+    LightBoxPanel : ['view']
+}
+"""This dictionary is used by the :class:`~fsl.fslview.profiles.ProfileManager`
+to figure out which profiles are available for each
+:class:`~fsl.fslview.views.canvaspanel.CanvasPanel`.
+"""
 
-profiles = {
+
+profileHandlers = {
     (OrthoPanel,    'view') : OrthoViewProfile,
     (OrthoPanel,    'edit') : OrthoEditProfile,
     (LightBoxPanel, 'view') : LightBoxViewProfile
@@ -110,5 +119,8 @@ altHandlerMap = {
         
         (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
         (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
-        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp'))))
+        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')))),
+
+    LightBoxViewProfile : OrderedDict((
+        ((None, 'LeftMouseDown'), (None, 'LeftMouseDrag')), ))
 }

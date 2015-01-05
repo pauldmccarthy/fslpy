@@ -29,6 +29,8 @@ labels = td.TypeDict({
     'OpenStandardAction'  : 'Add standard',
     'LoadColourMapAction' : 'Load custom colour map',
 
+    ('CanvasPanel', 'profile', 'view') : 'View',
+    ('OrthoPanel',  'profile', 'edit') : 'Edit',
 
     ('CanvasPanel', 'screenshot')              : 'Take screenshot',
     ('CanvasPanel', 'toggleColourBar')         : 'Show/hide colour bar',

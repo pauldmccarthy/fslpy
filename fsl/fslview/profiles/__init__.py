@@ -341,7 +341,8 @@ class Profile(actions.ActionProvider):
         else:
             handlerName = '_{}{}'.format(evType[0].lower(),
                                          evType[1:])
-        handler     = getattr(self, handlerName, None)
+
+        handler = getattr(self, handlerName, None)
 
         if handler is not None:
             log.debug('Handler found for mode {}, event {}'.format(mode,
@@ -540,11 +541,24 @@ class ProfileManager(object):
                           instance which defines how images are being
                           displayed.
         """
+        import fsl.fslview.profilemap as profilemap
+        import fsl.fslview.strings    as strings
+        
         self._canvasPanel    = canvasPanel
         self._canvasCls      = canvasPanel.__class__
         self._imageList      = imageList
         self._displayCtx     = displayCtx
         self._currentProfile = None
+
+        profileProp = canvasPanel.getProp('profile')
+        profilez    = profilemap.profiles[canvasPanel.__class__]
+
+        for profile in profilez:
+            profileProp.addChoice(
+                profile,
+                strings.labels[canvasPanel, 'profile', profile],
+                canvasPanel)
+        canvasPanel.profile = profilez[0]
 
 
     def getCurrentProfile(self):
@@ -559,7 +573,7 @@ class ProfileManager(object):
 
         import fsl.fslview.profilemap as profilemap
 
-        profileCls = profilemap.profiles[self._canvasCls, profile]
+        profileCls = profilemap.profileHandlers[self._canvasCls, profile]
 
         # the current profile is the requested profile
         if (self._currentProfile is not None) and \
