@@ -123,7 +123,7 @@ class SliceCanvas(props.HasProperties):
     
     def canvasToWorld(self, xpos, ypos):
         """Given pixel x/y coordinates on this canvas, translates them
-        into the display coordinates of the displayed slice.
+        into xyz display coordinates.
         """
 
         realWidth                 = self.displayBounds.xlen
@@ -142,7 +142,12 @@ class SliceCanvas(props.HasProperties):
         xpos = self.displayBounds.xlo + (xpos / canvasWidth)  * realWidth
         ypos = self.displayBounds.ylo + (ypos / canvasHeight) * realHeight
 
-        return xpos, ypos
+        pos = [None] * 3
+        pos[self.xax] = xpos
+        pos[self.yax] = ypos
+        pos[self.zax] = self.pos.z
+
+        return pos
 
 
     def panDisplayBy(self, xoff, yoff):

@@ -289,19 +289,12 @@ class Profile(actions.ActionProvider):
         corresponding x/y/z display space coordinates.
         """
 
-        mx, my  = ev.GetPositionTuple()
-        canvas  = ev.GetEventObject()
-        w, h    = canvas.GetClientSize()
-        my      = h - my
+        mx, my    = ev.GetPositionTuple()
+        canvas    = ev.GetEventObject()
+        w, h      = canvas.GetClientSize()
+        my        = h - my
 
-        xpos, ypos = canvas.canvasToWorld(mx, my)
-        zpos       = canvas.pos.z
-
-        canvasPos = [None] * 3
-
-        canvasPos[canvas.xax] = xpos
-        canvasPos[canvas.yax] = ypos
-        canvasPos[canvas.zax] = zpos
+        canvasPos = canvas.canvasToWorld(mx, my)
         
         return (mx, my), canvasPos
                                 
@@ -343,7 +336,11 @@ class Profile(actions.ActionProvider):
 
         # Search for a method which can
         # handle the specified mode/evtype
-        handlerName = '_{}Mode{}'.format(mode, evType)
+        if mode is not None:
+            handlerName = '_{}Mode{}'.format(mode, evType)
+        else:
+            handlerName = '_{}{}'.format(evType[0].lower(),
+                                         evType[1:])
         handler     = getattr(self, handlerName, None)
 
         if handler is not None:

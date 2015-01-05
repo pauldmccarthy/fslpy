@@ -127,16 +127,18 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         Given pixel x/y coordinates on this canvas, translates them into the
         real world x/y/z coordinates of the displayed slice.  Returns a
-        3-tuple containing the (x, y, z) coordinates (in the dimension order
-        of the image list space). If the given canvas position is out of the
-        image range, ``None`` is returned.
+        3-tuple containing the (x, y, z) display system coordinates. If the
+        given canvas position is out of the image range, ``None`` is returned.
         """
 
         nrows = self._totalRows
         ncols = self.ncols
 
-        screenx, screeny = slicecanvas.SliceCanvas.canvasToWorld(
+        screenPos = slicecanvas.SliceCanvas.canvasToWorld(
             self, xpos, ypos)
+
+        screenx = screenPos[self.xax]
+        screeny = screenPos[self.yax]
 
         xmin = self.displayCtx.bounds.getLo( self.xax)
         ymin = self.displayCtx.bounds.getLo( self.yax)

@@ -288,20 +288,24 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__profileManager.changeProfile(self.profile)
         self.__profilePanel.DestroyChildren()
 
-        profile = self.getCurrentProfile()
         
-        profilePropPanel = fslpanel.ConfigPanel(
-            self.__profilePanel, profile,
-            layout=layouts.layouts[type(profile), 'props'])
+        sizer        = wx.BoxSizer(wx.VERTICAL)
+        profile      = self.getCurrentProfile()
+        propLayout   = layouts.layouts.get((type(profile), 'props'),   None)
+        actionLayout = layouts.layouts.get((type(profile), 'actions'), None)
 
-        profileActionPanel = fslpanel.ConfigPanel(
-            self.__profilePanel, profile,
-            layout=layouts.layouts[type(profile), 'actions'])
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        if propLayout is not None:
+            profilePropPanel = fslpanel.ConfigPanel(
+                self.__profilePanel, profile,
+                layout=layouts.layouts[type(profile), 'props'])
+            sizer.Add(profilePropPanel,   flag=wx.EXPAND)
 
-        sizer.Add(profilePropPanel,   flag=wx.EXPAND)
-        sizer.Add(profileActionPanel, flag=wx.EXPAND)
+        if actionLayout is not None:
+            profileActionPanel = fslpanel.ConfigPanel(
+                self.__profilePanel, profile,
+                layout=layouts.layouts[type(profile), 'actions'])
+            sizer.Add(profileActionPanel, flag=wx.EXPAND)
+            
         self.__profilePanel.SetSizer(sizer)
 
         self.__layout()
