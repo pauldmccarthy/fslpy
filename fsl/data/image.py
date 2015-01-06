@@ -42,7 +42,12 @@ NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
 
 
-ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.nii.gz', '.img.gz']
+# TODO The wx.FileDialog does not
+# seem to handle wildcards with
+# multiple suffixes (e.g. '.nii.gz'),
+# so i'm just providing '*.gz'for now
+
+ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.gz']
 """The file extensions which we understand. This list is used as the default
 if if the ``allowedExts`` parameter is not passed to any of the functions in
 this module.
@@ -51,12 +56,11 @@ this module.
 EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
                           'ANALYZE75 images',
                           'NIFTI1/ANALYZE75 headers',
-                          'Compressed NIFTI1 images',
-                          'Compressed ANALYZE75/NIFTI1 images']
-"""Descriptions for each of the extensions in :data:`_allowedExts`. """
+                          'Compressed images']
+"""Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-DEFAULT_EXTENSION  = '.nii.gz'
+DEFAULT_EXTENSION  = '.gz'
 """The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
 
 
@@ -78,7 +82,6 @@ def makeWildcard(allowedExts=None):
 
     wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
 
-    print  '|'.join(wcParts)
     return '|'.join(wcParts)
 
 
@@ -610,13 +613,11 @@ class ImageList(props.HasProperties):
             fromDir = self._lastDir
             saveLastDir = True
 
-        # TODO wx wildcard handling is buggy,
-        # so i'm disabling it for now
-        # wildcard = wildcard()
+        wildcard = makeWildcard()
         dlg = wx.FileDialog(app.GetTopWindow(),
                             message='Open image file',
                             defaultDir=fromDir,
-                            # wildcard=wildcard,
+                            wildcard=wildcard,
                             style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
         if dlg.ShowModal() != wx.ID_OK: return False
