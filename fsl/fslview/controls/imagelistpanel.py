@@ -15,9 +15,66 @@ log = logging.getLogger(__name__)
 
 
 import wx
+
+import props
+
 import pwidgets.elistbox as elistbox
 
 import fsl.fslview.panel as fslpanel
+
+class ListItemWidget(wx.Panel):
+
+    _enabledFG  = '#000000'
+    _disabledFG = '#CCCCCC'
+
+    def __init__(self, parent, image, display, listBox):
+        wx.Panel.__init__(self, parent)
+
+        self.image   = image
+        self.display = display
+        self.listBox = listBox
+        self.name    = '{}_{}'.format(self.__class__.__name__, id(self))
+
+        self.visibility = props.makeWidget(self, display, 'enabled')
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.SetSizer(self.sizer)
+
+        self.sizer.Add(self.visibility, flag=wx.EXPAND, proportion=1)
+
+        self.display.addListener('enabled', self.name, self._vizChanged)
+        self.image  .addListener('saved',   self.name, self._saveStateChanged)
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
+
+        self._vizChanged()
+        self._saveStateChanged()
+
+        
+    def _onDestroy(self, ev):
+        ev.Skip()
+        self.display.removeListener('enabled', self.name)
+        self.image  .removeListener('saved',   self.name)
+
+        
+    def _saveStateChanged(self, *a):
+        idx = self.listBox.IndexOf(self.image)
+
+        if self.image.saved:
+            self.listBox.SetItemBackgroundColour(idx)
+        else:
+            self.listBox.SetItemBackgroundColour(idx, '#ffaaaa', '#993333') 
+
+            
+    def _vizChanged(self, *a):
+
+        idx = self.listBox.IndexOf(self.image)
+
+        if self.display.enabled: fgColour = ListItemWidget._enabledFG
+        else:                    fgColour = ListItemWidget._disabledFG
+
+        self.listBox.SetItemForegroundColour(idx, fgColour)
 
 
 class ImageListPanel(fslpanel.FSLViewPanel):
@@ -46,7 +103,6 @@ class ImageListPanel(fslpanel.FSLViewPanel):
             self,
             style=(elistbox.ELB_REVERSE    | 
                    elistbox.ELB_TOOLTIP    | 
-                   elistbox.ELB_ENABLEABLE |
                    elistbox.ELB_EDITABLE))
 
         # listeners for when the user does
@@ -55,7 +111,6 @@ class ImageListPanel(fslpanel.FSLViewPanel):
         self._listBox.Bind(elistbox.EVT_ELB_MOVE_EVENT,   self._lbMove)
         self._listBox.Bind(elistbox.EVT_ELB_REMOVE_EVENT, self._lbRemove)
         self._listBox.Bind(elistbox.EVT_ELB_ADD_EVENT,    self._lbAdd)
-        self._listBox.Bind(elistbox.EVT_ELB_ENABLE_EVENT, self._lbEnable)
         self._listBox.Bind(elistbox.EVT_ELB_EDIT_EVENT,   self._lbEdit)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -135,9 +190,10 @@ class ImageListPanel(fslpanel.FSLViewPanel):
             if name is None: name = ''
 
             self._listBox.Append(name, image, image.imageFile)
-            
-            if display.enabled: self._listBox.EnableItem( i)
-            else:               self._listBox.DisableItem(i)
+
+            widget = ListItemWidget(self, image, display, self._listBox)
+
+            self._listBox.SetItemWidget(i, widget)
 
             def nameChanged(img):
                 idx  = self._displayCtx.getImageOrder(img)
@@ -145,23 +201,10 @@ class ImageListPanel(fslpanel.FSLViewPanel):
                 if name is None: name = ''
                 self._listBox.SetString(idx, name)
 
-            def enabledChanged(img):
-                display = self._displayCtx.getDisplayProperties(img)
-                idx     = self._displayCtx.getImageOrder(img)
-
-                if display.enabled: self._listBox.EnableItem( idx)
-                else:               self._listBox.DisableItem(idx)
-
             image.addListener(
                 'name',
                 self._name,
                 lambda c, va, vi, img=image: nameChanged(img),
-                overwrite=True)
-
-            display.addListener(
-                'enabled',
-                self._name,
-                lambda c, va, vi, img=image: enabledChanged(img),
                 overwrite=True)
 
         if len(self._imageList) > 0:
@@ -205,17 +248,6 @@ class ImageListPanel(fslpanel.FSLViewPanel):
         :class:`~fsl.data.image.ImageList`. 
         """
         self._imageList.pop(self._displayCtx.imageOrder[ev.idx])
-
-
-    def _lbEnable(self, ev):
-        """Called when an item is enabled/disabled on the image list box.
-
-        Toggles the image display enabled property accordingly.
-        """
-        idx             = self._displayCtx.imageOrder[ev.idx]
-        img             = self._imageList[idx]
-        display         = self._displayCtx.getDisplayProperties(img)
-        display.enabled = ev.enabled
 
 
     def _lbEdit(self, ev):
