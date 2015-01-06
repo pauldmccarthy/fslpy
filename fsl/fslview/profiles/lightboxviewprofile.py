@@ -46,4 +46,7 @@ class LightBoxViewProfile(profiles.Profile):
         Updates the canvas and display context location.
         """
 
+        if canvasPos is None:
+            return
+
         self._displayCtx.location.xyz = canvasPos

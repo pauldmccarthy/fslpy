@@ -17,6 +17,7 @@ import fsl.fslview.strings as strings
 from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 from fsl.fslview.views.canvaspanel         import CanvasPanel
+from fsl.fslview.views.lightboxpanel       import LightBoxPanel
 
 
 OrthoEditProfileLayout = props.HGroup(
@@ -75,13 +76,13 @@ CanvasPanelLayout = props.VGroup((
     props.Widget('colourBarLocation',  label=strings.labels[CanvasPanel, 'colourBarLocation'])))
 
 LightBoxPanelLayout = props.VGroup((
-    props.Widget('zax',            label=strings.labels[CanvasPanel, 'zax']),
-    props.Widget('zoom',           label=strings.labels[CanvasPanel, 'zoom']),
-    props.Widget('highlightSlice', label=strings.labels[CanvasPanel, 'highlightSlice']),
-    props.Widget('showCursor',     label=strings.labels[CanvasPanel, 'showCursor']),
-    props.Widget('showGridLines',  label=strings.labels[CanvasPanel, 'showGridLines']),
-    props.Widget('sliceSpacing',   label=strings.labels[CanvasPanel, 'sliceSpacing']),
-    props.Widget('zrange',         label=strings.labels[CanvasPanel, 'zrange'])))
+    props.Widget('zax',            label=strings.labels[LightBoxPanel, 'zax']),
+    props.Widget('zoom',           label=strings.labels[LightBoxPanel, 'zoom']),
+    props.Widget('highlightSlice', label=strings.labels[LightBoxPanel, 'highlightSlice']),
+    props.Widget('showCursor',     label=strings.labels[LightBoxPanel, 'showCursor']),
+    props.Widget('showGridLines',  label=strings.labels[LightBoxPanel, 'showGridLines']),
+    props.Widget('sliceSpacing',   label=strings.labels[LightBoxPanel, 'sliceSpacing']),
+    props.Widget('zrange',         label=strings.labels[LightBoxPanel, 'zrange'])))
 
 
 
@@ -93,5 +94,5 @@ layouts = td.TypeDict({
     ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
 
     ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
-    ('LightBoxPanel',    'props')   : CanvasPanelActionLayout,
+    ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
 })

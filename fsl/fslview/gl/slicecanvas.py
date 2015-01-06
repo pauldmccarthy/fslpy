@@ -137,7 +137,7 @@ class SliceCanvas(props.HasProperties):
            canvasWidth  == 0 or \
            realHeight   == 0 or \
            canvasHeight == 0:
-            return 0 
+            return None
         
         xpos = self.displayBounds.xlo + (xpos / canvasWidth)  * realWidth
         ypos = self.displayBounds.ylo + (ypos / canvasHeight) * realHeight
