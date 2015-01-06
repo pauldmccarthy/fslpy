@@ -284,7 +284,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         
         self.__profileManager.changeProfile(self.profile)
         self.__profilePanel.DestroyChildren()
-
         
         sizer        = wx.BoxSizer(wx.VERTICAL)
         profile      = self.getCurrentProfile()
@@ -304,8 +303,15 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             sizer.Add(profileActionPanel, flag=wx.EXPAND)
             
         self.__profilePanel.SetSizer(sizer)
-
         self.__layout()
+
+        # Profile mode changes may result in the 
+        # content of the above prop/action panels 
+        # changing. So we need to make sure that 
+        # the canvas panel is sized appropriately.
+        def modeChange(*a):
+            self.__layout()
+        profile.addListener('mode', self._name, modeChange)
 
 
     def toggleImageList(self, *a):
