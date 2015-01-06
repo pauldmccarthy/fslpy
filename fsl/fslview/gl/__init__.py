@@ -42,8 +42,9 @@ Two super classes are provided for each of these cases:
 import logging
 log = logging.getLogger(__name__)
 
-import os
-import OpenGL
+import            os
+import os.path as op
+import            OpenGL
 
 # Make PyOpenGL throw an error, instead of implicitly
 # converting, if we pass incorrect types to OpenGL functions.
@@ -146,8 +147,9 @@ def getWXGLContext():
         # create a dummy one, and destroy it immediately
         # after the context has been created.  An excuse 
         # to display a splash screen ...
+        splashfile  = op.join(op.dirname(__file__), 'splash.png')
         frame = wx.SplashScreen(
-            wx.Bitmap('splash.png', wx.BITMAP_TYPE_PNG),
+            wx.Bitmap(splashfile, wx.BITMAP_TYPE_PNG),
             wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
             -1,
             None)
