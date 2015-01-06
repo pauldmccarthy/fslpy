@@ -144,25 +144,23 @@ def getWXGLContext():
         # This is a ridiculous problem.  We can't create a
         # wx GLContext without a wx GLCanvas. But we can
         # create a dummy one, and destroy it immediately
-        # after the context has been created. 
-        frame  = wx.Frame(None)
+        # after the context has been created.  An excuse 
+        # to display a splash screen ...
+        frame = wx.SplashScreen(
+            wx.Bitmap('splash.png', wx.BITMAP_TYPE_PNG),
+            wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
+            1500,
+            None)
         canvas = wxgl.GLCanvas(frame)
+        canvas.SetSize((0, 0))
 
         # Even worse - on Linux/GTK,the canvas
         # has to visible before we are able to
         # set it as the target of the GL context
-        frame.Show()
-        frame.Update()
         wx.Yield()
         
         thismod._wxGLContext = wxgl.GLContext(canvas)
         thismod._wxGLContext.SetCurrent(canvas)
-
-        # Hopefully the frame won't be visible
-        # for a noticeable period of time 
-        frame.Show(False)
-        wx.Yield()
-        wx.CallAfter(frame.Close)
 
     return thismod._wxGLContext
 
