@@ -42,11 +42,10 @@ NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
 
 
-# TODO The wx.FileDialog does not
-# seem to handle wildcards with
+# TODO The wx.FileDialog does not    
+# seem to handle wildcards with      
 # multiple suffixes (e.g. '.nii.gz'),
 # so i'm just providing '*.gz'for now
-
 ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.gz']
 """The file extensions which we understand. This list is used as the default
 if if the ``allowedExts`` parameter is not passed to any of the functions in
@@ -60,7 +59,7 @@ EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-DEFAULT_EXTENSION  = '.gz'
+DEFAULT_EXTENSION  = '.nii.gz'
 """The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
 
 
@@ -80,7 +79,11 @@ def makeWildcard(allowedExts=None):
 
     exts = ['*{}'.format(ext) for ext in allowedExts]
 
+    allDesc = 'All supported files'
+    allExts = ';'.join(exts)
+
     wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
+    wcParts = ['|'.join((allDesc, allExts))] + wcParts
 
     return '|'.join(wcParts)
 
@@ -613,11 +616,10 @@ class ImageList(props.HasProperties):
             fromDir = self._lastDir
             saveLastDir = True
 
-        wildcard = makeWildcard()
         dlg = wx.FileDialog(app.GetTopWindow(),
                             message='Open image file',
                             defaultDir=fromDir,
-                            wildcard=wildcard,
+                            wildcard=makeWildcard(),
                             style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
         if dlg.ShowModal() != wx.ID_OK: return False
