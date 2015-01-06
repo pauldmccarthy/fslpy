@@ -37,11 +37,13 @@ def listGlobalActions():
     import openfile
     import openstandard
     import copyimage
+    import saveimage
     import loadcolourmap
     
     return [openfile     .OpenFileAction,
             openstandard .OpenStandardAction,
             copyimage    .CopyImageAction,
+            saveimage    .SaveImageAction,
             loadcolourmap.LoadColourMapAction]
 
 
@@ -70,9 +72,10 @@ class Action(props.HasProperties):
         :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
                          instance defining how the images are to be displayed.
         """
-        self._imageList        = imageList
-        self._displayCtx       = displayCtx
-        self._boundWidgets     = []
+        self._imageList    = imageList
+        self._displayCtx   = displayCtx
+        self._boundWidgets = []
+        self._name         = '{}_{}'.format(self.__class__.__name__, id(self))
         
         if action is not None:
             self.doAction = action
@@ -91,6 +94,7 @@ class Action(props.HasProperties):
             self.doAction()
             
         parent.Bind(evType, wrappedAction, widget)
+        widget.Enable(self.enabled)
         self._boundWidgets.append(widget)
 
 

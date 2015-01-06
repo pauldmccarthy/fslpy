@@ -14,6 +14,23 @@ import fsl.fslview.actions as actions
 import fsl.data.image      as fslimage
 
 class CopyImageAction(actions.Action):
+
+    def __init__(self, *args, **kwargs):
+        actions.Action.__init__(self, *args, **kwargs)
+
+        self._displayCtx.addListener('selectedImage',
+                                     self._name,
+                                     self._selectedImageChanged)
+        self._imageList .addListener('images',
+                                     self._name,
+                                     self._selectedImageChanged)
+
+        self._selectedImageChanged()
+
+        
+    def _selectedImageChanged(self, *a):
+        self.enabled = self._displayCtx.getSelectedImage() is not None
+    
     
     def doAction(self):
 

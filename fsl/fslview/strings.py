@@ -28,6 +28,7 @@ labels = td.TypeDict({
     'OpenFileAction'      : 'Add image file',
     'OpenStandardAction'  : 'Add standard',
     'CopyImageAction'     : 'Copy image',
+    'SaveImageAction'     : 'Save image',
     'LoadColourMapAction' : 'Load custom colour map',
 
     ('Profile', 'mode') : 'Mode',
