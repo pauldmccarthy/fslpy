@@ -148,8 +148,8 @@ def getWXGLContext():
         # to display a splash screen ...
         frame = wx.SplashScreen(
             wx.Bitmap('splash.png', wx.BITMAP_TYPE_PNG),
-            wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
-            1500,
+            wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
+            -1,
             None)
         canvas = wxgl.GLCanvas(frame)
         canvas.SetSize((0, 0))
@@ -157,10 +157,15 @@ def getWXGLContext():
         # Even worse - on Linux/GTK,the canvas
         # has to visible before we are able to
         # set it as the target of the GL context
+        frame.Update()
+        frame.Show()
         wx.Yield()
         
         thismod._wxGLContext = wxgl.GLContext(canvas)
         thismod._wxGLContext.SetCurrent(canvas)
+        
+        wx.CallAfter(frame.Close)
+
 
     return thismod._wxGLContext
 
