@@ -19,6 +19,7 @@ from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 from fsl.fslview.views.canvaspanel         import CanvasPanel
 from fsl.fslview.views.orthopanel          import OrthoPanel
 from fsl.fslview.views.lightboxpanel       import LightBoxPanel
+from fsl.fslview.displaycontext            import ImageDisplay
 
 def widget(name, labelCls, *args, **kwargs):
     return props.Widget(name,
@@ -123,6 +124,20 @@ LightBoxPanelLayout = props.VGroup((
                   widget('showGridLines',  LightBoxPanel)))))
 
 
+ImageDisplayLayout = props.VGroup((
+    widget('name',          ImageDisplay),
+    widget('enabled',       ImageDisplay),
+    widget('imageType',     ImageDisplay),
+    widget('cmap',          ImageDisplay),
+    widget('clipLow',       ImageDisplay),
+    widget('clipHigh',      ImageDisplay),
+    widget('displayRange',  ImageDisplay),
+    widget('alpha',         ImageDisplay),
+    widget('resolution',    ImageDisplay),
+    widget('transform',     ImageDisplay),
+    widget('interpolation', ImageDisplay)))
+
+
 layouts = td.TypeDict({
 
     ('OrthoViewProfile', 'props')   : OrthoViewProfileLayout,
@@ -133,4 +148,6 @@ layouts = td.TypeDict({
     ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
     ('OrthoPanel',       'props')   : OrthoPanelLayout,
     ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
+    
+    'ImageDisplay' : ImageDisplayLayout,
 })

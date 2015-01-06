@@ -15,6 +15,7 @@ import props
 
 import fsl.data.image         as fslimage
 import fsl.utils.transform    as transform
+import fsl.fslview.strings    as strings
 import fsl.fslview.colourmaps as fslcm
 
 class ImageDisplay(props.SyncableHasProperties):
@@ -35,9 +36,10 @@ class ImageDisplay(props.SyncableHasProperties):
     """Transparency - 1.0 is fully opaque, and 0.0 is fully transparent."""
 
     
-    displayRange = props.Bounds(ndims=1,
-                                editLimits=True,
-                                labels=['Min.', 'Max.'])
+    displayRange = props.Bounds(
+        ndims=1,
+        editLimits=True,
+        labels=strings.labels['ImageDisplay', 'displayRange', 'labels'])
     """Image values which map to the minimum and maximum colour map colours."""
 
     
@@ -73,10 +75,8 @@ class ImageDisplay(props.SyncableHasProperties):
 
     
     transform = props.Choice(
-        collections.OrderedDict([
-            ('affine', 'Use qform/sform transformation matrix'),
-            ('pixdim', 'Use pixdims only'),
-            ('id',     'Do not use qform/sform or pixdims')]),
+        ('affine', 'pixdim', 'id'),
+        labels=strings.labels['ImageDisplay', 'transform', 'labels'],
         default='pixdim')
     """This property defines how the image should be transformd into the display
     coordinate system.
@@ -93,10 +93,9 @@ class ImageDisplay(props.SyncableHasProperties):
     """
 
 
-    interpolation = props.Choice(OrderedDict([
-        ('none',   'No interpolation'),
-        ('linear', 'Linear interpolation'),
-        ('spline', 'Spline interpolation')]))
+    interpolation = props.Choice(
+        ('none', 'linear', 'spline'),
+        labels=strings.labels['ImageDisplay', 'interpolation', 'labels'])
     """How the value shown at a real world location is derived from the
     corresponding voxel value(s). 'No interpolation' is equivalent to nearest
     neighbour interpolation.
@@ -119,22 +118,6 @@ class ImageDisplay(props.SyncableHasProperties):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.
         """
         return self.image.is4DImage()
-
-    
-    _labels = {
-        'name'           : 'Image name',
-        'enabled'        : 'Enabled',
-        'displayRange'   : 'Display range',
-        'alpha'          : 'Opacity',
-        'clipLow'        : 'Low clipping',
-        'clipHigh'       : 'High clipping',
-        'interpolation'  : 'Interpolation',
-        'Resolution'     : 'Resolution',
-        'volume'         : 'Volume',
-        'syncVolume'     : 'Synchronise volume',
-        'transform'      : 'Image transform',
-        'imageType'      : 'Image data type',
-        'cmap'           : 'Colour map'}
 
     
     _tooltips = {

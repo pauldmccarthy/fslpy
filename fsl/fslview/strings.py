@@ -141,4 +141,28 @@ labels = td.TypeDict({
     ('OrthoEditProfile', 'intensityThres') : 'Intensity threshold',
     ('OrthoEditProfile', 'localFill')      : 'Only select adjacent voxels',
     ('OrthoEditProfile', 'searchRadius')   : 'Limit search to radius (mm)',
+
+
+    ('ImageDisplay', 'name')           : 'Image name',
+    ('ImageDisplay', 'enabled')        : 'Enabled',
+    ('ImageDisplay', 'displayRange')   : 'Display range',
+    ('ImageDisplay', 'alpha')          : 'Opacity',
+    ('ImageDisplay', 'clipLow')        : 'Low clipping',
+    ('ImageDisplay', 'clipHigh')       : 'High clipping',
+    ('ImageDisplay', 'interpolation')  : 'Interpolation',
+    ('ImageDisplay', 'resolution')     : 'Resolution',
+    ('ImageDisplay', 'volume')         : 'Volume',
+    ('ImageDisplay', 'syncVolume')     : 'Synchronise volume',
+    ('ImageDisplay', 'transform')      : 'Image transform',
+    ('ImageDisplay', 'imageType')      : 'Image data type',
+    ('ImageDisplay', 'cmap')           : 'Colour map',
+
+    ('ImageDisplay', 'displayRange', 'labels') : ['Min.', 'Max.'],
+    ('ImageDisplay', 'transform',    'labels') : ['Use qform/sform transformation matrix',
+                                                  'Use pixdims only',
+                                                  'Do not use qform/sform or pixdims'],
+
+    ('ImageDisplay', 'interpolation', 'labels') : ['No interpolation', 
+                                                   'Linear interpolation', 
+                                                   'Spline interpolation'],
 })

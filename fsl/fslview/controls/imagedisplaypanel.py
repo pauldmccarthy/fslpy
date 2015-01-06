@@ -87,8 +87,14 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         the user to edit the display properties of the given
         :class:`~fsl.data.image.Image` instance. 
         """
+
+        import fsl.fslview.layouts as fsllayouts
+        
         display      = self._displayCtx.getDisplayProperties(image)
-        displayPanel = props.buildGUI(self, display)
+        displayPanel = props.buildGUI(
+            self,
+            display,
+            view=fsllayouts.layouts[display])
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
         return displayPanel
 
