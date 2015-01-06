@@ -18,7 +18,6 @@ import numpy      as np
 import nibabel    as nib
 
 import props
-import fsl.data.imagefile   as imagefile
 import fsl.utils.transform  as transform
 
 
@@ -41,6 +40,160 @@ NIFTI_XFORM_SCANNER_ANAT = 1
 NIFTI_XFORM_ALIGNED_ANAT = 2
 NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
+
+
+ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.nii.gz', '.img.gz']
+"""The file extensions which we understand. This list is used as the default
+if if the ``allowedExts`` parameter is not passed to any of the functions in
+this module.
+"""
+
+EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
+                          'ANALYZE75 images',
+                          'NIFTI1/ANALYZE75 headers',
+                          'Compressed NIFTI1 images',
+                          'Compressed ANALYZE75/NIFTI1 images']
+"""Descriptions for each of the extensions in :data:`_allowedExts`. """
+
+
+DEFAULT_EXTENSION  = '.nii.gz'
+"""The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
+
+
+def makeWildcard(allowedExts=None):
+    """Returns a wildcard string for use in a file dialog, to limit
+    the acceptable file types.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
+    """
+    
+    if allowedExts is None:
+        allowedExts  = ALLOWED_EXTENSIONS
+        descs        = EXTENSION_DESCRIPTIONS
+    else:
+        descs        = allowedExts
+
+    exts = ['*{}'.format(ext) for ext in allowedExts]
+
+    wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
+
+    print  '|'.join(wcParts)
+    return '|'.join(wcParts)
+
+
+def isSupported(filename, allowedExts=None):
+    """
+    Returns ``True`` if the given file has a supported extension, ``False``
+    otherwise.
+
+    :arg filename:    The file name to test.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
+    """
+
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    return any(map(lambda ext: filename.endswith(ext, allowedExts)))
+
+
+def removeExtension(filename, allowedExts=None):
+    """
+    Removes the extension from the given file name. Raises a :exc:`ValueError`
+    if the file has an unsupported extension.
+
+    :arg filename:    The file name to strip.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.    
+    """
+
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    # figure out the extension of the given file
+    extMatches = map(lambda ext: filename.endswith(ext), allowedExts)
+
+    # the file does not have a supported extension
+    if not any(extMatches):
+        raise ValueError('Unsupported file type')
+
+    # figure out the length of the matched extension
+    extIdx = extMatches.index(True)
+    extLen = len(allowedExts[extIdx])
+
+    # and trim it from the file name
+    return filename[:-extLen]
+
+
+def addExtension(
+        prefix,
+        mustExist=False,
+        allowedExts=None,
+        defaultExt=None):
+    """Adds a file extension to the given file ``prefix``.
+
+    If ``mustExist`` is False (the default), and the file does not already
+    have a supported extension, the default extension is appended and the new
+    file name returned. If the prefix already has a supported extension,
+    it is returned unchanged.
+
+    If ``mustExist`` is ``True``, the function checks to see if any files
+    exist that have the given prefix, and a supported file extension.  A
+    :exc:`ValueError` is raised if:
+
+       - No files exist with the given prefix and a supported extension.
+       - More than one file exists with the given prefix, and a supported
+         extension.
+
+    Otherwise the full file name is returned.
+
+    :arg prefix:      The file name refix to modify.
+    :arg mustExist:   Whether the file must exist or not.
+    :arg allowedExts: List of allowed file extensions.
+    :arg defaultExt:  Default file extension to use.
+    """
+
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+    if defaultExt  is None: defaultExt  = DEFAULT_EXTENSION
+
+    if not mustExist:
+
+        # the provided file name already
+        # ends with a supported extension 
+        if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+            return prefix
+
+        return prefix + defaultExt
+
+    # If the provided prefix already ends with a
+    # supported extension , check to see that it exists
+    if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+        extended = [prefix]
+        
+    # Otherwise, make a bunch of file names, one per
+    # supported extension, and test to see if exactly
+    # one of them exists.
+    else:
+        extended = map(lambda ext: prefix + ext, allowedExts)
+
+    exists = map(op.isfile, extended)
+
+    # Could not find any supported file
+    # with the specified prefix
+    if not any(exists):
+        raise ValueError(
+            'Could not find a supported file with prefix {}'.format(prefix))
+
+    # Ambiguity! More than one supported
+    # file with the specified prefix
+    if len(filter(bool, exists)) > 1:
+        raise ValueError('More than one file with prefix {}'.format(prefix))
+
+    # Return the full file name of the
+    # supported file that was found
+    extIdx = exists.index(True)
+    return extended[extIdx]
 
 
 def _loadImageFile(filename):
@@ -174,7 +327,7 @@ class Image(props.HasProperties):
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
-            nibImage, filename = _loadImageFile(imagefile.addExt(image))
+            nibImage, filename = _loadImageFile(addExtension(image))
             self.nibImage      = nibImage
             self.imageFile     = image
 
@@ -182,10 +335,10 @@ class Image(props.HasProperties):
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                self.name     = op.basename(self.imageFile)
+                self.name     = removeExtension(op.basename(self.imageFile))
                 self.tempFile = nibImage.get_filename()
             else:
-                self.name     = op.basename(self.imageFile)
+                self.name     = removeExtension(op.basename(self.imageFile))
 
             self.saved = True
                 
@@ -459,7 +612,7 @@ class ImageList(props.HasProperties):
 
         # TODO wx wildcard handling is buggy,
         # so i'm disabling it for now
-        # wildcard = imagefile.wildcard()
+        # wildcard = wildcard()
         dlg = wx.FileDialog(app.GetTopWindow(),
                             message='Open image file',
                             defaultDir=fromDir,

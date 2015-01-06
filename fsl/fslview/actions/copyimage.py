@@ -25,7 +25,7 @@ class CopyImageAction(actions.Action):
 
         data  = np.copy(image.data)
         xform = image.voxToWorldMat
-        name  = '{} copy'.format(image.name)
+        name  = '{}_copy'.format(image.name)
         copy  = fslimage.Image(data, xform, name)
 
         self._imageList.insert(imageIdx + 1, copy)
