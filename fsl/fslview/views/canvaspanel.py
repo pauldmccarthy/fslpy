@@ -303,6 +303,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             sizer.Add(profileActionPanel, flag=wx.EXPAND)
             
         self.__profilePanel.SetSizer(sizer)
+        self.__profilePanel.Layout()
         self.__layout()
 
         # Profile mode changes may result in the 

@@ -36,13 +36,13 @@ def listGlobalActions():
 
     import openfile
     import openstandard
+    import copyimage
     import loadcolourmap
-
-    OpenFileAction      = openfile     .OpenFileAction
-    OpenStandardAction  = openstandard .OpenStandardAction
-    LoadColourMapAction = loadcolourmap.LoadColourMapAction
-
-    return [OpenFileAction, OpenStandardAction, LoadColourMapAction]
+    
+    return [openfile     .OpenFileAction,
+            openstandard .OpenStandardAction,
+            copyimage    .CopyImageAction,
+            loadcolourmap.LoadColourMapAction]
 
 
 class Action(props.HasProperties):
