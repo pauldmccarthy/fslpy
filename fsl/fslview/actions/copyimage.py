@@ -45,4 +45,6 @@ class CopyImageAction(actions.Action):
         name  = '{}_copy'.format(image.name)
         copy  = fslimage.Image(data, xform, name)
 
+        # TODO copy display properties
+        
         self._imageList.insert(imageIdx + 1, copy)

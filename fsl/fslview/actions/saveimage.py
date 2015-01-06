@@ -39,9 +39,16 @@ class SaveImageAction(actions.Action):
  
 
     def _imageSaveStateChanged(self, *a):
-        image        = self._displayCtx.getSelectedImage()
-        self.enabled = image.saved
+        image = self._displayCtx.getSelectedImage()
+        
+        if image is None: self.enabled = False
+        else:             self.enabled = not image.saved
 
         
     def doAction(self):
-        pass
+        
+        image = self._displayCtx.getSelectedImage()
+        if image is None:
+            return
+        
+        image.save()

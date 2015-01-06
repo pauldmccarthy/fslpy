@@ -423,6 +423,12 @@ class Image(props.HasProperties):
 
         self.data  = data
         self.saved = False
+
+
+    def save(self):
+        """
+        """
+        pass
         
 
     def __hash__(self):
