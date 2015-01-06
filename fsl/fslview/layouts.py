@@ -39,18 +39,18 @@ OrthoViewProfileLayout = props.HGroup(
     vertLabels=True)
 
 OrthoViewProfileActionLayout = props.HGroup(
-    (props.Button('resetZoom',    text=strings.labels[OrthoViewProfile, 'resetZoom'],    callback=OrthoViewProfile.resetZoom),
-     props.Button('centreCursor', text=strings.labels[OrthoViewProfile, 'centreCursor'], callback=OrthoViewProfile.centreCursor)),
+    (props.Button('resetZoom',    text=strings.labels[OrthoViewProfile, 'resetZoom'],    callback=lambda i, *a: i.run('resetZoom')),
+     props.Button('centreCursor', text=strings.labels[OrthoViewProfile, 'centreCursor'], callback=lambda i, *a: i.run('centreCursor'))),
     wrap=True,
     showLabels=False)
 
 OrthoEditProfileActionLayout = props.HGroup(
-    (props.Button('resetZoom',      text=strings.labels[OrthoEditProfile, 'resetZoom'],      callback=OrthoEditProfile.resetZoom),
-     props.Button('centreCursor',   text=strings.labels[OrthoEditProfile, 'centreCursor'],   callback=OrthoEditProfile.centreCursor),
-     props.Button('clearSelection', text=strings.labels[OrthoEditProfile, 'clearSelection'], callback=OrthoEditProfile.clearSelection),
-     props.Button('fillSelection',  text=strings.labels[OrthoEditProfile, 'fillSelection'],  callback=OrthoEditProfile.fillSelection),
-     props.Button('undo',           text=strings.labels[OrthoEditProfile, 'undo'],           callback=OrthoEditProfile.undo),
-     props.Button('redo',           text=strings.labels[OrthoEditProfile, 'redo'],           callback=OrthoEditProfile.redo)),
+    (props.Button('resetZoom',      text=strings.labels[OrthoEditProfile, 'resetZoom'],      callback=lambda i, *a: i.run('resetZoom')),
+     props.Button('centreCursor',   text=strings.labels[OrthoEditProfile, 'centreCursor'],   callback=lambda i, *a: i.run('centreCursor')),
+     props.Button('clearSelection', text=strings.labels[OrthoEditProfile, 'clearSelection'], callback=lambda i, *a: i.run('clearSelection')),
+     props.Button('fillSelection',  text=strings.labels[OrthoEditProfile, 'fillSelection'],  callback=lambda i, *a: i.run('fillSelection')),
+     props.Button('undo',           text=strings.labels[OrthoEditProfile, 'undo'],           callback=lambda i, *a: i.run('undo')),
+     props.Button('redo',           text=strings.labels[OrthoEditProfile, 'redo'],           callback=lambda i, *a: i.run('redo'))),
     wrap=True,
     showLabels=False)
 
@@ -58,12 +58,12 @@ OrthoEditProfileActionLayout = props.HGroup(
 CanvasPanelActionLayout = props.HGroup(
     (props.Widget('profile',                 label=strings.labels[CanvasPanel, 'profile'],
                   visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1),
-     props.Button('screenshot',               text=strings.labels[CanvasPanel, 'screenshot'],              callback=CanvasPanel.screenshot),
-     props.Button('toggleColourBar',          text=strings.labels[CanvasPanel, 'toggleColourBar'],         callback=CanvasPanel.toggleColourBar),
-     props.Button('toggleImageList',          text=strings.labels[CanvasPanel, 'toggleImageList'],         callback=CanvasPanel.toggleImageList),
-     props.Button('toggleDisplayProperties',  text=strings.labels[CanvasPanel, 'toggleDisplayProperties'], callback=CanvasPanel.toggleDisplayProperties),
-     props.Button('toggleLocationPanel',      text=strings.labels[CanvasPanel, 'toggleLocationPanel'],     callback=CanvasPanel.toggleLocationPanel),
-     props.Button('toggleCanvasProperties',   text=strings.labels[CanvasPanel, 'toggleCanvasProperties'],  callback=CanvasPanel.toggleCanvasProperties)),
+     props.Button('screenshot',               text=strings.labels[CanvasPanel, 'screenshot'],              callback=lambda i, a: i.run('screenshot')),
+     props.Button('toggleColourBar',          text=strings.labels[CanvasPanel, 'toggleColourBar'],         callback=lambda i, a: i.run('toggleColourBar')),
+     props.Button('toggleImageList',          text=strings.labels[CanvasPanel, 'toggleImageList'],         callback=lambda i, a: i.run('toggleImageList')),
+     props.Button('toggleDisplayProperties',  text=strings.labels[CanvasPanel, 'toggleDisplayProperties'], callback=lambda i, a: i.run('toggleDisplayProperties')),
+     props.Button('toggleLocationPanel',      text=strings.labels[CanvasPanel, 'toggleLocationPanel'],     callback=lambda i, a: i.run('toggleLocationPanel')),
+     props.Button('toggleCanvasProperties',   text=strings.labels[CanvasPanel, 'toggleCanvasProperties'],  callback=lambda i, a: i.run('toggleCanvasProperties'))),
     wrap=True,
     showLabels=False)
 
