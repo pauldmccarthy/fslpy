@@ -226,7 +226,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         self.__listLocSizer.Add(self.__imageListPanel,
                                 flag=wx.EXPAND,
-                                proportion=0.5)
+                                proportion=1)
         self.__listLocSizer.Add(self.__locationPanel,
                                 flag=wx.EXPAND,
                                 proportion=1)
@@ -239,7 +239,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                                 proportion=1)
         self.__dispSetSizer.Add(self.__canvasPropsPanel,
                                 flag=wx.EXPAND,
-                                proportion=0.75)
+                                proportion=1)
 
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
