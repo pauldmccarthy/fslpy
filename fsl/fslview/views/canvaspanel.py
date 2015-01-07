@@ -23,8 +23,8 @@ import wx
 
 import props
 
+import fsl.data.strings                       as strings
 import fsl.fslview.panel                      as fslpanel
-import fsl.fslview.strings                    as strings
 import fsl.fslview.profiles                   as profiles
 import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
@@ -163,7 +163,12 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
     colourBarLocation  = props.Choice(
         ('top', 'bottom', 'left', 'right'),
-        labels=strings.labels['CanvasPanel', 'colourBarLocation', 'labels'])
+        labels=[strings.choices['CanvasPanel.colourBarLocation.top'],
+                strings.choices['CanvasPanel.colourBarLocation.bottom'],
+                strings.choices['CanvasPanel.colourBarLocation.left'],
+                strings.choices['CanvasPanel.colourBarLocation.right']])
+
+    
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
 

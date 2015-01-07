@@ -49,9 +49,10 @@ log = logging.getLogger(__name__)
 import wx
 import wx.aui as aui
 
+import fsl.data.strings as strings
+
 import views
 import actions
-import strings
 import displaycontext
 
 
@@ -110,7 +111,7 @@ class FSLViewFrame(wx.Frame):
         allowing the user to configure the view.
         """
 
-        title   = strings.labels[panelCls]
+        title   = strings.titles[panelCls]
         childDC = displaycontext.DisplayContext(self._imageList,
                                                 self._displayCtx)
         panel   = panelCls(self._centrePane,
@@ -240,14 +241,14 @@ class FSLViewFrame(wx.Frame):
         actionz    = actions .listGlobalActions()
 
         for action in actionz:
-            menuItem = fileMenu.Append(wx.ID_ANY, strings.labels[action])
+            menuItem = fileMenu.Append(wx.ID_ANY, strings.actions[action])
             
             actionObj = action(self._imageList, self._displayCtx)
 
             actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
 
         for viewPanel in viewPanels:
-            viewAction = viewMenu.Append(wx.ID_ANY, strings.labels[viewPanel]) 
+            viewAction = viewMenu.Append(wx.ID_ANY, strings.titles[viewPanel]) 
             self.Bind(wx.EVT_MENU,
                       lambda ev, vp=viewPanel: self.addViewPanel(vp),
                       viewAction)

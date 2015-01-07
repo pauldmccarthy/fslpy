@@ -12,7 +12,7 @@ import props
 
 import fsl.utils.typedict  as td
 
-import fsl.fslview.strings as strings
+import fsl.data.strings as strings
 
 from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
@@ -23,7 +23,7 @@ from fsl.fslview.displaycontext            import ImageDisplay
 
 def widget(name, labelCls, *args, **kwargs):
     return props.Widget(name,
-                        label=strings.labels[labelCls, name],
+                        label=strings.properties[labelCls, name],
                         *args,
                         **kwargs)
 
@@ -32,7 +32,7 @@ def actionButton(name, labelCls, *args, **kwargs):
     def callback(i, *a):
         i.run(name)
     return props.Button(name,
-                        text=strings.labels[labelCls, name],
+                        text=strings.actions[labelCls, name],
                         callback=callback)
 
 

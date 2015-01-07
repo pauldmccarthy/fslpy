@@ -29,7 +29,7 @@ import fslview_parseargs
 import fsl.utils.layout          as fsllayout
 import fsl.utils.colourbarbitmap as cbarbitmap
 import fsl.utils.textbitmap      as textbitmap
-import fsl.fslview.strings       as strings 
+import fsl.data.strings          as strings 
 import fsl.data.image            as fslimage
 
 
@@ -75,12 +75,12 @@ def buildLabelBitmaps(imageList,
     if fslimage.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
         fgColour = 'red'
 
-    xlo = strings.imageAxisLowShortLabels[ xorient]
-    ylo = strings.imageAxisLowShortLabels[ yorient]
-    zlo = strings.imageAxisLowShortLabels[ zorient]
-    xhi = strings.imageAxisHighShortLabels[xorient]
-    yhi = strings.imageAxisHighShortLabels[yorient]
-    zhi = strings.imageAxisHighShortLabels[zorient]
+    xlo = strings.anatomy['Image', 'lowshort',  xorient]
+    ylo = strings.anatomy['Image', 'lowshort',  yorient]
+    zlo = strings.anatomy['Image', 'lowshort',  zorient]
+    xhi = strings.anatomy['Image', 'highshort', xorient]
+    yhi = strings.anatomy['Image', 'highshort', yorient]
+    zhi = strings.anatomy['Image', 'highshort', zorient]
 
     loLabels = [xlo, ylo, zlo]
     hiLabels = [xhi, yhi, zhi]

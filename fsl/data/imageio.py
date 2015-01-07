@@ -5,15 +5,16 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import                   logging
-import                   os 
-import os.path        as op
-import subprocess     as sp
-import                   tempfile
+import                     logging
+import                     os 
+import os.path          as op
+import subprocess       as sp
+import                     tempfile
 
-import nibabel        as nib
+import nibabel          as nib
 
-import image          as fslimage
+import fsl.data.strings as strings
+import image            as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -29,13 +30,11 @@ if if the ``allowedExts`` parameter is not passed to any of the functions in
 this module.
 """
 
-ALLOWED_EXTENSIONS     = [';'.join(ALLOWED_EXTENSIONS)] + ALLOWED_EXTENSIONS
-EXTENSION_DESCRIPTIONS = ['All supported files'
-                          'Compressed NIFTI1 images',
+EXTENSION_DESCRIPTIONS = ['Compressed NIFTI1 images',
                           'NIFTI1 images',
                           'ANALYZE75 images',
                           'NIFTI1/ANALYZE75 headers',
-                          'Compressed NIFTI1/ANALYZE75 images'
+                          'Compressed NIFTI1/ANALYZE75 images',
                           'Compressed images']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
@@ -58,9 +57,12 @@ def makeWildcard(allowedExts=None):
     else:
         descs        = allowedExts
 
-    exts    = ['*{}'.format(ext) for ext in allowedExts]
+    exts  = ['*{}'.format(ext) for ext in allowedExts]
+    exts  = [';'.join(exts)]        + exts
+    descs = ['All supported files'] + descs
+
     wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
-    
+
     return '|'.join(wcParts)
 
 
@@ -77,7 +79,7 @@ def isSupported(filename, allowedExts=None):
 
     if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
 
-    return any(map(lambda ext: filename.endswith(ext, allowedExts)))
+    return any(map(lambda ext: filename.endswith(ext), allowedExts))
 
 
 def removeExt(filename, allowedExts=None):
@@ -208,10 +210,8 @@ def loadImage(filename):
 
         unzipped = os.fdopen(unzipped)
 
-        msg = '{} is a large file ({} MB) - decompressing ' \
-              'to {}, to allow memory mapping...'.format(realFilename,
-                                                         mbytes,
-                                                         filename)
+        msg = strings.messages['imageio.loadImage.decompress']
+        msg = msg.format(realFilename, mbytes, filename)
 
         if not haveGui:
             log.info(msg)
@@ -297,13 +297,10 @@ def saveImage(image, imageList=None, fromDir=None):
         saveLastDir = True
 
     dlg = wx.FileDialog(app.GetTopWindow(),
-                        message='Save image file',
+                        message=strings.titles['imageio.saveImage.dialog'],
                         defaultDir=fromDir,
                         defaultFile=filename, 
-                        wildcard=makeWildcard(),
                         style=wx.FD_SAVE)
-
-    dlg.SetFilterIndex(ALLOWED_EXTENSIONS.index(DEFAULT_EXTENSION))
 
     if dlg.ShowModal() != wx.ID_OK: return False
 
@@ -312,37 +309,48 @@ def saveImage(image, imageList=None, fromDir=None):
     path     = dlg.GetPath()
     nibImage = image.nibImage
 
+    if not isSupported(path):
+        path = addExt(path, False)
+
     # this is an image which has been
     # loaded from a file, and ungzipped
     # to a temporary location
-    if image.tempFile is not None:
+    try:
+        if image.tempFile is not None:
 
-        # if selected path is same as original path,
-        # save to both temp file and to path
+            # if selected path is same as original path,
+            # save to both temp file and to path
 
-        # else, if selected path is different from
-        # original path, save to temp file and to
-        # new path, and update the path
+            # else, if selected path is different from
+            # original path, save to temp file and to
+            # new path, and update the path
 
-        # actually, the two behaviours just described
-        # are identical
-        pass
+            # actually, the two behaviours just described
+            # are identical
+            pass
 
+        # TODO handle error
 
-    # TODO handle error
+        # this is just a normal image
+        # which has been loaded from
+        # a file, or an in-memory image
+        else:
 
-    # this is just a normal image
-    # which has been loaded from
-    # a file, or an in-memory image
-    else:
+            log.debug('Saving image ({}) to {}'.format(image, path))
 
-        log.debug('Saving image ({}) to {}'.format(image, path))
-        
-        nib.save(nibImage, path)
-        image.imageFile = path
+            nib.save(nibImage, path)
+            image.imageFile = path
+            
+    except Exception as e:
+
+        msg = strings.messages['imageio.saveImage.error'].format(e.msg)
+        log.warn(msg)
+        wx.MessageDialog(app.GetTopWindow(),
+                         message=msg,
+                         style=wx.OK | wx.ICON_ERROR)
+        return
 
     image.saved = True
-
 
 
 def addImages(imageList, fromDir=None, addToEnd=True):
@@ -389,7 +397,7 @@ def addImages(imageList, fromDir=None, addToEnd=True):
         saveLastDir = True
 
     dlg = wx.FileDialog(app.GetTopWindow(),
-                        message='Open image file',
+                        message=strings.titles['imageio.addImages.dialog'],
                         defaultDir=fromDir,
                         wildcard=makeWildcard(),
                         style=wx.FD_OPEN | wx.FD_MULTIPLE)

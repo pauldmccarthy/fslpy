@@ -16,8 +16,9 @@ import wx
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from mpl_toolkits.mplot3d              import Axes3D
 
-import fsl.fslview.panel   as fslpanel
+import fsl.data.strings    as strings
 import fsl.utils.transform as transform
+import fsl.fslview.panel   as fslpanel
 
 class SpacePanel(fslpanel.FSLViewPanel):
 
@@ -125,9 +126,6 @@ class SpacePanel(fslpanel.FSLViewPanel):
         
     def _plotImageLabels(self):
 
-        # Imported here to avoid circular import issues
-        import fsl.fslview.strings as strings
-        
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
@@ -142,8 +140,8 @@ class SpacePanel(fslpanel.FSLViewPanel):
 
             orient = image.getVoxelOrientation(ax)
 
-            lblLo = strings.imageAxisLowShortLabels[ orient]
-            lblHi = strings.imageAxisHighShortLabels[orient]
+            lblLo = strings.anatomy['Image', 'lowshort',  orient]
+            lblHi = strings.anatomy['Image', 'highshort', orient]
 
             wldSpan = transform.transform(voxSpan, display.voxToDisplayMat)
 

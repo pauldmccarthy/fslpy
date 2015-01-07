@@ -6,17 +6,15 @@
 #
 
 import sys
-import collections
-from   collections import OrderedDict
-
-import numpy         as np
+import numpy as np
 
 import props
 
 import fsl.data.image         as fslimage
 import fsl.utils.transform    as transform
-import fsl.fslview.strings    as strings
+import fsl.data.strings       as strings
 import fsl.fslview.colourmaps as fslcm
+
 
 class ImageDisplay(props.SyncableHasProperties):
     """A class which describes how an :class:`~fsl.data.image.Image` should
@@ -39,7 +37,8 @@ class ImageDisplay(props.SyncableHasProperties):
     displayRange = props.Bounds(
         ndims=1,
         editLimits=True,
-        labels=strings.labels['ImageDisplay', 'displayRange', 'labels'])
+        labels=[strings.choices['ImageDisplay.displayRange.min'],
+                strings.choices['ImageDisplay.displayRange.max']])
     """Image values which map to the minimum and maximum colour map colours."""
 
     
@@ -76,7 +75,9 @@ class ImageDisplay(props.SyncableHasProperties):
     
     transform = props.Choice(
         ('affine', 'pixdim', 'id'),
-        labels=strings.labels['ImageDisplay', 'transform', 'labels'],
+        labels=[strings.choices['ImageDisplay.transform.affine'],
+                strings.choices['ImageDisplay.transform.pixdim'],
+                strings.choices['ImageDisplay.transform.id']],
         default='pixdim')
     """This property defines how the image should be transformd into the display
     coordinate system.
@@ -95,7 +96,9 @@ class ImageDisplay(props.SyncableHasProperties):
 
     interpolation = props.Choice(
         ('none', 'linear', 'spline'),
-        labels=strings.labels['ImageDisplay', 'interpolation', 'labels'])
+        labels=[strings.choices['ImageDisplay.interpolation.none'],
+                strings.choices['ImageDisplay.interpolation.linear'],
+                strings.choices['ImageDisplay.interpolation.spline']])
     """How the value shown at a real world location is derived from the
     corresponding voxel value(s). 'No interpolation' is equivalent to nearest
     neighbour interpolation.

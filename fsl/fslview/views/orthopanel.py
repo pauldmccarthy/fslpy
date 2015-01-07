@@ -21,9 +21,9 @@ import copy
 import wx
 import props
 
-import fsl.data.image                 as fslimage
+import fsl.data.strings               as strings 
+import fsl.data.constants             as constants
 import fsl.utils.layout               as fsllayout
-import fsl.fslview.strings            as strings 
 import fsl.fslview.gl                 as fslgl
 import fsl.fslview.gl.wxglslicecanvas as slicecanvas
 import canvaspanel
@@ -358,15 +358,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             yorient = image.getWorldOrientation(1)
             zorient = image.getWorldOrientation(2)
                 
-        if fslimage.ORIENT_UNKNOWN in (xorient, yorient, zorient):
+        if constants.ORIENT_UNKNOWN in (xorient, yorient, zorient):
             colour = 'red'
 
-        xlo = strings.labels['Image', 'lowshort',  xorient]
-        ylo = strings.labels['Image', 'lowshort',  yorient]
-        zlo = strings.labels['Image', 'lowshort',  zorient]
-        xhi = strings.labels['Image', 'highshort', xorient]
-        yhi = strings.labels['Image', 'highshort', yorient]
-        zhi = strings.labels['Image', 'highshort', zorient]
+        xlo = strings.anatomy['Image', 'lowshort',  xorient]
+        ylo = strings.anatomy['Image', 'lowshort',  yorient]
+        zlo = strings.anatomy['Image', 'lowshort',  zorient]
+        xhi = strings.anatomy['Image', 'highshort', xorient]
+        yhi = strings.anatomy['Image', 'highshort', yorient]
+        zhi = strings.anatomy['Image', 'highshort', zorient]
 
         for lbl in allLabels:
             lbl.SetForegroundColour(colour)

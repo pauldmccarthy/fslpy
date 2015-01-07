@@ -23,7 +23,7 @@ import numpy             as np
 import props
 
 import fsl.utils.colourbarbitmap as cbarbmp
-import fsl.fslview.strings       as strings
+import fsl.data.strings          as strings
 
 
 class ColourBarCanvas(props.HasProperties):
@@ -44,13 +44,15 @@ class ColourBarCanvas(props.HasProperties):
     
     orientation = props.Choice(
         ('horizontal', 'vertical'),
-        labels=strings.labels['ColourBarCanvas', 'orientation', 'labels'])
+        labels=[strings.choices['ColourBarCanvas.orientation.horizontal'],
+                strings.choices['ColourBarCanvas.orientation.vertical']])
     """Whether the colour bar should be vertical or horizontal. """
 
     
     labelSide = props.Choice(
         ('top-left', 'bottom-right'),
-        labels=strings.labels['ColourBarCanvas', 'labelSide', 'labels'])
+        labels=[strings.choices['ColourBarCanvas.labelSide.top-left'],
+                strings.choices['ColourBarCanvas.labelSide.bottom-right']])
     """Whether the colour bar labels should be on the top/left, or bottom/right
     of the colour bar (depending upon whether the colour bar orientation is
     horizontal/vertical).

@@ -21,13 +21,28 @@ class TypeDict(object):
     """
 
     def __init__(self, initial=None):
-        self._dict = dict(initial)
+        
+        if initial is None:
+            initial = {}
+        
+        self.__dict = {}
+
+        for k, v in initial.items():
+            self[k] = v
 
 
     def __setitem__(self, key, value):
-        self._dict[key] = value
+        self.__dict[self.__tokenifyKey(key)] = value
 
 
+    def __tokenifyKey(self, key):
+        
+        if isinstance(key, basestring) and '.' in key:
+            return tuple(key.split('.'))
+
+        return key
+
+        
     def get(self, key, default):
         try:             return self.__getitem__(key)
         except KeyError: return default
@@ -36,6 +51,7 @@ class TypeDict(object):
     def __getitem__(self, key):
         
         origKey = key
+        key     = self.__tokenifyKey(key)
         bases   = []
 
         # Make the code a bit easier by
@@ -71,7 +87,7 @@ class TypeDict(object):
             if len(key) == 1: lKey = key[0]
             else:             lKey = tuple(key)
 
-            val = self._dict.get(lKey, None)
+            val = self.__dict.get(lKey, None)
             
             if val is not None:
                 return val

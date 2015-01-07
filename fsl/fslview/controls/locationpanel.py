@@ -24,7 +24,7 @@ import numpy as np
 import props
 
 import fsl.utils.transform as transform
-import fsl.fslview.strings as strings
+import fsl.data.strings    as strings
 import fsl.fslview.panel   as fslpanel
 import imageselectpanel    as imageselect
 
@@ -335,7 +335,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         # Update the label which
         # displays the image space 
-        spaceLabel = strings.labels['Image', 'space', image.getXFormCode()]
+        spaceLabel = strings.anatomy['Image', 'space', image.getXFormCode()]
         spaceLabel = '{} {}'.format(spaceLabel,
                                     strings.labels[self, 'spaceLabel'])
         self._spaceLabel.SetLabel(spaceLabel)

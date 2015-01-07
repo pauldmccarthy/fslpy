@@ -31,7 +31,7 @@ import inspect
 import wx
 import props
 
-import fsl.fslview.strings as strings
+import fsl.data.strings    as strings
 import fsl.fslview.actions as actions
 
 
@@ -168,7 +168,7 @@ class Profile(actions.ActionProvider):
         modeProp = self.getProp('mode')
         
         for mode in modes:
-            modeProp.addChoice(mode, strings.labels[self, mode], self)
+            modeProp.addChoice(mode, strings.modes[self, mode], self)
 
         if len(modes) > 0:
             self.mode = modes[0]
@@ -542,7 +542,6 @@ class ProfileManager(object):
                           displayed.
         """
         import fsl.fslview.profilemap as profilemap
-        import fsl.fslview.strings    as strings
         
         self._canvasPanel    = canvasPanel
         self._canvasCls      = canvasPanel.__class__
@@ -556,7 +555,7 @@ class ProfileManager(object):
         for profile in profilez:
             profileProp.addChoice(
                 profile,
-                strings.labels[canvasPanel, 'profile', profile],
+                strings.profiles[canvasPanel, profile],
                 canvasPanel)
         canvasPanel.profile = profilez[0]
 

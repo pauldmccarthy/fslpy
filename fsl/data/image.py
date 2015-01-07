@@ -23,29 +23,11 @@ import props
 
 import fsl.utils.transform as transform
 import fsl.data.imageio    as iio
+import fsl.data.constants  as constants
 
 
 log = logging.getLogger(__name__)
 
-
-# Constants which represent the orientation
-# of an axis, in either voxel or world space.
-ORIENT_UNKNOWN = -1
-ORIENT_L2R     = 0
-ORIENT_R2L     = 1
-ORIENT_P2A     = 2
-ORIENT_A2P     = 3
-ORIENT_I2S     = 4
-ORIENT_S2I     = 5
-
-
-# Constants from the NIFTI1 specification that define
-# the 'space' in which an image is assumed to be.
-NIFTI_XFORM_UNKNOWN      = 0
-NIFTI_XFORM_SCANNER_ANAT = 1
-NIFTI_XFORM_ALIGNED_ANAT = 2
-NIFTI_XFORM_TALAIRACH    = 3
-NIFTI_XFORM_MNI_152      = 4
 
 
 class Image(props.HasProperties):
@@ -251,8 +233,8 @@ class Image(props.HasProperties):
         sform_code = self.nibImage.get_header()['sform_code']
 
         # Invalid values
-        if   sform_code > 4: code = NIFTI_XFORM_UNKNOWN
-        elif sform_code < 0: code = NIFTI_XFORM_UNKNOWN
+        if   sform_code > 4: code = constants.NIFTI_XFORM_UNKNOWN
+        elif sform_code < 0: code = constants.NIFTI_XFORM_UNKNOWN
 
         # All is well
         else:                code = sform_code
@@ -283,12 +265,12 @@ class Image(props.HasProperties):
         to superior).
         """
 
-        if self.getXFormCode() == NIFTI_XFORM_UNKNOWN:
+        if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
             return -1
 
-        if   axis == 0: return ORIENT_L2R
-        elif axis == 1: return ORIENT_P2A
-        elif axis == 2: return ORIENT_I2S
+        if   axis == 0: return constants.ORIENT_L2R
+        elif axis == 1: return constants.ORIENT_P2A
+        elif axis == 2: return constants.ORIENT_I2S
 
         else: return -1
 
@@ -301,16 +283,17 @@ class Image(props.HasProperties):
         of the return value.
         """
         
-        if self.getXFormCode() == NIFTI_XFORM_UNKNOWN:
+        if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
             return -1 
         
         # the aff2axcodes returns one code for each 
         # axis in the image array (i.e. in voxel space),
         # which denotes the real world direction
-        code = nib.orientations.aff2axcodes(self.nibImage.get_affine(),
-                                            ((ORIENT_R2L, ORIENT_L2R),
-                                             (ORIENT_A2P, ORIENT_P2A),
-                                             (ORIENT_S2I, ORIENT_I2S)))[axis]
+        code = nib.orientations.aff2axcodes(
+            self.nibImage.get_affine(),
+            ((constants.ORIENT_R2L, constants.ORIENT_L2R),
+             (constants.ORIENT_A2P, constants.ORIENT_P2A),
+             (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
         return code
 
     
