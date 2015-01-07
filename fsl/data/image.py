@@ -114,6 +114,10 @@ class Image(props.HasProperties):
                     a :mod:`numpy` array, or a :mod:`nibabel` image object.
         """
 
+        self.nibImage  = None
+        self.imageFile = None
+        self.tempFile  = None
+
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
@@ -142,18 +146,14 @@ class Image(props.HasProperties):
             
             self.nibImage  = nib.nifti1.Nifti1Image(image, xform)
             self.name      = name
-            self.tempFile  = None
-            self.imageFile = None
             
         # otherwise, we assume that it is a nibabel image
         else:
             if name  is None:
                 name = 'Nibabel image'
             
-            self.nibImage  = image
-            self.name      = name
-            self.tempFile  = None
-            self.imageFile = None 
+            self.nibImage = image
+            self.name     = name
 
         self.data          = self.nibImage.get_data()
         self.shape         = self.nibImage.get_shape()

@@ -5,9 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
-log = logging.getLogger(__name__)
-
+import                   logging
 import                   os 
 import os.path        as op
 import subprocess     as sp
@@ -16,6 +14,9 @@ import                   tempfile
 import nibabel        as nib
 
 import image          as fslimage
+
+
+log = logging.getLogger(__name__)
 
 
 # TODO The wx.FileDialog does not    
@@ -32,8 +33,8 @@ EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
                           'ANALYZE75 images',
                           'NIFTI1/ANALYZE75 headers',
                           'Compressed images',
-                          'Compressed images',
-                          'Compressed images']
+                          'Compressed NIFTI1 images',
+                          'Compressed NIFTI1/ANALYZE75 images']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
@@ -239,6 +240,8 @@ def loadImage(filename):
         if haveGui:
             busyDlg.Destroy()
 
+    log.debug('Loading image from {}'.format(filename))
+    
     return nib.load(filename), filename
 
 
@@ -284,8 +287,12 @@ def saveImage(image, imageList=None, fromDir=None):
         if image.imageFile is None: lastDir = os.cwd()
         else:                       lastDir = op.dirname(image.imageFile)
 
-    if image.imageFile is None: filename = os.cwd()
-    else:                       filename = op.basename(image.imageFile) 
+    # TODO make image.name safe (spaces to 
+    # underscores, filter non-alphanumeric)
+    if image.imageFile is None: filename = image.name
+    else:                       filename = op.basename(image.imageFile)
+
+    filename = removeExt(filename)
 
     saveLastDir = False
     if fromDir is None:
@@ -299,9 +306,42 @@ def saveImage(image, imageList=None, fromDir=None):
                         wildcard=makeWildcard(),
                         style=wx.FD_SAVE)
 
+    dlg.SetFilterIndex(ALLOWED_EXTENSIONS.index(DEFAULT_EXTENSION))
+
     if dlg.ShowModal() != wx.ID_OK: return False
 
     if saveLastDir: saveImage.lastDir = lastDir
+
+    path     = dlg.GetPath()
+    nibImage = image.nibImage
+
+    # this is an image which has been
+    # loaded from a file, and ungzipped
+    # to a temporary location
+    if image.tempFile is not None:
+
+        # if selected path is same as original path,
+        # save to both temp file and to path
+
+        # else, if selected path is different from
+        # original path, save to temp file and to
+        # new path, and update the path
+
+        # actually, the two behaviours just described
+        # are identical
+        pass
+
+    # this is just a normal image
+    # which has been loaded from
+    # a file, or an in-memory image
+    else:
+
+        log.debug('Saving image ({}) to {}'.format(image, path))
+        
+        nib.save(nibImage, path)
+        image.imageFile = path
+
+    image.saved = True
 
 
 
