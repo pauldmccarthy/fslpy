@@ -51,12 +51,17 @@ also provide the following module level attributes:
 """
 
 import logging
-log = logging.getLogger(__name__)
+import warnings
 
 import os
 import sys
-import logging
 import argparse
+
+log = logging.getLogger(__name__)
+
+# make matplotlib quiet
+warnings.filterwarnings('ignore', module='matplotlib')
+
 
 # There's a bug in OpenGL.GL.shaders (which has been fixed in
 # the latest version) - it calls logging.basicConfig(), and
