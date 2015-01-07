@@ -10,6 +10,7 @@ from collections import OrderedDict
 import props
 
 import fsl.data.image               as fslimage
+import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
 
@@ -33,12 +34,12 @@ class Options(props.HasProperties):
 
     inputImage           = props.FilePath(
         exists=True,
-        suffixes=fslimage.ALLOWED_EXTENSIONS,
+        suffixes=iio.ALLOWED_EXTENSIONS,
         required=True)
     outputImage          = props.FilePath(required=True)
     t2Image              = props.FilePath(
         exists=True,
-        suffixes=fslimage.ALLOWED_EXTENSIONS,
+        suffixes=iio.ALLOWED_EXTENSIONS,
         required=lambda i: i.runChoice == '-A2')
 
     runChoice            = props.Choice(runChoices)
@@ -65,7 +66,7 @@ class Options(props.HasProperties):
         """
 
         if not valid: return
-        value = fslimage.removeExtension(value)
+        value = iio.removeExt(value)
         self.outputImage = value + '_brain'
 
         

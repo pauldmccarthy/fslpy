@@ -1,27 +1,32 @@
 #!/usr/bin/env python
-#
+# 
 # image.py - Classes for representing 3D/4D images and collections of said
 # images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Classes for representing 3D/4D images and collections of said images."""
+"""Classes for representing 3D/4D images and collections of said images.
 
-import os
+See the :mod:`fsl.data.imageio` module for image loading/saving 
+functionality.
+
+"""
+
 import logging
-import tempfile
 import collections
-import subprocess as sp
-import os.path    as op
+import os.path as op
 
-import numpy      as np
-import nibabel    as nib
+import numpy   as np
+import nibabel as nib
 
 import props
-import fsl.utils.transform  as transform
+
+import fsl.utils.transform as transform
+import fsl.data.imageio    as iio
 
 
 log = logging.getLogger(__name__)
+
 
 # Constants which represent the orientation
 # of an axis, in either voxel or world space.
@@ -33,6 +38,7 @@ ORIENT_A2P     = 3
 ORIENT_I2S     = 4
 ORIENT_S2I     = 5
 
+
 # Constants from the NIFTI1 specification that define
 # the 'space' in which an image is assumed to be.
 NIFTI_XFORM_UNKNOWN      = 0
@@ -40,228 +46,6 @@ NIFTI_XFORM_SCANNER_ANAT = 1
 NIFTI_XFORM_ALIGNED_ANAT = 2
 NIFTI_XFORM_TALAIRACH    = 3
 NIFTI_XFORM_MNI_152      = 4
-
-
-# TODO The wx.FileDialog does not    
-# seem to handle wildcards with      
-# multiple suffixes (e.g. '.nii.gz'),
-# so i'm just providing '*.gz'for now
-ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.gz']
-"""The file extensions which we understand. This list is used as the default
-if if the ``allowedExts`` parameter is not passed to any of the functions in
-this module.
-"""
-
-EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
-                          'ANALYZE75 images',
-                          'NIFTI1/ANALYZE75 headers',
-                          'Compressed images']
-"""Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
-
-
-DEFAULT_EXTENSION  = '.nii.gz'
-"""The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
-
-
-def makeWildcard(allowedExts=None):
-    """Returns a wildcard string for use in a file dialog, to limit
-    the acceptable file types.
-    
-    :arg allowedExts: A list of strings containing the allowed file
-                      extensions.
-    """
-    
-    if allowedExts is None:
-        allowedExts  = ALLOWED_EXTENSIONS
-        descs        = EXTENSION_DESCRIPTIONS
-    else:
-        descs        = allowedExts
-
-    exts = ['*{}'.format(ext) for ext in allowedExts]
-
-    allDesc = 'All supported files'
-    allExts = ';'.join(exts)
-
-    wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
-    wcParts = ['|'.join((allDesc, allExts))] + wcParts
-
-    return '|'.join(wcParts)
-
-
-def isSupported(filename, allowedExts=None):
-    """
-    Returns ``True`` if the given file has a supported extension, ``False``
-    otherwise.
-
-    :arg filename:    The file name to test.
-    
-    :arg allowedExts: A list of strings containing the allowed file
-                      extensions.
-    """
-
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
-
-    return any(map(lambda ext: filename.endswith(ext, allowedExts)))
-
-
-def removeExtension(filename, allowedExts=None):
-    """
-    Removes the extension from the given file name. Raises a :exc:`ValueError`
-    if the file has an unsupported extension.
-
-    :arg filename:    The file name to strip.
-    
-    :arg allowedExts: A list of strings containing the allowed file
-                      extensions.    
-    """
-
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
-
-    # figure out the extension of the given file
-    extMatches = map(lambda ext: filename.endswith(ext), allowedExts)
-
-    # the file does not have a supported extension
-    if not any(extMatches):
-        raise ValueError('Unsupported file type')
-
-    # figure out the length of the matched extension
-    extIdx = extMatches.index(True)
-    extLen = len(allowedExts[extIdx])
-
-    # and trim it from the file name
-    return filename[:-extLen]
-
-
-def addExtension(
-        prefix,
-        mustExist=False,
-        allowedExts=None,
-        defaultExt=None):
-    """Adds a file extension to the given file ``prefix``.
-
-    If ``mustExist`` is False (the default), and the file does not already
-    have a supported extension, the default extension is appended and the new
-    file name returned. If the prefix already has a supported extension,
-    it is returned unchanged.
-
-    If ``mustExist`` is ``True``, the function checks to see if any files
-    exist that have the given prefix, and a supported file extension.  A
-    :exc:`ValueError` is raised if:
-
-       - No files exist with the given prefix and a supported extension.
-       - More than one file exists with the given prefix, and a supported
-         extension.
-
-    Otherwise the full file name is returned.
-
-    :arg prefix:      The file name refix to modify.
-    :arg mustExist:   Whether the file must exist or not.
-    :arg allowedExts: List of allowed file extensions.
-    :arg defaultExt:  Default file extension to use.
-    """
-
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
-    if defaultExt  is None: defaultExt  = DEFAULT_EXTENSION
-
-    if not mustExist:
-
-        # the provided file name already
-        # ends with a supported extension 
-        if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
-            return prefix
-
-        return prefix + defaultExt
-
-    # If the provided prefix already ends with a
-    # supported extension , check to see that it exists
-    if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
-        extended = [prefix]
-        
-    # Otherwise, make a bunch of file names, one per
-    # supported extension, and test to see if exactly
-    # one of them exists.
-    else:
-        extended = map(lambda ext: prefix + ext, allowedExts)
-
-    exists = map(op.isfile, extended)
-
-    # Could not find any supported file
-    # with the specified prefix
-    if not any(exists):
-        raise ValueError(
-            'Could not find a supported file with prefix {}'.format(prefix))
-
-    # Ambiguity! More than one supported
-    # file with the specified prefix
-    if len(filter(bool, exists)) > 1:
-        raise ValueError('More than one file with prefix {}'.format(prefix))
-
-    # Return the full file name of the
-    # supported file that was found
-    extIdx = exists.index(True)
-    return extended[extIdx]
-
-
-def _loadImageFile(filename):
-    """Given the name of an image file, loads it using nibabel.
-
-    If the file is large, and is gzipped, it is decompressed to a temporary
-    location, so that it can be memory-mapped.  A tuple is returned,
-    consisting of the nibabel image object, and the name of the file that it
-    was loaded from (either the passed-in file name, or the name of the
-    temporary decompressed file).
-    """
-
-    # If we have a GUI, we can display a dialog
-    # message. Otherwise we print a log message
-    haveGui = False
-    try:
-        import wx
-        if wx.GetApp() is not None: 
-            haveGui = True
-    except:
-        pass
-
-    realFilename = filename
-    mbytes = op.getsize(filename) / 1048576.0
-
-    # The mbytes limit is arbitrary
-    if filename.endswith('.nii.gz') and mbytes > 512:
-
-        unzipped, filename = tempfile.mkstemp(suffix='.nii')
-
-        unzipped = os.fdopen(unzipped)
-
-        msg = '{} is a large file ({} MB) - decompressing ' \
-              'to {}, to allow memory mapping...'.format(realFilename,
-                                                         mbytes,
-                                                         filename)
-
-        if not haveGui:
-            log.info(msg)
-        else:
-            busyDlg = wx.BusyInfo(msg, wx.GetTopLevelWindows()[0])
-
-        gzip = ['gzip', '-d', '-c', realFilename]
-        log.debug('Running {} > {}'.format(' '.join(gzip), filename))
-
-        # If the gzip call fails, revert to loading from the gzipped file
-        try:
-            sp.call(gzip, stdout=unzipped)
-            unzipped.close()
-
-        except OSError as e:
-            log.warn('gzip call failed ({}) - cannot memory '
-                     'map file: {}'.format(e, realFilename),
-                     exc_info=True)
-            unzipped.close()
-            os.remove(filename)
-            filename = realFilename
-
-        if haveGui:
-            busyDlg.Destroy()
-
-    return nib.load(filename), filename
 
 
 class Image(props.HasProperties):
@@ -279,20 +63,20 @@ class Image(props.HasProperties):
 
     :ivar shape:          A list/tuple containing the number of voxels
                           along each image dimension.
-    
+
     :ivar pixdim:         A list/tuple containing the size of one voxel
                           along each image dimension.
-    
+
     :ivar voxToWorldMat:  A 4*4 array specifying the affine transformation
                           for transforming voxel coordinates into real world
                           coordinates.
 
     :ivar worldToVoxMat:  A 4*4 array specifying the affine transformation
                           for transforming real world coordinates into voxel
-                          coordinates. 
+                          coordinates.
 
     :ivar imageFile:      The name of the file that the image was loaded from.
-    
+
     :ivar tempFile:       The name of the temporary file which was created (in
                           the event that the image was large and was gzipped -
                           see :func:`_loadImageFile`).
@@ -306,7 +90,7 @@ class Image(props.HasProperties):
         default='volume')
     """This property defines the type of image data."""
 
-    
+
     name = props.String()
     """The name of this image."""
 
@@ -322,7 +106,7 @@ class Image(props.HasProperties):
     as stored in memory, is saved to disk, ``False`` otherwise.
     """
 
-    
+
     def __init__(self, image, xform=None, name=None):
         """Initialise an Image object with the given image data or file name.
 
@@ -333,7 +117,7 @@ class Image(props.HasProperties):
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
-            nibImage, filename = _loadImageFile(addExtension(image))
+            nibImage, filename = iio.loadImage(iio.addExt(image))
             self.nibImage      = nibImage
             self.imageFile     = image
 
@@ -341,10 +125,10 @@ class Image(props.HasProperties):
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                self.name     = removeExtension(op.basename(self.imageFile))
+                self.name     = iio.removeExt(op.basename(self.imageFile))
                 self.tempFile = nibImage.get_filename()
             else:
-                self.name     = removeExtension(op.basename(self.imageFile))
+                self.name     = iio.removeExt(op.basename(self.imageFile))
 
             self.saved = True
                 
@@ -402,7 +186,7 @@ class Image(props.HasProperties):
         
         :arg volume:  If this is a 4D image, the volume index.
         """
-
+        
         if self.is4DImage() and volume is None:
             raise ValueError('Volume must be specified for 4D images')
         
@@ -426,10 +210,13 @@ class Image(props.HasProperties):
 
 
     def save(self):
+        """Convenience method to save any changes made to the :attr:`data` of 
+        this :class:`Image` instance.
+
+        See the :func:`fsl.data.imageio.save` function.
         """
-        """
-        pass
-        
+        return iio.saveImage(self)
+    
 
     def __hash__(self):
         """Returns a number which uniquely idenfities this :class:`Image`
@@ -440,7 +227,9 @@ class Image(props.HasProperties):
 
     def __str__(self):
         """Return a string representation of this :class:`Image`."""
-        return '{}("{}")'.format(self.__class__.__name__, self.imageFile)
+        return '{}({}, {})'.format(self.__class__.__name__,
+                                   self.name,
+                                   self.imageFile)
 
         
     def __repr__(self):
@@ -560,6 +349,7 @@ class ImageList(props.HasProperties):
     as if it were a list itself.
     """
 
+    
     def _validateImage(self, atts, images):
         """Returns ``True`` if all objects in the given ``images`` list are
         :class:`Image` objects, ``False`` otherwise.
@@ -576,69 +366,16 @@ class ImageList(props.HasProperties):
         :class:`Image` objects."""
         
         if images is None: images = []
-
         self.images.extend(images)
-
-        # set the _lastDir attribute,
-        # used by the addImages method
-        if len(images) == 0: self._lastDir = os.getcwd()
-        else:                self._lastDir = op.dirname(images[-1].imageFile)
 
 
     def addImages(self, fromDir=None, addToEnd=True):
         """Convenience method for interactively adding images to this
         :class:`ImageList`.
 
-        If the :mod:`wx` package is available, pops up a file dialog
-        prompting the user to select one or more images to append to the
-        image list.
-
-        :param str fromDir:   Directory in which the file dialog should start.
-                              If ``None``, the most recently visited directory
-                              (via this method) is used, or a directory from
-                              an already loaded image, or the current working
-                              directory.
-
-        :param bool addToEnd: If True (the default), the new images are added
-                              to the end of the list. Otherwise, they are added
-                              to the beginning of the list.
-
-        Returns: True if images were successfully added, False if no images
-        were added.
-        
-        :raise ImportError:  if :mod:`wx` is not present.
-        :raise RuntimeError: if a :class:`wx.App` has not been created.
-
+        See the :func:`fsl.data.imageio.addImages` function.
         """
-        import wx
-
-        app = wx.GetApp()
-
-        if app is None:
-            raise RuntimeError('A wx.App has not been created')
-
-        saveLastDir = False
-        if fromDir is None:
-            fromDir = self._lastDir
-            saveLastDir = True
-
-        dlg = wx.FileDialog(app.GetTopWindow(),
-                            message='Open image file',
-                            defaultDir=fromDir,
-                            wildcard=makeWildcard(),
-                            style=wx.FD_OPEN | wx.FD_MULTIPLE)
-
-        if dlg.ShowModal() != wx.ID_OK: return False
-
-        paths         = dlg.GetPaths()
-        images        = map(Image, paths)
-
-        if saveLastDir: self._lastDir = op.dirname(paths[-1])
-
-        if addToEnd: self.extend(      images)
-        else:        self.insertAll(0, images)
-
-        return True
+        return iio.addImages(self, fromDir, addToEnd)
 
 
     # Wrappers around the images list property, allowing this

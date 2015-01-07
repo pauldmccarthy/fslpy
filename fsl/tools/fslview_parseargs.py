@@ -18,6 +18,7 @@ import argparse
 
 import props
 import fsl.data.image             as fslimage
+import fsl.data.imageio           as iio
 import fsl.utils.transform        as transform 
 import fsl.fslview.displaycontext as displaycontext
 
@@ -233,7 +234,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
         # an -i with something that is
         # not a file following it
-        if not op.isfile(imgFile):
+        if not op.isfile(iio.addExt(imgFile, True)):
             print_help()
             sys.argv(1)            
 
