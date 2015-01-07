@@ -23,18 +23,20 @@ log = logging.getLogger(__name__)
 # seem to handle wildcards with      
 # multiple suffixes (e.g. '.nii.gz'),
 # so i'm just providing '*.gz'for now
-ALLOWED_EXTENSIONS = ['.nii', '.img', '.hdr', '.gz', '.nii.gz', '.img.gz']
+ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.gz']
 """The file extensions which we understand. This list is used as the default
 if if the ``allowedExts`` parameter is not passed to any of the functions in
 this module.
 """
 
-EXTENSION_DESCRIPTIONS = ['NIFTI1 images',
+ALLOWED_EXTENSIONS     = [';'.join(ALLOWED_EXTENSIONS)] + ALLOWED_EXTENSIONS
+EXTENSION_DESCRIPTIONS = ['All supported files'
+                          'Compressed NIFTI1 images',
+                          'NIFTI1 images',
                           'ANALYZE75 images',
                           'NIFTI1/ANALYZE75 headers',
-                          'Compressed images',
-                          'Compressed NIFTI1 images',
-                          'Compressed NIFTI1/ANALYZE75 images']
+                          'Compressed NIFTI1/ANALYZE75 images'
+                          'Compressed images']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
@@ -56,14 +58,9 @@ def makeWildcard(allowedExts=None):
     else:
         descs        = allowedExts
 
-    exts = ['*{}'.format(ext) for ext in allowedExts]
-
-    allDesc = 'All supported files'
-    allExts = ';'.join(exts)
-
+    exts    = ['*{}'.format(ext) for ext in allowedExts]
     wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
-    wcParts = ['|'.join((allDesc, allExts))] + wcParts
-
+    
     return '|'.join(wcParts)
 
 
@@ -284,7 +281,7 @@ def saveImage(image, imageList=None, fromDir=None):
     lastDir = getattr(saveImage, 'lastDir', None)
 
     if lastDir is None:
-        if image.imageFile is None: lastDir = os.cwd()
+        if image.imageFile is None: lastDir = os.getcwd()
         else:                       lastDir = op.dirname(image.imageFile)
 
     # TODO make image.name safe (spaces to 
@@ -330,6 +327,9 @@ def saveImage(image, imageList=None, fromDir=None):
         # actually, the two behaviours just described
         # are identical
         pass
+
+
+    # TODO handle error
 
     # this is just a normal image
     # which has been loaded from
@@ -381,7 +381,7 @@ def addImages(imageList, fromDir=None, addToEnd=True):
         if len(imageList) > 0 and imageList[-1].imageFile is not None:
             lastDir = op.dirname(imageList[-1].imageFile)
         else:
-            lastDir = os.cwd()
+            lastDir = os.getcwd()
 
     saveLastDir = False
     if fromDir is None:

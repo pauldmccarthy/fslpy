@@ -175,7 +175,7 @@ class GLImage(object):
         # Another GLImage object may have
         # already deleted the image texture
         try:
-            imageTexture = self.image.delAttribute('glImageTexture')
+            imageTexture = self.image.delAttribute('GLImageTexture')
             gl.glDeleteTextures(1, imageTexture)
             
         except KeyError:
