@@ -39,12 +39,14 @@ Two super classes are provided for each of these cases:
    OSMesa.
 """
 
-import logging
-log = logging.getLogger(__name__)
-
+import            logging 
 import            os
 import os.path as op
 import            OpenGL
+
+
+log = logging.getLogger(__name__)
+
 
 # Make PyOpenGL throw an error, instead of implicitly
 # converting, if we pass incorrect types to OpenGL functions.

@@ -244,6 +244,9 @@ def postDraw(glimg):
 
     gl.glDisableVertexAttribArray(glimg.worldCoordPos)
 
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
     glimg.indices    .unbind()
     glimg.worldCoords.unbind()
 

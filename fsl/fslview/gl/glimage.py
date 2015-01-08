@@ -113,7 +113,10 @@ class GLImage(object):
 
         # The colour map, used for converting 
         # image data to a RGBA colour.
-        self.colourTexture    = gl.glGenTextures(1)
+        self.colourTexture = gl.glGenTextures(1)
+
+        log.debug('Created GL texture: {}'.format(self.colourTexture))
+        
         self.colourResolution = 256
         self.genColourTexture(self.colourResolution)
         
@@ -170,12 +173,14 @@ class GLImage(object):
         longer needed. It performs any needed clean up of OpenGL data (e.g.
         deleting texture handles).
         """
+        log.debug('Deleting GL texture: {}'.format(self.colourTexture))
         gl.glDeleteTextures(1, self.colourTexture)
 
         # Another GLImage object may have
         # already deleted the image texture
         try:
             imageTexture = self.image.delAttribute('GLImageTexture')
+            log.debug('Deleting GL texture: {}'.format(imageTexture))
             gl.glDeleteTextures(1, imageTexture)
             
         except KeyError:
@@ -362,6 +367,7 @@ class GLImage(object):
         # otherwise, create a new one
         if imageTexture is None:
             imageTexture = gl.glGenTextures(1)
+            log.debug('Created GL texture: {}'.format(imageTexture))
 
         # The image buffer already exists, and is valid
         elif not image.getAttribute('GLImageDirty'):
@@ -371,9 +377,10 @@ class GLImage(object):
         
         self.imageTexture      = imageTexture
         self.imageTextureShape = shape
-        
-        log.debug('Creating 3D texture for '
+
+        log.debug('Configuring 3D texture (id {}) for '
                   'image {} (data shape: {})'.format(
+                      imageTexture,
                       image.name,
                       imageData.shape))
 
@@ -428,6 +435,8 @@ class GLImage(object):
                         gl.GL_LUMINANCE, 
                         texExtFmt,
                         imageData)
+
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
 
         # Add a reference to the texture as an attribute
         # of the image, and mark it as up to date, so other
