@@ -35,21 +35,31 @@ class ListItemWidget(wx.Panel):
         self.listBox = listBox
         self.name    = '{}_{}'.format(self.__class__.__name__, id(self))
 
+        self.saveButton = wx.Button(self, label='S', style=wx.BU_EXACTFIT)
         self.visibility = props.makeWidget(self, display, 'enabled')
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.SetSizer(self.sizer)
 
+        self.sizer.Add(self.saveButton, flag=wx.EXPAND, proportion=1)
         self.sizer.Add(self.visibility, flag=wx.EXPAND, proportion=1)
 
         self.display.addListener('enabled', self.name, self._vizChanged)
         self.image  .addListener('saved',   self.name, self._saveStateChanged)
 
+
+        self.saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton)
+                             
+
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
 
         self._vizChanged()
         self._saveStateChanged()
+
+        
+    def _onSaveButton(self, ev):
+        self.image.save()
 
         
     def _onDestroy(self, ev):
@@ -60,6 +70,8 @@ class ListItemWidget(wx.Panel):
         
     def _saveStateChanged(self, *a):
         idx = self.listBox.IndexOf(self.image)
+
+        self.saveButton.Enable(not self.image.saved)
 
         if self.image.saved:
             self.listBox.SetItemBackgroundColour(idx)
