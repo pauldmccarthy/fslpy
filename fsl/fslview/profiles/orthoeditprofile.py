@@ -33,7 +33,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
     searchRadius   = props.Real(minval=0.0,
                                 default=0.0,
-                                maxval=100.0,
+                                maxval=250.0,
                                 clamped=True)
 
     selectionMode  = props.Choice(OrderedDict((
