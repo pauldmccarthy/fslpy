@@ -181,24 +181,6 @@ class ImageDisplay(props.SyncableHasProperties):
 
         :arg parent: 
         """
-
-        props.SyncableHasProperties.__init__(
-            self,
-            parent,
-            
-            # The name property is implicitly bound
-            # through the image object so it doesn't
-            # need to be linked between ImageDisplays 
-            nobind=['name'],
-            
-            # These properties cannot be unbound, as
-            # they affect the OpenGL representation
-            nounbind=['interpolation',
-                      'volume',
-                      'resolution',
-                      'transform',
-                      'imageType'])
-
         self.image = image
 
         # bind self.name to # image.name, so changes
@@ -266,6 +248,27 @@ class ImageDisplay(props.SyncableHasProperties):
         self._oldDisplayToVoxMat   = self.displayToVoxMat
         self._oldWorldToDisplayMat = self.worldToDisplayMat
         self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        # Call the super constructor after our own
+        # initialisation, in case the provided parent
+        # has different property values to our own,
+        # and our values need to be updated
+        props.SyncableHasProperties.__init__(
+            self,
+            parent,
+            
+            # The name property is implicitly bound
+            # through the image object so it doesn't
+            # need to be linked between ImageDisplays 
+            nobind=['name'],
+            
+            # These properties cannot be unbound, as
+            # they affect the OpenGL representation
+            nounbind=['interpolation',
+                      'volume',
+                      'resolution',
+                      'transform',
+                      'imageType'])
 
         
     def _transformChanged(self, *a):
