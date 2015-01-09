@@ -25,7 +25,7 @@ class OpenStandardAction(actions.Action):
             self._stddir = op.join(fsldir, 'data', 'standard')
         else:
             self._stddir = None
-            self.disable()
+            self.enabled = False
         
         
     def doAction(self):
