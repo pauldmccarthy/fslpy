@@ -237,7 +237,7 @@ class OSMesaCanvasTarget(object):
                                  self._height)
 
         
-    def _refresh(self):
+    def _refresh(self, *a):
         """Does nothing. This canvas is for static (i.e. unchanging) rendering.
         """
         pass
@@ -370,7 +370,7 @@ class WXGLCanvasTarget(object):
         return True
 
         
-    def _refresh(self):
+    def _refresh(self, *a):
         """Triggers a redraw via the :mod:`wx` `Refresh` method."""
         self.Refresh()
 
