@@ -23,8 +23,18 @@ def concat(x1, x2):
     return np.dot(x1, x2)
 
 
-def axisBounds(shape, xform, axis):
-    """Returns the (lo, hi) bounds of the specified axis."""
+def axisBounds(shape, xform, axes=None):
+    """Returns the (lo, hi) bounds of the specified axis/axes."""
+
+    scalar = False
+
+    if axes is None:
+        axes = [0, 1, 2]
+        
+    elif not isinstance(axes, collections.Iterable):
+        scalar = True
+        axes   = [axes]
+    
     x, y, z = shape[:3]
 
     x -= 0.5
@@ -44,10 +54,11 @@ def axisBounds(shape, xform, axis):
 
     tx = transform(points, xform)
 
-    lo = tx[:, axis].min()
-    hi = tx[:, axis].max()
+    lo = tx[:, axes].min(axis=0)
+    hi = tx[:, axes].max(axis=0)
 
-    return (lo, hi)
+    if scalar: return (lo[0], hi[0])
+    else:      return (lo,    hi)
 
 
 def axisLength(shape, xform, axis):

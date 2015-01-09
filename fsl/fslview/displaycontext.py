@@ -271,6 +271,21 @@ class ImageDisplay(props.SyncableHasProperties):
                       'imageType'])
 
         
+    def getDisplayBounds(self):
+        """Calculates and returns the min/max values of a 3D bounding box,
+        in the display coordinate system, which is big enough to contain
+        the image associated with this :class:`ImageDisplay` instance.
+
+        The coordinate system in which the bounding box is defined is
+        determined by the current value of the :attr:`transform` property.
+
+        A tuple containing two values is returned, with the first value
+        a sequence of three low bounds, and the second value a sequence
+        of three high bounds.
+        """
+        return transform.axisBounds(self.image.shape[:3], self.voxToDisplayMat)
+    
+        
     def _transformChanged(self, *a):
         """Called when the :attr:`transform` property is changed.
 
@@ -615,14 +630,12 @@ class DisplayContext(props.SyncableHasProperties):
         for img in self._imageList.images:
 
             display = self._imageDisplays[img]
-            xform   = display.voxToDisplayMat
+            lo, hi  = display.getDisplayBounds()
 
             for ax in range(3):
 
-                lo, hi = transform.axisBounds(img.shape[:3], xform, ax)
-
-                if lo < minBounds[ax]: minBounds[ax] = lo
-                if hi > maxBounds[ax]: maxBounds[ax] = hi
+                if lo[ax] < minBounds[ax]: minBounds[ax] = lo[ax]
+                if hi[ax] > maxBounds[ax]: maxBounds[ax] = hi[ax]
 
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
