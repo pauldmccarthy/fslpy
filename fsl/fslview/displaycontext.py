@@ -569,7 +569,7 @@ class DisplayContext(props.SyncableHasProperties):
             self.setConstraint('volume', 'maxval', 0)
 
 
-    def _transformChanged(self, xform, valid, display):
+    def _transformChanged(self, xform, valid, display, propName):
         """Called when the
         :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform property
         changes on any image in the :attr:`images` list. Sets the 
