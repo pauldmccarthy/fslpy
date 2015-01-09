@@ -9,7 +9,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-import wx
 
 import fsl.fslview.profiles as profiles
 
@@ -19,7 +18,8 @@ class LightBoxViewProfile(profiles.Profile):
         profiles.Profile.__init__(self,
                                   canvasPanel,
                                   imageList,
-                                  displayCtx)
+                                  displayCtx,
+                                  modes=['view', 'zoom'])
 
         self._canvas = canvasPanel.getCanvas()
 
@@ -27,20 +27,24 @@ class LightBoxViewProfile(profiles.Profile):
         return [self._canvas]
 
         
-    def _mouseWheel(self, ev, canvas, wheel, mousePos=None, canvasPos=None):
+    def _viewModeMouseWheel(self,
+                            ev,
+                            canvas,
+                            wheel,
+                            mousePos=None,
+                            canvasPos=None):
         """Called when the mouse wheel is moved.
 
         Updates the top row displayed on the canvas.
         """
-        wheelDir = ev.GetWheelRotation()
 
-        if   wheelDir > 0: wheelDir = -1
-        elif wheelDir < 0: wheelDir =  1
+        if   wheel > 0: wheel = -1
+        elif wheel < 0: wheel =  1
 
-        self._canvasPanel.getCanvas().topRow += wheelDir
+        self._canvasPanel.getCanvas().topRow += wheel
 
         
-    def _leftMouseDrag(self, ev, canvas, mousePos, canvasPos):
+    def _viewModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Called when the mouse is clicked or dragged on the canvas.
 
         Updates the canvas and display context location.
@@ -50,3 +54,19 @@ class LightBoxViewProfile(profiles.Profile):
             return
 
         self._displayCtx.location.xyz = canvasPos
+
+
+    def _zoomModeMouseWheel(self,
+                            ev,
+                            canvas,
+                            wheel,
+                            mousePos=None,
+                            canvasPos=None):
+        """Called in zoom mode when the mouse wheel is moved.
+
+        Zooms in/out of the canvas.
+        """
+
+        if   wheel > 0: wheel =  50
+        elif wheel < 0: wheel = -50
+        self._canvasPanel.zoom += wheel 

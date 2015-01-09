@@ -401,7 +401,26 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         xlen = self.displayCtx.bounds.getLen(self.xax)
         ylen = self.displayCtx.bounds.getLen(self.yax)
 
-        off  = self._totalRows - self.nrows - self.topRow
+
+        # Calculate the vertical offset required to
+        # ensure that the current 'topRow' is the first
+        # row, and the correct number of rows ('nrows')
+        # are displayed
+        
+        # if the number of rows to be displayed (nrows)
+        # is more than the number of rows that exist
+        # (totalRows), calculate an offset to vertically
+        # centre the existing row space in the display
+        # row space
+        if self._totalRows < self.nrows:
+            off  = (self._totalRows - self.nrows) / 2.0
+
+        # otherwise calculate the offset so that the
+        # top of the display space lines up with the
+        # current topRow
+        else:
+            off  = self._totalRows - self.nrows - self.topRow
+
         ymin = ymin + ylen * off
         xmax = xmin + xlen * self.ncols
         ymax = ymin + ylen * self.nrows
@@ -411,7 +430,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # necessarily the same as the actual bounds,
         # as they are  adjusted to preserve  the
         # image aspect ratio. But the real bounds
-        # are of use in the _zPosChangedmethod, so
+        # are of use in the _zPosChanged method, so
         # we save them here as an attribute
         self._realBounds = (xmin, xmax, ymin, ymax)
 

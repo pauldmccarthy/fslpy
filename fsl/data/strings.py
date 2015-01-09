@@ -142,6 +142,10 @@ modes = TypeDict({
     ('OrthoEditProfile', 'desel')  : 'Deselect',
     ('OrthoEditProfile', 'selint') : 'Select by intensity',
 
+
+    ('LightBoxViewProfile', 'view')   : 'View',
+    ('LightBoxViewProfile', 'zoom')   : 'Zoom',
+
 })
 
 

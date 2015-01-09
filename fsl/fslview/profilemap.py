@@ -71,7 +71,10 @@ tempModeMap = {
 
         (('sel',    wx.WXK_CONTROL), 'zoom'),
         (('desel',  wx.WXK_CONTROL), 'zoom'),
-        (('selint', wx.WXK_CONTROL), 'zoom')))
+        (('selint', wx.WXK_CONTROL), 'zoom'))),
+
+    LightBoxViewProfile : OrderedDict((
+        (('view', wx.WXK_CONTROL), 'zoom'), ))
 }
 
 altHandlerMap = {
