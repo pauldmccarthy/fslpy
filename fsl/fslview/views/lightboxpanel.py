@@ -91,8 +91,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         # And remove that listener when
         # this panel is destroyed
         def onDestroy(ev):
-            self._displayCtx.removeListener('location', self._name)
             ev.Skip()
+            if ev.GetEventObject() is not self:
+                return
+            self._displayCtx.removeListener('location', self._name)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

@@ -125,5 +125,5 @@ altHandlerMap = {
         (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')))),
 
     LightBoxViewProfile : OrderedDict((
-        ((None, 'LeftMouseDown'), (None, 'LeftMouseDrag')), ))
+        (('view', 'LeftMouseDown'), ('view', 'LeftMouseDrag')), ))
 }
