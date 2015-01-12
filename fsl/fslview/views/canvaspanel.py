@@ -30,6 +30,7 @@ import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.locationpanel     as locationpanel
+import fsl.fslview.widgets.togglepanel        as togglepanel
 import                                           colourbarpanel
 
 
@@ -187,28 +188,42 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         self.__profileManager = profiles.ProfileManager(
             self, imageList, displayCtx)
-        
-        self.bindProps('syncLocation',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('location'))
-        self.bindProps('syncImageOrder',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('imageOrder'))
-        self.bindProps('syncVolume',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('volume'))
 
-        self.__profilePanel     = wx.Panel(self)
-        self.__canvasContainer  = wx.Panel(self)
-        self.__listLocContainer = wx.Panel(self)
-        self.__dispSetContainer = wx.Panel(self)
+        if displayCtx.getParent() is not None:
+        
+            self.bindProps('syncLocation',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('location'))
+            self.bindProps('syncImageOrder',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('imageOrder'))
+            self.bindProps('syncVolume',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('volume'))
+        else:
+
+            # Disable syncLocation, syncImageOrder, and syncVolume somehow
+            pass
+
+        self.__controlPanel        = togglepanel.TogglePanel(
+            self, initialState=False)
+        self.__controlContentPanel = self.__controlPanel.getContentPanel()
+        self.__canvasContainer     = wx.Panel(self)
+        self.__listLocContainer    = wx.Panel(self)
+        self.__dispSetContainer    = wx.Panel(self)
 
         import fsl.fslview.layouts as layouts
-        
-        self.__actionPanel = fslpanel.ConfigPanel(
-            self,
+
+        self.__profilePanel = wx.Panel(self.__controlContentPanel)
+        self.__actionPanel  = fslpanel.ConfigPanel(
+            self.__controlContentPanel,
             self,
             layout=layouts.layouts.get((type(self), 'actions'), None))
+
+        self.__controlSizer = wx.BoxSizer(wx.VERTICAL)
+        self.__controlContentPanel.SetSizer(self.__controlSizer)
+        self.__controlSizer.Add(self.__actionPanel,  flag=wx.EXPAND)
+        self.__controlSizer.Add(self.__profilePanel, flag=wx.EXPAND)
         
         self.__canvasPropsPanel = fslpanel.ConfigPanel(
             self.__dispSetContainer,
@@ -255,8 +270,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
         
-        self.__sizer.Add(self.__actionPanel,       flag=wx.EXPAND)
-        self.__sizer.Add(self.__profilePanel,      flag=wx.EXPAND)
+        self.__sizer.Add(self.__controlPanel,      flag=wx.EXPAND)
         self.__sizer.Add(self.__listLocContainer,  flag=wx.EXPAND)
         self.__sizer.Add(self.__canvasContainer,   flag=wx.EXPAND,
                          proportion=1)
@@ -318,6 +332,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         def modeChange(*a):
             self.__layout()
         profile.addListener('mode', self._name, modeChange)
+
+
+    def toggleControlPanel(self, *a):
+        self.__controlPanel.toggle()
 
 
     def toggleImageList(self, *a):
