@@ -80,7 +80,6 @@ class TogglePanel(wx.Panel):
         self.__toggleButton.Bind(wx.EVT_BUTTON, self.toggle)
 
         self.SetSizer(self.__sizer)
-        self.Layout()
 
         if not initialState:
             self.toggle()
@@ -96,6 +95,8 @@ class TogglePanel(wx.Panel):
         if isShown: self.__toggleButton.SetLabel(self.__showLabel)
         else:       self.__toggleButton.SetLabel(self.__hideLabel)
 
+        self.__contentPanel.Layout()
+        self.Layout()
         self.GetParent().Layout()
 
     

@@ -323,6 +323,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             
         self.__profilePanel.SetSizer(sizer)
         self.__profilePanel.Layout()
+        self.__controlPanel.Layout()
         self.__layout()
 
         # Profile mode changes may result in the 
