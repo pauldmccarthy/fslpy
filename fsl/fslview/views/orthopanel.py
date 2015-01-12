@@ -289,7 +289,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Do nothing if the destroyed window is not
         # this panel (i.e. it is a child of this panel)
-        if ev.GetEventObject() != self: return
+        if ev.GetEventObject() is not self:
+            return
 
         self._displayCtx.removeListener('location',      self._name)
         self._displayCtx.removeListener('bounds',        self._name)

@@ -64,6 +64,8 @@ class ListItemWidget(wx.Panel):
         
     def _onDestroy(self, ev):
         ev.Skip()
+        if ev.GetEventObject() is not self:
+            return
         self.display.removeListener('enabled', self.name)
         self.image  .removeListener('saved',   self.name)
 

@@ -74,6 +74,11 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
             self._selectedImageChanged)
 
         def onDestroy(ev):
+            ev.Skip()
+
+            if ev.GetEventObject() is not self:
+                return
+            
             self._imageList. removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
             self._displayCtx.removeListener('imageOrder',    self._name)
@@ -82,7 +87,6 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
             # a listener on the name of each image
             for image in imageList:
                 image.removeListener('name', self._name)
-            ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

@@ -43,6 +43,11 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
         # this SliceCanvas object, so we do the right
         # thing and remove our listeners when we die
         def onDestroy(ev):
+            ev.Skip()
+
+            if ev.GetEventObject() is not self:
+                return
+
             self.imageList .removeListener('images',     self.name)
             self.displayCtx.removeListener('bounds',     self.name)
             self.displayCtx.removeListener('imageOrder', self.name)
@@ -60,7 +65,6 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
                 disp .removeListener('resolution',    self.name)
                 disp .removeListener('cmap',          self.name)
                 disp .removeListener('volume',        self.name)
-            ev.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

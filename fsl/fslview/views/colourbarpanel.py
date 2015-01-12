@@ -72,6 +72,10 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """Removes all registered listeners from the image list, display
         context, and individual images.
         """
+
+        ev.Skip()
+        if ev.GetEventObject() is not self:
+            return
         
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)

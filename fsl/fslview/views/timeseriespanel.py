@@ -73,6 +73,10 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
         def onDestroy(ev):
             ev.Skip()
+
+            if ev.GetEventObject() is not self:
+                return
+            
             self._displayCtx.removeListener('selectedImage', self._name)
             self._displayCtx.removeListener('location',      self._name)
             self._displayCtx.removeListener('volume',        self._name)
