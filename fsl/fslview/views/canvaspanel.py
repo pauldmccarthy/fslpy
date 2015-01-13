@@ -30,7 +30,7 @@ import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.locationpanel     as locationpanel
-import fsl.fslview.widgets.togglepanel        as togglepanel
+import fsl.fslview.widgets.togglepanel        as togp
 import                                           colourbarpanel
 
 
@@ -205,12 +205,17 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             # Disable syncLocation, syncImageOrder, and syncVolume somehow
             pass
 
-        self.__controlPanel        = togglepanel.TogglePanel(
-            self, initialState=False)
+        self.__controlPanel        = togp.TogglePanel(self,
+                                                      initialState=False)
         self.__controlContentPanel = self.__controlPanel.getContentPanel()
         self.__canvasContainer     = wx.Panel(self)
         self.__listLocContainer    = wx.Panel(self)
         self.__dispSetContainer    = wx.Panel(self)
+
+        def onToggle(ev):
+            self.Layout()
+
+        self.__controlPanel.Bind(togp.EVT_TOGGLEPANEL_EVENT, onToggle)
 
         import fsl.fslview.layouts as layouts
 
