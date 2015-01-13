@@ -202,7 +202,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
 
         # default to showing the entire slice range
-        self.zrange.x = displayCtx.bounds.getRange(self.zax)
+        zmin, zmax = displayCtx.bounds.getRange(self.zax)
+        self.zrange.xmin = zmin
+        self.zrange.xmax = zmax
+        self.zrange.x    = zmin, zmax
 
         self._slicePropsChanged()
 
@@ -242,9 +245,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         
         self._calcNumSlices()
-        self._updateDisplayBounds()
         self._genSliceLocations()
         self._zPosChanged()
+        self._updateDisplayBounds()
         self._refresh()
 
 
@@ -321,6 +324,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         Regenerates slice locations for all images, and calls the super
         implementation.
         """
+        self._updateZAxisProperties()
         self._genSliceLocations()
         slicecanvas.SliceCanvas._imageListChanged(self, *a)
 
@@ -334,27 +338,28 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         transformation matrices being changed).
 
         """
-        newZRange = self.displayCtx.bounds.getRange(self.zax)
-        newZGap   = self.sliceSpacing
 
-        # Pick a sensible default for the
-        # slice spacing - the smallest pixdim
-        # across all images in the list
-        if len(self.imageList) > 0:
-            newZGap = min([i.pixdim[self.zax] for i in self.imageList])
-
-        # Changing the zrange/sliceSpacing properties will, in most cases,
-        # trigger a call to _slicePropsChanged. But for images which have the
-        # same range across more than one dimension, the call might not
-        # happen. So we do a check and, if the dimension ranges are the same,
-        # manually call _slicePropsChanged.  Bringing out the ugly side of
-        # event driven programming.
-        if self.zrange.x == newZRange and self.sliceSpacing == newZGap:
-            self._slicePropsChanged()
+        if len(self.imageList) == 0:
+            self.setConstraint('zrange', 'minDistance', 0)
+            self.zrange.x     = (0, 0)
+            self.sliceSpacing = 0
         else:
-            self.zrange.x     = newZRange
-            self.sliceSpacing = newZGap
-            self.setConstraint('zrange', 'minDistance', newZGap)
+
+            # Pick a sensible default for the
+            # slice spacing - the smallest pixdim
+            # across all images in the list
+            newZGap   = min([i.pixdim[self.zax] for i in self.imageList])
+            newZRange = self.displayCtx.bounds.getRange(self.zax)
+
+            # Changing the zrange/sliceSpacing properties will, in most cases,
+            # trigger a call to _slicePropsChanged. But for images which have
+            # the same range across more than one dimension, the call might not
+            # happen. So we do a check and, if the dimension ranges are the
+            # same,  manually call _slicePropsChanged.  Bringing out the ugly
+            # side of event driven programming.
+            self.zrange.setLimits(0, *newZRange)
+            self.setConstraint('zrange',       'minDistance', newZGap)
+            self.setConstraint('sliceSpacing', 'minval',      newZGap)
 
 
     def _imageBoundsChanged(self, *a):
@@ -366,21 +371,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
 
         slicecanvas.SliceCanvas._imageBoundsChanged(self)
-
-        zmin,    zmax    = self.displayCtx.bounds.getRange(self.zax)
-        oldzmin, oldzmax = self.zrange.getLimits(0)
-        
-        self.zrange.setLimits(0, zmin, zmax)
-
-        # if the old limits were (0, 0) we assume
-        # that the image list was empty, and the
-        # zrange needs to be reset. 
-        if (oldzmin == 0) and (oldzmax == 0):
-            self.zrange.x = (zmin, zmax)
-
-        if len(self.imageList) > 0:
-            zgap = min([i.pixdim[self.zax] for i in self.imageList])
-            self.setConstraint('zrange', 'minDistance', zgap)
 
         self._updateZAxisProperties()
         self._calcNumSlices()

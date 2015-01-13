@@ -87,6 +87,12 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._displayCtx.addListener('location',
                                      self._name,
                                      self._onLocationChange)
+        self._displayCtx.addListener('selectedImage',
+                                     self._name,
+                                     self._selectedImageChanged)
+        self._imageList.addListener('images',
+                                     self._name,
+                                     self._selectedImageChanged) 
 
         # And remove that listener when
         # this panel is destroyed
@@ -120,6 +126,55 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self.Bind(wx.EVT_SIZE, self._onResize)
 
         self.Layout()
+
+        self._selectedImageChanged()
+
+
+    def _selectedImageChanged(self, *a):
+        """Called when the selected image changes.
+
+        Registers a listener on the
+        :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform` property
+        associated with the selected image, so that the
+        :meth:`_transformChanged` method will be called on ``transform``
+        changes.
+        """
+
+        image = self._displayCtx.getSelectedImage()
+
+        for img in self._imageList:
+
+            display = self._displayCtx.getDisplayProperties(img)
+
+            display.removeListener('transform', self._name)
+
+            if img == image:
+                display.addListener('transform',
+                                    self._name,
+                                    self._transformChanged)
+
+        self._transformChanged()
+
+
+    def _transformChanged(self, *a):
+        """Called when the transform for the currently selected image changes.
+
+        Updates the ``sliceSpacing`` and ``zrange`` properties to values
+        sensible to the new image display space.
+        """
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        loBounds, hiBounds = display.getDisplayBounds()
+
+        if display.transform == 'id':
+            self.sliceSpacing = 1
+            self.zrange.x     = (0, image.shape[self.zax] - 1)
+        else:
+            self.sliceSpacing = image.pixdim[self.zax]
+            self.zrange.x     = (loBounds[self.zax], hiBounds[self.zax])
+
+        self._onResize()
 
 
     def getCanvas(self):
