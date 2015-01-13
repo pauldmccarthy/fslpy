@@ -29,8 +29,8 @@ import fslview_parseargs
 import fsl.utils.layout          as fsllayout
 import fsl.utils.colourbarbitmap as cbarbitmap
 import fsl.utils.textbitmap      as textbitmap
-import fsl.data.strings          as strings 
-import fsl.data.image            as fslimage
+import fsl.data.strings          as strings
+import fsl.data.constants        as constants
 
 
 if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
@@ -72,7 +72,7 @@ def buildLabelBitmaps(imageList,
         yorient = image.getWorldOrientation(1)
         zorient = image.getWorldOrientation(2)
 
-    if fslimage.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
+    if constants.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
         fgColour = 'red'
 
     xlo = strings.anatomy['Image', 'lowshort',  xorient]

@@ -59,7 +59,7 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     if not isinstance(canvas, CanvasPanel):
         return
 
-    width, height = canvas.GetClientSize().Get()
+    width, height = canvas.getCanvasPanel().GetClientSize().Get()
 
     argv  = []
     argv += ['--outfile', filename]
@@ -76,7 +76,7 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     if not canvas.showCursor:
         argv += ['--hideCursor']
 
-    if canvas.showColourBar:
+    if canvas.colourBarIsShown():
         argv += ['--showColourBar']
         argv += ['--colourBarLocation']
         argv += [canvas.colourBarLocation]
@@ -127,7 +127,11 @@ def _takeScreenShot(imageList, displayCtx, canvas):
 
         fname = image.imageFile
 
-        # No support for in-memory images just yet
+        # No support for in-memory images just yet.
+        # 
+        # TODO Popup a message telling the
+        # user they must save images before
+        # the screenshot can proceed
         if fname is None:
             continue
 
@@ -363,6 +367,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar
         self.__layout()
+
+    def colourBarIsShown(self):
+        return self.__showColourBar
 
     def screenshot(self, *a):
         _takeScreenShot(self._imageList, self._displayCtx, self)
