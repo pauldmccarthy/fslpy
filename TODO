@@ -6,39 +6,36 @@ have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
-High priority:
+Selections: Experiment with using a transparent overlay instead of squares
+around selected voxels. 
+
+Related - an 'Annotation' image type that allows the user to highlight regions
+in different colours.
 
 
-  Add a setting on HasProperties instances to allow validation of all
-  properties to be disabled for instances which don't need it (see comments at
-  properties.py:264).  Also, redo the way that global HasProps validation
-  works - it is currently performed by the PropertyBase instance, which is
-  hacky, I think.
-
-
-* 
 * Things to do in props package
-** Add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
-Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
-** Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
 ** Remove PropertyOwner metaclass?
 I think that all the work performed by the PropertyOwner metaclass can be done in HasProps.__new__, and HasProps.addProperty.
+** DONE Add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
+Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
+** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 * WX Bugs
 *** Floating panels get moved about when opening a new floating panel.
 *** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 *** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** LightBox - updated nrows/ncols when image list changes
+** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
-** ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
 
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE LightBox - updated nrows/ncols when image list changes
+** DONE ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** DONE OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
 ** DONE OrthoPanel - need to refresh slice canvases when view changes
 ** DONE Lightbox scrollbar positioned incorrectly - goes over location panel
@@ -286,3 +283,4 @@ on the image display object.
 ** (Ged).    Intensity contour lines (cool idea!).
 ** (Ged).    First/third angle orthographic projection. 
 ** (Paul).   Image groups - may make life easier for grouping images which belong together for analysis purposes.
+** (Paul).   An integrated python shell with images available in-memory to manipulate.
