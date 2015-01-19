@@ -97,6 +97,13 @@ def getColourMaps():
     return  _cmaps.keys()
 
 
+def isRegistered(cmapName):
+    """Returns ``True`` if the specified colourmap is registered, ``False``
+    otherwise. 
+    """ 
+    return cmapName in _cmaps
+
+
 def isInstalled(cmapName):
     """Returns ``True`` if the specified colourmap is installed, ``False``
     otherwise.  A ``KeyError`` is raised if the colourmap is not registered.
@@ -127,12 +134,14 @@ def installColourMap(cmapName):
 
     destfile = op.join(op.dirname(__file__),
                        'colourmaps',
-                       '{}.cmap'.forma(cmapName))
+                       '{}.cmap'.format(cmapName))
 
     # destination file already exists
     if op.exists(destfile):
         raise RuntimeError('Destionation file for colour map {} already '
                            'exists: {}'.format(cmapName, destfile))
+
+    log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
         
     shutil.copyfile(cmap.cmfile, destfile)
 

@@ -16,6 +16,20 @@ messages = TypeDict({
     'imageio.loadImage.decompress' : '{} is a large file ({} MB) - '
                                      'decompressing to {}, to allow memory '
                                      'mapping...',
+
+    'actions.loadcolourmap.loadcmap'    : 'Open colour map file',
+    'actions.loadcolourmap.namecmap'    : 'Enter a name for the colour map - '
+                                          'please use only letters, numbers, '
+                                          'and underscores.',
+    'actions.loadcolourmap.installcmap' : 'Do you want to install '
+                                          'this colour map permanently?',
+    'actions.loadcolourmap.alreadyinstalled' : 'A colour map with that name '
+                                               'already exists - choose a '
+                                               'different name.',
+    'actions.loadcolourmap.invalidname'      : 'Please use only letters, '
+                                               'numbers, and underscores.',
+    'actions.loadcolourmap.installerror'     : 'An error occurred while '
+                                               'installing the colour map', 
 })
 
 
@@ -207,8 +221,10 @@ anatomy = TypeDict({
     ('Image', 'highshort', constants.ORIENT_S2I)               : 'I',
     ('Image', 'highshort', constants.ORIENT_UNKNOWN)           : '?',
     ('Image', 'space',     constants.NIFTI_XFORM_UNKNOWN)      : 'Unknown',
-    ('Image', 'space',     constants.NIFTI_XFORM_SCANNER_ANAT) : 'Scanner anatomical',
-    ('Image', 'space',     constants.NIFTI_XFORM_ALIGNED_ANAT) : 'Aligned anatomical',
+    ('Image', 'space',     constants.NIFTI_XFORM_SCANNER_ANAT) : 'Scanner '
+                                                                 'anatomical',
+    ('Image', 'space',     constants.NIFTI_XFORM_ALIGNED_ANAT) : 'Aligned '
+                                                                 'anatomical',
     ('Image', 'space',     constants.NIFTI_XFORM_TALAIRACH)    : 'Talairach', 
     ('Image', 'space',     constants.NIFTI_XFORM_MNI_152)      : 'MNI152',
 })
