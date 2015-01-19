@@ -68,6 +68,7 @@ class Image(props.HasProperties):
     imageType = props.Choice(
         collections.OrderedDict([
             ('volume', '3D/4D volume'),
+            ('mask',   '3D/4D mask image'),
             ('tensor', '3-direction tensor image')]),
         default='volume')
     """This property defines the type of image data."""

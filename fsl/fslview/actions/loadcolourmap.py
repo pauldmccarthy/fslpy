@@ -8,10 +8,10 @@
 import logging
 import os.path as op
 
-import fsl.data.strings           as strings
-import fsl.fslview.actions        as actions
-import fsl.fslview.colourmaps     as fslcmap
-import fsl.fslview.displaycontext as displaycontext
+import fsl.data.strings                        as strings
+import fsl.fslview.actions                     as actions
+import fsl.fslview.colourmaps                  as fslcmap
+import fsl.fslview.displaycontext.imagedisplay as imagedisplay
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class LoadColourMapAction(actions.Action):
         # update the ImageDisplay colour map property ...
         #
         # for future images
-        displaycontext.ImageDisplay.cmap.setConstraint(
+        imagedisplay.ImageDisplay.cmap.setConstraint(
             None,
             'cmapNames',
             fslcmap.getColourMaps())
@@ -81,7 +81,10 @@ class LoadColourMapAction(actions.Action):
         # and for images which are already loaded
         for image in self._imageList:
             display = self._displayCtx.getDisplayProperties(image)
-            display.setConstraint('cmap', 'cmapNames', fslcmap.getColourMaps())
+            if isinstance(display, imagedisplay.ImageDisplay):
+                display.setConstraint('cmap',
+                                      'cmapNames',
+                                      fslcmap.getColourMaps())
 
         # ask the user if they want to install
         # the colour map for future use

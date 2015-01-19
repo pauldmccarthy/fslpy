@@ -14,12 +14,13 @@ import fsl.utils.typedict  as td
 
 import fsl.data.strings as strings
 
-from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
-from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
-from fsl.fslview.views.canvaspanel         import CanvasPanel
-from fsl.fslview.views.orthopanel          import OrthoPanel
-from fsl.fslview.views.lightboxpanel       import LightBoxPanel
-from fsl.fslview.displaycontext            import ImageDisplay
+from fsl.fslview.profiles.orthoviewprofile   import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
+from fsl.fslview.views.canvaspanel           import CanvasPanel
+from fsl.fslview.views.orthopanel            import OrthoPanel
+from fsl.fslview.views.lightboxpanel         import LightBoxPanel
+from fsl.fslview.displaycontext.imagedisplay import ImageDisplay
+
 
 def widget(name, labelCls, *args, **kwargs):
     return props.Widget(name,

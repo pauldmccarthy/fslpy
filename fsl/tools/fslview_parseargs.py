@@ -9,18 +9,16 @@ which specify a scene to be displayed in FSLView.  This logic is shared
 between fslview.py and render.py.
 """
 
-import logging
-log = logging.getLogger(__name__)
-
 import sys
 import os.path as op
 import argparse
 
 import props
-import fsl.data.image             as fslimage
-import fsl.data.imageio           as iio
-import fsl.utils.transform        as transform 
-import fsl.fslview.displaycontext as displaycontext
+import fsl.data.image                          as fslimage
+import fsl.data.imageio                        as iio
+import fsl.utils.transform                     as transform 
+import fsl.fslview.displaycontext              as displaycontext
+import fsl.fslview.displaycontext.imagedisplay as imagedisplay
 
 
 def _configMainParser(mainParser):
@@ -140,7 +138,7 @@ def _configImageParser(imgParser):
 
     # As above - labels and help text are embedded in the
     # ImageDisplay class
-    props.addParserArguments(displaycontext.ImageDisplay,
+    props.addParserArguments(imagedisplay.ImageDisplay,
                              imgParser,
                              cliProps=imgOpts,
                              shortArgs=dict(zip(imgOpts, imgArgs))) 
