@@ -458,9 +458,10 @@ class GLImage(object):
         """
 
         display = self.display
+        opts    = display.getDisplayOpts()
 
-        imin = display.displayRange[0]
-        imax = display.displayRange[1]
+        imin = opts.displayRange[0]
+        imax = opts.displayRange[1]
 
         # This transformation is used to transform voxel values
         # from their native range to the range [0.0, 1.0], which
@@ -478,13 +479,13 @@ class GLImage(object):
         # spanning the entire range of the image
         # colour map
         colourRange     = np.linspace(0.0, 1.0, colourResolution)
-        colourmap       = display.cmap(colourRange)
+        colourmap       = opts   .cmap(colourRange)
         colourmap[:, 3] = display.alpha
 
         # Make out-of-range values transparent
         # if clipping is enabled 
-        if display.clipLow:  colourmap[ 0, 3] = 0.0
-        if display.clipHigh: colourmap[-1, 3] = 0.0 
+        if opts.clipLow:  colourmap[ 0, 3] = 0.0
+        if opts.clipHigh: colourmap[-1, 3] = 0.0 
 
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
@@ -539,15 +540,16 @@ class GLImage(object):
 
         image   = self.image
         display = self.display
+        opts    = display.getDisplayOpts()
         lnrName = 'GlImage_{}'.format(id(self))
 
         display.addListener('transform',       lnrName, vertexUpdate)
         display.addListener('interpolation',   lnrName, imageUpdate)
         display.addListener('alpha',           lnrName, colourUpdate)
-        display.addListener('displayRange',    lnrName, colourUpdate)
-        display.addListener('clipLow',         lnrName, colourUpdate)
-        display.addListener('clipHigh',        lnrName, colourUpdate)
-        display.addListener('cmap',            lnrName, colourUpdate)
+        opts   .addListener('displayRange',    lnrName, colourUpdate)
+        opts   .addListener('clipLow',         lnrName, colourUpdate)
+        opts   .addListener('clipHigh',        lnrName, colourUpdate)
+        opts   .addListener('cmap',            lnrName, colourUpdate)
         display.addListener('resolution',      lnrName, imageUpdate)
         display.addListener('volume',          lnrName, imageUpdate)
         image  .addListener('data',            lnrName, imageUpdate)

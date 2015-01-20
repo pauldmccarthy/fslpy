@@ -6,6 +6,9 @@
 #
 
 import sys
+import logging
+
+import numpy               as np
 
 import props
 
@@ -13,19 +16,33 @@ import fsl.data.image      as fslimage
 import fsl.data.strings    as strings
 import fsl.utils.transform as transform
 
+import volumeopts
+import maskopts
 
-def _makeDisplay(image, parent):
-    
-    import imagedisplay
-    # import maskdisplay
-    
-    if image.imageType == 'volume':
-        return imagedisplay.ImageDisplay(image, parent)
-    # elif image.type == 'mask': return maskdisplay.MaskDisplay(image, parent)
+
+log = logging.getLogger(__name__)
+
+
+_IMAGETYPE_OPTS_MAP = {
+    'volume' : volumeopts.VolumeOpts,
+    'mask'   : maskopts.  MaskOpts
+}
 
 
 class Display(props.SyncableHasProperties):
     """
+    """
+
+    
+    name = fslimage.Image.name
+    """The image name.  This property is bound to the
+    :attr:`~fsl.data.image.Image.name` property.
+    """
+
+    
+    imageType = fslimage.Image.imageType
+    """The image data type. This property is bound to the
+    :attr:`~fsl.data.image.Image.imageType` property.
     """
 
     
@@ -53,9 +70,9 @@ class Display(props.SyncableHasProperties):
     
     transform = props.Choice(
         ('affine', 'pixdim', 'id'),
-        labels=[strings.choices['ImageDisplay.transform.affine'],
-                strings.choices['ImageDisplay.transform.pixdim'],
-                strings.choices['ImageDisplay.transform.id']],
+        labels=[strings.choices['Display.transform.affine'],
+                strings.choices['Display.transform.pixdim'],
+                strings.choices['Display.transform.id']],
         default='pixdim')
     """This property defines how the image should be transformd into the display
     coordinate system.
@@ -74,24 +91,12 @@ class Display(props.SyncableHasProperties):
 
     interpolation = props.Choice(
         ('none', 'linear', 'spline'),
-        labels=[strings.choices['ImageDisplay.interpolation.none'],
-                strings.choices['ImageDisplay.interpolation.linear'],
-                strings.choices['ImageDisplay.interpolation.spline']])
+        labels=[strings.choices['Display.interpolation.none'],
+                strings.choices['Display.interpolation.linear'],
+                strings.choices['Display.interpolation.spline']])
     """How the value shown at a real world location is derived from the
     corresponding voxel value(s). 'No interpolation' is equivalent to nearest
     neighbour interpolation.
-    """
-
-    
-    name = fslimage.Image.name
-    """The image name.  This property is bound to the
-    :attr:`~fsl.data.image.Image.name` property.
-    """
-
-    
-    imageType = fslimage.Image.imageType
-    """The image data type. This property is bound to the
-    :attr:`~fsl.data.image.Image.imageType` property.
     """
 
         
@@ -102,7 +107,7 @@ class Display(props.SyncableHasProperties):
 
 
     def __init__(self, image, parent=None):
-        """Create an :class:`ImageDisplay` for the specified image.
+        """Create a :class:`Display` for the specified image.
 
         :arg image: A :class:`~fsl.data.image.Image` object.
 
@@ -110,9 +115,10 @@ class Display(props.SyncableHasProperties):
         """
         self.image = image
 
-        # bind self.name to # image.name, so changes
+        # bind self.name to image.name, so changes
         # in one are propagated to the other
-        self.bindProps('name', image)
+        self.bindProps('name',      image)
+        self.bindProps('imageType', image)
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
@@ -131,10 +137,16 @@ class Display(props.SyncableHasProperties):
         # the transform property changes
         self.addListener(
             'transform',
-            'ImageDisplay_{}'.format(id(self)),
-            self._transformChanged)
+            'Display_{}'.format(id(self)),
+            self.__transformChanged)
 
-        self._transformChanged()
+        self.addListener(
+            'imageType',
+            'Display_{}'.format(id(self)),
+            self.__imageTypeChanged) 
+
+        self.__transformChanged()
+        
         # When the transform property changes,
         # the display<->* transformation matrices
         # are recalculated. References to the
@@ -149,6 +161,10 @@ class Display(props.SyncableHasProperties):
         self._oldDisplayToVoxMat   = self.displayToVoxMat
         self._oldWorldToDisplayMat = self.worldToDisplayMat
         self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        # limit resolution to the image dimensions
+        self.resolution = min(image.pixdim[:3])
+        self.setConstraint('resolution',   'minval', self.resolution)
 
         # Call the super constructor after our own
         # initialisation, in case the provided parent
@@ -170,6 +186,116 @@ class Display(props.SyncableHasProperties):
                       'resolution',
                       'transform',
                       'imageType'])
+
+        self.__displayOpts = None
+        self.__imageTypeChanged()
+
+        
+    def getDisplayBounds(self):
+        """Calculates and returns the min/max values of a 3D bounding box,
+        in the display coordinate system, which is big enough to contain
+        the image associated with this :class:`ImageDisplay` instance.
+
+        The coordinate system in which the bounding box is defined is
+        determined by the current value of the :attr:`transform` property.
+
+        A tuple containing two values is returned, with the first value
+        a sequence of three low bounds, and the second value a sequence
+        of three high bounds.
+        """
+        return transform.axisBounds(self.image.shape[:3], self.voxToDisplayMat)
+
+    
+    def getDisplayOpts(self):
+        """
+        """
+
+        if (self.__displayOpts is None) or \
+           (type(self.__displayOpts) != _IMAGETYPE_OPTS_MAP[self.imageType]):
+            
+            self.__displayOpts = self.__makeDisplayOpts()
+            
+        return self.__displayOpts
+
+
+    def __makeDisplayOpts(self):
+        """
+        """
+        
+        if self.getParent() is None:
+            oParent = None
+        else:
+            oParent = self.getParent().getDisplayOpts()
+
+        optType = _IMAGETYPE_OPTS_MAP[self.imageType]
+        log.debug('Creating DisplayOpts for image {}: {}'.format(
+            self.name,
+            optType.__name__))
+        
+        return optType(self.image, oParent)
+
+    
+    def __imageTypeChanged(self, *a):
+        """
+        """
+
+        # make sure that the display
+        # options instance is up to date
+        self.getDisplayOpts()
+
+        
+    def __transformChanged(self, *a):
+        """Called when the :attr:`transform` property is changed.
+
+        Generates transformation matrices for transforming between voxel and
+        display coordinate space.
+
+        If :attr:`transform` is set to ``affine``, the :attr:`interpolation`
+        property is changed to ``spline. Otherwise, it is set to ``none``.
+        """
+
+        # Store references to the previous display related
+        # transformation matrices (see comments in __init__)
+        self._oldVoxToDisplayMat   = self.voxToDisplayMat
+        self._oldDisplayToVoxMat   = self.displayToVoxMat
+        self._oldWorldToDisplayMat = self.worldToDisplayMat
+        self._oldDisplayToWorldMat = self.displayToWorldMat
+
+        # The transform property defines the way
+        # in which image voxel coordinates map
+        # to the display coordinate system
+        if self.transform == 'id':
+            pixdim          = [1.0, 1.0, 1.0]
+            voxToDisplayMat = np.eye(4)
+            
+        elif self.transform == 'pixdim':
+            pixdim          = self.image.pixdim
+            voxToDisplayMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
+            
+        elif self.transform == 'affine':
+            voxToDisplayMat = self.voxToWorldMat
+
+        # for pixdim/identity transformations, we want the world
+        # location (0, 0, 0) to map to voxel location (0, 0, 0)
+        if self.transform in ('id', 'pixdim'):
+            for i in range(3):
+                voxToDisplayMat[3, i] =  pixdim[i] * 0.5
+
+        # Transformation matrices for moving between the voxel
+        # coordinate system and the display coordinate system
+        self.voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
+        self.displayToVoxMat = transform.invert(self.voxToDisplayMat)
+
+        # Matrices for moving between the display coordinate
+        # system, and the image world coordinate system
+        self.displayToWorldMat = transform.concat(self.displayToVoxMat,
+                                                  self.voxToWorldMat)
+        self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
+
+        # When transform is changed to 'affine', enable interpolation
+        # and, when changed to 'pixdim' or 'id', disable interpolation
+        if self.transform == 'affine': self.interpolation = 'spline'
+        else:                          self.interpolation = 'none'
         
 
 class DisplayContext(props.SyncableHasProperties):
@@ -258,7 +384,7 @@ class DisplayContext(props.SyncableHasProperties):
                               self._name,
                               self._volumeChanged)
 
-
+        
     def getDisplayProperties(self, image):
         """Returns the display property object (e.g. an :class:`ImageDisplay`
         object) for the specified image (or image index).
@@ -279,7 +405,7 @@ class DisplayContext(props.SyncableHasProperties):
             else:
                 dParent = self.getParent().getDisplayProperties(image)
 
-            display = _makeDisplay(image, dParent)
+            display = Display(image, dParent)
             self._imageDisplays[image] = display
         
         return display

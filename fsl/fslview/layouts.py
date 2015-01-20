@@ -19,7 +19,9 @@ from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
 from fsl.fslview.views.canvaspanel           import CanvasPanel
 from fsl.fslview.views.orthopanel            import OrthoPanel
 from fsl.fslview.views.lightboxpanel         import LightBoxPanel
-from fsl.fslview.displaycontext.imagedisplay import ImageDisplay
+from fsl.fslview.displaycontext              import Display
+from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
+from fsl.fslview.displaycontext.maskopts     import MaskOpts
 
 
 def widget(name, labelCls, *args, **kwargs):
@@ -125,18 +127,25 @@ LightBoxPanelLayout = props.VGroup((
                   widget('showGridLines',  LightBoxPanel)))))
 
 
-ImageDisplayLayout = props.VGroup((
-    widget('name',          ImageDisplay),
-    widget('enabled',       ImageDisplay),
-    widget('imageType',     ImageDisplay),
-    widget('cmap',          ImageDisplay),
-    widget('clipLow',       ImageDisplay),
-    widget('clipHigh',      ImageDisplay),
-    widget('displayRange',  ImageDisplay),
-    widget('alpha',         ImageDisplay),
-    widget('resolution',    ImageDisplay),
-    widget('transform',     ImageDisplay),
-    widget('interpolation', ImageDisplay)))
+DisplayLayout = props.VGroup((
+    widget('name',          Display),
+    widget('imageType',     Display),
+    widget('enabled',       Display),
+    widget('resolution',    Display),
+    widget('transform',     Display),
+    widget('interpolation', Display),
+    widget('alpha',         Display)))
+
+
+VolumeOptsLayout = props.VGroup((
+    widget('cmap',          VolumeOpts),
+    widget('clipLow',       VolumeOpts),
+    widget('clipHigh',      VolumeOpts),
+    widget('displayRange',  VolumeOpts)))
+
+
+MaskOptsLayout = props.VGroup((
+    widget('colour', MaskOpts), ))
 
 
 layouts = td.TypeDict({
@@ -149,6 +158,8 @@ layouts = td.TypeDict({
     ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
     ('OrthoPanel',       'props')   : OrthoPanelLayout,
     ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
-    
-    'ImageDisplay' : ImageDisplayLayout,
+
+    'Display'    : DisplayLayout,
+    'VolumeOpts' : VolumeOptsLayout,
+    'MaskOpts'   : MaskOptsLayout,
 })

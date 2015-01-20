@@ -123,19 +123,22 @@ properties = TypeDict({
     'OrthoEditProfile.searchRadius'   : 'Limit search to radius (mm)',
 
 
-    'ImageDisplay.name'           : 'Image name',
-    'ImageDisplay.enabled'        : 'Enabled',
-    'ImageDisplay.displayRange'   : 'Display range',
-    'ImageDisplay.alpha'          : 'Opacity',
-    'ImageDisplay.clipLow'        : 'Low clipping',
-    'ImageDisplay.clipHigh'       : 'High clipping',
-    'ImageDisplay.interpolation'  : 'Interpolation',
-    'ImageDisplay.resolution'     : 'Resolution',
-    'ImageDisplay.volume'         : 'Volume',
-    'ImageDisplay.syncVolume'     : 'Synchronise volume',
-    'ImageDisplay.transform'      : 'Image transform',
-    'ImageDisplay.imageType'      : 'Image data type',
-    'ImageDisplay.cmap'           : 'Colour map',
+    'Display.name'              : 'Image name',
+    'Display.enabled'           : 'Enabled',
+    'Display.alpha'             : 'Opacity',
+    'Display.interpolation'     : 'Interpolation',
+    'Display.resolution'        : 'Resolution',
+    'Display.volume'            : 'Volume',
+    'Display.syncVolume'        : 'Synchronise volume',
+    'Display.transform'         : 'Image transform',
+    'Display.imageType'         : 'Image data type',
+    
+    'VolumeOpts.displayRange' : 'Display range',
+    'VolumeOpts.clipLow'      : 'Low clipping',
+    'VolumeOpts.clipHigh'     : 'High clipping',
+    'VolumeOpts.cmap'         : 'Colour map',
+
+    'MaskOpts.colour'         : 'Colour',
 })
 
 
@@ -177,16 +180,16 @@ choices = TypeDict({
     'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
     'ColourBarCanvas.labelSide.bottom-right' : 'Bottom / Right', 
 
-    'ImageDisplay.displayRange.min' : 'Min.',
-    'ImageDisplay.displayRange.max' : 'Max.',
+    'VolumeOpts.displayRange.min' : 'Min.',
+    'VolumeOpts.displayRange.max' : 'Max.',
     
-    'ImageDisplay.transform.affine' : 'Use qform/sform transformation matrix',
-    'ImageDisplay.transform.pixdim' : 'Use pixdims only',
-    'ImageDisplay.transform.id'     : 'Do not use qform/sform or pixdims',
+    'Display.transform.affine' : 'Use qform/sform transformation matrix',
+    'Display.transform.pixdim' : 'Use pixdims only',
+    'Display.transform.id'     : 'Do not use qform/sform or pixdims',
 
-    'ImageDisplay.interpolation.none'   : 'No interpolation', 
-    'ImageDisplay.interpolation.linear' : 'Linear interpolation', 
-    'ImageDisplay.interpolation.spline' : 'Spline interpolation', 
+    'Display.interpolation.none'   : 'No interpolation', 
+    'Display.interpolation.linear' : 'Linear interpolation', 
+    'Display.interpolation.spline' : 'Spline interpolation', 
 })
 
 

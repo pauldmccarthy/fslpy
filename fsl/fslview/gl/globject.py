@@ -44,10 +44,12 @@ import fsl.utils.transform as transform
 def createGLObject(image, display):
 
     import fsl.fslview.gl.glimage      as glimage
+    import fsl.fslview.gl.glmask       as glmask
     import fsl.fslview.gl.gltensorline as gltensorline
 
     _objectmap = {
         'volume' : glimage     .GLImage,
+        'mask'   : glmask      .GLMask,
         'tensor' : gltensorline.GLTensorLine
     } 
 

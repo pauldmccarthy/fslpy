@@ -379,12 +379,22 @@ class SliceCanvas(props.HasProperties):
 
             # Called when the GL object representation
             # of the image needs to be re-created
-            def genGLObject(ctx=None, value=None, valid=None, disp=display):
+            def genGLObject(ctx=None,
+                            value=None,
+                            valid=None,
+                            name=None,
+                            disp=display):
                 globj = globject.createGLObject(image, disp)
+                opts  = display.getDisplayOpts()
+
                 image.setAttribute(self.name, globj)
 
                 if globj is not None: globj.init(self.xax, self.yax)
+
+                opts.addGlobalListener(self.name, self._refresh)
+                
                 self._refresh()
+                
             genGLObject()
                 
             image  .addListener('data',          self.name, self._refresh)
@@ -393,11 +403,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('transform',     self.name, self._refresh)
             display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
-            display.addListener('displayRange',  self.name, self._refresh)
-            display.addListener('clipLow',       self.name, self._refresh)
-            display.addListener('clipHigh',      self.name, self._refresh)
             display.addListener('resolution',    self.name, self._refresh)
-            display.addListener('cmap',          self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 
         self._refresh()

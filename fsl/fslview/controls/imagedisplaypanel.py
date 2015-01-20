@@ -19,6 +19,7 @@ import props
 import fsl.fslview.panel as fslpanel
 import imageselectpanel  as imageselect
 
+
 class ImageDisplayPanel(fslpanel.FSLViewPanel):
     """A panel which shows display control options for the currently selected
     image.
@@ -91,12 +92,55 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         import fsl.fslview.layouts as fsllayouts
         
         display      = self._displayCtx.getDisplayProperties(image)
-        displayPanel = props.buildGUI(
-            self,
+        opts         = display.getDisplayOpts()
+        displayPanel = wx.Panel(self)
+        panelSizer   = wx.BoxSizer(wx.VERTICAL)
+
+        displayPanel.SetSizer(panelSizer)
+
+        displayPropPanel = props.buildGUI(
+            displayPanel,
             display,
             view=fsllayouts.layouts[display])
+
+        optPropPanel = props.buildGUI(
+            displayPanel,
+            opts,
+            view=fsllayouts.layouts[opts]) 
+
+        panelSizer.Add(displayPropPanel, flag=wx.EXPAND)
+        panelSizer.Add(optPropPanel,     flag=wx.EXPAND)
+        
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
+
+        image.addListener('imageType', self._name, self._imageTypeChanged)
+        
         return displayPanel
+
+
+    def _imageTypeChanged(self, value, valid, image, name):
+        
+        import fsl.fslview.layouts as fsllayouts
+
+        display      = self._displayCtx.getDisplayProperties(image)
+        opts         = display.getDisplayOpts()
+        displayPanel = self._getDisplayPanel(image)
+        panelSizer   = displayPanel.GetSizer()
+
+        item = panelSizer.GetItem(1).GetWindow()
+        panelSizer.Remove(1)
+        item.Destroy()
+
+        optPropPanel = props.buildGUI(
+            displayPanel,
+            opts,
+            view=fsllayouts.layouts[opts])
+
+        panelSizer.Add(optPropPanel, flag=wx.EXPAND)
+
+        displayPanel.Layout()
+        self.Layout()
+        self.GetParent().Layout()
 
     
     def _getDisplayPanel(self, image):

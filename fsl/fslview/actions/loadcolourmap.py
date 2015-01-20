@@ -8,12 +8,18 @@
 import logging
 import os.path as op
 
-import fsl.data.strings                        as strings
-import fsl.fslview.actions                     as actions
-import fsl.fslview.colourmaps                  as fslcmap
-import fsl.fslview.displaycontext.imagedisplay as imagedisplay
+import fsl.data.strings                      as strings
+import fsl.fslview.actions                   as actions
+import fsl.fslview.colourmaps                as fslcmap
+import fsl.fslview.displaycontext.volumeopts as volumeopts
+
+
+# TODO You will need to patch ColourMap instances
+# for any new display option types
+
 
 log = logging.getLogger(__name__)
+
 
 _stringID = 'actions.loadcolourmap.'
 
@@ -70,21 +76,22 @@ class LoadColourMapAction(actions.Action):
         # register the selected colour map file
         fslcmap.registerColourMap(cmapFile, cmapName)
 
-        # update the ImageDisplay colour map property ...
+        # update the VolumeOpts colour map property ...
         #
         # for future images
-        imagedisplay.ImageDisplay.cmap.setConstraint(
+        volumeopts.VolumeOpts.cmap.setConstraint(
             None,
             'cmapNames',
             fslcmap.getColourMaps())
 
-        # and for images which are already loaded
+        # and for any existing VolumeOpts instances
         for image in self._imageList:
             display = self._displayCtx.getDisplayProperties(image)
-            if isinstance(display, imagedisplay.ImageDisplay):
-                display.setConstraint('cmap',
-                                      'cmapNames',
-                                      fslcmap.getColourMaps())
+            opts    = display.getDisplayOpts()
+            if isinstance(opts, volumeopts.VolumeOpts):
+                opts.setConstraint('cmap',
+                                   'cmapNames',
+                                   fslcmap.getColourMaps())
 
         # ask the user if they want to install
         # the colour map for future use

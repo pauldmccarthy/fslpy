@@ -14,11 +14,11 @@ import os.path as op
 import argparse
 
 import props
-import fsl.data.image                          as fslimage
-import fsl.data.imageio                        as iio
-import fsl.utils.transform                     as transform 
-import fsl.fslview.displaycontext              as displaycontext
-import fsl.fslview.displaycontext.imagedisplay as imagedisplay
+import fsl.data.image             as fslimage
+import fsl.data.imageio           as iio
+import fsl.utils.transform        as transform 
+import fsl.fslview.displaycontext as displaycontext
+
 
 
 def _configMainParser(mainParser):
@@ -123,22 +123,18 @@ def _configMainParser(mainParser):
 def _configImageParser(imgParser):
 
     imgOpts = ['alpha',
-               'clipLow',
-               'clipHigh',
                'name',
-               'displayRange',
                'interpolation',
                'resolution',
                'transform',
                'imageType',
-               'cmap',
                'volume']
-    imgArgs = ['a', 'cl', 'ch', 'n', 'dr', 'int',
-               'vr', 'tf', 'it', 'cm', 'vol']
+    imgArgs = ['a', 'n',  'int',
+               'vr', 'tf', 'it', 'vol']
 
     # As above - labels and help text are embedded in the
     # ImageDisplay class
-    props.addParserArguments(imagedisplay.ImageDisplay,
+    props.addParserArguments(displaycontext.Display,
                              imgParser,
                              cliProps=imgOpts,
                              shortArgs=dict(zip(imgOpts, imgArgs))) 

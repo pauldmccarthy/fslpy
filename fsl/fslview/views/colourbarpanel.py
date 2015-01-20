@@ -18,8 +18,9 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.fslview.panel                  as fslpanel
-import fsl.fslview.gl.wxglcolourbarcanvas as cbarcanvas
+import fsl.fslview.panel                      as fslpanel
+import fsl.fslview.displaycontext.volumeopts  as volumeopts
+import fsl.fslview.gl.wxglcolourbarcanvas     as cbarcanvas
 
 
 class ColourBarPanel(fslpanel.FSLViewPanel):
@@ -63,6 +64,8 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self._displayCtx.addListener('selectedImage',
                                      self._name,
                                      self._selectedImageChanged)
+
+        self._selectedImage = None
         
         self._layout()
         self._selectedImageChanged()
@@ -80,12 +83,14 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
-        for i in range(len(self._imageList)):
-            image   = self._imageList[i]
-            display = self._displayCtx.getDisplayProperties(image)
+        image = self._selectedImage
 
-            image.removeListener(  'name',         self._name)
-            display.removeListener('cmap',         self._name)
+        if image is not None:
+            display = self._displayCtx.getDisplayProperties(image)
+            opts    = display.getDisplayOpts()
+
+            image  .removeListener('name',         self._name)
+            opts   .removeListener('cmap',         self._name)
             display.removeListener('displayRange', self._name)
 
             
@@ -107,25 +112,42 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """
         """
 
-        for i in range(len(self._imageList)):
-            
-            image   = self._imageList[i]
-            display = self._displayCtx.getDisplayProperties(image)
+        image = self._selectedImage
 
-            display.removeListener('displayRange', self._name)
-            display.removeListener('cmap',         self._name)
-            image  .removeListener('name',         self._name)
-                
-            if i == self._displayCtx.selectedImage:
+        if image is not None:
+            display = self._displayCtx.getDisplayProperties(image)
+            opts    = display.getDisplayOpts()
+
+            if isinstance(opts, volumeopts.VolumeOpts):
+                display.removeListener('displayRange', self._name)
+                opts   .removeListener('cmap',         self._name)
+                image  .removeListener('name',         self._name)            
+
+        self._selectedImage = self._displayCtx.getSelectedImage()
+        image               = self._selectedImage
+
+        # TODO register on imageType property, in
+        # case the image type changes to a type
+        # that has a display range and colour map
+
+        if image is not None:
+            display = self._displayCtx.getDisplayProperties(image)
+            opts    = display.getDisplayOpts()
+
+            if isinstance(opts, volumeopts.VolumeOpts):
+            
                 display.addListener('displayRange',
                                     self._name,
                                     self._displayRangeChanged)
-                display.addListener('cmap',
+                opts   .addListener('cmap',
                                     self._name,
                                     self._refreshColourBar)
                 image  .addListener('name',
                                     self._name,
-                                    self._imageNameChanged) 
+                                    self._imageNameChanged)
+
+            else:
+                self._selectedImage = None
 
         self._imageNameChanged()
         self._displayRangeChanged()
@@ -135,10 +157,9 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
     def _imageNameChanged(self, *a):
         """
         """
-        if len(self._imageList) > 0:
-            label = self._displayCtx.getSelectedImage().name
-        else:
-            label = ''
+
+        if self._selectedImage is not None: label = self._selectedImage.name
+        else:                               label = ''
         self._cbPanel.label = label
 
         
@@ -146,10 +167,12 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """
         """
 
-        if len(self._imageList) > 0:
+        if self._selectedImage is not None:
+            
             image      = self._displayCtx.getSelectedImage()
             display    = self._displayCtx.getDisplayProperties(image)
-            dmin, dmax = display.displayRange.getRange(0)
+            opts       = display.getDisplayOpts()
+            dmin, dmax = opts.displayRange.getRange(0)
         else:
             dmin, dmax = 0.0, 0.0
 
@@ -160,11 +183,11 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """
         """
 
-        if len(self._imageList) > 0:
-
+        if self._selectedImage is not None:
             image   = self._displayCtx.getSelectedImage()
             display = self._displayCtx.getDisplayProperties(image)
-            cmap    = display.cmap
+            opts    = display.getDisplayOpts()
+            cmap    = opts.cmap
         else:
             cmap = None
 
