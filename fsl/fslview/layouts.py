@@ -145,7 +145,8 @@ VolumeOptsLayout = props.VGroup((
 
 
 MaskOptsLayout = props.VGroup((
-    widget('colour', MaskOpts), ))
+    widget('colour', MaskOpts),
+    widget('invert', MaskOpts)))
 
 
 layouts = td.TypeDict({

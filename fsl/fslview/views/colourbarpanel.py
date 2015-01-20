@@ -119,7 +119,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
             opts    = display.getDisplayOpts()
 
             if isinstance(opts, volumeopts.VolumeOpts):
-                display.removeListener('displayRange', self._name)
+                opts   .removeListener('displayRange', self._name)
                 opts   .removeListener('cmap',         self._name)
                 image  .removeListener('name',         self._name)            
 
@@ -136,7 +136,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
 
             if isinstance(opts, volumeopts.VolumeOpts):
             
-                display.addListener('displayRange',
+                opts   .addListener('displayRange',
                                     self._name,
                                     self._displayRangeChanged)
                 opts   .addListener('cmap',

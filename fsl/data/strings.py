@@ -139,6 +139,7 @@ properties = TypeDict({
     'VolumeOpts.cmap'         : 'Colour map',
 
     'MaskOpts.colour'         : 'Colour',
+    'MaskOpts.invert'         : 'Invert',
 })
 
 

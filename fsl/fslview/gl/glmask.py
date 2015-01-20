@@ -217,11 +217,20 @@ class GLMask(object):
 
         colour = np.array(opts.colour + [display.alpha], dtype=np.float32)
 
+        if opts.invert: opAlpha = gl.GL_ONE_MINUS_SRC_ALPHA
+        else:           opAlpha = gl.GL_SRC_ALPHA 
+
         gl.glEnable(gl.GL_TEXTURE_3D)
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture)
 
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_COMBINE)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_COMBINE_RGB,      gl.GL_MODULATE)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_COMBINE_ALPHA,    gl.GL_MODULATE)
+
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_SOURCE0_RGB, gl.GL_PRIMARY_COLOR)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_SOURCE0_ALPHA, gl.GL_TEXTURE)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_OPERAND0_ALPHA, opAlpha)
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
