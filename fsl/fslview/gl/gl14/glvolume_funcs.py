@@ -24,6 +24,9 @@ This module provides the following functions:
  - :func:`draw`: Renders the current image slice.
 
  - :func:`destroy`: Deletes handles to the vertex/fragment programs
+
+This PDF is quite useful:
+ - http://www.renderguild.com/gpuguide.pdf
 """
 
 import logging
@@ -221,7 +224,10 @@ def preDraw(glvol):
 
     # Don't draw the slice if this
     # image display is disabled
-    if not display.enabled: return 
+    if not display.enabled: return
+
+    gl.glEnable(gl.GL_TEXTURE_1D)
+    gl.glEnable(gl.GL_TEXTURE_3D)
     
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -358,4 +364,7 @@ def postDraw(glvol):
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glPopMatrix() 
+    gl.glPopMatrix()
+
+    gl.glDisable(gl.GL_TEXTURE_1D)
+    gl.glDisable(gl.GL_TEXTURE_3D) 

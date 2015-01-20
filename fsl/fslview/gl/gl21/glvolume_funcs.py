@@ -152,7 +152,10 @@ def preDraw(glvol):
     if not display.enabled: return
 
     # load the shaders
-    gl.glUseProgram(glvol.shaders) 
+    gl.glUseProgram(glvol.shaders)
+    
+    gl.glEnable(gl.GL_TEXTURE_1D)
+    gl.glEnable(gl.GL_TEXTURE_3D)
 
     # bind the current interpolation setting,
     # image shape, and image->screen axis
@@ -247,6 +250,9 @@ def postDraw(glvol):
 
     gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+    gl.glDisable(gl.GL_TEXTURE_1D)
+    gl.glDisable(gl.GL_TEXTURE_3D)
 
     glvol.indices    .unbind()
     glvol.worldCoords.unbind()

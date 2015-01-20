@@ -62,9 +62,10 @@ class GLVolume(object):
                            displayed.
         """
 
-        self.image   = image
-        self.display = display
-        self._ready  = False
+        self.image       = image
+        self.display     = display
+        self.displayOpts = display.getDisplayOpts()
+        self._ready      = False
 
         # Whenever some specific display/image properties
         # change, the 3D image texture must be updated.
@@ -195,6 +196,19 @@ class GLVolume(object):
             
         except KeyError:
             pass
+
+        lnrName = 'GLVolume_{}'.format(id(self))
+
+        self.display    .removeListener('transform',     lnrName)
+        self.display    .removeListener('interpolation', lnrName)
+        self.display    .removeListener('alpha',         lnrName)
+        self.displayOpts.removeListener('displayRange',  lnrName)
+        self.displayOpts.removeListener('clipLow',       lnrName)
+        self.displayOpts.removeListener('clipHigh',      lnrName)
+        self.displayOpts.removeListener('cmap',          lnrName)
+        self.display    .removeListener('resolution',    lnrName)
+        self.display    .removeListener('volume',        lnrName)
+        self.image      .removeListener('data',          lnrName)
         
         fslgl.glvolume_funcs.destroy(self)
 
@@ -468,7 +482,7 @@ class GLVolume(object):
         """
 
         display = self.display
-        opts    = display.getDisplayOpts()
+        opts    = self.displayOpts
 
         imin = opts.displayRange[0]
         imax = opts.displayRange[1]
@@ -548,18 +562,15 @@ class GLVolume(object):
         def colourUpdate(*a):
             self.genColourTexture(self.colourResolution)
 
-        image   = self.image
-        display = self.display
-        opts    = display.getDisplayOpts()
         lnrName = 'GLVolume_{}'.format(id(self))
 
-        display.addListener('transform',       lnrName, vertexUpdate)
-        display.addListener('interpolation',   lnrName, imageUpdate)
-        display.addListener('alpha',           lnrName, colourUpdate)
-        opts   .addListener('displayRange',    lnrName, colourUpdate)
-        opts   .addListener('clipLow',         lnrName, colourUpdate)
-        opts   .addListener('clipHigh',        lnrName, colourUpdate)
-        opts   .addListener('cmap',            lnrName, colourUpdate)
-        display.addListener('resolution',      lnrName, imageUpdate)
-        display.addListener('volume',          lnrName, imageUpdate)
-        image  .addListener('data',            lnrName, imageUpdate)
+        self.display    .addListener('transform',     lnrName, vertexUpdate)
+        self.display    .addListener('interpolation', lnrName, imageUpdate)
+        self.display    .addListener('alpha',         lnrName, colourUpdate)
+        self.displayOpts.addListener('displayRange',  lnrName, colourUpdate)
+        self.displayOpts.addListener('clipLow',       lnrName, colourUpdate)
+        self.displayOpts.addListener('clipHigh',      lnrName, colourUpdate)
+        self.displayOpts.addListener('cmap',          lnrName, colourUpdate)
+        self.display    .addListener('resolution',    lnrName, imageUpdate)
+        self.display    .addListener('volume',        lnrName, imageUpdate)
+        self.image      .addListener('data',          lnrName, imageUpdate)
