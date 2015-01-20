@@ -98,6 +98,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** On startup, check to see if cached display location is valid (e.g. external display has been unplugged). Revert to default location/size if not.
 ** EListBox - Mouse drag to move items
 ** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
