@@ -1,42 +1,71 @@
 #!/usr/bin/env python
 #
-# glmask.py -
+# glmask.py - OpenGL rendering of a binary mask image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module defines the :class:`GLMask` class, which provides functionality
+for OpenGL rendering of a 3D volume as a binary mask.
+
+When created, a :class:`GLMask` instance assumes that the provided
+:class:`~fsl.data.image.Image` instance has an ``imageType`` of ``mask``, and
+that its associated :class:`~fsl.fslview.displaycontext.Display` instance
+contains a :class:`~fsl.fslview.displatcontext.maskopts.MaskOpts` instance,
+containing mask-specific display properties.
+
+The :class:`GLMask` class is closely based on the
+:class:`~fsl.fslview.gl.glvolume.GLVolume` class.
+"""
 
 import logging
 
 
-import numpy     as np
-import OpenGL.GL as gl
+import numpy                          as np
+import OpenGL.GL                      as gl
+import OpenGL.GL.ARB.fragment_program as arbfp
+import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.utils.transform as transform
+
+import fsl.fslview.gl.globject            as globject
+import fsl.fslview.gl.gl14.glvolume_funcs as glvolume_funcs
+import fsl.utils.transform                as transform
 
 
 log = logging.getLogger(__name__)
 
 
-class GLMask(object):
+_glmask_vertex_program = glvolume_funcs._glvolume_vertex_program
+
+
+_glmask_fragment_program = """!!ARBfp1.0
+
+
+"""
+
+
+class GLMask(globject.GLObject):
     """
     """
     
     def __init__(self, image, display):
-        self.image       = image
-        self.display     = display
-        self.displayOpts = display.getDisplayOpts()
-        self._ready      = False
+        globject.GLObject.__init__(self, image, display)
+        
+        self._ready = False
 
         # Multiple GLMask instances may manage a single image
-        # texture - see the comments in GLImage.__init__.
+        # texture - see the comments in GLVolume.__init__.
         def markImage(*a):
             image.setAttribute('GLMaskDirty', True)
+
+        opts = self.displayOpts
 
         try:    display.addListener('interpolation', 'GLMaskDirty', markImage)
         except: pass
         try:    display.addListener('resolution',    'GLMaskDirty', markImage)
         except: pass
         try:    display.addListener('data',          'GLMaskDirty', markImage)
+        except: pass
+        try:    opts   .addListener('threshold',     'GLMaskDirty', markImage)
         except: pass 
 
         
@@ -48,6 +77,7 @@ class GLMask(object):
 
         image   = self.image
         display = self.display
+        opts    = self.displayOpts
         
         self.setAxes(xax, yax)
         self.genImageTexture()
@@ -57,6 +87,7 @@ class GLMask(object):
         display.addListener('resolution',    lName, self.genImageTexture)
         display.addListener('interpolation', lName, self.genImageTexture)
         display.addListener('volume',        lName, self.genImageTexture)
+        opts   .addListener('threshold',     lName, self.genImageTexture)
         image  .addListener('data',          lName, self.genImageTexture)
         
         self._ready = True
@@ -94,6 +125,7 @@ class GLMask(object):
 
         image      = self.image
         display    = self.display
+        opts       = self.displayOpts
         volume     = display.volume
         resolution = display.resolution
 
@@ -131,10 +163,15 @@ class GLMask(object):
 
         self.imageTexture = imageTexture
 
-        texShape             = texData.shape
-        texData[texData > 0] = 255
-        texData              = np.array(texData, dtype=np.uint8)
-        texData              = texData.ravel(order='F')
+        print 'Regen: {}'.format(opts.threshold)
+
+        mask = texData >= opts.threshold
+
+        texShape       = texData.shape
+        texData[ mask] = 255
+        texData[~mask] = 0
+        texData        = np.array(texData, dtype=np.uint8)
+        texData        = texData.ravel(order='F')
         
         gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)

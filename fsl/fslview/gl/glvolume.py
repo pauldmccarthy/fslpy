@@ -8,7 +8,14 @@
 """Defines the :class:`GLVolume` class, which creates and encapsulates the
 data and logic required to render 2D slice of a 3D image. The
 :class:`GLVolume` class provides the interface defined in the
-:mod:`~fsl.fslview.gl.globject` module.
+:class:`~fsl.fslview.gl.globject.GLObject` class.
+
+A :class:`GLVolume` instance may be used to render an
+:class:`~fsl.data.image.Image` instance which has an ``imageType`` of
+``volume``. It is assumed that this ``Image`` instance is associated with a
+:class:`~fsl.fslview.displaycontext.Display` instance which contains a
+:class:`~fsl.fslview.displaycontext.volumeopts.VolumeOpts` instance,
+containing display options specific to volume rendering.
 
 The :class:`GLVolume` class makes use of the functions defined in the
 :mod:`fsl.fslview.gl.gl14.glvolume_funcs` or the
@@ -29,24 +36,26 @@ These version dependent modules must provide the following functions:
     Z position. If xform is not None, it must be applied as a transformation
     on the vertex coordinates.
 
-Images rendered in essentially the same way, regardless of which OpenGL
+Images are rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
 as a 3D texture, and the current colour map as a 1D texture. A slice through
 the texture is rendered using four vertices, located at the respective corners
 of the image bounds.
+
 """
 
 import logging
 log = logging.getLogger(__name__)
 
-import OpenGL.GL           as gl
-import numpy               as np
+import OpenGL.GL               as gl
+import numpy                   as np
 
-import fsl.fslview.gl      as fslgl
-import fsl.utils.transform as transform
+import fsl.fslview.gl          as fslgl
+import fsl.fslview.gl.globject as globject
+import fsl.utils.transform     as transform
 
 
-class GLVolume(object):
+class GLVolume(globject.GLObject):
     """The :class:`GLVolume` class encapsulates the data and logic required to
     render 2D slices of a 3D image.
     """
@@ -55,17 +64,16 @@ class GLVolume(object):
         """Creates a GLVolume object bound to the given image, and associated
         image display.
 
-        :arg image:        A :class:`~fsl.data.image.Image` object.
+        :arg image:   A :class:`~fsl.data.image.Image` object.
         
-        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                           object which describes how the image is to be
-                           displayed.
+        :arg display: A :class:`~fsl.fslview.displaycontext.Display`
+                      object which describes how the image is to be
+                      displayed. 
         """
 
-        self.image       = image
-        self.display     = display
-        self.displayOpts = display.getDisplayOpts()
-        self._ready      = False
+        globject.GLObject.__init__(self, image, display)
+        
+        self._ready = False
 
         # Whenever some specific display/image properties
         # change, the 3D image texture must be updated.
@@ -78,27 +86,19 @@ class GLVolume(object):
         # Only one 'GLVolumeDirty' listener, for all GLVolume
         # instances, is registered on ecah image/display,
         # so the GLVolumeDirty attribute is only set once.
-        try:
-            display.addListener('interpolation', 'GLVolumeDirty', markImage)
-        except:
-            pass
-        try:
-            display.addListener('volume',        'GLVolumeDirty', markImage)
-        except:
-            pass
-        try:
-            display.addListener('resolution',    'GLVolumeDirty', markImage)
-        except:
-            pass
-        try:
-            image  .addListener('data',          'GLVolumeDirty', markImage)
-        except:
-            pass
+        try: display.addListener('interpolation', 'GLVolumeDirty', markImage)
+        except: pass
+        try: display.addListener('volume',        'GLVolumeDirty', markImage)
+        except: pass
+        try: display.addListener('resolution',    'GLVolumeDirty', markImage)
+        except: pass
+        try: image  .addListener('data',          'GLVolumeDirty', markImage)
+        except: pass
 
 
     def ready(self):
-        """Returns `True` when the OpenGL data/state has been initialised, and the
-        image is ready to be drawn, `False` before.
+        """Returns `True` when the OpenGL data/state has been initialised,
+        and the image is ready to be drawn, `False` before.
         """
         return self._ready
 
@@ -216,6 +216,11 @@ class GLVolume(object):
     def genVertexData(self):
         """Generates coordinates at the corners of the image bounds, along the
         xax/yax plane, which define a slice through the 3D image.
+
+        This method is provided for use by the version-dependent
+        :mod:`fsl.fslview.gl.gl14.glvolume_funcs` and 
+        :mod:`fsl.fslview.gl.gl21.glvolume_funcs` modules, in their
+        implemntation of the ``genVertexData` function.
 
         :arg image:   The :class:`~fsl.data.image.Image` object to
                       generate vertex and texture coordinates for.

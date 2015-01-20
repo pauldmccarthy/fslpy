@@ -140,6 +140,7 @@ properties = TypeDict({
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
+    'MaskOpts.threshold'      : 'Threshold',
 })
 
 

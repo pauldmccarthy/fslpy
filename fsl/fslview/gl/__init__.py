@@ -128,6 +128,58 @@ def bootstrap(glVersion=None):
     thismod._bootstrapped  = True
 
 
+def compilePrograms(vertexProgramSrc, fragmentProgramSrc):
+    
+    import OpenGL.GL                      as gl
+    import OpenGL.GL.ARB.fragment_program as arbfp
+    import OpenGL.GL.ARB.vertex_program   as arbvp
+    
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
+    gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    
+    fragmentProgram = arbfp.glGenProgramsARB(1)
+    vertexProgram   = arbvp.glGenProgramsARB(1) 
+
+    # vertex program
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           vertexProgram)
+
+    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                             len(vertexProgramSrc),
+                             vertexProgramSrc)
+
+    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
+
+        position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
+        message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
+
+        raise RuntimeError('Error compiling vertex program '
+                           '({}): {}'.format(position, message)) 
+
+    # fragment program
+    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                           fragmentProgram)
+
+    arbfp.glProgramStringARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                             arbfp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                             len(fragmentProgramSrc),
+                             fragmentProgramSrc)
+
+    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
+
+        position = gl.glGetIntegerv(arbfp.GL_PROGRAM_ERROR_POSITION_ARB)
+        message  = gl.glGetString(  arbfp.GL_PROGRAM_ERROR_STRING_ARB)
+
+        raise RuntimeError('Error compiling fragment program '
+                           '({}): {}'.format(position, message))
+
+    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
+    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    
+    return vertexProgram, fragmentProgram
+
+
 def getWXGLContext():
     """Create and return a GL context object for rendering to a
     :class:`wx.glcanvas.GLCanvas` canvas.

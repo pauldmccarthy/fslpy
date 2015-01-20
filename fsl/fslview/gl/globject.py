@@ -5,43 +5,35 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
-This module provides the :func:`createGLObject` function, which provides
-mappings between :class:`~fsl.data.image.Image` types, and their
-corresponding OpenGL representation.
+"""This module defines the :class:`GLObject` class, which is a superclass for
+all 2D OpenGL representations of :class:`fsl.data.image.Image` instances.
+
+This module also provides the :func:`createGLObject` function, which provides
+mappings between :class:`~fsl.data.image.Image` types, and their corresponding
+OpenGL representation.
 
 Some other convenience functions are also provided, for generating
 OpenGL vertex data.
-
-
-GL Objects must have the following methods:
-  - ``__init__(self, image, display)``
-
-  - ``init(   self, xax, yax)``
-
-  - ``ready(self)``
-
-  - ``setAxes(self, xax, yax)``
-
-  - ``destroy(self)``
-
-  - ``preDraw(self)``
-
-  - ``draw(self, zpos, xform=None)``
-
-  - ``postDraw(self)``
-
 """
 
+
 import logging
-log = logging.getLogger(__name__)
 
 import itertools           as it
 import numpy               as np
 import fsl.utils.transform as transform
 
 
+log = logging.getLogger(__name__)
+
+
 def createGLObject(image, display):
+    """Create :class:`GLObject` instance for the given
+    :class:`~fsl.data.image.Image` instance.
+
+    :arg image:   A :class:`~fsl.data.image.Image` instance.
+    :arg display: A :class:`~fsl.fslview.displaycontext.Display` instance.
+    """
 
     import fsl.fslview.gl.glvolume     as glvolume
     import fsl.fslview.gl.glmask       as glmask
@@ -57,6 +49,97 @@ def createGLObject(image, display):
 
     if ctr is not None: return ctr(image, display)
     else:               return None
+
+
+class GLObject(object):
+    """The :class:`GLObject` class is a superclass for all 2D OpenGL
+    representations of :class:`~fsl.data.image.Image` instances.
+    """
+
+    def __init__(self, image, display):
+        """Create a :class:`GLObject`.  The constructor adds three
+        attributes to this instance:
+          - ``image``:       A reference to the image.
+          - ``display``:     A reference to the display.
+          - ``displayOpts``: A reference to the image type-specific display
+                             options.
+
+        :arg image:   The :class:`~fsl.data.image.Image` instance
+        :arg display: An associated
+                      :class:`~fsl.fslview.displaycontext.Display` instance.
+        """
+        self.image       = image
+        self.display     = display
+        self.displayOpts = display.getDisplayOpts()
+
+
+    def init(self, xax, yax):
+        """Perform any necessary OpenGL initialisation, such as
+        creating textures and vertices.
+
+        :arg xax: The display coordinate axis which corresponds to the
+                  horizontal screen axis for this :class:`GLObject`.
+        :arg yax: The display coordinate axis which corresponds to the
+                  vertical screen axis for this :class:`GLObject`. 
+        """
+        raise NotImplementedError()
+
+    
+    def ready(self):
+        """This method should return ``False`` if this :class:`GLObject` is not yet
+        ready to be displayed, ``True`` otherwise.
+        """
+        raise NotImplementedError()
+
+    
+    def setAxes(self, xax, yax):
+        """This method is called when the display orientation for this
+        :class:`GLObject` changes. It should perform any necessary updates to
+        the GL data (e.g. regenerating/moving vertices).
+        """
+        raise NotImplementedError()
+
+    
+    def destroy(self):
+        """This method is called when this :class:`GLObject` is no longer
+        needed.
+        
+        It should perform any necessary cleaning up, such as deleting texture
+        handles.
+        """
+        raise NotImplementedError()
+
+    
+    def preDraw(self):
+        """This method is called at the start of a draw routine.
+
+        It should perform any initialisation which is required before one or
+        more calls to the :meth:`draw` method are made, such as binding and
+        configuring textures.
+        """
+        raise NotImplementedError()
+
+    
+    def draw(self, zpos, xform=None):
+        """This method should draw a view of this :class:`GLObject` at the
+        given Z position, which specifies the position along the screen
+        depth axis.
+
+        If the ``xform`` parameter is provided, it should be applied to the
+        model view transformation before drawing.
+        """
+        raise NotImplementedError()
+
+
+    def postDraw(self):
+        """This method is called after the :meth:`draw` method has been called
+        one or more times.
+
+        It should perform any necessary cleaning up, such as unbinding
+        textures.
+        """
+        raise NotImplementedError()
+
 
 
 def calculateSamplePoints(image, display, xax, yax):
