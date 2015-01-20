@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 import os.path as op
 
-import fsl.fslview.gl.glimage  as glimage
+import fsl.fslview.gl.glvolume  as glvolume
 
     
 def getVertexShader(globj):
@@ -53,7 +53,7 @@ def _getFileName(globj, shaderType):
     if shaderType not in ('vert', 'frag'):
         raise RuntimeError('Invalid shader type: {}'.format(shaderType))
 
-    if   isinstance(globj, glimage .GLImage):  prefix = 'glimage'
+    if   isinstance(globj, glvolume .GLVolume):  prefix = 'glvolume'
     else:
         raise RuntimeError('Unknown GL object type: '
                            '{}'.format(type(globj)))

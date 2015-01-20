@@ -124,7 +124,7 @@ def bootstrap(glVersion=None):
 
     log.debug('Using OpenGL {} implementation'.format(verstr))
 
-    thismod.glimage_funcs  = glpkg.glimage_funcs
+    thismod.glvolume_funcs = glpkg.glvolume_funcs
     thismod._bootstrapped  = True
 
 

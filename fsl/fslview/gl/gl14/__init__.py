@@ -5,4 +5,4 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import glimage_funcs
+import glvolume_funcs

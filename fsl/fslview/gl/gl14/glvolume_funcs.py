@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 #
-# glimage_funcs.py - Functions used by the fsl.fslview.gl.glimage.GLImage class
-#                    to render 3D images in an OpenGL 1.4 compatible manner.
+# glvolume_funcs.py - Functions used by the fsl.fslview.gl.glvolume.GLVolume
+#                     class to render 3D images in an OpenGL 1.4 compatible
+#                     manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """Provides functions which are used by the
-:class:`~fsl.fslview.gl.glimage.GLImage` class to render 3D images in an
+:class:`~fsl.fslview.gl.glvolume.GLVolume` class to render 3D images in an
 OpenGL 1.4 compatible manner.
 
 This module depends upon two OpenGL ARB extensions, ARB_vertex_program and
@@ -34,7 +35,7 @@ import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform as transform
 
-_glimage_vertex_program = """!!ARBvp1.0
+_glvolume_vertex_program = """!!ARBvp1.0
 
 # Transform the vertex coordinates from the display
 # coordinate system to the screen coordinate system
@@ -61,7 +62,7 @@ END
 """
 
 
-_glimage_fragment_program = """!!ARBfp1.0
+_glvolume_fragment_program = """!!ARBfp1.0
 TEMP  dispTexCoord;
 TEMP  voxTexCoord;
 TEMP  normVoxTexCoord;
@@ -148,23 +149,23 @@ The fragment shader does the following:
 """
 
 
-def init(glimg, xax, yax):
+def init(glvol, xax, yax):
     """Compiles the vertex and fragment programs used for rendering."""
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     
-    glimg.fragmentProgram = arbfp.glGenProgramsARB(1)
-    glimg.vertexProgram   = arbvp.glGenProgramsARB(1) 
+    glvol.fragmentProgram = arbfp.glGenProgramsARB(1)
+    glvol.vertexProgram   = arbvp.glGenProgramsARB(1) 
 
     # vertex program
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           glimg.vertexProgram)
+                           glvol.vertexProgram)
 
     arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                              arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(_glimage_vertex_program),
-                             _glimage_vertex_program)
+                             len(_glvolume_vertex_program),
+                             _glvolume_vertex_program)
 
     if (gl.glGetError() == gl.GL_INVALID_OPERATION):
 
@@ -176,12 +177,12 @@ def init(glimg, xax, yax):
 
     # fragment program
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           glimg.fragmentProgram)
+                           glvol.fragmentProgram)
 
     arbfp.glProgramStringARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                              arbfp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(_glimage_fragment_program),
-                             _glimage_fragment_program)
+                             len(_glvolume_fragment_program),
+                             _glvolume_fragment_program)
 
     if (gl.glGetError() == gl.GL_INVALID_OPERATION):
 
@@ -195,28 +196,28 @@ def init(glimg, xax, yax):
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB) 
 
     
-def destroy(glimg):
+def destroy(glvol):
     """Deletes handles to the vertex/fragment programs."""
-    arbvp.glDeleteProgramsARB(glimg.vertexProgram) 
-    arbfp.glDeleteProgramsARB(glimg.fragmentProgram)
+    arbvp.glDeleteProgramsARB(glvol.vertexProgram) 
+    arbfp.glDeleteProgramsARB(glvol.fragmentProgram)
 
     
-def genVertexData(glimg):
+def genVertexData(glvol):
     """Generates vertex and texture coordinates required to render
-    the image. See :func:`fsl.fslview.gl.glimage.genVertexData`.
+    the image. See :func:`fsl.fslview.gl.glvolume.genVertexData`.
     """
     
-    worldCoords, texCoords, indices = glimg.genVertexData()
+    worldCoords, texCoords, indices = glvol.genVertexData()
 
     return worldCoords, texCoords, indices, indices.shape[0]
 
 
-def preDraw(glimg):
+def preDraw(glvol):
     """Prepares to draw a slice from the given
-    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
+    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = glimg.display
+    display = glvol.display
 
     # Don't draw the slice if this
     # image display is disabled
@@ -227,23 +228,23 @@ def preDraw(glimg):
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
 
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           glimg.vertexProgram)
+                           glvol.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           glimg.fragmentProgram) 
+                           glvol.fragmentProgram) 
 
     # Set up the image data texture 
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glimg.imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture)
 
     # Set up the colour map texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glimg.colourTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, glvol.colourTexture)
 
     # The fragment program needs to know
     # the image shape (and its inverse,
     # because there's no division operation,
     # and the RCP operation works on scalars)
-    shape = glimg.imageShape
+    shape = glvol.imageShape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                                        0,
                                        shape[0],
@@ -267,8 +268,8 @@ def preDraw(glimg):
     # into a value between 0 and 1, suitable
     # for looking up an appropriate colour
     # in the 1D colour map texture
-    cmapXForm = transform.concat(glimg.voxValXform,
-                                 glimg.colourMapXform)
+    cmapXForm = transform.concat(glvol.voxValXform,
+                                 glvol.colourMapXform)
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
@@ -292,7 +293,7 @@ def preDraw(glimg):
     # comments in draw)
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
-    glimg.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
+    glvol.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
 
 
 def draw(glimg, zpos, xform=None):
@@ -336,12 +337,12 @@ def draw(glimg, zpos, xform=None):
                       indices)
 
 
-def postDraw(glimg):
+def postDraw(glvol):
     """Cleans up the GL state after drawing from the given
-    :class:`~fsl.fslview.gl.glimage.GLImage` instance.
+    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = glimg.display
+    display = glvol.display
     if not display.enabled: return
 
     gl.glPopMatrix()

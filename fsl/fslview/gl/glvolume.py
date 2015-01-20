@@ -1,29 +1,31 @@
 #!/usr/bin/env python
 #
-# glimage.py - OpenGL vertex/texture creation for 2D slice rendering of a 3D
-#              image.
+# glvolume.py - OpenGL vertex/texture creation for 2D slice rendering of a 3D
+#               image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Defines the :class:`GLImage` class, which creates and encapsulates the data
-and logic required to render 2D slice of a 3D image. The :class:`GLImage` class
-provides the interface defined in the :mod:`~fsl.fslview.gl.globject` module.
+"""Defines the :class:`GLVolume` class, which creates and encapsulates the
+data and logic required to render 2D slice of a 3D image. The
+:class:`GLVolume` class provides the interface defined in the
+:mod:`~fsl.fslview.gl.globject` module.
 
-The :class:`GLImage` class makes use of the functions defined in the
-:mod:`fsl.fslview.gl.gl14.glimage_funcs` or the
-:mod:`fsl.fslview.gl.gl21.glimage_funcs` modules, which provide OpenGL version
-specific details for creation/storage of vertex data, and for rendering.
+The :class:`GLVolume` class makes use of the functions defined in the
+:mod:`fsl.fslview.gl.gl14.glvolume_funcs` or the
+:mod:`fsl.fslview.gl.gl21.glvolume_funcs` modules, which provide OpenGL 
+version specific details for creation/storage of vertex data, and for
+rendering.
 
 These version dependent modules must provide the following functions:
 
-  - `init(GLImage, xax, yax)`: Perform any necessary initialisation.
+  - `init(GLVolume, xax, yax)`: Perform any necessary initialisation.
 
-  - `destroy(GLimage)`: Perform any necessary clean up.
+  - `destroy(GLVolume)`: Perform any necessary clean up.
 
-  - `genVertexData(GLImage)`: Create and prepare vertex and texture
-    coordinates, using the :meth:`GLImage.genVertexData` method. 
+  - `genVertexData(GLVolume)`: Create and prepare vertex and texture
+    coordinates, using the :meth:`GLVolume.genVertexData` method. 
 
-  - `draw(GLImage, zpos, xform=None)`: Draw a slice of the image at the given
+  - `draw(GLVolume, zpos, xform=None)`: Draw a slice of the image at the given
     Z position. If xform is not None, it must be applied as a transformation
     on the vertex coordinates.
 
@@ -44,13 +46,13 @@ import fsl.fslview.gl      as fslgl
 import fsl.utils.transform as transform
 
 
-class GLImage(object):
-    """The :class:`GLImage` class encapsulates the data and logic required to
+class GLVolume(object):
+    """The :class:`GLVolume` class encapsulates the data and logic required to
     render 2D slices of a 3D image.
     """
  
     def __init__(self, image, display):
-        """Creates a GLImage object bound to the given image, and associated
+        """Creates a GLVolume object bound to the given image, and associated
         image display.
 
         :arg image:        A :class:`~fsl.data.image.Image` object.
@@ -70,19 +72,27 @@ class GLImage(object):
         # genImageTexture method can figure out whether
         # or not the image texture needs to be updated
         def markImage(*a):
-            image.setAttribute('GLImageDirty', True)
+            image.setAttribute('GLVolumeDirty', True)
 
-        # Only one 'GLImageDirty' listener, for all GLImage
+        # Only one 'GLVolumeDirty' listener, for all GLVolume
         # instances, is registered on ecah image/display,
-        # so the GLImageDirty attribute is only set once.
-        try:    display.addListener('interpolation', 'GLImageDirty', markImage)
-        except: pass
-        try:    display.addListener('volume',        'GLImageDirty', markImage)
-        except: pass
-        try:    display.addListener('resolution',    'GLImageDirty', markImage)
-        except: pass
-        try:    image  .addListener('data',          'GLImageDirty', markImage)
-        except: pass
+        # so the GLVolumeDirty attribute is only set once.
+        try:
+            display.addListener('interpolation', 'GLVolumeDirty', markImage)
+        except:
+            pass
+        try:
+            display.addListener('volume',        'GLVolumeDirty', markImage)
+        except:
+            pass
+        try:
+            display.addListener('resolution',    'GLVolumeDirty', markImage)
+        except:
+            pass
+        try:
+            image  .addListener('data',          'GLVolumeDirty', markImage)
+        except:
+            pass
 
 
     def ready(self):
@@ -103,7 +113,7 @@ class GLImage(object):
         # updated when its display properties are changed
         self._configDisplayListeners()
 
-        fslgl.glimage_funcs.init(self, xax, yax)
+        fslgl.glvolume_funcs.init(self, xax, yax)
 
         # Initialise the image data, and
         # generate vertex/texture coordinates
@@ -132,7 +142,7 @@ class GLImage(object):
         self.xax         = xax
         self.yax         = yax
         self.zax         = 3 - xax - yax
-        wc, tc, idxs, nv = fslgl.glimage_funcs.genVertexData(self)
+        wc, tc, idxs, nv = fslgl.glvolume_funcs.genVertexData(self)
         self.worldCoords = wc
         self.texCoords   = tc
         self.indices     = idxs
@@ -140,10 +150,10 @@ class GLImage(object):
 
 
     def preDraw(self):
-        """Sets up the GL state to draw a slice from this :class:`GLImage`
+        """Sets up the GL state to draw a slice from this :class:`GLVolume`
         instance.
         """
-        fslgl.glimage_funcs.preDraw(self)
+        fslgl.glvolume_funcs.preDraw(self)
 
         
     def draw(self, zpos, xform=None):
@@ -158,35 +168,35 @@ class GLImage(object):
         Note: Calls to this method must be preceded by a call to
         :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
         """
-        fslgl.glimage_funcs.draw(self, zpos, xform)
+        fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
     def postDraw(self):
-        """Clears the GL state after drawing from this :class:`GLImage`
+        """Clears the GL state after drawing from this :class:`GLVolume`
         instance.
         """ 
-        fslgl.glimage_funcs.postDraw(self) 
+        fslgl.glvolume_funcs.postDraw(self) 
 
 
     def destroy(self):
-        """This should be called when this :class:`GLImage` object is no
+        """This should be called when this :class:`GLVolume` object is no
         longer needed. It performs any needed clean up of OpenGL data (e.g.
         deleting texture handles).
         """
         log.debug('Deleting GL texture: {}'.format(self.colourTexture))
         gl.glDeleteTextures(1, self.colourTexture)
 
-        # Another GLImage object may have
+        # Another GLVolume object may have
         # already deleted the image texture
         try:
-            imageTexture = self.image.delAttribute('GLImageTexture')
+            imageTexture = self.image.delAttribute('GLVolumeTexture')
             log.debug('Deleting GL texture: {}'.format(imageTexture))
             gl.glDeleteTextures(1, imageTexture)
             
         except KeyError:
             pass
         
-        fslgl.glimage_funcs.destroy(self)
+        fslgl.glvolume_funcs.destroy(self)
 
 
     def genVertexData(self):
@@ -313,11 +323,11 @@ class GLImage(object):
 
         The texture handle is stored as an attribute of the image. If a
         texture handle is already present (i.e. it has been created by another
-        GLImage object representing the same image), it is not recreated.
+        GLVolume object representing the same image), it is not recreated.
 
         The transformation matrix generated by the
         :meth:`_prepareImageTextureData` method is saved as an attribute of
-        this :class:`GLImage` object called :attr:`voxValXform`. This
+        this :class:`GLVolume` object called :attr:`voxValXform`. This
         transformation needs to be applied to voxel values when they are
         retrieved from the 3D image texture, in order to recover the actual
         voxel value.
@@ -361,7 +371,7 @@ class GLImage(object):
 
         # Check to see if the image texture
         # has already been created
-        try:    imageTexture = image.getAttribute('GLImageTexture')
+        try:    imageTexture = image.getAttribute('GLVolumeTexture')
         except: imageTexture = None
 
         # otherwise, create a new one
@@ -370,7 +380,7 @@ class GLImage(object):
             log.debug('Created GL texture: {}'.format(imageTexture))
 
         # The image buffer already exists, and is valid
-        elif not image.getAttribute('GLImageDirty'):
+        elif not image.getAttribute('GLVolumeDirty'):
             self.imageTexture      = imageTexture
             self.imageTextureShape = shape
             return
@@ -442,8 +452,8 @@ class GLImage(object):
         # of the image, and mark it as up to date, so other
         # things which want to render the same image data
         # don't need to regenerate the texture
-        image.setAttribute('GLImageTexture', imageTexture)
-        image.setAttribute('GLImageDirty',   False)
+        image.setAttribute('GLVolumeTexture', imageTexture)
+        image.setAttribute('GLVolumeDirty',   False)
 
     
     def genColourTexture(self, colourResolution):
@@ -452,7 +462,7 @@ class GLImage(object):
         Also createss a transformation matrix which transforms an image voxel
         value to the range (0-1), which may then be used as a texture
         coordinate into the colour map texture. This matrix is stored as an
-        attribute of this :class:`GLImage` object called
+        attribute of this :class:`GLVolume` object called
         :attr:`colourMapXForm`. See also the :meth:`genImageTexture` method
         for more details.
         """
@@ -526,7 +536,7 @@ class GLImage(object):
         """ 
 
         def vertexUpdate(*a):
-            wc, tc, idx, nv = fslgl.glimage_funcs.genVertexData(self)
+            wc, tc, idx, nv = fslgl.glvolume_funcs.genVertexData(self)
             self.worldCoords = wc
             self.texCoords   = tc
             self.indices     = idx
@@ -541,7 +551,7 @@ class GLImage(object):
         image   = self.image
         display = self.display
         opts    = display.getDisplayOpts()
-        lnrName = 'GlImage_{}'.format(id(self))
+        lnrName = 'GLVolume_{}'.format(id(self))
 
         display.addListener('transform',       lnrName, vertexUpdate)
         display.addListener('interpolation',   lnrName, imageUpdate)
