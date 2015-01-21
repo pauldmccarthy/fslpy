@@ -72,11 +72,13 @@ class GLTensor(globject.GLObject):
                 self.preDraw  = self.lineModePreDraw
                 self.draw     = self.lineModeDraw 
                 self.postDraw = self.lineModePostDraw
+                self.rgbModeDestroy()
 
             elif opts.displayMode == 'rgb':
                 self.preDraw  = self.rgbModePreDraw
                 self.draw     = self.rgbModeDraw 
                 self.postDraw = self.rgbModePostDraw
+                self.lineModeDestroy()
 
             self.setAxes(self.xax, self.yax)
             
@@ -158,10 +160,17 @@ class GLTensor(globject.GLObject):
 
         
     def lineModeDestroy(self):
-        pass
-        
+        del self.worldCoords
+        del self.xpixdim
+        del self.ypixdim
+
+    
     def lineModePreDraw(self):
-        pass
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPushMatrix()
+        self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
         
     def lineModeDraw(self, zpos, xform=None):
@@ -231,11 +240,8 @@ class GLTensor(globject.GLObject):
 
         # Draw all the lines!
         if xform is not None: 
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glPushMatrix()
+            xform = transform.concat(xform. self.mvmat)
             gl.glMultMatrixf(xform)
-
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
         colour = opts.colour
 
@@ -244,15 +250,13 @@ class GLTensor(globject.GLObject):
         gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
         gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels)
 
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-
-        if xform is not None:
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glPopMatrix()
-
-    
+        
     def lineModePostDraw(self):
-        pass 
+
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glPopMatrix()
+
 
 
     ######################
