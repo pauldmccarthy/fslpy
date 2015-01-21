@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 #
-# display.py -
+# display.py - Definitions of the Display and DisplayOpts classes.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""
+"""
 
 import logging
 
@@ -15,17 +17,18 @@ import fsl.data.image      as fslimage
 import fsl.data.strings    as strings
 import fsl.utils.transform as transform
 
-import volumeopts
-import maskopts
-
 
 log = logging.getLogger(__name__)
 
 
-_IMAGETYPE_OPTS_MAP = {
-    'volume' : volumeopts.VolumeOpts,
-    'mask'   : maskopts.  MaskOpts
-}
+class DisplayOpts(props.SyncableHasProperties):
+
+    def __init__(self, image, display, imageList, displayCtx, parent=None):
+        props.SyncableHasProperties.__init__(self, parent)
+        self.image      = image
+        self.displayCtx = displayCtx
+        self.imageList  = imageList
+        self.imageType  = image.imageType
 
 
 class Display(props.SyncableHasProperties):
@@ -105,14 +108,16 @@ class Display(props.SyncableHasProperties):
         return self.image.is4DImage()
 
 
-    def __init__(self, image, parent=None):
+    def __init__(self, image, imageList, displayCtx, parent=None):
         """Create a :class:`Display` for the specified image.
 
         :arg image: A :class:`~fsl.data.image.Image` object.
 
         :arg parent: 
         """
-        self.image = image
+        self.image      = image
+        self.imageList  = image
+        self.displayCtx = displayCtx
 
         # bind self.name to image.name, so changes
         # in one are propagated to the other
@@ -209,8 +214,8 @@ class Display(props.SyncableHasProperties):
         """
         """
 
-        if (self.__displayOpts is None) or \
-           (type(self.__displayOpts) != _IMAGETYPE_OPTS_MAP[self.imageType]):
+        if (self.__displayOpts           is None) or \
+           (self.__displayOpts.imageType != self.imageType):
             
             self.__displayOpts = self.__makeDisplayOpts()
             
@@ -220,18 +225,32 @@ class Display(props.SyncableHasProperties):
     def __makeDisplayOpts(self):
         """
         """
+
+        import volumeopts
+        import tensoropts
+        import maskopts        
         
         if self.getParent() is None:
             oParent = None
         else:
             oParent = self.getParent().getDisplayOpts()
 
-        optType = _IMAGETYPE_OPTS_MAP[self.imageType]
+        optsMap = {
+            'volume' : volumeopts.VolumeOpts,
+            'tensor' : tensoropts.TensorOpts,
+            'mask'   : maskopts.  MaskOpts
+        }
+
+        optType = optsMap[self.imageType]
         log.debug('Creating DisplayOpts for image {}: {}'.format(
             self.name,
             optType.__name__))
         
-        return optType(self.image, oParent)
+        return optType(self.image,
+                       self,
+                       self.imageList,
+                       self.displayCtx,
+                       oParent)
 
     
     def __imageTypeChanged(self, *a):

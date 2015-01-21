@@ -14,6 +14,8 @@ import props
 import fsl.data.strings       as strings
 import fsl.fslview.colourmaps as fslcm
 
+import display as fsldisplay
+
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ log = logging.getLogger(__name__)
 # which have a display range/cmap).
 
 
-class VolumeOpts(props.SyncableHasProperties):
+class VolumeOpts(fsldisplay.DisplayOpts):
     """A class which describes how an :class:`~fsl.data.image.Image` should
     be displayed.
 
@@ -88,7 +90,7 @@ class VolumeOpts(props.SyncableHasProperties):
     _propHelp = _tooltips
 
 
-    def __init__(self, image, parent=None):
+    def __init__(self, image, display, imageList, displayCtx, parent=None):
         """Create an :class:`ImageDisplay` for the specified image.
 
         :arg image: A :class:`~fsl.data.image.Image` object.
@@ -118,4 +120,8 @@ class VolumeOpts(props.SyncableHasProperties):
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
-        props.SyncableHasProperties.__init__(self, parent)
+        fsldisplay.DisplayOpts.__init__(self,
+                                        display,
+                                        imageList,
+                                        displayCtx,
+                                        parent) 

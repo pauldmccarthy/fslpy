@@ -12,8 +12,9 @@ import numpy as np
 import props
 
 import fsl.data.strings as strings
+import display          as fsldisplay
 
-class MaskOpts(props.SyncableHasProperties):
+class MaskOpts(fsldisplay.DisplayOpts):
 
     colour     = props.Colour()
     invert     = props.Boolean(default=False)
@@ -23,8 +24,12 @@ class MaskOpts(props.SyncableHasProperties):
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']]) 
 
-    def __init__(self, image, parent=None):
-        props.SyncableHasProperties.__init__(self, parent)
+    def __init__(self, image, display, imageList, displayCtx, parent=None):
+        fsldisplay.DisplayOpts.__init__(self,
+                                        display,
+                                        imageList,
+                                        displayCtx,
+                                        parent)
 
         if np.prod(image.shape) > 2 ** 30:
             sample = image.data[..., image.shape[-1] / 2]

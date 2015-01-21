@@ -141,6 +141,9 @@ properties = TypeDict({
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
     'MaskOpts.threshold'      : 'Threshold',
+
+    'TensorOpts.displayMode'  : 'Display mode',
+    'TensorOpts.colour'       : 'Colour',
 })
 
 
@@ -184,6 +187,9 @@ choices = TypeDict({
 
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
+
+    'TensorOpts.displayType.lines' : 'Lines',
+    'TensorOpts.displayType.rgb'   : 'RGB',
     
     'Display.transform.affine' : 'Use qform/sform transformation matrix',
     'Display.transform.pixdim' : 'Use pixdims only',

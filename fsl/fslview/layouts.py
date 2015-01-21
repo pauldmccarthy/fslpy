@@ -22,6 +22,7 @@ from fsl.fslview.views.lightboxpanel         import LightBoxPanel
 from fsl.fslview.displaycontext              import Display
 from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
 from fsl.fslview.displaycontext.maskopts     import MaskOpts
+from fsl.fslview.displaycontext.tensoropts   import TensorOpts
 
 
 def widget(name, labelCls, *args, **kwargs):
@@ -149,6 +150,10 @@ MaskOptsLayout = props.VGroup((
     widget('invert',    MaskOpts),
     widget('threshold', MaskOpts)))
 
+TensorOptsLayout = props.VGroup((
+    widget('displayMode', TensorOpts),
+    widget('colour',      TensorOpts))) 
+
 
 layouts = td.TypeDict({
 
@@ -164,4 +169,5 @@ layouts = td.TypeDict({
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,
     'MaskOpts'   : MaskOptsLayout,
+    'TensorOpts' : TensorOptsLayout, 
 })

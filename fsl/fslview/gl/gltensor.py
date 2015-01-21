@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #
-# gltensorline.py - OpenGL vertex creation and rendering code for drawing a
+# gltensor.py - OpenGL vertex creation and rendering code for drawing a
 # X*Y*Z*3 image as a tensor image.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""OpenGL vertex creation and rendering code for drawing a # X*Y*Z*3 image as
+"""OpenGL vertex creation and rendering code for drawing a X*Y*Z*3 image as
 a tensor image.
 """
 
@@ -20,18 +20,19 @@ import globject
 
 import fsl.utils.transform as transform
 
-class GLTensorLine(object):
-    """The :class:`GLTensorLine` class encapsulates the data and logic required to
+
+class GLTensor(globject.GLObject):
+    """The :class:`GLTensor` class encapsulates the data and logic required to
     render 2D slices of a X*Y*Z*3 image as tensor lines.
     """
 
     def __init__(self, image, display):
-        """Create a :class:`GLTensorLine` object bound to the given image and
+        """Create a :class:`GLTensor` object bound to the given image and
         display.
 
         :arg image:        A :class:`~fsl.data.image.Image` object.
         
-        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
+        :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.Display`
                            object which describes how the image is to be
                            displayed .
         """
@@ -40,9 +41,8 @@ class GLTensorLine(object):
             raise ValueError('Image must be 4 dimensional, with 3 volumes '
                              'representing the XYZ tensor angles')
 
-        self.image   = image
-        self.display = display
-        self._ready  = False
+        globject.GLObject.__init__(self, image, display)
+        self._ready = False
 
         
     def ready(self):
@@ -105,6 +105,7 @@ class GLTensorLine(object):
         zax         = self.zax
         image       = self.image
         display     = self.display
+        opts        = self.displayOpts
         worldCoords = self.worldCoords
 
         if not display.enabled: return
@@ -167,9 +168,9 @@ class GLTensorLine(object):
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-        colour = self.display.cmap(0.5)
+        colour = opts.colour
 
-        gl.glColor4f(colour[0], colour[1], colour[2], self.display.alpha)
+        gl.glColor4f(colour[0], colour[1], colour[2], display.alpha)
         gl.glLineWidth(2)
         gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
         gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels)

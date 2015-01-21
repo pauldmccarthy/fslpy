@@ -126,7 +126,7 @@ class DisplayContext(props.SyncableHasProperties):
             else:
                 dParent = self.getParent().getDisplayProperties(image)
 
-            display = fsldisplay.Display(image, dParent)
+            display = fsldisplay.Display(image, self._imageList, self, dParent)
             self._imageDisplays[image] = display
         
         return display
