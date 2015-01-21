@@ -267,18 +267,18 @@ def preDraw(glvol):
     glvol.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
 
 
-def draw(glimg, zpos, xform=None):
+def draw(glvol, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
 
-    display = glimg.display
+    display = glvol.display
     
     # Don't draw the slice if this
     # image display is disabled
     if not display.enabled: return
 
-    worldCoords  = glimg.worldCoords
-    indices      = glimg.indices
-    worldCoords[:, glimg.zax] = zpos
+    worldCoords  = glvol.worldCoords
+    indices      = glvol.indices
+    worldCoords[:, glvol.zax] = zpos
 
     # Apply the custom xform if provided.
     # I'm doing this on CPU to minimise
@@ -295,7 +295,7 @@ def draw(glimg, zpos, xform=None):
     # as opposed to the single call to
     # glLoadMatrixf required here
     if xform is not None:
-        xform = transform.concat(xform, glimg.mvmat)
+        xform = transform.concat(xform, glvol.mvmat)
         gl.glLoadMatrixf(xform)
 
     worldCoords = worldCoords.ravel('C')
