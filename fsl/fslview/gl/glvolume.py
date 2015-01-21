@@ -41,7 +41,6 @@ version-specific module is used.  The image data itself is stored on the GPU
 as a 3D texture, and the current colour map as a 1D texture. A slice through
 the texture is rendered using four vertices, located at the respective corners
 of the image bounds.
-
 """
 
 import logging
@@ -80,19 +79,20 @@ class GLVolume(globject.GLObject):
         # An attribute is set on the image object so the
         # genImageTexture method can figure out whether
         # or not the image texture needs to be updated
+        name = '{}Dirty'.format(type(self).__name__)
         def markImage(*a):
-            image.setAttribute('GLVolumeDirty', True)
+            image.setAttribute(name, True)
 
         # Only one 'GLVolumeDirty' listener, for all GLVolume
         # instances, is registered on ecah image/display,
         # so the GLVolumeDirty attribute is only set once.
-        try: display.addListener('interpolation', 'GLVolumeDirty', markImage)
+        try: display.addListener('interpolation', name, markImage)
         except: pass
-        try: display.addListener('volume',        'GLVolumeDirty', markImage)
+        try: display.addListener('volume',        name, markImage)
         except: pass
-        try: display.addListener('resolution',    'GLVolumeDirty', markImage)
+        try: display.addListener('resolution',    name, markImage)
         except: pass
-        try: image  .addListener('data',          'GLVolumeDirty', markImage)
+        try: image  .addListener('data',          name, markImage)
         except: pass
 
 
@@ -112,7 +112,7 @@ class GLVolume(globject.GLObject):
         
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
-        self._configDisplayListeners()
+        self.addDisplayListeners()
 
         fslgl.glvolume_funcs.init(self, xax, yax)
 
@@ -190,25 +190,15 @@ class GLVolume(globject.GLObject):
         # Another GLVolume object may have
         # already deleted the image texture
         try:
-            imageTexture = self.image.delAttribute('GLVolumeTexture')
+            imageTexture = self.image.delAttribute(
+                '{}Texture'.format(type(self).__name__))
             log.debug('Deleting GL texture: {}'.format(imageTexture))
             gl.glDeleteTextures(1, imageTexture)
             
         except KeyError:
             pass
 
-        lnrName = 'GLVolume_{}'.format(id(self))
-
-        self.display    .removeListener('transform',     lnrName)
-        self.display    .removeListener('interpolation', lnrName)
-        self.display    .removeListener('alpha',         lnrName)
-        self.displayOpts.removeListener('displayRange',  lnrName)
-        self.displayOpts.removeListener('clipLow',       lnrName)
-        self.displayOpts.removeListener('clipHigh',      lnrName)
-        self.displayOpts.removeListener('cmap',          lnrName)
-        self.display    .removeListener('resolution',    lnrName)
-        self.display    .removeListener('volume',        lnrName)
-        self.image      .removeListener('data',          lnrName)
+        self.removeDisplayListeners()
         
         fslgl.glvolume_funcs.destroy(self)
 
@@ -390,8 +380,11 @@ class GLVolume(globject.GLObject):
 
         # Check to see if the image texture
         # has already been created
-        try:    imageTexture = image.getAttribute('GLVolumeTexture')
-        except: imageTexture = None
+        try:
+            imageTexture = image.getAttribute(
+                '{}Texture'.format(type(self).__name__))
+        except:
+            imageTexture = None
 
         # otherwise, create a new one
         if imageTexture is None:
@@ -399,7 +392,8 @@ class GLVolume(globject.GLObject):
             log.debug('Created GL texture: {}'.format(imageTexture))
 
         # The image buffer already exists, and is valid
-        elif not image.getAttribute('GLVolumeDirty'):
+        
+        elif not image.getAttribute('{}Dirty'.format(type(self).__name__)):
             self.imageTexture      = imageTexture
             self.imageTextureShape = shape
             return
@@ -471,8 +465,10 @@ class GLVolume(globject.GLObject):
         # of the image, and mark it as up to date, so other
         # things which want to render the same image data
         # don't need to regenerate the texture
-        image.setAttribute('GLVolumeTexture', imageTexture)
-        image.setAttribute('GLVolumeDirty',   False)
+        image.setAttribute('{}Texture'.format(type(self).__name__),
+                           imageTexture)
+        image.setAttribute('{}Dirty'  .format(type(self).__name__),
+                           False)
 
     
     def genColourTexture(self, colourResolution):
@@ -545,21 +541,20 @@ class GLVolume(globject.GLObject):
         gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
 
         
-    def _configDisplayListeners(self):
-        """Adds a bunch of listeners to the
-        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
-        how the given image is to be displayed.
+    def addDisplayListeners(self):
+        """Called by :meth:`init`.
+
+        Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.Display` object, and the
+        associated :class:`~fsl.fslview.displaycontext.volumeopts.VolumeOpts`
+        instance, which define how the image should be displayed.
 
         This is done so we can update the colour, vertex, and image data when
         display properties are changed.
         """ 
 
         def vertexUpdate(*a):
-            wc, tc, idx, nv = fslgl.glvolume_funcs.genVertexData(self)
-            self.worldCoords = wc
-            self.texCoords   = tc
-            self.indices     = idx
-            self.nVertices   = nv
+            self.setAxes(self.xax, self.yax)
 
         def imageUpdate(*a):
             self.genImageTexture()
@@ -567,7 +562,7 @@ class GLVolume(globject.GLObject):
         def colourUpdate(*a):
             self.genColourTexture(self.colourResolution)
 
-        lnrName = 'GLVolume_{}'.format(id(self))
+        lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
         self.display    .addListener('transform',     lnrName, vertexUpdate)
         self.display    .addListener('interpolation', lnrName, imageUpdate)
@@ -579,3 +574,22 @@ class GLVolume(globject.GLObject):
         self.display    .addListener('resolution',    lnrName, imageUpdate)
         self.display    .addListener('volume',        lnrName, imageUpdate)
         self.image      .addListener('data',          lnrName, imageUpdate)
+
+
+    def removeDisplayListeners(self):
+        """Called by :meth:`destroy`. Removes all the property listeners that
+        were added by :meth:`addDisplayListeners`.
+        """
+
+        lnrName = '{}_{}'.format(type(self).__name__, id(self))
+
+        self.display    .removeListener('transform',     lnrName)
+        self.display    .removeListener('interpolation', lnrName)
+        self.display    .removeListener('alpha',         lnrName)
+        self.displayOpts.removeListener('displayRange',  lnrName)
+        self.displayOpts.removeListener('clipLow',       lnrName)
+        self.displayOpts.removeListener('clipHigh',      lnrName)
+        self.displayOpts.removeListener('cmap',          lnrName)
+        self.display    .removeListener('resolution',    lnrName)
+        self.display    .removeListener('volume',        lnrName)
+        self.image      .removeListener('data',          lnrName)

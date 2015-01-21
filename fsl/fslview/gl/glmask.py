@@ -13,319 +13,149 @@ that its associated :class:`~fsl.fslview.displaycontext.Display` instance
 contains a :class:`~fsl.fslview.displatcontext.maskopts.MaskOpts` instance,
 containing mask-specific display properties.
 
-The :class:`GLMask` class is closely based on the
-:class:`~fsl.fslview.gl.glvolume.GLVolume` class.
+The :class:`GLMask` class uses the functionality of the
+:class:`~fsl.fslview.gl.glvolume.GLVolume` class through inheritance.
 """
 
 import logging
 
 
-import numpy                          as np
-import OpenGL.GL                      as gl
-import OpenGL.GL.ARB.fragment_program as arbfp
-import OpenGL.GL.ARB.vertex_program   as arbvp
+import numpy                   as np
+import OpenGL.GL               as gl
 
-
-import fsl.fslview.gl.globject            as globject
-import fsl.fslview.gl.gl14.glvolume_funcs as glvolume_funcs
-import fsl.utils.transform                as transform
+import fsl.fslview.gl.glvolume as glvolume
 
 
 log = logging.getLogger(__name__)
 
 
-_glmask_vertex_program = glvolume_funcs._glvolume_vertex_program
+class GLMask(glvolume.GLVolume):
+    """The :class:`GLMask` class encapsulates logic to render 2D slices of a
+    :class:`~fsl.data.image.Image` instance as a binary mask in OpenGL.
 
-
-_glmask_fragment_program = """!!ARBfp1.0
-
-
-"""
-
-
-class GLMask(globject.GLObject):
+    ``GLMask`` is a subclass of the :class:`~fsl.fslview.gl.glvolume.GLVolume
+    class. It overrides a few key methods of ``GLVolume``, but most of the
+    logic is provided by ``GLVolume``.
     """
-    """
-    
-    def __init__(self, image, display):
-        globject.GLObject.__init__(self, image, display)
+
+
+    def addDisplayListeners(self):
+        """Overrides
+        :meth:`~fsl.fslview.gl.glvolume.GLVolume.addDisplayListeners`.
+
+        Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.Display` object, and the
+        associated :class:`~fsl.fslview.displaycontext.maskopts.MaskOpts`
+        instance, which define how the mask image should be displayed.
+        """
+        def vertexUpdate(*a):
+            self.setAxes(self.xax, self.yax)
+
+        def imageUpdate(*a):
+            self.genImageTexture()
         
-        self._ready = False
+        def colourUpdate(*a):
+            self.genColourTexture(self.colourResolution)
 
-        # Multiple GLMask instances may manage a single image
-        # texture - see the comments in GLVolume.__init__.
-        def markImage(*a):
-            image.setAttribute('GLMaskDirty', True)
+        lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
-        opts = self.displayOpts
+        self.display    .addListener('transform',     lnrName, vertexUpdate)
+        self.display    .addListener('interpolation', lnrName, imageUpdate)
+        self.display    .addListener('alpha',         lnrName, colourUpdate)
+        self.display    .addListener('resolution',    lnrName, imageUpdate)
+        self.display    .addListener('volume',        lnrName, imageUpdate)
+        self.image      .addListener('data',          lnrName, imageUpdate)
+        self.displayOpts.addListener('colour',        lnrName, colourUpdate)
+        self.displayOpts.addListener('threshold',     lnrName, colourUpdate)
+        self.displayOpts.addListener('invert',        lnrName, colourUpdate)
 
-        try:    display.addListener('interpolation', 'GLMaskDirty', markImage)
-        except: pass
-        try:    display.addListener('resolution',    'GLMaskDirty', markImage)
-        except: pass
-        try:    display.addListener('data',          'GLMaskDirty', markImage)
-        except: pass
-        try:    opts   .addListener('threshold',     'GLMaskDirty', markImage)
-        except: pass 
+
+    def removeDisplayListeners(self):
+        """Overrides
+        :meth:`~fsl.fslview.gl.glvolume.GLVolume.removeDisplayListeners`.
+
+        Removes all the listeners added by :meth:`addDisplayListeners`.
+        """
+        
+        lnrName = '{}_{}'.format(type(self).__name__, id(self))
+
+        self.display    .removeListener('transform',     lnrName)
+        self.display    .removeListener('interpolation', lnrName)
+        self.display    .removeListener('alpha',         lnrName)
+        self.display    .removeListener('resolution',    lnrName)
+        self.display    .removeListener('volume',        lnrName)
+        self.image      .removeListener('data',          lnrName)
+        self.displayOpts.removeListener('colour',        lnrName)
+        self.displayOpts.removeListener('threshold',     lnrName)
+        self.displayOpts.removeListener('invert',        lnrName) 
 
         
-    def ready(self):
-        return self._ready
+    def genColourTexture(self, *a):
+        """Overrides
+        :meth:`~fsl.fslview.gl.glvolume.GLVolume.genColourTexture`.
 
+        Creates a colour texture which contains the current mask colour,
+        and a transformation matrix which maps from the current
+        :attr:`~fsl.fslview.displaycontext.maskopts.MaskOpts.threshold` range
+        to the texture range, so that voxels within this range are coloured,
+        and voxels outside the range are transparent (or vice versa, if the
+        :attr:`~fsl.fslview.displaycontext.maskopts.MaskOpts.invert` flag
+        is set).
+        """
 
-    def init(self, xax, yax):
-
-        image   = self.image
         display = self.display
         opts    = self.displayOpts
-        
-        self.setAxes(xax, yax)
-        self.genImageTexture()
 
-        lName = '{}_{}'.format(type(self).__name__, id(self))
-        display.addListener('transform',     lName, self.genVertexData)
-        display.addListener('resolution',    lName, self.genImageTexture)
-        display.addListener('interpolation', lName, self.genImageTexture)
-        display.addListener('volume',        lName, self.genImageTexture)
-        opts   .addListener('threshold',     lName, self.genImageTexture)
-        image  .addListener('data',          lName, self.genImageTexture)
-        
-        self._ready = True
+        imin = opts.threshold[0]
+        imax = opts.threshold[1]
 
-    
-    def destroy(self):
-        """
-        """
-        # Another GLMask object may have
-        # already deleted the image texture
-        try:
-            imageTexture = self.image.delAttribute('GLMaskTexture')
-            log.debug('Deleting GL texture: {}'.format(imageTexture))
-            gl.glDeleteTextures(1, imageTexture)
-            
-        except KeyError:
-            pass
+        # This transformation is used to transform voxel values
+        # from their native range to the range [0.0, 1.0], which
+        # is required for texture colour lookup. Values below
+        # or above the current display range will be mapped
+        # to texture coordinate values less than 0.0 or greater
+        # than 1.0 respectively.
+        cmapXform = np.identity(4, dtype=np.float32)
+        cmapXform[0, 0] = 1.0 / (imax - imin)
+        cmapXform[3, 0] = -imin * cmapXform[0, 0]
 
-        lName = '{}_{}'.format(type(self).__name__, id(self))
-        self.display.removeListener('transform',     lName)
-        self.display.removeListener('resolution',    lName)
-        self.display.removeListener('interpolation', lName)
-        self.display.removeListener('volume',        lName)
-        self.image  .removeListener('data',          lName) 
+        self.colourMapXform = cmapXform
 
-    
-    def setAxes(self, xax, yax):
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-        self.genVertexData()
+        if opts.invert:
+            colourmap = np.tile([[0.0, 0.0, 0.0, 0.0]], (2, 1))
+            border    = np.array(opts.colour + [display.alpha],
+                                 dtype=np.float32)
+        else:
+            colourmap = np.tile([[opts.colour + [display.alpha]]], (2, 1))
+            border    = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)            
 
-        
-    def genImageTexture(self, *a):
+        colourmap = np.floor(colourmap * 255)
+        colourmap = np.array(colourmap, dtype=np.uint8)
+        colourmap = colourmap.ravel('C')
 
-        image      = self.image
-        display    = self.display
-        opts       = self.displayOpts
-        volume     = display.volume
-        resolution = display.resolution
 
-        xstep = np.round(resolution / image.pixdim[0])
-        ystep = np.round(resolution / image.pixdim[1])
-        zstep = np.round(resolution / image.pixdim[2])
-        
-        if xstep < 1: xstep = 1
-        if ystep < 1: ystep = 1
-        if zstep < 1: zstep = 1
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
 
-        xstart = xstep / 2
-        ystart = ystep / 2
-        zstart = zstep / 2
-
-        if len(image.shape) > 3: texData = image.data[xstart::xstep,
-                                                      ystart::ystep,
-                                                      zstart::zstep,
-                                                      volume]
-        else:                    texData = image.data[xstart::xstep,
-                                                      ystart::ystep,
-                                                      zstart::zstep]
-        texData = np.array(texData)
-        
-        try:    imageTexture = image.getAttribute('GLMaskTexture')
-        except: imageTexture = None
-        
-        if imageTexture is None:
-            imageTexture = gl.glGenTextures(1)
-            log.debug('Created GL texture: {}'.format(imageTexture))
-
-        elif not image.getAttribute('GLMaskDirty'):
-            self.imageTexture = imageTexture
-            return
-
-        self.imageTexture = imageTexture
-
-        print 'Regen: {}'.format(opts.threshold)
-
-        mask = texData >= opts.threshold
-
-        texShape       = texData.shape
-        texData[ mask] = 255
-        texData[~mask] = 0
-        texData        = np.array(texData, dtype=np.uint8)
-        texData        = texData.ravel(order='F')
-        
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-        # Set up image texture sampling thingos
-        # with appropriate interpolation method
-        if display.interpolation == 'none': interp = gl.GL_NEAREST
-        else:                               interp = gl.GL_LINEAR 
-
-        gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           interp)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           interp)
-
-        # Make everything outside
-        # of the image transparent
-        gl.glTexParameterfv(gl.GL_TEXTURE_3D,
+        gl.glTexParameterfv(gl.GL_TEXTURE_1D,
                             gl.GL_TEXTURE_BORDER_COLOR,
-                            np.array([0, 0, 0, 0], dtype=np.float32))
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                            border)
+        
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_WRAP_S,
                            gl.GL_CLAMP_TO_BORDER)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_WRAP_T,
-                           gl.GL_CLAMP_TO_BORDER)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_WRAP_R,
-                           gl.GL_CLAMP_TO_BORDER)
-        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
-                        gl.GL_ALPHA8,
-                        texShape[0],
-                        texShape[1],
-                        texShape[2],
+                        gl.GL_RGBA8,
+                        2,
                         0,
-                        gl.GL_ALPHA, 
+                        gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,
-                        texData)
-
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        
-        image.setAttribute('GLMaskTexture', imageTexture)
-        image.setAttribute('GLMaskDirty',   False) 
-            
-
-    def genVertexData(self, *a):
-        image        = self.image
-        xax          = self.xax
-        yax          = self.yax
-        transformMat = self.display.voxToDisplayMat
-
-        xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
-        ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
-
-        worldCoords = np.zeros((4, 3), dtype=np.float32)
-
-        worldCoords[0, [xax, yax]] = (xmin, ymin)
-        worldCoords[1, [xax, yax]] = (xmin, ymax)
-        worldCoords[2, [xax, yax]] = (xmax, ymin)
-        worldCoords[3, [xax, yax]] = (xmax, ymax)
-
-        indices = np.arange(0, 4, dtype=np.uint32)
-
-        self.worldCoords = worldCoords
-        self.indices     = indices
-    
-
-    def preDraw(self):
-        
-        display = self.display
-        opts    = self.displayOpts
-        if not display.enabled:
-            return
-
-        colour = np.array(opts.colour + [display.alpha], dtype=np.float32)
-
-        if opts.invert: opAlpha = gl.GL_ONE_MINUS_SRC_ALPHA
-        else:           opAlpha = gl.GL_SRC_ALPHA 
-
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture)
-
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_COMBINE)
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_COMBINE_RGB,      gl.GL_MODULATE)
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_COMBINE_ALPHA,    gl.GL_MODULATE)
-
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_SOURCE0_RGB, gl.GL_PRIMARY_COLOR)
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_SOURCE0_ALPHA, gl.GL_TEXTURE)
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_OPERAND0_ALPHA, opAlpha)
-
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-        
-        gl.glColor4f(*colour)
-
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glPushMatrix()
-        self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
-
-    
-    def draw(self, zpos, xform=None):
-        
-        display = self.display
-        if not display.enabled:
-            return
-        
-        worldCoords  = self.worldCoords
-        indices      = self.indices
-        worldCoords[:, self.zax] = zpos
-
-        texCoords = transform.transform(worldCoords, display.displayToVoxMat)
-
-        texCoords[:, self.xax] /= self.image.shape[self.xax]
-        texCoords[:, self.yax] /= self.image.shape[self.yax]
-        texCoords[:, self.zax] /= self.image.shape[self.zax]
-
-        worldCoords = worldCoords.ravel('C')
-        texCoords   = texCoords  .ravel('C')
-
-        # TODO need to transform texture coordinates properly,
-        # from display to vox, then from vox to sub-sampled
-        # vox
-
-        if xform is not None:
-            xform = transform.concat(xform, self.mvmat)
-            gl.glLoadMatrixf(xform) 
-
-        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
-
-        gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices) 
-
-    
-    def postDraw(self):
-        
-        display = self.display
-        if not display.enabled:
-            return
-
-        gl.glPopMatrix()
-
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-        gl.glDisable(gl.GL_TEXTURE_3D)
+                        colourmap)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)        
