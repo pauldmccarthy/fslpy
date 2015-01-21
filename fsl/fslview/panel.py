@@ -36,12 +36,12 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.data.image      as fslimage
-import fsl.fslview.actions as actions
-
-import displaycontext
-
 import props
+
+import fsl.data.image as fslimage
+
+import actions
+import displaycontext
 
 
 class FSLViewPanel(wx.Panel, actions.ActionProvider):
