@@ -44,6 +44,69 @@ class GLTensor(globject.GLObject):
         globject.GLObject.__init__(self, image, display)
         self._ready = False
 
+
+        if self.displayOpts.displayMode == 'line':
+            self.preDraw  = self.lineModePreDraw
+            self.draw     = self.lineModeDraw
+            self.postDraw = self.lineModePostDraw
+        elif self.displayOpts.displayMode == 'rgb':
+            self.preDraw  = self.rgbModePreDraw
+            self.draw     = self.rgbModeDraw
+            self.postDraw = self.rgbModePostDraw 
+
+    
+    def addDisplayListeners(self):
+        """Adds a bunch of listeners to the
+        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
+        how the given image is to be displayed.
+        """
+
+        display = self.display
+        opts    = self.displayOpts
+
+        def coordUpdate(*a):
+            self.setAxes(self.xax, self.yax)
+
+        def modeChange(*a):
+            if opts.displayMode == 'line':
+                self.preDraw  = self.lineModePreDraw
+                self.draw     = self.lineModeDraw 
+                self.postDraw = self.lineModePostDraw
+
+            elif opts.displayMode == 'rgb':
+                self.preDraw  = self.rgbModePreDraw
+                self.draw     = self.rgbModeDraw 
+                self.postDraw = self.rgbModePostDraw
+
+            self.setAxes(self.xax, self.yax)
+            
+
+        lName = '{}_{}'.format(self.__class__.__name__, id(self))
+
+        display.addListener('transform',     lName, coordUpdate)
+        display.addListener('interpolation', lName, coordUpdate)
+        display.addListener('resolution',    lName, coordUpdate)
+        opts   .addListener('displayMode',   lName, modeChange)
+
+        
+    def removeDisplayListeners(self):
+        lName = '{}_{}'.format(self.__class__.__name__, id(self))
+
+        self.display    .removeListener('transform',     lName)
+        self.display    .removeListener('interpolation', lName)
+        self.display    .removeListener('resolution',    lName)
+        self.displayOpts.removeListener('displayMode',   lName)
+
+
+    def init(self, xax, yax):
+        """Initialise the OpenGL data required to render the given image.
+
+        After this method has been called, the image is ready to be rendered.
+        """ 
+        self.setAxes(xax, yax)
+        self.addDisplayListeners()
+        self._ready = True
+
         
     def ready(self):
         """Returns `True` when the OpenGL data/state has been initialised, and the
@@ -51,51 +114,57 @@ class GLTensor(globject.GLObject):
         """ 
         return self._ready
 
+        
+    def destroy(self):
+        """Does nothing - nothing needs to be cleaned up. """
+
+        self.removeDisplayListeners()
+
+        if   self.displayOpts.displayMode == 'line': self.lineModeDestroy()
+        elif self.displayOpts.displayMode == 'rgb':  self.rgbModeDestroy()
+
 
     def setAxes(self, xax, yax):
-        """Calculates vertex locations according to the specified X/Y axes, and image
-        display properties. This is done via a call to the
+        """Calculates vertex locations according to the specified X/Y axes,
+        and image display properties. This is done via a call to the
         :func:`~fsl.fslview.gl.globject.calculateSamplePoints` function.
         """
 
         self.xax = xax
         self.yax = yax
         self.zax = 3 - xax - yax
-        
+
+        if   self.displayOpts.displayMode == 'line': self.lineModeInit()
+        elif self.displayOpts.displayMode == 'rgb':  self.rgbModeInit()
+
+
+    #######################
+    # methods for Line Mode
+    #######################
+
+
+    def lineModeInit(self):
+
         worldCoords, xpixdim, ypixdim, lenx, leny = \
-          globject.calculateSamplePoints(
-              self.image,
-              self.display,
-              self.xax,
-              self.yax)
+            globject.calculateSamplePoints(
+                self.image,
+                self.display,
+                self.xax,
+                self.yax)
 
         self.worldCoords = worldCoords
         self.xpixdim     = xpixdim
-        self.ypixdim     = ypixdim
-        
-        
-    def init(self, xax, yax):
-        """Initialise the OpenGL data required to render the given image.
-
-        After this method has been called, the image is ready to be rendered.
-        """ 
-        self.setAxes(xax, yax)
-        self._configDisplayListeners()
-        self._ready = True
+        self.ypixdim     = ypixdim 
 
         
-    def destroy(self):
-        """Does nothing - nothing needs to be cleaned up. """
+    def lineModeDestroy(self):
+        pass
+        
+    def lineModePreDraw(self):
         pass
 
-    def preDraw(self):
-        pass
-
-    def postDraw(self):
-        pass 
-
         
-    def draw(self, zpos, xform=None):
+    def lineModeDraw(self, zpos, xform=None):
         """Calculates tensor orientations for the specified Z-axis location, and
         renders them using immediate mode OpenGL.
         """
@@ -181,19 +250,26 @@ class GLTensor(globject.GLObject):
             gl.glMatrixMode(gl.GL_MODELVIEW)
             gl.glPopMatrix()
 
-            
-    def _configDisplayListeners(self):
-        """Adds a bunch of listeners to the
-        :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
-        how the given image is to be displayed.
-        """
+    
+    def lineModePostDraw(self):
+        pass 
 
-        def coordUpdate(*a):
-            self.setAxes(self.xax, self.yax)
 
-        display = self.display
-        lnrName = '{}_{}'.format(self.__class__.__name__, id(self))
+    ######################
+    # Methods for RGB mode
+    ######################
 
-        display.addListener('transform',     lnrName, coordUpdate)
-        display.addListener('interpolation', lnrName, coordUpdate)
-        display.addListener('resolution',    lnrName, coordUpdate)
+    def rgbModeInit(self):
+        pass
+
+    def rgbModeDestroy(self):
+        pass
+    
+    def rgbModePreDraw(self):
+        pass
+
+    def rgbModeDraw(self, zpos, xform=None):
+        pass
+
+    def rgbModePostDraw(self):
+        pass

@@ -13,8 +13,8 @@ import display          as fsldisplay
 class TensorOpts(fsldisplay.DisplayOpts):
 
     displayMode = props.Choice(
-        ('lines', 'rgb'),
-        labels=[strings.choices['TensorOpts.displayType.lines'],
+        ('line', 'rgb'),
+        labels=[strings.choices['TensorOpts.displayType.line'],
                 strings.choices['TensorOpts.displayType.rgb']])
 
 

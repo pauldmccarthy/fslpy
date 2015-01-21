@@ -122,7 +122,6 @@ properties = TypeDict({
     'OrthoEditProfile.localFill'      : 'Only select adjacent voxels',
     'OrthoEditProfile.searchRadius'   : 'Limit search to radius (mm)',
 
-
     'Display.name'              : 'Image name',
     'Display.enabled'           : 'Enabled',
     'Display.alpha'             : 'Opacity',
@@ -188,8 +187,8 @@ choices = TypeDict({
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
 
-    'TensorOpts.displayType.lines' : 'Lines',
-    'TensorOpts.displayType.rgb'   : 'RGB',
+    'TensorOpts.displayType.line' : 'Lines',
+    'TensorOpts.displayType.rgb'  : 'RGB',
     
     'Display.transform.affine' : 'Use qform/sform transformation matrix',
     'Display.transform.pixdim' : 'Use pixdims only',
