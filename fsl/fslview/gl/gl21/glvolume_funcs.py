@@ -132,7 +132,7 @@ def genVertexData(glvol):
     xax = glvol.xax
     yax = glvol.yax
 
-    worldCoords, texCoords, indices = glvol.genVertexData()
+    worldCoords, indices = glvol.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
 
@@ -140,7 +140,7 @@ def genVertexData(glvol):
     indexBuffer      = vbo.VBO(indices    .ravel('C'), gl.GL_STATIC_DRAW,
                                gl.GL_ELEMENT_ARRAY_BUFFER)
 
-    return worldCoordBuffer, texCoords, indexBuffer, len(indices)
+    return worldCoordBuffer, indexBuffer, len(indices)
 
 
 def preDraw(glvol):

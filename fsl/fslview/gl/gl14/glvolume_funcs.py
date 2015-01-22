@@ -175,9 +175,8 @@ def genVertexData(glvol):
     the image. See :func:`fsl.fslview.gl.glvolume.genVertexData`.
     """
     
-    worldCoords, texCoords, indices = glvol.genVertexData()
-
-    return worldCoords, texCoords, indices, indices.shape[0]
+    worldCoords, indices = glvol.genVertexData()
+    return worldCoords, indices, len(indices)
 
 
 def preDraw(glvol):

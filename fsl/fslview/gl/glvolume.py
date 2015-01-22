@@ -51,7 +51,6 @@ import numpy                   as np
 
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
-import fsl.utils.transform     as transform
 
 
 class GLVolume(globject.GLObject):
@@ -143,11 +142,10 @@ class GLVolume(globject.GLObject):
         self.xax         = xax
         self.yax         = yax
         self.zax         = 3 - xax - yax
-        wc, tc, idxs, nv = fslgl.glvolume_funcs.genVertexData(self)
+        wc, idxs, nverts = fslgl.glvolume_funcs.genVertexData(self)
         self.worldCoords = wc
-        self.texCoords   = tc
         self.indices     = idxs
-        self.nVertices   = nv
+        self.nVertices   = nverts
 
 
     def preDraw(self):
@@ -226,24 +224,10 @@ class GLVolume(globject.GLObject):
                       vertical screen axis (0, 1, or 2).
         """
 
-        image        = self.image
-        xax          = self.xax
-        yax          = self.yax
-        transformMat = self.display.voxToDisplayMat 
-        
-        xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
-        ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
-
-        worldCoords = np.zeros((4, 3), dtype=np.float32)
-
-        worldCoords[0, [xax, yax]] = (xmin, ymin)
-        worldCoords[1, [xax, yax]] = (xmin, ymax)
-        worldCoords[2, [xax, yax]] = (xmax, ymin)
-        worldCoords[3, [xax, yax]] = (xmax, ymax)
-
-        indices = np.arange(0, 4, dtype=np.uint32)
-
-        return worldCoords, None, indices
+        return globject.slice2D(self.image.shape,
+                                self.xax,
+                                self.yax,
+                                self.display.voxToDisplayMat)
 
     
     def _prepareImageTextureData(self, data):
@@ -342,38 +326,17 @@ class GLVolume(globject.GLObject):
         voxel value.
         """
 
-        image   = self.image
-        display = self.display
-        volume  = display.volume
-
-        resolution = display.resolution
-
-        xstep = np.round(resolution / image.pixdim[0])
-        ystep = np.round(resolution / image.pixdim[1])
-        zstep = np.round(resolution / image.pixdim[2])
-
-        if xstep < 1: xstep = 1
-        if ystep < 1: ystep = 1
-        if zstep < 1: zstep = 1
-
-        xstart = xstep / 2
-        ystart = ystep / 2
-        zstart = zstep / 2
-
-        # we only store a single 3D image
-        # in GPU memory at any one time
-        if len(image.shape) > 3: imageData = image.data[xstart::xstep,
-                                                        ystart::ystep,
-                                                        zstart::zstep,
-                                                        volume]
-        else:                    imageData = image.data[xstart::xstep,
-                                                        ystart::ystep,
-                                                        zstart::zstep]
+        image     = self.image
+        display   = self.display
+        imageData = globject.subsample(image.data,
+                                       display.resolution,
+                                       image.pixdim, 
+                                       display.volume)
 
         imageData, texIntFmt, texExtFmt, voxValXform = \
             self._prepareImageTextureData(imageData)
 
-        shape                  = imageData.shape
+        texDataShape           = imageData.shape
         self.voxValXform       = voxValXform
         self.imageTextureShape = imageData.shape
         self.imageShape        = image.data.shape
@@ -392,14 +355,13 @@ class GLVolume(globject.GLObject):
             log.debug('Created GL texture: {}'.format(imageTexture))
 
         # The image buffer already exists, and is valid
-        
         elif not image.getAttribute('{}Dirty'.format(type(self).__name__)):
             self.imageTexture      = imageTexture
-            self.imageTextureShape = shape
+            self.imageTextureShape = texDataShape
             return
         
         self.imageTexture      = imageTexture
-        self.imageTextureShape = shape
+        self.imageTextureShape = texDataShape
 
         log.debug('Configuring 3D texture (id {}) for '
                   'image {} (data shape: {})'.format(
@@ -451,9 +413,9 @@ class GLVolume(globject.GLObject):
         gl.glTexImage3D(gl.GL_TEXTURE_3D,
                         0,
                         texIntFmt,
-                        shape[0],
-                        shape[1],
-                        shape[2],
+                        texDataShape[0],
+                        texDataShape[1],
+                        texDataShape[2],
                         0,
                         gl.GL_LUMINANCE, 
                         texExtFmt,

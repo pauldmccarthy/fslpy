@@ -455,3 +455,97 @@ def voxelGrid(points, xax, yax, xpixdim, ypixdim):
     indices = (indices.T + np.repeat(np.arange(0, npoints * 4, 4), 8)).T
     
     return vertices, indices
+
+
+def slice2D(dataShape, xax, yax, voxToDisplayMat):
+    """Generates and returns four vertices which denote a slice through an
+    array of the given ``dataShape``, parallel to the plane defined by the
+    given ``xax`` and ``yax``, in the space defined by the given
+    ``voxToDisplayMat``.
+
+    :arg dataShape:       Number of elements along each dimension in the
+                          image data.
+    
+    :arg xax:             Index of display axis which corresponds to the
+                          horizontal screen axis.
+
+    :arg yax:             Index of display axis which corresponds to the
+                          vertical screen axis. 
+    
+    :arg voxToDisplayMat: Affine transformation matrix which transforms from
+                          voxel/array indices into the display coordinate
+                          system.
+
+
+    Returns a tuple containing:
+    
+      - A ``4*3`` ``numpy.float32`` array containing the vertex locations
+        of a slice through the data. The values along the ``Z`` axis are set
+        to ``0``.
+    
+      - A ``numpy.uint32`` array to be used as vertex indices.
+    """
+        
+    xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax)
+    ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax)
+
+    worldCoords = np.zeros((4, 3), dtype=np.float32)
+
+    worldCoords[0, [xax, yax]] = (xmin, ymin)
+    worldCoords[1, [xax, yax]] = (xmin, ymax)
+    worldCoords[2, [xax, yax]] = (xmax, ymin)
+    worldCoords[3, [xax, yax]] = (xmax, ymax)
+
+    indices = np.arange(0, 4, dtype=np.uint32)
+
+    return worldCoords, indices 
+
+
+def subsample(data, resolution, pixdim=None, volume=None):
+    """Samples the given data according to the given resolution.
+
+    :arg data:       The data to be sampled.
+
+    :arg resolution: Sampling resolution, proportional to the values in
+                     ``pixdim``.
+
+    :arg pixdim:     Length of each dimension in the input data (defaults to
+                     ``(1.0, 1.0, 1.0)``).
+
+    :arg volume:     If the image is a 4D volume, the volume index of the 3D
+                     image to be sampled.
+    """
+
+    if pixdim is None:
+        pixdim = (1.0, 1.0, 1.0)
+
+    xstep = np.round(resolution / pixdim[0])
+    ystep = np.round(resolution / pixdim[1])
+    zstep = np.round(resolution / pixdim[2])
+
+    if xstep < 1: xstep = 1
+    if ystep < 1: ystep = 1
+    if zstep < 1: zstep = 1
+
+    xstart = xstep / 2
+    ystart = ystep / 2
+    zstart = zstep / 2
+
+    if volume is not None:
+        if len(data.shape) > 3: sample = data[xstart::xstep,
+                                              ystart::ystep,
+                                              zstart::zstep,
+                                              volume]
+        else:                   sample = data[xstart::xstep,
+                                              ystart::ystep,
+                                              zstart::zstep]
+    else:
+        if len(data.shape) > 3: sample = data[xstart::xstep,
+                                              ystart::ystep,
+                                              zstart::zstep,
+                                              :]
+        else:                   sample = data[xstart::xstep,
+                                              ystart::ystep,
+                                              zstart::zstep]        
+
+    return sample
