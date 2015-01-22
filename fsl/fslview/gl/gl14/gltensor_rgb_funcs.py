@@ -78,6 +78,9 @@ def init(self):
     opts   .addListener('xColour',       self.name, cmapUpdate)
     opts   .addListener('yColour',       self.name, cmapUpdate)
     opts   .addListener('zColour',       self.name, cmapUpdate)
+    opts   .addListener('suppressX',     self.name, cmapUpdate)
+    opts   .addListener('suppressY',     self.name, cmapUpdate)
+    opts   .addListener('suppressZ',     self.name, cmapUpdate)    
 
 
 def destroy(self):
@@ -105,7 +108,10 @@ def destroy(self):
     self.display    .removeListener('alpha',         self.name)
     self.displayOpts.removeListener('xColour',       self.name)
     self.displayOpts.removeListener('yColour',       self.name)
-    self.displayOpts.removeListener('zColour',       self.name) 
+    self.displayOpts.removeListener('zColour',       self.name)
+    self.displayOpts.removeListener('suppressX',     self.name)
+    self.displayOpts.removeListener('suppressY',     self.name)
+    self.displayOpts.removeListener('suppressZ',     self.name) 
 
     del self.vertexProgram
     del self.fragmentProgram
@@ -208,29 +214,34 @@ def createImageTexture(self, *a):
 
 def createColourTextures(self, colourRes=256):
 
-    xColour = self.displayOpts.xColour + [1.0]
-    yColour = self.displayOpts.yColour + [1.0]
-    zColour = self.displayOpts.zColour + [1.0]
+
+    xcol = self.displayOpts.xColour + [1.0]
+    ycol = self.displayOpts.yColour + [1.0]
+    zcol = self.displayOpts.zColour + [1.0]
+
+    xsup = self.displayOpts.suppressX
+    ysup = self.displayOpts.suppressY
+    zsup = self.displayOpts.suppressZ 
 
     xtex = self.xColourTexture
     ytex = self.yColourTexture
     ztex = self.zColourTexture
 
-    xcmap = np.array([np.linspace(0.0, i, colourRes) for i in xColour])
-    ycmap = np.array([np.linspace(0.0, i, colourRes) for i in yColour])
-    zcmap = np.array([np.linspace(0.0, i, colourRes) for i in zColour])
+    for colour, texture, suppress in zip(
+            (xcol, ycol, zcol),
+            (xtex, ytex, ztex),
+            (xsup, ysup, zsup)):
 
-    xcmap[3, :] = self.display.alpha
-    ycmap[3, :] = self.display.alpha
-    zcmap[3, :] = self.display.alpha
+        if not suppress:
+            cmap = np.array([np.linspace(0.0, i, colourRes) for i in colour])
+        else:
+            cmap = np.zeros((4, colourRes))
 
-    xcmap = np.array(np.floor(xcmap * 255), dtype=np.uint8).ravel('F')
-    ycmap = np.array(np.floor(ycmap * 255), dtype=np.uint8).ravel('F')
-    zcmap = np.array(np.floor(zcmap * 255), dtype=np.uint8).ravel('F')
+        cmap[3, :] = self.display.alpha
+        cmap[3, 0] = 0.0
 
-    for cmap, texture in zip([xcmap, ycmap, zcmap],
-                             [xtex,  ytex,  ztex]):
-        
+        cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')
+
         gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MAG_FILTER,

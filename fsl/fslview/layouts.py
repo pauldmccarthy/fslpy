@@ -152,9 +152,16 @@ MaskOptsLayout = props.VGroup((
 
 TensorOptsLayout = props.VGroup((
     widget('displayMode', TensorOpts),
-    widget('xColour',      TensorOpts),
-    widget('yColour',      TensorOpts),
-    widget('zColour',      TensorOpts))) 
+    props.HGroup((
+        widget('xColour',      TensorOpts),
+        widget('yColour',      TensorOpts),
+        widget('zColour',      TensorOpts)),
+        vertLabels=True),
+    props.HGroup((
+        widget('suppressX', TensorOpts),
+        widget('suppressY', TensorOpts),
+        widget('suppressZ', TensorOpts)),
+        vertLabels=True)))
 
 
 layouts = td.TypeDict({

@@ -141,10 +141,14 @@ properties = TypeDict({
     'MaskOpts.invert'         : 'Invert',
     'MaskOpts.threshold'      : 'Threshold',
 
-    'TensorOpts.displayMode'  : 'Display mode',
-    'TensorOpts.xColour'      : 'X Colour',
-    'TensorOpts.yColour'      : 'Y Colour',
-    'TensorOpts.zColour'      : 'Z Colour',
+    'TensorOpts.displayMode'   : 'Display mode',
+    'TensorOpts.xColour'       : 'X Colour',
+    'TensorOpts.yColour'       : 'Y Colour',
+    'TensorOpts.zColour'       : 'Z Colour',
+
+    'TensorOpts.suppressX'     : 'Suppress X value',
+    'TensorOpts.suppressY'     : 'Suppress Y value',
+    'TensorOpts.suppressZ'     : 'Suppress Z value',
 })
 
 

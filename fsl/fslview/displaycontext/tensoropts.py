@@ -26,6 +26,15 @@ class TensorOpts(fsldisplay.DisplayOpts):
     
     zColour = props.Colour(default=(0.0, 0.0, 1.0))
 
+
+    suppressX = props.Boolean(default=False)
+
+    
+    suppressY = props.Boolean(default=False)
+
+    
+    suppressZ = props.Boolean(default=False)
+
     
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         fsldisplay.DisplayOpts.__init__(self,
