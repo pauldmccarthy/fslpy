@@ -30,14 +30,17 @@ This PDF is quite useful:
 """
 
 import logging
-log = logging.getLogger(__name__)
 
 import OpenGL.GL                      as gl
+import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform    as transform
 import fsl.fslview.gl.shaders as shaders
+
+
+log = logging.getLogger(__name__)
 
 
 def init(glvol, xax, yax):
@@ -55,8 +58,9 @@ def init(glvol, xax, yax):
     
 def destroy(glvol):
     """Deletes handles to the vertex/fragment programs."""
-    arbvp.glDeleteProgramsARB(glvol.vertexProgram) 
-    arbfp.glDeleteProgramsARB(glvol.fragmentProgram)
+
+    arbvp.glDeleteProgramsARB(1, gltypes.GLuint(glvol.vertexProgram))
+    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(glvol.fragmentProgram))
 
     
 def genVertexData(glvol):
@@ -213,10 +217,12 @@ def postDraw(glvol):
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
     gl.glPopMatrix()
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     gl.glPopMatrix()
 
     gl.glDisable(gl.GL_TEXTURE_1D)

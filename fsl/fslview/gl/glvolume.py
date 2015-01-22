@@ -51,6 +51,7 @@ import numpy                   as np
 
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
+import fsl.utils.transform     as transform
 
 
 class GLVolume(globject.GLObject):
@@ -85,13 +86,13 @@ class GLVolume(globject.GLObject):
         # Only one 'GLVolumeDirty' listener, for all GLVolume
         # instances, is registered on ecah image/display,
         # so the GLVolumeDirty attribute is only set once.
-        try: display.addListener('interpolation', name, markImage)
+        try:    display.addListener('interpolation', name, markImage)
         except: pass
-        try: display.addListener('volume',        name, markImage)
+        try:    display.addListener('volume',        name, markImage)
         except: pass
-        try: display.addListener('resolution',    name, markImage)
+        try:    display.addListener('resolution',    name, markImage)
         except: pass
-        try: image  .addListener('data',          name, markImage)
+        try:    image  .addListener('data',          name, markImage)
         except: pass
 
 
@@ -183,7 +184,7 @@ class GLVolume(globject.GLObject):
         deleting texture handles).
         """
         log.debug('Deleting GL texture: {}'.format(self.colourTexture))
-        gl.glDeleteTextures(1, self.colourTexture)
+        gl.glDeleteTextures(self.colourTexture)
 
         # Another GLVolume object may have
         # already deleted the image texture
@@ -191,13 +192,12 @@ class GLVolume(globject.GLObject):
             imageTexture = self.image.delAttribute(
                 '{}Texture'.format(type(self).__name__))
             log.debug('Deleting GL texture: {}'.format(imageTexture))
-            gl.glDeleteTextures(1, imageTexture)
+            gl.glDeleteTextures(imageTexture)
             
         except KeyError:
             pass
 
         self.removeDisplayListeners()
-        
         fslgl.glvolume_funcs.destroy(self)
 
 
@@ -303,9 +303,7 @@ class GLVolume(globject.GLObject):
         elif dtype == np.int16:  scale = 65535
         else:                    scale = dmax - dmin
 
-        voxValXform = np.eye(4, dtype=np.float32)
-        voxValXform[0, 0] = scale
-        voxValXform[3, 0] = offset
+        voxValXform = transform.scaleOffsetXform(scale, offset)
 
         return data, texIntFmt, texExtFmt, voxValXform
 

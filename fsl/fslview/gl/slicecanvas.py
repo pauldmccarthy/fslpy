@@ -384,6 +384,19 @@ class SliceCanvas(props.HasProperties):
                             valid=None,
                             name=None,
                             disp=display):
+
+                log.debug('GLObject representation for {} '
+                          'changed to {}'.format(display.name,
+                                                 display.imageType))
+
+                # Tell the previous GLObject (if
+                # any) to clean up after itself
+                try:
+                    globj = image.getAttribute(self.name)
+                    globj.destroy()
+                except KeyError:
+                    pass
+                
                 globj = globject.createGLObject(image, disp)
                 opts  = display.getDisplayOpts()
 

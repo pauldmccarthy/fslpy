@@ -26,9 +26,9 @@ This module provides the following functions:
 import logging
 log = logging.getLogger(__name__)
 
-import numpy             as np
-import OpenGL.GL         as gl
-import OpenGL.arrays.vbo as vbo
+import numpy                  as np
+import OpenGL.GL              as gl
+import OpenGL.raw.GL._types   as gltypes
 
 import fsl.fslview.gl.shaders as shaders
 import fsl.utils.transform    as transform
@@ -66,10 +66,10 @@ def _compileShaders(glvol):
                                                        'colourTexture') 
     glvol.useSplinePos       = gl.glGetUniformLocation(glvol.shaders,
                                                        'useSpline')
-    glvol.displayToVoxMatPos  = gl.glGetUniformLocation(glvol.shaders,
-                                                        'displayToVoxMat')
-    glvol.voxValXformPos      = gl.glGetUniformLocation(glvol.shaders,
-                                                        'voxValXform') 
+    glvol.displayToVoxMatPos = gl.glGetUniformLocation(glvol.shaders,
+                                                       'displayToVoxMat')
+    glvol.voxValXformPos     = gl.glGetUniformLocation(glvol.shaders,
+                                                       'voxValXform') 
 
 
 def init(glvol, xax, yax):
@@ -77,11 +77,16 @@ def init(glvol, xax, yax):
     """
     _compileShaders(glvol)
 
+    glvol.worldCoordBuffer = gl.glGenBuffers(1)
+    glvol.indexBuffer      = gl.glGenBuffers(1) 
+
 
 def destroy(glvol):
     """Cleans up VBO handles."""
-    glvol.worldCoords.delete()
-    glvol.indices    .delete()
+
+    gl.glDeleteBuffers(1, gltypes.GLuint(glvol.worldCoordBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(glvol.indexBuffer))
+    gl.glDeleteProgram(glvol.shaders)
 
 
 def genVertexData(glvol):
@@ -92,13 +97,26 @@ def genVertexData(glvol):
     xax = glvol.xax
     yax = glvol.yax
 
+    worldCoordBuffer     = glvol.worldCoordBuffer
+    indexBuffer          = glvol.indexBuffer
     worldCoords, indices = glvol.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
 
-    worldCoordBuffer = vbo.VBO(worldCoords.ravel('C'), gl.GL_STATIC_DRAW)
-    indexBuffer      = vbo.VBO(indices    .ravel('C'), gl.GL_STATIC_DRAW,
-                               gl.GL_ELEMENT_ARRAY_BUFFER)
+    worldCoords = worldCoords.ravel('C')
+    indices     = indices    .ravel('C')
+    
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, worldCoordBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER, 
+                    worldCoords.nbytes,
+                    worldCoords,
+                    gl.GL_STATIC_DRAW)
+
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, indexBuffer)
+    gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
+                    indices.nbytes,
+                    indices,
+                    gl.GL_STATIC_DRAW)
 
     return worldCoordBuffer, indexBuffer, len(indices)
 
@@ -155,7 +173,7 @@ def preDraw(glvol):
     gl.glUniform1i(glvol.imageTexturePos, 1)
 
     # Bind the world x/y coordinate buffer
-    glvol.worldCoords.bind()
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, glvol.worldCoords)
     gl.glVertexAttribPointer(
         glvol.worldCoordPos,
         2,
@@ -166,7 +184,7 @@ def preDraw(glvol):
     gl.glEnableVertexAttribArray(glvol.worldCoordPos)
 
     # Bind the vertex index buffer
-    glvol.indices.bind()
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, glvol.indices)
 
 
 def draw(glvol, zpos, xform=None):
@@ -214,7 +232,7 @@ def postDraw(glvol):
     gl.glDisable(gl.GL_TEXTURE_1D)
     gl.glDisable(gl.GL_TEXTURE_3D)
 
-    glvol.indices    .unbind()
-    glvol.worldCoords.unbind()
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
 
     gl.glUseProgram(0)

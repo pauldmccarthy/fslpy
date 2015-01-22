@@ -23,6 +23,33 @@ def concat(x1, x2):
     return np.dot(x1, x2)
 
 
+def scaleOffsetXform(scales, offsets):
+    """Creates and returns an affine transformation matrix which encodes
+    the specified scale(s) and offset(s).
+    """
+
+    if not isinstance(scales,  collections.Sequence): scales  = [scales]
+    if not isinstance(offsets, collections.Sequence): offsets = [offsets]
+
+    lens = len(scales)
+    leno = len(offsets)
+
+    if lens < 3: scales  = scales  + [1] * (3 - lens)
+    if leno < 3: offsets = offsets + [0] * (3 - leno)
+
+    xform = np.eye(4, dtype=np.float32)
+
+    xform[0, 0] = scales[0]
+    xform[1, 1] = scales[1]
+    xform[2, 2] = scales[2]
+
+    xform[3, 0] = offsets[0]
+    xform[3, 1] = offsets[0]
+    xform[3, 2] = offsets[0]
+
+    return xform
+
+
 def axisBounds(shape, xform, axes=None):
     """Returns the (lo, hi) bounds of the specified axis/axes."""
 

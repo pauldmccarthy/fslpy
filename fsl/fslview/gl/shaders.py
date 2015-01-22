@@ -24,9 +24,7 @@ import logging
 
 import os.path as op
 
-import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.glvolume as glvolume
-import fsl.fslview.gl.gltensor as gltensor
+import fsl.fslview.gl as fslgl
 
 
 log = logging.getLogger(__name__)
@@ -173,6 +171,9 @@ def _getFileName(globj, shaderType):
     # callers can request a specific
     # shader by passing the name, rather
     # than passing a GLObject instance
+    import fsl.fslview.gl.glvolume as glvolume
+    import fsl.fslview.gl.gltensor as gltensor
+    
     if   isinstance(globj, str):               prefix =  globj
     elif isinstance(globj, glvolume.GLVolume): prefix = 'glvolume'
     elif isinstance(globj, gltensor.GLTensor): prefix = 'gltensor'
