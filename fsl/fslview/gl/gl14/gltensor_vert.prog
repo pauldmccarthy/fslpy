@@ -1,0 +1,29 @@
+!!ARBvp1.0
+#
+# Vertex program used for rendering GLVolume instances.
+#
+# This vertex program does two things:
+#
+#  - Transforms vertex coordinates from display space into screen space
+#
+#  - Sets the vertex texture coordinate from its display coordinate
+#
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+#
+
+# Transform the vertex coordinates from the display
+# coordinate system to the screen coordinate system
+TEMP vertexPos;
+
+DP4 vertexPos.x, state.matrix.mvp.row[0], vertex.position;
+DP4 vertexPos.y, state.matrix.mvp.row[1], vertex.position;
+DP4 vertexPos.z, state.matrix.mvp.row[2], vertex.position;
+DP4 vertexPos.w, state.matrix.mvp.row[3], vertex.position;
+
+MOV result.position, vertexPos;
+
+# Set the vertex texture coordinate
+# to the vertex position
+MOV result.texcoord[0], vertex.position;
+
+END

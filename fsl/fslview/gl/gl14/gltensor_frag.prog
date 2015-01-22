@@ -1,0 +1,85 @@
+!!ARBfp1.0
+#
+# Fragment program used for rendering GLTensor instances, where
+# the tensor direction is represented by a combination of RGB colours.
+#
+# This fragment program does the following:
+# 
+#  1. Retrieves the texture coordinates corresponding to the fragment
+# 
+#  2. Transforms those coordinates into voxel coordinates
+# 
+#  3. Uses those voxel coordinates to look up the corresponding xyz
+#     directions value in the 3D RGB image texture.
+# 
+#  4. Uses those voxel values to colour the fragment.
+#
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+#
+
+TEMP  dispTexCoord;
+TEMP  voxTexCoord;
+TEMP  normVoxTexCoord;
+TEMP  voxValue;
+TEMP  voxColour;
+PARAM imageShape    = program.local[0];
+PARAM imageShapeInv = program.local[1];
+
+# This matrix scales the voxel value to
+# lie in a range which is appropriate to
+# the current display range 
+PARAM voxValXform[4] = { state.matrix.texture[1] };
+
+# This matrix transforms coordinates
+# from the display coordinate system
+# to image voxel coordinates
+PARAM dispToVoxMat[4] = { state.matrix.texture[0] };
+
+# retrieve the 3D texture coordinates
+# (which are in terms of the display
+# coordinate system)
+MOV dispTexCoord, fragment.texcoord[0];
+
+# Transform said coordinates
+# into voxel coordinates
+DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
+DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
+DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
+
+# Offset voxel coordinates by 0.5 
+# so they are centred within a voxel
+ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
+
+# Normalise voxel coordinates to 
+# lie in the range (0, 1), so they 
+# can be used for texture lookup
+MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
+
+# look up tensor values
+# from the 3D RGB texture
+TEX voxValue, normVoxTexCoord, texture[0], 3D;
+ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
+  
+# Scale voxel values according
+# to the current display range
+# DP4 voxValue.x, voxValXform[0], voxValue;
+# DP4 voxValue.y, voxValXform[1], voxValue;
+# DP4 voxValue.z, voxValXform[2], voxValue;
+
+# If any of the voxel coordinates are
+# less than 0, clear the voxel colour
+CMP voxValue.w, voxTexCoord.x, 0.0, voxValue.w;
+CMP voxValue.w, voxTexCoord.y, 0.0, voxValue.w;
+CMP voxValue.w, voxTexCoord.z, 0.0, voxValue.w;
+
+# If any voxel coordinates are greater than
+# the image shape, clear the voxel colour
+SUB voxTexCoord, voxTexCoord, imageShape;
+CMP voxValue.w, voxTexCoord.x, voxValue.w, 0.0;
+CMP voxValue.w, voxTexCoord.y, voxValue.w, 0.0;
+CMP voxValue.w, voxTexCoord.z, voxValue.w, 0.0;
+
+# Colour the pixel!
+MOV result.color, voxValue;
+
+END
