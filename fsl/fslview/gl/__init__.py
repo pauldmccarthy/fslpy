@@ -37,6 +37,16 @@ Two super classes are provided for each of these cases:
 
  - The :class:`OSMesaCanvasTarget` class for off-screen rendering using
    OSMesa.
+
+After the :func:`boostrap` function has been called, the following
+package-level attributes will be available:
+
+ - ``GL_VERSION``:     A string containing the target OpenGL version, in the
+                       format ``major.minor``, e.g. ``2.1``.
+
+ - ``glvolume_funcs``: The version-specific module containing functions for
+                       rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
+                       instances.
 """
 
 import            logging 
@@ -81,7 +91,8 @@ def bootstrap(glVersion=None):
     """
 
     import sys
-    import OpenGL.GL as gl
+    import OpenGL.GL         as gl
+    import OpenGL.extensions as glexts
     import gl14
     import gl21
 
@@ -111,73 +122,37 @@ def bootstrap(glVersion=None):
     # fall back to the gl14 implementation
     if glpkg == gl21:
 
-        import OpenGL.extensions as glexts
 
-        exts = ['GL_ARB_texture_rg',
-                'GL_EXT_gpu_shader4']
+        # List any GL21 extensions here
+        exts = []
         
-        exts = map(glexts.hasExtension, exts)
-        
-        if not all(exts):
+        if not all(map(glexts.hasExtension, exts)):
+            log.debug('One of these OpenGL extensions is '
+                      'not available: [{}]. Falling back '
+                      'to an older OpenGL implementation.'
+                      .format(', '.join(exts))) 
             verstr = '1.4'
             glpkg = gl14
 
+    # If using GL14, and the ARB_vertex_program
+    # and ARB_fragment_program extensions are
+    # not present, we're screwed.
+    if glpkg == gl14:
+        
+        exts = ['GL_ARB_vertex_program',
+                'GL_ARB_fragment_program']
+        
+        if not all(map(glexts.hasExtension, exts)):
+            raise RuntimeError('One of these OpenGL extensions is '
+                               'not available: [{}]. This software '
+                               'cannot run on the available graphics '
+                               'hardware.'.format(', '.join(exts)))
+
     log.debug('Using OpenGL {} implementation'.format(verstr))
 
+    thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs
     thismod._bootstrapped  = True
-
-
-def compilePrograms(vertexProgramSrc, fragmentProgramSrc):
-    
-    import OpenGL.GL                      as gl
-    import OpenGL.GL.ARB.fragment_program as arbfp
-    import OpenGL.GL.ARB.vertex_program   as arbvp
-    
-    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
-    gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
-    
-    fragmentProgram = arbfp.glGenProgramsARB(1)
-    vertexProgram   = arbvp.glGenProgramsARB(1) 
-
-    # vertex program
-    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           vertexProgram)
-
-    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(vertexProgramSrc),
-                             vertexProgramSrc)
-
-    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
-
-        position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
-        message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
-
-        raise RuntimeError('Error compiling vertex program '
-                           '({}): {}'.format(position, message)) 
-
-    # fragment program
-    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           fragmentProgram)
-
-    arbfp.glProgramStringARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                             arbfp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(fragmentProgramSrc),
-                             fragmentProgramSrc)
-
-    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
-
-        position = gl.glGetIntegerv(arbfp.GL_PROGRAM_ERROR_POSITION_ARB)
-        message  = gl.glGetString(  arbfp.GL_PROGRAM_ERROR_STRING_ARB)
-
-        raise RuntimeError('Error compiling fragment program '
-                           '({}): {}'.format(position, message))
-
-    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
-    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
-    
-    return vertexProgram, fragmentProgram
 
 
 def getWXGLContext():

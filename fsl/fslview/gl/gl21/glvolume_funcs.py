@@ -30,61 +30,21 @@ import numpy             as np
 import OpenGL.GL         as gl
 import OpenGL.arrays.vbo as vbo
 
-import shaders
-import fsl.utils.transform as transform
+import fsl.fslview.gl.shaders as shaders
+import fsl.utils.transform    as transform
 
 
 def _compileShaders(glvol):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
-    programs, and attaches a reference to the resulting program to
-    the given GLVolume object. Raises an error if compilation/linking
-    fails.
-
-    I'm explicitly not using the PyOpenGL
-    :func:`OpenGL.GL.shaders.compileProgram` function, because it attempts
-    to validate the program after compilation, which fails due to texture
-    data not being bound at the time of validation.
+    programs, and attaches a reference to the resulting program, and
+    all GLSL variables, to the given GLVolume object. 
     """
 
     vertShaderSrc = shaders.getVertexShader(  glvol)
     fragShaderSrc = shaders.getFragmentShader(glvol)
+    glvol.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
-    # vertex shader
-    vertShader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-    gl.glShaderSource(vertShader, vertShaderSrc)
-    gl.glCompileShader(vertShader)
-    vertResult = gl.glGetShaderiv(vertShader, gl.GL_COMPILE_STATUS)
-
-    if vertResult != gl.GL_TRUE:
-        raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(vertShader)))
-
-    # fragment shader
-    fragShader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-    gl.glShaderSource(fragShader, fragShaderSrc)
-    gl.glCompileShader(fragShader)
-    fragResult = gl.glGetShaderiv(fragShader, gl.GL_COMPILE_STATUS)
-
-    if fragResult != gl.GL_TRUE:
-        raise RuntimeError('{}'.format(gl.glGetShaderInfoLog(fragShader)))
-
-    # link all of the shaders!
-    program = gl.glCreateProgram()
-    gl.glAttachShader(program, vertShader)
-    gl.glAttachShader(program, fragShader)
-
-    gl.glLinkProgram(program)
-
-    gl.glDeleteShader(vertShader)
-    gl.glDeleteShader(fragShader)
-
-    linkResult = gl.glGetProgramiv(program, gl.GL_LINK_STATUS)
-
-    if linkResult != gl.GL_TRUE:
-        raise RuntimeError('{}'.format(gl.glGetProgramInfoLog(program)))
-
-    glvol.shaders = program
-
-    # Indices of all vertex/fragment shader parameters
+    # indices of all vertex/fragment shader parameters
     glvol.worldToWorldMatPos = gl.glGetUniformLocation(glvol.shaders,
                                                        'worldToWorldMat')
     glvol.xaxPos             = gl.glGetUniformLocation(glvol.shaders,

@@ -1,7 +1,7 @@
 /*
- * OpenGL vertex shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
+ * OpenGL vertex shader used by fsl/fslview/gl/gl21/glvolume_funcs.py.
  *
- * All this shader does is transfer  texture coordinates through
+ * All this shader does is transfer texture coordinates through
  * to the fragment shader.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>

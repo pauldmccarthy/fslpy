@@ -36,129 +36,18 @@ import OpenGL.GL                      as gl
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.utils.transform as transform
-import fsl.fslview.gl      as fslgl
-
-
-_glvolume_vertex_program = """!!ARBvp1.0
-
-# Transform the vertex coordinates from the display
-# coordinate system to the screen coordinate system
-TEMP vertexPos;
-
-DP4 vertexPos.x, state.matrix.mvp.row[0], vertex.position;
-DP4 vertexPos.y, state.matrix.mvp.row[1], vertex.position;
-DP4 vertexPos.z, state.matrix.mvp.row[2], vertex.position;
-DP4 vertexPos.w, state.matrix.mvp.row[3], vertex.position;
-
-MOV result.position, vertexPos;
-
-# Set the vertex texture coordinate
-# to the vertex position
-MOV result.texcoord[0], vertex.position;
-
-END
-"""
-"""The vertex program does two things:
-
-  - Transforms vertex coordinates from display space into screen space
-
-  - Sets the vertex texture coordinate from its display coordinate
-"""
-
-
-_glvolume_fragment_program = """!!ARBfp1.0
-TEMP  dispTexCoord;
-TEMP  voxTexCoord;
-TEMP  normVoxTexCoord;
-TEMP  voxValue;
-TEMP  voxColour;
-PARAM imageShape    = program.local[0];
-PARAM imageShapeInv = program.local[1];
-
-# This matrix scales the voxel value to
-# lie in a range which is appropriate to
-# the current display range 
-PARAM voxValXform[4] = { state.matrix.texture[1] };
-
-# This matrix transforms coordinates
-# from the display coordinate system
-# to image voxel coordinates
-PARAM dispToVoxMat[4] = { state.matrix.texture[0] };
-
-# retrieve the 3D texture coordinates
-# (which are in terms of the display
-# coordinate system)
-MOV dispTexCoord, fragment.texcoord[0];
-
-# Transform said coordinates
-# into voxel coordinates
-DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
-DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
-DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
-
-# Offset voxel coordinates by 0.5 
-# so they are centred within a voxel
-ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
-
-# Normalise voxel coordinates to 
-# lie in the range (0, 1), so they 
-# can be used for texture lookup
-MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
-
-# look up image voxel value
-# from 3D image texture
-TEX voxValue, normVoxTexCoord, texture[0], 3D;
-
-# Scale voxel value according
-# to the current display range
-MUL voxValue, voxValue, voxValXform[0].x;
-ADD voxValue, voxValue, voxValXform[0].w;
-
-# look up the appropriate colour
-# in the 1D colour map texture
-TEX voxColour, voxValue.x, texture[1], 1D;
-
-# If any of the voxel coordinates are
-# less than 0, clear the voxel colour
-CMP voxColour.w, voxTexCoord.x, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.y, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.z, 0.0, voxColour.w;
-
-# If any voxel coordinates are greater than
-# the image shape, clear the voxel colour
-SUB voxTexCoord, voxTexCoord, imageShape;
-CMP voxColour.w, voxTexCoord.x, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.y, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.z, voxColour.w, 0.0;
-
-# Colour the pixel!
-MOV result.color, voxColour;
-
-END
-"""
-"""
-The fragment shader does the following:
-
- 1. Retrieves the texture coordinates corresponding to the fragment
-
- 2. Transforms those coordinates into voxel coordinates
-
- 3. Uses those voxel coordinates to look up the corresponding voxel
-    value in the 3D image texture.
-
- 4. Uses that voxel value to look up the corresponding colour in the
-    1D colour map texture.
-
- 5. Sets the fragment colour.
-"""
+import fsl.utils.transform    as transform
+import fsl.fslview.gl.shaders as shaders
 
 
 def init(glvol, xax, yax):
     """Compiles the vertex and fragment programs used for rendering."""
 
-    vertexProgram, fragmentProgram = fslgl.compilePrograms(
-        _glvolume_vertex_program, _glvolume_fragment_program)
+    vertShaderSrc = shaders.getVertexShader(  glvol)
+    fragShaderSrc = shaders.getFragmentShader(glvol) 
+
+    vertexProgram, fragmentProgram = shaders.compilePrograms(
+        vertShaderSrc, fragShaderSrc)
 
     glvol.vertexProgram   = vertexProgram
     glvol.fragmentProgram = fragmentProgram
