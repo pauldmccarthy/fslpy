@@ -43,7 +43,7 @@ import fsl.fslview.gl.shaders as shaders
 log = logging.getLogger(__name__)
 
 
-def init(glvol, xax, yax):
+def init(glvol):
     """Compiles the vertex and fragment programs used for rendering."""
 
     vertShaderSrc = shaders.getVertexShader(  glvol)

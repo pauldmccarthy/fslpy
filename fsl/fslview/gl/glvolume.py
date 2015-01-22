@@ -103,7 +103,7 @@ class GLVolume(globject.GLObject):
         return self._ready
 
         
-    def init(self, xax, yax):
+    def init(self):
         """Initialise the OpenGL data required to render the given image.
 
         The real initialisation takes place in this method - it must
@@ -114,11 +114,7 @@ class GLVolume(globject.GLObject):
         # updated when its display properties are changed
         self.addDisplayListeners()
 
-        fslgl.glvolume_funcs.init(self, xax, yax)
-
-        # Initialise the image data, and
-        # generate vertex/texture coordinates
-        self.setAxes(xax, yax)
+        fslgl.glvolume_funcs.init(self)
 
         self.genImageTexture()
 

@@ -72,7 +72,7 @@ def _compileShaders(glvol):
                                                        'voxValXform') 
 
 
-def init(glvol, xax, yax):
+def init(glvol):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
     _compileShaders(glvol)

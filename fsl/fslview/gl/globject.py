@@ -71,16 +71,12 @@ class GLObject(object):
         self.image       = image
         self.display     = display
         self.displayOpts = display.getDisplayOpts()
+        self.name        = '{}_{}'.format(type(self).__name__, id(self))
+                
 
-
-    def init(self, xax, yax):
+    def init(self):
         """Perform any necessary OpenGL initialisation, such as
         creating textures and vertices.
-
-        :arg xax: The display coordinate axis which corresponds to the
-                  horizontal screen axis for this :class:`GLObject`.
-        :arg yax: The display coordinate axis which corresponds to the
-                  vertical screen axis for this :class:`GLObject`. 
         """
         raise NotImplementedError()
 

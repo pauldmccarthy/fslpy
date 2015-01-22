@@ -402,7 +402,9 @@ class SliceCanvas(props.HasProperties):
 
                 image.setAttribute(self.name, globj)
 
-                if globj is not None: globj.init(self.xax, self.yax)
+                if globj is not None:
+                    globj.init()
+                    globj.setAxes(self.xax, self.yax)
 
                 opts.addGlobalListener(self.name, self._refresh)
                 
