@@ -149,6 +149,7 @@ properties = TypeDict({
     'TensorOpts.suppressX'     : 'Suppress X value',
     'TensorOpts.suppressY'     : 'Suppress Y value',
     'TensorOpts.suppressZ'     : 'Suppress Z value',
+    'TensorOpts.modulate'      : 'Modulate by',
 })
 
 
@@ -195,6 +196,8 @@ choices = TypeDict({
 
     'TensorOpts.displayType.line' : 'Lines',
     'TensorOpts.displayType.rgb'  : 'RGB',
+
+    'TensorOpts.modulate.none'    : 'No modulation',
     
     'Display.transform.affine' : 'Use qform/sform transformation matrix',
     'Display.transform.pixdim' : 'Use pixdims only',

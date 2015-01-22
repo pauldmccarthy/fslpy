@@ -26,9 +26,11 @@ class DisplayOpts(props.SyncableHasProperties):
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         props.SyncableHasProperties.__init__(self, parent)
         self.image      = image
-        self.displayCtx = displayCtx
+        self.display    = display
         self.imageList  = imageList
+        self.displayCtx = displayCtx
         self.imageType  = image.imageType
+        self.name       = '{}_{}'.format(type(self).__name__, id(self))
 
 
 class Display(props.SyncableHasProperties):
@@ -116,7 +118,7 @@ class Display(props.SyncableHasProperties):
         :arg parent: 
         """
         self.image      = image
-        self.imageList  = image
+        self.imageList  = imageList
         self.displayCtx = displayCtx
 
         # bind self.name to image.name, so changes
