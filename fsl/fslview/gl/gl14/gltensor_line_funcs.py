@@ -142,7 +142,7 @@ def draw(self, zpos, xform=None):
         xform = transform.concat(xform. self.mvmat)
         gl.glMultMatrixf(xform)
 
-    colour = opts.colour
+    colour = opts.xColour
 
     gl.glColor4f(colour[0], colour[1], colour[2], display.alpha)
     gl.glLineWidth(2)

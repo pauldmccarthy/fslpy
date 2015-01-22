@@ -47,6 +47,12 @@ def init(self):
 
     createImageTexture(self)
 
+    self.xColourTexture = gl.glGenTextures(1)
+    self.yColourTexture = gl.glGenTextures(1)
+    self.zColourTexture = gl.glGenTextures(1)
+
+    createColourTextures(self)
+
     # This matrix is used by the tensor fragment
     # program to transform tensor values (which
     # are assumed to lie in the range [-1.0, 1.0]
@@ -56,17 +62,32 @@ def init(self):
     self.voxValXform = transform.scaleOffsetXform(
         [0.5, 0.5, 0.5], [1.0, 1.0, 1.0])
 
+
+    display = self.display
+    opts    = self.displayOpts
+
     def imageUpdate(*a):
         createImageTexture(self)
 
-    self.display.addListener('interpolation', self.name, imageUpdate)
-    self.display.addListener('resolution',    self.name, imageUpdate)
+    def cmapUpdate(*a):
+        createColourTextures(self)
+
+    display.addListener('interpolation', self.name, imageUpdate)
+    display.addListener('resolution',    self.name, imageUpdate)
+    display.addListener('alpha',         self.name, cmapUpdate)
+    opts   .addListener('xColour',       self.name, cmapUpdate)
+    opts   .addListener('yColour',       self.name, cmapUpdate)
+    opts   .addListener('zColour',       self.name, cmapUpdate)
 
 
 def destroy(self):
 
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
+
+    gl.glDeleteTextures(1, self.xColourTexture)
+    gl.glDeleteTextures(1, self.yColourTexture)
+    gl.glDeleteTextures(1, self.zColourTexture)
 
     # Another GLTensor object may have
     # already deleted the image texture
@@ -78,9 +99,13 @@ def destroy(self):
         
     except KeyError:
         pass
-
-    self.display.removeListener('interpolation', self.name)
-    self.display.removeListener('resolution',    self.name)
+    
+    self.display    .removeListener('interpolation', self.name)
+    self.display    .removeListener('resolution',    self.name)
+    self.display    .removeListener('alpha',         self.name)
+    self.displayOpts.removeListener('xColour',       self.name)
+    self.displayOpts.removeListener('yColour',       self.name)
+    self.displayOpts.removeListener('zColour',       self.name) 
 
     del self.vertexProgram
     del self.fragmentProgram
@@ -181,6 +206,54 @@ def createImageTexture(self, *a):
                     textureData)
 
 
+def createColourTextures(self, colourRes=256):
+
+    xColour = self.displayOpts.xColour + [1.0]
+    yColour = self.displayOpts.yColour + [1.0]
+    zColour = self.displayOpts.zColour + [1.0]
+
+    xtex = self.xColourTexture
+    ytex = self.yColourTexture
+    ztex = self.zColourTexture
+
+    xcmap = np.array([np.linspace(0.0, i, colourRes) for i in xColour])
+    ycmap = np.array([np.linspace(0.0, i, colourRes) for i in yColour])
+    zcmap = np.array([np.linspace(0.0, i, colourRes) for i in zColour])
+
+    xcmap[3, :] = self.display.alpha
+    ycmap[3, :] = self.display.alpha
+    zcmap[3, :] = self.display.alpha
+
+    xcmap = np.array(np.floor(xcmap * 255), dtype=np.uint8).ravel('F')
+    ycmap = np.array(np.floor(ycmap * 255), dtype=np.uint8).ravel('F')
+    zcmap = np.array(np.floor(zcmap * 255), dtype=np.uint8).ravel('F')
+
+    for cmap, texture in zip([xcmap, ycmap, zcmap],
+                             [xtex,  ytex,  ztex]):
+        
+        gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_EDGE)
+
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                        0,
+                        gl.GL_RGBA8,
+                        colourRes,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        cmap)
+        
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+
 def preDraw(self):
 
     if not self.display.enabled:
@@ -233,6 +306,15 @@ def preDraw(self):
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture)
 
+    gl.glActiveTexture(gl.GL_TEXTURE1)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
+    
+    gl.glActiveTexture(gl.GL_TEXTURE2)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, self.yColourTexture)
+
+    gl.glActiveTexture(gl.GL_TEXTURE3)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
+
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
     self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX) 
@@ -275,6 +357,15 @@ def postDraw(self):
 
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+    gl.glActiveTexture(gl.GL_TEXTURE1)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+    gl.glActiveTexture(gl.GL_TEXTURE2)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+    gl.glActiveTexture(gl.GL_TEXTURE3)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
 
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPopMatrix()

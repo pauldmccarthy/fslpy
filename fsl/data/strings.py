@@ -142,7 +142,9 @@ properties = TypeDict({
     'MaskOpts.threshold'      : 'Threshold',
 
     'TensorOpts.displayMode'  : 'Display mode',
-    'TensorOpts.colour'       : 'Colour',
+    'TensorOpts.xColour'      : 'X Colour',
+    'TensorOpts.yColour'      : 'Y Colour',
+    'TensorOpts.zColour'      : 'Z Colour',
 })
 
 

@@ -18,8 +18,15 @@ class TensorOpts(fsldisplay.DisplayOpts):
                 strings.choices['TensorOpts.displayType.rgb']])
 
 
-    colour = props.Colour()
+    xColour = props.Colour(default=(1.0, 0.0, 0.0))
 
+    
+    yColour = props.Colour(default=(0.0, 1.0, 0.0))
+
+    
+    zColour = props.Colour(default=(0.0, 0.0, 1.0))
+
+    
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         fsldisplay.DisplayOpts.__init__(self,
                                         display,

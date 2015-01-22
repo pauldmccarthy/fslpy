@@ -21,6 +21,9 @@ TEMP  dispTexCoord;
 TEMP  voxTexCoord;
 TEMP  normVoxTexCoord;
 TEMP  voxValue;
+TEMP  xColour;
+TEMP  yColour;
+TEMP  zColour;
 TEMP  voxColour;
 PARAM imageShape    = program.local[0];
 PARAM imageShapeInv = program.local[1];
@@ -59,27 +62,38 @@ MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
 # from the 3D RGB texture
 TEX voxValue, normVoxTexCoord, texture[0], 3D;
 ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
-  
-# Scale voxel values according
-# to the current display range
-# DP4 voxValue.x, voxValXform[0], voxValue;
-# DP4 voxValue.y, voxValXform[1], voxValue;
-# DP4 voxValue.z, voxValXform[2], voxValue;
 
+# Use those values to look up
+# the colours for each xyz
+# direction
+TEX xColour, voxValue.x, texture[1], 1D;
+TEX yColour, voxValue.y, texture[2], 1D;
+TEX zColour, voxValue.z, texture[3], 1D;
+
+# Cumulatively combine the rgb
+# channels of those three colours
+MOV voxColour,            xColour;
+ADD voxColour, voxColour, yColour;
+ADD voxColour, voxColour, zColour;
+
+# But take the average of the alpha channel
+MUL voxColour, voxColour, { 1.0, 1.0, 1.0, 0.333333 };
+  
 # If any of the voxel coordinates are
 # less than 0, clear the voxel colour
-CMP voxValue.w, voxTexCoord.x, 0.0, voxValue.w;
-CMP voxValue.w, voxTexCoord.y, 0.0, voxValue.w;
-CMP voxValue.w, voxTexCoord.z, 0.0, voxValue.w;
+CMP voxColour.w, voxTexCoord.x, 0.0, voxColour.w;
+CMP voxColour.w, voxTexCoord.y, 0.0, voxColour.w;
+CMP voxColour.w, voxTexCoord.z, 0.0, voxColour.w;
 
 # If any voxel coordinates are greater than
 # the image shape, clear the voxel colour
 SUB voxTexCoord, voxTexCoord, imageShape;
-CMP voxValue.w, voxTexCoord.x, voxValue.w, 0.0;
-CMP voxValue.w, voxTexCoord.y, voxValue.w, 0.0;
-CMP voxValue.w, voxTexCoord.z, voxValue.w, 0.0;
+  
+CMP voxColour.w, voxTexCoord.x, voxColour.w, 0.0;
+CMP voxColour.w, voxTexCoord.y, voxColour.w, 0.0;
+CMP voxColour.w, voxTexCoord.z, voxColour.w, 0.0;
 
 # Colour the pixel!
-MOV result.color, voxValue;
+MOV result.color, voxColour;
 
 END
