@@ -121,6 +121,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
         fsldisplay.DisplayOpts.__init__(self,
+                                        image,
                                         display,
                                         imageList,
                                         displayCtx,

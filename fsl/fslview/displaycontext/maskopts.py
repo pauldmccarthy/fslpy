@@ -26,6 +26,7 @@ class MaskOpts(fsldisplay.DisplayOpts):
 
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         fsldisplay.DisplayOpts.__init__(self,
+                                        image,
                                         display,
                                         imageList,
                                         displayCtx,
