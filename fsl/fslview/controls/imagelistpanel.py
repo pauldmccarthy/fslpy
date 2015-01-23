@@ -209,17 +209,13 @@ class ImageListPanel(fslpanel.FSLViewPanel):
 
             self._listBox.SetItemWidget(i, widget)
 
-            def nameChanged(img):
-                idx  = self._displayCtx.getImageOrder(img)
-                name = img.name 
+            def nameChanged(value, valid, image, name):
+                idx  = self._displayCtx.getImageOrder(image)
+                name = image.name 
                 if name is None: name = ''
                 self._listBox.SetString(idx, name)
 
-            image.addListener(
-                'name',
-                self._name,
-                lambda c, va, vi, img=image: nameChanged(img),
-                overwrite=True)
+            image.addListener('name', self._name, nameChanged, overwrite=True)
 
         if len(self._imageList) > 0:
             self._listBox.SetSelection(

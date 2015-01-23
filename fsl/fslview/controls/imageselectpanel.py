@@ -127,9 +127,9 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         and that listeners are registered on the name property of each image.
         """
 
-        def nameChanged(img):
+        def nameChanged(value, valid, image, name):
 
-            idx = self._imageList.index(img)
+            idx = self._imageList.index(image)
             
             # if the name of the currently selected image has changed,
             # make sure that this panel updates to reflect the change
@@ -137,10 +137,7 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
                 self._selectedImageChanged()
 
         for image in self._imageList:
-            image.addListener('name',
-                              self._name,
-                              lambda c, va, vi, i=image: nameChanged(i),
-                              overwrite=True)
+            image.addListener('name', self._name, nameChanged, overwrite=True)
 
         self._selectedImageChanged()
 
