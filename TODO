@@ -98,6 +98,9 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Support ANALYZE75
+Pixdims stored in A75 header should be used, unchanged, as the affine
+diagonals (i.e. negative pixdims supported).
 ** On startup, check to see if cached display location is valid (e.g. external display has been unplugged). Revert to default location/size if not.
 ** EListBox - Mouse drag to move items
 ** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
@@ -200,6 +203,8 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Custom colour select widget - the OSX one is rubbish
+** Transfer editor selection on selected image changes
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
 ** Tensors
 *** RGB display
