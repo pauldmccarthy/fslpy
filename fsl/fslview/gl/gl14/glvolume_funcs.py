@@ -97,7 +97,7 @@ def preDraw(glvol):
 
     # Set up the image data texture 
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture.texture)
 
     # Set up the colour map texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
@@ -107,7 +107,7 @@ def preDraw(glvol):
     # the image shape (and its inverse,
     # because there's no division operation,
     # and the RCP operation works on scalars)
-    shape = glvol.imageShape
+    shape = glvol.image.shape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                                        0,
                                        shape[0],
@@ -131,7 +131,7 @@ def preDraw(glvol):
     # into a value between 0 and 1, suitable
     # for looking up an appropriate colour
     # in the 1D colour map texture
-    cmapXForm = transform.concat(glvol.voxValXform,
+    cmapXForm = transform.concat(glvol.imageTexture.voxValXform,
                                  glvol.colourMapXform)
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)

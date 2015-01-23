@@ -50,8 +50,8 @@ import OpenGL.GL               as gl
 import numpy                   as np
 
 import fsl.fslview.gl          as fslgl
+import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
-import fsl.utils.transform     as transform
 
 
 class GLVolume(globject.GLObject):
@@ -74,27 +74,6 @@ class GLVolume(globject.GLObject):
         
         self._ready = False
 
-        # Whenever some specific display/image properties
-        # change, the 3D image texture must be updated.
-        # An attribute is set on the image object so the
-        # genImageTexture method can figure out whether
-        # or not the image texture needs to be updated
-        name = '{}Dirty'.format(type(self).__name__)
-        def markImage(*a):
-            image.setAttribute(name, True)
-
-        # Only one 'GLVolumeDirty' listener, for all GLVolume
-        # instances, is registered on ecah image/display,
-        # so the GLVolumeDirty attribute is only set once.
-        try:    display.addListener('interpolation', name, markImage)
-        except: pass
-        try:    display.addListener('volume',        name, markImage)
-        except: pass
-        try:    display.addListener('resolution',    name, markImage)
-        except: pass
-        try:    image  .addListener('data',          name, markImage)
-        except: pass
-
 
     def ready(self):
         """Returns `True` when the OpenGL data/state has been initialised,
@@ -116,16 +95,16 @@ class GLVolume(globject.GLObject):
 
         fslgl.glvolume_funcs.init(self)
 
-        self.genImageTexture()
+        self.imageTexture = fsltextures.getImageTexture(
+            self.image, self.display, type(self).__name__)
 
         # The colour map, used for converting 
         # image data to a RGBA colour.
         self.colourTexture = gl.glGenTextures(1)
-
         log.debug('Created GL texture: {}'.format(self.colourTexture))
         
         self.colourResolution = 256
-        self.genColourTexture(self.colourResolution)
+        self.refreshColourTexture(self.colourResolution)
         
         self._ready = True
 
@@ -179,20 +158,8 @@ class GLVolume(globject.GLObject):
         longer needed. It performs any needed clean up of OpenGL data (e.g.
         deleting texture handles).
         """
-        log.debug('Deleting GL texture: {}'.format(self.colourTexture))
-        gl.glDeleteTextures(self.colourTexture)
 
-        # Another GLVolume object may have
-        # already deleted the image texture
-        try:
-            imageTexture = self.image.delAttribute(
-                '{}Texture'.format(type(self).__name__))
-            log.debug('Deleting GL texture: {}'.format(imageTexture))
-            gl.glDeleteTextures(imageTexture)
-            
-        except KeyError:
-            pass
-
+        self.imageTexture.destroy()
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
@@ -226,208 +193,7 @@ class GLVolume(globject.GLObject):
                                 self.display.voxToDisplayMat)
 
     
-    def _prepareImageTextureData(self, data):
-        """Figures out how the image data should be stored as an OpenGL 3D
-        texture, and what transformation, if any, will be required to map
-        the data into the range (0, 1) for subsequent colour map texture
-        lookup.
-
-        OpenGL does different things to 3D texture data depending on its type:
-        unsigned integer types are normalised from [0, INT_MAX] to [0, 1].
-        This method calculates an appropriate transformation matrix to
-        transform the image data to the appropriate texture coordinate range,
-        which is then returned by this function, and subsequently used in the
-        :func:`draw` function.
-
-        As an aside, floating point texture data types are, by default,
-        *clamped* (not normalised), to the range [0, 1]! This can be overcome
-        by using a more recent versions of OpenGL, or by using the
-        ARB.texture_rg.GL_R32F data format.
-
-        Returns a tuple containing the following:
-        
-          - The image data, possibly converted to a different type
-        
-          - An OpenGL identifier to be used as the internal texture type.
-        
-          - An OpenGL identifier to be used as the external texture type.
-        
-          - A transformation matrix which should be applied to individual
-            voxel values before they are used as lookup values into the
-            colour map texture.
-        """
-
-        dtype = data.dtype
-
-        # Signed data types are a pain in the arse.
-        #
-        # TODO It would be nice if you didn't have
-        # to perform the data conversion/offset
-        # for signed types.
-        if   dtype == np.uint8:  texExtFmt = gl.GL_UNSIGNED_BYTE
-        elif dtype == np.int8:   texExtFmt = gl.GL_UNSIGNED_BYTE
-        elif dtype == np.uint16: texExtFmt = gl.GL_UNSIGNED_SHORT
-        elif dtype == np.int16:  texExtFmt = gl.GL_UNSIGNED_SHORT
-        else:                    texExtFmt = gl.GL_UNSIGNED_SHORT
-
-        if   dtype == np.uint8:  texIntFmt = gl.GL_LUMINANCE8
-        elif dtype == np.int8:   texIntFmt = gl.GL_LUMINANCE8
-        elif dtype == np.uint16: texIntFmt = gl.GL_LUMINANCE16
-        elif dtype == np.int16:  texIntFmt = gl.GL_LUMINANCE16
-        else:                    texIntFmt = gl.GL_LUMINANCE16
-
-        if   dtype == np.uint8:  pass
-        elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
-        elif dtype == np.uint16: pass
-        elif dtype == np.int16:  data = np.array(data + 32768, dtype=np.uint16)
-        else:
-            dmin = float(data.min())
-            dmax = float(data.max())
-            data = (data - dmin) / (dmax - dmin)
-            data = np.round(data * 65535)
-            data = np.array(data, dtype=np.uint16)
-
-        if   dtype == np.uint8:  offset =  0
-        elif dtype == np.int8:   offset = -128
-        elif dtype == np.uint16: offset =  0
-        elif dtype == np.int16:  offset = -32768
-        else:                    offset =  dmin
-
-        if   dtype == np.uint8:  scale = 255
-        elif dtype == np.int8:   scale = 255
-        elif dtype == np.uint16: scale = 65535
-        elif dtype == np.int16:  scale = 65535
-        else:                    scale = dmax - dmin
-
-        voxValXform = transform.scaleOffsetXform(scale, offset)
-
-        return data, texIntFmt, texExtFmt, voxValXform
-
-
-    def genImageTexture(self):
-        """Generates the OpenGL image texture used to store the data for the
-        given image.
-
-        The texture handle is stored as an attribute of the image. If a
-        texture handle is already present (i.e. it has been created by another
-        GLVolume object representing the same image), it is not recreated.
-
-        The transformation matrix generated by the
-        :meth:`_prepareImageTextureData` method is saved as an attribute of
-        this :class:`GLVolume` object called :attr:`voxValXform`. This
-        transformation needs to be applied to voxel values when they are
-        retrieved from the 3D image texture, in order to recover the actual
-        voxel value.
-        """
-
-        image     = self.image
-        display   = self.display
-        imageData = globject.subsample(image.data,
-                                       display.resolution,
-                                       image.pixdim, 
-                                       display.volume)
-
-        imageData, texIntFmt, texExtFmt, voxValXform = \
-            self._prepareImageTextureData(imageData)
-
-        texDataShape           = imageData.shape
-        self.voxValXform       = voxValXform
-        self.imageTextureShape = imageData.shape
-        self.imageShape        = image.data.shape
-
-        # Check to see if the image texture
-        # has already been created
-        try:
-            imageTexture = image.getAttribute(
-                '{}Texture'.format(type(self).__name__))
-        except:
-            imageTexture = None
-
-        # otherwise, create a new one
-        if imageTexture is None:
-            imageTexture = gl.glGenTextures(1)
-            log.debug('Created GL texture: {}'.format(imageTexture))
-
-        # The image buffer already exists, and is valid
-        elif not image.getAttribute('{}Dirty'.format(type(self).__name__)):
-            self.imageTexture      = imageTexture
-            self.imageTextureShape = texDataShape
-            return
-        
-        self.imageTexture      = imageTexture
-        self.imageTextureShape = texDataShape
-
-        log.debug('Configuring 3D texture (id {}) for '
-                  'image {} (data shape: {})'.format(
-                      imageTexture,
-                      image.name,
-                      imageData.shape))
-
-        # The image data is flattened, with fortran dimension
-        # ordering, so the data, as stored on the GPU, has its
-        # first dimension as the fastest changing.
-        imageData = imageData.ravel(order='F')
-
-        # Enable storage of tightly packed data of any size (i.e.
-        # our texture shape does not have to be divisible by 4).
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-        # Set up image texture sampling thingos
-        # with appropriate interpolation method
-        if display.interpolation == 'none': interp = gl.GL_NEAREST
-        else:                               interp = gl.GL_LINEAR
- 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           interp)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           interp)
-
-        # Make everything outside
-        # of the image transparent
-        gl.glTexParameterfv(gl.GL_TEXTURE_3D,
-                            gl.GL_TEXTURE_BORDER_COLOR,
-                            np.array([0, 0, 0, 0], dtype=np.float32))
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_BORDER)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_WRAP_T,
-                           gl.GL_CLAMP_TO_BORDER)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_WRAP_R,
-                           gl.GL_CLAMP_TO_BORDER)
-
-        # create the texture according to
-        # the format determined by the
-        # _prepareImageTextureData method.
-        gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                        0,
-                        texIntFmt,
-                        texDataShape[0],
-                        texDataShape[1],
-                        texDataShape[2],
-                        0,
-                        gl.GL_LUMINANCE, 
-                        texExtFmt,
-                        imageData)
-
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-
-        # Add a reference to the texture as an attribute
-        # of the image, and mark it as up to date, so other
-        # things which want to render the same image data
-        # don't need to regenerate the texture
-        image.setAttribute('{}Texture'.format(type(self).__name__),
-                           imageTexture)
-        image.setAttribute('{}Dirty'  .format(type(self).__name__),
-                           False)
-
-    
-    def genColourTexture(self, colourResolution):
+    def refreshColourTexture(self, colourResolution):
         """Configures the colour texture used to colour image voxels.
 
         Also createss a transformation matrix which transforms an image voxel
@@ -507,29 +273,25 @@ class GLVolume(globject.GLObject):
 
         This is done so we can update the colour, vertex, and image data when
         display properties are changed.
-        """ 
+        """
 
+        display = self.display
+        opts    = self.displayOpts
+
+        lName = self.name
+        
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
 
-        def imageUpdate(*a):
-            self.genImageTexture()
-        
         def colourUpdate(*a):
-            self.genColourTexture(self.colourResolution)
+            self.refreshColourTexture(self.colourResolution)
 
-        lnrName = '{}_{}'.format(type(self).__name__, id(self))
-
-        self.display    .addListener('transform',     lnrName, vertexUpdate)
-        self.display    .addListener('interpolation', lnrName, imageUpdate)
-        self.display    .addListener('alpha',         lnrName, colourUpdate)
-        self.displayOpts.addListener('displayRange',  lnrName, colourUpdate)
-        self.displayOpts.addListener('clipLow',       lnrName, colourUpdate)
-        self.displayOpts.addListener('clipHigh',      lnrName, colourUpdate)
-        self.displayOpts.addListener('cmap',          lnrName, colourUpdate)
-        self.display    .addListener('resolution',    lnrName, imageUpdate)
-        self.display    .addListener('volume',        lnrName, imageUpdate)
-        self.image      .addListener('data',          lnrName, imageUpdate)
+        display.addListener('transform',     lName, vertexUpdate)
+        display.addListener('alpha',         lName, colourUpdate)
+        opts   .addListener('displayRange',  lName, colourUpdate)
+        opts   .addListener('clipLow',       lName, colourUpdate)
+        opts   .addListener('clipHigh',      lName, colourUpdate)
+        opts   .addListener('cmap',          lName, colourUpdate)
 
 
     def removeDisplayListeners(self):
@@ -537,15 +299,14 @@ class GLVolume(globject.GLObject):
         were added by :meth:`addDisplayListeners`.
         """
 
-        lnrName = '{}_{}'.format(type(self).__name__, id(self))
+        display = self.display
+        opts    = self.displayOpts
 
-        self.display    .removeListener('transform',     lnrName)
-        self.display    .removeListener('interpolation', lnrName)
-        self.display    .removeListener('alpha',         lnrName)
-        self.displayOpts.removeListener('displayRange',  lnrName)
-        self.displayOpts.removeListener('clipLow',       lnrName)
-        self.displayOpts.removeListener('clipHigh',      lnrName)
-        self.displayOpts.removeListener('cmap',          lnrName)
-        self.display    .removeListener('resolution',    lnrName)
-        self.display    .removeListener('volume',        lnrName)
-        self.image      .removeListener('data',          lnrName)
+        lName = self.name
+
+        display.removeListener('transform',     lName)
+        display.removeListener('alpha',         lName)
+        opts   .removeListener('displayRange',  lName)
+        opts   .removeListener('clipLow',       lName)
+        opts   .removeListener('clipHigh',      lName)
+        opts   .removeListener('cmap',          lName)

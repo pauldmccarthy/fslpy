@@ -140,7 +140,7 @@ def preDraw(glvol):
     # mappings
     gl.glUniform1f( glvol.useSplinePos,     display.interpolation == 'spline')
     
-    gl.glUniform3fv(glvol.imageShapePos, 1, np.array(glvol.imageShape,
+    gl.glUniform3fv(glvol.imageShapePos, 1, np.array(glvol.image.shape,
                                                      dtype=np.float32))
     gl.glUniform1i( glvol.xaxPos,           glvol.xax)
     gl.glUniform1i( glvol.yaxPos,           glvol.yax)
@@ -150,7 +150,8 @@ def preDraw(glvol):
     # display coordinates to voxel coordinates,
     # and to scale voxel values to colour map
     # texture coordinates
-    tcx = transform.concat(glvol.voxValXform, glvol.colourMapXform)
+    tcx = transform.concat(glvol.imageTexture.voxValXform,
+                           glvol.colourMapXform)
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
     vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
     
@@ -169,7 +170,7 @@ def preDraw(glvol):
 
     # Set up the image data texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture.texture)
     gl.glUniform1i(glvol.imageTexturePos, 1)
 
     # Bind the world x/y coordinate buffer
