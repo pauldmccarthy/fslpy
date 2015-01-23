@@ -36,6 +36,7 @@ class TensorOpts(fsldisplay.DisplayOpts):
     suppressZ = props.Boolean(default=False)
 
 
+    # make this nounbind?
     modulate  = props.Choice()
 
     
@@ -63,23 +64,32 @@ class TensorOpts(fsldisplay.DisplayOpts):
             self.removeListener('images', self.name)
             return
 
-        # It doesn't make sense to
-        # modulate the image by itself
-        images.remove(self.image)
+        modOptions = ['none']
+        modLabels  = [strings.choices['TensorOpts.modulate.none']]
 
-        # Update choices when any
-        # image name changes too
         for image in images:
+            
+            # It doesn't make sense to
+            # modulate the image by itself
+            if image is self.image:
+                continue
+
+            # an image can only be used to modulate
+            # the tensor image if it shares the same
+            # dimensions as said tensor image
+            if image.shape  != self.image.shape[ :3] or \
+               image.pixdim != self.image.pixdim[:3]:
+                continue
+
+            modOptions.append(image)
+            modLabels .append(image.name)
+                
             image.addListener('name',
                               self.name,
                               self.imageListChanged,
                               overwrite=True)
-        
-        names  = [strings.choices['TensorOpts.modulate.none']] + \
-                 [i.name for i in images]
-        images = ['none'] + images
-
-        modProp.setChoices(images, names, self)
+            
+        modProp.setChoices(modOptions, modLabels, self)
 
         if modVal in images: self.modulate = modVal
         else:                self.modulate = 'none'

@@ -20,6 +20,7 @@
 TEMP  dispTexCoord;
 TEMP  voxTexCoord;
 TEMP  normVoxTexCoord;
+TEMP  modValue;
 TEMP  voxValue;
 TEMP  xColour;
 TEMP  yColour;
@@ -63,12 +64,17 @@ MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
 TEX voxValue, normVoxTexCoord, texture[0], 3D;
 ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
 
+# Look up the modulation value
+# from the modulation texture
+TEX modValue, normVoxTexCoord, texture[1], 3D;
+ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };  
+  
 # Use those values to look up
 # the colours for each xyz
 # direction
-TEX xColour, voxValue.x, texture[1], 1D;
-TEX yColour, voxValue.y, texture[2], 1D;
-TEX zColour, voxValue.z, texture[3], 1D;
+TEX xColour, voxValue.x, texture[2], 1D;
+TEX yColour, voxValue.y, texture[3], 1D;
+TEX zColour, voxValue.z, texture[4], 1D;
 
 # Cumulatively combine the rgb
 # channels of those three colours
@@ -78,6 +84,9 @@ ADD voxColour, voxColour, zColour;
 
 # But take the average of the alpha channel
 MUL voxColour, voxColour, { 1.0, 1.0, 1.0, 0.333333 };
+
+# Apply the modulation factor
+MUL voxColour, voxColour, modValue ;
   
 # If any of the voxel coordinates are
 # less than 0, clear the voxel colour
