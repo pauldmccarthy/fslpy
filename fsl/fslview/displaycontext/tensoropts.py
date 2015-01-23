@@ -47,21 +47,15 @@ class TensorOpts(fsldisplay.DisplayOpts):
                                         displayCtx,
                                         parent)
 
-        print 'image:     ', type(image)
-        print 'display:   ', type(display)
-        print 'imageList: ', type(imageList)
-        print 'displayCtx:', type(displayCtx)
-
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
 
 
     def imageListChanged(self, *a):
-
+        
         modProp = self.getProp('modulate')
         modVal  = self.modulate
-
-        images = self.imageList[:]
+        images  = self.displayCtx.getOrderedImages()
 
         # the image for this TensorOpts
         # instance has been removed
@@ -84,8 +78,6 @@ class TensorOpts(fsldisplay.DisplayOpts):
         names  = [strings.choices['TensorOpts.modulate.none']] + \
                  [i.name for i in images]
         images = ['none'] + images
-
-        print 'Updating choices (value: {}): {}'.format(modVal, names)
 
         modProp.setChoices(images, names, self)
 
