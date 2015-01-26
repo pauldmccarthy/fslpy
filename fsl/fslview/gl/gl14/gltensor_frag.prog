@@ -11,8 +11,12 @@
 # 
 #  3. Uses those voxel coordinates to look up the corresponding xyz
 #     directions value in the 3D RGB image texture.
-# 
-#  4. Uses those voxel values to colour the fragment.
+#
+#  4. Looks up the colours corresponding to those xyz directions.
+#
+#  5. Modulates those colours by the modulation texture.
+#
+#  6. Uses those voxel values to colour the fragment.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #

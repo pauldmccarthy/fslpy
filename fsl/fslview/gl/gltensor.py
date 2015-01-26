@@ -118,6 +118,18 @@ class GLTensor(globject.GLObject):
         self.refreshModulateTexture()
         self.refreshColourTextures()
 
+
+        def prefilter(data):
+            return np.abs(data.transpose((3, 0, 1, 2)))
+
+        self.imageTexture = fsltextures.getTexture(
+            self.image,
+            type(self).__name__,
+            display=self.display,
+            nvals=3,
+            normalise=True,
+            prefilter=prefilter) 
+
         self.modeMod.init(self)
         
         self._ready = True
@@ -129,7 +141,8 @@ class GLTensor(globject.GLObject):
         gl.glDeleteTextures(self.xColourTexture)
         gl.glDeleteTextures(self.yColourTexture)
         gl.glDeleteTextures(self.zColourTexture)
-        
+
+        fsltextures.deleteTexture(self.imageTexture)
         fsltextures.deleteTexture(self.modTexture) 
 
         self.display    .removeListener('alpha',       self.name)
@@ -244,12 +257,61 @@ class GLTensor(globject.GLObject):
 
         
     def preDraw(self):
+        if not self.display.enabled:
+            return
+
+        gl.glEnable(gl.GL_TEXTURE_1D)
+        gl.glEnable(gl.GL_TEXTURE_3D)
+
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
+
+        gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.modTexture.texture) 
+
+        gl.glActiveTexture(gl.GL_TEXTURE2)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
+
+        gl.glActiveTexture(gl.GL_TEXTURE3)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.yColourTexture)
+
+        gl.glActiveTexture(gl.GL_TEXTURE4)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
+ 
         self.modeMod.preDraw(self)
 
         
     def draw(self, zpos, xform=None):
+        if not self.display.enabled:
+            return
+        
         self.modeMod.draw(self, zpos, xform)
 
         
     def postDraw(self):
+        if not self.display.enabled:
+            return
+
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+        gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+        gl.glActiveTexture(gl.GL_TEXTURE2)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+        gl.glActiveTexture(gl.GL_TEXTURE3)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+        gl.glActiveTexture(gl.GL_TEXTURE4)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)    
+
+        gl.glDisable(gl.GL_TEXTURE_1D) 
+        gl.glDisable(gl.GL_TEXTURE_3D) 
+        
         self.modeMod.postDraw(self) 

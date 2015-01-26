@@ -7,8 +7,6 @@
 
 import logging
 
-import numpy                          as np
-
 import OpenGL.GL                      as gl
 import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
@@ -16,7 +14,6 @@ import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform     as transform
 import fsl.fslview.gl.shaders  as shaders
-import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
 
 log = logging.getLogger(__name__)
@@ -36,8 +33,8 @@ log = logging.getLogger(__name__)
 
 def init(self):
 
-    vertShaderSrc = shaders.getVertexShader(  'gltensor_rgb')
-    fragShaderSrc = shaders.getFragmentShader('gltensor_rgb')
+    vertShaderSrc = shaders.getVertexShader(  self)
+    fragShaderSrc = shaders.getFragmentShader(self)
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
         vertShaderSrc, fragShaderSrc)
@@ -45,24 +42,11 @@ def init(self):
     self.vertexProgram   = vertexProgram
     self.fragmentProgram = fragmentProgram
 
-    def prefilter(data):
-        return np.abs(data.transpose((3, 0, 1, 2)))
-
-    self.imageTexture = fsltextures.getTexture(
-        self.image,
-        type(self).__name__,
-        display=self.display,
-        nvals=3,
-        normalise=True,
-        prefilter=prefilter)
-
 
 def destroy(self):
 
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
-
-    fsltextures.deleteTexture(self.imageTexture)
 
 
 def setAxes(self):
@@ -77,11 +61,6 @@ def setAxes(self):
 
 
 def preDraw(self):
-
-    if not self.display.enabled:
-        return
-
-    gl.glEnable(gl.GL_TEXTURE_3D)
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -117,35 +96,13 @@ def preDraw(self):
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
     gl.glLoadMatrixf(self.display.displayToVoxMat)
-    
-    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
-
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, self.modTexture.texture) 
-
-    gl.glActiveTexture(gl.GL_TEXTURE2)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
-    
-    gl.glActiveTexture(gl.GL_TEXTURE3)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, self.yColourTexture)
-
-    gl.glActiveTexture(gl.GL_TEXTURE4)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
 
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
-    self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX) 
+    self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
 
 
 def draw(self, zpos, xform=None):
-
-    display = self.display
-    
-    if not display.enabled:
-        return
 
     worldCoords  = self.worldCoords
     indices      = self.indices
@@ -167,34 +124,12 @@ def draw(self, zpos, xform=None):
 
 def postDraw(self):
 
-    if not self.display.enabled:
-        return
-
-    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
-
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-
-    gl.glActiveTexture(gl.GL_TEXTURE2)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-
-    gl.glActiveTexture(gl.GL_TEXTURE3)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     
-    gl.glActiveTexture(gl.GL_TEXTURE4)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)    
-
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPopMatrix()
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPopMatrix()
-    
-    gl.glDisable(gl.GL_TEXTURE_3D) 

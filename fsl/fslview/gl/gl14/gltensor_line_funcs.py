@@ -7,11 +7,15 @@
 
 import logging
 
-import OpenGL.GL     as gl
+import OpenGL.GL                      as gl
+import OpenGL.raw.GL._types           as gltypes
+import OpenGL.GL.ARB.fragment_program as arbfp
+import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import numpy         as np
 import scipy.ndimage as ndi
 
+import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
 import fsl.utils.transform     as transform
 
@@ -31,27 +35,40 @@ def init(self):
         """
 
     display = self.display
+
+    vertShaderSrc = shaders.getVertexShader(  self)
+    fragShaderSrc = shaders.getFragmentShader(self)
+
+    vertexProgram, fragmentProgram = shaders.compilePrograms(
+        vertShaderSrc, fragShaderSrc)
+    
+    self.vertexProgram   = vertexProgram
+    self.fragmentProgram = fragmentProgram    
     
     def coordUpdate(*a):
         self.setAxes(self.xax, self.yax)
 
-    display.addListener('transform',     self.name, coordUpdate)
-    display.addListener('interpolation', self.name, coordUpdate)
-    display.addListener('resolution',    self.name, coordUpdate)
+    display.addListener('transform',  self.name, coordUpdate)
+    display.addListener('resolution', self.name, coordUpdate)
 
     
 def destroy(self):
+
+    arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
+    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))    
     
     self.display.removeListener('transform',     self.name)
     self.display.removeListener('interpolation', self.name)
     self.display.removeListener('resolution',    self.name)
-    
-    del self.worldCoords
-    del self.xpixdim
-    del self.ypixdim
 
 
 def setAxes(self):
+    
+    genVertices(self)
+
+
+def genVertices(self):
+
     worldCoords, xpixdim, ypixdim, lenx, leny = \
         globject.calculateSamplePoints(
             self.image,
@@ -61,15 +78,51 @@ def setAxes(self):
 
     self.worldCoords = worldCoords
     self.xpixdim     = xpixdim
-    self.ypixdim     = ypixdim 
+    self.ypixdim     = ypixdim
 
-    
+
+
 def preDraw(self):
+
+
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
+    gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           self.vertexProgram)
+    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                           self.fragmentProgram)
+
+    # the fragment program needs to know the image
+    # shape and its inverse, so it can scale voxel
+    # coordinates to the range [0.0, 1.0], and so
+    # it can clip fragments outside of the image
+    # space
+    shape = self.image.shape
+    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                       0,
+                                       shape[0],
+                                       shape[1],
+                                       shape[2],
+                                       0)
+    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                       1,
+                                       1.0 / shape[0],
+                                       1.0 / shape[1],
+                                       1.0 / shape[2],
+                                       0)
+
+    # The fragment program usees the displayToVoxMat
+    # to transform from display coordinates to voxel
+    # coordinates
+    gl.glMatrixMode(gl.GL_TEXTURE)
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glPushMatrix()
+    gl.glLoadMatrixf(self.display.displayToVoxMat)
 
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
     self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
-    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
     
 def draw(self, zpos, xform=None):
@@ -82,10 +135,10 @@ def draw(self, zpos, xform=None):
     zax         = self.zax
     image       = self.image
     display     = self.display
-    opts        = self.displayOpts
     worldCoords = self.worldCoords
 
-    if not display.enabled: return
+    if not display.enabled:
+        return
 
     worldCoords[:, zax] = zpos
 
@@ -142,9 +195,6 @@ def draw(self, zpos, xform=None):
         xform = transform.concat(xform. self.mvmat)
         gl.glMultMatrixf(xform)
 
-    colour = opts.xColour
-
-    gl.glColor4f(colour[0], colour[1], colour[2], display.alpha)
     gl.glLineWidth(2)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
     gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels)
@@ -152,6 +202,12 @@ def draw(self, zpos, xform=None):
     
 def postDraw(self):
 
-    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
+
     gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glPopMatrix()
+
+    gl.glMatrixMode(gl.GL_TEXTURE)
+    gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPopMatrix()
