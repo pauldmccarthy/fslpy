@@ -51,20 +51,13 @@ class GLMask(glvolume.GLVolume):
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
 
-        def imageUpdate(*a):
-            self.genImageTexture()
-        
         def colourUpdate(*a):
-            self.genColourTexture(self.colourResolution)
+            self.refreshColourTexture(self.colourResolution)
 
         lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
         self.display    .addListener('transform',     lnrName, vertexUpdate)
-        self.display    .addListener('interpolation', lnrName, imageUpdate)
         self.display    .addListener('alpha',         lnrName, colourUpdate)
-        self.display    .addListener('resolution',    lnrName, imageUpdate)
-        self.display    .addListener('volume',        lnrName, imageUpdate)
-        self.image      .addListener('data',          lnrName, imageUpdate)
         self.displayOpts.addListener('colour',        lnrName, colourUpdate)
         self.displayOpts.addListener('threshold',     lnrName, colourUpdate)
         self.displayOpts.addListener('invert',        lnrName, colourUpdate)
@@ -90,9 +83,9 @@ class GLMask(glvolume.GLVolume):
         self.displayOpts.removeListener('invert',        lnrName) 
 
         
-    def genColourTexture(self, *a):
+    def refreshColourTexture(self, *a):
         """Overrides
-        :meth:`~fsl.fslview.gl.glvolume.GLVolume.genColourTexture`.
+        :meth:`~fsl.fslview.gl.glvolume.GLVolume.refreshColourTexture`.
 
         Creates a colour texture which contains the current mask colour,
         and a transformation matrix which maps from the current

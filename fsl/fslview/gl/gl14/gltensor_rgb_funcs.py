@@ -105,9 +105,9 @@ def destroy(self):
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
-    gl.glDeleteTextures(1, self.xColourTexture)
-    gl.glDeleteTextures(1, self.yColourTexture)
-    gl.glDeleteTextures(1, self.zColourTexture)
+    gl.glDeleteTextures(self.xColourTexture)
+    gl.glDeleteTextures(self.yColourTexture)
+    gl.glDeleteTextures(self.zColourTexture)
 
     # Another GLTensor object may have
     # already deleted the image texture
@@ -115,7 +115,7 @@ def destroy(self):
         imageTexture = self.image.delAttribute(
             '{}Texture'.format(type(self).__name__))
         log.debug('Deleting GL texture: {}'.format(imageTexture))
-        gl.glDeleteTextures(1, imageTexture)
+        gl.glDeleteTextures(imageTexture)
         
     except KeyError:
         pass
