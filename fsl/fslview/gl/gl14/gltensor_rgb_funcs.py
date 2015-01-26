@@ -14,10 +14,11 @@ import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.fslview.gl.shaders  as shaders
-import fsl.fslview.gl.globject as globject
 import fsl.utils.transform     as transform
-
+import fsl.data.image          as fslimage
+import fsl.fslview.gl.shaders  as shaders
+import fsl.fslview.gl.textures as fsltextures
+import fsl.fslview.gl.globject as globject
 
 log = logging.getLogger(__name__)
 
@@ -49,47 +50,29 @@ def init(self):
     self.yColourTexture = gl.glGenTextures(1)
     self.zColourTexture = gl.glGenTextures(1)
 
+    def prefilter(data):
+        return np.abs(data.transpose((3, 0, 1, 2)))
+
+    self.imageTexture = fsltextures.getTexture(
+        self.image,
+        type(self).__name__,
+        display=self.display,
+        nvals=3,
+        normalise=True,
+        prefilter=prefilter)
+
+    self.modTexture = None
+
     createColourTextures( self)
-    createImageTexture(   self)
     createModulateTexture(self)
 
-    # This matrix is used by the tensor fragment
-    # program to transform tensor values (which
-    # are assumed to lie in the range [-1.0, 1.0]
-    # to the range [0.0, 1.0], for texture lookup.
-    # We can customised this if we get tensor data
-    # which is not in the range [-1.0, 1.0]
-    self.voxValXform = transform.scaleOffsetXform(
-        [0.5, 0.5, 0.5], [1.0, 1.0, 1.0])
-
-    image   = self.image
     display = self.display
     opts    = self.displayOpts
+    lName   = self.name
 
-    dName = '{}Dirty'.format(type(self).__name__)
-    lName = self.name
+    def modUpdate( *a): createModulateTexture(self)
+    def cmapUpdate(*a): createColourTextures( self)
 
-    def imageUpdate(*a): createImageTexture(   self)
-    def modUpdate(  *a): createModulateTexture(self)
-    def cmapUpdate( *a): createColourTextures( self)
-    def markDirty(  *a):
-        image.setAttribute('{}Dirty'   .format(type(self).__name__), True)
-        image.setAttribute('{}ModDirty'.format(type(self).__name__), True)
-
-    # TODO You should probably listen
-    # for interpolation/resolution/data
-    # changes on the modulate image, in
-    # addition to the displayed image
-
-    try:    display.addListener('interpolation', dName, markDirty)
-    except: pass
-    try:    display.addListener('resolution',    dName, markDirty)
-    except: pass
-    try:    image  .addListener('data',          dName, markDirty)
-    except: pass 
-
-    display.addListener('interpolation', lName, imageUpdate)
-    display.addListener('resolution',    lName, imageUpdate)
     display.addListener('alpha',         lName, cmapUpdate)
     opts   .addListener('xColour',       lName, cmapUpdate)
     opts   .addListener('yColour',       lName, cmapUpdate)
@@ -109,36 +92,16 @@ def destroy(self):
     gl.glDeleteTextures(self.yColourTexture)
     gl.glDeleteTextures(self.zColourTexture)
 
-    # Another GLTensor object may have
-    # already deleted the image texture
-    try:
-        imageTexture = self.image.delAttribute(
-            '{}Texture'.format(type(self).__name__))
-        log.debug('Deleting GL texture: {}'.format(imageTexture))
-        gl.glDeleteTextures(imageTexture)
-        
-    except KeyError:
-        pass
+    fsltextures.deleteTexture(self.imageTexture)
+    fsltextures.deleteTexture(self.modTexture)
     
-    self.display    .removeListener('interpolation', self.name)
-    self.display    .removeListener('resolution',    self.name)
-    self.display    .removeListener('alpha',         self.name)
-    self.displayOpts.removeListener('xColour',       self.name)
-    self.displayOpts.removeListener('yColour',       self.name)
-    self.displayOpts.removeListener('zColour',       self.name)
-    self.displayOpts.removeListener('suppressX',     self.name)
-    self.displayOpts.removeListener('suppressY',     self.name)
-    self.displayOpts.removeListener('suppressZ',     self.name) 
-
-    del self.vertexProgram
-    del self.fragmentProgram
-    del self.imageTexture
-    del self.imageTextureShape
-    del self.modImageTexture
-    del self.modImageTextureShape 
-    del self.worldCoords
-    del self.indices
-    del self.voxValXform
+    self.display    .removeListener('alpha',     self.name)
+    self.displayOpts.removeListener('xColour',   self.name)
+    self.displayOpts.removeListener('yColour',   self.name)
+    self.displayOpts.removeListener('zColour',   self.name)
+    self.displayOpts.removeListener('suppressX', self.name)
+    self.displayOpts.removeListener('suppressY', self.name)
+    self.displayOpts.removeListener('suppressZ', self.name) 
 
 
 def setAxes(self):
@@ -154,171 +117,26 @@ def setAxes(self):
 
 def createModulateTexture(self):
     
-    image    = self.image
-    display  = self.display
     modImage = self.displayOpts.modulate
+
+    if self.modTexture is not None:
+        fsltextures.deleteTexture(self.modTexture)
 
     if modImage == 'none':
         textureData = np.zeros((5, 5, 5), dtype=np.uint8)
         textureData[:] = 255
+        modImage   = fslimage.Image(textureData)
+        modDisplay = None
+        norm       = False
     else:
-        textureData = globject.subsample(modImage.data,
-                                         display.resolution,
-                                         modImage.pixdim)
-        dmin        = textureData.min()
-        dmax        = textureData.max()
-        textureData = 255.0 * (textureData - dmin) / (dmax - dmin)
-        textureData = np.array(textureData, dtype=np.uint8)
+        modDisplay = self.display
+        norm       = True
 
-    texDataShape = textureData.shape
-
-    
-    # Check to see if the image texture
-    # has already been created
-    try:
-        imageTexture = image.getAttribute(
-            '{}ModTexture'.format(type(self).__name__))
-    except:
-        imageTexture = None
-
-    if imageTexture is None:
-        imageTexture = gl.glGenTextures(1)
-        log.debug('Created GL texture: {}'.format(imageTexture))
-        
-    elif not image.getAttribute('{}ModDirty'.format(type(self).__name__)):
-        self.modImageTexture      = imageTexture
-        self.modImageTextureShape = texDataShape
-        return
-
-    self.modImageTexture      = imageTexture
-    self.modImageTextureShape = texDataShape
-
-    textureData = textureData.ravel('F')
-
-    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-    if display.interpolation == 'none': interp = gl.GL_NEAREST
-    else:                               interp = gl.GL_LINEAR
-
-    gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       interp)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       interp) 
-
-    gl.glTexParameterfv(gl.GL_TEXTURE_3D,
-                        gl.GL_TEXTURE_BORDER_COLOR,
-                        np.array([0, 0, 0, 0], dtype=np.float32))
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_T,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_R,
-                       gl.GL_CLAMP_TO_BORDER)
-    
-    gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                    0,
-                    gl.GL_LUMINANCE8,
-                    texDataShape[0],
-                    texDataShape[1],
-                    texDataShape[2],
-                    0,
-                    gl.GL_LUMINANCE, 
-                    gl.GL_UNSIGNED_BYTE,
-                    textureData)    
-    
-    image.setAttribute('{}ModTexture'.format(type(self).__name__),
-                       imageTexture)
-    image.setAttribute('{}ModDirty'  .format(type(self).__name__),
-                       False)
-
-    
-def createImageTexture(self):
-
-    image   = self.image
-    display = self.display
-
-    textureData = globject.subsample(image.data,
-                                     display.resolution,
-                                     image.pixdim)
-
-    texDataShape = textureData.shape
-
-    textureData = np.abs(textureData)
-
-    dmin        = textureData.min()
-    dmax        = textureData.max()
-    textureData = 255.0 * (textureData - dmin) / (dmax - dmin)
-    textureData = np.array(textureData, dtype=np.uint8)
-    
-    # Check to see if the image texture
-    # has already been created
-    try:
-        imageTexture = image.getAttribute(
-            '{}Texture'.format(type(self).__name__))
-    except:
-        imageTexture = None
-
-    if imageTexture is None:
-        imageTexture = gl.glGenTextures(1)
-        log.debug('Created GL texture: {}'.format(imageTexture))
-        
-    elif not image.getAttribute('{}Dirty'.format(type(self).__name__)):
-        self.imageTexture      = imageTexture
-        self.imageTextureShape = texDataShape
-        return
-
-    self.imageTexture      = imageTexture
-    self.imageTextureShape = texDataShape
-
-    textureData = textureData.transpose((3, 0, 1, 2)).ravel('F')
-    
-    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-    if display.interpolation == 'none': interp = gl.GL_NEAREST
-    else:                               interp = gl.GL_LINEAR
-
-    gl.glBindTexture(gl.GL_TEXTURE_3D, imageTexture)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MAG_FILTER,
-                       interp)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_MIN_FILTER,
-                       interp) 
-
-    gl.glTexParameterfv(gl.GL_TEXTURE_3D,
-                        gl.GL_TEXTURE_BORDER_COLOR,
-                        np.array([0, 0, 0, 0], dtype=np.float32))
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_S,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_T,
-                       gl.GL_CLAMP_TO_BORDER)
-    gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                       gl.GL_TEXTURE_WRAP_R,
-                       gl.GL_CLAMP_TO_BORDER)
-    
-    gl.glTexImage3D(gl.GL_TEXTURE_3D,
-                    0,
-                    gl.GL_RGB8,
-                    texDataShape[0],
-                    texDataShape[1],
-                    texDataShape[2],
-                    0,
-                    gl.GL_RGB, 
-                    gl.GL_UNSIGNED_BYTE,
-                    textureData)
-
-    image.setAttribute('{}Texture'.format(type(self).__name__), imageTexture)
-    image.setAttribute('{}Dirty'  .format(type(self).__name__), False)
+    self.modTexture = fsltextures.getTexture(
+        modImage,
+        '{}_{}_modulate'.format(type(self).__name__, id(self.image)),
+        display=modDisplay,
+        normalise=norm)
 
 
 def createColourTextures(self, colourRes=256):
@@ -415,19 +233,14 @@ def preDraw(self):
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
     gl.glLoadMatrixf(self.display.displayToVoxMat)
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glPushMatrix()
-    gl.glLoadMatrixf(self.voxValXform) 
     
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
 
     gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, self.modImageTexture) 
+    gl.glBindTexture(gl.GL_TEXTURE_3D, self.modTexture.texture) 
 
     gl.glActiveTexture(gl.GL_TEXTURE2)
     gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
@@ -499,8 +312,5 @@ def postDraw(self):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPopMatrix()
-
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glPopMatrix() 
     
     gl.glDisable(gl.GL_TEXTURE_3D) 

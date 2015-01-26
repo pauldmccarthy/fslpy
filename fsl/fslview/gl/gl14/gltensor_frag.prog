@@ -29,11 +29,6 @@ TEMP  voxColour;
 PARAM imageShape    = program.local[0];
 PARAM imageShapeInv = program.local[1];
 
-# This matrix scales the voxel value to
-# lie in a range which is appropriate to
-# the current display range 
-PARAM voxValXform[4] = { state.matrix.texture[1] };
-
 # This matrix transforms coordinates
 # from the display coordinate system
 # to image voxel coordinates
