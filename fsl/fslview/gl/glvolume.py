@@ -95,8 +95,8 @@ class GLVolume(globject.GLObject):
 
         fslgl.glvolume_funcs.init(self)
 
-        self.imageTexture = fsltextures.getImageTexture(
-            self.image, self.display, type(self).__name__)
+        self.imageTexture = fsltextures.getTexture(
+            self.image, type(self).__name__, self.display)
 
         # The colour map, used for converting 
         # image data to a RGBA colour.
@@ -159,7 +159,7 @@ class GLVolume(globject.GLObject):
         deleting texture handles).
         """
 
-        self.imageTexture.destroy()
+        fsltextures.deleteTexture(self.imageTexture)
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
