@@ -21,7 +21,11 @@ This module provides the following functions:
  - :func:`genVertexData`: Generates and returns vertex and texture coordinates
    for rendering a single 2D slice of a 3D image.
 
+ - :func:`preDraw: Prepares the GL state for drawing.
+
  - :func:`draw`: Renders the current image slice.
+
+ - :func:`postDraw: Resets the GL state after drawing.
 
  - :func:`destroy`: Deletes handles to the vertex/fragment programs
 
@@ -64,8 +68,8 @@ def destroy(glvol):
 
     
 def genVertexData(glvol):
-    """Generates vertex and texture coordinates required to render
-    the image. See :func:`fsl.fslview.gl.glvolume.genVertexData`.
+    """Generates vertex coordinates required to render the image. See
+    :func:`fsl.fslview.gl.glvolume.genVertexData`.
     """
     
     worldCoords, indices = glvol.genVertexData()

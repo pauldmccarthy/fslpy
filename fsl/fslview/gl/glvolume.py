@@ -25,22 +25,27 @@ rendering.
 
 These version dependent modules must provide the following functions:
 
-  - `init(GLVolume, xax, yax)`: Perform any necessary initialisation.
+  - ``init(GLVolume)``: Perform any necessary initialisation.
 
-  - `destroy(GLVolume)`: Perform any necessary clean up.
+  - ``destroy(GLVolume)``: Perform any necessary clean up.
 
-  - `genVertexData(GLVolume)`: Create and prepare vertex and texture
-    coordinates, using the :meth:`GLVolume.genVertexData` method. 
+  - ``genVertexData(GLVolume)``: Create and prepare vertex coordinates, using
+    the :meth:`GLVolume.genVertexData` method.
 
-  - `draw(GLVolume, zpos, xform=None)`: Draw a slice of the image at the given
-    Z position. If xform is not None, it must be applied as a transformation
-    on the vertex coordinates.
+  - ``preDraw()``: Initialise the GL state, ready for drawing.
+
+  - ``draw(GLVolume, zpos, xform=None)``: Draw a slice of the image at the
+    given Z position. If xform is not None, it must be applied as a 
+    transformation on the vertex coordinates.
+
+  - ``postDraw()``: Clear the GL state after drawing.
 
 Images are rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
 as a 3D texture, and the current colour map as a 1D texture. A slice through
 the texture is rendered using four vertices, located at the respective corners
 of the image bounds.
+
 """
 
 import logging

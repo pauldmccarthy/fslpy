@@ -20,7 +20,13 @@ This module provides the following functions:
    for rendering a single 2D slice of a 3D image. Actually returns handles to
    VBOs which encapsulate the vertex and texture coordinates.
 
- - :func:`destroy`: Deletes the vertex and texture coordinate VBOs.
+ - :func:`preDraw`:  Prepares the GL state for drawing.
+
+ - :func:`draw`:     Draws the scene.
+
+ - :func:`postDraw`: Resets the GL state after drawing.
+
+ - :func:`destroy`:  Deletes the vertex and texture coordinate VBOs.
 """
 
 import logging
