@@ -8,7 +8,7 @@
 """OpenGL vertex creation and rendering code for drawing a X*Y*Z*3 image as
 a tensor image.
 
-Tensors can be displayed in oneof several 'modes'.
+Tensors can be displayed in one of several 'modes'.
 
  - init(self)
 
@@ -28,11 +28,16 @@ Tensors can be displayed in oneof several 'modes'.
 """
 
 import logging
-log = logging.getLogger(__name__)
 
+import numpy                   as np
+import OpenGL.GL               as gl
 
+import fsl.data.image          as fslimage
 import fsl.fslview.gl          as fslgl
+import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
+
+log = logging.getLogger(__name__)
 
 
 class GLTensor(globject.GLObject):
@@ -72,11 +77,27 @@ class GLTensor(globject.GLObject):
             raise RuntimeError('No tensor module for mode {}'.format(mode))
 
 
+
     def init(self):
         """Initialise the OpenGL data required to render the given image.
 
         After this method has been called, the image is ready to be rendered.
         """
+
+        display = self.display
+        opts    = self.displayOpts
+        name    = self.name
+
+        self.xColourTexture = gl.glGenTextures(1)
+        self.yColourTexture = gl.glGenTextures(1)
+        self.zColourTexture = gl.glGenTextures(1)
+        self.modTexture     = None
+        
+        def modUpdate( *a):
+            self.refreshModulateTexture()
+
+        def cmapUpdate(*a):
+            self.refreshColourTextures()
 
         def modeChange(*a):
             self.modeMod.destroy(self)
@@ -84,11 +105,44 @@ class GLTensor(globject.GLObject):
             self.modeMod.init(self)
             self.setAxes(self.xax, self.yax)
 
-        self.displayOpts.addListener('displayMode', self.name, modeChange)
+        display.addListener('alpha',       name, cmapUpdate)
+        opts   .addListener('xColour',     name, cmapUpdate)
+        opts   .addListener('yColour',     name, cmapUpdate)
+        opts   .addListener('zColour',     name, cmapUpdate)
+        opts   .addListener('suppressX',   name, cmapUpdate)
+        opts   .addListener('suppressY',   name, cmapUpdate)
+        opts   .addListener('suppressZ',   name, cmapUpdate)
+        opts   .addListener('modulate',    name, modUpdate)
+        opts   .addListener('displayMode', name, modeChange)
+
+        self.refreshModulateTexture()
+        self.refreshColourTextures()
 
         self.modeMod.init(self)
         
         self._ready = True
+
+        
+    def destroy(self):
+        """Does nothing - nothing needs to be cleaned up. """
+
+        gl.glDeleteTextures(self.xColourTexture)
+        gl.glDeleteTextures(self.yColourTexture)
+        gl.glDeleteTextures(self.zColourTexture)
+        
+        fsltextures.deleteTexture(self.modTexture) 
+
+        self.display    .removeListener('alpha',       self.name)
+        self.displayOpts.removeListener('xColour',     self.name)
+        self.displayOpts.removeListener('yColour',     self.name)
+        self.displayOpts.removeListener('zColour',     self.name)
+        self.displayOpts.removeListener('suppressX',   self.name)
+        self.displayOpts.removeListener('suppressY',   self.name)
+        self.displayOpts.removeListener('suppressZ',   self.name)
+        self.displayOpts.removeListener('modulate',    self.name)
+        self.displayOpts.removeListener('displayMode', self.name)
+
+        self.modeMod.destroy(self)
 
         
     def ready(self):
@@ -97,14 +151,84 @@ class GLTensor(globject.GLObject):
         """ 
         return self._ready
 
-        
-    def destroy(self):
-        """Does nothing - nothing needs to be cleaned up. """
 
-        self.displayOpts.removeListener('displayMode', self.name)
 
-        self.modeMod.destroy(self)
+    def refreshModulateTexture(self):
 
+        modImage = self.displayOpts.modulate
+
+        if self.modTexture is not None:
+            fsltextures.deleteTexture(self.modTexture)
+
+        if modImage == 'none':
+            textureData = np.zeros((5, 5, 5), dtype=np.uint8)
+            textureData[:] = 255
+            modImage   = fslimage.Image(textureData)
+            modDisplay = None
+            norm       = False
+        else:
+            modDisplay = self.display
+            norm       = True
+
+        self.modTexture = fsltextures.getTexture(
+            modImage,
+            '{}_{}_modulate'.format(type(self).__name__, id(self.image)),
+            display=modDisplay,
+            normalise=norm)
+
+
+    def refreshColourTextures(self, colourRes=256):
+
+        xcol = self.displayOpts.xColour + [1.0]
+        ycol = self.displayOpts.yColour + [1.0]
+        zcol = self.displayOpts.zColour + [1.0]
+
+        xsup = self.displayOpts.suppressX
+        ysup = self.displayOpts.suppressY
+        zsup = self.displayOpts.suppressZ 
+
+        xtex = self.xColourTexture
+        ytex = self.yColourTexture
+        ztex = self.zColourTexture
+
+        for colour, texture, suppress in zip(
+                (xcol, ycol, zcol),
+                (xtex, ytex, ztex),
+                (xsup, ysup, zsup)):
+
+            if not suppress:
+                cmap = np.array(
+                    [np.linspace(0.0, i, colourRes) for i in colour])
+            else:
+                cmap = np.zeros((4, colourRes))
+
+            cmap[3, :] = self.display.alpha
+            cmap[3, 0] = 0.0
+
+            cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')
+
+            gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_MAG_FILTER,
+                               gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_MIN_FILTER,
+                               gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_WRAP_S,
+                               gl.GL_CLAMP_TO_EDGE)
+
+            gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                            0,
+                            gl.GL_RGBA8,
+                            colourRes,
+                            0,
+                            gl.GL_RGBA,
+                            gl.GL_UNSIGNED_BYTE,
+                            cmap)
+
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+    
 
     def setAxes(self, xax, yax):
         """Calculates vertex locations according to the specified X/Y axes,

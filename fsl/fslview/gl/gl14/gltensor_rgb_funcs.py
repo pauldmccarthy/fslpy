@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gltensor_rgb_funcs.py -
+# gltensor_rgb_funcs.py - 
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -15,7 +15,6 @@ import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
 import fsl.utils.transform     as transform
-import fsl.data.image          as fslimage
 import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
@@ -37,18 +36,14 @@ log = logging.getLogger(__name__)
 
 def init(self):
 
-    vertShaderSrc = shaders.getVertexShader(  self)
-    fragShaderSrc = shaders.getFragmentShader(self) 
+    vertShaderSrc = shaders.getVertexShader(  'gltensor_rgb')
+    fragShaderSrc = shaders.getFragmentShader('gltensor_rgb')
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
         vertShaderSrc, fragShaderSrc)
     
     self.vertexProgram   = vertexProgram
     self.fragmentProgram = fragmentProgram
-
-    self.xColourTexture = gl.glGenTextures(1)
-    self.yColourTexture = gl.glGenTextures(1)
-    self.zColourTexture = gl.glGenTextures(1)
 
     def prefilter(data):
         return np.abs(data.transpose((3, 0, 1, 2)))
@@ -61,47 +56,13 @@ def init(self):
         normalise=True,
         prefilter=prefilter)
 
-    self.modTexture = None
-
-    createColourTextures( self)
-    createModulateTexture(self)
-
-    display = self.display
-    opts    = self.displayOpts
-    lName   = self.name
-
-    def modUpdate( *a): createModulateTexture(self)
-    def cmapUpdate(*a): createColourTextures( self)
-
-    display.addListener('alpha',         lName, cmapUpdate)
-    opts   .addListener('xColour',       lName, cmapUpdate)
-    opts   .addListener('yColour',       lName, cmapUpdate)
-    opts   .addListener('zColour',       lName, cmapUpdate)
-    opts   .addListener('suppressX',     lName, cmapUpdate)
-    opts   .addListener('suppressY',     lName, cmapUpdate)
-    opts   .addListener('suppressZ',     lName, cmapUpdate)
-    opts   .addListener('modulate',      lName, modUpdate)
-    
 
 def destroy(self):
 
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
-    gl.glDeleteTextures(self.xColourTexture)
-    gl.glDeleteTextures(self.yColourTexture)
-    gl.glDeleteTextures(self.zColourTexture)
-
     fsltextures.deleteTexture(self.imageTexture)
-    fsltextures.deleteTexture(self.modTexture)
-    
-    self.display    .removeListener('alpha',     self.name)
-    self.displayOpts.removeListener('xColour',   self.name)
-    self.displayOpts.removeListener('yColour',   self.name)
-    self.displayOpts.removeListener('zColour',   self.name)
-    self.displayOpts.removeListener('suppressX', self.name)
-    self.displayOpts.removeListener('suppressY', self.name)
-    self.displayOpts.removeListener('suppressZ', self.name) 
 
 
 def setAxes(self):
@@ -113,83 +74,6 @@ def setAxes(self):
 
     self.worldCoords = worldCoords
     self.indices     = idxs
-
-
-def createModulateTexture(self):
-    
-    modImage = self.displayOpts.modulate
-
-    if self.modTexture is not None:
-        fsltextures.deleteTexture(self.modTexture)
-
-    if modImage == 'none':
-        textureData = np.zeros((5, 5, 5), dtype=np.uint8)
-        textureData[:] = 255
-        modImage   = fslimage.Image(textureData)
-        modDisplay = None
-        norm       = False
-    else:
-        modDisplay = self.display
-        norm       = True
-
-    self.modTexture = fsltextures.getTexture(
-        modImage,
-        '{}_{}_modulate'.format(type(self).__name__, id(self.image)),
-        display=modDisplay,
-        normalise=norm)
-
-
-def createColourTextures(self, colourRes=256):
-
-
-    xcol = self.displayOpts.xColour + [1.0]
-    ycol = self.displayOpts.yColour + [1.0]
-    zcol = self.displayOpts.zColour + [1.0]
-
-    xsup = self.displayOpts.suppressX
-    ysup = self.displayOpts.suppressY
-    zsup = self.displayOpts.suppressZ 
-
-    xtex = self.xColourTexture
-    ytex = self.yColourTexture
-    ztex = self.zColourTexture
-
-    for colour, texture, suppress in zip(
-            (xcol, ycol, zcol),
-            (xtex, ytex, ztex),
-            (xsup, ysup, zsup)):
-
-        if not suppress:
-            cmap = np.array([np.linspace(0.0, i, colourRes) for i in colour])
-        else:
-            cmap = np.zeros((4, colourRes))
-
-        cmap[3, :] = self.display.alpha
-        cmap[3, 0] = 0.0
-
-        cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')
-
-        gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE)
-
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        colourRes,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        cmap)
-        
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
 
 
 def preDraw(self):
@@ -210,7 +94,7 @@ def preDraw(self):
     # the fragment program needs to know the image
     # shape and its inverse, so it can scale voxel
     # coordinates to the range [0.0, 1.0], and so
-    # it can  clip fragments outside of the image
+    # it can clip fragments outside of the image
     # space
     shape = self.image.shape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
