@@ -9,8 +9,8 @@
 """A GLVolume object encapsulates the OpenGL information necessary
 to render 2D slices of a 3D image, in an OpenGL 2.1 compatible manner.
 
-This module is extremely tightly coupled to the vertex and fragment shader
-programs (`glvolume_vert.glsl` and `glvolume_frag.glsl` respectively).
+This module is extremely tightly coupled to the fragment shader
+program ``glvolume_frag.glsl``.
 
 This module provides the following functions:
 
@@ -30,7 +30,6 @@ This module provides the following functions:
 """
 
 import logging
-log = logging.getLogger(__name__)
 
 import numpy                  as np
 import OpenGL.GL              as gl
@@ -40,72 +39,74 @@ import fsl.fslview.gl.shaders as shaders
 import fsl.utils.transform    as transform
 
 
-def _compileShaders(glvol):
+log = logging.getLogger(__name__)
+
+def _compileShaders(self):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
     programs, and attaches a reference to the resulting program, and
     all GLSL variables, to the given GLVolume object. 
     """
 
     vertShaderSrc = shaders.getVertexShader('generic')
-    fragShaderSrc = shaders.getFragmentShader(glvol)
-    glvol.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
+    fragShaderSrc = shaders.getFragmentShader(self)
+    self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
     # indices of all vertex/fragment shader parameters
-    glvol.worldToWorldMatPos = gl.glGetUniformLocation(glvol.shaders,
+    self.worldToWorldMatPos = gl.glGetUniformLocation(self.shaders,
                                                        'worldToWorldMat')
-    glvol.xaxPos             = gl.glGetUniformLocation(glvol.shaders,
+    self.xaxPos             = gl.glGetUniformLocation(self.shaders,
                                                        'xax')
-    glvol.yaxPos             = gl.glGetUniformLocation(glvol.shaders,
+    self.yaxPos             = gl.glGetUniformLocation(self.shaders,
                                                        'yax')
-    glvol.zaxPos             = gl.glGetUniformLocation(glvol.shaders,
+    self.zaxPos             = gl.glGetUniformLocation(self.shaders,
                                                        'zax')
-    glvol.worldCoordPos      = gl.glGetAttribLocation( glvol.shaders,
+    self.worldCoordPos      = gl.glGetAttribLocation( self.shaders,
                                                        'worldCoords') 
-    glvol.zCoordPos          = gl.glGetUniformLocation(glvol.shaders,
+    self.zCoordPos          = gl.glGetUniformLocation(self.shaders,
                                                        'zCoord')
     
-    glvol.imageTexturePos    = gl.glGetUniformLocation(glvol.shaders,
+    self.imageTexturePos    = gl.glGetUniformLocation(self.shaders,
                                                        'imageTexture')
-    glvol.imageShapePos      = gl.glGetUniformLocation(glvol.shaders,
+    self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
                                                        'imageShape')
-    glvol.colourTexturePos   = gl.glGetUniformLocation(glvol.shaders,
+    self.colourTexturePos   = gl.glGetUniformLocation(self.shaders,
                                                        'colourTexture') 
-    glvol.useSplinePos       = gl.glGetUniformLocation(glvol.shaders,
+    self.useSplinePos       = gl.glGetUniformLocation(self.shaders,
                                                        'useSpline')
-    glvol.displayToVoxMatPos = gl.glGetUniformLocation(glvol.shaders,
+    self.displayToVoxMatPos = gl.glGetUniformLocation(self.shaders,
                                                        'displayToVoxMat')
-    glvol.voxValXformPos     = gl.glGetUniformLocation(glvol.shaders,
+    self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
                                                        'voxValXform') 
 
 
-def init(glvol):
+def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
-    _compileShaders(glvol)
+    _compileShaders(self)
 
-    glvol.worldCoordBuffer = gl.glGenBuffers(1)
-    glvol.indexBuffer      = gl.glGenBuffers(1) 
+    self.worldCoordBuffer = gl.glGenBuffers(1)
+    self.indexBuffer      = gl.glGenBuffers(1) 
 
 
-def destroy(glvol):
+def destroy(self):
     """Cleans up VBO handles."""
 
-    gl.glDeleteBuffers(1, gltypes.GLuint(glvol.worldCoordBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(glvol.indexBuffer))
-    gl.glDeleteProgram(glvol.shaders)
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.worldCoordBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
+    gl.glDeleteProgram(self.shaders)
 
 
-def genVertexData(glvol):
+def genVertexData(self):
     """Generates vertex and texture coordinates required to render the
     image, and associates them with OpenGL VBOs . See
     :func:`fsl.fslview.gl.glvolume.genVertexData`.
     """ 
-    xax = glvol.xax
-    yax = glvol.yax
+    xax = self.xax
+    yax = self.yax
 
-    worldCoordBuffer     = glvol.worldCoordBuffer
-    indexBuffer          = glvol.indexBuffer
-    worldCoords, indices = glvol.genVertexData()
+    worldCoordBuffer     = self.worldCoordBuffer
+    indexBuffer          = self.indexBuffer
+    worldCoords, indices = self.genVertexData()
 
     worldCoords = worldCoords[:, [xax, yax]]
 
@@ -127,16 +128,16 @@ def genVertexData(glvol):
     return worldCoordBuffer, indexBuffer, len(indices)
 
 
-def preDraw(glvol):
+def preDraw(self):
     """Sets up the GL state to draw a slice from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = glvol.display
+    display = self.display
     if not display.enabled: return
 
     # load the shaders
-    gl.glUseProgram(glvol.shaders)
+    gl.glUseProgram(self.shaders)
     
     gl.glEnable(gl.GL_TEXTURE_1D)
     gl.glEnable(gl.GL_TEXTURE_3D)
@@ -144,46 +145,46 @@ def preDraw(glvol):
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
-    gl.glUniform1f( glvol.useSplinePos,     display.interpolation == 'spline')
+    gl.glUniform1f( self.useSplinePos,     display.interpolation == 'spline')
     
-    gl.glUniform3fv(glvol.imageShapePos, 1, np.array(glvol.image.shape,
+    gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape,
                                                      dtype=np.float32))
-    gl.glUniform1i( glvol.xaxPos,           glvol.xax)
-    gl.glUniform1i( glvol.yaxPos,           glvol.yax)
-    gl.glUniform1i( glvol.zaxPos,           glvol.zax)
+    gl.glUniform1i( self.xaxPos,           self.xax)
+    gl.glUniform1i( self.yaxPos,           self.yax)
+    gl.glUniform1i( self.zaxPos,           self.zax)
 
     # Bind transformation matrices to transform
     # display coordinates to voxel coordinates,
     # and to scale voxel values to colour map
     # texture coordinates
-    tcx = transform.concat(glvol.imageTexture.voxValXform,
-                           glvol.colourMapXform)
+    tcx = transform.concat(self.imageTexture.voxValXform,
+                           self.colourMapXform)
     w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
     vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
     
-    gl.glUniformMatrix4fv(glvol.displayToVoxMatPos, 1, False, w2v)
-    gl.glUniformMatrix4fv(glvol.voxValXformPos,     1, False, vvx)
+    gl.glUniformMatrix4fv(self.displayToVoxMatPos, 1, False, w2v)
+    gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, vvx)
 
     # Set up the colour and image textures
-    gl.glUniform1i(glvol.colourTexturePos, 0) 
-    gl.glUniform1i(glvol.imageTexturePos,  1)
+    gl.glUniform1i(self.colourTexturePos, 0) 
+    gl.glUniform1i(self.imageTexturePos,  1)
 
     # Bind the world x/y coordinate buffer
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, glvol.worldCoords)
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoords)
     gl.glVertexAttribPointer(
-        glvol.worldCoordPos,
+        self.worldCoordPos,
         2,
         gl.GL_FLOAT,
         gl.GL_FALSE,
         0,
         None)
-    gl.glEnableVertexAttribArray(glvol.worldCoordPos)
+    gl.glEnableVertexAttribArray(self.worldCoordPos)
 
     # Bind the vertex index buffer
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, glvol.indices)
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indices)
 
 
-def draw(glvol, zpos, xform=None):
+def draw(self, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
     :arg image:   The :class:`~fsl.fslview.gl.glvolume.GLVolume` object which
@@ -194,7 +195,7 @@ def draw(glvol, zpos, xform=None):
     :arg xform:   A 4*4 transformation matrix to be applied to the vertex
                   data.
     """
-    display = glvol.display
+    display = self.display
     if not display.enabled: return 
     
     if xform is None: xform = np.identity(4)
@@ -203,24 +204,24 @@ def draw(glvol, zpos, xform=None):
 
     # Bind the current world z position, and
     # the xform transformation matrix
-    gl.glUniform1f(       glvol.zCoordPos,                    zpos)
-    gl.glUniformMatrix4fv(glvol.worldToWorldMatPos, 1, False, w2w)
+    gl.glUniform1f(       self.zCoordPos,                    zpos)
+    gl.glUniformMatrix4fv(self.worldToWorldMatPos, 1, False, w2w)
 
     # Draw all of the triangles!
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                      glvol.nVertices,
+                      self.nVertices,
                       gl.GL_UNSIGNED_INT,
                       None)
 
 
-def postDraw(glvol):
+def postDraw(self):
     """Cleans up the GL state after drawing from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    if not glvol.display.enabled: return
+    if not self.display.enabled: return
 
-    gl.glDisableVertexAttribArray(glvol.worldCoordPos)
+    gl.glDisableVertexAttribArray(self.worldCoordPos)
 
     gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     gl.glBindTexture(gl.GL_TEXTURE_3D, 0)

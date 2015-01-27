@@ -47,41 +47,41 @@ import fsl.fslview.gl.shaders as shaders
 log = logging.getLogger(__name__)
 
 
-def init(glvol):
+def init(self):
     """Compiles the vertex and fragment programs used for rendering."""
 
     vertShaderSrc = shaders.getVertexShader('generic')
-    fragShaderSrc = shaders.getFragmentShader(glvol) 
+    fragShaderSrc = shaders.getFragmentShader(self) 
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
         vertShaderSrc, fragShaderSrc)
 
-    glvol.vertexProgram   = vertexProgram
-    glvol.fragmentProgram = fragmentProgram
+    self.vertexProgram   = vertexProgram
+    self.fragmentProgram = fragmentProgram
 
     
-def destroy(glvol):
+def destroy(self):
     """Deletes handles to the vertex/fragment programs."""
 
-    arbvp.glDeleteProgramsARB(1, gltypes.GLuint(glvol.vertexProgram))
-    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(glvol.fragmentProgram))
+    arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
+    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
     
-def genVertexData(glvol):
+def genVertexData(self):
     """Generates vertex coordinates required to render the image. See
     :func:`fsl.fslview.gl.glvolume.genVertexData`.
     """
     
-    worldCoords, indices = glvol.genVertexData()
+    worldCoords, indices = self.genVertexData()
     return worldCoords, indices, len(indices)
 
 
-def preDraw(glvol):
+def preDraw(self):
     """Prepares to draw a slice from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = glvol.display
+    display = self.display
 
     # Don't draw the slice if this
     # image display is disabled
@@ -95,23 +95,23 @@ def preDraw(glvol):
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
 
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           glvol.vertexProgram)
+                           self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           glvol.fragmentProgram) 
+                           self.fragmentProgram) 
 
     # Set up the image data texture 
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture.texture)
+    gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
 
     # Set up the colour map texture
     gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glvol.colourTexture)
+    gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
 
     # The fragment program needs to know
     # the image shape (and its inverse,
     # because there's no division operation,
     # and the RCP operation works on scalars)
-    shape = glvol.image.shape
+    shape = self.image.shape
     arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                                        0,
                                        shape[0],
@@ -135,8 +135,8 @@ def preDraw(glvol):
     # into a value between 0 and 1, suitable
     # for looking up an appropriate colour
     # in the 1D colour map texture
-    cmapXForm = transform.concat(glvol.imageTexture.voxValXform,
-                                 glvol.colourMapXform)
+    cmapXForm = transform.concat(self.imageTexture.voxValXform,
+                                 self.colourMapXform)
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
     gl.glPushMatrix()
@@ -160,21 +160,21 @@ def preDraw(glvol):
     # comments in draw)
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glPushMatrix()
-    glvol.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
+    self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
 
 
-def draw(glvol, zpos, xform=None):
+def draw(self, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
 
-    display = glvol.display
+    display = self.display
     
     # Don't draw the slice if this
     # image display is disabled
     if not display.enabled: return
 
-    worldCoords  = glvol.worldCoords
-    indices      = glvol.indices
-    worldCoords[:, glvol.zax] = zpos
+    worldCoords  = self.worldCoords
+    indices      = self.indices
+    worldCoords[:, self.zax] = zpos
 
     # Apply the custom xform if provided.
     # I'm doing this on CPU to minimise
@@ -191,7 +191,7 @@ def draw(glvol, zpos, xform=None):
     # as opposed to the single call to
     # glLoadMatrixf required here
     if xform is not None:
-        xform = transform.concat(xform, glvol.mvmat)
+        xform = transform.concat(xform, self.mvmat)
         gl.glLoadMatrixf(xform)
 
     worldCoords = worldCoords.ravel('C')
@@ -204,12 +204,12 @@ def draw(glvol, zpos, xform=None):
                       indices)
 
 
-def postDraw(glvol):
+def postDraw(self):
     """Cleans up the GL state after drawing from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = glvol.display
+    display = self.display
     if not display.enabled: return
 
     gl.glPopMatrix()
