@@ -1,5 +1,5 @@
 /*
- * OpenGL fragment shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
+ * OpenGL fragment shader used by fsl/fslview/gl/gl21/glvolume_funcs.py.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -87,7 +87,8 @@ void main(void) {
     float voxValue;
     if (useSpline) voxValue = spline_interp(imageTexture,
                                             voxCoords.xyz,
-                                            imageShape);
+                                            imageShape,
+                                            0);
     else           voxValue = texture3D(    imageTexture,
                                             voxCoords.xyz).r;
 

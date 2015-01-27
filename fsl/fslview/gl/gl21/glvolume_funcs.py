@@ -164,11 +164,6 @@ def preDraw(glvol):
     gl.glUniformMatrix4fv(glvol.displayToVoxMatPos, 1, False, w2v)
     gl.glUniformMatrix4fv(glvol.voxValXformPos,     1, False, vvx)
 
-    # Enable storage of tightly packed data
-    # of any size, for our 3D image texture 
-    gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1) 
-    
     # Set up the colour texture
     gl.glActiveTexture(gl.GL_TEXTURE0) 
     gl.glBindTexture(gl.GL_TEXTURE_1D, glvol.colourTexture)

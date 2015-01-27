@@ -47,8 +47,9 @@ following papers:
 // @param tex        3D texture
 // @param coord      normalized 3D texture coordinate
 // @param nrOfVoxels Texture size
+// @param comp       Texture component (0 == r, 1 == g, 2 == b, 3 == a)
 
-float spline_interp(sampler3D tex, vec3 coord, vec3 nrOfVoxels) {
+float spline_interp(sampler3D tex, vec3 coord, vec3 nrOfVoxels, int comp) {
 
   // shift the coordinate from [0,1] to [-0.5, nrOfVoxels-0.5]
 	vec3 coord_grid = coord * nrOfVoxels - 0.5;
@@ -69,18 +70,18 @@ float spline_interp(sampler3D tex, vec3 coord, vec3 nrOfVoxels) {
 
    // fetch the eight linear interpolations
    // weighting and fetching is interleaved for performance and stability reasons
-	float tex000 = texture3D(tex, h0).r;
-	float tex100 = texture3D(tex, vec3(h1.x, h0.y, h0.z)).r;
+	float tex000 = texture3D(tex, h0)[comp];
+	float tex100 = texture3D(tex, vec3(h1.x, h0.y, h0.z))[comp];
 	tex000 = mix(tex100, tex000, g0.x);  //weigh along the x-direction
-	float tex010 = texture3D(tex, vec3(h0.x, h1.y, h0.z)).r;
-	float tex110 = texture3D(tex, vec3(h1.x, h1.y, h0.z)).r;
+	float tex010 = texture3D(tex, vec3(h0.x, h1.y, h0.z))[comp];
+	float tex110 = texture3D(tex, vec3(h1.x, h1.y, h0.z))[comp];
 	tex010 = mix(tex110, tex010, g0.x);  //weigh along the x-direction
 	tex000 = mix(tex010, tex000, g0.y);  //weigh along the y-direction
-	float tex001 = texture3D(tex, vec3(h0.x, h0.y, h1.z)).r;
-	float tex101 = texture3D(tex, vec3(h1.x, h0.y, h1.z)).r;
+	float tex001 = texture3D(tex, vec3(h0.x, h0.y, h1.z))[comp];
+	float tex101 = texture3D(tex, vec3(h1.x, h0.y, h1.z))[comp];
 	tex001 = mix(tex101, tex001, g0.x);  //weigh along the x-direction
-	float tex011 = texture3D(tex, vec3(h0.x, h1.y, h1.z)).r;
-	float tex111 = texture3D(tex, h1).r;
+	float tex011 = texture3D(tex, vec3(h0.x, h1.y, h1.z))[comp];
+	float tex111 = texture3D(tex, h1)[comp];
 	tex011 = mix(tex111, tex011, g0.x);  //weigh along the x-direction
 	tex001 = mix(tex011, tex001, g0.y);  //weigh along the y-direction
 

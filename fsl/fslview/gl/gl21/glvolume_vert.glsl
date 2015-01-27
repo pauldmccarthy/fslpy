@@ -37,12 +37,6 @@ uniform float zCoord;
  */ 
 varying vec3 fragTexCoords;
 
-/* 
- * If the world location is out of bounds, tell 
- * the fragment shader not to draw the fragment. 
- */
-varying float outOfBounds;
-
 
 void main(void) {
 
