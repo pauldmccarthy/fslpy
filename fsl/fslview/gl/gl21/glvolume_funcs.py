@@ -164,15 +164,9 @@ def preDraw(glvol):
     gl.glUniformMatrix4fv(glvol.displayToVoxMatPos, 1, False, w2v)
     gl.glUniformMatrix4fv(glvol.voxValXformPos,     1, False, vvx)
 
-    # Set up the colour texture
-    gl.glActiveTexture(gl.GL_TEXTURE0) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, glvol.colourTexture)
+    # Set up the colour and image textures
     gl.glUniform1i(glvol.colourTexturePos, 0) 
-
-    # Set up the image data texture
-    gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_3D, glvol.imageTexture.texture)
-    gl.glUniform1i(glvol.imageTexturePos, 1)
+    gl.glUniform1i(glvol.imageTexturePos,  1)
 
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, glvol.worldCoords)

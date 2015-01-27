@@ -14,6 +14,7 @@ class TensorOpts(fsldisplay.DisplayOpts):
 
     displayMode = props.Choice(
         ('line', 'rgb'),
+        default='rgb',
         labels=[strings.choices['TensorOpts.displayType.line'],
                 strings.choices['TensorOpts.displayType.rgb']])
 
