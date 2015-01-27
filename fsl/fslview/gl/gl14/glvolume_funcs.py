@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 def init(glvol):
     """Compiles the vertex and fragment programs used for rendering."""
 
-    vertShaderSrc = shaders.getVertexShader(  glvol)
+    vertShaderSrc = shaders.getVertexShader('generic')
     fragShaderSrc = shaders.getFragmentShader(glvol) 
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(

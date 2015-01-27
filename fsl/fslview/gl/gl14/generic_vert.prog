@@ -1,6 +1,6 @@
 !!ARBvp1.0
 #
-# Vertex program used for rendering GLTensor instances.
+# Vertex program used for rendering GLObject instances.
 #
 # This vertex program does two things:
 #

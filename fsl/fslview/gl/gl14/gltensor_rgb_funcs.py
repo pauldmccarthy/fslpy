@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 def init(self):
 
-    vertShaderSrc = shaders.getVertexShader(  self)
+    vertShaderSrc = shaders.getVertexShader('generic')
     fragShaderSrc = shaders.getFragmentShader(self)
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(

@@ -1,5 +1,5 @@
 /*
- * OpenGL vertex shader used by fsl/fslview/gl/gl21/glvolume_funcs.py.
+ * OpenGL vertex shader used for rendering GLObject instances.
  *
  * All this shader does is transfer texture coordinates through
  * to the fragment shader.

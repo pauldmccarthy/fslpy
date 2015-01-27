@@ -23,7 +23,7 @@ def init(self):
     self.worldCoordBuffer = gl.glGenBuffers(1)
     self.indexBuffer      = gl.glGenBuffers(1)
 
-    vertShaderSrc = shaders.getVertexShader(  'gltensor_rgb')
+    vertShaderSrc = shaders.getVertexShader(  'generic')
     fragShaderSrc = shaders.getFragmentShader('gltensor_rgb')
     self.shaders  = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
