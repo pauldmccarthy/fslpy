@@ -5,25 +5,32 @@
 #
 # This fragment program does the following:
 # 
-#  1. Retrieves the texture coordinates corresponding to the fragment
+#  - Retrieves the voxel coordinates corresponding to the fragment
 # 
-#  2. Transforms those coordinates into voxel coordinates
-# 
-#  3. Uses those voxel coordinates to look up the corresponding xyz
-#     directions value in the 3D RGB image texture.
+#  - Uses those voxel coordinates to look up the corresponding xyz
+#    directions value in the 3D RGB image texture.
 #
-#  4. Looks up the colours corresponding to those xyz directions.
+#  - Looks up the colours corresponding to those xyz directions.
 #
-#  5. Modulates those colours by the modulation texture.
+#  - Modulates those colours by the modulation texture.
 #
-#  6. Uses those voxel values to colour the fragment.
+#  - Uses those voxel values to colour the fragment.
+#
+# Required inputs:
+#
+#   program.local[0] - Image shape - number of voxels along the xyz
+#                      dimensions in the image
+#   program.local[1] - Inverse of image shape
+#
+# Outputs:
+#
+#   result.color - The fragment colour
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-TEMP  dispTexCoord;
-TEMP  voxTexCoord;
-TEMP  normVoxTexCoord;
+TEMP  voxCoord;
+TEMP  normVoxCoord;
 TEMP  modValue;
 TEMP  voxValue;
 TEMP  xColour;
@@ -33,40 +40,23 @@ TEMP  voxColour;
 PARAM imageShape    = program.local[0];
 PARAM imageShapeInv = program.local[1];
 
-# This matrix transforms coordinates
-# from the display coordinate system
-# to image voxel coordinates
-PARAM dispToVoxMat[4] = { state.matrix.texture[0] };
-
-# retrieve the 3D texture coordinates
-# (which are in terms of the display
-# coordinate system)
-MOV dispTexCoord, fragment.texcoord[0];
-
-# Transform said coordinates
-# into voxel coordinates
-DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
-DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
-DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
-
-# Offset voxel coordinates by 0.5 
-# so they are centred within a voxel
-ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
+# retrieve the voxel coordinates
+MOV voxCoord, fragment.texcoord[1];
 
 # Normalise voxel coordinates to 
 # lie in the range (0, 1), so they 
 # can be used for texture lookup
-MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
+MUL normVoxCoord, voxCoord, imageShapeInv;
 
 # look up tensor values
 # from the 3D RGB texture
-TEX voxValue, normVoxTexCoord, texture[0], 3D;
+TEX voxValue, normVoxCoord, texture[0], 3D;
 ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
 
 # Look up the modulation value
 # from the modulation texture
-TEX modValue, normVoxTexCoord, texture[1], 3D;
-ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };  
+TEX modValue, normVoxCoord, texture[1], 3D;
+ADD modValue, modValue, { 0.0, 0.0, 0.0, 1.0 };  
   
 # Use those values to look up
 # the colours for each xyz
@@ -86,20 +76,20 @@ MUL voxColour, voxColour, { 1.0, 1.0, 1.0, 0.333333 };
 
 # Apply the modulation factor
 MUL voxColour, voxColour, modValue ;
-  
+
 # If any of the voxel coordinates are
 # less than 0, clear the voxel colour
-CMP voxColour.w, voxTexCoord.x, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.y, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.z, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.x, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.y, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.z, 0.0, voxColour.w;
 
 # If any voxel coordinates are greater than
 # the image shape, clear the voxel colour
-SUB voxTexCoord, voxTexCoord, imageShape;
+SUB voxCoord, voxCoord, imageShape;
   
-CMP voxColour.w, voxTexCoord.x, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.y, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.z, voxColour.w, 0.0;
+CMP voxColour.w, voxCoord.x, voxColour.w, 0.0;
+CMP voxColour.w, voxCoord.y, voxColour.w, 0.0;
+CMP voxColour.w, voxCoord.z, voxColour.w, 0.0;
 
 # Colour the pixel!
 MOV result.color, voxColour;

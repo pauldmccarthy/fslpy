@@ -93,36 +93,12 @@ def preDraw(self):
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            self.fragmentProgram)
 
-    # the fragment program needs to know the image
-    # shape and its inverse, so it can scale voxel
-    # coordinates to the range [0.0, 1.0], and so
-    # it can clip fragments outside of the image
-    # space
-    shape = self.image.shape
-    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       0,
-                                       shape[0],
-                                       shape[1],
-                                       shape[2],
-                                       0)
-    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       1,
-                                       1.0 / shape[0],
-                                       1.0 / shape[1],
-                                       1.0 / shape[2],
-                                       0)
+    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
 
-    # The fragment program usees the displayToVoxMat
-    # to transform from display coordinates to voxel
-    # coordinates
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glPushMatrix()
-    gl.glLoadMatrixf(self.display.displayToVoxMat)
-
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPushMatrix()
-    self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
+    shape    = list(self.image.shape)
+    invshape = [1.0 / s for s in shape]
+    shaders.setFragmentProgramVector(0, shape    + [0])
+    shaders.setFragmentProgramVector(1, invshape + [0]) 
 
     
 def draw(self, zpos, xform=None):
@@ -191,9 +167,10 @@ def draw(self, zpos, xform=None):
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
 
     # Draw all the lines!
-    if xform is not None: 
-        xform = transform.concat(xform. self.mvmat)
-        gl.glMultMatrixf(xform)
+    if xform is None: 
+        xform = np.eye(4)
+
+    shaders.setVertexProgramMatrix(4, xform.T) 
 
     gl.glLineWidth(2)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
@@ -204,10 +181,3 @@ def postDraw(self):
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
-
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPopMatrix()
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glPopMatrix()
