@@ -134,19 +134,14 @@ def preDraw(self):
     """
 
     display = self.display
-    if not display.enabled: return
 
     # load the shaders
     gl.glUseProgram(self.shaders)
-    
-    gl.glEnable(gl.GL_TEXTURE_1D)
-    gl.glEnable(gl.GL_TEXTURE_3D)
 
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
     gl.glUniform1f( self.useSplinePos,     display.interpolation == 'spline')
-    
     gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape,
                                                      dtype=np.float32))
     gl.glUniform1i( self.xaxPos,           self.xax)
@@ -166,8 +161,8 @@ def preDraw(self):
     gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, vvx)
 
     # Set up the colour and image textures
-    gl.glUniform1i(self.colourTexturePos, 0) 
-    gl.glUniform1i(self.imageTexturePos,  1)
+    gl.glUniform1i(self.imageTexturePos,  0)
+    gl.glUniform1i(self.colourTexturePos, 1) 
 
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoords)
@@ -195,8 +190,6 @@ def draw(self, zpos, xform=None):
     :arg xform:   A 4*4 transformation matrix to be applied to the vertex
                   data.
     """
-    display = self.display
-    if not display.enabled: return 
     
     if xform is None: xform = np.identity(4)
     
@@ -219,17 +212,7 @@ def postDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    if not self.display.enabled: return
-
     gl.glDisableVertexAttribArray(self.worldCoordPos)
-
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-
-    gl.glDisable(gl.GL_TEXTURE_1D)
-    gl.glDisable(gl.GL_TEXTURE_3D)
-
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
-
     gl.glUseProgram(0)

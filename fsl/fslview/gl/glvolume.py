@@ -133,6 +133,21 @@ class GLVolume(globject.GLObject):
         """Sets up the GL state to draw a slice from this :class:`GLVolume`
         instance.
         """
+        
+        if not self.display.enabled:
+            return
+
+        gl.glEnable(gl.GL_TEXTURE_1D)
+        gl.glEnable(gl.GL_TEXTURE_3D)
+
+        # Set up the image data texture 
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
+
+        # Set up the colour map texture
+        gl.glActiveTexture(gl.GL_TEXTURE1) 
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
+        
         fslgl.glvolume_funcs.preDraw(self)
 
         
@@ -148,13 +163,29 @@ class GLVolume(globject.GLObject):
         Note: Calls to this method must be preceded by a call to
         :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
         """
+        
+        if not self.display.enabled:
+            return
+        
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
     def postDraw(self):
         """Clears the GL state after drawing from this :class:`GLVolume`
         instance.
-        """ 
+        """
+        if not self.display.enabled:
+            return
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        
+        gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+
+        gl.glDisable(gl.GL_TEXTURE_1D)
+        gl.glDisable(gl.GL_TEXTURE_3D)         
+        
         fslgl.glvolume_funcs.postDraw(self) 
 
 

@@ -81,15 +81,9 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = self.display
+    # enable drawing from a vertex array
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-    # Don't draw the slice if this
-    # image display is disabled
-    if not display.enabled: return
-
-    gl.glEnable(gl.GL_TEXTURE_1D)
-    gl.glEnable(gl.GL_TEXTURE_3D)
-    
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -98,14 +92,6 @@ def preDraw(self):
                            self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            self.fragmentProgram) 
-
-    # Set up the image data texture 
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
-
-    # Set up the colour map texture
-    gl.glActiveTexture(gl.GL_TEXTURE1) 
-    gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
 
     # The fragment program needs to know
     # the image shape (and its inverse,
@@ -150,9 +136,7 @@ def preDraw(self):
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glPushMatrix()
-    gl.glLoadMatrixf(display.displayToVoxMat)
-
-    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glLoadMatrixf(self.display.displayToVoxMat)
 
     # Save a copy of the current MV matrix.
     # We do this to minimise the number of GL
@@ -165,12 +149,6 @@ def preDraw(self):
 
 def draw(self, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
-
-    display = self.display
-    
-    # Don't draw the slice if this
-    # image display is disabled
-    if not display.enabled: return
 
     worldCoords  = self.worldCoords
     indices      = self.indices
@@ -209,9 +187,6 @@ def postDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = self.display
-    if not display.enabled: return
-
     gl.glPopMatrix()
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
@@ -221,13 +196,8 @@ def postDraw(self):
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
     gl.glPopMatrix()
 
     gl.glMatrixMode(gl.GL_TEXTURE)
     gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
     gl.glPopMatrix()
-
-    gl.glDisable(gl.GL_TEXTURE_1D)
-    gl.glDisable(gl.GL_TEXTURE_3D) 
