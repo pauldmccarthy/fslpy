@@ -96,10 +96,7 @@ def preDraw(self):
     # The vertex program needs to be
     # able to transform from display
     # coordinates to voxel coordinates
-    for i, row in enumerate(self.display.displayToVoxMat.T):
-        arbvp.glProgramLocalParameter4fARB(
-            arbvp.GL_VERTEX_PROGRAM_ARB, i,
-            row[0], row[1], row[2], row[3])
+    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
 
     # The voxValXform transformation turns
     # an image texture value into a raw
@@ -110,24 +107,18 @@ def preDraw(self):
     # in the 1D colour map texture
     cmapXForm = transform.concat(self.imageTexture.voxValXform,
                                  self.colourMapXform)
-    for i, row in enumerate(cmapXForm.T):
-        arbfp.glProgramLocalParameter4fARB(
-            arbfp.GL_FRAGMENT_PROGRAM_ARB, i,
-            row[0], row[1], row[2], row[3]) 
+    
+    shaders.setFragmentProgramMatrix(0, cmapXForm.T)
 
-    # The fragment program needs
-    # to know the image shape 
-    shape = self.image.shape
-    arbfp.glProgramLocalParameter4fARB(
-        arbfp.GL_FRAGMENT_PROGRAM_ARB, 4,
-        shape[0], shape[1], shape[2], 0)
-
-    # and its inverse, because there's
-    # no division operation, and the RCP
-    # operation only works on scalars
-    arbfp.glProgramLocalParameter4fARB(
-        arbfp.GL_FRAGMENT_PROGRAM_ARB, 5,
-        1.0 / shape[0], 1.0 / shape[1], 1.0 / shape[2], 0) 
+    # The fragment program needs to know
+    # the image shape, and its inverse,
+    # because there's no division operation,
+    # and the RCP operation only works on
+    # scalars 
+    shape    = list(self.image.shape)
+    invshape = [1.0 / s for s in shape]
+    shaders.setFragmentProgramVector(4, shape    + [0])
+    shaders.setFragmentProgramVector(5, invshape + [0])
 
     # Save a copy of the current MV matrix.
     # We do this to minimise the number of GL

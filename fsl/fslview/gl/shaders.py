@@ -30,6 +30,53 @@ import fsl.fslview.gl as fslgl
 log = logging.getLogger(__name__)
 
 
+def setVertexProgramVector(index, vector):
+    """Convenience function which sets the vertex program local parameter
+    at the given index to the given 4 component vector.
+    """
+    import OpenGL.GL.ARB.vertex_program as arbvp
+    
+    arbvp.glProgramLocalParameter4fARB(
+        arbvp.GL_FRAGMENT_PROGRAM_ARB, index, *vector) 
+
+
+def setVertexProgramMatrix(index, matrix):
+    """Convenience function which sets four vertex program local parameters,
+    starting at the given index, to the given ``4*4`` matrix.
+    """ 
+    
+    import OpenGL.GL.ARB.vertex_program as arbvp
+    
+    for i, row in enumerate(matrix):
+        arbvp.glProgramLocalParameter4fARB(
+            arbvp.GL_VERTEX_PROGRAM_ARB, i + index,
+            row[0], row[1], row[2], row[3])    
+
+        
+def setFragmentProgramVector(index, vector):
+    """Convenience function which sets the fragment program local parameter
+    at the given index to the given 4 component vector.
+    """    
+    
+    import OpenGL.GL.ARB.fragment_program as arbfp
+    
+    arbfp.glProgramLocalParameter4fARB(
+        arbfp.GL_FRAGMENT_PROGRAM_ARB, index, *vector) 
+
+
+def setFragmentProgramMatrix(index, matrix):
+    """Convenience function which sets four fragment program local parameters,
+    starting at the given index, to the given ``4*4`` matrix.
+    """ 
+    
+    import OpenGL.GL.ARB.fragment_program as arbfp
+    
+    for i, row in enumerate(matrix):
+        arbfp.glProgramLocalParameter4fARB(
+            arbfp.GL_FRAGMENT_PROGRAM_ARB, i + index,
+            row[0], row[1], row[2], row[3]) 
+
+
 def compilePrograms(vertexProgramSrc, fragmentProgramSrc):
     """Compiles the given vertex and fragment programs (written according
     to the ARB_vertex_program and ARB_fragment_program extensions), and
@@ -47,15 +94,16 @@ def compilePrograms(vertexProgramSrc, fragmentProgramSrc):
     vertexProgram   = arbvp.glGenProgramsARB(1) 
 
     # vertex program
-    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                           vertexProgram)
+    try:
+        arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                               vertexProgram)
 
-    arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
-                             arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(vertexProgramSrc),
-                             vertexProgramSrc)
+        arbvp.glProgramStringARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                                 arbvp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                                 len(vertexProgramSrc),
+                                 vertexProgramSrc)
 
-    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
+    except:
 
         position = gl.glGetIntegerv(arbvp.GL_PROGRAM_ERROR_POSITION_ARB)
         message  = gl.glGetString(  arbvp.GL_PROGRAM_ERROR_STRING_ARB)
@@ -64,16 +112,15 @@ def compilePrograms(vertexProgramSrc, fragmentProgramSrc):
                            '({}): {}'.format(position, message)) 
 
     # fragment program
-    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           fragmentProgram)
+    try:
+        arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                               fragmentProgram)
 
-    arbfp.glProgramStringARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                             arbfp.GL_PROGRAM_FORMAT_ASCII_ARB,
-                             len(fragmentProgramSrc),
-                             fragmentProgramSrc)
-
-    if (gl.glGetError() == gl.GL_INVALID_OPERATION):
-
+        arbfp.glProgramStringARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                                 arbfp.GL_PROGRAM_FORMAT_ASCII_ARB,
+                                 len(fragmentProgramSrc),
+                                 fragmentProgramSrc)
+    except:
         position = gl.glGetIntegerv(arbfp.GL_PROGRAM_ERROR_POSITION_ARB)
         message  = gl.glGetString(  arbfp.GL_PROGRAM_ERROR_STRING_ARB)
 
