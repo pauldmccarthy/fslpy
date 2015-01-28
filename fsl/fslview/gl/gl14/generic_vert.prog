@@ -23,6 +23,12 @@
 #   program.local[3] - Matrix which transforms from the display coordinate
 #                      system to the image voxel coordinate system.
 #
+#   program.local[4]
+#   program.local[5]
+#   program.local[6]
+#   program.local[7] - Matrix which performs an arbitrary transformation in 
+#                      the display coordinate system.
+#
 # Outputs:
 #
 #   result.position    - vertex position in the screen coordinate system
@@ -40,14 +46,25 @@ PARAM dispToVoxMat[   4] = { program.local[0],
                              program.local[1],
                              program.local[2],
                              program.local[3] };
+PARAM worldToWorldMat[4] = { program.local[4],
+                             program.local[5],
+                             program.local[6],
+                             program.local[7] }; 
 
 # Transform the vertex position
 # from display coordinates to
-# screen coordinates
-DP4 vertexScreenPos.x, dispToScreenMat[0], vertex.position;
-DP4 vertexScreenPos.y, dispToScreenMat[1], vertex.position;
-DP4 vertexScreenPos.z, dispToScreenMat[2], vertex.position;
-DP4 vertexScreenPos.w, dispToScreenMat[3], vertex.position;
+# screen coordinates, incorporating
+# the arbitrary display space
+# transformation
+DP4 vertexScreenPos.x, worldToWorldMat[0], vertex.position;
+DP4 vertexScreenPos.y, worldToWorldMat[1], vertex.position;
+DP4 vertexScreenPos.z, worldToWorldMat[2], vertex.position;
+DP4 vertexScreenPos.w, worldToWorldMat[3], vertex.position;
+
+DP4 vertexScreenPos.x, dispToScreenMat[0], vertexScreenPos;
+DP4 vertexScreenPos.y, dispToScreenMat[1], vertexScreenPos;
+DP4 vertexScreenPos.z, dispToScreenMat[2], vertexScreenPos;
+DP4 vertexScreenPos.w, dispToScreenMat[3], vertexScreenPos;
 
 # Transform the vertex position
 # from display coordinates to

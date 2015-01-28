@@ -35,6 +35,7 @@ This PDF is quite useful:
 
 import logging
 
+import numpy                          as np
 import OpenGL.GL                      as gl
 import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
@@ -120,14 +121,6 @@ def preDraw(self):
     shaders.setFragmentProgramVector(4, shape    + [0])
     shaders.setFragmentProgramVector(5, invshape + [0])
 
-    # Save a copy of the current MV matrix.
-    # We do this to minimise the number of GL
-    # calls in the draw function (see inline
-    # comments in draw)
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPushMatrix()
-    self.mvmat = gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX)
-
 
 def draw(self, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
@@ -137,22 +130,10 @@ def draw(self, zpos, xform=None):
     worldCoords[:, self.zax] = zpos
 
     # Apply the custom xform if provided.
-    # I'm doing this on CPU to minimise
-    # the number of GL calls (which, when
-    # running over a network, is the major
-    # performance bottleneck). Doing this
-    # on the GPU would require three calls:
-    # 
-    #   gl.glPushMatrix
-    #   gl.glMultiMatrixf
-    #   ...
-    #   gl.glPopMatrix
-    #
-    # as opposed to the single call to
-    # glLoadMatrixf required here
-    if xform is not None:
-        xform = transform.concat(xform, self.mvmat)
-        gl.glLoadMatrixf(xform)
+    if xform is None:
+        xform = np.eye(4)
+
+    shaders.setVertexProgramMatrix(4, xform.T)
 
     worldCoords = worldCoords.ravel('C')
 
@@ -168,8 +149,6 @@ def postDraw(self):
     """Cleans up the GL state after drawing from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
-
-    gl.glPopMatrix()
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
