@@ -51,7 +51,21 @@ def scaleOffsetXform(scales, offsets):
 
 
 def axisBounds(shape, xform, axes=None):
-    """Returns the (lo, hi) bounds of the specified axis/axes."""
+    """Returns the (lo, hi) bounds of the specified axis/axes.
+
+    This function assumes that voxel indices correspond to the voxel
+    centre. For example, the voxel at ``(4, 5, 6)`` covers the space:
+    
+      ``[3.5 - 4.5, 4.5 - 5.5, 5.5 - 6.5]``
+    
+    So the bounds of the specified shape extends from the corner at
+
+    ``(-0.5, -0.5, -0.5)``
+
+    to the corner at
+
+    ``(shape[0] - 0.5, shape[1] - 0.5, shape[1] - 0.5)``
+    """
 
     scalar = False
 
@@ -64,11 +78,11 @@ def axisBounds(shape, xform, axes=None):
     
     x, y, z = shape[:3]
 
+    points = np.zeros((8, 3), dtype=np.float32)
+
     x -= 0.5
     y -= 0.5
     z -= 0.5
-
-    points = np.zeros((8, 3), dtype=np.float32)
 
     points[0, :] = [-0.5, -0.5, -0.5]
     points[1, :] = [-0.5, -0.5,  z]

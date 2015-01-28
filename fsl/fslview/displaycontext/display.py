@@ -4,7 +4,15 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
+"""This module provides definitions of an important class - the
+:class:`Display` class.
+
+A ``Display`` contains a specification for the way in which an
+:class:`~fsl.data.image.Image` instance is to be displayed.
+
+
+..note:: Put a description of the three coordinate systems which
+         exist in the system.
 """
 
 import logging
@@ -294,12 +302,6 @@ class Display(props.SyncableHasProperties):
             
         elif self.transform == 'affine':
             voxToDisplayMat = self.voxToWorldMat
-
-        # for pixdim/identity transformations, we want the world
-        # location (0, 0, 0) to map to voxel location (0, 0, 0)
-        if self.transform in ('id', 'pixdim'):
-            for i in range(3):
-                voxToDisplayMat[3, i] =  pixdim[i] * 0.5
 
         # Transformation matrices for moving between the voxel
         # coordinate system and the display coordinate system
