@@ -159,7 +159,17 @@ def draw(self, zpos, xform=None):
     # and scaled appropriately
     vecs[:, xax] *= 0.5 * self.xpixdim
     vecs[:, yax] *= 0.5 * self.ypixdim
+
+    # Flatten on the depth axis
+    vecs[:, zax]  = 0.0
     vecs = np.hstack((-vecs, vecs)).reshape((2 * nVoxels, 3))
+
+    #
+    # TODO The above code assumes a correspondence
+    # between the image array axes and the display
+    # coordinate system axes. I'm not currently
+    # sure how to get around this.
+    #
 
     # Translate the world coordinates
     # by those line vertices

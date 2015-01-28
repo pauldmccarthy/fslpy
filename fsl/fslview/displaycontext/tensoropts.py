@@ -14,7 +14,6 @@ class TensorOpts(fsldisplay.DisplayOpts):
 
     displayMode = props.Choice(
         ('line', 'rgb'),
-        default='rgb',
         labels=[strings.choices['TensorOpts.displayType.line'],
                 strings.choices['TensorOpts.displayType.rgb']])
 
@@ -62,7 +61,7 @@ class TensorOpts(fsldisplay.DisplayOpts):
         # the image for this TensorOpts
         # instance has been removed
         if self.image not in images:
-            self.removeListener('images', self.name)
+            self.imageList.removeListener('images', self.name)
             return
 
         modOptions = ['none']
