@@ -4,62 +4,68 @@
 #
 # This fragment program does the following:
 # 
-#  1. Retrieves the texture coordinates corresponding to the fragment
+#  - Retrieves the display space/voxel coordinates corresponding to the
+#    fragment
 # 
-#  2. Transforms those coordinates into voxel coordinates
+#  - Uses those voxel coordinates to look up the corresponding voxel
+#    value in the 3D image texture.
 # 
-#  3. Uses those voxel coordinates to look up the corresponding voxel
-#     value in the 3D image texture.
+#  - Uses that voxel value to look up the corresponding colour in the
+#    1D colour map texture.
 # 
-#  4. Uses that voxel value to look up the corresponding colour in the
-#     1D colour map texture.
-# 
-#  5. Sets the fragment colour.
+#  - Sets the fragment colour.
+#
+# Required inputs:
+#
+#   fragment.texcoord[0] - Fragment position in the display coordinate system
+#   fragment.texcoord[1] - Fragment position in the image voxel coordinate
+#                          system
+#
+#   program.local[0]  
+#   program.local[1]
+#   program.local[2]
+#   program.local[3]     - Matrix which transforms voxel values into the range
+#                          [0, 1], for use as a colour map texture coordinate
+#
+#   program.local[4]     - Image shape - number of voxels along the xyz
+#                          dimensions in the image
+#   program.local[5]     - Inverse of image shape
+#
+# Outputs:
+#
+#   result.color         - The fragment colour
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-TEMP  dispTexCoord;
-TEMP  voxTexCoord;
-TEMP  normVoxTexCoord;
+TEMP  voxCoord;
+TEMP  normVoxCoord;
 TEMP  voxValue;
 TEMP  voxColour;
-PARAM imageShape    = program.local[0];
-PARAM imageShapeInv = program.local[1];
+PARAM imageShape    = program.local[4];
+PARAM imageShapeInv = program.local[5];
 
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
 # the current display range 
-PARAM voxValXform[4] = { state.matrix.texture[1] };
+PARAM voxValXform[4] = { program.local[0],
+                         program.local[1],
+                         program.local[2],
+                         program.local[3] };
 
-# This matrix transforms coordinates
-# from the display coordinate system
-# to image voxel coordinates
-PARAM dispToVoxMat[4] = { state.matrix.texture[0] };
-
-# retrieve the 3D texture coordinates
-# (which are in terms of the display
-# coordinate system)
-MOV dispTexCoord, fragment.texcoord[0];
-
-# Transform said coordinates
-# into voxel coordinates
-DP4 voxTexCoord.x, dispToVoxMat[0], dispTexCoord;
-DP4 voxTexCoord.y, dispToVoxMat[1], dispTexCoord;
-DP4 voxTexCoord.z, dispToVoxMat[2], dispTexCoord;
-
-# Offset voxel coordinates by 0.5 
-# so they are centred within a voxel
-ADD voxTexCoord, voxTexCoord, { 0.5, 0.5, 0.5, 0.0 };
+# retrieve the voxel coordinates,
+# which should have been calculated
+# by the vertex progarm
+MOV voxCoord, fragment.texcoord[1];
 
 # Normalise voxel coordinates to 
 # lie in the range (0, 1), so they 
 # can be used for texture lookup
-MUL normVoxTexCoord, voxTexCoord, imageShapeInv;
+MUL normVoxCoord, voxCoord, imageShapeInv;
 
 # look up image voxel value
 # from 3D image texture
-TEX voxValue, normVoxTexCoord, texture[0], 3D;
+TEX voxValue, normVoxCoord, texture[0], 3D;
 
 # Scale voxel value according
 # to the current display range
@@ -72,16 +78,16 @@ TEX voxColour, voxValue.x, texture[1], 1D;
 
 # If any of the voxel coordinates are
 # less than 0, clear the voxel colour
-CMP voxColour.w, voxTexCoord.x, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.y, 0.0, voxColour.w;
-CMP voxColour.w, voxTexCoord.z, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.x, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.y, 0.0, voxColour.w;
+CMP voxColour.w, voxCoord.z, 0.0, voxColour.w;
 
 # If any voxel coordinates are greater than
 # the image shape, clear the voxel colour
-SUB voxTexCoord, voxTexCoord, imageShape;
-CMP voxColour.w, voxTexCoord.x, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.y, voxColour.w, 0.0;
-CMP voxColour.w, voxTexCoord.z, voxColour.w, 0.0;
+SUB voxCoord, voxCoord, imageShape;
+CMP voxColour.w, voxCoord.x, voxColour.w, 0.0;
+CMP voxColour.w, voxCoord.y, voxColour.w, 0.0;
+CMP voxColour.w, voxCoord.z, voxColour.w, 0.0;
 
 # Colour the pixel!
 MOV result.color, voxColour;

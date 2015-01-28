@@ -91,29 +91,16 @@ def preDraw(self):
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                           self.fragmentProgram) 
+                           self.fragmentProgram)
 
-    # The fragment program needs to know
-    # the image shape (and its inverse,
-    # because there's no division operation,
-    # and the RCP operation works on scalars)
-    shape = self.image.shape
-    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       0,
-                                       shape[0],
-                                       shape[1],
-                                       shape[2],
-                                       0)
-    arbfp.glProgramLocalParameter4fARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
-                                       1,
-                                       1.0 / shape[0],
-                                       1.0 / shape[1],
-                                       1.0 / shape[2],
-                                       0) 
+    # The vertex program needs to be
+    # able to transform from display
+    # coordinates to voxel coordinates
+    for i, row in enumerate(self.display.displayToVoxMat.T):
+        arbvp.glProgramLocalParameter4fARB(
+            arbvp.GL_VERTEX_PROGRAM_ARB, i,
+            row[0], row[1], row[2], row[3])
 
-    # Configure the texture coordinate
-    # transformation for the colour map
-    # 
     # The voxValXform transformation turns
     # an image texture value into a raw
     # voxel value. The colourMapXform
@@ -123,20 +110,24 @@ def preDraw(self):
     # in the 1D colour map texture
     cmapXForm = transform.concat(self.imageTexture.voxValXform,
                                  self.colourMapXform)
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glPushMatrix()
-    gl.glLoadMatrixf(cmapXForm)
-    
-    # And configure the image data
-    # transformation for the image texture.
-    # The image texture coordinates need
-    # to be transformed from display space
-    # to voxel coordinates
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glPushMatrix()
-    gl.glLoadMatrixf(self.display.displayToVoxMat)
+    for i, row in enumerate(cmapXForm.T):
+        arbfp.glProgramLocalParameter4fARB(
+            arbfp.GL_FRAGMENT_PROGRAM_ARB, i,
+            row[0], row[1], row[2], row[3]) 
+
+    # The fragment program needs
+    # to know the image shape 
+    shape = self.image.shape
+    arbfp.glProgramLocalParameter4fARB(
+        arbfp.GL_FRAGMENT_PROGRAM_ARB, 4,
+        shape[0], shape[1], shape[2], 0)
+
+    # and its inverse, because there's
+    # no division operation, and the RCP
+    # operation only works on scalars
+    arbfp.glProgramLocalParameter4fARB(
+        arbfp.GL_FRAGMENT_PROGRAM_ARB, 5,
+        1.0 / shape[0], 1.0 / shape[1], 1.0 / shape[2], 0) 
 
     # Save a copy of the current MV matrix.
     # We do this to minimise the number of GL
@@ -193,11 +184,3 @@ def postDraw(self):
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glPopMatrix()
-
-    gl.glMatrixMode(gl.GL_TEXTURE)
-    gl.glActiveTexture(gl.GL_TEXTURE1)
-    gl.glPopMatrix()
