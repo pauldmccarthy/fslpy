@@ -34,9 +34,9 @@ uniform bool useSpline;
 uniform mat4 voxValXform;
 
 /*
- * Image texture coordinates. 
+ * Image display coordinates. 
  */
-varying vec3 fragTexCoords;
+varying vec3 fragDisplayCoords;
 
 
 /*

@@ -37,9 +37,9 @@ attribute vec2 worldCoords;
 uniform float zCoord;
 
 /* 
- * Image texture coordinates passed through to fragment shader.
+ * Vertex display coordinates passed through to fragment shader.
  */ 
-varying vec3 fragTexCoords;
+varying vec3 fragDisplayCoords;
 
 /* 
  * Image voxel coordinates corresponding to this vertex.
@@ -78,7 +78,7 @@ void common_vert(void) {
      * Pass the vertex coordinates as texture
      * coordinates to the fragment shader
      */
-    fragTexCoords = worldLoc.xyz; 
+    fragDisplayCoords = worldLoc.xyz; 
 
     /* Transform the vertex coordinates to display space */
     gl_Position = gl_ModelViewProjectionMatrix * worldToWorldMat * worldLoc;
