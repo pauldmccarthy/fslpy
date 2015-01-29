@@ -203,6 +203,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Brightness/contrast control, common to all image types (i.e. in top level Display properties)
 ** Custom colour select widget - the OSX one is rubbish
 ** Transfer editor selection on selected image changes
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
