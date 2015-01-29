@@ -89,7 +89,7 @@ void main(void) {
 
     /* Apply the modulation value and average the transparency */
     voxColour.xyz = voxColour.xyz * modValue;
-    voxColour.a   = voxColour.a   / 0.333333;
+    voxColour.a   = voxColour.a   * 0.333333;
 
     gl_FragColor = voxColour;
 }

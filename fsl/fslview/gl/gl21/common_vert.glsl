@@ -72,7 +72,7 @@ void common_vert(void) {
      * so we need to offset the coordinates by 0.5 to
      * make the coordinates usable as voxel indices
      */
-    fragVoxCoords.xyz = fragVoxCoords.xyz + 0.5;
+    fragVoxCoords += 0.5;
 
     /*
      * Pass the vertex coordinates as texture
