@@ -44,8 +44,8 @@ def scaleOffsetXform(scales, offsets):
     xform[2, 2] = scales[2]
 
     xform[3, 0] = offsets[0]
-    xform[3, 1] = offsets[0]
-    xform[3, 2] = offsets[0]
+    xform[3, 1] = offsets[1]
+    xform[3, 2] = offsets[2]
 
     return xform
 

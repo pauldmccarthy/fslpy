@@ -121,6 +121,7 @@ def draw(self, zpos, xform=None):
     # Transform the world coordinates to
     # floating point voxel coordinates
     dToVMat = display.displayToVoxMat
+    vToDMat = display.voxToDisplayMat
     
     voxCoords  = transform.transform(worldCoords, dToVMat).transpose()
     imageData  = image.data
@@ -157,23 +158,17 @@ def draw(self, zpos, xform=None):
     # make a bunch of vertices which represent lines 
     # (two vertices per line), centered at the origin
     # and scaled appropriately
-    vecs[:, xax] *= 0.5 * self.xpixdim
-    vecs[:, yax] *= 0.5 * self.ypixdim
+    vecs *= 0.5
+    vecs  = np.hstack((-vecs, vecs)).reshape((2 * nVoxels, 3))
 
-    # Flatten on the depth axis
-    vecs[:, zax]  = 0.0
-    vecs = np.hstack((-vecs, vecs)).reshape((2 * nVoxels, 3))
-
-    #
-    # TODO The above code assumes a correspondence
-    # between the image array axes and the display
-    # coordinate system axes. I'm not currently
-    # sure how to get around this.
-    #
+    # Offset each of those vertices by
+    # their original voxel coordinates
+    vecs += voxCoords.T.repeat(2, 0)
 
     # Translate the world coordinates
     # by those line vertices
-    worldCoords = worldCoords.repeat(2, 0) + vecs
+    worldCoords = transform.transform(vecs, vToDMat)
+    worldCoords[:, zax] = zpos
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
 
     # Draw all the lines!

@@ -54,13 +54,15 @@ TEX voxValue, normVoxCoord, texture[0], 3D;
 ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
 
 # Look up the modulation value
-# from the modulation texture
+# from the modulation texture -
+# initialise modValue transparency
+# to 1.0, so it doesn't corrupt
+# our voxel colour value later on
+MOV modValue, { 0.0, 0.0, 0.0, 1.0 };  
 TEX modValue, normVoxCoord, texture[1], 3D;
-ADD modValue, modValue, { 0.0, 0.0, 0.0, 1.0 };  
   
-# Use those values to look up
-# the colours for each xyz
-# direction
+# Use those values to look up the
+# colours for each xyz direction
 TEX xColour, voxValue.x, texture[2], 1D;
 TEX yColour, voxValue.y, texture[3], 1D;
 TEX zColour, voxValue.z, texture[4], 1D;
@@ -71,7 +73,7 @@ MOV voxColour,            xColour;
 ADD voxColour, voxColour, yColour;
 ADD voxColour, voxColour, zColour;
 
-# But take the average of the alpha channel
+# Take the average of the alpha channel
 MUL voxColour, voxColour, { 1.0, 1.0, 1.0, 0.333333 };
 
 # Apply the modulation factor
