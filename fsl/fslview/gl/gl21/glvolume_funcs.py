@@ -47,7 +47,7 @@ def _compileShaders(self):
     all GLSL variables, to the given GLVolume object. 
     """
 
-    vertShaderSrc = shaders.getVertexShader('generic')
+    vertShaderSrc = shaders.getVertexShader(  self)
     fragShaderSrc = shaders.getFragmentShader(self)
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 

@@ -1,13 +1,14 @@
-/*
- * OpenGL vertex shader used for rendering GLObject instances.
+/**
+ * The common_vert function (and associated uniform/attribute/varying
+ * definitions) contains logic which is common to all vertex shader
+ * programs.
  *
- * All this shader does is transfer texture coordinates through
- * to the fragment shader.
+ * The common_vert function calculates and sets vertex/texture
+ * coordinates, for pass-through to the fragment shader, in both
+ * screen space and voxel space.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
-#version 120
-
 
 uniform mat4 displayToVoxMat;
 
@@ -40,14 +41,13 @@ uniform float zCoord;
  */ 
 varying vec3 fragTexCoords;
 
-
 /* 
  * Image voxel coordinates corresponding to this vertex.
  */ 
 varying vec3 fragVoxCoords;
 
 
-void main(void) {
+void common_vert(void) {
 
     vec4 worldLoc = vec4(0, 0, 0, 1);
     worldLoc[xax] = worldCoords.x;
