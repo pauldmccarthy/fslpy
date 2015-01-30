@@ -58,6 +58,10 @@ PARAM voxValXform[4] = { program.local[0],
 # by the vertex progarm
 MOV voxCoord, fragment.texcoord[1];
 
+# bail if the voxel coordinates
+# are out of bounds
+#pragma include test_in_bounds.prog
+
 # Normalise voxel coordinates to 
 # lie in the range (0, 1), so they 
 # can be used for texture lookup
@@ -75,19 +79,6 @@ ADD voxValue, voxValue, voxValXform[0].w;
 # look up the appropriate colour
 # in the 1D colour map texture
 TEX voxColour, voxValue.x, texture[1], 1D;
-
-# If any of the voxel coordinates are
-# less than 0, clear the voxel colour
-CMP voxColour.w, voxCoord.x, 0.0, voxColour.w;
-CMP voxColour.w, voxCoord.y, 0.0, voxColour.w;
-CMP voxColour.w, voxCoord.z, 0.0, voxColour.w;
-
-# If any voxel coordinates are greater than
-# the image shape, clear the voxel colour
-SUB voxCoord, voxCoord, imageShape;
-CMP voxColour.w, voxCoord.x, voxColour.w, 0.0;
-CMP voxColour.w, voxCoord.y, voxColour.w, 0.0;
-CMP voxColour.w, voxCoord.z, voxColour.w, 0.0;
 
 # Colour the pixel!
 MOV result.color, voxColour;
