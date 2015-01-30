@@ -43,11 +43,13 @@ def init(self):
 
     # parameters for gltensor_rgb_vert.glsl/gltensor_rgb_frag.glsl
     p['imageTexture']    = gl.glGetUniformLocation(s, 'imageTexture')
+    p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
     p['modTexture']      = gl.glGetUniformLocation(s, 'modTexture') 
     p['xColourTexture']  = gl.glGetUniformLocation(s, 'xColourTexture')
     p['yColourTexture']  = gl.glGetUniformLocation(s, 'yColourTexture')
     p['zColourTexture']  = gl.glGetUniformLocation(s, 'zColourTexture')
     p['imageShape']      = gl.glGetUniformLocation(s, 'imageShape')
+    p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
     p['displayToVoxMat'] = gl.glGetUniformLocation(s, 'displayToVoxMat')
 
@@ -93,16 +95,25 @@ def preDraw(self):
     # bind the shader uniform/attribute parameters
     pars            = self.shaderParams
     useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape, dtype=np.float32)
+    
+    imageShape      = np.array(self.image.shape,        dtype=np.float32)
+    imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
     displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
+    imageValueXform = np.array(self.imageTexture.voxValXform.T,
+                               dtype=np.float32)
+    
     displayToVoxMat = displayToVoxMat.ravel('C')
+    imageValueXform = imageValueXform.ravel('C')
+ 
 
     gl.glUniform1f(       pars['useSpline'],     useSpline)
     gl.glUniform3fv(      pars['imageShape'], 1, imageShape)
+    gl.glUniform3fv(      pars['imageDims'], 1, imageDims)
     gl.glUniform1i(       pars['xax'],           self.xax)
     gl.glUniform1i(       pars['yax'],           self.yax)
     gl.glUniform1i(       pars['zax'],           self.zax)
     gl.glUniformMatrix4fv(pars['displayToVoxMat'], 1, False, displayToVoxMat)
+    gl.glUniformMatrix4fv(pars['imageValueXform'], 1, False, imageValueXform)
 
     gl.glUniform1i(       pars['imageTexture'],   0)
     gl.glUniform1i(       pars['modTexture'],     1)
