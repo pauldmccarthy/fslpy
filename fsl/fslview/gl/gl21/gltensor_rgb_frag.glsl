@@ -56,37 +56,37 @@ void main(void) {
     /* 
      * Normalise voxel coordinates to (0.0, 1.0)
      */
-    voxCoords.xyz = voxCoords.xyz / imageShape.xyz;
+    voxCoords = voxCoords / imageShape;
 
     /*
      * Look up the xyz tensor values
      */
     vec3 voxValue;
     if (useSpline) {
-       voxValue.x = spline_interp(imageTexture, voxCoords.xyz, imageShape, 0);
-       voxValue.y = spline_interp(imageTexture, voxCoords.xyz, imageShape, 1);
-       voxValue.z = spline_interp(imageTexture, voxCoords.xyz, imageShape, 2);
+       voxValue.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
+       voxValue.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
+       voxValue.z = spline_interp(imageTexture, voxCoords, imageShape, 2);
     }
     else {
-        voxValue = texture3D(imageTexture, voxCoords.xyz).xyz;
+        voxValue = texture3D(imageTexture, voxCoords).xyz;
     }
 
     /*
      * Transform the voxel texture values 
      * into their original range
      */
-    voxValue.xyz *= imageValueXform[0].x;
-    voxValue.xyz += imageValueXform[0].w;
-    voxValue      = abs(voxValue);
+    voxValue *= imageValueXform[0].x;
+    voxValue += imageValueXform[0].w;
+    voxValue  = abs(voxValue);
 
     /* Look up the modulation value */
     vec3 modValue;
     if (useSpline) {
-        float tmp = spline_interp(modTexture, voxCoords.xyz, imageShape, 0);
+        float tmp = spline_interp(modTexture, voxCoords, imageShape, 0);
         modValue.xyz = vec3(tmp, tmp, tmp);
     }
     else {
-        modValue = texture3D(modTexture, voxCoords.xyz).xxx;
+        modValue = texture3D(modTexture, voxCoords).xxx;
     }
 
     /* Look up the colours for the xyz components */

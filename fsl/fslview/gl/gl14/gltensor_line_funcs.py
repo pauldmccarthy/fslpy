@@ -134,14 +134,17 @@ def draw(self, zpos, xform=None):
     xvals = ndi.map_coordinates(imageData[:, :, :, 0],
                                 voxCoords,
                                 order=order,
+                                mode='nearest',
                                 prefilter=False)
     yvals = ndi.map_coordinates(imageData[:, :, :, 1],
                                 voxCoords,
                                 order=order,
+                                mode='nearest',
                                 prefilter=False)
     zvals = ndi.map_coordinates(imageData[:, :, :, 2],
                                 voxCoords,
                                 order=order,
+                                mode='nearest',
                                 prefilter=False)
 
     # make a N*3 list of vectors
