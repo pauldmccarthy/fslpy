@@ -58,18 +58,18 @@ void main(void) {
     /* 
      * Normalise voxel coordinates to (0.0, 1.0)
      */
-    voxCoords.xyz = voxCoords.xyz / imageShape.xyz;
+    voxCoords = voxCoords / imageShape;
 
     /*
      * Look up the voxel value 
      */
     float voxValue;
     if (useSpline) voxValue = spline_interp(imageTexture,
-                                            voxCoords.xyz,
+                                            voxCoords,
                                             imageShape,
                                             0);
     else           voxValue = texture3D(    imageTexture,
-                                            voxCoords.xyz).r;
+                                            voxCoords).r;
 
     /*
      * Transform the voxel value to a colour map texture

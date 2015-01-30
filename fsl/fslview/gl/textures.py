@@ -437,20 +437,19 @@ class ImageTexture(object):
                            gl.GL_TEXTURE_MIN_FILTER,
                            interp)
 
-        # Make everything outside
-        # of the image transparent
-        gl.glTexParameterfv(gl.GL_TEXTURE_3D,
-                            gl.GL_TEXTURE_BORDER_COLOR,
-                            np.array([0, 0, 0, 0], dtype=np.float32))
+        # Clamp texture borders to the edge
+        # values - it is the responsibility
+        # of the rendering logic to not draw
+        # anything outside of the image space
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_BORDER)
+                           gl.GL_CLAMP_TO_EDGE)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_T,
-                           gl.GL_CLAMP_TO_BORDER)
+                           gl.GL_CLAMP_TO_EDGE)
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_WRAP_R,
-                           gl.GL_CLAMP_TO_BORDER)
+                           gl.GL_CLAMP_TO_EDGE)
 
         # create the texture according to
         # the format determined by the
