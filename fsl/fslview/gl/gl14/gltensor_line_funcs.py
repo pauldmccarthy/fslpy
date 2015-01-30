@@ -58,7 +58,6 @@ def destroy(self):
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))    
     
     self.display.removeListener('transform',     self.name)
-    self.display.removeListener('interpolation', self.name)
     self.display.removeListener('resolution',    self.name)
 
 
@@ -93,12 +92,14 @@ def preDraw(self):
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            self.fragmentProgram)
 
-    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
+    shaders.setVertexProgramMatrix(  0, self.display.displayToVoxMat.T)
 
     shape    = list(self.image.shape)
     invshape = [1.0 / s for s in shape]
     shaders.setFragmentProgramVector(0, shape    + [0])
-    shaders.setFragmentProgramVector(1, invshape + [0]) 
+    shaders.setFragmentProgramVector(1, invshape + [0])
+    shaders.setFragmentProgramMatrix(2, self.imageTexture.voxValXform.T)
+ 
 
     
 def draw(self, zpos, xform=None):
@@ -106,9 +107,6 @@ def draw(self, zpos, xform=None):
     renders them using immediate mode OpenGL.
     """
 
-    xax         = self.xax
-    yax         = self.yax
-    zax         = self.zax
     image       = self.image
     display     = self.display
     worldCoords = self.worldCoords
@@ -116,7 +114,7 @@ def draw(self, zpos, xform=None):
     if not display.enabled:
         return
 
-    worldCoords[:, zax] = zpos
+    worldCoords[:, self.zax] = zpos
 
     # Transform the world coordinates to
     # floating point voxel coordinates
@@ -161,14 +159,18 @@ def draw(self, zpos, xform=None):
     vecs *= 0.5
     vecs  = np.hstack((-vecs, vecs)).reshape((2 * nVoxels, 3))
 
+    # Scale the vector by the minimum voxel length, 
+    # so it is a unit vector within real world space
+    vecs /= (image.pixdim[:3] / min(image.pixdim[:3]))
+
     # Offset each of those vertices by
     # their original voxel coordinates
     vecs += voxCoords.T.repeat(2, 0)
 
-    # Translate the world coordinates
-    # by those line vertices
+    # Translate those line vertices
+    # into display coordinates
     worldCoords = transform.transform(vecs, vToDMat)
-    worldCoords[:, zax] = zpos
+    worldCoords[:, self.zax] = zpos
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
 
     # Draw all the lines!

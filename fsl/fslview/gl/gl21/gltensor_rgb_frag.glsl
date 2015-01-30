@@ -21,6 +21,8 @@ uniform sampler1D xColourTexture;
 uniform sampler1D yColourTexture;
 uniform sampler1D zColourTexture;
 
+uniform mat4 imageValueXform;
+
 /*
  * Image/texture dimensions
  */
@@ -68,6 +70,14 @@ void main(void) {
     else {
         voxValue = texture3D(imageTexture, voxCoords.xyz).xyz;
     }
+
+    /*
+     * Transform the voxel texture values 
+     * into their original range
+     */
+    voxValue.xyz *= imageValueXform[0].x;
+    voxValue.xyz += imageValueXform[0].w;
+    voxValue      = abs(voxValue);
 
     /* Look up the modulation value */
     vec3 modValue;

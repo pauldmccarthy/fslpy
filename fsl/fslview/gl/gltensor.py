@@ -118,9 +118,8 @@ class GLTensor(globject.GLObject):
         self.refreshModulateTexture()
         self.refreshColourTextures()
 
-
         def prefilter(data):
-            return np.abs(data.transpose((3, 0, 1, 2)))
+            return data.transpose((3, 0, 1, 2))
 
         self.imageTexture = fsltextures.getTexture(
             self.image,

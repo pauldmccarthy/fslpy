@@ -51,15 +51,25 @@ def init(self):
     p['yColourTexture']  = gl.glGetUniformLocation( s, 'yColourTexture')
     p['zColourTexture']  = gl.glGetUniformLocation( s, 'zColourTexture')
     p['imageShape']      = gl.glGetUniformLocation( s, 'imageShape')
+    p['imageDims']       = gl.glGetUniformLocation( s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation( s, 'useSpline')
     p['vertexID']        = gl.glGetAttribLocation(  s, 'vertexID')
+
+    def coordUpdate(*a):
+        self.setAxes(self.xax, self.yax)
+
+    self.display.addListener('transform',  self.name, coordUpdate)
+    self.display.addListener('resolution', self.name, coordUpdate)
 
     
 def destroy(self):
     gl.glDeleteProgram(self.shaders)
     gl.glDeleteBuffers(1, gltypes.GLuint(self.worldCoordBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer)) 
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
+
+    self.display.removeListener('transform',  self.name)
+    self.display.removeListener('resolution', self.name)
 
 
 def setAxes(self):
@@ -75,7 +85,7 @@ def setAxes(self):
 
     self.nVertices = worldCoords.shape[0] * 2
 
-    worldCoords = np.repeat(worldCoords, 2, 0).ravel('C')
+    worldCoords = np.repeat(worldCoords, 2, 0)
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
     indices     = np.arange(self.nVertices, dtype=np.uint32)
     vertexIDs   = np.arange(self.nVertices, dtype=np.float32)
@@ -107,19 +117,24 @@ def preDraw(self):
     
     pars            = self.shaderParams
     useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape, dtype=np.float32)
+
+    imageShape      = np.array(self.image.shape,        dtype=np.float32)
+    imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
     displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
-    displayToVoxMat = displayToVoxMat.ravel('C')
     voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
-    voxToDisplayMat = voxToDisplayMat.ravel('C')    
-    imageValueXform = np.array(self.imageTexture.voxValXform, dtype=np.float32)
+    imageValueXform = np.array(self.imageTexture.voxValXform.T,
+                               dtype=np.float32)
+    
+    displayToVoxMat = displayToVoxMat.ravel('C')
+    voxToDisplayMat = voxToDisplayMat.ravel('C')        
     imageValueXform = imageValueXform.ravel('C')
 
-    gl.glUniform1f(       pars['useSpline'],     useSpline)
-    gl.glUniform3fv(      pars['imageShape'], 1, imageShape)
-    gl.glUniform1i(       pars['xax'],           self.xax)
-    gl.glUniform1i(       pars['yax'],           self.yax)
-    gl.glUniform1i(       pars['zax'],           self.zax)
+    gl.glUniform1f(       pars['useSpline'],                 useSpline)
+    gl.glUniform3fv(      pars['imageShape'], 1,             imageShape)
+    gl.glUniform3fv(      pars['imageDims'],  1,             imageDims)
+    gl.glUniform1i(       pars['xax'],                       self.xax)
+    gl.glUniform1i(       pars['yax'],                       self.yax)
+    gl.glUniform1i(       pars['zax'],                       self.zax)
     gl.glUniformMatrix4fv(pars['displayToVoxMat'], 1, False, displayToVoxMat)
     gl.glUniformMatrix4fv(pars['voxToDisplayMat'], 1, False, voxToDisplayMat)
     gl.glUniformMatrix4fv(pars['imageValueXform'], 1, False, imageValueXform)
@@ -158,13 +173,13 @@ def preDraw(self):
 def draw(self, zpos, xform=None):
     if xform is None: xform = np.identity(4)
     
-    w2w  = np.array(xform, dtype=np.float32).ravel('C')
-    pars = self.shaderParams
+    xform = np.array(xform, dtype=np.float32).ravel('C')
+    pars  = self.shaderParams
 
     # Bind the current world z position, and
     # the xform transformation matrix
     gl.glUniform1f(       pars['zCoord'],                    zpos)
-    gl.glUniformMatrix4fv(pars['worldToWorldMat'], 1, False, w2w)
+    gl.glUniformMatrix4fv(pars['worldToWorldMat'], 1, False, xform)
 
     # Draw all of the triangles!
     gl.glLineWidth(2)

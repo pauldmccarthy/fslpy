@@ -37,8 +37,12 @@ TEMP  xColour;
 TEMP  yColour;
 TEMP  zColour;
 TEMP  voxColour;
-PARAM imageShape    = program.local[0];
-PARAM imageShapeInv = program.local[1];
+PARAM imageShape         =   program.local[0];
+PARAM imageShapeInv      =   program.local[1];
+PARAM imageValueXform[4] = { program.local[2],
+                             program.local[3],
+                             program.local[4],
+                             program.local[5] };
 
 # retrieve the voxel coordinates
 MOV voxCoord, fragment.texcoord[1];
@@ -51,6 +55,17 @@ MUL normVoxCoord, voxCoord, imageShapeInv;
 # look up tensor values
 # from the 3D RGB texture
 TEX voxValue, normVoxCoord, texture[0], 3D;
+
+# Transform tensor values from their normalised 
+# texture range to their original data range,
+# and take the absolue value
+MUL voxValue, voxValue, imageValueXform[0].xxxx;
+ADD voxValue, voxValue, imageValueXform[0].wwww;
+
+ABS voxValue, voxValue;
+
+# Reset the opacity component
+MUL voxValue, voxValue, { 1.0, 1.0, 1.0, 0.0 };
 ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
 
 # Look up the modulation value

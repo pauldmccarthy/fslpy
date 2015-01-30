@@ -23,12 +23,16 @@ uniform sampler3D imageTexture;
 uniform mat4 imageValueXform;
 
 
+
 uniform mat4 voxToDisplayMat;
 
 /*
  * Image/texture dimensions
  */
 uniform vec3 imageShape;
+
+
+uniform vec3 imageDims;
 
 /*
  * Vertex index - the built-in gl_VertexID
@@ -46,9 +50,12 @@ void main(void) {
   common_vert();
 
   vec3 voxCoords = fragVoxCoords / imageShape;
-  vec3 vertexPos = fragVoxCoords;
+  vec3 vertexPos = fragVoxCoords - 0.5;
   vec3 tensorVec;
-  
+
+  /*
+   * Retrieve the tensor values for this voxel
+   */
   if (useSpline) {
     tensorVec.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
     tensorVec.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
@@ -59,17 +66,36 @@ void main(void) {
     tensorVec = texture3D(imageTexture, voxCoords).xyz;
   }
 
-  tensorVec.x = (imageValueXform * vec4(tensorVec.x, 0, 0, 1)).x;
-  tensorVec.y = (imageValueXform * vec4(tensorVec.y, 0, 0, 1)).x;
-  tensorVec.z = (imageValueXform * vec4(tensorVec.z, 0, 0, 1)).x;
+  /*
+   * Tranasform the tensor values  from their
+   * texture range of [0,1] to the original
+   * data range
+   */
+  tensorVec.xyz *= imageValueXform[0].x;
+  tensorVec.xyz += imageValueXform[0].w; 
 
-  if (mod(vertexID, 2) == 0.0) tensorVec =  0.5 * tensorVec;
-  else                         tensorVec = -0.5 * tensorVec;
+  /*
+   * Vertices are coming in as line pairs - flip
+   * every second vertex about the origin
+   */
+  if (mod(vertexID, 2) == 1) 
+    tensorVec = -tensorVec;
 
-  vertexPos += tensorVec;
+  /*
+   * Scale the vector by the minimum voxel length,
+   * so it is a unit vector within real world space 
+   */
+  tensorVec /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
 
-  vertexPos -= 0.5;
+  /*
+   * Offset the vertex position 
+   * by the tensor direction
+   */ 
+  vertexPos += 0.5 * tensorVec;
 
+  /*
+   * Output the final vertex position
+   */
   gl_Position = gl_ModelViewProjectionMatrix * 
                 worldToWorldMat * 
                 voxToDisplayMat * 
