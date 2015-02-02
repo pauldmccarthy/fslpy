@@ -177,6 +177,20 @@ class ImageTexture(object):
         gl.glDeleteTextures(self.texture)
         self.texture = None
 
+        
+    def setPrefilter(self, prefilter):
+        """Updates the method used to pre-filter the data, and refreshes the
+        texture.
+
+        See :meth:`__init__`.
+        """
+        
+        changed = self.prefilter is not prefilter
+        self.prefilter = prefilter
+
+        if changed:
+            self.refreshTexture()
+
     
     def _addListeners(self):
         """Adds listeners to some properties of the ``Image`` and ``Display``
@@ -190,12 +204,16 @@ class ImageTexture(object):
         def refreshTexture(*a):
             self.refreshTexture()
 
+        def refreshInterp(*a):
+            self._updateInterpolationMethod()
+            
+
         name = '{}_{}'.format(type(self).__name__, id(self))
 
         image.addListener('data', name, refreshTexture)
 
         if display is not None:
-            display.addListener('interpolation', name, refreshTexture)
+            display.addListener('interpolation', name, refreshInterp)
             display.addListener('volume',        name, refreshTexture)
             display.addListener('resolution',    name, refreshTexture)
 
@@ -390,14 +408,40 @@ class ImageTexture(object):
 
         return data
 
+
+    def _updateInterpolationMethod(self, *a):
+        """Sets the interpolation method for the texture from the value of the
+        :attr:`~fsl.fslview.displaycontext.display.Display.interpolation`
+        property.
+        """
+
+        display = self.display
+
+        # Set up image texture sampling thingos
+        # with appropriate interpolation method
+        if display is None or display.interpolation == 'none':
+            interp = gl.GL_NEAREST
+        else:
+            interp = gl.GL_LINEAR
+
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
+        
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           interp)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           interp)
+        
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
         
     def refreshTexture(self):
         """(Re-)generates the OpenGL image texture used to store the image
         data.
         """
 
-        display   = self.display
-        data      = self._prepareTextureData()
+        data = self._prepareTextureData()
 
         # It is assumed that, for textures with more than one
         # value per voxel (e.g. RGB textures), the data is
@@ -422,20 +466,11 @@ class ImageTexture(object):
         gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
 
-        # Set up image texture sampling thingos
-        # with appropriate interpolation method
-        if display is None or display.interpolation == 'none':
-            interp = gl.GL_NEAREST
-        else:
-            interp = gl.GL_LINEAR
+        # Set the texture filtering
+        # (interpolation) method
+        self._updateInterpolationMethod()
 
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           interp)
-        gl.glTexParameteri(gl.GL_TEXTURE_3D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           interp)
 
         # Clamp texture borders to the edge
         # values - it is the responsibility
