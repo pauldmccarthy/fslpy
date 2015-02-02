@@ -6,5 +6,4 @@
 #
 
 import glvolume_funcs
-import glvector_line_funcs
-import glvector_rgb_funcs
+import glvector_funcs

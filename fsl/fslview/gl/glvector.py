@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """OpenGL vertex creation and rendering code for drawing a X*Y*Z*3 image as
-a vector image.
+a vector.
 
 Vectors can be displayed in one of several 'modes'.
  - RGB
@@ -64,21 +64,7 @@ class GLVector(globject.GLObject):
         globject.GLObject.__init__(self, image, display)
         self._ready = False
 
-        self._setModeModule()
-
-
-    def _setModeModule(self):
-
-        mode = self.displayOpts.displayMode
         
-        if   mode == 'line': self.modeMod = fslgl.glvector_line_funcs
-        elif mode == 'rgb':  self.modeMod = fslgl.glvector_rgb_funcs
-
-        else:
-            raise RuntimeError('No vector module for mode {}'.format(mode))
-
-
-
     def init(self):
         """Initialise the OpenGL data required to render the given image.
 
@@ -104,7 +90,12 @@ class GLVector(globject.GLObject):
         def modeChange(*a):
             self._onModeChange()
 
+        def coordUpdate(*a):
+            self.setAxes(self.xax, self.yax)
+
         display.addListener('alpha',       name, cmapUpdate)
+        display.addListener('transform',   name, coordUpdate)
+        display.addListener('resolution',  name, coordUpdate) 
         opts   .addListener('xColour',     name, cmapUpdate)
         opts   .addListener('yColour',     name, cmapUpdate)
         opts   .addListener('zColour',     name, cmapUpdate)
@@ -130,7 +121,7 @@ class GLVector(globject.GLObject):
         self.refreshModulateTexture()
         self.refreshColourTextures()
 
-        self.modeMod.init(self)
+        fslgl.glvector_funcs.init(self)
         
         self._ready = True
 
@@ -146,6 +137,8 @@ class GLVector(globject.GLObject):
         fsltextures.deleteTexture(self.modTexture) 
 
         self.display    .removeListener('alpha',       self.name)
+        self.display    .removeListener('transform',   self.name)
+        self.display    .removeListener('resolution',  self.name)
         self.displayOpts.removeListener('xColour',     self.name)
         self.displayOpts.removeListener('yColour',     self.name)
         self.displayOpts.removeListener('zColour',     self.name)
@@ -155,7 +148,7 @@ class GLVector(globject.GLObject):
         self.displayOpts.removeListener('modulate',    self.name)
         self.displayOpts.removeListener('displayMode', self.name)
 
-        self.modeMod.destroy(self)
+        fslgl.glvector_funcs.destroy(self)
 
         
     def ready(self):
@@ -185,10 +178,9 @@ class GLVector(globject.GLObject):
         elif self.displayOpts.displayMode == 'rgb':
             self.display.enableProperty('interpolation')
             
-        self.modeMod.destroy(self)
-        self._setModeModule()
+        fslgl.glvector_funcs.destroy(self)
         self.imageTexture.refreshTexture()
-        self.modeMod.init(self)
+        fslgl.glvector_funcs.init(self)
         self.setAxes(self.xax, self.yax)
         
 
@@ -279,7 +271,7 @@ class GLVector(globject.GLObject):
         self.yax = yax
         self.zax = 3 - xax - yax
 
-        self.modeMod.setAxes(self)
+        fslgl.glvector_funcs.setAxes(self)
 
         
     def preDraw(self):
@@ -306,14 +298,14 @@ class GLVector(globject.GLObject):
         gl.glActiveTexture(gl.GL_TEXTURE4)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
  
-        self.modeMod.preDraw(self)
+        fslgl.glvector_funcs.preDraw(self)
 
         
     def draw(self, zpos, xform=None):
         if not self.display.enabled:
             return
         
-        self.modeMod.draw(self, zpos, xform)
+        fslgl.glvector_funcs.draw(self, zpos, xform)
 
         
     def postDraw(self):
@@ -340,4 +332,4 @@ class GLVector(globject.GLObject):
         gl.glDisable(gl.GL_TEXTURE_1D) 
         gl.glDisable(gl.GL_TEXTURE_3D) 
         
-        self.modeMod.postDraw(self) 
+        fslgl.glvector_funcs.postDraw(self) 

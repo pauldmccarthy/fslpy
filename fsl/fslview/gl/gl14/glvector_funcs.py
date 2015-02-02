@@ -1,41 +1,30 @@
 #!/usr/bin/env python
 #
-# glvector_line_funcs.py -
+# glvector_funcs.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
 import logging
 
+import numpy                          as np
+import scipy.ndimage                  as ndi
+
 import OpenGL.GL                      as gl
 import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import numpy         as np
-import scipy.ndimage as ndi
-
+import fsl.utils.transform     as transform
 import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
-import fsl.utils.transform     as transform
 
 
 log = logging.getLogger(__name__)
 
 
-#######################
-# methods for Line Mode
-#######################
-
-
 def init(self):
-    """Adds a bunch of listeners to the
-    :class:`~fsl.fslview.displaycontext.ImageDisplay` object which defines
-    how the given image is to be displayed.
-        """
-
-    display = self.display
-
+  
     vertShaderSrc = shaders.getVertexShader('generic')
     fragShaderSrc = shaders.getFragmentShader(self)
 
@@ -43,31 +32,33 @@ def init(self):
         vertShaderSrc, fragShaderSrc)
     
     self.vertexProgram   = vertexProgram
-    self.fragmentProgram = fragmentProgram    
-    
-    def coordUpdate(*a):
-        self.setAxes(self.xax, self.yax)
+    self.fragmentProgram = fragmentProgram
 
-    display.addListener('transform',  self.name, coordUpdate)
-    display.addListener('resolution', self.name, coordUpdate)
 
-    
 def destroy(self):
 
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
-    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))    
-    
-    self.display.removeListener('transform',     self.name)
-    self.display.removeListener('resolution',    self.name)
+    arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
 
 def setAxes(self):
+    mode = self.displayOpts.displayMode
+
+    if   mode == 'rgb':  rgbModeSetAxes( self)
+    elif mode == 'line': lineModeSetAxes(self)
+
     
-    genVertices(self)
+def rgbModeSetAxes(self):
+    worldCoords, idxs = globject.slice2D(self.image.shape,
+                                         self.xax,
+                                         self.yax,
+                                         self.display.voxToDisplayMat)
 
+    self.worldCoords = worldCoords
+    self.indices     = idxs 
 
-def genVertices(self):
-
+    
+def lineModeSetAxes(self):
     worldCoords, xpixdim, ypixdim, lenx, leny = \
         globject.calculateSamplePoints(
             self.image,
@@ -80,9 +71,7 @@ def genVertices(self):
     self.ypixdim     = ypixdim
 
 
-
 def preDraw(self):
-
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -92,17 +81,37 @@ def preDraw(self):
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            self.fragmentProgram)
 
-    shaders.setVertexProgramMatrix(  0, self.display.displayToVoxMat.T)
+    # the vertex program needs to be able to
+    # transform from display space to voxel
+    # space
+    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
 
+    # the fragment program needs to know the image
+    # shape and its inverse, so it can scale voxel
+    # coordinates to the range [0.0, 1.0], and so
+    # it can clip fragments outside of the image
+    # space
     shape    = list(self.image.shape)
     invshape = [1.0 / s for s in shape]
     shaders.setFragmentProgramVector(0, shape    + [0])
     shaders.setFragmentProgramVector(1, invshape + [0])
-    shaders.setFragmentProgramMatrix(2, self.imageTexture.voxValXform.T)
- 
 
-    
+    if self.displayOpts.displayMode == 'line':
+        shaders.setFragmentProgramMatrix(2, self.imageTexture.voxValXform.T)
+    else:
+        shaders.setFragmentProgramMatrix(2, np.eye(4))
+
+
 def draw(self, zpos, xform=None):
+    
+    if self.displayOpts.displayMode == 'line':
+        lineModeDraw(self, zpos, xform)
+        
+    elif self.displayOpts.displayMode == 'rgb':
+        rgbModeDraw(self, zpos, xform)
+
+        
+def lineModeDraw(self, zpos, xform=None):
     """Calculates vector orientations for the specified Z-axis location, and
     renders them using immediate mode OpenGL.
     """
@@ -175,7 +184,28 @@ def draw(self, zpos, xform=None):
 
     gl.glLineWidth(2)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels)
+    gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels) 
+
+    
+def rgbModeDraw(self, zpos, xform=None):
+
+    worldCoords  = self.worldCoords
+    indices      = self.indices
+    worldCoords[:, self.zax] = zpos
+
+    worldCoords = worldCoords.ravel('C')
+
+    if xform is None:
+        xform = np.eye(4)
+
+    shaders.setVertexProgramMatrix(4, xform.T)
+
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+
+    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+                      len(indices),
+                      gl.GL_UNSIGNED_INT,
+                      indices) 
 
     
 def postDraw(self):

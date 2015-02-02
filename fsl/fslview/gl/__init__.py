@@ -150,11 +150,10 @@ def bootstrap(glVersion=None):
 
     log.debug('Using OpenGL {} implementation'.format(verstr))
 
-    thismod.GL_VERSION          = verstr
-    thismod.glvolume_funcs      = glpkg.glvolume_funcs
-    thismod.glvector_line_funcs = glpkg.glvector_line_funcs
-    thismod.glvector_rgb_funcs  = glpkg.glvector_rgb_funcs
-    thismod._bootstrapped       = True
+    thismod.GL_VERSION     = verstr
+    thismod.glvolume_funcs = glpkg.glvolume_funcs
+    thismod.glvector_funcs = glpkg.glvector_funcs
+    thismod._bootstrapped  = True
 
 
 def getWXGLContext():
