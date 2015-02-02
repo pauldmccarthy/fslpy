@@ -37,12 +37,12 @@ def createGLObject(image, display):
 
     import fsl.fslview.gl.glvolume as glvolume
     import fsl.fslview.gl.glmask   as glmask
-    import fsl.fslview.gl.gltensor as gltensor
+    import fsl.fslview.gl.glvector as glvector
 
     _objectmap = {
         'volume' : glvolume.GLVolume,
         'mask'   : glmask  .GLMask,
-        'tensor' : gltensor.GLTensor
+        'vector' : glvector.GLVector
     } 
 
     ctr = _objectmap.get(display.imageType, None)

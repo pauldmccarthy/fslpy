@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 #
-# gltensor.py - OpenGL vertex creation and rendering code for drawing a
-# X*Y*Z*3 image as a tensor image.
+# glvector.py - OpenGL vertex creation and rendering code for drawing a
+# X*Y*Z*3 image as a vector.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """OpenGL vertex creation and rendering code for drawing a X*Y*Z*3 image as
-a tensor image.
+a vector image.
 
-Tensors can be displayed in one of several 'modes'.
+Vectors can be displayed in one of several 'modes'.
+ - RGB
+ - Line
+ - Arrow
 
  - init(self)
 
@@ -21,9 +24,6 @@ Tensors can be displayed in one of several 'modes'.
  - draw(self, zpos, xform=None)
 
  - postDraw(self)
-
-
-
 
 """
 
@@ -40,13 +40,13 @@ import fsl.fslview.gl.globject as globject
 log = logging.getLogger(__name__)
 
 
-class GLTensor(globject.GLObject):
-    """The :class:`GLTensor` class encapsulates the data and logic required to
-    render 2D slices of a X*Y*Z*3 image as tensor lines.
+class GLVector(globject.GLObject):
+    """The :class:`GLVector` class encapsulates the data and logic required
+    to render 2D slices of a X*Y*Z*3 image as vectors.
     """
 
     def __init__(self, image, display):
-        """Create a :class:`GLTensor` object bound to the given image and
+        """Create a :class:`GLVector` object bound to the given image and
         display.
 
         :arg image:        A :class:`~fsl.data.image.Image` object.
@@ -58,7 +58,7 @@ class GLTensor(globject.GLObject):
 
         if not image.is4DImage() or image.shape[3] != 3:
             raise ValueError('Image must be 4 dimensional, with 3 volumes '
-                             'representing the XYZ tensor angles')
+                             'representing the XYZ vector angles')
 
         globject.GLObject.__init__(self, image, display)
         self._ready = False
@@ -70,11 +70,11 @@ class GLTensor(globject.GLObject):
 
         mode = self.displayOpts.displayMode
         
-        if   mode == 'line': self.modeMod = fslgl.gltensor_line_funcs
-        elif mode == 'rgb':  self.modeMod = fslgl.gltensor_rgb_funcs
+        if   mode == 'line': self.modeMod = fslgl.glvector_line_funcs
+        elif mode == 'rgb':  self.modeMod = fslgl.glvector_rgb_funcs
 
         else:
-            raise RuntimeError('No tensor module for mode {}'.format(mode))
+            raise RuntimeError('No vector module for mode {}'.format(mode))
 
 
 

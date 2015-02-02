@@ -141,15 +141,15 @@ properties = TypeDict({
     'MaskOpts.invert'         : 'Invert',
     'MaskOpts.threshold'      : 'Threshold',
 
-    'TensorOpts.displayMode'   : 'Display mode',
-    'TensorOpts.xColour'       : 'X Colour',
-    'TensorOpts.yColour'       : 'Y Colour',
-    'TensorOpts.zColour'       : 'Z Colour',
+    'VectorOpts.displayMode'   : 'Display mode',
+    'VectorOpts.xColour'       : 'X Colour',
+    'VectorOpts.yColour'       : 'Y Colour',
+    'VectorOpts.zColour'       : 'Z Colour',
 
-    'TensorOpts.suppressX'     : 'Suppress X value',
-    'TensorOpts.suppressY'     : 'Suppress Y value',
-    'TensorOpts.suppressZ'     : 'Suppress Z value',
-    'TensorOpts.modulate'      : 'Modulate by',
+    'VectorOpts.suppressX'     : 'Suppress X value',
+    'VectorOpts.suppressY'     : 'Suppress Y value',
+    'VectorOpts.suppressZ'     : 'Suppress Z value',
+    'VectorOpts.modulate'      : 'Modulate by',
 })
 
 
@@ -194,10 +194,10 @@ choices = TypeDict({
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
 
-    'TensorOpts.displayType.line' : 'Lines',
-    'TensorOpts.displayType.rgb'  : 'RGB',
+    'VectorOpts.displayType.line' : 'Lines',
+    'VectorOpts.displayType.rgb'  : 'RGB',
 
-    'TensorOpts.modulate.none'    : 'No modulation',
+    'VectorOpts.modulate.none'    : 'No modulation',
     
     'Display.transform.affine' : 'Use qform/sform transformation matrix',
     'Display.transform.pixdim' : 'Use pixdims only',

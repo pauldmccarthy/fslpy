@@ -1,7 +1,7 @@
 !!ARBfp1.0
 #
-# Fragment program used for rendering GLTensor instances, where
-# the tensor direction is represented by a combination of RGB colours.
+# Fragment program used for rendering GLVector instances, where
+# the vector orientation is represented by a combination of RGB colours.
 #
 # This fragment program does the following:
 # 
@@ -56,11 +56,11 @@ MOV voxCoord, fragment.texcoord[1];
 # can be used for texture lookup
 MUL normVoxCoord, voxCoord, imageShapeInv;
 
-# look up tensor values
+# look up vector values
 # from the 3D RGB texture
 TEX voxValue, normVoxCoord, texture[0], 3D;
 
-# Transform tensor values from their normalised 
+# Transform vector values from their normalised 
 # texture range to their original data range,
 # and take the absolue value
 MUL voxValue, voxValue, imageValueXform[0].xxxx;

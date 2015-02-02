@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gltensor_rgb_funcs.py -
+# glvector_rgb_funcs.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 
 def init(self):
 
-    vertShaderSrc = shaders.getVertexShader(  'gltensor_rgb')
-    fragShaderSrc = shaders.getFragmentShader('gltensor_rgb')    
+    vertShaderSrc = shaders.getVertexShader(  'glvector_rgb')
+    fragShaderSrc = shaders.getFragmentShader('glvector_rgb')    
 
     self.shaders          = shaders.compileShaders(vertShaderSrc,
                                                    fragShaderSrc)
@@ -41,7 +41,7 @@ def init(self):
     p['zCoord']          = gl.glGetUniformLocation(s, 'zCoord')
     p['worldCoords']     = gl.glGetAttribLocation( s, 'worldCoords')
 
-    # parameters for gltensor_rgb_vert.glsl/gltensor_rgb_frag.glsl
+    # parameters for glvector_rgb_vert.glsl/glvector_rgb_frag.glsl
     p['imageTexture']    = gl.glGetUniformLocation(s, 'imageTexture')
     p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
     p['modTexture']      = gl.glGetUniformLocation(s, 'modTexture') 

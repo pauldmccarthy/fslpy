@@ -237,7 +237,7 @@ class Display(props.SyncableHasProperties):
         """
 
         import volumeopts
-        import tensoropts
+        import vectoropts
         import maskopts        
         
         if self.getParent() is None:
@@ -247,7 +247,7 @@ class Display(props.SyncableHasProperties):
 
         optsMap = {
             'volume' : volumeopts.VolumeOpts,
-            'tensor' : tensoropts.TensorOpts,
+            'vector' : vectoropts.VectorOpts,
             'mask'   : maskopts.  MaskOpts
         }
 

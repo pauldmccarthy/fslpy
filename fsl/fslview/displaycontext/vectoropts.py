@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# tensoropts.py -
+# vectoropts.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -10,12 +10,13 @@ import props
 import fsl.data.strings as strings
 import display          as fsldisplay
 
-class TensorOpts(fsldisplay.DisplayOpts):
+class VectorOpts(fsldisplay.DisplayOpts):
 
     displayMode = props.Choice(
         ('line', 'rgb'),
-        labels=[strings.choices['TensorOpts.displayType.line'],
-                strings.choices['TensorOpts.displayType.rgb']])
+        default='rgb',
+        labels=[strings.choices['VectorOpts.displayType.line'],
+                strings.choices['VectorOpts.displayType.rgb']])
 
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
@@ -58,14 +59,14 @@ class TensorOpts(fsldisplay.DisplayOpts):
         modVal  = self.modulate
         images  = self.displayCtx.getOrderedImages()
 
-        # the image for this TensorOpts
+        # the image for this VectorOpts
         # instance has been removed
         if self.image not in images:
             self.imageList.removeListener('images', self.name)
             return
 
         modOptions = ['none']
-        modLabels  = [strings.choices['TensorOpts.modulate.none']]
+        modLabels  = [strings.choices['VectorOpts.modulate.none']]
 
         for image in images:
             
@@ -75,8 +76,8 @@ class TensorOpts(fsldisplay.DisplayOpts):
                 continue
 
             # an image can only be used to modulate
-            # the tensor image if it shares the same
-            # dimensions as said tensor image
+            # the vector image if it shares the same
+            # dimensions as said vector image
             if image.shape  != self.image.shape[ :3] or \
                image.pixdim != self.image.pixdim[:3]:
                 continue

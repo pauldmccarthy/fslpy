@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gltensor_rgb_funcs.py - 
+# glvector_rgb_funcs.py - 
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 # Methods for RGB mode
 ######################
 
-# The tensor data is stored as a 3D RGB texture,
+# The vector data is stored as a 3D RGB texture,
 # and rendered as a four-vertex slice through said
 # texture. The fragment program looks up each of
 # the texture values, and calculates the appropriate

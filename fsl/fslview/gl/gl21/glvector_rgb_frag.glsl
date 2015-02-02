@@ -1,5 +1,5 @@
 /*
- * OpenGL fragment shader used by fsl/fslview/gl/gl21/slicecanvas_draw.py.
+ * OpenGL fragment shader used for colouring GLVector instances.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -59,7 +59,7 @@ void main(void) {
     voxCoords = voxCoords / imageShape;
 
     /*
-     * Look up the xyz tensor values
+     * Look up the xyz vector values
      */
     vec3 voxValue;
     if (useSpline) {

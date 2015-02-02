@@ -22,7 +22,7 @@ from fsl.fslview.views.lightboxpanel         import LightBoxPanel
 from fsl.fslview.displaycontext              import Display
 from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
 from fsl.fslview.displaycontext.maskopts     import MaskOpts
-from fsl.fslview.displaycontext.tensoropts   import TensorOpts
+from fsl.fslview.displaycontext.vectoropts   import VectorOpts
 
 
 def widget(name, labelCls, *args, **kwargs):
@@ -150,19 +150,19 @@ MaskOptsLayout = props.VGroup((
     widget('invert',    MaskOpts),
     widget('threshold', MaskOpts)))
 
-TensorOptsLayout = props.VGroup((
-    widget('displayMode',   TensorOpts),
+VectorOptsLayout = props.VGroup((
+    widget('displayMode',   VectorOpts),
     props.HGroup((
-        widget('xColour',   TensorOpts),
-        widget('yColour',   TensorOpts),
-        widget('zColour',   TensorOpts)),
+        widget('xColour',   VectorOpts),
+        widget('yColour',   VectorOpts),
+        widget('zColour',   VectorOpts)),
         vertLabels=True),
     props.HGroup((
-        widget('suppressX', TensorOpts),
-        widget('suppressY', TensorOpts),
-        widget('suppressZ', TensorOpts)),
+        widget('suppressX', VectorOpts),
+        widget('suppressY', VectorOpts),
+        widget('suppressZ', VectorOpts)),
         vertLabels=True),
-    widget('modulate',      TensorOpts)))
+    widget('modulate',      VectorOpts)))
 
 
 layouts = td.TypeDict({
@@ -179,5 +179,5 @@ layouts = td.TypeDict({
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,
     'MaskOpts'   : MaskOptsLayout,
-    'TensorOpts' : TensorOptsLayout, 
+    'VectorOpts' : VectorOptsLayout, 
 })

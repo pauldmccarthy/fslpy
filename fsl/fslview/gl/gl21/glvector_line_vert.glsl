@@ -1,8 +1,6 @@
 /*
- * OpenGL vertex shader used for rendering GLObject instances.
+ * OpenGL vertex shader used for rendering GLVector instances.
  *
- * All this shader does is transfer texture coordinates through
- * to the fragment shader.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -12,7 +10,7 @@
 #pragma include spline_interp.glsl
 
 /*
- * Tensor image containing XYZ vectors
+ * Vector image containing XYZ magnitudes
  */
 uniform sampler3D imageTexture;
 
@@ -51,47 +49,47 @@ void main(void) {
 
   vec3 voxCoords = fragVoxCoords / imageShape;
   vec3 vertexPos = fragVoxCoords - 0.5;
-  vec3 tensorVec;
+  vec3 vector;
 
   /*
-   * Retrieve the tensor values for this voxel
+   * Retrieve the vector values for this voxel
    */
   if (useSpline) {
-    tensorVec.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
-    tensorVec.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
-    tensorVec.z = spline_interp(imageTexture, voxCoords, imageShape, 2);
+    vector.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
+    vector.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
+    vector.z = spline_interp(imageTexture, voxCoords, imageShape, 2);
   }
 
   else {
-    tensorVec = texture3D(imageTexture, voxCoords).xyz;
+    vector = texture3D(imageTexture, voxCoords).xyz;
   }
 
   /*
-   * Tranasform the tensor values  from their
+   * Tranasform the vector values  from their
    * texture range of [0,1] to the original
    * data range
    */
-  tensorVec.xyz *= imageValueXform[0].x;
-  tensorVec.xyz += imageValueXform[0].w; 
+  vector.xyz *= imageValueXform[0].x;
+  vector.xyz += imageValueXform[0].w; 
 
   /*
    * Vertices are coming in as line pairs - flip
    * every second vertex about the origin
    */
   if (mod(vertexID, 2) == 1) 
-    tensorVec = -tensorVec;
+    vector = -vector;
 
   /*
    * Scale the vector by the minimum voxel length,
    * so it is a unit vector within real world space 
    */
-  tensorVec /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
+  vector /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
 
   /*
    * Offset the vertex position 
-   * by the tensor direction
+   * by the vector direction
    */ 
-  vertexPos += 0.5 * tensorVec;
+  vertexPos += 0.5 * vector;
 
   /*
    * Output the final vertex position

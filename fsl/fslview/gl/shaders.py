@@ -219,11 +219,11 @@ def _getFileName(globj, shaderType):
     # shader by passing the name, rather
     # than passing a GLObject instance
     import fsl.fslview.gl.glvolume as glvolume
-    import fsl.fslview.gl.gltensor as gltensor
+    import fsl.fslview.gl.glvector as glvector
     
     if   isinstance(globj, str):               prefix =  globj
     elif isinstance(globj, glvolume.GLVolume): prefix = 'glvolume'
-    elif isinstance(globj, gltensor.GLTensor): prefix = 'gltensor'
+    elif isinstance(globj, glvector.GLVector): prefix = 'glvector'
     else:
         raise RuntimeError('Unknown GL object type: '
                            '{}'.format(type(globj)))

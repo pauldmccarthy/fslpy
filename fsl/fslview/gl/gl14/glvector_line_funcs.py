@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gltensor_line_funcs.py -
+# glvector_line_funcs.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -103,7 +103,7 @@ def preDraw(self):
 
     
 def draw(self, zpos, xform=None):
-    """Calculates tensor orientations for the specified Z-axis location, and
+    """Calculates vector orientations for the specified Z-axis location, and
     renders them using immediate mode OpenGL.
     """
 

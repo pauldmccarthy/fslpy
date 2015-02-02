@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gltensor_line_funcs.py -
+# glvector_line_funcs.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 
 def init(self):
 
-    vertShaderSrc = shaders.getVertexShader(  'gltensor_line')
-    fragShaderSrc = shaders.getFragmentShader('gltensor_rgb')
+    vertShaderSrc = shaders.getVertexShader(  'glvector_line')
+    fragShaderSrc = shaders.getFragmentShader('glvector_rgb')
     
     self.shaders          = shaders.compileShaders(vertShaderSrc,
                                                    fragShaderSrc)
@@ -43,7 +43,7 @@ def init(self):
     p['zCoord']          = gl.glGetUniformLocation(s, 'zCoord')
     p['worldCoords']     = gl.glGetAttribLocation( s, 'worldCoords')
 
-    # parameters for gltensor_line_vert/gltensor_line_frag.glsl
+    # parameters for glvector_line_vert/glvector_line_frag.glsl
     p['imageTexture']    = gl.glGetUniformLocation( s, 'imageTexture')
     p['imageValueXform'] = gl.glGetUniformLocation( s, 'imageValueXform')
     p['modTexture']      = gl.glGetUniformLocation( s, 'modTexture')

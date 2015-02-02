@@ -152,8 +152,8 @@ def bootstrap(glVersion=None):
 
     thismod.GL_VERSION          = verstr
     thismod.glvolume_funcs      = glpkg.glvolume_funcs
-    thismod.gltensor_line_funcs = glpkg.gltensor_line_funcs
-    thismod.gltensor_rgb_funcs  = glpkg.gltensor_rgb_funcs
+    thismod.glvector_line_funcs = glpkg.glvector_line_funcs
+    thismod.glvector_rgb_funcs  = glpkg.glvector_rgb_funcs
     thismod._bootstrapped       = True
 
 
