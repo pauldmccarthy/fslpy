@@ -11,7 +11,9 @@ a vector image.
 Vectors can be displayed in one of several 'modes'.
  - RGB
  - Line
- - Arrow
+ - Arrow?
+
+Each mode module must provide the following functions:
 
  - init(self)
 
@@ -24,7 +26,6 @@ Vectors can be displayed in one of several 'modes'.
  - draw(self, zpos, xform=None)
 
  - postDraw(self)
-
 """
 
 import logging
@@ -92,6 +93,7 @@ class GLVector(globject.GLObject):
         self.yColourTexture = gl.glGenTextures(1)
         self.zColourTexture = gl.glGenTextures(1)
         self.modTexture     = None
+        self.imageTexture   = None
         
         def modUpdate( *a):
             self.refreshModulateTexture()
@@ -100,10 +102,7 @@ class GLVector(globject.GLObject):
             self.refreshColourTextures()
 
         def modeChange(*a):
-            self.modeMod.destroy(self)
-            self._setModeModule()
-            self.modeMod.init(self)
-            self.setAxes(self.xax, self.yax)
+            self._onModeChange()
 
         display.addListener('alpha',       name, cmapUpdate)
         opts   .addListener('xColour',     name, cmapUpdate)
@@ -115,11 +114,10 @@ class GLVector(globject.GLObject):
         opts   .addListener('modulate',    name, modUpdate)
         opts   .addListener('displayMode', name, modeChange)
 
-        self.refreshModulateTexture()
-        self.refreshColourTextures()
-
         def prefilter(data):
-            return data.transpose((3, 0, 1, 2))
+            data = data.transpose((3, 0, 1, 2))
+            if self.displayOpts.displayMode == 'rgb': return np.abs(data)
+            else:                                     return data
 
         self.imageTexture = fsltextures.getTexture(
             self.image,
@@ -128,6 +126,9 @@ class GLVector(globject.GLObject):
             nvals=3,
             normalise=True,
             prefilter=prefilter) 
+
+        self.refreshModulateTexture()
+        self.refreshColourTextures()
 
         self.modeMod.init(self)
         
@@ -158,12 +159,38 @@ class GLVector(globject.GLObject):
 
         
     def ready(self):
-        """Returns `True` when the OpenGL data/state has been initialised, and the
-        image is ready to be drawn, `False` before.
+        """Returns `True` when the OpenGL data/state has been initialised,
+        and the image is ready to be drawn, `False` before.
         """ 
         return self._ready
 
 
+    def _onModeChange(self, *a):
+        """Called when the
+        :attr:`~fsl.fslview.displaycontext.vectoropts.VectorOpts` property
+        changes.
+
+        Initialises data and GL state for the newly selected vector display
+        mode.
+        """
+
+        # No texture interpolation in line mode
+        if self.displayOpts.displayMode == 'line':
+            
+            if self.display.interpolation != 'none':
+                self.display.interpolation = 'none'
+                
+            self.display.disableProperty('interpolation')
+            
+        elif self.displayOpts.displayMode == 'rgb':
+            self.display.enableProperty('interpolation')
+            
+        self.modeMod.destroy(self)
+        self._setModeModule()
+        self.imageTexture.refreshTexture()
+        self.modeMod.init(self)
+        self.setAxes(self.xax, self.yax)
+        
 
     def refreshModulateTexture(self):
 

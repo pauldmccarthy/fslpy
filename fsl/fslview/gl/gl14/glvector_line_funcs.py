@@ -125,36 +125,27 @@ def draw(self, zpos, xform=None):
     imageData  = image.data
     nVoxels    = worldCoords.shape[0]
 
-    if   display.interpolation == 'spline': order = 3
-    elif display.interpolation == 'linear': order = 1
-    else:                                   order = 0
-
-    # Get the image data at those (floating point)
-    # voxel coordinates, interpolating if it is enabled
+    # Get the image data at those 
+    # voxel coordinates, using
+    # nearest neighbour interpolation
     xvals = ndi.map_coordinates(imageData[:, :, :, 0],
                                 voxCoords,
-                                order=order,
+                                order=0,
                                 mode='nearest',
                                 prefilter=False)
     yvals = ndi.map_coordinates(imageData[:, :, :, 1],
                                 voxCoords,
-                                order=order,
+                                order=0,
                                 mode='nearest',
                                 prefilter=False)
     zvals = ndi.map_coordinates(imageData[:, :, :, 2],
                                 voxCoords,
-                                order=order,
+                                order=0,
                                 mode='nearest',
                                 prefilter=False)
 
     # make a N*3 list of vectors
     vecs = np.array([xvals, yvals, zvals]).transpose()
-
-    # if interpolating, rescale those
-    # vectors back to unit vectors
-    if order != 0:
-        dists = np.sqrt(np.sum(vecs ** 2, axis=1))
-        vecs  = np.multiply(vecs.transpose(), 1.0 / dists).transpose()
 
     # make a bunch of vertices which represent lines 
     # (two vertices per line), centered at the origin

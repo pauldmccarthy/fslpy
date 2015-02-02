@@ -47,22 +47,22 @@ void main(void) {
 
   common_vert();
 
-  vec3 voxCoords = fragVoxCoords / imageShape;
+  vec3 voxCoords = fragVoxCoords;
   vec3 vertexPos = fragVoxCoords - 0.5;
   vec3 vector;
 
   /*
+   * Normalise the vertex coordinates to [0.0, 1.0],
+   * so they can be used for texture lookup. And make
+   * sure the voxel coordinates are exact integers,
+   * as we cannot interpolate vector directions. 
+   */
+  voxCoords = floor(voxCoords) / imageShape;
+
+  /*
    * Retrieve the vector values for this voxel
    */
-  if (useSpline) {
-    vector.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
-    vector.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
-    vector.z = spline_interp(imageTexture, voxCoords, imageShape, 2);
-  }
-
-  else {
-    vector = texture3D(imageTexture, voxCoords).xyz;
-  }
+  vector = texture3D(imageTexture, voxCoords).xyz;
 
   /*
    * Tranasform the vector values  from their

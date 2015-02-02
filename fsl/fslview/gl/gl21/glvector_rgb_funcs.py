@@ -99,16 +99,14 @@ def preDraw(self):
     imageShape      = np.array(self.image.shape,        dtype=np.float32)
     imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
     displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
-    imageValueXform = np.array(self.imageTexture.voxValXform.T,
-                               dtype=np.float32)
+    imageValueXform = np.eye(  4,                       dtype=np.float32)
     
     displayToVoxMat = displayToVoxMat.ravel('C')
     imageValueXform = imageValueXform.ravel('C')
  
-
     gl.glUniform1f(       pars['useSpline'],     useSpline)
     gl.glUniform3fv(      pars['imageShape'], 1, imageShape)
-    gl.glUniform3fv(      pars['imageDims'], 1, imageDims)
+    gl.glUniform3fv(      pars['imageDims'],  1, imageDims)
     gl.glUniform1i(       pars['xax'],           self.xax)
     gl.glUniform1i(       pars['yax'],           self.yax)
     gl.glUniform1i(       pars['zax'],           self.zax)

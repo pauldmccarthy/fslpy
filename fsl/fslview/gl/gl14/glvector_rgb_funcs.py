@@ -84,7 +84,7 @@ def preDraw(self):
     invshape = [1.0 / s for s in shape]
     shaders.setFragmentProgramVector(0, shape    + [0])
     shaders.setFragmentProgramVector(1, invshape + [0])
-    shaders.setFragmentProgramMatrix(2, self.imageTexture.voxValXform.T)
+    shaders.setFragmentProgramMatrix(2, np.eye(4))
 
 
 def draw(self, zpos, xform=None):
