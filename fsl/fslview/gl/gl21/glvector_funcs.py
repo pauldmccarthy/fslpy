@@ -19,31 +19,25 @@ log = logging.getLogger(__name__)
 
 
 def init(self):
+    mode      = self.displayOpts.displayMode
+    self.mode = mode
 
-    mode = self.displayOpts.displayMode
-
-    if   mode == 'line': vertShader = 'glvector_line'
-    elif mode == 'rgb':  vertShader = 'glvector_rgb'
-
-    vertShaderSrc = shaders.getVertexShader(  vertShader)
+    vertShaderSrc = shaders.getVertexShader(  'glvector_{}'.format(mode))
     fragShaderSrc = shaders.getFragmentShader('glvector_rgb')
-    
-    self.shaders          = shaders.compileShaders(vertShaderSrc,
-                                                   fragShaderSrc)
 
-    self.shaderParams     = {}
+    self.shaderParams = {}
+    self.shaders      = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
+    
+    s = self.shaders
+    p = self.shaderParams 
+
     self.worldCoordBuffer = gl.glGenBuffers(1)
     self.indexBuffer      = gl.glGenBuffers(1)
-
-    # only needed for line mode
-    self.vertexIDBuffer   = gl.glGenBuffers(1)
- 
-
-    s = self.shaders
-    p = self.shaderParams
-
+    
     if mode == 'line':
-        p['voxToDisplayMat'] = gl.glGetUniformLocation(s, 'voxToDisplayMat')
+        self.vertexIDBuffer   = gl.glGenBuffers(1)
+        p['voxToDisplayMat']  = gl.glGetUniformLocation(s, 'voxToDisplayMat')
+        p['vertexID']         = gl.glGetAttribLocation( s, 'vertexID')    
 
     p['displayToVoxMat'] = gl.glGetUniformLocation(s, 'displayToVoxMat')
     p['worldToWorldMat'] = gl.glGetUniformLocation(s, 'worldToWorldMat')
@@ -54,31 +48,31 @@ def init(self):
     p['worldCoords']     = gl.glGetAttribLocation( s, 'worldCoords')
 
     # parameters for glvector_line_vert/glvector_line_frag.glsl
-    p['imageTexture']    = gl.glGetUniformLocation( s, 'imageTexture')
-    p['imageValueXform'] = gl.glGetUniformLocation( s, 'imageValueXform')
-    p['modTexture']      = gl.glGetUniformLocation( s, 'modTexture')
-    p['xColourTexture']  = gl.glGetUniformLocation( s, 'xColourTexture')
-    p['yColourTexture']  = gl.glGetUniformLocation( s, 'yColourTexture')
-    p['zColourTexture']  = gl.glGetUniformLocation( s, 'zColourTexture')
-    p['imageShape']      = gl.glGetUniformLocation( s, 'imageShape')
-    p['imageDims']       = gl.glGetUniformLocation( s, 'imageDims')
-    p['useSpline']       = gl.glGetUniformLocation( s, 'useSpline')
-    p['vertexID']        = gl.glGetAttribLocation(  s, 'vertexID')    
+    p['imageTexture']    = gl.glGetUniformLocation(s, 'imageTexture')
+    p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
+    p['modTexture']      = gl.glGetUniformLocation(s, 'modTexture')
+    p['xColourTexture']  = gl.glGetUniformLocation(s, 'xColourTexture')
+    p['yColourTexture']  = gl.glGetUniformLocation(s, 'yColourTexture')
+    p['zColourTexture']  = gl.glGetUniformLocation(s, 'zColourTexture')
+    p['imageShape']      = gl.glGetUniformLocation(s, 'imageShape')
+    p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
+    p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
 
     
 def destroy(self):
 
-    # only needed for line mode
-    if self.displayOpts.displayMode == 'line':
-        gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
-    
     gl.glDeleteProgram(self.shaders)
+
     gl.glDeleteBuffers(1, gltypes.GLuint(self.worldCoordBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer)) 
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
 
+    # only needed for line mode
+    if self.mode == 'line':
+        gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
 
+        
 def setAxes(self):
-    mode = self.displayOpts.displayMode
+    mode = self.mode
 
     if mode == 'line':
         worldCoords, xpixdim, ypixdim, lenx, leny = \
@@ -89,7 +83,8 @@ def setAxes(self):
                 self.yax)
 
         worldCoords = np.repeat(worldCoords, 2, 0) 
-        indices     = np.arange(worldCoords.shape[0] * 2)
+        indices     = np.arange(worldCoords.shape[0])
+
         
     elif mode == 'rgb':
         worldCoords, indices = globject.slice2D(
@@ -98,11 +93,9 @@ def setAxes(self):
             self.yax,
             self.display.voxToDisplayMat)
 
-    worldCoords = worldCoords[:, [self.xax, self.yax]]
-    
-    worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
-    indices     = np.array(indices,     dtype=np.uint32) .ravel('C')
-
+    worldCoords    = worldCoords[:, [self.xax, self.yax]]
+    worldCoords    = np.array(worldCoords, dtype=np.float32).ravel('C')
+    indices        = np.array(indices,     dtype=np.uint32) .ravel('C')
     self.nVertices = len(indices)
 
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoordBuffer)
@@ -116,21 +109,22 @@ def setAxes(self):
                     indices.nbytes,
                     indices,
                     gl.GL_STATIC_DRAW)
-
+        
     if mode == 'line':
+
         vertexIDs = np.array(indices, dtype=np.float32)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexIDBuffer)
         gl.glBufferData(gl.GL_ARRAY_BUFFER,
                         vertexIDs.nbytes,
                         vertexIDs,
-                        gl.GL_STATIC_DRAW) 
+                        gl.GL_STATIC_DRAW)
 
         
 def preDraw(self):
 
     display = self.display
-    mode    = self.displayOpts.displayMode
-    
+    mode    = self.mode
+
     gl.glUseProgram(self.shaders)
     
     pars            = self.shaderParams
@@ -164,15 +158,6 @@ def preDraw(self):
     gl.glUniform1i(       pars['yColourTexture'], 3)
     gl.glUniform1i(       pars['zColourTexture'], 4)
 
-    # only for line mode
-    if mode == 'line':
-        voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
-        voxToDisplayMat = voxToDisplayMat.ravel('C')                
-        gl.glUniformMatrix4fv(pars['voxToDisplayMat'],
-                              1,
-                              False,
-                              voxToDisplayMat)
-
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoordBuffer)
     gl.glVertexAttribPointer(
@@ -184,11 +169,17 @@ def preDraw(self):
         None)
     gl.glEnableVertexAttribArray(pars['worldCoords'])
 
-    # Bind the vertex index buffer
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer) 
- 
-
+    # only for line mode
     if mode == 'line':
+    
+        voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
+        voxToDisplayMat = voxToDisplayMat.ravel('C')                
+        gl.glUniformMatrix4fv(pars['voxToDisplayMat'],
+                              1,
+                              False,
+                              voxToDisplayMat)
+
+        # and the vertex ID buffer
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexIDBuffer)
         gl.glVertexAttribPointer(
             pars['vertexID'],
@@ -197,16 +188,19 @@ def preDraw(self):
             gl.GL_FALSE,
             0,
             None)
-        gl.glEnableVertexAttribArray(pars['vertexID']) 
+        gl.glEnableVertexAttribArray(pars['vertexID'])
+        
+    # Bind the vertex index buffer
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer) 
 
 
 def draw(self, zpos, xform=None):
-    
+
     if xform is None: xform = np.identity(4)
     
     xform = np.array(xform, dtype=np.float32).ravel('C')
     pars  = self.shaderParams
-    mode  = self.displayOpts.displayMode
+    mode  = self.mode
 
     # Bind the current world z position, and
     # the xform transformation matrix
@@ -220,19 +214,21 @@ def draw(self, zpos, xform=None):
                           self.nVertices,
                           gl.GL_UNSIGNED_INT,
                           None)
+        
     elif mode == 'rgb':
         gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                          4,
+                          self.nVertices,
                           gl.GL_UNSIGNED_INT,
                           None) 
 
 
 def postDraw(self):
 
-    if self.displayOpts.displayMode == 'line':
+    if self.mode == 'line':
         gl.glDisableVertexAttribArray(self.shaderParams['vertexID'])
-    
+        
     gl.glDisableVertexAttribArray(self.shaderParams['worldCoords'])
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
+        
     gl.glUseProgram(0) 

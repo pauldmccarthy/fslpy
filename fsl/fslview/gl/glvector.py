@@ -41,6 +41,14 @@ import fsl.fslview.gl.globject as globject
 log = logging.getLogger(__name__)
 
 
+def _lineModePrefilter(data):
+    return data.transpose((3, 0, 1, 2))
+
+
+def _rgbModePrefilter(data):
+    return np.abs(data.transpose((3, 0, 1, 2)))
+
+
 class GLVector(globject.GLObject):
     """The :class:`GLVector` class encapsulates the data and logic required
     to render 2D slices of a X*Y*Z*3 image as vectors.
@@ -105,10 +113,8 @@ class GLVector(globject.GLObject):
         opts   .addListener('modulate',    name, modUpdate)
         opts   .addListener('displayMode', name, modeChange)
 
-        def prefilter(data):
-            data = data.transpose((3, 0, 1, 2))
-            if self.displayOpts.displayMode == 'rgb': return np.abs(data)
-            else:                                     return data
+        if   opts.displayMode == 'line': prefilter = _lineModePrefilter
+        elif opts.displayMode == 'rgb':  prefilter = _rgbModePrefilter
 
         self.imageTexture = fsltextures.getTexture(
             self.image,
@@ -125,7 +131,6 @@ class GLVector(globject.GLObject):
         
         self._ready = True
 
-        
     def destroy(self):
         """Does nothing - nothing needs to be cleaned up. """
 
@@ -167,19 +172,24 @@ class GLVector(globject.GLObject):
         mode.
         """
 
+        mode = self.displayOpts.displayMode
+
         # No texture interpolation in line mode
-        if self.displayOpts.displayMode == 'line':
+        if mode == 'line':
             
             if self.display.interpolation != 'none':
                 self.display.interpolation = 'none'
                 
             self.display.disableProperty('interpolation')
             
-        elif self.displayOpts.displayMode == 'rgb':
+        elif mode == 'rgb':
             self.display.enableProperty('interpolation')
+
+        if   mode == 'line': prefilter = _lineModePrefilter
+        elif mode == 'rgb':  prefilter = _rgbModePrefilter 
             
         fslgl.glvector_funcs.destroy(self)
-        self.imageTexture.refreshTexture()
+        self.imageTexture.setPrefilter(prefilter)
         fslgl.glvector_funcs.init(self)
         self.setAxes(self.xax, self.yax)
         
