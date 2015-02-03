@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 #
-# glvector_funcs.py -
+# glvector_funcs.py - Logic for rendering GLVector instances in an OpenGL 1.4
+#                     compatible manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains functions used by the
+:class:`~fsl.fslview.gl.glvector.GLVector` class, for rendering
+:class:`~fsl.data.image.Image` instances as vectors in an OpenGL 1.4
+compatible manner.
 
-import logging
+See the ``GLVector`` documentation for more details.
+"""
 
 import numpy                          as np
 import scipy.ndimage                  as ndi
@@ -20,10 +26,10 @@ import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
 
 
-log = logging.getLogger(__name__)
-
-
 def init(self):
+    """Compiles the vertex and fragment programs used for rendering. The
+    same programs are used for both ``line`` and ``rgb`` mode.
+    """
   
     vertShaderSrc = shaders.getVertexShader('generic')
     fragShaderSrc = shaders.getFragmentShader(self)
@@ -36,12 +42,16 @@ def init(self):
 
 
 def destroy(self):
+    """Deletes the vertex/fragment programs. """
 
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
 
 def setAxes(self):
+    """Calls one of :func:`rgbModeSetAxes` or :func:`lineModeSetAxes`,
+    depending upon the current display mode.
+    """
     mode = self.displayOpts.displayMode
 
     if   mode == 'rgb':  rgbModeSetAxes( self)
@@ -49,6 +59,12 @@ def setAxes(self):
 
     
 def rgbModeSetAxes(self):
+    """Creates four vertices which represent a slice through the image
+    texture, oriented according to the plane defined by
+    ``self.xax`` and  ``self.yax``.
+
+    See :func:`~fsl.fslview.globject.slice2D` for more details.
+    """
     worldCoords, idxs = globject.slice2D(self.image.shape,
                                          self.xax,
                                          self.yax,
@@ -59,6 +75,14 @@ def rgbModeSetAxes(self):
 
     
 def lineModeSetAxes(self):
+    """Creates an array of points forming a rectangular grid, one point
+    in the centre of each voxel, oriented according to the plane defined by
+    ``self.xax`` and  ``self.yax``. These points are used by
+    :func:`lineModeDraw` to generate lines representing vectors at every
+    voxel.
+
+    See :func:`~fsl.fslview.globject.calculateSamplePoints` for more details.
+    """
     worldCoords, xpixdim, ypixdim, lenx, leny = \
         globject.calculateSamplePoints(
             self.image,
@@ -72,6 +96,8 @@ def lineModeSetAxes(self):
 
 
 def preDraw(self):
+    """Loads the vertex/fragment programs, and sets some program parameters.
+    """
 
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
@@ -103,6 +129,9 @@ def preDraw(self):
 
 
 def draw(self, zpos, xform=None):
+    """Calls one of :func:`lineModeDraw` or :func:`rgbModeDraw`, depending
+    upon the current display mode.
+    """
     
     if self.displayOpts.displayMode == 'line':
         lineModeDraw(self, zpos, xform)
@@ -112,8 +141,8 @@ def draw(self, zpos, xform=None):
 
         
 def lineModeDraw(self, zpos, xform=None):
-    """Calculates vector orientations for the specified Z-axis location, and
-    renders them using immediate mode OpenGL.
+    """Creates a line, representing a vector, at each voxel at the specified
+    ``zpos``, and renders them.
     """
 
     image       = self.image
@@ -188,6 +217,9 @@ def lineModeDraw(self, zpos, xform=None):
 
     
 def rgbModeDraw(self, zpos, xform=None):
+    """Renders a rectangular slice through the vector image texture at the
+    specified ``zpos``.
+    """
 
     worldCoords  = self.worldCoords
     indices      = self.indices
@@ -209,6 +241,7 @@ def rgbModeDraw(self, zpos, xform=None):
 
     
 def postDraw(self):
+    """Disables the vertex/fragment programs used for drawing."""
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)

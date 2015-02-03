@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-# vectoropts.py -
+# vectoropts.py - Defines the VectorOpts class.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module defines the :class:`VectorOpts` class, which contains
+display options for rendering :class:`~fsl.fslview.gl.glvector.GLVector`
+instances.
+"""
 
 import props
 
@@ -17,28 +21,35 @@ class VectorOpts(fsldisplay.DisplayOpts):
         default='rgb',
         labels=[strings.choices['VectorOpts.displayType.line'],
                 strings.choices['VectorOpts.displayType.rgb']])
+    """Mode in which the ``GLVector`` instance is to be displayed."""
 
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
+    """Colour used to represent the X vector magnitude."""
 
     
     yColour = props.Colour(default=(0.0, 1.0, 0.0))
+    """Colour used to represent the Y vector magnitude."""
 
     
     zColour = props.Colour(default=(0.0, 0.0, 1.0))
+    """Colour used to represent the Z vector magnitude."""
 
 
     suppressX = props.Boolean(default=False)
+    """Do not use the X vector magnitude to colour vectors."""
 
     
     suppressY = props.Boolean(default=False)
+    """Do not use the Y vector magnitude to colour vectors."""
 
     
     suppressZ = props.Boolean(default=False)
+    """Do not use the Z vector magnitude to colour vectors."""
 
 
-    # make this nounbind?
     modulate  = props.Choice()
+    """Modulate the vector colours by another image."""
 
     
     def __init__(self, image, display, imageList, displayCtx, parent=None):
@@ -48,12 +59,21 @@ class VectorOpts(fsldisplay.DisplayOpts):
                                         imageList,
                                         displayCtx,
                                         parent)
+        """Create a ``VectorOpts`` instance for the given image.
+
+        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
+        documentation for more details.
+        """
 
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
 
 
     def imageListChanged(self, *a):
+        """Called when the image list changes. Updates the ``modulate``
+        property so that it contains a list of images which could be used
+        to modulate the vector image.
+        """
         
         modProp = self.getProp('modulate')
         modVal  = self.modulate

@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-# volumedisplay.py -
+# volumeopts.py - Defines the VolumeOpts class.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module defines the :class:`VolumeOpts` class, which contains
+display options for rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
+instances.
+"""
 
 import logging
 
@@ -93,9 +97,8 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         """Create an :class:`ImageDisplay` for the specified image.
 
-        :arg image: A :class:`~fsl.data.image.Image` object.
-
-        :arg parent: 
+        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
+        documentation for more details. 
         """
 
         # Attributes controlling image display. Only

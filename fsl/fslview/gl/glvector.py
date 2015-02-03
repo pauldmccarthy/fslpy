@@ -5,30 +5,74 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""OpenGL vertex creation and rendering code for drawing a X*Y*Z*3 image as
-a vector.
+"""Defines the :class:`GLVector` class, which encapsulates the logic for
+rendering 2D slices of a ``X*Y*Z*3`` image as a vector. The ``GLVector`` class
+provides the interface defined by the
+:class:`~fsl.fslview.gl.globject.GLObject` class.
 
-Vectors can be displayed in one of several 'modes'.
- - RGB
- - Line
- - Arrow?
+A ``GLVector`` instance may be used to render an
+:class:`~fsl.data.image.Image` instance which has an ``imageType`` of
+``vector``. It is assumed that this ``Image`` instance is associated with
+a :class:`~fsl.fslview.displaycontext.display.Display` instance which contains
+a :class:`~fsl.fslview.dislpaycontext.vectoropts.VectorOpts` instance,
+containing options specific to vector rendering.
 
-Each mode module must provide the following functions:
+Vectors can be displayed in one of several 'modes', defined by the
+``VectorOpts.displayMode`` option:
 
- - init(self)
+ - ``rgb``: The magnitude of the vector at each voxel along each axis is
+            displayed as a combination of three colours. 
 
- - destroy(self)
+ - `line``: The vector at each voxel is rendered as an undirected line.
 
- - setAxes(self)
+The :class:`GLVector` class makes use of the functions defined in the
+:mod:`fsl.fslview.gl.gl14.glvector_funcs` or the
+:mod:`fsl.fslview.gl.gl21.glvector_funcs` modules, which provide OpenGL 
+version specific details for creation/storage of vertex data, and for
+rendering.
 
- - preDraw(self)
+These version dependent modules must provide the following functions:
 
- - draw(self, zpos, xform=None)
+ - ``init(GLVector)``:  Initialise any necessary OpenGL shaders, textures,
+   buffers, etc.
 
- - postDraw(self)
+ - ``destroy(GLVector)``: Clean up any OpenGL data/state.
+
+ - ``setAxes(GLVector)``: Create the necessary geometry, ensuring that it is
+    oriented in such a way as to be displayed with ``GLVector.xax`` mapping to
+    the horizontal screen axis, ``GLVector.yax`` to the vertical axis, and
+    ``GLVector.yax`` to the depth axis.
+
+ - ``preDraw(GLVector)``: Prepare GL state ready for drawing.
+
+ - ``draw(GLVector, zpos, xform=None)``: Draw a slice of the vector image
+   at the given ``zpos``.
+                                    
+ - ``postDraw(GLVector)``: Clean up GL state after drawing.
+
+
+The vector image is stored on the GPU as a 3D RGB texture, where the ``R``
+channel contains the ``x`` vector values, the ``G`` channel the ``y`` values,
+and the ``B`` channel the ``z`` values. In ``line`` mode, this 3D texture
+contains the vector data normalised, but unchanged. However, in ``rgb`` mode,
+the absolute vaues of the vector data are stored. This is necessary to
+allow for GPU based interpolation of RGB vector images.
+
+In both ``rgb`` and ``line`` mode, three 1D textures are used to store a
+colour table for each of the ``x``, ``y`` and ``z`` components. A custom
+fragment shader program looks up the ``xyz`` vector values, looks up colours
+for each of them, and combines the three colours to form the final fragment
+colour.
+
+When in ``rgb`` mode, 2D slices of the image are rendered using a simple
+rectangular slice through the texture. When in ``line`` mode, each voxel
+is rendered using two vertices, which are aligned in the direction of the
+vector.
+
+The colour of each vector may be modulated by another image, specified by the
+:attr:`~fsl.fslview.displaycontext.vectoropts.VectorOpts.modulate` property.
+This modulation image is stored as a 3D single-channel texture.
 """
-
-import logging
 
 import numpy                   as np
 import OpenGL.GL               as gl
@@ -38,20 +82,25 @@ import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
 
-log = logging.getLogger(__name__)
-
 
 def _lineModePrefilter(data):
+    """Prefilter method for the vector image texture, when it is being
+    displayed in ``line`` mode - see
+    :meth:`~fsl.fslview.gl.textures.ImageTexture.setPrefilter`.
+    """
     return data.transpose((3, 0, 1, 2))
 
 
 def _rgbModePrefilter(data):
+    """Prefilter method for the vector image texture, when it is being
+    displayed in ``rgb`` mode.
+    """ 
     return np.abs(data.transpose((3, 0, 1, 2)))
 
 
 class GLVector(globject.GLObject):
     """The :class:`GLVector` class encapsulates the data and logic required
-    to render 2D slices of a X*Y*Z*3 image as vectors.
+    to render 2D slices of a ``X*Y*Z*3`` image as vectors.
     """
 
     def __init__(self, image, display):
@@ -76,7 +125,18 @@ class GLVector(globject.GLObject):
     def init(self):
         """Initialise the OpenGL data required to render the given image.
 
-        After this method has been called, the image is ready to be rendered.
+        This method does the following:
+        
+          - Creates the image texture, the modulate texture, and the three
+            colour map textures.
+
+          - Adds listeners to the
+            :class:`~fsl.fslview.displaycontext.display.Display` and
+            :class:`~fsl.fslview.displaycontext.vectoropts.VectorOpts`
+            instances, so the textures and geometry can be updated when
+            necessary.
+
+          - Calls the GTL version specific ``glvector_funcs.init`` function.
         """
 
         display = self.display
@@ -131,8 +191,12 @@ class GLVector(globject.GLObject):
         
         self._ready = True
 
+        
     def destroy(self):
-        """Does nothing - nothing needs to be cleaned up. """
+        """Deletes the GL textures, deregisters the listeners
+        configured in :meth:`init`, and calls the GL version specific
+        ``glvector_funcs.destroy`` function.
+        """
 
         gl.glDeleteTextures(self.xColourTexture)
         gl.glDeleteTextures(self.yColourTexture)
@@ -165,8 +229,8 @@ class GLVector(globject.GLObject):
 
     def _onModeChange(self, *a):
         """Called when the
-        :attr:`~fsl.fslview.displaycontext.vectoropts.VectorOpts` property
-        changes.
+        :attr:`~fsl.fslview.displaycontext.vectoropts.VectorOpts.displayMode`
+        property changes.
 
         Initialises data and GL state for the newly selected vector display
         mode.
@@ -174,7 +238,7 @@ class GLVector(globject.GLObject):
 
         mode = self.displayOpts.displayMode
 
-        # No texture interpolation in line mode
+        # Disable atexture interpolation in line mode
         if mode == 'line':
             
             if self.display.interpolation != 'none':
@@ -195,6 +259,14 @@ class GLVector(globject.GLObject):
         
 
     def refreshModulateTexture(self):
+        """Called when the
+        :attr`~fsl.fslview.displaycontext.vectoropts.VectorOpts.modulate`
+        property changes.
+
+        Reconfigures the modulation texture. If no modulation image is
+        selected, a 'dummy' texture is creatad, which contains all white
+        values (and which result in the modulation texture having no effect).
+        """
 
         modImage = self.displayOpts.modulate
 
@@ -207,6 +279,7 @@ class GLVector(globject.GLObject):
             modImage   = fslimage.Image(textureData)
             modDisplay = None
             norm       = False
+            
         else:
             modDisplay = self.display
             norm       = True
@@ -219,6 +292,14 @@ class GLVector(globject.GLObject):
 
 
     def refreshColourTextures(self, colourRes=256):
+        """Called when the component colour maps need to be updated, when
+        one of the
+        :attr:`~fsl.fslview.displaycontext.vectoropts.VectorOpts.xColour`,
+        ``yColour``, ``zColour``, ``suppressX``, ``suppressY``, or
+        ``suppressZ`` properties change.
+
+        Regenerates the colour textures.
+        """
 
         xcol = self.displayOpts.xColour + [1.0]
         ycol = self.displayOpts.yColour + [1.0]
@@ -272,9 +353,9 @@ class GLVector(globject.GLObject):
     
 
     def setAxes(self, xax, yax):
-        """Calculates vertex locations according to the specified X/Y axes,
-        and image display properties. This is done via a call to the
-        :func:`~fsl.fslview.gl.globject.calculateSamplePoints` function.
+        """Calls the GL version-specific ``glvector_funcs.setAxes`` function,
+        which should make sure that the GL geometry representation is up
+        to date.
         """
 
         self.xax = xax
@@ -285,6 +366,10 @@ class GLVector(globject.GLObject):
 
         
     def preDraw(self):
+        """Ensures that the five textures (the vector and modulation images,
+        and the three colour textures) are bound, then calls
+        ``glvector_funcs.preDraw``.
+        """
         if not self.display.enabled:
             return
 
@@ -312,6 +397,8 @@ class GLVector(globject.GLObject):
 
         
     def draw(self, zpos, xform=None):
+        """Calls the ``glvector_funcs.draw`` function. """
+        
         if not self.display.enabled:
             return
         
@@ -319,6 +406,9 @@ class GLVector(globject.GLObject):
 
         
     def postDraw(self):
+        """Unbindes the five GL textures, and calls the
+        ``glvector_funcs.postDraw`` function.
+        """
         if not self.display.enabled:
             return
 

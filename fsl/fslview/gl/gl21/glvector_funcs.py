@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 #
-# glvector_funcs.py -
+# glvector_funcs.py - Logic for rendering GLVector instances in an OpenGL 2.1
+#                     compatible manner.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains functions used by the
+:class:`~fsl.fslview.gl.glvector.GLVector` class, for rendering
+:class:`~fsl.data.image.Image` instances as vectors in an OpenGL 2.1
+compatible manner.
 
-import logging
+See the ``GLVector`` documentation for more details.
+
+This OpenGL 2.1 implementation improves upon the OpenGL 1.4 implementation
+(see :mod:`~fsl.fslview.gl.gl14.glvector_funcs`) in that, in ``line`` mode,
+the vertices which represent vector lines are positioned by a custom vertex
+shader running on the GPU.
+"""
 
 import numpy                as np
 import OpenGL.GL            as gl
@@ -15,15 +26,17 @@ import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
 
 
-log = logging.getLogger(__name__)
-
-
 def init(self):
+    """Compiles the vertex/fragment shaders used for rendering. A custom
+    vertex shader is used for ``line`` mode, but the same fragment shader
+    is used for both ``line`` and ``rgb`` modes. Also creates 
+    vertex and index buffers needed for storing vertices and indices.
+    """
     mode      = self.displayOpts.displayMode
     self.mode = mode
 
     vertShaderSrc = shaders.getVertexShader(  'glvector_{}'.format(mode))
-    fragShaderSrc = shaders.getFragmentShader('glvector_rgb')
+    fragShaderSrc = shaders.getFragmentShader('glvector')
 
     self.shaderParams = {}
     self.shaders      = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
@@ -33,12 +46,17 @@ def init(self):
 
     self.worldCoordBuffer = gl.glGenBuffers(1)
     self.indexBuffer      = gl.glGenBuffers(1)
-    
+
+    # Line mode needs an extra vertex array
+    # which contains vertex indices (which
+    # are not built-in in OpenGL2.1), and
+    # some extra parameters.
     if mode == 'line':
         self.vertexIDBuffer   = gl.glGenBuffers(1)
         p['voxToDisplayMat']  = gl.glGetUniformLocation(s, 'voxToDisplayMat')
         p['vertexID']         = gl.glGetAttribLocation( s, 'vertexID')    
 
+    # parameers for glvector_rgb_vert.glsl/glvector_line_vert.glsl
     p['displayToVoxMat'] = gl.glGetUniformLocation(s, 'displayToVoxMat')
     p['worldToWorldMat'] = gl.glGetUniformLocation(s, 'worldToWorldMat')
     p['xax']             = gl.glGetUniformLocation(s, 'xax')
@@ -47,31 +65,37 @@ def init(self):
     p['zCoord']          = gl.glGetUniformLocation(s, 'zCoord')
     p['worldCoords']     = gl.glGetAttribLocation( s, 'worldCoords')
 
-    # parameters for glvector_line_vert/glvector_line_frag.glsl
+    # parameters for glvector_frag.glsl
     p['imageTexture']    = gl.glGetUniformLocation(s, 'imageTexture')
-    p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
     p['modTexture']      = gl.glGetUniformLocation(s, 'modTexture')
     p['xColourTexture']  = gl.glGetUniformLocation(s, 'xColourTexture')
     p['yColourTexture']  = gl.glGetUniformLocation(s, 'yColourTexture')
     p['zColourTexture']  = gl.glGetUniformLocation(s, 'zColourTexture')
+    p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
     p['imageShape']      = gl.glGetUniformLocation(s, 'imageShape')
     p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
 
     
 def destroy(self):
+    """Deletes the vertex/fragment shader programs, and the vertex/index
+    buffers created in :func:`init`.
+    """
 
     gl.glDeleteProgram(self.shaders)
 
     gl.glDeleteBuffers(1, gltypes.GLuint(self.worldCoordBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
 
-    # only needed for line mode
+    # extra vertex array buffer for line mode
     if self.mode == 'line':
         gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
 
         
 def setAxes(self):
+    """Generates geometry for rendering the vector image in either ``line``
+    mode or ``rgb`` mode.
+    """
     mode = self.mode
 
     if mode == 'line':
@@ -85,7 +109,6 @@ def setAxes(self):
         worldCoords = np.repeat(worldCoords, 2, 0) 
         indices     = np.arange(worldCoords.shape[0])
 
-        
     elif mode == 'rgb':
         worldCoords, indices = globject.slice2D(
             self.image.shape,
@@ -121,6 +144,9 @@ def setAxes(self):
 
         
 def preDraw(self):
+    """Loads the vertex/fragment shaders, and binds shader parameters and
+    vertex/index arrays ready for drawing.
+    """
 
     display = self.display
     mode    = self.mode
@@ -169,7 +195,8 @@ def preDraw(self):
         None)
     gl.glEnableVertexAttribArray(pars['worldCoords'])
 
-    # only for line mode
+    # vox to display matrix, and vertex
+    # index buffer only needed for line mode
     if mode == 'line':
     
         voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
@@ -179,7 +206,6 @@ def preDraw(self):
                               False,
                               voxToDisplayMat)
 
-        # and the vertex ID buffer
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexIDBuffer)
         gl.glVertexAttribPointer(
             pars['vertexID'],
@@ -190,11 +216,12 @@ def preDraw(self):
             None)
         gl.glEnableVertexAttribArray(pars['vertexID'])
         
-    # Bind the vertex index buffer
+    # Bind the index buffer
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer) 
 
 
 def draw(self, zpos, xform=None):
+    """Draws the vector image."""
 
     if xform is None: xform = np.identity(4)
     
@@ -223,6 +250,7 @@ def draw(self, zpos, xform=None):
 
 
 def postDraw(self):
+    """Unbinds vertex/index buffers."""
 
     if self.mode == 'line':
         gl.glDisableVertexAttribArray(self.shaderParams['vertexID'])

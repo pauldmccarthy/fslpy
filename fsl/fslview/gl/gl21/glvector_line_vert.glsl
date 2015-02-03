@@ -1,6 +1,6 @@
 /*
- * OpenGL vertex shader used for rendering GLVector instances.
- *
+ * OpenGL vertex shader used for rendering GLVector instances in
+ * line mode.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -10,26 +10,32 @@
 #pragma include spline_interp.glsl
 
 /*
- * Vector image containing XYZ magnitudes
+ * Vector image containing XYZ vector data.
  */
 uniform sampler3D imageTexture;
 
 
 /*
- *
+ * Transformation matrix which transforms the
+ * vector texture data to its original data range.
  */
 uniform mat4 imageValueXform;
 
 
-
+/*
+ * Matrix which transforms from voxel
+ * coordinates to display coordinates.
+ */
 uniform mat4 voxToDisplayMat;
 
 /*
- * Image/texture dimensions
+ * Shape of the image texture.
  */
 uniform vec3 imageShape;
 
-
+/*
+ * Dimensions of one voxel in the image texture.
+ */
 uniform vec3 imageDims;
 
 /*
@@ -38,10 +44,6 @@ uniform vec3 imageDims;
  */
 attribute float vertexID;
 
-/*
- * Use spline interpolation?
- */
-uniform bool useSpline;
 
 void main(void) {
 
@@ -65,7 +67,7 @@ void main(void) {
   vector = texture3D(imageTexture, voxCoords).xyz;
 
   /*
-   * Tranasform the vector values  from their
+   * Transform the vector values  from their
    * texture range of [0,1] to the original
    * data range
    */

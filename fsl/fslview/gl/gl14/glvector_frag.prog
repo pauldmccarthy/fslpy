@@ -21,6 +21,12 @@
 #   program.local[0] - Image shape - number of voxels along the xyz
 #                      dimensions in the image
 #   program.local[1] - Inverse of image shape
+#   program.local[2]
+#   program.local[3]
+#   program.local[4]
+#   program.local[5] - Transformation matrix which transforms the vector
+#                      image voxel values from their texture value
+#                      to the original data range.
 #
 # Outputs:
 #

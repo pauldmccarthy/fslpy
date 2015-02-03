@@ -1,28 +1,68 @@
 /*
- * OpenGL fragment shader used for colouring GLVector instances.
+ * OpenGL fragment shader used for colouring GLVector instances in
+ * both line and rgb modes.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 #version 120
 
 #pragma include spline_interp.glsl
-
 #pragma include test_in_bounds.glsl
 
 /*
- * must contain absolute vector values
+ * Vector image containing XYZ vector data.
  */
 uniform sampler3D imageTexture;
-uniform sampler3D modTexture;
-uniform sampler1D xColourTexture;
-uniform sampler1D yColourTexture;
-uniform sampler1D zColourTexture;
-uniform mat4      imageValueXform;
-uniform vec3      imageShape;
-uniform bool      useSpline;
 
-varying vec3      fragDisplayCoords;
-varying vec3      fragVoxCoords;
+/*
+ * Modulation texture containing values by
+ * which the vector colours are to be modulated.
+ */
+uniform sampler3D modTexture;
+
+/*
+ * Colour map for the X vector component.
+ */
+uniform sampler1D xColourTexture;
+
+/*
+ * Colour map for the Y vector component.
+ */
+uniform sampler1D yColourTexture;
+
+/*
+ * Colour map for the Z vector component.
+ */
+uniform sampler1D zColourTexture;
+
+/*
+ * Matrix which transforms from vector image
+ * texture values to their original data range.
+ */
+uniform mat4 imageValueXform;
+
+/*
+ * Shape of the image texture.
+ */
+uniform vec3 imageShape;
+
+/*
+ * Use spline interpolation?
+ */
+uniform bool useSpline;
+
+
+/*
+ * Coordinates of the fragment in display
+ * coordinates, passed from the vertex shader.
+ */
+varying vec3 fragDisplayCoords;
+
+/*
+ * Coordinates of the fragment in voxel
+ * coordinates, passed from the vertex shader.
+ */
+varying vec3 fragVoxCoords;
 
 
 void main(void) {
