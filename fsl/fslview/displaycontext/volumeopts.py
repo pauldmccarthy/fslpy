@@ -73,7 +73,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         'name'          : 'The name of this image',
         'enabled'       : 'Enable/disable this image',
         'alpha'         : 'Opacity, between 0.0 (transparent) '
-                          'and 1.0 (opaque)',
+                          'and 100.0 (opaque)',
         'displayRange'  : 'Minimum/maximum display values',
         'clipLow'       : 'Do not show image values which are '
                           'lower than the display range',

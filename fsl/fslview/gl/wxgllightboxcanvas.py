@@ -62,6 +62,8 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
                 disp .removeListener('transform',     self.name)
                 disp .removeListener('interpolation', self.name)
                 disp .removeListener('alpha',         self.name)
+                disp .removeListener('brightness',    self.name)
+                disp .removeListener('contrast',      self.name)
                 disp .removeListener('resolution',    self.name)
                 disp .removeListener('volume',        self.name)
                 opts .removeGlobalListener(           self.name)

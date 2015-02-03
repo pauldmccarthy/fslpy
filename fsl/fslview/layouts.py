@@ -135,7 +135,9 @@ DisplayLayout = props.VGroup((
     widget('resolution',    Display),
     widget('transform',     Display),
     widget('interpolation', Display),
-    widget('alpha',         Display)))
+    widget('alpha',         Display),
+    widget('brightness',    Display),
+    widget('contrast',      Display)))
 
 
 VolumeOptsLayout = props.VGroup((

@@ -7,6 +7,7 @@
 
 #pragma include spline_interp.glsl
 #pragma include test_in_bounds.glsl
+#pragma include briconalpha.glsl
 
 /*
  * image data texture
@@ -76,5 +77,5 @@ void main(void) {
      * coordinate, and look up the colour for the voxel value
      */
     vec4 normVoxValue = voxValXform * vec4(voxValue, 0, 0, 1);
-    gl_FragColor      = texture1D(colourTexture, normVoxValue.x); 
+    gl_FragColor      = briconalpha(texture1D(colourTexture, normVoxValue.x)); 
 }

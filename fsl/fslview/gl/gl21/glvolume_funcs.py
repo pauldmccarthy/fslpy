@@ -76,7 +76,11 @@ def _compileShaders(self):
     self.displayToVoxMatPos = gl.glGetUniformLocation(self.shaders,
                                                        'displayToVoxMat')
     self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
-                                                       'voxValXform') 
+                                                       'voxValXform')
+
+    self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
+    self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
+    self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
 
 
 def init(self):
@@ -147,6 +151,10 @@ def preDraw(self):
     gl.glUniform1i( self.xaxPos,           self.xax)
     gl.glUniform1i( self.yaxPos,           self.yax)
     gl.glUniform1i( self.zaxPos,           self.zax)
+
+    gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
+    gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
+    gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
 
     # Bind transformation matrices to transform
     # display coordinates to voxel coordinates,

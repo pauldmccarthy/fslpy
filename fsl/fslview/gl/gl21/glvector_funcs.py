@@ -76,6 +76,10 @@ def init(self):
     p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
 
+    p['alpha']           = gl.glGetUniformLocation(s, 'alpha')
+    p['brightness']      = gl.glGetUniformLocation(s, 'brightness')
+    p['contrast']        = gl.glGetUniformLocation(s, 'contrast')
+
     
 def destroy(self):
     """Deletes the vertex/fragment shader programs, and the vertex/index
@@ -183,6 +187,10 @@ def preDraw(self):
     gl.glUniform1i(       pars['xColourTexture'], 2)
     gl.glUniform1i(       pars['yColourTexture'], 3)
     gl.glUniform1i(       pars['zColourTexture'], 4)
+
+    gl.glUniform1f(       pars['alpha'],      display.alpha      / 100.0)
+    gl.glUniform1f(       pars['brightness'], display.brightness / 100.0)
+    gl.glUniform1f(       pars['contrast'],   display.contrast   / 100.0)
 
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoordBuffer)

@@ -319,12 +319,15 @@ class GLVector(globject.GLObject):
                 (xsup, ysup, zsup)):
 
             if not suppress:
+                
                 cmap = np.array(
                     [np.linspace(0.0, i, colourRes) for i in colour])
             else:
                 cmap = np.zeros((4, colourRes))
 
-            cmap[3, :] = self.display.alpha
+            # Component magnitudes
+            # of 0 are transparent
+            cmap[3, :] = 1.0
             cmap[3, 0] = 0.0
 
             cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')

@@ -240,8 +240,7 @@ class GLVolume(globject.GLObject):
         for more details.
         """
 
-        display = self.display
-        opts    = self.displayOpts
+        opts = self.displayOpts
 
         imin = opts.displayRange[0]
         imax = opts.displayRange[1]
@@ -262,8 +261,7 @@ class GLVolume(globject.GLObject):
         # spanning the entire range of the image
         # colour map
         colourRange     = np.linspace(0.0, 1.0, colourResolution)
-        colourmap       = opts   .cmap(colourRange)
-        colourmap[:, 3] = display.alpha
+        colourmap       = opts.cmap(colourRange)
 
         # Make out-of-range values transparent
         # if clipping is enabled 
@@ -323,7 +321,6 @@ class GLVolume(globject.GLObject):
             self.refreshColourTexture(self.colourResolution)
 
         display.addListener('transform',     lName, vertexUpdate)
-        display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
         opts   .addListener('clipLow',       lName, colourUpdate)
         opts   .addListener('clipHigh',      lName, colourUpdate)
@@ -341,7 +338,6 @@ class GLVolume(globject.GLObject):
         lName = self.name
 
         display.removeListener('transform',     lName)
-        display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
         opts   .removeListener('clipLow',       lName)
         opts   .removeListener('clipHigh',      lName)

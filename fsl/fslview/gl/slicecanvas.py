@@ -418,6 +418,8 @@ class SliceCanvas(props.HasProperties):
             display.addListener('transform',     self.name, self._refresh)
             display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
+            display.addListener('brightness',    self.name, self._refresh)
+            display.addListener('contrast',      self.name, self._refresh)
             display.addListener('resolution',    self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 

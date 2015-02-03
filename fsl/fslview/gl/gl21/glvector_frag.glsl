@@ -8,6 +8,7 @@
 
 #pragma include spline_interp.glsl
 #pragma include test_in_bounds.glsl
+#pragma include briconalpha.glsl
 
 /*
  * Vector image containing XYZ vector data.
@@ -120,8 +121,9 @@ void main(void) {
   vec4 voxColour = xColour + yColour + zColour;
 
   /* Apply the modulation value and average the transparency */
-  voxColour.xyz = voxColour.xyz * modValue;
-  voxColour.a   = voxColour.a   * 0.333333;
 
-  gl_FragColor = voxColour;
+  voxColour.xyz = voxColour.xyz * modValue;
+  voxColour.a   = voxColour.a   * 0.333334;
+
+  gl_FragColor = briconalpha(voxColour);
 }

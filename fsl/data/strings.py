@@ -125,6 +125,8 @@ properties = TypeDict({
     'Display.name'              : 'Image name',
     'Display.enabled'           : 'Enabled',
     'Display.alpha'             : 'Opacity',
+    'Display.brightness'        : 'Brightness',
+    'Display.contrast'          : 'Contrast',
     'Display.interpolation'     : 'Interpolation',
     'Display.resolution'        : 'Resolution',
     'Display.volume'            : 'Volume',

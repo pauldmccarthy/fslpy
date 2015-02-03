@@ -62,10 +62,6 @@ class Display(props.SyncableHasProperties):
     """Should this image be displayed at all?"""
 
     
-    alpha = props.Real(minval=0.0, maxval=1.0, default=1.0)
-    """Transparency - 1.0 is fully opaque, and 0.0 is fully transparent."""
-
-    
     resolution = props.Real(maxval=10,
                             default=1,
                             clamped=True,
@@ -110,6 +106,16 @@ class Display(props.SyncableHasProperties):
     corresponding voxel value(s). 'No interpolation' is equivalent to nearest
     neighbour interpolation.
     """
+
+    
+    alpha = props.Percentage(default=100.0)
+    """Opacity - 100% is fully opaque, and 0% is fully transparent."""
+
+    
+    brightness = props.Percentage()
+
+    
+    contrast   = props.Percentage()
 
         
     def is4DImage(self):
