@@ -164,7 +164,8 @@ VectorOptsLayout = props.VGroup((
         widget('suppressY', VectorOpts),
         widget('suppressZ', VectorOpts)),
         vertLabels=True),
-    widget('modulate',      VectorOpts)))
+    widget('modulate',      VectorOpts),
+    widget('modThreshold',  VectorOpts)))
 
 
 layouts = td.TypeDict({

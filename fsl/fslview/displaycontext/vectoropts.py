@@ -51,6 +51,10 @@ class VectorOpts(fsldisplay.DisplayOpts):
     modulate  = props.Choice()
     """Modulate the vector colours by another image."""
 
+
+    modThreshold = props.Percentage(default=0.0)
+    """Hide voxels for which the modulation value is below this threshold."""
+
     
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         fsldisplay.DisplayOpts.__init__(self,

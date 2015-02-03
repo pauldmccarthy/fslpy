@@ -75,6 +75,7 @@ def init(self):
     p['imageShape']      = gl.glGetUniformLocation(s, 'imageShape')
     p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
+    p['modThreshold']    = gl.glGetUniformLocation(s, 'modThreshold')
 
     p['alpha']           = gl.glGetUniformLocation(s, 'alpha')
     p['brightness']      = gl.glGetUniformLocation(s, 'brightness')
@@ -153,13 +154,15 @@ def preDraw(self):
     """
 
     display = self.display
+    opts    = self.displayOpts
     mode    = self.mode
+
+    modThreshold = opts.modThreshold / 100.0
 
     gl.glUseProgram(self.shaders)
     
     pars            = self.shaderParams
     useSpline       = display.interpolation == 'spline'
-
     imageShape      = np.array(self.image.shape,        dtype=np.float32)
     imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
     displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
@@ -173,6 +176,7 @@ def preDraw(self):
     displayToVoxMat = displayToVoxMat.ravel('C')
     imageValueXform = imageValueXform.ravel('C')
 
+    gl.glUniform1f(       pars['modThreshold'],              modThreshold)
     gl.glUniform1f(       pars['useSpline'],                 useSpline)
     gl.glUniform3fv(      pars['imageShape'], 1,             imageShape)
     gl.glUniform3fv(      pars['imageDims'],  1,             imageDims)

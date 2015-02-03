@@ -152,6 +152,7 @@ properties = TypeDict({
     'VectorOpts.suppressY'     : 'Suppress Y value',
     'VectorOpts.suppressZ'     : 'Suppress Z value',
     'VectorOpts.modulate'      : 'Modulate by',
+    'VectorOpts.modThreshold'  : 'Modulation threshold',
 })
 
 

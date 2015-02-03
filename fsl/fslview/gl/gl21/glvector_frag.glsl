@@ -22,6 +22,13 @@ uniform sampler3D imageTexture;
 uniform sampler3D modTexture;
 
 /*
+ * If the modulation value is below this
+ * threshold, the fragment is made
+ * transparent.
+ */
+uniform float modThreshold;
+
+/*
  * Colour map for the X vector component.
  */
 uniform sampler1D xColourTexture;
@@ -104,12 +111,12 @@ void main(void) {
   voxValue  = abs(voxValue);
 
   /* Look up the modulation value */
-  vec3 modValue;
+  float modValue;
   if (useSpline) {
-    modValue = vec3(spline_interp(modTexture, voxCoords, imageShape, 0));
+    modValue = spline_interp(modTexture, voxCoords, imageShape, 0);
   }
   else {
-    modValue = texture3D(modTexture, voxCoords).xxx;
+    modValue = texture3D(modTexture, voxCoords).x;
   }
 
   /* Look up the colours for the xyz components */
@@ -120,10 +127,11 @@ void main(void) {
   /* Combine those colours */
   vec4 voxColour = xColour + yColour + zColour;
 
-  /* Apply the modulation value and average the transparency */
+  /* Apply the modulation value */
+  voxColour.rgb = voxColour.rgb * modValue;
 
-  voxColour.xyz = voxColour.xyz * modValue;
-  voxColour.a   = voxColour.a   * 0.333334;
+  if (modValue < modThreshold)
+    voxColour.a = 0.0;
 
   gl_FragColor = briconalpha(voxColour);
 }

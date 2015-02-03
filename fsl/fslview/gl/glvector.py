@@ -322,13 +322,14 @@ class GLVector(globject.GLObject):
                 
                 cmap = np.array(
                     [np.linspace(0.0, i, colourRes) for i in colour])
+                
+                # Component magnitudes of 0 are
+                # transparent, but any other
+                # magnitude is fully opaque
+                cmap[3, :] = 1.0
+                cmap[3, 0] = 0.0 
             else:
                 cmap = np.zeros((4, colourRes))
-
-            # Component magnitudes
-            # of 0 are transparent
-            cmap[3, :] = 1.0
-            cmap[3, 0] = 0.0
 
             cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')
 
