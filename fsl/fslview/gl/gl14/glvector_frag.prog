@@ -18,19 +18,27 @@
 #
 # Required inputs:
 #
-#   program.local[0] - Image shape - number of voxels along the xyz
-#                      dimensions in the image
-#   program.local[1] - Inverse of image shape
+#   program.local[0]
+#   program.local[1]
 #   program.local[2]
-#   program.local[3]
-#   program.local[4]
-#   program.local[5] - Transformation matrix which transforms the vector
+#   program.local[3] - Transformation matrix which transforms the vector
 #                      image voxel values from their texture value
 #                      to the original data range.
 #
+#   program.local[4] - Image shape - number of voxels along the xyz
+#                      dimensions in the image
+#   program.local[5] - Inverse of image shape
+#
+#   program.local[6] - Modulation threshold (x component) - if the 
+#                      modulation value is less than this, the fragment
+#                      is set to fully transparent.
+#
+#   program.local[7] - Vector which contains global brightness, contrast, 
+#                      and alpha settings, to pass to briconalpha.prog.
+#
 # Outputs:
 #
-#   result.color - The fragment colour
+#   result.color     - The fragment colour (written by briconalpha.prog)
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -42,13 +50,15 @@ TEMP  voxValue;
 TEMP  xColour;
 TEMP  yColour;
 TEMP  zColour;
-TEMP  voxColour;
-PARAM imageShape         =   program.local[0];
-PARAM imageShapeInv      =   program.local[1];
-PARAM imageValueXform[4] = { program.local[2],
-                             program.local[3],
-                             program.local[4],
-                             program.local[5] };
+TEMP  fragColour;
+PARAM imageValueXform[4] = { program.local[0],
+                             program.local[1],
+                             program.local[2],
+                             program.local[3] };
+PARAM imageShape         =   program.local[4];
+PARAM imageShapeInv      =   program.local[5];
+PARAM modThres           =   program.local[6];
+PARAM bca                =   program.local[7];
 
 # retrieve the voxel coordinates
 MOV voxCoord, fragment.texcoord[1];
@@ -69,22 +79,19 @@ TEX voxValue, normVoxCoord, texture[0], 3D;
 # Transform vector values from their normalised 
 # texture range to their original data range,
 # and take the absolue value
-MUL voxValue, voxValue, imageValueXform[0].xxxx;
-ADD voxValue, voxValue, imageValueXform[0].wwww;
-
+MAD voxValue, voxValue, imageValueXform[0].x, imageValueXform[0].w;
 ABS voxValue, voxValue;
 
 # Reset the opacity component
-MUL voxValue, voxValue, { 1.0, 1.0, 1.0, 0.0 };
-ADD voxValue, voxValue, { 0.0, 0.0, 0.0, 1.0 };
+MAD voxValue, voxValue, { 1, 1, 1, 0 }, { 0, 0, 0, 1 }; 
 
 # Look up the modulation value
 # from the modulation texture -
 # initialise modValue transparency
 # to 1.0, so it doesn't corrupt
 # our voxel colour value later on
-MOV modValue, { 0.0, 0.0, 0.0, 1.0 };  
 TEX modValue, normVoxCoord, texture[1], 3D;
+MAD modValue, modValue, { 1, 1, 1, 0 }, { 0, 0, 0, 1 }; 
   
 # Use those values to look up the
 # colours for each xyz direction
@@ -94,17 +101,24 @@ TEX zColour, voxValue.z, texture[4], 1D;
 
 # Cumulatively combine the rgb
 # channels of those three colours
-MOV voxColour,            xColour;
-ADD voxColour, voxColour, yColour;
-ADD voxColour, voxColour, zColour;
+MOV fragColour,             xColour;
+ADD fragColour, fragColour, yColour;
+ADD fragColour, fragColour, zColour;
 
 # Take the average of the alpha channel
-MUL voxColour, voxColour, { 1.0, 1.0, 1.0, 0.333333 };
+MUL fragColour, fragColour, { 1.0, 1.0, 1.0, 0.333333 };
 
 # Apply the modulation factor
-MUL voxColour, voxColour, modValue ;
+MUL fragColour, fragColour, modValue;
+
+# But clear the fragment if the modulation
+# vaue does not meet the threshold
+MOV modValue,   modValue.x;
+SUB modValue,   modValue, modThres.x;
+CMP fragColour, modValue.x, { 0, 0, 0, 0 }, fragColour;
 
 # Colour the pixel!
-MOV result.color, voxColour;
+#pragma include briconalpha.prog
 
 END
+

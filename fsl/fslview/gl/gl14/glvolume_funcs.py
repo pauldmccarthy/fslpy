@@ -115,11 +115,19 @@ def preDraw(self):
     # the image shape, and its inverse,
     # because there's no division operation,
     # and the RCP operation only works on
-    # scalars 
+    # scalars
+    
+    # We also need to pass the global
+    # brightness/contrast/alpha values to
+    # the fragment program 
     shape    = list(self.image.shape)
     invshape = [1.0 / s for s in shape]
+    bca      = [self.display.brightness / 100.0, 
+                self.display.contrast   / 100.0,
+                self.display.alpha      / 100.0]    
     shaders.setFragmentProgramVector(4, shape    + [0])
     shaders.setFragmentProgramVector(5, invshape + [0])
+    shaders.setFragmentProgramVector(6, bca      + [0])
 
 
 def draw(self, zpos, xform=None):

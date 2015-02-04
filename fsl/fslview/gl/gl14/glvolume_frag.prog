@@ -30,10 +30,14 @@
 #   program.local[4]     - Image shape - number of voxels along the xyz
 #                          dimensions in the image
 #   program.local[5]     - Inverse of image shape
+# 
+#   program.local[6]     - Vector containing global brightness (x), contrast
+#                          (y), and alpha (z) values to pass to the
+#                          briconalpha.prog routine.
 #
 # Outputs:
 #
-#   result.color         - The fragment colour
+#   result.color         - The fragment colour (written by briconalpha.prog)
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -41,10 +45,12 @@
 TEMP  voxCoord;
 TEMP  normVoxCoord;
 TEMP  voxValue;
-TEMP  voxColour;
+TEMP  fragColour;
+
 PARAM imageShape    = program.local[4];
 PARAM imageShapeInv = program.local[5];
-
+PARAM bca           = program.local[6];
+  
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
 # the current display range 
@@ -73,14 +79,13 @@ TEX voxValue, normVoxCoord, texture[0], 3D;
 
 # Scale voxel value according
 # to the current display range
-MUL voxValue, voxValue, voxValXform[0].x;
-ADD voxValue, voxValue, voxValXform[0].w;
+MAD voxValue, voxValue, voxValXform[0].x, voxValXform[0].w;
 
 # look up the appropriate colour
 # in the 1D colour map texture
-TEX voxColour, voxValue.x, texture[1], 1D;
+TEX fragColour, voxValue.x, texture[1], 1D;
 
 # Colour the pixel!
-MOV result.color, voxColour;
+#pragma include briconalpha.prog
 
 END
