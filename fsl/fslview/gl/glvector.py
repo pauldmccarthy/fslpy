@@ -377,24 +377,26 @@ class GLVector(globject.GLObject):
         if not self.display.enabled:
             return
 
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
         gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_3D)
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
 
         gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glEnable(gl.GL_TEXTURE_3D)
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.modTexture.texture) 
 
         gl.glActiveTexture(gl.GL_TEXTURE2)
+        gl.glEnable(gl.GL_TEXTURE_1D)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
 
         gl.glActiveTexture(gl.GL_TEXTURE3)
+        gl.glEnable(gl.GL_TEXTURE_1D)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.yColourTexture)
 
         gl.glActiveTexture(gl.GL_TEXTURE4)
+        gl.glEnable(gl.GL_TEXTURE_1D)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
  
         fslgl.glvector_funcs.preDraw(self)
@@ -420,20 +422,22 @@ class GLVector(globject.GLObject):
 
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glActiveTexture(gl.GL_TEXTURE1)
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        gl.glDisable(gl.GL_TEXTURE_3D)
 
         gl.glActiveTexture(gl.GL_TEXTURE2)
         gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+        gl.glDisable(gl.GL_TEXTURE_1D)
 
         gl.glActiveTexture(gl.GL_TEXTURE3)
         gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+        gl.glDisable(gl.GL_TEXTURE_1D)
 
         gl.glActiveTexture(gl.GL_TEXTURE4)
         gl.glBindTexture(gl.GL_TEXTURE_1D, 0)    
-
-        gl.glDisable(gl.GL_TEXTURE_1D) 
-        gl.glDisable(gl.GL_TEXTURE_3D) 
+        gl.glDisable(gl.GL_TEXTURE_1D)
         
         fslgl.glvector_funcs.postDraw(self) 

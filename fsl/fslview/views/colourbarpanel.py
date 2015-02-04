@@ -89,9 +89,10 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
             display = self._displayCtx.getDisplayProperties(image)
             opts    = display.getDisplayOpts()
 
-            image  .removeListener('name',         self._name)
-            opts   .removeListener('cmap',         self._name)
-            display.removeListener('displayRange', self._name)
+            if isinstance(opts, volumeopts.VolumeOpts):
+                image  .removeListener('name',         self._name)
+                opts   .removeListener('cmap',         self._name)
+                opts   .removeListener('displayRange', self._name)
 
             
     def _layout(self, *a):

@@ -147,6 +147,9 @@ def setAxes(self):
                         vertexIDs,
                         gl.GL_STATIC_DRAW)
 
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
+
         
 def preDraw(self):
     """Loads the vertex/fragment shaders, and binds shader parameters and

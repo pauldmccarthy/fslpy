@@ -129,6 +129,9 @@ def genVertexData(self):
                     indices,
                     gl.GL_STATIC_DRAW)
 
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
+
     return worldCoordBuffer, indexBuffer, len(indices)
 
 

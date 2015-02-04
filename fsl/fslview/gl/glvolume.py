@@ -137,15 +137,14 @@ class GLVolume(globject.GLObject):
         if not self.display.enabled:
             return
 
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-
         # Set up the image data texture 
         gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_3D)
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
 
         # Set up the colour map texture
-        gl.glActiveTexture(gl.GL_TEXTURE1) 
+        gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glEnable(gl.GL_TEXTURE_1D)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
         
         fslgl.glvolume_funcs.preDraw(self)
@@ -179,12 +178,11 @@ class GLVolume(globject.GLObject):
 
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        gl.glDisable(gl.GL_TEXTURE_3D)
         
         gl.glActiveTexture(gl.GL_TEXTURE1)
         gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-
         gl.glDisable(gl.GL_TEXTURE_1D)
-        gl.glDisable(gl.GL_TEXTURE_3D)         
         
         fslgl.glvolume_funcs.postDraw(self) 
 
