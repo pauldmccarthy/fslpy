@@ -1,8 +1,7 @@
-!!ARBvp1.0
 #
-# Vertex program used for rendering GLObject instances.
+# Vertex program routine used for rendering GLObject instances.
 #
-# This vertex program does three things:
+# This routine does three things:
 #
 #  - Transforms vertex coordinates from display coordinates into screen
 #    coordinates.
@@ -76,7 +75,7 @@ DP4 vertexVoxelPos.w, dispToVoxMat[3], vertex.position;
 
 # Offset voxel coordinates by 0.5 
 # so they are centred within a voxel.
-# See comments in gl21/generic_vert.glsl
+# See comments in gl21/common_vert.glsl
 # for an explanation.
 ADD vertexVoxelPos, vertexVoxelPos, { 0.5, 0.5, 0.5, 0.0 };
 
@@ -84,5 +83,3 @@ ADD vertexVoxelPos, vertexVoxelPos, { 0.5, 0.5, 0.5, 0.0 };
 MOV result.position,    vertexScreenPos;
 MOV result.texcoord[0], vertex.position;
 MOV result.texcoord[1], vertexVoxelPos;
-
-END

@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 def init(self):
     """Compiles the vertex and fragment programs used for rendering."""
 
-    vertShaderSrc = shaders.getVertexShader('generic')
+    vertShaderSrc = shaders.getVertexShader(  self)
     fragShaderSrc = shaders.getFragmentShader(self) 
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(

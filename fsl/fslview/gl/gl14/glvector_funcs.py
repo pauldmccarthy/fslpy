@@ -31,7 +31,7 @@ def init(self):
     same programs are used for both ``line`` and ``rgb`` mode.
     """
   
-    vertShaderSrc = shaders.getVertexShader('generic')
+    vertShaderSrc = shaders.getVertexShader(  self)
     fragShaderSrc = shaders.getFragmentShader(self)
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
