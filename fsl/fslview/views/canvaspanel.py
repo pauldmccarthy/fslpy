@@ -296,8 +296,16 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.addListener('colourBarLocation',     lName, self.__layout)
         self.addListener('profile',               lName, self.__profileChanged)
         
+        imageList .addListener('images',
+                               lName,
+                               self.__selectedImageChanged)
+        displayCtx.addListener('selectedImage',
+                               lName,
+                               self.__selectedImageChanged)
+        
         self._init()
         self.__profileChanged()
+        self.__selectedImageChanged()
         self.__layout()
 
             
@@ -306,6 +314,41 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                                   'provided by subclasses')
 
 
+    def __selectedImageChanged(self, *a):
+        """Called when the image list or selected image changed.
+
+        This method is slightly hard-coded and hacky. For the time being, edit
+        profiles are only going to be supported for ``volume`` image
+        types. This method checks the type of the selected image, and disables
+        the ``edit`` profile option (if it is an option), so the user can
+        only choose an ``edit`` profile on ``volume`` image types.
+        """
+        image = self._displayCtx.getSelectedImage()
+
+        if image is None:
+            return
+
+        profileProp = self.getProp('profile')
+
+        # edit profile is not an option -
+        # nothing to be done
+        if 'edit' not in profileProp.getChoices(self):
+            return
+
+        if image.imageType != 'volume':
+            
+            # change profile if needed,
+            if self.profile == 'edit':
+                self.profile = 'view'
+
+            # and disable edit profile
+            profileProp.disableChoice('edit', self)
+            
+        # make sure edit is enabled for volume images
+        else:
+            profileProp.enableChoice('edit', self)
+            
+    
     def __profileChanged(self, *a):
 
         import fsl.fslview.layouts as layouts

@@ -140,7 +140,13 @@ class Editor(props.HasProperties):
         if len(self._undoneStack) == 0:
             self.canRedo = False 
             
-        image = change.image
+        image   = change.image
+        display = self._displayCtx.getDisplayProperties(image)
+        volume  = None
+
+        if image.is4DImage():
+            volume = display.volume
+        
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
 
@@ -151,7 +157,7 @@ class Editor(props.HasProperties):
             return
         
         if isinstance(change, ValueChange):
-            change.image.applyChange(change.selection, change.newVals)
+            change.image.applyChange(change.selection, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)

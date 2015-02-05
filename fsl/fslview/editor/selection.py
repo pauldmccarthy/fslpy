@@ -29,7 +29,7 @@ class Selection(props.HasProperties):
         self._image            = image
         self._lastSelection    = None
         self._currentSelection = None
-        self.selection         = np.zeros(image.shape, dtype=np.bool)
+        self.selection         = np.zeros(image.shape[:3], dtype=np.bool)
 
 
     def _filterVoxels(self, xyzs):

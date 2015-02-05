@@ -133,7 +133,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             self._selAnnotation  = None
             self._tempAnnotation = None
 
-        if image is None:
+        # Edit mode is only supported on images with
+        # the 'volume' type for the time being
+        if image is None or image.imageType != 'volume':
             return
 
         selection.addListener('selection', self._name, self._selectionChanged)
@@ -350,8 +352,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
+        opts    = display.displayOpts
 
-        step = display.displayRange.xlen / 50.0
+        step = opts.displayRange.xlen / 50.0
 
         if   wheel > 0: self.intensityThres += step
         elif wheel < 0: self.intensityThres -= step
