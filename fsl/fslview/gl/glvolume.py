@@ -59,7 +59,7 @@ import fsl.fslview.gl.textures as fsltextures
 import fsl.fslview.gl.globject as globject
 
 
-class GLVolume(globject.GLObject):
+class GLVolume(globject.GLImageObject):
     """The :class:`GLVolume` class encapsulates the data and logic required to
     render 2D slices of a 3D image.
     """
@@ -75,7 +75,7 @@ class GLVolume(globject.GLObject):
                       displayed. 
         """
 
-        globject.GLObject.__init__(self, image, display)
+        globject.GLImageObject.__init__(self, image, display)
         
         self._ready = False
 

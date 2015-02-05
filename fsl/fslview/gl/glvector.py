@@ -98,7 +98,7 @@ def _rgbModePrefilter(data):
     return np.abs(data.transpose((3, 0, 1, 2)))
 
 
-class GLVector(globject.GLObject):
+class GLVector(globject.GLImageObject):
     """The :class:`GLVector` class encapsulates the data and logic required
     to render 2D slices of a ``X*Y*Z*3`` image as vectors.
     """
@@ -118,7 +118,7 @@ class GLVector(globject.GLObject):
             raise ValueError('Image must be 4 dimensional, with 3 volumes '
                              'representing the XYZ vector angles')
 
-        globject.GLObject.__init__(self, image, display)
+        globject.GLImageObject.__init__(self, image, display)
         self._ready = False
 
         
