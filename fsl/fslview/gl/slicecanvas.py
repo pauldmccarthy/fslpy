@@ -271,9 +271,8 @@ class SliceCanvas(props.HasProperties):
         self.xax = (zax + 1) % 3
         self.yax = (zax + 2) % 3
 
-        self._annotations = annotations.Annotations()
-
-        self._zAxisChanged()
+        self._annotations = annotations.Annotations(self.xax, self.yax)
+        self._zAxisChanged() 
 
         # when any of the properties of this
         # canvas change, we need to redraw
@@ -331,6 +330,8 @@ class SliceCanvas(props.HasProperties):
         dims.pop(self.zax)
         self.xax = dims[0]
         self.yax = dims[1]
+
+        self._annotations.setAxes(self.xax, self.yax)
 
         for image in self.imageList:
 
@@ -719,5 +720,5 @@ class SliceCanvas(props.HasProperties):
         
         if self.showCursor: self._drawCursor()
 
-        self._annotations.draw(self.xax, self.yax, self.zax, self.pos.z)
+        self._annotations.draw(self.pos.z)
         self._postDraw()

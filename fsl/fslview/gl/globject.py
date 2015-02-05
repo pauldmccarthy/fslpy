@@ -128,6 +128,42 @@ class GLObject(object):
         raise NotImplementedError()
 
 
+class GLSimpleObject(GLObject):
+    """The ``GLSimpleObject`` class is a convenience superclass for simple
+    rendering tasks (probably fixed-function) which require no setup or
+    initialisation/management of GL memory or state. All subclasses need to
+    do is implement the :meth:`GLObject.draw` method.
+
+    Subclasses should not assume that any of the other methods will ever
+    be called.
+
+    On calls to :meth:`draw`, the following attributes will be available on
+    ``GLSimpleObject`` instances:
+
+      - ``xax``: Index of the display coordinate system axis that corresponds
+                 to the horizontal screen axis.
+      - ``yax``: Index of the display coordinate system axis that corresponds
+                 to the vertical screen axis.
+    """
+
+    def __init__(self):
+        GLObject.__init__(self)
+        self.__ready = False
+
+    def init(   self): pass
+    def destroy(self): pass
+    def ready(  self): return self.__ready
+
+    def setAxes(self, xax, yax):
+        self.xax     =  xax
+        self.yax     =  yax
+        self.zax     = 3 - xax - yax
+        self.__ready = True
+
+    def preDraw( self): pass
+    def postDraw(self): pass
+
+
 class GLImageObject(GLObject):
     """The ``GLImageObject` class is the superclass for all GL representations
     of :class:`~fsl.data.image.Image` instances.
@@ -249,7 +285,7 @@ def calculateSamplePoints(image, display, xax, yax):
 
     worldX, worldY = np.meshgrid(worldX, worldY)
     
-    coords = np.zeros((worldX.size, 3))
+    coords = np.zeros((worldX.size, 3), dtype=np.float32)
     coords[:, xax] = worldX.flatten()
     coords[:, yax] = worldY.flatten()
 
@@ -465,7 +501,8 @@ def voxelGrid(points, xax, yax, xpixdim, ypixdim):
     indices = np.array([0, 1, 0, 2, 1, 3, 2, 3], dtype=np.uint32)
     indices = np.tile(indices, npoints)
     
-    indices = (indices.T + np.repeat(np.arange(0, npoints * 4, 4), 8)).T
+    indices = (indices.T +
+               np.repeat(np.arange(0, npoints * 4, 4, dtype=np.uint32), 8)).T
     
     return vertices, indices
 

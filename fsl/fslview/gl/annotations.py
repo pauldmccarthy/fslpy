@@ -48,17 +48,32 @@ class Annotations(object):
     """
 
     
-    def __init__(self):
-        """Creates an :class:`Annotations` object."""
+    def __init__(self, xax, yax):
+        """Creates an :class:`Annotations` object.
+
+        :arg xax: Index of the display coordinate system axis that corresponds
+                  to the horizontal screen axis.
+        
+        :arg yax: Index of the display coordinate system axis that corresponds
+                  to the horizontal screen axis.
+        """
         
         self._q     = []
         self._holdq = []
+        self._xax   = xax
+        self._yax   = yax
 
         
-    def _adjustColour(self, colour):
-        """Turns RGB colour tuples into RGBA tuples, if necessary."""
-        if len(colour) == 3: return (colour[0], colour[1], colour[2], 1.0)
-        else:                return colour
+    def setAxes(self, xax, yax):
+        """This method must be called if the display orientation changes.  See
+        :meth:`__init__`.
+        """
+        
+        self._xax = xax
+        self._yax = yax
+        
+        for obj in self._q:     obj.setAxes(xax, yax)
+        for obj in self._holdq: obj.setAxes(xax, yax)
 
         
     def line(self, *args, **kwargs):
@@ -89,11 +104,15 @@ class Annotations(object):
         if hold: self._holdq.append(obj)
         else:    self._q    .append(obj)
 
+        obj.setAxes(self._xax, self._yax)
+
         return obj
 
 
     def dequeue(self, obj, hold=False):
-        """Removes the given :class:`AnnotationObject` from the queue.
+        """Removes the given :class:`AnnotationObject` from the queue, but
+        does not call its :meth:`~fsl.fslview.gl.globject.GLObject.destroy`
+        method - this is the responsibility of the caller.
         """
 
         if hold:
@@ -106,68 +125,76 @@ class Annotations(object):
 
     def clear(self):
         """Clears both the normal queue and the persistent (a.k.a. ``hold``)
-        queue.
+        queue, and calls the :meth:`~fsl.fslview.gl.globject.GLObject.destroy`
+        method of all objects in the queue.
         """
+
+        for obj in self._q:     obj.destroy()
+        for obj in self._holdq: obj.destroy()
+        
         self._q     = []
         self._holdq = []
         
 
-    def draw(self, xax, yax, zax, zpos):
+    def draw(self, zpos, xform=None):
         """Draws all enqueued annotations.
 
-        :arg xax:  Data axis which corresponds to the horizontal screen axis.
-        
-        :arg yax:  Data axis which corresponds to the vertical screen axis.
-        
-        :arg zax:  Data axis which corresponds to the depth screen axis.
-        
-        :arg zpos: Position along the Z axis, above which all annotations
-                   should be drawn.
-        """
+        :arg zpos:  Position along the Z axis, above which all annotations
+                    should be drawn.
 
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        :arg xform: Transformation matrix which should be applied to all
+                    objects.
+        """
 
         objs = self._holdq + self._q
 
+        if xform is not None:
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glPushMatrix()
+            gl.glMultMatrixf(xform.ravel('C')) 
+
         for obj in objs:
 
-            verts, indices = obj.vertices(xax, yax, zax, zpos)
-
-            verts[:, zax] = zpos
-
-            verts   = np.array(verts,   dtype=np.float32).ravel('C')
-            indices = np.array(indices, dtype=np.uint32)
+            if not obj.ready():
+                continue
+            
+            obj.setAxes(self._xax, self._yax)
 
             if obj.xform is not None:
                 gl.glMatrixMode(gl.GL_MODELVIEW)
                 gl.glPushMatrix()
                 gl.glMultMatrixf(obj.xform.ravel('C'))
 
-            gl.glColor4f(*self._adjustColour(obj.colour))
-            gl.glLineWidth(obj.width)
+            if obj.colour is not None:
+                
+                if len(obj.colour) == 3: colour = list(obj.colour) + [1.0]
+                else:                    colour = list(obj.colour)
+                gl.glColor4f(*colour)
 
-            gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts)
+            if obj.width is not None:
+                gl.glLineWidth(obj.width) 
 
-            gl.glDrawElements(gl.GL_LINES,
-                              len(indices),
-                              gl.GL_UNSIGNED_INT,
-                              indices)
+            obj.preDraw()
+            obj.draw(zpos)
+            obj.postDraw()
 
             if obj.xform is not None:
-                gl.glPopMatrix()
-            
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+                gl.glPopMatrix() 
+
+        if xform is not None:
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glPopMatrix()
 
         self._q = []
 
 
-class AnnotationObject(object):
-    """Superclass for all annotation objects. Subclasses must override the
-    :meth:`vertices` method.
+class AnnotationObject(globject.GLSimpleObject):
+    """Superclass for all annotation objects. Subclasses must, at the very
+    least override, the :meth:`globject.GLObject.draw` method.
     """
     
     def __init__(self, xform=None, colour=None, width=None):
-        """Create an AnnotationObject.
+        """Create an ``AnnotationObject``.
 
         :arg xform:  Transformation matrix which will be applied to all
                      vertex coordinates.
@@ -177,37 +204,15 @@ class AnnotationObject(object):
         :arg width:  Line width to use for the annotation.
         """
         
-        if colour is None: colour = (1, 1, 1, 1)
-        if width  is None: width  = 1
-
         self.colour = colour
         self.width  = width
         self.xform  = xform
 
-        
-    def vertices(self, xax, yax, zax, zpos):
-        """Generate/return vertices to render this :class:`AnnotationObject`.
+    def preDraw(self):
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
-        This method must be overridden by subclasses, and must return two
-        values:
-
-          - A 2D ``float32`` numpy array of shape ``(N, 3)`` (where ``N`` is
-            the number of vertices), containing the xyz coordinates of every
-            vertex.
-
-          - A 1D ``uint32`` numpy array containing the indices of all
-            vertices to be rendered.
-
-        :arg xax:  The axis which corresponds to the horizontal screen axis.
-        
-        :arg yax:  The axis which corresponds to the horizontal screen axis.
-        
-        :arg zax:  The axis which corresponds to the depth screen axis.
-        
-        :arg zpos: The position along the depth axis.
-        """
-        raise NotImplementedError('Subclasses must implement '
-                                  'the vertices method')
+    def postDraw(self):
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY) 
 
         
 class Line(AnnotationObject):
@@ -226,16 +231,23 @@ class Line(AnnotationObject):
 
         """
         AnnotationObject.__init__(self, *args, **kwargs)
-        self.xy1       = xy1
-        self.xy2       = xy2
+        self.xy1 = xy1
+        self.xy2 = xy2
 
-        
-    def vertices(self, xax, yax, zax, zpos):
-        verts                = np.zeros((2, 3))
+
+    def draw(self, zpos):
+        xax = self.xax
+        yax = self.yax
+        zax = self.zax
+
+        idxs                 = np.arange(2,     dtype=np.uint32) 
+        verts                = np.zeros((2, 3), dtype=np.float32)
         verts[0, [xax, yax]] = self.xy1
         verts[1, [xax, yax]] = self.xy2
-        
-        return verts, np.arange(2)
+        verts[:, zax]        = zpos
+
+        gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
+        gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs) 
 
         
 class Rect(AnnotationObject):
@@ -253,18 +265,22 @@ class Rect(AnnotationObject):
         self.h  = h
 
         
-    def vertices(self, xax, yax, zax, zpos):
+    def draw(self, zpos):
 
-        xy = self.xy
-        w  = self.w
-        h  = self.h
+        xax = self.xax
+        yax = self.yax
+        zax = self.zax
+        xy  = self.xy
+        w   = self.w
+        h   = self.h
 
         bl = [xy[0],     xy[1]]
         br = [xy[0] + w, xy[1]]
         tl = [xy[0],     xy[1] + h]
         tr = [xy[0] + w, xy[1] + h]
 
-        verts                = np.zeros((8, 3))
+        idxs                 = np.arange(8,     dtype=np.uint32)
+        verts                = np.zeros((8, 3), dtype=np.float32)
         verts[0, [xax, yax]] = bl
         verts[1, [xax, yax]] = br
         verts[2, [xax, yax]] = tl
@@ -273,8 +289,10 @@ class Rect(AnnotationObject):
         verts[5, [xax, yax]] = tl
         verts[6, [xax, yax]] = br
         verts[7, [xax, yax]] = tr
+        verts[:,  zax]       = zpos
 
-        return verts, np.arange(8)
+        gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
+        gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs) 
 
 
 class VoxelSelection(AnnotationObject):
@@ -327,7 +345,11 @@ class VoxelSelection(AnnotationObject):
         self.offsets         = offsets
 
 
-    def vertices(self, xax, yax, zax, zpos):
+    def draw(self, zpos):
+
+        xax = self.xax
+        yax = self.yax
+        zax = self.zax
 
         dispLoc = [0] * 3
         dispLoc[zax] = zpos
@@ -348,7 +370,10 @@ class VoxelSelection(AnnotationObject):
                 off = 0
             voxels[:, ax] += off + self.offsets[ax]
 
-        return globject.voxelGrid(voxels, xax, yax, 1, 1)
+        verts, idxs = globject.voxelGrid(voxels, xax, yax, 1, 1)
+
+        gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
+        gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs) 
 
 # class Text(AnnotationObject) ?
 # class Circle(AnnotationObject) ?
