@@ -114,13 +114,16 @@ properties = TypeDict({
     'OrthoPanel.zzoom'       : 'Z zoom',
 
 
-    'OrthoEditProfile.selectionMode'  : 'Selection mode',
-    'OrthoEditProfile.selectionSize'  : 'Selection size',
-    'OrthoEditProfile.selectionIs3D'  : '3D selection',
-    'OrthoEditProfile.fillValue'      : 'Fill value',
-    'OrthoEditProfile.intensityThres' : 'Intensity threshold',
-    'OrthoEditProfile.localFill'      : 'Only select adjacent voxels',
-    'OrthoEditProfile.searchRadius'   : 'Limit search to radius (mm)',
+    'OrthoEditProfile.selectionMode'          : 'Selection mode',
+    'OrthoEditProfile.selectionSize'          : 'Selection size',
+    'OrthoEditProfile.selectionIs3D'          : '3D selection',
+    'OrthoEditProfile.fillValue'              : 'Fill value',
+    'OrthoEditProfile.intensityThres'         : 'Intensity threshold',
+    'OrthoEditProfile.localFill'              : 'Only select adjacent voxels',
+    'OrthoEditProfile.searchRadius'           : 'Limit search to radius (mm)',
+    'OrthoEditProfile.selectionOverlayColour' : 'Selection overlay',
+    'OrthoEditProfile.selectionCursorColour'  : 'Selection cursor',
+    
 
     'Display.name'              : 'Image name',
     'Display.enabled'           : 'Enabled',

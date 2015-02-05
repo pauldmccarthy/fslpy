@@ -301,9 +301,13 @@ class GLVector(globject.GLObject):
         Regenerates the colour textures.
         """
 
-        xcol = self.displayOpts.xColour + [1.0]
-        ycol = self.displayOpts.yColour + [1.0]
-        zcol = self.displayOpts.zColour + [1.0]
+        xcol = self.displayOpts.xColour
+        ycol = self.displayOpts.yColour
+        zcol = self.displayOpts.zColour
+
+        xcol[3] = 1.0
+        ycol[3] = 1.0
+        zcol[3] = 1.0
 
         xsup = self.displayOpts.suppressX
         ysup = self.displayOpts.suppressY

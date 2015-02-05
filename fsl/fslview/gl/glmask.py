@@ -96,9 +96,12 @@ class GLMask(glvolume.GLVolume):
         is set).
         """
 
-        opts  = self.displayOpts
-        imin  = opts.threshold[0]
-        imax  = opts.threshold[1]
+        opts   = self.displayOpts
+        colour = opts.colour
+        imin   = opts.threshold[0]
+        imax   = opts.threshold[1]
+        
+        colour[3] = 1.0
 
         # This transformation is used to transform voxel values
         # from their native range to the range [0.0, 1.0], which
@@ -114,9 +117,9 @@ class GLMask(glvolume.GLVolume):
 
         if opts.invert:
             colourmap = np.tile([[0.0, 0.0, 0.0, 0.0]], (2, 1))
-            border    = np.array(opts.colour + [1.0], dtype=np.float32)
+            border    = np.array(opts.colour, dtype=np.float32)
         else:
-            colourmap = np.tile([[opts.colour + [1.0]]], (2, 1))
+            colourmap = np.tile([[opts.colour]], (2, 1))
             border    = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)            
 
         colourmap = np.floor(colourmap * 255)

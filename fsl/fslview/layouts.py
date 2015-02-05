@@ -60,7 +60,9 @@ OrthoEditProfileLayout = props.HGroup(
             visibleWhen=lambda p: p.mode == 'selint'),
      widget('searchRadius',
             OrthoEditProfile,
-            visibleWhen=lambda p: p.mode == 'selint')),
+            visibleWhen=lambda p: p.mode == 'selint'),
+     widget('selectionCursorColour',  OrthoEditProfile),
+     widget('selectionOverlayColour', OrthoEditProfile)),
     wrap=True,
     vertLabels=True,
 )

@@ -31,6 +31,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     intensityThres = props.Real(minval=0.0, default=10, clamped=True)
     localFill      = props.Boolean(default=False)
 
+    selectionCursorColour  = props.Colour(default=(1, 1, 0, 0.7))
+    selectionOverlayColour = props.Colour(default=(1, 0, 1, 0.7))
+
     searchRadius   = props.Real(minval=0.0,
                                 default=0.0,
                                 maxval=250.0,
@@ -97,7 +100,14 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                  self._undoStateChanged)
         self._editor.addListener('canRedo',
                                  self._name,
-                                 self._undoStateChanged) 
+                                 self._undoStateChanged)
+
+        self.addListener('selectionOverlayColour',
+                         self._name,
+                         self._selectionColoursChanged)
+        self.addListener('selectionCursorColour',
+                         self._name,
+                         self._selectionColoursChanged) 
 
         self._selectedImageChanged()
         self._selectionChanged()
@@ -107,6 +117,13 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def _undoStateChanged(self, *a):
         self.enable('undo', self._editor.canUndo)
         self.enable('redo', self._editor.canRedo)
+
+
+    def _selectionColoursChanged(self, *a):
+        if self._selAnnotation is not None:
+            self._selAnnotation.colour = self.selectionOverlayColour
+        if self._tempAnnotation is not None:
+            self._tempAnnotation.colour = self.selectionCursorColour 
 
 
     def _selectedImageChanged(self, *a):
@@ -143,14 +160,15 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._selAnnotation = annotations.VoxelSelection(
             selection.selection,
             display.displayToVoxMat,
-            display.voxToDisplayMat)
+            display.voxToDisplayMat,
+            colour=self.selectionOverlayColour)
 
         self._tempSelection  = editorselection.Selection(image.data)
         self._tempAnnotation = annotations.VoxelSelection(
             self._tempSelection.selection,
             display.displayToVoxMat,
             display.voxToDisplayMat,
-            colour=(1, 1, 0, 0.7))
+            colour=self.selectionCursorColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
         yannot.obj(self._selAnnotation,  hold=True)
@@ -226,13 +244,16 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
         selection[xs, ys, zs] = True
 
+        colour    = self.selectionCursorColour
+        colour[3] = 1.0
+
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().selection(
                 selection,
                 display.displayToVoxMat,
                 display.voxToDisplayMat,
                 offsets=voxel - blockOff,
-                colour=(1, 1, 0))
+                colour=colour)
 
 
     def _applySelection(self):
