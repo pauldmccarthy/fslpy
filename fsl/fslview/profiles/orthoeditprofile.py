@@ -16,7 +16,6 @@ import numpy                        as np
 import                                 props
 import fsl.utils.transform          as transform
 import fsl.fslview.editor.editor    as editor
-import fsl.fslview.editor.selection as editorselection
 import fsl.fslview.gl.annotations   as annotations
 
 import orthoviewprofile
@@ -40,9 +39,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                 clamped=True)
 
     selectionMode  = props.Choice(OrderedDict((
-        ('replace',  'Replace current selection'),
-        ('add',      'Add to current selection'),
-        ('subtract', 'Subtract from current selection'))))
+        ('replace', 'Replace current selection'),
+        ('add',     'Add to current selection'))))
 
 
     def clearSelection(self, *a):
@@ -70,6 +68,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._selAnnotation  = None
         self._tempAnnotation = None
         self._selecting      = False
+        self._lastDist       = None
         self._currentImage   = None
         
         actions = {
@@ -157,25 +156,15 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         selection.addListener('selection', self._name, self._selectionChanged)
 
-        self._selAnnotation = annotations.VoxelSelection(
-            selection.selection,
+        self._selAnnotation = annotations.VoxelMask( 
+            selection,
             display.displayToVoxMat,
             display.voxToDisplayMat,
             colour=self.selectionOverlayColour)
-
-        self._tempSelection  = editorselection.Selection(image.data)
-        self._tempAnnotation = annotations.VoxelSelection(
-            self._tempSelection.selection,
-            display.displayToVoxMat,
-            display.voxToDisplayMat,
-            colour=self.selectionCursorColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
         yannot.obj(self._selAnnotation,  hold=True)
         zannot.obj(self._selAnnotation,  hold=True)
-        xannot.obj(self._tempAnnotation, hold=True)
-        yannot.obj(self._tempAnnotation, hold=True)
-        zannot.obj(self._tempAnnotation, hold=True) 
         self._canvasPanel.Refresh()
 
 
@@ -193,9 +182,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._xcanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
         self._ycanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
         self._zcanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
-        self._xcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
-        self._ycanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True)
-        self._zcanvas.getAnnotations().dequeue(self._tempAnnotation, hold=True) 
         orthoviewprofile.OrthoViewProfile.deregister(self)
 
         
@@ -222,7 +208,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         were to click.
         """
 
-        display = self._displayCtx.getDisplayProperties(self._currentImage) 
+        display = self._displayCtx.getDisplayProperties(self._currentImage)
+        shape   = self._currentImage.shape
         
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)
@@ -230,46 +217,33 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         if blockSize is None:
             blockSize = self.selectionSize
 
-        blockOff = int(blockSize / 2)
-        block = self._editor.getSelection().generateBlock(
-            [blockOff] * 3,
-            blockSize,
-            axes)
-
-        selection = np.zeros((blockSize, blockSize, blockSize))
-
-        xs = block[:, 0]
-        ys = block[:, 1]
-        zs = block[:, 2]
-        
-        selection[xs, ys, zs] = True
+        block, offset = self._editor.getSelection().generateBlock(
+            voxel, blockSize, shape, axes)
 
         colour    = self.selectionCursorColour
         colour[3] = 1.0
 
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().selection(
-                selection,
+                block,
                 display.displayToVoxMat,
                 display.voxToDisplayMat,
-                offsets=voxel - blockOff,
+                offsets=offset,
                 colour=colour)
 
 
-    def _applySelection(self):
+    def _applySelection(self, canvas, voxel):
 
-        selection    = self._editor.getSelection()
-        newSelection = self._tempSelection.getIndices()
-        self._tempSelection.clearSelection() 
+        if self.selectionIs3D: axes = (0, 1, 2)
+        else:                  axes = (canvas.xax, canvas.yax)        
 
-        if   self.selectionMode == 'replace':
-            selection.setSelection(newSelection)
-            
-        elif self.selectionMode == 'add':
-            selection.addToSelection(newSelection)
-            
-        elif self.selectionMode == 'subtract':
-            selection.removeFromSelection(newSelection)
+        selection     = self._editor.getSelection()
+        block, offset = selection.generateBlock(voxel,
+                                                self.selectionSize,
+                                                selection.selection.shape,
+                                                axes)
+        
+        selection.addToSelection(block, offset)
 
             
     def _selModeMouseWheel(self, ev, canvas, wheelDir, mousePos, canvasPos):
@@ -282,64 +256,46 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def _selModeMouseMove(self, ev, canvas, mousePos, canvasPos):
-
         voxel = self._getVoxelLocation(canvasPos)
         self._makeSelectionAnnotation(canvas, voxel)
 
 
     def _selModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+        
+        if self.selectionMode == 'replace':
+            self._editor.getSelection().clearSelection()
 
         voxel = self._getVoxelLocation(canvasPos)
-
-        if self.selectionIs3D: axes = (0, 1, 2)
-        else:                  axes = (canvas.xax, canvas.yax)
-
-        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
+        self._applySelection(         canvas, voxel)
         self._makeSelectionAnnotation(canvas, voxel) 
 
 
     def _selModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
-
         voxel = self._getVoxelLocation(canvasPos)
-
-        if self.selectionIs3D: axes = (0, 1, 2)
-        else:                  axes = (canvas.xax, canvas.yax)
-
-        self._tempSelection.selectBlock(voxel, self.selectionSize, axes) 
+        self._applySelection(         canvas, voxel)
         self._makeSelectionAnnotation(canvas, voxel)
 
         
     def _selModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
-        self._applySelection()
-
+        voxel = self._getVoxelLocation(canvasPos)
+        self._applySelection(canvas, voxel)
+        
 
     def _deselModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
-
         voxel = self._getVoxelLocation(canvasPos)
-
-        if self.selectionIs3D: axes = (0, 1, 2)
-        else:                  axes = (canvas.xax, canvas.yax)
-        
-        self._tempSelection.clearSelection()
-        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
+        self._applySelection(         canvas, voxel)
         self._makeSelectionAnnotation(canvas, voxel) 
 
 
     def _deselModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
-        
         voxel = self._getVoxelLocation(canvasPos)
-
-        if self.selectionIs3D: axes = (0, 1, 2)
-        else:                  axes = (canvas.xax, canvas.yax)
-                  
-        self._tempSelection.selectBlock(voxel, self.selectionSize, axes)
-        self._makeSelectionAnnotation(canvas, voxel)
+        self._applySelection(         canvas, voxel)
+        self._makeSelectionAnnotation(canvas, voxel) 
 
         
     def _deselModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
-        self._editor.getSelection().removeFromSelection(
-            self._tempSelection.getIndices())
-        self._tempSelection.clearSelection() 
+        voxel = self._getVoxelLocation(canvasPos)
+        self._applySelection(canvas, voxel)
 
 
     def _selintModeMouseMove(self, ev, canvas, mousePos, canvasPos):
@@ -348,7 +304,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         
     def _selintModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+        self._editor.getSelection().clearSelection() 
         self._selecting = True
+        self._lastDist  = 0
         self._selintSelect(self._getVoxelLocation(canvasPos))
 
         
@@ -362,7 +320,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         dist = np.sqrt((cx - cdx) ** 2 + (cy - cdy) ** 2 + (cz - cdz) ** 2)
         self.searchRadius = dist
-        
+
         self._selintSelect(voxel)
 
         
@@ -395,14 +353,20 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                             self.searchRadius / image.pixdim[1],
                             self.searchRadius / image.pixdim[2])
 
-        self._tempSelection.clearSelection()
-        self._tempSelection.selectByValue(
+        # If the last selection covered a bigger radius
+        # than this selection, clear the whole selection 
+        if self._lastDist is None or \
+           np.any(np.array(searchRadius) < self._lastDist):
+            self._editor.getSelection().clearSelection()
+
+        self._editor.getSelection().selectByValue(
             voxel,
             precision=self.intensityThres,
             searchRadius=searchRadius,
-            local=self.localFill) 
+            local=self.localFill)
+
+        self._lastDist = searchRadius
 
         
     def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
-        self._applySelection()
         self._selecting = False

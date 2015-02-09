@@ -154,40 +154,40 @@ class Image(props.HasProperties):
         self._attributes = {}
 
         
-    def applyChange(self, indices, newVals, volume=None):
-        """Changes the image data according to the indices and new values.
+    def applyChange(self, offset, newVals, vol=None):
+        """Changes the image data according to the given new values.
         Any listeners registered on the :attr:`data` property will be
         notified of the change.
 
-        :arg indices: A :mod:`numpy` array  of shape ``N*3`` containing
-                      the indices of the voxels to be changed.
+        :arg offset:  A tuple of three values, containing the xyz
+                      offset of the image region to be changed.
         
-        :arg newVals: A sequence of values of length ``N`` containing the
-                      new voxel values. Or a scalar value, in which case
-                      all of the voxels specified by ``indices`` will be
-                      set to the scalar.
+        :arg newVals: A 3D numpy array containing the new image values.
         
-        :arg volume:  If this is a 4D image, the volume index.
+        :arg vol:     If this is a 4D image, the volume index.
         """
         
-        if self.is4DImage() and volume is None:
+        if self.is4DImage() and vol is None:
             raise ValueError('Volume must be specified for 4D images')
         
-        xs = indices[:, 0]
-        ys = indices[:, 1]
-        zs = indices[:, 2]
-
-        data = self.data
+        data          = self.data
+        xlo, ylo, zlo = offset
+        xhi           = xlo + newVals.shape[0]
+        yhi           = ylo + newVals.shape[1]
+        zhi           = zlo + newVals.shape[2]
 
         try:
             data.flags.writeable = True
-            if self.is4DImage(): data[xs, ys, zs, volume] = newVals
-            else:                data[xs, ys, zs]         = newVals
+            if self.is4DImage(): data[xlo:xhi, ylo:yhi, zlo:zhi, vol] = newVals
+            else:                data[xlo:xhi, ylo:yhi, zlo:zhi]      = newVals
             data.flags.writeable = False
+            
         except:
             data.flags.writeable = False
             raise
 
+        # Force a notification on the 'data' property
+        # by assigning its value back to itself
         self.data  = data
         self.saved = False
 

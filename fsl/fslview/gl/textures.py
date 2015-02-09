@@ -24,8 +24,11 @@ import logging
 import OpenGL.GL as gl
 import numpy     as np
 
-import fsl.fslview.gl.globject as globject
-import fsl.utils.transform     as transform
+import fsl.data.image               as fslimage
+import fsl.utils.transform          as transform
+import fsl.fslview.gl.globject      as globject
+import fsl.fslview.editor.selection as fslselection
+
 
 log = logging.getLogger(__name__)
 
@@ -37,23 +40,26 @@ corresponding :class:`ImageTexture` object.
 """
 
 
-def getTexture(image, tag, *args, **kwargs):
-    """Retrieve an :class:`ImageTexture` object for the given image (with
+def getTexture(target, tag, *args, **kwargs):
+    """Retrieve a texture  object for the given target object (with
     the given tag), creating one if it does not exist.
 
-    :arg image: A :class:`~fsl.data.image.Image` instance for which a texture
-                is needed.
-    
-    :arg tag:   An application-unique string associated with the given image.
-                Future requests for a texture with the same image and tag
-                will return the same :class:`ImageTexture` instance.
+    :arg target:     
+    :arg tag:    An application-unique string associated with the given image.
+                 Future requests for a texture with the same image and tag
+                 will return the same :class:`ImageTexture` instance.
     """
 
-    tag        = '{}_{}'.format(id(image), tag)
+    textureMap = {
+        fslimage.Image         : ImageTexture,
+        fslselection.Selection : VoxelSelectionTexture
+    }    
+
+    tag        = '{}_{}'.format(id(target), tag)
     textureObj = _allTextures.get(tag, None)
 
     if textureObj is None:
-        textureObj = ImageTexture(image, tag, *args, **kwargs)
+        textureObj = textureMap[type(target)](target, tag, *args, **kwargs)
         _allTextures[tag] = textureObj
 
     return textureObj
@@ -158,7 +164,7 @@ class ImageTexture(object):
                                                          self.texture)) 
 
         self._addListeners()
-        self.refreshTexture()
+        self.refresh()
 
 
     def destroy(self):
@@ -189,7 +195,7 @@ class ImageTexture(object):
         self.prefilter = prefilter
 
         if changed:
-            self.refreshTexture()
+            self.refresh()
 
     
     def _addListeners(self):
@@ -201,21 +207,18 @@ class ImageTexture(object):
         display = self.display
         image   = self.image
         
-        def refreshTexture(*a):
-            self.refreshTexture()
-
         def refreshInterp(*a):
             self._updateInterpolationMethod()
             
 
         name = '{}_{}'.format(type(self).__name__, id(self))
 
-        image.addListener('data', name, refreshTexture)
+        image.addListener('data', name, self.refresh)
 
         if display is not None:
             display.addListener('interpolation', name, refreshInterp)
-            display.addListener('volume',        name, refreshTexture)
-            display.addListener('resolution',    name, refreshTexture)
+            display.addListener('volume',        name, self.refresh)
+            display.addListener('resolution',    name, self.refresh)
 
         
     def _removeListeners(self):
@@ -436,7 +439,7 @@ class ImageTexture(object):
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
 
         
-    def refreshTexture(self):
+    def refresh(self, *a):
         """(Re-)generates the OpenGL image texture used to store the image
         data.
         """
@@ -500,4 +503,84 @@ class ImageTexture(object):
                         self.texDtype,
                         data)
 
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+
+class VoxelSelectionTexture(object):
+
+    def __init__(self, selection, tag):
+
+        self.tag       = tag
+        self.selection = selection
+        self.texture   = gl.glGenTextures(1)
+
+        selection.addListener('selection', tag, self.refresh)
+
+        self._init()
+        self.refresh()
+
+
+    def _init(self):
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
+        
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+
+        gl.glTexParameterfv(gl.GL_TEXTURE_3D,
+                            gl.GL_TEXTURE_BORDER_COLOR,
+                            np.array([0, 0, 0, 0], dtype=np.float32))
+        
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_S,
+                           gl.GL_CLAMP_TO_BORDER)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_T,
+                           gl.GL_CLAMP_TO_BORDER)
+        gl.glTexParameteri(gl.GL_TEXTURE_3D,
+                           gl.GL_TEXTURE_WRAP_R,
+                           gl.GL_CLAMP_TO_BORDER)
+
+        shape = self.selection.selection.shape
+        gl.glTexImage3D(gl.GL_TEXTURE_3D,
+                        0,
+                        gl.GL_ALPHA8,
+                        shape[0],
+                        shape[1],
+                        shape[2],
+                        0,
+                        gl.GL_ALPHA,
+                        gl.GL_UNSIGNED_BYTE,
+                        None)
+        
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+
+
+    def refresh(self, *a):
+        
+        old, new, offset = self.selection.getLastChange()
+
+        if old is None or new is None:
+            data   = self.selection.selection
+            offset = [0, 0, 0]
+        else:
+            data = new
+
+        data = data * 255
+        
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
+        gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
+                           0,
+                           offset[0],
+                           offset[1],
+                           offset[2],
+                           data.shape[0],
+                           data.shape[1],
+                           data.shape[2],
+                           gl.GL_ALPHA,
+                           gl.GL_UNSIGNED_BYTE,
+                           data.ravel('F'))
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)

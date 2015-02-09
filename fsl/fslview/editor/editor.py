@@ -19,16 +19,17 @@ import fsl.data.image as fslimage
 
 
 class ValueChange(object):
-    def __init__(self, image, selection, oldVals, newVals):
-        self.image     = image
-        self.selection = selection
-        self.oldVals   = oldVals
-        self.newVals   = newVals
+    def __init__(self, image, offset, oldVals, newVals):
+        self.image   = image
+        self.offset  = offset
+        self.oldVals = oldVals
+        self.newVals = newVals
 
 
 class SelectionChange(object):
-    def __init__(self, image, oldSelection, newSelection):
+    def __init__(self, image, offset, oldSelection, newSelection):
         self.image        = image
+        self.offset       = offset
         self.oldSelection = oldSelection
         self.newSelection = newSelection
 
@@ -87,10 +88,10 @@ class Editor(props.HasProperties):
 
     def _selectionChanged(self, *a):
 
-        image  = self._displayCtx.getSelectedImage()
-        oldSel = self._selection.getPreviousIndices()
-        newSel = self._selection.getIndices()
-        change = SelectionChange(image, oldSel, newSel)
+        image            = self._displayCtx.getSelectedImage()
+        old, new, offset = self._selection.getLastChange()
+        
+        change = SelectionChange(image, offset, old, new)
         self._applyChange(change, True)
 
         
@@ -101,20 +102,27 @@ class Editor(props.HasProperties):
     def fillSelection(self, newVals):
 
         image = self._displayCtx.getSelectedImage()
-        nvox  = self._selection.getSelectionSize()
+
+        selectBlock, offset = self._selection.getBoundedSelection()
 
         if not isinstance(newVals, collections.Sequence):
-            nv = np.zeros(nvox, dtype=np.float32)
+            nv = np.zeros(selectBlock.shape, dtype=np.float32)
             nv.fill(newVals)
             newVals = nv
         else:
             newVals = np.array(newVals)
 
-        xyzs    = self._selection.getIndices()
-        xyzt    = xyzs.T
-        oldVals = image.data[xyzt[0], xyzt[1], xyzt[2]]
+        xlo, ylo, zlo = offset
+        xhi = xlo + selectBlock.shape[0]
+        yhi = ylo + selectBlock.shape[1]
+        zhi = zlo + selectBlock.shape[2]
+
+        oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi]
+
+        selectBlock = selectBlock == 0
+        newVals[selectBlock] = oldVals[selectBlock]
         
-        change = ValueChange(image, xyzs, oldVals, newVals)
+        change = ValueChange(image, offset, oldVals, newVals)
         self._applyChange(change)
 
 
@@ -142,10 +150,9 @@ class Editor(props.HasProperties):
             
         image   = change.image
         display = self._displayCtx.getDisplayProperties(image)
-        volume  = None
 
-        if image.is4DImage():
-            volume = display.volume
+        if image.is4DImage(): volume = display.volume
+        else:                 volume = None
         
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
@@ -157,11 +164,11 @@ class Editor(props.HasProperties):
             return
         
         if isinstance(change, ValueChange):
-            change.image.applyChange(change.selection, change.newVals, volume)
+            change.image.applyChange(change.offset, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
-            self._selection.setSelection(change.newSelection)
+            self._selection.setSelection(change.offset, change.newSelection)
             self._selection.enableListener('selection', self._name)
 
         
@@ -173,9 +180,14 @@ class Editor(props.HasProperties):
         if len(self._doneStack) == 0:
             self.canUndo = False 
          
-        image = change.image
+        image   = change.image
+        display = self._displayCtx.getDisplayProperties(image)
+        
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
+
+        if image.is4DImage(): volume = display.volume
+        else:                 volume = None 
 
         self._undoneStack.append(change)
         self.canRedo = True
@@ -184,11 +196,11 @@ class Editor(props.HasProperties):
             return
 
         if isinstance(change, ValueChange):
-            change.image.applyChange(change.selection, change.oldVals)
+            change.image.applyChange(change.offset, change.oldVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
-            self._selection.setSelection(change.oldSelection)
+            self._selection.setSelection(change.offset, change.oldSelection)
             self._selection.enableListener('selection', self._name)
 
 
@@ -196,19 +208,12 @@ class Editor(props.HasProperties):
 
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
-        xyzs     = self._selection.getIndices()
-
-        xs = xyzs[:, 0]
-        ys = xyzs[:, 1]
-        zs = xyzs[:, 2]
-        
-        roi             = np.zeros(image.shape, image.data.dtype)
-        roi[xs, ys, zs] = 1
+        mask     = np.array(self._selection.selection, dtype=np.uint8)
 
         xform = image.voxToWorldMat
         name  = '{}_mask'.format(image.name)
 
-        roiImage = fslimage.Image(roi, xform, name)
+        roiImage = fslimage.Image(mask, xform, name)
         self._imageList.insert(imageIdx + 1, roiImage) 
 
 
@@ -216,14 +221,10 @@ class Editor(props.HasProperties):
 
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
-        xyzs     = self._selection.getIndices()
-
-        xs = xyzs[:, 0]
-        ys = xyzs[:, 1]
-        zs = xyzs[:, 2]
         
-        roi             = np.zeros(image.shape, image.data.dtype)
-        roi[xs, ys, zs] = image.data[xs, ys, zs]
+        roi = np.zeros(image.shape, dtype=image.data.dtype)
+        
+        roi[self._selection.selection] = image.data[self._selection.selection]
 
         xform = image.voxToWorldMat
         name  = '{}_roi'.format(image.name)

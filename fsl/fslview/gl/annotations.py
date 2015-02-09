@@ -21,6 +21,7 @@ import OpenGL.GL as gl
 
 
 import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.textures as textures
 import fsl.utils.transform     as transform
 
 
@@ -96,6 +97,13 @@ class Annotations(object):
         hold = kwargs.pop('hold', False)
         return self.obj(VoxelSelection(*args, **kwargs), hold)
 
+    def mask(self, *args, **kwargs):
+        """Queues a mask for drawing - see the :class:`VoxelMask`
+        class.
+        """ 
+        hold = kwargs.pop('hold', False)
+        return self.obj(VoxelMask(*args, **kwargs), hold) 
+    
         
     def obj(self, obj, hold=False):
         """Queues the given :class:`AnnotationObject` for drawing."""
@@ -174,9 +182,12 @@ class Annotations(object):
             if obj.width is not None:
                 gl.glLineWidth(obj.width) 
 
-            obj.preDraw()
-            obj.draw(zpos)
-            obj.postDraw()
+            try:
+                obj.preDraw()
+                obj.draw(zpos)
+                obj.postDraw()
+            except Exception as e:
+                log.warn('{}'.format(e), exc_info=True)
 
             if obj.xform is not None:
                 gl.glPopMatrix() 
@@ -373,7 +384,76 @@ class VoxelSelection(AnnotationObject):
         verts, idxs = globject.voxelGrid(voxels, xax, yax, 1, 1)
 
         gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
-        gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs) 
+        gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs)
 
+
+
+class VoxelMask(AnnotationObject):
+    """
+    """
+
+    def __init__(self,
+                 selection,
+                 displayToVoxMat,
+                 voxToDisplayMat,
+                 offsets=None,
+                 *args,
+                 **kwargs):
+        
+        AnnotationObject.__init__(self, *args, **kwargs)
+
+        if offsets is None:
+            offsets = [0, 0, 0]
+
+        self.selection       = selection
+        self.displayToVoxMat = displayToVoxMat
+        self.voxToDisplayMat = voxToDisplayMat
+        self.offsets         = offsets
+        
+        self.texture = textures.getTexture(
+            selection,
+            'VoxelMask_{}'.format(id(selection)))
+
+
+    def draw(self, zpos):
+
+        xax   = self.xax
+        yax   = self.yax
+        zax   = self.zax
+        shape = self.selection.selection.shape
+
+        verts, _ = globject.slice2D(shape,
+                                    xax,
+                                    yax,
+                                    self.voxToDisplayMat)
+
+        verts[:, zax] = zpos
+
+        texs  = transform.transform(verts, self.displayToVoxMat) + 0.5
+        texs /= shape
+
+        verts = np.array(verts, dtype=np.float32).ravel('C')
+        texs  = np.array(texs,  dtype=np.float32).ravel('C')
+        idxs  = np.arange(4,    dtype=np.uint32)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_3D)
+        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture.texture)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
+
+        # gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
+        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, verts)
+        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texs)
+        gl.glDrawElements(gl.GL_TRIANGLE_STRIP, 4, gl.GL_UNSIGNED_INT, idxs)
+
+        # gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+
+        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        gl.glDisable(gl.GL_TEXTURE_3D)
+        
+        
 # class Text(AnnotationObject) ?
 # class Circle(AnnotationObject) ?
