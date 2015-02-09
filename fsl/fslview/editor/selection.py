@@ -9,21 +9,22 @@
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 import collections
 
-import numpy as np
-
+import numpy                      as np
 import scipy.ndimage.measurements as ndimeas
 
 import props
+
+
+log = logging.getLogger(__name__)
 
 
 class Selection(props.HasProperties):
 
 
     selection = props.Object()
+
     
     def __init__(self, image):
         self._image                = image
@@ -57,6 +58,9 @@ class Selection(props.HasProperties):
 
         block = np.array(block, dtype=np.uint8)
 
+        if block.size == 0:
+            return
+
         if offset is None:
             offset = (0, 0, 0)
 
@@ -69,7 +73,10 @@ class Selection(props.HasProperties):
         self._lastChangeOffset   = offset
         self._lastChangeOldBlock = self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
         self._lastChangeNewBlock = block
-        
+
+        log.debug('Updating selection ({}) block [{}:{}, {}:{}, {}:{}]'.format(
+            id(self), xlo, xhi, ylo, yhi, zlo, zhi))
+
         self.selection[xlo:xhi, ylo:yhi, zlo:zhi] = block
         self.notify('selection') 
 
@@ -108,6 +115,9 @@ class Selection(props.HasProperties):
     
     
     def _clearSelection(self, notify=True):
+
+        log.debug('Clearing selection ({})'.format(id(self)))
+        
         self._lastChangeOffset     = [0, 0, 0]
         self._lastChangeOldBlock   = np.array(self.selection)
         self._lastChangeNewBlock   = self.selection

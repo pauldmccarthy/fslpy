@@ -277,11 +277,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._makeSelectionAnnotation(canvas, voxel)
 
         
-    def _selModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
-        voxel = self._getVoxelLocation(canvasPos)
-        self._applySelection(canvas, voxel)
-        
-
     def _deselModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
         self._applySelection(         canvas, voxel, False)
@@ -294,11 +289,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._makeSelectionAnnotation(canvas, voxel) 
 
         
-    def _deselModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
-        voxel = self._getVoxelLocation(canvasPos)
-        self._applySelection(canvas, voxel, False)
-
-
     def _selintModeMouseMove(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
         self._makeSelectionAnnotation(canvas, voxel, 1)
