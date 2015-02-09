@@ -232,7 +232,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                 colour=colour)
 
 
-    def _applySelection(self, canvas, voxel):
+    def _applySelection(self, canvas, voxel, add=True):
 
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)        
@@ -242,8 +242,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                                 self.selectionSize,
                                                 selection.selection.shape,
                                                 axes)
-        
-        selection.addToSelection(block, offset)
+
+        if add: selection.addToSelection(     block, offset)
+        else:   selection.removeFromSelection(block, offset)
 
             
     def _selModeMouseWheel(self, ev, canvas, wheelDir, mousePos, canvasPos):
@@ -283,19 +284,19 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
     def _deselModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
-        self._applySelection(         canvas, voxel)
+        self._applySelection(         canvas, voxel, False)
         self._makeSelectionAnnotation(canvas, voxel) 
 
 
     def _deselModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
-        self._applySelection(         canvas, voxel)
+        self._applySelection(         canvas, voxel, False)
         self._makeSelectionAnnotation(canvas, voxel) 
 
         
     def _deselModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
-        self._applySelection(canvas, voxel)
+        self._applySelection(canvas, voxel, False)
 
 
     def _selintModeMouseMove(self, ev, canvas, mousePos, canvasPos):
