@@ -60,7 +60,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._ycanvas        = canvasPanel.getYCanvas()
         self._zcanvas        = canvasPanel.getZCanvas() 
         self._selAnnotation  = None
-        self._tempAnnotation = None
         self._selecting      = False
         self._lastDist       = None
         self._currentImage   = None
@@ -115,8 +114,6 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def _selectionColoursChanged(self, *a):
         if self._selAnnotation is not None:
             self._selAnnotation.colour = self.selectionOverlayColour
-        if self._tempAnnotation is not None:
-            self._tempAnnotation.colour = self.selectionCursorColour 
 
 
     def _selectedImageChanged(self, *a):
@@ -137,11 +134,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             xannot.dequeue(self._selAnnotation,  hold=True)
             yannot.dequeue(self._selAnnotation,  hold=True)
             zannot.dequeue(self._selAnnotation,  hold=True)
-            xannot.dequeue(self._tempAnnotation, hold=True)
-            yannot.dequeue(self._tempAnnotation, hold=True)
-            zannot.dequeue(self._tempAnnotation, hold=True)
             self._selAnnotation  = None
-            self._tempAnnotation = None
 
         # Edit mode is only supported on images with
         # the 'volume' type for the time being
