@@ -92,7 +92,7 @@ class Selection(props.HasProperties):
         yhi = ylo + size[1]
         zhi = zlo + size[2]
 
-        return self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
+        return np.array(self.selection[xlo:xhi, ylo:yhi, zlo:zhi])
 
 
     def replaceSelection(self, block, offset):
