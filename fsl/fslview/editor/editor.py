@@ -135,6 +135,8 @@ class Editor(props.HasProperties):
 
         
     def startChangeGroup(self):
+        del self._doneList[self._doneIndex + 1:]
+        
         self._inGroup    = True
         self._doneIndex += 1
         self._doneList.append([])
