@@ -9,8 +9,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-from collections import OrderedDict
-
 import numpy                        as np
 
 import                                 props
@@ -38,11 +36,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                                 maxval=250.0,
                                 clamped=True)
 
-    selectionMode  = props.Choice(OrderedDict((
-        ('replace', 'Replace current selection'),
-        ('add',     'Add to current selection'))))
-
-
+    
     def clearSelection(self, *a):
         self._editor.getSelection().clearSelection()
 
@@ -262,11 +256,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def _selModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
-
         self._editor.startChangeGroup()
-
-        if self.selectionMode == 'replace':
-            self._editor.getSelection().clearSelection()
 
         voxel = self._getVoxelLocation(canvasPos)
         self._applySelection(         canvas, voxel)

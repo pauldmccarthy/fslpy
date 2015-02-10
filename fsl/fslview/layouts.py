@@ -48,8 +48,6 @@ def actionButton(name, labelCls, *args, **kwargs):
 OrthoEditProfileLayout = props.HGroup(
     (widget('mode',
             OrthoEditProfile),
-     widget('selectionMode',
-            OrthoEditProfile),
      widget('selectionSize',
             OrthoEditProfile,
             visibleWhen=lambda p: p.mode in ['sel', 'desel']),

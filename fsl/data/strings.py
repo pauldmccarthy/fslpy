@@ -114,7 +114,6 @@ properties = TypeDict({
     'OrthoPanel.zzoom'       : 'Z zoom',
 
 
-    'OrthoEditProfile.selectionMode'          : 'Selection mode',
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
     'OrthoEditProfile.fillValue'              : 'Fill value',
