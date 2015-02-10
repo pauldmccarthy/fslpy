@@ -52,7 +52,7 @@ def getTexture(target, tag, *args, **kwargs):
 
     textureMap = {
         fslimage.Image         : ImageTexture,
-        fslselection.Selection : VoxelSelectionTexture
+        fslselection.Selection : SelectionTexture
     }    
 
     tag        = '{}_{}'.format(id(target), tag)
@@ -506,7 +506,7 @@ class ImageTexture(object):
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
 
 
-class VoxelSelectionTexture(object):
+class SelectionTexture(object):
 
     def __init__(self, selection, tag):
 

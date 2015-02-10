@@ -164,7 +164,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         selection.addListener('selection', self._name, self._selectionChanged)
 
-        self._selAnnotation = annotations.VoxelMask( 
+        self._selAnnotation = annotations.VoxelSelection( 
             selection,
             display.displayToVoxMat,
             display.voxToDisplayMat,
@@ -232,7 +232,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         colour[3] = 1.0
 
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
-            canvas.getAnnotations().selection(
+            canvas.getAnnotations().grid(
                 block,
                 display.displayToVoxMat,
                 display.voxToDisplayMat,

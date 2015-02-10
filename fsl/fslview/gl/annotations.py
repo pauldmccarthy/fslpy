@@ -90,19 +90,19 @@ class Annotations(object):
         return self.obj(Rect(*args, **kwargs), hold)
 
 
-    def selection(self, *args, **kwargs):
+    def grid(self, *args, **kwargs):
         """Queues a selection for drawing - see the :class:`VoxelSelection`
         class.
         """ 
         hold = kwargs.pop('hold', False)
-        return self.obj(VoxelSelection(*args, **kwargs), hold)
+        return self.obj(VoxelGrid(*args, **kwargs), hold)
 
-    def mask(self, *args, **kwargs):
+    def selection(self, *args, **kwargs):
         """Queues a mask for drawing - see the :class:`VoxelMask`
         class.
         """ 
         hold = kwargs.pop('hold', False)
-        return self.obj(VoxelMask(*args, **kwargs), hold) 
+        return self.obj(VoxelSelection(*args, **kwargs), hold) 
     
         
     def obj(self, obj, hold=False):
@@ -306,7 +306,7 @@ class Rect(AnnotationObject):
         gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs) 
 
 
-class VoxelSelection(AnnotationObject):
+class VoxelGrid(AnnotationObject):
     """Annotation object which represents a collection of 'selected' voxels.
 
     Each selected voxel is highlighted with a rectangle around its border.
@@ -388,7 +388,7 @@ class VoxelSelection(AnnotationObject):
 
 
 
-class VoxelMask(AnnotationObject):
+class VoxelSelection(AnnotationObject):
     """
     """
 
@@ -412,7 +412,7 @@ class VoxelMask(AnnotationObject):
         
         self.texture = textures.getTexture(
             selection,
-            'VoxelMask_{}'.format(id(selection)))
+            '{}_{}'.format(type(self).__name__, id(selection)))
 
 
     def draw(self, zpos):
