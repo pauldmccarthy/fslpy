@@ -71,8 +71,10 @@ class Selection(props.HasProperties):
         zhi = zlo + block.shape[2]
 
         self._lastChangeOffset   = offset
-        self._lastChangeOldBlock = self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
-        self._lastChangeNewBlock = block
+        self._lastChangeOldBlock = np.array(self.selection[xlo:xhi,
+                                                           ylo:yhi,
+                                                           zlo:zhi])
+        self._lastChangeNewBlock = np.array(block)
 
         log.debug('Updating selection ({}) block [{}:{}, {}:{}, {}:{}]'.format(
             id(self), xlo, xhi, ylo, yhi, zlo, zhi))
@@ -93,9 +95,13 @@ class Selection(props.HasProperties):
         return self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
 
 
-    def setSelection(self, block, offset):
-        self._clearSelection(False)
+    def replaceSelection(self, block, offset):
+        self.clearSelection()
         self._updateSelectionBlock(block, offset)
+
+        
+    def setSelection(self, block, offset):
+        self._updateSelectionBlock(block, offset) 
 
         
     def addToSelection(self, block, offset):
@@ -111,20 +117,15 @@ class Selection(props.HasProperties):
 
         
     def clearSelection(self):
-        self._clearSelection(True)
-    
-    
-    def _clearSelection(self, notify=True):
 
         log.debug('Clearing selection ({})'.format(id(self)))
         
         self._lastChangeOffset     = [0, 0, 0]
         self._lastChangeOldBlock   = np.array(self.selection)
-        self._lastChangeNewBlock   = self.selection
         self.selection[:]          = False
+        self._lastChangeNewBlock   = np.array(self.selection)
 
-        if notify:
-            self.notify('selection')
+        self.notify('selection')
 
 
     def getLastChange(self):
@@ -288,4 +289,4 @@ class Selection(props.HasProperties):
             seedLabel = hits[seedLoc[0], seedLoc[1], seedLoc[2]]
             hits      = hits == seedLabel
 
-        self.setSelection(hits, searchOffset)
+        self.replaceSelection(hits, searchOffset)

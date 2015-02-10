@@ -47,10 +47,16 @@ class Editor(props.HasProperties):
         self._selection    = None
         self._currentImage = None
  
-        # Two stacks of Change objects, providing
-        # records of what has been done and undone
-        self._doneStack   = []
-        self._undoneStack = []
+        # A list of state objects, providing
+        # records of what has been done. The
+        # doneIndex points to the current
+        # state. Everything before the doneIndex
+        # represents previous states, and
+        # everything after the doneIndex
+        # represents states which have been
+        # undone.
+        self._doneList  = []
+        self._doneIndex = -1
 
         self._displayCtx.addListener('selectedImage',
                                      self._name,
@@ -92,9 +98,9 @@ class Editor(props.HasProperties):
         old, new, offset = self._selection.getLastChange()
         
         change = SelectionChange(image, offset, old, new)
-        self._applyChange(change, True)
+        self._do(change)
 
-        
+
     def getSelection(self):
         return self._selection
 
@@ -123,31 +129,61 @@ class Editor(props.HasProperties):
         newVals[selectBlock] = oldVals[selectBlock]
         
         change = ValueChange(image, offset, oldVals, newVals)
+        self._do(change)
+
+
+    def _do(self, change):
+
         self._applyChange(change)
+        del self._doneList[self._doneIndex + 1:]
+        self._doneList.append(change)
+
+        self._doneIndex += 1
+        self.canUndo     = True
+        self.canRedo     = False
+
+        log.debug('New change ({} of {})'.format(self._doneIndex,
+                                                 len(self._doneList)))
 
 
     def undo(self):
-        if len(self._doneStack) == 0:
+        if self._doneIndex == -1:
             return
-        
-        self._revertChange()
+
+        log.debug('Undo change {} of {}'.format(self._doneIndex,
+                                                len(self._doneList)))        
+
+        change = self._doneList[self._doneIndex]
+
+        self._revertChange(change)
+
+        self._doneIndex -= 1
+
+        self.canRedo = True
+        if self._doneIndex == -1:
+            self.canUndo = False
         
 
     def redo(self):
-        if len(self._undoneStack) == 0:
+        if self._doneIndex == len(self._doneList) - 1:
             return
-        
-        self._applyChange()
+
+        log.debug('Redo change {} of {}'.format(self._doneIndex + 1,
+                                                len(self._doneList))) 
+
+        change = self._doneList[self._doneIndex + 1]
+
+        self._applyChange(change)
+
+        self._doneIndex += 1
+
+        self.canUndo = True
+        if self._doneIndex == len(self._doneList) - 1:
+            self.canRedo = False
 
 
-    def _applyChange(self, change=None, alreadyApplied=False):
+    def _applyChange(self, change):
 
-        if change is None: change = self._undoneStack.pop()
-        else:              self._undoneStack = []
-
-        if len(self._undoneStack) == 0:
-            self.canRedo = False 
-            
         image   = change.image
         display = self._displayCtx.getDisplayProperties(image)
 
@@ -157,29 +193,17 @@ class Editor(props.HasProperties):
         if self._displayCtx.getSelectedImage() != image:
             self._displayCtx.selectImage(image)
 
-        self._doneStack.append(change)
-        self.canUndo = True
-
-        if alreadyApplied:
-            return
-        
         if isinstance(change, ValueChange):
             change.image.applyChange(change.offset, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
-            self._selection.setSelection(change.offset, change.newSelection)
+            self._selection.setSelection(change.newSelection, change.offset)
             self._selection.enableListener('selection', self._name)
 
         
-    def _revertChange(self, change=None, alreadyApplied=False):
+    def _revertChange(self, change):
 
-        if change is None: change = self._doneStack.pop()
-        else:              self._doneStack = []
-
-        if len(self._doneStack) == 0:
-            self.canUndo = False 
-         
         image   = change.image
         display = self._displayCtx.getDisplayProperties(image)
         
@@ -189,18 +213,12 @@ class Editor(props.HasProperties):
         if image.is4DImage(): volume = display.volume
         else:                 volume = None 
 
-        self._undoneStack.append(change)
-        self.canRedo = True
-
-        if alreadyApplied:
-            return
-
         if isinstance(change, ValueChange):
             change.image.applyChange(change.offset, change.oldVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
-            self._selection.setSelection(change.offset, change.oldSelection)
+            self._selection.setSelection(change.oldSelection, change.offset)
             self._selection.enableListener('selection', self._name)
 
 
