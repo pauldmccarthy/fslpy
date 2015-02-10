@@ -514,7 +514,10 @@ class VoxelSelectionTexture(object):
         self.selection = selection
         self.texture   = gl.glGenTextures(1)
 
-        selection.addListener('selection', tag, self.refresh)
+        log.debug('Created GL texture for {}: {}'.format(self.tag,
+                                                         self.texture))         
+
+        selection.addListener('selection', tag, self._selectionChanged)
 
         self._init()
         self.refresh()
@@ -558,18 +561,19 @@ class VoxelSelectionTexture(object):
         
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
 
-
-    def refresh(self, *a):
         
-        old, new, offset = self.selection.getLastChange()
-
-        if old is None or new is None:
+    def refresh(self, block=None, offset=None):
+        
+        if block is None or offset is None:
             data   = self.selection.selection
             offset = [0, 0, 0]
         else:
-            data = new
+            data = block
 
         data = data * 255
+
+        log.debug('Updating selection texture (offset {}, size {})'.format(
+            offset, data.shape))
         
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
         gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
@@ -584,3 +588,16 @@ class VoxelSelectionTexture(object):
                            gl.GL_UNSIGNED_BYTE,
                            data.ravel('F'))
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+ 
+    
+    def _selectionChanged(self, *a):
+        
+        old, new, offset = self.selection.getLastChange()
+
+        if old is None or new is None:
+            data   = self.selection.selection
+            offset = [0, 0, 0]
+        else:
+            data = new
+
+        self.refresh(data, offset)

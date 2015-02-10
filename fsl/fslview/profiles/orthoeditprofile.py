@@ -46,11 +46,32 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def undo(self, *a):
-        self._editor.undo() 
+
+        # We're disabling notification of changes to the selection
+        # during undo/redo. This is because a single undo
+        # will probably involve multiple modifications to the
+        # selection (as changes are grouped by the editor),
+        # with each of those changes causing the selection object
+        # to notify its listeners. As one of these listeners is a
+        # SelectionTexture, these notifications can get expensive,
+        # due to updates to the GL texture buffer. So we disable
+        # notification, and then manually refresh the texture
+        # afterwards
+        self._editor.getSelection().disableNotification('selection')
+        self._editor.undo()
+        self._editor.getSelection().enableNotification('selection')
+        
+        self._selectionChanged()
+        self._selAnnotation.texture.refresh()
 
 
     def redo(self, *a):
+
+        self._editor.getSelection().disableNotification('selection')
         self._editor.redo()
+        self._editor.getSelection().enableNotification('selection')
+        self._selectionChanged()
+        self._selAnnotation.texture.refresh() 
  
 
     def __init__(self, canvasPanel, imageList, displayCtx):
