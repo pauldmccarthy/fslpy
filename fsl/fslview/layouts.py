@@ -8,6 +8,8 @@
 import logging
 log = logging.getLogger(__name__)
 
+import wx
+
 import props
 
 import fsl.utils.typedict  as td
@@ -35,8 +37,11 @@ def widget(name, labelCls, *args, **kwargs):
 def actionButton(name, labelCls, *args, **kwargs):
     def callback(i, *a):
         i.run(name)
+    def setup(inst, parent, widget, *a):
+        inst.getAction(name).bindToWidget(parent, wx.EVT_BUTTON, widget)
     return props.Button(name,
                         text=strings.actions[labelCls, name],
+                        setup=setup,
                         callback=callback)
 
 
