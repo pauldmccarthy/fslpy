@@ -57,6 +57,7 @@ class Editor(props.HasProperties):
         # undone.
         self._doneList  = []
         self._doneIndex = -1
+        self._inGroup   = False
 
         self._displayCtx.addListener('selectedImage',
                                      self._name,
@@ -98,7 +99,7 @@ class Editor(props.HasProperties):
         old, new, offset = self._selection.getLastChange()
         
         change = SelectionChange(image, offset, old, new)
-        self._do(change)
+        self._changeMade(change)
 
 
     def getSelection(self):
@@ -129,18 +130,37 @@ class Editor(props.HasProperties):
         newVals[selectBlock] = oldVals[selectBlock]
         
         change = ValueChange(image, offset, oldVals, newVals)
-        self._do(change)
-
-
-    def _do(self, change):
-
         self._applyChange(change)
-        del self._doneList[self._doneIndex + 1:]
-        self._doneList.append(change)
+        self._changeMade( change)
 
+        
+    def startChangeGroup(self):
+        self._inGroup    = True
         self._doneIndex += 1
-        self.canUndo     = True
-        self.canRedo     = False
+        self._doneList.append([])
+
+        log.debug('Starting change group - merging subsequent '
+                  'changes at index {} of {}'.format(self._doneIndex,
+                                                     len(self._doneList)))
+
+        
+    def endChangeGroup(self):
+        self._inGroup = False
+        log.debug('Ending change group at {} of {}'.format(
+            self._doneIndex, len(self._doneList))) 
+
+        
+    def _changeMade(self, change):
+
+        if self._inGroup:
+            self._doneList[self._doneIndex].append(change)
+        else:
+            del self._doneList[self._doneIndex + 1:]
+            self._doneList.append(change)
+            self._doneIndex += 1
+            
+        self.canUndo = True
+        self.canRedo = False
 
         log.debug('New change ({} of {})'.format(self._doneIndex,
                                                  len(self._doneList)))
@@ -155,11 +175,16 @@ class Editor(props.HasProperties):
 
         change = self._doneList[self._doneIndex]
 
-        self._revertChange(change)
+        if not isinstance(change, collections.Sequence):
+            change = [change]
+
+        for c in reversed(change):
+            self._revertChange(c)
 
         self._doneIndex -= 1
 
-        self.canRedo = True
+        self._inGroup = False
+        self.canRedo  = True
         if self._doneIndex == -1:
             self.canUndo = False
         
@@ -172,12 +197,17 @@ class Editor(props.HasProperties):
                                                 len(self._doneList))) 
 
         change = self._doneList[self._doneIndex + 1]
+        
+        if not isinstance(change, collections.Sequence):
+            change = [change] 
 
-        self._applyChange(change)
+        for c in change:
+            self._applyChange(c)
 
         self._doneIndex += 1
 
-        self.canUndo = True
+        self._inGroup = False
+        self.canUndo  = True
         if self._doneIndex == len(self._doneList) - 1:
             self.canRedo = False
 

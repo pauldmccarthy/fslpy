@@ -262,7 +262,9 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def _selModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
-        
+
+        self._editor.startChangeGroup()
+
         if self.selectionMode == 'replace':
             self._editor.getSelection().clearSelection()
 
@@ -276,8 +278,15 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._applySelection(         canvas, voxel)
         self._makeSelectionAnnotation(canvas, voxel)
 
+
+    def _selModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+        self._editor.endChangeGroup()
+
         
     def _deselModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+
+        self._editor.startChangeGroup()
+
         voxel = self._getVoxelLocation(canvasPos)
         self._applySelection(         canvas, voxel, False)
         self._makeSelectionAnnotation(canvas, voxel) 
@@ -286,7 +295,11 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def _deselModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         voxel = self._getVoxelLocation(canvasPos)
         self._applySelection(         canvas, voxel, False)
-        self._makeSelectionAnnotation(canvas, voxel) 
+        self._makeSelectionAnnotation(canvas, voxel)
+
+        
+    def _deselModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+        self._editor.endChangeGroup()
 
         
     def _selintModeMouseMove(self, ev, canvas, mousePos, canvasPos):
@@ -295,6 +308,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         
     def _selintModeLeftMouseDown(self, ev, canvas, mousePos, canvasPos):
+
+        self._editor.startChangeGroup()
         self._editor.getSelection().clearSelection() 
         self._selecting = True
         self._lastDist  = 0
@@ -360,4 +375,5 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         
     def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):
+        self._editor.endChangeGroup()
         self._selecting = False
