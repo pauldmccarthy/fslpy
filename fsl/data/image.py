@@ -90,11 +90,23 @@ class Image(props.HasProperties):
     """
 
 
-    def __init__(self, image, xform=None, name=None):
+    def __init__(self, image, xform=None, name=None, loadData=True):
         """Initialise an Image object with the given image data or file name.
 
-        :arg image: A string containing the name of an image file to load, or
-                    a :mod:`numpy` array, or a :mod:`nibabel` image object.
+        :arg image:    A string containing the name of an image file to load, 
+                       or a :mod:`numpy` array, or a :mod:`nibabel` image
+                       object.
+
+        :arg xform:    A ``4*4`` affine transformation matrix which transforms
+                       voxel coordinates into real world coordinates.
+
+        :arg name:     A name for the image.
+
+        :arg loadData: Defaults to ``True``. If ``False``, the image data is
+                       not loaded - this is useful if you're only interested
+                       in the header data, as the file will be loaded much
+                       more quickly. The image data may subsequently be loaded
+                       via the :meth:`loadData` method.
         """
 
         self.nibImage  = None
@@ -138,13 +150,15 @@ class Image(props.HasProperties):
             self.nibImage = image
             self.name     = name
 
-        self.data          = self.nibImage.get_data()
         self.shape         = self.nibImage.get_shape()
         self.pixdim        = self.nibImage.get_header().get_zooms()
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
-        
-        self.data.flags.writeable = False
+
+        if loadData:
+            self.loadData()
+        else:
+            self.data = None
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
@@ -153,6 +167,15 @@ class Image(props.HasProperties):
         # arbitrary data associated with this image.
         self._attributes = {}
 
+        
+    def loadData(self):
+        """Loads the image data from the file. This method only needs to
+        be called if the ``loadData`` parameter passed to :meth:`__init__`
+        was ``False``.
+        """
+        self.data = self.nibImage.get_data()
+        self.data.flags.writeable = False
+        
         
     def applyChange(self, offset, newVals, vol=None):
         """Changes the image data according to the given new values.
