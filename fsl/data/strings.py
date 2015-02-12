@@ -82,6 +82,10 @@ labels = TypeDict({
     'LocationPanel.volumeLabel' : 'Volume',
     'LocationPanel.spaceLabel'  : 'Space',
     'LocationPanel.outOfBounds' : 'Out of bounds',
+
+    'AtlasPanel.infoPanel'      : 'Information',
+    'AtlasPanel.atlasListPanel' : 'Choose atlases',
+    'AtlasPanel.overlayPanel'   : 'Choose overlays'
 })
 
 
