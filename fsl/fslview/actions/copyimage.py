@@ -40,10 +40,10 @@ class CopyImageAction(actions.Action):
         if image is None:
             return
 
-        data  = np.copy(image.data)
-        xform = image.voxToWorldMat
-        name  = '{}_copy'.format(image.name)
-        copy  = fslimage.Image(data, xform, name)
+        data   = np.copy(image.data)
+        header = image.nibImage.get_header()
+        name   = '{}_copy'.format(image.name)
+        copy   = fslimage.Image(data, name=name, header=header)
 
         # TODO copy display properties
         

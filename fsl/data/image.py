@@ -90,7 +90,12 @@ class Image(props.HasProperties):
     """
 
 
-    def __init__(self, image, xform=None, name=None, loadData=True):
+    def __init__(self,
+                 image,
+                 xform=None,
+                 name=None,
+                 header=None,
+                 loadData=True):
         """Initialise an Image object with the given image data or file name.
 
         :arg image:    A string containing the name of an image file to load, 
@@ -102,6 +107,11 @@ class Image(props.HasProperties):
 
         :arg name:     A name for the image.
 
+        :arg header:   If not ``None``, assumed to be a
+                       :class:`nibabel.nifti1.Nifti1Header` to be used as the 
+                       image header. Not applied to images loaded from file,
+                       or existing :mod:`nibabel` images.
+
         :arg loadData: Defaults to ``True``. If ``False``, the image data is
                        not loaded - this is useful if you're only interested
                        in the header data, as the file will be loaded much
@@ -112,6 +122,9 @@ class Image(props.HasProperties):
         self.nibImage  = None
         self.imageFile = None
         self.tempFile  = None
+
+        if header is not None:
+            header = header.copy()
 
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
@@ -136,10 +149,14 @@ class Image(props.HasProperties):
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
 
-            if xform is None: xform = np.identity(4)
+            if xform is None:
+                if header is None: xform = np.identity(4)
+                else:              xform = header.get_best_affine()
             if name  is None: name = 'Numpy array'
             
-            self.nibImage  = nib.nifti1.Nifti1Image(image, xform)
+            self.nibImage  = nib.nifti1.Nifti1Image(image,
+                                                    xform,
+                                                    header=header)
             self.name      = name
             
         # otherwise, we assume that it is a nibabel image

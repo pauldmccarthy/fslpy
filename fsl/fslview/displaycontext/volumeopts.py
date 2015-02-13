@@ -52,7 +52,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     """Image values which map to the minimum and maximum colour map colours."""
 
     
-    clipLow  = props.Boolean(default=False)
+    clipLow  = props.Boolean(default=True)
     """If ``True``, don't display voxel values which are lower than
     the :attr:`displayRange`.
     """

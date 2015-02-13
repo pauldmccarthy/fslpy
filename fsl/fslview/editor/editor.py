@@ -260,10 +260,10 @@ class Editor(props.HasProperties):
         image    = self._imageList[imageIdx]
         mask     = np.array(self._selection.selection, dtype=np.uint8)
 
-        xform = image.voxToWorldMat
-        name  = '{}_mask'.format(image.name)
+        header = image.nibImage.get_header()
+        name   = '{}_mask'.format(image.name)
 
-        roiImage = fslimage.Image(mask, xform, name)
+        roiImage = fslimage.Image(mask, name=name, header=header)
         self._imageList.insert(imageIdx + 1, roiImage) 
 
 
@@ -276,8 +276,8 @@ class Editor(props.HasProperties):
         
         roi[self._selection.selection] = image.data[self._selection.selection]
 
-        xform = image.voxToWorldMat
-        name  = '{}_roi'.format(image.name)
+        header = image.nibImage.get_header()
+        name   = '{}_roi'.format(image.name)
 
-        roiImage = fslimage.Image(roi, xform, name)
+        roiImage = fslimage.Image(roi, name=name, header=header)
         self._imageList.insert(imageIdx + 1, roiImage)

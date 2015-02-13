@@ -119,10 +119,10 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         log.debug('{}/{} clicked'.format(atlasID, label.name)) 
 
         if isinstance(atlas, atlases.ProbabilisticAtlas):
-            pass
+            self.toggleOverlay(atlasID, labelIndex, False)
         
         elif isinstance(atlas, atlases.LabelAtlas):
-            self.toggleLabelOverlay(atlasID, labelIndex)
+            self.toggleOverlay(atlasID, labelIndex, True)
 
 
         
@@ -146,11 +146,10 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         pass
 
     
-    def toggleProbabilisticOverlay(self, atlasID, labelIndex):
-        pass
-
     
-    def toggleLabelOverlay(self, atlasID, labelIndex):
+    def toggleOverlay(self, atlasID, labelIndex, label):
+        """
+        """
 
         desc        = self.atlasDescs[atlasID]
         overlayName = '{}/{}'.format(atlasID, desc.labels[labelIndex].name)
@@ -166,26 +165,35 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             if atlas is None:
                 atlas = atlases.loadAtlas(self.atlasDescs[atlasID], True)
 
-            if   desc.atlasType == 'probabilistic': labelVal = labelIndex + 1
-            elif desc.atlasType == 'label':         labelVal = labelIndex 
+            if label:
+                if   desc.atlasType == 'probabilistic':
+                    labelVal = labelIndex + 1
+                elif desc.atlasType == 'label':
+                    labelVal = labelIndex 
             
-            mask = np.zeros(atlas.shape, dtype=np.uint8)
-            mask[atlas.data == labelIndex] = labelVal
+                mask = np.zeros(atlas.shape, dtype=np.uint8)
+                mask[atlas.data == labelIndex] = labelVal
+            else:
+                mask = atlas.data[..., labelIndex]
 
             overlay = fslimage.Image(
                 mask,
-                atlas.voxToWorldMat,
+                header=atlas.nibImage.get_header(),
                 name=overlayName)
-            overlay.imageType = 'mask'
+
+            if label:
+                overlay.imageType = 'mask'
 
             log.debug('Adding overlay {}'.format(overlayName))
 
             self._imageList.append(overlay)
             
             display = self._displayCtx.getDisplayProperties(overlay)
-            display.getDisplayOpts().colour = np.random.random(3)
-            
 
+            if label:
+                display.getDisplayOpts().colour = np.random.random(3)
+            else:
+                display.getDisplayOpts().cmap = 'hot'
  
 
 
