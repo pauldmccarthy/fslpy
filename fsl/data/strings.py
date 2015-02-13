@@ -29,7 +29,9 @@ messages = TypeDict({
     'actions.loadcolourmap.invalidname'      : 'Please use only letters, '
                                                'numbers, and underscores.',
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
-                                               'installing the colour map', 
+                                               'installing the colour map',
+
+    'atlaspanel.unknownLocation' : 'Unknown location'
 })
 
 
@@ -59,6 +61,7 @@ actions = TypeDict({
     'CanvasPanel.toggleImageList'         : 'Show/hide image list',
     'CanvasPanel.toggleDisplayProperties' : 'Show/hide display properties',
     'CanvasPanel.toggleLocationPanel'     : 'Show/hide location panel',
+    'CanvasPanel.toggleAtlasPanel'        : 'Show/hide atlas panel',
     'CanvasPanel.toggleCanvasProperties'  : 'Show/hide canvas properties',
 
 

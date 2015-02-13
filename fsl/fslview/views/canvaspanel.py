@@ -30,6 +30,7 @@ import fsl.fslview.displaycontext             as displayctx
 import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.locationpanel     as locationpanel
+import fsl.fslview.controls.atlaspanel        as atlaspanel
 import fsl.fslview.widgets.togglepanel        as togp
 import                                           colourbarpanel
 
@@ -183,6 +184,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             'screenshot'              : self.screenshot,
             'toggleColourBar'         : self.toggleColourBar,
             'toggleImageList'         : self.toggleImageList,
+            'toggleAtlasPanel'        : self.toggleAtlasPanel,
             'toggleDisplayProperties' : self.toggleDisplayProperties,
             'toggleLocationPanel'     : self.toggleLocationPanel,
             'toggleCanvasProperties'  : self.toggleCanvasProperties}
@@ -245,6 +247,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__listLocContainer, imageList, displayCtx)
 
         self.__locationPanel = locationpanel.LocationPanel(
+            self.__listLocContainer, imageList, displayCtx)
+
+        self.__atlasPanel = atlaspanel.AtlasPanel(
             self.__listLocContainer, imageList, displayCtx) 
         
         self.__displayPropsPanel = imagedisplaypanel.ImageDisplayPanel(
@@ -259,6 +264,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__listLocSizer.Add(self.__locationPanel,
                                 flag=wx.EXPAND,
                                 proportion=1)
+        self.__listLocSizer.Add(self.__atlasPanel,
+                                flag=wx.EXPAND,
+                                proportion=1) 
 
         self.__dispSetSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__dispSetContainer.SetSizer(self.__dispSetSizer)
@@ -289,6 +297,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__locationPanel    .Show(False)
         self.__canvasPropsPanel .Show(False)
         self.__displayPropsPanel.Show(False)
+        self.__atlasPanel       .Show(False)
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
@@ -398,6 +407,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     def toggleLocationPanel(self, *a):
         self.__locationPanel.Show(not self.__locationPanel.IsShown())
         self.__layout()
+
+    def toggleAtlasPanel(self, *a):
+        self.__atlasPanel.Show(not self.__atlasPanel.IsShown())
+        self.__layout() 
         
     def toggleDisplayProperties(self, *a):
         self.__displayPropsPanel.Show(not self.__displayPropsPanel.IsShown())

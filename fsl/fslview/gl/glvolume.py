@@ -249,8 +249,11 @@ class GLVolume(globject.GLImageObject):
         # or above the current display range will be mapped
         # to texture coordinate values less than 0.0 or greater
         # than 1.0 respectively.
+        if imax == imin: scale = 1
+        else:            scale = imax - imin
+        
         cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / (imax - imin)
+        cmapXform[0, 0] = 1.0 / scale
         cmapXform[3, 0] = -imin * cmapXform[0, 0]
 
         self.colourMapXform = cmapXform

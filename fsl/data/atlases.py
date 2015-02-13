@@ -10,6 +10,8 @@
 
 Instances of the :class:`Atlas` class is a
 
+MNI152
+
 
 <atlas>
   <header>
@@ -75,7 +77,18 @@ def listAtlases():
     atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
     atlasDescs = map(AtlasDescription, atlasFiles)
 
-    return {d.key: d for d in atlasDescs}
+    return {d.atlasID: d for d in atlasDescs}
+
+
+def loadAtlas(atlasDesc, loadSummary=False):
+
+    if loadSummary or atlasDesc.atlasType == 'label':
+        return LabelAtlas(atlasDesc)
+    
+    if atlasDesc.atlasType == 'probabilistic':
+        return ProbabilisticAtlas(atlasDesc)
+    else:
+        raise ValueError('Unknown atlas type: {}'.format(atlasDesc.atlasType))
 
 
 class AtlasDescription(object):
@@ -92,9 +105,13 @@ class AtlasDescription(object):
         header = root.find('header')
         data   = root.find('data')
 
-        self.key       = op.splitext(op.basename(filename))[0]
+        self.atlasID   = op.splitext(op.basename(filename))[0]
         self.name      = header.find('name').text
-        self.atlasType = header.find('type').text
+        self.atlasType = header.find('type').text.lower()
+ 
+        # Spelling error in some of the atlas.xml files.
+        if self.atlasType == 'probabalistic':
+            self.atlasType = 'probabilistic'
 
         images             = header.findall('images')
         self.images        = []
@@ -141,11 +158,12 @@ class AtlasDescription(object):
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
         xform  = fslimage.Image(self.images[0], loadData=False).voxToWorldMat
-        coords = transform.transform(coords, xform)
+        coords = transform.transform(coords, xform.T)
 
         # Update the coordinates 
         # in our label objects
         for i, label in enumerate(self.labels):
+
             label.x, label.y, label.z = coords[i]
 
 
@@ -164,34 +182,39 @@ class Atlas(fslimage.Image):
             if imgRes < minImageRes:
                 minImageRes = imgRes
                 imageIdx    = i
-                
+
         if isLabel: imageFile = atlasDesc.summaryImages[imageIdx]
         else:       imageFile = atlasDesc.images[       imageIdx]
 
         fslimage.Image.__init__(self, imageFile)
 
+        self.desc = atlasDesc
+
         
-class LabelAtlas(fslimage.Image):
+class LabelAtlas(Atlas):
 
     def __init__(self, atlasDesc):
         Atlas.__init__(self, atlasDesc, isLabel=True)
 
-    def label(self, voxelLoc):
+    def label(self, worldLoc):
+
+        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        
         val = self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
 
-        if self.atlasDesc.atlasType == 'Label':
-            return self.atlasDesc.label[val]
+        if self.desc.atlasType == 'label':
+            return val
         
-        elif self.atlasDesc.atlasType == 'Probabilistic':
-            return self.atlasDesc.label[val - 1]
+        elif self.desc.atlasType == 'probabilistic':
+            return val - 1
 
     
-class ProbabilisticAtlas(fslimage.Image):
+class ProbabilisticAtlas(Atlas):
 
     def __init__(self, atlasDesc):
         Atlas.__init__(self, atlasDesc, isLabel=False)
 
         
-    def proportions(self, voxelLoc):
-        props = self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
-        return zip(self.atlasDesc.labels, props)
+    def proportions(self, worldLoc):
+        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        return self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]

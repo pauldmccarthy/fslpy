@@ -103,6 +103,7 @@ CanvasPanelActionLayout = props.HGroup(
      actionButton('toggleImageList',          CanvasPanel),
      actionButton('toggleDisplayProperties',  CanvasPanel),
      actionButton('toggleLocationPanel',      CanvasPanel),
+     actionButton('toggleAtlasPanel',         CanvasPanel),
      actionButton('toggleCanvasProperties',   CanvasPanel)),
     wrap=True,
     showLabels=False)

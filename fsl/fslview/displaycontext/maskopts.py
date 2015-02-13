@@ -45,5 +45,5 @@ class MaskOpts(fsldisplay.DisplayOpts):
 
         self.threshold.setMin(  0, self.dataMin - 0.5 * dRangeLen)
         self.threshold.setMax(  0, self.dataMax + 0.5 * dRangeLen)
-        self.threshold.setRange(0, self.dataMin, self.dataMax)
+        self.threshold.setRange(0, 0.1, self.dataMax + 0.1)
         self.setConstraint('threshold', 'minDistance', dMinDistance)        

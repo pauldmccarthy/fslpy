@@ -252,7 +252,6 @@ class Image(props.HasProperties):
     def getXFormCode(self):
         """This method returns the code contained in the NIFTI1 header,
         indicating the space to which the (transformed) image is oriented.
-        
         """
         sform_code = self.nibImage.get_header()['sform_code']
 
@@ -272,13 +271,13 @@ class Image(props.HasProperties):
 
         This method returns one of the following values, indicating the
         direction in which coordinates along the specified axis increase:
-          - :attr:`~fsl.data.image.ORIENT_L2R`:     Left to right
-          - :attr:`~fsl.data.image.ORIENT_R2L`:     Right to left
-          - :attr:`~fsl.data.image.ORIENT_A2P`:     Anterior to posterior
-          - :attr:`~fsl.data.image.ORIENT_P2A`:     Posterior to anterior
-          - :attr:`~fsl.data.image.ORIENT_I2S`:     Inferior to superior
-          - :attr:`~fsl.data.image.ORIENT_S2I`:     Superior to inferior
-          - :attr:`~fsl.data.image.ORIENT_UNKNOWN`: Orientation is unknown
+          - :attr:`~fsl.data.constants.ORIENT_L2R`:     Left to right
+          - :attr:`~fsl.data.constants.ORIENT_R2L`:     Right to left
+          - :attr:`~fsl.data.constants.ORIENT_A2P`:     Anterior to posterior
+          - :attr:`~fsl.data.constants.ORIENT_P2A`:     Posterior to anterior
+          - :attr:`~fsl.data.constants.ORIENT_I2S`:     Inferior to superior
+          - :attr:`~fsl.data.constants.ORIENT_S2I`:     Superior to inferior
+          - :attr:`~fsl.data.constants.ORIENT_UNKNOWN`: Orientation is unknown
 
         The returned value is dictated by the XForm code contained in the
         image file header (see the :meth:`getXFormCode` method). Basically,
@@ -385,6 +384,16 @@ class ImageList(props.HasProperties):
         return iio.addImages(self, fromDir, addToEnd)
 
 
+    def find(self, name):
+        """Returns the first image with the given name, or ``None`` if
+        there is no image with said name.
+        """
+        for image in self.images:
+            if image.name == name:
+                return image
+        return None
+            
+
     # Wrappers around the images list property, allowing this
     # ImageList object to be used as if it is actually a list.
     def __len__(     self):               return self.images.__len__()
@@ -400,6 +409,7 @@ class ImageList(props.HasProperties):
     def extend(      self, iterable):     return self.images.extend(iterable)
     def pop(         self, index=-1):     return self.images.pop(index)
     def move(        self, from_, to):    return self.images.move(from_, to)
+    def remove(      self, item):         return self.images.remove(item)
     def insert(      self, index, item):  return self.images.insert(index,
                                                                     item)
     def insertAll(   self, index, items): return self.images.insertAll(index,
