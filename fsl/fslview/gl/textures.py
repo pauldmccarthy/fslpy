@@ -24,10 +24,9 @@ import logging
 import OpenGL.GL as gl
 import numpy     as np
 
-import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform
+import fsl.utils.typedict           as typedict
 import fsl.fslview.gl.globject      as globject
-import fsl.fslview.editor.selection as fslselection
 
 
 log = logging.getLogger(__name__)
@@ -50,10 +49,10 @@ def getTexture(target, tag, *args, **kwargs):
                  will return the same :class:`ImageTexture` instance.
     """
 
-    textureMap = {
-        fslimage.Image         : ImageTexture,
-        fslselection.Selection : SelectionTexture
-    }    
+    textureMap = typedict.TypeDict({
+        'Image'     : ImageTexture,
+        'Selection' : SelectionTexture
+    })
 
     tag        = '{}_{}'.format(id(target), tag)
     textureObj = _allTextures.get(tag, None)
