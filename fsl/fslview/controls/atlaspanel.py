@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 class AtlasListWidget(wx.Panel):
 
-    def __init__(self, parent, atlasDesc, atlasPanel):
+    def __init__(self, parent, atlasPanel, atlasDesc):
 
         wx.Panel.__init__(self, parent)
 
@@ -46,7 +46,6 @@ class AtlasListWidget(wx.Panel):
             self.atlasPanel.enableAtlasInfo(self.atlasDesc.atlasID)
         else:
             self.atlasPanel.disableAtlasInfo(self.atlasDesc.atlasID)
-                    
 
 
 class AtlasPanel(fslpanel.FSLViewPanel):
@@ -70,19 +69,21 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         # Atlas list, containing a list of atlases
         # that the user can choose from
-        self.atlasList = elistbox.EditableListBox(
-            self.notebook,
+        self.atlasPanel  = wx.Panel(self.notebook)
+        self.atlasFilter = wx.TextCtrl(self.atlasPanel)
+        self.atlasList   = elistbox.EditableListBox(
+            self.atlasPanel,
             style=(elistbox.ELB_NO_ADD    | 
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
         # Overlay panel, containing a list of regions,
         # allowing the user to add/remove overlays
-        self.overlayPanel = wx.Panel(self.notebook)
+        self.overlayPanel  = wx.Panel(self.notebook)
         
         self.notebook.AddPage(self.infoPanel,
                               strings.labels['AtlasPanel.infoPanel'])
-        self.notebook.AddPage(self.atlasList,
+        self.notebook.AddPage(self.atlasPanel,
                               strings.labels['AtlasPanel.atlasListPanel'])
         self.notebook.AddPage(self.overlayPanel,
                               strings.labels['AtlasPanel.overlayPanel'])
@@ -96,8 +97,16 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         self.infoPanel.Bind(wxhtml.EVT_HTML_LINK_CLICKED,
                             self._infoPanelLinkClicked)
 
+        # Set up the atlas list, allowing the
+        # user to choose which atlases information
+        # (in the info panel) is shown for
+        self.atlasSizer = wx.BoxSizer(wx.VERTICAL)
+        self.atlasSizer.Add(self.atlasFilter, flag=wx.EXPAND)
+        self.atlasSizer.Add(self.atlasList,   flag=wx.EXPAND, proportion=1)
+        self.atlasPanel.SetSizer(self.atlasSizer)
 
-        # Set up the list of atlases to choose from
+        self.atlasFilter.Bind(wx.EVT_TEXT, self._onAtlasFilter)
+        
         self.atlasDescs     = atlases.listAtlases()
         self.enabledAtlases = {}
 
@@ -106,7 +115,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         for i, (atlasID, desc) in enumerate(listItems):
             
             self.atlasList.Append(desc.name, atlasID)
-            widget = AtlasListWidget(self.atlasList, desc, self)
+            widget = AtlasListWidget(self.atlasList, self, desc)
             self.atlasList.SetItemWidget(i, widget)
 
         displayCtx.addListener('location', self._name, self._locationChanged)
@@ -132,7 +141,12 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         elif showType == 'label':
             self.toggleOverlay(atlasID, labelIndex, True)
 
-        
+
+    def _onAtlasFilter(self, ev):
+        filterStr = self.atlasFilter.GetValue().lower()
+        self.atlasList.ApplyFilter(filterStr, ignoreCase=True)
+
+    
     def enableAtlasInfo(self, atlasID):
 
         desc       = self.atlasDescs[atlasID]
