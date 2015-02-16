@@ -23,21 +23,18 @@ import fsl.fslview.panel  as fslpanel
 log = logging.getLogger(__name__)
 
 
-
-
 class OverlayListWidget(wx.CheckBox):
 
-    def __init__(self, parent, atlasDesc, label=None):
+    def __init__(self, parent, atlasID, label=None):
 
         wx.CheckBox.__init__(self, parent)
 
-        self.parent     = parent
-        self.atlasDesc  = atlasDesc
-        self.label      = label
+        self.parent   = parent
+        self.atlasID  = atlasID
+        self.label    = label
 
         
     def _onCheck(self, ev):
-        
         pass
 
 
@@ -47,18 +44,18 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        self.atlasPanel = atlasPanel
-        
         self.enabledOverlays = {}
+        self.atlasPanel      = atlasPanel
         self.atlasList       = elistbox.EditableListBox(
             self,
             style=(elistbox.ELB_NO_ADD    |
                    elistbox.ELB_NO_REMOVE |
-
                    elistbox.ELB_NO_MOVE))
 
         self.regionPanel     = wx.Panel(   self)
         self.regionFilter    = wx.TextCtrl(self.regionPanel)
+
+        atlasDescs = atlases.listAtlases()
 
         self.regionLists = [None] * len(atlasDescs)
 
@@ -183,12 +180,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                 
             overlay.name = overlayName
 
-            # Even though all the FSL atlases
-            # are in MNI152 space, not all of
-            # their sform_codes are correctly set
-            overlay.nibImage.get_header().set_sform(
-                None, code=constants.NIFTI_XFORM_MNI_152)
-            
+
             self._imageList.append(overlay)
             log.debug('Added summary overlay {}'.format(overlayName))
             

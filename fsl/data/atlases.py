@@ -55,6 +55,7 @@ import                          logging
 import numpy                 as np
 
 import fsl.data.image        as fslimage
+import fsl.data.constants    as constants
 import fsl.utils.transform   as transform
 
 
@@ -234,6 +235,13 @@ class Atlas(fslimage.Image):
         else:       imageFile = atlasDesc.images[       imageIdx]
 
         fslimage.Image.__init__(self, imageFile)
+
+        # Even though all the FSL atlases
+        # are in MNI152 space, not all of
+        # their sform_codes are correctly set
+        self.nibImage.get_header().set_sform(
+            None, code=constants.NIFTI_XFORM_MNI_152)
+                    
 
         self.desc = atlasDesc
 

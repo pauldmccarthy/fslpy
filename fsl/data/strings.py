@@ -31,10 +31,10 @@ messages = TypeDict({
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
                                                'installing the colour map',
 
-    'atlaspanel.notMNISpace'   : 'Atlas lookup can only be performed on '
-                                 'images registered to MNI152 space',
+    'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
+                                     'images registered to MNI152 space',
 
-    'atlaspanel.chooseAnAtlas' : 'Choose an atlas!'
+    'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!'
 })
 
 
