@@ -66,6 +66,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         # Info panel, containing atlas-based regional
         # proportions/labels for the current location
         self.infoPanel = wxhtml.HtmlWindow(self.notebook)
+        self.infoPanel.SetMinSize((-1, 100))
 
         # Atlas list, containing a list of atlases
         # that the user can choose from
@@ -85,6 +86,8 @@ class AtlasPanel(fslpanel.FSLViewPanel):
                               strings.labels['AtlasPanel.atlasListPanel'])
         self.notebook.AddPage(self.overlayPanel,
                               strings.labels['AtlasPanel.overlayPanel'])
+
+        self.notebook.ShowPage(0)
 
         # The info panel contains clickable links
         # for the currently displayed regions -
@@ -108,22 +111,26 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         displayCtx.addListener('location', self._name, self._locationChanged)
 
+        self.Layout()
+
 
     def _infoPanelLinkClicked(self, ev):
 
-        atlasID, labelIndex = ev.GetLinkInfo().GetHref().split()
-        labelIndex          = int(labelIndex)
-        atlas               = self.enabledAtlases[atlasID]
-        label               = atlas.desc.labels[labelIndex]
+        showType, atlasID, labelIndex = ev.GetLinkInfo().GetHref().split()
+        labelIndex                    = int(labelIndex)
+        atlas                         = self.enabledAtlases[atlasID]
+        label                         = atlas.desc.labels[labelIndex]
 
-        log.debug('{}/{} clicked'.format(atlasID, label.name)) 
+        log.debug('{}/{} ({}) clicked'.format(atlasID, label.name, showType))
 
-        if isinstance(atlas, atlases.ProbabilisticAtlas):
+        if showType == 'summary':
+            self.toggleSummaryOverlay(atlasID)
+
+        elif showType == 'prob':
             self.toggleOverlay(atlasID, labelIndex, False)
         
-        elif isinstance(atlas, atlases.LabelAtlas):
+        elif showType == 'label':
             self.toggleOverlay(atlasID, labelIndex, True)
-
 
         
     def enableAtlasInfo(self, atlasID):
@@ -143,8 +150,32 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         
     def toggleSummaryOverlay(self, atlasID):
-        pass
 
+        overlayName = '{}/all'.format(atlasID)
+        overlay     = self._imageList.find(overlayName)
+
+        if overlay is not None:
+            self._imageList.remove(overlay)
+            log.debug('Removed summary overlay {}'.format(overlayName))
+            
+        else:
+            overlay = self.enabledAtlases.get(atlasID, None)
+            if overlay is None or \
+               isinstance(overlay, atlases.ProbabilisticAtlas):
+                overlay = atlases.loadAtlas(self.atlasDescs[atlasID], True)
+                
+            overlay.name = overlayName
+
+            # Even though all the FSL atlases
+            # are in MNI152 space, not all of
+            # their sform_codes are correctly set
+            overlay.nibImage.get_header().set_sform(
+                None, code=constants.NIFTI_XFORM_MNI_152)
+            
+            self._imageList.append(overlay)
+            log.debug('Added summary overlay {}'.format(overlayName))
+            
+            
     
     
     def toggleOverlay(self, atlasID, labelIndex, label):
@@ -157,12 +188,12 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         if overlay is not None:
             self._imageList.remove(overlay)
-
-            log.debug('Removing overlay {}'.format(overlayName))
+            log.debug('Removed overlay {}'.format(overlayName))
 
         else:
             atlas = self.enabledAtlases.get(atlasID, None)
-            if atlas is None:
+            if atlas is None or \
+               (label and isinstance(overlay, atlases.LabelAtlas)):
                 atlas = atlases.loadAtlas(self.atlasDescs[atlasID], True)
 
             if label:
@@ -181,12 +212,15 @@ class AtlasPanel(fslpanel.FSLViewPanel):
                 header=atlas.nibImage.get_header(),
                 name=overlayName)
 
+            # See comment  in toggleSummaryOverlay
+            overlay.nibImage.get_header().set_sform(
+                None, code=constants.NIFTI_XFORM_MNI_152)
+
             if label:
                 overlay.imageType = 'mask'
 
-            log.debug('Adding overlay {}'.format(overlayName))
-
             self._imageList.append(overlay)
+            log.debug('Added overlay {}'.format(overlayName))
             
             display = self._displayCtx.getDisplayProperties(overlay)
 
@@ -198,30 +232,31 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
 
     def _locationChanged(self, *a):
+        
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         loc     = self._displayCtx.location
         text    = self.infoPanel
+        loc     = transform.transform([loc], display.displayToWorldMat)[0]
 
-        loc = transform.transform([loc], display.displayToWorldMat)[0]
+        if len(self.enabledAtlases) == 0:
+            text.SetPage(strings.messages['atlaspanel.chooseAnAtlas'])
+            return
 
         if image.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
-            text.SetPage(strings.messages['atlaspanel.unknownLocation'])
+            text.SetPage(strings.messages['atlaspanel.notMNISpace'])
             return
 
         lines = []
 
-        labelTemplate = """{}
-        (<a href="{} {}">Show/Hide</a>)
-        """
-        probTemplate = """
-        {:0.2f}% {}
-        (<a href="{} {}">Show/Hide</a>)
-        """
+
+        titleTemplate = '<b>{}</b> (<a href="summary {} {}">Show/Hide</a>)'
+        labelTemplate = '{} (<a href="label {} {}">Show/Hide</a>)'
+        probTemplate  = '{:0.2f}% {} (<a href="prob {} {}">Show/Hide</a>)'
 
         for atlasID, atlas in self.enabledAtlases.items():
 
-            lines.append('<b>{}</b>'.format(atlas.desc.name))
+            lines.append(titleTemplate.format(atlas.desc.name, atlasID, 0))
 
             if isinstance(atlas, atlases.ProbabilisticAtlas):
                 proportions = atlas.proportions(loc)
@@ -239,7 +274,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             elif isinstance(atlas, atlases.LabelAtlas):
                 
                 labelVal = atlas.label(loc)
-                label    = atlas.desc.labels[labelVal]
+                label    = atlas.desc.labels[int(labelVal)]
                 lines.append(labelTemplate.format(label.name,
                                                   atlasID,
                                                   label.index,
