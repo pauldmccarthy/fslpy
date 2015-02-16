@@ -106,8 +106,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             self.loadedAtlases.pop((atlasID, summary))
 
 
-    def toggleOverlay(self, atlasID, labelIdx, summary):
-
+    def getOverlayName(self, atlasID, labelIdx, summary):
         atlasDesc = atlases.getAtlasDescription(atlasID)
 
         if atlasDesc.atlasType == 'summary' or labelIdx is None:
@@ -122,8 +121,21 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             overlayName = '{}/{}/{}' .format(atlasID,
                                              overlayType,
                                              atlasDesc.labels[labelIdx].name)
+ 
+        return overlayName, summary
 
-        overlay = self._imageList.find(overlayName)
+    
+    def getOverlayState(self, atlasID, labelIdx, summary):
+
+        name, _ = self.getOverlayName(atlasID, labelIdx, summary)
+        return self._imageList.find(name) is not None
+    
+
+    def toggleOverlay(self, atlasID, labelIdx, summary):
+
+        atlasDesc            = atlases.getAtlasDescription(atlasID)
+        overlayName, summary = self.getOverlayName(atlasID, labelIdx, summary)
+        overlay              = self._imageList.find(overlayName)
  
         if overlay is not None:
             self.clearAtlas(atlasID, summary)
