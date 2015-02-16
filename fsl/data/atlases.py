@@ -49,6 +49,7 @@ import                          os
 import xml.etree.ElementTree as et
 import os.path               as op
 import                          glob
+import                          collections
 import                          logging
 
 import numpy                 as np
@@ -67,28 +68,74 @@ if os.environ.get('FSLDIR', None) is None:
 else:
     ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')
 
+
+ATLAS_DESCRIPTIONS = collections.OrderedDict()
+
     
-def listAtlases():
+def listAtlases(refresh=False):
     """Returns a dictionary containing :class:`AtlasDescription` objects for
     all available atlases.
+
+    :arg refresh: If ``True``, or if the atlas desriptions have not
+                  previously been loaded, atlas descriptions are
+                  loaded from the atlas files. Otherwise, prefviously
+                  loaded descriptions are returned (see 
+                  :attr:`ATLAS_DESCRIPTIONS`).
     """
 
 
+    if len(ATLAS_DESCRIPTIONS) == 0:
+        refresh = True
+
+    if not refresh:
+        return ATLAS_DESCRIPTIONS.values()
+
     atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
     atlasDescs = map(AtlasDescription, atlasFiles)
+    atlasDescs = sorted(atlasDescs, key=lambda d: d.name)
 
-    return {d.atlasID: d for d in atlasDescs}
+    ATLAS_DESCRIPTIONS.clear()
+
+    for desc in atlasDescs:
+        ATLAS_DESCRIPTIONS[desc.atlasID] = desc
+
+    return atlasDescs
 
 
-def loadAtlas(atlasDesc, loadSummary=False):
-
-    if loadSummary or atlasDesc.atlasType == 'label':
-        return LabelAtlas(atlasDesc)
+def getAtlasDescription(atlasID):
+    """Returns an :class:`AtlasDescription` instance describing the
+    atlas with the given ``atlasID``.
+    """
     
-    if atlasDesc.atlasType == 'probabilistic':
-        return ProbabilisticAtlas(atlasDesc)
-    else:
-        raise ValueError('Unknown atlas type: {}'.format(atlasDesc.atlasType))
+    if len(ATLAS_DESCRIPTIONS) == 0:
+        listAtlases()
+
+    return ATLAS_DESCRIPTIONS[atlasID]
+
+
+def loadAtlas(atlasID, loadSummary=False):
+    """Loads and returns an :class:`Atlas` instance for the atlas
+    with the given  ``atlasID``. 
+
+    :arg loadSummary: If ``True``, a 3D :class:`LabelAtlas` image is
+                      loaded. Otherwise, if the atlas is probabilistic,
+                      a 4D :class:`ProbabilisticAtlas` image is loaded.
+    """
+    
+    if len(ATLAS_DESCRIPTIONS) == 0:
+        listAtlases()
+
+    atlasDesc = ATLAS_DESCRIPTIONS[atlasID]
+
+    # label atlases are only
+    # available in 'summary' form
+    if atlasDesc.atlasType == 'label':
+        loadSummary = True
+
+    if loadSummary: atlas = LabelAtlas(        atlasDesc)
+    else:           atlas = ProbabilisticAtlas(atlasDesc)
+
+    return atlas
 
 
 class AtlasDescription(object):

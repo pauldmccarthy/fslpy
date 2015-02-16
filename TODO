@@ -7,13 +7,17 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * February 2015 internal release
-** Git release pipeline
 ** UI design
 ** Atlas tools
+** Histogram?
 ** SSH / VNC performance
 ** Fix all the bugs
 *** Command line
 *** Offscreen rendering
+** DONE Git release pipeline
+We now have an 'oxford' branch, which is linked to the jalapeno installation.
+When you want to 'release' something, merge from the master branch to the
+oxford branch, and push to jalapeno
 
 
 * Things to do in props package
@@ -102,6 +106,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Ability to display vector data as directional (i.e. starting from voxel centre)
 ** Ortho canvases not taking up all the available space 
 ** 'Annotation' image type that allows the user to highlight regions in different colours.
 ** Support ANALYZE75
