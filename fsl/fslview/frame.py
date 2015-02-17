@@ -204,14 +204,34 @@ class FSLViewFrame(wx.Frame):
 
         if not default:
             config   = wx.Config('FSLView')
-            size     = self._parseSavedSize(  config.Read('size'))
-            position = self._parseSavedPoint( config.Read('position'))
+            size     = self._parseSavedSize( config.Read('size'))
+            position = self._parseSavedPoint(config.Read('position'))
+
+            # If any of the saved position is off 
+            # screen, revert to default settings
+            corners = [position,
+                       (position[0] + size[0], position[1]),
+                       (position[0],           position[1] + size[1]),
+                       (position[0] + size[0], position[1] + size[1])]
+            
+            displays = map(wx.Display.GetFromPoint, corners)
+
+            if any([d == wx.NOT_FOUND for d in displays]):
+                size     = None
+                position = None
 
         if size is not None:
             log.debug('Restoring previous size: {}'.format(size))
             self.SetSize(size)
+            
         else:
-            self.SetSize((800, 600))
+            
+            # Default size is 90% of
+            # the first display size
+            size     = list(wx.Display(0).GetGeometry().GetSize())
+            size[0] *= 0.9
+            size[1] *= 0.9
+            self.SetSize(size)
 
         if position is not None:
             log.debug('Restoring previous position: {}'.format(position))
