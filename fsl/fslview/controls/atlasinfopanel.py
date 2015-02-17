@@ -81,7 +81,14 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         self.infoPanel.Bind(wxhtml.EVT_HTML_LINK_CLICKED,
                             self._infoPanelLinkClicked)
 
-        displayCtx.addListener('location', self._name, self._locationChanged)
+        displayCtx.addListener('location',
+                               self._name,
+                               self._locationChanged)
+        displayCtx.addListener('selectedImage',
+                               self._name,
+                               self._locationChanged)
+
+        self._locationChanged()
 
         self.Layout()
 
@@ -122,12 +129,12 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         text    = self.infoPanel
         loc     = transform.transform([loc], display.displayToWorldMat)[0]
 
-        if len(self.enabledAtlases) == 0:
-            text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
-            return
-
         if image.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
             text.SetPage(strings.messages['AtlasInfoPanel.notMNISpace'])
+            return
+
+        if len(self.enabledAtlases) == 0:
+            text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
 
         lines         = []
