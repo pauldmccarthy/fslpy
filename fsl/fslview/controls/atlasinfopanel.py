@@ -22,39 +22,24 @@ import fsl.utils.transform as transform
 log = logging.getLogger(__name__)
 
 
-class AtlasListWidget(wx.Panel):
+class AtlasListWidget(wx.CheckBox):
 
     def __init__(self, parent, atlasInfoPanel, atlasID):
 
-        wx.Panel.__init__(self, parent)
+        wx.CheckBox.__init__(self, parent)
 
         self.atlasID        = atlasID
         self.atlasInfoPanel = atlasInfoPanel
-        self.enableBox      = wx.CheckBox(self)
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.enableBox, flag=wx.EXPAND)
-
-        self.enableBox.Bind(wx.EVT_CHECKBOX, self.onEnable)
+        self.Bind(wx.EVT_CHECKBOX, self.onEnable)
 
         
     def onEnable(self, ev):
 
-        if self.enableBox.GetValue():
+        if self.GetValue():
             self.atlasInfoPanel.enableAtlasInfo(self.atlasID)
         else:
             self.atlasInfoPanel.disableAtlasInfo(self.atlasID)
-
-
-# TODO
-# 
-# Actions to show/hide atlas overlays are managed by the AtlasPanel,
-# which provides methods to do so, and maintains the state required
-# to track whether an overlay is enabled/disabled. Thec
-# AtlasInfoPanel and AtlasOverlayPanel  implement the GUI
-# functionality, and the event handling needed to allow the user
-# to toggle atlas information/overlays on/off, but management
-# of the in-memory atlas images is handled by the AtlasPanel.
 
 
 # Info panel, containing atlas-based regional

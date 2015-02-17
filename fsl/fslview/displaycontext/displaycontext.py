@@ -41,7 +41,7 @@ class DisplayContext(props.SyncableHasProperties):
 
     location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
     """The location property contains the currently selected
-    3D location (xyz) in the image list space. 
+    3D location (xyz) in the current display coordinate system.
     """
 
     

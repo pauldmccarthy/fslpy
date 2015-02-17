@@ -15,6 +15,7 @@ import pwidgets.notebook                      as notebook
 import fsl.data.image                         as fslimage
 import fsl.data.atlases                       as atlases
 import fsl.data.strings                       as strings
+import fsl.utils.transform                    as transform
 import fsl.fslview.panel                      as fslpanel
 import fsl.fslview.controls.atlasoverlaypanel as atlasoverlaypanel
 import fsl.fslview.controls.atlasinfopanel    as atlasinfopanel
@@ -140,6 +141,8 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         if overlay is not None:
             self.clearAtlas(atlasID, summary)
             self._imageList.remove(overlay)
+            self.overlayPanel.setOverlayState(
+                atlasID, labelIdx, summary, False)
             log.debug('Removed overlay {}'.format(overlayName))
             return
 
@@ -175,6 +178,10 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         overlay.imageType = imageType
 
         self._imageList.append(overlay)
+
+        self.overlayPanel.setOverlayState(
+            atlasID, labelIdx, summary, True)
+        
         log.debug('Added overlay {}'.format(overlayName))
 
         display = self._displayCtx.getDisplayProperties(overlay)
@@ -182,3 +189,18 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         if labelIdx is not None:
             if summary: display.getDisplayOpts().colour = np.random.random(3)
             else:       display.getDisplayOpts().cmap   = 'hot'
+
+
+    def locateRegion(self, atlasID, labelIdx):
+        
+        atlasDesc = atlases.getAtlasDescription(atlasID)
+        label     = atlasDesc.labels[labelIdx]
+
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        worldLoc = (label.x, label.y, label.z)
+        dispLoc  = transform.transform(
+            [worldLoc], display.worldToDisplayMat)[0]
+
+        self._displayCtx.location.xyz = dispLoc

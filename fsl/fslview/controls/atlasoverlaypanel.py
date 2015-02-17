@@ -9,34 +9,58 @@
 
 import logging
 
-import          wx
-import numpy as np
+import wx
 
-import pwidgets.elistbox  as elistbox
+import pwidgets.elistbox as elistbox
 
-import fsl.data.atlases   as atlases
-import fsl.data.image     as fslimage
-import fsl.data.constants as constants
-import fsl.fslview.panel  as fslpanel
+import fsl.data.atlases  as atlases
+import fsl.fslview.panel as fslpanel
 
 
 log = logging.getLogger(__name__)
 
 
-class OverlayListWidget(wx.CheckBox):
+class OverlayListWidget(wx.Panel):
 
-    def __init__(self, parent, atlasID, label=None):
+    def __init__(self, parent, atlasID, atlasPanel, labelIdx=None):
 
-        wx.CheckBox.__init__(self, parent)
+        wx.Panel.__init__(self, parent)
+        
+        self.atlasID    = atlasID
+        self.atlasDesc  = atlases.getAtlasDescription(atlasID)
+        self.atlasPanel = atlasPanel
+        self.labelIdx   = labelIdx
 
-        self.parent   = parent
-        self.atlasID  = atlasID
-        self.label    = label
+        self.enableBox = wx.CheckBox(self)
+        self.enableBox.SetValue(False)
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(self.sizer)
+
+        self.sizer.Add(self.enableBox, flag=wx.EXPAND)
+
+        self.enableBox.Bind(wx.EVT_CHECKBOX, self._onEnable)
+        
+        if labelIdx is not None:
+            self.locateButton = wx.Button(self,
+                                          label='+',
+                                          style=wx.BU_EXACTFIT)
+            self.sizer.Add(self.locateButton, flag=wx.EXPAND)
+
+            self.locateButton.Bind(wx.EVT_BUTTON, self._onLocate)
+        
+    def _onEnable(self, ev):
+        self.atlasPanel.toggleOverlay(
+            self.atlasID,
+            self.labelIdx,
+            self.atlasDesc.atlasType == 'label')
+
+    def _onLocate(self, ev):
+        self.atlasPanel.locateRegion(self.atlasID, self.labelIdx)
 
         
-    def _onCheck(self, ev):
-        pass
-
+# TODO control to locate region (in addition 
+# to control displaying the region)
 
 class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
@@ -73,12 +97,32 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
         for i, atlasDesc in enumerate(atlasDescs):
             self.atlasList.Append(atlasDesc.name, atlasDesc)
             self._updateAtlasState(i)
+            widget = OverlayListWidget(self.atlasList,
+                                       atlasDesc.atlasID,
+                                       atlasPanel)
+            self.atlasList.SetItemWidget(i, widget)
         
         self.regionFilter.Bind(wx.EVT_TEXT, self._onRegionFilter)
         self.atlasList.Bind(elistbox.EVT_ELB_SELECT_EVENT, self._onAtlasSelect)
 
         self.regionSizer.Layout()
         self.sizer      .Layout()
+
+
+    def setOverlayState(self, atlasID, labelIdx, summary, state):
+
+        atlasDesc = atlases.getAtlasDescription(atlasID)
+        log.debug('Setting {}/{} overlay state to {}'.format(
+            atlasID, labelIdx, state))
+
+        if labelIdx is None:
+            widget = self.atlasList.GetItemWidget(atlasDesc.index)
+            widget.enableBox.SetValue(state)
+        else:
+            regionList = self.regionLists[atlasDesc.index]
+            
+            if regionList is not None:
+                regionList.GetItemWidget(labelIdx).enableBox.SetValue(state)
 
 
     def _onRegionFilter(self, ev):
@@ -130,21 +174,28 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                        elistbox.ELB_NO_REMOVE |
                        elistbox.ELB_NO_MOVE))
 
-            print 'Creating region list for {} ({})'.format(
-                atlasDesc.atlasID, id(regionList))
+            log.debug('Creating region list for {} ({})'.format(
+                atlasDesc.atlasID, id(regionList)))
             
             self.regionLists[atlasIdx] = regionList
 
-            for label in atlasDesc.labels:
+            for i, label in enumerate(atlasDesc.labels):
                 regionList.Append(label.name)
+                widget = OverlayListWidget(regionList,
+                                           atlasDesc.atlasID,
+                                           self.atlasPanel,
+                                           label.index)
+                regionList.SetItemWidget(i, widget)
+                                           
+
 
             filterStr = self.regionFilter.GetValue().lower()
             regionList.ApplyFilter(filterStr, ignoreCase=True)
 
             self._updateAtlasState(atlasIdx)
             
-        print 'Showing region list for {} ({})'.format(
-            atlasDesc.atlasID, id(regionList))
+        log.debug('Showing region list for {} ({})'.format(
+            atlasDesc.atlasID, id(regionList)))
 
         old = self.regionSizer.GetItem(1).GetWindow()
         
@@ -156,83 +207,3 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
         
         self.regionSizer.Insert(1, regionList, flag=wx.EXPAND, proportion=1)
         self.regionSizer.Layout()
-
-
-    def overlayIsEnabled(self, atlasDesc, label=None, summary=False):
-        pass
-
-        
-    def toggleSummaryOverlay(self, atlasDesc):
-
-        atlasID     = atlasDesc.atlasID
-        overlayName = '{}/all'.format(atlasID)
-        overlay     = self._imageList.find(overlayName)
-
-        if overlay is not None:
-            self._imageList.remove(overlay)
-            log.debug('Removed summary overlay {}'.format(overlayName))
-            
-        else:
-            overlay = self.enabledAtlases.get(atlasID, None)
-            if overlay is None or \
-               isinstance(overlay, atlases.ProbabilisticAtlas):
-                overlay = atlases.loadAtlas(atlasDesc, True)
-                
-            overlay.name = overlayName
-
-
-            self._imageList.append(overlay)
-            log.debug('Added summary overlay {}'.format(overlayName))
-            
-    
-    def toggleOverlay(self, atlasDesc, labelIndex, label):
-        """
-        """
-
-        atlasID     = atlasDesc.atlasID
-        overlayName = '{}/{}'.format(atlasID,
-                                     atlasDesc.labels[labelIndex].name)
-        overlay     = self._imageList.find(overlayName)
-
-        if overlay is not None:
-            self._imageList.remove(overlay)
-            log.debug('Removed overlay {}'.format(overlayName))
-
-        else:
-            atlas = self.enabledAtlases.get(atlasID, None)
-            if atlas is None or \
-               (label and isinstance(overlay, atlases.LabelAtlas)):
-                atlas = atlases.loadAtlas(atlasDesc, True)
-
-            if label:
-                if   atlasDesc.atlasType == 'probabilistic':
-                    labelVal = labelIndex + 1
-                elif atlasDesc.atlasType == 'label':
-                    labelVal = labelIndex 
-            
-                mask = np.zeros(atlas.shape, dtype=np.uint8)
-                mask[atlas.data == labelIndex] = labelVal
-            else:
-                mask = atlas.data[..., labelIndex]
-
-            overlay = fslimage.Image(
-                mask,
-                header=atlas.nibImage.get_header(),
-                name=overlayName)
-
-            # See comment  in toggleSummaryOverlay
-            overlay.nibImage.get_header().set_sform(
-                None, code=constants.NIFTI_XFORM_MNI_152)
-
-            if label:
-                overlay.imageType = 'mask'
-
-            self._imageList.append(overlay)
-            log.debug('Added overlay {}'.format(overlayName))
-            
-            display = self._displayCtx.getDisplayProperties(overlay)
-
-            if label:
-                display.getDisplayOpts().colour = np.random.random(3)
-            else:
-                display.getDisplayOpts().cmap = 'hot'

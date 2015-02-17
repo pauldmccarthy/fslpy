@@ -97,8 +97,10 @@ def listAtlases(refresh=False):
 
     ATLAS_DESCRIPTIONS.clear()
 
-    for desc in atlasDescs:
+    for i, desc in enumerate(atlasDescs):
+        desc.index                       = i
         ATLAS_DESCRIPTIONS[desc.atlasID] = desc
+        
 
     return atlasDescs
 
@@ -194,10 +196,10 @@ class AtlasDescription(object):
             
             al        = AtlasLabel()
             al.name   = label.text
-            al.index  = label.attrib['index']
-            al.x      = label.attrib['x']
-            al.y      = label.attrib['y']
-            al.z      = label.attrib['z']
+            al.index  = int(  label.attrib['index'])
+            al.x      = float(label.attrib['x'])
+            al.y      = float(label.attrib['y'])
+            al.z      = float(label.attrib['z'])
 
             coords[i] = (al.x, al.y, al.z)
 
