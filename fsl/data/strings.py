@@ -46,6 +46,7 @@ titles = TypeDict({
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
+    'HistogramPanel'  : 'Histogram',
     'SpacePanel'      : 'Space inspector', 
 
     'AtlasInfoPanel'      : 'Atlas information',
@@ -121,6 +122,8 @@ properties = TypeDict({
     'OrthoPanel.yzoom'       : 'Y zoom',
     'OrthoPanel.zzoom'       : 'Z zoom',
 
+    'HistogramPanel.histRange' : 'Histogram range',
+    'HistogramPanel.nbins'     : 'Number of bins',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
@@ -197,6 +200,9 @@ choices = TypeDict({
     'CanvasPanel.colourBarLocation.bottom' : 'Bottom',
     'CanvasPanel.colourBarLocation.left'   : 'Left',
     'CanvasPanel.colourBarLocation.right'  : 'Right',
+
+    'HistogramPanel.histRange.min' : 'Min.',
+    'HistogramPanel.histRange.max' : 'Max.',
     
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',

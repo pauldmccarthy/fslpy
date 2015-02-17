@@ -21,6 +21,7 @@ from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
 from fsl.fslview.views.canvaspanel           import CanvasPanel
 from fsl.fslview.views.orthopanel            import OrthoPanel
 from fsl.fslview.views.lightboxpanel         import LightBoxPanel
+from fsl.fslview.views.histogrampanel        import HistogramPanel
 from fsl.fslview.displaycontext              import Display
 from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
 from fsl.fslview.displaycontext.maskopts     import MaskOpts
@@ -134,6 +135,11 @@ LightBoxPanelLayout = props.VGroup((
                   widget('showGridLines',  LightBoxPanel)))))
 
 
+HistogramPanelLayout = props.VGroup((
+    widget('histRange', HistogramPanel),
+    widget('nbins',     HistogramPanel)))
+
+
 DisplayLayout = props.VGroup((
     widget('name',          Display),
     widget('imageType',     Display),
@@ -184,6 +190,7 @@ layouts = td.TypeDict({
     ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
     ('OrthoPanel',       'props')   : OrthoPanelLayout,
     ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
+    ('HistogramPanel',   'props')   : HistogramPanelLayout,
 
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,

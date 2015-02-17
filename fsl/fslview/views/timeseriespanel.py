@@ -58,6 +58,10 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
         self.SetSizer(self._sizer)
         self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
 
+        self._imageList.addListener(
+            'images',
+            self._name,
+            self._selectedImageChanged) 
         self._displayCtx.addListener(
             'selectedImage',
             self._name,
@@ -76,7 +80,8 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
             if ev.GetEventObject() is not self:
                 return
-            
+
+            self._imageList .removeListener('images',        self._name)
             self._displayCtx.removeListener('selectedImage', self._name)
             self._displayCtx.removeListener('location',      self._name)
             self._displayCtx.removeListener('volume',        self._name)
@@ -116,7 +121,6 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
             return
 
         self._drawPlot() 
-
 
 
     def _drawPlot(self):
