@@ -32,10 +32,8 @@ log = logging.getLogger(__name__)
 #    - Ability to apply a label mask image, and plot separate
 #      histograms for each label
 # 
-#    - Add an intensity range control which limits the range
-#      of values values that are included in the histogram,
-#      and which puts an overlay on the display, showing the
-#      voxels that are within the range
+#    - Ability to put an overlay on the display, showing the
+#      voxels that are within the histogram range
 #
 #    - For 4D images, add an option to plot the histogram for
 #      the current volume only, or for all volumes
@@ -47,16 +45,16 @@ log = logging.getLogger(__name__)
 # 
 class HistogramPanel(fslpanel.FSLViewPanel):
 
-
-    histRange = props.Bounds(
+    
+    dataRange = props.Bounds(
         ndims=1,
-        labels=[strings.choices['HistogramPanel.histRange.min'],
-                strings.choices['HistogramPanel.histRange.max']])
-
+        labels=[strings.choices['HistogramPanel.dataRange.min'],
+                strings.choices['HistogramPanel.dataRange.max']])
     
-    nbins = props.Int(minval=10, maxval=500, default=100)
+    nbins     = props.Int( minval=10,  maxval=500, default=100, clamped=True)
+    autoHist  = props.Boolean(default=True)
 
-    
+
     def __init__(self, parent, imageList, displayCtx):
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
@@ -95,19 +93,19 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         self._canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
         self._canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)        
 
-        self.addListener('histRange', self._name, self._drawPlot)
+        self.addListener('dataRange', self._name, self._drawPlot)
         self.addListener('nbins',     self._name, self._drawPlot)
+        self.addListener('autoHist',  self._name, self._drawPlot)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
 
-        self._histX           = None
-        self._histY           = None
         self._domainHighlight = None
         
         self._selectedImageChanged()
 
         self.Layout()
 
+        
     def _onDestroy(self, ev):
         ev.Skip()
 
@@ -117,7 +115,57 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
+        
+    def _autoHistogramBins(self, data):
 
+        # Automatic histogram bin calculation
+        # as implemented in the original FSLView
+
+        dMin, dMax = self.dataRange.x
+        dRange     = dMax - dMin
+
+        binSize = np.power(10, np.ceil(np.log10(dRange) - 1) - 1)
+
+        nbins = dRange / binSize
+        
+        while nbins < 100:
+            binSize /= 2
+            nbins    = dRange / binSize
+
+        if issubclass(data.dtype.type, np.integer):
+            binSize = max(1, np.ceil(binSize))
+
+        adjMin = np.floor(dMin / binSize) * binSize
+        adjMax = np.ceil( dMax / binSize) * binSize
+
+        nbins = int((adjMax - adjMin) / binSize) + 1
+
+        print binSize, nbins
+
+        return nbins
+
+    
+    def _calcHistogram(self, data):
+        
+        if self.autoHist: nbins = self._autoHistogramBins(data)
+        else:             nbins = self.nbins
+        
+        histY, histX = np.histogram(data.flat,
+                                    bins=nbins,
+                                    range=self.dataRange.x)
+        
+        # np.histogram returns all bin
+        # edges, including the right hand
+        # side of the final bin. Remove it.
+        # And also shift the remaining
+        # bin edges so they are centred
+        # within each bin
+        histX  = histX[:-1]
+        histX += (histX[1] - histX[0]) / 2.0
+
+        return histX, histY
+
+    
     def _selectedImageChanged(self, *a):
 
         if len(self._imageList) == 0:
@@ -128,25 +176,14 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         minval = float(image.data.min())
         maxval = float(image.data.max())
 
-        histX, histY = np.histogram(image.data.flat,
-                                    bins=self.nbins,
-                                    range=self.histRange)
-
-        # np.histogram returns all bin
-        # edges, including the right hand
-        # side of the final bin. Remove it.
-        # And also shift the remaining
-        # bin edges so they are centred
-        # within each bin
-        histX  = histX[:-1]
-        histX += (histX[1] - histX[0]) / 2.0
-
-        self._histX = histX
-        self._histY = histY
-
-        self.histRange.setMin(  0, minval)
-        self.histRange.setMax(  0, maxval)
-        self.histRange.setRange(0, minval, maxval)
+        # update the  histgram range from the data range
+        self.disableListener('dataRange', self._name)
+        
+        self.dataRange.setMin(  0, minval)
+        self.dataRange.setMax(  0, maxval)
+        self.dataRange.setRange(0, minval, maxval)
+        
+        self.enableListener('dataRange', self._name)
 
         self._drawPlot()
 
@@ -184,29 +221,23 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         newRange              = sorted(self._domainHighlight)
         self._mouseDown       = False
         self._domainHighlight = None
-        self.histRange.x      = newRange
+        self.dataRange.x      = newRange
 
     
     def _drawPlot(self, *a):
 
         self._axis.clear()
 
-        if any((self._histX is None, self._histY is None)):
-            return
-
         image = self._displayCtx.getSelectedImage()
+        x, y  = self._calcHistogram(image.data)
 
-        hist, bins, _ = self._axis.hist(image.data.flat,
-                                         bins=self.nbins,
-                                         range=self.histRange.x,
-                                         histtype='step')
-
+        self._axis.step(x, y)
         self._axis.grid(True)
         
-        xmin = bins.min()
-        xmax = bins.max()
-        ymin = hist.min()
-        ymax = hist.max()
+        xmin = x.min()
+        xmax = x.max()
+        ymin = y.min()
+        ymax = y.max()
 
         xlen = xmax - xmin
         ylen = ymax - ymin

@@ -136,8 +136,10 @@ LightBoxPanelLayout = props.VGroup((
 
 
 HistogramPanelLayout = props.VGroup((
-    widget('histRange', HistogramPanel),
-    widget('nbins',     HistogramPanel)))
+    widget('dataRange', HistogramPanel),
+    widget('autoHist',  HistogramPanel),
+    widget('nbins',     HistogramPanel,
+           enabledWhen=lambda hp: not hp.autoHist)))
 
 
 DisplayLayout = props.VGroup((

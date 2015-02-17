@@ -122,8 +122,10 @@ properties = TypeDict({
     'OrthoPanel.yzoom'       : 'Y zoom',
     'OrthoPanel.zzoom'       : 'Z zoom',
 
-    'HistogramPanel.histRange' : 'Histogram range',
-    'HistogramPanel.nbins'     : 'Number of bins',
+    'HistogramPanel.dataRange'  : 'Data range',
+    'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
+    'HistogramPanel.nbins'      : 'Number of bins', 
+
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
@@ -201,8 +203,8 @@ choices = TypeDict({
     'CanvasPanel.colourBarLocation.left'   : 'Left',
     'CanvasPanel.colourBarLocation.right'  : 'Right',
 
-    'HistogramPanel.histRange.min' : 'Min.',
-    'HistogramPanel.histRange.max' : 'Max.',
+    'HistogramPanel.dataRange.min' : 'Min.',
+    'HistogramPanel.dataRange.max' : 'Max.',
     
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',
