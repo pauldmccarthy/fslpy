@@ -272,15 +272,24 @@ class Profile(actions.ActionProvider):
         """
 
         mode  = self.mode
-        shift = ev.ShiftDown()
+        alt   = ev.AltDown()        
         ctrl  = ev.ControlDown()
-        alt   = ev.AltDown()
+        shift = ev.ShiftDown()
 
-        if shift: return self.__tempModeMap.get((mode, wx.WXK_SHIFT),   None)
-        if ctrl:  return self.__tempModeMap.get((mode, wx.WXK_CONTROL), None)
-        if alt:   return self.__tempModeMap.get((mode, wx.WXK_ALT),     None)
-        
-        return None
+        # Figure out the dictionary key to use,
+        # based on the modifier keys that are down
+        keys  = {
+            (False, False, False) :  None,
+            (False, False, True)  :  wx.WXK_SHIFT,
+            (False, True,  False) :  wx.WXK_CONTROL,
+            (False, True,  True)  : (wx.WXK_CONTROL, wx.WXK_SHIFT), 
+            (True,  False, False) :  wx.WXK_ALT,
+            (True,  False, True)  : (wx.WXK_ALT, wx.WXK_SHIFT),
+            (True,  True,  False) : (wx.WXK_ALT, wx.WXK_CONTROL),
+            (True,  True,  True)  : (wx.WXK_ALT, wx.WXK_CONTROL, wx.WXK_SHIFT)
+        }
+
+        return self.__tempModeMap.get((mode, keys[alt, ctrl, shift]), None)
 
     
     def __getMouseLocation(self, ev):
