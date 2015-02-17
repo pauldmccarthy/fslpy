@@ -90,12 +90,20 @@ class HistogramPanel(fslpanel.FSLViewPanel):
             self._name,
             self._selectedImageChanged)
 
+        self._mouseDown = False
+        self._canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
+        self._canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
+        self._canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)        
 
         self.addListener('histRange', self._name, self._drawPlot)
         self.addListener('nbins',     self._name, self._drawPlot)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
 
+        self._histX           = None
+        self._histY           = None
+        self._domainHighlight = None
+        
         self._selectedImageChanged()
 
         self.Layout()
@@ -120,6 +128,22 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         minval = float(image.data.min())
         maxval = float(image.data.max())
 
+        histX, histY = np.histogram(image.data.flat,
+                                    bins=self.nbins,
+                                    range=self.histRange)
+
+        # np.histogram returns all bin
+        # edges, including the right hand
+        # side of the final bin. Remove it.
+        # And also shift the remaining
+        # bin edges so they are centred
+        # within each bin
+        histX  = histX[:-1]
+        histX += (histX[1] - histX[0]) / 2.0
+
+        self._histX = histX
+        self._histY = histY
+
         self.histRange.setMin(  0, minval)
         self.histRange.setMax(  0, maxval)
         self.histRange.setRange(0, minval, maxval)
@@ -127,9 +151,48 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         self._drawPlot()
 
 
+    def _onPlotMouseDown(self, ev):
+        
+        if ev.inaxes != self._axis:
+            return
+        if self._displayCtx.getSelectedImage() is None:
+            return
+
+        self._mouseDown       = True
+        self._domainHighlight = [ev.xdata, ev.xdata]
+
+    
+    def _onPlotMouseMove(self, ev):
+        if not self._mouseDown:
+            return
+        
+        if ev.inaxes != self._axis:
+            return
+
+        self._domainHighlight[1] = ev.xdata
+        self._drawPlot()
+
+    
+    def _onPlotMouseUp(self, ev):
+
+        if not self._mouseDown or self._domainHighlight is None:
+            return
+
+        # Sort the domain min/max in case the mouse was
+        # dragged from right to left, in which case the
+        # second value would be less than the first
+        newRange              = sorted(self._domainHighlight)
+        self._mouseDown       = False
+        self._domainHighlight = None
+        self.histRange.x      = newRange
+
+    
     def _drawPlot(self, *a):
 
         self._axis.clear()
+
+        if any((self._histX is None, self._histY is None)):
+            return
 
         image = self._displayCtx.getSelectedImage()
 
@@ -162,6 +225,15 @@ class HistogramPanel(fslpanel.FSLViewPanel):
             tick.label1.set_horizontalalignment('left')
         for tick in self._axis.xaxis.get_major_ticks():
             tick.set_pad(-20)
+
+
+        if self._domainHighlight is not None:
+            self._axis.axvspan(self._domainHighlight[0],
+                               self._domainHighlight[1],
+                               fill=True,
+                               facecolor='#000080',
+                               edgecolor='none',
+                               alpha=0.4)
 
         self._canvas.draw()
         self.Refresh() 
