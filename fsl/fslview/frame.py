@@ -86,14 +86,18 @@ class FSLViewFrame(wx.Frame):
             aui.AUI_NB_TAB_MOVE |
             aui.AUI_NB_CLOSE_ON_ALL_TABS)
 
-        # we can have as many view
-        # panels as we like
+        # Keeping track of all
+        # open view panels
         self._viewPanels      = []
         self._viewPanelTitles = {}
+        self._viewPanelMenus  = {}
         self._viewPanelCount  = 0
 
         self._makeMenuBar()
         self._restoreState(default)
+
+        self._centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
+                              self._onViewPanelClose)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
@@ -103,7 +107,7 @@ class FSLViewFrame(wx.Frame):
         of their titles.
         """
         return (self._viewPanels,
-                [self._viewPanelTitles[id(vp)] for vp in self._viewPanels])
+                [self._viewPanelTitles[vp] for vp in self._viewPanels])
 
 
     def addViewPanel(self, panelCls):
@@ -111,21 +115,74 @@ class FSLViewFrame(wx.Frame):
         allowing the user to configure the view.
         """
 
-        title   = strings.titles[panelCls]
-        childDC = displaycontext.DisplayContext(self._imageList,
-                                                self._displayCtx)
-        panel   = panelCls(self._centrePane,
-                           self._imageList,
-                           childDC) 
+        title = '{} {}'.format(
+            strings.titles[panelCls],
+            self._viewPanelCount + 1)
+        
+        childDC = displaycontext.DisplayContext(
+            self._imageList,
+            self._displayCtx)
+        
+        panel = panelCls(
+            self._centrePane,
+            self._imageList,
+            childDC) 
 
         self._viewPanelCount = self._viewPanelCount + 1
 
         self._viewPanels.append(panel)
-        self._viewPanelTitles[id(panel)] = title
+        self._viewPanelTitles[panel] = title
+        
         self._centrePane.AddPage(panel, title, True)
         self._centrePane.Split(
             self._centrePane.GetPageIndex(panel),
             wx.RIGHT)
+
+        self._addViewPanelMenu(panel, title)
+
+
+    def _addViewPanelMenu(self, panel, title):
+
+        actionz = panel.getActions()
+
+        if len(actionz) == 0:
+            return
+
+        menuBar = self.GetMenuBar()
+        menu    = wx.Menu()
+        menuBar.Append(menu, title)
+
+        self._viewPanelMenus[panel] = menu
+
+        for actionName, actionObj in actionz.items():
+            
+            menuItem = menu.Append(
+                wx.ID_ANY,
+                strings.actions[panel, actionName])
+            actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
+    
+
+    def _onViewPanelClose(self, ev):
+
+        ev.Skip()
+        print 'onViewPanelClose {}'.format(ev.GetSelection())
+
+        pageIdx = ev.GetSelection()
+        panel   = self._centrePane.GetPage(pageIdx)
+
+        if panel not in self._viewPanels:
+            print 'Huh? {} {} {}'.format(panel, type(panel), ev.GetSelection())
+            return
+
+        self._viewPanels             .remove(panel)
+        title = self._viewPanelTitles.pop(   panel)
+
+        print 'Close {}!'.format(title)
+
+        menuBar = self.GetMenuBar()
+        menuIdx = menuBar.FindMenu(title)
+        if menuIdx != wx.NOT_FOUND:
+            menuBar.Remove(menuIdx)
 
         
     def _onClose(self, ev):
@@ -238,7 +295,6 @@ class FSLViewFrame(wx.Frame):
             self.SetPosition(position)
         else:
             self.Centre()
-    
 
     def _makeMenuBar(self):
         """Constructs a bunch of menu items for working with the given

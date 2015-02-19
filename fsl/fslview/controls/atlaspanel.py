@@ -10,15 +10,13 @@ import logging
 import numpy as np
 import          wx
 
-import pwidgets.notebook                      as notebook
+import pwidgets.notebook   as notebook
 
-import fsl.data.image                         as fslimage
-import fsl.data.atlases                       as atlases
-import fsl.data.strings                       as strings
-import fsl.utils.transform                    as transform
-import fsl.fslview.panel                      as fslpanel
-import fsl.fslview.controls.atlasoverlaypanel as atlasoverlaypanel
-import fsl.fslview.controls.atlasinfopanel    as atlasinfopanel
+import fsl.data.image      as fslimage
+import fsl.data.atlases    as atlases
+import fsl.data.strings    as strings
+import fsl.utils.transform as transform
+import fsl.fslview.panel   as fslpanel
 
 
 log = logging.getLogger(__name__)
@@ -28,6 +26,9 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
 
     def __init__(self, parent, imageList, displayCtx):
+
+        import fsl.fslview.controls.atlasoverlaypanel as atlasoverlaypanel
+        import fsl.fslview.controls.atlasinfopanel    as atlasinfopanel        
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 

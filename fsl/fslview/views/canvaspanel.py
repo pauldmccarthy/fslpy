@@ -19,7 +19,8 @@ log = logging.getLogger(__name__)
 
 import subprocess
 
-import wx
+import                   wx
+import wx.lib.agw.aui as aui
 
 import props
 
@@ -31,7 +32,6 @@ import fsl.fslview.controls.imagelistpanel    as imagelistpanel
 import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.locationpanel     as locationpanel
 import fsl.fslview.controls.atlaspanel        as atlaspanel
-import fsl.fslview.widgets.togglepanel        as togp
 import                                           colourbarpanel
 
 
@@ -180,14 +180,21 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
+        # TODO add 'show/hide profile (props/actions) panel' action
         actionz = {
             'screenshot'              : self.screenshot,
             'toggleColourBar'         : self.toggleColourBar,
-            'toggleImageList'         : self.toggleImageList,
-            'toggleAtlasPanel'        : self.toggleAtlasPanel,
-            'toggleDisplayProperties' : self.toggleDisplayProperties,
-            'toggleLocationPanel'     : self.toggleLocationPanel,
-            'toggleCanvasProperties'  : self.toggleCanvasProperties}
+            'toggleImageList'         : lambda *a: self.toggleControlPanel(
+                imagelistpanel.ImageListPanel, *a),
+            'toggleAtlasPanel'        : lambda *a: self.toggleControlPanel(
+                atlaspanel.AtlasPanel, *a),
+            'toggleDisplayProperties' : lambda *a: self.toggleControlPanel(
+                imagedisplaypanel.ImageDisplayPanel, *a),
+            'toggleLocationPanel'     : lambda *a: self.toggleControlPanel(
+                locationpanel.LocationPanel, *a),
+            'toggleCanvasProperties'  : lambda  *a: self.toggleConfigPanel(
+                type(self), self, *a)
+        }
         
         fslpanel.FSLViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
@@ -211,72 +218,11 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             # Disable syncLocation, syncImageOrder, and syncVolume somehow
             pass
 
-        self.__controlPanel        = togp.TogglePanel(self,
-                                                      initialState=False)
-        self.__controlContentPanel = self.__controlPanel.getContentPanel()
-        self.__canvasContainer     = wx.Panel(self)
-        self.__listLocContainer    = wx.Panel(self)
-        self.__dispSetContainer    = wx.Panel(self)
 
-        def onToggle(ev):
-            self.Layout()
-
-        self.__controlPanel.Bind(togp.EVT_TOGGLEPANEL_EVENT, onToggle)
-
-        import fsl.fslview.layouts as layouts
-
-        self.__profilePanel = wx.Panel(self.__controlContentPanel)
-        self.__actionPanel  = fslpanel.ConfigPanel(
-            self.__controlContentPanel,
-            self,
-            layout=layouts.layouts.get((type(self), 'actions'), None))
-
-        self.__controlSizer = wx.BoxSizer(wx.VERTICAL)
-        self.__controlContentPanel.SetSizer(self.__controlSizer)
-        self.__controlSizer.Add(self.__actionPanel,  flag=wx.EXPAND)
-        self.__controlSizer.Add(self.__profilePanel, flag=wx.EXPAND)
-        
-        self.__canvasPropsPanel = fslpanel.ConfigPanel(
-            self.__dispSetContainer,
-            self,
-            layout=layouts.layouts.get((type(self), 'props'), None))
-
-        self.__canvasPanel = wx.Panel(self.__canvasContainer)
- 
-        self.__imageListPanel = imagelistpanel.ImageListPanel(
-            self.__listLocContainer, imageList, displayCtx)
-
-        self.__locationPanel = locationpanel.LocationPanel(
-            self.__listLocContainer, imageList, displayCtx)
-
-        self.__atlasPanel = atlaspanel.AtlasPanel(
-            self.__listLocContainer, imageList, displayCtx) 
-        
-        self.__displayPropsPanel = imagedisplaypanel.ImageDisplayPanel(
-            self.__dispSetContainer, imageList, displayCtx)
-
-        self.__listLocSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.__listLocContainer.SetSizer(self.__listLocSizer)
-
-        self.__listLocSizer.Add(self.__imageListPanel,
-                                flag=wx.EXPAND,
-                                proportion=1)
-        self.__listLocSizer.Add(self.__locationPanel,
-                                flag=wx.EXPAND,
-                                proportion=1)
-        self.__listLocSizer.Add(self.__atlasPanel,
-                                flag=wx.EXPAND,
-                                proportion=1) 
-
-        self.__dispSetSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.__dispSetContainer.SetSizer(self.__dispSetSizer)
-
-        self.__dispSetSizer.Add(self.__displayPropsPanel,
-                                flag=wx.EXPAND,
-                                proportion=1)
-        self.__dispSetSizer.Add(self.__canvasPropsPanel,
-                                flag=wx.EXPAND,
-                                proportion=1)
+        self.__canvasContainer = wx.Panel(self)
+        self.__canvasPanel     = wx.Panel(self.__canvasContainer)
+        self.__controlPanels   = {}
+        self.__configPanels    = {}
 
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
@@ -284,26 +230,11 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__colourBar     = None
         self.__showColourBar = False
 
-        self.__sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.__sizer)
-        
-        self.__sizer.Add(self.__controlPanel,      flag=wx.EXPAND)
-        self.__sizer.Add(self.__listLocContainer,  flag=wx.EXPAND)
-        self.__sizer.Add(self.__canvasContainer,   flag=wx.EXPAND,
-                         proportion=1)
-        self.__sizer.Add(self.__dispSetContainer,  flag=wx.EXPAND)
-
-        self.__imageListPanel   .Show(False)
-        self.__locationPanel    .Show(False)
-        self.__canvasPropsPanel .Show(False)
-        self.__displayPropsPanel.Show(False)
-        self.__atlasPanel       .Show(False)
-
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
         lName = 'CanvasPanel_{}'.format(self._name)
-        self.addListener('colourBarLocation',     lName, self.__layout)
-        self.addListener('profile',               lName, self.__profileChanged)
+        self.addListener('colourBarLocation', lName, self.__layout)
+        self.addListener('profile',           lName, self.__profileChanged)
         
         imageList .addListener('images',
                                lName,
@@ -316,6 +247,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__profileChanged()
         self.__selectedImageChanged()
         self.__layout()
+        
+        self.__auiMgr = aui.AuiManager(self, agwFlags=0) 
+        self.__auiMgr.AddPane(self.__canvasContainer, wx.CENTRE)
+        self.__auiMgr.Update()
 
             
     def _init(self):
@@ -360,32 +295,12 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     
     def __profileChanged(self, *a):
 
-        import fsl.fslview.layouts as layouts
-        
         self.__profileManager.changeProfile(self.profile)
-        self.__profilePanel.DestroyChildren()
+
+        # TODO if a profile panel is being displayed,
+        #      destroy it and create a new one
         
-        sizer        = wx.BoxSizer(wx.VERTICAL)
-        profile      = self.getCurrentProfile()
-        propLayout   = layouts.layouts.get((type(profile), 'props'),   None)
-        actionLayout = layouts.layouts.get((type(profile), 'actions'), None)
-
-        if propLayout is not None:
-            profilePropPanel = fslpanel.ConfigPanel(
-                self.__profilePanel, profile,
-                layout=layouts.layouts[type(profile), 'props'])
-            sizer.Add(profilePropPanel,   flag=wx.EXPAND)
-
-        if actionLayout is not None:
-            profileActionPanel = fslpanel.ConfigPanel(
-                self.__profilePanel, profile,
-                layout=layouts.layouts[type(profile), 'actions'])
-            sizer.Add(profileActionPanel, flag=wx.EXPAND)
-            
-        self.__profilePanel.SetSizer(sizer)
-        self.__profilePanel.Layout()
-        self.__controlPanel.Layout()
-        self.__layout()
+        profile = self.getCurrentProfile()
 
         # Profile mode changes may result in the 
         # content of the above prop/action panels 
@@ -393,40 +308,53 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         # the canvas panel is sized appropriately.
         def modeChange(*a):
             self.__layout()
+            
         profile.addListener('mode', self._name, modeChange)
 
 
-    def toggleControlPanel(self, *a):
-        self.__controlPanel.toggle()
-
-
-    def toggleImageList(self, *a):
-        self.__imageListPanel.Show(not self.__imageListPanel.IsShown())
-        self.__layout()
+    def toggleConfigPanel(self, targetType, target, *a):
         
-    def toggleLocationPanel(self, *a):
-        self.__locationPanel.Show(not self.__locationPanel.IsShown())
-        self.__layout()
+        window = self.__configPanels.get(targetType, None)
 
-    def toggleAtlasPanel(self, *a):
-        self.__atlasPanel.Show(not self.__atlasPanel.IsShown())
-        self.__layout() 
+        if window is not None:
+            self.__auiMgr.DetachPane(window)
+            window.Destroy()
+        else:
+            
+            import fsl.fslview.layouts as layouts
+            
+            layout = layouts.layouts.get(targetType, None)
+            window = fslpanel.ConfigPanel(self, target, layout=layout)
+            
+            self.__auiMgr.AddPane(window, wx.TOP)
+            
+        self.__auiMgr.Update()        
+
         
-    def toggleDisplayProperties(self, *a):
-        self.__displayPropsPanel.Show(not self.__displayPropsPanel.IsShown())
-        self.__layout()
+    def toggleControlPanel(self, panelType, *a):
         
-    def toggleCanvasProperties(self, *a):
-        self.__canvasPropsPanel .Show(not self.__canvasPropsPanel.IsShown())
-        self.__layout()
+        window = self.__controlPanels.get(panelType, None)
+
+        if window is not None:
+            self.__auiMgr.DetachPane(window)
+            window.Destroy()
+        else:
+            window = panelType(self, self._imageList, self._displayCtx)
+            
+            self.__auiMgr.AddPane(window, wx.TOP)
+            
+        self.__auiMgr.Update()
+        
 
     def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar
         self.__layout()
 
+        
     def colourBarIsShown(self):
         return self.__showColourBar
 
+    
     def screenshot(self, *a):
         _takeScreenShot(self._imageList, self._displayCtx, self)
 

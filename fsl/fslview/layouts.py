@@ -95,26 +95,16 @@ OrthoEditProfileActionLayout = props.HGroup(
     showLabels=False)
 
 
-CanvasPanelActionLayout = props.HGroup(
-    (widget('profile',
-            CanvasPanel,
-            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1),
-     actionButton('screenshot',               CanvasPanel),
-     actionButton('toggleColourBar',          CanvasPanel),
-     actionButton('toggleImageList',          CanvasPanel),
-     actionButton('toggleDisplayProperties',  CanvasPanel),
-     actionButton('toggleLocationPanel',      CanvasPanel),
-     actionButton('toggleAtlasPanel',         CanvasPanel),
-     actionButton('toggleCanvasProperties',   CanvasPanel)),
-    wrap=True,
-    showLabels=False)
-
 CanvasPanelLayout = props.VGroup((
+    widget('profile',
+           CanvasPanel,
+           visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
     widget('syncImageOrder',     CanvasPanel),
     widget('syncLocation',       CanvasPanel),
     widget('syncVolume',         CanvasPanel),
     widget('colourBarLabelSide', CanvasPanel),
     widget('colourBarLocation',  CanvasPanel)))
+
 
 OrthoPanelLayout = props.VGroup((
     widget('layout',     OrthoPanel), 
@@ -189,10 +179,9 @@ layouts = td.TypeDict({
     ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
     ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
 
-    ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
-    ('OrthoPanel',       'props')   : OrthoPanelLayout,
-    ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
-    ('HistogramPanel',   'props')   : HistogramPanelLayout,
+    'OrthoPanel'       : OrthoPanelLayout,
+    'LightBoxPanel'    : LightBoxPanelLayout,
+    'HistogramPanel'   : HistogramPanelLayout,
 
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,

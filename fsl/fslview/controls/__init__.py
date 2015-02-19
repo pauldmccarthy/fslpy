@@ -20,11 +20,13 @@ import fsl.fslview.panel as fslpanel
 import locationpanel
 import imagelistpanel
 import imagedisplaypanel
+import atlaspanel
 
 FSLViewPanel      = fslpanel         .FSLViewPanel
 LocationPanel     = locationpanel    .LocationPanel
 ImageListPanel    = imagelistpanel   .ImageListPanel
 ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
+AtlasPanel        = atlaspanel.       AtlasPanel
 
 
 def listControlPanels():
