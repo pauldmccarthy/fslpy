@@ -271,10 +271,14 @@ class FSLViewFrame(wx.Frame):
                        (position[0] + size[0], position[1]),
                        (position[0],           position[1] + size[1]),
                        (position[0] + size[0], position[1] + size[1])]
-            
+
+
             displays = map(wx.Display.GetFromPoint, corners)
 
+            # TODO This is not smart enough - the Display.GetFromPoint
+            #     method doesn't seem to cover the entire display space.
             if any([d == wx.NOT_FOUND for d in displays]):
+
                 size     = None
                 position = None
 
@@ -297,6 +301,7 @@ class FSLViewFrame(wx.Frame):
         else:
             self.Centre()
 
+            
     def _makeMenuBar(self):
         """Constructs a bunch of menu items for working with the given
         :class:`~fsl.fslview.fslviewframe.FslViewFrame`.
