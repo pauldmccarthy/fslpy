@@ -94,16 +94,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                      self._name,
                                      self._selectedImageChanged) 
 
-        # And remove that listener when
-        # this panel is destroyed
-        def onDestroy(ev):
-            ev.Skip()
-            if ev.GetEventObject() is not self:
-                return
-            self._displayCtx.removeListener('location', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         self.zoom = 500
 
         self._onLightBoxChange()
@@ -130,6 +120,15 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._selectedImageChanged()
 
 
+    def destroy(self):
+        """Removes property listeners"""
+        canvaspanel.CanvasPanel.destroy(self)
+
+        self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._imageList .removeListener('images',        self._name)
+
+        
     def _selectedImageChanged(self, *a):
         """Called when the selected image changes.
 

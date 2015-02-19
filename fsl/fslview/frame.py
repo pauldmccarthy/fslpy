@@ -165,19 +165,20 @@ class FSLViewFrame(wx.Frame):
     def _onViewPanelClose(self, ev):
 
         ev.Skip()
-        print 'onViewPanelClose {}'.format(ev.GetSelection())
-
+        
         pageIdx = ev.GetSelection()
         panel   = self._centrePane.GetPage(pageIdx)
 
         if panel not in self._viewPanels:
-            print 'Huh? {} {} {}'.format(panel, type(panel), ev.GetSelection())
             return
 
         self._viewPanels             .remove(panel)
         title = self._viewPanelTitles.pop(   panel)
 
-        print 'Close {}!'.format(title)
+        # Calling fslpanel.FSLViewPanel.destroy()
+        # - I think that the AUINotebook does the
+        # wx.Window.Destroy side of things ...
+        panel.destroy()
 
         menuBar = self.GetMenuBar()
         menuIdx = menuBar.FindMenu(title)

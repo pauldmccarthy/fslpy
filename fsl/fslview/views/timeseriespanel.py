@@ -75,23 +75,19 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
             self._name,
             self._locationChanged) 
 
-        def onDestroy(ev):
-            ev.Skip()
-
-            if ev.GetEventObject() is not self:
-                return
-
-            self._imageList .removeListener('images',        self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-            self._displayCtx.removeListener('location',      self._name)
-            self._displayCtx.removeListener('volume',        self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         self._selectedImageChanged()
         
         self.Layout()
 
+
+    def destroy(self):
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._imageList .removeListener('images',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('volume',        self._name)
+        
         
     def _selectedImageChanged(self, *a):
         

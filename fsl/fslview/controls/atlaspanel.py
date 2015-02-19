@@ -60,7 +60,19 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         self.notebook.ShowPage(0)
 
+        # TODO Listen on image list, and update overlay
+        # panel states when an overlay image is removed
+
         self.Layout()
+
+
+    def destroy(self):
+        """Must be called on destruction. Performs some necessary clean up
+        when this AtlasPanel is no longer needed.
+        """
+        fslpanel.FSLViewPanel.destroy(self)
+        self.infoPanel.destroy()
+        self.overlayPanel.destroy()
 
 
     def loadAtlas(self, atlasID, summary):

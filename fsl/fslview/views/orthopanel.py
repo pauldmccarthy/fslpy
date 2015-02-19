@@ -184,11 +184,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                          self._name,
                          lambda *a: self._toggleCanvas('z'))
 
-        # Do some cleaning up if/when this panel is destroyed
-        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
-
-        # And finally, call the _resize method to
-        # refresh things when this panel is resized
+        # Call the _resize method to refresh
+        # things when this panel is resized
         self.Bind(wx.EVT_SIZE, self._onResize)
 
         # Initialise the panel
@@ -196,6 +193,28 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._imageListChanged()
         self._refreshLabels()
         self._locationChanged()
+
+
+    def destroy(self):
+        """Called when this panel is closed. 
+        
+        The display context and image list will probably live longer than
+        this OrthoPanel. So when this panel is destroyed, all those
+        registered listeners are removed.
+        """
+        canvaspanel.CanvasPanel.destroy(self)
+
+        self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('bounds',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._imageList .removeListener('images',        self._name)
+
+        # The _imageListChanged method adds
+        # listeners to individual images,
+        # so we have to remove them too
+        for img in self._imageList:
+            display = self._displayCtx.getDisplayProperties(img)
+            display.removeListener('transform', self._name)
 
 
     def getXCanvas(self):
@@ -277,33 +296,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # anatomical orientation may have changed with an image change
         self._refreshLabels()
 
-
-    def _onDestroy(self, ev):
-        """Called when this panel is destroyed. 
-        
-        The display context and image list will probably live longer than
-        this OrthoPanel. So when this panel is destroyed, all those
-        registered listeners are removed.
-        """
-        ev.Skip()
-
-        # Do nothing if the destroyed window is not
-        # this panel (i.e. it is a child of this panel)
-        if ev.GetEventObject() is not self:
-            return
-
-        self._displayCtx.removeListener('location',      self._name)
-        self._displayCtx.removeListener('bounds',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._imageList .removeListener('images',        self._name)
-
-        # The _imageListChanged method adds
-        # listeners to individual images,
-        # so we have to remove them too
-        for img in self._imageList:
-            display = self._displayCtx.getDisplayProperties(img)
-            display.removeListener('transform', self._name)
-        
             
     def _onResize(self, ev):
         """

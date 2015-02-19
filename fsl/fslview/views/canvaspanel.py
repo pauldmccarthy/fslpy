@@ -252,6 +252,8 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__auiMgr.AddPane(self.__canvasContainer, wx.CENTRE)
         self.__auiMgr.Update()
 
+        self.__auiMgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.__onPaneClose)
+
             
     def _init(self):
         raise NotImplementedError('CanvasPanel._init must be '
@@ -311,25 +313,35 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             
         profile.addListener('mode', self._name, modeChange)
 
-
-    def toggleConfigPanel(self, targetType, target, *a):
         
-        window = self.__configPanels.get(targetType, None)
+    def __onPaneClose(self, ev=None, panel=None):
 
-        if window is not None:
-            self.__auiMgr.DetachPane(window)
-            window.Destroy()
+        if ev is not None:
+            ev.Skip()
+            panel = ev.GetPane().window
+
+        log.debug('Panel closed: {}'.format(type(panel).__name__))
+
+        if isinstance(panel, fslpanel.FSLViewPanel):
+            self.__controlPanels.pop(type(panel))
+
+            # calling fslpanel.FSLViewPanel.destroy()
+            # here -  wx.Destroy is done below
+            panel.destroy()
+            
+        elif isinstance(panel, fslpanel.ConfigPanel):
+            self.__configPanels.pop(panel.getTarget())
+
+        # WTF AUI. Sometimes this method gets called
+        # twice for a panel, the second time with a
+        # reference to a wx._wxpyDeadObject; in such
+        # situations, the Destroy method call below
+        # will result in an exception being raised.
         else:
-            
-            import fsl.fslview.layouts as layouts
-            
-            layout = layouts.layouts.get(targetType, None)
-            window = fslpanel.ConfigPanel(self, target, layout=layout)
-            
-            self.__auiMgr.AddPane(window, wx.TOP)
-            
-        self.__auiMgr.Update()        
-
+            return
+        
+        panel.Destroy()
+ 
         
     def toggleControlPanel(self, panelType, *a):
         
@@ -337,15 +349,35 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         if window is not None:
             self.__auiMgr.DetachPane(window)
-            window.Destroy()
+            self.__onPaneClose(None, window)
         else:
             window = panelType(self, self._imageList, self._displayCtx)
-            
             self.__auiMgr.AddPane(window, wx.TOP)
+            self.__controlPanels[panelType] = window
             
         self.__auiMgr.Update()
         
 
+    def toggleConfigPanel(self, targetType, target, *a):
+            
+        import fsl.fslview.layouts as layouts
+        
+        window = self.__configPanels.get(targetType, None)
+
+        if window is not None:
+            
+            self.__auiMgr.DetachPane(window)
+            self.__onPaneClose(None, window)
+        else:
+            layout = layouts.layouts.get(targetType, None)
+            window = fslpanel.ConfigPanel(self, target, layout=layout)
+
+            self.__configPanels[target] = window
+            self.__auiMgr.AddPane(window, wx.TOP)
+            
+        self.__auiMgr.Update()
+
+        
     def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar
         self.__layout()
@@ -375,6 +407,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                 self.unbindProps('colourBarLabelSide',
                                  self.__colourBar,
                                  'labelSide')
+                self.__colourBar.destroy()
                 self.__colourBar.Destroy()
                 self.__colourBar = None
                 

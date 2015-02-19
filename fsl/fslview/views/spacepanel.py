@@ -55,16 +55,13 @@ class SpacePanel(fslpanel.FSLViewPanel):
         self.SetSizer(self._sizer)
         self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
 
-        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
-        
         self._selectedImageChanged()
 
 
-    def _onDestroy(self, ev):
-        
-        ev.Skip()
-        if ev.GetEventObject() is not self:
-            return
+    def destroy(self):
+        """De-registers property listeners."""
+
+        fslpanel.FSLViewPanel.destroy(self)
         
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)

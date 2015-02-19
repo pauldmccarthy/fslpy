@@ -73,25 +73,21 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
             self._name,
             self._selectedImageChanged)
 
-        def onDestroy(ev):
-            ev.Skip()
-
-            if ev.GetEventObject() is not self:
-                return
-            
-            self._imageList. removeListener('images',        self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-
-            # the _imageListChanged method registers
-            # a listener on the name of each image
-            for image in imageList:
-                image.removeListener('name', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         self._imageListChanged()
 
+
+    def destroy(self):
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._imageList. removeListener('images',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
+
+        # the _imageListChanged method registers
+        # a listener on the name of each image
+        for image in self._imageList:
+            image.removeListener('name', self._name)
+ 
         
     def _onPrevButton(self, ev):
         """Called when the previous button is pushed. Selects the previous

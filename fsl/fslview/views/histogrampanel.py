@@ -97,8 +97,6 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         self.addListener('nbins',     self._name, self._drawPlot)
         self.addListener('autoHist',  self._name, self._drawPlot)
 
-        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
-
         self._domainHighlight = None
         
         self._selectedImageChanged()
@@ -106,11 +104,9 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         self.Layout()
 
         
-    def _onDestroy(self, ev):
-        ev.Skip()
-
-        if ev.GetEventObject() is not self:
-            return
+    def destroy(self):
+        """De-registers property listeners. """
+        fslpanel.FSLViewPanel.destroy(self)
 
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)

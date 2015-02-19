@@ -92,6 +92,16 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
         self.Layout()
 
+        
+    def destroy(self):
+        """Must be called when this :class:`AtlasInfoPanel` is to be
+        destroyed. De-registers various property listeners.
+        """
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._displayCtx.removeListener('location',      self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+
 
     def enableAtlasInfo(self, atlasID):
         self.enabledAtlases[atlasID] = self.atlasPanel.loadAtlas(atlasID,

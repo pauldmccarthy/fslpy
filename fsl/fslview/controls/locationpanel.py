@@ -153,19 +153,21 @@ class LocationPanel(fslpanel.FSLViewPanel):
                                      self._name,
                                      self._worldLocationChanged)
 
-        def onDestroy(ev):
-            ev.Skip()
-            self._imageList.removeListener( 'images',        self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-            self._displayCtx.removeListener('volume',        self._name)
-            self._displayCtx.removeListener('location',      self._name)
-            
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-        
         self._selectedImageChanged()
         self._displayLocationChanged()
         self._volumeChanged()
+
+
+    def destroy(self):
+        """Deregisters property listeners."""
+        fslpanel.FSLViewPanel.destroy(self)
+        self._imageSelect.destroy()
+
+        self._imageList.removeListener( 'images',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
+        self._displayCtx.removeListener('volume',        self._name)
+        self._displayCtx.removeListener('location',      self._name)
 
 
     def _updateVoxelValue(self, voxVal=None):

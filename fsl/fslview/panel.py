@@ -31,8 +31,6 @@ See the following for examples of :class:`ViewPanel` subclasses:
 
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import wx
 
@@ -42,6 +40,9 @@ import fsl.data.image as fslimage
 
 import actions
 import displaycontext
+
+
+log = logging.getLogger(__name__)
 
 
 class FSLViewPanel(wx.Panel, actions.ActionProvider):
@@ -96,12 +97,52 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
         self._imageList  = imageList
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.__destroyed = False
+
+        
+    def destroy(self):
+        """This method must be called by whatever is managing this
+        :class:`FSLViewPanel` when it is to be closed/destroyed. It seems to
+        be impossible to define a single handler (on either the
+        :attr:`wx.EVT_CLOSE` and/or :attr:`wx.EVT_WINDOW_DESTROY` events)
+        which handles both cases where the window is destroyed (in the
+        process of destroying a parent window), and where the window is
+        explicitly closed by the user (e.g. when embedded as a page in
+        a Notebook). 
+
+        This issue is probably caused by my use of the AUI framework for
+        layout management, as the AUI manager/notebook classes do not seem to
+        call close/destroy in all cases. Everything that I've tried, which
+        relies upon EVT_CLOSE/EVT_WINDOW_DESTROY events, inevitably results in
+        the event handlers not being called, or in segmentation faults
+        (presumably due to double-frees at the C++ level).
+
+        Subclasses which need to perform any cleaning up when they are closed
+        may override this method, and should be able to assume that it will be
+        called. So this method *must* be called by managing code when a panel
+        is deleted.
+
+        Overriding subclass implementations should also call this base class
+        method, otherwise warnings will probably be output to the log (see 
+        :meth:`__del__`)
+        """
+        self.__destroyed = True
+
+    
+    def __del__(self):
+
+        if not self.__destroyed:
+            log.warning('The {}.destroy() method has not been called '
+                        '- unless the application is shutting down, '
+                        'this is probably a bug!'.format(type(self).__name__))
+        
+        wx.Panel              .__del__(self)
+        actions.ActionProvider.__del__(self)
 
 
 class ConfigPanel(wx.Panel):
 
     def __init__(self, parent, target, layout=None):
-
         
         wx.Panel.__init__(self, parent)
         self._name   = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -114,3 +155,6 @@ class ConfigPanel(wx.Panel):
 
         self.SetSizer(self._sizer)
         self.Layout()
+
+    def getTarget(self):
+        return self._target

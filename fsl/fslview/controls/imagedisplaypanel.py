@@ -64,24 +64,23 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
             self._name,
             self._selectedImageChanged)
         
-
-        def onDestroy(ev):
-            ev.Skip()
-
-            # Stupid. Window destroy handlers of a panel
-            # get called when children of said panel are
-            # destroyed.
-            if ev.GetEventObject() != self: return
-            
-            self._imageList .removeListener('images',        self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         # trigger initial display panel creation
         self._imageListChanged()
 
+
+    def destroy(self):
+        """Deregisters property listeners. """
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._imageSelect.destroy()
+        
+        self._imageList .removeListener('images',        self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+
+        for image in self._imageList:
+            image.removeListener('imageType', self._name)
+ 
         
     def _makeDisplayPanel(self, image):
         """Creates and returns panel containing widgets allowing

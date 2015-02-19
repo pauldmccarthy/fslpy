@@ -66,6 +66,7 @@ class ListItemWidget(wx.Panel):
         ev.Skip()
         if ev.GetEventObject() is not self:
             return
+
         self.display.removeListener('enabled', self.name)
         self.image  .removeListener('saved',   self.name)
 
@@ -147,33 +148,27 @@ class ImageListPanel(fslpanel.FSLViewPanel):
             self._name,
             self._selectedImageChanged)
 
-        def onDestroy(ev):
-            ev.Skip()
-
-            # This handler gets called when child windows
-            # are destroyed (e.g. items in the embedded
-            # elistbox), so this check is necessary.
-            if ev.GetEventObject() != self: return
-            
-            self._imageList .removeListener('images',        self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-
-            # these listeners are added in the
-            # _imageListChanged method, below
-            for image in self._imageList:
-                display = self._displayCtx.getDisplayProperties(image)
-                image  .removeListener('name',    self._name)
-                display.removeListener('enabled', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         self._imageListChanged()
         self._selectedImageChanged()
 
         self.Layout()
 
 
+    def destroy(self):
+        """Deregisters property listeners."""
+        
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._imageList .removeListener('images',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
+
+        # A listener on name was added 
+        # in the_imageListChanged method
+        for image in self._imageList:
+            image.removeListener('name', self._name)
+
+        
     def _selectedImageChanged(self, *a):
         """Called when the
         :attr:`~fsl.fslview.displaycontext.DisplayContext.selectedImage`
