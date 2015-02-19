@@ -260,6 +260,18 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                                   'provided by subclasses')
 
 
+    def destroy(self):
+        """Makes sure that any remaining control panels are destroyed
+        cleanly.
+        """
+
+        fslpanel.FSLViewPanel.destroy(self)
+        
+        # Make sure that any control panels are correctly destroyed
+        for panelType, panel in self.__controlPanels.items():
+            panel.destroy()
+
+
     def __selectedImageChanged(self, *a):
         """Called when the image list or selected image changed.
 

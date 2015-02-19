@@ -29,3 +29,5 @@ def trace(desc):
             srcLine.strip())
 
     log.debug(lines)
+    
+    return lines

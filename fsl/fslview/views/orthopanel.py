@@ -185,8 +185,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                          lambda *a: self._toggleCanvas('z'))
 
         # Call the _resize method to refresh
-        # things when this panel is resized
-        self.Bind(wx.EVT_SIZE, self._onResize)
+        # the slice canvases when the canvas
+        # panel is resized, so aspect ratio
+        # is maintained
+        canvasPanel.Bind(wx.EVT_SIZE, self._onResize)
 
         # Initialise the panel
         self._refreshLayout()
@@ -388,10 +390,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         layout = self.layout
 
-        # Lay out this panel, so the canvas
-        # panel size is up to date 
-        self.Layout()
-
         width, height = self.getCanvasPanel().GetClientSize().Get()
 
         if width == 0 or height == 0: return
@@ -496,8 +494,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         for canvas, size in zip(canvases, sizes):
             canvas.SetMinSize(size)
             canvas.SetMaxSize(size)
-
-        self.getCanvasPanel().Layout()
 
         
     def _refreshLayout(self, *a):
