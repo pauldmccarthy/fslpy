@@ -42,9 +42,6 @@ class AtlasPanel(fslpanel.FSLViewPanel):
  
         self.SetSizer(self.sizer)
 
-        # Temporary
-        self.SetMaxSize((-1, 200))
-
         self.infoPanel = atlasinfopanel.AtlasInfoPanel(
             self.notebook, imageList, displayCtx, self)
 
@@ -57,8 +54,6 @@ class AtlasPanel(fslpanel.FSLViewPanel):
                               strings.titles[self.infoPanel])
         self.notebook.AddPage(self.overlayPanel,
                               strings.titles[self.overlayPanel])
-
-        self.notebook.ShowPage(0)
 
         # TODO Listen on image list, and update overlay
         # panel states when an overlay image is removed

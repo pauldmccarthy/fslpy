@@ -54,7 +54,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
         self.enabledAtlases = {}
         self.atlasPanel     = atlasPanel
-        self.contentPanel   = wx.SplitterWindow(self)
+        self.contentPanel   = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.infoPanel      = wxhtml.HtmlWindow(self.contentPanel)
         self.atlasList      = elistbox.EditableListBox(
             self.contentPanel,
@@ -62,12 +62,14 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
-
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.contentPanel, flag=wx.EXPAND, proportion=1)
         self.SetSizer(self.sizer)
-        self.contentPanel.SplitVertically(self.atlasList, self.infoPanel)
 
+        self.contentPanel.SetMinimumPaneSize(50)
+        self.contentPanel.SplitVertically(self.atlasList, self.infoPanel) 
+        self.contentPanel.SetSashGravity(0.4)
+        
         for i, atlasDesc in enumerate(atlases.listAtlases()):
             
             self.atlasList.Append(atlasDesc.name, atlasDesc.atlasID)
@@ -89,7 +91,6 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
                                self._locationChanged)
 
         self._locationChanged()
-
         self.Layout()
 
         

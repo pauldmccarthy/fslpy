@@ -99,6 +99,9 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
         self.__destroyed = False
 
+        import fsl.fslview.layouts as layouts
+        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
+
         
     def destroy(self):
         """This method must be called by whatever is managing this

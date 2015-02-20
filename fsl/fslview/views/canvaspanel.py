@@ -232,7 +232,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
-        lName = 'CanvasPanel_{}'.format(self._name)
+        lName = '{}_{}'.format(type(self).__name__, self._name)
         self.addListener('colourBarLocation', lName, self.__layout)
         self.addListener('profile',           lName, self.__profileChanged)
         
@@ -273,6 +273,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         if self.__colourBar is not None:
             self.__colourBar.destroy()
+
+        lName = '{}_{}'.format(type(self).__name__, self._name)
+        self._imageList .removeListener('images',        lName)
+        self._displayCtx.removeListener('selectedImage', lName)
 
 
     def __selectedImageChanged(self, *a):
@@ -367,7 +371,14 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__onPaneClose(None, window)
         else:
             window = panelType(self, self._imageList, self._displayCtx)
-            self.__auiMgr.AddPane2(window, wx.TOP, strings.titles[window])
+            
+            self.__auiMgr.AddPane(
+                window,
+                aui.AuiPaneInfo() 
+                .Top()
+                .MinSize(window.GetMinSize()) 
+                .BestSize(window.GetBestSize()) 
+                .Caption(strings.titles[window]))
             self.__controlPanels[panelType] = window
             
         self.__auiMgr.Update()

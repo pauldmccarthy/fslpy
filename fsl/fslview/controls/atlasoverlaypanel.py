@@ -70,26 +70,31 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
         self.enabledOverlays = {}
         self.atlasPanel      = atlasPanel
+        self.contentPanel    = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.atlasList       = elistbox.EditableListBox(
-            self,
+            self.contentPanel,
             style=(elistbox.ELB_NO_ADD    |
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
-        self.regionPanel     = wx.Panel(   self)
+        self.regionPanel     = wx.Panel(   self.contentPanel)
         self.regionFilter    = wx.TextCtrl(self.regionPanel)
 
         atlasDescs = atlases.listAtlases()
 
         self.regionLists = [None] * len(atlasDescs)
 
+        self.contentPanel.SetMinimumPaneSize(50)
+        self.contentPanel.SplitVertically(self.atlasList, self.regionPanel)
+        self.contentPanel.SetSashGravity(0.5) 
+        
         self.sizer       = wx.BoxSizer(wx.HORIZONTAL)
         self.regionSizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.sizer      .Add(self.atlasList,    flag=wx.EXPAND, proportion=1)
         self.regionSizer.Add(self.regionFilter, flag=wx.EXPAND)
-        self.regionSizer.AddStretchSpacer()
-        self.sizer      .Add(self.regionPanel,  flag=wx.EXPAND, proportion=1)
+        self.regionSizer.AddStretchSpacer()        
+        
+        self.sizer      .Add(self.contentPanel, flag=wx.EXPAND, proportion=1)
         
         self.regionPanel.SetSizer(self.regionSizer) 
         self            .SetSizer(self.sizer)

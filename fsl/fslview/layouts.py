@@ -188,3 +188,11 @@ layouts = td.TypeDict({
     'MaskOpts'   : MaskOptsLayout,
     'VectorOpts' : VectorOptsLayout, 
 })
+
+
+minSizes = td.TypeDict({
+    'AtlasInfoPanel'    : (300, 100),
+    'AtlasOverlayPanel' : (300, 100),
+    'AtlasPanel'        : (300, 100),
+    'ImageListPanel'    : (150, 100), 
+})
