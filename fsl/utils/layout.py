@@ -63,10 +63,11 @@ the appropriate layout-specific function.
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import numpy as np
+
+
+log = logging.getLogger(__name__)
 
 
 #
@@ -281,7 +282,13 @@ def calcSizes(layout, canvasaxes, bounds, width, height):
 
     # a bad value for layout
     # will result in an error
-    return func(canvasaxes, bounds, width, height)
+    sizes = func(canvasaxes, bounds, width, height)
+
+    log.debug('For space ({}, {}) and {} layout, pixel '
+              'sizes for canvases {} ({}) are: {}'.format(
+                  width, height, layout, canvasaxes, bounds, sizes))
+
+    return sizes
 
         
 def calcGridSizes(canvasaxes, bounds, width, height):
@@ -387,14 +394,6 @@ def _calcFlatSizes(canvasaxes, bounds, width, height, vert=True):
 
         if ttlHeight == 0: ch = 0
         else:              ch = height * (canvasHeights[i] / ttlHeight)
-
-        acw, ach = _adjustPixelSize(canvasWidths[ i],
-                                    canvasHeights[i],
-                                    cw,
-                                    ch)
-
-        if vert: ch, cw = ach, width
-        else:    cw, ch = acw, height
 
         sizes.append((cw, ch))
 
