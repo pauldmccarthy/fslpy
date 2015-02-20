@@ -206,6 +206,12 @@ class FSLViewFrame(wx.Frame):
         config.Write('size',     str(size))
         config.Write('position', str(position))
 
+        # It's nice to explicitly clean
+        # up our FSLViewPanels, otherwise
+        # they'll probably complain
+        for panel in self._viewPanels:
+            panel.destroy()
+
         
     def _parseSavedSize(self, size):
         """Parses the given string, which is assumed to contain a size tuple.
@@ -256,6 +262,8 @@ class FSLViewFrame(wx.Frame):
 
         :arg bool default: If ``True``, any saved state is ignored.
         """
+
+        from operator import itemgetter as iget
         
         size     = None
         position = None
@@ -265,20 +273,59 @@ class FSLViewFrame(wx.Frame):
             size     = self._parseSavedSize( config.Read('size'))
             position = self._parseSavedPoint(config.Read('position'))
 
-            # If any of the saved position is off 
-            # screen, revert to default settings
-            corners = [position,
-                       (position[0] + size[0], position[1]),
-                       (position[0],           position[1] + size[1]),
-                       (position[0] + size[0], position[1] + size[1])]
+            # Turn the saved size/pos into
+            # a (tlx, tly, brx, bry) tuple
+            frameRect = [position[0],
+                         position[1],
+                         position[0] + size[0],
+                         position[1] + size[1]]
 
+            # Now make a bounding box containing the
+            # space made up of all available displays.
+            # Get the bounding rectangles of each 
+            # display, and change them from
+            # (x, y, w, h) into (tlx, tly, brx, bry).
+            displays  = [wx.Display(i)   for i in range(wx.Display.GetCount())]
+            dispRects = [d.GetGeometry() for d in displays]
+            dispRects = [[d.GetTopLeft()[    0],
+                          d.GetTopLeft()[    1],
+                          d.GetBottomRight()[0],
+                          d.GetBottomRight()[1]] for d in dispRects]
 
-            displays = map(wx.Display.GetFromPoint, corners)
+            # get the union of these display
+            # rectangles (tlx, tly, brx, bry)
+            dispRect = [min(dispRects, key=iget(0))[0],
+                        min(dispRects, key=iget(1))[1],
+                        max(dispRects, key=iget(2))[2],
+                        max(dispRects, key=iget(3))[3]]
 
-            # TODO This is not smart enough - the Display.GetFromPoint
-            #     method doesn't seem to cover the entire display space.
-            if any([d == wx.NOT_FOUND for d in displays]):
+            # Now we have our two rectangles - the
+            # rectangle of our saved frame position,
+            # and the rectangle of the available
+            # display space.
 
+            # Calculate the area of intersection
+            # betwen the two rectangles, and the
+            # area of our saved frame position
+            xOverlap  = max(0, min(frameRect[2], dispRect[2]) -
+                               max(frameRect[0], dispRect[0]))
+            yOverlap  = max(0, min(frameRect[3], dispRect[3]) -
+                               max(frameRect[1], dispRect[1]))
+
+            intArea   = xOverlap * yOverlap
+            frameArea = ((frameRect[2] - frameRect[0]) *
+                         (frameRect[3] - frameRect[1]))
+
+            # If the ratio of (frame-display intersection) to
+            # (saved frame position) is 'not decent', then 
+            # forget it, and use a default frame position/size
+            ratio = intArea / float(frameArea)
+            if ratio < 0.5:
+
+                log.debug('Intersection of saved frame area with available '
+                          'display area is too small ({}) - reverting to '
+                          'default frame size/position'.format(ratio))
+                
                 size     = None
                 position = None
 
@@ -293,6 +340,7 @@ class FSLViewFrame(wx.Frame):
             size     = list(wx.Display(0).GetGeometry().GetSize())
             size[0] *= 0.9
             size[1] *= 0.9
+            log.debug('Setting default frame size: {}'.format(size))
             self.SetSize(size)
 
         if position is not None:
