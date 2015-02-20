@@ -132,29 +132,23 @@ HistogramPanelLayout = props.VGroup((
            enabledWhen=lambda hp: not hp.autoHist)))
 
 
-DisplayLayout = props.VGroup((
-    widget('name',          Display),
-    widget('imageType',     Display),
-    widget('enabled',       Display),
-    widget('resolution',    Display),
-    widget('transform',     Display),
-    widget('interpolation', Display),
-    widget('alpha',         Display),
-    widget('brightness',    Display),
-    widget('contrast',      Display)))
+DisplayLayout = props.HGroup(
+    (widget('enabled',       Display),
+     widget('name',          Display),
+     widget('alpha',         Display),
+     widget('brightness',    Display),
+     widget('contrast',      Display)),
+    vertLabels=True)
 
 
-VolumeOptsLayout = props.VGroup((
-    widget('cmap',          VolumeOpts),
-    widget('clipLow',       VolumeOpts),
-    widget('clipHigh',      VolumeOpts),
-    widget('displayRange',  VolumeOpts)))
+VolumeOptsLayout = props.HGroup(
+    (widget('cmap', VolumeOpts),),
+    vertLabels=True)
 
 
-MaskOptsLayout = props.VGroup((
-    widget('colour',    MaskOpts),
-    widget('invert',    MaskOpts),
-    widget('threshold', MaskOpts)))
+MaskOptsLayout = props.HGroup(
+    (widget('colour', MaskOpts),),
+    vertLabels=True)
 
 VectorOptsLayout = props.VGroup((
     widget('displayMode',   VectorOpts),

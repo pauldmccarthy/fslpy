@@ -20,6 +20,117 @@ import fsl.fslview.panel as fslpanel
 import imageselectpanel  as imageselect
 
 
+class DisplayStrip(fslpanel.FSLViewPanel):
+    
+    def __init__(self, parent, imageList, displayCtx, image, display):
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        
+        self.image   = image
+        self.display = display
+
+        self.topPanel  = wx.Panel(self)
+        self.morePanel = wx.Panel(self)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.topPanel,  flag=wx.EXPAND)
+        self.sizer.Add(self.morePanel, flag=wx.EXPAND, proportion=1)
+        self.SetSizer(self.sizer)
+
+        self.topMainOptsPanel  = wx.Panel( self.topPanel)
+        self.topExtraOptsPanel = wx.Panel( self.topPanel)
+        self.moreButton        = wx.Button(self.topPanel,
+                                           label='more')
+
+        self.topSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.topSizer.Add(self.topMainOptsPanel,  flag=wx.EXPAND, proportion=1)
+        self.topSizer.Add(self.topExtraOptsPanel, flag=wx.EXPAND, proportion=1)
+        self.topSizer.Add(self.moreButton,        flag=wx.EXPAND)
+        self.topPanel.SetSizer(self.topSizer)
+
+        self.enabled    = wx.CheckBox(self.topMainOptsPanel)
+        self.name       = wx.TextCtrl(self.topMainOptsPanel)
+        self.alpha      = wx.Slider(  self.topMainOptsPanel,
+                                      value=100,
+                                      minValue=0,
+                                      maxValue=100)
+        self.brightness = wx.Slider(  self.topMainOptsPanel,
+                                      value=50,
+                                      minValue=0,
+                                      maxValue=100)
+        self.contrast   = wx.Slider(  self.topMainOptsPanel,
+                                      value=50,
+                                      minValue=0,
+                                      maxValue=100)
+        
+
+        self.topMainSizer = wx.FlexGridSizer(2, 5)
+        self.topMainSizer.AddGrowableCol(1)
+        self.topMainSizer.AddGrowableCol(2)
+        self.topMainSizer.AddGrowableCol(3)
+        self.topMainSizer.AddGrowableCol(4)
+        
+        self.topMainOptsPanel.SetSizer(self.topMainSizer)
+        self.topMainSizer.Add(self.enabled,    flag=wx.EXPAND)
+        self.topMainSizer.Add(self.name,       flag=wx.EXPAND)
+        self.topMainSizer.Add(self.alpha,      flag=wx.EXPAND)
+        self.topMainSizer.Add(self.brightness, flag=wx.EXPAND)
+        self.topMainSizer.Add(self.contrast,   flag=wx.EXPAND)
+
+        def label(label):
+            return wx.StaticText(self.topMainOptsPanel,
+                                 label=label,
+                                 style=wx.ALIGN_CENTER_HORIZONTAL)
+        
+        self.topMainSizer.Add(label(''))
+        self.topMainSizer.Add(label('name'),       flag=wx.EXPAND)
+        self.topMainSizer.Add(label('alpha'),      flag=wx.EXPAND)
+        self.topMainSizer.Add(label('brightness'), flag=wx.EXPAND)
+        self.topMainSizer.Add(label('contrast'),   flag=wx.EXPAND)
+
+        props.bindWidget(self.enabled,    display, 'enabled', wx.EVT_CHECKBOX)
+        props.bindWidget(self.name,       display, 'name',       wx.EVT_TEXT)
+        props.bindWidget(self.alpha,      display, 'alpha',      wx.EVT_SLIDER)
+        props.bindWidget(self.brightness, display, 'brightness', wx.EVT_SLIDER)
+        props.bindWidget(self.contrast,   display, 'contrast',   wx.EVT_SLIDER)
+
+        image.addListener('imageType', self._name, self._imageTypeChanged)
+
+        self._imageTypeChanged()
+
+        self.Layout()
+
+    def destroy(self):
+        fslpanel.FSLViewPanel.destroy(self)
+        self.image.removeListener('imageType', self._name)
+
+        
+    def _imageTypeChanged(self, *a):
+
+        pass
+        
+        # import fsl.fslview.layouts as fsllayouts
+
+        # display      = self._displayCtx.getDisplayProperties(self.image)
+        # opts         = display.getDisplayOpts()
+        # displayPanel = self._getDisplayPanel(self.image)
+        # panelSizer   = displayPanel.GetSizer()
+
+        # item = panelSizer.GetItem(1).GetWindow()
+        # panelSizer.Remove(1)
+        # item.Destroy()
+
+        # optPropPanel = props.buildGUI(
+        #     displayPanel,
+        #     opts,
+        #     view=fsllayouts.layouts[opts])
+
+        # panelSizer.Add(optPropPanel, flag=wx.EXPAND)
+
+        # displayPanel.Layout()
+        # self.Layout()
+        # self.GetParent().Layout()
+
+
 class ImageDisplayPanel(fslpanel.FSLViewPanel):
     """A panel which shows display control options for the currently selected
     image.
@@ -41,9 +152,9 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         self._displayPanels = {}
 
         self._imageSelect = imageselect.ImageSelectPanel(
-            self, imageList, displayCtx)
+            self, imageList, displayCtx, False)
 
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
+        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.SetSizer(self._sizer)
 
@@ -53,11 +164,6 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
             'images',
             self._name,
             self._imageListChanged)
- 
-        self._displayCtx.addListener(
-            'imageOrder',
-            self._name,
-            self._selectedImageChanged)
         
         self._displayCtx.addListener(
             'selectedImage',
@@ -73,9 +179,11 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         fslpanel.FSLViewPanel.destroy(self)
 
         self._imageSelect.destroy()
+
+        for panel in self._displayPanels.values():
+            panel.destroy()
         
         self._imageList .removeListener('images',        self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
         for image in self._imageList:
@@ -88,58 +196,16 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         :class:`~fsl.data.image.Image` instance. 
         """
 
-        import fsl.fslview.layouts as fsllayouts
-        
         display      = self._displayCtx.getDisplayProperties(image)
-        opts         = display.getDisplayOpts()
-        displayPanel = wx.Panel(self)
-        panelSizer   = wx.BoxSizer(wx.VERTICAL)
+        displayPanel = DisplayStrip(self,
+                                    self._imageList,
+                                    self._displayCtx,
+                                    image,
+                                    display)
 
-        displayPanel.SetSizer(panelSizer)
-
-        displayPropPanel = props.buildGUI(
-            displayPanel,
-            display,
-            view=fsllayouts.layouts[display])
-
-        optPropPanel = props.buildGUI(
-            displayPanel,
-            opts,
-            view=fsllayouts.layouts[opts]) 
-
-        panelSizer.Add(displayPropPanel, flag=wx.EXPAND)
-        panelSizer.Add(optPropPanel,     flag=wx.EXPAND)
-        
         self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
-
-        image.addListener('imageType', self._name, self._imageTypeChanged)
         
         return displayPanel
-
-
-    def _imageTypeChanged(self, value, valid, image, name):
-        
-        import fsl.fslview.layouts as fsllayouts
-
-        display      = self._displayCtx.getDisplayProperties(image)
-        opts         = display.getDisplayOpts()
-        displayPanel = self._getDisplayPanel(image)
-        panelSizer   = displayPanel.GetSizer()
-
-        item = panelSizer.GetItem(1).GetWindow()
-        panelSizer.Remove(1)
-        item.Destroy()
-
-        optPropPanel = props.buildGUI(
-            displayPanel,
-            opts,
-            view=fsllayouts.layouts[opts])
-
-        panelSizer.Add(optPropPanel, flag=wx.EXPAND)
-
-        displayPanel.Layout()
-        self.Layout()
-        self.GetParent().Layout()
 
     
     def _getDisplayPanel(self, image):
@@ -208,10 +274,3 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
             displayPanel.Show(i == idx)
 
         self.Layout()
-        self.Refresh()
-
-        # If the image list is empty, or was empty and
-        # is now not empty, this panel will have changed
-        # size. So we tell our parent to refresh itself
-        self.GetParent().Layout()
-        self.GetParent().Refresh()
