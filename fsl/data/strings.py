@@ -50,7 +50,12 @@ titles = TypeDict({
     'SpacePanel'      : 'Space inspector', 
 
     'AtlasInfoPanel'      : 'Atlas information',
-    'AtlasOverlayPanel'   : 'Atlas overlays'
+    'AtlasOverlayPanel'   : 'Atlas overlays',
+
+    'ImageListPanel'    : 'Image list',
+    'AtlasPanel'        : 'Atlases',
+    'LocationPanel'     : 'Location',
+    'ImageDisplayPanel' : 'Display',
 })
 
 

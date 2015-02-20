@@ -271,6 +271,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         for panelType, panel in self.__controlPanels.items():
             panel.destroy()
 
+        if self.__colourBar is not None:
+            self.__colourBar.destroy()
+
 
     def __selectedImageChanged(self, *a):
         """Called when the image list or selected image changed.
@@ -364,7 +367,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__onPaneClose(None, window)
         else:
             window = panelType(self, self._imageList, self._displayCtx)
-            self.__auiMgr.AddPane(window, wx.TOP)
+            self.__auiMgr.AddPane2(window, wx.TOP, strings.titles[window])
             self.__controlPanels[panelType] = window
             
         self.__auiMgr.Update()

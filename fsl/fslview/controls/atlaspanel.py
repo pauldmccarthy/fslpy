@@ -202,6 +202,13 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         if labelIdx is not None:
             if summary: display.getDisplayOpts().colour = np.random.random(3)
             else:       display.getDisplayOpts().cmap   = 'hot'
+        else:
+            # The Harvard-Oxford atlases have special colour maps
+            if   atlasID == 'HarvardOxford-Cortical':    cmap = 'cortical'
+            elif atlasID == 'HarvardOxford-Subcortical': cmap = 'subcortical'
+            else:                                        cmap = 'random'
+                
+            display.getDisplayOpts().cmap = cmap
 
 
     def locateRegion(self, atlasID, labelIdx):
