@@ -380,28 +380,29 @@ class SliceCanvas(props.HasProperties):
 
             # Called when the GL object representation
             # of the image needs to be re-created
-            def genGLObject(ctx=None,
-                            value=None,
+            def genGLObject(value=None,
                             valid=None,
+                            ctx=None,
                             name=None,
-                            disp=display):
+                            disp=display,
+                            img=image):
 
                 log.debug('GLObject representation for {} '
-                          'changed to {}'.format(display.name,
-                                                 display.imageType))
+                          'changed to {}'.format(disp.name,
+                                                 disp.imageType))
 
                 # Tell the previous GLObject (if
                 # any) to clean up after itself
                 try:
-                    globj = image.getAttribute(self.name)
+                    globj = img.getAttribute(self.name)
                     globj.destroy()
                 except KeyError:
                     pass
                 
-                globj = globject.createGLObject(image, disp)
-                opts  = display.getDisplayOpts()
+                globj = globject.createGLObject(img, disp)
+                opts  = disp.getDisplayOpts()
 
-                image.setAttribute(self.name, globj)
+                img.setAttribute(self.name, globj)
 
                 if globj is not None:
                     globj.init()
