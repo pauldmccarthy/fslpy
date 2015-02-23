@@ -24,15 +24,16 @@ import wx.lib.agw.aui as aui
 
 import props
 
-import fsl.data.strings                       as strings
-import fsl.fslview.panel                      as fslpanel
-import fsl.fslview.profiles                   as profiles
-import fsl.fslview.displaycontext             as displayctx
-import fsl.fslview.controls.imagelistpanel    as imagelistpanel
-import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
-import fsl.fslview.controls.locationpanel     as locationpanel
-import fsl.fslview.controls.atlaspanel        as atlaspanel
-import                                           colourbarpanel
+import fsl.data.strings                         as strings
+import fsl.fslview.panel                        as fslpanel
+import fsl.fslview.profiles                     as profiles
+import fsl.fslview.displaycontext               as displayctx
+import fsl.fslview.controls.imagelistpanel      as imagelistpanel
+# import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
+import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
+import fsl.fslview.controls.locationpanel       as locationpanel
+import fsl.fslview.controls.atlaspanel          as atlaspanel
+import                                             colourbarpanel
 
 
 def _takeScreenShot(imageList, displayCtx, canvas):
@@ -189,7 +190,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             'toggleAtlasPanel'        : lambda *a: self.toggleControlPanel(
                 atlaspanel.AtlasPanel, *a),
             'toggleDisplayProperties' : lambda *a: self.toggleControlPanel(
-                imagedisplaypanel.ImageDisplayPanel, *a),
+                imagedisplaytoolbar.ImageDisplayToolBar, *a),
             'toggleLocationPanel'     : lambda *a: self.toggleControlPanel(
                 locationpanel.LocationPanel, *a),
             'toggleCanvasProperties'  : lambda  *a: self.toggleConfigPanel(
@@ -370,15 +371,23 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__auiMgr.DetachPane(window)
             self.__onPaneClose(None, window)
         else:
-            window = panelType(self, self._imageList, self._displayCtx)
+            window   = panelType(self, self._imageList, self._displayCtx)
+
+            if isinstance(window, fslpanel.FSLViewPanel):
+                paneInfo = aui.AuiPaneInfo()        \
+                    .Top()                          \
+                    .MinSize(window.GetMinSize())   \
+                    .BestSize(window.GetBestSize()) \
+                    .Caption(strings.titles[window])
+
+            elif isinstance(window, fslpanel.FSLViewToolBar):
+                paneInfo = aui.AuiPaneInfo()        \
+                    .Top()                          \
+                    .ToolbarPane()                  \
+                    .Caption(strings.titles[window])
+                
             
-            self.__auiMgr.AddPane(
-                window,
-                aui.AuiPaneInfo() 
-                .Top()
-                .MinSize(window.GetMinSize()) 
-                .BestSize(window.GetBestSize()) 
-                .Caption(strings.titles[window]))
+            self.__auiMgr.AddPane(window, paneInfo)
             self.__controlPanels[panelType] = window
             
         self.__auiMgr.Update()

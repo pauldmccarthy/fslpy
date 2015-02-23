@@ -19,14 +19,16 @@ dynamic lookup of all :class:`~fsl.fslview.panel.ControlPanel` types.
 import fsl.fslview.panel as fslpanel 
 import locationpanel
 import imagelistpanel
-import imagedisplaypanel
+# import imagedisplaypanel
+import imagedisplaytoolbar
 import atlaspanel
 
-FSLViewPanel      = fslpanel         .FSLViewPanel
-LocationPanel     = locationpanel    .LocationPanel
-ImageListPanel    = imagelistpanel   .ImageListPanel
-ImageDisplayPanel = imagedisplaypanel.ImageDisplayPanel
-AtlasPanel        = atlaspanel.       AtlasPanel
+FSLViewPanel        = fslpanel         .FSLViewPanel
+LocationPanel       = locationpanel    .LocationPanel
+ImageListPanel      = imagelistpanel   .ImageListPanel
+# ImageDisplayPanel  = imagedisplaypanel.ImageDisplayPanel
+ImageDisplayToolBar = imagedisplaytoolbar.ImageDisplayToolBar
+AtlasPanel          = atlaspanel.       AtlasPanel
 
 
 def listControlPanels():

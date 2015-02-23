@@ -4,22 +4,23 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides a single class - the :class:`FSLViewPanel`.
-
+"""This module provides two classes - the :class:`FSLViewPanel`, and the
+:class:`FSLViewToolBar`.
 
 A :class:`FSLViewPanel` object is a :class:`wx.Panel` which provides some
 sort of view of a collection of :class:`~fsl.data.image.Image` objects,
-contained within an :class:`~fsl.data.image.ImageList`.
+contained within an :class:`~fsl.data.image.ImageList`. Similarly, a
+:class:`FSLViewToolBar` is a :class:`wx.lib.agw.aui.AuiToolBar` which
+provides some sort of control over the view.
 
+Instances of these classes are also
+:class:`~fsl.fslview.actions.ActionProvider` instances - any actions which
+are specified during construction may be exposed to the user. Furthermore,
+any display configuration options which should be made available available
+to the user should be added as :class:`~props.PropertyBase` attributes of
+the :class:`FSLViewPanel` subclass.
 
-A :class:`ViewPanel` is also a :class:`~fsl.fslview.actions.ActionProvider`
-instance - any actions which are specified during construction are exposed
-to the user. Furthermore, any display configuration options which should be
-made available available to the user should be added as
-:class:`~props.PropertyBase` attributes of the :class:`FSLViewPanel`
-subclass.
-
-See the following for examples of :class:`ViewPanel` subclasses:
+See the following for examples of :class:`FSLViewPanel` subclasses:
 
   - :class:`~fsl.fslview.views.OrthoPanel`
   - :class:`~fsl.fslview.views.LightBoxPanel`
@@ -44,8 +45,7 @@ import displaycontext
 
 log = logging.getLogger(__name__)
 
-
-class FSLViewPanel(wx.Panel, actions.ActionProvider):
+class _FSLViewPanel(actions.ActionProvider):
     """Superclass for FSLView view panels.
 
     A :class:`ViewPanel` has the following attributes, intended to be
@@ -64,14 +64,11 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
 
     
     def __init__(self,
-                 parent,
                  imageList,
                  displayCtx,
                  actionz=None):
         """Create a :class:`ViewPanel`.
 
-        :arg parent:     The :mod:`wx` parent object of this panel.
-        
         :arg imageList:  A :class:`~fsl.data.image.ImageList` instance.
         
         :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
@@ -82,7 +79,6 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
                          :class:`~fsl.fslview.actions.ActionProvider`).
         """
         
-        wx.Panel.__init__(self, parent)
         actions.ActionProvider.__init__(self, imageList, displayCtx, actionz)
 
         if not isinstance(imageList, fslimage.ImageList):
@@ -98,9 +94,6 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
         self._displayCtx = displayCtx
         self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
         self.__destroyed = False
-
-        import fsl.fslview.layouts as layouts
-        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
 
         
     def destroy(self):
@@ -138,11 +131,37 @@ class FSLViewPanel(wx.Panel, actions.ActionProvider):
             log.warning('The {}.destroy() method has not been called '
                         '- unless the application is shutting down, '
                         'this is probably a bug!'.format(type(self).__name__))
-        
-        wx.Panel              .__del__(self)
+
         actions.ActionProvider.__del__(self)
 
 
+class FSLViewPanel(_FSLViewPanel, wx.Panel):
+    def __init__(self, parent, imageList, displayCtx, actionz=None):
+        wx.Panel.__init__(self, parent)
+        _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
+
+        import fsl.fslview.layouts as layouts
+        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
+
+        
+    def __del__(self):
+        wx.Panel     .__del__(self)
+        _FSLViewPanel.__del__(self)
+
+class FSLViewToolBar(_FSLViewPanel, wx.Panel):
+    def __init__(self, parent, imageList, displayCtx, actionz=None):
+        wx.Panel.__init__(self, parent)
+        _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
+
+        import fsl.fslview.layouts as layouts
+        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
+
+        
+    def __del__(self):
+        wx.Panel     .__del__(self)
+        _FSLViewPanel.__del__(self)        
+
+        
 class ConfigPanel(wx.Panel):
 
     def __init__(self, parent, target, layout=None):

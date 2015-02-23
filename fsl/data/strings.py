@@ -55,7 +55,7 @@ titles = TypeDict({
     'ImageListPanel'    : 'Image list',
     'AtlasPanel'        : 'Atlases',
     'LocationPanel'     : 'Location',
-    'ImageDisplayPanel' : 'Display',
+    'ImageDisplayToolBar' : 'Display',
 })
 
 
@@ -96,6 +96,8 @@ labels = TypeDict({
     'LocationPanel.volumeLabel' : 'Volume',
     'LocationPanel.spaceLabel'  : 'Space',
     'LocationPanel.outOfBounds' : 'Out of bounds',
+
+    'ImageDisplayToolBar.more' : 'More settings',
 })
 
 
