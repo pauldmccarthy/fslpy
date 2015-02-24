@@ -190,8 +190,28 @@ class Image(props.HasProperties):
         be called if the ``loadData`` parameter passed to :meth:`__init__`
         was ``False``.
         """
-        self.data = self.nibImage.get_data()
-        self.data.flags.writeable = False
+        
+        data = self.nibImage.get_data()
+
+        # Squeeze out empty dimensions, as
+        # 3D image can sometimes be listed
+        # as having 4 or more dimensions
+        shape = data.shape
+        
+        for i in reversed(range(len(shape))):
+            if shape[i - 1] == 1:
+                data = data.squeeze(axis=i - 1)
+
+        data.flags.writeable = False
+
+        log.debug('Loaded image data ({}) - original '
+                  'shape {}, squeezed shape {}'.format(
+                      self.name,
+                      shape,
+                      data.shape))
+
+        self.data = data
+
         
         
     def applyChange(self, offset, newVals, vol=None):

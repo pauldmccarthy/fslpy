@@ -354,6 +354,49 @@ class ImageTexture(object):
 
         voxValXform = transform.scaleOffsetXform(scale, offset)
 
+        if log.getEffectiveLevel() == logging.DEBUG:
+
+            if   texDtype == gl.GL_UNSIGNED_BYTE:
+                sTexDtype = 'GL_UNSIGNED_BYTE'
+            elif texDtype == gl.GL_UNSIGNED_SHORT:
+                sTexDtype = 'GL_UNSIGNED_SHORT' 
+            
+            if   texFmt == gl.GL_LUMINANCE:
+                sTexFmt = 'GL_LUMINANCE'
+            elif texFmt == gl.GL_LUMINANCE_ALPHA:
+                sTexFmt = 'GL_LUMINANCE_ALPHA'
+            elif texFmt == gl.GL_RGB:
+                sTexFmt = 'GL_RGB'
+            elif texFmt == gl.GL_RGBA:
+                sTexFmt = 'GL_RGBA'
+                
+            if   intFmt == gl.GL_LUMINANCE8:
+                sIntFmt = 'GL_LUMINANCE8'
+            elif intFmt == gl.GL_LUMINANCE16:
+                sIntFmt = 'GL_LUMINANCE16' 
+            elif intFmt == gl.GL_LUMINANCE8_ALPHA8:
+                sIntFmt = 'GL_LUMINANCE8_ALPHA8'
+            elif intFmt == gl.GL_LUMINANCE16_ALPHA16:
+                sIntFmt = 'GL_LUMINANCE16_ALPHA16'
+            elif intFmt == gl.GL_RGB8:
+                sIntFmt = 'GL_RGB8'
+            elif intFmt == gl.GL_RGB16:
+                sIntFmt = 'GL_RGB16'
+            elif intFmt == gl.GL_RGBA8:
+                sIntFmt = 'GL_RGBA8'
+            elif intFmt == gl.GL_RGBA16:
+                sIntFmt = 'GL_RGBA16' 
+            
+            log.debug('Image texture ({}) is to be stored as {}/{}/{} '
+                      '(normalised: {} -  scale {}, offset {})'.format(
+                          self.image,
+                          sTexDtype,
+                          sTexFmt,
+                          sIntFmt,
+                          self.normalise,
+                          scale,
+                          offset))
+
         return texFmt, intFmt, texDtype, voxValXform
 
 
