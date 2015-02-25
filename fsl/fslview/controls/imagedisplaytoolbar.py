@@ -37,11 +37,11 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         self._sepLine1 = wx.StaticLine(
             self,
-            size=(-1, 25),
+            size=(-1, 30),
             style=wx.LI_VERTICAL)
         self._sepLine2 = wx.StaticLine(
             self,
-            size=(-1, 25),
+            size=(-1, 30),
             style=wx.LI_VERTICAL) 
 
         self._displayWidgets = {}
@@ -59,6 +59,8 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             'selectedImage',
             self._name,
             self._selectedImageChanged)
+
+        self._moreButton.Bind(wx.EVT_BUTTON, self._onMoreButton)
         
         self._selectedImageChanged()
 
@@ -74,6 +76,10 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         for image in self._imageList:
             image.removeListener('imageType', self._name)
 
+
+    def _onMoreButton(self, ev):
+        self.GetParent().toggleControlPanel(ImageDisplayPanel, True)
+    
 
     def _imageTypeChanged(self, value, valid, image, name, refresh=True):
 
@@ -236,17 +242,114 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
     
 class ImageDisplayPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx, image):
+    def __init__(self, parent, imageList, displayCtx):
+        """
+        """
+
+        # TODO Ability to link properties across images
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        image   = image
-        display = displayCtx.getDisplayProperties(image)
-        opts    = self.display.getDisplayOpts()
+        self.imageSelect = imageselect.ImageSelectPanel(
+            self, imageList, displayCtx)
 
-        name       = props.makeWidget(self, display, 'name')
-        enabled    = props.makeWidget(self, display, 'enabled')
-        imageType  = props.makeWidget(self, display, 'imageType')
-        resolution = props.makeWidget(self, display, 'resolution')
-        transform  = props.makeWidget(self, display, 'transform')
+        self.propPanel = wx.ScrolledWindow(self)
+        self.propPanel.SetScrollRate(0, 5)
+
+        self.divider = wx.StaticLine(
+            self.propPanel, size=(-1, -1), style=wx.LI_HORIZONTAL)
+
+        self.sizer     = wx.BoxSizer(wx.VERTICAL)
+        self.propSizer = wx.BoxSizer(wx.VERTICAL)
+        self.dispSizer = wx.GridBagSizer()
+        self.optsSizer = wx.GridBagSizer()
         
+        self          .SetSizer(self.sizer)
+        self.propPanel.SetSizer(self.propSizer)
+
+        self.sizer.Add(self.imageSelect, flag=wx.EXPAND)
+        self.sizer.Add(self.propPanel,   flag=wx.EXPAND, proportion=1)
+        
+        self.propSizer.Add(self.dispSizer,
+                           border=20,
+                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL)
+
+        self.propSizer.Add(self.divider,
+                           border=20,
+                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL)
+        
+        self.propSizer.Add(self.optsSizer,
+                           border=10,
+                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL) 
+
+        displayCtx.addListener('selectedImage',
+                               self._name,
+                               self._selectedImageChanged)
+        imageList .addListener('images',
+                               self._name,
+                               self._selectedImageChanged)
+
+        self._lastImage = None
+        self._selectedImageChanged()
+
+
+    def _selectedImageChanged(self, *a):
+
+        image     = self._displayCtx.getSelectedImage()
+        dispSizer = self.dispSizer
+        optsSizer = self.optsSizer
+        lastImage = self._lastImage
+
+        if image is None:
+            self._lastImage = None
+            dispSizer.Clear(True)
+            optsSizer.Clear(True)
+            self.Layout()
+            return
+
+        if image is lastImage:
+            return
+
+        if lastImage is not None:
+            lastImage.removeListener('imageType', self._name)
+            
+        image.addListener('imageType',
+                          self._name,
+                          lambda *a: self._updateProps(True))
+        self._lastImage = image
+        self._updateProps(False)
+        self._updateProps(True)
+
+        
+    def _updateProps(self, opts=False):
+
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        if opts:
+            sizer  = self.optsSizer
+            optObj = display.getDisplayOpts()
+        else:
+            sizer  = self.dispSizer
+            optObj = display
+
+        propNames = optObj.getAllProperties()[0]
+
+        sizer.Clear(True)
+        
+        for i, prop in enumerate(propNames):
+
+            widget     = props.makeWidget(    self.propPanel, optObj, prop)
+            syncWidget = props.makeSyncWidget(self.propPanel, optObj, prop)
+            label      = wx.StaticText(
+                self.propPanel, label=strings.properties[optObj, prop])
+
+            sizer.Add(label,      (i, 0), flag=wx.EXPAND)
+            sizer.Add(syncWidget, (i, 1), flag=wx.EXPAND)
+            sizer.Add(widget,     (i, 2), flag=wx.EXPAND)
+
+        if not sizer.IsColGrowable(2):
+            sizer.AddGrowableCol(2)
+
+        sizer.Layout()
+        self.propPanel.Layout()

@@ -189,5 +189,6 @@ minSizes = td.TypeDict({
     'AtlasOverlayPanel'   : (300, 100),
     'AtlasPanel'          : (300, 100),
     'ImageListPanel'      : (150, 100),
-    'ImageDisplayToolBar' : (-1,  50), 
+    'ImageDisplayToolBar' : (-1,  50),
+#     'ImageDisplayPanel'   : (200, -1), 
 })

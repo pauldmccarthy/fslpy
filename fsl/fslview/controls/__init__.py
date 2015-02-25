@@ -23,12 +23,12 @@ import imagelistpanel
 import imagedisplaytoolbar
 import atlaspanel
 
-FSLViewPanel        = fslpanel         .FSLViewPanel
-LocationPanel       = locationpanel    .LocationPanel
-ImageListPanel      = imagelistpanel   .ImageListPanel
-# ImageDisplayPanel  = imagedisplaypanel.ImageDisplayPanel
+FSLViewPanel        = fslpanel           .FSLViewPanel
+LocationPanel       = locationpanel      .LocationPanel
+ImageListPanel      = imagelistpanel     .ImageListPanel
+ImageDisplayPanel   = imagedisplaytoolbar.ImageDisplayPanel
 ImageDisplayToolBar = imagedisplaytoolbar.ImageDisplayToolBar
-AtlasPanel          = atlaspanel.       AtlasPanel
+AtlasPanel          = atlaspanel         .AtlasPanel
 
 
 def listControlPanels():

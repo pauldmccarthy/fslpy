@@ -52,10 +52,11 @@ titles = TypeDict({
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'ImageListPanel'    : 'Image list',
-    'AtlasPanel'        : 'Atlases',
-    'LocationPanel'     : 'Location',
-    'ImageDisplayToolBar' : 'Display',
+    'ImageListPanel'       : 'Image list',
+    'AtlasPanel'           : 'Atlases',
+    'LocationPanel'        : 'Location',
+    'ImageDisplayToolBar'  : 'Display toolbar',
+    'ImageDisplayPanel'    : 'Display settings',
 })
 
 

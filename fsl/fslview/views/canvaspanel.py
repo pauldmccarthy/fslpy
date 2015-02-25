@@ -186,15 +186,15 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             'screenshot'              : self.screenshot,
             'toggleColourBar'         : self.toggleColourBar,
             'toggleImageList'         : lambda *a: self.toggleControlPanel(
-                imagelistpanel.ImageListPanel, *a),
+                imagelistpanel.ImageListPanel),
             'toggleAtlasPanel'        : lambda *a: self.toggleControlPanel(
-                atlaspanel.AtlasPanel, *a),
+                atlaspanel.AtlasPanel),
             'toggleDisplayProperties' : lambda *a: self.toggleControlPanel(
-                imagedisplaytoolbar.ImageDisplayToolBar, *a),
+                imagedisplaytoolbar.ImageDisplayToolBar),
             'toggleLocationPanel'     : lambda *a: self.toggleControlPanel(
-                locationpanel.LocationPanel, *a),
+                locationpanel.LocationPanel),
             'toggleCanvasProperties'  : lambda  *a: self.toggleConfigPanel(
-                type(self), self, *a)
+                type(self), self)
         }
         
         fslpanel.FSLViewPanel.__init__(
@@ -249,11 +249,14 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__selectedImageChanged()
         self.__layout()
         
-        self.__auiMgr = aui.AuiManager(self, agwFlags=0) 
+        self.__auiMgr = aui.AuiManager(self, agwFlags=(
+            aui.AUI_MGR_ALLOW_FLOATING)) 
         self.__auiMgr.AddPane(self.__canvasContainer, wx.CENTRE)
         self.__auiMgr.Update()
 
         self.__auiMgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.__onPaneClose)
+
+        self.auiMgr = self.__auiMgr
 
             
     def _init(self):
@@ -364,7 +367,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         panel.Destroy()
  
         
-    def toggleControlPanel(self, panelType, *a):
+    def toggleControlPanel(self, panelType, floatPane=False, *a):
         
         window = self.__controlPanels.get(panelType, None)
 
@@ -374,13 +377,15 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         else:
             window   = panelType(self, self._imageList, self._displayCtx)
             paneInfo = aui.AuiPaneInfo()        \
-                .Top()                          \
                 .MinSize(window.GetMinSize())   \
                 .BestSize(window.GetBestSize()) \
                 .Caption(strings.titles[window])
 
             if isinstance(window, fslpanel.FSLViewToolBar):
                 paneInfo = paneInfo.ToolbarPane()
+
+            if floatPane is False: paneInfo.Top()
+            else:                  paneInfo.Float()
                     
             self.__auiMgr.AddPane(window, paneInfo)
             self.__controlPanels[panelType] = window
