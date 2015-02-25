@@ -342,7 +342,8 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         log.debug('Panel closed: {}'.format(type(panel).__name__))
 
-        if isinstance(panel, fslpanel.FSLViewPanel):
+        if isinstance(panel, (fslpanel.FSLViewPanel,
+                              fslpanel.FSLViewToolBar)):
             self.__controlPanels.pop(type(panel))
 
             # calling fslpanel.FSLViewPanel.destroy()
@@ -372,21 +373,15 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__onPaneClose(None, window)
         else:
             window   = panelType(self, self._imageList, self._displayCtx)
+            paneInfo = aui.AuiPaneInfo()        \
+                .Top()                          \
+                .MinSize(window.GetMinSize())   \
+                .BestSize(window.GetBestSize()) \
+                .Caption(strings.titles[window])
 
-            if isinstance(window, fslpanel.FSLViewPanel):
-                paneInfo = aui.AuiPaneInfo()        \
-                    .Top()                          \
-                    .MinSize(window.GetMinSize())   \
-                    .BestSize(window.GetBestSize()) \
-                    .Caption(strings.titles[window])
-
-            elif isinstance(window, fslpanel.FSLViewToolBar):
-                paneInfo = aui.AuiPaneInfo()        \
-                    .Top()                          \
-                    .ToolbarPane()                  \
-                    .Caption(strings.titles[window])
-                
-            
+            if isinstance(window, fslpanel.FSLViewToolBar):
+                paneInfo = paneInfo.ToolbarPane()
+                    
             self.__auiMgr.AddPane(window, paneInfo)
             self.__controlPanels[panelType] = window
             

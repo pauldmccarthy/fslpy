@@ -160,6 +160,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             label .Show() 
 
         self._displayPanel.Layout()
+        self.Layout()
             
 
     def _makeLabel(self, parent, hasProps, propName):
