@@ -33,21 +33,27 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         self._moreButton = wx.Button(
             self, label=strings.labels['ImageDisplayToolBar.more'])
 
-        self._sepLine = wx.StaticLine(
-            self, size=(-1, 25), style=wx.LI_VERTICAL)
+        self._displayPanel = wx.Panel(self)
+        self._displaySizer = wx.GridBagSizer()
+        self._displayPanel.SetSizer(self._displaySizer)
 
-        self._displayPanels = {}
-        self._optsPanels    = {}
+        self._sepLine1 = wx.StaticLine(
+            self._displayPanel,
+            size=(-1, 25),
+            style=wx.LI_VERTICAL)
+        self._sepLine2 = wx.StaticLine(
+            self,
+            size=(-1, 25),
+            style=wx.LI_VERTICAL) 
 
-        self._currentDisplayPanel = None
-        self._currentOptsPanel    = None
+        self._displayWidgets = {}
+        self._optsWidgets    = {}
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._sizer.Add(self._imageSelect)
-        self._sizer.Add((0, 0))
-        self._sizer.Add(self._sepLine)
-        self._sizer.Add((0, 0))
-        self._sizer.Add(self._moreButton)
+        self._sizer.Add(self._imageSelect,  flag=wx.ALIGN_CENTRE)
+        self._sizer.Add(self._displayPanel, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._sepLine2,     flag=wx.ALIGN_CENTRE)
+        self._sizer.Add(self._moreButton,   flag=wx.EXPAND)
 
         self.SetSizer(self._sizer)
 
@@ -71,19 +77,22 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             image.removeListener('imageType', self._name)
 
 
-    def _imageTypeChanged(self, value, valid, image, name):
+    def _imageTypeChanged(self, value, valid, image, name, refresh=True):
 
-        oldOptsPanel = self._optsPanels.get(image, None)
-        newOptsPanel = self._makeOptsPanel(image)
+        panel = self._displayPanel
         
-        self._optsPanels[image] = newOptsPanel
-        
-        if oldOptsPanel is not None:
-            current = self._sizer.GetItem(3).GetWindow()
-            if current is oldOptsPanel:
-                self._sizer.Detach(3)
-                self._sizer.Insert(3, newOptsPanel, flag=wx.EXPAND)
-            oldOptsPanel.Destroy()
+        oldOptsWidgets = self._optsWidgets.get(image, None)
+        newOptsWidgets = self._makeOptsWidgets(image, panel)
+
+        self._optsWidgets[image] = newOptsWidgets
+
+        if oldOptsWidgets is not None:
+            for widget, label, _ in oldOptsWidgets:
+                widget.Destroy()
+                label .Destroy()
+
+        if refresh and (image is self._displayCtx.getSelectedImage()):
+            self._showImageWidgets(image)
             
 
     def _selectedImageChanged(self, *a):
@@ -91,105 +100,140 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         index changes. Ensures that the correct display panel is visible.
         """
 
-        currDispPanel = self._sizer.GetItem(1).GetWindow()
-        currOptsPanel = self._sizer.GetItem(3).GetWindow()
-
-        self._sizer.Detach(3)
-        self._sizer.Detach(1)
-
-        if currDispPanel is not None: currDispPanel.Show(False)
-        if currOptsPanel is not None: currOptsPanel.Show(False) 
-
         image = self._displayCtx.getSelectedImage()
+        panel = self._displayPanel
 
-        if image is None:
-            self._sizer.Insert(1, (0, 0))
-            self._sizer.Insert(3, (0, 0))
-        else:
+        if image is not None:
 
-            displayPanel = self._displayPanels.get(image, None)
-            optsPanel    = self._optsPanels   .get(image, None)
+            displayWidgets = self._displayWidgets.get(image, None)
+            optsWidgets    = self._optsWidgets   .get(image, None)
 
-            if displayPanel is None:
-                displayPanel = self._makeDisplayPanel(image)
-                self._displayPanels[image] = displayPanel
+            if displayWidgets is None:
+                displayWidgets = self._makeDisplayWidgets(image, panel)
+                self._displayWidgets[image] = displayWidgets
 
-            if optsPanel is None:
-                optsPanel = self._makeOptsPanel(image)
-                self._optsPanels[image] = optsPanel
-                
+            if optsWidgets is None:
+                self._imageTypeChanged(None, None, image, None, False)
                 image.addListener(
                     'imageType',
                     self._name,
                     self._imageTypeChanged,
                     overwrite=True)
-                
-            self._sizer.Insert(1, displayPanel, flag=wx.EXPAND)
-            self._sizer.Insert(3, optsPanel,    flag=wx.EXPAND)
 
-            displayPanel.Show(True)
-            optsPanel   .Show(True)
+        self._showImageWidgets(image)
 
-        self.Layout()
+
+    def _showImageWidgets(self, image):
+
+        for i in range(self._displaySizer.GetItemCount()):
+            self._displaySizer.Hide(i)
+
+        self._displaySizer.Clear(False)
+
+        if image is None:
+            self._displaySizer.Layout()
+            return
+
+        displayWidgets = self._displayWidgets[image]
+        optsWidgets    = self._optsWidgets[   image]
+
+        for col, (widget, label, flag) in enumerate(displayWidgets):
+            self._displaySizer.Add(widget, (0, col), flag=flag)
+            self._displaySizer.Add(label,  (1, col),
+                                   flag=wx.ALIGN_CENTRE_HORIZONTAL)
+
+            widget.Show()
+            label .Show()
+
+        self._displaySizer.Add(self._sepLine1,
+                               (0, len(displayWidgets)),
+                               (2, 1),
+                               flag=wx.ALIGN_CENTRE)
+
+        startCol = len(displayWidgets) + 1
+
+        for col, (widget, label, flag) in enumerate(optsWidgets, startCol):
+            self._displaySizer.Add(widget, (0, col), flag=flag)
+            self._displaySizer.Add(label,  (1, col),
+                                   flag=wx.ALIGN_CENTRE_HORIZONTAL)
+            widget.Show()
+            label .Show() 
+
+        self._displayPanel.Layout()
             
+
+    def _makeLabel(self, parent, hasProps, propName):
         
-    def _makeDisplayPanel(self, image):
+        label = wx.StaticText(
+            parent, label=strings.properties[hasProps, propName],
+            style=wx.ALIGN_CENTER_HORIZONTAL)
+        label.SetFont(label.GetFont().Smaller().Smaller())
+        return label
+
+        
+    def _makeDisplayWidgets(self, image, parent):
         """Creates and returns panel containing widgets allowing
         the user to edit the display properties of the given
         :class:`~fsl.data.image.Image` instance. 
         """
 
-        display = self._displayCtx.getDisplayProperties(image)
-        panel   = wx.Panel(self)
+        display    = self._displayCtx.getDisplayProperties(image)
+
+        enabled    = props.makeWidget(parent, display, 'enabled')
+        name       = props.makeWidget(parent, display, 'name')
+        imageType  = props.makeWidget(parent, display, 'imageType')
         
-        enabled    = props.makeWidget(panel, display, 'enabled')
-        name       = props.makeWidget(panel, display, 'name')
-        imageType  = props.makeWidget(panel, display, 'imageType')
-        
-        alpha      = wx.Slider(panel, value=100, minValue=0, maxValue=100)
-        brightness = wx.Slider(panel, value=50,  minValue=0, maxValue=100)
-        contrast   = wx.Slider(panel, value=50,  minValue=0, maxValue=100)
-        
+        alpha      = wx.Slider(parent, value=100, minValue=0, maxValue=100)
+        brightness = wx.Slider(parent, value=50,  minValue=0, maxValue=100)
+        contrast   = wx.Slider(parent, value=50,  minValue=0, maxValue=100)
+
         props.bindWidget(alpha,      display, 'alpha',      wx.EVT_SLIDER)
         props.bindWidget(brightness, display, 'brightness', wx.EVT_SLIDER)
         props.bindWidget(contrast,   display, 'contrast',   wx.EVT_SLIDER)
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        panel.SetSizer(sizer)
+        name.SetMinSize((150, -1))
 
-        sizer.Add(enabled,    flag=wx.EXPAND)
-        sizer.Add(name,       flag=wx.EXPAND)
-        sizer.Add(imageType,  flag=wx.EXPAND)
-        sizer.Add(alpha,      flag=wx.EXPAND)
-        sizer.Add(brightness, flag=wx.EXPAND)
-        sizer.Add(contrast,   flag=wx.EXPAND)
+        def label(prop):
+            return self._makeLabel(parent, display, prop)
 
-        panel.Layout()
+        widgets = [enabled, name, imageType, alpha, brightness, contrast]
+        labels = [label('enabled'),
+                  label('name'),
+                  label('imageType'),
+                  label('alpha'),
+                  label('brightness'),
+                  label('contrast')]
+        flags = [wx.ALIGN_CENTRE,
+                 wx.EXPAND,
+                 wx.EXPAND,
+                 wx.EXPAND,
+                 wx.EXPAND,
+                 wx.EXPAND]
 
-        return panel
+        return zip(widgets, labels, flags)
 
     
-    def _makeOptsPanel(self, image):
+    def _makeOptsWidgets(self, image, parent):
 
         display = self._displayCtx.getDisplayProperties(image)
         opts    = display.getDisplayOpts()
-        panel   = wx.Panel(self)
+        labels  = []
         widgets = []
+        flags   = []
 
         if display.imageType == 'volume':
-            widgets.append(props.makeWidget(panel, opts, 'cmap'))
+            widgets.append(props.makeWidget(parent, opts, 'cmap'))
+            labels .append(self._makeLabel( parent, opts, 'cmap'))
+            flags  .append(wx.EXPAND)
             
         elif display.imageType == 'mask':
-            widgets.append(props.makeWidget(panel, opts, 'colour'))
+            widgets.append(props.makeWidget(parent, opts, 'colour'))
+            labels .append(self._makeLabel( parent, opts, 'colour'))
+            flags  .append(wx.ALIGN_CENTRE)
             
         elif display.imageType == 'vector':
-            widgets.append(props.makeWidget(panel, opts, 'displayMode'))
+            widgets.append(props.makeWidget(parent, opts, 'displayMode'))
+            labels .append(self._makeLabel( parent, opts, 'displayMode'))
+            flags  .append(wx.EXPAND)
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        panel.SetSizer(sizer)
-
-        for w in widgets:
-            sizer.Add(w)
-
-        panel.Layout()
-        return panel
+        return zip(widgets, labels, flags)
