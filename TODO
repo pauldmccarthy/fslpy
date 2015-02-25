@@ -6,13 +6,15 @@ have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
-* February 2015 internal release
-** UI design
+* February/March 2015 internal release
 ** SSH / VNC performance
 ** Fix all the bugs
 ** Command line
 ** Offscreen rendering
+** Movie mode?
 ** Document all the code
+** IN PROGRESS UI design
+** DONE Support for double precision images
 ** DONE Histogram
 ** DONE Atlas tools
 ** DONE Keyboard shortcut for pan mode - can't use middle click when using a shitty laptop trackpad
@@ -20,7 +22,6 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 We now have an 'oxford' branch, which is linked to the jalapeno installation.
 When you want to 'release' something, merge from the master branch to the
 oxford branch, and push to jalapeno
-
 
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
@@ -219,6 +220,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Link display properties across images
 ** Custom colour select widget - the OSX one is rubbish
 ** Transfer editor selection on selected image changes
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
@@ -229,22 +231,21 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 *** 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
-** IN PROGRESS Different settings for each view
+** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE Different settings for each view
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
-*** IN PROGRESS Ability to display images in a different order for different view panels.
-*** IN PROGRESS Separate image displays for each view panel - this needs to be possible.
+*** DONE Ability to display images in a different order for different view panels.
+*** DONE Separate image displays for each view panel - this needs to be possible.
 And the ability to link/unlink said display properties
 ImageDisplay objects could be managed by DisplayContetx, rather than being
 tacked on as an image attribute (the same could be said of GLObjects, but
 that's irrelevant).
-*** IN PROGRESS Link display properties across all images
-** IN PROGRESS Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
+** DONE Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
 This will probably dictate how you go about implementing keyboard/mouse control
-** IN PROGRESS Keyboard/mouse control
+** DONE Keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
-** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
 ** DONE Brightness/contrast control, common to all image types (i.e. in top level Display properties)
 ** DONE Image export/offscreen rendering.
 ** DONE Re-work image display resolution options.
