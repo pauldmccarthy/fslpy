@@ -33,12 +33,10 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         self._moreButton = wx.Button(
             self, label=strings.labels['ImageDisplayToolBar.more'])
 
-        self._displayPanel = wx.Panel(self)
         self._displaySizer = wx.GridBagSizer()
-        self._displayPanel.SetSizer(self._displaySizer)
 
         self._sepLine1 = wx.StaticLine(
-            self._displayPanel,
+            self,
             size=(-1, 25),
             style=wx.LI_VERTICAL)
         self._sepLine2 = wx.StaticLine(
@@ -51,7 +49,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._sizer.Add(self._imageSelect,  flag=wx.ALIGN_CENTRE)
-        self._sizer.Add(self._displayPanel, flag=wx.EXPAND, proportion=1)
+        self._sizer.Add(self._displaySizer, flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._sepLine2,     flag=wx.ALIGN_CENTRE)
         self._sizer.Add(self._moreButton,   flag=wx.EXPAND)
 
@@ -79,10 +77,8 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
     def _imageTypeChanged(self, value, valid, image, name, refresh=True):
 
-        panel = self._displayPanel
-        
         oldOptsWidgets = self._optsWidgets.get(image, None)
-        newOptsWidgets = self._makeOptsWidgets(image, panel)
+        newOptsWidgets = self._makeOptsWidgets(image, self)
 
         self._optsWidgets[image] = newOptsWidgets
 
@@ -101,7 +97,6 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         """
 
         image = self._displayCtx.getSelectedImage()
-        panel = self._displayPanel
 
         if image is not None:
 
@@ -109,7 +104,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             optsWidgets    = self._optsWidgets   .get(image, None)
 
             if displayWidgets is None:
-                displayWidgets = self._makeDisplayWidgets(image, panel)
+                displayWidgets = self._makeDisplayWidgets(image, self)
                 self._displayWidgets[image] = displayWidgets
 
             if optsWidgets is None:
@@ -132,6 +127,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         if image is None:
             self._displaySizer.Layout()
+            self              .Layout()
             return
 
         displayWidgets = self._displayWidgets[image]
@@ -139,8 +135,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         for col, (widget, label, flag) in enumerate(displayWidgets):
             self._displaySizer.Add(widget, (0, col), flag=flag)
-            self._displaySizer.Add(label,  (1, col),
-                                   flag=wx.ALIGN_CENTRE_HORIZONTAL)
+            self._displaySizer.Add(label,  (1, col), flag=wx.EXPAND)
 
             widget.Show()
             label .Show()
@@ -154,20 +149,19 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         for col, (widget, label, flag) in enumerate(optsWidgets, startCol):
             self._displaySizer.Add(widget, (0, col), flag=flag)
-            self._displaySizer.Add(label,  (1, col),
-                                   flag=wx.ALIGN_CENTRE_HORIZONTAL)
+            self._displaySizer.Add(label,  (1, col), flag=wx.EXPAND)
             widget.Show()
             label .Show() 
 
-        self._displayPanel.Layout()
-        self.Layout()
+        self              .Layout()            
+        self._displaySizer.Layout()
             
 
     def _makeLabel(self, parent, hasProps, propName):
         
         label = wx.StaticText(
             parent, label=strings.properties[hasProps, propName],
-            style=wx.ALIGN_CENTER_HORIZONTAL)
+            style=wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_BOTTOM)
         label.SetFont(label.GetFont().Smaller().Smaller())
         return label
 
@@ -238,3 +232,21 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             flags  .append(wx.EXPAND)
 
         return zip(widgets, labels, flags)
+
+    
+class ImageDisplayPanel(fslpanel.FSLViewPanel):
+
+    def __init__(self, parent, imageList, displayCtx, image):
+
+        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+
+        image   = image
+        display = displayCtx.getDisplayProperties(image)
+        opts    = self.display.getDisplayOpts()
+
+        name       = props.makeWidget(self, display, 'name')
+        enabled    = props.makeWidget(self, display, 'enabled')
+        imageType  = props.makeWidget(self, display, 'imageType')
+        resolution = props.makeWidget(self, display, 'resolution')
+        transform  = props.makeWidget(self, display, 'transform')
+        

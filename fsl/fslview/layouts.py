@@ -185,8 +185,9 @@ layouts = td.TypeDict({
 
 
 minSizes = td.TypeDict({
-    'AtlasInfoPanel'    : (300, 100),
-    'AtlasOverlayPanel' : (300, 100),
-    'AtlasPanel'        : (300, 100),
-    'ImageListPanel'    : (150, 100), 
+    'AtlasInfoPanel'      : (300, 100),
+    'AtlasOverlayPanel'   : (300, 100),
+    'AtlasPanel'          : (300, 100),
+    'ImageListPanel'      : (150, 100),
+    'ImageDisplayToolBar' : (-1,  50), 
 })

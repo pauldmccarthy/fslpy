@@ -184,6 +184,18 @@ class Image(props.HasProperties):
         # arbitrary data associated with this image.
         self._attributes = {}
 
+        # update the available image type(s)
+        imageTypeProp = self.getProp('imageType')
+
+        # the vector type is only
+        # applicable to X*Y*Z*3 images
+        if len(self.shape) != 4 or self.shape[3] != 3:
+            
+            log.debug('Disabling vector type for {} ({})'.format(
+                self, self.shape))
+            imageTypeProp.disableChoice('vector', self)
+        
+
         
     def loadData(self):
         """Loads the image data from the file. This method only needs to
