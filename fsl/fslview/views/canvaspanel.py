@@ -179,10 +179,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
 
 
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, imageList, displayCtx, extraActions=None):
 
         # TODO add 'show/hide profile (props/actions) panel' action
-        actionz = {
+        actionz = dict({
             'screenshot'              : self.screenshot,
             'toggleColourBar'         : self.toggleColourBar,
             'toggleImageList'         : lambda *a: self.toggleControlPanel(
@@ -193,9 +193,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
                 imagedisplaytoolbar.ImageDisplayToolBar),
             'toggleLocationPanel'     : lambda *a: self.toggleControlPanel(
                 locationpanel.LocationPanel),
-            'toggleCanvasProperties'  : lambda  *a: self.toggleConfigPanel(
-                type(self), self)
-        }
+        }.items() + extraActions.items())
         
         fslpanel.FSLViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
@@ -352,9 +350,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             # calling fslpanel.FSLViewPanel.destroy()
             # here -  wx.Destroy is done below
             panel.destroy()
-            
-        elif isinstance(panel, fslpanel.ConfigPanel):
-            self.__configPanels.pop(panel.getTarget())
 
         # WTF AUI. Sometimes this method gets called
         # twice for a panel, the second time with a
@@ -367,7 +362,7 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         panel.Destroy()
  
         
-    def toggleControlPanel(self, panelType, floatPane=False, *a):
+    def toggleControlPanel(self, panelType, floatPane=False, *args, **kwargs):
         
         window = self.__controlPanels.get(panelType, None)
 
@@ -375,7 +370,8 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             self.__auiMgr.DetachPane(window)
             self.__onPaneClose(None, window)
         else:
-            window   = panelType(self, self._imageList, self._displayCtx)
+            window   = panelType(
+                self, self._imageList, self._displayCtx, *args, **kwargs)
             paneInfo = aui.AuiPaneInfo()        \
                 .MinSize(window.GetMinSize())   \
                 .BestSize(window.GetBestSize()) \

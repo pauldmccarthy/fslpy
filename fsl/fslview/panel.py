@@ -35,8 +35,6 @@ import logging
 
 import wx
 
-import props
-
 import fsl.data.image as fslimage
 
 import actions
@@ -148,6 +146,7 @@ class FSLViewPanel(_FSLViewPanel, wx.Panel):
         wx.Panel     .__del__(self)
         _FSLViewPanel.__del__(self)
 
+        
 class FSLViewToolBar(_FSLViewPanel, wx.Panel):
     def __init__(self, parent, imageList, displayCtx, actionz=None):
         wx.Panel.__init__(self, parent)
@@ -160,23 +159,3 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
     def __del__(self):
         wx.Panel     .__del__(self)
         _FSLViewPanel.__del__(self)        
-
-        
-class ConfigPanel(wx.Panel):
-
-    def __init__(self, parent, target, layout=None):
-        
-        wx.Panel.__init__(self, parent)
-        self._name   = '{}_{}'.format(self.__class__.__name__, id(self))
-        self._target = target
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self._propPanel = props.buildGUI(self, target, view=layout)
-
-        self._sizer.Add(self._propPanel, flag=wx.EXPAND, proportion=1)
-
-        self.SetSizer(self._sizer)
-        self.Layout()
-
-    def getTarget(self):
-        return self._target

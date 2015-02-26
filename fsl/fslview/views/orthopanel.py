@@ -21,12 +21,13 @@ import copy
 import wx
 import props
 
-import fsl.data.strings               as strings 
-import fsl.data.constants             as constants
-import fsl.utils.layout               as fsllayout
-import fsl.fslview.gl                 as fslgl
-import fsl.fslview.gl.wxglslicecanvas as slicecanvas
-import canvaspanel
+import fsl.data.strings                         as strings 
+import fsl.data.constants                       as constants
+import fsl.utils.layout                         as fsllayout
+import fsl.fslview.gl                           as fslgl
+import fsl.fslview.gl.wxglslicecanvas           as slicecanvas
+import fsl.fslview.controls.orthodisplaytoolbar as orthodisplaytoolbar
+import                                             canvaspanel
 
 class OrthoPanel(canvaspanel.CanvasPanel):
 
@@ -47,14 +48,13 @@ class OrthoPanel(canvaspanel.CanvasPanel):
     """If ``True``, labels showing anatomical orientation are displayed on
     each of the canvases.
     """
-
     
+
     layout = props.Choice(
         ['horizontal', 'vertical', 'grid'],
         ['Horizontal', 'Vertical', 'Grid'])
     """How should we lay out each of the three canvases?"""
 
-    
 
     xzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
     """Controls zoom on the X canvas."""
@@ -83,10 +83,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         in the given image list along a different axis. 
         """
 
+        actionz = {
+            'toggleOrthoProperties' : lambda *a: self.toggleControlPanel(
+                orthodisplaytoolbar.OrthoDisplayToolBar, False, self),
+        }
+
         canvaspanel.CanvasPanel.__init__(self,
                                          parent,
                                          imageList,
-                                         displayCtx)
+                                         displayCtx,
+                                         actionz)
 
     def _init(self):
 

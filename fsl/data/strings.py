@@ -57,6 +57,7 @@ titles = TypeDict({
     'LocationPanel'        : 'Location',
     'ImageDisplayToolBar'  : 'Display toolbar',
     'ImageDisplayPanel'    : 'Display settings',
+    'OrthoDisplayToolBar'  : 'Ortho view toolbar',
 })
 
 
@@ -74,7 +75,8 @@ actions = TypeDict({
     'CanvasPanel.toggleDisplayProperties' : 'Show/hide display properties',
     'CanvasPanel.toggleLocationPanel'     : 'Show/hide location panel',
     'CanvasPanel.toggleAtlasPanel'        : 'Show/hide atlas panel',
-    'CanvasPanel.toggleCanvasProperties'  : 'Show/hide canvas properties',
+    
+    'OrthoPanel.toggleOrthoProperties'    : 'Show/hide view properties',
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
