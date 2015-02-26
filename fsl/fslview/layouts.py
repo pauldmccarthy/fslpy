@@ -132,16 +132,6 @@ HistogramPanelLayout = props.VGroup((
            enabledWhen=lambda hp: not hp.autoHist)))
 
 
-DisplayToolBarLayout = props.HGroup(
-    (widget('enabled',    Display),
-     widget('name',       Display),
-     widget('imageType',  Display),
-     widget('alpha',      Display),
-     widget('brightness', Display),
-     widget('contrast',   Display)),
-    wrap=True, vertLabels=True)
-
-
 DisplayLayout = props.VGroup(
     (widget('name',          Display),
      widget('imageType',     Display),
@@ -162,20 +152,11 @@ VolumeOptsLayout = props.VGroup(
      widget('clipLow',      VolumeOpts),
      widget('clipHigh',     VolumeOpts)))
 
-VolumeOptsToolBarLayout = props.HGroup(
-    (widget('cmap', VolumeOpts),),
-    wrap=True, vertLabels=True)
-
 
 MaskOptsLayout = props.VGroup(
     (widget('colour',    MaskOpts),
      widget('invert',    MaskOpts),
      widget('threshold', MaskOpts)))
-
-
-MaskOptsToolBarLayout = props.HGroup(
-    (widget('colour', MaskOpts),),
-    wrap=True, vertLabels=True)
 
 
 VectorOptsLayout = props.VGroup((
@@ -194,11 +175,6 @@ VectorOptsLayout = props.VGroup((
     widget('modThreshold',  VectorOpts)))
 
 
-VectorOptsToolBarLayout = props.HGroup(
-    (widget('displayMode', VectorOpts),),
-    wrap=True, vertLabels=True)
-
-
 layouts = td.TypeDict({
 
     ('OrthoViewProfile', 'props')   : OrthoViewProfileLayout,
@@ -210,14 +186,10 @@ layouts = td.TypeDict({
     'LightBoxPanel'    : LightBoxPanelLayout,
     'HistogramPanel'   : HistogramPanelLayout,
 
-    'Display'                 : DisplayLayout,
-    ('Display',    'toolbar') : DisplayToolBarLayout,
-    'VolumeOpts'              : VolumeOptsLayout,
-    ('VolumeOpts', 'toolbar') : VolumeOptsToolBarLayout,
-    'MaskOpts'                : MaskOptsLayout,
-    ('MaskOpts',   'toolbar') : MaskOptsToolBarLayout,
-    'VectorOpts'              : VectorOptsLayout,
-    ('VectorOpts', 'toolbar') : VectorOptsToolBarLayout, 
+    'Display'    : DisplayLayout,
+    'VolumeOpts' : VolumeOptsLayout,
+    'MaskOpts'   : MaskOptsLayout,
+    'VectorOpts' : VectorOptsLayout, 
 })
 
 
