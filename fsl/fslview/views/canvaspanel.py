@@ -178,6 +178,9 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
     def __init__(self, parent, imageList, displayCtx, extraActions=None):
 
+        if extraActions is None:
+            extraActions = {}
+
         # TODO add 'show/hide profile (props/actions) panel' action
         actionz = dict({
             'screenshot'              : self.screenshot,
@@ -198,22 +201,19 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__profileManager = profiles.ProfileManager(
             self, imageList, displayCtx)
 
-        if displayCtx.getParent() is not None:
-        
-            self.bindProps('syncLocation',
-                           displayCtx,
-                           displayCtx.getSyncPropertyName('location'))
-            self.bindProps('syncImageOrder',
-                           displayCtx,
-                           displayCtx.getSyncPropertyName('imageOrder'))
-            self.bindProps('syncVolume',
-                           displayCtx,
-                           displayCtx.getSyncPropertyName('volume'))
-        else:
-
-            # Disable syncLocation, syncImageOrder, and syncVolume somehow
-            pass
-
+        # If the provided DisplayContext  does not
+        # have a parent, this will raise an error.
+        # But I don't think a CanvasPanel will ever
+        # be created with a 'master' DisplayContext.
+        self.bindProps('syncLocation',
+                       displayCtx,
+                       displayCtx.getSyncPropertyName('location'))
+        self.bindProps('syncImageOrder',
+                       displayCtx,
+                       displayCtx.getSyncPropertyName('imageOrder'))
+        self.bindProps('syncVolume',
+                       displayCtx,
+                       displayCtx.getSyncPropertyName('volume'))
 
         self.__canvasContainer = wx.Panel(self)
         self.__canvasPanel     = wx.Panel(self.__canvasContainer)

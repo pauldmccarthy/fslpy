@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# orthodisplaytoolbar.py -
+# orthotoolbar.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -10,14 +10,15 @@ import logging
 import wx
 import props
 
-import fsl.data.strings  as strings
-import fsl.fslview.panel as fslpanel
+import fsl.data.strings                        as strings
+import fsl.fslview.panel                       as fslpanel
+import fsl.fslview.controls.orthosettingspanel as orthosettingspanel
 
 
 log = logging.getLogger(__name__)
 
 
-class OrthoDisplayToolBar(fslpanel.FSLViewToolBar):
+class OrthoToolBar(fslpanel.FSLViewToolBar):
 
     
     def __init__(self, parent, imageList, displayCtx, ortho):
@@ -41,11 +42,15 @@ class OrthoDisplayToolBar(fslpanel.FSLViewToolBar):
         self.showX  = props.makeWidget(self, ortho, 'showXCanvas')
         self.showY  = props.makeWidget(self, ortho, 'showYCanvas')
         self.showZ  = props.makeWidget(self, ortho, 'showZCanvas')
+        
+        self.more   = wx.Button(self, label=strings.labels[self, 'more'])
 
         ortho.getAction('screenshot').bindToWidget(
             self, wx.EVT_BUTTON, self.screenshot)
         ortho.getAction('toggleColourBar').bindToWidget(
-            self, wx.EVT_BUTTON, self.colourBar) 
+            self, wx.EVT_BUTTON, self.colourBar)
+
+        self.more.Bind(wx.EVT_BUTTON, self._onMoreButton)
 
         self.AddTool(self.screenshot)
         self.AddTool(self.colourBar)
@@ -55,7 +60,13 @@ class OrthoDisplayToolBar(fslpanel.FSLViewToolBar):
         self.AddTool(self.showX,   strings.properties[ortho, 'showXCanvas'])
         self.AddTool(self.showY,   strings.properties[ortho, 'showYCanvas'])
         self.AddTool(self.showZ,   strings.properties[ortho, 'showZCanvas'])
+        self.AddTool(self.more)
         
 
     def destroy(self):
         fslpanel.FSLViewToolBar.destroy(self)
+
+
+    def _onMoreButton(self, ev):
+        self.GetParent().toggleControlPanel(
+            orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 

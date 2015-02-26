@@ -57,7 +57,8 @@ titles = TypeDict({
     'LocationPanel'        : 'Location',
     'ImageDisplayToolBar'  : 'Display toolbar',
     'ImageDisplayPanel'    : 'Display settings',
-    'OrthoDisplayToolBar'  : 'Ortho view toolbar',
+    'OrthoToolBar'         : 'Ortho view toolbar',
+    'OrthoSettingsPanel'   : 'Ortho view settings',
 })
 
 
@@ -102,6 +103,7 @@ labels = TypeDict({
     'LocationPanel.outOfBounds'   : 'Out of bounds',
 
     'ImageDisplayToolBar.more' : 'More settings',
+    'OrthoToolBar.more'        : 'More settings',
 })
 
 
