@@ -182,6 +182,7 @@ layouts = td.TypeDict({
     ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
     ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
 
+    'CanvasPanel'      : CanvasPanelLayout,
     'OrthoPanel'       : OrthoPanelLayout,
     'LightBoxPanel'    : LightBoxPanelLayout,
     'HistogramPanel'   : HistogramPanelLayout,
@@ -199,5 +200,6 @@ minSizes = td.TypeDict({
     'AtlasPanel'          : (300, 100),
     'ImageListPanel'      : (150, -1),
     'ImageDisplayPanel'   : (200,  200),
+    'OrthoSettingsPanel'  : (200,  200), 
     'LocationPanel'       : (-1, -1),
 })

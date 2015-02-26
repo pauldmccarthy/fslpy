@@ -31,13 +31,12 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
         self.colourBar  = wx.Button(
             self, label=strings.actions[ortho, 'toggleColourBar']) 
 
-        self.profile = props.makeWidget(self, ortho, 'profile')
-        self.zoom    = props.makeWidget(self,
-                                        ortho,
-                                        'zoom',
-                                        slider=True,
-                                        spin=False,
-                                        showLimits=False)
+        self.zoom   = props.makeWidget(self,
+                                       ortho,
+                                       'zoom',
+                                       slider=True,
+                                       spin=False,
+                                       showLimits=False)
         self.layout = props.makeWidget(self, ortho, 'layout')
         self.showX  = props.makeWidget(self, ortho, 'showXCanvas')
         self.showY  = props.makeWidget(self, ortho, 'showYCanvas')
@@ -54,7 +53,6 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
 
         self.AddTool(self.screenshot)
         self.AddTool(self.colourBar)
-        self.AddTool(self.profile, strings.properties[ortho, 'profile'])
         self.AddTool(self.layout,  strings.properties[ortho, 'layout'])
         self.AddTool(self.zoom,    strings.properties[ortho, 'zoom'])
         self.AddTool(self.showX,   strings.properties[ortho, 'showXCanvas'])

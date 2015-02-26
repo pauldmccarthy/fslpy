@@ -53,18 +53,12 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
 
         self.sizer.Add(self.imageSelect, flag=wx.EXPAND)
         self.sizer.Add(self.propPanel,   flag=wx.EXPAND, proportion=1)
+
+        flags = wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL
         
-        self.propSizer.Add(self.dispPanel,
-                           border=20,
-                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL)
-
-        self.propSizer.Add(self.divider,
-                           border=20,
-                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL)
-
-        self.propSizer.Add(self.optsPanel,
-                           border=20,
-                           flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL)        
+        self.propSizer.Add(self.dispPanel, border=20, flag=flags)
+        self.propSizer.Add(self.divider,              flag=flags)
+        self.propSizer.Add(self.optsPanel, border=20, flag=flags) 
         
         displayCtx.addListener('selectedImage',
                                self._name,
