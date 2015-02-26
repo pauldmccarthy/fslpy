@@ -43,6 +43,7 @@ import displaycontext
 
 log = logging.getLogger(__name__)
 
+
 class _FSLViewPanel(actions.ActionProvider):
     """Superclass for FSLView view panels.
 
@@ -148,12 +149,81 @@ class FSLViewPanel(_FSLViewPanel, wx.Panel):
 
         
 class FSLViewToolBar(_FSLViewPanel, wx.Panel):
-    def __init__(self, parent, imageList, displayCtx, actionz=None):
+    def __init__(self, parent, imageList, displayCtx):
         wx.Panel.__init__(self, parent)
-        _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
+        _FSLViewPanel.__init__(self, imageList, displayCtx)
 
         import fsl.fslview.layouts as layouts
         self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
+
+        self.__sizer = wx.GridBagSizer()
+        self.__tools  = []
+        self.__labels = []
+        self.SetSizer(self.__sizer)
+
+
+    def AddTool(self, tool, labelText=None):
+
+        tool.Reparent(self)
+
+        index = len(self.__tools)
+
+        log.debug('{}: adding tool at index {}: {}'.format(
+            type(self).__name__, index, labelText))
+
+        if isinstance(tool, (wx.CheckBox, )):
+            flag = wx.ALIGN_CENTRE
+        else:
+            flag = wx.EXPAND
+
+        if labelText is None:
+            label = None
+            self.__sizer.Add(tool, (0, index), (2, 1), flag=flag)
+            
+        else:
+            label = wx.StaticText(self,
+                                  label=labelText,
+                                  style=wx.ALIGN_CENTRE)
+            
+            label.SetFont(label.GetFont().Smaller().Smaller())
+
+            self.__sizer.Add(tool,  (0, index), flag=flag)
+            self.__sizer.Add(label, (1, index), flag=wx.EXPAND)
+            
+        self.__tools .append((tool, labelText))
+        self.__labels.append(label)
+
+        self.Layout()
+
+
+    def GetTools(self):
+        """
+        """
+        if len(self.__tools) == 0: return [], []
+        else:                      return zip(*self.__tools)
+
+
+    def SetTools(self, tools, labels=None, destroy=False):
+
+        if labels is None:
+            labels = [None] * len(tools)
+
+        self.ClearTools(destroy)
+
+        for tool, label in zip(tools, labels):
+            self.AddTool(tool, label)
+
+    
+    def ClearTools(self, destroy=False):
+
+        self.__sizer.Clear(destroy)
+        self.__tools = []
+
+        for label in self.__labels:
+            if label is not None:
+                label.Destroy()
+
+        self.__labels = []
 
         
     def __del__(self):

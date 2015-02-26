@@ -9,9 +9,6 @@ class for all panels which display image data (e.g. the
 :class:`~fsl.fslview.views.orthopanel.OrthoPanel` and the
 :class:`~fsl.fslview.views.lightboxpanel.LightBoxPanel`).
 
-Another class, the :class:`ControlStrip` is also defined in this module; it
-contains a few buttons allowing the user to configure a :class:`CanvasPanel`
-instance.
 """
 
 import logging
@@ -221,7 +218,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         self.__canvasContainer = wx.Panel(self)
         self.__canvasPanel     = wx.Panel(self.__canvasContainer)
         self.__controlPanels   = {}
-        self.__configPanels    = {}
 
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
@@ -351,6 +347,12 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             # here -  wx.Destroy is done below
             panel.destroy()
 
+            # Even when the user closes a pane,
+            # AUI does not detach said pane -
+            # we have to do it manually
+            self.__auiMgr.DetachPane(panel)
+            self.__auiMgr.Update()
+
         # WTF AUI. Sometimes this method gets called
         # twice for a panel, the second time with a
         # reference to a wx._wxpyDeadObject; in such
@@ -363,12 +365,12 @@ class CanvasPanel(fslpanel.FSLViewPanel):
  
         
     def toggleControlPanel(self, panelType, floatPane=False, *args, **kwargs):
-        
+
         window = self.__controlPanels.get(panelType, None)
 
         if window is not None:
-            self.__auiMgr.DetachPane(window)
             self.__onPaneClose(None, window)
+            
         else:
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
@@ -388,26 +390,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
             
         self.__auiMgr.Update()
         
-
-    def toggleConfigPanel(self, targetType, target, *a):
-            
-        import fsl.fslview.layouts as layouts
-        
-        window = self.__configPanels.get(targetType, None)
-
-        if window is not None:
-            
-            self.__auiMgr.DetachPane(window)
-            self.__onPaneClose(None, window)
-        else:
-            layout = layouts.layouts.get(targetType, None)
-            window = fslpanel.ConfigPanel(self, target, layout=layout)
-
-            self.__configPanels[target] = window
-            self.__auiMgr.AddPane(window, wx.TOP)
-            
-        self.__auiMgr.Update()
-
         
     def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar

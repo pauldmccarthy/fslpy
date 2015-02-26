@@ -34,27 +34,8 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         self._moreButton = wx.Button(
             self, label=strings.labels['ImageDisplayToolBar.more'])
 
-        self._displaySizer = wx.GridBagSizer()
-
-        self._sepLine1 = wx.StaticLine(
-            self,
-            size=(-1, 30),
-            style=wx.LI_VERTICAL)
-        self._sepLine2 = wx.StaticLine(
-            self,
-            size=(-1, 30),
-            style=wx.LI_VERTICAL) 
-
         self._displayWidgets = {}
         self._optsWidgets    = {}
-
-        self._sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._sizer.Add(self._imageSelect,  flag=wx.ALIGN_CENTRE)
-        self._sizer.Add(self._displaySizer, flag=wx.EXPAND, proportion=1)
-        self._sizer.Add(self._sepLine2,     flag=wx.ALIGN_CENTRE)
-        self._sizer.Add(self._moreButton,   flag=wx.EXPAND)
-
-        self.SetSizer(self._sizer)
 
         self._displayCtx.addListener(
             'selectedImage',
@@ -81,6 +62,21 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
     def _onMoreButton(self, ev):
         self.GetParent().toggleControlPanel(
             imagedisplay.ImageDisplayPanel, True)
+
+
+    def _imageListChanged(self, *a):
+
+        for image in self._dispWidgets.keys():
+            if image not in self._imageList:
+                widgets = self._dispWidgets.pop(image)
+                for w, _ in widgets:
+                    w.Destroy()
+                    
+        for image in self._optsWidgets.keys():
+            if image not in self._imageList:
+                widgets = self._optsWidgets.pop(image)
+                for w, _ in widgets:
+                    w.Destroy()                
     
 
     def _imageTypeChanged(self, value, valid, image, name, refresh=True):
@@ -91,12 +87,12 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         self._optsWidgets[image] = newOptsWidgets
 
         if oldOptsWidgets is not None:
-            for widget, label, _ in oldOptsWidgets:
+            for widget, _ in oldOptsWidgets:
                 widget.Destroy()
-                label .Destroy()
 
         if refresh and (image is self._displayCtx.getSelectedImage()):
-            self._showImageWidgets(image)
+            self.ClearTools()
+            self._refreshTools(image)
             
 
     def _selectedImageChanged(self, *a):
@@ -123,56 +119,35 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
                     self._imageTypeChanged,
                     overwrite=True)
 
-        self._showImageWidgets(image)
+        self._refreshTools(image)
 
 
-    def _showImageWidgets(self, image):
+    def _refreshTools(self, image):
 
-        for i in range(self._displaySizer.GetItemCount()):
-            self._displaySizer.Hide(i)
-
-        self._displaySizer.Clear(False)
+        tools, _ = self.GetTools()
+        for widget in tools:
+            if widget not in (self._imageSelect, self._moreButton):
+                widget.Show(False)
+                
+        self.ClearTools()
 
         if image is None:
-            self._displaySizer.Layout()
-            self              .Layout()
-            return
+            self.Layout()
 
-        displayWidgets = self._displayWidgets[image]
-        optsWidgets    = self._optsWidgets[   image]
+        dispWidgets, dispLabels = zip(*self._displayWidgets[image])
+        optsWidgets, optsLabels = zip(*self._optsWidgets[   image])
 
-        for col, (widget, label, flag) in enumerate(displayWidgets):
-            self._displaySizer.Add(widget, (0, col), flag=flag)
-            self._displaySizer.Add(label,  (1, col), flag=wx.EXPAND)
+        tools  = list(dispWidgets) + list(optsWidgets)
+        labels = list(dispLabels)  + list(optsLabels)
 
-            widget.Show()
-            label .Show()
+        tools  = [self._imageSelect] + tools  + [self._moreButton]
+        labels = [None]              + labels + [None]
 
-        self._displaySizer.Add(self._sepLine1,
-                               (0, len(displayWidgets)),
-                               (2, 1),
-                               flag=wx.ALIGN_CENTRE)
+        self.SetTools(tools, labels)
 
-        startCol = len(displayWidgets) + 1
-
-        for col, (widget, label, flag) in enumerate(optsWidgets, startCol):
-            self._displaySizer.Add(widget, (0, col), flag=flag)
-            self._displaySizer.Add(label,  (1, col), flag=wx.EXPAND)
-            widget.Show()
-            label .Show() 
-
-        self._displaySizer.Layout()            
-        self              .Layout()            
-            
-
-    def _makeLabel(self, parent, hasProps, propName):
+        for tool in tools:
+            tool.Show(True)
         
-        label = wx.StaticText(
-            parent, label=strings.properties[hasProps, propName],
-            style=wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_BOTTOM)
-        label.SetFont(label.GetFont().Smaller().Smaller())
-        return label
-
         
     def _makeDisplayWidgets(self, image, parent):
         """Creates and returns panel containing widgets allowing
@@ -195,24 +170,15 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         name.SetMinSize((150, -1))
 
-        def label(prop):
-            return self._makeLabel(parent, display, prop)
-
         widgets = [enabled, name, imageType, alpha, brightness, contrast]
-        labels = [label('enabled'),
-                  label('name'),
-                  label('imageType'),
-                  label('alpha'),
-                  label('brightness'),
-                  label('contrast')]
-        flags = [wx.ALIGN_CENTRE,
-                 wx.EXPAND,
-                 wx.EXPAND,
-                 wx.EXPAND,
-                 wx.EXPAND,
-                 wx.EXPAND]
+        labels  = [strings.properties[display, 'enabled'],
+                   strings.properties[display, 'name'],
+                   strings.properties[display, 'imageType'],
+                   strings.properties[display, 'alpha'],
+                   strings.properties[display, 'brightness'],
+                   strings.properties[display, 'contrast']]
 
-        return zip(widgets, labels, flags)
+        return zip(widgets, labels)
 
     
     def _makeOptsWidgets(self, image, parent):
@@ -221,21 +187,17 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         opts    = display.getDisplayOpts()
         labels  = []
         widgets = []
-        flags   = []
 
         if display.imageType == 'volume':
             widgets.append(props.makeWidget(parent, opts, 'cmap'))
-            labels .append(self._makeLabel( parent, opts, 'cmap'))
-            flags  .append(wx.EXPAND)
+            labels .append(strings.properties[opts, 'cmap'])
             
         elif display.imageType == 'mask':
             widgets.append(props.makeWidget(parent, opts, 'colour'))
-            labels .append(self._makeLabel( parent, opts, 'colour'))
-            flags  .append(wx.ALIGN_CENTRE)
+            labels .append(strings.properties[opts, 'colour'])
             
         elif display.imageType == 'vector':
             widgets.append(props.makeWidget(parent, opts, 'displayMode'))
-            labels .append(self._makeLabel( parent, opts, 'displayMode'))
-            flags  .append(wx.EXPAND)
+            labels .append(strings.properties[opts, 'displayMode'])
 
-        return zip(widgets, labels, flags)
+        return zip(widgets, labels)
