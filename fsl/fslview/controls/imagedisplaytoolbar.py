@@ -186,13 +186,12 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         name       = props.makeWidget(parent, display, 'name')
         imageType  = props.makeWidget(parent, display, 'imageType')
         
-        alpha      = wx.Slider(parent, value=100, minValue=0, maxValue=100)
-        brightness = wx.Slider(parent, value=50,  minValue=0, maxValue=100)
-        contrast   = wx.Slider(parent, value=50,  minValue=0, maxValue=100)
-
-        props.bindWidget(alpha,      display, 'alpha',      wx.EVT_SLIDER)
-        props.bindWidget(brightness, display, 'brightness', wx.EVT_SLIDER)
-        props.bindWidget(contrast,   display, 'contrast',   wx.EVT_SLIDER)
+        alpha      = props.makeWidget(
+            parent, display, 'alpha',      spin=False, showLimits=False)
+        brightness = props.makeWidget(
+            parent, display, 'brightness', spin=False, showLimits=False)
+        contrast   = props.makeWidget(
+            parent, display, 'contrast',   spin=False, showLimits=False)
 
         name.SetMinSize((150, -1))
 
