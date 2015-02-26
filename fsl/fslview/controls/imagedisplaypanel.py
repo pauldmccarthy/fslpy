@@ -84,6 +84,9 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         self._imageList .removeListener('images',        self._name)
         self.imageSelect.destroy()
 
+        for image in self._imageList:
+            image.removeListener('imageType', self._name)
+
 
     def _selectedImageChanged(self, *a):
 
