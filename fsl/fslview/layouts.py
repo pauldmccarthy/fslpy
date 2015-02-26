@@ -132,23 +132,32 @@ HistogramPanelLayout = props.VGroup((
            enabledWhen=lambda hp: not hp.autoHist)))
 
 
-DisplayLayout = props.HGroup(
-    (widget('enabled',       Display),
-     widget('name',          Display),
+DisplayLayout = props.VGroup(
+    (widget('name',          Display),
+     widget('imageType',     Display),
+     widget('resolution',    Display),
+     widget('transform',     Display),
+     widget('interpolation', Display),
+     widget('volume',        Display),
+     widget('syncVolume',    Display),
+     widget('enabled',       Display),
      widget('alpha',         Display),
      widget('brightness',    Display),
-     widget('contrast',      Display)),
-    vertLabels=True)
+     widget('contrast',      Display)))
 
 
-VolumeOptsLayout = props.HGroup(
-    (widget('cmap', VolumeOpts),),
-    vertLabels=True)
+VolumeOptsLayout = props.VGroup(
+    (widget('cmap',         VolumeOpts),
+     widget('displayRange', VolumeOpts),
+     widget('clipLow',      VolumeOpts),
+     widget('clipHigh',     VolumeOpts)))
 
 
-MaskOptsLayout = props.HGroup(
-    (widget('colour', MaskOpts),),
-    vertLabels=True)
+MaskOptsLayout = props.VGroup(
+    (widget('colour',    MaskOpts),
+     widget('invert',    MaskOpts),
+     widget('threshold', MaskOpts)))
+
 
 VectorOptsLayout = props.VGroup((
     widget('displayMode',   VectorOpts),
@@ -189,6 +198,6 @@ minSizes = td.TypeDict({
     'AtlasOverlayPanel'   : (300, 100),
     'AtlasPanel'          : (300, 100),
     'ImageListPanel'      : (150, 100),
-    'ImageDisplayToolBar' : (-1,  50),
-#     'ImageDisplayPanel'   : (200, -1), 
+    'ImageDisplayToolBar' : (-1,  -1),
+    'ImageDisplayPanel'   : (200,  200), 
 })

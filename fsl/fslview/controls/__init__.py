@@ -24,9 +24,10 @@ import imagedisplaytoolbar
 import atlaspanel
 
 FSLViewPanel        = fslpanel           .FSLViewPanel
+FSLViewToolBar      = fslpanel           .FSLViewToolBar
 LocationPanel       = locationpanel      .LocationPanel
 ImageListPanel      = imagelistpanel     .ImageListPanel
-ImageDisplayPanel   = imagedisplaytoolbar.ImageDisplayPanel
+ImageDisplayPanel   = imagedisplaypanel  .ImageDisplayPanel
 ImageDisplayToolBar = imagedisplaytoolbar.ImageDisplayToolBar
 AtlasPanel          = atlaspanel         .AtlasPanel
 
@@ -50,3 +51,19 @@ def listControlPanels():
             ctrlPanels.append(val)
             
     return ctrlPanels
+
+
+def listToolBars():
+    atts = globals()
+
+    toolbars = []
+
+    for name, val in atts.items():
+        
+        if not isinstance(val, type): continue
+        if val == FSLViewToolBar:     continue
+            
+        if issubclass(val, FSLViewToolBar):
+            toolbars.append(val)
+            
+    return toolbars
