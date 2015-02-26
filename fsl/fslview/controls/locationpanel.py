@@ -67,68 +67,77 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._voxelPanel = wx.Panel(self)
-        self._worldPanel = wx.Panel(self)
+        voxX, voxY, voxZ = props.makeListWidgets(
+            self,
+            self,
+            'voxelLocation',
+            slider=False,
+            spin=True,
+            showLimits=False)
+        worldX, worldY, worldZ = props.makeListWidgets(
+            self,
+            self,
+            'worldLocation',
+            slider=False,
+            spin=True,
+            showLimits=False) 
 
-        self._imageSelect = imageselect.ImageSelectPanel(
-            self, imageList, displayCtx)
-
-        self._worldLabel   = wx.StaticText(   self._worldPanel,
-                                              style=wx.ALIGN_LEFT)
-        self._spaceLabel   = wx.StaticText(   self._worldPanel,
-                                              style=wx.ALIGN_LEFT)
-        self._worldWidget  = props.makeWidget(self, self, 'worldLocation')
+        self.voxX      = voxX
+        self.voxY      = voxY
+        self.voxZ      = voxZ
+        self.worldX    = worldX
+        self.worldY    = worldY
+        self.worldZ    = worldZ
+        self.volume    = props.makeWidget(self,
+                                          displayCtx,
+                                          'volume',
+                                          slider=False,
+                                          spin=True,
+                                          showLimits=False)
         
-        self._dividerLine1 = wx.StaticLine(   self, style=wx.LI_HORIZONTAL)
-        self._voxelWidget  = props.makeWidget(self, self, 'voxelLocation')
+        self.intensity = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self.space     = wx.TextCtrl(self, style=wx.TE_READONLY)
+
+        self.voxLabel   = wx.StaticText(
+            self, label=strings.labels[self, 'voxelLocation'])
+        self.worldLabel = wx.StaticText(
+            self, label=strings.labels[self, 'worldLocation'])
+        self.volumeLabel = wx.StaticText(
+            self, label=strings.labels[self, 'volume'])
+        self.spaceLabel = wx.StaticText(
+            self, label=strings.labels[self, 'space']) 
+        self.intensityLabel = wx.StaticText(
+            self, label=strings.labels[self, 'intensity']) 
+
+        self.sizer = wx.FlexGridSizer(4, 4)
+        self.SetSizer(self.sizer)
+
+        self.sizer.Add(self.voxLabel,       flag=wx.EXPAND)
+        self.sizer.Add(self.worldLabel,     flag=wx.EXPAND)
+        self.sizer.Add((0, 0))
+        self.sizer.Add((0, 0))
+        self.sizer.Add(self.voxX,           flag=wx.EXPAND)
+        self.sizer.Add(self.worldX,         flag=wx.EXPAND)
+        self.sizer.Add(self.volumeLabel,    flag=wx.EXPAND)
+        self.sizer.Add(self.volume,         flag=wx.EXPAND)
         
-        self._dividerLine2 = wx.StaticLine(   self, style=wx.LI_HORIZONTAL) 
-        self._volumeLabel  = wx.StaticText(   self, style=wx.ALIGN_LEFT)
-        self._volumeWidget = props.makeWidget(self, displayCtx, 'volume')
-        
-        self._voxelLabel = wx.StaticText(self._voxelPanel,
-                                         style=wx.ALIGN_LEFT)
-        self._valueLabel = wx.StaticText(self._voxelPanel,
-                                         style=wx.ALIGN_RIGHT)
+        self.sizer.Add(self.voxY,           flag=wx.EXPAND)
+        self.sizer.Add(self.worldY,         flag=wx.EXPAND)
+        self.sizer.Add(self.intensityLabel, flag=wx.EXPAND) 
+        self.sizer.Add(self.intensity,      flag=wx.EXPAND) 
+        self.sizer.Add(self.voxZ,           flag=wx.EXPAND)
+        self.sizer.Add(self.worldZ,         flag=wx.EXPAND)
+        self.sizer.Add(self.spaceLabel,     flag=wx.EXPAND)
+        self.sizer.Add(self.space,          flag=wx.EXPAND)
 
-        self._adjustFont(self._worldLabel,  -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._spaceLabel,  -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._volumeLabel, -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._voxelLabel,  -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self._valueLabel,  -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.voxLabel,       -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.worldLabel,     -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.volumeLabel,    -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.spaceLabel,     -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.intensityLabel, -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.intensity,      -2, wx.FONTWEIGHT_LIGHT)
+        self._adjustFont(self.space,          -2, wx.FONTWEIGHT_LIGHT)
 
-        self._worldLabel .SetLabel(strings.labels[self, 'worldLabel'])
-        self._voxelLabel .SetLabel(strings.labels[self, 'voxelLabel'])
-        self._volumeLabel.SetLabel(strings.labels[self, 'volumeLabel'])
-
-        self._worldSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._worldPanel.SetSizer(self._worldSizer)
-
-        self._worldSizer.Add(self._worldLabel, flag=wx.EXPAND)
-        self._worldSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
-        self._worldSizer.Add(self._spaceLabel, flag=wx.EXPAND)
-
-        self._voxelSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._voxelPanel.SetSizer(self._voxelSizer)
-
-        self._voxelSizer.Add(self._voxelLabel, flag=wx.EXPAND)
-        self._voxelSizer.Add((1, 1),           flag=wx.EXPAND, proportion=1)
-        self._voxelSizer.Add(self._valueLabel, flag=wx.EXPAND)
-
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-
-        self._sizer.Add(self._imageSelect,  flag=wx.EXPAND)
-        self._sizer.Add(self._worldPanel,   flag=wx.EXPAND)
-        self._sizer.Add(self._worldWidget,  flag=wx.EXPAND)
-        self._sizer.Add(self._dividerLine1, flag=wx.EXPAND)
-        self._sizer.Add(self._voxelPanel,   flag=wx.EXPAND)
-        self._sizer.Add(self._voxelWidget,  flag=wx.EXPAND)
-        self._sizer.Add(self._dividerLine2, flag=wx.EXPAND) 
-        self._sizer.Add(self._volumeLabel,  flag=wx.EXPAND)
-        self._sizer.Add(self._volumeWidget, flag=wx.EXPAND)
-
-        self._voxelPanel.Layout()
         self.Layout()
         
         self._imageList.addListener( 'images',
@@ -161,7 +170,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         """Deregisters property listeners."""
         fslpanel.FSLViewPanel.destroy(self)
-        self._imageSelect.destroy()
 
         self._imageList.removeListener( 'images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
@@ -182,8 +190,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             voxVal = ''
 
         if voxVal is not None:
-            self._valueLabel.SetLabel('{}'.format(voxVal))
-            self._voxelPanel.Layout()
+            self.intensity.SetLabel('{}'.format(voxVal))
             return
 
         image   = self._displayCtx.getSelectedImage()
@@ -224,8 +231,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             if   np.isnan(voxVal): voxVal = 'NaN'
             elif np.isinf(voxVal): voxVal = 'Inf'
 
-        self._valueLabel.SetLabel('{}'.format(voxVal))
-        self._voxelPanel.Layout()
+        self.intensity.SetLabel('{}'.format(voxVal))
 
         
     def _volumeChanged(self, *a):
@@ -328,8 +334,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         if len(self._imageList) == 0:
             self._updateVoxelValue(   '')
-            self._spaceLabel.SetLabel('')
-            self._worldPanel.Layout()
+            self.space.SetLabel('')
             return
 
         image   = self._displayCtx.getSelectedImage()
@@ -338,10 +343,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # Update the label which
         # displays the image space 
         spaceLabel = strings.anatomy['Image', 'space', image.getXFormCode()]
-        spaceLabel = '{} {}'.format(spaceLabel,
-                                    strings.labels[self, 'spaceLabel'])
-        self._spaceLabel.SetLabel(spaceLabel)
-        self._worldPanel.Layout()
+        self.space.SetLabel(spaceLabel)
 
         # Update the voxel and world location limits,
         # but don't trigger a listener callback, as

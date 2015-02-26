@@ -92,11 +92,12 @@ actions = TypeDict({
 })
 
 labels = TypeDict({
-    'LocationPanel.worldLabel'  : 'World location (mm)',
-    'LocationPanel.voxelLabel'  : 'Voxel location',
-    'LocationPanel.volumeLabel' : 'Volume',
-    'LocationPanel.spaceLabel'  : 'Space',
-    'LocationPanel.outOfBounds' : 'Out of bounds',
+    'LocationPanel.worldLocation' : 'World location (mm)',
+    'LocationPanel.voxelLocation' : 'Voxel location',
+    'LocationPanel.volume'        : 'Volume',
+    'LocationPanel.space'         : 'Space',
+    'LocationPanel.intensity'     : 'Intensity',
+    'LocationPanel.outOfBounds'   : 'Out of bounds',
 
     'ImageDisplayToolBar.more' : 'More settings',
 })
