@@ -177,7 +177,7 @@ class ActionProvider(props.HasProperties):
 
         
     def getActions(self):
-        """Return a dictionary containing ``{name -> function}`` mappings for
+        """Return a dictionary containing ``{name -> Action}`` mappings for
         all defined actions.
         """
         return dict(self.__actions)

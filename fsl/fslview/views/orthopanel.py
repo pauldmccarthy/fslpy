@@ -21,13 +21,14 @@ import copy
 import wx
 import props
 
-import fsl.data.strings                  as strings 
-import fsl.data.constants                as constants
-import fsl.utils.layout                  as fsllayout
-import fsl.fslview.gl                    as fslgl
-import fsl.fslview.gl.wxglslicecanvas    as slicecanvas
-import fsl.fslview.controls.orthotoolbar as orthotoolbar
-import                                      canvaspanel
+import fsl.data.strings                         as strings 
+import fsl.data.constants                       as constants
+import fsl.utils.layout                         as fsllayout
+import fsl.fslview.gl                           as fslgl
+import fsl.fslview.gl.wxglslicecanvas           as slicecanvas
+import fsl.fslview.controls.orthotoolbar        as orthotoolbar
+import fsl.fslview.controls.orthoprofiletoolbar as orthoprofiletoolbar
+import                                             canvaspanel
 
 class OrthoPanel(canvaspanel.CanvasPanel):
 
@@ -84,8 +85,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         """
 
         actionz = {
-            'toggleOrthoProperties' : lambda *a: self.toggleControlPanel(
+            'toggleOrthoToolBar' : lambda *a: self.toggleControlPanel(
                 orthotoolbar.OrthoToolBar, False, self),
+            'toggleProfileToolBar' : lambda *a: self.toggleControlPanel(
+                orthoprofiletoolbar.OrthoProfileToolBar, False, self), 
         }
 
         canvaspanel.CanvasPanel.__init__(self,
