@@ -60,6 +60,7 @@ titles = TypeDict({
     'OrthoToolBar'         : 'Ortho view toolbar',
     'OrthoProfileToolBar'  : 'Ortho view profile toolbar',
     'OrthoSettingsPanel'   : 'Ortho view settings',
+    'LightBoxToolBar'      : 'Lightbox view toolbar',
 })
 
 
@@ -80,6 +81,8 @@ actions = TypeDict({
     
     'OrthoPanel.toggleOrthoToolBar'     : 'Show/hide view properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Show/hide view controls',
+
+    'LightBoxPanel.toggleLightBoxToolBar' : 'Show/hide view controls',
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
@@ -104,8 +107,9 @@ labels = TypeDict({
     'LocationPanel.intensity'     : 'Intensity',
     'LocationPanel.outOfBounds'   : 'Out of bounds',
 
-    'ImageDisplayToolBar.more' : 'More settings',
-    'OrthoToolBar.more'        : 'More settings',
+    'ImageDisplayToolBar.more'    : 'More settings',
+    'OrthoToolBar.more'           : 'More settings',
+    'LightBoxToolBar.more'        : 'More settings',
 })
 
 

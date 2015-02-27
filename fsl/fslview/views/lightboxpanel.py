@@ -17,9 +17,11 @@ import wx
 
 import numpy as np
 
-import fsl.utils.layout                  as fsllayout
-import fsl.fslview.gl.wxgllightboxcanvas as lightboxcanvas
+import fsl.utils.layout                     as fsllayout
+import fsl.fslview.gl.wxgllightboxcanvas    as lightboxcanvas
+import fsl.fslview.controls.lightboxtoolbar as lightboxtoolbar
 import canvaspanel
+
 
 class LightBoxPanel(canvaspanel.CanvasPanel):
     """Convenience Panel which contains a 
@@ -44,10 +46,16 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """
         """
 
+        actionz = {
+            'toggleLightBoxToolBar' : lambda *a: self.toggleControlPanel(
+                lightboxtoolbar.LightBoxToolBar, False, self)
+        }
+
         canvaspanel.CanvasPanel.__init__(self,
                                          parent,
                                          imageList,
-                                         displayCtx)
+                                         displayCtx,
+                                         actionz)
 
 
     def _init(self):
