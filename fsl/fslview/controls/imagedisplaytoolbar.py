@@ -85,14 +85,14 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         newOptsWidgets = self._makeOptsWidgets(image, self)
 
         self._optsWidgets[image] = newOptsWidgets
+        
+        if refresh and (image is self._displayCtx.getSelectedImage()):
+            self.ClearTools()
+            self._refreshTools(image)
 
         if oldOptsWidgets is not None:
             for widget, _ in oldOptsWidgets:
                 widget.Destroy()
-
-        if refresh and (image is self._displayCtx.getSelectedImage()):
-            self.ClearTools()
-            self._refreshTools(image)
             
 
     def _selectedImageChanged(self, *a):
@@ -124,11 +124,10 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
     def _refreshTools(self, image):
 
-        tools, _ = self.GetTools()
+        tools = self.GetTools()
         for widget in tools:
             if widget not in (self._imageSelect, self._moreButton):
                 widget.Show(False)
-                
         self.ClearTools()
 
         if image is None:

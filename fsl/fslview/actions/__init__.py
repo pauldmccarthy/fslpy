@@ -23,10 +23,13 @@ an :class:`ActionProvider`.
 
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import props
+
+import fsl.data.strings as strings
+
+
+log = logging.getLogger(__name__)
 
 
 def listGlobalActions():
@@ -45,6 +48,36 @@ def listGlobalActions():
             copyimage    .CopyImageAction,
             saveimage    .SaveImageAction,
             loadcolourmap.LoadColourMapAction]
+
+
+class ActionButton(props.Button):
+    """Extends the :class:`props.Button` class to encapsulate an
+    :class:`~fsl.fslview.actions.Action` instance.
+    """
+    def __init__(self, classType, actionName, **kwargs):
+
+        self.name = actionName
+
+        props.Button.__init__(self,
+                              actionName,
+                              text=strings.actions[classType, actionName],
+                              callback=self.__onButton,
+                              setup=self.__setup,
+                              **kwargs)
+
+
+    def __setup(self, instance, parent, widget, *a):
+        """Called when the button is created. Binds the button widget to the
+        ``Action`` instance.
+        """
+        import wx
+        instance.getAction(self.name).bindToWidget(
+            parent, wx.EVT_BUTTON, widget)
+
+        
+    def __onButton(self, instance, *a):
+        """Called when the button is pushed. Runs the action."""
+        instance.run(self.name)         
 
 
 class Action(props.HasProperties):

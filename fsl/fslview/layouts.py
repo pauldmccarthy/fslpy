@@ -14,7 +14,8 @@ import props
 
 import fsl.utils.typedict  as td
 
-import fsl.data.strings as strings
+import fsl.data.strings    as strings
+import fsl.fslview.actions as actions
 
 from fsl.fslview.profiles.orthoviewprofile   import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
@@ -33,17 +34,6 @@ def widget(name, labelCls, *args, **kwargs):
                         label=strings.properties[labelCls, name],
                         *args,
                         **kwargs)
-
-
-def actionButton(name, labelCls, *args, **kwargs):
-    def callback(i, *a):
-        i.run(name)
-    def setup(inst, parent, widget, *a):
-        inst.getAction(name).bindToWidget(parent, wx.EVT_BUTTON, widget)
-    return props.Button(name,
-                        text=strings.actions[labelCls, name],
-                        setup=setup,
-                        callback=callback)
 
 
 OrthoEditProfileLayout = props.HGroup(
@@ -77,20 +67,20 @@ OrthoViewProfileLayout = props.HGroup(
     vertLabels=True)
 
 OrthoViewProfileActionLayout = props.HGroup(
-    (actionButton('resetZoom',    OrthoViewProfile),
-     actionButton('centreCursor', OrthoViewProfile)),
+    (actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+     actions.ActionButton(OrthoViewProfile, 'centreCursor')),
     wrap=True,
     showLabels=False)
 
 OrthoEditProfileActionLayout = props.HGroup(
-    (actionButton('resetZoom',               OrthoEditProfile),
-     actionButton('centreCursor',            OrthoEditProfile),
-     actionButton('clearSelection',          OrthoEditProfile),
-     actionButton('fillSelection',           OrthoEditProfile),
-     actionButton('createMaskFromSelection', OrthoEditProfile),
-     actionButton('createROIFromSelection',  OrthoEditProfile),
-     actionButton('undo',                    OrthoEditProfile),
-     actionButton('redo',                    OrthoEditProfile)),
+    (actions.ActionButton(OrthoEditProfile, 'resetZoom'),
+     actions.ActionButton(OrthoEditProfile, 'centreCursor'),
+     actions.ActionButton(OrthoEditProfile, 'clearSelection'),
+     actions.ActionButton(OrthoEditProfile, 'fillSelection'),
+     actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
+     actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
+     actions.ActionButton(OrthoEditProfile, 'undo'),
+     actions.ActionButton(OrthoEditProfile, 'redo')),
     wrap=True,
     showLabels=False)
 

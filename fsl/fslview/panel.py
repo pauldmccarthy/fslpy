@@ -149,6 +149,27 @@ class FSLViewPanel(_FSLViewPanel, wx.Panel):
 
         
 class FSLViewToolBar(_FSLViewPanel, wx.Panel):
+    """
+    """
+
+
+    class Tool(object):
+
+        
+        def __init__(self, tool, label, labelText):
+            self.tool      = tool
+            self.label     = label
+            self.labelText = labelText
+
+
+        def __str__(self):
+            return '{}: {} ({}, {})'.format(
+                type(self)      .__name__,
+                type(self.tool) .__name__,
+                type(self.label).__name__,
+                self.labelText)
+
+            
     def __init__(self, parent, imageList, displayCtx):
         wx.Panel.__init__(self, parent)
         _FSLViewPanel.__init__(self, imageList, displayCtx)
@@ -157,50 +178,28 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
         self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
 
         self.__sizer = wx.GridBagSizer()
-        self.__tools  = []
-        self.__labels = []
+        self.__tools = []
+        
         self.SetSizer(self.__sizer)
-
-
-    def AddTool(self, tool, labelText=None):
-
-        tool.Reparent(self)
-
-        index = len(self.__tools)
-
-        log.debug('{}: adding tool at index {}: {}'.format(
-            type(self).__name__, index, labelText))
-
-        if isinstance(tool, (wx.CheckBox, )):
-            flag = wx.ALIGN_CENTRE
-        else:
-            flag = wx.EXPAND
-
-        if labelText is None:
-            label = None
-            self.__sizer.Add(tool, (0, index), (2, 1), flag=flag)
-            
-        else:
-            label = wx.StaticText(self,
-                                  label=labelText,
-                                  style=wx.ALIGN_CENTRE)
-            
-            label.SetFont(label.GetFont().Smaller().Smaller())
-
-            self.__sizer.Add(tool,  (0, index), flag=flag)
-            self.__sizer.Add(label, (1, index), flag=wx.EXPAND)
-            
-        self.__tools .append((tool, labelText))
-        self.__labels.append(label)
-
-        self.Layout()
 
 
     def GetTools(self):
         """
         """
-        if len(self.__tools) == 0: return [], []
-        else:                      return zip(*self.__tools)
+        return [t.tool for t in self.__tools]
+
+
+    def AddTool(self, tool, labelText=None):
+        self.InsertTool(tool, labelText)
+
+        
+    def InsertTools(self, tools, labels=None, index=None):
+
+        if labels is None:
+            labels = [None] * len(tools)
+
+        for i, (tool, label) in enumerate(zip(tools, labels), index):
+            self.InsertTool(tool, label, i)
 
 
     def SetTools(self, tools, labels=None, destroy=False):
@@ -211,19 +210,72 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
         self.ClearTools(destroy)
 
         for tool, label in zip(tools, labels):
-            self.AddTool(tool, label)
+            self.InsertTool(tool, label)
+        
+
+    def InsertTool(self, tool, labelText=None, index=None):
+
+        if index is None:
+            index = len(self.__tools)
+
+        if labelText is None:
+            label = None
+            
+        else:
+            label = wx.StaticText(self,
+                                  label=labelText,
+                                  style=wx.ALIGN_CENTRE)
+            label.SetFont(label.GetFont().Smaller().Smaller())
+
+        log.debug('{}: adding tool at index {}: {}'.format(
+            type(self).__name__, index, labelText))
+
+        t = FSLViewToolBar.Tool(tool, label, labelText)
+        print 'Inserting {}'.format(t)
+        self.__tools.insert(index, t)
+
+        self.__LayoutTools()
+
+        
+    def __LayoutTools(self):
+
+        self.__sizer.Clear()
+
+        for i, tool in enumerate(self.__tools):
+
+            flag = wx.ALIGN_CENTRE
+
+            if tool.label is None:
+                self.__sizer.Add(tool.tool,  (0, i), (2, 1), flag=flag)
+
+            else:
+                self.__sizer.Add(tool.tool,  (0, i), flag=flag)
+                self.__sizer.Add(tool.label, (1, i), flag=wx.EXPAND)
+
+        self.Layout()
 
     
-    def ClearTools(self, destroy=False):
+    def ClearTools(self, destroy=False, startIdx=None, endIdx=None):
 
-        self.__sizer.Clear(destroy)
-        self.__tools = []
+        if startIdx is None: startIdx = 0
+        if endIdx   is None: endIdx   = len(self.__tools)
 
-        for label in self.__labels:
-            if label is not None:
-                label.Destroy()
+        for i in range(startIdx, endIdx):
+            tool = self.__tools[i]
 
-        self.__labels = []
+            print 'Clearing {}'.format(tool)
+
+            self.__sizer.Detach(tool.tool)
+            
+            if destroy:
+                tool.tool.Destroy()
+
+            if tool.label is not None:
+                self.__sizer.Detach(tool.label)
+                tool.label.Destroy()
+
+        self.__tools[startIdx:endIdx] = []
+        self.Layout()
 
         
     def __del__(self):

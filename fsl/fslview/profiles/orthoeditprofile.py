@@ -21,20 +21,17 @@ import orthoviewprofile
 
 class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
-    selectionSize  = props.Int(minval=1, maxval=30, default=3, clamped=True)
+    selectionSize  = props.Int(minval=1, default=3)
     selectionIs3D  = props.Boolean(default=False)
     fillValue      = props.Real(default=0)
 
-    intensityThres = props.Real(minval=0.0, default=10, clamped=True)
+    intensityThres = props.Real(minval=0.0, default=10)
     localFill      = props.Boolean(default=False)
 
     selectionCursorColour  = props.Colour(default=(1, 1, 0, 0.7))
     selectionOverlayColour = props.Colour(default=(1, 0, 1, 0.7))
 
-    searchRadius   = props.Real(minval=0.0,
-                                default=0.0,
-                                maxval=250.0,
-                                clamped=True)
+    searchRadius   = props.Real(minval=0.0, default=0.0)
 
     
     def clearSelection(self, *a):
