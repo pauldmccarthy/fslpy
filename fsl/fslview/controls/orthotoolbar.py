@@ -31,12 +31,16 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
         self.colourBar  = wx.Button(
             self, label=strings.actions[ortho, 'toggleColourBar']) 
 
+        # You need to update the props.build/widgets,
+        # so you can include these type-specific
+        # options in ViewItem specifications
         self.zoom   = props.makeWidget(self,
                                        ortho,
                                        'zoom',
                                        slider=True,
                                        spin=False,
                                        showLimits=False)
+        
         self.layout = props.makeWidget(self, ortho, 'layout')
         self.showX  = props.makeWidget(self, ortho, 'showXCanvas')
         self.showY  = props.makeWidget(self, ortho, 'showYCanvas')

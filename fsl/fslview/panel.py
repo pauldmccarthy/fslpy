@@ -230,10 +230,7 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
         log.debug('{}: adding tool at index {}: {}'.format(
             type(self).__name__, index, labelText))
 
-        t = FSLViewToolBar.Tool(tool, label, labelText)
-        print 'Inserting {}'.format(t)
-        self.__tools.insert(index, t)
-
+        self.__tools.insert(index, FSLViewToolBar.Tool(tool, label, labelText))
         self.__LayoutTools()
 
         
@@ -262,8 +259,6 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
 
         for i in range(startIdx, endIdx):
             tool = self.__tools[i]
-
-            print 'Clearing {}'.format(tool)
 
             self.__sizer.Detach(tool.tool)
             

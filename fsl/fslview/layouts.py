@@ -165,6 +165,38 @@ VectorOptsLayout = props.VGroup((
     widget('modThreshold',  VectorOpts)))
 
 
+OrthoProfileToolBarViewLayout = [
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor')]
+
+
+# We cannot currently use the visibleWhen 
+# feature, as toolbar labels won't be hidden.
+OrthoProfileToolBarEditLayout = [
+    props.Widget('mode'),
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor'),
+    actions.ActionButton(OrthoEditProfile, 'undo'),
+    actions.ActionButton(OrthoEditProfile, 'redo'),
+    actions.ActionButton(OrthoEditProfile, 'fillSelection'),
+    actions.ActionButton(OrthoEditProfile, 'clearSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
+    props.Widget('selectionCursorColour'),
+    props.Widget('selectionOverlayColour'),    
+    props.Widget('selectionSize',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('selectionIs3D',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('fillValue'),
+    props.Widget('intensityThres',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('localFill',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('searchRadius',
+                 enabledWhen=lambda p: p.mode == 'selint')]
+
+
 layouts = td.TypeDict({
 
     ('OrthoViewProfile', 'props')   : OrthoViewProfileLayout,
@@ -180,7 +212,11 @@ layouts = td.TypeDict({
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,
     'MaskOpts'   : MaskOptsLayout,
-    'VectorOpts' : VectorOptsLayout, 
+    'VectorOpts' : VectorOptsLayout,
+
+
+    ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
+    ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,
 })
 
 
