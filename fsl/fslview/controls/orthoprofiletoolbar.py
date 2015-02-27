@@ -7,15 +7,47 @@
 
 import logging
 
-import wx
-
 import props
 
-import fsl.fslview.panel as fslpanel
-import fsl.data.strings  as strings
+import fsl.fslview.panel                     as fslpanel
+import fsl.fslview.actions                   as actions
+import fsl.data.strings                      as strings
+
+from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 
 
 log = logging.getLogger(__name__)
+
+
+VIEW_TOOLS = [
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor')]
+
+
+# We cannot currently use the visibleWhen 
+# feature, as toolbar labels won't be hidden.
+EDIT_TOOLS = [
+    props.Widget('mode'),
+    actions.ActionButton(OrthoEditProfile, 'undo'),
+    actions.ActionButton(OrthoEditProfile, 'redo'),
+    actions.ActionButton(OrthoEditProfile, 'fillSelection'),
+    actions.ActionButton(OrthoEditProfile, 'clearSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
+    props.Widget('selectionCursorColour'),
+    props.Widget('selectionOverlayColour'),    
+    props.Widget('selectionSize',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('selectionIs3D',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('fillValue'),
+    props.Widget('intensityThres',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('localFill',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('searchRadius',
+                 enabledWhen=lambda p: p.mode == 'selint')]
 
 
 class OrthoProfileToolBar(fslpanel.FSLViewToolBar):
@@ -27,7 +59,9 @@ class OrthoProfileToolBar(fslpanel.FSLViewToolBar):
 
         ortho.addListener('profile', self._name, self._profileChanged)
 
-        self._profile = None
+        self.profileTool = props.makeWidget(self, ortho, 'profile')
+        self.AddTool(self.profileTool, strings.properties[ortho, 'profile'])
+
         self._profileChanged()
 
 
@@ -40,52 +74,34 @@ class OrthoProfileToolBar(fslpanel.FSLViewToolBar):
 
         profile = self.orthoPanel.profile
 
-        if   profile == 'view': tools, labels = self._makeViewProfileTools()
-        elif profile == 'edit': tools, labels = self._makeEditProfileTools()
+        if   profile == 'view':
+            tools, labels = self._makeProfileTools(VIEW_TOOLS)
+        elif profile == 'edit':
+            tools, labels = self._makeProfileTools(EDIT_TOOLS)
 
-        self.SetTools(tools, labels, destroy=True)
+        tools  = tools
+        labels = labels
 
-            
-    def _makeViewProfileTools(self):
+        self.ClearTools(destroy=True, startIdx=1)
+        self.InsertTools(tools, labels, 1)
+
         
+    def _makeProfileTools(self, toolSpecs):
+            
         profile = self.orthoPanel.getCurrentProfile()
-
-        actions = ['resetZoom', 'centreCursor']
 
         tools  = []
         labels = []
 
-        for action in actions:
-            
-            tool = wx.Button(self, label=strings.actions[profile, action])
-            profile.getAction(action).bindToWidget(self, wx.EVT_BUTTON, tool)
-            
+        for toolSpec in toolSpecs:
+
+            tool = props.buildGUI(self, profile, toolSpec)
             tools .append(tool)
-            labels.append(None)
 
-        return tools, labels
-
-    
-    def _makeEditProfileTools(self):
-        profile = self.orthoPanel.getCurrentProfile()
-
-        actions = ['undo',
-                   'redo',
-                   'fillSelection',
-                   'clearSelection',
-                   'createMaskFromSelection',
-                   'createROIFromSelection']
-
-        props = []
-
-        tools  = []
-        labels = []        
-        for action in actions:
-            
-            tool = wx.Button(self, label=strings.actions[profile, action])
-            profile.getAction(action).bindToWidget(self, wx.EVT_BUTTON, tool)
-            
-            tools .append(tool)
-            labels.append(None)
+            if isinstance(toolSpec, actions.ActionButton):
+                labels.append(None)
+            else:
+                tool.SetLabel(strings.properties[profile, toolSpec.key])
+                labels.append(strings.properties[profile, toolSpec.key])
 
         return tools, labels

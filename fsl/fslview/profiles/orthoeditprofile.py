@@ -338,7 +338,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
-        opts    = display.displayOpts
+        opts    = display.getDisplayOpts()
 
         step = opts.displayRange.xlen / 50.0
 
