@@ -61,6 +61,7 @@ log = logging.getLogger(__name__)
 
 # make matplotlib quiet
 warnings.filterwarnings('ignore', module='matplotlib')
+warnings.filterwarnings('ignore', module='mpl_toolkits')
 
 
 # There's a bug in OpenGL.GL.shaders (which has been fixed in

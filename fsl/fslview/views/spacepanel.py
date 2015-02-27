@@ -18,7 +18,8 @@ class SpacePanel(plotpanel.PlotPanel):
 
     
     def __init__(self, parent, imageList, displayCtx):
-        plotpanel.PlotPanel.__init__(self, parent, imageList, displayCtx, '3d')
+        plotpanel.PlotPanel.__init__(
+            self, parent, imageList, displayCtx, proj='3d')
 
         figure = self.getFigure()
         canvas = self.getCanvas()

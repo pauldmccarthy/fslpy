@@ -62,6 +62,7 @@ titles = TypeDict({
     'OrthoSettingsPanel'    : 'Ortho view settings',
     'LightBoxToolBar'       : 'Lightbox view toolbar',
     'LightBoxSettingsPanel' : 'Lightbox view settings',
+    'HistogramToolBar'      : 'Histogram settings', 
 })
 
 
@@ -87,6 +88,8 @@ actions = TypeDict({
 
 
     'PlotPanel.screenshot' : 'Take screenshot',
+
+    'HistogramPanel.toggleToolbar' : 'Show/hide histogram controls',
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',

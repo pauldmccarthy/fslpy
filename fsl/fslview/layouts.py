@@ -115,12 +115,6 @@ LightBoxPanelLayout = props.VGroup((
                   widget('showGridLines',  LightBoxPanel)))))
 
 
-HistogramPanelLayout = props.VGroup((
-    widget('dataRange', HistogramPanel),
-    widget('autoHist',  HistogramPanel),
-    widget('nbins',     HistogramPanel,
-           enabledWhen=lambda hp: not hp.autoHist)))
-
 
 DisplayLayout = props.VGroup(
     (widget('name',          Display),
@@ -196,6 +190,14 @@ OrthoProfileToolBarEditLayout = [
     props.Widget('searchRadius',
                  enabledWhen=lambda p: p.mode == 'selint')]
 
+# TODO add type-specific options here, to hide spin panels/limit
+# buttons for the numeric sliders, when the props module supports it
+HistogramToolBarLayout = [
+    actions.ActionButton(HistogramPanel, 'screenshot'),
+    props.Widget('dataRange'),
+    props.Widget('nbins', enabledWhen=lambda p: not p.autoHist),
+    props.Widget('autoHist')]
+
 
 layouts = td.TypeDict({
 
@@ -204,10 +206,9 @@ layouts = td.TypeDict({
     ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
     ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
 
-    'CanvasPanel'      : CanvasPanelLayout,
-    'OrthoPanel'       : OrthoPanelLayout,
-    'LightBoxPanel'    : LightBoxPanelLayout,
-    'HistogramPanel'   : HistogramPanelLayout,
+    'CanvasPanel'   : CanvasPanelLayout,
+    'OrthoPanel'    : OrthoPanelLayout,
+    'LightBoxPanel' : LightBoxPanelLayout,
 
     'Display'    : DisplayLayout,
     'VolumeOpts' : VolumeOptsLayout,
@@ -217,15 +218,18 @@ layouts = td.TypeDict({
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
     ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,
+    
+    'HistogramToolBar' : HistogramToolBarLayout,
 })
 
 
 minSizes = td.TypeDict({
-    'AtlasInfoPanel'      : (300, 100),
-    'AtlasOverlayPanel'   : (300, 100),
-    'AtlasPanel'          : (300, 100),
-    'ImageListPanel'      : (150, -1),
-    'ImageDisplayPanel'   : (200,  200),
-    'OrthoSettingsPanel'  : (200,  200), 
-    'LocationPanel'       : (-1, -1),
+    'AtlasInfoPanel'        : (300, 100),
+    'AtlasOverlayPanel'     : (300, 100),
+    'AtlasPanel'            : (300, 100),
+    'ImageListPanel'        : (150, -1),
+    'ImageDisplayPanel'     : (200,  200),
+    'OrthoSettingsPanel'    : (200,  200),
+    'LightBoxSettingsPanel' : (200,  200),
+    'LocationPanel'         : (-1, -1),
 })

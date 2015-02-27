@@ -9,12 +9,13 @@
 import logging
 
 
-import numpy             as np
+import numpy as np
 
 import props
 
-import fsl.data.strings as strings
-import                     plotpanel
+import fsl.data.strings                      as strings
+import fsl.fslview.controls.histogramtoolbar as histogramtoolbar
+import                                          plotpanel
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,11 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        plotpanel.PlotPanel.__init__(self, parent, imageList, displayCtx)
+        actionz = {'toggleToolbar' : lambda *a: self.toggleControlPanel(
+            histogramtoolbar.HistogramToolBar, False, self)}
+
+        plotpanel.PlotPanel.__init__(
+            self, parent, imageList, displayCtx, actionz)
 
         figure = self.getFigure()
         canvas = self.getCanvas()
