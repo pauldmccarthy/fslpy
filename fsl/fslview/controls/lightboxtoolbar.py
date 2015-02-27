@@ -13,7 +13,8 @@ import props
 
 import fsl.data.strings                           as strings
 import fsl.fslview.panel                          as fslpanel
-# import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
+import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
+
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +32,10 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
             self, label=strings.actions[lb, 'toggleColourBar'])
 
         self.zax            = props.makeWidget(self, lb, 'zax')
-        self.sliceSpacing   = props.makeWidget(self, lb, 'sliceSpacing')
-        self.zrange         = props.makeWidget(self, lb, 'zrange')
+        self.sliceSpacing   = props.makeWidget(
+            self, lb, 'sliceSpacing', spin=False, showLimits=False)
+        self.zrange         = props.makeWidget(
+            self, lb, 'zrange',       spin=False, showLimits=False)
 
         self.zoom = props.makeWidget(self,
                                      lb,
@@ -63,11 +66,10 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
         self.AddTool(self.more)
 
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
+        fslpanel.FSLViewToolBar.destroy(self)
 
     def _onMoreButton(self, ev):
-        pass
-        # self.GetParent().toggleControlPanel(
-        #     lightboxsettingspanel.LightBoxSettingsPanel,
-        #     True,
-        #     self.lightBoxPanel) 
+        self.GetParent().toggleControlPanel(
+            lightboxsettingspanel.LightBoxSettingsPanel,
+            True,
+            self.lightBoxPanel) 

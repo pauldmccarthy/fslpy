@@ -52,15 +52,16 @@ titles = TypeDict({
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'ImageListPanel'       : 'Image list',
-    'AtlasPanel'           : 'Atlases',
-    'LocationPanel'        : 'Location',
-    'ImageDisplayToolBar'  : 'Display toolbar',
-    'ImageDisplayPanel'    : 'Display settings',
-    'OrthoToolBar'         : 'Ortho view toolbar',
-    'OrthoProfileToolBar'  : 'Ortho view profile toolbar',
-    'OrthoSettingsPanel'   : 'Ortho view settings',
-    'LightBoxToolBar'      : 'Lightbox view toolbar',
+    'ImageListPanel'        : 'Image list',
+    'AtlasPanel'            : 'Atlases',
+    'LocationPanel'         : 'Location',
+    'ImageDisplayToolBar'   : 'Display toolbar',
+    'ImageDisplayPanel'     : 'Display settings',
+    'OrthoToolBar'          : 'Ortho view toolbar',
+    'OrthoProfileToolBar'   : 'Ortho view profile toolbar',
+    'OrthoSettingsPanel'    : 'Ortho view settings',
+    'LightBoxToolBar'       : 'Lightbox view toolbar',
+    'LightBoxSettingsPanel' : 'Lightbox view settings',
 })
 
 
