@@ -8,11 +8,8 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * February/March 2015 internal release
 ** SSH / VNC performance
-** Fix all the bugs
+** Linux compatibility
 ** Command line
-** Offscreen rendering
-** Movie mode?
-** Document all the code
 ** IN PROGRESS UI design
 ** DONE Support for double precision images
 ** DONE Histogram
@@ -22,6 +19,13 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 We now have an 'oxford' branch, which is linked to the jalapeno installation.
 When you want to 'release' something, merge from the master branch to the
 oxford branch, and push to jalapeno
+
+** Stretch objectives:
+*** Save/restore window layout
+*** Movie mode
+*** Offscreen rendering
+*** Document all the code
+*** Fix all the bugs
 
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
