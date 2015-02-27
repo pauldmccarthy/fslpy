@@ -8,52 +8,42 @@
 import logging
 log = logging.getLogger(__name__)
 
-import numpy             as np
-import matplotlib.pyplot as plt
-
-import wx
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
-from mpl_toolkits.mplot3d              import Axes3D
+import numpy               as np
 
 import fsl.data.strings    as strings
 import fsl.utils.transform as transform
-import fsl.fslview.panel   as fslpanel
+import                        plotpanel
 
-class SpacePanel(fslpanel.FSLViewPanel):
+class SpacePanel(plotpanel.PlotPanel):
 
     
     def __init__(self, parent, imageList, displayCtx):
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        plotpanel.PlotPanel.__init__(self, parent, imageList, displayCtx, '3d')
 
-        self._figure = plt.Figure()
-        self._canvas = Canvas(self, -1, self._figure)
-        self._axis   = self._figure.add_subplot(111, projection='3d')
+        figure = self.getFigure()
+        canvas = self.getCanvas()
+        axis   = self.getAxis()
 
-        self._axis.mouse_init()
+        axis.mouse_init()
 
         # the canvas doesn't seem to refresh itself,
         # so we'll do it manually on mouse events
         def draw(*a):
-            self._canvas.draw()
+            canvas.draw()
 
-        self._canvas.mpl_connect('button_press_event',   draw)
-        self._canvas.mpl_connect('motion_notify_event',  draw)
-        self._canvas.mpl_connect('button_release_event', draw) 
+        canvas.mpl_connect('button_press_event',   draw)
+        canvas.mpl_connect('motion_notify_event',  draw)
+        canvas.mpl_connect('button_release_event', draw) 
 
-        self._figure.subplots_adjust(
+        figure.subplots_adjust(
             top=1.0, bottom=0.0, left=0.0, right=1.0)
 
-        self._figure.patch.set_visible(False)
+        figure.patch.set_visible(False)
 
         self._imageList .addListener('images', self._name,
                                      self._selectedImageChanged)
         self._displayCtx.addListener('selectedImage', self._name,
                                      self._selectedImageChanged)
-
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-        self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
 
         self._selectedImageChanged()
 
@@ -61,7 +51,7 @@ class SpacePanel(fslpanel.FSLViewPanel):
     def destroy(self):
         """De-registers property listeners."""
 
-        fslpanel.FSLViewPanel.destroy(self)
+        plotpanel.PlotPanel.destroy(self)
         
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
@@ -73,10 +63,13 @@ class SpacePanel(fslpanel.FSLViewPanel):
 
     def _selectedImageChanged(self, *a):
 
-        self._axis.clear()
+        axis   = self.getAxis()
+        canvas = self.getCanvas()
+
+        axis.clear()
 
         if len(self._imageList) == 0:
-            self._canvas.draw()
+            canvas.draw()
             return
 
         image   = self._displayCtx.getSelectedImage()
@@ -87,18 +80,18 @@ class SpacePanel(fslpanel.FSLViewPanel):
                             self._selectedImageChanged,
                             overwrite=True)
 
-        self._axis.set_title(image.name)
-        self._axis.set_xlabel('X')
-        self._axis.set_ylabel('Y')
-        self._axis.set_zlabel('Z')
+        axis.set_title(image.name)
+        axis.set_xlabel('X')
+        axis.set_ylabel('Y')
+        axis.set_zlabel('Z')
 
         self._plotImageCorners()
         self._plotImageBounds()
         self._plotImageLabels()
         self._plotAxisLengths()
 
-        self._axis.legend()
-        self._canvas.draw()
+        axis.legend()
+        canvas.draw()
 
 
     def _plotImageBounds(self):
@@ -121,12 +114,13 @@ class SpacePanel(fslpanel.FSLViewPanel):
         points[6, :] = [xhi, yhi, zlo]
         points[7, :] = [xhi, yhi, zhi]
 
-        self._axis.scatter(points[:, 0], points[:, 1], points[:, 2],
-                           color='r', s=40)
+        self.getAxis().scatter(points[:, 0], points[:, 1], points[:, 2],
+                               color='r', s=40)
 
         
     def _plotImageLabels(self):
 
+        axis    = self.getAxis()
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
@@ -146,18 +140,19 @@ class SpacePanel(fslpanel.FSLViewPanel):
 
             wldSpan = transform.transform(voxSpan, display.voxToDisplayMat)
 
-            self._axis.plot(wldSpan[:, 0],
-                            wldSpan[:, 1],
-                            wldSpan[:, 2],
-                            lw=2,
-                            color=colour)
+            axis.plot(wldSpan[:, 0],
+                      wldSpan[:, 1],
+                      wldSpan[:, 2],
+                      lw=2,
+                      color=colour)
 
-            self._axis.text(wldSpan[0, 0], wldSpan[0, 1], wldSpan[0, 2], lblLo)
-            self._axis.text(wldSpan[1, 0], wldSpan[1, 1], wldSpan[1, 2], lblHi)
+            axis.text(wldSpan[0, 0], wldSpan[0, 1], wldSpan[0, 2], lblLo)
+            axis.text(wldSpan[1, 0], wldSpan[1, 1], wldSpan[1, 2], lblHi)
 
 
     def _plotAxisLengths(self):
 
+        axis    = self.getAxis()
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
@@ -175,14 +170,13 @@ class SpacePanel(fslpanel.FSLViewPanel):
                                          display.voxToDisplayMat,
                                          ax)
 
-            self._axis.plot(tx[:, 0],
-                            tx[:, 1],
-                            tx[:, 2],
-                            lw=1,
-                            color=colour,
-                            alpha=0.5,
-                            label='Axis {} (length {:0.2f})'.format(label,
-                                                                    axlen))
+            axis.plot(tx[:, 0],
+                      tx[:, 1],
+                      tx[:, 2],
+                      lw=1,
+                      color=colour,
+                      alpha=0.5,
+                      label='Axis {} (length {:0.2f})'.format(label, axlen))
 
 
     def _plotImageCorners(self):
@@ -209,5 +203,5 @@ class SpacePanel(fslpanel.FSLViewPanel):
 
         points = transform.transform(points, display.voxToDisplayMat)
 
-        self._axis.scatter(points[:, 0], points[:, 1], points[:, 2],
-                           color='b', s=40)
+        self.getAxis().scatter(points[:, 0], points[:, 1], points[:, 2],
+                               color='b', s=40)

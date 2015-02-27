@@ -15,20 +15,13 @@ collection of :class:`~fsl.data.image.Image` objects stored in an
 import logging
 log = logging.getLogger(__name__)
 
-import wx
-import numpy      as np
-import matplotlib as mpl
+import numpy as np
 
-mpl.use('WXAgg')
-
-import matplotlib.pyplot as plt
-from   matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
-
-import fsl.fslview.panel   as fslpanel
+import                        plotpanel
 import fsl.utils.transform as transform
 
 
-class TimeSeriesPanel(fslpanel.FSLViewPanel):
+class TimeSeriesPanel(plotpanel.PlotPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
 
     The volume data for each of the :class:`~fsl.data.image.Image`
@@ -38,25 +31,20 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        plotpanel.PlotPanel.__init__(self, parent, imageList, displayCtx)
 
-        self._figure = plt.Figure()
-        self._axis   = self._figure.add_subplot(111)
-        self._canvas = Canvas(self, -1, self._figure)
+        figure = self.getFigure()
+        canvas = self.getCanvas()
 
-        self._figure.subplots_adjust(
+        figure.subplots_adjust(
             top=1.0, bottom=0.0, left=0.0, right=1.0)
 
-        self._figure.patch.set_visible(False)
+        figure.patch.set_visible(False)
 
         self._mouseDown = False
-        self._canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
-        self._canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
-        self._canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)
-
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-        self._sizer.Add(self._canvas, flag=wx.EXPAND, proportion=1)
+        canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
+        canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
+        canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)
 
         self._imageList.addListener(
             'images',
@@ -81,7 +69,7 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
 
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
+        plotpanel.PlotPanel.destroy(self)
 
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
@@ -91,7 +79,7 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
         
     def _selectedImageChanged(self, *a):
         
-        self._axis.clear()
+        self.getAxis().clear()
 
         if len(self._imageList) == 0:
             return
@@ -106,7 +94,7 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
         
     def _locationChanged(self, *a):
         
-        self._axis.clear()
+        self.getAxis().clear()
 
         if len(self._imageList) == 0:
             return 
@@ -121,6 +109,9 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
     def _drawPlot(self):
 
+
+        axis    = self.getAxis()
+        canvas  = self.getCanvas()
         x, y, z = self._displayCtx.location.xyz
         vol     = self._displayCtx.volume
 
@@ -146,8 +137,7 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
                 maxs.append(minmaxvol[1])
                 vols.append(minmaxvol[2])
 
-        self._axis.axvline(vol, c='#000080', lw=2, alpha=0.4)
-
+        axis.axvline(vol, c='#000080', lw=2, alpha=0.4)
 
         if len(mins) > 0:
 
@@ -159,22 +149,23 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
             xlen = xmax - xmin
             ylen = ymax - ymin
 
-            self._axis.grid(True)
-            self._axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
-            self._axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
+            axis.grid(True)
+            axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
+            axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
 
             if ymin != ymax: yticks = np.linspace(ymin, ymax, 5)
             else:            yticks = [ymin]
 
-            self._axis.set_yticks(yticks)
+            axis.set_yticks(yticks)
 
-            for tick in self._axis.yaxis.get_major_ticks():
+            for tick in axis.yaxis.get_major_ticks():
                 tick.set_pad(-15)
                 tick.label1.set_horizontalalignment('left')
-            for tick in self._axis.xaxis.get_major_ticks():
+                
+            for tick in axis.xaxis.get_major_ticks():
                 tick.set_pad(-20)
 
-        self._canvas.draw()
+        canvas.draw()
         self.Refresh()
 
         
@@ -190,13 +181,13 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
                 return None
 
         data = image.data[x, y, z, :]
-        self._axis.plot(data, lw=2)
+        self.getAxis().plot(data, lw=2)
 
         return data.min(), data.max(), len(data)
 
 
     def _onPlotMouseDown(self, ev):
-        if ev.inaxes != self._axis: return
+        if ev.inaxes != self.getAxis(): return
         self._mouseDown = True
         self._displayCtx.volume = np.floor(ev.xdata)
         
@@ -206,6 +197,6 @@ class TimeSeriesPanel(fslpanel.FSLViewPanel):
 
         
     def _onPlotMouseMove(self, ev):
-        if not self._mouseDown:     return
-        if ev.inaxes != self._axis: return
+        if not self._mouseDown:         return
+        if ev.inaxes != self.getAxis(): return
         self._displayCtx.volume = np.floor(ev.xdata)

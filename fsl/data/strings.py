@@ -86,6 +86,9 @@ actions = TypeDict({
     'LightBoxPanel.toggleLightBoxToolBar' : 'Show/hide view controls',
 
 
+    'PlotPanel.screenshot' : 'Take screenshot',
+
+
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',
 

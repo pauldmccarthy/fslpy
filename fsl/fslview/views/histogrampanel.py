@@ -9,17 +9,12 @@
 import logging
 
 
-import wx
-
 import numpy             as np
-import matplotlib.pyplot as plt
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 
 import props
 
-import fsl.fslview.panel as fslpanel
-import fsl.data.strings  as strings
+import fsl.data.strings as strings
+import                     plotpanel
 
 
 log = logging.getLogger(__name__)
@@ -43,7 +38,7 @@ log = logging.getLogger(__name__)
 #      magnitude, or separate histogram lines for xyz
 #      components?
 # 
-class HistogramPanel(fslpanel.FSLViewPanel):
+class HistogramPanel(plotpanel.PlotPanel):
 
     
     dataRange = props.Bounds(
@@ -57,27 +52,15 @@ class HistogramPanel(fslpanel.FSLViewPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        plotpanel.PlotPanel.__init__(self, parent, imageList, displayCtx)
 
-
-        self._figure = plt.Figure()
-        self._axis   = self._figure.add_subplot(111)
-        self._canvas = Canvas(self, -1, self._figure)
+        figure = self.getFigure()
+        canvas = self.getCanvas()
         
-        self._figure.subplots_adjust(
+        figure.subplots_adjust(
             top=1.0, bottom=0.0, left=0.0, right=1.0)
 
-        self._figure.patch.set_visible(False)
-
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self._sizer)
-
-        import fsl.fslview.layouts as layouts
-        self._configPanel = fslpanel.ConfigPanel(
-            self, self, layouts.layouts[self, 'props'])
-        
-        self._sizer.Add(self._configPanel, flag=wx.EXPAND)
-        self._sizer.Add(self._canvas,      flag=wx.EXPAND, proportion=1) 
+        figure.patch.set_visible(False)
 
         self._imageList.addListener(
             'images',
@@ -89,9 +72,9 @@ class HistogramPanel(fslpanel.FSLViewPanel):
             self._selectedImageChanged)
 
         self._mouseDown = False
-        self._canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
-        self._canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
-        self._canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)        
+        canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
+        canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
+        canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)        
 
         self.addListener('dataRange', self._name, self._drawPlot)
         self.addListener('nbins',     self._name, self._drawPlot)
@@ -106,7 +89,7 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         
     def destroy(self):
         """De-registers property listeners. """
-        fslpanel.FSLViewPanel.destroy(self)
+        plotpanel.PlotPanel.destroy(self)
 
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
@@ -135,8 +118,6 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         adjMax = np.ceil( dMax / binSize) * binSize
 
         nbins = int((adjMax - adjMin) / binSize) + 1
-
-        print binSize, nbins
 
         return nbins
 
@@ -186,7 +167,7 @@ class HistogramPanel(fslpanel.FSLViewPanel):
 
     def _onPlotMouseDown(self, ev):
         
-        if ev.inaxes != self._axis:
+        if ev.inaxes != self.getAxis():
             return
         if self._displayCtx.getSelectedImage() is None:
             return
@@ -199,7 +180,7 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         if not self._mouseDown:
             return
         
-        if ev.inaxes != self._axis:
+        if ev.inaxes != self.getAxis():
             return
 
         self._domainHighlight[1] = ev.xdata
@@ -222,13 +203,13 @@ class HistogramPanel(fslpanel.FSLViewPanel):
     
     def _drawPlot(self, *a):
 
-        self._axis.clear()
-
+        axis = self.getAxis()
         image = self._displayCtx.getSelectedImage()
         x, y  = self._calcHistogram(image.data)
 
-        self._axis.step(x, y)
-        self._axis.grid(True)
+        axis.clear()
+        axis.step(x, y)
+        axis.grid(True)
         
         xmin = x.min()
         xmax = x.max()
@@ -238,29 +219,30 @@ class HistogramPanel(fslpanel.FSLViewPanel):
         xlen = xmax - xmin
         ylen = ymax - ymin
 
-        self._axis.grid(True)
-        self._axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
-        self._axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
+        axis.grid(True)
+        axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
+        axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
 
         if ymin != ymax: yticks = np.linspace(ymin, ymax, 5)
         else:            yticks = [ymin]
 
-        self._axis.set_yticks(yticks)
+        axis.set_yticks(yticks)
 
-        for tick in self._axis.yaxis.get_major_ticks():
+        for tick in axis.yaxis.get_major_ticks():
             tick.set_pad(-15)
             tick.label1.set_horizontalalignment('left')
-        for tick in self._axis.xaxis.get_major_ticks():
+            
+        for tick in axis.xaxis.get_major_ticks():
             tick.set_pad(-20)
 
 
         if self._domainHighlight is not None:
-            self._axis.axvspan(self._domainHighlight[0],
-                               self._domainHighlight[1],
-                               fill=True,
-                               facecolor='#000080',
-                               edgecolor='none',
-                               alpha=0.4)
+            axis.axvspan(self._domainHighlight[0],
+                         self._domainHighlight[1],
+                         fill=True,
+                         facecolor='#000080',
+                         edgecolor='none',
+                         alpha=0.4)
 
-        self._canvas.draw()
+        self.getCanvas().draw()
         self.Refresh() 
