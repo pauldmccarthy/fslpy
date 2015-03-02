@@ -559,14 +559,16 @@ class ProfileManager(object):
         self._currentProfile = None
 
         profileProp = canvasPanel.getProp('profile')
-        profilez    = profilemap.profiles[canvasPanel.__class__]
+        profilez    = profilemap.profiles.get(canvasPanel.__class__, [])
 
         for profile in profilez:
             profileProp.addChoice(
                 profile,
                 strings.profiles[canvasPanel, profile],
                 canvasPanel)
-        canvasPanel.profile = profilez[0]
+
+        if len(profilez) > 0:
+            canvasPanel.profile = profilez[0]
 
 
     def getCurrentProfile(self):

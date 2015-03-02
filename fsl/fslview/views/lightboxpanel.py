@@ -57,9 +57,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                          displayCtx,
                                          actionz)
 
-
-    def _init(self):
-
         imageList  = self._imageList
         displayCtx = self._displayCtx
 
@@ -126,6 +123,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self.Layout()
 
         self._selectedImageChanged()
+        self.initProfile()
 
 
     def destroy(self):
