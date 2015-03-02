@@ -170,9 +170,9 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
                 self.labelText)
 
             
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, imageList, displayCtx, actionz=None):
         wx.Panel.__init__(self, parent)
-        _FSLViewPanel.__init__(self, imageList, displayCtx)
+        _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
 
         import fsl.fslview.layouts as layouts
         self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))

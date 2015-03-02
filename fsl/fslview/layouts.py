@@ -23,6 +23,7 @@ from fsl.fslview.views.canvaspanel           import CanvasPanel
 from fsl.fslview.views.orthopanel            import OrthoPanel
 from fsl.fslview.views.lightboxpanel         import LightBoxPanel
 from fsl.fslview.views.histogrampanel        import HistogramPanel
+from fsl.fslview.controls.orthotoolbar       import OrthoToolBar
 from fsl.fslview.displaycontext              import Display
 from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
 from fsl.fslview.displaycontext.maskopts     import MaskOpts
@@ -39,6 +40,16 @@ def widget(labelCls, name, *args, **kwargs):
 ########################################
 # OrthoPanel related panels and toolbars
 ########################################
+
+OrthoToolBarLayout = [
+    actions.ActionButton(OrthoPanel,   'screenshot'),
+    actions.ActionButton(OrthoPanel,   'toggleColourBar'),
+    widget(              OrthoPanel,   'zoom', spin=False, showLimits=False),
+    widget(              OrthoPanel,   'layout'),
+    widget(              OrthoPanel,   'showXCanvas'),
+    widget(              OrthoPanel,   'showYCanvas'),
+    widget(              OrthoPanel,   'showZCanvas'),
+    actions.ActionButton(OrthoToolBar, 'more')]
 
 
 OrthoEditProfileLayout = props.HGroup(
@@ -221,6 +232,8 @@ layouts = td.TypeDict({
     'VolumeOpts' : VolumeOptsLayout,
     'MaskOpts'   : MaskOptsLayout,
     'VectorOpts' : VectorOptsLayout,
+
+    'OrthoToolBar' : OrthoToolBarLayout,
 
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,

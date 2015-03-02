@@ -7,10 +7,10 @@
 
 import logging
 
-import wx
 import props
 
 import fsl.data.strings                        as strings
+import fsl.fslview.actions                     as actions
 import fsl.fslview.panel                       as fslpanel
 import fsl.fslview.controls.orthosettingspanel as orthosettingspanel
 
@@ -22,53 +22,35 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
 
     
     def __init__(self, parent, imageList, displayCtx, ortho):
+
+        import fsl.fslview.layouts as layouts
+
+        actionz = {'more' :  self.showMoreSettings}
         
-        fslpanel.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewToolBar.__init__(
+            self, parent, imageList, displayCtx, actionz)
         self.orthoPanel = ortho
 
-        self.screenshot = wx.Button(
-            self, label=strings.actions[ortho, 'screenshot'])
-        self.colourBar  = wx.Button(
-            self, label=strings.actions[ortho, 'toggleColourBar']) 
+        toolSpecs = layouts.layouts[self]
 
-        # You need to update the props.build/widgets,
-        # so you can include these type-specific
-        # options in ViewItem specifications
-        self.zoom   = props.makeWidget(self,
-                                       ortho,
-                                       'zoom',
-                                       slider=True,
-                                       spin=False,
-                                       showLimits=False)
-        
-        self.layout = props.makeWidget(self, ortho, 'layout')
-        self.showX  = props.makeWidget(self, ortho, 'showXCanvas')
-        self.showY  = props.makeWidget(self, ortho, 'showYCanvas')
-        self.showZ  = props.makeWidget(self, ortho, 'showZCanvas')
-        
-        self.more   = wx.Button(self, label=strings.labels[self, 'more'])
+        for toolSpec in toolSpecs:
+            if toolSpec.key == 'more':
+                tool = props.buildGUI(self, self,  toolSpec)
+            else: 
+                tool = props.buildGUI(self, ortho, toolSpec)
 
-        ortho.getAction('screenshot').bindToWidget(
-            self, wx.EVT_BUTTON, self.screenshot)
-        ortho.getAction('toggleColourBar').bindToWidget(
-            self, wx.EVT_BUTTON, self.colourBar)
+            if isinstance(toolSpec, actions.ActionButton):
+                label = None
+            else:
+                label = strings.properties[ortho, toolSpec.key]
 
-        self.more.Bind(wx.EVT_BUTTON, self._onMoreButton)
-
-        self.AddTool(self.screenshot)
-        self.AddTool(self.colourBar)
-        self.AddTool(self.layout,  strings.properties[ortho, 'layout'])
-        self.AddTool(self.zoom,    strings.properties[ortho, 'zoom'])
-        self.AddTool(self.showX,   strings.properties[ortho, 'showXCanvas'])
-        self.AddTool(self.showY,   strings.properties[ortho, 'showYCanvas'])
-        self.AddTool(self.showZ,   strings.properties[ortho, 'showZCanvas'])
-        self.AddTool(self.more)
+            self.AddTool(tool, label)
         
 
     def destroy(self):
         fslpanel.FSLViewToolBar.destroy(self)
 
 
-    def _onMoreButton(self, ev):
+    def showMoreSettings(self, *a):
         self.GetParent().togglePanel(
             orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 
