@@ -85,9 +85,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         """
 
         actionz = {
-            'toggleOrthoToolBar' : lambda *a: self.toggleControlPanel(
+            'toggleOrthoToolBar' : lambda *a: self.togglePanel(
                 orthotoolbar.OrthoToolBar, False, self),
-            'toggleProfileToolBar' : lambda *a: self.toggleControlPanel(
+            'toggleProfileToolBar' : lambda *a: self.togglePanel(
                 orthoprofiletoolbar.OrthoProfileToolBar, False, self), 
         }
 
@@ -96,8 +96,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                                          imageList,
                                          displayCtx,
                                          actionz)
-
-    def _init(self):
 
         canvasPanel = self.getCanvasPanel()
         imageList   = self._imageList
@@ -204,6 +202,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._imageListChanged()
         self._refreshLabels()
         self._locationChanged()
+        self.initProfile()
 
 
     def destroy(self):

@@ -60,8 +60,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
 
     def _onMoreButton(self, ev):
-        self.GetParent().toggleControlPanel(
-            imagedisplay.ImageDisplayPanel, True)
+        self.GetParent().togglePanel(imagedisplay.ImageDisplayPanel, True)
 
 
     def _imageListChanged(self, *a):

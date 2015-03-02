@@ -69,7 +69,7 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
         fslpanel.FSLViewToolBar.destroy(self)
 
     def _onMoreButton(self, ev):
-        self.GetParent().toggleControlPanel(
+        self.GetParent().togglePanel(
             lightboxsettingspanel.LightBoxSettingsPanel,
             True,
             self.lightBoxPanel) 

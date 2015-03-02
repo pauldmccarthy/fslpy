@@ -70,5 +70,5 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
 
 
     def _onMoreButton(self, ev):
-        self.GetParent().toggleControlPanel(
+        self.GetParent().togglePanel(
             orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 

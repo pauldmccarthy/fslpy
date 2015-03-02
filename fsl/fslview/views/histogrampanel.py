@@ -53,7 +53,7 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     def __init__(self, parent, imageList, displayCtx):
 
-        actionz = {'toggleToolbar' : lambda *a: self.toggleControlPanel(
+        actionz = {'toggleToolbar' : lambda *a: self.togglePanel(
             histogramtoolbar.HistogramToolBar, False, self)}
 
         plotpanel.PlotPanel.__init__(

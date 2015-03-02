@@ -16,14 +16,11 @@ log = logging.getLogger(__name__)
 
 import subprocess
 
-import                   wx
-import wx.lib.agw.aui as aui
+import wx
 
 import props
 
 import fsl.data.strings                         as strings
-import fsl.fslview.panel                        as fslpanel
-import fsl.fslview.profiles                     as profiles
 import fsl.fslview.displaycontext               as displayctx
 import fsl.fslview.controls.imagelistpanel      as imagelistpanel
 # import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
@@ -31,6 +28,7 @@ import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
 import fsl.fslview.controls.locationpanel       as locationpanel
 import fsl.fslview.controls.atlaspanel          as atlaspanel
 import                                             colourbarpanel
+import                                             viewpanel
 
 
 def _takeScreenShot(imageList, displayCtx, canvas):
@@ -151,7 +149,7 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     subprocess.call(argv)
 
 
-class CanvasPanel(fslpanel.FSLViewPanel):
+class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
@@ -160,8 +158,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
     syncLocation   = displayctx.DisplayContext.getSyncProperty('location')
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
-
-    profile = props.Choice()
 
     zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
 
@@ -181,25 +177,21 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         if extraActions is None:
             extraActions = {}
 
-        # TODO add 'show/hide profile (props/actions) panel' action
         actionz = dict({
             'screenshot'              : self.screenshot,
             'toggleColourBar'         : self.toggleColourBar,
-            'toggleImageList'         : lambda *a: self.toggleControlPanel(
+            'toggleImageList'         : lambda *a: self.togglePanel(
                 imagelistpanel.ImageListPanel),
-            'toggleAtlasPanel'        : lambda *a: self.toggleControlPanel(
+            'toggleAtlasPanel'        : lambda *a: self.togglePanel(
                 atlaspanel.AtlasPanel),
-            'toggleDisplayProperties' : lambda *a: self.toggleControlPanel(
+            'toggleDisplayProperties' : lambda *a: self.togglePanel(
                 imagedisplaytoolbar.ImageDisplayToolBar),
-            'toggleLocationPanel'     : lambda *a: self.toggleControlPanel(
+            'toggleLocationPanel'     : lambda *a: self.togglePanel(
                 locationpanel.LocationPanel),
         }.items() + extraActions.items())
         
-        fslpanel.FSLViewPanel.__init__(
+        viewpanel.ViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
-
-        self.__profileManager = profiles.ProfileManager(
-            self, imageList, displayCtx)
 
         # If the provided DisplayContext  does not
         # have a parent, this will raise an error.
@@ -217,7 +209,8 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         self.__canvasContainer = wx.Panel(self)
         self.__canvasPanel     = wx.Panel(self.__canvasContainer)
-        self.__controlPanels   = {}
+
+        self.setCentrePanel(self.__canvasContainer)
 
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
@@ -227,35 +220,10 @@ class CanvasPanel(fslpanel.FSLViewPanel):
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
-        lName = '{}_{}'.format(type(self).__name__, self._name)
+        lName = 'CanvasPanel_{}'.format(self._name)
         self.addListener('colourBarLocation', lName, self.__layout)
-        self.addListener('profile',           lName, self.__profileChanged)
         
-        imageList .addListener('images',
-                               lName,
-                               self.__selectedImageChanged)
-        displayCtx.addListener('selectedImage',
-                               lName,
-                               self.__selectedImageChanged)
-        
-        self._init()
-        self.__profileChanged()
-        self.__selectedImageChanged()
         self.__layout()
-        
-        self.__auiMgr = aui.AuiManager(self, agwFlags=(
-            aui.AUI_MGR_ALLOW_FLOATING)) 
-        self.__auiMgr.AddPane(self.__canvasContainer, wx.CENTRE)
-        self.__auiMgr.Update()
-
-        self.__auiMgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.__onPaneClose)
-
-        self.auiMgr = self.__auiMgr
-
-            
-    def _init(self):
-        raise NotImplementedError('CanvasPanel._init must be '
-                                  'provided by subclasses')
 
 
     def destroy(self):
@@ -263,134 +231,12 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         cleanly.
         """
 
-        fslpanel.FSLViewPanel.destroy(self)
-        
-        # Make sure that any control panels are correctly destroyed
-        for panelType, panel in self.__controlPanels.items():
-            panel.destroy()
+        viewpanel.ViewPanel.destroy(self)
 
         if self.__colourBar is not None:
             self.__colourBar.destroy()
 
-        lName = '{}_{}'.format(type(self).__name__, self._name)
-        self._imageList .removeListener('images',        lName)
-        self._displayCtx.removeListener('selectedImage', lName)
 
-
-    def __selectedImageChanged(self, *a):
-        """Called when the image list or selected image changed.
-
-        This method is slightly hard-coded and hacky. For the time being, edit
-        profiles are only going to be supported for ``volume`` image
-        types. This method checks the type of the selected image, and disables
-        the ``edit`` profile option (if it is an option), so the user can
-        only choose an ``edit`` profile on ``volume`` image types.
-        """
-        image = self._displayCtx.getSelectedImage()
-
-        if image is None:
-            return
-
-        profileProp = self.getProp('profile')
-
-        # edit profile is not an option -
-        # nothing to be done
-        if 'edit' not in profileProp.getChoices(self):
-            return
-
-        if image.imageType != 'volume':
-            
-            # change profile if needed,
-            if self.profile == 'edit':
-                self.profile = 'view'
-
-            # and disable edit profile
-            profileProp.disableChoice('edit', self)
-            
-        # make sure edit is enabled for volume images
-        else:
-            profileProp.enableChoice('edit', self)
-            
-    
-    def __profileChanged(self, *a):
-
-        self.__profileManager.changeProfile(self.profile)
-
-        # TODO if a profile panel is being displayed,
-        #      destroy it and create a new one
-        
-        profile = self.getCurrentProfile()
-
-        # Profile mode changes may result in the 
-        # content of the above prop/action panels 
-        # changing. So we need to make sure that 
-        # the canvas panel is sized appropriately.
-        def modeChange(*a):
-            self.__layout()
-            
-        profile.addListener('mode', self._name, modeChange)
-
-        
-    def __onPaneClose(self, ev=None, panel=None):
-
-        if ev is not None:
-            ev.Skip()
-            panel = ev.GetPane().window
-
-        log.debug('Panel closed: {}'.format(type(panel).__name__))
-
-        if isinstance(panel, (fslpanel.FSLViewPanel,
-                              fslpanel.FSLViewToolBar)):
-            self.__controlPanels.pop(type(panel))
-
-            # calling fslpanel.FSLViewPanel.destroy()
-            # here -  wx.Destroy is done below
-            panel.destroy()
-
-            # Even when the user closes a pane,
-            # AUI does not detach said pane -
-            # we have to do it manually
-            self.__auiMgr.DetachPane(panel)
-            self.__auiMgr.Update()
-
-        # WTF AUI. Sometimes this method gets called
-        # twice for a panel, the second time with a
-        # reference to a wx._wxpyDeadObject; in such
-        # situations, the Destroy method call below
-        # will result in an exception being raised.
-        else:
-            return
-        
-        panel.Destroy()
- 
-        
-    def toggleControlPanel(self, panelType, floatPane=False, *args, **kwargs):
-
-        window = self.__controlPanels.get(panelType, None)
-
-        if window is not None:
-            self.__onPaneClose(None, window)
-            
-        else:
-            window   = panelType(
-                self, self._imageList, self._displayCtx, *args, **kwargs)
-            paneInfo = aui.AuiPaneInfo()        \
-                .MinSize(window.GetMinSize())   \
-                .BestSize(window.GetBestSize()) \
-                .Caption(strings.titles[window])
-
-            if isinstance(window, fslpanel.FSLViewToolBar):
-                paneInfo = paneInfo.ToolbarPane()
-
-            if floatPane is False: paneInfo.Top()
-            else:                  paneInfo.Float()
-                    
-            self.__auiMgr.AddPane(window, paneInfo)
-            self.__controlPanels[panelType] = window
-            
-        self.__auiMgr.Update()
-        
-        
     def toggleColourBar(self, *a):
         self.__showColourBar = not self.__showColourBar
         self.__layout()
@@ -406,10 +252,6 @@ class CanvasPanel(fslpanel.FSLViewPanel):
         
     def getCanvasPanel(self):
         return self.__canvasPanel
-
-
-    def getCurrentProfile(self):
-        return self.__profileManager.getCurrentProfile()
 
 
     def __layout(self, *a):

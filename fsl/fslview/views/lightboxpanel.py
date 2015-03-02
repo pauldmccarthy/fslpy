@@ -47,7 +47,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """
 
         actionz = {
-            'toggleLightBoxToolBar' : lambda *a: self.toggleControlPanel(
+            'toggleLightBoxToolBar' : lambda *a: self.togglePanel(
                 lightboxtoolbar.LightBoxToolBar, False, self)
         }
 
