@@ -119,15 +119,15 @@ LightBoxPanelLayout = props.VGroup((
 DisplayLayout = props.VGroup(
     (widget('name',          Display),
      widget('imageType',     Display),
-     widget('resolution',    Display),
+     widget('resolution',    Display, editLimits=False),
      widget('transform',     Display),
      widget('interpolation', Display),
-     widget('volume',        Display),
+     widget('volume',        Display, editLimits=False),
      widget('syncVolume',    Display),
      widget('enabled',       Display),
-     widget('alpha',         Display),
-     widget('brightness',    Display),
-     widget('contrast',      Display)))
+     widget('alpha',         Display, showLimits=False, editLimits=False),
+     widget('brightness',    Display, showLimits=False, editLimits=False),
+     widget('contrast',      Display, showLimits=False, editLimits=False)))
 
 
 VolumeOptsLayout = props.VGroup(
@@ -194,8 +194,10 @@ OrthoProfileToolBarEditLayout = [
 # buttons for the numeric sliders, when the props module supports it
 HistogramToolBarLayout = [
     actions.ActionButton(HistogramPanel, 'screenshot'),
-    props.Widget('dataRange'),
-    props.Widget('nbins', enabledWhen=lambda p: not p.autoHist),
+    props.Widget('dataRange', showLimits=False),
+    props.Widget('nbins',
+                 enabledWhen=lambda p: not p.autoHist,
+                 spin=False, showLimits=False),
     props.Widget('autoHist')]
 
 

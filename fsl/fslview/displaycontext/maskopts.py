@@ -20,7 +20,6 @@ class MaskOpts(fsldisplay.DisplayOpts):
     invert     = props.Boolean(default=False)
     threshold  = props.Bounds(
         ndims=1,
-        editLimits=True,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']]) 
 

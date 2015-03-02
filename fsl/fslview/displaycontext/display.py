@@ -62,10 +62,7 @@ class Display(props.SyncableHasProperties):
     """Should this image be displayed at all?"""
 
     
-    resolution = props.Real(maxval=10,
-                            default=1,
-                            clamped=True,
-                            editLimits=False)
+    resolution = props.Real(maxval=10, default=1, clamped=True)
     """Data resolution in world space. The minimum value is set in __init__.""" 
                               
     

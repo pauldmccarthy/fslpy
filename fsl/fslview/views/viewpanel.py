@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-# viewpanel.py -
+# viewpanel.py - Superclass for all FSLView view panels.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides the :class:`ViewPanel` class, which is the superclass
+of all of the 'view' panels available in FSLView - see
+:class:`~fsl.fslview.frame.FSLViewFrame`.
+"""
 
 import logging
 

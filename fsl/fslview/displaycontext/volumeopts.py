@@ -46,7 +46,6 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     
     displayRange = props.Bounds(
         ndims=1,
-        editLimits=True,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']])
     """Image values which map to the minimum and maximum colour map colours."""
