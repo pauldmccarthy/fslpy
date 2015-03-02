@@ -272,9 +272,10 @@ class Editor(props.HasProperties):
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
         
-        roi = np.zeros(image.shape, dtype=image.data.dtype)
+        roi       = np.zeros(image.shape, dtype=image.data.dtype)
+        selection = self._selection.selection > 0
         
-        roi[self._selection.selection] = image.data[self._selection.selection]
+        roi[selection] = image.data[selection]
 
         header = image.nibImage.get_header()
         name   = '{}_roi'.format(image.name)
