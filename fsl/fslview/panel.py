@@ -138,6 +138,10 @@ class _FSLViewPanel(actions.ActionProvider):
 
 
 class FSLViewPanel(_FSLViewPanel, wx.Panel):
+    """
+    """
+
+    
     def __init__(self, parent, imageList, displayCtx, actionz=None):
         wx.Panel.__init__(self, parent)
         _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
@@ -283,6 +287,7 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
                 self.__sizer.Add(tool.label, (1, i), flag=wx.EXPAND)
 
         self.Layout()
+        self.GetParent().PanelResize()
 
     
     def ClearTools(self, destroy=False, startIdx=None, endIdx=None):

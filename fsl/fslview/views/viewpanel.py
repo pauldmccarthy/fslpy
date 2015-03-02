@@ -57,6 +57,10 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         self.__selectedImageChanged()
 
+
+    def PanelResize(self):
+        self.__auiMgr.Update()
+
         
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)

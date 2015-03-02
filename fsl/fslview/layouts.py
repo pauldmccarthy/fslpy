@@ -8,7 +8,6 @@
 import logging
 log = logging.getLogger(__name__)
 
-import wx
 
 import props
 
@@ -45,6 +44,7 @@ def widget(labelCls, name, *args, **kwargs):
 ########################################
 # OrthoPanel related panels and toolbars
 ########################################
+
 
 OrthoToolBarLayout = [
     actions.ActionButton(OrthoPanel,   'screenshot'),
@@ -206,6 +206,12 @@ VectorOptsLayout = props.VGroup((
         vertLabels=True),
     widget(VectorOpts, 'modulate'),
     widget(VectorOpts, 'modThreshold')))
+
+
+##########################
+# Histogram toolbar/panels
+##########################
+
 
 # TODO add type-specific options here, to hide spin panels/limit
 # buttons for the numeric sliders, when the props module supports it

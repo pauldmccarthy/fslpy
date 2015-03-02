@@ -102,12 +102,10 @@ actions = TypeDict({
 
     'OrthoEditProfile.undo'                    : 'Undo',
     'OrthoEditProfile.redo'                    : 'Redo',
-    'OrthoEditProfile.fillSelection'           : 'Fill selected region',
-    'OrthoEditProfile.clearSelection'          : 'Clear selection',
-    'OrthoEditProfile.createMaskFromSelection' : 'Create mask from '
-                                                 'selected region',
-    'OrthoEditProfile.createROIFromSelection'  : 'Create ROI from ' 
-                                                 'selected region',
+    'OrthoEditProfile.fillSelection'           : 'Fill',
+    'OrthoEditProfile.clearSelection'          : 'Clear',
+    'OrthoEditProfile.createMaskFromSelection' : 'Mask',
+    'OrthoEditProfile.createROIFromSelection'  : 'ROI',
 })
 
 labels = TypeDict({
