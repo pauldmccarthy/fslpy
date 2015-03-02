@@ -29,40 +29,45 @@ from fsl.fslview.displaycontext.maskopts     import MaskOpts
 from fsl.fslview.displaycontext.vectoropts   import VectorOpts
 
 
-def widget(name, labelCls, *args, **kwargs):
+def widget(labelCls, name, *args, **kwargs):
     return props.Widget(name,
                         label=strings.properties[labelCls, name],
                         *args,
                         **kwargs)
 
 
+########################################
+# OrthoPanel related panels and toolbars
+########################################
+
+
 OrthoEditProfileLayout = props.HGroup(
-    (widget('mode',
-            OrthoEditProfile),
-     widget('selectionSize',
-            OrthoEditProfile,
+    (widget(OrthoEditProfile, 'mode'),
+     widget(OrthoEditProfile,
+            'selectionSize',
             visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget('selectionIs3D',  OrthoEditProfile,
+     widget(OrthoEditProfile,
+            'selectionIs3D',  
             visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget('fillValue',
-            OrthoEditProfile),
-     widget('intensityThres',
-            OrthoEditProfile,
+     widget(OrthoEditProfile,
+            'fillValue'),
+     widget(OrthoEditProfile,
+            'intensityThres',
             visibleWhen=lambda p: p.mode == 'selint'),
-     widget('localFill',
-            OrthoEditProfile,
+     widget(OrthoEditProfile,
+            'localFill',
             visibleWhen=lambda p: p.mode == 'selint'),
-     widget('searchRadius',
-            OrthoEditProfile,
+     widget(OrthoEditProfile,
+            'searchRadius',
             visibleWhen=lambda p: p.mode == 'selint'),
-     widget('selectionCursorColour',  OrthoEditProfile),
-     widget('selectionOverlayColour', OrthoEditProfile)),
+     widget(OrthoEditProfile, 'selectionCursorColour'),
+     widget(OrthoEditProfile, 'selectionOverlayColour')),
     wrap=True,
     vertLabels=True,
 )
 
 OrthoViewProfileLayout = props.HGroup(
-    (widget('mode', OrthoViewProfile), ),
+    (widget(OrthoViewProfile, 'mode'), ),
     wrap=True,
     vertLabels=True)
 
@@ -86,77 +91,77 @@ OrthoEditProfileActionLayout = props.HGroup(
 
 
 CanvasPanelLayout = props.VGroup((
-    widget('profile',
-           CanvasPanel,
+    widget(CanvasPanel,
+           'profile',
            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
-    widget('syncImageOrder',     CanvasPanel),
-    widget('syncLocation',       CanvasPanel),
-    widget('syncVolume',         CanvasPanel),
-    widget('colourBarLabelSide', CanvasPanel),
-    widget('colourBarLocation',  CanvasPanel)))
+    widget(CanvasPanel, 'syncImageOrder'),
+    widget(CanvasPanel, 'syncLocation'),
+    widget(CanvasPanel, 'syncVolume'),
+    widget(CanvasPanel, 'colourBarLabelSide'),
+    widget(CanvasPanel, 'colourBarLocation')))
 
 
 OrthoPanelLayout = props.VGroup((
-    widget('layout',     OrthoPanel), 
-    widget('zoom',       OrthoPanel),
-    props.HGroup((widget('showCursor', OrthoPanel),
-                  widget('showLabels', OrthoPanel))),
-    props.HGroup((widget('showXCanvas', OrthoPanel),
-                  widget('showYCanvas', OrthoPanel),
-                  widget('showZCanvas', OrthoPanel)))))
+    widget(OrthoPanel, 'layout'), 
+    widget(OrthoPanel, 'zoom'),
+    props.HGroup((widget(OrthoPanel, 'showCursor'),
+                  widget(OrthoPanel, 'showLabels'))),
+    props.HGroup((widget(OrthoPanel, 'showXCanvas'),
+                  widget(OrthoPanel, 'showYCanvas'),
+                  widget(OrthoPanel, 'showZCanvas')))))
 
 LightBoxPanelLayout = props.VGroup((
-    widget('zax',            LightBoxPanel),
-    widget('zoom',           LightBoxPanel),
-    widget('sliceSpacing',   LightBoxPanel),
-    widget('zrange',         LightBoxPanel),
-    props.HGroup((widget('showCursor',     LightBoxPanel),
-                  widget('highlightSlice', LightBoxPanel),
-                  widget('showGridLines',  LightBoxPanel)))))
+    widget(LightBoxPanel, 'zax'),
+    widget(LightBoxPanel, 'zoom'),
+    widget(LightBoxPanel, 'sliceSpacing'),
+    widget(LightBoxPanel, 'zrange'),
+    props.HGroup((widget(LightBoxPanel, 'showCursor'),
+                  widget(LightBoxPanel, 'highlightSlice'),
+                  widget(LightBoxPanel, 'showGridLines')))))
 
 
 
 DisplayLayout = props.VGroup(
-    (widget('name',          Display),
-     widget('imageType',     Display),
-     widget('resolution',    Display, editLimits=False),
-     widget('transform',     Display),
-     widget('interpolation', Display),
-     widget('volume',        Display, editLimits=False),
-     widget('syncVolume',    Display),
-     widget('enabled',       Display),
-     widget('alpha',         Display, showLimits=False, editLimits=False),
-     widget('brightness',    Display, showLimits=False, editLimits=False),
-     widget('contrast',      Display, showLimits=False, editLimits=False)))
+    (widget(Display, 'name'),
+     widget(Display, 'imageType'),
+     widget(Display, 'resolution',    editLimits=False),
+     widget(Display, 'transform'),
+     widget(Display, 'interpolation'),
+     widget(Display, 'volume',        editLimits=False),
+     widget(Display, 'syncVolume'),
+     widget(Display, 'enabled'),
+     widget(Display, 'alpha',         showLimits=False, editLimits=False),
+     widget(Display, 'brightness',    showLimits=False, editLimits=False),
+     widget(Display, 'contrast',      showLimits=False, editLimits=False)))
 
 
 VolumeOptsLayout = props.VGroup(
-    (widget('cmap',         VolumeOpts),
-     widget('displayRange', VolumeOpts),
-     widget('clipLow',      VolumeOpts),
-     widget('clipHigh',     VolumeOpts)))
+    (widget(VolumeOpts, 'cmap'),
+     widget(VolumeOpts, 'displayRange'),
+     widget(VolumeOpts, 'clipLow'),
+     widget(VolumeOpts, 'clipHigh')))
 
 
 MaskOptsLayout = props.VGroup(
-    (widget('colour',    MaskOpts),
-     widget('invert',    MaskOpts),
-     widget('threshold', MaskOpts)))
+    (widget(MaskOpts, 'colour'),
+     widget(MaskOpts, 'invert'),
+     widget(MaskOpts, 'threshold')))
 
 
 VectorOptsLayout = props.VGroup((
-    widget('displayMode',   VectorOpts),
+    widget(VectorOpts, 'displayMode'),
     props.HGroup((
-        widget('xColour',   VectorOpts),
-        widget('yColour',   VectorOpts),
-        widget('zColour',   VectorOpts)),
+        widget(VectorOpts, 'xColour'),
+        widget(VectorOpts, 'yColour'),
+        widget(VectorOpts, 'zColour')),
         vertLabels=True),
     props.HGroup((
-        widget('suppressX', VectorOpts),
-        widget('suppressY', VectorOpts),
-        widget('suppressZ', VectorOpts)),
+        widget(VectorOpts, 'suppressX'),
+        widget(VectorOpts, 'suppressY'),
+        widget(VectorOpts, 'suppressZ')),
         vertLabels=True),
-    widget('modulate',      VectorOpts),
-    widget('modThreshold',  VectorOpts)))
+    widget(VectorOpts, 'modulate'),
+    widget(VectorOpts, 'modThreshold')))
 
 
 OrthoProfileToolBarViewLayout = [
