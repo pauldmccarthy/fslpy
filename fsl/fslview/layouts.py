@@ -17,17 +17,22 @@ import fsl.utils.typedict  as td
 import fsl.data.strings    as strings
 import fsl.fslview.actions as actions
 
-from fsl.fslview.profiles.orthoviewprofile   import OrthoViewProfile
-from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
-from fsl.fslview.views.canvaspanel           import CanvasPanel
-from fsl.fslview.views.orthopanel            import OrthoPanel
-from fsl.fslview.views.lightboxpanel         import LightBoxPanel
-from fsl.fslview.views.histogrampanel        import HistogramPanel
-from fsl.fslview.controls.orthotoolbar       import OrthoToolBar
-from fsl.fslview.displaycontext              import Display
-from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
-from fsl.fslview.displaycontext.maskopts     import MaskOpts
-from fsl.fslview.displaycontext.vectoropts   import VectorOpts
+from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
+
+from fsl.fslview.views.canvaspanel            import CanvasPanel
+from fsl.fslview.views.orthopanel             import OrthoPanel
+from fsl.fslview.views.lightboxpanel          import LightBoxPanel
+from fsl.fslview.views.histogrampanel         import HistogramPanel
+
+from fsl.fslview.controls.orthotoolbar        import OrthoToolBar
+from fsl.fslview.controls.lightboxtoolbar     import LightBoxToolBar
+from fsl.fslview.controls.imagedisplaytoolbar import ImageDisplayToolBar
+
+from fsl.fslview.displaycontext               import Display
+from fsl.fslview.displaycontext.volumeopts    import VolumeOpts
+from fsl.fslview.displaycontext.maskopts      import MaskOpts
+from fsl.fslview.displaycontext.vectoropts    import VectorOpts
 
 
 def widget(labelCls, name, *args, **kwargs):
@@ -97,7 +102,7 @@ CanvasPanelLayout = props.VGroup((
 
 OrthoPanelLayout = props.VGroup((
     widget(OrthoPanel, 'layout'), 
-    widget(OrthoPanel, 'zoom'),
+    widget(OrthoPanel, 'zoom', spin=False, showLimits=False),
     props.HGroup((widget(OrthoPanel, 'showCursor'),
                   widget(OrthoPanel, 'showLabels'))),
     props.HGroup((widget(OrthoPanel, 'showXCanvas'),
@@ -113,9 +118,11 @@ LightBoxToolBarLayout = [
     actions.ActionButton(LightBoxPanel, 'screenshot'),
     actions.ActionButton(LightBoxPanel, 'toggleColourBar'),
     widget(              LightBoxPanel, 'zax'),
-    widget(              LightBoxPanel, 'sliceSpacing'),
-    widget(              LightBoxPanel, 'zrange'),
-    widget(              LightBoxPanel, 'zoom', spin=False, showLimits=False)]
+    
+    widget(LightBoxPanel, 'sliceSpacing', spin=False, showLimits=False),
+    widget(LightBoxPanel, 'zrange',       spin=False, showLimits=False),
+    widget(LightBoxPanel, 'zoom',         spin=False, showLimits=False),
+    actions.ActionButton(LightBoxToolBar, 'more')]
 
 
 LightBoxPanelLayout = props.VGroup((
@@ -127,6 +134,35 @@ LightBoxPanelLayout = props.VGroup((
                   widget(LightBoxPanel, 'highlightSlice'),
                   widget(LightBoxPanel, 'showGridLines')))))
 
+
+
+########################################
+# Image display property panels/toolbars
+########################################
+
+
+DisplayToolBarLayout = [
+    widget(Display, 'enabled'),
+    widget(Display, 'name'),
+    widget(Display, 'imageType'),
+    widget(Display, 'alpha',      spin=False, showLimits=False),
+    widget(Display, 'brightness', spin=False, showLimits=False),
+    widget(Display, 'contrast',   spin=False, showLimits=False)]
+
+
+VolumeOptsToolBarLayout = [
+    widget(VolumeOpts, 'cmap'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')]
+
+
+MaskOptsToolBarLayout = [
+    widget(MaskOpts, 'colour'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')]
+
+
+VectorOptsToolBarLayout = [
+    widget(VectorOpts, 'displayMode'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')] 
 
 
 DisplayLayout = props.VGroup(
@@ -188,14 +224,18 @@ layouts = td.TypeDict({
     'OrthoPanel'    : OrthoPanelLayout,
     'LightBoxPanel' : LightBoxPanelLayout,
 
-    'Display'    : DisplayLayout,
-    'VolumeOpts' : VolumeOptsLayout,
-    'MaskOpts'   : MaskOptsLayout,
-    'VectorOpts' : VectorOptsLayout,
+    ('ImageDisplayToolBar', 'Display')    : DisplayToolBarLayout,
+    ('ImageDisplayToolBar', 'VolumeOpts') : VolumeOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'MaskOpts')   : MaskOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'VectorOpts') : VectorOptsToolBarLayout,
+
+    ('ImageDisplayPanel',   'Display')    : DisplayLayout,
+    ('ImageDisplayPanel',   'VolumeOpts') : VolumeOptsLayout,
+    ('ImageDisplayPanel',   'MaskOpts')   : MaskOptsLayout,
+    ('ImageDisplayPanel',   'VectorOpts') : VectorOptsLayout, 
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,
-
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
     ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,

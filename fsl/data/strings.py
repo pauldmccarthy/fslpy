@@ -86,7 +86,8 @@ actions = TypeDict({
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
- 
+    'ImageDisplayToolBar.more'    : 'More settings',
+    
     'LightBoxPanel.toggleLightBoxToolBar' : 'Show/hide view controls',
 
 
@@ -116,8 +117,6 @@ labels = TypeDict({
     'LocationPanel.space'         : 'Space',
     'LocationPanel.intensity'     : 'Intensity',
     'LocationPanel.outOfBounds'   : 'Out of bounds',
-
-    'ImageDisplayToolBar.more'    : 'More settings',
 })
 
 

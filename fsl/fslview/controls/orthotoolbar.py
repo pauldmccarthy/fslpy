@@ -21,7 +21,7 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
 
         import fsl.fslview.layouts as layouts
 
-        actionz = {'more' :  self.showMoreSettings}
+        actionz = {'more' : self.showMoreSettings}
         
         fslpanel.FSLViewToolBar.__init__(
             self, parent, imageList, displayCtx, actionz)

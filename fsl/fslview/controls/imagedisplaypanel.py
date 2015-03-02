@@ -120,7 +120,8 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
 
         parent.DestroyChildren()
         
-        panel = props.buildGUI(parent, optObj, view=layouts.layouts[optObj])
+        panel = props.buildGUI(
+            parent, optObj, view=layouts.layouts[self, optObj])
 
         parent.GetSizer().Add(panel, flag=wx.EXPAND, proportion=1)
         panel .Layout()

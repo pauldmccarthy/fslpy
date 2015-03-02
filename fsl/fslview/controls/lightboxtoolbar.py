@@ -7,11 +7,6 @@
 
 import logging
 
-import wx
-
-import props
-
-import fsl.data.strings                           as strings
 import fsl.fslview.panel                          as fslpanel
 import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
 
@@ -40,7 +35,7 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
     def destroy(self):
         fslpanel.FSLViewToolBar.destroy(self)
 
-    def showMoreSettings(self, ev):
+    def showMoreSettings(self, *a):
         self.GetParent().togglePanel(
             lightboxsettingspanel.LightBoxSettingsPanel,
             True,

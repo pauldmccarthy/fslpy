@@ -26,13 +26,14 @@ import imagedisplaypanel as imagedisplay
 class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
     
     def __init__(self, parent, imageList, displayCtx):
-        fslpanel.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+
+        actionz = {'more' : self.showMoreSettings}
+        
+        fslpanel.FSLViewToolBar.__init__(
+            self, parent, imageList, displayCtx, actionz)
 
         self._imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx, False)
-
-        self._moreButton = wx.Button(
-            self, label=strings.labels['ImageDisplayToolBar.more'])
 
         self._displayWidgets = {}
         self._optsWidgets    = {}
@@ -42,8 +43,6 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             self._name,
             self._selectedImageChanged)
 
-        self._moreButton.Bind(wx.EVT_BUTTON, self._onMoreButton)
-        
         self._selectedImageChanged()
 
 
@@ -59,7 +58,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
             image.removeListener('imageType', self._name)
 
 
-    def _onMoreButton(self, ev):
+    def showMoreSettings(self, *a):
         self.GetParent().togglePanel(imagedisplay.ImageDisplayPanel, True)
 
 
@@ -125,7 +124,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
         tools = self.GetTools()
         for widget in tools:
-            if widget not in (self._imageSelect, self._moreButton):
+            if widget is not self._imageSelect:
                 widget.Show(False)
         self.ClearTools()
 
@@ -138,8 +137,8 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         tools  = list(dispWidgets) + list(optsWidgets)
         labels = list(dispLabels)  + list(optsLabels)
 
-        tools  = [self._imageSelect] + tools  + [self._moreButton]
-        labels = [None]              + labels + [None]
+        tools  = [self._imageSelect] + tools
+        labels = [None]              + labels
 
         self.SetTools(tools, labels)
 
@@ -153,49 +152,21 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
         :class:`~fsl.data.image.Image` instance. 
         """
 
-        display    = self._displayCtx.getDisplayProperties(image)
+        import fsl.fslview.layouts as layouts
 
-        enabled    = props.makeWidget(parent, display, 'enabled')
-        name       = props.makeWidget(parent, display, 'name')
-        imageType  = props.makeWidget(parent, display, 'imageType')
+        display   = self._displayCtx.getDisplayProperties(image)
+        toolSpecs = layouts.layouts[self, display]
         
-        alpha      = props.makeWidget(
-            parent, display, 'alpha',      spin=False, showLimits=False)
-        brightness = props.makeWidget(
-            parent, display, 'brightness', spin=False, showLimits=False)
-        contrast   = props.makeWidget(
-            parent, display, 'contrast',   spin=False, showLimits=False)
-
-        name.SetMinSize((150, -1))
-
-        widgets = [enabled, name, imageType, alpha, brightness, contrast]
-        labels  = [strings.properties[display, 'enabled'],
-                   strings.properties[display, 'name'],
-                   strings.properties[display, 'imageType'],
-                   strings.properties[display, 'alpha'],
-                   strings.properties[display, 'brightness'],
-                   strings.properties[display, 'contrast']]
-
-        return zip(widgets, labels)
+        return self.GenerateTools(toolSpecs, display, add=False)
 
     
     def _makeOptsWidgets(self, image, parent):
 
-        display = self._displayCtx.getDisplayProperties(image)
-        opts    = display.getDisplayOpts()
-        labels  = []
-        widgets = []
+        import fsl.fslview.layouts as layouts
 
-        if display.imageType == 'volume':
-            widgets.append(props.makeWidget(parent, opts, 'cmap'))
-            labels .append(strings.properties[opts, 'cmap'])
-            
-        elif display.imageType == 'mask':
-            widgets.append(props.makeWidget(parent, opts, 'colour'))
-            labels .append(strings.properties[opts, 'colour'])
-            
-        elif display.imageType == 'vector':
-            widgets.append(props.makeWidget(parent, opts, 'displayMode'))
-            labels .append(strings.properties[opts, 'displayMode'])
+        display   = self._displayCtx.getDisplayProperties(image)
+        opts      = display.getDisplayOpts()
+        toolSpecs = layouts.layouts[self, opts]
+        targets   = { s : self if s.key == 'more' else opts for s in toolSpecs}
 
-        return zip(widgets, labels)
+        return self.GenerateTools(toolSpecs, targets, add=False) 
