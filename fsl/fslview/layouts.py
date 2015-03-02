@@ -52,53 +52,36 @@ OrthoToolBarLayout = [
     actions.ActionButton(OrthoToolBar, 'more')]
 
 
-OrthoEditProfileLayout = props.HGroup(
-    (widget(OrthoEditProfile, 'mode'),
-     widget(OrthoEditProfile,
-            'selectionSize',
-            visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget(OrthoEditProfile,
-            'selectionIs3D',  
-            visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget(OrthoEditProfile,
-            'fillValue'),
-     widget(OrthoEditProfile,
-            'intensityThres',
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget(OrthoEditProfile,
-            'localFill',
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget(OrthoEditProfile,
-            'searchRadius',
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget(OrthoEditProfile, 'selectionCursorColour'),
-     widget(OrthoEditProfile, 'selectionOverlayColour')),
-    wrap=True,
-    vertLabels=True,
-)
+OrthoProfileToolBarViewLayout = [
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor')]
 
-OrthoViewProfileLayout = props.HGroup(
-    (widget(OrthoViewProfile, 'mode'), ),
-    wrap=True,
-    vertLabels=True)
 
-OrthoViewProfileActionLayout = props.HGroup(
-    (actions.ActionButton(OrthoViewProfile, 'resetZoom'),
-     actions.ActionButton(OrthoViewProfile, 'centreCursor')),
-    wrap=True,
-    showLabels=False)
-
-OrthoEditProfileActionLayout = props.HGroup(
-    (actions.ActionButton(OrthoEditProfile, 'resetZoom'),
-     actions.ActionButton(OrthoEditProfile, 'centreCursor'),
-     actions.ActionButton(OrthoEditProfile, 'clearSelection'),
-     actions.ActionButton(OrthoEditProfile, 'fillSelection'),
-     actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
-     actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
-     actions.ActionButton(OrthoEditProfile, 'undo'),
-     actions.ActionButton(OrthoEditProfile, 'redo')),
-    wrap=True,
-    showLabels=False)
+# We cannot currently use the visibleWhen 
+# feature, as toolbar labels won't be hidden.
+OrthoProfileToolBarEditLayout = [
+    props.Widget('mode'),
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor'),
+    actions.ActionButton(OrthoEditProfile, 'undo'),
+    actions.ActionButton(OrthoEditProfile, 'redo'),
+    actions.ActionButton(OrthoEditProfile, 'fillSelection'),
+    actions.ActionButton(OrthoEditProfile, 'clearSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
+    props.Widget('selectionCursorColour'),
+    props.Widget('selectionOverlayColour'),    
+    props.Widget('selectionSize',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('selectionIs3D',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('fillValue'),
+    props.Widget('intensityThres',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('localFill',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('searchRadius',
+                 enabledWhen=lambda p: p.mode == 'selint')]
 
 
 CanvasPanelLayout = props.VGroup((
@@ -120,6 +103,20 @@ OrthoPanelLayout = props.VGroup((
     props.HGroup((widget(OrthoPanel, 'showXCanvas'),
                   widget(OrthoPanel, 'showYCanvas'),
                   widget(OrthoPanel, 'showZCanvas')))))
+
+
+#######################################
+# LightBoxPanel control panels/toolbars
+#######################################
+
+LightBoxToolBarLayout = [
+    actions.ActionButton(LightBoxPanel, 'screenshot'),
+    actions.ActionButton(LightBoxPanel, 'toggleColourBar'),
+    widget(              LightBoxPanel, 'zax'),
+    widget(              LightBoxPanel, 'sliceSpacing'),
+    widget(              LightBoxPanel, 'zrange'),
+    widget(              LightBoxPanel, 'zoom', spin=False, showLimits=False)]
+
 
 LightBoxPanelLayout = props.VGroup((
     widget(LightBoxPanel, 'zax'),
@@ -174,38 +171,6 @@ VectorOptsLayout = props.VGroup((
     widget(VectorOpts, 'modulate'),
     widget(VectorOpts, 'modThreshold')))
 
-
-OrthoProfileToolBarViewLayout = [
-    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
-    actions.ActionButton(OrthoViewProfile, 'centreCursor')]
-
-
-# We cannot currently use the visibleWhen 
-# feature, as toolbar labels won't be hidden.
-OrthoProfileToolBarEditLayout = [
-    props.Widget('mode'),
-    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
-    actions.ActionButton(OrthoViewProfile, 'centreCursor'),
-    actions.ActionButton(OrthoEditProfile, 'undo'),
-    actions.ActionButton(OrthoEditProfile, 'redo'),
-    actions.ActionButton(OrthoEditProfile, 'fillSelection'),
-    actions.ActionButton(OrthoEditProfile, 'clearSelection'),
-    actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
-    actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
-    props.Widget('selectionCursorColour'),
-    props.Widget('selectionOverlayColour'),    
-    props.Widget('selectionSize',
-                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
-    props.Widget('selectionIs3D',
-                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
-    props.Widget('fillValue'),
-    props.Widget('intensityThres',
-                 enabledWhen=lambda p: p.mode == 'selint'),
-    props.Widget('localFill',
-                 enabledWhen=lambda p: p.mode == 'selint'),
-    props.Widget('searchRadius',
-                 enabledWhen=lambda p: p.mode == 'selint')]
-
 # TODO add type-specific options here, to hide spin panels/limit
 # buttons for the numeric sliders, when the props module supports it
 HistogramToolBarLayout = [
@@ -219,11 +184,6 @@ HistogramToolBarLayout = [
 
 layouts = td.TypeDict({
 
-    ('OrthoViewProfile', 'props')   : OrthoViewProfileLayout,
-    ('OrthoEditProfile', 'props')   : OrthoEditProfileLayout,
-    ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
-    ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
-
     'CanvasPanel'   : CanvasPanelLayout,
     'OrthoPanel'    : OrthoPanelLayout,
     'LightBoxPanel' : LightBoxPanelLayout,
@@ -233,7 +193,8 @@ layouts = td.TypeDict({
     'MaskOpts'   : MaskOptsLayout,
     'VectorOpts' : VectorOptsLayout,
 
-    'OrthoToolBar' : OrthoToolBarLayout,
+    'OrthoToolBar'    : OrthoToolBarLayout,
+    'LightBoxToolBar' : LightBoxToolBarLayout,
 
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,

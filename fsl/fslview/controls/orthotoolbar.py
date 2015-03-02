@@ -7,10 +7,6 @@
 
 import logging
 
-import props
-
-import fsl.data.strings                        as strings
-import fsl.fslview.actions                     as actions
 import fsl.fslview.panel                       as fslpanel
 import fsl.fslview.controls.orthosettingspanel as orthosettingspanel
 
@@ -32,19 +28,9 @@ class OrthoToolBar(fslpanel.FSLViewToolBar):
         self.orthoPanel = ortho
 
         toolSpecs = layouts.layouts[self]
+        targets   = {s : self if s.key == 'more' else ortho for s in toolSpecs}
 
-        for toolSpec in toolSpecs:
-            if toolSpec.key == 'more':
-                tool = props.buildGUI(self, self,  toolSpec)
-            else: 
-                tool = props.buildGUI(self, ortho, toolSpec)
-
-            if isinstance(toolSpec, actions.ActionButton):
-                label = None
-            else:
-                label = strings.properties[ortho, toolSpec.key]
-
-            self.AddTool(tool, label)
+        self.GenerateTools(toolSpecs, targets)
         
 
     def destroy(self):

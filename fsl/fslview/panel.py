@@ -35,7 +35,10 @@ import logging
 
 import wx
 
-import fsl.data.image as fslimage
+import props
+
+import fsl.data.image   as fslimage
+import fsl.data.strings as strings
 
 import actions
 import displaycontext
@@ -183,6 +186,33 @@ class FSLViewToolBar(_FSLViewPanel, wx.Panel):
         self.SetSizer(self.__sizer)
 
 
+    def GenerateTools(self, toolSpecs, targets, add=True):
+        """
+        Targets may be a single object, or a dict of [toolSpec : target]
+        mappings.
+        """
+        
+        tools = []
+
+        if not isinstance(targets, dict):
+            targets = {s : targets for s in toolSpecs}
+
+        for toolSpec in toolSpecs:
+            tool = props.buildGUI(self, targets[toolSpec], toolSpec)
+
+            if isinstance(toolSpec, actions.ActionButton):
+                label = None
+            else:
+                label = strings.properties[targets[toolSpec], toolSpec.key]
+
+            tools.append(tool)
+
+            if add:
+                self.AddTool(tool, label)
+
+        return tools
+
+            
     def GetTools(self):
         """
         """
