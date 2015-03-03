@@ -126,21 +126,38 @@ altHandlerMap = {
         (('zoom', 'MiddleMouseDrag'), ('pan',  'LeftMouseDrag')))),
 
     OrthoEditProfile : OrderedDict((
+
+        # In select and select-by-intensity 
+        # mode, the right mouse button deselects
         (('sel',    'RightMouseDown'),  ('desel',  'LeftMouseDown')),
         (('sel',    'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
         (('sel',    'RightMouseUp'),    ('desel',  'LeftMouseUp')),
-        
+        (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
+        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
+        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')), 
+
+        # In select/deselect/selint
+        # mode, the middle mouse buyton pans
         (('sel',    'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('sel',    'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
         (('desel',  'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
         (('selint', 'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('selint', 'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
-         
+
+        # The selection cursor is shown in deselect
+        # mode the same as for select mode
         (('desel',  'MouseMove'),       ('sel',    'MouseMove')),
-        
-        (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
-        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
-        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')))),
+
+
+        # Keyboard navigation works in the select
+        # modes in the same way that it works
+        # in navigate mode (as defined in the
+        # OrthoViewProfile)
+        (('sel',    'Char'), ('nav', 'Char')),
+        (('desel',  'Char'), ('nav', 'Char')),
+        (('selint', 'Char'), ('nav', 'Char')),
+    )),
+
 
     LightBoxViewProfile : OrderedDict((
         (('view', 'LeftMouseDown'), ('view', 'LeftMouseDrag')), ))

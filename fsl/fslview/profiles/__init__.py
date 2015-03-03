@@ -176,7 +176,7 @@ class Profile(actions.ActionProvider):
         # Configure temporary modes and alternate
         # event handlers - see the profilemap
         # module
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
         
         for cls in inspect.getmro(self.__class__):
             
@@ -550,7 +550,7 @@ class ProfileManager(object):
                           instance which defines how images are being
                           displayed.
         """
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
         
         self._canvasPanel    = canvasPanel
         self._canvasCls      = canvasPanel.__class__
@@ -581,7 +581,7 @@ class ProfileManager(object):
         and creates a new one corresponding to the named profile.
         """
 
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
 
         profileCls = profilemap.profileHandlers[self._canvasCls, profile]
 
