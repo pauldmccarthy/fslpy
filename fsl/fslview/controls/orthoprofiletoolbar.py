@@ -9,7 +9,7 @@ import logging
 
 import props
 
-import fsl.fslview.panel   as fslpanel
+import fsl.fslview.toolbar as fsltoolbar
 import fsl.fslview.actions as actions
 import fsl.data.strings    as strings
 
@@ -17,10 +17,10 @@ import fsl.data.strings    as strings
 log = logging.getLogger(__name__)
 
 
-class OrthoProfileToolBar(fslpanel.FSLViewToolBar):
+class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
     def __init__(self, parent, imageList, displayCtx, ortho):
-        fslpanel.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+        fsltoolbar.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
 
         self.orthoPanel = ortho
 
@@ -33,7 +33,7 @@ class OrthoProfileToolBar(fslpanel.FSLViewToolBar):
 
 
     def destroy(self):
-        fslpanel.FSLViewToolBar.destroy(self)
+        fsltoolbar.FSLViewToolBar.destroy(self)
         self.orthoPanel.removeListener('profile', self._name)
 
 

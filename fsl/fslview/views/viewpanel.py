@@ -17,6 +17,7 @@ import wx.lib.agw.aui as aui
 import props
 
 import fsl.fslview.panel    as fslpanel
+import fsl.fslview.toolbar  as fsltoolbar
 import fsl.fslview.profiles as profiles
 import fsl.data.strings     as strings
 
@@ -95,7 +96,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 .BestSize(window.GetBestSize()) \
                 .Caption(strings.titles[window])
 
-            if isinstance(window, fslpanel.FSLViewToolBar):
+            if isinstance(window, fsltoolbar.FSLViewToolBar):
                 paneInfo = paneInfo.ToolbarPane()
 
             if floatPane is False: paneInfo.Top()
@@ -178,9 +179,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         log.debug('Panel closed: {}'.format(type(panel).__name__))
         
-
-        if isinstance(panel, (fslpanel.FSLViewPanel,
-                              fslpanel.FSLViewToolBar)):
+        if isinstance(panel, (fslpanel  .FSLViewPanel,
+                              fsltoolbar.FSLViewToolBar)):
             self.__panels.pop(type(panel))
 
             # calling fslpanel.FSLViewPanel.destroy()

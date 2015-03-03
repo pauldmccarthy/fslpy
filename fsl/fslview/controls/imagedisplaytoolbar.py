@@ -17,19 +17,19 @@ import                   wx
 
 import props
 
-import fsl.fslview.panel as fslpanel
-import fsl.data.strings  as strings
-import imageselectpanel  as imageselect
-import imagedisplaypanel as imagedisplay
+import fsl.fslview.toolbar as fsltoolbar
+import fsl.data.strings    as strings
+import imageselectpanel    as imageselect
+import imagedisplaypanel   as imagedisplay
 
 
-class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
+class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
     
     def __init__(self, parent, imageList, displayCtx):
 
         actionz = {'more' : self.showMoreSettings}
         
-        fslpanel.FSLViewToolBar.__init__(
+        fsltoolbar.FSLViewToolBar.__init__(
             self, parent, imageList, displayCtx, actionz)
 
         self._imageSelect = imageselect.ImageSelectPanel(
@@ -48,7 +48,7 @@ class ImageDisplayToolBar(fslpanel.FSLViewToolBar):
 
     def destroy(self):
         """Deregisters property listeners. """
-        fslpanel.FSLViewToolBar.destroy(self)
+        fsltoolbar.FSLViewToolBar.destroy(self)
 
         self._imageSelect.destroy()
 

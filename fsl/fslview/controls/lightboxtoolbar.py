@@ -7,14 +7,14 @@
 
 import logging
 
-import fsl.fslview.panel                          as fslpanel
+import fsl.fslview.toolbar                        as fsltoolbar
 import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
 
 
 log = logging.getLogger(__name__)
 
 
-class LightBoxToolBar(fslpanel.FSLViewToolBar):
+class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
 
     def __init__(self, parent, imageList, displayCtx, lb):
 
@@ -22,7 +22,7 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
 
         actionz = {'more' : self.showMoreSettings}
         
-        fslpanel.FSLViewToolBar.__init__(
+        fsltoolbar.FSLViewToolBar.__init__(
             self, parent, imageList, displayCtx, actionz)
         self.lightBoxPanel = lb
 
@@ -33,7 +33,7 @@ class LightBoxToolBar(fslpanel.FSLViewToolBar):
 
 
     def destroy(self):
-        fslpanel.FSLViewToolBar.destroy(self)
+        fsltoolbar.FSLViewToolBar.destroy(self)
 
     def showMoreSettings(self, *a):
         self.GetParent().togglePanel(

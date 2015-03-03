@@ -6,22 +6,22 @@
 #
 import logging
 
-import fsl.fslview.panel as fslpanel
+import fsl.fslview.toolbar as fsltoolbar
 
 
 log = logging.getLogger(__name__)
 
 
-class HistogramToolBar(fslpanel.FSLViewToolBar):
+class HistogramToolBar(fsltoolbar.FSLViewToolBar):
 
     def __init__(self, parent, imageList, displayCtx, histPanel):
 
         import fsl.fslview.layouts as layouts
         
-        fslpanel.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+        fsltoolbar.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
         
         self.GenerateTools(layouts.layouts[self], histPanel)
 
 
     def destroy(self):
-        fslpanel.FSLViewToolBar.destroy(self)
+        fsltoolbar.FSLViewToolBar.destroy(self)
