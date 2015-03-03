@@ -58,10 +58,6 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         self.__selectedImageChanged()
 
-
-    def PanelResize(self):
-        self.__auiMgr.Update()
-
         
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
@@ -94,13 +90,27 @@ class ViewPanel(fslpanel.FSLViewPanel):
             paneInfo = aui.AuiPaneInfo()        \
                 .MinSize(window.GetMinSize())   \
                 .BestSize(window.GetBestSize()) \
+                .LeftDockable(False)            \
+                .RightDockable(False)           \
                 .Caption(strings.titles[window])
 
             if isinstance(window, fsltoolbar.FSLViewToolBar):
-                paneInfo = paneInfo.ToolbarPane()
+                paneInfo = paneInfo.ToolbarPane().Resizable(False)
 
-            if floatPane is False: paneInfo.Top()
-            else:                  paneInfo.Float()
+            if floatPane is False:
+                paneInfo = paneInfo.Top()
+            else:
+                # Centre the floating pane on this pane
+                selfPos    = self.GetScreenPosition().Get()
+                selfSize   = self.GetSize().Get()
+                selfCentre = (selfPos[0] + selfSize[0] * 0.5,
+                              selfPos[1] + selfSize[1] * 0.5)
+
+                paneSize = window.GetBestSize().Get()
+                panePos  = (selfCentre[0] - paneSize[0] * 0.5,
+                            selfCentre[1] - paneSize[1] * 0.5)
+                
+                paneInfo = paneInfo.Float().FloatingPosition(panePos)
                     
             self.__auiMgr.AddPane(window, paneInfo)
             self.__panels[panelType] = window
