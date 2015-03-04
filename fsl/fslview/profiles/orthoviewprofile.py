@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 
 import wx
 
+import fsl.utils.transform  as transform
 import fsl.fslview.profiles as profiles
 
 
@@ -118,19 +119,31 @@ class OrthoViewProfile(profiles.Profile):
         to the depth axis of the canvas which was the target of the event.
         """ 
 
-        pos = self._displayCtx.location.xyz
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+        pos     = self._displayCtx.location.xyz
+
+        # If we're displaying voxel space,
+        # we want a keypress to move one
+        # voxel in the appropriate direction
+        if   display.transform == 'id':     offsets = [1, 1, 1]
+        elif display.transform == 'pixdim': offsets = image.pixdim
+
+        # Otherwise we'll just move an arbitrary 
+        # amount in the image world space - 2mm
+        else:                               offsets = [2, 2, 2]
 
         try:    ch = chr(key)
         except: ch = None
 
-        if   key == wx.WXK_LEFT:  pos[canvas.xax] -= 2
-        elif key == wx.WXK_RIGHT: pos[canvas.xax] += 2
-        elif key == wx.WXK_UP:    pos[canvas.yax] += 2
-        elif key == wx.WXK_DOWN:  pos[canvas.yax] -= 2
-        elif ch  in ('-', '_'):   pos[canvas.zax] -= 2
-        elif ch  in ('+', '='):   pos[canvas.zax] += 2
+        if   key == wx.WXK_LEFT:  pos[canvas.xax] -= offsets[canvas.xax]
+        elif key == wx.WXK_RIGHT: pos[canvas.xax] += offsets[canvas.xax]
+        elif key == wx.WXK_UP:    pos[canvas.yax] += offsets[canvas.yax]
+        elif key == wx.WXK_DOWN:  pos[canvas.yax] -= offsets[canvas.yax]
+        elif ch  in ('-', '_'):   pos[canvas.zax] -= offsets[canvas.zax]
+        elif ch  in ('+', '='):   pos[canvas.zax] += offsets[canvas.zax]
 
-        self._displayCtx.location = pos
+        self._displayCtx.location.xyz = pos
 
         
     ####################
