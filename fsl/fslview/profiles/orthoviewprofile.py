@@ -30,7 +30,6 @@ log = logging.getLogger(__name__)
 
 import wx
 
-import fsl.utils.transform  as transform
 import fsl.fslview.profiles as profiles
 
 
@@ -119,7 +118,11 @@ class OrthoViewProfile(profiles.Profile):
         to the depth axis of the canvas which was the target of the event.
         """ 
 
-        image   = self._displayCtx.getSelectedImage()
+        image = self._displayCtx.getSelectedImage()
+
+        if image is None:
+            return
+        
         display = self._displayCtx.getDisplayProperties(image)
         pos     = self._displayCtx.location.xyz
 

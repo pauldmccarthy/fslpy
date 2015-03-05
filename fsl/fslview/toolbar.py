@@ -19,6 +19,7 @@ import fsl.data.strings    as strings
 
 log = logging.getLogger(__name__)
 
+
         
 class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
     """
@@ -46,6 +47,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
                 
             self.sizer.Add(self.tool, flag=wx.EXPAND)
             self.Layout()
+            self.SetMinSize(self.sizer.GetMinSize())
             
 
         def __str__(self):
@@ -169,10 +171,6 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         sizer.Insert(self.__numVisible + 1, self.__rightButton)
         sizer.Insert(0,                 self.__leftButton)
 
-        widgets = [self.__leftButton, self.__rightButton] + tools
-        bestHeight = max([w.GetBestSize().GetHeight() for w in widgets])
-
-        self.SetMinSize((availWidth, bestHeight))
         self.Layout()
 
 
@@ -255,6 +253,30 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
 
         self.__tools.insert(
             index, FSLViewToolBar.Tool(self, tool, label, labelText))
+
+        # Calculate the minimum/maximum size
+        # for this toolbar, given the addition
+        # of the new tool
+        ttlWidth  = 0
+        minWidth  = 0
+        minHeight = 0
+
+        for tool in self.__tools:
+            tw, th = tool.GetMinSize().Get()
+            if tw > minWidth:  minWidth  = tw
+            if th > minHeight: minHeight = th
+
+            ttlWidth += minWidth
+
+        leftWidth  = self.__leftButton .GetBestSize().GetWidth()
+        rightWidth = self.__rightButton.GetBestSize().GetWidth()
+
+        minWidth = minWidth + leftWidth + rightWidth
+
+        self.SetMinSize((minWidth, minHeight))
+        self.SetMaxSize((ttlWidth, minHeight))
+        self.CacheBestSize((ttlWidth, minHeight))
+        
         self.__drawToolBar()
 
     
@@ -276,6 +298,10 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
                 tool.label.Destroy()
 
         self.__tools[startIdx:endIdx] = []
+
+        self.SetMinSize((   -1, -1))
+        self.SetMaxSize((   -1, -1))
+        self.CacheBestSize((-1, -1))
         self.Layout()
 
         

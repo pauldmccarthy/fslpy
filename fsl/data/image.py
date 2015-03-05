@@ -222,8 +222,9 @@ class Image(props.HasProperties):
                       shape,
                       data.shape))
 
-        self.data = data
-
+        self.data   = data
+        self.shape  = self.shape[ :len(data.shape)]
+        self.pixdim = self.pixdim[:len(data.shape)]
         
         
     def applyChange(self, offset, newVals, vol=None):

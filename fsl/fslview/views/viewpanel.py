@@ -113,18 +113,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
 
-            minSize   = window.GetMinSize() .Get()
-            bestSize  = window.GetBestSize().Get()
-
-            # See comments in __init__ about
-            # this 'float offset' thing
-            floatSize = (bestSize[0] + self.__floatOffset[0],
-                         bestSize[1] + self.__floatOffset[1])
-            
             paneInfo = aui.AuiPaneInfo()        \
-                .MinSize( minSize)              \
-                .BestSize(bestSize)             \
-                .FloatingSize(floatSize)        \
                 .LeftDockable(False)            \
                 .RightDockable(False)           \
                 .Caption(strings.titles[window])
@@ -132,11 +121,19 @@ class ViewPanel(fslpanel.FSLViewPanel):
             if isinstance(window, fsltoolbar.FSLViewToolBar):
                 paneInfo = paneInfo.ToolbarPane()
 
+            # Dock the pane at the position specified
+            # in fsl.fslview.layouts.locations, or
+            # at the top of the panel if there is no
+            # location specified 
             if floatPane is False:
+
                 paneInfo = paneInfo.Direction(
                     layouts.locations.get(window, aui.AUI_DOCK_TOP))
+
+            # Or, for floating panes, centre the
+            # floating pane on this ViewPanel 
             else:
-                # Centre the floating pane on this ViewPanel
+
                 selfPos    = self.GetScreenPosition().Get()
                 selfSize   = self.GetSize().Get()
                 selfCentre = (selfPos[0] + selfSize[0] * 0.5,
@@ -151,9 +148,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
                     .FloatingPosition(panePos)
                     
             self.__auiMgr.AddPane(window, paneInfo)
-            self.__auiMgrUpdate()
-            
             self.__panels[panelType] = window
+            self.__auiMgrUpdate()
  
 
     def __selectedImageChanged(self, *a):
@@ -190,6 +186,19 @@ class ViewPanel(fslpanel.FSLViewPanel):
         else:
             profileProp.enableChoice('edit', self)
 
+        # A change to the currently selected image may cause
+        # changes in the size/layout of visible control panels.
+        # So we'll tell the AUI manager to re-lay out itself.
+        #
+        # TODO I don't like this. Most panels won't actually
+        #      change their size - it's just the toolbars
+        #      that I need to worry about. How about having
+        #      toolbars post a wx event whenever tools are
+        #      added/removed, having this ViewPanel listen
+        #      for said events, and do the update then?
+        #      
+        wx.CallAfter(self.__auiMgrUpdate)
+
 
     def initProfile(self):
         """Must be called by subclasses, after they have initialised all
@@ -215,7 +224,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
     
 
-    def __auiMgrUpdate(self, ):
+    def __auiMgrUpdate(self):
         """Calls the :meth:`~wx.lib.agw.aui.AuiManager.Update` method
         on the ``AuiManager`` instance that is managing this panel.
 
@@ -229,10 +238,26 @@ class ViewPanel(fslpanel.FSLViewPanel):
         # to their original position, when they were created.
         # Here, we explicitly set the position of each
         # floating frame, so the AuiManager doesn't move our
-        # windows about the place
+        # windows about the place.
+        # 
+        # We also explicitly tell the AuiManager what the
+        # current minimum and best sizes are for every panel
         for panel in self.__panels.values():
             paneInfo = self.__auiMgr.GetPane(panel)
             parent   = panel.GetParent()
+
+            minSize   = panel.GetMinSize() .Get()
+            bestSize  = panel.GetBestSize().Get()
+
+            # See comments in __init__ about
+            # this 'float offset' thing 
+            floatSize = (bestSize[0] + self.__floatOffset[0],
+                         bestSize[1] + self.__floatOffset[1])
+            
+            paneInfo.MinSize(     minSize)  \
+                    .BestSize(    bestSize) \
+                    .FloatingSize(floatSize)
+                
             if paneInfo.IsFloating() and \
                isinstance(parent, aui.AuiFloatingFrame):
                 paneInfo.FloatingPosition(parent.GetScreenPosition())

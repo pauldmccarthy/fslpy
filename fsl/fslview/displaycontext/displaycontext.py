@@ -113,6 +113,10 @@ class DisplayContext(props.SyncableHasProperties):
         If an :class:`ImageDisplay` object does not exist for the given image,
         one is created.
         """
+
+        if not isinstance(image, (int, fslimage.Image)):
+            raise ValueError('image must be an integer or an Image object')
+
         if isinstance(image, int):
             image = self._imageList[image]
 

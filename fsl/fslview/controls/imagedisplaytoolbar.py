@@ -39,6 +39,14 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
             'selectedImage',
             self._name,
             self._selectedImageChanged)
+        self._displayCtx.addListener(
+            'imageOrder',
+            self._name,
+            self._selectedImageChanged) 
+        self._imageList.addListener(
+            'images',
+            self._name,
+            self._imageListChanged) 
 
         self._selectedImageChanged()
 
@@ -49,7 +57,9 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         self._imageSelect.destroy()
 
+        self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
 
         for image in self._imageList:
             image.removeListener('imageType', self._name)
@@ -61,14 +71,20 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
     def _imageListChanged(self, *a):
 
-        for image in self._dispWidgets.keys():
+        for image in self._displayWidgets.keys():
             if image not in self._imageList:
-                widgets = self._dispWidgets.pop(image)
+
+                log.debug('Destroying display tools for {}'.format(image))
+                
+                widgets = self._displayWidgets.pop(image)
                 for w, _ in widgets:
                     w.Destroy()
                     
         for image in self._optsWidgets.keys():
             if image not in self._imageList:
+                
+                log.debug('Destroying options tools for {}'.format(image))
+
                 widgets = self._optsWidgets.pop(image)
                 for w, _ in widgets:
                     w.Destroy()                
@@ -97,22 +113,24 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         image = self._displayCtx.getSelectedImage()
 
-        if image is not None:
+        if image is None:
+            self.ClearTools()
+            return
 
-            displayWidgets = self._displayWidgets.get(image, None)
-            optsWidgets    = self._optsWidgets   .get(image, None)
+        displayWidgets = self._displayWidgets.get(image, None)
+        optsWidgets    = self._optsWidgets   .get(image, None)
 
-            if displayWidgets is None:
-                displayWidgets = self._makeDisplayWidgets(image, self)
-                self._displayWidgets[image] = displayWidgets
+        if displayWidgets is None:
+            displayWidgets = self._makeDisplayWidgets(image, self)
+            self._displayWidgets[image] = displayWidgets
 
-            if optsWidgets is None:
-                self._imageTypeChanged(None, None, image, None, False)
-                image.addListener(
-                    'imageType',
-                    self._name,
-                    self._imageTypeChanged,
-                    overwrite=True)
+        if optsWidgets is None:
+            self._imageTypeChanged(None, None, image, None, False)
+            image.addListener(
+                'imageType',
+                self._name,
+                self._imageTypeChanged,
+                overwrite=True)
 
         self._refreshTools(image)
 
@@ -137,10 +155,11 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         tools  = [self._imageSelect] + tools
         labels = [None]              + labels
 
+        for tool in tools:
+            tool.Show(True) 
+
         self.SetTools(tools, labels)
 
-        for tool in tools:
-            tool.Show(True)
         
         
     def _makeDisplayWidgets(self, image, parent):
@@ -153,6 +172,8 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         display   = self._displayCtx.getDisplayProperties(image)
         toolSpecs = layouts.layouts[self, display]
+
+        log.debug('Creating display tools for {}'.format(image))
         
         return self.GenerateTools(toolSpecs, display, add=False)
 
@@ -165,5 +186,7 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         opts      = display.getDisplayOpts()
         toolSpecs = layouts.layouts[self, opts]
         targets   = { s : self if s.key == 'more' else opts for s in toolSpecs}
+        
+        log.debug('Creating options tools for {}'.format(image))
 
         return self.GenerateTools(toolSpecs, targets, add=False) 

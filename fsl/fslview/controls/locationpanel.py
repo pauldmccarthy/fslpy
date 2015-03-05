@@ -221,6 +221,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
             
         else:
             
+            log.debug('Looking up voxel value in {} ({}, {} -> {})'.format(
+                image, vloc, volume, image.shape))
+            
             # 3D image
             if len(image.shape) == 3:
                 voxVal = image.data[vloc[0], vloc[1], vloc[2]]
