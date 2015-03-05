@@ -122,7 +122,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         for image in self._imageList:
 
             display = self._displayCtx.getDisplayProperties(image)
-            xform   = display.displayToVoxMat
+            xform   = display.getTransform('display', 'voxel')
 
             ix, iy, iz = transform.transform([[x, y, z]], xform)[0]
 

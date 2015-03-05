@@ -198,8 +198,8 @@ def selectHeadCentre(opts, button):
                                         opts.inputImage,
                                         style=wx.RESIZE_BORDER)
     panel      = frame.panel
-    v2dMat     = display.voxToDisplayMat
-    d2vMat     = display.displayToVoxMat
+    v2dMat     = display.getTransform('voxel',   'display')
+    d2vMat     = display.getTransform('display', 'voxel')
 
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.

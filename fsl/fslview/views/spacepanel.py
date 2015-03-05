@@ -99,7 +99,7 @@ class SpacePanel(plotpanel.PlotPanel):
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
-        v2DMat  = display.voxToDisplayMat
+        v2DMat  = display.getTransform('voxel', 'display')
 
         xlo, xhi = transform.axisBounds(image.shape, v2DMat, 0)
         ylo, yhi = transform.axisBounds(image.shape, v2DMat, 1)
@@ -139,7 +139,8 @@ class SpacePanel(plotpanel.PlotPanel):
             lblLo = strings.anatomy['Image', 'lowshort',  orient]
             lblHi = strings.anatomy['Image', 'highshort', orient]
 
-            wldSpan = transform.transform(voxSpan, display.voxToDisplayMat)
+            wldSpan = transform.transform(
+                voxSpan, display.getTransform('voxel', 'display'))
 
             axis.plot(wldSpan[:, 0],
                       wldSpan[:, 1],
@@ -157,6 +158,8 @@ class SpacePanel(plotpanel.PlotPanel):
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
 
+        xform = display.getTransform('voxel', 'display')
+
         for ax, colour, label in zip(range(3),
                                      ['r', 'g', 'b'],
                                      ['X', 'Y', 'Z']):
@@ -165,11 +168,8 @@ class SpacePanel(plotpanel.PlotPanel):
             points[:]     = [-0.5, -0.5, -0.5]
             points[1, ax] = image.shape[ax] - 0.5
 
-            tx = transform.transform(points, display.voxToDisplayMat)
-
-            axlen = transform.axisLength(image.shape,
-                                         display.voxToDisplayMat,
-                                         ax)
+            tx    = transform.transform(points, xform)
+            axlen = transform.axisLength(image.shape, xform, ax)
 
             axis.plot(tx[:, 0],
                       tx[:, 1],
@@ -202,7 +202,8 @@ class SpacePanel(plotpanel.PlotPanel):
         points[6, :] = [x,     y,   -0.5]
         points[7, :] = [x,     y,    z] 
 
-        points = transform.transform(points, display.voxToDisplayMat)
+        points = transform.transform(
+            points, display.getTransform('voxel', 'display'))
 
         self.getAxis().scatter(points[:, 0], points[:, 1], points[:, 2],
                                color='b', s=40)

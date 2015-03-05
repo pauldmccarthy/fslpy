@@ -65,10 +65,11 @@ def rgbModeSetAxes(self):
 
     See :func:`~fsl.fslview.globject.slice2D` for more details.
     """
-    worldCoords, idxs = globject.slice2D(self.image.shape,
-                                         self.xax,
-                                         self.yax,
-                                         self.display.voxToDisplayMat)
+    worldCoords, idxs = globject.slice2D(
+        self.image.shape,
+        self.xax,
+        self.yax,
+        self.display.getTransform('voxel', 'display'))
 
     self.worldCoords = worldCoords
     self.indices     = idxs 
@@ -110,7 +111,8 @@ def preDraw(self):
     # the vertex program needs to be able to
     # transform from display space to voxel
     # space
-    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
+    shaders.setVertexProgramMatrix(
+        0, self.display.getTransform('display', 'voxel').T)
 
     if self.displayOpts.displayMode == 'line':
         shaders.setFragmentProgramMatrix(0, self.imageTexture.voxValXform.T)
@@ -164,8 +166,8 @@ def lineModeDraw(self, zpos, xform=None):
 
     # Transform the world coordinates to
     # floating point voxel coordinates
-    dToVMat = display.displayToVoxMat
-    vToDMat = display.voxToDisplayMat
+    dToVMat = display.getTransform('display', 'voxel')
+    vToDMat = display.getTransform('voxel',   'display')
     
     voxCoords  = transform.transform(worldCoords, dToVMat).transpose()
     imageData  = image.data

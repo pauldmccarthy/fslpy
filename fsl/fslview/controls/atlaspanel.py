@@ -216,6 +216,6 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         worldLoc = (label.x, label.y, label.z)
         dispLoc  = transform.transform(
-            [worldLoc], display.worldToDisplayMat)[0]
+            [worldLoc], display.getTransform('world', 'display'))[0]
 
         self._displayCtx.location.xyz = dispLoc

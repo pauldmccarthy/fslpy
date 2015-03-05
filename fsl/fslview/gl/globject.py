@@ -225,7 +225,7 @@ def calculateSamplePoints(image, display, xax, yax):
     """
 
     transformCode = display.transform
-    transformMat  = display.voxToDisplayMat 
+    transformMat  = display.getTransform('voxel', 'display')
     worldRes      = display.resolution
     
     xVoxelRes     = np.round(worldRes / image.pixdim[xax])

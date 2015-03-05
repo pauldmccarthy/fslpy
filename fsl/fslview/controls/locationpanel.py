@@ -26,7 +26,7 @@ import props
 import fsl.utils.transform as transform
 import fsl.data.strings    as strings
 import fsl.fslview.panel   as fslpanel
-import imageselectpanel    as imageselect
+
 
 log = logging.getLogger(__name__)
 
@@ -163,7 +163,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
                                      self._worldLocationChanged)
 
         self._selectedImageChanged()
-        self._displayLocationChanged()
         self._volumeChanged()
 
 
@@ -197,7 +196,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplayProperties(image)
 
         dloc   = self._displayCtx.location.xyz
-        vloc   = transform.transform([dloc], display.displayToVoxMat)[0]
+        vloc   = transform.transform(
+            [dloc], display.getTransform('display', 'voxel'))[0]
         vloc   = np.round(vloc)
         volume = self._displayCtx.volume
 
@@ -250,9 +250,17 @@ class LocationPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplayProperties(image)
 
         dloc = self._displayCtx.location.xyz
-        vloc = transform.transform([dloc], display.displayToVoxMat)[  0]
-        wloc = transform.transform([dloc], display.displayToWorldMat)[0]
+        vloc = transform.transform(
+            [dloc], display.getTransform('display', 'voxel'))[0]
+        wloc = transform.transform(
+            [dloc], display.getTransform('display', 'world'))[0]
 
+        import fsl.utils.trace as trace
+        trace.trace('LocationPanel')
+
+        log.debug('Updating location ({} -> vox {}, world {})'.format(
+            dloc, vloc, wloc))
+        
         self            .disableListener('voxelLocation', self._name)
         self            .disableListener('worldLocation', self._name)
         self._displayCtx.disableListener('location',      self._name)
@@ -279,8 +287,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplayProperties(image)
         
         vloc = self.voxelLocation.xyz
-        dloc = transform.transform([vloc], display.voxToDisplayMat)[0]
-        wloc = transform.transform([vloc], display.voxToWorldMat)[  0]
+        dloc = transform.transform(
+            [vloc], display.getTransform('voxel', 'display'))[0]
+        wloc = transform.transform(
+            [vloc], display.getTransform('voxel', 'world'))[  0]
 
         self            .disableListener('voxelLocation', self._name)
         self            .disableListener('worldLocation', self._name)
@@ -309,8 +319,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplayProperties(image)
         
         wloc = self.worldLocation.xyz
-        dloc = transform.transform([wloc], display.worldToDisplayMat)[0]
-        vloc = transform.transform([wloc], display.worldToVoxMat)[    0]
+        dloc = transform.transform(
+            [wloc], display.getTransform('world', 'display'))[0]
+        vloc = transform.transform(
+            [wloc], display.getTransform('world', 'voxel'))[  0]
 
         self            .disableListener('voxelLocation', self._name)
         self            .disableListener('worldLocation', self._name)
@@ -355,9 +367,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         
         for i in range(3):
             vlo, vhi = 0, image.shape[i] - 1
-            wlo, whi = transform.axisBounds(image.shape,
-                                            display.voxToWorldMat,
-                                            i)
+            wlo, whi = transform.axisBounds(
+                image.shape, display.getTransform('voxel', 'world'), i)
 
             self.voxelLocation.setLimits(i, vlo, vhi)
             self.worldLocation.setLimits(i, wlo, whi)

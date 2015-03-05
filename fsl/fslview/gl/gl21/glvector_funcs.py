@@ -119,7 +119,7 @@ def setAxes(self):
             self.image.shape,
             self.xax,
             self.yax,
-            self.display.voxToDisplayMat)
+            self.display.getTransform('voxel', 'display'))
 
     worldCoords    = worldCoords[:, [self.xax, self.yax]]
     worldCoords    = np.array(worldCoords, dtype=np.float32).ravel('C')
@@ -166,9 +166,10 @@ def preDraw(self):
     
     pars            = self.shaderParams
     useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape,        dtype=np.float32)
-    imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
-    displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
+    imageShape      = np.array(self.image.shape, dtype=np.float32)
+    imageDims       = np.array(self.image.pixdim, dtype=np.float32) 
+    displayToVoxMat = np.array(
+        display.getTransform('display', 'voxel'), dtype=np.float32)
 
     if mode == 'line':
         imageValueXform = np.array(self.imageTexture.voxValXform.T,
@@ -214,7 +215,8 @@ def preDraw(self):
     # index buffer only needed for line mode
     if mode == 'line':
     
-        voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
+        voxToDisplayMat = np.array(display.getTransform('voxel', 'display'),
+                                   dtype=np.float32)
         voxToDisplayMat = voxToDisplayMat.ravel('C')                
         gl.glUniformMatrix4fv(pars['voxToDisplayMat'],
                               1,

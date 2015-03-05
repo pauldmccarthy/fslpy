@@ -271,6 +271,43 @@ class DisplayContext(props.SyncableHasProperties):
         is preserved, in the new display coordinate system.
         """
 
+        # This check is ugly, and is required due to
+        # an ugly circular relationship which exists
+        # between parent/child DCs and the transform/
+        # location properties:
+        # 
+        # 1. When the transform property of a child DC
+        #    Display object changes (this should always 
+        #    be due to user input), that change is 
+        #    propagated to the parent DC Display object.
+        #
+        # 2. This results in the DC._transformChanged
+        #    method (this method) being called on the
+        #    parent DC.
+        #
+        # 3. Said method correctly updates the DC.location
+        #    property, so that the world location of the
+        #    selected image is preserved.
+        #
+        # 4. This location update is propagated back to
+        #    the child DC.location property, which is
+        #    updated to have the new correct location
+        #    value.
+        #
+        # 5. Then, the child DC._transformChanged method
+        #    is called, which goes and updates the child
+        #    DC.location property to contain a bogus
+        #    value.
+        #
+        # So this test is in place to prevent this horrible
+        # circular loop behaviour from occurring. If the
+        # location properties are synced, and contain the
+        # same value, we assume that they don't need to be
+        # updated again, and escape from ths system.
+        if self.getParent() is not None and self.isSyncedToParent('location'):
+            if self.getParent().location == self.location:
+                return
+
         if display.image != self.getSelectedImage():
             self._updateBounds()
             return
@@ -279,10 +316,13 @@ class DisplayContext(props.SyncableHasProperties):
         # the old display<-> world transform, then
         # transform it back to the new world->display
         # transform
-        imgWorldLoc = transform.transform([self.location.xyz],
-                                          display._oldDisplayToWorldMat)[0]
-        newDispLoc  = transform.transform([imgWorldLoc],
-                                          display.worldToDisplayMat)[0]
+        
+        imgWorldLoc = transform.transform(
+            [self.location.xyz],
+            display.getTransform(display.getLastTransform(), 'world'))[0]
+        newDispLoc  = transform.transform(
+            [imgWorldLoc],
+            display.getTransform('world', 'display'))[0]
 
         # Update the display coordinate system bounds -
         # this will also update the constraints on the

@@ -221,10 +221,11 @@ class GLVolume(globject.GLImageObject):
                       vertical screen axis (0, 1, or 2).
         """
 
-        return globject.slice2D(self.image.shape,
-                                self.xax,
-                                self.yax,
-                                self.display.voxToDisplayMat)
+        return globject.slice2D(
+            self.image.shape,
+            self.xax,
+            self.yax,
+            self.display.getTransform('voxel', 'display'))
 
     
     def refreshColourTexture(self, colourResolution):

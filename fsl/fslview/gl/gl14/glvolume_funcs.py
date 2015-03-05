@@ -97,7 +97,8 @@ def preDraw(self):
     # The vertex program needs to be
     # able to transform from display
     # coordinates to voxel coordinates
-    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
+    shaders.setVertexProgramMatrix(
+        0, self.display.getTransform('display', 'voxel').T)
 
     # The voxValXform transformation turns
     # an image texture value into a raw

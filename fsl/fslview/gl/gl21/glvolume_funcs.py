@@ -165,8 +165,10 @@ def preDraw(self):
     # texture coordinates
     tcx = transform.concat(self.imageTexture.voxValXform,
                            self.colourMapXform)
-    w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
-    vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
+    w2v = np.array(
+        display.getTransform('display', 'voxel'), dtype=np.float32).ravel('C')
+    
+    vvx = np.array(tcx, dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(self.displayToVoxMatPos, 1, False, w2v)
     gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, vvx)

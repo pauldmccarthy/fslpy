@@ -269,7 +269,7 @@ def handleImageArgs(args):
             loc = args.worldloc
         elif args.voxelloc:
             display = displayCtx.getDisplayProperties(imageList[0])
-            xform   = display.voxToDisplayMat
+            xform   = display.getTransform('voxel', 'display')
             loc     = transform.transform([[args.voxelloc]], xform)[0]
             
         else:

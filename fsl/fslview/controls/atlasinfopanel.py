@@ -138,7 +138,8 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplayProperties(image)
         loc     = self._displayCtx.location
         text    = self.infoPanel
-        loc     = transform.transform([loc], display.displayToWorldMat)[0]
+        loc     = transform.transform(
+            [loc], display.getTransform('display', 'world'))[0]
 
         if image.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
             text.SetPage(strings.messages['AtlasInfoPanel.notMNISpace'])

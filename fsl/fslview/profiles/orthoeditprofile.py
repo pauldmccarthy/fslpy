@@ -163,8 +163,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         self._selAnnotation = annotations.VoxelSelection( 
             selection,
-            display.displayToVoxMat,
-            display.voxToDisplayMat,
+            display.getTransform('display', 'voxel'),
+            display.getTransform('voxel',   'display'),
             colour=self.selectionOverlayColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
@@ -196,7 +196,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         """
         display = self._displayCtx.getDisplayProperties(self._currentImage)
 
-        voxel = transform.transform([canvasPos], display.displayToVoxMat)[0]
+        voxel = transform.transform(
+            [canvasPos], display.getTransform('display', 'voxel'))[0]
 
         # Using floor(voxel+0.5) because, when at the
         # midpoint, I want to round up. np.round rounds
@@ -231,8 +232,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().grid(
                 block,
-                display.displayToVoxMat,
-                display.voxToDisplayMat,
+                display.getTransform('display', 'voxel'),
+                display.getTransform('voxel',   'display'),
                 offsets=offset,
                 colour=colour)
 
