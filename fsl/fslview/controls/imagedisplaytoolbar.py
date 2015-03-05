@@ -13,19 +13,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
-import                   wx
-
-import props
-
 import fsl.fslview.toolbar as fsltoolbar
-import fsl.data.strings    as strings
 import imageselectpanel    as imageselect
 import imagedisplaypanel   as imagedisplay
 
 
 class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
     
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, imageList, displayCtx, viewPanel):
 
         actionz = {'more' : self.showMoreSettings}
         
@@ -34,6 +29,8 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         self._imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx, False)
+
+        self._viewPanel      = viewPanel
 
         self._displayWidgets = {}
         self._optsWidgets    = {}
@@ -59,7 +56,7 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
 
     def showMoreSettings(self, *a):
-        self.GetParent().togglePanel(imagedisplay.ImageDisplayPanel, True)
+        self._viewPanel.togglePanel(imagedisplay.ImageDisplayPanel, True)
 
 
     def _imageListChanged(self, *a):

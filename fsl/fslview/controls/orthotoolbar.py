@@ -38,5 +38,5 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
 
     def showMoreSettings(self, *a):
-        self.GetParent().togglePanel(
+        self.orthoPanel.togglePanel(
             orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 

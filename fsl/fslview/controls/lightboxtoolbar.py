@@ -36,7 +36,7 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
         fsltoolbar.FSLViewToolBar.destroy(self)
 
     def showMoreSettings(self, *a):
-        self.GetParent().togglePanel(
+        self.lightBoxPanel.togglePanel(
             lightboxsettingspanel.LightBoxSettingsPanel,
             True,
             self.lightBoxPanel) 

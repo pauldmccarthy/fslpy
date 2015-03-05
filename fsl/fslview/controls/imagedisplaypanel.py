@@ -76,7 +76,7 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         size  = self.sizer    .GetMinSize().Get()
 
         self.SetMinSize((max(pSize[0], size[0]),
-                         max(pSize[1], size[1])))
+                         max(pSize[1], size[1]) / 4.0))
 
         
     def destroy(self):

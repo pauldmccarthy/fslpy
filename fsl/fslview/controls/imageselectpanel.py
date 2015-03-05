@@ -84,6 +84,9 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
 
         self._imageListChanged()
 
+        self.Layout()
+        self.SetMinSize(self._sizer.GetMinSize())
+
 
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)

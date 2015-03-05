@@ -185,7 +185,7 @@ class CanvasPanel(viewpanel.ViewPanel):
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
                 atlaspanel.AtlasPanel),
             'toggleDisplayProperties' : lambda *a: self.togglePanel(
-                imagedisplaytoolbar.ImageDisplayToolBar),
+                imagedisplaytoolbar.ImageDisplayToolBar, False, self),
             'toggleLocationPanel'     : lambda *a: self.togglePanel(
                 locationpanel.LocationPanel),
         }.items() + extraActions.items())
