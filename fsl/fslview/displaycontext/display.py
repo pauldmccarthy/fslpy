@@ -198,8 +198,8 @@ class Display(props.SyncableHasProperties):
         image          = self.image
 
         voxToIdMat     = np.eye(4)
-        voxToPixdimMat = np.diag(list(image.pixdim) + [1.0])
-        voxToAffineMat  = image.voxToWorldMat.T
+        voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
+        voxToAffineMat = image.voxToWorldMat.T
         
         idToVoxMat        = transform.invert(voxToIdMat)
         idToPixdimMat     = transform.concat(idToVoxMat, voxToPixdimMat)
