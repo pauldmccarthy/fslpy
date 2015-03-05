@@ -199,47 +199,65 @@ class Display(props.SyncableHasProperties):
 
         voxToIdMat     = np.eye(4)
         voxToPixdimMat = np.diag(list(image.pixdim) + [1.0])
-        voxToWorldMat  = image.voxToWorldMat
+        voxToAffineMat  = image.voxToWorldMat.T
         
-        idToVoxMat     = transform.invert(voxToIdMat)
-        idToPixdimMat  = transform.concat(idToVoxMat, voxToPixdimMat)
-        idToWorldMat   = transform.concat(idToVoxMat, voxToWorldMat)
+        idToVoxMat        = transform.invert(voxToIdMat)
+        idToPixdimMat     = transform.concat(idToVoxMat, voxToPixdimMat)
+        idToAffineMat     = transform.concat(idToVoxMat, voxToAffineMat)
 
-        pixdimToVoxMat   = transform.invert(voxToPixdimMat)
-        pixdimToIdMat    = transform.concat(pixdimToVoxMat, voxToIdMat)
-        pixdimToWorldMat = transform.concat(pixdimToVoxMat, voxToWorldMat)
+        pixdimToVoxMat    = transform.invert(voxToPixdimMat)
+        pixdimToIdMat     = transform.concat(pixdimToVoxMat, voxToIdMat)
+        pixdimToAffineMat = transform.concat(pixdimToVoxMat, voxToAffineMat)
 
-        worldToVoxMat    = image.worldToVoxMat
-        worldToIdMat     = transform.concat(worldToVoxMat, voxToIdMat)
-        worldToPixdimMat = transform.concat(worldToVoxMat, voxToPixdimMat)
+        affineToVoxMat    = image.worldToVoxMat.T
+        affineToIdMat     = transform.concat(affineToVoxMat, voxToIdMat)
+        affineToPixdimMat = transform.concat(affineToVoxMat, voxToPixdimMat)
         
-        # voxel to display transforms
-        self.__xforms['voxel',  'id']     = voxToIdMat
-        self.__xforms['voxel',  'pixdim'] = voxToPixdimMat 
-        self.__xforms['voxel',  'world']  = voxToWorldMat
+        self.__xforms['id',  'id']     = np.eye(4)
+        self.__xforms['id',  'pixdim'] = idToPixdimMat 
+        self.__xforms['id',  'affine'] = idToAffineMat
 
-        # world to display transforms
-        self.__xforms['id', 'voxel']  = idToVoxMat
-        self.__xforms['id', 'pixdim'] = idToPixdimMat
-        self.__xforms['id', 'world']  = idToWorldMat
-
-        self.__xforms['pixdim', 'voxel'] = pixdimToVoxMat
-        self.__xforms['pixdim', 'id']    = pixdimToIdMat
-        self.__xforms['pixdim', 'world'] = pixdimToWorldMat
+        self.__xforms['pixdim', 'pixdim'] = np.eye(4)
+        self.__xforms['pixdim', 'id']     = pixdimToIdMat
+        self.__xforms['pixdim', 'affine'] = pixdimToAffineMat
  
-        self.__xforms['world', 'voxel']  = worldToVoxMat
-        self.__xforms['world', 'id']     = worldToIdMat
-        self.__xforms['world', 'pixdim'] = worldToPixdimMat 
+        self.__xforms['affine', 'affine'] = np.eye(4)
+        self.__xforms['affine', 'id']     = affineToIdMat
+        self.__xforms['affine', 'pixdim'] = affineToPixdimMat 
 
 
     def getTransform(self, from_, to, xform=None):
         """Return a matrix which may be used to transform coordinates
-        from ``from_`` to ``to``.
+        from ``from_`` to ``to``. Valid values for ``from_`` and ``to``
+        are:
+          - ``id``:      Voxel coordinates
+        
+          - ``pixdim``:  Voxel coordinates, scaled by voxel dimensions
+        
+          - ``affine``:  World coordinates, as defined by the NIFTI1
+                         ``qform``/``sform``. See
+                         :attr:`~fsl.data.image.Image.voxToWorldMat`.
+        
+          - ``voxel``:   Equivalent to ``id``.
+        
+          - ``display``: Equivalent to the current value of :attr:`transform`.
+        
+          - ``world``;   Equivalent to ``affine``.
+
+        If the ``xform`` parameter is provided, and one of ``from_`` or ``to``
+        is ``display``, the value of ``xform`` is used instead of the current
+        value of :attr:`transform`.
         """
 
         if xform is None:      xform = self.transform
-        if from_ == 'display': from_ = xform
-        if to    == 'display': to    = xform
+
+        if   from_ == 'display': from_ = xform
+        elif from_ == 'world':   from_ = 'affine'
+        elif from_ == 'voxel':   from_ = 'id'
+        
+        if   to    == 'display': to    = xform
+        elif to    == 'world':   to    = 'affine'
+        elif to    == 'voxel':   to    = 'id'
 
         return self.__xforms[from_, to]
 

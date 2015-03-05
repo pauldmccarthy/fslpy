@@ -78,13 +78,18 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
 
     def togglePanel(self, panelType, floatPane=False, *args, **kwargs):
-        
+
         window = self.__panels.get(panelType, None)
 
         if window is not None:
             self.__onPaneClose(None, window)
             
         else:
+
+            # TODO Existing floating panels seem to get
+            #      moved about when a new panel is
+            #      opened. Do something about that.
+            
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
             paneInfo = aui.AuiPaneInfo()        \
