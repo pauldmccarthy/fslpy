@@ -74,7 +74,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
     def setCentrePanel(self, panel):
         panel.Reparent(self)
         self.__auiMgr.AddPane(panel, wx.CENTRE)
-        self.__auiMgr.Update()
+        self.__auiMgrUpdate()
 
 
     def togglePanel(self, panelType, floatPane=False, *args, **kwargs):
@@ -85,13 +85,10 @@ class ViewPanel(fslpanel.FSLViewPanel):
             self.__onPaneClose(None, window)
             
         else:
-
-            # TODO Existing floating panels seem to get
-            #      moved about when a new panel is
-            #      opened. Do something about that.
             
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
+            
             paneInfo = aui.AuiPaneInfo()        \
                 .MinSize(window.GetMinSize())   \
                 .BestSize(window.GetBestSize()) \
@@ -118,10 +115,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 paneInfo = paneInfo.Float().FloatingPosition(panePos)
                     
             self.__auiMgr.AddPane(window, paneInfo)
+            self.__auiMgrUpdate()            
             self.__panels[panelType] = window
-            
-        self.__auiMgr.Update()
-
+ 
 
     def __selectedImageChanged(self, *a):
         """Called when the image list or selected image changed.
@@ -171,20 +167,41 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         
     def __profileChanged(self, *a):
+        """Called when the current :attr:`profile` property changes. Tells
+        the :class:`~fsl.fslview.profiles.ProfileManager` about the change.
+
+        The ``ProfileManager`` will then update mouse/keyboard listeners
+        according to the new profile.
+        """
 
         self.__profileManager.changeProfile(self.profile)
 
-        # profile = self.getCurrentProfile()
-
-        # Profile mode changes may result in the 
-        # content of the above prop/action panels 
-        # changing. So we need to make sure that 
-        # the canvas panel is sized appropriately.
-        # def modeChange(*a):
-        #     self.__layout()
-            
-        # profile.addListener('mode', self._name, modeChange)
     
+
+    def __auiMgrUpdate(self, ):
+        """Calls the :meth:`~wx.lib.agw.aui.AuiManager.Update` method
+        on the ``AuiManager`` instance that is managing this panel.
+
+        Ensures that the position of any floating panels is preserved,
+        as the ``AuiManager`` tends to move them about in some
+        circumstances.
+        """
+
+        # When a panel is added/removed from the AuiManager,
+        # the position of floating panels seems to get reset
+        # to their original position, when they were created.
+        # Here, we explicitly set the position of each
+        # floating frame, so the AuiManager doesn't move our
+        # windows about the place
+        for panel in self.__panels.values():
+            paneInfo = self.__auiMgr.GetPane(panel)
+            parent   = panel.GetParent()
+            if paneInfo.IsFloating() and \
+               isinstance(parent, aui.AuiFloatingFrame):
+                paneInfo.FloatingPosition(parent.GetScreenPosition())
+
+        self.__auiMgr.Update()
+
         
     def __onPaneClose(self, ev=None, panel=None):
 
@@ -206,7 +223,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
             # AUI does not detach said pane -
             # we have to do it manually
             self.__auiMgr.DetachPane(panel)
-            self.__auiMgr.Update()
+            self.__auiMgrUpdate()
 
         # WTF AUI. Sometimes this method gets called
         # twice for a panel, the second time with a
