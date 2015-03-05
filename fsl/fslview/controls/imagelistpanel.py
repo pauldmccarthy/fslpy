@@ -153,6 +153,8 @@ class ImageListPanel(fslpanel.FSLViewPanel):
 
         self.Layout()
 
+        self.SetMinSize(self._sizer.GetMinSize())
+
 
     def destroy(self):
         """Deregisters property listeners."""

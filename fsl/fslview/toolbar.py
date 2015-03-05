@@ -64,9 +64,6 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         self.__index      = 0
         self.__numVisible = None
 
-        import fsl.fslview.layouts as layouts
-        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
-
         self.__leftButton  = wx.Button(self, label='<', style=wx.BU_EXACTFIT)
         self.__rightButton = wx.Button(self, label='>', style=wx.BU_EXACTFIT) 
 

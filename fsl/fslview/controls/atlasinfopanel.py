@@ -93,6 +93,8 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         self._locationChanged()
         self.Layout()
 
+        self.SetMinSize(self.sizer.GetMinSize())
+
         
     def destroy(self):
         """Must be called when this :class:`AtlasInfoPanel` is to be

@@ -70,6 +70,14 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         self._lastImage = None
         self._selectedImageChanged()
 
+        self.Layout()
+
+        pSize = self.propSizer.GetMinSize().Get()
+        size  = self.sizer    .GetMinSize().Get()
+
+        self.SetMinSize((max(pSize[0], size[0]),
+                         max(pSize[1], size[1])))
+
         
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)

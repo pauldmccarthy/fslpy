@@ -143,9 +143,6 @@ class FSLViewPanel(_FSLViewPanel, wx.Panel):
         wx.Panel.__init__(self, parent)
         _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
 
-        import fsl.fslview.layouts as layouts
-        self.SetMinSize(layouts.minSizes.get(self, (-1, -1)))
-
         
     def __del__(self):
         wx.Panel     .__del__(self)

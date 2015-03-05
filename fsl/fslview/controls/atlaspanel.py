@@ -59,6 +59,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         # panel states when an overlay image is removed
 
         self.Layout()
+        self.SetMinSize(self.sizer.GetMinSize())
 
 
     def destroy(self):

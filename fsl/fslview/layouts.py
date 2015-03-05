@@ -5,9 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
-log = logging.getLogger(__name__)
-
+import wx.lib.agw.aui as aui
 
 import props
 
@@ -250,13 +248,10 @@ layouts = td.TypeDict({
 })
 
 
-minSizes = td.TypeDict({
-    'AtlasInfoPanel'        : (300, 100),
-    'AtlasOverlayPanel'     : (300, 100),
-    'AtlasPanel'            : (300, 100),
-    'ImageListPanel'        : (150, -1),
-    'ImageDisplayPanel'     : (200,  200),
-    'OrthoSettingsPanel'    : (200,  200),
-    'LightBoxSettingsPanel' : (200,  200),
-    'LocationPanel'         : (-1, -1),
+locations = td.TypeDict({
+    'LocationPanel'       : aui.AUI_DOCK_BOTTOM,
+    'ImageListPanel'      : aui.AUI_DOCK_BOTTOM,
+    'AtlasPanel'          : aui.AUI_DOCK_BOTTOM,
+    'ImageDisplayToolBar' : aui.AUI_DOCK_TOP,
+    
 })

@@ -165,6 +165,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._selectedImageChanged()
         self._volumeChanged()
 
+        self.SetMinSize(self.sizer.GetMinSize())
+
 
     def destroy(self):
         """Deregisters property listeners."""

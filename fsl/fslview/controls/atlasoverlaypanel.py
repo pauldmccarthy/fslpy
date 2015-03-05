@@ -113,6 +113,8 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
         self.regionSizer.Layout()
         self.sizer      .Layout()
 
+        self.SetMinSize(self.sizer.GetMinSize())
+
 
     def setOverlayState(self, atlasID, labelIdx, summary, state):
 

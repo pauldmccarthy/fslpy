@@ -58,6 +58,28 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         self.__selectedImageChanged()
 
+        # A very shitty necessity. When panes are floated,
+        # the AuiManager sets the size of the floating frame
+        # to the minimum size of the panel, without taking
+        # into account the size of its borders/title bar,
+        # meaning that the panel size is too small. Here,
+        # we're just creating a dummy MiniFrame (from which
+        # the AuiFloatingFrame derives), and saving the size
+        # of its trimmings for later use in the togglePanel
+        # method.
+        ff         = wx.MiniFrame(self)
+
+        # total size of frame
+        size       = ff.GetSize().Get()
+
+        # size of frame, sans trimmings
+        clientSize = ff.GetClientSize().Get()
+        
+        ff.Destroy()
+
+        self.__floatOffset = (size[0] - clientSize[0],
+                              size[1] - clientSize[1])
+
         
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
@@ -79,6 +101,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
     def togglePanel(self, panelType, floatPane=False, *args, **kwargs):
 
+        import fsl.fslview.layouts as layouts
+
         window = self.__panels.get(panelType, None)
 
         if window is not None:
@@ -88,21 +112,31 @@ class ViewPanel(fslpanel.FSLViewPanel):
             
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
+
+            minSize   = window.GetMinSize() .Get()
+            bestSize  = window.GetBestSize().Get()
+
+            # See comments in __init__ about
+            # this 'float offset' thing
+            floatSize = (bestSize[0] + self.__floatOffset[0],
+                         bestSize[1] + self.__floatOffset[1])
             
             paneInfo = aui.AuiPaneInfo()        \
-                .MinSize(window.GetMinSize())   \
-                .BestSize(window.GetBestSize()) \
+                .MinSize( minSize)              \
+                .BestSize(bestSize)             \
+                .FloatingSize(floatSize)        \
                 .LeftDockable(False)            \
                 .RightDockable(False)           \
                 .Caption(strings.titles[window])
 
             if isinstance(window, fsltoolbar.FSLViewToolBar):
-                paneInfo = paneInfo.ToolbarPane().Resizable(False)
+                paneInfo = paneInfo.ToolbarPane()
 
             if floatPane is False:
-                paneInfo = paneInfo.Top()
+                paneInfo = paneInfo.Direction(
+                    layouts.locations.get(window, aui.AUI_DOCK_TOP))
             else:
-                # Centre the floating pane on this pane
+                # Centre the floating pane on this ViewPanel
                 selfPos    = self.GetScreenPosition().Get()
                 selfSize   = self.GetSize().Get()
                 selfCentre = (selfPos[0] + selfSize[0] * 0.5,
@@ -111,11 +145,14 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 paneSize = window.GetBestSize().Get()
                 panePos  = (selfCentre[0] - paneSize[0] * 0.5,
                             selfCentre[1] - paneSize[1] * 0.5)
-                
-                paneInfo = paneInfo.Float().FloatingPosition(panePos)
+
+                paneInfo = paneInfo \
+                    .Float()        \
+                    .FloatingPosition(panePos)
                     
             self.__auiMgr.AddPane(window, paneInfo)
-            self.__auiMgrUpdate()            
+            self.__auiMgrUpdate()
+            
             self.__panels[panelType] = window
  
 
