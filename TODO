@@ -10,7 +10,10 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** SSH / VNC performance
 ** Linux compatibility
 ** Command line
-** IN PROGRESS UI design
+** Keyboard on number widgets
+** DONE Default layout
+** DONE UI design
+Good enough for the time being
 ** DONE Support for double precision images
 ** DONE Histogram
 ** DONE Atlas tools
@@ -20,13 +23,13 @@ We now have an 'oxford' branch, which is linked to the jalapeno installation.
 When you want to 'release' something, merge from the master branch to the
 oxford branch, and push to jalapeno
 
-** Stretch objectives:
+** Other things/stretch objectives:
+*** Tooltips
 *** Save/restore window layout
 *** Movie mode
 *** Offscreen rendering
 *** Document all the code
 *** Fix all the bugs
-
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -36,9 +39,11 @@ I think that all the work performed by the PropertyOwner metaclass can be done i
 Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
 ** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 * WX Bugs
-*** Floating panels get moved about when opening a new floating panel.
-*** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
-*** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
+** agw.aui
+*** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue
+*** Floating panels are resized to specified floating size, but the title bar is not taken into account 
+** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
+** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
 ** Image order synchronisation
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
@@ -117,6 +122,7 @@ perhaps into a standalone module...
 ** Spline interpolation in GL14
 ** Ability to display vector data as directional (i.e. starting from voxel centre)
 ** 'Label' image type, which allows user to change colour for each label.
+Ability to draw region outlines instead of full label overlays
 ** 'Annotation' image type that allows the user to highlight regions in different colours. Is this the same as the 'label' image above?
 ** Support ANALYZE75
 Pixdims stored in A75 header should be used, unchanged, as the affine
