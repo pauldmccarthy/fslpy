@@ -191,7 +191,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             voxVal = ''
 
         if voxVal is not None:
-            self.intensity.SetLabel('{}'.format(voxVal))
+            self.intensity.SetValue('{}'.format(voxVal))
             return
 
         image   = self._displayCtx.getSelectedImage()
@@ -236,7 +236,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             if   np.isnan(voxVal): voxVal = 'NaN'
             elif np.isinf(voxVal): voxVal = 'Inf'
 
-        self.intensity.SetLabel('{}'.format(voxVal))
+        self.intensity.SetValue('{}'.format(voxVal))
 
         
     def _volumeChanged(self, *a):
@@ -351,7 +351,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         if len(self._imageList) == 0:
             self._updateVoxelValue(   '')
-            self.space.SetLabel('')
+            self.space.SetValue('')
             return
 
         image   = self._displayCtx.getSelectedImage()
@@ -360,7 +360,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # Update the label which
         # displays the image space 
         spaceLabel = strings.anatomy['Image', 'space', image.getXFormCode()]
-        self.space.SetLabel(spaceLabel)
+        self.space.SetValue(spaceLabel)
 
         # Update the voxel and world location limits,
         # but don't trigger a listener callback, as

@@ -40,7 +40,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
         self.__panels = {}
 
         self.__auiMgr = aui.AuiManager(self,
-                                       agwFlags=aui.AUI_MGR_ALLOW_FLOATING) 
+                                       agwFlags=(aui.AUI_MGR_ALLOW_FLOATING |
+                                                 aui.AUI_MGR_LIVE_RESIZE))        
         self.__auiMgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.__onPaneClose)
 
         # Use a different listener name so that subclasses
