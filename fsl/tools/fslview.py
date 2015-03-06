@@ -142,8 +142,8 @@ def context(args):
 
     ctx = fslview_parseargs.handleImageArgs(args)
 
-    frame.Close()
-    frame.Destroy()
+    wx.CallAfter(frame.Close)
+    wx.Yield()
     
     return ctx
 

@@ -49,10 +49,9 @@ package-level attributes will be available:
                        instances.
 """
 
-import            logging 
-import            os
-import os.path as op
-import            OpenGL
+import logging 
+import os
+import OpenGL
 
 
 log = logging.getLogger(__name__)
@@ -190,11 +189,12 @@ def getWXGLContext(parent=None):
     # has to visible before we are able to
     # set it as the target of the GL context
     canvas.Show(True)
+    canvas.Update()
 
     thismod._wxGLContext = wxgl.GLContext(canvas)
     thismod._wxGLContext.SetCurrent(canvas)
 
-    canvas.Destroy()
+    wx.CallAfter(canvas.Destroy)
 
     return thismod._wxGLContext
 
