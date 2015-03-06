@@ -7,7 +7,12 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * February/March 2015 internal release
-** SSH / VNC performance
+** SSH performance
+*** Startup time
+*** Rendering time
+*** Shutdown time
+** VNC performance
+*** See sub-items in SSH performance
 ** Linux compatibility
 ** Command line
 ** Keyboard on number widgets
