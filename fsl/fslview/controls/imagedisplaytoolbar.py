@@ -98,7 +98,6 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self._optsWidgets[image] = newOptsWidgets
         
         if refresh and (image is self._displayCtx.getSelectedImage()):
-            self.ClearTools()
             self._refreshTools(image)
 
         if oldOptsWidgets is not None:
@@ -141,7 +140,7 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         for widget in tools:
             if widget is not self._imageSelect:
                 widget.Show(False)
-        self.ClearTools()
+        self.ClearTools(postevent=False)
 
         if image is None:
             self.Layout()

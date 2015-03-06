@@ -8,6 +8,7 @@
 import logging
 
 import wx
+import wx.lib.newevent as wxevent
 
 import numpy as np
 
@@ -20,7 +21,19 @@ import fsl.data.strings    as strings
 log = logging.getLogger(__name__)
 
 
-        
+_ToolBarEvent, _EVT_TOOLBAR_EVENT = wxevent.NewEvent()
+
+
+EVT_TOOLBAR_EVENT = _EVT_TOOLBAR_EVENT
+"""Identifier for the :data:`ToolBarEvent` event. """
+
+
+ToolBarEvent = _ToolBarEvent
+"""
+Event emitted when one or more tools is/are added/removed to/from the toolbar.
+"""
+
+
 class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
     """
     """
@@ -199,7 +212,10 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
             labels.append(label)
 
             if add:
-                self.AddTool(tool, label)
+                self.AddTool(tool, label, postevent=False)
+
+        if add:
+            wx.PostEvent(self, ToolBarEvent())
 
         return zip(tools, labels)
 
@@ -220,7 +236,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
             labels = [None] * len(tools)
 
         for i, (tool, label) in enumerate(zip(tools, labels), index):
-            self.InsertTool(tool, label, i)
+            self.InsertTool(tool, label, i, postevent=False)
+
+        wx.PostEvent(self, ToolBarEvent())
 
 
     def SetTools(self, tools, labels=None, destroy=False):
@@ -228,13 +246,15 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         if labels is None:
             labels = [None] * len(tools)
 
-        self.ClearTools(destroy)
+        self.ClearTools(destroy, postevent=False)
 
         for tool, label in zip(tools, labels):
-            self.InsertTool(tool, label)
+            self.InsertTool(tool, label, postevent=False)
+
+        wx.PostEvent(self, ToolBarEvent())
         
 
-    def InsertTool(self, tool, labelText=None, index=None):
+    def InsertTool(self, tool, labelText=None, index=None, postevent=True):
 
         if index is None:
             index = len(self.__tools)
@@ -273,14 +293,18 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
 
         minWidth = minWidth + leftWidth + rightWidth
 
-        self.SetMinSize((minWidth, minHeight))
-        self.SetMaxSize((ttlWidth, minHeight))
+        self.SetMinSize((   minWidth, minHeight))
+        self.SetMaxSize((   ttlWidth, minHeight))
         self.CacheBestSize((ttlWidth, minHeight))
         
         self.__drawToolBar()
 
+        if postevent:
+            wx.PostEvent(self, ToolBarEvent())
+
     
-    def ClearTools(self, destroy=False, startIdx=None, endIdx=None):
+    def ClearTools(
+            self, destroy=False, startIdx=None, endIdx=None, postevent=True):
 
         if startIdx is None: startIdx = 0
         if endIdx   is None: endIdx   = len(self.__tools)
@@ -303,6 +327,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         self.SetMaxSize((   -1, -1))
         self.CacheBestSize((-1, -1))
         self.Layout()
+
+        if postevent:
+            wx.PostEvent(self, ToolBarEvent())
 
         
     def __del__(self):

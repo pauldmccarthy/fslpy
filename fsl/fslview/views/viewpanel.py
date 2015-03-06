@@ -113,13 +113,19 @@ class ViewPanel(fslpanel.FSLViewPanel):
             window   = panelType(
                 self, self._imageList, self._displayCtx, *args, **kwargs)
 
-            paneInfo = aui.AuiPaneInfo()        \
-                .LeftDockable(False)            \
-                .RightDockable(False)           \
-                .Caption(strings.titles[window])
+            paneInfo = aui.AuiPaneInfo()
 
             if isinstance(window, fsltoolbar.FSLViewToolBar):
-                paneInfo = paneInfo.ToolbarPane()
+                paneInfo.ToolbarPane()
+
+                # When the toolbar contents change,
+                # update the layout, so that the
+                # toolbar's new size is accommodated
+                window.Bind(fsltoolbar.EVT_TOOLBAR_EVENT, self.__auiMgrUpdate)
+
+            paneInfo.LeftDockable( False) \
+                    .RightDockable(False) \
+                    .Caption(strings.titles[window])                
 
             # Dock the pane at the position specified
             # in fsl.fslview.layouts.locations, or
@@ -186,19 +192,6 @@ class ViewPanel(fslpanel.FSLViewPanel):
         else:
             profileProp.enableChoice('edit', self)
 
-        # A change to the currently selected image may cause
-        # changes in the size/layout of visible control panels.
-        # So we'll tell the AUI manager to re-lay out itself.
-        #
-        # TODO I don't like this. Most panels won't actually
-        #      change their size - it's just the toolbars
-        #      that I need to worry about. How about having
-        #      toolbars post a wx event whenever tools are
-        #      added/removed, having this ViewPanel listen
-        #      for said events, and do the update then?
-        #      
-        wx.CallAfter(self.__auiMgrUpdate)
-
 
     def initProfile(self):
         """Must be called by subclasses, after they have initialised all
@@ -223,8 +216,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         self.__profileManager.changeProfile(self.profile)
 
     
-
-    def __auiMgrUpdate(self):
+    def __auiMgrUpdate(self, *a):
         """Calls the :meth:`~wx.lib.agw.aui.AuiManager.Update` method
         on the ``AuiManager`` instance that is managing this panel.
 
@@ -253,6 +245,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
             # this 'float offset' thing 
             floatSize = (bestSize[0] + self.__floatOffset[0],
                          bestSize[1] + self.__floatOffset[1])
+
+            log.debug('New size for panel {} - min: {}, best: {}'.format(
+                type(panel).__name__, minSize, bestSize))
             
             paneInfo.MinSize(     minSize)  \
                     .BestSize(    bestSize) \
