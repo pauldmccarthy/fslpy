@@ -126,6 +126,7 @@ def context(args):
     # to initialise the OpenGL context
     frame = fslsplash.FSLViewSplash(None)
     
+    frame.CentreOnScreen()
     frame.Show()
     frame.Update()
 
