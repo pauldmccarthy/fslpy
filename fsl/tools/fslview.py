@@ -118,18 +118,14 @@ def parseArgs(argv):
 def context(args):
 
     import wx
-    import fsl.fslview.gl as fslgl
+    import fsl.fslview.gl     as fslgl
+    import fsl.data.strings   as strings
+    import fsl.fslview.splash as fslsplash
 
-    # Create a
-    # This is a ridiculous problem.    An excuse 
-    # to display a splash screen ...
-    splashfile  = op.join(op.dirname(__file__), 'splash.png')
-    frame = wx.SplashScreen(
-        wx.Bitmap(splashfile, wx.BITMAP_TYPE_PNG),
-        wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
-        -1,
-        None)
-
+    # Create a splash screen, and use it
+    # to initialise the OpenGL context
+    frame = fslsplash.FSLViewSplash(None)
+    
     frame.Show()
     frame.Update()
 
@@ -140,7 +136,20 @@ def context(args):
     fslgl.getWXGLContext(frame)
     fslgl.bootstrap(args.glversion)
 
-    ctx = fslview_parseargs.handleImageArgs(args)
+    def status(image):
+        frame.SetStatus(
+            '{} {} {}'.format(
+                strings.messages['fslview.loading.prefix'],
+                image,
+                strings.messages['fslview.loading.suffix']))
+        wx.Yield()
+
+    # Load the images - the splash screen status
+    # will be updated with the currently loading
+    # image name
+    ctx = fslview_parseargs.handleImageArgs(
+        args,
+        loadFunc=status)
 
     wx.CallAfter(frame.Close)
     wx.Yield()
