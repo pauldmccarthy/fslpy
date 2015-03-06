@@ -302,7 +302,7 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
 
     return frame
 
-    
+
 def main():
     """Entry point.
 
@@ -337,12 +337,14 @@ def main():
         for mod in args.noisy:
             logging.getLogger(mod).setLevel(logging.DEBUG)
 
-    if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-    else:                           ctx = None
-
     if fslTool.interface is not None:
         import wx
         app   = wx.App()
+
+        # Context creation may assume that a wx.App has been created
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+        
         frame = buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
         frame.Show()
 
@@ -355,5 +357,9 @@ def main():
         app.MainLoop()
         
     elif fslTool.execute is not None:
+        
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+        
         fslDirWarning( None, fslTool.toolName, fslEnvActive)
         fslTool.execute(toolArgs, ctx)

@@ -9,19 +9,23 @@ details. The command line interface is defined (and parsed) by the
 :mod:`fslview_parseargs` module.
 """
 
-import logging
-log = logging.getLogger(__name__)
 
+import time
+import logging
 import argparse
+import os.path as op
 
 import fslview_parseargs
+
+
+log = logging.getLogger(__name__)
+
 
     
 def interface(parent, args, ctx):
 
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
-    import fsl.fslview.gl    as fslgl
 
     imageList, displayCtx = ctx
     
@@ -32,11 +36,6 @@ def interface(parent, args, ctx):
     # visible before the GL context is set (which occurs
     # in the fslgl.getWXGLContext call below).
     frame.Show()
-
-    # initialise OpenGL version-specific module loads, and
-    # force the creation of a wx.glcanvas.GLContext object
-    fslgl.getWXGLContext()
-    fslgl.bootstrap(args.glversion)
     
     if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
     else:             frame.addViewPanel(views.OrthoPanel)
@@ -116,8 +115,40 @@ def parseArgs(argv):
                                        'fslview',
                                        'Image viewer')
 
+def context(args):
+
+    import wx
+    import fsl.fslview.gl as fslgl
+
+    # Create a
+    # This is a ridiculous problem.    An excuse 
+    # to display a splash screen ...
+    splashfile  = op.join(op.dirname(__file__), 'splash.png')
+    frame = wx.SplashScreen(
+        wx.Bitmap(splashfile, wx.BITMAP_TYPE_PNG),
+        wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
+        -1,
+        None)
+
+    frame.Show()
+    frame.Update()
+
+    time.sleep(0.5)
+    
+    # force the creation of a wx.glcanvas.GLContext object,
+    # and initialise OpenGL version-specific module loads
+    fslgl.getWXGLContext(frame)
+    fslgl.bootstrap(args.glversion)
+
+    ctx = fslview_parseargs.handleImageArgs(args)
+
+    frame.Close()
+    frame.Destroy()
+    
+    return ctx
+
 
 FSL_TOOLNAME  = 'FSLView'
 FSL_INTERFACE = interface
-FSL_CONTEXT   = fslview_parseargs.handleImageArgs
+FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs
