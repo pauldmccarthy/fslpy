@@ -246,8 +246,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
             floatSize = (bestSize[0] + self.__floatOffset[0],
                          bestSize[1] + self.__floatOffset[1])
 
-            log.debug('New size for panel {} - min: {}, best: {}'.format(
-                type(panel).__name__, minSize, bestSize))
+            log.debug('New size for panel {} - min: {}, '
+                      'best: {}, float: {}'.format(
+                          type(panel).__name__, minSize, bestSize, floatSize))
             
             paneInfo.MinSize(     minSize)  \
                     .BestSize(    bestSize) \

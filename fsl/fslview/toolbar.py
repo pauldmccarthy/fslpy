@@ -29,12 +29,12 @@ EVT_TOOLBAR_EVENT = _EVT_TOOLBAR_EVENT
 
 
 ToolBarEvent = _ToolBarEvent
-"""
-Event emitted when one or more tools is/are added/removed to/from the toolbar.
+"""Event emitted when one or more tools is/are added/removed to/from the
+toolbar.
 """
 
 
-class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
+class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
     """
     """
 
@@ -58,7 +58,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
                 label.Reparent(self)
                 self.sizer.Add(label, flag=wx.ALIGN_CENTRE)
                 
-            self.sizer.Add(self.tool, flag=wx.EXPAND)
+            self.sizer.Add(self.tool, flag=wx.EXPAND | wx.ALIGN_CENTRE)
             self.Layout()
             self.SetMinSize(self.sizer.GetMinSize())
             
@@ -72,7 +72,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
 
             
     def __init__(self, parent, imageList, displayCtx, actionz=None):
-        wx.Panel.__init__(self, parent)
+        wx.PyPanel.__init__(self, parent)
         fslpanel._FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
 
         self.__tools      = []
@@ -176,13 +176,13 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
             for i in range(len(tools)):
                 if i >= self.__index and i < lastIdx:
                     tools[i].Show(True)
-                    sizer.Add(tools[i])
+                    sizer.Add(tools[i], flag=wx.EXPAND | wx.ALIGN_CENTRE)
                 else:
                     tools[i].Show(False)
 
         sizer.Insert(self.__numVisible, (0, 0), flag=wx.EXPAND, proportion=1)
         sizer.Insert(self.__numVisible + 1, self.__rightButton)
-        sizer.Insert(0,                 self.__leftButton)
+        sizer.Insert(0,                     self.__leftButton)
 
         self.Layout()
 
@@ -274,6 +274,14 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         self.__tools.insert(
             index, FSLViewToolBar.Tool(self, tool, label, labelText))
 
+        self.InvalidateBestSize()
+        self.__drawToolBar()
+
+        if postevent:
+            wx.PostEvent(self, ToolBarEvent())
+            
+
+    def DoGetBestSize(self):
         # Calculate the minimum/maximum size
         # for this toolbar, given the addition
         # of the new tool
@@ -282,25 +290,30 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
         minHeight = 0
 
         for tool in self.__tools:
-            tw, th = tool.GetMinSize().Get()
+            tw, th = tool.GetBestSize().Get()
             if tw > minWidth:  minWidth  = tw
             if th > minHeight: minHeight = th
 
-            ttlWidth += minWidth
+            ttlWidth += tw
 
         leftWidth  = self.__leftButton .GetBestSize().GetWidth()
         rightWidth = self.__rightButton.GetBestSize().GetWidth()
 
         minWidth = minWidth + leftWidth + rightWidth
 
-        self.SetMinSize((   minWidth, minHeight))
+        # The agw.AuiManager does not honour the best size when
+        # toolbars are floated, but it does honour the minimum
+        # size. So I'm just setting the minimum size to the best
+        # size.
+        log.debug('Setting toolbar sizes: min {}, best {}'.format(
+            (ttlWidth, minHeight), (ttlWidth, minHeight)))
+        
+        self.SetMinSize((   ttlWidth, minHeight))
         self.SetMaxSize((   ttlWidth, minHeight))
         self.CacheBestSize((ttlWidth, minHeight))
         
-        self.__drawToolBar()
-
-        if postevent:
-            wx.PostEvent(self, ToolBarEvent())
+        return (ttlWidth, minHeight)
+        
 
     
     def ClearTools(
@@ -323,9 +336,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.Panel):
 
         self.__tools[startIdx:endIdx] = []
 
-        self.SetMinSize((   -1, -1))
-        self.SetMaxSize((   -1, -1))
-        self.CacheBestSize((-1, -1))
+        self.InvalidateBestSize()
         self.Layout()
 
         if postevent:
