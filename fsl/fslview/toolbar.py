@@ -151,7 +151,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
             for tool in tools:
                 tool.Show(True)
-                sizer.Add(tool)
+                sizer.Add(tool, flag=wx.EXPAND | wx.ALIGN_CENTRE)
 
         else:
             reqdWidths = reqdWidths[self.__index:]
@@ -212,7 +212,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             labels.append(label)
 
             if add:
-                self.AddTool(tool, label, postevent=False)
+                self.InsertTool(tool, label, postevent=False)
 
         if add:
             wx.PostEvent(self, ToolBarEvent())
