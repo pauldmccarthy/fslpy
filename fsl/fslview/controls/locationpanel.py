@@ -260,15 +260,14 @@ class LocationPanel(fslpanel.FSLViewPanel):
         wloc = transform.transform(
             [dloc], display.getTransform('display', 'world'))[0]
 
-        import fsl.utils.trace as trace
-        trace.trace('LocationPanel')
-
         log.debug('Updating location ({} -> vox {}, world {})'.format(
             dloc, vloc, wloc))
         
         self            .disableListener('voxelLocation', self._name)
         self            .disableListener('worldLocation', self._name)
         self._displayCtx.disableListener('location',      self._name)
+
+        self.Freeze()
         
         self.voxelLocation.xyz       = np.round(vloc)
         self.worldLocation.xyz       = wloc
@@ -278,6 +277,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._displayCtx.enableListener('location',      self._name)
 
         self._updateVoxelValue()
+
+        self.Thaw()
+        self.Refresh()
+        self.Update()
 
 
     def _voxelLocationChanged(self, *a):

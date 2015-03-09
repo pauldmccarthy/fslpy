@@ -396,8 +396,13 @@ class WXGLCanvasTarget(object):
 
         
     def _refresh(self, *a):
-        """Triggers a redraw via the :mod:`wx` `Refresh` method."""
-        self.Refresh()
+        """Triggers a redraw via the :meth:`_draw` method."""
+        
+        # NOTE I'm not drawing via wx.Refresh/Update
+        # because, when running over ssh under X11,
+        # this doesn't seem to force a redraw. Calling
+        # the draw code directly seems to do the trick
+        self._draw()
 
         
     def _postDraw(self):

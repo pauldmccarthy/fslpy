@@ -692,6 +692,10 @@ class SliceCanvas(props.HasProperties):
         :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
         the actual drawing.
         """
+        
+        width, height = self._getSize()
+        if width == 0 or height == 0:
+            return
 
         self._setGLContext()
         self._setViewport()
