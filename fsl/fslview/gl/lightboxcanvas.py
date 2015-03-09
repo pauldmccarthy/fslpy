@@ -209,14 +209,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         self._slicePropsChanged()
 
-        def _refresh(*a): self._refresh()
-
         self.addListener('sliceSpacing',   self.name, self._slicePropsChanged)
         self.addListener('ncols',          self.name, self._slicePropsChanged)
         self.addListener('nrows',          self.name, self._slicePropsChanged)
         self.addListener('zrange',         self.name, self._slicePropsChanged)
-        self.addListener('showGridLines',  self.name, _refresh)
-        self.addListener('highlightSlice', self.name, _refresh)
+        self.addListener('showGridLines',  self.name, self._refresh)
+        self.addListener('highlightSlice', self.name, self._refresh)
 
         # Called when the top row changes -
         # adjusts display range and refreshes
@@ -604,7 +602,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.getAnnotations().line(yverts[0], yverts[1], colour=(0, 1, 0))
 
         
-    def _draw(self):
+    def _draw(self, *a):
         """
         """
 
