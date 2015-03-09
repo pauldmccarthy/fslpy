@@ -325,14 +325,10 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         for i in range(startIdx, endIdx):
             tool = self.__tools[i]
 
-            self.__sizer.Detach(tool.tool)
+            self.__sizer.Detach(tool)
             
             if destroy:
-                tool.tool.Destroy()
-
-            if tool.label is not None:
-                self.__sizer.Detach(tool.label)
-                tool.label.Destroy()
+                tool.Destroy()
 
         self.__tools[startIdx:endIdx] = []
 

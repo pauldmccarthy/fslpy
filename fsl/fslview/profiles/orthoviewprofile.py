@@ -106,7 +106,10 @@ class OrthoViewProfile(profiles.Profile):
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
         the mouse location.
         """
-        
+
+        if canvasPos is None:
+            return
+
         self._displayCtx.location = canvasPos
 
         
