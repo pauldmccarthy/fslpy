@@ -128,7 +128,7 @@ def context(args):
     frame.CentreOnScreen()
     frame.Show()
     frame.Update()
-
+    wx.Yield()
     time.sleep(0.5)
     
     # force the creation of a wx.glcanvas.GLContext object,
