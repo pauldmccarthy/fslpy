@@ -256,6 +256,14 @@ class LabelAtlas(Atlas):
     def label(self, worldLoc):
 
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+
+        if voxelLoc[0] <  0             or \
+           voxelLoc[1] <  0             or \
+           voxelLoc[2] <  0             or \
+           voxelLoc[0] >= self.shape[0] or \
+           voxelLoc[1] >= self.shape[1] or \
+           voxelLoc[2] >= self.shape[2]:
+            return np.nan        
         
         val = self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
 
@@ -274,4 +282,13 @@ class ProbabilisticAtlas(Atlas):
         
     def proportions(self, worldLoc):
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+
+        if voxelLoc[0] <  0             or \
+           voxelLoc[1] <  0             or \
+           voxelLoc[2] <  0             or \
+           voxelLoc[0] >= self.shape[0] or \
+           voxelLoc[1] >= self.shape[1] or \
+           voxelLoc[2] >= self.shape[2]:
+            return np.nan
+        
         return self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]

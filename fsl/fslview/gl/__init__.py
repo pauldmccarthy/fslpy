@@ -273,7 +273,7 @@ class OSMesaCanvasTarget(object):
         pass
 
 
-    def _draw(self):
+    def _draw(self, *a):
         """Must be provided by subclasses."""
         raise NotImplementedError()
 
@@ -350,7 +350,7 @@ class WXGLCanvasTarget(object):
         raise NotImplementedError()
 
 
-    def _draw(self):
+    def _draw(self, *a):
         """Must be implemented by subclasses.
 
         This method should implement the OpenGL drawing logic.
@@ -402,7 +402,7 @@ class WXGLCanvasTarget(object):
         # because, when running over ssh under X11,
         # this doesn't seem to force a redraw. Calling
         # the draw code directly seems to do the trick
-        self._draw()
+        self.Refresh()
 
         
     def _postDraw(self):

@@ -276,14 +276,12 @@ class SliceCanvas(props.HasProperties):
 
         # when any of the properties of this
         # canvas change, we need to redraw
-        def refresh(*a): self._refresh()
-
         self.addListener('zax',           self.name, self._zAxisChanged)
-        self.addListener('pos',           self.name, refresh)
-        self.addListener('showCursor',    self.name, refresh)
-        self.addListener('displayBounds', self.name, refresh)
-        self.addListener('invertX',       self.name, refresh)
-        self.addListener('invertY',       self.name, refresh)
+        self.addListener('pos',           self.name, self._draw)
+        self.addListener('showCursor',    self.name, self._refresh)
+        self.addListener('displayBounds', self.name, self._refresh)
+        self.addListener('invertX',       self.name, self._refresh)
+        self.addListener('invertY',       self.name, self._refresh)
         self.addListener('zoom',
                          self.name,
                          lambda *a: self._updateDisplayBounds())
@@ -685,7 +683,7 @@ class SliceCanvas(props.HasProperties):
         self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0))
 
 
-    def _draw(self):
+    def _draw(self, *a):
         """Draws the current scene to the canvas. 
 
         Ths actual drawing is managed by the OpenGL version-dependent
