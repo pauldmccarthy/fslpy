@@ -30,10 +30,9 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self._imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx, False)
 
-        self._viewPanel      = viewPanel
-
-        self._displayWidgets = {}
-        self._optsWidgets    = {}
+        self._viewPanel    = viewPanel
+        self._imageTools   = {}
+        self._currentImage = None
 
         self._displayCtx.addListener(
             'selectedImage',
@@ -71,38 +70,35 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
     def _imageListChanged(self, *a):
 
-        for image in self._displayWidgets.keys():
+        for image in self._imageTools.keys():
             if image not in self._imageList:
 
-                log.debug('Destroying display tools for {}'.format(image))
-                
-                widgets = self._displayWidgets.pop(image)
-                for w, _ in widgets:
-                    w.Destroy()
-                    
-        for image in self._optsWidgets.keys():
-            if image not in self._imageList:
-                
-                log.debug('Destroying options tools for {}'.format(image))
+                dispTools, optsTools = self._imageTools.pop(image)
 
-                widgets = self._optsWidgets.pop(image)
-                for w, _ in widgets:
-                    w.Destroy()                
+                log.debug('Destroying all tools for {}'.format(image))
+
+                if image is self._currentImage:
+                    self.ClearTools()
+
+                for tool, _ in dispTools: tool.Destroy()
+                for tool, _ in optsTools: tool.Destroy()
     
 
     def _imageTypeChanged(self, value, valid, image, name, refresh=True):
 
-        oldOptsWidgets = self._optsWidgets.get(image, None)
-        newOptsWidgets = self._makeOptsWidgets(image, self)
+        dispTools, oldOptsTools = self._imageTools[image]
 
-        self._optsWidgets[image] = newOptsWidgets
-        
+        newOptsTools = self._makeOptsWidgets(image, self)
+
+        self._imageTools[image] = (dispTools, newOptsTools)
+
         if refresh and (image is self._displayCtx.getSelectedImage()):
             self._refreshTools(image)
 
-        if oldOptsWidgets is not None:
-            for widget, _ in oldOptsWidgets:
-                widget.Destroy()
+        log.debug('Destroying opts tools for {}'.format(image))
+
+        for tool, _ in oldOptsTools:
+            tool.Destroy()
             
 
     def _selectedImageChanged(self, *a):
@@ -116,15 +112,14 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
             self.ClearTools()
             return
 
-        displayWidgets = self._displayWidgets.get(image, None)
-        optsWidgets    = self._optsWidgets   .get(image, None)
+        tools = self._imageTools.get(image, None)
 
-        if displayWidgets is None:
-            displayWidgets = self._makeDisplayWidgets(image, self)
-            self._displayWidgets[image] = displayWidgets
+        if tools is None:
+            displayTools = self._makeDisplayWidgets(image, self)
+            optsTools    = self._makeOptsWidgets(   image, self)
+            
+            self._imageTools[image] = (displayTools, optsTools)
 
-        if optsWidgets is None:
-            self._imageTypeChanged(None, None, image, None, False)
             image.addListener(
                 'imageType',
                 self._name,
@@ -136,30 +131,33 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
     def _refreshTools(self, image):
 
+        self._currentImage = image
+
+        log.debug('Showing tools for {}'.format(image))
+
         tools = self.GetTools()
         for widget in tools:
             if widget is not self._imageSelect:
                 widget.Show(False)
+                
         self.ClearTools(postevent=False)
 
         if image is None:
             self.Layout()
 
-        dispWidgets, dispLabels = zip(*self._displayWidgets[image])
-        optsWidgets, optsLabels = zip(*self._optsWidgets[   image])
+        dispTools, optsTools = self._imageTools[image]
 
-        tools  = list(dispWidgets) + list(optsWidgets)
-        labels = list(dispLabels)  + list(optsLabels)
-
-        tools  = [self._imageSelect] + tools
-        labels = [None]              + labels
+        dispTools, dispLabels = zip(*dispTools)
+        optsTools, optsLabels = zip(*optsTools)
+        
+        tools  = [self._imageSelect] + list(dispTools)  + list(optsTools)
+        labels = [None]              + list(dispLabels) + list(optsLabels)
 
         for tool in tools:
             tool.Show(True) 
 
         self.SetTools(tools, labels)
 
-        
         
     def _makeDisplayWidgets(self, image, parent):
         """Creates and returns panel containing widgets allowing

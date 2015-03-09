@@ -317,7 +317,14 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
     
     def ClearTools(
-            self, destroy=False, startIdx=None, endIdx=None, postevent=True):
+            self,
+            destroy=False,
+            startIdx=None,
+            endIdx=None,
+            postevent=True):
+ 
+        if len(self.__tools) == 0:
+            return
 
         if startIdx is None: startIdx = 0
         if endIdx   is None: endIdx   = len(self.__tools)
