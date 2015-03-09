@@ -219,6 +219,9 @@ class AnnotationObject(globject.GLSimpleObject):
         self.width  = width
         self.xform  = xform
 
+        if self.xform is not None:
+            self.xform = np.array(self.xform, dtype=np.float32)
+
     def preDraw(self):
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 

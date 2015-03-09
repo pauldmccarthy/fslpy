@@ -164,7 +164,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         This method is slightly hard-coded and hacky. For the time being, edit
         profiles are only going to be supported for ``volume`` image
-        types. This method checks the type of the selected image, and disables
+        types, which are being displayed in ``id`` or ``pixdim`` space..
+        This method checks the type of the selected image, and disables
         the ``edit`` profile option (if it is an option), so the user can
         only choose an ``edit`` profile on ``volume`` image types.
         """
@@ -173,6 +174,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         if image is None:
             return
 
+        display     = self._displayCtx.getDisplayProperties(image)
         profileProp = self.getProp('profile')
 
         # edit profile is not an option -
@@ -180,7 +182,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
         if 'edit' not in profileProp.getChoices(self):
             return
 
-        if image.imageType != 'volume':
+        if image.imageType != 'volume' or \
+           display.transform not in ('id', 'pixdim'):
             
             # change profile if needed,
             if self.profile == 'edit':
@@ -189,7 +192,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
             # and disable edit profile
             profileProp.disableChoice('edit', self)
             
-        # make sure edit is enabled for volume images
+        # Otherwise make sure edit
+        # is enabled for volume images
         else:
             profileProp.enableChoice('edit', self)
 

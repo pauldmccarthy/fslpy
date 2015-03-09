@@ -137,27 +137,46 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def _selectedImageChanged(self, *a):
 
         image     = self._displayCtx.getSelectedImage()
-        selection = self._editor.getSelection()
-        display   = self._displayCtx.getDisplayProperties(image)
+        selection = self._editor.getSelection() 
         xannot    = self._xcanvas.getAnnotations()
         yannot    = self._ycanvas.getAnnotations()
-        zannot    = self._zcanvas.getAnnotations()
+        zannot    = self._zcanvas.getAnnotations()        
 
+        # If the selected image hasn't changed,
+        # we don't need to do anything
         if image == self._currentImage:
             return
 
-        self._currentImage = image
-
+        # If there's already an existing
+        # selection object, clear it 
         if self._selAnnotation is not None:
             xannot.dequeue(self._selAnnotation,  hold=True)
             yannot.dequeue(self._selAnnotation,  hold=True)
             zannot.dequeue(self._selAnnotation,  hold=True)
             self._selAnnotation  = None
 
-        # Edit mode is only supported on images with
-        # the 'volume' type for the time being
-        if image is None or image.imageType != 'volume':
+        self._currentImage = image
+
+        # If there is no selected image  (the image
+        # list is empty), don't do anything.
+        if image is None:
             return
+
+        display = self._displayCtx.getDisplayProperties(image)
+
+        # Edit mode is only supported on images with
+        # the 'volume' type, in 'id' or 'pixdim'
+        # transformation for the time being
+        if image.imageType != 'volume' or \
+           display.transform not in ('id', 'pixdim'):
+            
+            self._currentImage = None
+            log.warn('Editing is only possible on volume '
+                     'images, in ID or pixdim space.')
+            return
+
+        # Otherwise, create a selection annotation
+        # and queue it on the canvases for drawing
 
         selection.addListener('selection', self._name, self._selectionChanged)
 
