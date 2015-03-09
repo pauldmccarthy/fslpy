@@ -147,7 +147,9 @@ def bootstrap(glVersion=None):
                                'cannot run on the available graphics '
                                'hardware.'.format(', '.join(exts)))
 
-    log.debug('Using OpenGL {} implementation'.format(verstr))
+    renderer = gl.glGetString(gl.GL_RENDERER)
+    log.debug('Using OpenGL {} implementation with renderer {}'.format(
+        verstr, renderer))
 
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs
@@ -190,6 +192,7 @@ def getWXGLContext(parent=None):
     # set it as the target of the GL context
     canvas.Show(True)
     canvas.Update()
+    wx.Yield()
 
     thismod._wxGLContext = wxgl.GLContext(canvas)
     thismod._wxGLContext.SetCurrent(canvas)

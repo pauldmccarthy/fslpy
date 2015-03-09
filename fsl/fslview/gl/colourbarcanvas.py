@@ -89,7 +89,8 @@ class ColourBarCanvas(props.HasProperties):
         according to the current property values.
         """
 
-        self._setGLContext()
+        if not self._setGLContext():
+            return
 
         w, h = self._getSize()
 
@@ -156,7 +157,8 @@ class ColourBarCanvas(props.HasProperties):
     def _draw(self):
         """Renders the colour bar texture using all available canvas space."""
 
-        self._setGLContext()
+        if not self._setGLContext():
+            return
         
         width, height = self._getSize()
 

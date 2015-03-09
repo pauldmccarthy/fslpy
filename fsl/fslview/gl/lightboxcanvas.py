@@ -606,7 +606,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         """
         """
 
-        self._setGLContext()
+        if not self._setGLContext():
+            return
+        
         self._setViewport()
 
         startSlice   = self.ncols * self.topRow

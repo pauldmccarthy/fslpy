@@ -359,7 +359,8 @@ class SliceCanvas(props.HasProperties):
         triggers a refresh.
         """
 
-        self._setGLContext()
+        if not self._setGLContext():
+            return
 
         # Create a GL object for any new images,
         # and attach a listener to their display

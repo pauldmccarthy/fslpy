@@ -13,7 +13,6 @@ details. The command line interface is defined (and parsed) by the
 import time
 import logging
 import argparse
-import os.path as op
 
 import fslview_parseargs
 
