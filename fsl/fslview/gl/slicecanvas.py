@@ -696,7 +696,8 @@ class SliceCanvas(props.HasProperties):
         if width == 0 or height == 0:
             return
 
-        self._setGLContext()
+        if not self._setGLContext():
+            return
         self._setViewport()
 
         # clear the canvas
