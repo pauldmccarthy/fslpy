@@ -99,7 +99,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                      self._name,
                                      self._selectedImageChanged) 
 
-        self.zoom = 500
+        self.zoom = 750
 
         self._onLightBoxChange()
         self._onZoom()

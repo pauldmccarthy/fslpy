@@ -643,9 +643,20 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             globj.preDraw()
 
-            for zi in range(startSlice, endSlice):
-                globj.draw(self._sliceLocs[ image][zi],
-                           self._transforms[image][zi])
+            # An idea for better lightbox performance -
+            # generate the vertices on the CPU....
+
+            zposes = self._sliceLocs[ image][startSlice:endSlice]
+            xforms = self._transforms[image][startSlice:endSlice]
+
+            # TODO Implement this function:
+            # 
+            globj.drawAll(zposes, xforms)
+            # 
+
+            # for zi in range(startSlice, endSlice):
+            #     globj.draw(self._sliceLocs[ image][zi],
+            #                self._transforms[image][zi])
 
             globj.postDraw()
 

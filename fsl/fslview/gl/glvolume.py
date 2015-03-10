@@ -169,6 +169,13 @@ class GLVolume(globject.GLImageObject):
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
+    def drawAll(self, zposs, xforms):
+        if not self.display.enabled:
+            return
+        fslgl.glvolume_funcs.drawAll(self, zposs, xforms)
+        
+
+        
     def postDraw(self):
         """Clears the GL state after drawing from this :class:`GLVolume`
         instance.

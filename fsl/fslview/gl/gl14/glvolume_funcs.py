@@ -84,6 +84,7 @@ def preDraw(self):
 
     # enable drawing from a vertex array
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -146,6 +147,8 @@ def draw(self, zpos, xform=None):
 
     worldCoords = worldCoords.ravel('C')
 
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, worldCoords)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
@@ -153,13 +156,57 @@ def draw(self, zpos, xform=None):
                       gl.GL_UNSIGNED_INT,
                       indices)
 
+    
+def drawAll(self, zposs, xforms):
 
+    shaders.setVertexProgramMatrix(4, np.eye(4))
+
+    # Tell vertex program to use texture coordinates
+    shaders.setFragmentProgramVector(7, -np.ones(4))
+    
+    worldCoords  = self.worldCoords
+    indices      = self.indices
+    nverts       = worldCoords.shape[0]
+    nidxs        = indices.shape[0]
+
+    allTexCoords   = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
+    allWorldCoords = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
+    allIndices     = np.zeros( nidxs  * len(zposs),     dtype=np.uint32)
+
+    for i, (zpos, xform) in enumerate(zip(zposs, xforms)):
+
+        worldCoords[:, self.zax] = zpos
+
+        vStart = i * nverts
+        vEnd   = vStart + nverts
+
+        iStart = i * nidxs
+        iEnd   = iStart + nidxs
+
+        allIndices[    iStart:iEnd]    = indices + i * nverts
+        allTexCoords[  vStart:vEnd, :] = worldCoords
+        allWorldCoords[vStart:vEnd, :] = transform.transform(worldCoords,
+                                                             xform)
+
+    allWorldCoords = allWorldCoords.ravel('C')
+    allTexCoords   = allTexCoords  .ravel('C')
+
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, allTexCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, allWorldCoords)
+
+    gl.glDrawElements(gl.GL_QUADS,
+                      len(allIndices),
+                      gl.GL_UNSIGNED_INT,
+                      allIndices) 
+    
 def postDraw(self):
     """Cleans up the GL state after drawing from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)

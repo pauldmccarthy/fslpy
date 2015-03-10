@@ -20,6 +20,7 @@
 #   fragment.texcoord[0] - Fragment position in the display coordinate system
 #   fragment.texcoord[1] - Fragment position in the image voxel coordinate
 #                          system
+#   fragment.texcoord[2] - 
 #
 #   program.local[0]  
 #   program.local[1]
@@ -34,6 +35,8 @@
 #   program.local[6]     - Vector containing global brightness (x), contrast
 #                          (y), and alpha (z) values to pass to the
 #                          briconalpha.prog routine.
+#
+#   program.local[7]
 #
 # Outputs:
 #
@@ -50,6 +53,7 @@ TEMP  fragColour;
 PARAM imageShape    = program.local[4];
 PARAM imageShapeInv = program.local[5];
 PARAM bca           = program.local[6];
+PARAM useTexCoords  = program.local[7];
   
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -62,7 +66,8 @@ PARAM voxValXform[4] = { program.local[0],
 # retrieve the voxel coordinates,
 # which should have been calculated
 # by the vertex progarm
-MOV voxCoord, fragment.texcoord[1];
+# MOV voxCoord, fragment.texcoord[1];
+CMP voxCoord, useTexCoords, fragment.texcoord[2], fragment.texcoord[1];
 
 # bail if the voxel coordinates
 # are out of bounds

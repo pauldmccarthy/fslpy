@@ -20,6 +20,10 @@ import numpy as np
 import                        plotpanel
 import fsl.utils.transform as transform
 
+# TODO
+#      - Whack a scrollbar in there, to allow 
+#        zooming/scrolling on the horizontal axis   
+
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
