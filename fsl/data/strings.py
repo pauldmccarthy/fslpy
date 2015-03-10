@@ -80,25 +80,25 @@ actions = TypeDict({
     'LoadColourMapAction' : 'Load custom colour map',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
-    'CanvasPanel.toggleColourBar'         : 'Show/hide colour bar',
-    'CanvasPanel.toggleImageList'         : 'Show/hide image list',
-    'CanvasPanel.toggleDisplayProperties' : 'Show/hide display properties',
-    'CanvasPanel.toggleLocationPanel'     : 'Show/hide location panel',
-    'CanvasPanel.toggleAtlasPanel'        : 'Show/hide atlas panel',
+    'CanvasPanel.toggleColourBar'         : 'Colour bar',
+    'CanvasPanel.toggleImageList'         : 'Image list',
+    'CanvasPanel.toggleDisplayProperties' : 'Image display properties',
+    'CanvasPanel.toggleLocationPanel'     : 'Location panel',
+    'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
     
-    'OrthoPanel.toggleOrthoToolBar'     : 'Show/hide view properties',
-    'OrthoPanel.toggleProfileToolBar'   : 'Show/hide view controls',
+    'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
+    'OrthoPanel.toggleProfileToolBar'   : 'Profile controls',
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
     'ImageDisplayToolBar.more'    : 'More settings',
     
-    'LightBoxPanel.toggleLightBoxToolBar' : 'Show/hide view controls',
+    'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
 
     'PlotPanel.screenshot' : 'Take screenshot',
 
-    'HistogramPanel.toggleToolbar' : 'Show/hide histogram controls',
+    'HistogramPanel.toggleToolbar' : 'Histogram controls',
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
