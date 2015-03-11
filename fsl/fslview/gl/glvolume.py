@@ -169,11 +169,12 @@ class GLVolume(globject.GLImageObject):
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
-    def drawAll(self, zposs, xforms):
+    def drawAll(self, zposes, xforms):
+        """Calls the module-specific ``drawAll`` function. """
+        
         if not self.display.enabled:
             return
-        fslgl.glvolume_funcs.drawAll(self, zposs, xforms)
-        
+        fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
 
         
     def postDraw(self):

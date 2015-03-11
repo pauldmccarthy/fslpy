@@ -118,6 +118,25 @@ class GLObject(object):
         raise NotImplementedError()
 
 
+    def drawAll(self, zposes, xforms):
+        """This method should do the same as multiple calls to the
+        :meth:`draw` method, one for each of the Z positions and
+        transformation matrices contained in the ``zposes`` and
+        ``xforms`` arrays.
+
+        In some circumstances (hint: the
+        :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`),
+        better performance may be achievbed in combining multiple
+        renders, rather than doing it with separate calls to :meth:`draw`.
+
+        The default implementation does exactly this, so this method
+        need only be overridden for subclasses which are able to get
+        better performance by combining the draws.
+        """
+        for (zpos, xform) in zip(zposes, xforms):
+            self.draw(zpos, xform)
+
+
     def postDraw(self):
         """This method is called after the :meth:`draw` method has been called
         one or more times.
@@ -525,8 +544,7 @@ def slice2D(dataShape, xax, yax, voxToDisplayMat):
     :arg voxToDisplayMat: Affine transformation matrix which transforms from
                           voxel/array indices into the display coordinate
                           system.
-
-
+    
     Returns a tuple containing:
     
       - A ``4*3`` ``numpy.float32`` array containing the vertex locations

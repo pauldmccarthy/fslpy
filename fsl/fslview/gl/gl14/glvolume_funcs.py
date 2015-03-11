@@ -158,21 +158,37 @@ def draw(self, zpos, xform=None):
 
     
 def drawAll(self, zposs, xforms):
+    """Draws mutltiple slices of the given image at the given Z position,
+    applying the corresponding transformation to each of the slices.
+    """
 
+    # Don't use a custom world-to-world
+    # transformation matrix.
     shaders.setVertexProgramMatrix(4, np.eye(4))
-
-    # Tell vertex program to use texture coordinates
+    
+    # Instead, tell the vertex
+    # program to use texture coordinates
     shaders.setFragmentProgramVector(7, -np.ones(4))
     
-    worldCoords  = self.worldCoords
-    indices      = self.indices
+    worldCoords  = np.array(self.worldCoords)
+    indices      = np.array(self.indices)
     nverts       = worldCoords.shape[0]
     nidxs        = indices.shape[0]
 
+    # The world coordinates are ordered to 
+    # be rendered as a triangle strip, but
+    # we want to render as quads. So we
+    # need to re-order them
+    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
+
+    # Combine all of the world/texture
+    # coordinates and indices into single
+    # arrays, so we can send them all
+    # with a single draw command
     allTexCoords   = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
     allWorldCoords = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
     allIndices     = np.zeros( nidxs  * len(zposs),     dtype=np.uint32)
-
+    
     for i, (zpos, xform) in enumerate(zip(zposs, xforms)):
 
         worldCoords[:, self.zax] = zpos
@@ -187,10 +203,11 @@ def drawAll(self, zposs, xforms):
         allTexCoords[  vStart:vEnd, :] = worldCoords
         allWorldCoords[vStart:vEnd, :] = transform.transform(worldCoords,
                                                              xform)
-
     allWorldCoords = allWorldCoords.ravel('C')
     allTexCoords   = allTexCoords  .ravel('C')
 
+    # Draw all of the slices with 
+    # these four function calls.
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, allTexCoords)
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, allWorldCoords)
@@ -198,8 +215,9 @@ def drawAll(self, zposs, xforms):
     gl.glDrawElements(gl.GL_QUADS,
                       len(allIndices),
                       gl.GL_UNSIGNED_INT,
-                      allIndices) 
-    
+                      allIndices)
+
+
 def postDraw(self):
     """Cleans up the GL state after drawing from the given
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.

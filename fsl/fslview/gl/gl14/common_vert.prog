@@ -13,29 +13,32 @@
 #
 # Required inputs:
 #
-#   state.matrix.mvp - Matrix which transforms from the display coordinate
-#                      system to the screen coordinate system.
+#   state.matrix.mvp   - Matrix which transforms from the display coordinate
+#                        system to the screen coordinate system.
 #
 #   program.local[0]
 #   program.local[1]
 #   program.local[2]
-#   program.local[3] - Matrix which transforms from the display coordinate
-#                      system to the image voxel coordinate system.
+#   program.local[3]   - Matrix which transforms from the display coordinate
+#                        system to the image voxel coordinate system.
 #
 #   program.local[4]
 #   program.local[5]
 #   program.local[6]
-#   program.local[7] - Matrix which performs an arbitrary transformation in 
-#                      the display coordinate system.
+#   program.local[7]   - Matrix which performs an arbitrary transformation in 
+#                        the display coordinate system.
 #
-#   vertex.texcoord[0] - 
+#   vertex.texcoord[0] - Optional texture coordinates - these are transformed
+#                        to voxel coordinates, and passed through to the 
+#                        fragment shader in result.texcoord[2].
 #
 # Outputs:
 #
 #   result.position    - vertex position in the screen coordinate system
 #   result.texcoord[0] - vertex position in the display coordinate system
 #   result.texcoord[1] - vertex position in the image voxel coordinate system
-#   result.texcoord[2] - 
+#   result.texcoord[2] - texture coordinates in the image voxel coordinate
+#                        system
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #

@@ -35,8 +35,9 @@ import numpy                  as np
 import OpenGL.GL              as gl
 import OpenGL.raw.GL._types   as gltypes
 
-import fsl.fslview.gl.shaders as shaders
-import fsl.utils.transform    as transform
+import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.shaders  as shaders
+import fsl.utils.transform     as transform
 
 
 log = logging.getLogger(__name__)
@@ -218,6 +219,12 @@ def draw(self, zpos, xform=None):
                       self.nVertices,
                       gl.GL_UNSIGNED_INT,
                       None)
+
+def drawAll(self, zposes, xforms):
+    """Delegates to the default implementation in
+    :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`.
+    """
+    globject.GLObject.drawAll(self, zposes, xforms)
 
 
 def postDraw(self):

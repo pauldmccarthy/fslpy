@@ -20,7 +20,8 @@
 #   fragment.texcoord[0] - Fragment position in the display coordinate system
 #   fragment.texcoord[1] - Fragment position in the image voxel coordinate
 #                          system
-#   fragment.texcoord[2] - 
+#   fragment.texcoord[2] - Optionally used as texture coordinates (see
+#                          program.local[7]). 
 #
 #   program.local[0]  
 #   program.local[1]
@@ -36,7 +37,10 @@
 #                          (y), and alpha (z) values to pass to the
 #                          briconalpha.prog routine.
 #
-#   program.local[7]
+#   program.local[7]     - If greater than or equal to 0, fragment.texcoord[1]
+#                          is used as the coordinates for the texture lookup.
+#                          Otherwise, fragment.texcoord[2] is used for the
+#                          texture lookup.
 #
 # Outputs:
 #
@@ -65,8 +69,12 @@ PARAM voxValXform[4] = { program.local[0],
 
 # retrieve the voxel coordinates,
 # which should have been calculated
-# by the vertex progarm
-# MOV voxCoord, fragment.texcoord[1];
+# by the vertex program
+#
+# If useTexCoords is < 0, we use
+# fragment.texcoord[2] for the
+# texture lookup, otherwise we use
+# fragment.texcoord[1].
 CMP voxCoord, useTexCoords, fragment.texcoord[2], fragment.texcoord[1];
 
 # bail if the voxel coordinates
