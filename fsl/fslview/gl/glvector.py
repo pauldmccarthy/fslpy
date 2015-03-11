@@ -381,8 +381,6 @@ class GLVector(globject.GLImageObject):
         if not self.display.enabled:
             return
 
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glEnable(gl.GL_TEXTURE_3D)
         gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
@@ -414,6 +412,14 @@ class GLVector(globject.GLImageObject):
         
         fslgl.glvector_funcs.draw(self, zpos, xform)
 
+    def drawAll(self, zposes, xforms=None):
+        """Calls the ``glvector_funcs.drawAll`` function. """
+        
+        if not self.display.enabled:
+            return
+        
+        fslgl.glvector_funcs.drawAll(self, zposes, xforms) 
+
         
     def postDraw(self):
         """Unbindes the five GL textures, and calls the
@@ -421,8 +427,6 @@ class GLVector(globject.GLImageObject):
         """
         if not self.display.enabled:
             return
-
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_3D, 0)

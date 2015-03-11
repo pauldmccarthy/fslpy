@@ -30,7 +30,12 @@
 #
 #   vertex.texcoord[0] - Optional texture coordinates - these are transformed
 #                        to voxel coordinates, and passed through to the 
-#                        fragment shader in result.texcoord[2].
+#                        fragment shader in result.texcoord[2]. This gives
+#                        the option of using the vertex coordinates as texture
+#                        coordinates, or to use independent texture
+#                        coordinates, for the image texture lookup. Fragment
+#                        programs get passed both, and will need to decide
+#                        which coordinates to use.
 #
 # Outputs:
 #

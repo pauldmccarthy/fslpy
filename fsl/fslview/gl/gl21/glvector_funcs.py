@@ -263,7 +263,14 @@ def draw(self, zpos, xform=None):
         gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                           self.nVertices,
                           gl.GL_UNSIGNED_INT,
-                          None) 
+                          None)
+
+        
+def drawAll(self, zposes, xforms):
+    """Delegates to the :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`
+    method.
+    """
+    globject.GLObject.drawAll(self, zposes, xforms)
 
 
 def postDraw(self):

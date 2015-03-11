@@ -617,3 +617,62 @@ def subsample(data, resolution, pixdim=None, volume=None):
                                               zstart::zstep]        
 
     return sample
+
+
+def broadcast(vertices, indices, zposes, xforms, zax):
+    """Given a set of vertices and indices (assumed to be 2D representations
+    of some geometry in a 3D space, with the depth axis specified by ``zax``),
+    replicates them across all of the specified Z positions, applying the
+    corresponding transformation to each set of vertices.
+
+    :arg vertices: Vertex array (a ``N*3`` numpy array).
+    
+    :arg indices:  Index array
+    
+    :arg zposes:   Positions along the depth axis at which the vertices
+                   are to be replicated.
+    
+    :arg xforms:   Sequence of transformation matrices, one for each
+                   Z position.
+    
+    :arg zax:      Index of the 'depth' axis
+
+    Returns three values:
+    
+      - A numpy array containing all of the generated vertices
+    
+      - A numpy array containing the original vertices for each of the
+        generated vertices, which may be used as texture coordinates
+
+      - A new numpy array containing all of the generated indices.
+    """
+
+    vertices = np.array(vertices)
+    indices  = np.array(indices)
+    
+    nverts   = vertices.shape[0]
+    nidxs    = indices.shape[ 0]
+
+    # Combine all of the world/texture
+    # coordinates and indices into single
+    # arrays, so we can send them all
+    # with a single draw command
+    allTexCoords  = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
+    allVertCoords = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
+    allIndices    = np.zeros( nidxs  * len(zposes),     dtype=np.uint32)
+    
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+
+        vertices[:, zax] = zpos
+
+        vStart = i * nverts
+        vEnd   = vStart + nverts
+
+        iStart = i * nidxs
+        iEnd   = iStart + nidxs
+
+        allIndices[   iStart:iEnd]    = indices + i * nverts
+        allTexCoords[ vStart:vEnd, :] = vertices
+        allVertCoords[vStart:vEnd, :] = transform.transform(vertices, xform)
+        
+    return allVertCoords, allTexCoords, allIndices

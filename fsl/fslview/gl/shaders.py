@@ -37,7 +37,7 @@ def setVertexProgramVector(index, vector):
     import OpenGL.GL.ARB.vertex_program as arbvp
     
     arbvp.glProgramLocalParameter4fARB(
-        arbvp.GL_FRAGMENT_PROGRAM_ARB, index, *vector) 
+        arbvp.GL_VERTEX_PROGRAM_ARB, index, *vector) 
 
 
 def setVertexProgramMatrix(index, matrix):

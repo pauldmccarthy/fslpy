@@ -103,6 +103,9 @@ def preDraw(self):
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
 
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
@@ -142,15 +145,25 @@ def draw(self, zpos, xform=None):
     """Calls one of :func:`lineModeDraw` or :func:`rgbModeDraw`, depending
     upon the current display mode.
     """
+    if xform is None:
+        xform = np.eye(4, dtype=np.float32)
+        
+    drawAll(self, [zpos], [xform])
+
+    
+def drawAll(self, zposes, xforms):
+    
+    if not self.display.enabled:
+        return
     
     if self.displayOpts.displayMode == 'line':
-        lineModeDraw(self, zpos, xform)
+        lineModeDrawAll(self, zposes, xforms)
         
     elif self.displayOpts.displayMode == 'rgb':
-        rgbModeDraw(self, zpos, xform)
+        rgbModeDrawAll( self, zposes, xforms)
 
         
-def lineModeDraw(self, zpos, xform=None):
+def lineModeDrawAll(self, zposes, xforms):
     """Creates a line, representing a vector, at each voxel at the specified
     ``zpos``, and renders them.
     """
@@ -158,9 +171,6 @@ def lineModeDraw(self, zpos, xform=None):
     image       = self.image
     display     = self.display
     worldCoords = self.worldCoords
-
-    if not display.enabled:
-        return
 
     worldCoords[:, self.zax] = zpos
 
@@ -226,28 +236,26 @@ def lineModeDraw(self, zpos, xform=None):
     gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels) 
 
     
-def rgbModeDraw(self, zpos, xform=None):
+def rgbModeDrawAll(self, zposes, xforms):
     """Renders a rectangular slice through the vector image texture at the
     specified ``zpos``.
     """
 
-    worldCoords  = self.worldCoords
-    indices      = self.indices
-    worldCoords[:, self.zax] = zpos
+    worldCoords  = np.array(self.worldCoords)
+    indices      = np.array(self.indices)
 
-    worldCoords = worldCoords.ravel('C')
+    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
 
-    if xform is None:
-        xform = np.eye(4)
+    worldCoords, texCoords, indices = globject.broadcast(
+        worldCoords, indices, zposes, xforms, self.zax)
 
-    shaders.setVertexProgramMatrix(4, xform.T)
+    shaders.setVertexProgramMatrix(  4,  np.eye( 4, dtype=np.float32))
+    shaders.setFragmentProgramVector(8, -np.ones(4, dtype=np.float32))
 
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                      len(indices),
-                      gl.GL_UNSIGNED_INT,
-                      indices) 
+    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices) 
 
     
 def postDraw(self):
@@ -255,3 +263,6 @@ def postDraw(self):
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
+
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)

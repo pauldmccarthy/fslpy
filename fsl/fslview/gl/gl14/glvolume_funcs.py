@@ -41,8 +41,9 @@ import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.utils.transform    as transform
-import fsl.fslview.gl.shaders as shaders
+import fsl.utils.transform     as transform
+import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.shaders  as shaders
 
 
 log = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ def draw(self, zpos, xform=None):
                       indices)
 
     
-def drawAll(self, zposs, xforms):
+def drawAll(self, zposes, xforms):
     """Draws mutltiple slices of the given image at the given Z position,
     applying the corresponding transformation to each of the slices.
     """
@@ -169,53 +170,31 @@ def drawAll(self, zposs, xforms):
     # Instead, tell the vertex
     # program to use texture coordinates
     shaders.setFragmentProgramVector(7, -np.ones(4))
-    
-    worldCoords  = np.array(self.worldCoords)
-    indices      = np.array(self.indices)
-    nverts       = worldCoords.shape[0]
-    nidxs        = indices.shape[0]
 
+    worldCoords = np.array(self.worldCoords)
+    indices     = np.array(self.indices)
+    
     # The world coordinates are ordered to 
     # be rendered as a triangle strip, but
     # we want to render as quads. So we
     # need to re-order them
     worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
 
-    # Combine all of the world/texture
-    # coordinates and indices into single
-    # arrays, so we can send them all
-    # with a single draw command
-    allTexCoords   = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
-    allWorldCoords = np.zeros((nverts * len(zposs), 3), dtype=np.float32)
-    allIndices     = np.zeros( nidxs  * len(zposs),     dtype=np.uint32)
-    
-    for i, (zpos, xform) in enumerate(zip(zposs, xforms)):
+    # Replicate the world coordinates
+    # across all z positions, and with
+    # each corresponding transformation
+    worldCoords, texCoords, indices = globject.broadcast(
+        worldCoords, indices, zposes, xforms, self.zax)
 
-        worldCoords[:, self.zax] = zpos
-
-        vStart = i * nverts
-        vEnd   = vStart + nverts
-
-        iStart = i * nidxs
-        iEnd   = iStart + nidxs
-
-        allIndices[    iStart:iEnd]    = indices + i * nverts
-        allTexCoords[  vStart:vEnd, :] = worldCoords
-        allWorldCoords[vStart:vEnd, :] = transform.transform(worldCoords,
-                                                             xform)
-    allWorldCoords = allWorldCoords.ravel('C')
-    allTexCoords   = allTexCoords  .ravel('C')
+    worldCoords = worldCoords.ravel('C')
+    texCoords   = texCoords  .ravel('C')
 
     # Draw all of the slices with 
     # these four function calls.
     gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, allTexCoords)
-    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, allWorldCoords)
-
-    gl.glDrawElements(gl.GL_QUADS,
-                      len(allIndices),
-                      gl.GL_UNSIGNED_INT,
-                      allIndices)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices)
 
 
 def postDraw(self):
