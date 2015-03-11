@@ -89,7 +89,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         for panelType, panel in self.__panels.items():
             panel.destroy()
             
-        lName = '{}_{}'.format(type(self).__name__, self._name)
+        lName = 'ViewPanel_{}'.format(self._name)
         self._imageList .removeListener('images',        lName)
         self._displayCtx.removeListener('selectedImage', lName) 
 

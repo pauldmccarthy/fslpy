@@ -175,6 +175,9 @@ class FSLViewFrame(wx.Frame):
         self._viewPanels             .remove(panel)
         title = self._viewPanelTitles.pop(   panel)
 
+        log.debug('Destroying view panel {} ({})'.format(
+            title, type(panel).__name__))
+
         # Calling fslpanel.FSLViewPanel.destroy()
         # - I think that the AUINotebook does the
         # wx.Window.Destroy side of things ...
