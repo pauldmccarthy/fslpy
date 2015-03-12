@@ -26,15 +26,10 @@ def interface(parent, args, ctx):
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
 
-    imageList, displayCtx = ctx
+    (imageList, displayCtx), splashFrame = ctx
     
     frame = fslviewframe.FSLViewFrame(
         parent, imageList, displayCtx, args.default)
-
-    # Some platforms will crash if the GL Canvas is not
-    # visible before the GL context is set (which occurs
-    # in the fslgl.getWXGLContext call below).
-    frame.Show()
     
     if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
     else:             frame.addViewPanel(views.OrthoPanel)
@@ -86,7 +81,15 @@ def interface(parent, args, ctx):
         if args.colourBarLocation is not None:
             viewPanel.colourBarLocation = args.colourBarLocation
         if args.colourBarLabelSide is not None:
-            viewPanel.colourBarLabelSide = args.colourBarLabelSide 
+            viewPanel.colourBarLabelSide = args.colourBarLabelSide
+
+    # Make sure the new frame is shown
+    # before destroying the splash screen
+    frame.Show(True)
+    frame.Refresh()
+    frame.Update()
+
+    splashFrame.Close()
     
     return frame
 
@@ -123,8 +126,14 @@ def context(args):
 
     # Create a splash screen, and use it
     # to initialise the OpenGL context
-    frame = fslsplash.FSLViewSplash(None)
     
+    # The splash screen is used as the parent of the dummy
+    # canvas created by the gl.getWXGLContext function; the
+    # splash screen frame is returned by this function, and
+    # passed through to the interface function above, which
+    # takes care of destroying it.
+    frame = fslsplash.FSLViewSplash(None)
+
     frame.CentreOnScreen()
     frame.Show()
     frame.Update()
@@ -132,7 +141,7 @@ def context(args):
     time.sleep(0.5)
     
     # force the creation of a wx.glcanvas.GLContext object,
-    # and initialise OpenGL version-specific module loads
+    # and initialise OpenGL version-specific module loads.
     fslgl.getWXGLContext(frame)
     fslgl.bootstrap(args.glversion)
 
@@ -143,14 +152,9 @@ def context(args):
     # Load the images - the splash screen status
     # will be updated with the currently loading
     # image name
-    ctx = fslview_parseargs.handleImageArgs(
-        args,
-        loadFunc=status)
-
-    wx.CallAfter(frame.Close)
-    wx.Yield()
+    ctx = fslview_parseargs.handleImageArgs(args, loadFunc=status)
     
-    return ctx
+    return ctx, frame
 
 
 FSL_TOOLNAME  = 'FSLView'

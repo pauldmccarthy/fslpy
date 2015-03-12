@@ -164,42 +164,54 @@ def getWXGLContext(parent=None):
     If a context object has already been created, it is returned.
     Otherwise, one is created and returned. In the latter case,
     the ``parent`` parameter must be a visible :mod:`wx` object.
+
+    In either case, this function returns two values:
+    
+      - A :class:`wx.glcanvas.GLContext` instance
+    
+      - If a context instance has previously been created, the second
+        return value is ``None``. Other a dummy
+        :class:`wx.glcanvas.GLCanvas` instance is returned. This canvas
+        should be destroyed by the caller when it is safe to do so. This
+        seems to primarily be a problem under Linux/GTK - it does not
+        seem to be possible to destroy the dummy canvas immediately after
+        creating the context. So the calling code needs to destroy it
+        at some point in the future (possibly after another, real
+        GLCanvas has been created, and set as the context target).
     """
 
     import sys
-    import wx
     import wx.glcanvas as wxgl
 
     thismod = sys.modules[__name__]
 
     # A context has already been created
     if hasattr(thismod, '_wxGLContext'):
-        return thismod._wxGLContext
+        return thismod._wxGLContext, None
 
-    if parent is None:
+    if parent is None or not parent.IsShown():
         raise RuntimeError('A visible WX object is required '
                            'to create a GL context')
 
     # We can't create a wx GLContext without
     # a wx GLCanvas. But we can create a
-    # dummy one, and destroy it immediately
-    # after the context has been created. 
+    # dummy one, and destroy it after the
+    # context has been created. Destroying
+    # the canvas is the responsibility of the
+    # calling code.
     canvas = wxgl.GLCanvas(parent)
     canvas.SetSize((0, 0))
 
-    # Even worse - on Linux/GTK,the canvas
-    # has to visible before we are able to
-    # set it as the target of the GL context
+    # The canvas must be visible before we are
+    # able to set it as the target of the GL context
     canvas.Show(True)
+    canvas.Refresh()
     canvas.Update()
-    wx.Yield()
 
     thismod._wxGLContext = wxgl.GLContext(canvas)
     thismod._wxGLContext.SetCurrent(canvas)
 
-    wx.CallAfter(canvas.Destroy)
-
-    return thismod._wxGLContext
+    return thismod._wxGLContext, canvas
 
     
 def getOSMesaContext():
@@ -394,7 +406,7 @@ class WXGLCanvasTarget(object):
         this canvas take place (e.g. texture/data creation, drawing, etc).
         """
         if not self.IsShownOnScreen(): return False
-        getWXGLContext().SetCurrent(self)
+        getWXGLContext()[0].SetCurrent(self)
         return True
 
         

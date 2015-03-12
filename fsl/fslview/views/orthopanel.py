@@ -673,11 +673,14 @@ class OrthoFrame(wx.Frame):
         
         wx.Frame.__init__(self, parent, title=title)
 
-        fslgl.getWXGLContext() 
+        ctx, dummyCanvas = fslgl.getWXGLContext() 
         fslgl.bootstrap()
         
         self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()
+
+        if dummyCanvas is not None:
+            dummyCanvas.Destroy()
 
 
 class OrthoDialog(wx.Dialog):
@@ -693,8 +696,11 @@ class OrthoDialog(wx.Dialog):
 
         wx.Dialog.__init__(self, parent, title=title, style=style)
 
-        fslgl.getWXGLContext()
+        ctx, dummyCanvas = fslgl.getWXGLContext()
         fslgl.bootstrap()
         
         self.panel = OrthoPanel(self, imageList, displayCtx)
         self.Layout()
+
+        if dummyCanvas is not None:
+            dummyCanvas.Destroy()
