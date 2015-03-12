@@ -302,8 +302,14 @@ class Display(props.SyncableHasProperties):
         
         # When transform is changed to 'affine', enable interpolation
         # and, when changed to 'pixdim' or 'id', disable interpolation
-        if self.transform == 'affine': self.interpolation = 'spline'
-        else:                          self.interpolation = 'none' 
+        try:
+            if self.transform == 'affine': self.interpolation = 'spline'
+            else:                          self.interpolation = 'none'
+
+        # The interpolation property may be disabled for some images
+        # (e.g. vector images when being displayed as lines)
+        except props.DisabledError:
+            pass
     
     
     def getDisplayOpts(self):
