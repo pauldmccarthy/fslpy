@@ -243,25 +243,16 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     return namespace
 
 
-def handleImageArgs(args, loadFunc=None):
+def handleImageArgs(args, **kwargs):
     """Loads and configures any images which were specified on the
     command line.
 
-    If the ``loadFunc`` parameter is provided, it is assumed to be
-    a function which accepts a single string parameter. As the images
-    are loaded, the name of the current image is passed to this function.
+    The ``a`` and ``kwa`` arguments are passed through to the
+    :func:`fsl.data.imageio.loadImages` function.
     """
 
-    if loadFunc is None:
-        loadFunc = lambda s: s
-    
-    images = []
-    
-    for i in range(len(args.images)):
-
-        loadFunc(args.images[i].image)
-        image = fslimage.Image(args.images[i].image)
-        images.append(image)
+    paths      = [i.image for i in args.images]
+    images     = iio.loadImages(paths, **kwargs)
         
     imageList  = fslimage.ImageList(images)
     displayCtx = displaycontext.DisplayContext(imageList)

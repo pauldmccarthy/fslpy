@@ -137,11 +137,7 @@ def context(args):
     fslgl.bootstrap(args.glversion)
 
     def status(image):
-        frame.SetStatus(
-            '{} {} {}'.format(
-                strings.messages['fslview.loading.prefix'],
-                image,
-                strings.messages['fslview.loading.suffix']))
+        frame.SetStatus(strings.messages['fslview.loading'].format(image))
         wx.Yield()
 
     # Load the images - the splash screen status
