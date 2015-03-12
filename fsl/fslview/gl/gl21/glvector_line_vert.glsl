@@ -56,10 +56,12 @@ void main(void) {
   /*
    * Normalise the vertex coordinates to [0.0, 1.0],
    * so they can be used for texture lookup. And make
-   * sure the voxel coordinates are exact integers,
-   * as we cannot interpolate vector directions. 
+   * sure the voxel coordinates are exact integers 
+   * (actually, that they are centred within the
+   * voxel - see common_vert.glsl), as we cannot
+   * interpolate vector directions.
    */
-  voxCoords = floor(voxCoords) / imageShape;
+  voxCoords = (floor(voxCoords) + 0.5) / imageShape;
 
   /*
    * Retrieve the vector values for this voxel
@@ -71,8 +73,10 @@ void main(void) {
    * texture range of [0,1] to the original
    * data range
    */
-  vector.xyz *= imageValueXform[0].x;
-  vector.xyz += imageValueXform[0].w; 
+  vector *= imageValueXform[0].x;
+  vector += imageValueXform[0].w;
+
+  vector *= 0.5;
 
   /*
    * Vertices are coming in as line pairs - flip
@@ -91,7 +95,7 @@ void main(void) {
    * Offset the vertex position 
    * by the vector direction
    */ 
-  vertexPos += 0.5 * vector;
+  vertexPos += vector;
 
   /*
    * Output the final vertex position

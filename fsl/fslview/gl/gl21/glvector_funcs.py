@@ -165,16 +165,17 @@ def preDraw(self):
     gl.glUseProgram(self.shaders)
     
     pars            = self.shaderParams
-    useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape, dtype=np.float32)
-    imageDims       = np.array(self.image.pixdim, dtype=np.float32) 
+    imageShape      = np.array(self.image.shape[ :3], dtype=np.float32)
+    imageDims       = np.array(self.image.pixdim[:3], dtype=np.float32) 
     displayToVoxMat = np.array(
         display.getTransform('display', 'voxel'), dtype=np.float32)
 
     if mode == 'line':
+        useSpline       = False
         imageValueXform = np.array(self.imageTexture.voxValXform.T,
                                    dtype=np.float32)
     elif mode == 'rgb':
+        useSpline       = display.interpolation == 'spline'
         imageValueXform = np.eye(4, dtype=np.float32)
 
     displayToVoxMat = displayToVoxMat.ravel('C')
