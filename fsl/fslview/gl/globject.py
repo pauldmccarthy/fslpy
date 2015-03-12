@@ -627,7 +627,7 @@ def broadcast(vertices, indices, zposes, xforms, zax):
 
     :arg vertices: Vertex array (a ``N*3`` numpy array).
     
-    :arg indices:  Index array
+    :arg indices:  Index array.
     
     :arg zposes:   Positions along the depth axis at which the vertices
                    are to be replicated.
@@ -653,10 +653,6 @@ def broadcast(vertices, indices, zposes, xforms, zax):
     nverts   = vertices.shape[0]
     nidxs    = indices.shape[ 0]
 
-    # Combine all of the world/texture
-    # coordinates and indices into single
-    # arrays, so we can send them all
-    # with a single draw command
     allTexCoords  = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
     allVertCoords = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
     allIndices    = np.zeros( nidxs  * len(zposes),     dtype=np.uint32)

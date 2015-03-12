@@ -171,8 +171,12 @@ def lineModeDrawAll(self, zposes, xforms):
     image       = self.image
     display     = self.display
     worldCoords = self.worldCoords
+    nVerts      = worldCoords.shape[0]
+    nSlices     = len(zposes)
 
-    worldCoords[:, self.zax] = zpos
+    worldCoords = np.vstack([worldCoords] * nSlices)
+    worldCoords[:, self.zax] = np.repeat(zposes, nVerts)
+    texCoords   = np.array(worldCoords)
 
     # Transform the world coordinates to
     # floating point voxel coordinates
@@ -222,17 +226,28 @@ def lineModeDrawAll(self, zposes, xforms):
     # Translate those line vertices
     # into display coordinates
     worldCoords = transform.transform(vecs, vToDMat)
-    worldCoords[:, self.zax] = zpos
+
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+        
+        start = i     * (nVerts * 2)
+        end   = start + (nVerts * 2)
+        c     = worldCoords[start:end, :]
+        
+        c[:, self.zax] = zpos
+        
+        worldCoords[start:end, :] = transform.transform(c, xform)
+
+    texCoords   = np.repeat(texCoords, 2, axis=0)
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
 
     # Draw all the lines!
-    if xform is None: 
-        xform = np.eye(4)
-
-    shaders.setVertexProgramMatrix(4, xform.T) 
-
+    shaders.setVertexProgramMatrix(  4,  np.eye( 4, dtype=np.float32))
+    shaders.setFragmentProgramVector(8, -np.ones(4, dtype=np.float32))    
+ 
     gl.glLineWidth(2)
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    
     gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels) 
 
     

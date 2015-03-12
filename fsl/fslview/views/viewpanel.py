@@ -119,6 +119,18 @@ class ViewPanel(fslpanel.FSLViewPanel):
             if isinstance(window, fsltoolbar.FSLViewToolBar):
                 paneInfo.ToolbarPane()
 
+                # TODDO make this code robust - the innermost
+                # layer is 0 (which is fucking stupid, IMHO),
+                # so if you want a new toolbar to be added below
+                # existing toolbars, you have to increment the
+                # layer number of all existing toolbars, and
+                # set the new one to 0
+                numToolbars = len([p for p in self.__panels.values() if isinstance(p, fsltoolbar.FSLViewToolBar)])
+                paneInfo.Layer(numToolbars)
+
+                print '{} layer {}'.format(type(window).__name__, numToolbars)
+                
+
                 # When the toolbar contents change,
                 # update the layout, so that the
                 # toolbar's new size is accommodated
