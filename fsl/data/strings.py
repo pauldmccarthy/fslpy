@@ -22,6 +22,8 @@ messages = TypeDict({
                                      'decompressing to {}, to allow memory '
                                      'mapping...',
 
+    'imageio.addImages.error' : 'Error loading image {}\n{}',
+
     'actions.loadcolourmap.loadcmap'    : 'Open colour map file',
     'actions.loadcolourmap.namecmap'    : 'Enter a name for the colour map - '
                                           'please use only letters, numbers, '
@@ -47,6 +49,7 @@ messages = TypeDict({
 titles = TypeDict({
     'imageio.saveImage.dialog' : 'Save image file',
     'imageio.addImages.dialog' : 'Open image files',
+    'imageio.addImages.error'  : 'Error',
 
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',

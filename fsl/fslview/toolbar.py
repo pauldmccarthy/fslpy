@@ -268,11 +268,21 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
                                   style=wx.ALIGN_CENTRE)
             label.SetFont(label.GetFont().Smaller().Smaller())
 
+            # Mouse wheel on the label will scroll
+            # through the toolbar items. We don't
+            # bind on the tool widget, because it
+            # might already be intercepting mouse
+            # wheel events
+            label.Bind(wx.EVT_MOUSEWHEEL, self.__onMouseWheel)
+
         log.debug('{}: adding tool at index {}: {}'.format(
             type(self).__name__, index, labelText))
 
-        self.__tools.insert(
-            index, FSLViewToolBar.Tool(self, tool, label, labelText))
+        toolPanel = FSLViewToolBar.Tool(self, tool, label, labelText)
+        
+        toolPanel.Bind(wx.EVT_MOUSEWHEEL, self.__onMouseWheel)
+
+        self.__tools.insert(index, toolPanel)
 
         self.InvalidateBestSize()
         self.__drawToolBar()

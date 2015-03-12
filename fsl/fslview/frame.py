@@ -267,14 +267,12 @@ class FSLViewFrame(wx.Frame):
         """
 
         from operator import itemgetter as iget
-        
-        size     = None
-        position = None
 
-        if not default:
-            config   = wx.Config('FSLView')
-            size     = self._parseSavedSize( config.Read('size'))
-            position = self._parseSavedPoint(config.Read('position'))
+        config   = wx.Config('FSLView')
+        size     = self._parseSavedSize( config.Read('size'))
+        position = self._parseSavedPoint(config.Read('position'))        
+
+        if not default and (size is not None) and (position is not None):
 
             # Turn the saved size/pos into
             # a (tlx, tly, brx, bry) tuple

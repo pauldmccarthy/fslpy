@@ -404,8 +404,18 @@ def addImages(imageList, fromDir=None, addToEnd=True):
 
     if dlg.ShowModal() != wx.ID_OK: return False
 
-    paths         = dlg.GetPaths()
-    images        = map(fslimage.Image, paths)
+    paths  = dlg.GetPaths()
+    images = []
+
+    for path in paths:
+
+        try:
+            images.append(fslimage.Image(path))
+        except Exception as e:
+            title = strings.titles[  'imageio.addImages.error']
+            msg   = strings.messages['imageio.addImages.error'].format(path,
+                                                                       str(e))
+            wx.MessageBox(msg, title, wx.OK | wx.ICON_ERROR)
 
     if saveLastDir: addImages.lastDir = op.dirname(paths[-1])
 
