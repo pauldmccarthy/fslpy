@@ -189,7 +189,12 @@ def lineModeDrawAll(self, zposes, xforms):
 
     # Get the image data at those 
     # voxel coordinates, using
-    # nearest neighbour interpolation
+    # nearest neighbour interpolation.
+    # 
+    # Three separate calls to map_coordinates
+    # is generally faster than constructing
+    # a 4D coordinate array, and performing
+    # one call to map_coordinates.
     xvals = ndi.map_coordinates(imageData[:, :, :, 0],
                                 voxCoords,
                                 order=0,

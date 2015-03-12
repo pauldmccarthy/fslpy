@@ -119,17 +119,31 @@ class ViewPanel(fslpanel.FSLViewPanel):
             if isinstance(window, fsltoolbar.FSLViewToolBar):
                 paneInfo.ToolbarPane()
 
-                # TODDO make this code robust - the innermost
-                # layer is 0 (which is fucking stupid, IMHO),
-                # so if you want a new toolbar to be added below
-                # existing toolbars, you have to increment the
-                # layer number of all existing toolbars, and
-                # set the new one to 0
-                numToolbars = len([p for p in self.__panels.values() if isinstance(p, fsltoolbar.FSLViewToolBar)])
-                paneInfo.Layer(numToolbars)
-
-                print '{} layer {}'.format(type(window).__name__, numToolbars)
+                # We are going to put any new toolbars on 
+                # the top of the panel, below any existing
+                # toolbars. This is annoyingly complicated,
+                # because the AUI designer(s) decided to
+                # give the innermost layer an index of 0.
+                # 
+                # So in order to put a new toolbar at the
+                # innermost layer, we need to adjust the
+                # layers of all other existing toolbars
                 
+                for p in self.__panels.values():
+                    if isinstance(p, fsltoolbar.FSLViewToolBar):
+                        info = self.__auiMgr.GetPane(p)
+
+                        # This is nasty - the agw.aui.AuiPaneInfo
+                        # class doesn't have any publicly documented
+                        # methods of querying its current state.
+                        # So I'm accessing its undocumented instance
+                        # attributes (determined by browsing the
+                        # source code)
+                        if info.IsDocked() and \
+                           info.dock_direction == aui.AUI_DOCK_TOP:
+                            info.Layer(info.dock_layer + 1)
+
+                paneInfo.Layer(0)
 
                 # When the toolbar contents change,
                 # update the layout, so that the
@@ -146,7 +160,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
             # location specified 
             if floatPane is False:
 
-                paneInfo = paneInfo.Direction(
+                paneInfo.Direction(
                     layouts.locations.get(window, aui.AUI_DOCK_TOP))
 
             # Or, for floating panes, centre the
@@ -162,9 +176,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 panePos  = (selfCentre[0] - paneSize[0] * 0.5,
                             selfCentre[1] - paneSize[1] * 0.5)
 
-                paneInfo = paneInfo \
-                    .Float()        \
-                    .FloatingPosition(panePos)
+                paneInfo.Float() \
+                        .FloatingPosition(panePos)
                     
             self.__auiMgr.AddPane(window, paneInfo)
             self.__panels[panelType] = window
