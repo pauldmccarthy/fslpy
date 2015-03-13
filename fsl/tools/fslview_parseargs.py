@@ -28,9 +28,6 @@ def _configMainParser(mainParser):
     mainParser.add_argument('-h',  '--help',    action='store_true',
                             help='Display this help and exit')
 
-    mainParser.add_argument('-i', '--image', metavar='IMAGE',
-                            help='Image file to display')
-
     # Options defining the overall scene
     sceneParser = mainParser.add_argument_group('Scene options')
 
@@ -154,10 +151,9 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     # I hate argparse. By default, it does not support
     # the command line interface that I want to provide,
-    # as demonstrated in this usage string. I also hate
-    # the fact that I have to delimit image files with '-i':
-    usageStr   = '{} {} [-i image [displayOpts]] '\
-                 '[-i image [displayOpts]] ...'.format(
+    # as demonstrated in this usage string. 
+    usageStr   = '{} {} [imagefile [displayOpts]] '\
+                 '[imagefile [displayOpts]] ...'.format(
                      name,
                      toolOptsDesc)
     imgOptDesc = 'Each display option will be applied to the '\
@@ -183,7 +179,15 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     # Figure out where the image files
     # are in the argument list.
-    imageIdxs = [i for i in range(len(argv)) if argv[i] in ('-i', '--image')]
+    #
+    # This approach currently means that
+    # we cannot have any other options
+    # which accept file names as arguments.
+    # A future change will be to allow
+    # this, but to add an explciit check
+    # here, for each of the options which
+    # require a file argument.
+    imageIdxs = [i for i in range(len(argv)) if op.isfile(argv[i])]
     imageIdxs.append(len(argv))
 
     # Separate the program arguments 
@@ -211,18 +215,10 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
  
     # Then parse each block of
     # display options one by one.
-    # This will probably explode
-    # if the user forgets to add
-    # an image file name after '-i'
     namespace.images = []
     for i in range(len(imageIdxs) - 1):
 
-        imgArgv = argv[imageIdxs[i] + 1:imageIdxs[i + 1]]
-
-        # an '-i' with nothing following it
-        if len(imgArgv) == 0:
-            print_help()
-            sys.argv(1)
+        imgArgv = argv[imageIdxs[i]:imageIdxs[i + 1]]
 
         imgFile = op.expanduser(imgArgv[0])
         imgArgv = imgArgv[1:]
