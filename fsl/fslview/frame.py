@@ -63,7 +63,7 @@ class FSLViewFrame(wx.Frame):
                  parent,
                  imageList,
                  displayCtx,
-                 default=False):
+                 restore=True):
         """
         :arg parent:
         
@@ -71,7 +71,9 @@ class FSLViewFrame(wx.Frame):
         
         :arg displayCtx:
         
-        :arg default:
+        :arg restore:    Restores previous saved layout (not currently
+                         implemented). If ``False``, no view panels will
+                         be displayed.
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')
@@ -94,7 +96,7 @@ class FSLViewFrame(wx.Frame):
         self._viewPanelCount  = 0
 
         self._makeMenuBar()
-        self._restoreState(default)
+        self._restoreState(restore)
 
         self._centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
                               self._onViewPanelClose)
@@ -259,7 +261,7 @@ class FSLViewFrame(wx.Frame):
             return []
 
         
-    def _restoreState(self, default=False):
+    def _restoreState(self, restore=True):
         """Called on :meth:`__init__`. If any frame size/layout properties
         have previously been saved, they are applied to this frame.
 
@@ -269,10 +271,12 @@ class FSLViewFrame(wx.Frame):
         from operator import itemgetter as iget
 
         config   = wx.Config('FSLView')
+
+        # Restore the saved frame size/position
         size     = self._parseSavedSize( config.Read('size'))
         position = self._parseSavedPoint(config.Read('position'))        
 
-        if not default and (size is not None) and (position is not None):
+        if (size is not None) and (position is not None):
 
             # Turn the saved size/pos into
             # a (tlx, tly, brx, bry) tuple
@@ -349,6 +353,11 @@ class FSLViewFrame(wx.Frame):
             self.SetPosition(position)
         else:
             self.Centre()
+
+
+        # TODO Restore the previous view panel layout
+        if restore:
+            self.addViewPanel(views.OrthoPanel)
 
             
     def _makeMenuBar(self):

@@ -33,10 +33,11 @@ def _configMainParser(mainParser):
 
     # Options defining the overall scene
     sceneParser = mainParser.add_argument_group('Scene options')
- 
-    sceneParser.add_argument('-l', '--lightbox',  action='store_true',
-                             help='Display lightbox view '
-                             'instead of ortho view')
+
+    sceneParser.add_argument('-s', '--scene', choices=('ortho', 'lightbox'),
+                             help='Scene to show. If not provided, the '
+                             'previous scene layout is restored.')
+    
     sceneParser.add_argument('-v', '--voxelloc', metavar=('X', 'Y', 'Z'),
                              type=int, nargs=3,
                              help='Location to show (voxel coordinates of '

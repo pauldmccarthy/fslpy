@@ -147,6 +147,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         image = self._displayCtx.getSelectedImage()
 
+        # do nothing if the image list is empty
+        if image is None:
+            return
+
         for img in self._imageList:
 
             display = self._displayCtx.getDisplayProperties(img)
@@ -167,7 +171,11 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         Updates the ``sliceSpacing`` and ``zrange`` properties to values
         sensible to the new image display space.
         """
-        image   = self._displayCtx.getSelectedImage()
+        image = self._displayCtx.getSelectedImage()
+
+        if image is None:
+            return
+        
         display = self._displayCtx.getDisplayProperties(image)
 
         loBounds, hiBounds = display.getDisplayBounds()

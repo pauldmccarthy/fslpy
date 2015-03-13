@@ -27,12 +27,19 @@ def interface(parent, args, ctx):
     import fsl.fslview.views as views
 
     (imageList, displayCtx), splashFrame = ctx
+
+    # If a scene has not been specified, the default
+    # behaviour is to restore the previous frame layout
+    if args.scene is None: restore = True
+    else:                  restore = False
     
     frame = fslviewframe.FSLViewFrame(
-        parent, imageList, displayCtx, args.default)
-    
-    if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
-    else:             frame.addViewPanel(views.OrthoPanel)
+        parent, imageList, displayCtx, restore)
+
+    # Otherwise, we add the scene
+    # specified by the user
+    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
+    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
 
     viewPanel = frame.getViewPanels()[0][0]
 
@@ -40,7 +47,7 @@ def interface(parent, args, ctx):
     # of the possible display options 
     viewPanel.showCursor = not args.hideCursor
 
-    if args.lightbox:
+    if args.scene == 'lightbox':
 
         for prop in ['sliceSpacing',
                      'ncols',
@@ -53,7 +60,7 @@ def interface(parent, args, ctx):
             if val is not None:
                 setattr(viewPanel, prop, val)
 
-    else:
+    elif args.scene == 'ortho':
         if args.hidex:              viewPanel.showXCanvas = False
         if args.hidey:              viewPanel.showYCanvas = False
         if args.hidez:              viewPanel.showZCanvas = False
@@ -104,8 +111,6 @@ def parseArgs(argv):
     parser = argparse.ArgumentParser(add_help=False)
 
     # FSLView application options
-    parser.add_argument('-def', '--default',   action='store_true',
-                        help='Default layout')
     parser.add_argument('-gl', '--glversion',
                         metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
                         help='Desired (major, minor) OpenGL version')
