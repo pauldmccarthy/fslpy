@@ -328,12 +328,9 @@ class DisplayContext(props.SyncableHasProperties):
             [imgWorldLoc],
             display.getTransform('world', 'display'))[0]
 
-        # Update the display coordinate system bounds -
-        # this will also update the constraints on the
-        # location property, so we have to do this first
-        # before setting said location property.
+        # Update the display coordinate 
+        # system bounds, and the location
         self._updateBounds()
-        
         self.location.xyz = newDispLoc
 
 
@@ -362,7 +359,7 @@ class DisplayContext(props.SyncableHasProperties):
 
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
-                          minBounds[2], maxBounds[2]] 
+                          minBounds[2], maxBounds[2]]
  
     
     def _volumeChanged(self, *a):

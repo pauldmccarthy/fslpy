@@ -368,8 +368,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # Update the voxel and world location limits,
         # but don't trigger a listener callback, as
         # this would change the display location.
-        self.disableNotification('worldLocation')
-        self.disableNotification('voxelLocation')
+        self.disableListener('worldLocation', self._name)
+        self.disableListener('voxelLocation', self._name)
 
         self._displayCtx.disableListener('location', self._name)
         
@@ -383,8 +383,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self._displayCtx.enableListener('location', self._name) 
 
-        self.enableNotification('worldLocation')
-        self.enableNotification('voxelLocation')
+        self.enableListener('worldLocation', self._name)
+        self.enableListener('voxelLocation', self._name)
 
         # Refresh the world/voxel location properties
         self._displayLocationChanged()
