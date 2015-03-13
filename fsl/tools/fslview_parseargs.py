@@ -14,11 +14,173 @@ import os.path as op
 import argparse
 
 import props
+
+import fsl.utils.typedict         as td
 import fsl.data.image             as fslimage
 import fsl.data.imageio           as iio
 import fsl.utils.transform        as transform 
 import fsl.fslview.displaycontext as displaycontext
 
+
+# Names of all of the property which are 
+# customisable via command line arguments.
+_OPTIONS_ = td.TypeDict({
+    'OrthoPanel'    : ['xzoom',
+                       'yzoom',
+                       'zzoom',
+                       'layout',
+                       'showXCanvas',
+                       'showYCanvas',
+                       'showZCanvas'],
+    'LightBoxPanel' : ['sliceSpacing',
+                       'ncols',
+                       'nrows',
+                       'zrange',
+                       'showGridLines',
+                       'highlightSlice',
+                       'zax'],
+    'Display'       : ['name',
+                       'interpolation',
+                       'resolution',
+                       'transform',
+                       'imageType',
+                       'volume',
+                       'alpha',
+                       'brightness',
+                       'contrast'],
+    'VolumeOpts'    : ['displayRange',
+                       'clipLow',
+                       'clipHigh',
+                       'cmap'],
+    'MaskOpts'      : ['colour',
+                       'invert',
+                       'threshold'],
+    'VectorOpts'    : ['displayMode',
+                       'xColour',
+                       'yColour',
+                       'zColour',
+                       'suppressX',
+                       'suppressY',
+                       'suppressZ',
+                       'modulate'],
+})
+
+# Short/long arguments for all of those options
+# 
+# We can't use -w or -v, as they are used by the
+# top level argument parser (in fsl/__init__.py).
+#
+# There cannot be any collisions between the scene
+# options. 
+#
+# There can't be any collisions between the 
+# Display options and the *Opts options.
+_ARGUMENTS_ = td.TypeDict({
+    'OrthoPanel.xzoom'       : ('xz', 'xzoom'),
+    'OrthoPanel.yzoom'       : ('yz', 'yzoom'),
+    'OrthoPanel.zzoom'       : ('zz', 'zzoom'),
+    'OrthoPanel.layout'      : ('lo', 'layout'),
+    'OrthoPanel.showXCanvas' : ('xh', 'hidex'),
+    'OrthoPanel.showYCanvas' : ('yh', 'hidey'),
+    'OrthoPanel.showZCanvas' : ('zh', 'hidez'),
+    'OrthoPanel.showLabels'  : ('lh', 'hideLabels'),
+
+    'LightBoxPanel.sliceSpacing'   : ('ss', 'sliceSpacing'),
+    'LightBoxPanel.ncols'          : ('nc', 'ncols'),
+    'LightBoxPanel.nrows'          : ('nr', 'nrows'),
+    'LightBoxPanel.zrange'         : ('zr', 'zrange'),
+    'LightBoxPanel.showGridLines'  : ('sg', 'showGridLines'),
+    'LightBoxPanel.highlightSlice' : ('hs', 'highlightSlice'),
+    'LightBoxPanel.zax'            : ('zx', 'zaxis'),
+
+    'Display.name'          : ('n',  'name'),
+    'Display.interpolation' : ('in', 'interp'),
+    'Display.resolution'    : ('r',  'resolution'),
+    'Display.transform'     : ('tf', 'transform'),
+    'Display.imageType'     : ('it', 'imageType'),
+    'Display.volume'        : ('vl', 'volume'),
+    'Display.alpha'         : ('a',  'alpha'),
+    'Display.brightness'    : ('b',  'brightness'),
+    'Display.contrast'      : ('c',  'contrast'),
+
+    'VolumeOpts.displayRange' : ('dr', 'displayRange'),
+    'VolumeOpts.clipLow'      : ('cl', 'clipLow'),
+    'VolumeOpts.clipHigh'     : ('ch', 'clipHigh'),
+    'VolumeOpts.cmap'         : ('cm', 'cmap'),
+
+    'MaskOpts.colour'    : ('c', 'colour'),
+    'MaskOpts.invert'    : ('i', 'invert'),
+    'MaskOpts.threshold' : ('t', 'threshold'),
+
+    'VectorOpts.displayMode' : ('d',  'displayMode'),
+    'VectorOpts.xColour'     : ('xc', 'xColour'),
+    'VectorOpts.yColour'     : ('yc', 'yColour'),
+    'VectorOpts.zColour'     : ('zc', 'zColour'),
+    'VectorOpts.suppressX'   : ('xs', 'suppressX'),
+    'VectorOpts.suppressY'   : ('ys', 'suppressY'),
+    'VectorOpts.suppressX'   : ('zs', 'suppressZ'),
+    'VectorOpts.modulate'    : ('m',  'modulate'),
+})
+
+# Help text for all of the options
+_HELP_ = td.TypeDict({
+    'OrthoPanel.xzoom'       : 'X canvas zoom',
+    'OrthoPanel.yzoom'       : 'Y canvas zoom',
+    'OrthoPanel.zzoom'       : 'Z canvas zoom',
+    'OrthoPanel.layout'      : 'Canvas layout',
+    'OrthoPanel.showXCanvas' : 'Hide the X canvas',
+    'OrthoPanel.showYCanvas' : 'Hide the Y canvas',
+    'OrthoPanel.showZCanvas' : 'Hide the Z canvas',
+    'OrthoPanel.showLabels'  : 'Hide orientation labels',
+
+    'LightBoxPanel.sliceSpacing'   : 'Slice spacing',
+    'LightBoxPanel.ncols'          : 'Number of columns',
+    'LightBoxPanel.nrows'          : 'Number of rows',
+    'LightBoxPanel.zrange'         : 'Slice range',
+    'LightBoxPanel.showGridLines'  : 'Show grid lines',
+    'LightBoxPanel.highlightSlice' : 'Highlight current slice',
+    'LightBoxPanel.zax'            : 'Z axis',
+
+    'Display.name'          : 'Image name',
+    'Display.interpolation' : 'Interpolation',
+    'Display.resolution'    : 'Resolution',
+    'Display.transform'     : 'Transformation',
+    'Display.imageType'     : 'Image type',
+    'Display.volume'        : 'Volume',
+    'Display.alpha'         : 'Opacity',
+    'Display.brightness'    : 'Brightness',
+    'Display.contrast'      : 'Contrast',
+
+    'VolumeOpts.displayRange' : 'Display range',
+    'VolumeOpts.clipLow'      : 'Low clipping',
+    'VolumeOpts.clipHigh'     : 'High clipping',
+    'VolumeOpts.cmap'         : 'Colour map',
+
+    'MaskOpts.colour'    : 'Colour',
+    'MaskOpts.invert'    : 'Invert',
+    'MaskOpts.threshold' : 'Threshold',
+
+    'VectorOpts.displayMode' : 'Display mode',
+    'VectorOpts.xColour'     : 'X colour',
+    'VectorOpts.yColour'     : 'Y colour',
+    'VectorOpts.zColour'     : 'Z colour',
+    'VectorOpts.suppressX'   : 'Suppress X magnitude',
+    'VectorOpts.suppressY'   : 'Suppress Y magnitude',
+    'VectorOpts.suppressX'   : 'Suppress Z magnitude',
+    'VectorOpts.modulate'    : 'Modulate vector colours',
+})
+
+# Transform functions for properties where the
+# value passed in on the command line needs to
+# be manipulated before the property value is
+# set
+_TRANSFORMS_ = td.TypeDict({
+    'OrthoPanel.showXCanvas' : lambda b: not b,
+    'OrthoPanel.showYCanvas' : lambda b: not b,
+    'OrthoPanel.showZCanvas' : lambda b: not b,
+    'OrthoPanel.showLabels'  : lambda b: not b,
+    'VectorOpts.modulate'    : lambda f: None,
+})
 
 
 def _configMainParser(mainParser):
@@ -115,7 +277,15 @@ def _configMainParser(mainParser):
     cbarParser.add_argument('-bt', '--colourBarLabelSide',
                             choices=('top-left', 'bottom-right'),
                             help='Colour bar label orientation',
-                            default='top-left') 
+                            default='top-left')
+
+
+def _configOrthoParser(orthoParser):
+    pass
+
+
+def _configLightBoxParser(orthoParser):
+    pass 
 
 
 def _configImageParser(imgParser):
