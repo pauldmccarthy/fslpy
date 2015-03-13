@@ -10,12 +10,23 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** SSH performance
 *** Startup time
 *** Rendering time
+Pretty good!
 *** Shutdown time
 ** VNC performance
 *** See sub-items in SSH performance
+This may not be possible in the short term. I think we would need to upgrade 
+the VNC version on the servers.
+** VM performance?
+** Wireless performance?
 ** Linux compatibility
+*** Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
+*** Toolbars not being resized appropriately when the parent viewpanel is resized?
+*** Toolbar mouse scrolling not working? Oh, this may be because of the above issue.
 ** Command line
-** Keyboard on number widgets
+** DONE? Little things
+*** DONE ViewPanel: New toolbars in a lower layer
+*** DONE Number spinboxes are no longer clamped
+*** Keyboard on number widgets .. Should be working by default?
 ** DONE Default layout
 ** DONE UI design
 Good enough for the time being
