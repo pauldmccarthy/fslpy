@@ -18,8 +18,16 @@ import props
 import fsl.utils.typedict         as td
 import fsl.data.image             as fslimage
 import fsl.data.imageio           as iio
-import fsl.utils.transform        as transform 
-import fsl.fslview.displaycontext as displaycontext
+import fsl.utils.transform        as transform
+
+import fsl.fslview.displaycontext.displaycontext as displaycontext
+import fsl.fslview.displaycontext.display        as display
+import fsl.fslview.displaycontext.volumeopts     as volumeopts
+import fsl.fslview.displaycontext.vectoropts     as vectoropts
+import fsl.fslview.displaycontext.maskopts       as maskopts
+
+import fsl.fslview.views.orthopanel    as orthopanel
+import fsl.fslview.views.lightboxpanel as lightboxpanel
 
 
 # Names of all of the property which are 
@@ -65,6 +73,18 @@ _OPTIONS_ = td.TypeDict({
                        'modulate'],
 })
 
+_GROUPNAMES_ = td.TypeDict({
+    'OrthoPanel'    : 'Ortho display options',
+    'LightBoxPanel' : 'LightBox display options',
+    'Display'       : 'Image display options',
+    
+    'VolumeOpts'    : 'Volume options',
+    'VectorOpts'    : 'Vector options',
+    'MaskOpts'      : 'Mask options',
+
+    'ColourBar'     : 'Colour bar options',
+})
+
 # Short/long arguments for all of those options
 # 
 # We can't use -w or -v, as they are used by the
@@ -84,6 +104,10 @@ _ARGUMENTS_ = td.TypeDict({
     'OrthoPanel.showYCanvas' : ('yh', 'hidey'),
     'OrthoPanel.showZCanvas' : ('zh', 'hidez'),
     'OrthoPanel.showLabels'  : ('lh', 'hideLabels'),
+
+    'OrthoPanel.xcentre'     : ('xc', 'xcentre'),
+    'OrthoPanel.ycentre'     : ('yc', 'ycentre'),
+    'OrthoPanel.zcentre'     : ('zc', 'zcentre'),
 
     'LightBoxPanel.sliceSpacing'   : ('ss', 'sliceSpacing'),
     'LightBoxPanel.ncols'          : ('nc', 'ncols'),
@@ -108,9 +132,9 @@ _ARGUMENTS_ = td.TypeDict({
     'VolumeOpts.clipHigh'     : ('ch', 'clipHigh'),
     'VolumeOpts.cmap'         : ('cm', 'cmap'),
 
-    'MaskOpts.colour'    : ('c', 'colour'),
-    'MaskOpts.invert'    : ('i', 'invert'),
-    'MaskOpts.threshold' : ('t', 'threshold'),
+    'MaskOpts.colour'    : ('co', 'colour'),
+    'MaskOpts.invert'    : ('i',  'invert'),
+    'MaskOpts.threshold' : ('t',  'threshold'),
 
     'VectorOpts.displayMode' : ('d',  'displayMode'),
     'VectorOpts.xColour'     : ('xc', 'xColour'),
@@ -118,7 +142,7 @@ _ARGUMENTS_ = td.TypeDict({
     'VectorOpts.zColour'     : ('zc', 'zColour'),
     'VectorOpts.suppressX'   : ('xs', 'suppressX'),
     'VectorOpts.suppressY'   : ('ys', 'suppressY'),
-    'VectorOpts.suppressX'   : ('zs', 'suppressZ'),
+    'VectorOpts.suppressZ'   : ('zs', 'suppressZ'),
     'VectorOpts.modulate'    : ('m',  'modulate'),
 })
 
@@ -132,6 +156,10 @@ _HELP_ = td.TypeDict({
     'OrthoPanel.showYCanvas' : 'Hide the Y canvas',
     'OrthoPanel.showZCanvas' : 'Hide the Z canvas',
     'OrthoPanel.showLabels'  : 'Hide orientation labels',
+
+    'OrthoPanel.xcentre'     : 'X canvas display centre (world coordinates)',
+    'OrthoPanel.ycentre'     : 'Y canvas display centre (world coordinates)',
+    'OrthoPanel.zcentre'     : 'Z canvas display centre (world coordinates)',
 
     'LightBoxPanel.sliceSpacing'   : 'Slice spacing',
     'LightBoxPanel.ncols'          : 'Number of columns',
@@ -166,7 +194,7 @@ _HELP_ = td.TypeDict({
     'VectorOpts.zColour'     : 'Z colour',
     'VectorOpts.suppressX'   : 'Suppress X magnitude',
     'VectorOpts.suppressY'   : 'Suppress Y magnitude',
-    'VectorOpts.suppressX'   : 'Suppress Z magnitude',
+    'VectorOpts.suppressZ'   : 'Suppress Z magnitude',
     'VectorOpts.modulate'    : 'Modulate vector colours',
 })
 
@@ -211,61 +239,88 @@ def _configMainParser(mainParser):
                              help='Do not display the green cursor '
                              'highlighting the current location')
 
-
     # Separate parser groups for ortho/lightbox options
-    orthoParser =  mainParser.add_argument_group('Ortho options')
-    lbParser    =  mainParser.add_argument_group('Lightbox options')
-    cbarParser  =  mainParser.add_argument_group('Colour bar options')
+    orthoParser =  mainParser.add_argument_group(_GROUPNAMES_['OrthoPanel'])
+    lbParser    =  mainParser.add_argument_group(_GROUPNAMES_['LightBoxPanel'])
+    cbarParser  =  mainParser.add_argument_group(_GROUPNAMES_['ColourBar'])
 
-    # Ortho options
-    orthoParser.add_argument('-xz', '--xzoom', type=float,
-                             help='X axis zoom')
-    orthoParser.add_argument('-yz', '--yzoom', type=float,
-                             help='Y axis zoom')
-    orthoParser.add_argument('-zz', '--zzoom', type=float,
-                             help='Z axis zoom')
-    orthoParser.add_argument('-xc', '--xcentre', metavar=('Y', 'Z'),
-                             type=float, nargs=2,
-                             help='X canvas display centre '
-                                  '(world coordinates)') 
-    orthoParser.add_argument('-yc', '--ycentre', metavar=('X', 'Z'),
-                             type=float, nargs=2,
-                             help='Y canvas display centre '
-                                  '(world coordinates)')     
-    orthoParser.add_argument('-zc', '--zcentre', metavar=('X', 'Y'),
-                             type=float, nargs=2,
-                             help='Z canvas display centre '
-                                  '(world coordinates)') 
-    orthoParser.add_argument('-xh', '--hidex', action='store_true',
-                             help='Hide the X axis')
-    orthoParser.add_argument('-yh', '--hidey', action='store_true',
-                             help='Hide the Y axis')
-    orthoParser.add_argument('-zh', '--hidez', action='store_true',
-                             help='Hide the Z axis')
-    orthoParser.add_argument('-lh', '--hideLabels', action='store_true',
-                             help='Hide orientation labels')
-    orthoParser.add_argument('-lo', '--layout', 
-                             choices=('horizontal', 'vertical', 'grid'),
-                             default='horizontal',
-                             help='Canvas layout') 
-    
-    # Lightbox display options
-    lbOpts = ['sliceSpacing',
-              'ncols',
-              'nrows',
-              'zrange',
-              'showGridLines',
-              'zax']
-    lbArgs = ['ss', 'nc', 'nr', 'zr', 'sg', 'ax']
+    _configOrthoParser(    orthoParser)
+    _configLightBoxParser( lbParser)
+    _configColourBarParser(cbarParser)
 
-    # Use the properties module to automatically generate
-    # arguments - property labels and help strings are
-    # embedded inside the LightBoxCanvas class.
-    import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
-    props.addParserArguments(lightboxcanvas.LightBoxCanvas,
+
+def _configOrthoParser(orthoParser):
+
+    OrthoPanel = orthopanel.OrthoPanel
+
+    propNames = _OPTIONS_[OrthoPanel]
+
+    shortArgs = {}
+    longArgs  = {}
+    helpTexts = {}
+
+    for propName in propNames:
+
+        shortArg, longArg = _ARGUMENTS_[OrthoPanel, propName]
+        helpText          = _HELP_[     OrthoPanel, propName]
+
+        shortArgs[propName] = shortArg
+        longArgs[ propName] = longArg
+        helpTexts[propName] = helpText
+
+    props.addParserArguments(OrthoPanel,
+                             orthoParser,
+                             cliProps=propNames,
+                             shortArgs=shortArgs,
+                             longArgs=longArgs,
+                             propHelp=helpTexts)
+                             
+    # Extra configuration options that are
+    # not OrthoPanel properties, so can't
+    # be automatically set up
+    for opt, metavar in zip(['xcentre',  'ycentre',  'zcentre'],
+                            [('Y', 'Z'), ('X', 'Z'), ('X', 'Y')]):
+        
+        shortArg, longArg = _ARGUMENTS_[OrthoPanel, opt]
+        helpText          = _HELP_[     OrthoPanel, opt]
+
+        shortArg =  '-{}'.format(shortArg)
+        longArg  = '--{}'.format(longArg)
+
+        orthoParser.add_argument(shortArg,
+                                 longArg,
+                                 metavar=metavar,
+                                 type=float,
+                                 nargs=2,
+                                 help=helpText)
+
+
+def _configLightBoxParser(lbParser):
+    LightBoxPanel = lightboxpanel.LightBoxPanel
+
+    propNames = _OPTIONS_[LightBoxPanel]
+    shortArgs = {}
+    longArgs  = {}
+    helpTexts = {}
+
+    for propName in propNames:
+
+        shortArg, longArg = _ARGUMENTS_[LightBoxPanel, propName]
+        helpText          = _HELP_[     LightBoxPanel, propName]
+
+        shortArgs[propName] = shortArg
+        longArgs[ propName] = longArg
+        helpTexts[propName] = helpText
+
+    props.addParserArguments(LightBoxPanel,
                              lbParser,
-                             cliProps=lbOpts,
-                             shortArgs=dict(zip(lbOpts, lbArgs)))
+                             cliProps=propNames,
+                             shortArgs=shortArgs,
+                             longArgs=longArgs,
+                             propHelp=helpTexts)
+
+
+def _configColourBarParser(cbarParser):
 
     # Colour bar
     cbarParser.add_argument('-bs', '--showColourBar', action='store_true',
@@ -277,35 +332,51 @@ def _configMainParser(mainParser):
     cbarParser.add_argument('-bt', '--colourBarLabelSide',
                             choices=('top-left', 'bottom-right'),
                             help='Colour bar label orientation',
-                            default='top-left')
-
-
-def _configOrthoParser(orthoParser):
+                            default='top-left')    
     pass
-
-
-def _configLightBoxParser(orthoParser):
-    pass 
-
+    
 
 def _configImageParser(imgParser):
 
-    imgOpts = ['alpha',
-               'name',
-               'interpolation',
-               'resolution',
-               'transform',
-               'imageType',
-               'volume']
-    imgArgs = ['a', 'n',  'int',
-               'vr', 'tf', 'it', 'vol']
+    Display    = display.Display
+    VolumeOpts = volumeopts.VolumeOpts
+    VectorOpts = vectoropts.VectorOpts
+    MaskOpts   = maskopts  .MaskOpts
+    
+    dispDesc = 'Each display option will be applied to the '\
+               'image which is listed before that option.'
 
-    # As above - labels and help text are embedded in the
-    # ImageDisplay class
-    props.addParserArguments(displaycontext.Display,
-                             imgParser,
-                             cliProps=imgOpts,
-                             shortArgs=dict(zip(imgOpts, imgArgs))) 
+
+    dispParser = imgParser.add_argument_group(_GROUPNAMES_[Display],
+                                              dispDesc)
+    volParser  = imgParser.add_argument_group(_GROUPNAMES_[VolumeOpts])
+    vecParser  = imgParser.add_argument_group(_GROUPNAMES_[VectorOpts])
+    maskParser = imgParser.add_argument_group(_GROUPNAMES_[MaskOpts])
+
+    for target, parser in zip(
+            [Display,    VolumeOpts, VectorOpts, MaskOpts],
+            [dispParser, volParser,  vecParser,  maskParser]):
+
+        propNames = _OPTIONS_[target]
+        shortArgs = {}
+        longArgs  = {}
+        helpTexts = {}
+
+        for propName in propNames:
+
+            shortArg, longArg = _ARGUMENTS_[target, propName]
+            helpText          = _HELP_[     target, propName]
+
+            shortArgs[propName] = shortArg
+            longArgs[ propName] = longArg
+            helpTexts[propName] = helpText
+
+        props.addParserArguments(target,
+                                 parser,
+                                 cliProps=propNames,
+                                 shortArgs=shortArgs,
+                                 longArgs=longArgs,
+                                 propHelp=helpTexts)
 
 
 def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
@@ -326,8 +397,6 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
                  '[imagefile [displayOpts]] ...'.format(
                      name,
                      toolOptsDesc)
-    imgOptDesc = 'Each display option will be applied to the '\
-                 'image which is listed before that option.'
 
     # So I'm using two argument parsers - the
     # mainParser parses application options
@@ -344,8 +413,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # one at a time
     imgParser = argparse.ArgumentParser(add_help=False) 
 
-    _configImageParser(imgParser.add_argument_group(
-        'Image display options', imgOptDesc))
+    _configImageParser(imgParser)
 
     # Figure out where the image files
     # are in the argument list.
@@ -357,6 +425,8 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # this, but to add an explciit check
     # here, for each of the options which
     # require a file argument.
+    #
+    # TODO Handle vector opts modulate option
     imageIdxs = [i for i in range(len(argv)) if op.isfile(argv[i])]
     imageIdxs.append(len(argv))
 
@@ -373,10 +443,13 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         mainParser.print_help()
 
         # Did I mention that I hate argparse?  Why
-        # can't we customise the help text?
-        imgHelp = imgParser.format_help()
+        # can't we customise the help text? Here
+        # we're skipping over the top section of
+        # the help text
+        imgHelp   = imgParser.format_help()
+        dispGroup = _GROUPNAMES_[display.Display]
         print 
-        print imgHelp[imgHelp.index('Image display options'):]
+        print imgHelp[imgHelp.index(dispGroup):]
         sys.exit(0)
 
     if namespace.help:
@@ -414,7 +487,7 @@ def handleImageArgs(args, **kwargs):
     """Loads and configures any images which were specified on the
     command line.
 
-    The ``a`` and ``kwa`` arguments are passed through to the
+    The ``kwargs`` arguments are passed through to the
     :func:`fsl.data.imageio.loadImages` function.
     """
 
