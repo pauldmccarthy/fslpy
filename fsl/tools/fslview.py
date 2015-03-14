@@ -16,6 +16,9 @@ import argparse
 
 import fslview_parseargs
 
+import fsl.fslview.displaycontext as displaycontext
+import fsl.data.image             as fslimage
+
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ def interface(parent, args, ctx):
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
 
-    (imageList, displayCtx), splashFrame = ctx
+    imageList, displayCtx, splashFrame = ctx
 
     # If a scene has not been specified, the default
     # behaviour is to restore the previous frame layout
@@ -154,12 +157,23 @@ def context(args):
         frame.SetStatus(strings.messages['fslview.loading'].format(image))
         wx.Yield()
 
-    # Load the images - the splash screen status
-    # will be updated with the currently loading
-    # image name
-    ctx = fslview_parseargs.handleImageArgs(args, loadFunc=status)
+    # Create the image list - only one of these
+    # ever exists; and the master DisplayContext.
+    # A new DisplayContext instance will be
+    # created for every new view that is opened
+    # in the FSLViewFrame (which is created in
+    # the interface function, above), but all
+    # child DisplayContext instances will be
+    # linked to this master one.
+    imageList  = fslimage.ImageList()
+    displayCtx = displaycontext.DisplayContext(imageList)
     
-    return ctx, frame
+    # Load the images - the splash screen status will 
+    # be updated with the currently loading image name
+    fslview_parseargs.handleImageArgs(
+        args, imageList, displayCtx, loadFunc=status)
+
+    return imageList, displayCtx, frame
 
 
 FSL_TOOLNAME  = 'FSLView'

@@ -47,12 +47,10 @@ import argparse
 import props
 
 import fsl.utils.typedict         as td
-import fsl.data.image             as fslimage
 import fsl.data.imageio           as iio
 import fsl.utils.transform        as transform
 
-import fsl.fslview.displaycontext.displaycontext as displaycontext
-import fsl.fslview.displaycontext.display        as display
+import fsl.fslview.displaycontext.display        as fsldisplay
 import fsl.fslview.displaycontext.volumeopts     as volumeopts
 import fsl.fslview.displaycontext.vectoropts     as vectoropts
 import fsl.fslview.displaycontext.maskopts       as maskopts
@@ -445,7 +443,7 @@ def _configImageParser(imgParser):
     configure the display of a single image.
     """
 
-    Display    = display.Display
+    Display    = fsldisplay.Display
     VolumeOpts = volumeopts.VolumeOpts
     VectorOpts = vectoropts.VectorOpts
     MaskOpts   = maskopts  .MaskOpts
@@ -489,6 +487,13 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     """Parses the given command line arguments, returning an
     :class:`argparse.Namespace` object containing all the arguments.
 
+    The display options for individual images are parsed separately. The
+    :class:`~argparse.Namespace` objects for each image are returned in a
+    list, stored as an attribute, called ``images``, of the returned
+    top-level ``Namespace`` instance. Each of the image ``Namespace``
+    instances also has an attribute, called ``image``, which contains the
+    full path of the image file that was speciied.
+
       - mainParser:   A :class:`argparse.ArgumentParser` which should be
                       used as the top level parser.
     
@@ -502,6 +507,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
       - toolOptsDesc: A string describing the tool-specific options (those
                       options which are handled by the tool, not by this
                       module).
+
     """
 
     # I hate argparse. By default, it does not support
@@ -543,8 +549,15 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # TODO Handle vector opts modulate option
     # 
     # TODO Could do a more rigorous test
-    # here - check for supported image files 
-    imageIdxs = [i for i in range(len(argv)) if op.isfile(argv[i])]
+    # here - check for supported image files
+    imageIdxs = []
+    for i in range(len(argv)):
+        try:
+            argv[i] = iio.addExt(argv[i], mustExist=True)
+            imageIdxs.append(i)
+        except:
+            continue
+        
     imageIdxs.append(len(argv))
 
     # Separate the program arguments 
@@ -564,7 +577,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         # we're skipping over the top section of
         # the image parser help text
         imgHelp   = imgParser.format_help()
-        dispGroup = _GROUPNAMES_[display.Display]
+        dispGroup = _GROUPNAMES_[fsldisplay.Display]
         print 
         print imgHelp[imgHelp.index(dispGroup):]
         sys.exit(0)
@@ -579,15 +592,8 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     for i in range(len(imageIdxs) - 1):
 
         imgArgv = argv[imageIdxs[i]:imageIdxs[i + 1]]
-
         imgFile = op.expanduser(imgArgv[0])
         imgArgv = imgArgv[1:]
-
-        # an  with something that is
-        # not a file following it
-        if not op.isfile(iio.addExt(imgFile, True)):
-            print_help()
-            sys.exit(1)            
 
         imgNamespace       = imgParser.parse_args(imgArgv)
         imgNamespace.image = imgFile
@@ -600,50 +606,85 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     return namespace
 
 
-def handleSceneArgs(args, frame, displayCtx):
+def handleSceneArgs(args, imageList, displayCtx, frame=None):
+
+    # # voxel/world location
+    # if len(imageList) > 0:
+    #     if args.worldloc:
+    #         loc = args.worldloc
+    #     elif args.voxelloc:
+    #         display = displayCtx.getDisplayProperties(imageList[0])
+    #         xform   = display.getTransform('voxel', 'display')
+    #         loc     = transform.transform([[args.voxelloc]], xform)[0]
+            
+    #     else:
+    #         loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
+    #                displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
+    #                displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
+
+    #     displayCtx.location.xyz = loc
+
+    # if args.selectedImage is not None:
+    #     if args.selectedImage < len(imageList):
+    #         displayCtx.selectedImage = args.selectedImage
+    # else:
+    #     if len(imageList) > 0:
+    #         displayCtx.selectedImage = len(imageList) - 1
     pass
 
 
-def handleImageArgs(args, **kwargs):
+def handleImageArgs(args, imageList, displayCtx, **kwargs):
     """Loads and configures any images which were specified on the
     command line.
 
-    The ``kwargs`` arguments are passed through to the
-    :func:`fsl.data.imageio.loadImages` function.
+    :arg args:       A :class:`~argparse.Namespace` instance, as returned
+                     by the :func:`parseArgs` function.
+    
+    :arg imageList:  An :class:`~fsl.data.image.ImageList` instance, to
+                     which the images should be added.
+    
+    :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
+                     instance, which manages the scene and image display.
+    
+    :arg kwargs:     Passed through to the
+                     :func:`fsl.data.imageio.loadImages` function.
     """
 
-    paths      = [i.image for i in args.images]
-    images     = iio.loadImages(paths, **kwargs)
+    paths  = [i.image for i in args.images]
+    images = iio.loadImages(paths, **kwargs)
         
-    imageList  = fslimage.ImageList(images)
-    displayCtx = displaycontext.DisplayContext(imageList)
+    imageList.extend(images)
+
+    dispPropNames = _OPTIONS_[fsldisplay.Display]
+    dispLongArgs  = {name : _ARGUMENTS_[fsldisplay.Display, name][1]
+                     for name in dispPropNames}
+    dispXforms    = {}
+    
+    for name in dispPropNames:
+        xform = _TRANSFORMS_.get((fsldisplay.Display, name), None)
+        if xform is not None:
+            dispXforms[name] = xform
 
     # per-image display arguments
     for i in range(len(imageList)):
-        props.applyArguments(displayCtx.getDisplayProperties(imageList[i]),
-                             args.images[i])
 
-    # voxel/world location
-    if len(imageList) > 0:
-        if args.worldloc:
-            loc = args.worldloc
-        elif args.voxelloc:
-            display = displayCtx.getDisplayProperties(imageList[0])
-            xform   = display.getTransform('voxel', 'display')
-            loc     = transform.transform([[args.voxelloc]], xform)[0]
-            
-        else:
-            loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
-                   displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
-                   displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
+        display = displayCtx.getDisplayProperties(imageList[i])
+        opts    = display.getDisplayOpts()
 
-        displayCtx.location.xyz = loc
+        optPropNames = _OPTIONS_[opts]
+        optLongArgs  = {name : _ARGUMENTS_[opts, name][1]
+                        for name in optPropNames}
+        optXforms    = {}
+        for name in optPropNames:
+            xform = _TRANSFORMS_.get((opts, name), None)
+            if xform is not None:
+                optXforms[name] = xform
 
-    if args.selectedImage is not None:
-        if args.selectedImage < len(imageList):
-            displayCtx.selectedImage = args.selectedImage
-    else:
-        if len(imageList) > 0:
-            displayCtx.selectedImage = len(imageList) - 1
-
-    return imageList, displayCtx
+        props.applyArguments(display,
+                             args.images[i],
+                             xformFuncs=dispXforms,
+                             longArgs=dispLongArgs)
+        props.applyArguments(opts,
+                             args.images[i],
+                             xformFuncs=optXforms,
+                             longArgs=optLongArgs) 
