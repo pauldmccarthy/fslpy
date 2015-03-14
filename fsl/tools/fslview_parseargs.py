@@ -7,6 +7,37 @@
 """This module encapsulates the logic for parsing command line arguments
 which specify a scene to be displayed in FSLView.  This logic is shared
 between fslview.py and render.py.
+
+The functions in this module make use of the command line generation
+featuresd of the :mod:`props` package.
+
+There are a lot of command line arguments made available to the user,
+broadly split into the following groups:
+
+ - *Main* arguments control the overall scene display, such as the
+   display type (orthographic or lightbox), the displayed location,
+   and whether to show a colour bar.
+
+ - *Display* arguments control the display for a single image file,
+   such as interpolation, colour map, etc.
+
+The main entry points of this module are:
+
+  - :func:`parseArgs`:
+
+    Parses command line arguments, and returns an :class:`argparse.Namespace`
+    object.
+
+  - :func:`handleSceneArgs`:
+
+    Configures :class:`~fsl.fslview.frame.FSLViewFrame` and
+    :class:`~fsl.fslview.displaycontext.DisplayContext` instances according to
+    the arguments contained in a given :class:`~argparse.Namespace` object.
+
+  - :func:`handleImageArgs`:
+
+    Loads and configures the display of any image files specified by a given
+    :class:`~argparse.Namespace` object.
 """
 
 import sys
@@ -33,6 +64,20 @@ import fsl.fslview.views.lightboxpanel as lightboxpanel
 # Names of all of the property which are 
 # customisable via command line arguments.
 _OPTIONS_ = td.TypeDict({
+
+    'Main'          : ['scene',
+                       'voxelLoc',
+                       'worldLoc',
+                       'selectedImage',
+                       'hideCursor'],
+    'ColourBar'     : ['showColourBar',
+                       'colourBarLocation',
+                       'colourBarLabelSide'],
+
+    # From here on, all of the keys are
+    # the names of HasProperties classes,
+    # and all of the values are the 
+    # names of properties on them.
     'OrthoPanel'    : ['xzoom',
                        'yzoom',
                        'zzoom',
@@ -73,6 +118,7 @@ _OPTIONS_ = td.TypeDict({
                        'modulate'],
 })
 
+# Headings for each of the option groups
 _GROUPNAMES_ = td.TypeDict({
     'OrthoPanel'    : 'Ortho display options',
     'LightBoxPanel' : 'LightBox display options',
@@ -87,15 +133,24 @@ _GROUPNAMES_ = td.TypeDict({
 
 # Short/long arguments for all of those options
 # 
-# We can't use -w or -v, as they are used by the
-# top level argument parser (in fsl/__init__.py).
-#
-# There cannot be any collisions between the scene
-# options. 
+# There cannot be any collisions between the main
+# options, the scene options, and the colour bar
+# options.
 #
 # There can't be any collisions between the 
 # Display options and the *Opts options.
 _ARGUMENTS_ = td.TypeDict({
+
+    'Main.scene'         : ('s',  'scene'),
+    'Main.voxelLoc'      : ('v',  'voxelloc'),
+    'Main.worldLoc'      : ('w',  'worldloc'),
+    'Main.selectedImage' : ('i',  'selectedImage'),
+    'Main.hideCursor'    : ('hc', 'hideCursor'),
+    
+    'ColourBar.showColourBar'      : ('cb',  'showColourBar'),
+    'ColourBar.colourBarLocation'  : ('cbl', 'colourBarLocation'),
+    'ColourBar.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
+    
     'OrthoPanel.xzoom'       : ('xz', 'xzoom'),
     'OrthoPanel.yzoom'       : ('yz', 'yzoom'),
     'OrthoPanel.zzoom'       : ('zz', 'zzoom'),
@@ -144,10 +199,26 @@ _ARGUMENTS_ = td.TypeDict({
     'VectorOpts.suppressY'   : ('ys', 'suppressY'),
     'VectorOpts.suppressZ'   : ('zs', 'suppressZ'),
     'VectorOpts.modulate'    : ('m',  'modulate'),
+
 })
 
 # Help text for all of the options
 _HELP_ = td.TypeDict({
+
+    'Main.scene'         : 'Scene to show. If not provided, the '
+                           'previous scene layout is restored.',
+    'Main.voxelLoc'      : 'Location to show (voxel coordinates of '
+                           'first image)',
+    'Main.worldLoc'      : 'Location to show (world coordinates, '
+                           'takes precedence over --voxelloc)',
+    'Main.selectedImage' : 'Selected image (default: last)',
+    'Main.hideCursor'    : 'Do not display the green cursor '
+                           'highlighting the current location',
+    
+    'ColourBar.showColourBar'      : 'Show colour bar',
+    'ColourBar.colourBarLocation'  : 'Colour bar location',
+    'ColourBar.colourBarLabelSide' : 'Colour bar label orientation', 
+    
     'OrthoPanel.xzoom'       : 'X canvas zoom',
     'OrthoPanel.yzoom'       : 'Y canvas zoom',
     'OrthoPanel.zzoom'       : 'Z canvas zoom',
@@ -212,44 +283,90 @@ _TRANSFORMS_ = td.TypeDict({
 
 
 def _configMainParser(mainParser):
+    """Sets up an argument parser which handles options related
+    to the scene. This function configures the following argument
+    groups:
+    
+      - *Main*:          Top level optoins
+      - *ColourBar*:     Colour bar related options
+      - *OrthoPanel*:    Options related to setting up a orthographic display
+      - *LightBoxPanel*: Options related to setting up a lightbox display
+    """
 
-    # We're assuming that the fsl tool (e.g. render.py or fslview.py)
-    # has not added/used up any of these short or long arguments
-    mainParser.add_argument('-h',  '--help',    action='store_true',
+    mainParser.add_argument('-h',  '--help',
+                            action='store_true',
                             help='Display this help and exit')
 
     # Options defining the overall scene
     sceneParser = mainParser.add_argument_group('Scene options')
 
-    sceneParser.add_argument('-s', '--scene', choices=('ortho', 'lightbox'),
-                             help='Scene to show. If not provided, the '
-                             'previous scene layout is restored.')
-    
-    sceneParser.add_argument('-v', '--voxelloc', metavar=('X', 'Y', 'Z'),
-                             type=int, nargs=3,
-                             help='Location to show (voxel coordinates of '
-                             'first image)')
-    sceneParser.add_argument('-w', '--worldloc', metavar=('X', 'Y', 'Z'),
-                             type=float, nargs=3,
-                             help='Location to show (world coordinates, '
-                             'takes precedence over --voxelloc)')
-    sceneParser.add_argument('-si', '--selectedImage', type=int,
-                             help='Selected image (default: last)')
-    sceneParser.add_argument('-hc', '--hideCursor', action='store_true',
-                             help='Do not display the green cursor '
-                             'highlighting the current location')
+    mainArgs = {name: _ARGUMENTS_['Main', name] for name in _OPTIONS_['Main']}
+    mainHelp = {name: _HELP_[     'Main', name] for name in _OPTIONS_['Main']}
 
-    # Separate parser groups for ortho/lightbox options
+    for name, (shortArg, longArg) in mainArgs.items():
+        mainArgs[name] = ('-{}'.format(shortArg), '--{}'.format(longArg))
+
+    sceneParser.add_argument(*mainArgs['scene'],
+                             choices=('ortho', 'lightbox'),
+                             help=mainHelp['scene'])
+    sceneParser.add_argument(*mainArgs['voxelLoc'],
+                             metavar=('X', 'Y', 'Z'),
+                             type=int,
+                             nargs=3,
+                             help=mainHelp['voxelLoc'])
+    sceneParser.add_argument(*mainArgs['worldLoc'],
+                             metavar=('X', 'Y', 'Z'),
+                             type=int,
+                             nargs=3,
+                             help=mainHelp['worldLoc'])
+    sceneParser.add_argument(*mainArgs['selectedImage'],
+                             type=int,
+                             help=mainHelp['selectedImage'])
+    sceneParser.add_argument(*mainArgs['hideCursor'],
+                             action='store_true',
+                             help=mainHelp['hideCursor'])
+
+    # Separate parser groups for ortho/lightbox, and for colour bar options
+    cbarParser  =  mainParser.add_argument_group(_GROUPNAMES_['ColourBar'])    
     orthoParser =  mainParser.add_argument_group(_GROUPNAMES_['OrthoPanel'])
     lbParser    =  mainParser.add_argument_group(_GROUPNAMES_['LightBoxPanel'])
-    cbarParser  =  mainParser.add_argument_group(_GROUPNAMES_['ColourBar'])
 
+    _configColourBarParser(cbarParser)
     _configOrthoParser(    orthoParser)
     _configLightBoxParser( lbParser)
-    _configColourBarParser(cbarParser)
 
+
+def _configColourBarParser(cbarParser):
+    """Adds options to the given argument parser which allow
+    the user to specify colour bar properties.
+    """
+    
+    cbarArgs = {name: _ARGUMENTS_['ColourBar', name]
+                for name in _OPTIONS_['ColourBar']}
+    cbarHelp = {name: _HELP_['ColourBar', name]
+                for name in _OPTIONS_['ColourBar']}
+
+    for name, (shortArg, longArg) in cbarArgs.items():
+        cbarArgs[name] = ('-{}'.format(shortArg), '--{}'.format(longArg))
+    
+    # Colour bar
+    cbarParser.add_argument(*cbarArgs['showColourBar'],
+                            action='store_true',
+                            help=cbarHelp['showColourBar'])
+    cbarParser.add_argument(*cbarArgs['colourBarLocation'],
+                            choices=('top', 'bottom', 'left', 'right'),
+                            help=cbarHelp['colourBarLocation'],
+                            default='top')
+    cbarParser.add_argument(*cbarArgs['colourBarLabelSide'],
+                            choices=('top-left', 'bottom-right'),
+                            help=cbarHelp['colourBarLabelSide'],
+                            default='top-left') 
+   
 
 def _configOrthoParser(orthoParser):
+    """Adds options to the given parser allowing the user to
+    configure an orthographic display.
+    """
 
     OrthoPanel = orthopanel.OrthoPanel
 
@@ -296,6 +413,9 @@ def _configOrthoParser(orthoParser):
 
 
 def _configLightBoxParser(lbParser):
+    """Adds options to the given parser allowing the user to
+    configure a lightbox display.
+    """    
     LightBoxPanel = lightboxpanel.LightBoxPanel
 
     propNames = _OPTIONS_[LightBoxPanel]
@@ -320,23 +440,10 @@ def _configLightBoxParser(lbParser):
                              propHelp=helpTexts)
 
 
-def _configColourBarParser(cbarParser):
-
-    # Colour bar
-    cbarParser.add_argument('-bs', '--showColourBar', action='store_true',
-                            help='Show colour bar')
-    cbarParser.add_argument('-bl', '--colourBarLocation',
-                            choices=('top', 'bottom', 'left', 'right'),
-                            help='Colour bar location',
-                            default='top')
-    cbarParser.add_argument('-bt', '--colourBarLabelSide',
-                            choices=('top-left', 'bottom-right'),
-                            help='Colour bar label orientation',
-                            default='top-left')    
-    pass
-    
-
 def _configImageParser(imgParser):
+    """Adds options to the given image allowing the user to
+    configure the display of a single image.
+    """
 
     Display    = display.Display
     VolumeOpts = volumeopts.VolumeOpts
@@ -345,7 +452,6 @@ def _configImageParser(imgParser):
     
     dispDesc = 'Each display option will be applied to the '\
                'image which is listed before that option.'
-
 
     dispParser = imgParser.add_argument_group(_GROUPNAMES_[Display],
                                               dispDesc)
@@ -380,14 +486,22 @@ def _configImageParser(imgParser):
 
 
 def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
-    """
-    Parses the given command line arguments. Parameters:
+    """Parses the given command line arguments, returning an
+    :class:`argparse.Namespace` object containing all the arguments.
 
-      - mainParser: 
-      - argv:         command line arguments for fslview.
-      - name:
-      - desc:
-      - toolOptsDesc:
+      - mainParser:   A :class:`argparse.ArgumentParser` which should be
+                      used as the top level parser.
+    
+      - argv:         The arguments as passed in on the command line.
+    
+      - name:         The name of the tool - this function might be called by
+                      either the ``fslview`` tool or the ``render`` tool.
+    
+      - desc:         A description of the tool.
+    
+      - toolOptsDesc: A string describing the tool-specific options (those
+                      options which are handled by the tool, not by this
+                      module).
     """
 
     # I hate argparse. By default, it does not support
@@ -427,6 +541,9 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # require a file argument.
     #
     # TODO Handle vector opts modulate option
+    # 
+    # TODO Could do a more rigorous test
+    # here - check for supported image files 
     imageIdxs = [i for i in range(len(argv)) if op.isfile(argv[i])]
     imageIdxs.append(len(argv))
 
@@ -445,7 +562,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         # Did I mention that I hate argparse?  Why
         # can't we customise the help text? Here
         # we're skipping over the top section of
-        # the help text
+        # the image parser help text
         imgHelp   = imgParser.format_help()
         dispGroup = _GROUPNAMES_[display.Display]
         print 
@@ -466,11 +583,11 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         imgFile = op.expanduser(imgArgv[0])
         imgArgv = imgArgv[1:]
 
-        # an -i with something that is
+        # an  with something that is
         # not a file following it
         if not op.isfile(iio.addExt(imgFile, True)):
             print_help()
-            sys.argv(1)            
+            sys.exit(1)            
 
         imgNamespace       = imgParser.parse_args(imgArgv)
         imgNamespace.image = imgFile
@@ -481,6 +598,10 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         namespace.images.append(imgNamespace)
 
     return namespace
+
+
+def handleSceneArgs(args, frame, displayCtx):
+    pass
 
 
 def handleImageArgs(args, **kwargs):

@@ -169,8 +169,11 @@ def parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
-    parser.add_argument('-n', '--noisy', metavar='MODULE', action='append',
-                        help='Make the specified module noisy')
+    
+    parser.add_argument(
+        '-n', '--noisy', metavar='MODULE', action='append',
+        help='Make the specified module noisy')
+    
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
