@@ -237,6 +237,29 @@ def parseArgs(argv, allTools):
         parser.print_help()
         sys.exit(1)
 
+    # Configure any logging verbosity 
+    # settings specified by the user
+    if namespace.verbose == 1:
+        log.setLevel(logging.DEBUG)
+
+        # make some noisy things quiet
+        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
+        logging.getLogger('props')            .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
+    elif namespace.verbose == 2:
+        log.setLevel(logging.DEBUG)
+        logging.getLogger('props')   .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets').setLevel(logging.WARNING)
+    elif namespace.verbose == 3:
+        log.setLevel(logging.DEBUG)
+        logging.getLogger('props')   .setLevel(logging.DEBUG)
+        logging.getLogger('pwidgets').setLevel(logging.DEBUG)
+
+    if namespace.noisy is not None:
+        for mod in namespace.noisy:
+            logging.getLogger(mod).setLevel(logging.DEBUG)
+
     # otherwise, give the remaining arguments to the tool parser
     fslTool = allTools[namespace.tool]
 
@@ -318,27 +341,6 @@ def main():
 
     allTools                = loadAllFSLTools()
     fslTool, args, toolArgs = parseArgs(sys.argv[1:], allTools)
-
-    if args.verbose == 1:
-        log.setLevel(logging.DEBUG)
-
-        # make some noisy things quiet
-        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
-        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
-        logging.getLogger('props')            .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
-    elif args.verbose == 2:
-        log.setLevel(logging.DEBUG)
-        logging.getLogger('props')   .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets').setLevel(logging.WARNING)
-    elif args.verbose == 3:
-        log.setLevel(logging.DEBUG)
-        logging.getLogger('props')   .setLevel(logging.DEBUG)
-        logging.getLogger('pwidgets').setLevel(logging.DEBUG)
-
-    if args.noisy is not None:
-        for mod in args.noisy:
-            logging.getLogger(mod).setLevel(logging.DEBUG)
 
     if fslTool.interface is not None:
         import wx
