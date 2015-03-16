@@ -26,11 +26,14 @@ import matplotlib.image as mplimg
 
 import props
 import fslview_parseargs
-import fsl.utils.layout          as fsllayout
-import fsl.utils.colourbarbitmap as cbarbitmap
-import fsl.utils.textbitmap      as textbitmap
-import fsl.data.strings          as strings
-import fsl.data.constants        as constants
+
+import fsl.fslview.displaycontext as displaycontext
+import fsl.utils.layout           as fsllayout
+import fsl.utils.colourbarbitmap  as cbarbitmap
+import fsl.utils.textbitmap       as textbitmap
+import fsl.data.strings           as strings
+import fsl.data.image             as fslimage
+import fsl.data.constants         as constants
 
 
 if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
@@ -47,6 +50,12 @@ def buildLabelBitmaps(imageList,
                       canvasBmps,
                       bgColour,
                       alpha):
+    """Creates bitmaps containing anatomical orientation labels.
+
+    Returns a list of dictionaries, one dictionary for each canvas. Each
+    dictionary contains ``{label -> bitmap}`` mappings, where ``label`` is
+    either ``top``, ``bottom``, ``left`` or ``right``.
+    """
     
     # Default colour is white - if the orientation labels
     # cannot be determined, the foreground colour will be
@@ -118,6 +127,7 @@ def buildLabelBitmaps(imageList,
             
     return labelBmps
 
+
 def buildColourBarBitmap(imageList,
                          displayCtx,
                          width,
@@ -125,6 +135,8 @@ def buildColourBarBitmap(imageList,
                          cbarLocation,
                          cbarLabelSide,
                          bgColour):
+    """Creates and returns a bitmap containing a colour bar.
+    """
     
     display = displayCtx.getDisplayProperties(displayCtx.selectedImage)
     
@@ -276,6 +288,8 @@ def run(args, context):
     import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
     import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
 
+    # Make sure than an OpenGL context 
+    # exists, and initalise OpenGL modules
     fslgl.getOSMesaContext()
     fslgl.bootstrap((1, 4))
 
@@ -294,7 +308,7 @@ def run(args, context):
     canvases = []
 
     # Lightbox view -> only one canvas
-    if args.lightbox:
+    if args.scene == 'lightbox':
         c = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
             displayCtx,
@@ -307,7 +321,7 @@ def run(args, context):
         canvases.append(c)
 
     # Ortho view -> up to three canvases
-    else:
+    elif args.scene == 'ortho':
  
         # Build a list containing the horizontal 
         # and vertical axes for each canvas
@@ -381,8 +395,9 @@ def run(args, context):
 
         canvases[i] = c.getBitmap()
 
-    # Disable labels for now
-    if args.lightbox or args.hideLabels:
+    # Show/hide orientation labels -
+    # not supported on lightbox view
+    if args.scene == 'lightbox' or args.hideLabels:
         labelBmps = None
     else:
         labelBmps = buildLabelBitmaps(imageList,
@@ -393,12 +408,13 @@ def run(args, context):
                                       args.background[ 3])
 
     # layout
-    if args.lightbox: layout = fsllayout.Bitmap(canvases[0])
-    else:             layout = fsllayout.buildOrthoLayout(canvases,
-                                                          labelBmps,
-                                                          args.layout,
-                                                          not args.hideLabels,
-                                                          LABEL_SIZE)
+    if args.scene == 'lightbox':
+        layout = fsllayout.Bitmap(canvases[0])
+    else: layout = fsllayout.buildOrthoLayout(canvases,
+                                              labelBmps,
+                                              args.layout,
+                                              not args.hideLabels,
+                                              LABEL_SIZE)
 
     # Render a colour bar if required
     if args.showColourBar:
@@ -430,7 +446,7 @@ def parseArgs(argv):
 
     mainParser = argparse.ArgumentParser(add_help=False)
 
-    mainParser.add_argument('-of', '--outfile',  metavar='FILE',
+    mainParser.add_argument('-of', '--outfile',  metavar='OUTPUTFILE',
                             help='Output image file name')
     mainParser.add_argument('-sz', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
@@ -451,11 +467,42 @@ def parseArgs(argv):
         print 'Error: outfile is required'
         mainParser.print_usage()
         sys.exit(1)
+
+    if namespace.scene not in ('lightbox', 'ortho'):
+        print 'Error: scene option is required'
+        mainParser.print_usage()
+        sys.exit(1)
  
     return namespace
+
+
+def context(args):
+
+    # Create an image list and display context 
+    imageList  = fslimage.ImageList()
+    displayCtx = displaycontext.DisplayContext(imageList)
+
+    # The handleImageArgs function uses the
+    # fsl.data.imageio.loadImages  function,
+    # which will call these functions as it
+    # goes through the list of images to be
+    # loaded.
+    def load(image):
+        print 'Loading image {} ...'.format(image)
+    def error(image, error):
+        print 'Error loading image {}: '.format(image, error)
+
+    # Load the images specified on the command
+    # line, and configure the scene
+    fslview_parseargs.handleImageArgs(
+        args, imageList, displayCtx, loadFunc=load, errorFunc=error)
+    
+    fslview_parseargs.handleSceneArgs(args, imageList, displayCtx)
+
+    return imageList, displayCtx
  
 
 FSL_TOOLNAME  = 'Render'
 FSL_EXECUTE   = run
-FSL_CONTEXT   = fslview_parseargs.handleImageArgs
+FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs
