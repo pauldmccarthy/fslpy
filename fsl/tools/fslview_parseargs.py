@@ -642,31 +642,43 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     return namespace
 
 
-def handleSceneArgs(args, imageList, displayCtx, frame=None):
+def handleSceneArgs(args, imageList, displayCtx):
+    """Configures the scene displayed by the given
+    :class:`~fsl.fslview.displaycontext.DisplayContext` instance according
+    to the arguments that were passed in on the command line.
 
-    # # voxel/world location
-    # if len(imageList) > 0:
-    #     if args.worldloc:
-    #         loc = args.worldloc
-    #     elif args.voxelloc:
-    #         display = displayCtx.getDisplayProperties(imageList[0])
-    #         xform   = display.getTransform('voxel', 'display')
-    #         loc     = transform.transform([[args.voxelloc]], xform)[0]
-            
-    #     else:
-    #         loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
-    #                displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
-    #                displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
+    :arg args:       :class:`argparse.Namespace` object containing the parsed
+                     command line arguments.
 
-    #     displayCtx.location.xyz = loc
+    :arg imageList:  A :class:`~fsl.data.image.ImageList` instance.
 
-    # if args.selectedImage is not None:
-    #     if args.selectedImage < len(imageList):
-    #         displayCtx.selectedImage = args.selectedImage
-    # else:
-    #     if len(imageList) > 0:
-    #         displayCtx.selectedImage = len(imageList) - 1
-    pass
+    :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
+                     instance.
+    """
+    # First apply all command line options
+    # related to the display context 
+    if args.selectedImage is not None:
+        if args.selectedImage < len(imageList):
+            displayCtx.selectedImage = args.selectedImage
+    else:
+        if len(imageList) > 0:
+            displayCtx.selectedImage = len(imageList) - 1
+
+    # voxel/world location
+    if len(imageList) > 0:
+        if args.worldloc:
+            loc = args.worldloc
+        elif args.voxelloc:
+            display = displayCtx.getDisplayProperties(imageList[0])
+            xform   = display.getTransform('voxel', 'display')
+            loc     = transform.transform([[args.voxelloc]], xform)[0]
+          
+        else:
+            loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
+                   displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
+                   displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
+
+        displayCtx.location.xyz = loc
 
 
 def handleImageArgs(args, imageList, displayCtx, **kwargs):

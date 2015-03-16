@@ -57,6 +57,7 @@ def interface(parent, args, ctx):
                      'nrows',
                      'zrange',
                      'showGridLines',
+                     'highlightSlice',
                      'zax']:
             val = getattr(args, prop, None)
 
