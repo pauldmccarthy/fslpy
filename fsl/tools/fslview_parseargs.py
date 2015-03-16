@@ -669,8 +669,18 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
     for i in range(len(imageList)):
 
         display = displayCtx.getDisplayProperties(imageList[i])
-        opts    = display.getDisplayOpts()
 
+        props.applyArguments(display,
+                             args.images[i],
+                             xformFuncs=dispXforms,
+                             longArgs=dispLongArgs)
+
+        # Retrieve the DisplayOpts instance
+        # after applying arguments to the
+        # Display instance - if the image type
+        # is set on the command line, the
+        # DisplayOpts instance will be replaced
+        opts         = display.getDisplayOpts()
         optPropNames = _OPTIONS_[opts]
         optLongArgs  = {name : _ARGUMENTS_[opts, name][1]
                         for name in optPropNames}
@@ -680,10 +690,6 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
             if xform is not None:
                 optXforms[name] = xform
 
-        props.applyArguments(display,
-                             args.images[i],
-                             xformFuncs=dispXforms,
-                             longArgs=dispLongArgs)
         props.applyArguments(opts,
                              args.images[i],
                              xformFuncs=optXforms,
