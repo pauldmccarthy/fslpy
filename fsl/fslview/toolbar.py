@@ -197,16 +197,16 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         labels = []
 
         if not isinstance(targets, dict):
-            targets = {s : targets for s in toolSpecs}
+            targets = {s.key : targets for s in toolSpecs}
 
         for toolSpec in toolSpecs:
             tool = props.buildGUI(
-                self, targets[toolSpec], toolSpec, showUnlink=False)
+                self, targets[toolSpec.key], toolSpec, showUnlink=False)
 
             if isinstance(toolSpec, actions.ActionButton):
                 label = None
             else:
-                label = strings.properties[targets[toolSpec], toolSpec.key]
+                label = strings.properties[targets[toolSpec.key], toolSpec.key]
 
             tools .append(tool)
             labels.append(label)

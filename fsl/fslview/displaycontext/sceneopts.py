@@ -23,10 +23,10 @@ class SceneOpts(props.HasProperties):
 
     colourBarLocation  = props.Choice(
         ('top', 'bottom', 'left', 'right'),
-        labels=[strings.choices['CanvasPanel.colourBarLocation.top'],
-                strings.choices['CanvasPanel.colourBarLocation.bottom'],
-                strings.choices['CanvasPanel.colourBarLocation.left'],
-                strings.choices['CanvasPanel.colourBarLocation.right']])
+        labels=[strings.choices['SceneOpts.colourBarLocation.top'],
+                strings.choices['SceneOpts.colourBarLocation.bottom'],
+                strings.choices['SceneOpts.colourBarLocation.left'],
+                strings.choices['SceneOpts.colourBarLocation.right']])
 
     
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)

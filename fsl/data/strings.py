@@ -130,29 +130,31 @@ properties = TypeDict({
     
     'Profile.mode' : 'Mode',
 
-    'CanvasPanel.showCursor'         : 'Show location cursor',
     'CanvasPanel.syncLocation'       : 'Sync location',
     'CanvasPanel.syncImageOrder'     : 'Sync image order',
     'CanvasPanel.syncVolume'         : 'Sync volume',
     'CanvasPanel.profile'            : 'Profile',
-    'CanvasPanel.zoom'               : 'Zoom',
-    'CanvasPanel.colourBarLocation'  : 'Colour bar location',
-    'CanvasPanel.colourBarLabelSide' : 'Colour bar label side',
 
-    'LightBoxPanel.zax'            : 'Z axis',
-    'LightBoxPanel.highlightSlice' : 'Highlight slice',
-    'LightBoxPanel.showGridLines'  : 'Show grid lines',
-    'LightBoxPanel.sliceSpacing'   : 'Slice spacing',
-    'LightBoxPanel.zrange'         : 'Z range',
+    'SceneOpts.showCursor'         : 'Show location cursor',
+    'SceneOpts.showColourBar'      : 'Show colour bar',
+    'SceneOpts.zoom'               : 'Zoom',
+    'SceneOpts.colourBarLocation'  : 'Colour bar location',
+    'SceneOpts.colourBarLabelSide' : 'Colour bar label side',
 
-    'OrthoPanel.showXCanvas' : 'Show X canvas',
-    'OrthoPanel.showYCanvas' : 'Show Y canvas',
-    'OrthoPanel.showZCanvas' : 'Show Z canvas',
-    'OrthoPanel.showLabels'  : 'Show labels',
-    'OrthoPanel.layout'      : 'Layout',
-    'OrthoPanel.xzoom'       : 'X zoom',
-    'OrthoPanel.yzoom'       : 'Y zoom',
-    'OrthoPanel.zzoom'       : 'Z zoom',
+    'LightBoxOpts.zax'            : 'Z axis',
+    'LightBoxOpts.highlightSlice' : 'Highlight slice',
+    'LightBoxOpts.showGridLines'  : 'Show grid lines',
+    'LightBoxOpts.sliceSpacing'   : 'Slice spacing',
+    'LightBoxOpts.zrange'         : 'Z range',
+
+    'OrthoOpts.showXCanvas' : 'Show X canvas',
+    'OrthoOpts.showYCanvas' : 'Show Y canvas',
+    'OrthoOpts.showZCanvas' : 'Show Z canvas',
+    'OrthoOpts.showLabels'  : 'Show labels',
+    'OrthoOpts.layout'      : 'Layout',
+    'OrthoOpts.xzoom'       : 'X zoom',
+    'OrthoOpts.yzoom'       : 'Y zoom',
+    'OrthoOpts.zzoom'       : 'Z zoom',
 
     'HistogramPanel.dataRange'  : 'Data range',
     'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
@@ -230,10 +232,10 @@ modes = TypeDict({
 
 choices = TypeDict({
 
-    'CanvasPanel.colourBarLocation.top'    : 'Top',
-    'CanvasPanel.colourBarLocation.bottom' : 'Bottom',
-    'CanvasPanel.colourBarLocation.left'   : 'Left',
-    'CanvasPanel.colourBarLocation.right'  : 'Right',
+    'SceneOpts.colourBarLocation.top'    : 'Top',
+    'SceneOpts.colourBarLocation.bottom' : 'Bottom',
+    'SceneOpts.colourBarLocation.left'   : 'Left',
+    'SceneOpts.colourBarLocation.right'  : 'Right',
 
     'HistogramPanel.dataRange.min' : 'Min.',
     'HistogramPanel.dataRange.max' : 'Max.',

@@ -157,9 +157,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # And a global zoom which controls all canvases at once
         def onZoom(*a):
-            self.xzoom = self.zoom
-            self.yzoom = self.zoom
-            self.zzoom = self.zoom
+            sceneOpts.xzoom = sceneOpts.zoom
+            sceneOpts.yzoom = sceneOpts.zoom
+            sceneOpts.zzoom = sceneOpts.zoom
 
         minZoom = sceneOpts.getConstraint('xzoom', 'minval')
         maxZoom = sceneOpts.getConstraint('xzoom', 'maxval')
