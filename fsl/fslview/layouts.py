@@ -46,7 +46,6 @@ def widget(labelCls, name, *args, **kwargs):
 
 OrthoToolBarLayout = [
     actions.ActionButton(OrthoPanel,   'screenshot'),
-    actions.ActionButton(OrthoPanel,   'toggleColourBar'),
     widget(              OrthoPanel,   'zoom', spin=False, showLimits=False),
     widget(              OrthoPanel,   'layout'),
     widget(              OrthoPanel,   'showXCanvas'),
@@ -101,7 +100,8 @@ CanvasPanelLayout = props.VGroup((
 OrthoPanelLayout = props.VGroup((
     widget(OrthoPanel, 'layout'), 
     widget(OrthoPanel, 'zoom', spin=False, showLimits=False),
-    props.HGroup((widget(OrthoPanel, 'showCursor'),
+    props.HGroup((widget(OrthoPanel, 'showColourBar'),
+                  widget(OrthoPanel, 'showCursor'),
                   widget(OrthoPanel, 'showLabels'))),
     props.HGroup((widget(OrthoPanel, 'showXCanvas'),
                   widget(OrthoPanel, 'showYCanvas'),
@@ -114,7 +114,6 @@ OrthoPanelLayout = props.VGroup((
 
 LightBoxToolBarLayout = [
     actions.ActionButton(LightBoxPanel, 'screenshot'),
-    actions.ActionButton(LightBoxPanel, 'toggleColourBar'),
     widget(              LightBoxPanel, 'zax'),
     
     widget(LightBoxPanel, 'sliceSpacing', spin=False, showLimits=False),
@@ -128,7 +127,8 @@ LightBoxPanelLayout = props.VGroup((
     widget(LightBoxPanel, 'zoom'),
     widget(LightBoxPanel, 'sliceSpacing'),
     widget(LightBoxPanel, 'zrange'),
-    props.HGroup((widget(LightBoxPanel, 'showCursor'),
+    props.HGroup((widget(LightBoxPanel, 'showColourBar'),
+                  widget(LightBoxPanel, 'showCursor'),
                   widget(LightBoxPanel, 'highlightSlice'),
                   widget(LightBoxPanel, 'showGridLines')))))
 

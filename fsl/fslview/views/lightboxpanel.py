@@ -17,9 +17,10 @@ import wx
 
 import numpy as np
 
-import fsl.utils.layout                     as fsllayout
-import fsl.fslview.gl.wxgllightboxcanvas    as lightboxcanvas
-import fsl.fslview.controls.lightboxtoolbar as lightboxtoolbar
+import fsl.utils.layout                        as fsllayout
+import fsl.fslview.gl.wxgllightboxcanvas       as lightboxcanvas
+import fsl.fslview.controls.lightboxtoolbar    as lightboxtoolbar
+import fsl.fslview.displaycontext.lightboxopts as lightboxopts
 import canvaspanel
 
 
@@ -46,6 +47,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """
         """
 
+        sceneOpts = lightboxopts.LightBoxOpts()
+
         actionz = {
             'toggleLightBoxToolBar' : lambda *a: self.togglePanel(
                 lightboxtoolbar.LightBoxToolBar, False, self)
@@ -55,6 +58,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                          parent,
                                          imageList,
                                          displayCtx,
+                                         sceneOpts,
                                          actionz)
 
         imageList  = self._imageList
@@ -70,15 +74,15 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             displayCtx)
 
         # My properties are the canvas properties
-        self.bindProps('zax',            self._lbCanvas)
-        self.bindProps('nrows',          self._lbCanvas)
-        self.bindProps('ncols',          self._lbCanvas)
-        self.bindProps('topRow',         self._lbCanvas)
-        self.bindProps('sliceSpacing',   self._lbCanvas)
-        self.bindProps('zrange',         self._lbCanvas)
-        self.bindProps('showCursor',     self._lbCanvas)
-        self.bindProps('showGridLines',  self._lbCanvas)
-        self.bindProps('highlightSlice', self._lbCanvas)
+        sceneOpts.bindProps('zax',            self._lbCanvas)
+        sceneOpts.bindProps('nrows',          self._lbCanvas)
+        sceneOpts.bindProps('ncols',          self._lbCanvas)
+        sceneOpts.bindProps('topRow',         self._lbCanvas)
+        sceneOpts.bindProps('sliceSpacing',   self._lbCanvas)
+        sceneOpts.bindProps('zrange',         self._lbCanvas)
+        sceneOpts.bindProps('showCursor',     self._lbCanvas)
+        sceneOpts.bindProps('showGridLines',  self._lbCanvas)
+        sceneOpts.bindProps('highlightSlice', self._lbCanvas)
 
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.getCanvasPanel().SetSizer(self._canvasSizer)
@@ -99,20 +103,27 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
                                      self._name,
                                      self._selectedImageChanged) 
 
-        self.zoom = 750
+        sceneOpts.zoom = 750
 
         self._onLightBoxChange()
         self._onZoom()
 
         # When any lightbox properties change,
         # make sure the scrollbar is updated
-        self.addListener('ncols',        self._name, self._ncolsChanged)
-        self.addListener('nrows',        self._name, self._onLightBoxChange)
-        self.addListener('topRow',       self._name, self._onLightBoxChange)
-        self.addListener('sliceSpacing', self._name, self._onLightBoxChange)
-        self.addListener('zrange',       self._name, self._onLightBoxChange)
-        self.addListener('zax',          self._name, self._onLightBoxChange)
-        self.addListener('zoom',         self._name, self._onZoom)
+        sceneOpts.addListener(
+            'ncols',        self._name, self._ncolsChanged)
+        sceneOpts.addListener(
+            'nrows',        self._name, self._onLightBoxChange)
+        sceneOpts.addListener(
+            'topRow',       self._name, self._onLightBoxChange)
+        sceneOpts.addListener(
+            'sliceSpacing', self._name, self._onLightBoxChange)
+        sceneOpts.addListener(
+            'zrange',       self._name, self._onLightBoxChange)
+        sceneOpts.addListener(
+            'zax',          self._name, self._onLightBoxChange)
+        sceneOpts.addListener(
+            'zoom',         self._name, self._onZoom)
 
         # When the scrollbar is moved,
         # update the canvas display
@@ -171,7 +182,9 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         Updates the ``sliceSpacing`` and ``zrange`` properties to values
         sensible to the new image display space.
         """
+        
         image = self._displayCtx.getSelectedImage()
+        opts  = self.getSceneOptions()
 
         if image is None:
             return
@@ -181,11 +194,11 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         loBounds, hiBounds = display.getDisplayBounds()
 
         if display.transform == 'id':
-            self.sliceSpacing = 1
-            self.zrange.x     = (0, image.shape[self.zax] - 1)
+            opts.sliceSpacing = 1
+            opts.zrange.x     = (0, image.shape[opts.zax] - 1)
         else:
-            self.sliceSpacing = image.pixdim[self.zax]
-            self.zrange.x     = (loBounds[self.zax], hiBounds[self.zax])
+            opts.sliceSpacing = image.pixdim[opts.zax]
+            opts.zrange.x     = (loBounds[opts.zax], hiBounds[opts.zax])
 
         self._onResize()
 
@@ -202,11 +215,11 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """Called when the :attr:`zoom` property changes. Updates the
         number of columns on the lightbox canvas.
         """
-        minval   = self.getConstraint('zoom', 'minval')
-        maxval   = self.getConstraint('zoom', 'maxval')
-        normZoom = 1.0 - (self.zoom - minval) / float(maxval)
-        
-        self._lbCanvas.ncols = int(1 + np.round(normZoom * 29))
+        opts       = self.getSceneOptions()
+        minval     = opts.getConstraint('zoom', 'minval')
+        maxval     = opts.getConstraint('zoom', 'maxval')
+        normZoom   = 1.0 - (opts.zoom - minval) / float(maxval)
+        opts.ncols = int(1 + np.round(normZoom * 29))
 
 
     def _onResize(self, ev=None):

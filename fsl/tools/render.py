@@ -453,9 +453,35 @@ def parseArgs(argv):
         sys.exit(1)
  
     return namespace
+
+
+def context(args):
+
+    # Create an image list and display context 
+    imageList  = fslimage.ImageList()
+    displayCtx = displaycontext.DisplayContext(imageList)
+
+    # The handleImageArgs function uses the
+    # fsl.data.imageio.loadImages  function,
+    # which will call these functions as it
+    # goes through the list of images to be
+    # loaded.
+    def load(image):
+        print 'Loading image {} ...'.format(image)
+    def error(image, error):
+        print 'Error loading image {}: '.format(image, error)
+
+    # Load the images specified on the command
+    # line, and configure the scene
+    fslview_parseargs.applyImageArgs(
+        args, imageList, displayCtx, loadFunc=load, errorFunc=error)
+    
+    fslview_parseargs.applySceneArgs(args, imageList, displayCtx)
+
+    return imageList, displayCtx
  
 
 FSL_TOOLNAME  = 'Render'
 FSL_EXECUTE   = run
-FSL_CONTEXT   = fslview_parseargs.handleImageArgs
+FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs

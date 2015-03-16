@@ -20,10 +20,8 @@ import wx
 
 import props
 
-import fsl.data.strings                         as strings
 import fsl.fslview.displaycontext               as displayctx
 import fsl.fslview.controls.imagelistpanel      as imagelistpanel
-# import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
 import fsl.fslview.controls.locationpanel       as locationpanel
 import fsl.fslview.controls.atlaspanel          as atlaspanel
@@ -153,33 +151,22 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-
-    showCursor     = props.Boolean(default=True)
     syncLocation   = displayctx.DisplayContext.getSyncProperty('location')
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
 
-    zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
-
-    colourBarLocation  = props.Choice(
-        ('top', 'bottom', 'left', 'right'),
-        labels=[strings.choices['CanvasPanel.colourBarLocation.top'],
-                strings.choices['CanvasPanel.colourBarLocation.bottom'],
-                strings.choices['CanvasPanel.colourBarLocation.left'],
-                strings.choices['CanvasPanel.colourBarLocation.right']])
-
-    
-    colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
-
-
-    def __init__(self, parent, imageList, displayCtx, extraActions=None):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 displayCtx,
+                 sceneOpts,
+                 extraActions=None):
 
         if extraActions is None:
             extraActions = {}
 
         actionz = dict({
             'screenshot'              : self.screenshot,
-            'toggleColourBar'         : self.toggleColourBar,
             'toggleImageList'         : lambda *a: self.togglePanel(
                 imagelistpanel.ImageListPanel),
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
@@ -193,6 +180,8 @@ class CanvasPanel(viewpanel.ViewPanel):
         viewpanel.ViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
 
+        self.__opts = sceneOpts
+        
         # If the provided DisplayContext  does not
         # have a parent, this will raise an error.
         # But I don't think a CanvasPanel will ever
@@ -216,14 +205,18 @@ class CanvasPanel(viewpanel.ViewPanel):
         # the _layout/_toggleColourBar methods
         self.__canvasSizer   = None
         self.__colourBar     = None
-        self.__showColourBar = False
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
         lName = 'CanvasPanel_{}'.format(self._name)
-        self.addListener('colourBarLocation', lName, self.__layout)
+        self.__opts.addListener('colourBarLocation', lName, self.__layout)
+        self.__opts.addListener('showColourBar',     lName, self.__layout)
         
         self.__layout()
+
+
+    def getSceneOptions(self):
+        return self.__opts
 
 
     def destroy(self):
@@ -236,15 +229,6 @@ class CanvasPanel(viewpanel.ViewPanel):
         if self.__colourBar is not None:
             self.__colourBar.destroy()
 
-
-    def toggleColourBar(self, *a):
-        self.__showColourBar = not self.__showColourBar
-        self.__layout()
-
-        
-    def colourBarIsShown(self):
-        return self.__showColourBar
-
     
     def screenshot(self, *a):
         _takeScreenShot(self._imageList, self._displayCtx, self)
@@ -256,12 +240,12 @@ class CanvasPanel(viewpanel.ViewPanel):
 
     def __layout(self, *a):
 
-        if not self.__showColourBar:
+        if not self.__opts.showColourBar:
 
             if self.__colourBar is not None:
-                self.unbindProps('colourBarLabelSide',
-                                 self.__colourBar,
-                                 'labelSide')
+                self.__opts.unbindProps('colourBarLabelSide',
+                                        self.__colourBar,
+                                        'labelSide')
                 self.__colourBar.destroy()
                 self.__colourBar.Destroy()
                 self.__colourBar = None
@@ -279,21 +263,23 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.__colourBar = colourbarpanel.ColourBarPanel(
                 self.__canvasContainer, self._imageList, self._displayCtx)
 
-        self.bindProps('colourBarLabelSide', self.__colourBar, 'labelSide') 
+        self.__opts.bindProps('colourBarLabelSide',
+                              self.__colourBar,
+                              'labelSide') 
             
-        if   self.colourBarLocation in ('top', 'bottom'):
+        if   self.__opts.colourBarLocation in ('top', 'bottom'):
             self.__colourBar.orientation = 'horizontal'
-        elif self.colourBarLocation in ('left', 'right'):
+        elif self.__opts.colourBarLocation in ('left', 'right'):
             self.__colourBar.orientation = 'vertical'
         
-        if self.colourBarLocation in ('top', 'bottom'):
+        if self.__opts.colourBarLocation in ('top', 'bottom'):
             self.__canvasSizer = wx.BoxSizer(wx.VERTICAL)
         else:
             self.__canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.__canvasContainer.SetSizer(self.__canvasSizer)
 
-        if self.colourBarLocation in ('top', 'left'):
+        if self.__opts.colourBarLocation in ('top', 'left'):
             self.__canvasSizer.Add(self.__colourBar,   flag=wx.EXPAND)
             self.__canvasSizer.Add(self.__canvasPanel, flag=wx.EXPAND,
                                    proportion=1)

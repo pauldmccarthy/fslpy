@@ -47,18 +47,19 @@ import logging
 
 import props
 
-import fsl.utils.typedict         as td
-import fsl.data.imageio           as iio
-import fsl.data.image             as fslimage
-import fsl.utils.transform        as transform
+import fsl.utils.typedict  as td
+import fsl.data.imageio    as iio
+import fsl.data.image      as fslimage
+import fsl.utils.transform as transform
 
-import fsl.fslview.displaycontext.display        as fsldisplay
-import fsl.fslview.displaycontext.volumeopts     as volumeopts
-import fsl.fslview.displaycontext.vectoropts     as vectoropts
-import fsl.fslview.displaycontext.maskopts       as maskopts
+import fsl.fslview.displaycontext.display      as fsldisplay
+import fsl.fslview.displaycontext.volumeopts   as volumeopts
+import fsl.fslview.displaycontext.vectoropts   as vectoropts
+import fsl.fslview.displaycontext.maskopts     as maskopts
 
-import fsl.fslview.views.orthopanel    as orthopanel
-import fsl.fslview.views.lightboxpanel as lightboxpanel
+import fsl.fslview.displaycontext.sceneopts    as sceneopts
+import fsl.fslview.displaycontext.orthoopts    as orthoopts
+import fsl.fslview.displaycontext.lightboxopts as lightboxopts
 
 
 log = logging.getLogger(__name__)
@@ -71,9 +72,10 @@ _OPTIONS_ = td.TypeDict({
     'Main'          : ['scene',
                        'voxelLoc',
                        'worldLoc',
-                       'selectedImage',
-                       'hideCursor'],
-    'ColourBar'     : ['showColourBar',
+                       'selectedImage'],
+    
+    'SceneOpts'     : ['showCursor',
+                       'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide'],
 
@@ -81,14 +83,15 @@ _OPTIONS_ = td.TypeDict({
     # the names of HasProperties classes,
     # and all of the values are the 
     # names of properties on them.
-    'OrthoPanel'    : ['xzoom',
+    'OrthoOpts'     : ['xzoom',
                        'yzoom',
                        'zzoom',
+                       'showLabels',
                        'layout',
                        'showXCanvas',
                        'showYCanvas',
                        'showZCanvas'],
-    'LightBoxPanel' : ['sliceSpacing',
+    'LightBoxOpts'  : ['sliceSpacing',
                        'ncols',
                        'nrows',
                        'zrange',
@@ -123,15 +126,15 @@ _OPTIONS_ = td.TypeDict({
 
 # Headings for each of the option groups
 _GROUPNAMES_ = td.TypeDict({
-    'OrthoPanel'    : 'Ortho display options',
-    'LightBoxPanel' : 'LightBox display options',
-    'Display'       : 'Image display options',
+    'SceneOpts'    : 'Scene options',
+    'OrthoOpts'    : 'Ortho display options',
+    'LightBoxOpts' : 'LightBox display options',
     
-    'VolumeOpts'    : 'Volume options',
-    'VectorOpts'    : 'Vector options',
-    'MaskOpts'      : 'Mask options',
+    'Display'      : 'Image display options',
+    'VolumeOpts'   : 'Volume options',
+    'VectorOpts'   : 'Vector options',
+    'MaskOpts'     : 'Mask options',
 
-    'ColourBar'     : 'Colour bar options',
 })
 
 # Short/long arguments for all of those options
@@ -148,32 +151,32 @@ _ARGUMENTS_ = td.TypeDict({
     'Main.voxelLoc'      : ('v',  'voxelloc'),
     'Main.worldLoc'      : ('w',  'worldloc'),
     'Main.selectedImage' : ('i',  'selectedImage'),
-    'Main.hideCursor'    : ('hc', 'hideCursor'),
     
-    'ColourBar.showColourBar'      : ('cb',  'showColourBar'),
-    'ColourBar.colourBarLocation'  : ('cbl', 'colourBarLocation'),
-    'ColourBar.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
+    'SceneOpts.showColourBar'      : ('cb',  'showColourBar'),
+    'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
+    'SceneOpts.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
+    'SceneOpts.showCursor'         : ('hc', 'hideCursor'),
     
-    'OrthoPanel.xzoom'       : ('xz', 'xzoom'),
-    'OrthoPanel.yzoom'       : ('yz', 'yzoom'),
-    'OrthoPanel.zzoom'       : ('zz', 'zzoom'),
-    'OrthoPanel.layout'      : ('lo', 'layout'),
-    'OrthoPanel.showXCanvas' : ('xh', 'hidex'),
-    'OrthoPanel.showYCanvas' : ('yh', 'hidey'),
-    'OrthoPanel.showZCanvas' : ('zh', 'hidez'),
-    'OrthoPanel.showLabels'  : ('lh', 'hideLabels'),
+    'OrthoOpts.xzoom'       : ('xz', 'xzoom'),
+    'OrthoOpts.yzoom'       : ('yz', 'yzoom'),
+    'OrthoOpts.zzoom'       : ('zz', 'zzoom'),
+    'OrthoOpts.layout'      : ('lo', 'layout'),
+    'OrthoOpts.showXCanvas' : ('xh', 'hidex'),
+    'OrthoOpts.showYCanvas' : ('yh', 'hidey'),
+    'OrthoOpts.showZCanvas' : ('zh', 'hidez'),
+    'OrthoOpts.showLabels'  : ('lh', 'hideLabels'),
 
-    'OrthoPanel.xcentre'     : ('xc', 'xcentre'),
-    'OrthoPanel.ycentre'     : ('yc', 'ycentre'),
-    'OrthoPanel.zcentre'     : ('zc', 'zcentre'),
+    'OrthoOpts.xcentre'     : ('xc', 'xcentre'),
+    'OrthoOpts.ycentre'     : ('yc', 'ycentre'),
+    'OrthoOpts.zcentre'     : ('zc', 'zcentre'),
 
-    'LightBoxPanel.sliceSpacing'   : ('ss', 'sliceSpacing'),
-    'LightBoxPanel.ncols'          : ('nc', 'ncols'),
-    'LightBoxPanel.nrows'          : ('nr', 'nrows'),
-    'LightBoxPanel.zrange'         : ('zr', 'zrange'),
-    'LightBoxPanel.showGridLines'  : ('sg', 'showGridLines'),
-    'LightBoxPanel.highlightSlice' : ('hs', 'highlightSlice'),
-    'LightBoxPanel.zax'            : ('zx', 'zaxis'),
+    'LightBoxOpts.sliceSpacing'   : ('ss', 'sliceSpacing'),
+    'LightBoxOpts.ncols'          : ('nc', 'ncols'),
+    'LightBoxOpts.nrows'          : ('nr', 'nrows'),
+    'LightBoxOpts.zrange'         : ('zr', 'zrange'),
+    'LightBoxOpts.showGridLines'  : ('sg', 'showGridLines'),
+    'LightBoxOpts.highlightSlice' : ('hs', 'highlightSlice'),
+    'LightBoxOpts.zax'            : ('zx', 'zaxis'),
 
     'Display.name'          : ('n',  'name'),
     'Display.interpolation' : ('in', 'interp'),
@@ -215,33 +218,33 @@ _HELP_ = td.TypeDict({
     'Main.worldLoc'      : 'Location to show (world coordinates, '
                            'takes precedence over --voxelloc)',
     'Main.selectedImage' : 'Selected image (default: last)',
-    'Main.hideCursor'    : 'Do not display the green cursor '
-                           'highlighting the current location',
-    
-    'ColourBar.showColourBar'      : 'Show colour bar',
-    'ColourBar.colourBarLocation'  : 'Colour bar location',
-    'ColourBar.colourBarLabelSide' : 'Colour bar label orientation', 
-    
-    'OrthoPanel.xzoom'       : 'X canvas zoom',
-    'OrthoPanel.yzoom'       : 'Y canvas zoom',
-    'OrthoPanel.zzoom'       : 'Z canvas zoom',
-    'OrthoPanel.layout'      : 'Canvas layout',
-    'OrthoPanel.showXCanvas' : 'Hide the X canvas',
-    'OrthoPanel.showYCanvas' : 'Hide the Y canvas',
-    'OrthoPanel.showZCanvas' : 'Hide the Z canvas',
-    'OrthoPanel.showLabels'  : 'Hide orientation labels',
 
-    'OrthoPanel.xcentre'     : 'X canvas display centre (world coordinates)',
-    'OrthoPanel.ycentre'     : 'Y canvas display centre (world coordinates)',
-    'OrthoPanel.zcentre'     : 'Z canvas display centre (world coordinates)',
+    'SceneOpts.showCursor'         : 'Do not display the green cursor '
+                                     'highlighting the current location',
+    'SceneOpts.showColourBar'      : 'Show colour bar',
+    'SceneOpts.colourBarLocation'  : 'Colour bar location',
+    'SceneOpts.colourBarLabelSide' : 'Colour bar label orientation', 
+    
+    'OrthoOpts.xzoom'       : 'X canvas zoom',
+    'OrthoOpts.yzoom'       : 'Y canvas zoom',
+    'OrthoOpts.zzoom'       : 'Z canvas zoom',
+    'OrthoOpts.layout'      : 'Canvas layout',
+    'OrthoOpts.showXCanvas' : 'Hide the X canvas',
+    'OrthoOpts.showYCanvas' : 'Hide the Y canvas',
+    'OrthoOpts.showZCanvas' : 'Hide the Z canvas',
+    'OrthoOpts.showLabels'  : 'Hide orientation labels',
 
-    'LightBoxPanel.sliceSpacing'   : 'Slice spacing',
-    'LightBoxPanel.ncols'          : 'Number of columns',
-    'LightBoxPanel.nrows'          : 'Number of rows',
-    'LightBoxPanel.zrange'         : 'Slice range',
-    'LightBoxPanel.showGridLines'  : 'Show grid lines',
-    'LightBoxPanel.highlightSlice' : 'Highlight current slice',
-    'LightBoxPanel.zax'            : 'Z axis',
+    'OrthoOpts.xcentre'     : 'X canvas display centre (world coordinates)',
+    'OrthoOpts.ycentre'     : 'Y canvas display centre (world coordinates)',
+    'OrthoOpts.zcentre'     : 'Z canvas display centre (world coordinates)',
+
+    'LightBoxOpts.sliceSpacing'   : 'Slice spacing',
+    'LightBoxOpts.ncols'          : 'Number of columns',
+    'LightBoxOpts.nrows'          : 'Number of rows',
+    'LightBoxOpts.zrange'         : 'Slice range',
+    'LightBoxOpts.showGridLines'  : 'Show grid lines',
+    'LightBoxOpts.highlightSlice' : 'Highlight current slice',
+    'LightBoxOpts.zax'            : 'Z axis',
 
     'Display.name'          : 'Image name',
     'Display.interpolation' : 'Interpolation',
@@ -277,11 +280,12 @@ _HELP_ = td.TypeDict({
 # be manipulated before the property value is
 # set
 _TRANSFORMS_ = td.TypeDict({
-    'OrthoPanel.showXCanvas' : lambda b: not b,
-    'OrthoPanel.showYCanvas' : lambda b: not b,
-    'OrthoPanel.showZCanvas' : lambda b: not b,
-    'OrthoPanel.showLabels'  : lambda b: not b,
-    'VectorOpts.modulate'    : lambda f: None,
+    'SceneOpts.showCursor'  : lambda b: not b,
+    'OrthoOpts.showXCanvas' : lambda b: not b,
+    'OrthoOpts.showYCanvas' : lambda b: not b,
+    'OrthoOpts.showZCanvas' : lambda b: not b,
+    'OrthoOpts.showLabels'  : lambda b: not b,
+    'VectorOpts.modulate'   : lambda f: None,
 })
 
 
@@ -325,45 +329,47 @@ def _configMainParser(mainParser):
     sceneParser.add_argument(*mainArgs['selectedImage'],
                              type=int,
                              help=mainHelp['selectedImage'])
-    sceneParser.add_argument(*mainArgs['hideCursor'],
-                             action='store_true',
-                             help=mainHelp['hideCursor'])
 
     # Separate parser groups for ortho/lightbox, and for colour bar options
-    cbarParser  =  mainParser.add_argument_group(_GROUPNAMES_['ColourBar'])    
-    orthoParser =  mainParser.add_argument_group(_GROUPNAMES_['OrthoPanel'])
-    lbParser    =  mainParser.add_argument_group(_GROUPNAMES_['LightBoxPanel'])
+    sceneParser =  mainParser.add_argument_group(_GROUPNAMES_['SceneOpts']) 
+    orthoParser =  mainParser.add_argument_group(_GROUPNAMES_['OrthoOpts'])
+    lbParser    =  mainParser.add_argument_group(_GROUPNAMES_['LightBoxOpts'])
 
-    _configColourBarParser(cbarParser)
+    _configSceneParser(    sceneParser)
     _configOrthoParser(    orthoParser)
     _configLightBoxParser( lbParser)
 
 
-def _configColourBarParser(cbarParser):
+def _configParser(target, parser, propNames=None):
+
+    if propNames is None:
+        propNames = _OPTIONS_[target]
+    shortArgs = {}
+    longArgs  = {}
+    helpTexts = {}
+
+    for propName in propNames:
+
+        shortArg, longArg = _ARGUMENTS_[target, propName]
+        helpText          = _HELP_[     target, propName]
+
+        shortArgs[propName] = shortArg
+        longArgs[ propName] = longArg
+        helpTexts[propName] = helpText
+
+    props.addParserArguments(target,
+                             parser,
+                             cliProps=propNames,
+                             shortArgs=shortArgs,
+                             longArgs=longArgs,
+                             propHelp=helpTexts)
+
+
+def _configSceneParser(sceneParser):
     """Adds options to the given argument parser which allow
     the user to specify colour bar properties.
     """
-    
-    cbarArgs = {name: _ARGUMENTS_['ColourBar', name]
-                for name in _OPTIONS_['ColourBar']}
-    cbarHelp = {name: _HELP_['ColourBar', name]
-                for name in _OPTIONS_['ColourBar']}
-
-    for name, (shortArg, longArg) in cbarArgs.items():
-        cbarArgs[name] = ('-{}'.format(shortArg), '--{}'.format(longArg))
-    
-    # Colour bar
-    cbarParser.add_argument(*cbarArgs['showColourBar'],
-                            action='store_true',
-                            help=cbarHelp['showColourBar'])
-    cbarParser.add_argument(*cbarArgs['colourBarLocation'],
-                            choices=('top', 'bottom', 'left', 'right'),
-                            help=cbarHelp['colourBarLocation'],
-                            default='top')
-    cbarParser.add_argument(*cbarArgs['colourBarLabelSide'],
-                            choices=('top-left', 'bottom-right'),
-                            help=cbarHelp['colourBarLabelSide'],
-                            default='top-left') 
+    _configParser(sceneopts.SceneOpts, sceneParser)
    
 
 def _configOrthoParser(orthoParser):
@@ -371,29 +377,8 @@ def _configOrthoParser(orthoParser):
     configure an orthographic display.
     """
 
-    OrthoPanel = orthopanel.OrthoPanel
-
-    propNames = _OPTIONS_[OrthoPanel]
-
-    shortArgs = {}
-    longArgs  = {}
-    helpTexts = {}
-
-    for propName in propNames:
-
-        shortArg, longArg = _ARGUMENTS_[OrthoPanel, propName]
-        helpText          = _HELP_[     OrthoPanel, propName]
-
-        shortArgs[propName] = shortArg
-        longArgs[ propName] = longArg
-        helpTexts[propName] = helpText
-
-    props.addParserArguments(OrthoPanel,
-                             orthoParser,
-                             cliProps=propNames,
-                             shortArgs=shortArgs,
-                             longArgs=longArgs,
-                             propHelp=helpTexts)
+    OrthoOpts = orthoopts.OrthoOpts
+    _configParser(OrthoOpts, orthoParser)
                              
     # Extra configuration options that are
     # not OrthoPanel properties, so can't
@@ -401,8 +386,8 @@ def _configOrthoParser(orthoParser):
     for opt, metavar in zip(['xcentre',  'ycentre',  'zcentre'],
                             [('Y', 'Z'), ('X', 'Z'), ('X', 'Y')]):
         
-        shortArg, longArg = _ARGUMENTS_[OrthoPanel, opt]
-        helpText          = _HELP_[     OrthoPanel, opt]
+        shortArg, longArg = _ARGUMENTS_[OrthoOpts, opt]
+        helpText          = _HELP_[     OrthoOpts, opt]
 
         shortArg =  '-{}'.format(shortArg)
         longArg  = '--{}'.format(longArg)
@@ -419,28 +404,7 @@ def _configLightBoxParser(lbParser):
     """Adds options to the given parser allowing the user to
     configure a lightbox display.
     """    
-    LightBoxPanel = lightboxpanel.LightBoxPanel
-
-    propNames = _OPTIONS_[LightBoxPanel]
-    shortArgs = {}
-    longArgs  = {}
-    helpTexts = {}
-
-    for propName in propNames:
-
-        shortArg, longArg = _ARGUMENTS_[LightBoxPanel, propName]
-        helpText          = _HELP_[     LightBoxPanel, propName]
-
-        shortArgs[propName] = shortArg
-        longArgs[ propName] = longArg
-        helpTexts[propName] = helpText
-
-    props.addParserArguments(LightBoxPanel,
-                             lbParser,
-                             cliProps=propNames,
-                             shortArgs=shortArgs,
-                             longArgs=longArgs,
-                             propHelp=helpTexts)
+    _configParser(lightboxopts.LightBoxOpts, lbParser)
 
 
 def _configImageParser(imgParser):
@@ -467,33 +431,15 @@ def _configImageParser(imgParser):
             [dispParser, volParser,  vecParser,  maskParser]):
 
         propNames = _OPTIONS_[target]
-        shortArgs = {}
-        longArgs  = {}
-        helpTexts = {}
 
-        # The VectorOpts.modulate option
-        # needs special treatment - see
-        # below
+        # The VectorOpts.modulate option needs
+        # special treatment - see below
         addModulate = False
         if target == VectorOpts and 'modulate' in propNames:
             addModulate = True
             propNames.remove('modulate')
- 
-        for propName in propNames:
 
-            shortArg, longArg = _ARGUMENTS_[target, propName]
-            helpText          = _HELP_[     target, propName]
-
-            shortArgs[propName] = shortArg
-            longArgs[ propName] = longArg
-            helpTexts[propName] = helpText
-
-        props.addParserArguments(target,
-                                 parser,
-                                 cliProps=propNames,
-                                 shortArgs=shortArgs,
-                                 longArgs=longArgs,
-                                 propHelp=helpTexts)
+        _configParser(target, parser, propNames)
 
         # We need to process the modulate option
         # manually, rather than using the props.cli
@@ -535,8 +481,9 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
       - toolOptsDesc: A string describing the tool-specific options (those
                       options which are handled by the tool, not by this
                       module).
-
     """
+
+    log.debug('Parsing arguments for {}: {}'.format(name, argv))
 
     # I hate argparse. By default, it does not support
     # the command line interface that I want to provide,
@@ -642,7 +589,24 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     return namespace
 
 
-def handleSceneArgs(args, imageList, displayCtx):
+def _applyArgs(args, target, propNames=None):
+    """Applies the given command line arguments to the given target object."""
+
+    if propNames is None:
+        propNames = _OPTIONS_[target]
+        
+    longArgs  = {name : _ARGUMENTS_[target, name][1] for name in propNames}
+    xforms    = {}
+    
+    for name in propNames:
+        xform = _TRANSFORMS_.get((target, name), None)
+        if xform is not None:
+            xforms[name] = xform
+
+    props.applyArguments(target, args, xformFuncs=xforms, longArgs=longArgs)
+
+
+def applySceneArgs(args, imageList, displayCtx, sceneOpts):
     """Configures the scene displayed by the given
     :class:`~fsl.fslview.displaycontext.DisplayContext` instance according
     to the arguments that were passed in on the command line.
@@ -654,7 +618,10 @@ def handleSceneArgs(args, imageList, displayCtx):
 
     :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
                      instance.
+
+    :arg sceneOpts: 
     """
+    
     # First apply all command line options
     # related to the display context 
     if args.selectedImage is not None:
@@ -680,8 +647,15 @@ def handleSceneArgs(args, imageList, displayCtx):
 
         displayCtx.location.xyz = loc
 
+    # It is assuemd that the given sceneOpts object
+    # is a subclass of SceneOpts
+    
+    sceneProps  = _OPTIONS_['SceneOpts']
+    sceneProps += _OPTIONS_[sceneOpts]
+    _applyArgs(args, sceneOpts, sceneProps)
 
-def handleImageArgs(args, imageList, displayCtx, **kwargs):
+
+def applyImageArgs(args, imageList, displayCtx, **kwargs):
     """Loads and configures any images which were specified on the
     command line.
 
@@ -703,40 +677,18 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
         
     imageList.extend(images)
 
-    dispPropNames = _OPTIONS_[fsldisplay.Display]
-    dispLongArgs  = {name : _ARGUMENTS_[fsldisplay.Display, name][1]
-                     for name in dispPropNames}
-    dispXforms    = {}
-    
-    for name in dispPropNames:
-        xform = _TRANSFORMS_.get((fsldisplay.Display, name), None)
-        if xform is not None:
-            dispXforms[name] = xform
-
     # per-image display arguments
     for i, image in enumerate(imageList):
 
         display = displayCtx.getDisplayProperties(imageList[i])
-
-        props.applyArguments(display,
-                             args.images[i],
-                             xformFuncs=dispXforms,
-                             longArgs=dispLongArgs)
+        _applyArgs(args.images[i], display)
 
         # Retrieve the DisplayOpts instance
         # after applying arguments to the
         # Display instance - if the image type
         # is set on the command line, the
         # DisplayOpts instance will be replaced
-        opts         = display.getDisplayOpts()
-        optPropNames = _OPTIONS_[opts]
-        optLongArgs  = {name : _ARGUMENTS_[opts, name][1]
-                        for name in optPropNames}
-        optXforms    = {}
-        for name in optPropNames:
-            xform = _TRANSFORMS_.get((opts, name), None)
-            if xform is not None:
-                optXforms[name] = xform
+        opts = display.getDisplayOpts()
 
         # VectorOpts.modulate is a Choice property,
         # where the valid choices are defined by
@@ -775,7 +727,6 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
             except Exception as e:
                 log.warn(e) 
 
-        props.applyArguments(opts,
-                             args.images[i],
-                             xformFuncs=optXforms,
-                             longArgs=optLongArgs) 
+        # After handling the special cases above, we can
+        # apply the CLI options to the Opts instance
+        _applyArgs(args.images[i], opts)
