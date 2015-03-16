@@ -26,8 +26,29 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
             self, parent, imageList, displayCtx, actionz)
         self.lightBoxPanel = lb
 
+        sceneOpts = lb.getSceneOptions()
+
         toolSpecs = layouts.layouts[self]
-        targets   = {s : self if s.key == 'more' else lb for s in toolSpecs}
+
+        # TODO this is dodgy - there needs to be a
+        # way to have this automatically set up.
+        #
+        # 1. Add the ability to associate arbitrary
+        #    data with a toolspec (modify props.ViewItem
+        #    to allow a value to be set)
+        #
+        # 2. Update layouts.widget and actions.ActionButton
+        #    to set that value to the target class
+        #
+        # 3. Here, loop through the toolspecs, check
+        #    the target class, and set the instance
+        #    appropriately
+        targets   = {'screenshot'   : lb,
+                     'zax'          : sceneOpts,
+                     'sliceSpacing' : sceneOpts,
+                     'zrange'       : sceneOpts,
+                     'zoom'         : sceneOpts,
+                     'more'         : self}
 
         self.GenerateTools(toolSpecs, targets)
 
