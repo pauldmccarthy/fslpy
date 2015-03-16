@@ -553,7 +553,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     imageIdxs = []
     for i in range(len(argv)):
         try:
-            argv[i] = iio.addExt(argv[i], mustExist=True)
+            argv[i] = iio.addExt(op.expanduser(argv[i]), mustExist=True)
             imageIdxs.append(i)
         except:
             continue
@@ -592,7 +592,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     for i in range(len(imageIdxs) - 1):
 
         imgArgv = argv[imageIdxs[i]:imageIdxs[i + 1]]
-        imgFile = op.expanduser(imgArgv[0])
+        imgFile = imgArgv[0]
         imgArgv = imgArgv[1:]
 
         imgNamespace       = imgParser.parse_args(imgArgv)
