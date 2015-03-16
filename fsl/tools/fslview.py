@@ -172,7 +172,9 @@ def context(args):
     # Load the images - the splash screen status will 
     # be updated with the currently loading image name
     fslview_parseargs.handleImageArgs(
-        args, imageList, displayCtx, loadFunc=status)
+        args, imageList, displayCtx, loadFunc=status)  
+    fslview_parseargs.handleSceneArgs(
+        args, imageList, displayCtx)
 
     return imageList, displayCtx, frame
 

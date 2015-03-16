@@ -57,12 +57,6 @@ class VectorOpts(fsldisplay.DisplayOpts):
 
     
     def __init__(self, image, display, imageList, displayCtx, parent=None):
-        fsldisplay.DisplayOpts.__init__(self,
-                                        image,
-                                        display,
-                                        imageList,
-                                        displayCtx,
-                                        parent)
         """Create a ``VectorOpts`` instance for the given image.
 
         See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
@@ -71,6 +65,13 @@ class VectorOpts(fsldisplay.DisplayOpts):
 
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
+        
+        fsldisplay.DisplayOpts.__init__(self,
+                                        image,
+                                        display,
+                                        imageList,
+                                        displayCtx,
+                                        parent)
 
 
     def imageListChanged(self, *a):

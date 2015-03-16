@@ -24,12 +24,6 @@ class MaskOpts(fsldisplay.DisplayOpts):
                 strings.choices['VolumeOpts.displayRange.max']]) 
 
     def __init__(self, image, display, imageList, displayCtx, parent=None):
-        fsldisplay.DisplayOpts.__init__(self,
-                                        image,
-                                        display,
-                                        imageList,
-                                        displayCtx,
-                                        parent)
 
         if np.prod(image.shape) > 2 ** 30:
             sample = image.data[..., image.shape[-1] / 2]
@@ -45,4 +39,11 @@ class MaskOpts(fsldisplay.DisplayOpts):
         self.threshold.setMin(  0, self.dataMin - 0.5 * dRangeLen)
         self.threshold.setMax(  0, self.dataMax + 0.5 * dRangeLen)
         self.threshold.setRange(0, 0.1, self.dataMax + 0.1)
-        self.setConstraint('threshold', 'minDistance', dMinDistance)        
+        self.setConstraint('threshold', 'minDistance', dMinDistance)
+
+        fsldisplay.DisplayOpts.__init__(self,
+                                        image,
+                                        display,
+                                        imageList,
+                                        displayCtx,
+                                        parent)

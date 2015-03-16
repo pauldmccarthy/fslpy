@@ -559,7 +559,56 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # manually step through the list of arguments,
     # and pass each block of arguments to the imgParser
     # one at a time
-    imgParser = argparse.ArgumentParser(add_help=False) 
+    imgParser = argparse.ArgumentParser(add_help=False)
+
+    # Because I'm splitting the argument parsing across two
+    # parsers, I'm using a custom print_help function 
+    def printHelp(shortHelp=False):
+
+        # Print help for the main parser first,
+        # and then separately for the image parser
+        if shortHelp: mainParser.print_usage()
+        else:         mainParser.print_help()
+
+        # Did I mention that I hate argparse?  Why
+        # can't we customise the help text? 
+        dispGroup = _GROUPNAMES_[fsldisplay.Display]
+        if shortHelp:
+            imgHelp    = imgParser.format_usage()
+            imgHelp    = imgHelp.split('\n')
+
+            # Argparse usage text starts with 'usage [toolname]:',
+            # and then proceeds to give short help for all the
+            # possible arguments. Here, we're removing this
+            # 'usage [toolname]:' section, and replacing it with
+            # spaces. We're also adding the image display argument
+            # group title to the beginning of the usage text
+            start      = ' '.join(imgHelp[0].split()[:2])
+            imgHelp[0] = imgHelp[0].replace(start, ' ' * len(start))
+            
+            imgHelp.insert(0, dispGroup)
+
+            imgHelp = '\n'.join(imgHelp)
+        else:
+
+            # Here we're skipping over the first section of
+            # the image parser help text,  everything before
+            # where the help text contains the image display
+            # options (which were identifying by searching
+            # through the text for the argument group title)
+            imgHelp = imgParser.format_help()
+            imgHelp = imgHelp[imgHelp.index(dispGroup):]
+            
+        print 
+        print imgHelp
+
+    # And I want to handle image argument errors,
+    # rather than having the image parser force
+    # the program to exit
+    def imageArgError(message):
+        raise RuntimeError(message)
+    
+    imgParser.error = imageArgError
 
     _configImageParser(imgParser)
 
@@ -571,9 +620,13 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # Make a list of all the options which
     # accept filenames, and which we need
     # to account for when we're searching
-    # for image files, flattening the
-    # short/long arguments into a 1D list.
-    fileOpts = [_ARGUMENTS_[vectoropts.VectorOpts, 'modulate']]
+    # for image files, 
+    fileOpts = []
+
+    # Add more arguments here as needed
+    fileOpts.append(_ARGUMENTS_[vectoropts.VectorOpts, 'modulate'])
+
+    # flatten the short/long arguments into a 1D list.
     fileOpts = reduce(lambda a, b: list(a) + list(b), fileOpts, [])
 
     imageIdxs = []
@@ -603,23 +656,9 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     # Parse the application options with the mainParser
     namespace = mainParser.parse_args(progArgv)
-
-    # If the user asked for help, print some help and exit
-    def print_help():
-        mainParser.print_help()
-
-        # Did I mention that I hate argparse?  Why
-        # can't we customise the help text? Here
-        # we're skipping over the top section of
-        # the image parser help text
-        imgHelp   = imgParser.format_help()
-        dispGroup = _GROUPNAMES_[fsldisplay.Display]
-        print 
-        print imgHelp[imgHelp.index(dispGroup):]
-        sys.exit(0)
-
+    
     if namespace.help:
-        print_help()
+        printHelp()
         sys.exit(0)
  
     # Then parse each block of
@@ -631,8 +670,14 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         imgFile = imgArgv[0]
         imgArgv = imgArgv[1:]
 
-        imgNamespace       = imgParser.parse_args(imgArgv)
-        imgNamespace.image = imgFile
+        try:
+            imgNamespace       = imgParser.parse_args(imgArgv)
+            imgNamespace.image = imgFile
+            
+        except Exception as e:
+            printHelp(shortHelp=True)
+            print e.message
+            sys.exit(1)
 
         # We just add a list of argparse.Namespace
         # objects, one for each image, to the
