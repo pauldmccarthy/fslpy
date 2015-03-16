@@ -79,10 +79,12 @@ class OrthoViewProfile(profiles.Profile):
 
     def resetZoom(self, *a):
 
-        self._canvasPanel.zoom  = 100
-        self._canvasPanel.xzoom = 100
-        self._canvasPanel.yzoom = 100
-        self._canvasPanel.zzoom = 100
+        opts = self._canvasPanel.getSceneOptions()
+
+        opts.zoom  = 100
+        opts.xzoom = 100
+        opts.yzoom = 100
+        opts.zzoom = 100
 
 
     def centreCursor(self, *a):

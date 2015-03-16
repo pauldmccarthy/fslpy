@@ -182,7 +182,8 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         display   = self._displayCtx.getDisplayProperties(image)
         opts      = display.getDisplayOpts()
         toolSpecs = layouts.layouts[self, opts]
-        targets   = { s : self if s.key == 'more' else opts for s in toolSpecs}
+        targets   = { s.key : self if s.key == 'more' else opts
+                      for s in toolSpecs}
         
         log.debug('Creating options tools for {}'.format(image))
 
