@@ -43,11 +43,13 @@ The main entry points of this module are:
 import sys
 import os.path as op
 import argparse
+import logging
 
 import props
 
 import fsl.utils.typedict         as td
 import fsl.data.imageio           as iio
+import fsl.data.image             as fslimage
 import fsl.utils.transform        as transform
 
 import fsl.fslview.displaycontext.display        as fsldisplay
@@ -57,6 +59,9 @@ import fsl.fslview.displaycontext.maskopts       as maskopts
 
 import fsl.fslview.views.orthopanel    as orthopanel
 import fsl.fslview.views.lightboxpanel as lightboxpanel
+
+
+log = logging.getLogger(__name__)
 
 
 # Names of all of the property which are 
@@ -466,6 +471,14 @@ def _configImageParser(imgParser):
         longArgs  = {}
         helpTexts = {}
 
+        # The VectorOpts.modulate option
+        # needs special treatment - see
+        # below
+        addModulate = False
+        if target == VectorOpts and 'modulate' in propNames:
+            addModulate = True
+            propNames.remove('modulate')
+ 
         for propName in propNames:
 
             shortArg, longArg = _ARGUMENTS_[target, propName]
@@ -482,7 +495,22 @@ def _configImageParser(imgParser):
                                  longArgs=longArgs,
                                  propHelp=helpTexts)
 
+        # We need to process the modulate option
+        # manually, rather than using the props.cli
+        # module - see the handleImageArgs function.
+        if addModulate:
+            shortArg, longArg = _ARGUMENTS_[target, 'modulate']
+            helpText          = _HELP_[     target, 'modulate']
 
+            shortArg =  '-{}'.format(shortArg)
+            longArg  = '--{}'.format(longArg)
+            parser.add_argument(
+                shortArg,
+                longArg,
+                metavar='FILE',
+                help=helpText)
+
+            
 def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     """Parses the given command line arguments, returning an
     :class:`argparse.Namespace` object containing all the arguments.
@@ -536,24 +564,32 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     _configImageParser(imgParser)
 
     # Figure out where the image files
-    # are in the argument list.
-    #
-    # This approach currently means that
-    # we cannot have any other options
-    # which accept file names as arguments.
-    # A future change will be to allow
-    # this, but to add an explciit check
-    # here, for each of the options which
-    # require a file argument.
-    #
-    # TODO Handle vector opts modulate option
+    # are in the argument list, accounting
+    # for any options which accept image
+    # files as arguments.
     # 
-    # TODO Could do a more rigorous test
-    # here - check for supported image files
+    # Make a list of all the options which
+    # accept filenames, and which we need
+    # to account for when we're searching
+    # for image files, flattening the
+    # short/long arguments into a 1D list.
+    fileOpts = [_ARGUMENTS_[vectoropts.VectorOpts, 'modulate']]
+    fileOpts = reduce(lambda a, b: list(a) + list(b), fileOpts, [])
+
     imageIdxs = []
     for i in range(len(argv)):
         try:
+            # imageio.addExt will raise an error if
+            # the argument is not a valid image file
             argv[i] = iio.addExt(op.expanduser(argv[i]), mustExist=True)
+
+            # Check that this image file was not a
+            # parameter to a file option
+            if i > 0 and argv[i - 1].strip('-') in fileOpts:
+                continue
+
+            # Otherwise, it's an image
+            # file that needs to be loaded
             imageIdxs.append(i)
         except:
             continue
@@ -666,7 +702,7 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
             dispXforms[name] = xform
 
     # per-image display arguments
-    for i in range(len(imageList)):
+    for i, image in enumerate(imageList):
 
         display = displayCtx.getDisplayProperties(imageList[i])
 
@@ -689,6 +725,43 @@ def handleImageArgs(args, imageList, displayCtx, **kwargs):
             xform = _TRANSFORMS_.get((opts, name), None)
             if xform is not None:
                 optXforms[name] = xform
+
+        # VectorOpts.modulate is a Choice property,
+        # where the valid choices are defined by
+        # the current contents of the image list.
+        # So when the user specifies a modulation
+        # image, we need to do an explicit check
+        # to see if the specified image is vaid
+        # 
+        # Here, I'm loading the image, and checking
+        # to see if it can be used to modulate the
+        # vector image (just with a dimension check).
+        # If it can, I add it to the image list - the
+        # applyArguments function will apply the
+        # value. If the modulate file is not valid,
+        # I print a warning, and clear the modulate
+        # option.
+        if isinstance(opts, vectoropts.VectorOpts) and \
+           args.images[i].modulate is not None:
+
+            try:
+                modImage = fslimage.Image(args.images[i].modulate)
+                
+                if modImage.shape  != image.shape[ :3] or \
+                   modImage.pixdim != image.pixdim[:3]:
+                    raise RuntimeError(
+                        'Image {} cannot be used to modulate {} - '
+                        'dimensions don\'t match'.format(modImage, image))
+
+                imageList.insert(0, modImage)
+                opts.modulate = modImage
+                args.images[i].modulate = None
+
+                log.debug('Set {} to be modulated by {}'.format(
+                    image, modImage))
+                
+            except Exception as e:
+                log.warn(e) 
 
         props.applyArguments(opts,
                              args.images[i],
