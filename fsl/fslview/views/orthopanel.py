@@ -216,10 +216,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         import fsl.fslview.controls.imagedisplaytoolbar as idt
         import fsl.fslview.controls.orthotoolbar        as ot
         
-#        self.togglePanel(ilp.ImageListPanel)
-#        self.togglePanel(lop.LocationPanel)
-#        self.togglePanel(idt.ImageDisplayToolBar, False, self)
-#        self.togglePanel(ot .OrthoToolBar,        False, self)
+        self.togglePanel(ilp.ImageListPanel)
+        self.togglePanel(lop.LocationPanel)
+        self.togglePanel(idt.ImageDisplayToolBar, False, self)
+        self.togglePanel(ot .OrthoToolBar,        False, self)
  
 
     def destroy(self):
