@@ -19,10 +19,8 @@ See:
 
 import os
 import sys
-import subprocess
 
 import logging
-log = logging.getLogger(__name__)
 
 import argparse
 
@@ -31,6 +29,7 @@ import matplotlib.image as mplimg
 import props
 import fslview_parseargs
 
+import fsl
 import fsl.utils.layout                        as fsllayout
 import fsl.utils.colourbarbitmap               as cbarbitmap
 import fsl.utils.textbitmap                    as textbitmap
@@ -40,6 +39,9 @@ import fsl.data.constants                      as constants
 import fsl.fslview.displaycontext              as displaycontext
 import fsl.fslview.displaycontext.orthoopts    as orthoopts
 import fsl.fslview.displaycontext.lightboxopts as lightboxopts
+
+
+log = logging.getLogger(__name__)
 
 
 if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
@@ -279,16 +281,12 @@ def run(args, context):
         log.warning('Restarting render.py with '
                     'off-screen rendering configured...')
 
-        # If fslpy has been called via
-        # 'python -c "import fsl; fsl.main()",
-        # python passes '-c' as the first
-        # argument.
+        # Restart render with the same arguments,
+        # but with an updated environment
         argv = list(sys.argv)
-        if argv[0] == '-c': argv = argv[1:]
-        
-        argv = ['fslpy'] + argv
-        
-        subprocess.call(argv, env=env)
+        argv = argv[argv.index('render') + 1:]
+
+        fsl.runTool('render', argv, env=env)
         sys.exit(0)
 
     import fsl.fslview.gl                      as fslgl

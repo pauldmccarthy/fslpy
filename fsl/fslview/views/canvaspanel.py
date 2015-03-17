@@ -12,12 +12,10 @@ class for all panels which display image data (e.g. the
 """
 
 import logging
-log = logging.getLogger(__name__)
-
-import subprocess
 
 import wx
 
+import fsl
 import fsl.tools.fslview_parseargs              as fslview_parseargs
 import fsl.data.imageio                         as iio
 import fsl.data.strings                         as strings
@@ -29,6 +27,9 @@ import fsl.fslview.controls.locationpanel       as locationpanel
 import fsl.fslview.controls.atlaspanel          as atlaspanel
 import                                             colourbarpanel
 import                                             viewpanel
+
+
+log = logging.getLogger(__name__)
 
 
 def _takeScreenShot(imageList, displayCtx, canvas):
@@ -134,13 +135,16 @@ def _takeScreenShot(imageList, displayCtx, canvas):
         imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
         argv   += [fname] + imgArgv
 
+    # Make sure arguments are tokenised correctly - 
+    # the generated argument value for some properties
+    # values contains multiple values, but formatted
+    # as a single string
+    argv = ' '.join(argv).split()
+    log.debug('Generating screenshot with call '
+              'to render: {}'.format(' '.join(argv)))
+
     # Run render.py to generate the screenshot 
-    argv = ['fslpy', 'render'] + argv
-
-    log.debug('Generating screenshot with call to '
-              'render: {}'.format(' '.join(argv)))
-
-    subprocess.call(argv)
+    fsl.runTool('render', ' '.join(argv).split())
 
 
 class CanvasPanel(viewpanel.ViewPanel):

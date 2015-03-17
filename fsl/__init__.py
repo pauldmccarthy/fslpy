@@ -56,8 +56,11 @@ import warnings
 import os
 import sys
 import argparse
+import subprocess
+
 
 log = logging.getLogger(__name__)
+
 
 # make matplotlib quiet
 warnings.filterwarnings('ignore', module='matplotlib')
@@ -329,6 +332,19 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     return frame
 
 
+def runTool(toolName, args, **kwargs):
+    """Runs the tool with the specified name, with the specified arguments,
+    in a separate process.
+    """
+
+    args = [toolName] + args
+    args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
+
+    log.debug('Executing {}'.format(' '.join(args)))
+
+    subprocess.call(args, **kwargs)
+
+    
 def main():
     """Entry point.
 

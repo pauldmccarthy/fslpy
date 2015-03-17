@@ -519,7 +519,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
         # Did I mention that I hate argparse?  Why
         # can't we customise the help text? 
-        dispGroup = _GROUPNAMES_[fsldisplay.Display]
+        dispGroup = GROUPNAMES[fsldisplay.Display]
         if shortHelp:
             imgHelp    = imgParser.format_usage()
             imgHelp    = imgHelp.split('\n')
