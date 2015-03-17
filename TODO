@@ -22,7 +22,7 @@ the VNC version on the servers.
 *** Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
 *** Toolbars not being resized appropriately when the parent viewpanel is resized?
 *** Toolbar mouse scrolling not working? Oh, this may be because of the above issue.
-** Command line
+** DONE Command line
 ** DONE? Little things
 *** DONE ViewPanel: New toolbars in a lower layer
 *** DONE Number spinboxes are no longer clamped
@@ -43,7 +43,7 @@ oxford branch, and push to jalapeno
 *** Tooltips
 *** Save/restore window layout
 *** Movie mode
-*** Offscreen rendering
+*** DONE Offscreen rendering
 *** Document all the code
 *** Fix all the bugs
 * Things to do in props package
@@ -135,6 +135,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Option to centre display range for volume images
 ** Spline interpolation in GL14
 ** Ability to display vector data as directional (i.e. starting from voxel centre)
 ** 'Label' image type, which allows user to change colour for each label.
