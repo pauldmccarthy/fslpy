@@ -126,25 +126,21 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     # Add display options for each image
     for image in displayCtx.getOrderedImages():
 
-        fname = image.imageFile
+        display = displayCtx.getDisplayProperties(image)
+        fname   = image.imageFile
 
-        # Skip unsaved/in-memory images
-        if not image.saved:
+        # Skip invisible/unsaved/in-memory images
+        if not (display.enabled and image.saved):
             continue
 
         imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
         argv   += [fname] + imgArgv
 
-    # Make sure arguments are tokenised correctly - 
-    # the generated argument value for some properties
-    # values contains multiple values, but formatted
-    # as a single string
-    argv = ' '.join(argv).split()
     log.debug('Generating screenshot with call '
               'to render: {}'.format(' '.join(argv)))
 
     # Run render.py to generate the screenshot 
-    fsl.runTool('render', ' '.join(argv).split())
+    fsl.runTool('render', argv)
 
 
 class CanvasPanel(viewpanel.ViewPanel):

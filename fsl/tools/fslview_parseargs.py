@@ -121,7 +121,8 @@ OPTIONS = td.TypeDict({
                        'suppressX',
                        'suppressY',
                        'suppressZ',
-                       'modulate'],
+                       'modulate',
+                       'modThreshold'],
 })
 
 # Headings for each of the option groups
@@ -205,6 +206,7 @@ ARGUMENTS = td.TypeDict({
     'VectorOpts.suppressY'   : ('ys', 'suppressY'),
     'VectorOpts.suppressZ'   : ('zs', 'suppressZ'),
     'VectorOpts.modulate'    : ('m',  'modulate'),
+    'VectorOpts.modThreshold': ('mt', 'modThreshold'),
 
 })
 
@@ -265,27 +267,39 @@ HELP = td.TypeDict({
     'MaskOpts.invert'    : 'Invert',
     'MaskOpts.threshold' : 'Threshold',
 
-    'VectorOpts.displayMode' : 'Display mode',
-    'VectorOpts.xColour'     : 'X colour',
-    'VectorOpts.yColour'     : 'Y colour',
-    'VectorOpts.zColour'     : 'Z colour',
-    'VectorOpts.suppressX'   : 'Suppress X magnitude',
-    'VectorOpts.suppressY'   : 'Suppress Y magnitude',
-    'VectorOpts.suppressZ'   : 'Suppress Z magnitude',
-    'VectorOpts.modulate'    : 'Modulate vector colours',
+    'VectorOpts.displayMode'  : 'Display mode',
+    'VectorOpts.xColour'      : 'X colour',
+    'VectorOpts.yColour'      : 'Y colour',
+    'VectorOpts.zColour'      : 'Z colour',
+    'VectorOpts.suppressX'    : 'Suppress X magnitude',
+    'VectorOpts.suppressY'    : 'Suppress Y magnitude',
+    'VectorOpts.suppressZ'    : 'Suppress Z magnitude',
+    'VectorOpts.modulate'     : 'Modulate vector colours',
+    'VectorOpts.modThreshold' : 'Hide voxels where modulation '
+                                'value is below this threshold (%)',
 })
 
 # Transform functions for properties where the
 # value passed in on the command line needs to
 # be manipulated before the property value is
 # set
+#
+# TODO If/when you have a need for more
+# complicated property transformations (i.e.
+# non-reversible ones), you'll need to have
+# an inverse transforms dictionary
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
     'OrthoOpts.showXCanvas' : lambda b: not b,
     'OrthoOpts.showYCanvas' : lambda b: not b,
     'OrthoOpts.showZCanvas' : lambda b: not b,
     'OrthoOpts.showLabels'  : lambda b: not b,
-    'VectorOpts.modulate'   : lambda f: None,
+
+    # The modulate property is handled specially
+    # when reading in command line arguments -
+    # this transform function is only used when
+    # generating arguments
+    'VectorOpts.modulate'   : lambda i: i.imageFile,
 })
 
 
@@ -430,7 +444,7 @@ def _configImageParser(imgParser):
             [Display,    VolumeOpts, VectorOpts, MaskOpts],
             [dispParser, volParser,  vecParser,  maskParser]):
 
-        propNames = OPTIONS[target]
+        propNames = list(OPTIONS[target])
 
         # The VectorOpts.modulate option needs
         # special treatment - see below
