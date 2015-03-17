@@ -56,8 +56,8 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 * WX Bugs
 ** agw.aui
-*** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue
-*** Floating panels are resized to specified floating size, but the title bar is not taken into account 
+*** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue; I've coded a workaround.
+*** Floating panels are resized to specified floating size, but the title bar is not taken into account. Coded a workaround
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
