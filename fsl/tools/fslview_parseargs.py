@@ -67,7 +67,7 @@ log = logging.getLogger(__name__)
 
 # Names of all of the property which are 
 # customisable via command line arguments.
-_OPTIONS_ = td.TypeDict({
+OPTIONS = td.TypeDict({
 
     'Main'          : ['scene',
                        'voxelLoc',
@@ -125,7 +125,7 @@ _OPTIONS_ = td.TypeDict({
 })
 
 # Headings for each of the option groups
-_GROUPNAMES_ = td.TypeDict({
+GROUPNAMES = td.TypeDict({
     'SceneOpts'    : 'Scene options',
     'OrthoOpts'    : 'Ortho display options',
     'LightBoxOpts' : 'LightBox display options',
@@ -145,7 +145,7 @@ _GROUPNAMES_ = td.TypeDict({
 #
 # There can't be any collisions between the 
 # Display options and the *Opts options.
-_ARGUMENTS_ = td.TypeDict({
+ARGUMENTS = td.TypeDict({
 
     'Main.scene'         : ('s',  'scene'),
     'Main.voxelLoc'      : ('v',  'voxelloc'),
@@ -209,7 +209,7 @@ _ARGUMENTS_ = td.TypeDict({
 })
 
 # Help text for all of the options
-_HELP_ = td.TypeDict({
+HELP = td.TypeDict({
 
     'Main.scene'         : 'Scene to show. If not provided, the '
                            'previous scene layout is restored.',
@@ -279,7 +279,7 @@ _HELP_ = td.TypeDict({
 # value passed in on the command line needs to
 # be manipulated before the property value is
 # set
-_TRANSFORMS_ = td.TypeDict({
+TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
     'OrthoOpts.showXCanvas' : lambda b: not b,
     'OrthoOpts.showYCanvas' : lambda b: not b,
@@ -307,8 +307,8 @@ def _configMainParser(mainParser):
     # Options defining the overall scene
     sceneParser = mainParser.add_argument_group('Scene options')
 
-    mainArgs = {name: _ARGUMENTS_['Main', name] for name in _OPTIONS_['Main']}
-    mainHelp = {name: _HELP_[     'Main', name] for name in _OPTIONS_['Main']}
+    mainArgs = {name: ARGUMENTS['Main', name] for name in OPTIONS['Main']}
+    mainHelp = {name: HELP[     'Main', name] for name in OPTIONS['Main']}
 
     for name, (shortArg, longArg) in mainArgs.items():
         mainArgs[name] = ('-{}'.format(shortArg), '--{}'.format(longArg))
@@ -323,7 +323,7 @@ def _configMainParser(mainParser):
                              help=mainHelp['voxelLoc'])
     sceneParser.add_argument(*mainArgs['worldLoc'],
                              metavar=('X', 'Y', 'Z'),
-                             type=int,
+                             type=float,
                              nargs=3,
                              help=mainHelp['worldLoc'])
     sceneParser.add_argument(*mainArgs['selectedImage'],
@@ -331,9 +331,9 @@ def _configMainParser(mainParser):
                              help=mainHelp['selectedImage'])
 
     # Separate parser groups for ortho/lightbox, and for colour bar options
-    sceneParser =  mainParser.add_argument_group(_GROUPNAMES_['SceneOpts']) 
-    orthoParser =  mainParser.add_argument_group(_GROUPNAMES_['OrthoOpts'])
-    lbParser    =  mainParser.add_argument_group(_GROUPNAMES_['LightBoxOpts'])
+    sceneParser =  mainParser.add_argument_group(GROUPNAMES['SceneOpts']) 
+    orthoParser =  mainParser.add_argument_group(GROUPNAMES['OrthoOpts'])
+    lbParser    =  mainParser.add_argument_group(GROUPNAMES['LightBoxOpts'])
 
     _configSceneParser(    sceneParser)
     _configOrthoParser(    orthoParser)
@@ -343,15 +343,15 @@ def _configMainParser(mainParser):
 def _configParser(target, parser, propNames=None):
 
     if propNames is None:
-        propNames = _OPTIONS_[target]
+        propNames = OPTIONS[target]
     shortArgs = {}
     longArgs  = {}
     helpTexts = {}
 
     for propName in propNames:
 
-        shortArg, longArg = _ARGUMENTS_[target, propName]
-        helpText          = _HELP_[     target, propName]
+        shortArg, longArg = ARGUMENTS[target, propName]
+        helpText          = HELP[     target, propName]
 
         shortArgs[propName] = shortArg
         longArgs[ propName] = longArg
@@ -386,8 +386,8 @@ def _configOrthoParser(orthoParser):
     for opt, metavar in zip(['xcentre',  'ycentre',  'zcentre'],
                             [('Y', 'Z'), ('X', 'Z'), ('X', 'Y')]):
         
-        shortArg, longArg = _ARGUMENTS_[OrthoOpts, opt]
-        helpText          = _HELP_[     OrthoOpts, opt]
+        shortArg, longArg = ARGUMENTS[OrthoOpts, opt]
+        helpText          = HELP[     OrthoOpts, opt]
 
         shortArg =  '-{}'.format(shortArg)
         longArg  = '--{}'.format(longArg)
@@ -420,17 +420,17 @@ def _configImageParser(imgParser):
     dispDesc = 'Each display option will be applied to the '\
                'image which is listed before that option.'
 
-    dispParser = imgParser.add_argument_group(_GROUPNAMES_[Display],
+    dispParser = imgParser.add_argument_group(GROUPNAMES[Display],
                                               dispDesc)
-    volParser  = imgParser.add_argument_group(_GROUPNAMES_[VolumeOpts])
-    vecParser  = imgParser.add_argument_group(_GROUPNAMES_[VectorOpts])
-    maskParser = imgParser.add_argument_group(_GROUPNAMES_[MaskOpts])
+    volParser  = imgParser.add_argument_group(GROUPNAMES[VolumeOpts])
+    vecParser  = imgParser.add_argument_group(GROUPNAMES[VectorOpts])
+    maskParser = imgParser.add_argument_group(GROUPNAMES[MaskOpts])
 
     for target, parser in zip(
             [Display,    VolumeOpts, VectorOpts, MaskOpts],
             [dispParser, volParser,  vecParser,  maskParser]):
 
-        propNames = _OPTIONS_[target]
+        propNames = OPTIONS[target]
 
         # The VectorOpts.modulate option needs
         # special treatment - see below
@@ -445,8 +445,8 @@ def _configImageParser(imgParser):
         # manually, rather than using the props.cli
         # module - see the handleImageArgs function.
         if addModulate:
-            shortArg, longArg = _ARGUMENTS_[target, 'modulate']
-            helpText          = _HELP_[     target, 'modulate']
+            shortArg, longArg = ARGUMENTS[target, 'modulate']
+            helpText          = HELP[     target, 'modulate']
 
             shortArg =  '-{}'.format(shortArg)
             longArg  = '--{}'.format(longArg)
@@ -520,7 +520,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # to account for when we're searching
     # for image files, flattening the
     # short/long arguments into a 1D list.
-    fileOpts = [_ARGUMENTS_[vectoropts.VectorOpts, 'modulate']]
+    fileOpts = [ARGUMENTS[vectoropts.VectorOpts, 'modulate']]
     fileOpts = reduce(lambda a, b: list(a) + list(b), fileOpts, [])
 
     imageIdxs = []
@@ -560,7 +560,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         # we're skipping over the top section of
         # the image parser help text
         imgHelp   = imgParser.format_help()
-        dispGroup = _GROUPNAMES_[fsldisplay.Display]
+        dispGroup = GROUPNAMES[fsldisplay.Display]
         print 
         print imgHelp[imgHelp.index(dispGroup):]
         sys.exit(0)
@@ -593,17 +593,40 @@ def _applyArgs(args, target, propNames=None):
     """Applies the given command line arguments to the given target object."""
 
     if propNames is None:
-        propNames = _OPTIONS_[target]
+        propNames = OPTIONS[target]
         
-    longArgs  = {name : _ARGUMENTS_[target, name][1] for name in propNames}
+    longArgs  = {name : ARGUMENTS[target, name][1] for name in propNames}
     xforms    = {}
     
     for name in propNames:
-        xform = _TRANSFORMS_.get((target, name), None)
+        xform = TRANSFORMS.get((target, name), None)
         if xform is not None:
             xforms[name] = xform
 
     props.applyArguments(target, args, xformFuncs=xforms, longArgs=longArgs)
+
+
+def _generateArgs(source, propNames=None):
+    """Does the opposite of :func:`_applyArgs` - generates command line
+    arguments which can be used to configure another ``source`` instance
+    in the same way as the provided one.
+    """
+
+    if propNames is None:
+        propNames = OPTIONS[source]
+        
+    longArgs  = {name : ARGUMENTS[source, name][1] for name in propNames}
+    xforms    = {}
+    
+    for name in propNames:
+        xform = TRANSFORMS.get((source, name), None)
+        if xform is not None:
+            xforms[name] = xform
+
+    return props.generateArguments(source,
+                                   xformFuncs=xforms,
+                                   cliProps=propNames,
+                                   longArgs=longArgs)
 
 
 def applySceneArgs(args, imageList, displayCtx, sceneOpts):
@@ -647,12 +670,49 @@ def applySceneArgs(args, imageList, displayCtx, sceneOpts):
 
         displayCtx.location.xyz = loc
 
-    # It is assuemd that the given sceneOpts object
-    # is a subclass of SceneOpts
-    
-    sceneProps  = _OPTIONS_['SceneOpts']
-    sceneProps += _OPTIONS_[sceneOpts]
+    # It is assuemd that the given sceneOpts 
+    # object is a subclass of SceneOpts
+    sceneProps  = OPTIONS['SceneOpts'] + OPTIONS[sceneOpts]
     _applyArgs(args, sceneOpts, sceneProps)
+
+
+def generateSceneArgs(imageList, displayCtx, sceneOpts):
+    """Generates command line arguments which describe the current state of
+    the provided ``displayCtx`` and ``sceneOpts`` instances.
+    """
+
+    args = []
+
+
+    args += ['--{}'.format(ARGUMENTS['Main.scene'][1])]
+    if   isinstance(sceneOpts, orthoopts   .OrthoOpts):    args += ['ortho']
+    elif isinstance(sceneOpts, lightboxopts.LightBoxOpts): args += ['lightbox']
+    else: raise ValueError('Unrecognised SceneOpts '
+                           'type: {}'.format(type(sceneOpts).__name__))
+
+    # main options
+    if len(imageList) > 0:
+        args += ['--{}'.format(ARGUMENTS['Main.worldLoc'][1])]
+        args += ['{}'.format(c) for c in displayCtx.location.xyz]
+
+    if displayCtx.selectedImage is not None:
+        args += ['--{}'.format(ARGUMENTS['Main.selectedImage'][1])]
+        args += ['{}'.format(displayCtx.selectedImage)]
+
+    args += _generateArgs(sceneOpts, OPTIONS['SceneOpts'])
+    args += _generateArgs(sceneOpts, OPTIONS[ sceneOpts])
+
+    return args
+
+
+def generateImageArgs(image, displayCtx):
+    """
+    """
+    display = displayCtx.getDisplayProperties(image)
+    opts    = display   .getDisplayOpts()
+    args    = _generateArgs(display) + _generateArgs(opts)
+
+    return args
 
 
 def applyImageArgs(args, imageList, displayCtx, **kwargs):

@@ -55,7 +55,9 @@ titles = TypeDict({
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
     'HistogramPanel'  : 'Histogram',
-    'SpacePanel'      : 'Space inspector', 
+    'SpacePanel'      : 'Space inspector',
+
+    'CanvasPanel.screenshot' : 'Save screenshot',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',

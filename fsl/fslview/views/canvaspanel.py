@@ -18,9 +18,10 @@ import subprocess
 
 import wx
 
-import props
-
+import fsl.tools.fslview_parseargs              as fslview_parseargs
+import fsl.data.strings                         as strings
 import fsl.fslview.displaycontext               as displayctx
+import fsl.fslview.displaycontext.orthoopts     as orthoopts
 import fsl.fslview.controls.imagelistpanel      as imagelistpanel
 import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
 import fsl.fslview.controls.locationpanel       as locationpanel
@@ -31,11 +32,9 @@ import                                             viewpanel
 
 def _takeScreenShot(imageList, displayCtx, canvas):
 
-    import fsl.fslview.views.orthopanel    as orthopanel
-    import fsl.fslview.views.lightboxpanel as lightboxpanel
     
     dlg = wx.FileDialog(canvas,
-                        message='Save screenshot',
+                        message=strings['CanvasPanel.screenshot'],
                         style=wx.FD_SAVE)
 
     if dlg.ShowModal() != wx.ID_OK: return
@@ -49,74 +48,39 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     # will need to save them to a temp file or
     # alternately prompt the user to save all in memory
     # images and try again
-
-    # TODO support view panels other than lightbox/ortho? 
     if not isinstance(canvas, CanvasPanel):
         return
 
+    sceneOpts = canvas.getSceneOptions()
+
     width, height = canvas.getCanvasPanel().GetClientSize().Get()
 
+    # render.py specific options
     argv  = []
     argv += ['--outfile', filename]
     argv += ['--size', '{}'.format(width), '{}'.format(height)]
     argv += ['--background', '0', '0', '0', '255']
 
-    # TODO get location from panel - if possync
-    # is false, this will be wrong
-    argv += ['--worldloc']
-    argv += ['{}'.format(c) for c in displayCtx.location.xyz]
-    argv += ['--selectedImage']
-    argv += ['{}'.format(displayCtx.selectedImage)]
+    # scene options
+    argv += fslview_parseargs.generateSceneArgs(
+        imageList, displayCtx, sceneOpts)
 
-    if not canvas.showCursor:
-        argv += ['--hideCursor']
+    # ortho specific options
+    if isinstance(sceneOpts, orthoopts.OrthoOpts):
 
-    if canvas.colourBarIsShown():
-        argv += ['--showColourBar']
-        argv += ['--colourBarLocation']
-        argv += [canvas.colourBarLocation]
-        argv += ['--colourBarLabelSide']
-        argv += [canvas.colourBarLabelSide] 
-
-    #
-    if isinstance(canvas, orthopanel.OrthoPanel):
-        if not canvas.showXCanvas: argv += ['--hidex']
-        if not canvas.showYCanvas: argv += ['--hidey']
-        if not canvas.showZCanvas: argv += ['--hidez']
-        if not canvas.showLabels:  argv += ['--hideLabels']
-
-        argv += ['--xzoom', '{}'.format(canvas.xzoom)]
-        argv += ['--yzoom', '{}'.format(canvas.yzoom)]
-        argv += ['--zzoom', '{}'.format(canvas.zzoom)]
-        argv += ['--layout',            canvas.layout]
-
-        xbounds = canvas._xcanvas.displayBounds
-        ybounds = canvas._ycanvas.displayBounds
-        zbounds = canvas._zcanvas.displayBounds
-
-        xx = xbounds.xlo + (xbounds.xhi - xbounds.xlo) * 0.5
-        xy = xbounds.ylo + (xbounds.yhi - xbounds.ylo) * 0.5
-        yx = ybounds.xlo + (ybounds.xhi - ybounds.xlo) * 0.5
-        yy = ybounds.ylo + (ybounds.yhi - ybounds.ylo) * 0.5
-        zx = zbounds.xlo + (zbounds.xhi - zbounds.xlo) * 0.5
-        zy = zbounds.ylo + (zbounds.yhi - zbounds.ylo) * 0.5
-
-        argv += ['--xcentre', '{}'.format(xx), '{}'.format(xy)]
-        argv += ['--ycentre', '{}'.format(yx), '{}'.format(yy)]
-        argv += ['--zcentre', '{}'.format(zx), '{}'.format(zy)]
-
-
-    elif isinstance(canvas, lightboxpanel.LightBoxPanel):
-        argv += ['--lightbox']
-        argv += ['--sliceSpacing',  '{}'.format(canvas.sliceSpacing)]
-        argv += ['--nrows',         '{}'.format(canvas.nrows)]
-        argv += ['--ncols',         '{}'.format(canvas.ncols)]
-        argv += ['--zax',           '{}'.format(canvas.zax)]
-        argv += ['--zrange',        '{}'.format(canvas.zrange[0]),
-                                    '{}'.format(canvas.zrange[1])]
-
-        if canvas.showGridLines:
-            argv += ['--showGridLines']
+        xcanvas = canvas.getXCanvas()
+        ycanvas = canvas.getYCanvas()
+        zcanvas = canvas.getZCanvas()
+        
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'xcentre'][1])]
+        argv += ['{}'.format(c) for c in xcanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'ycentre'][1])]
+        argv += ['{}'.format(c) for c in ycanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'zcentre'][1])]
+        argv += ['{}'.format(c) for c in zcanvas.pos.xy]
 
     for image in displayCtx.getOrderedImages():
 
@@ -130,19 +94,14 @@ def _takeScreenShot(imageList, displayCtx, canvas):
         if fname is None:
             continue
 
-        display = displayCtx.getDisplayProperties(image)
-        imgArgv = props.generateArguments(display)
-
-        argv += ['--image', fname] + imgArgv
+        imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
+        argv   += [fname] + imgArgv
 
     argv = ' '.join(argv).split()
     argv = ['fslpy', 'render'] + argv
 
     log.debug('Generating screenshot with '
               'call to render: {}'.format(' '.join(argv)))
-
-    print 'Generate this scene from the command ' \
-          'line with: {}'.format(' '.join(argv))
 
     subprocess.call(argv)
 

@@ -30,20 +30,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     mouse-scrolling behaviour.
     """
 
-    nrows          = lightboxcanvas.LightBoxCanvas.nrows
-    ncols          = lightboxcanvas.LightBoxCanvas.ncols
-    topRow         = lightboxcanvas.LightBoxCanvas.topRow
-    sliceSpacing   = lightboxcanvas.LightBoxCanvas.sliceSpacing
-    zrange         = lightboxcanvas.LightBoxCanvas.zrange
-    zax            = lightboxcanvas.LightBoxCanvas.zax
-    showGridLines  = lightboxcanvas.LightBoxCanvas.showGridLines
-    highlightSlice = lightboxcanvas.LightBoxCanvas.highlightSlice 
 
-
-    def __init__(self,
-                 parent,
-                 imageList,
-                 displayCtx):
+    def __init__(self, parent, imageList, displayCtx):
         """
         """
 

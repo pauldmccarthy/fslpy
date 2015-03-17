@@ -34,53 +34,8 @@ import                                             canvaspanel
 
 class OrthoPanel(canvaspanel.CanvasPanel):
 
-    
-    # showXCanvas = props.Boolean(default=True)
-    # """Toggles display of the X canvas."""
 
-    
-    # showYCanvas = props.Boolean(default=True)
-    # """Toggles display of the Y canvas."""
-
-    
-    # showZCanvas = props.Boolean(default=True)
-    # """Toggles display of the Z canvas."""
-
-    
-    # showLabels = props.Boolean(default=True)
-    # """If ``True``, labels showing anatomical orientation are displayed on
-    # each of the canvases.
-    # """
-    
-
-    # layout = props.Choice(
-    #     ['horizontal', 'vertical', 'grid'],
-    #     ['Horizontal', 'Vertical', 'Grid'])
-    # """How should we lay out each of the three canvases?"""
-
-
-    # xzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
-    # """Controls zoom on the X canvas."""
-
-    
-    # yzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
-    # """Controls zoom on the Y canvas."""
-
-    
-    # zzoom = copy.copy(slicecanvas.WXGLSliceCanvas.zoom)
-    # """Controls zoom on the Z canvas.
-
-    # Note that the :class:`OrthoPanel` class also inherits a ``zoom`` property
-    # from the :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` class - this
-    # 'global' property can be used to adjust all canvas zoom levels
-    # simultaneously.
-    # """
-
-
-    def __init__(self,
-                 parent,
-                 imageList,
-                 displayCtx):
+    def __init__(self, parent, imageList, displayCtx):
         """
         Creates three SliceCanvas objects, each displaying the images
         in the given image list along a different axis. 
