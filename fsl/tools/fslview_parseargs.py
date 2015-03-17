@@ -98,11 +98,16 @@ OPTIONS = td.TypeDict({
                        'showGridLines',
                        'highlightSlice',
                        'zax'],
+
+    # The order in which properties are listed
+    # here is the order in which they are applied
+    # - so make sure transform is listed before
+    # interpolation!
     'Display'       : ['name',
-                       'interpolation',
-                       'resolution',
                        'transform',
                        'imageType',
+                       'interpolation',
+                       'resolution',
                        'volume',
                        'alpha',
                        'brightness',
@@ -686,7 +691,11 @@ def _applyArgs(args, target, propNames=None):
         if xform is not None:
             xforms[name] = xform
 
-    props.applyArguments(target, args, xformFuncs=xforms, longArgs=longArgs)
+    props.applyArguments(target,
+                         args,
+                         propNames=propNames,
+                         xformFuncs=xforms,
+                         longArgs=longArgs)
 
 
 def _generateArgs(source, propNames=None):

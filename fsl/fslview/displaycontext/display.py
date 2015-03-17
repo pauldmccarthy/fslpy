@@ -128,6 +128,7 @@ class Display(props.SyncableHasProperties):
 
         :arg parent: 
         """
+        
         self.image      = image
         self.imageList  = imageList
         self.displayCtx = displayCtx
@@ -145,15 +146,6 @@ class Display(props.SyncableHasProperties):
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
-
-        self.addListener(
-            'transform',
-            'Display_{}'.format(id(self)),
-            self.__transformChanged) 
-        self.addListener(
-            'imageType',
-            'Display_{}'.format(id(self)),
-            self.__imageTypeChanged)
 
         self.__oldTransform = None
         self.__transform    = self.transform
@@ -184,6 +176,28 @@ class Display(props.SyncableHasProperties):
                       'transform',
                       'imageType'])
 
+        # Set up listeners after caling Syncabole.__init__,
+        # so the callbacks don't get called during
+        # sychronisation, which would screw things up,
+        # specifically the transform<->interpolation
+        # interaction (see the __transformChanged method)
+        self.addListener(
+            'transform',
+            'Display_{}'.format(id(self)),
+            self.__transformChanged) 
+        self.addListener(
+            'imageType',
+            'Display_{}'.format(id(self)),
+            self.__imageTypeChanged)
+
+        # The imageTypeChanged method creates
+        # a new DisplayOpts instance - for this,
+        # it needs to be able to access this
+        # Dispaly instance's parent (so it can
+        # subsequently access a parent for the
+        # new DisplayOpts instance). Therefore,
+        # we do this after calling
+        # Syncable.__init__.
         self.__displayOpts = None
         self.__imageTypeChanged()
 
