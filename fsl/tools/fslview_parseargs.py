@@ -520,7 +520,22 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # to account for when we're searching
     # for image files, flattening the
     # short/long arguments into a 1D list.
-    fileOpts = [ARGUMENTS[vectoropts.VectorOpts, 'modulate']]
+    fileOpts = []
+
+    # The VectorOpts.modulate option allows
+    # the user to specify another image file
+    # by which the vector image colours are
+    # to be modulated
+    fileOpts.append(ARGUMENTS[vectoropts.VectorOpts, 'modulate'])
+
+    # There is a possibility that the user
+    # may specify an image name which is the
+    # same as the image file - so we make
+    # sure that such situations don't result
+    # in an image file match.
+    fileOpts.append(ARGUMENTS[fsldisplay.Display, 'name'])
+
+    
     fileOpts = reduce(lambda a, b: list(a) + list(b), fileOpts, [])
 
     imageIdxs = []

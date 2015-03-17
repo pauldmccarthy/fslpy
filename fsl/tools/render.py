@@ -453,10 +453,10 @@ def parseArgs(argv):
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
-    mainParser.add_argument('-bg', '--background', type=int, nargs=4,
+    mainParser.add_argument('-bg', '--background', type=float, nargs=4,
                             metavar=('R', 'G', 'B', 'A'),
-                            help='Background colour', 
-                            default=(0, 0, 0, 255)) 
+                            help='Background colour (between 0.0 and 1.0)', 
+                            default=(0, 0, 0, 1.0)) 
     
     namespace = fslview_parseargs.parseArgs(mainParser,
                                             argv,

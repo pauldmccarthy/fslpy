@@ -19,6 +19,7 @@ import subprocess
 import wx
 
 import fsl.tools.fslview_parseargs              as fslview_parseargs
+import fsl.data.imageio                         as iio
 import fsl.data.strings                         as strings
 import fsl.fslview.displaycontext               as displayctx
 import fsl.fslview.displaycontext.orthoopts     as orthoopts
@@ -32,40 +33,79 @@ import                                             viewpanel
 
 def _takeScreenShot(imageList, displayCtx, canvas):
 
-    
+    # Check to make sure that all images are saved
+    # on disk, and ask the  user what they want to
+    # do about the ones that aren't.
+    for image in displayCtx.getOrderedImages():
+
+        # If the image is not saved, popup a dialog
+        # telling the user they must save the image
+        # before the screenshot can proceed
+        if not image.saved:
+            title = strings.titles[  'CanvasPanel.screenshot.notSaved']
+            msg   = strings.messages['CanvasPanel.screenshot.notSaved']
+            msg   = msg.format(image.name)
+
+            dlg = wx.MessageDialog(canvas,
+                                   message=msg,
+                                   caption=title,
+                                   style=(wx.CENTRE |
+                                          wx.YES_NO |
+                                          wx.CANCEL |
+                                          wx.ICON_QUESTION))
+            dlg.SetYesNoCancelLabels(
+                strings.labels['CanvasPanel.screenshot.notSaved.save'],
+                strings.labels['CanvasPanel.screenshot.notSaved.skip'],
+                strings.labels['CanvasPanel.screenshot.notSaved.cancel'])
+
+            result = dlg.ShowModal()
+
+            # The user chose to save the image
+            if result == wx.ID_YES:
+                iio.saveImage(image)
+
+            # The user chose to skip the image
+            elif result == wx.ID_NO:
+                continue
+
+            # the user clicked cancel, or closed the dialog
+            else:
+                return    
+
+    # Ask the user where they want 
+    # the screenshot to be saved
     dlg = wx.FileDialog(canvas,
-                        message=strings['CanvasPanel.screenshot'],
+                        message=strings.messages['CanvasPanel.screenshot'],
                         style=wx.FD_SAVE)
 
-    if dlg.ShowModal() != wx.ID_OK: return
+    if dlg.ShowModal() != wx.ID_OK:
+        return
 
     filename = dlg.GetPath()
 
+    # Make the dialog go away before
+    # the screenshot gets taken
     dlg.Destroy()
     wx.Yield()
 
-    # TODO In-memory-only images will not be rendered -
-    # will need to save them to a temp file or
-    # alternately prompt the user to save all in memory
-    # images and try again
-    if not isinstance(canvas, CanvasPanel):
-        return
-
-    sceneOpts = canvas.getSceneOptions()
-
+    # Screnshot size and scene options
+    sceneOpts     = canvas.getSceneOptions()
     width, height = canvas.getCanvasPanel().GetClientSize().Get()
 
-    # render.py specific options
+    # Generate command line arguments for
+    # a callout to render.py - start with
+    # the render.py specific options
     argv  = []
     argv += ['--outfile', filename]
     argv += ['--size', '{}'.format(width), '{}'.format(height)]
     argv += ['--background', '0', '0', '0', '255']
 
-    # scene options
+    # Add scene options
     argv += fslview_parseargs.generateSceneArgs(
         imageList, displayCtx, sceneOpts)
 
-    # ortho specific options
+    # Add ortho specific options, if it's 
+    # an orthopanel we're dealing with
     if isinstance(sceneOpts, orthoopts.OrthoOpts):
 
         xcanvas = canvas.getXCanvas()
@@ -82,26 +122,23 @@ def _takeScreenShot(imageList, displayCtx, canvas):
                                                            'zcentre'][1])]
         argv += ['{}'.format(c) for c in zcanvas.pos.xy]
 
+    # Add display options for each image
     for image in displayCtx.getOrderedImages():
 
         fname = image.imageFile
 
-        # No support for in-memory images just yet.
-        # 
-        # TODO Popup a message telling the
-        # user they must save images before
-        # the screenshot can proceed
-        if fname is None:
+        # Skip unsaved/in-memory images
+        if not image.saved:
             continue
 
         imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
         argv   += [fname] + imgArgv
 
-    argv = ' '.join(argv).split()
+    # Run render.py to generate the screenshot 
     argv = ['fslpy', 'render'] + argv
 
-    log.debug('Generating screenshot with '
-              'call to render: {}'.format(' '.join(argv)))
+    log.debug('Generating screenshot with call to '
+              'render: {}'.format(' '.join(argv)))
 
     subprocess.call(argv)
 

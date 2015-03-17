@@ -40,7 +40,11 @@ messages = TypeDict({
     'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
                                      'images registered to MNI152 space',
 
-    'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!'
+    'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
+
+    'CanvasPanel.screenshot'          : 'Save screenshot',
+    'CanvasPanel.screenshot.notSaved' : 'Image {} needs saving before a '
+                                        'screenshot can be taken.',
 })
 
 
@@ -57,7 +61,8 @@ titles = TypeDict({
     'HistogramPanel'  : 'Histogram',
     'SpacePanel'      : 'Space inspector',
 
-    'CanvasPanel.screenshot' : 'Save screenshot',
+    'CanvasPanel.screenshot'          : 'Save screenshot',
+    'CanvasPanel.screenshot.notSaved' : 'Save image before continuing',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
@@ -125,6 +130,11 @@ labels = TypeDict({
     'LocationPanel.space'         : 'Space',
     'LocationPanel.intensity'     : 'Intensity',
     'LocationPanel.outOfBounds'   : 'Out of bounds',
+
+    'CanvasPanel.screenshot.notSaved.save'   : 'Save image now',
+    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip image (will not appear '
+                                               'in screenshot)',
+    'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
 })
 
 
