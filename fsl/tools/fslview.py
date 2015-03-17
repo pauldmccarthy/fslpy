@@ -44,35 +44,15 @@ def interface(parent, args, ctx):
     if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
     elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
 
+
+    # The viewPanel is assumed to be a CanvasPanel 
+    # (i.e. either OrthoPanel or LightBoxPanel)
     viewPanel = frame.getViewPanels()[0][0]
+    viewOpts  = viewPanel.getSceneOptions()
 
-    # Look in fslview_parseargs to see all
-    # of the possible display options 
-    viewPanel.showCursor = not args.hideCursor
+    fslview_parseargs.applySceneArgs(args, imageList, displayCtx, viewOpts)
 
-    if args.scene == 'lightbox':
-
-        for prop in ['sliceSpacing',
-                     'ncols',
-                     'nrows',
-                     'zrange',
-                     'showGridLines',
-                     'highlightSlice',
-                     'zax']:
-            val = getattr(args, prop, None)
-
-            if val is not None:
-                setattr(viewPanel, prop, val)
-
-    elif args.scene == 'ortho':
-        if args.hidex:              viewPanel.showXCanvas = False
-        if args.hidey:              viewPanel.showYCanvas = False
-        if args.hidez:              viewPanel.showZCanvas = False
-        if args.hideLabels:         viewPanel.showLabels  = False
-        if args.layout is not None: viewPanel.layout      = args.layout 
-        if args.xzoom  is not None: viewPanel.xzoom       = args.xzoom
-        if args.yzoom  is not None: viewPanel.yzoom       = args.yzoom
-        if args.zzoom  is not None: viewPanel.zzoom       = args.zzoom
+    if args.scene == 'ortho':
 
         xcentre = args.xcentre
         ycentre = args.ycentre
@@ -85,14 +65,6 @@ def interface(parent, args, ctx):
         viewPanel._xcanvas.centreDisplayAt(*xcentre)
         viewPanel._ycanvas.centreDisplayAt(*ycentre)
         viewPanel._zcanvas.centreDisplayAt(*zcentre)
-
-    if args.showColourBar:
-        viewPanel.showColourBar = True
-
-        if args.colourBarLocation is not None:
-            viewPanel.colourBarLocation = args.colourBarLocation
-        if args.colourBarLabelSide is not None:
-            viewPanel.colourBarLabelSide = args.colourBarLabelSide
 
     # Make sure the new frame is shown
     # before destroying the splash screen
@@ -171,10 +143,8 @@ def context(args):
     
     # Load the images - the splash screen status will 
     # be updated with the currently loading image name
-    fslview_parseargs.handleImageArgs(
+    fslview_parseargs.applyImageArgs(
         args, imageList, displayCtx, loadFunc=status)  
-    fslview_parseargs.handleSceneArgs(
-        args, imageList, displayCtx)
 
     return imageList, displayCtx, frame
 

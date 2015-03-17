@@ -69,4 +69,4 @@ class LightBoxViewProfile(profiles.Profile):
 
         if   wheel > 0: wheel =  50
         elif wheel < 0: wheel = -50
-        self._canvasPanel.zoom += wheel 
+        self._canvasPanel.getSceneOptions().zoom += wheel 

@@ -27,8 +27,16 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
             self, parent, imageList, displayCtx, actionz)
         self.orthoPanel = ortho
 
+        orthoOpts = ortho.getSceneOptions()
+
         toolSpecs = layouts.layouts[self]
-        targets   = {s : self if s.key == 'more' else ortho for s in toolSpecs}
+        targets    = {'screenshot'  : ortho,
+                      'zoom'        : orthoOpts,
+                      'layout'      : orthoOpts,
+                      'showXCanvas' : orthoOpts,
+                      'showYCanvas' : orthoOpts,
+                      'showZCanvas' : orthoOpts,
+                      'more'        : self}
 
         self.GenerateTools(toolSpecs, targets)
         

@@ -31,6 +31,10 @@ from fsl.fslview.displaycontext.volumeopts    import VolumeOpts
 from fsl.fslview.displaycontext.maskopts      import MaskOpts
 from fsl.fslview.displaycontext.vectoropts    import VectorOpts
 
+from fsl.fslview.displaycontext.sceneopts     import SceneOpts
+from fsl.fslview.displaycontext.orthoopts     import OrthoOpts
+from fsl.fslview.displaycontext.lightboxopts  import LightBoxOpts
+
 
 def widget(labelCls, name, *args, **kwargs):
     return props.Widget(name,
@@ -46,12 +50,11 @@ def widget(labelCls, name, *args, **kwargs):
 
 OrthoToolBarLayout = [
     actions.ActionButton(OrthoPanel,   'screenshot'),
-    actions.ActionButton(OrthoPanel,   'toggleColourBar'),
-    widget(              OrthoPanel,   'zoom', spin=False, showLimits=False),
-    widget(              OrthoPanel,   'layout'),
-    widget(              OrthoPanel,   'showXCanvas'),
-    widget(              OrthoPanel,   'showYCanvas'),
-    widget(              OrthoPanel,   'showZCanvas'),
+    widget(              OrthoOpts,    'zoom', spin=False, showLimits=False),
+    widget(              OrthoOpts,    'layout'),
+    widget(              OrthoOpts,    'showXCanvas'),
+    widget(              OrthoOpts,    'showYCanvas'),
+    widget(              OrthoOpts,    'showZCanvas'),
     actions.ActionButton(OrthoToolBar, 'more')]
 
 
@@ -93,19 +96,22 @@ CanvasPanelLayout = props.VGroup((
            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
     widget(CanvasPanel, 'syncImageOrder'),
     widget(CanvasPanel, 'syncLocation'),
-    widget(CanvasPanel, 'syncVolume'),
-    widget(CanvasPanel, 'colourBarLabelSide'),
-    widget(CanvasPanel, 'colourBarLocation')))
+    widget(CanvasPanel, 'syncVolume')))
+
+SceneOptsLayout = props.VGroup((
+    widget(SceneOpts, 'showCursor'),
+    widget(SceneOpts, 'showColourBar'),
+    widget(SceneOpts, 'colourBarLabelSide'),
+    widget(SceneOpts, 'colourBarLocation')))
 
 
 OrthoPanelLayout = props.VGroup((
-    widget(OrthoPanel, 'layout'), 
-    widget(OrthoPanel, 'zoom', spin=False, showLimits=False),
-    props.HGroup((widget(OrthoPanel, 'showCursor'),
-                  widget(OrthoPanel, 'showLabels'))),
-    props.HGroup((widget(OrthoPanel, 'showXCanvas'),
-                  widget(OrthoPanel, 'showYCanvas'),
-                  widget(OrthoPanel, 'showZCanvas')))))
+    widget(OrthoOpts, 'layout'), 
+    widget(OrthoOpts, 'zoom', spin=False, showLimits=False),
+    widget(OrthoOpts, 'showLabels'),
+    props.HGroup((widget(OrthoOpts, 'showXCanvas'),
+                  widget(OrthoOpts, 'showYCanvas'),
+                  widget(OrthoOpts, 'showZCanvas')))))
 
 
 #######################################
@@ -114,23 +120,21 @@ OrthoPanelLayout = props.VGroup((
 
 LightBoxToolBarLayout = [
     actions.ActionButton(LightBoxPanel, 'screenshot'),
-    actions.ActionButton(LightBoxPanel, 'toggleColourBar'),
-    widget(              LightBoxPanel, 'zax'),
+    widget(              LightBoxOpts, 'zax'),
     
-    widget(LightBoxPanel, 'sliceSpacing', spin=False, showLimits=False),
-    widget(LightBoxPanel, 'zrange',       spin=False, showLimits=False),
-    widget(LightBoxPanel, 'zoom',         spin=False, showLimits=False),
+    widget(LightBoxOpts, 'sliceSpacing', spin=False, showLimits=False),
+    widget(LightBoxOpts, 'zrange',       spin=False, showLimits=False),
+    widget(LightBoxOpts, 'zoom',         spin=False, showLimits=False),
     actions.ActionButton(LightBoxToolBar, 'more')]
 
 
 LightBoxPanelLayout = props.VGroup((
-    widget(LightBoxPanel, 'zax'),
-    widget(LightBoxPanel, 'zoom'),
-    widget(LightBoxPanel, 'sliceSpacing'),
-    widget(LightBoxPanel, 'zrange'),
-    props.HGroup((widget(LightBoxPanel, 'showCursor'),
-                  widget(LightBoxPanel, 'highlightSlice'),
-                  widget(LightBoxPanel, 'showGridLines')))))
+    widget(LightBoxOpts, 'zax'),
+    widget(LightBoxOpts, 'zoom'),
+    widget(LightBoxOpts, 'sliceSpacing'),
+    widget(LightBoxOpts, 'zrange'),
+    widget(LightBoxOpts, 'highlightSlice'),
+    widget(LightBoxOpts, 'showGridLines')))
 
 
 
@@ -227,6 +231,8 @@ layouts = td.TypeDict({
     'CanvasPanel'   : CanvasPanelLayout,
     'OrthoPanel'    : OrthoPanelLayout,
     'LightBoxPanel' : LightBoxPanelLayout,
+
+    'SceneOpts' : SceneOptsLayout,
 
     ('ImageDisplayToolBar', 'Display')    : DisplayToolBarLayout,
     ('ImageDisplayToolBar', 'VolumeOpts') : VolumeOptsToolBarLayout,

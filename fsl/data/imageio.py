@@ -346,7 +346,7 @@ def saveImage(image, imageList=None, fromDir=None):
         log.warn(msg)
         wx.MessageDialog(app.GetTopWindow(),
                          message=msg,
-                         style=wx.OK | wx.ICON_ERROR)
+                         style=wx.OK | wx.ICON_ERROR).ShowModal()
         return
 
     image.saved = True

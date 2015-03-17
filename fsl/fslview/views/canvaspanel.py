@@ -18,12 +18,12 @@ import subprocess
 
 import wx
 
-import props
-
+import fsl.tools.fslview_parseargs              as fslview_parseargs
+import fsl.data.imageio                         as iio
 import fsl.data.strings                         as strings
 import fsl.fslview.displaycontext               as displayctx
+import fsl.fslview.displaycontext.orthoopts     as orthoopts
 import fsl.fslview.controls.imagelistpanel      as imagelistpanel
-# import fsl.fslview.controls.imagedisplaypanel as imagedisplaypanel
 import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
 import fsl.fslview.controls.locationpanel       as locationpanel
 import fsl.fslview.controls.atlaspanel          as atlaspanel
@@ -33,118 +33,112 @@ import                                             viewpanel
 
 def _takeScreenShot(imageList, displayCtx, canvas):
 
-    import fsl.fslview.views.orthopanel    as orthopanel
-    import fsl.fslview.views.lightboxpanel as lightboxpanel
-    
+    # Check to make sure that all images are saved
+    # on disk, and ask the  user what they want to
+    # do about the ones that aren't.
+    for image in displayCtx.getOrderedImages():
+
+        # If the image is not saved, popup a dialog
+        # telling the user they must save the image
+        # before the screenshot can proceed
+        if not image.saved:
+            title = strings.titles[  'CanvasPanel.screenshot.notSaved']
+            msg   = strings.messages['CanvasPanel.screenshot.notSaved']
+            msg   = msg.format(image.name)
+
+            dlg = wx.MessageDialog(canvas,
+                                   message=msg,
+                                   caption=title,
+                                   style=(wx.CENTRE |
+                                          wx.YES_NO |
+                                          wx.CANCEL |
+                                          wx.ICON_QUESTION))
+            dlg.SetYesNoCancelLabels(
+                strings.labels['CanvasPanel.screenshot.notSaved.save'],
+                strings.labels['CanvasPanel.screenshot.notSaved.skip'],
+                strings.labels['CanvasPanel.screenshot.notSaved.cancel'])
+
+            result = dlg.ShowModal()
+
+            # The user chose to save the image
+            if result == wx.ID_YES:
+                iio.saveImage(image)
+
+            # The user chose to skip the image
+            elif result == wx.ID_NO:
+                continue
+
+            # the user clicked cancel, or closed the dialog
+            else:
+                return    
+
+    # Ask the user where they want 
+    # the screenshot to be saved
     dlg = wx.FileDialog(canvas,
-                        message='Save screenshot',
+                        message=strings.messages['CanvasPanel.screenshot'],
                         style=wx.FD_SAVE)
 
-    if dlg.ShowModal() != wx.ID_OK: return
+    if dlg.ShowModal() != wx.ID_OK:
+        return
 
     filename = dlg.GetPath()
 
+    # Make the dialog go away before
+    # the screenshot gets taken
     dlg.Destroy()
     wx.Yield()
 
-    # TODO In-memory-only images will not be rendered -
-    # will need to save them to a temp file or
-    # alternately prompt the user to save all in memory
-    # images and try again
-
-    # TODO support view panels other than lightbox/ortho? 
-    if not isinstance(canvas, CanvasPanel):
-        return
-
+    # Screnshot size and scene options
+    sceneOpts     = canvas.getSceneOptions()
     width, height = canvas.getCanvasPanel().GetClientSize().Get()
 
+    # Generate command line arguments for
+    # a callout to render.py - start with
+    # the render.py specific options
     argv  = []
     argv += ['--outfile', filename]
     argv += ['--size', '{}'.format(width), '{}'.format(height)]
     argv += ['--background', '0', '0', '0', '255']
 
-    # TODO get location from panel - if possync
-    # is false, this will be wrong
-    argv += ['--worldloc']
-    argv += ['{}'.format(c) for c in displayCtx.location.xyz]
-    argv += ['--selectedImage']
-    argv += ['{}'.format(displayCtx.selectedImage)]
+    # Add scene options
+    argv += fslview_parseargs.generateSceneArgs(
+        imageList, displayCtx, sceneOpts)
 
-    if not canvas.showCursor:
-        argv += ['--hideCursor']
+    # Add ortho specific options, if it's 
+    # an orthopanel we're dealing with
+    if isinstance(sceneOpts, orthoopts.OrthoOpts):
 
-    if canvas.colourBarIsShown():
-        argv += ['--showColourBar']
-        argv += ['--colourBarLocation']
-        argv += [canvas.colourBarLocation]
-        argv += ['--colourBarLabelSide']
-        argv += [canvas.colourBarLabelSide] 
+        xcanvas = canvas.getXCanvas()
+        ycanvas = canvas.getYCanvas()
+        zcanvas = canvas.getZCanvas()
+        
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'xcentre'][1])]
+        argv += ['{}'.format(c) for c in xcanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'ycentre'][1])]
+        argv += ['{}'.format(c) for c in ycanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'zcentre'][1])]
+        argv += ['{}'.format(c) for c in zcanvas.pos.xy]
 
-    #
-    if isinstance(canvas, orthopanel.OrthoPanel):
-        if not canvas.showXCanvas: argv += ['--hidex']
-        if not canvas.showYCanvas: argv += ['--hidey']
-        if not canvas.showZCanvas: argv += ['--hidez']
-        if not canvas.showLabels:  argv += ['--hideLabels']
-
-        argv += ['--xzoom', '{}'.format(canvas.xzoom)]
-        argv += ['--yzoom', '{}'.format(canvas.yzoom)]
-        argv += ['--zzoom', '{}'.format(canvas.zzoom)]
-        argv += ['--layout',            canvas.layout]
-
-        xbounds = canvas._xcanvas.displayBounds
-        ybounds = canvas._ycanvas.displayBounds
-        zbounds = canvas._zcanvas.displayBounds
-
-        xx = xbounds.xlo + (xbounds.xhi - xbounds.xlo) * 0.5
-        xy = xbounds.ylo + (xbounds.yhi - xbounds.ylo) * 0.5
-        yx = ybounds.xlo + (ybounds.xhi - ybounds.xlo) * 0.5
-        yy = ybounds.ylo + (ybounds.yhi - ybounds.ylo) * 0.5
-        zx = zbounds.xlo + (zbounds.xhi - zbounds.xlo) * 0.5
-        zy = zbounds.ylo + (zbounds.yhi - zbounds.ylo) * 0.5
-
-        argv += ['--xcentre', '{}'.format(xx), '{}'.format(xy)]
-        argv += ['--ycentre', '{}'.format(yx), '{}'.format(yy)]
-        argv += ['--zcentre', '{}'.format(zx), '{}'.format(zy)]
-
-
-    elif isinstance(canvas, lightboxpanel.LightBoxPanel):
-        argv += ['--lightbox']
-        argv += ['--sliceSpacing',  '{}'.format(canvas.sliceSpacing)]
-        argv += ['--nrows',         '{}'.format(canvas.nrows)]
-        argv += ['--ncols',         '{}'.format(canvas.ncols)]
-        argv += ['--zax',           '{}'.format(canvas.zax)]
-        argv += ['--zrange',        '{}'.format(canvas.zrange[0]),
-                                    '{}'.format(canvas.zrange[1])]
-
-        if canvas.showGridLines:
-            argv += ['--showGridLines']
-
+    # Add display options for each image
     for image in displayCtx.getOrderedImages():
 
         fname = image.imageFile
 
-        # No support for in-memory images just yet.
-        # 
-        # TODO Popup a message telling the
-        # user they must save images before
-        # the screenshot can proceed
-        if fname is None:
+        # Skip unsaved/in-memory images
+        if not image.saved:
             continue
 
-        display = displayCtx.getDisplayProperties(image)
-        imgArgv = props.generateArguments(display)
+        imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
+        argv   += [fname] + imgArgv
 
-        argv += ['--image', fname] + imgArgv
-
-    argv = ' '.join(argv).split()
+    # Run render.py to generate the screenshot 
     argv = ['fslpy', 'render'] + argv
 
-    log.debug('Generating screenshot with '
-              'call to render: {}'.format(' '.join(argv)))
-
-    print 'Generate this scene from the command ' \
-          'line with: {}'.format(' '.join(argv))
+    log.debug('Generating screenshot with call to '
+              'render: {}'.format(' '.join(argv)))
 
     subprocess.call(argv)
 
@@ -153,33 +147,22 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-
-    showCursor     = props.Boolean(default=True)
     syncLocation   = displayctx.DisplayContext.getSyncProperty('location')
     syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
     syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
 
-    zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
-
-    colourBarLocation  = props.Choice(
-        ('top', 'bottom', 'left', 'right'),
-        labels=[strings.choices['CanvasPanel.colourBarLocation.top'],
-                strings.choices['CanvasPanel.colourBarLocation.bottom'],
-                strings.choices['CanvasPanel.colourBarLocation.left'],
-                strings.choices['CanvasPanel.colourBarLocation.right']])
-
-    
-    colourBarLabelSide = colourbarpanel.ColourBarPanel.labelSide
-
-
-    def __init__(self, parent, imageList, displayCtx, extraActions=None):
+    def __init__(self,
+                 parent,
+                 imageList,
+                 displayCtx,
+                 sceneOpts,
+                 extraActions=None):
 
         if extraActions is None:
             extraActions = {}
 
         actionz = dict({
             'screenshot'              : self.screenshot,
-            'toggleColourBar'         : self.toggleColourBar,
             'toggleImageList'         : lambda *a: self.togglePanel(
                 imagelistpanel.ImageListPanel),
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
@@ -193,6 +176,8 @@ class CanvasPanel(viewpanel.ViewPanel):
         viewpanel.ViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
 
+        self.__opts = sceneOpts
+        
         # If the provided DisplayContext  does not
         # have a parent, this will raise an error.
         # But I don't think a CanvasPanel will ever
@@ -216,14 +201,18 @@ class CanvasPanel(viewpanel.ViewPanel):
         # the _layout/_toggleColourBar methods
         self.__canvasSizer   = None
         self.__colourBar     = None
-        self.__showColourBar = False
 
         # Use a different listener name so that subclasses
         # can register on the same properties with self._name
         lName = 'CanvasPanel_{}'.format(self._name)
-        self.addListener('colourBarLocation', lName, self.__layout)
+        self.__opts.addListener('colourBarLocation', lName, self.__layout)
+        self.__opts.addListener('showColourBar',     lName, self.__layout)
         
         self.__layout()
+
+
+    def getSceneOptions(self):
+        return self.__opts
 
 
     def destroy(self):
@@ -236,15 +225,6 @@ class CanvasPanel(viewpanel.ViewPanel):
         if self.__colourBar is not None:
             self.__colourBar.destroy()
 
-
-    def toggleColourBar(self, *a):
-        self.__showColourBar = not self.__showColourBar
-        self.__layout()
-
-        
-    def colourBarIsShown(self):
-        return self.__showColourBar
-
     
     def screenshot(self, *a):
         _takeScreenShot(self._imageList, self._displayCtx, self)
@@ -256,12 +236,12 @@ class CanvasPanel(viewpanel.ViewPanel):
 
     def __layout(self, *a):
 
-        if not self.__showColourBar:
+        if not self.__opts.showColourBar:
 
             if self.__colourBar is not None:
-                self.unbindProps('colourBarLabelSide',
-                                 self.__colourBar,
-                                 'labelSide')
+                self.__opts.unbindProps('colourBarLabelSide',
+                                        self.__colourBar,
+                                        'labelSide')
                 self.__colourBar.destroy()
                 self.__colourBar.Destroy()
                 self.__colourBar = None
@@ -279,21 +259,23 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.__colourBar = colourbarpanel.ColourBarPanel(
                 self.__canvasContainer, self._imageList, self._displayCtx)
 
-        self.bindProps('colourBarLabelSide', self.__colourBar, 'labelSide') 
+        self.__opts.bindProps('colourBarLabelSide',
+                              self.__colourBar,
+                              'labelSide') 
             
-        if   self.colourBarLocation in ('top', 'bottom'):
+        if   self.__opts.colourBarLocation in ('top', 'bottom'):
             self.__colourBar.orientation = 'horizontal'
-        elif self.colourBarLocation in ('left', 'right'):
+        elif self.__opts.colourBarLocation in ('left', 'right'):
             self.__colourBar.orientation = 'vertical'
         
-        if self.colourBarLocation in ('top', 'bottom'):
+        if self.__opts.colourBarLocation in ('top', 'bottom'):
             self.__canvasSizer = wx.BoxSizer(wx.VERTICAL)
         else:
             self.__canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.__canvasContainer.SetSizer(self.__canvasSizer)
 
-        if self.colourBarLocation in ('top', 'left'):
+        if self.__opts.colourBarLocation in ('top', 'left'):
             self.__canvasSizer.Add(self.__colourBar,   flag=wx.EXPAND)
             self.__canvasSizer.Add(self.__canvasPanel, flag=wx.EXPAND,
                                    proportion=1)

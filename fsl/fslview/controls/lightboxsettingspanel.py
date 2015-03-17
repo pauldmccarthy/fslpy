@@ -32,12 +32,22 @@ class LightBoxSettingsPanel(fslpanel.FSLViewPanel):
 
         self.canvasSettings = props.buildGUI(
             self.panel, ortho, layouts.layouts['CanvasPanel'])
+        
+        self.divider1 = wx.StaticLine(
+            self.panel, size=(-1, -1), style=wx.LI_HORIZONTAL)
+        
+        self.sceneSettings = props.buildGUI(
+            self.panel,
+            ortho.getSceneOptions(),
+            layouts.layouts['SceneOpts']) 
 
-        self.divider = wx.StaticLine(
+        self.divider2 = wx.StaticLine(
             self.panel, size=(-1, -1), style=wx.LI_HORIZONTAL)
 
         self.lightBoxSettings = props.buildGUI(
-            self.panel, ortho, layouts.layouts['LightBoxPanel'])
+            self.panel,
+            ortho.getSceneOptions(),
+            layouts.layouts['LightBoxPanel'])
 
         self.panelSizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.panelSizer)
@@ -45,7 +55,9 @@ class LightBoxSettingsPanel(fslpanel.FSLViewPanel):
         flags = wx.wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL
         
         self.panelSizer.Add(self.canvasSettings,    border=20, flag=flags)
-        self.panelSizer.Add(self.divider,                      flag=flags)
+        self.panelSizer.Add(self.divider1,                     flag=flags)
+        self.panelSizer.Add(self.sceneSettings,     border=20, flag=flags)
+        self.panelSizer.Add(self.divider2,                     flag=flags)
         self.panelSizer.Add(self.lightBoxSettings,  border=20, flag=flags)
 
         self.sizer     .Layout()

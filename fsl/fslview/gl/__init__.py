@@ -275,6 +275,7 @@ class OSMesaCanvasTarget(object):
                                  gl.GL_UNSIGNED_BYTE,
                                  self._width,
                                  self._height)
+        return True
 
         
     def _refresh(self, *a):
