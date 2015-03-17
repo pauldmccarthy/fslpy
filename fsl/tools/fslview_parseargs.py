@@ -638,7 +638,7 @@ def applySceneArgs(args, imageList, displayCtx, sceneOpts):
         elif args.voxelloc:
             display = displayCtx.getDisplayProperties(imageList[0])
             xform   = display.getTransform('voxel', 'display')
-            loc     = transform.transform([[args.voxelloc]], xform)[0]
+            loc     = transform.transform([args.voxelloc], xform)[0]
           
         else:
             loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
