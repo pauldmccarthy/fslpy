@@ -223,7 +223,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
     def GetTools(self):
         """
         """
-        return [t.tool for t in self.__tools]
+        return self.__tools[:]
 
 
     def AddTool(self, tool, labelText=None):
