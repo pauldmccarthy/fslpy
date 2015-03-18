@@ -181,6 +181,7 @@ def getWXGLContext(parent=None):
     """
 
     import sys
+    import wx
     import wx.glcanvas as wxgl
 
     thismod = sys.modules[__name__]
@@ -207,6 +208,7 @@ def getWXGLContext(parent=None):
     canvas.Show(True)
     canvas.Refresh()
     canvas.Update()
+    wx.Yield()
 
     thismod._wxGLContext = wxgl.GLContext(canvas)
     thismod._wxGLContext.SetCurrent(canvas)
