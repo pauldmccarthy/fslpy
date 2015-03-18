@@ -41,6 +41,7 @@ messages = TypeDict({
                                      'images registered to MNI152 space',
 
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
+    'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Image {} needs saving before a '

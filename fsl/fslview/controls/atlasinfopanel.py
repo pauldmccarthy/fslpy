@@ -143,6 +143,11 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         loc     = transform.transform(
             [loc], display.getTransform('display', 'world'))[0]
 
+
+        if len(atlases.listAtlases()) == 0:
+            text.SetPage(strings.messages['AtlasInfoPanel.atlasDisabled'])
+            return
+
         if image.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
             text.SetPage(strings.messages['AtlasInfoPanel.notMNISpace'])
             return
