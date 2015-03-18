@@ -105,26 +105,28 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         """Called when the previous button is pushed. Selects the previous
         image.
         """
+        allImages = self._displayCtx.getOrderedImages()
+        currImage = self._displayCtx.getSelectedImage()
+        currIdx   = allImages.index(currImage)
 
-        selectedImage = self._displayCtx.selectedImage
-
-        if selectedImage == 0:
+        if currIdx == 0:
             return
 
-        self._displayCtx.selectedImage = selectedImage - 1
+        self._displayCtx.selectImage(allImages[currIdx - 1])
 
         
     def _onNextButton(self, ev):
         """Called when the previous button is pushed. Selects the next
         image.
         """
-        
-        selectedImage = self._displayCtx.selectedImage
+        allImages = self._displayCtx.getOrderedImages()
+        currImage = self._displayCtx.getSelectedImage()
+        currIdx   = allImages.index(currImage)
 
-        if selectedImage == len(self._imageList) - 1:
+        if currIdx == len(allImages) - 1:
             return
 
-        self._displayCtx.selectedImage = selectedImage + 1
+        self._displayCtx.selectImage(allImages[currIdx + 1]) 
 
 
     def _imageListChanged(self, *a):
@@ -159,17 +161,18 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         label.
         """
 
-        idx   = self._displayCtx.selectedImage
-        image = self._displayCtx.getSelectedImage()
-        nimgs = len(self._imageList)
+        allImages = self._displayCtx.getOrderedImages()
+        image     = self._displayCtx.getSelectedImage()
+        idx       = allImages.index(image)
+        nimgs     = len(allImages)
 
         self._prevButton.Enable(nimgs > 0 and idx != 0)
-        self._nextButton.Enable(nimgs > 0 and idx != len(self._imageList) - 1)
+        self._nextButton.Enable(nimgs > 0 and idx != nimgs - 1)
 
         if self._imageLabel is None:
             return
 
-        if len(self._imageList) == 0:
+        if nimgs == 0:
             self._imageLabel.SetLabel('')
             return
 
