@@ -84,6 +84,8 @@ def listAtlases(refresh=False):
                   :attr:`ATLAS_DESCRIPTIONS`).
     """
 
+    if ATLAS_DIR is None:
+        return []
 
     if len(ATLAS_DESCRIPTIONS) == 0:
         refresh = True
@@ -109,6 +111,9 @@ def getAtlasDescription(atlasID):
     """Returns an :class:`AtlasDescription` instance describing the
     atlas with the given ``atlasID``.
     """
+
+    if ATLAS_DIR is None:
+        return None
     
     if len(ATLAS_DESCRIPTIONS) == 0:
         listAtlases()
@@ -124,6 +129,9 @@ def loadAtlas(atlasID, loadSummary=False):
                       loaded. Otherwise, if the atlas is probabilistic,
                       a 4D :class:`ProbabilisticAtlas` image is loaded.
     """
+
+    if ATLAS_DIR is None:
+        return None
     
     if len(ATLAS_DESCRIPTIONS) == 0:
         listAtlases()

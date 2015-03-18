@@ -163,11 +163,13 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
 
         allImages = self._displayCtx.getOrderedImages()
         image     = self._displayCtx.getSelectedImage()
-        idx       = allImages.index(image)
         nimgs     = len(allImages)
+        
+        if nimgs > 0: idx = allImages.index(image)
+        else:         idx = -1
 
-        self._prevButton.Enable(nimgs > 0 and idx != 0)
-        self._nextButton.Enable(nimgs > 0 and idx != nimgs - 1)
+        self._prevButton.Enable(nimgs > 0 and idx > 0)
+        self._nextButton.Enable(nimgs > 0 and idx < nimgs - 1)
 
         if self._imageLabel is None:
             return
