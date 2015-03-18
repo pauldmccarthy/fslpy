@@ -125,7 +125,7 @@ class SpacePanel(plotpanel.PlotPanel):
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
         
-        centre = np.array(image.shape) / 2.0
+        centre = np.array(image.shape[:3]) / 2.0
 
         for ax, colour in zip(range(3), ['r', 'g', 'b']):
 
