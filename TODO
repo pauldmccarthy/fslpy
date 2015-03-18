@@ -61,15 +61,15 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** Image order synchronisation
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
-** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
 
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
+** DONE Image order synchronisation
 ** DONE Ortho canvas resizing
 ** DONE LightBox - updated nrows/ncols when image list changes
 ** DONE ImageDisplay range  (and other properties?) on are reset when new view is opened
@@ -135,6 +135,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Editor - apply fill/mask/ROI to all volumes of a 4D image
 ** Option to centre display range for volume images
 ** Spline interpolation in GL14
 ** Ability to display vector data as directional (i.e. starting from voxel centre)
