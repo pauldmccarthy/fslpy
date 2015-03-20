@@ -656,11 +656,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             globj.postDraw()
 
-        if len(self.imageList) > 0:
-            if self.showCursor:     self._drawCursor()
-            if self.showGridLines:  self._drawGridLines()
-            if self.highlightSlice: self._drawSliceHighlight()
-
         self.getAnnotations().draw(self.pos.z)
 
         if self.twoStageRender:
@@ -672,6 +667,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self._setViewport()
             self._renderTexture.drawRender(
                 xmin, xmax, ymin, ymax, self.xax, self.yax)
-                
 
+        if len(self.imageList) > 0:
+            if self.showCursor:     self._drawCursor()
+            if self.showGridLines:  self._drawGridLines()
+            if self.highlightSlice: self._drawSliceHighlight()
+
+        self._annotations.draw(self.pos.z, skipHold=True)
+                
         self._postDraw()

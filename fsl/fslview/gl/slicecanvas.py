@@ -768,8 +768,6 @@ class SliceCanvas(props.HasProperties):
             globj.draw(self.pos.z)
             globj.postDraw()
         
-        if self.showCursor: self._drawCursor()
-
         self._annotations.draw(self.pos.z)
 
         if self.twoStageRender:
@@ -786,5 +784,10 @@ class SliceCanvas(props.HasProperties):
 
             self._renderTexture.drawRender(
                 xmin, xmax, ymin, ymax, self.xax, self.yax)
+
+        if self.showCursor:
+            self._drawCursor()
+
+        self._annotations.draw(self.pos.z, skipHold=True)
 
         self._postDraw()
