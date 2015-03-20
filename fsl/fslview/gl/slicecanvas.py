@@ -30,6 +30,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.gl.globject    as globject
+import fsl.fslview.gl.textures    as fsltextures
 import fsl.fslview.gl.annotations as annotations
 
 
@@ -237,7 +238,7 @@ class SliceCanvas(props.HasProperties):
         return self._annotations
 
         
-    def __init__(self, imageList, displayCtx, zax=0):
+    def __init__(self, imageList, displayCtx, zax=0, twoStageRender=True):
         """Creates a canvas object. 
 
         .. note:: It is assumed that each :class:`~fsl.data.image.Image`
@@ -260,9 +261,10 @@ class SliceCanvas(props.HasProperties):
 
         props.HasProperties.__init__(self)
 
-        self.imageList  = imageList
-        self.displayCtx = displayCtx
-        self.name       = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.imageList      = imageList
+        self.displayCtx     = displayCtx
+        self.twoStageRender = twoStageRender
+        self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -303,6 +305,33 @@ class SliceCanvas(props.HasProperties):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._imageListChanged()
+
+        if self.twoStageRender:
+            
+            self.frameBuffer   = gl.glGenFramebuffers(1)
+            self.renderTexture = fsltextures.RenderTexture(512, 512)
+
+            gl.glBindFramebuffer(     gl.GL_FRAMEBUFFER, self.frameBuffer)
+            gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER,
+                                      gl.GL_COLOR_ATTACHMENT0,
+                                      gl.GL_TEXTURE_2D,
+                                      self.renderTexture.texture,
+                                      0)
+            
+            if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != \
+               gl.GL_FRAMEBUFFER_COMPLETE:
+                raise RuntimeError('An error has occurred while '
+                                   'configuring the frame buffer')
+            
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+
+            def getSize():
+                return (512, 512)
+
+            # Replace the subclass _getSize 
+            # method with this one
+            self._realGetSize = self._getSize
+            self._getSize     = getSize
  
 
     def _zAxisChanged(self, *a):
@@ -606,9 +635,10 @@ class SliceCanvas(props.HasProperties):
            (ymin   == ymax):
             return
 
-        log.debug('Setting canvas bounds: '
+        log.debug('Setting canvas bounds (size {}, {}): '
                   'X {: 5.1f} - {: 5.1f},'
-                  'Y {: 5.1f} - {: 5.1f}'.format(xmin, xmax, ymin, ymax))
+                  'Y {: 5.1f} - {: 5.1f}'.format(
+                      width, height, xmin, xmax, ymin, ymax))
 
         # set up 2D orthographic drawing
         gl.glViewport(0, 0, width, height)
@@ -698,6 +728,11 @@ class SliceCanvas(props.HasProperties):
 
         if not self._setGLContext():
             return
+
+        if self.twoStageRender:
+            log.debug('Rendering to off-screen frame buffer')
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.frameBuffer)
+        
         self._setViewport()
 
         # clear the canvas
@@ -726,4 +761,81 @@ class SliceCanvas(props.HasProperties):
         if self.showCursor: self._drawCursor()
 
         self._annotations.draw(self.pos.z)
+
+        if self.twoStageRender:
+            
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+
+            # For debug, save rendered texture to file
+            if False:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
+                data = gl.glGetTexImage(gl.GL_TEXTURE_2D,
+                                        0,
+                                        gl.GL_RGBA,
+                                        gl.GL_UNSIGNED_BYTE)
+                data = np.fromstring(data, dtype=np.uint8).reshape(512, 512, 4)
+
+                if not hasattr(self, '_frameCount'):
+                    self._frameCount = 1
+                else:
+                    self._frameCount += 1
+
+                import matplotlib.image as mplimg
+                mplimg.imsave('{}_{:04d}.png'.format(
+                    id(self), self._frameCount), data)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+            width, height = self._realGetSize()
+
+            log.debug('Rendering FB texture to canvas (size {}, {})'.format(
+                width, height))
+
+            gl.glViewport(0, 0, width, height)
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
+        
+            gl.glOrtho(0.0, 1.0, 0.0, 1.0, -1000.0, 1000.0)
+
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+            gl.glEnable(gl.GL_BLEND)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+            indices  = np.arange(6,     dtype=np.uint32)
+            vertices = np.zeros((6, 3), dtype=np.float32)
+            vertices[0, [0, 1]] = [0, 0]
+            vertices[1, [0, 1]] = [0, 1]
+            vertices[2, [0, 1]] = [1, 0]
+            vertices[3, [0, 1]] = [1, 0]
+            vertices[4, [0, 1]] = [0, 1]
+            vertices[5, [0, 1]] = [1, 1]
+
+            texCoords = vertices[:, [0, 1]].ravel('C')
+            vertices  = vertices           .ravel('C')
+            
+            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+            
+            gl.glActiveTexture(gl.GL_TEXTURE0)
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
+            
+            gl.glTexEnvf(gl.GL_TEXTURE_ENV,
+                         gl.GL_TEXTURE_ENV_MODE,
+                         gl.GL_REPLACE)
+
+            gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
+            gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, texCoords)
+
+            gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
+            
+            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            gl.glDisable(gl.GL_TEXTURE_2D)
+            
+            gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
         self._postDraw()

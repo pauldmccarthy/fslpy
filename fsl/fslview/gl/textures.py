@@ -446,7 +446,7 @@ class ImageTexture(object):
             data = np.round(data * 255)
             data = np.array(data, dtype=np.uint8)
             
-        if   dtype == np.uint8:  pass
+        elif dtype == np.uint8:  pass
         elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
         elif dtype == np.uint16: pass
         elif dtype == np.int16:  data = np.array(data + 32768, dtype=np.uint16)
@@ -643,3 +643,46 @@ class SelectionTexture(object):
             data = new
 
         self.refresh(data, offset)
+
+
+class RenderTexture(object):
+    """A 2D texture intended to be used as a target for rendering."""
+
+    
+    def __init__(self, width, height):
+        
+        self.texture = gl.glGenTextures(1)
+        log.debug('Created GL texture for {}: {}'.format(
+            type(self).__name__, self.texture))         
+
+        self.refresh(width, height)
+
+    def getSize(self):
+        return self._width, self._height
+
+    
+    def refresh(self, width, height):
+
+        self._width  = width
+        self._height = height
+        
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+
+        gl.glTexImage2D(gl.GL_TEXTURE_2D,
+                        0,
+                        gl.GL_RGBA8,
+                        width,
+                        height,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        None)
+
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           gl.GL_NEAREST)
+        
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
