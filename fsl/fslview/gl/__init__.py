@@ -129,7 +129,7 @@ def bootstrap(glVersion=None):
 
 
         # List any GL21 extensions here
-        exts = []
+        exts = ['GL_EXT_framebuffer_object']
         
         if not all(map(glexts.hasExtension, exts)):
             log.debug('One of these OpenGL extensions is '
@@ -144,7 +144,8 @@ def bootstrap(glVersion=None):
     # not present, we're screwed.
     if glpkg == gl14:
         
-        exts = ['GL_ARB_vertex_program',
+        exts = ['GL_EXT_framebuffer_object',
+                'GL_ARB_vertex_program',
                 'GL_ARB_fragment_program']
         
         if not all(map(glexts.hasExtension, exts)):

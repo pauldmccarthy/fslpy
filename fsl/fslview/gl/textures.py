@@ -21,13 +21,16 @@ The main interface to this module comprises two functions:
 
 import logging
 
-import OpenGL.GL            as gl
-import OpenGL.raw.GL._types as gltypes
-import numpy                as np
+import OpenGL.GL                        as gl
+import OpenGL.raw.GL._types             as gltypes
+import OpenGL.GL.EXT.framebuffer_object as glfbo
+
+import numpy                            as np
 
 import fsl.utils.transform     as transform
 import fsl.utils.typedict      as typedict
 import fsl.fslview.gl.globject as globject
+
 
 
 log = logging.getLogger(__name__)
@@ -653,9 +656,9 @@ class RenderTexture(object):
 
     
     def __init__(self, width, height):
-        
-        self.texture     = gl.glGenTextures(1)
-        self.frameBuffer = gl.glGenFramebuffers(1)
+
+        self.texture     = gl   .glGenTextures(1)
+        self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
         
         log.debug('Created GL texture for {}: {}'.format(
             type(self).__name__, self.texture))         
@@ -668,11 +671,11 @@ class RenderTexture(object):
 
     
     def bindAsRenderTarget(self):
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.frameBuffer) 
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, self.frameBuffer) 
 
     
     def unbind(self):
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0) 
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
 
     
     def refresh(self, width, height):
@@ -703,19 +706,20 @@ class RenderTexture(object):
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
         # And configure the frame buffer
-        gl.glBindFramebuffer(     gl.GL_FRAMEBUFFER, self.frameBuffer)
-        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER,
-                                  gl.GL_COLOR_ATTACHMENT0,
-                                  gl.GL_TEXTURE_2D,
-                                  self.texture,
-                                  0)
+        glfbo.glBindFramebufferEXT(     glfbo.GL_FRAMEBUFFER_EXT,
+                                        self.frameBuffer)
+        glfbo.glFramebufferTexture2DEXT(glfbo.GL_FRAMEBUFFER_EXT,
+                                        glfbo.GL_COLOR_ATTACHMENT0_EXT,
+                                        gl   .GL_TEXTURE_2D,
+                                        self.texture,
+                                        0)
             
-        if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != \
-           gl.GL_FRAMEBUFFER_COMPLETE:
+        if glfbo.glCheckFramebufferStatusEXT(glfbo.GL_FRAMEBUFFER_EXT) != \
+           glfbo.GL_FRAMEBUFFER_COMPLETE_EXT:
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
             
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0)
 
 
     def drawRender(self, xmin, xmax, ymin, ymax, xax, yax):
@@ -769,5 +773,5 @@ class RenderTexture(object):
 
         
     def destroy(self):
-        gl.glDeleteTextures(                   self.texture)
-        gl.glDeleteFramebuffers(gltypes.GLuint(self.frameBuffer))
+        gl   .glDeleteTextures(                      self.texture)
+        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
