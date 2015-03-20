@@ -129,7 +129,7 @@ class SliceCanvas(props.HasProperties):
 
         realWidth                 = self.displayBounds.xlen
         realHeight                = self.displayBounds.ylen
-        canvasWidth, canvasHeight = map(float, self._getSize())
+        canvasWidth, canvasHeight = map(float, self._realGetSize())
 
         if self.invertX: xpos = canvasWidth  - xpos
         if self.invertY: ypos = canvasHeight - ypos
@@ -307,9 +307,11 @@ class SliceCanvas(props.HasProperties):
         self._imageListChanged()
 
         if self.twoStageRender:
+
+            width, height = 128, 128
             
             self.frameBuffer   = gl.glGenFramebuffers(1)
-            self.renderTexture = fsltextures.RenderTexture(512, 512)
+            self.renderTexture = fsltextures.RenderTexture(width, height)
 
             gl.glBindFramebuffer(     gl.GL_FRAMEBUFFER, self.frameBuffer)
             gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER,
@@ -326,7 +328,7 @@ class SliceCanvas(props.HasProperties):
             gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
 
             def getSize():
-                return (512, 512)
+                return (width, height)
 
             # Replace the subclass _getSize 
             # method with this one
@@ -602,7 +604,8 @@ class SliceCanvas(props.HasProperties):
                      ymin=None,
                      ymax=None,
                      zmin=None,
-                     zmax=None):
+                     zmax=None,
+                     size=None):
         """Sets up the GL canvas size, viewport, and projection.
 
         If any of the min/max parameters are not provided, they are
@@ -626,7 +629,10 @@ class SliceCanvas(props.HasProperties):
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
-        width, height = self._getSize()
+        if size is None:
+            size = self._getSize()
+            
+        width, height = size
         
         if (len(self.imageList) == 0) or \
            (width  == 0)              or \
@@ -767,53 +773,56 @@ class SliceCanvas(props.HasProperties):
             gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
 
             # For debug, save rendered texture to file
-            if False:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
-                data = gl.glGetTexImage(gl.GL_TEXTURE_2D,
-                                        0,
-                                        gl.GL_RGBA,
-                                        gl.GL_UNSIGNED_BYTE)
-                data = np.fromstring(data, dtype=np.uint8).reshape(512, 512, 4)
+            # if True:
+            #     gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
+            #     data = gl.glGetTexImage(gl.GL_TEXTURE_2D,
+            #                             0,
+            #                             gl.GL_RGBA,
+            #                             gl.GL_UNSIGNED_BYTE)
+            #     data = np.fromstring(data, dtype=np.uint8).reshape(128, 128, 4)
 
-                if not hasattr(self, '_frameCount'):
-                    self._frameCount = 1
-                else:
-                    self._frameCount += 1
+            #     if not hasattr(self, '_frameCount'):
+            #         self._frameCount = 1
+            #     else:
+            #         self._frameCount += 1
 
-                import matplotlib.image as mplimg
-                mplimg.imsave('{}_{:04d}.png'.format(
-                    id(self), self._frameCount), data)
-                gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            #     import matplotlib.image as mplimg
+            #     mplimg.imsave('{}_{:04d}.png'.format(
+            #         id(self), self._frameCount), data)
+            #     gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
             width, height = self._realGetSize()
-
             log.debug('Rendering FB texture to canvas (size {}, {})'.format(
                 width, height))
 
-            gl.glViewport(0, 0, width, height)
-            gl.glMatrixMode(gl.GL_PROJECTION)
-            gl.glLoadIdentity()
-        
-            gl.glOrtho(0.0, 1.0, 0.0, 1.0, -1000.0, 1000.0)
-
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity()
+            self._setViewport(size=(width, height))
 
             gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
             gl.glEnable(gl.GL_BLEND)
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-            indices  = np.arange(6,     dtype=np.uint32)
-            vertices = np.zeros((6, 3), dtype=np.float32)
-            vertices[0, [0, 1]] = [0, 0]
-            vertices[1, [0, 1]] = [0, 1]
-            vertices[2, [0, 1]] = [1, 0]
-            vertices[3, [0, 1]] = [1, 0]
-            vertices[4, [0, 1]] = [0, 1]
-            vertices[5, [0, 1]] = [1, 1]
+            indices    = np.arange(6,     dtype=np.uint32)
+            vertices   = np.zeros((6, 3), dtype=np.float32)
+            texCoords  = np.zeros((6, 2), dtype=np.float32)
+            xmin, xmax = self.displayBounds.x
+            ymin, ymax = self.displayBounds.y
+            
+            vertices[ :, self.zax]             = self.pos.z
+            vertices[ 0, [self.xax, self.yax]] = [xmin, ymin]
+            texCoords[0, :]                    = [0,    0]
+            vertices[ 1, [self.xax, self.yax]] = [xmin, ymax]
+            texCoords[1, :]                    = [0,    1]
+            vertices[ 2, [self.xax, self.yax]] = [xmax, ymin]
+            texCoords[2, :]                    = [1,    0]
+            vertices[ 3, [self.xax, self.yax]] = [xmax, ymin]
+            texCoords[3, :]                    = [1,    0]
+            vertices[ 4, [self.xax, self.yax]] = [xmin, ymax]
+            texCoords[4, :]                    = [0,    1]
+            vertices[ 5, [self.xax, self.yax]] = [xmax, ymax]
+            texCoords[5, :]                    = [1,    1]
 
-            texCoords = vertices[:, [0, 1]].ravel('C')
-            vertices  = vertices           .ravel('C')
+            texCoords = texCoords.ravel('C')
+            vertices  = vertices .ravel('C')
             
             gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
             gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
