@@ -608,8 +608,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         if not self._setGLContext():
             return
-        
-        self._setViewport()
+
+        if self.twoStageRender:
+            log.debug('Rendering to off-screen frame buffer')
+            self._renderTexture.bindAsRenderTarget()
+            self._setViewport(size=self._renderTexture.getSize())
+            
+        else:
+            self._setViewport()
 
         startSlice   = self.ncols * self.topRow
         endSlice     = startSlice + self.nrows * self.ncols
@@ -643,20 +649,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             globj.preDraw()
 
-            # An idea for better lightbox performance -
-            # generate the vertices on the CPU....
-
             zposes = self._sliceLocs[ image][startSlice:endSlice]
             xforms = self._transforms[image][startSlice:endSlice]
 
-            # TODO Implement this function:
-            # 
             globj.drawAll(zposes, xforms)
-            # 
-
-            # for zi in range(startSlice, endSlice):
-            #     globj.draw(self._sliceLocs[ image][zi],
-            #                self._transforms[image][zi])
 
             globj.postDraw()
 
@@ -666,5 +662,16 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             if self.highlightSlice: self._drawSliceHighlight()
 
         self.getAnnotations().draw(self.pos.z)
+
+        if self.twoStageRender:
+            self._renderTexture.unbind()
+
+            xmin, xmax = self.displayBounds.x
+            ymin, ymax = self.displayBounds.y
+            
+            self._setViewport()
+            self._renderTexture.drawRender(
+                xmin, xmax, ymin, ymax, self.xax, self.yax)
+                
 
         self._postDraw()

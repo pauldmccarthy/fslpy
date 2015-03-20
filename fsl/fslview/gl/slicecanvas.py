@@ -739,10 +739,9 @@ class SliceCanvas(props.HasProperties):
 
         if self.twoStageRender:
             log.debug('Rendering to off-screen frame buffer')
-            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER,
-                                 self._renderTexture.frameBuffer)
-        
+            self._renderTexture.bindAsRenderTarget()
             self._setViewport(size=self._renderTexture.getSize())
+            
         else:
             self._setViewport()
 
@@ -775,61 +774,17 @@ class SliceCanvas(props.HasProperties):
 
         if self.twoStageRender:
             
-            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+            self._renderTexture.unbind()
 
             log.debug('Rendering FB texture to canvas (size {})'.format(
                 self._getSize()))
 
             self._setViewport()
 
-            gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-            gl.glEnable(gl.GL_BLEND)
-            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-            indices    = np.arange(6,     dtype=np.uint32)
-            vertices   = np.zeros((6, 3), dtype=np.float32)
-            texCoords  = np.zeros((6, 2), dtype=np.float32)
             xmin, xmax = self.displayBounds.x
             ymin, ymax = self.displayBounds.y
-            
-            vertices[ :, self.zax]             = self.pos.z
-            vertices[ 0, [self.xax, self.yax]] = [xmin, ymin]
-            texCoords[0, :]                    = [0,    0]
-            vertices[ 1, [self.xax, self.yax]] = [xmin, ymax]
-            texCoords[1, :]                    = [0,    1]
-            vertices[ 2, [self.xax, self.yax]] = [xmax, ymin]
-            texCoords[2, :]                    = [1,    0]
-            vertices[ 3, [self.xax, self.yax]] = [xmax, ymin]
-            texCoords[3, :]                    = [1,    0]
-            vertices[ 4, [self.xax, self.yax]] = [xmin, ymax]
-            texCoords[4, :]                    = [0,    1]
-            vertices[ 5, [self.xax, self.yax]] = [xmax, ymax]
-            texCoords[5, :]                    = [1,    1]
 
-            texCoords = texCoords.ravel('C')
-            vertices  = vertices .ravel('C')
-            
-            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-            gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-            
-            gl.glActiveTexture(gl.GL_TEXTURE0)
-            gl.glEnable(gl.GL_TEXTURE_2D)
-            
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self._renderTexture.texture)
-            
-            gl.glTexEnvf(gl.GL_TEXTURE_ENV,
-                         gl.GL_TEXTURE_ENV_MODE,
-                         gl.GL_REPLACE)
-
-            gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
-            gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, texCoords)
-
-            gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
-            
-            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-            gl.glDisable(gl.GL_TEXTURE_2D)
-            
-            gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-            gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+            self._renderTexture.drawRender(
+                xmin, xmax, ymin, ymax, self.xax, self.yax)
 
         self._postDraw()

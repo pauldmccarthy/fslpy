@@ -662,8 +662,17 @@ class RenderTexture(object):
 
         self.refresh(width, height)
 
+        
     def getSize(self):
         return self._width, self._height
+
+    
+    def bindAsRenderTarget(self):
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.frameBuffer) 
+
+    
+    def unbind(self):
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0) 
 
     
     def refresh(self, width, height):
@@ -707,6 +716,56 @@ class RenderTexture(object):
                                'configuring the frame buffer')
             
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+
+
+    def drawRender(self, xmin, xmax, ymin, ymax, xax, yax):
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        indices    = np.arange(6,     dtype=np.uint32)
+        vertices   = np.zeros((6, 3), dtype=np.float32)
+        texCoords  = np.zeros((6, 2), dtype=np.float32)
+
+        vertices[ 0, [xax, yax]] = [xmin, ymin]
+        texCoords[0, :]          = [0,    0]
+        vertices[ 1, [xax, yax]] = [xmin, ymax]
+        texCoords[1, :]          = [0,    1]
+        vertices[ 2, [xax, yax]] = [xmax, ymin]
+        texCoords[2, :]          = [1,    0]
+        vertices[ 3, [xax, yax]] = [xmax, ymin]
+        texCoords[3, :]          = [1,    0]
+        vertices[ 4, [xax, yax]] = [xmin, ymax]
+        texCoords[4, :]          = [0,    1]
+        vertices[ 5, [xax, yax]] = [xmax, ymax]
+        texCoords[5, :]          = [1,    1]
+
+        texCoords = texCoords.ravel('C')
+        vertices  = vertices .ravel('C')
+
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV,
+                     gl.GL_TEXTURE_ENV_MODE,
+                     gl.GL_REPLACE)
+
+        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
+        gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, texCoords)
+
+        gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
 
         
     def destroy(self):
