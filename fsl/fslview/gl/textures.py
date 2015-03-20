@@ -646,12 +646,16 @@ class SelectionTexture(object):
 
 
 class RenderTexture(object):
-    """A 2D texture intended to be used as a target for rendering."""
+    """A 2D texture and frame buffer, intended to be used as a target for
+    off-screen rendering.
+    """
 
     
     def __init__(self, width, height):
         
-        self.texture = gl.glGenTextures(1)
+        self.texture     = gl.glGenTextures(1)
+        self.frameBuffer = gl.glGenFramebuffers(1)
+        
         log.debug('Created GL texture for {}: {}'.format(
             type(self).__name__, self.texture))         
 
@@ -665,7 +669,8 @@ class RenderTexture(object):
 
         self._width  = width
         self._height = height
-        
+
+        # Configure the texture
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
 
         gl.glTexImage2D(gl.GL_TEXTURE_2D,
@@ -686,3 +691,23 @@ class RenderTexture(object):
                            gl.GL_NEAREST)
         
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+        # And configure the frame buffer
+        gl.glBindFramebuffer(     gl.GL_FRAMEBUFFER, self.frameBuffer)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER,
+                                  gl.GL_COLOR_ATTACHMENT0,
+                                  gl.GL_TEXTURE_2D,
+                                  self.texture,
+                                  0)
+            
+        if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != \
+           gl.GL_FRAMEBUFFER_COMPLETE:
+            raise RuntimeError('An error has occurred while '
+                               'configuring the frame buffer')
+            
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+
+        
+    def destroy(self):
+        gl.glDeleteTextures(    self.texture)
+        gl.glDeleteFramebuffers(self.frameBuffer)

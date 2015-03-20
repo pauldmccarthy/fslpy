@@ -30,3 +30,5 @@ class SceneOpts(props.HasProperties):
 
     
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
+
+    twoStageRender = props.Boolean(default=False)

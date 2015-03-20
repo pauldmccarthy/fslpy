@@ -67,6 +67,15 @@ class SliceCanvas(props.HasProperties):
     """
 
     
+    twoStageRender = props.Boolean(default=False)
+    """If ``True``, the scene is rendered off-screen to a fixed-size texture;
+    this texture is then rendered to the canvas. If ``False``, the scene is
+    rendered directly to the canvas. Two-stage rendering will give better
+    performance on graphics cards, and when software-based rendering is
+    being used.
+    """
+
+    
     showCursor = props.Boolean(default=True)
     """If ``False``, the green crosshairs which show
     the current cursor location will not be drawn.
@@ -129,8 +138,8 @@ class SliceCanvas(props.HasProperties):
 
         realWidth                 = self.displayBounds.xlen
         realHeight                = self.displayBounds.ylen
-        canvasWidth, canvasHeight = map(float, self._realGetSize())
-
+        canvasWidth, canvasHeight = map(float, self._getSize())
+            
         if self.invertX: xpos = canvasWidth  - xpos
         if self.invertY: ypos = canvasHeight - ypos
 
@@ -238,7 +247,7 @@ class SliceCanvas(props.HasProperties):
         return self._annotations
 
         
-    def __init__(self, imageList, displayCtx, zax=0, twoStageRender=True):
+    def __init__(self, imageList, displayCtx, zax=0):
         """Creates a canvas object. 
 
         .. note:: It is assumed that each :class:`~fsl.data.image.Image`
@@ -263,7 +272,6 @@ class SliceCanvas(props.HasProperties):
 
         self.imageList      = imageList
         self.displayCtx     = displayCtx
-        self.twoStageRender = twoStageRender
         self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # The zax property is the image axis which maps to the
@@ -287,6 +295,10 @@ class SliceCanvas(props.HasProperties):
         self.addListener('zoom',
                          self.name,
                          lambda *a: self._updateDisplayBounds())
+        
+        self.addListener('twoStageRender',
+                         self.name,
+                         self._onTwoStageRenderChange)
 
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -304,36 +316,29 @@ class SliceCanvas(props.HasProperties):
     def _initGL(self):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
+        self._renderTexture = None
+        
         self._imageListChanged()
+        self._onTwoStageRenderChange()
+
+        
+    def _onTwoStageRenderChange(self, *a):
+        """Called when the :attr:`twoStageRender` property changes.
+
+        If two stage rendering has been enabled, a FrameBuffer and 2D texture
+        are created and configured - subsequent canvas draws will be made to
+        this 2D texture, and then to the actual canvas.
+        """
+
+        if self._renderTexture is not None:
+            self._renderTexture.destroy()
+            self._renderTexture = None
 
         if self.twoStageRender:
-
             width, height = 128, 128
-            
-            self.frameBuffer   = gl.glGenFramebuffers(1)
-            self.renderTexture = fsltextures.RenderTexture(width, height)
+            self._renderTexture = fsltextures.RenderTexture(width, height)
 
-            gl.glBindFramebuffer(     gl.GL_FRAMEBUFFER, self.frameBuffer)
-            gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER,
-                                      gl.GL_COLOR_ATTACHMENT0,
-                                      gl.GL_TEXTURE_2D,
-                                      self.renderTexture.texture,
-                                      0)
-            
-            if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != \
-               gl.GL_FRAMEBUFFER_COMPLETE:
-                raise RuntimeError('An error has occurred while '
-                                   'configuring the frame buffer')
-            
-            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
-
-            def getSize():
-                return (width, height)
-
-            # Replace the subclass _getSize 
-            # method with this one
-            self._realGetSize = self._getSize
-            self._getSize     = getSize
+        self._refresh()
  
 
     def _zAxisChanged(self, *a):
@@ -481,7 +486,7 @@ class SliceCanvas(props.HasProperties):
     def _applyZoom(self, xmin, xmax, ymin, ymax):
         """'Zooms' in to the given rectangle according to the
         current value of the zoom property, keeping the view
-        centre consistent with regards to the current value
+        centre consistent with respect to the current value
         of the :attr:`displayBounds` property. Returns a
         4-tuple containing the updated bound values.
         """
@@ -721,12 +726,7 @@ class SliceCanvas(props.HasProperties):
 
 
     def _draw(self, *a):
-        """Draws the current scene to the canvas. 
-
-        Ths actual drawing is managed by the OpenGL version-dependent
-        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
-        the actual drawing.
-        """
+        """Draws the current scene to the canvas. """
         
         width, height = self._getSize()
         if width == 0 or height == 0:
@@ -737,9 +737,12 @@ class SliceCanvas(props.HasProperties):
 
         if self.twoStageRender:
             log.debug('Rendering to off-screen frame buffer')
-            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.frameBuffer)
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER,
+                                 self._renderTexture.frameBuffer)
         
-        self._setViewport()
+            self._setViewport(size=self._renderTexture.getSize())
+        else:
+            self._setViewport()
 
         # clear the canvas
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
@@ -772,30 +775,10 @@ class SliceCanvas(props.HasProperties):
             
             gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
 
-            # For debug, save rendered texture to file
-            # if True:
-            #     gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
-            #     data = gl.glGetTexImage(gl.GL_TEXTURE_2D,
-            #                             0,
-            #                             gl.GL_RGBA,
-            #                             gl.GL_UNSIGNED_BYTE)
-            #     data = np.fromstring(data, dtype=np.uint8).reshape(128, 128, 4)
+            log.debug('Rendering FB texture to canvas (size {})'.format(
+                self._getSize()))
 
-            #     if not hasattr(self, '_frameCount'):
-            #         self._frameCount = 1
-            #     else:
-            #         self._frameCount += 1
-
-            #     import matplotlib.image as mplimg
-            #     mplimg.imsave('{}_{:04d}.png'.format(
-            #         id(self), self._frameCount), data)
-            #     gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-
-            width, height = self._realGetSize()
-            log.debug('Rendering FB texture to canvas (size {}, {})'.format(
-                width, height))
-
-            self._setViewport(size=(width, height))
+            self._setViewport()
 
             gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
             gl.glEnable(gl.GL_BLEND)
@@ -830,7 +813,7 @@ class SliceCanvas(props.HasProperties):
             gl.glActiveTexture(gl.GL_TEXTURE0)
             gl.glEnable(gl.GL_TEXTURE_2D)
             
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderTexture.texture)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self._renderTexture.texture)
             
             gl.glTexEnvf(gl.GL_TEXTURE_ENV,
                          gl.GL_TEXTURE_ENV_MODE,

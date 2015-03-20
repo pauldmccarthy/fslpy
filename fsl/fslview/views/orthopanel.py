@@ -110,6 +110,10 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         sceneOpts.bindProps('yzoom', self._ycanvas, 'zoom')
         sceneOpts.bindProps('zzoom', self._zcanvas, 'zoom')
 
+        sceneOpts.bindProps('twoStageRender', self._xcanvas)
+        sceneOpts.bindProps('twoStageRender', self._ycanvas)
+        sceneOpts.bindProps('twoStageRender', self._zcanvas)
+
         # And a global zoom which controls all canvases at once
         def onZoom(*a):
             sceneOpts.xzoom = sceneOpts.zoom
