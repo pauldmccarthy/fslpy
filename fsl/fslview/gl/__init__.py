@@ -57,9 +57,15 @@ import OpenGL
 log = logging.getLogger(__name__)
 
 
+
 # Make PyOpenGL throw an error, instead of implicitly
 # converting, if we pass incorrect types to OpenGL functions.
-OpenGL.ERROR_ON_COPY = True 
+OpenGL.ERROR_ON_COPY = True
+
+# These flags should be set to True
+# for development, False for production
+OpenGL.ERROR_CHECKING = True
+OpenGL.ERROR_LOGGING  = True 
 
 
 # Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the

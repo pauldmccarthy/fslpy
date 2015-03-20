@@ -21,12 +21,13 @@ The main interface to this module comprises two functions:
 
 import logging
 
-import OpenGL.GL as gl
-import numpy     as np
+import OpenGL.GL            as gl
+import OpenGL.raw.GL._types as gltypes
+import numpy                as np
 
-import fsl.utils.transform          as transform
-import fsl.utils.typedict           as typedict
-import fsl.fslview.gl.globject      as globject
+import fsl.utils.transform     as transform
+import fsl.utils.typedict      as typedict
+import fsl.fslview.gl.globject as globject
 
 
 log = logging.getLogger(__name__)
@@ -709,5 +710,5 @@ class RenderTexture(object):
 
         
     def destroy(self):
-        gl.glDeleteTextures(    self.texture)
-        gl.glDeleteFramebuffers(self.frameBuffer)
+        gl.glDeleteTextures(                   self.texture)
+        gl.glDeleteFramebuffers(gltypes.GLuint(self.frameBuffer))

@@ -274,6 +274,10 @@ class SliceCanvas(props.HasProperties):
         self.displayCtx     = displayCtx
         self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
 
+        # If two stage rendering is enabled, this attribute
+        # will refer to a RenderTexture instance
+        self._renderTexture = None
+
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
         # also fixes the values of 'xax' and 'yax'.
@@ -316,8 +320,6 @@ class SliceCanvas(props.HasProperties):
     def _initGL(self):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
-        self._renderTexture = None
-        
         self._imageListChanged()
         self._onTwoStageRenderChange()
 
