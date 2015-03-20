@@ -332,6 +332,12 @@ class SliceCanvas(props.HasProperties):
         this 2D texture, and then to the actual canvas.
         """
 
+        if self.twoStageRender and (self._renderTexture is not None):
+            return
+        
+        if (not self.twoStageRender) and (self._renderTexture is None):
+            return
+
         if self._renderTexture is not None:
             self._renderTexture.destroy()
             self._renderTexture = None

@@ -660,8 +660,8 @@ class RenderTexture(object):
         self.texture     = gl   .glGenTextures(1)
         self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
         
-        log.debug('Created GL texture for {}: {}'.format(
-            type(self).__name__, self.texture))         
+        log.debug('Created GL texture and FBO for {}: {}, fbo: {}'.format(
+            type(self).__name__, self.texture, self.frameBuffer)) 
 
         self.refresh(width, height)
 
@@ -682,6 +682,9 @@ class RenderTexture(object):
 
         self._width  = width
         self._height = height
+
+        log.debug('Configuring {} texture {}, fbo {}'.format(
+            type(self).__name__, self.texture, self.frameBuffer))
 
         # Configure the texture
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
@@ -773,5 +776,7 @@ class RenderTexture(object):
 
         
     def destroy(self):
+        log.debug('Deleting texture {} and fbo {}'.format(
+            self.texture, self.frameBuffer))
         gl   .glDeleteTextures(                      self.texture)
         glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
