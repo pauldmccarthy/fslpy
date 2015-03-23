@@ -172,6 +172,26 @@ def bootstrap(glVersion=None):
     log.debug('Using OpenGL {} implementation with renderer {}'.format(
         verstr, renderer))
 
+    # If we're using a software based renderer,
+    # make two-stage rendering (off-screen rendering
+    # to a texture, then rendering said texture to the
+    # screen) the default.
+    # 
+    # There doesn't seem to be any quantitative
+    # method for determining whether we are using
+    # software-based rendering, so a hack is
+    # necessary. 
+    if 'software' in renderer.lower():
+        
+        log.debug('Software-based rendering detected - two-stage '
+                  'rendering will be the default method')
+        
+        import fsl.fslview.displaycontext.sceneopts as so
+        import fsl.fslview.gl.slicecanvas           as sc
+        
+        so.SceneOpts  .twoStageRender.setConstraint(None, 'default', True)
+        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default', True)
+
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs
     thismod.glvector_funcs = glpkg.glvector_funcs

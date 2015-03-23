@@ -97,22 +97,22 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side].SetForegroundColour('white')
             self._zLabels[side].SetForegroundColour('white') 
 
-        sceneOpts.bindProps('showCursor', self._xcanvas)
-        sceneOpts.bindProps('showCursor', self._ycanvas)
-        sceneOpts.bindProps('showCursor', self._zcanvas)
+        self._xcanvas.bindProps('showCursor', sceneOpts)
+        self._ycanvas.bindProps('showCursor', sceneOpts)
+        self._zcanvas.bindProps('showCursor', sceneOpts)
 
         # Callbacks for ortho panel layout options
         sceneOpts.addListener('layout',     self._name, self._refreshLayout)
         sceneOpts.addListener('showLabels', self._name, self._refreshLabels)
 
         # Individual zoom control for each canvas
-        sceneOpts.bindProps('xzoom', self._xcanvas, 'zoom')
-        sceneOpts.bindProps('yzoom', self._ycanvas, 'zoom')
-        sceneOpts.bindProps('zzoom', self._zcanvas, 'zoom')
+        self._xcanvas.bindProps('zoom', sceneOpts, 'xzoom')
+        self._ycanvas.bindProps('zoom', sceneOpts, 'yzoom')
+        self._zcanvas.bindProps('zoom', sceneOpts, 'zzoom')
 
-        sceneOpts.bindProps('twoStageRender', self._xcanvas)
-        sceneOpts.bindProps('twoStageRender', self._ycanvas)
-        sceneOpts.bindProps('twoStageRender', self._zcanvas)
+        self._xcanvas.bindProps('twoStageRender', sceneOpts)
+        self._ycanvas.bindProps('twoStageRender', sceneOpts)
+        self._zcanvas.bindProps('twoStageRender', sceneOpts)
 
         # And a global zoom which controls all canvases at once
         def onZoom(*a):
