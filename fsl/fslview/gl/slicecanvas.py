@@ -351,8 +351,8 @@ class SliceCanvas(props.HasProperties):
                 # property - if affine, use a fixed size
                 # render texture? Or estimate which voxel
                 # axes correspond to the screen axes?
-                width  = image.shape[self.xax]
-                height = image.shape[self.yax]
+                width  = image.shape[self.xax] / 2
+                height = image.shape[self.yax] / 2
 
                 texture = fsltextures.RenderTexture(width, height)
                 self._renderTextures[image] = texture
