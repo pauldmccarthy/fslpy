@@ -274,9 +274,10 @@ class SliceCanvas(props.HasProperties):
         self.displayCtx     = displayCtx
         self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        # If two stage rendering is enabled, this attribute
-        # will refer to a RenderTexture instance
-        self._renderTexture = None
+        # If two stage rendering is enabled, this
+        # attribute will contain a RenderTexture
+        # instance for each image in the image list
+        self._renderTextures = {}
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -299,11 +300,15 @@ class SliceCanvas(props.HasProperties):
         self.addListener('zoom',
                          self.name,
                          lambda *a: self._updateDisplayBounds())
-        
+
+        # When the two stage rendering option changes,
+        # make sure that, if it has been enabled, a
+        # rendering texture exists for every image
+        # in the list
         self.addListener('twoStageRender',
                          self.name,
                          self._onTwoStageRenderChange)
-
+        
         # When the image list changes, refresh the
         # display, and update the display bounds
         self.imageList.addListener( 'images',
@@ -321,44 +326,37 @@ class SliceCanvas(props.HasProperties):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._imageListChanged()
-        self._onTwoStageRenderChange()
 
-        
+
     def _onTwoStageRenderChange(self, *a):
-        """Called when the :attr:`twoStageRender` property changes.
 
-        If two stage rendering has been enabled, a FrameBuffer and 2D texture
-        are created and configured - subsequent canvas draws will be made to
-        this 2D texture, and then to the actual canvas.
-        """
+        if not self.twoStageRender:
 
-        if self.twoStageRender and (self._renderTexture is not None):
-            return
-        
-        if (not self.twoStageRender) and (self._renderTexture is None):
-            return
+            for image, texture in self._renderTextures:
+                self._renderTextures.pop(image)
+                texture.Destroy()
 
-        if self._renderTexture is not None:
-            self._renderTexture.destroy()
-            self._renderTexture = None
+        else:
+            
+            for image in self.imageList:
+                if image in self._renderTextures:
+                    continue
 
-        # OpenGL is stupid. We can't create a frame
-        # buffer, to be used as a target for off-screen
-        # rendering, unless the current context has
-        # been assigned a different rendering target.
-        #
-        # So here, we're failing silently if the context
-        # can't be set (i.e. if this canvas is not yet
-        # visible). The _draw method will then explicitly
-        # call this method if two stage rendering is
-        # enabled, and a render texture has not yet been
-        # created.
-        if self.twoStageRender and self._setGLContext():
-            width, height = 128, 128
-            self._renderTexture = fsltextures.RenderTexture(width, height)
+                # TODO honour display.resolution here
 
-        self._refresh()
- 
+                # We're assuming here that the voxel axes
+                # correspond to the display coordinate system
+                # axes, which is not necessarily true. You
+                # may need to check the display.transform
+                # property - if affine, use a fixed size
+                # render texture? Or estimate which voxel
+                # axes correspond to the screen axes?
+                width  = image.shape[self.xax]
+                height = image.shape[self.yax]
+
+                texture = fsltextures.RenderTexture(width, height)
+                self._renderTextures[image] = texture
+
 
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
@@ -479,6 +477,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('resolution',    self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 
+        self._onTwoStageRenderChange()
         self._refresh()
 
 
@@ -711,6 +710,14 @@ class SliceCanvas(props.HasProperties):
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
 
+        # clear the canvas
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        
+
         
     def _drawCursor(self):
         """Draws a green cursor at the current X/Y position."""
@@ -754,63 +761,82 @@ class SliceCanvas(props.HasProperties):
         if not self._setGLContext():
             return
 
-        if self.twoStageRender:
-            log.debug('Rendering to off-screen frame buffer')
-
-            # Force creation of a render texture
-            # if one does not already exist
-            if self._renderTexture is None:
-                self._onTwoStageRenderChange()
-            
-            self._renderTexture.bindAsRenderTarget()
-            self._setViewport(size=self._renderTexture.getSize())
-            
-        else:
+        if not self.twoStageRender:
             self._setViewport()
-
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         for image in self.displayCtx.getOrderedImages():
 
-            try: globj = image.getAttribute(self.name)
+            display = self.displayCtx.getDisplayProperties(image)
+
+            try:
+                globj = image.getAttribute(self.name)
             except KeyError:
                 continue
 
-            if (globj is None) or (not globj.ready()):
-                continue 
+            if (globj is None) or (not globj.ready()) or not display.enabled:
+                continue
+
+            if self.twoStageRender:
+                
+                renderTexture = self._renderTextures.get(image, None)
+                lo, hi        = display.getDisplayBounds()
+
+                if renderTexture is None:
+                    continue
+
+                renderTexture.bindAsRenderTarget()
+                
+                self._setViewport(
+                    xmin=lo[self.xax],
+                    xmax=hi[self.xax],
+                    ymin=lo[self.yax],
+                    ymax=hi[self.yax],
+                    size=renderTexture.getSize())
+
+                log.debug('Rendering image {} to offscreen '
+                          'texture {} (size {})'.format(
+                              image,
+                              renderTexture.texture,
+                              renderTexture.getSize()))
 
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
-
+                
             globj.preDraw()
             globj.draw(self.pos.z)
             globj.postDraw()
+
+            if self.twoStageRender:
+                renderTexture.unbind()
         
-        self._annotations.draw(self.pos.z)
-
         if self.twoStageRender:
-            
-            self._renderTexture.unbind()
 
-            log.debug('Rendering FB texture to canvas (size {})'.format(
+            log.debug('Rendering FB textures to canvas (size {})'.format(
                 self._getSize()))
 
             self._setViewport()
 
-            xmin, xmax = self.displayBounds.x
-            ymin, ymax = self.displayBounds.y
+            for image in self.displayCtx.getOrderedImages():
+                renderTexture = self._renderTextures.get(image, None)
+                display       = self.displayCtx.getDisplayProperties(image)
+                lo, hi        = display.getDisplayBounds()
 
-            self._renderTexture.drawRender(
-                xmin, xmax, ymin, ymax, self.xax, self.yax)
+                if renderTexture is None or not display.enabled:
+                    continue
+                
+                xmin, xmax = lo[self.xax], hi[self.xax]
+                ymin, ymax = lo[self.yax], hi[self.yax]
+
+                log.debug('Drawing image {} texture to {:0.3f}-{:0.3f}, '
+                          '{:0.3f}-{:0.3f}'.format(
+                              image, xmin, xmax, ymin, ymax))
+
+                renderTexture.drawRender(
+                    xmin, xmax, ymin, ymax, self.xax, self.yax)
 
         if self.showCursor:
             self._drawCursor()
 
-        self._annotations.draw(self.pos.z, skipHold=True)
+        self._annotations.draw(self.pos.z)
 
         self._postDraw()

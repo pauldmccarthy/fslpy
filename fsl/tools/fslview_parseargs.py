@@ -178,7 +178,7 @@ ARGUMENTS = td.TypeDict({
     'OrthoOpts.ycentre'     : ('yc', 'ycentre'),
     'OrthoOpts.zcentre'     : ('zc', 'zcentre'),
 
-    'LightBoxOpts.sliceSpacing'   : ('ss', 'sliceSpacing'),
+    'LightBoxOpts.sliceSpacing'   : ('sp', 'sliceSpacing'),
     'LightBoxOpts.ncols'          : ('nc', 'ncols'),
     'LightBoxOpts.nrows'          : ('nr', 'nrows'),
     'LightBoxOpts.zrange'         : ('zr', 'zrange'),
