@@ -51,21 +51,35 @@ package-level attributes will be available:
 
 import logging 
 import os
-import OpenGL
 
 
 log = logging.getLogger(__name__)
 
+
+# When running under X, indirect rendering fails for
+# unknown reasons, so I'm forcing direct rendering.
+# If direct rendering is not available, I don't know
+# what to do.
+os.environ.pop('LIBGL_ALWAYS_INDIRECT', None)
+
+
+import OpenGL
 
 
 # Make PyOpenGL throw an error, instead of implicitly
 # converting, if we pass incorrect types to OpenGL functions.
 OpenGL.ERROR_ON_COPY = True
 
+
 # These flags should be set to True
 # for development, False for production
 OpenGL.ERROR_CHECKING = True
-OpenGL.ERROR_LOGGING  = True 
+OpenGL.ERROR_LOGGING  = True
+
+
+# If FULL_LOGGING is enabled,
+# every GL call will be logged.
+# OpenGL.FULL_LOGGING   = True
 
 
 # Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
@@ -416,6 +430,10 @@ class WXGLCanvasTarget(object):
         this canvas take place (e.g. texture/data creation, drawing, etc).
         """
         if not self.IsShownOnScreen(): return False
+
+        log.debug('Setting context target to {} ({})'.format(
+            type(self).__name__, id(self)))
+        
         getWXGLContext()[0].SetCurrent(self)
         return True
 

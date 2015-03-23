@@ -342,7 +342,18 @@ class SliceCanvas(props.HasProperties):
             self._renderTexture.destroy()
             self._renderTexture = None
 
-        if self.twoStageRender:
+        # OpenGL is stupid. We can't create a frame
+        # buffer, to be used as a target for off-screen
+        # rendering, unless the current context has
+        # been assigned a different rendering target.
+        #
+        # So here, we're failing silently if the context
+        # can't be set (i.e. if this canvas is not yet
+        # visible). The _draw method will then explicitly
+        # call this method if two stage rendering is
+        # enabled, and a render texture has not yet been
+        # created.
+        if self.twoStageRender and self._setGLContext():
             width, height = 128, 128
             self._renderTexture = fsltextures.RenderTexture(width, height)
 
@@ -403,9 +414,6 @@ class SliceCanvas(props.HasProperties):
         triggers a refresh.
         """
 
-        if not self._setGLContext():
-            return
-
         # Create a GL object for any new images,
         # and attach a listener to their display
         # properties so we know when to refresh
@@ -433,6 +441,9 @@ class SliceCanvas(props.HasProperties):
                 log.debug('GLObject representation for {} '
                           'changed to {}'.format(disp.name,
                                                  disp.imageType))
+
+                if not self._setGLContext():
+                    return
 
                 # Tell the previous GLObject (if
                 # any) to clean up after itself
@@ -745,6 +756,12 @@ class SliceCanvas(props.HasProperties):
 
         if self.twoStageRender:
             log.debug('Rendering to off-screen frame buffer')
+
+            # Force creation of a render texture
+            # if one does not already exist
+            if self._renderTexture is None:
+                self._onTwoStageRenderChange()
+            
             self._renderTexture.bindAsRenderTarget()
             self._setViewport(size=self._renderTexture.getSize())
             

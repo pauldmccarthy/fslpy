@@ -656,12 +656,18 @@ class RenderTexture(object):
 
     
     def __init__(self, width, height):
+        """
+
+        Note that a current target must have been set for the GL context
+        before a frameBuffer can be created ... in other words, call
+        ``context.SetCurrent`` before creating a ``RenderTexture``).
+        """
 
         self.texture     = gl   .glGenTextures(1)
         self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
         
         log.debug('Created GL texture and FBO for {}: {}, fbo: {}'.format(
-            type(self).__name__, self.texture, self.frameBuffer)) 
+            type(self).__name__, self.texture, self.frameBuffer))
 
         self.refresh(width, height)
 
@@ -705,8 +711,6 @@ class RenderTexture(object):
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
                            gl.GL_TEXTURE_MAG_FILTER,
                            gl.GL_NEAREST)
-        
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
         # And configure the frame buffer
         glfbo.glBindFramebufferEXT(     glfbo.GL_FRAMEBUFFER_EXT,
@@ -721,8 +725,9 @@ class RenderTexture(object):
            glfbo.GL_FRAMEBUFFER_COMPLETE_EXT:
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
-            
+
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
 
     def drawRender(self, xmin, xmax, ymin, ymax, xax, yax):
