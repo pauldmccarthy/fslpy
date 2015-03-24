@@ -70,9 +70,9 @@ class SliceCanvas(props.HasProperties):
     twoStageRender = props.Boolean(default=False)
     """If ``True``, the scene is rendered off-screen to a fixed-size texture;
     this texture is then rendered to the canvas. If ``False``, the scene is
-    rendered directly to the canvas. Two-stage rendering will give better
-    performance on graphics cards, and when software-based rendering is
-    being used.
+    rendered directly to the canvas. Two-stage rendering will probably give
+    better performance on old graphics cards, and when software-based
+    rendering is being used.
     """
 
     
@@ -328,34 +328,51 @@ class SliceCanvas(props.HasProperties):
         self._imageListChanged()
 
 
-    def _onTwoStageRenderChange(self, *a):
+    def _onTwoStageRenderChange(
+            self,
+            value=None,
+            valid=None,
+            ctx=None,
+            name=None,
+            recreate=False):
+        """Called when the :attr:`twoStageRender` property changes.
+        """
 
-        if not self.twoStageRender:
+        needRefresh = False
+        if recreate or not self.twoStageRender:
 
-            for image, texture in self._renderTextures:
+            for image, texture in self._renderTextures.items():
                 self._renderTextures.pop(image)
-                texture.Destroy()
+                texture.destroy()
+                needRefresh = True
 
-        else:
-            
+        if self.twoStageRender:
+
+            # If any images have been removed from the image
+            # list, destroy the associated render texture
+            for image, texture in self._renderTextures.items():
+                if image not in self.imageList:
+                    self._renderTextures.pop(image)
+                    texture.destroy()
+                    needRefresh = True
+
+            # If any images have been added to the list,
+            # create a new render textures for them
             for image in self.imageList:
+
                 if image in self._renderTextures:
                     continue
 
-                # TODO honour display.resolution here
+                display = self.displayCtx.getDisplayProperties(image)
+                rt      = fsltextures.ImageRenderTexture(
+                    image, display, self.xax, self.yax)
+                
+                self._renderTextures[image] = rt
+                
+                needRefresh = True
 
-                # We're assuming here that the voxel axes
-                # correspond to the display coordinate system
-                # axes, which is not necessarily true. You
-                # may need to check the display.transform
-                # property - if affine, use a fixed size
-                # render texture? Or estimate which voxel
-                # axes correspond to the screen axes?
-                width  = image.shape[self.xax] / 2
-                height = image.shape[self.yax] / 2
-
-                texture = fsltextures.RenderTexture(width, height)
-                self._renderTextures[image] = texture
+        if needRefresh:
+            self._refresh()
 
 
     def _zAxisChanged(self, *a):
@@ -402,6 +419,12 @@ class SliceCanvas(props.HasProperties):
         self.pos.xyz = [pos[self.xax],
                         pos[self.yax],
                         pos[self.zax]]
+
+        # If two stage rendering is enabled, the
+        # render textures need to be updated, as
+        # they are configured in terms of the
+        # display axes
+        self._onTwoStageRenderChange(recreate=True)
  
             
     def _imageListChanged(self, *a):

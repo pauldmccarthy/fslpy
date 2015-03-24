@@ -649,13 +649,13 @@ class SelectionTexture(object):
         self.refresh(data, offset)
 
 
-class RenderTexture(object):
+class ImageRenderTexture(object):
     """A 2D texture and frame buffer, intended to be used as a target for
-    off-screen rendering.
+    off-screen volumetric rendering of a 3D image.
     """
 
     
-    def __init__(self, width, height):
+    def __init__(self, image, display, xax, yax):
         """
 
         Note that a current target must have been set for the GL context
@@ -663,17 +663,54 @@ class RenderTexture(object):
         ``context.SetCurrent`` before creating a ``RenderTexture``).
         """
 
+        self.name        = '{}_{}'.format(type(self).__name__, id(self))
+        self.image       = image
+        self.display     = display
+        self.xax         = xax
+        self.yax         = yax
+        
         self.texture     = gl   .glGenTextures(1)
         self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
         
         log.debug('Created GL texture and FBO for {}: {}, fbo: {}'.format(
-            type(self).__name__, self.texture, self.frameBuffer))
+            image, self.texture, self.frameBuffer))
 
-        self.refresh(width, height)
+        self._addListeners()
+        self.refresh()
+
+        
+    def destroy(self):
+        log.debug('Deleting texture {} and fbo {}'.format(
+            self.texture, self.frameBuffer))
+        gl   .glDeleteTextures(                      self.texture)
+        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
+
+        self.display.removeListener('resolution',    self.name)
+        self.display.removeListener('interpolation', self.name)
+        self.display.removeListener('transform',     self.name)
+        
+
+    def _addListeners(self):
+
+        # TODO Could change the resolution when
+        #      the image type changes - vector
+        #      images will need a higher
+        #      resolution than voxel space
+
+        self.display.addListener('resolution',    self.name, self.refresh)
+        self.display.addListener('interpolation', self.name, self.refresh)
+        self.display.addListener('transform',     self.name, self.refresh)
 
         
     def getSize(self):
-        return self._width, self._height
+        return self.width, self.height
+
+    
+    def setAxes(self, xax, yax):
+        self.xax = xax
+        self.yax = yax
+        self.refresh()
+        
 
     
     def bindAsRenderTarget(self):
@@ -684,13 +721,44 @@ class RenderTexture(object):
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
 
     
-    def refresh(self, width, height):
+    def refresh(self, *a):
 
-        self._width  = width
-        self._height = height
+        image      = self.image
+        display    = self.display
 
-        log.debug('Configuring {} texture {}, fbo {}'.format(
-            type(self).__name__, self.texture, self.frameBuffer))
+        resolution = display.resolution / np.array(image.pixdim)
+        resolution = np.round(resolution)
+
+        if resolution[0] < 1: resolution[0] = 1
+        if resolution[1] < 1: resolution[1] = 1
+        if resolution[2] < 1: resolution[2] = 1
+        
+        # If the display transformation is 'id' or
+        # 'pixdim', then the display coordinate system
+        # axes line up with the voxel coordinate system
+        # axes, so we can just match the voxel resolution        
+        if display.transform in ('id', 'pixdim'):
+            
+            width  = image.shape[self.xax] / resolution[self.xax]
+            height = image.shape[self.yax] / resolution[self.yax]
+
+        # However, if we're displaying in world coordinates,
+        # we cannot assume any correspondence between the
+        # voxel coordinate system and the display coordinate
+        # system. So we'll use a fixed size render texture
+        # instead.
+        elif display.transform == 'affine':
+            width  = 256 / resolution.min()
+            height = 256 / resolution.min()
+
+        width  = int(width)
+        height = int(height)
+            
+        self.width  = width
+        self.height = height
+
+        log.debug('Configuring {} texture {}, fbo {}, size'.format(
+            image, self.texture, self.frameBuffer), (width, height))
 
         # Configure the texture
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
@@ -705,12 +773,15 @@ class RenderTexture(object):
                         gl.GL_UNSIGNED_BYTE,
                         None)
 
+        if display.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                               interp = gl.GL_LINEAR
+
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
                            gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
         gl.glTexParameteri(gl.GL_TEXTURE_2D,
                            gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
 
         # And configure the frame buffer
         glfbo.glBindFramebufferEXT(     glfbo.GL_FRAMEBUFFER_EXT,
@@ -778,10 +849,3 @@ class RenderTexture(object):
 
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
-
-        
-    def destroy(self):
-        log.debug('Deleting texture {} and fbo {}'.format(
-            self.texture, self.frameBuffer))
-        gl   .glDeleteTextures(                      self.texture)
-        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))

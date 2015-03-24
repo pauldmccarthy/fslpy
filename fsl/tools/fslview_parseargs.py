@@ -293,7 +293,8 @@ HELP = td.TypeDict({
     'VectorOpts.suppressZ'    : 'Suppress Z magnitude',
     'VectorOpts.modulate'     : 'Modulate vector colours',
     'VectorOpts.modThreshold' : 'Hide voxels where modulation '
-                                'value is below this threshold (%)',
+                                'value is below this threshold '
+                                '(expressed as a percentage)',
 })
 
 # Transform functions for properties where the
