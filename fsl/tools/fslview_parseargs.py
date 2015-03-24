@@ -172,7 +172,7 @@ ARGUMENTS = td.TypeDict({
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
     'SceneOpts.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
     'SceneOpts.showCursor'         : ('hc',  'hideCursor'),
-    'SceneOpts.twoStageRender'     : ('ss',  'ssRendering'),
+    'SceneOpts.twoStageRender'     : ('tr',  'twoStageRendering'),
     
     'OrthoOpts.xzoom'       : ('xz', 'xzoom'),
     'OrthoOpts.yzoom'       : ('yz', 'yzoom'),
@@ -187,7 +187,7 @@ ARGUMENTS = td.TypeDict({
     'OrthoOpts.ycentre'     : ('yc', 'ycentre'),
     'OrthoOpts.zcentre'     : ('zc', 'zcentre'),
 
-    'LightBoxOpts.sliceSpacing'   : ('sp', 'sliceSpacing'),
+    'LightBoxOpts.sliceSpacing'   : ('ss', 'sliceSpacing'),
     'LightBoxOpts.ncols'          : ('nc', 'ncols'),
     'LightBoxOpts.nrows'          : ('nr', 'nrows'),
     'LightBoxOpts.zrange'         : ('zr', 'zrange'),
@@ -242,7 +242,7 @@ HELP = td.TypeDict({
     'SceneOpts.showColourBar'      : 'Show colour bar',
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label orientation',
-    'SceneOpts.twoStageRender'     : 'Enable SS rendering',
+    'SceneOpts.twoStageRender'     : 'Enable two-stage rendering',
     
     'OrthoOpts.xzoom'       : 'X canvas zoom',
     'OrthoOpts.yzoom'       : 'Y canvas zoom',
