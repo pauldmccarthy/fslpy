@@ -52,6 +52,15 @@ import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
 import fsl.utils.transform as transform
 
+
+# The colour maps module needs to be imported
+# before the displaycontext.opts modules are
+# imported, as some of their class definitions
+# rely on the colourmaps being initialised
+import fsl.fslview.colourmaps as colourmaps
+colourmaps.initColourMaps()
+
+
 import fsl.fslview.displaycontext.display      as fsldisplay
 import fsl.fslview.displaycontext.volumeopts   as volumeopts
 import fsl.fslview.displaycontext.vectoropts   as vectoropts

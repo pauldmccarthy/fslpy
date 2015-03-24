@@ -17,11 +17,17 @@ This list of RGB values is used to create a
 with the :mod:`matplotlib.cm` module (using the file name prefix as the colour
 map name), and thus made available for rendering purposes.
 
-In addition to these custom `.cmap` colour maps, a handful of built-in
-matplotlib colour maps are also made available.  The built-in colour maps
-which are included are defined by the :attr:`_builtins` list.
+If a file named ``order.txt`` exists in the ``fsl/fslview/colourmaps/``
+directory, it is assumed to contain a list of colour map names, and colour map
+identifiers, defining the order in which the colour maps should be displayed
+to the user. Any colour maps which are not listed in the ``order.txt`` file
+will be appended to the end of the list.
 
 This module provides a number of functions, the most important of which are:
+
+ - :func:`initColourMaps`:    This function must be called before any of the
+                              other functions will work. It loads all present
+                              colourmap files.
 
  - :func:`getDefault`:        Returns the name of the colourmap to be used
                               as the default.
@@ -32,6 +38,7 @@ This module provides a number of functions, the most important of which are:
  - :func:`registerColourMap`: Given a text file containing RGB values,
                               loads the data and registers it  with
                               :mod:`matplotlib`.
+
 """
 
 import glob
@@ -45,15 +52,13 @@ import matplotlib.colors as colors
 import matplotlib.cm     as mplcm
 
 import logging
+
+
 log = logging.getLogger(__name__)
 
 
-_default  = 'Greys_r'
-_cmaps    = OrderedDict()
-_builtins = ['Greys_r'  , 'Greys'  , 'Reds'     , 'Reds_r' , 'Blues'  ,
-             'Blues_r'  , 'Greens' , 'Greens_r' , 'pink'   , 'pink_r' ,
-             'hot'      , 'hot_r'  , 'cool'     , 'cool_r' , 'autumn' ,
-             'autumn_r' , 'copper' , 'copper_r']
+_cmapDir = op.join(op.dirname(__file__), 'colourmaps')
+_cmaps   = None
 
 
 class _ColourMap(object):
@@ -89,7 +94,7 @@ class _ColourMap(object):
         
 def getDefault():
     """Returns the name of the default colour map."""
-    return _default
+    return getColourMaps()[0]
 
 
 def getColourMaps():
@@ -138,7 +143,7 @@ def installColourMap(cmapName):
 
     # destination file already exists
     if op.exists(destfile):
-        raise RuntimeError('Destionation file for colour map {} already '
+        raise RuntimeError('Destination file for colour map {} already '
                            'exists: {}'.format(cmapName, destfile))
 
     log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
@@ -169,22 +174,67 @@ def registerColourMap(cmapFile, name=None):
 
     _cmaps[name] = _ColourMap(name, cmapFile, False)
 
-
-# Load a bunch of matplotlib colour maps
-for cmapName in _builtins:
-    _cmaps[cmapName] = _ColourMap(cmapName, None, True)
-
     
-# Load all custom colour maps from the colourmaps/*.cmap files.
-for cmapFile in glob.glob(op.join(op.dirname(__file__),
-                                  'colourmaps',
-                                  '*.cmap')):
+# Load all custom colour maps from the colourmaps/*.cmap files,
+# honouring the naming/order specified in order.txt (if it exists).
+def initColourMaps():
+    """This function must be called before any of the other functions in this
+    module can be used.
 
-    try:
-        name = op.basename(cmapFile).split('.')[0]        
-        registerColourMap(cmapFile, name)
-        _cmaps[name].installed = True
+    It initialises the colour map 'register', loading all colour map files
+    that exist.
+    """
+
+    global _cmaps
+
+    if _cmaps is not None:
+        return
+
+    _cmaps = OrderedDict()
+
+    # Build up a list of cmapKey -> cmapName
+    # mappings, from the order.txt file, and
+    # any other colour map files in the cmap
+    # directory
+    allcmaps  = OrderedDict()
+    orderFile = op.join(_cmapDir, 'order.txt')
+
+    if op.exists(orderFile):
+        with open(orderFile, 'rt') as f:
+            lines = f.read().split('\n')
+
+            for line in lines:
+                if line.strip() == '':
+                    continue
+                # The order.txt file is assumed to
+                # contain one row per colour map,
+                # where the first word is the colour
+                # map key (the cmap file name prefix),
+                # and the remainder of the line is
+                # the colour map name
+                key, name = line.split(' ', 1)
+
+                allcmaps[key.strip()] = name.strip()
+
+    # Search through all cmap files that exist -
+    # any which were not specified in order.txt
+    # are added to the end of the list, and their
+    # name is just set to the file name prefix
+    for cmapFile in sorted(glob.glob(op.join(_cmapDir, '*.cmap'))):
+
+        name = op.basename(cmapFile).split('.')[0]
+
+        if name not in allcmaps:
+            allcmaps[name] = name
+
+    # Now load all of the colour maps
+    for key, name in allcmaps.items():
+        cmapFile = op.join(_cmapDir, '{}.cmap'.format(key))
         
-    except:
-        log.warn('Error processing custom colour '
-                 'map file: {}'.format(cmapFile))
+        try:
+            registerColourMap(cmapFile, name)
+            _cmaps[name].installed = True
+
+        except:
+            log.warn('Error processing custom colour '
+                     'map file: {}'.format(cmapFile))

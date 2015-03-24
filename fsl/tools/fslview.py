@@ -22,7 +22,6 @@ import fsl.data.image             as fslimage
 
 log = logging.getLogger(__name__)
 
-
     
 def interface(parent, args, ctx):
 
