@@ -96,9 +96,9 @@ MAD voxValue, voxValue, voxValXform[0].x, voxValXform[0].w;
 
 # look up the appropriate colour
 # in the 1D colour map texture
-TEX fragColour, voxValue.x, texture[1], 1D;
+TEX result.color, voxValue.x, texture[1], 1D;
 
 # Colour the pixel!
-#pragma include briconalpha.prog
+#  #pragma include briconalpha.prog
 
 END

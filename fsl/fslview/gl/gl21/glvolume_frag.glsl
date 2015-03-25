@@ -77,5 +77,7 @@ void main(void) {
      * coordinate, and look up the colour for the voxel value
      */
     vec4 normVoxValue = voxValXform * vec4(voxValue, 0, 0, 1);
-    gl_FragColor      = briconalpha(texture1D(colourTexture, normVoxValue.x)); 
+    // gl_FragColor      = briconalpha(texture1D(colourTexture, normVoxValue.x));
+    
+    gl_FragColor = texture1D(colourTexture, normVoxValue.x);
 }

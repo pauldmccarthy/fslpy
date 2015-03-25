@@ -120,8 +120,6 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
-        self.displayRange.setMin(0, self.dataMin - 0.5 * dRangeLen)
-        self.displayRange.setMax(0, self.dataMax + 0.5 * dRangeLen)
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
@@ -130,4 +128,39 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                                         display,
                                         imageList,
                                         displayCtx,
-                                        parent) 
+                                        parent)
+
+        display.addListener('brightness', self.name, self.briconChanged)
+        display.addListener('contrast',   self.name, self.briconChanged)
+
+
+    def briconChanged(self, *a):
+
+        # Turn the bricon percentages
+        # into values between 0 and 1
+        brightness = 1 - self.display.brightness / 100.0
+        contrast   = 1 - self.display.contrast   / 100.0
+
+        dmin, dmax = self.dataMin, self.dataMax
+        drange     = dmax - dmin
+        dmid       = dmin + 0.5 * drange
+
+        # The brightness is applied as a linear offset,
+        # with 0.5 equivalent to an offset of 0.0.                
+        offset = (brightness * 2 - 1) * drange
+
+        # If the contrast lies between 0.0 and 0.5, it is
+        # applied to the colour as a linear scaling factor.
+        scale = contrast * 2
+
+        # If the contrast lies between 0.5 and 0.1, it
+        # is applied as an exponential scaling factor,
+        # so lower values (closer to 0.5) have less of
+        # an effect than higher values (closer to 1.0).
+        if contrast > 0.5:
+            scale += np.exp((contrast - 0.5) * 6) - 1
+
+        dlo = (dmid + offset) - 0.5 * drange * scale 
+        dhi = (dmid + offset) + 0.5 * drange * scale
+
+        self.displayRange.setRange(0, dlo, dhi)
