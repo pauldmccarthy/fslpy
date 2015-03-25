@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 
 
 import fsl.fslview.toolbar as fsltoolbar
-import imageselectpanel    as imageselect
 import imagedisplaypanel   as imagedisplay
 
 
@@ -26,9 +25,6 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         
         fsltoolbar.FSLViewToolBar.__init__(
             self, parent, imageList, displayCtx, actionz)
-
-        self._imageSelect = imageselect.ImageSelectPanel(
-            self, imageList, displayCtx, False)
 
         self._viewPanel    = viewPanel
         self._imageTools   = {}
@@ -53,8 +49,6 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
     def destroy(self):
         """Deregisters property listeners. """
         fsltoolbar.FSLViewToolBar.destroy(self)
-
-        self._imageSelect.destroy()
 
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
@@ -99,6 +93,12 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         for tool, _ in oldOptsTools:
             tool.Destroy()
+
+    def _toggleEnabled(self, *a):
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        self.Enable(display.enabled)
             
 
     def _selectedImageChanged(self, *a):
@@ -111,9 +111,23 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         if image is None:
             self.ClearTools()
             return
+        
+        display = self._displayCtx.getDisplayProperties(image)
 
+        # Call _toggleEnabled when
+        # the image is enabled/disabled
+        for i in self._imageList:
+            if i == image:
+                display.addListener('enabled',
+                                    self._name,
+                                    self._toggleEnabled,
+                                    overwrite=True)
+            else:
+                display.removeListener('enabled', self._name)
+
+        # Build/refresh the toolbar widgets for this image
         tools = self._imageTools.get(image, None)
-
+ 
         if tools is None:
             displayTools = self._makeDisplayWidgets(image, self)
             optsTools    = self._makeOptsWidgets(   image, self)
@@ -137,8 +151,7 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         tools = self.GetTools()
         for widget in tools:
-            if widget is not self._imageSelect:
-                widget.Show(False)
+            widget.Show(False)
                 
         self.ClearTools(postevent=False)
 
@@ -150,8 +163,8 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         dispTools, dispLabels = zip(*dispTools)
         optsTools, optsLabels = zip(*optsTools)
         
-        tools  = [self._imageSelect] + list(dispTools)  + list(optsTools)
-        labels = [None]              + list(dispLabels) + list(optsLabels)
+        tools  = list(dispTools)  + list(optsTools)
+        labels = list(dispLabels) + list(optsLabels)
 
         for tool in tools:
             tool.Show(True) 

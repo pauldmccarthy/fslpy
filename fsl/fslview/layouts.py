@@ -95,8 +95,7 @@ CanvasPanelLayout = props.VGroup((
            'profile',
            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
     widget(CanvasPanel, 'syncImageOrder'),
-    widget(CanvasPanel, 'syncLocation'),
-    widget(CanvasPanel, 'syncVolume')))
+    widget(CanvasPanel, 'syncLocation')))
 
 SceneOptsLayout = props.VGroup((
     widget(SceneOpts, 'showCursor'),
@@ -145,7 +144,6 @@ LightBoxPanelLayout = props.VGroup((
 
 
 DisplayToolBarLayout = [
-    widget(Display, 'enabled'),
     widget(Display, 'name'),
     widget(Display, 'imageType'),
     widget(Display, 'alpha',      spin=False, showLimits=False),
@@ -175,7 +173,6 @@ DisplayLayout = props.VGroup(
      widget(Display, 'transform'),
      widget(Display, 'interpolation'),
      widget(Display, 'volume',        editLimits=False),
-     widget(Display, 'syncVolume'),
      widget(Display, 'enabled'),
      widget(Display, 'alpha',         showLimits=False, editLimits=False),
      widget(Display, 'brightness',    showLimits=False, editLimits=False),

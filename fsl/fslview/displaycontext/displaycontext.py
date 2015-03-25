@@ -377,8 +377,7 @@ class DisplayContext(props.SyncableHasProperties):
             # be clamped to the possible value for that
             # image, so we don't need to check if the
             # current volume value is valid for each image
-            if display.syncVolume:
-                display.volume = self.volume
+            display.volume = self.volume
 
             
     def _boundsChanged(self, *a):

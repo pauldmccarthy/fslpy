@@ -82,7 +82,6 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                           'each displayed real world location',
         'resolution'    : 'Data resolution in voxels',
         'volume'        : 'Volume number (for 4D images)',
-        'syncVolume'    : 'Synchronise to global volume number',
         'transform'     : 'The transformation matrix which specifies the '
                           'conversion from voxel coordinates to a real '
                           'world location',

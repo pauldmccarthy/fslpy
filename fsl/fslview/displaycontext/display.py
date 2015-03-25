@@ -70,9 +70,6 @@ class Display(props.SyncableHasProperties):
     """If a 4D image, the current volume to display."""
 
 
-    syncVolume = props.Boolean(default=True)
-
-    
     transform = props.Choice(
         ('affine', 'pixdim', 'id'),
         labels=[strings.choices['Display.transform.affine'],

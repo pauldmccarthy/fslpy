@@ -144,7 +144,7 @@ properties = TypeDict({
     'Profile.mode' : 'Mode',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
-    'CanvasPanel.syncImageOrder'     : 'Sync image order',
+    'CanvasPanel.syncImageOrder'     : 'Sync overlay order',
     'CanvasPanel.syncVolume'         : 'Sync volume',
     'CanvasPanel.profile'            : 'Profile',
 
@@ -193,7 +193,6 @@ properties = TypeDict({
     'Display.interpolation'     : 'Interpolation',
     'Display.resolution'        : 'Resolution',
     'Display.volume'            : 'Volume',
-    'Display.syncVolume'        : 'Synchronise volume',
     'Display.transform'         : 'Image transform',
     'Display.imageType'         : 'Image data type',
     
