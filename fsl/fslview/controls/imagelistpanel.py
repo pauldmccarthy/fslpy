@@ -79,7 +79,7 @@ class ListItemWidget(wx.Panel):
         if self.image.saved:
             self.listBox.SetItemBackgroundColour(idx)
         else:
-            self.listBox.SetItemBackgroundColour(idx, '#ffaaaa', '#993333') 
+            self.listBox.SetItemBackgroundColour(idx, '#ffaaaa', '#aa4444') 
 
             
     def _vizChanged(self, *a):
