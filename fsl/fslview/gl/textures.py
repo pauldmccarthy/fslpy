@@ -654,7 +654,7 @@ class RenderTexture(object):
     off-screen rendering of a scene.
     """
     
-    def __init__(self, width, height):
+    def __init__(self, width, height, defaultInterp=gl.GL_NEAREST):
         """
 
         Note that a current target must have been set for the GL context
@@ -669,8 +669,9 @@ class RenderTexture(object):
         log.debug('Created GL texture {} and fbo: {}'.format(
             self.texture, self.frameBuffer))
 
-        self.width  = width
-        self.height = height
+        self.defaultInterp = defaultInterp
+        self.width         = width
+        self.height        = height
         self.refresh()        
 
         
@@ -701,7 +702,9 @@ class RenderTexture(object):
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
 
         
-    def refresh(self, interp=gl.GL_NEAREST):
+    def refresh(self, interp=None):
+        if interp is None:
+            interp = self.defaultInterp
 
         log.debug('Configuring texture {}, fbo {}, size {}'.format(
             self.texture, self.frameBuffer, (self.width, self.height)))

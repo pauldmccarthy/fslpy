@@ -13,7 +13,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import numpy as np
+import numpy     as np
+import OpenGL.GL as gl
 
 import props
 
@@ -275,7 +276,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self._renderTextures = None
 
         else:
-            self._renderTextures = fsltextures.RenderTexture(256, 256)
+            self._renderTextures = fsltextures.RenderTexture(
+                256, 256, gl.GL_LINEAR)
 
         self._refresh()
 
