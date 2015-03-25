@@ -7,23 +7,26 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * February/March 2015 internal release
-** Make VNC two stage render approach stable
 ** Ludoweird interpolation effect - wtf?
 ** Change 'profile' to 'mode'
-** Volume Option to invert colour map
-** DONE Add 'blue-lightblue' colour map
-** DONE Rename 'autumn' to 'red-yellow' (change colour map)
-** DONE Colour map ordering
-** Disable image display widgets for disabledd images
-** Rename 'sync image order' -> 'sync overlay order'
-** Remove 'sync volume' option
-** Change 'ss' back to 'twostage'
+** Fix all 'listener still registered' warnings.
 ** OSX installer
-** INstallation instructions on wiki
+Make sure you disable GL error checking/logging
+** Installation instructions on wiki
 ** Linux compatibility
 *** Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
 *** Toolbars not being resized appropriately when the parent viewpanel is resized?
 *** Toolbar mouse scrolling not working? Oh, this may be because of the above issue.
+** DONE Volume Option to invert colour map
+** DONE Make ImageDisplayPanel change interpolation when transformation is changed
+** DONE Disable image display widgets for disabled images
+** DONE Rename 'sync image order' -> 'sync overlay order'
+** DONE Remove 'sync volume' option
+** DONE -ISH Make VNC two stage render approach stablish
+** DONE Add 'blue-lightblue' colour map
+** DONE Rename 'autumn' to 'red-yellow' (change colour map)
+** DONE Colour map ordering
+** DONE Change 'ss' back to 'twostage'
 ** DONE Command line
 ** DONE? Little things
 *** DONE ViewPanel: New toolbars in a lower layer
