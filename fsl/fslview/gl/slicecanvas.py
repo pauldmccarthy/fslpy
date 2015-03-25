@@ -774,6 +774,33 @@ class SliceCanvas(props.HasProperties):
         self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0))
 
 
+    def _drawRenderTextures(self):
+        """
+        """
+        log.debug('Combining off-screen image textures, and rendering '
+                  'to canvas (size {})'.format(self._getSize()))
+
+        self._setViewport()
+
+        for image in self.displayCtx.getOrderedImages():
+            renderTexture = self._renderTextures.get(image, None)
+            display       = self.displayCtx.getDisplayProperties(image)
+            lo, hi        = display.getDisplayBounds()
+
+            if renderTexture is None or not display.enabled:
+                continue
+
+            xmin, xmax = lo[self.xax], hi[self.xax]
+            ymin, ymax = lo[self.yax], hi[self.yax]
+
+            log.debug('Drawing image {} texture to {:0.3f}-{:0.3f}, '
+                      '{:0.3f}-{:0.3f}'.format(
+                          image, xmin, xmax, ymin, ymax))
+
+            renderTexture.drawRender(
+                xmin, xmax, ymin, ymax, self.xax, self.yax) 
+
+
     def _draw(self, *a):
         """Draws the current scene to the canvas. """
         
@@ -784,6 +811,8 @@ class SliceCanvas(props.HasProperties):
         if not self._setGLContext():
             return
 
+        # If normal rendering, set the viewport to match
+        # the current display bounds and canvas size
         if not self.twoStageRender:
             self._setViewport()
 
@@ -799,16 +828,22 @@ class SliceCanvas(props.HasProperties):
             if (globj is None) or (not globj.ready()) or not display.enabled:
                 continue
 
+            # Two-stage rendering - each image is
+            # rendered to an off-screen texture -
+            # these textures are combined below.
+            # Set up this texture as the rendering
+            # target
             if self.twoStageRender:
-                
                 renderTexture = self._renderTextures.get(image, None)
                 lo, hi        = display.getDisplayBounds()
 
+                # Assume that all is well - the texture
+                # just has not yet been created
                 if renderTexture is None:
-                    continue
+                    return
 
                 renderTexture.bindAsRenderTarget()
-                
+
                 self._setViewport(
                     xmin=lo[self.xax],
                     xmax=hi[self.xax],
@@ -820,8 +855,8 @@ class SliceCanvas(props.HasProperties):
                           'texture {} (size {})'.format(
                               image,
                               renderTexture.texture,
-                              renderTexture.getSize()))
-
+                              renderTexture.getSize())) 
+                
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
                 
@@ -830,32 +865,10 @@ class SliceCanvas(props.HasProperties):
             globj.postDraw()
 
             if self.twoStageRender:
-                renderTexture.unbind()
-        
+                fsltextures.ImageRenderTexture.unbind()
+
         if self.twoStageRender:
-
-            log.debug('Rendering FB textures to canvas (size {})'.format(
-                self._getSize()))
-
-            self._setViewport()
-
-            for image in self.displayCtx.getOrderedImages():
-                renderTexture = self._renderTextures.get(image, None)
-                display       = self.displayCtx.getDisplayProperties(image)
-                lo, hi        = display.getDisplayBounds()
-
-                if renderTexture is None or not display.enabled:
-                    continue
-                
-                xmin, xmax = lo[self.xax], hi[self.xax]
-                ymin, ymax = lo[self.yax], hi[self.yax]
-
-                log.debug('Drawing image {} texture to {:0.3f}-{:0.3f}, '
-                          '{:0.3f}-{:0.3f}'.format(
-                              image, xmin, xmax, ymin, ymax))
-
-                renderTexture.drawRender(
-                    xmin, xmax, ymin, ymax, self.xax, self.yax)
+            self._drawRenderTextures()
 
         if self.showCursor:
             self._drawCursor()
