@@ -642,8 +642,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         if self.twoStageRender:
             log.debug('Rendering to off-screen frame buffer')
-            self._renderTexture.bindAsRenderTarget()
-            self._setViewport(size=self._renderTexture.getSize())
+            self._renderTextures.bindAsRenderTarget()
+            self._setViewport(size=self._renderTextures.getSize())
             
         else:
             self._setViewport()
