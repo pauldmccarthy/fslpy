@@ -168,6 +168,12 @@ def bootstrap(glVersion=None):
                                'cannot run on the available graphics '
                                'hardware.'.format(', '.join(exts)))
 
+        # Spline interpolation is not currently
+        # available in the GL14 implementation
+        import fsl.fslview.displaycontext.display as di
+        di.Display.interpolation.removeChoice('spline')
+        
+
     renderer = gl.glGetString(gl.GL_RENDERER)
     log.debug('Using OpenGL {} implementation with renderer {}'.format(
         verstr, renderer))

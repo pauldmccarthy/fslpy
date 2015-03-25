@@ -106,14 +106,38 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
             return
 
         if lastImage is not None:
-            lastImage.removeListener('imageType', self._name)
+            lastDisplay = self._displayCtx.getDisplayProperties(lastImage)
+            lastImage  .removeListener('imageType', self._name)
+            lastDisplay.removeListener('transform', self._name)
+
+        display = self._displayCtx.getDisplayProperties(image)
             
-        image.addListener('imageType',
-                          self._name,
-                          lambda *a: self._updateProps(self.optsPanel, True))
+        image  .addListener('imageType',
+                            self._name,
+                            lambda *a: self._updateProps(self.optsPanel, True))
+        display.addListener('transform', self._name, self._transformChanged)
+        
         self._lastImage = image
         self._updateProps(self.dispPanel, False)
         self._updateProps(self.optsPanel, True)
+
+        
+    def _transformChanged(self, *a):
+        """Called when the transform setting of the currently selected image
+        changes. If affine transformation is selected, interpolation is
+        enabled, otherwise interpolation is disabled.
+        """
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        choices = display.getProp('interpolation').getChoices(display)
+
+        if  display.transform in ('none', 'pixdim'):
+            display.interpolation = 'none'
+            
+        elif display.transform == 'affine':
+            if 'spline' in choices: display.interpolation = 'spline'
+            else:                   display.interpolation = 'linear'
 
         
     def _updateProps(self, parent, opts):
