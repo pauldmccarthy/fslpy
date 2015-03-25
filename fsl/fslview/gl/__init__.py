@@ -184,13 +184,14 @@ def bootstrap(glVersion=None):
     if 'software' in renderer.lower():
         
         log.debug('Software-based rendering detected - two-stage '
-                  'rendering will be the default method')
+                  'rendering will be the default method.')
         
         import fsl.fslview.displaycontext.sceneopts as so
         import fsl.fslview.gl.slicecanvas           as sc
-        
-        so.SceneOpts  .twoStageRender.setConstraint(None, 'default', True)
-        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default', True)
+
+        # Make two-stage rendering the default
+        so.SceneOpts  .twoStageRender.setConstraint(None, 'default',  True)
+        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default',  True)
 
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs

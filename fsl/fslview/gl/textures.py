@@ -751,14 +751,30 @@ class ImageRenderTexture(object):
             width  = 256 / resolution.min()
             height = 256 / resolution.min()
 
+        # Limit the width/height to an arbitrary maximum
+        if width > 256 or height > 256:
+            oldWidth, oldHeight = width, height
+            ratio = min(width, height) / max(width, height)
+            
+            if width > height:
+                width  = 256
+                height = width * ratio
+            else:
+                height = 256
+                width  = height * ratio
+
+            log.debug('Limiting texture resolution to {}x{} '
+                      '(for image resolution {}x{})'.format(
+                          *map(int, (width, height, oldWidth, oldHeight))))
+
         width  = int(width)
         height = int(height)
             
         self.width  = width
         self.height = height
 
-        log.debug('Configuring {} texture {}, fbo {}, size'.format(
-            image, self.texture, self.frameBuffer), (width, height))
+        log.debug('Configuring {} texture {}, fbo {}, size {}'.format(
+            image, self.texture, self.frameBuffer, (width, height)))
 
         # Configure the texture
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)

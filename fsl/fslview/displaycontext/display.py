@@ -177,10 +177,7 @@ class Display(props.SyncableHasProperties):
                       'imageType'])
 
         # Set up listeners after caling Syncabole.__init__,
-        # so the callbacks don't get called during
-        # sychronisation, which would screw things up,
-        # specifically the transform<->interpolation
-        # interaction (see the __transformChanged method)
+        # so the callbacks don't get called during synchronisation
         self.addListener(
             'transform',
             'Display_{}'.format(id(self)),
@@ -300,11 +297,7 @@ class Display(props.SyncableHasProperties):
 
 
     def __transformChanged(self, *a):
-        """Called when the :attr:`transform` property is changed.
-
-        If :attr:`transform` is set to ``affine``, the :attr:`interpolation`
-        property is changed to ``spline. Otherwise, it is set to ``none``.
-        """
+        """Called when the :attr:`transform` property is changed."""
 
         # Store references to the previous display related transformation
         # matrices, just in case anything (hint the DisplayContext object)
@@ -313,17 +306,6 @@ class Display(props.SyncableHasProperties):
         # space, when the transform of the selected image changes)
         self.__oldTransform = self.__transform
         self.__transform    = self.transform
-        
-        # When transform is changed to 'affine', enable interpolation
-        # and, when changed to 'pixdim' or 'id', disable interpolation
-        try:
-            if self.transform == 'affine': self.interpolation = 'spline'
-            else:                          self.interpolation = 'none'
-
-        # The interpolation property may be disabled for some images
-        # (e.g. vector images when being displayed as lines)
-        except props.DisabledError:
-            pass
     
     
     def getDisplayOpts(self):
