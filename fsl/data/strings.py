@@ -200,6 +200,7 @@ properties = TypeDict({
     'VolumeOpts.clipLow'      : 'Low clipping',
     'VolumeOpts.clipHigh'     : 'High clipping',
     'VolumeOpts.cmap'         : 'Colour map',
+    'VolumeOpts.invert'       : 'Invert colour map',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',

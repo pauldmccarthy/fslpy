@@ -181,6 +181,7 @@ DisplayLayout = props.VGroup(
 
 VolumeOptsLayout = props.VGroup(
     (widget(VolumeOpts, 'cmap'),
+     widget(VolumeOpts, 'invert'),
      widget(VolumeOpts, 'displayRange'),
      widget(VolumeOpts, 'clipLow'),
      widget(VolumeOpts, 'clipHigh')))

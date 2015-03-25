@@ -270,13 +270,15 @@ class GLVolume(globject.GLImageObject):
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map
-        colourRange     = np.linspace(0.0, 1.0, colourResolution)
-        colourmap       = opts.cmap(colourRange)
+        if opts.invert: colourRange = np.linspace(1.0, 0.0, colourResolution)
+        else:           colourRange = np.linspace(0.0, 1.0, colourResolution)
+        
+        colourmap = opts.cmap(colourRange)
 
         # Make out-of-range values transparent
         # if clipping is enabled 
         if opts.clipLow:  colourmap[ 0, 3] = 0.0
-        if opts.clipHigh: colourmap[-1, 3] = 0.0 
+        if opts.clipHigh: colourmap[-1, 3] = 0.0
 
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
@@ -335,6 +337,7 @@ class GLVolume(globject.GLImageObject):
         opts   .addListener('clipLow',       lName, colourUpdate)
         opts   .addListener('clipHigh',      lName, colourUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
+        opts   .addListener('invert',        lName, colourUpdate)
 
 
     def removeDisplayListeners(self):
@@ -352,3 +355,4 @@ class GLVolume(globject.GLImageObject):
         opts   .removeListener('clipLow',       lName)
         opts   .removeListener('clipHigh',      lName)
         opts   .removeListener('cmap',          lName)
+        opts   .removeListener('invert',        lName)

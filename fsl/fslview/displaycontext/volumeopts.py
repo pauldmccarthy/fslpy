@@ -67,6 +67,10 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                            cmapNames=fslcm.getColourMaps())
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 
+
+    invert = props.Boolean(default=False)
+    """Invert the colour map."""
+
     
     _tooltips = {
         'name'          : 'The name of this image',
