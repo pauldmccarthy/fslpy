@@ -474,12 +474,12 @@ class SliceCanvas(props.HasProperties):
 
                 # Tell the previous GLObject (if
                 # any) to clean up after itself
-                globj = self._glObjects.get(image, None)
+                globj = self._glObjects.get(img, None)
                 if globj is not None:
                     globj.destroy()
                 
                 globj = globject.createGLObject(img, disp)
-                self._glObjects[image] = globj
+                self._glObjects[img] = globj
 
                 if globj is not None:
                     globj.init()
