@@ -191,13 +191,22 @@ def bootstrap(glVersion=None):
         
         log.debug('Software-based rendering detected - two-stage '
                   'rendering will be the default method.')
-        
-        import fsl.fslview.displaycontext.sceneopts as so
-        import fsl.fslview.gl.slicecanvas           as sc
+
+        import fsl.fslview.displaycontext.display    as di
+        import fsl.fslview.displaycontext.vectoropts as vo
+        import fsl.fslview.displaycontext.sceneopts  as so
+        import fsl.fslview.gl.slicecanvas            as sc
 
         # Make two-stage rendering the default
         so.SceneOpts  .twoStageRender.setConstraint(None, 'default',  True)
         sc.SliceCanvas.twoStageRender.setConstraint(None, 'default',  True)
+
+        # And disable some fancy options - spline
+        # may have been disabled above, so absorb
+        # the IndexError if it occurs
+        vo.VectorOpts  .displayMode  .removeChoice('lines')
+        try: di.Display.interpolation.removeChoice('spline')
+        except IndexError: pass
 
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs
