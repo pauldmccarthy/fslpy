@@ -93,11 +93,12 @@ class ImageTexture(object):
     Once created, the following attributes are available on an
     :class:`ImageTexture` object:
 
-     - ``texture``:     The OpenGL texture identifier. 
+     - ``texture``:        The OpenGL texture identifier. 
 
-     - ``voxValXform``: An affine transformation matrix which encodes an
-                        offset and scale, for transforming from the
-                        texture values [0.0, 1.0] to the actual data values.
+     - ``voxValXform``:    An affine transformation matrix which encodes an
+                           offset and scale, for transforming from the
+                           texture values [0.0, 1.0] to the actual data values.
+     - ``invVoxValXform``: Inverted version of the ``voxValXform`` matrix.
     """
     
     def __init__(self,
@@ -157,11 +158,12 @@ class ImageTexture(object):
 
         texFmt, intFmt, texDtype, voxValXform = self._determineTextureType()
 
-        self.texFmt      = texFmt
-        self.texIntFmt   = intFmt
-        self.texDtype    = texDtype
-        self.voxValXform = voxValXform
-        self.texture     = gl.glGenTextures(1)
+        self.texFmt         = texFmt
+        self.texIntFmt      = intFmt
+        self.texDtype       = texDtype
+        self.voxValXform    = voxValXform
+        self.invVoxValXform = transform.invert(voxValXform)
+        self.texture        = gl.glGenTextures(1)
         
         log.debug('Created GL texture for {}: {}'.format(self.tag,
                                                          self.texture)) 

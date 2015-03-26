@@ -51,16 +51,10 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     """Image values which map to the minimum and maximum colour map colours."""
 
     
-    clipLow  = props.Boolean(default=True)
-    """If ``True``, don't display voxel values which are lower than
-    the :attr:`displayRange`.
-    """
-
-    
-    clipHigh = props.Boolean(default=False)
-    """If ``True``, don't display voxel values which are higher than
-    the :attr:`displayRange`.
-    """ 
+    clippingRange = props.Bounds(
+        ndims=1,
+        labels=[strings.choices['VolumeOpts.displayRange.min'],
+                strings.choices['VolumeOpts.displayRange.max']]) 
 
     
     cmap = props.ColourMap(default=fslcm.getDefault(),
@@ -120,6 +114,13 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
+        self.clippingRange.setLimits(0,
+                                     self.dataMin - dMinDistance,
+                                     self.dataMax + dMinDistance)
+        self.clippingRange.setRange( 0,
+                                     self.dataMin,
+                                     self.dataMax + dMinDistance)
+
         self.displayRange.setRange(0, self.dataMin, self.dataMax)
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
@@ -135,9 +136,14 @@ class VolumeOpts(fsldisplay.DisplayOpts):
 
 
     def briconChanged(self, *a):
+        """Called when the ``brightness``/``contrast`` properties of the
+        :class:`~fsl.fslview.displaycontext.display.Display` instance change.
+        
+        Updates the :attr:`displayRange` property accordingly.
+        """
 
-        # Turn the bricon percentages
-        # into values between 0 and 1
+        # Turn the bricon percentages into
+        # values between 1 and 0 (inverted)
         brightness = 1 - self.display.brightness / 100.0
         contrast   = 1 - self.display.contrast   / 100.0
 
@@ -160,6 +166,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         if contrast > 0.5:
             scale += np.exp((contrast - 0.5) * 6) - 1
 
+        # Calculate the new display range, keeping it
+        # centered in the middle of the data range
+        # (but offset according to the brightness)
         dlo = (dmid + offset) - 0.5 * drange * scale 
         dhi = (dmid + offset) + 0.5 * drange * scale
 

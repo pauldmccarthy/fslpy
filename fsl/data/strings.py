@@ -196,11 +196,10 @@ properties = TypeDict({
     'Display.transform'         : 'Image transform',
     'Display.imageType'         : 'Image data type',
     
-    'VolumeOpts.displayRange' : 'Display range',
-    'VolumeOpts.clipLow'      : 'Low clipping',
-    'VolumeOpts.clipHigh'     : 'High clipping',
-    'VolumeOpts.cmap'         : 'Colour map',
-    'VolumeOpts.invert'       : 'Invert colour map',
+    'VolumeOpts.displayRange'  : 'Display range',
+    'VolumeOpts.clippingRange' : 'Clipping range',
+    'VolumeOpts.cmap'          : 'Colour map',
+    'VolumeOpts.invert'        : 'Invert colour map',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',

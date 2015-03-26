@@ -78,10 +78,14 @@ def _compileShaders(self):
                                                        'displayToVoxMat')
     self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
                                                        'voxValXform')
+    self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
+                                                       'clipLow')
+    self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
+                                                       'clipHigh') 
 
-    self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
-    self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
-    self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
+    # self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
+    # self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
+    # self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
 
 
 def init(self):
@@ -142,6 +146,7 @@ def preDraw(self):
     """
 
     display = self.display
+    opts    = self.displayOpts
 
     # load the shaders
     gl.glUseProgram(self.shaders)
@@ -156,9 +161,23 @@ def preDraw(self):
     gl.glUniform1i( self.yaxPos,           self.yax)
     gl.glUniform1i( self.zaxPos,           self.zax)
 
-    gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
-    gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
-    gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
+    # gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
+    # gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
+    # gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
+
+    # The clipping range options are in the voxel value
+    # range, but the shader needs them to be in image
+    # texture value range (0.0 - 1.0). So let's scale 
+    # them.
+    clipLow = opts.clippingRange.xlo           * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+    clipHigh = opts.clippingRange.xhi          * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0] 
+
+    gl.glUniform1f(self.clipLowPos,  clipLow)
+    gl.glUniform1f(self.clipHighPos, clipHigh)
 
     # Bind transformation matrices to transform
     # display coordinates to voxel coordinates,

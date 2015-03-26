@@ -182,8 +182,7 @@ DisplayLayout = props.VGroup(
 VolumeOptsLayout = props.VGroup(
     (widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
-     widget(VolumeOpts, 'clipLow'),
-     widget(VolumeOpts, 'clipHigh')))
+     widget(VolumeOpts, 'clippingRange', slider=True)))
 
 
 MaskOptsLayout = props.VGroup(

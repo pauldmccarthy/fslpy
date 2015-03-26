@@ -278,12 +278,7 @@ class GLVolume(globject.GLImageObject):
 
         # Apply global transparency
         colourmap[:, 3] = display.alpha / 100.0
-
-        # Make out-of-range values transparent
-        # if clipping is enabled 
-        if opts.clipLow:  colourmap[ 0, 3] = 0.0
-        if opts.clipHigh: colourmap[-1, 3] = 0.0
-
+        
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
@@ -339,8 +334,6 @@ class GLVolume(globject.GLImageObject):
         display.addListener('transform',     lName, vertexUpdate)
         display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
-        opts   .addListener('clipLow',       lName, colourUpdate)
-        opts   .addListener('clipHigh',      lName, colourUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
         opts   .addListener('invert',        lName, colourUpdate)
 
@@ -358,7 +351,5 @@ class GLVolume(globject.GLImageObject):
         display.removeListener('transform',     lName)
         display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
-        opts   .removeListener('clipLow',       lName)
-        opts   .removeListener('clipHigh',      lName)
         opts   .removeListener('cmap',          lName)
         opts   .removeListener('invert',        lName)
