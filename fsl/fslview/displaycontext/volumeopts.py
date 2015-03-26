@@ -114,17 +114,23 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
-        self.clippingRange.setLimits(0,
-                                     self.dataMin - dMinDistance,
-                                     self.dataMax + dMinDistance)
-
+        self.clippingRange.xmin = self.dataMin - dMinDistance
+        self.clippingRange.xmax = self.dataMax + dMinDistance
+        
         # By default, the lowest values
         # in the image are clipped
-        self.clippingRange.setRange( 0,
-                                     self.dataMin + dMinDistance,
-                                     self.dataMax + dMinDistance)
+        self.clippingRange.xlo  = self.dataMin + dMinDistance
+        self.clippingRange.xhi  = self.dataMax + dMinDistance
 
-        self.displayRange.setRange(0, self.dataMin, self.dataMax)
+        self.displayRange.xlo  = self.dataMin
+        self.displayRange.xhi  = self.dataMax
+
+        # The Display.contrast property expands/contracts
+        # the display range, by a scaling factor up to
+        # approximately 10.
+        self.displayRange.xmin = self.dataMin - 10 * dRangeLen
+        self.displayRange.xmax = self.dataMax + 10 * dRangeLen
+        
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
         fsldisplay.DisplayOpts.__init__(self,
@@ -132,10 +138,35 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                                         display,
                                         imageList,
                                         displayCtx,
-                                        parent)
+                                        parent,
+                                        nounbind=('displayRange'))
 
-        display.addListener('brightness', self.name, self.briconChanged)
-        display.addListener('contrast',   self.name, self.briconChanged)
+        # Bricon values are synchronised with
+        # displayRange values on the parent
+        # VolumeOpts instance. If these listeners
+        # are registered on child instances, and
+        # there are multiple children, horrible
+        # semi-infniite recursive listener callback
+        # madness will entail ...
+        #
+        # TODO Problem here is that if a child
+        #      instance disables synchronisation
+        #      on brightness/contrast with the
+        #      parent, the bricon-displayRange
+        #      synchronsiation no longer occurs
+        #      on the child .. This is why
+        #      displayRange currently cannot be
+        #      unbound between parent/child
+        #      instances (constructor above). 
+        #      Same goes for Display.bricon
+        #      properties
+        
+        if parent is None:
+            display.addListener('brightness', self.name, self.briconChanged)
+            display.addListener('contrast',   self.name, self.briconChanged)
+            self   .addListener('displayRange',
+                                self.name,
+                                self.displayRangeChanged)
 
 
     def briconChanged(self, *a):
@@ -144,6 +175,8 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         
         Updates the :attr:`displayRange` property accordingly.
         """
+
+        display = self.display
 
         # Turn the bricon percentages into
         # values between 1 and 0 (inverted)
@@ -168,11 +201,53 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         # an effect than higher values (closer to 1.0).
         if contrast > 0.5:
             scale += np.exp((contrast - 0.5) * 6) - 1
-
+            
         # Calculate the new display range, keeping it
         # centered in the middle of the data range
         # (but offset according to the brightness)
         dlo = (dmid + offset) - 0.5 * drange * scale 
         dhi = (dmid + offset) + 0.5 * drange * scale
 
-        self.displayRange.setRange(0, dlo, dhi)
+        self   .disableListener('displayRange', self.name)
+        display.disableListener('brightness',   self.name)
+        display.disableListener('contrast',     self.name)
+        
+        self.displayRange.x = [dlo, dhi]
+        
+        self   .enableListener('displayRange', self.name)
+        display.enableListener('brightness',   self.name)
+        display.enableListener('contrast',     self.name) 
+
+        
+    def displayRangeChanged(self, *a):
+
+        display    = self.display
+        
+        dmin, dmax = self.dataMin, self.dataMax
+        drange     = dmax - dmin
+        dmid       = dmin + 0.5 * drange
+
+        dlo, dhi = self.displayRange.x
+
+        # Inversions of the equations in briconChanged
+        # above, which calculate the display ranges
+        # from the bricon offset/scale
+        offset = dlo + 0.5 * (dhi - dlo) - dmid
+        scale  = (dhi - dlo) / drange
+
+        brightness = 0.5 * (offset / drange + 1)
+
+        if scale <= 1: contrast = scale / 2.0
+        else:          contrast = np.log(scale + 1) / 6.0 + 0.5
+
+        self   .disableListener('displayRange', self.name)
+        display.disableListener('brightness',   self.name)
+        display.disableListener('contrast',     self.name)
+
+        # update bricon
+        display.brightness = 100 - brightness * 100
+        display.contrast   = 100 - contrast   * 100
+
+        self   .enableListener('displayRange', self.name)
+        display.enableListener('brightness',   self.name)
+        display.enableListener('contrast',     self.name)

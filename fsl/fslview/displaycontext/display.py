@@ -31,8 +31,18 @@ log = logging.getLogger(__name__)
 
 class DisplayOpts(props.SyncableHasProperties):
 
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
-        props.SyncableHasProperties.__init__(self, parent)
+    def __init__(
+            self,
+            image,
+            display,
+            imageList,
+            displayCtx,
+            parent=None,
+            *args,
+            **kwargs):
+        
+        props.SyncableHasProperties.__init__(self, parent, *args, **kwargs)
+        
         self.image      = image
         self.display    = display
         self.imageList  = imageList
@@ -171,6 +181,8 @@ class Display(props.SyncableHasProperties):
                       'volume',
                       'resolution',
                       'transform',
+                      'brightness',
+                      'contrast',
                       'imageType'])
 
         # Set up listeners after caling Syncabole.__init__,
