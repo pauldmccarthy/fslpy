@@ -405,7 +405,10 @@ def _adjustPixelSize(wldWidth, wldHeight, pixWidth, pixHeight):
     display space aspect ratio is maintained.
     """
 
-    if pixWidth == 0 or pixHeight == 0:
+    if any((pixWidth  == 0,
+            pixHeight == 0,
+            wldWidth  == 0,
+            wldHeight == 0)):
         return 0, 0
 
     pixRatio = float(pixWidth) / pixHeight

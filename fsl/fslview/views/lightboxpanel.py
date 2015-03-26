@@ -233,7 +233,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         sliceWidth  = width / float(self._lbCanvas.ncols)
         sliceHeight = fsllayout.calcPixHeight(xlen, ylen, sliceWidth)
 
-        self._lbCanvas.nrows = int(height / sliceHeight)
+        if sliceHeight > 0: 
+            self._lbCanvas.nrows = int(height / sliceHeight)
 
 
     def _onLocationChange(self, *a):
