@@ -96,6 +96,9 @@ class HistogramPanel(plotpanel.PlotPanel):
         """De-registers property listeners. """
         plotpanel.PlotPanel.destroy(self)
 
+        self            .removeListener('dataRange',     self._name)
+        self            .removeListener('nbins',         self._name)
+        self            .removeListener('autoHist',      self._name)
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)
 
