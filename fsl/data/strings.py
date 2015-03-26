@@ -74,7 +74,7 @@ titles = TypeDict({
     'ImageDisplayToolBar'   : 'Display toolbar',
     'ImageDisplayPanel'     : 'Display settings',
     'OrthoToolBar'          : 'Ortho view toolbar',
-    'OrthoProfileToolBar'   : 'Ortho view profile toolbar',
+    'OrthoProfileToolBar'   : 'Ortho view mode toolbar',
     'OrthoSettingsPanel'    : 'Ortho view settings',
     'LightBoxToolBar'       : 'Lightbox view toolbar',
     'LightBoxSettingsPanel' : 'Lightbox view settings',
@@ -98,7 +98,7 @@ actions = TypeDict({
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
-    'OrthoPanel.toggleProfileToolBar'   : 'Profile controls',
+    'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
@@ -141,12 +141,12 @@ labels = TypeDict({
 
 properties = TypeDict({
     
-    'Profile.mode' : 'Mode',
+    'Profile.mode' : 'Profile',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
     'CanvasPanel.syncImageOrder'     : 'Sync overlay order',
     'CanvasPanel.syncVolume'         : 'Sync volume',
-    'CanvasPanel.profile'            : 'Profile',
+    'CanvasPanel.profile'            : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.showColourBar'      : 'Show colour bar',
