@@ -134,13 +134,12 @@ def preDraw(self):
 
     # And the clipping range, normalised
     # to the image texture value range
-    clipLo = opts.clippingRange.xlo            * \
+    clipLo = opts.clippingRange[0]             * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
-    clipHi = opts.clippingRange.xhi            * \
+    clipHi = opts.clippingRange[1]             * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
-
     
     shaders.setFragmentProgramVector(4, shape    + [0])
     shaders.setFragmentProgramVector(5, invshape + [0])

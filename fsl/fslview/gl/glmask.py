@@ -59,7 +59,7 @@ class GLMask(glvolume.GLVolume):
         self.display    .addListener('transform',     lnrName, vertexUpdate)
         self.display    .addListener('alpha',         lnrName, colourUpdate)
         self.displayOpts.addListener('colour',        lnrName, colourUpdate)
-        self.displayOpts.addListener('clippingRange', lnrName, colourUpdate)
+        self.displayOpts.addListener('threshold',     lnrName, colourUpdate)
         self.displayOpts.addListener('invert',        lnrName, colourUpdate)
 
 
@@ -79,7 +79,7 @@ class GLMask(glvolume.GLVolume):
         self.display    .removeListener('volume',        lnrName)
         self.image      .removeListener('data',          lnrName)
         self.displayOpts.removeListener('colour',        lnrName)
-        self.displayOpts.removeListener('clippingRange', lnrName)
+        self.displayOpts.removeListener('threshold',     lnrName)
         self.displayOpts.removeListener('invert',        lnrName) 
 
         
@@ -98,8 +98,8 @@ class GLMask(glvolume.GLVolume):
 
         opts   = self.displayOpts
         colour = opts.colour
-        imin   = opts.clippingRange[0]
-        imax   = opts.clippingRange[1]
+        imin   = opts.threshold[0]
+        imax   = opts.threshold[1]
         
         colour[3] = 1.0
 

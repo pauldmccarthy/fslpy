@@ -169,10 +169,10 @@ def preDraw(self):
     # range, but the shader needs them to be in image
     # texture value range (0.0 - 1.0). So let's scale 
     # them.
-    clipLow = opts.clippingRange.xlo           * \
+    clipLow = opts.clippingRange[0]           * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
-    clipHigh = opts.clippingRange.xhi          * \
+    clipHigh = opts.clippingRange[1]          * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0] 
 

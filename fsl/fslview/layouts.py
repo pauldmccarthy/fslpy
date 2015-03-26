@@ -169,10 +169,10 @@ VectorOptsToolBarLayout = [
 DisplayLayout = props.VGroup(
     (widget(Display, 'name'),
      widget(Display, 'imageType'),
-     widget(Display, 'resolution',    editLimits=False),
+     widget(Display, 'resolution',    showLimits=False),
      widget(Display, 'transform'),
      widget(Display, 'interpolation'),
-     widget(Display, 'volume',        editLimits=False),
+     widget(Display, 'volume',        showLimits=False),
      widget(Display, 'enabled'),
      widget(Display, 'alpha',         showLimits=False, editLimits=False),
      widget(Display, 'brightness',    showLimits=False, editLimits=False),
@@ -182,14 +182,14 @@ DisplayLayout = props.VGroup(
 VolumeOptsLayout = props.VGroup(
     (widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
-     widget(VolumeOpts, 'displayRange',  slider=True, showLimits=False),
-     widget(VolumeOpts, 'clippingRange', slider=True, showLimits=False)))
+     widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
+     widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)))
 
 
 MaskOptsLayout = props.VGroup(
     (widget(MaskOpts, 'colour'),
      widget(MaskOpts, 'invert'),
-     widget(MaskOpts, 'clippingRange', showLimits=False)))
+     widget(MaskOpts, 'threshold', showLimits=False)))
 
 
 VectorOptsLayout = props.VGroup((
