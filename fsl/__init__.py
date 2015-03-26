@@ -334,7 +334,7 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
 
 def runTool(toolName, args, **kwargs):
     """Runs the tool with the specified name, with the specified arguments,
-    in a separate process.
+    in a separate process. Returns the process exit code.
     """
 
     args = [toolName] + args
@@ -342,7 +342,7 @@ def runTool(toolName, args, **kwargs):
 
     log.debug('Executing {}'.format(' '.join(args)))
 
-    subprocess.call(args, **kwargs)
+    return subprocess.call(args, **kwargs)
 
     
 def main():

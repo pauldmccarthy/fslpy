@@ -43,9 +43,15 @@ messages = TypeDict({
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
 
-    'CanvasPanel.screenshot'          : 'Save screenshot',
-    'CanvasPanel.screenshot.notSaved' : 'Image {} needs saving before a '
-                                        'screenshot can be taken.',
+    'CanvasPanel.screenshot'            : 'Save screenshot',
+    'CanvasPanel.screenshot.notSaved'   : 'Image {} needs saving before a '
+                                          'screenshot can be taken.',
+    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
+                                          'please wait ...',
+    'CanvasPanel.screenshot.error'      : 'Sorry, there was an error '
+                                          'saving the screenshot. Try '
+                                          'calling render directly with '
+                                          'this command: \n{}',
 })
 
 
@@ -64,6 +70,7 @@ titles = TypeDict({
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save image before continuing',
+    'CanvasPanel.screenshot.error'    : 'Error saving screenshot',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',

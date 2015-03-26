@@ -139,8 +139,18 @@ def _takeScreenShot(imageList, displayCtx, canvas):
     log.debug('Generating screenshot with call '
               'to render: {}'.format(' '.join(argv)))
 
-    # Run render.py to generate the screenshot 
-    fsl.runTool('render', argv)
+    # Run render.py to generate the screenshot
+    msg     = strings.messages['CanvasPanel.screenshot.pleaseWait']
+    busyDlg = wx.BusyInfo(msg, canvas)
+    result  = fsl.runTool('render', argv)
+    
+    busyDlg.Destroy()
+
+    if result != 0:
+        title = strings.titles[  'CanvasPanel.screenshot.error']
+        msg   = strings.messages['CanvasPanel.screenshot.error']
+        msg   = msg.format(' '.join(['render'] + argv))
+        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
 
 
 class CanvasPanel(viewpanel.ViewPanel):
