@@ -83,6 +83,9 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
+    display = self.display
+    opts    = self.displayOpts
+
     # enable drawing from a vertex array
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
@@ -100,7 +103,7 @@ def preDraw(self):
     # able to transform from display
     # coordinates to voxel coordinates
     shaders.setVertexProgramMatrix(
-        0, self.display.getTransform('display', 'voxel').T)
+        0, display.getTransform('display', 'voxel').T)
 
     # The voxValXform transformation turns
     # an image texture value into a raw
@@ -125,12 +128,24 @@ def preDraw(self):
     # the fragment program 
     shape    = list(self.image.shape)
     invshape = [1.0 / s for s in shape]
-    bca      = [self.display.brightness / 100.0, 
-                self.display.contrast   / 100.0,
-                self.display.alpha      / 100.0]    
+    bca      = [display.brightness / 100.0, 
+                display.contrast   / 100.0,
+                display.alpha      / 100.0]
+
+    # And the clipping range, normalised
+    # to the image texture value range
+    clipLo = opts.clippingRange.xlo            * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+    clipHi = opts.clippingRange.xhi            * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+
+    
     shaders.setFragmentProgramVector(4, shape    + [0])
     shaders.setFragmentProgramVector(5, invshape + [0])
     shaders.setFragmentProgramVector(6, bca      + [0])
+    shaders.setFragmentProgramVector(7, [clipLo, clipHi, 0, 0])
 
 
 def draw(self, zpos, xform=None):
@@ -169,7 +184,7 @@ def drawAll(self, zposes, xforms):
     
     # Instead, tell the vertex
     # program to use texture coordinates
-    shaders.setFragmentProgramVector(7, -np.ones(4))
+    shaders.setFragmentProgramVector(8, -np.ones(4))
 
     worldCoords = np.array(self.worldCoords)
     indices     = np.array(self.indices)

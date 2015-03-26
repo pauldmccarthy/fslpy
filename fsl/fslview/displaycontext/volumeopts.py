@@ -117,8 +117,11 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.clippingRange.setLimits(0,
                                      self.dataMin - dMinDistance,
                                      self.dataMax + dMinDistance)
+
+        # By default, the lowest values
+        # in the image are clipped
         self.clippingRange.setRange( 0,
-                                     self.dataMin,
+                                     self.dataMin + dMinDistance,
                                      self.dataMax + dMinDistance)
 
         self.displayRange.setRange(0, self.dataMin, self.dataMax)

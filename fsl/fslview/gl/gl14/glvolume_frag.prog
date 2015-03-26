@@ -37,7 +37,12 @@
 #                          (y), and alpha (z) values to pass to the
 #                          briconalpha.prog routine.
 #
-#   program.local[7]     - If greater than or equal to 0, fragment.texcoord[1]
+#   program.local[7]     - Vector containing clipping values - voxels with a
+#                          value below the low threshold (x), or above the
+#                          high threshold (y) will not be shown. Assumed to
+#                          be normalised to the image texture value range.
+#
+#   program.local[8]     - If greater than or equal to 0, fragment.texcoord[1]
 #                          is used as the coordinates for the texture lookup.
 #                          Otherwise, fragment.texcoord[2] is used for the
 #                          texture lookup.
@@ -50,6 +55,7 @@
 #
 
 TEMP  voxCoord;
+TEMP  voxClip;
 TEMP  normVoxCoord;
 TEMP  voxValue;
 TEMP  fragColour;
@@ -57,7 +63,8 @@ TEMP  fragColour;
 PARAM imageShape    = program.local[4];
 PARAM imageShapeInv = program.local[5];
 PARAM bca           = program.local[6];
-PARAM useTexCoords  = program.local[7];
+PARAM clipping      = program.local[7];
+PARAM useTexCoords  = program.local[8];
   
 # This matrix scales the voxel value to
 # lie in a range which is appropriate to
@@ -90,6 +97,17 @@ MUL normVoxCoord, voxCoord, imageShapeInv;
 # from 3D image texture
 TEX voxValue, normVoxCoord, texture[0], 3D;
 
+# If the voxel value is outside the
+# clipping range, don't draw it
+
+# Test the low clipping range
+SUB voxClip, voxValue.x, clipping.x;
+KIL voxClip;
+
+# And the high clipping range
+SUB voxClip, clipping.y, voxValue.x;
+KIL voxClip;
+
 # Scale voxel value according
 # to the current display range
 MAD voxValue, voxValue, voxValXform[0].x, voxValXform[0].w;
@@ -97,8 +115,5 @@ MAD voxValue, voxValue, voxValXform[0].x, voxValXform[0].w;
 # look up the appropriate colour
 # in the 1D colour map texture
 TEX result.color, voxValue.x, texture[1], 1D;
-
-# Colour the pixel!
-#  #pragma include briconalpha.prog
 
 END
