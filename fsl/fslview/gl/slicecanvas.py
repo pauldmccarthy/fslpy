@@ -274,6 +274,12 @@ class SliceCanvas(props.HasProperties):
         self.displayCtx     = displayCtx
         self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
 
+
+        # A GLObject instance is created for
+        # every image in the image list, and
+        # stored in this dictionary
+        self._glObjects = {}
+
         # If two stage rendering is enabled, this
         # attribute will contain a RenderTexture
         # instance for each image in the image list
@@ -378,7 +384,7 @@ class SliceCanvas(props.HasProperties):
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
         the corresponding X and Y axes, and saves them as attributes of
-        the object. Also regenerates the GL index buffers for every
+        this object. Also regenerates the GL index buffers for every
         image in the image list, as they are dependent upon how the
         image is being displayed.
         """
@@ -401,15 +407,10 @@ class SliceCanvas(props.HasProperties):
 
         self._annotations.setAxes(self.xax, self.yax)
 
-        for image in self.imageList:
+        for image, globj in self._glObjects.items():
 
-            try:   glData = image.getAttribute(self.name)
-
-            # if this lookup fails, it means that the GL data
-            # for this image has not yet been generated.
-            except KeyError: continue
-
-            glData.setAxes(self.xax, self.yax)
+            if globj is not None:
+                globj.setAxes(self.xax, self.yax)
 
         self._imageBoundsChanged()
 
@@ -435,18 +436,23 @@ class SliceCanvas(props.HasProperties):
         triggers a refresh.
         """
 
+        # Destroy any GL objects for images 
+        # which are no longer in the list
+        for image, globj in self._glObjects.items():
+            if image not in self.imageList:
+                self._glObjects.pop(image)
+                if globj is not None:
+                    globj.destroy()
+
         # Create a GL object for any new images,
         # and attach a listener to their display
         # properties so we know when to refresh
         # the canvas.
         for image in self.imageList:
 
-            try:
-                image.getAttribute(self.name)
+            # A GLObject already exists for this image
+            if image in self._glObjects:
                 continue
-                
-            except KeyError:
-                pass
 
             display = self.displayCtx.getDisplayProperties(image)
 
@@ -468,23 +474,19 @@ class SliceCanvas(props.HasProperties):
 
                 # Tell the previous GLObject (if
                 # any) to clean up after itself
-                try:
-                    globj = img.getAttribute(self.name)
+                globj = self._glObjects.get(image, None)
+                if globj is not None:
                     globj.destroy()
-                except KeyError:
-                    pass
                 
                 globj = globject.createGLObject(img, disp)
-                opts  = disp.getDisplayOpts()
-
-                img.setAttribute(self.name, globj)
+                self._glObjects[image] = globj
 
                 if globj is not None:
                     globj.init()
                     globj.setAxes(self.xax, self.yax)
 
+                opts = disp.getDisplayOpts()
                 opts.addGlobalListener(self.name, self._refresh)
-                
                 self._refresh()
                 
             genGLObject()
@@ -819,12 +821,8 @@ class SliceCanvas(props.HasProperties):
         for image in self.displayCtx.getOrderedImages():
 
             display = self.displayCtx.getDisplayProperties(image)
-
-            try:
-                globj = image.getAttribute(self.name)
-            except KeyError:
-                continue
-
+            globj   = self._glObjects.get(image, None)
+            
             if (globj is None) or (not globj.ready()) or not display.enabled:
                 continue
 
