@@ -105,8 +105,7 @@ class VectorOpts(fsldisplay.DisplayOpts):
             # an image can only be used to modulate
             # the vector image if it shares the same
             # dimensions as said vector image
-            if image.shape  != self.image.shape[ :3] or \
-               image.pixdim != self.image.pixdim[:3]:
+            if image.shape != self.image.shape[:3]:
                 continue
 
             modOptions.append(image)
