@@ -90,6 +90,8 @@ class ViewPanel(fslpanel.FSLViewPanel):
             panel.destroy()
             
         lName = 'ViewPanel_{}'.format(self._name)
+
+        self            .removeListener('profile',       lName)
         self._imageList .removeListener('images',        lName)
         self._displayCtx.removeListener('selectedImage', lName) 
 

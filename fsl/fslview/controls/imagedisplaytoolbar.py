@@ -55,7 +55,10 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self._displayCtx.removeListener('imageOrder',    self._name)
 
         for image in self._imageList:
-            image.removeListener('imageType', self._name)
+            
+            display = self._displayCtx.getDisplayProperties(image)
+            image  .removeListener('imageType', self._name)
+            display.removeListener('enabled',   self._name)
 
 
     def showMoreSettings(self, *a):
@@ -95,8 +98,11 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
             tool.Destroy()
 
             
-    def _toggleEnabled(self, *a):
-        image   = self._displayCtx.getSelectedImage()
+    def _toggleEnabled(self, value, valid, image, name):
+        
+        if image is not self._displayCtx.getSelectedImage():
+            return
+        
         display = self._displayCtx.getDisplayProperties(image)
 
         self.Enable(display.enabled)
