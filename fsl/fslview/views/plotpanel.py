@@ -34,6 +34,11 @@ class PlotPanel(viewpanel.ViewPanel):
         viewpanel.ViewPanel.__init__(
             self, parent, imageList, displayCtx, actionz)
 
+        # There is currently no screenshot functionality
+        # because I haven't gotten around to implementing
+        # it ...
+        self.disable('screenshot')
+
         self.__figure = plt.Figure()
         self.__axis   = self.__figure.add_subplot(111, projection=proj)
         self.__canvas = Canvas(self, -1, self.__figure) 
