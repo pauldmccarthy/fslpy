@@ -94,6 +94,7 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         for tool, _ in oldOptsTools:
             tool.Destroy()
 
+            
     def _toggleEnabled(self, *a):
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
@@ -111,19 +112,23 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         if image is None:
             self.ClearTools()
             return
-        
+
         display = self._displayCtx.getDisplayProperties(image)
 
         # Call _toggleEnabled when
         # the image is enabled/disabled
+        self.Enable(display.enabled)
         for i in self._imageList:
+            
+            d = self._displayCtx.getDisplayProperties(i)
+            
             if i == image:
-                display.addListener('enabled',
-                                    self._name,
-                                    self._toggleEnabled,
-                                    overwrite=True)
+                d.addListener('enabled',
+                              self._name,
+                              self._toggleEnabled,
+                              overwrite=True)
             else:
-                display.removeListener('enabled', self._name)
+                d.removeListener('enabled', self._name)
 
         # Build/refresh the toolbar widgets for this image
         tools = self._imageTools.get(image, None)
