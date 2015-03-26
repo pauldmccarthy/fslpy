@@ -7,8 +7,6 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * February/March 2015 internal release
-** Ludoweird interpolation effect - wtf?
-** Change 'profile' to 'mode'
 ** Fix all 'listener still registered' warnings.
 ** OSX installer
 Make sure you disable GL error checking/logging
@@ -17,6 +15,10 @@ Make sure you disable GL error checking/logging
 *** Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
 *** Toolbars not being resized appropriately when the parent viewpanel is resized?
 *** Toolbar mouse scrolling not working? Oh, this may be because of the above issue.
+** WONTFIX Ludoweird interpolation effect - wtf?
+It's an artifact of the fact that interpolation is applied in voxel space, rather than mm space.
+** DONE VNC/X11 ortho panning 
+** DONE Change 'profile' to 'mode'
 ** DONE Volume Option to invert colour map
 ** DONE Make ImageDisplayPanel change interpolation when transformation is changed
 ** DONE Disable image display widgets for disabled images
@@ -66,6 +68,10 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** VolumeOpts DisplayRange<->Bricon synchronisation.
+Breaks when brightness/contrast/displayRange sync (between multiple displays)
+is turned off .. I think the sync logic has to occur somewhere other than the
+VolumeOpts class ...
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
 ** Lightbox scrollbar under linux not visible?
@@ -140,6 +146,8 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** A proper GLMask class - deriving from GLVolume is inefficient
+** A top-level class, from which all things inherit, which has a destroy method that must be called when the object is destroy4ed
 ** Editor - apply fill/mask/ROI to all volumes of a 4D image
 ** Option to centre display range for volume images
 ** Spline interpolation in GL14
@@ -253,6 +261,9 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Editor features
+*** Select all above/below a specified intensity
+*** Honour clipping range (i.e. don't select clipped voxels)
 ** Ability to unlink image volume across displays
 ** Link display properties across images
 ** Custom colour select widget - the OSX one is rubbish
