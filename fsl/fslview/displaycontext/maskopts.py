@@ -18,7 +18,8 @@ class MaskOpts(fsldisplay.DisplayOpts):
 
     colour     = props.Colour()
     invert     = props.Boolean(default=False)
-    threshold  = props.Bounds(
+
+    clippingRange = props.Bounds(
         ndims=1,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']]) 
@@ -36,10 +37,15 @@ class MaskOpts(fsldisplay.DisplayOpts):
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
-        self.threshold.setMin(  0, self.dataMin - 0.5 * dRangeLen)
-        self.threshold.setMax(  0, self.dataMax + 0.5 * dRangeLen)
-        self.threshold.setRange(0, 0.1, self.dataMax + 0.1)
-        self.setConstraint('threshold', 'minDistance', dMinDistance)
+        self.clippingRange.xmin = self.dataMin - dMinDistance
+        self.clippingRange.xmax = self.dataMax + dMinDistance
+        
+        # By default, the lowest values
+        # in the image are clipped
+        self.clippingRange.xlo  = self.dataMin + dMinDistance
+        self.clippingRange.xhi  = self.dataMax + dMinDistance 
+
+        self.setConstraint('clippingRange', 'minDistance', dMinDistance)
 
         fsldisplay.DisplayOpts.__init__(self,
                                         image,

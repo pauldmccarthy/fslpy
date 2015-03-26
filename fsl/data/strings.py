@@ -203,7 +203,7 @@ properties = TypeDict({
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
-    'MaskOpts.threshold'      : 'Threshold',
+    'MaskOpts.clippingRange'  : 'Threshold',
 
     'VectorOpts.displayMode'   : 'Display mode',
     'VectorOpts.xColour'       : 'X Colour',

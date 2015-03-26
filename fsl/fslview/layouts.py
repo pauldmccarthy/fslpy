@@ -182,14 +182,14 @@ DisplayLayout = props.VGroup(
 VolumeOptsLayout = props.VGroup(
     (widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
-     widget(VolumeOpts, 'displayRange',  slider=True),
-     widget(VolumeOpts, 'clippingRange', slider=True)))
+     widget(VolumeOpts, 'displayRange',  slider=True, showLimits=False),
+     widget(VolumeOpts, 'clippingRange', slider=True, showLimits=False)))
 
 
 MaskOptsLayout = props.VGroup(
     (widget(MaskOpts, 'colour'),
      widget(MaskOpts, 'invert'),
-     widget(MaskOpts, 'threshold')))
+     widget(MaskOpts, 'clippingRange', showLimits=False)))
 
 
 VectorOptsLayout = props.VGroup((

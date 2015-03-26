@@ -128,7 +128,7 @@ OPTIONS = td.TypeDict({
                        'cmap'],
     'MaskOpts'      : ['colour',
                        'invert',
-                       'threshold'],
+                       'clippingRange'],
     'VectorOpts'    : ['displayMode',
                        'xColour',
                        'yColour',
@@ -210,9 +210,9 @@ ARGUMENTS = td.TypeDict({
     'VolumeOpts.cmap'          : ('cm', 'cmap'),
     'VolumeOpts.invert'        : ('ci', 'cmapInvert'),
 
-    'MaskOpts.colour'    : ('co', 'colour'),
-    'MaskOpts.invert'    : ('mi', 'maskInvert'),
-    'MaskOpts.threshold' : ('t',  'threshold'),
+    'MaskOpts.colour'        : ('co', 'colour'),
+    'MaskOpts.invert'        : ('mi', 'maskInvert'),
+    'MaskOpts.clippingRange' : ('t',  'threshold'),
 
     'VectorOpts.displayMode' : ('d',  'displayMode'),
     'VectorOpts.xColour'     : ('xc', 'xColour'),
@@ -280,9 +280,9 @@ HELP = td.TypeDict({
     'VolumeOpts.cmap'          : 'Colour map',
     'VolumeOpts.invert'        : 'Invert colour map',
 
-    'MaskOpts.colour'    : 'Colour',
-    'MaskOpts.invert'    : 'Invert',
-    'MaskOpts.threshold' : 'Threshold',
+    'MaskOpts.colour'        : 'Colour',
+    'MaskOpts.invert'        : 'Invert',
+    'MaskOpts.clippingRange' : 'Threshold',
 
     'VectorOpts.displayMode'  : 'Display mode',
     'VectorOpts.xColour'      : 'X colour',

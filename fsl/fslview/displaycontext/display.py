@@ -50,6 +50,10 @@ class DisplayOpts(props.SyncableHasProperties):
         self.imageType  = image.imageType
         self.name       = '{}_{}'.format(type(self).__name__, id(self))
 
+        
+    def destroy(self):
+        pass
+
 
 class Display(props.SyncableHasProperties):
     """
@@ -323,6 +327,9 @@ class Display(props.SyncableHasProperties):
 
         if (self.__displayOpts           is None) or \
            (self.__displayOpts.imageType != self.imageType):
+
+            if self.__displayOpts is not None:
+                self.__displayOpts.destroy()
             
             self.__displayOpts = self.__makeDisplayOpts()
             

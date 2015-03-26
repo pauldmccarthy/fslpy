@@ -90,6 +90,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     _propHelp = _tooltips
 
 
+
     def __init__(self, image, display, imageList, displayCtx, parent=None):
         """Create an :class:`ImageDisplay` for the specified image.
 
@@ -167,6 +168,11 @@ class VolumeOpts(fsldisplay.DisplayOpts):
             self   .addListener('displayRange',
                                 self.name,
                                 self.displayRangeChanged)
+
+    def destroy(self):
+        self.display.removeListener('brightness',   self.name)
+        self.display.removeListener('contrast',     self.name)
+        self        .removeListener('displayRange', self.name)
 
 
     def briconChanged(self, *a):
