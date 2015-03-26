@@ -661,9 +661,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             display = self.displayCtx.getDisplayProperties(image)
 
-            try: globj = image.getAttribute(self.name)
-            except KeyError:
-                continue
+            globj = self._glObjects.get(image, None)
 
             if (globj is None) or (not globj.ready()) or not display.enabled:
                 continue
