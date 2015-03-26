@@ -94,8 +94,8 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
     def __onMouseWheel(self, ev):
 
         wheelDir = ev.GetWheelRotation()
-        if   wheelDir < 0: self.__onRightButton()
-        elif wheelDir > 0: self.__onLeftButton()
+        if   wheelDir < 0: self.__onLeftButton()
+        elif wheelDir > 0: self.__onRightButton()
 
 
     def __onLeftButton(self, ev=None):
