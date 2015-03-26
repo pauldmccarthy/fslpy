@@ -139,6 +139,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         screenPos = slicecanvas.SliceCanvas.canvasToWorld(
             self, xpos, ypos)
 
+        if screenPos is None:
+            return None
+
         screenx = screenPos[self.xax]
         screeny = screenPos[self.yax]
 

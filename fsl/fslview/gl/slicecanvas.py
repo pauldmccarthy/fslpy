@@ -681,6 +681,13 @@ class SliceCanvas(props.HasProperties):
             size = self._getSize()
             
         width, height = size
+
+        # clear the canvas
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)        
         
         if (len(self.imageList) == 0) or \
            (width  == 0)              or \
@@ -734,14 +741,6 @@ class SliceCanvas(props.HasProperties):
         trans = [0, 0, 0]
         trans[self.zax] = -self.pos.z
         gl.glTranslatef(*trans)
-
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        
 
         
     def _drawCursor(self):
