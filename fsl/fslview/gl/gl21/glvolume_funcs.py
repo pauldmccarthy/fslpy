@@ -35,8 +35,9 @@ import numpy                  as np
 import OpenGL.GL              as gl
 import OpenGL.raw.GL._types   as gltypes
 
-import fsl.fslview.gl.shaders as shaders
-import fsl.utils.transform    as transform
+import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.shaders  as shaders
+import fsl.utils.transform     as transform
 
 
 log = logging.getLogger(__name__)
@@ -77,10 +78,14 @@ def _compileShaders(self):
                                                        'displayToVoxMat')
     self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
                                                        'voxValXform')
+    self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
+                                                       'clipLow')
+    self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
+                                                       'clipHigh') 
 
-    self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
-    self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
-    self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
+    # self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
+    # self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
+    # self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
 
 
 def init(self):
@@ -141,6 +146,7 @@ def preDraw(self):
     """
 
     display = self.display
+    opts    = self.displayOpts
 
     # load the shaders
     gl.glUseProgram(self.shaders)
@@ -155,9 +161,23 @@ def preDraw(self):
     gl.glUniform1i( self.yaxPos,           self.yax)
     gl.glUniform1i( self.zaxPos,           self.zax)
 
-    gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
-    gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
-    gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
+    # gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
+    # gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
+    # gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
+
+    # The clipping range options are in the voxel value
+    # range, but the shader needs them to be in image
+    # texture value range (0.0 - 1.0). So let's scale 
+    # them.
+    clipLow = opts.clippingRange[0]           * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+    clipHigh = opts.clippingRange[1]          * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0] 
+
+    gl.glUniform1f(self.clipLowPos,  clipLow)
+    gl.glUniform1f(self.clipHighPos, clipHigh)
 
     # Bind transformation matrices to transform
     # display coordinates to voxel coordinates,
@@ -165,8 +185,10 @@ def preDraw(self):
     # texture coordinates
     tcx = transform.concat(self.imageTexture.voxValXform,
                            self.colourMapXform)
-    w2v = np.array(display.displayToVoxMat, dtype=np.float32).ravel('C')
-    vvx = np.array(tcx,                     dtype=np.float32).ravel('C')
+    w2v = np.array(
+        display.getTransform('display', 'voxel'), dtype=np.float32).ravel('C')
+    
+    vvx = np.array(tcx, dtype=np.float32).ravel('C')
     
     gl.glUniformMatrix4fv(self.displayToVoxMatPos, 1, False, w2v)
     gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, vvx)
@@ -216,6 +238,12 @@ def draw(self, zpos, xform=None):
                       self.nVertices,
                       gl.GL_UNSIGNED_INT,
                       None)
+
+def drawAll(self, zposes, xforms):
+    """Delegates to the default implementation in
+    :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`.
+    """
+    globject.GLObject.drawAll(self, zposes, xforms)
 
 
 def postDraw(self):

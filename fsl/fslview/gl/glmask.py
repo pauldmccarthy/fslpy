@@ -52,7 +52,7 @@ class GLMask(glvolume.GLVolume):
             self.setAxes(self.xax, self.yax)
 
         def colourUpdate(*a):
-            self.refreshColourTexture(self.colourResolution)
+            self.refreshColourTexture()
 
         lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
@@ -109,17 +109,20 @@ class GLMask(glvolume.GLVolume):
         # or above the current display range will be mapped
         # to texture coordinate values less than 0.0 or greater
         # than 1.0 respectively.
+        if imax == imin: scale = 1
+        else:            scale = imax - imin
+            
         cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / (imax - imin)
+        cmapXform[0, 0] = 1.0 / scale
         cmapXform[3, 0] = -imin * cmapXform[0, 0]
 
         self.colourMapXform = cmapXform
 
         if opts.invert:
-            colourmap = np.tile([[0.0, 0.0, 0.0, 0.0]], (2, 1))
+            colourmap = np.tile([[0.0, 0.0, 0.0, 0.0]], (16, 1))
             border    = np.array(opts.colour, dtype=np.float32)
         else:
-            colourmap = np.tile([[opts.colour]], (2, 1))
+            colourmap = np.tile([[opts.colour]], (16, 1))
             border    = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)            
 
         colourmap = np.floor(colourmap * 255)
@@ -145,7 +148,7 @@ class GLMask(glvolume.GLVolume):
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
                         gl.GL_RGBA8,
-                        2,
+                        16,
                         0,
                         gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,

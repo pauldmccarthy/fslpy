@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# imageio.py -
+# imageio.py - Utility functions for loading/saving images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -327,9 +327,8 @@ def saveImage(image, imageList=None, fromDir=None):
 
             # actually, the two behaviours just described
             # are identical
+            log.warn('Saving large images is not yet functional')
             pass
-
-        # TODO handle error
 
         # this is just a normal image
         # which has been loaded from
@@ -347,13 +346,108 @@ def saveImage(image, imageList=None, fromDir=None):
         log.warn(msg)
         wx.MessageDialog(app.GetTopWindow(),
                          message=msg,
-                         style=wx.OK | wx.ICON_ERROR)
+                         style=wx.OK | wx.ICON_ERROR).ShowModal()
         return
 
     image.saved = True
 
 
-def addImages(imageList, fromDir=None, addToEnd=True):
+def loadImages(paths, loadFunc='default', errorFunc='default'):
+    """Loads all of the images specified in the sequence of image files
+    contained in ``paths``.
+
+    :param loadFunc:  A function which is called just before each image
+                      is loaded, and is passed the image path. The default
+                      load function uses a :mod:`wx` popup frame to display
+                      the name of the image currently being loaded. Pass in
+                      ``None`` to disable this default behaviour.
+
+    :param errorFunc: A function which is called if an error occurs while
+                      loading an image, being passed the name of the image,
+                      and the :class:`Exception` which occurred. The
+                      default function pops up a :class:`wx.MessageBox`
+                      with an error message. Pass in ``None`` to disable
+                      this default behaviour.
+
+    :Returns a list of :class:`~fsl.data.image.Image` instances, the
+    images that were loaded.
+    """
+
+    defaultLoad = loadFunc == 'default'
+
+    # If the default load function is
+    # being used, create a dialog window
+    # to show the currently loading image
+    if defaultLoad:
+        import wx
+        loadDlg       = wx.Frame(wx.GetApp().GetTopWindow(), style=0)
+        loadDlgStatus = wx.StaticText(loadDlg, style=wx.ST_ELLIPSIZE_MIDDLE)
+        
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(loadDlgStatus,
+                  border=25,
+                  proportion=1,
+                  flag=wx.EXPAND | wx.ALL | wx.ALIGN_CENTRE)
+        loadDlg.SetSizer(sizer)
+        
+        loadDlg.SetSize((400, 100))
+        loadDlg.Layout()
+
+    # The default load function updates
+    # the dialog window created above
+    def defaultLoadFunc(s):
+        msg = strings.messages['imageio.loadImages.loading'].format(s)
+        loadDlgStatus.SetLabel(msg)
+        loadDlg.Layout()
+        loadDlg.Refresh()
+        loadDlg.Update()
+
+    # The default error function
+    # shows an error dialog
+    def defaultErrorFunc(s, e):
+        import wx
+        e     = str(e)
+        msg   = strings.messages['imageio.loadImages.error'].format(s, e)
+        title = strings.titles[  'imageio.loadImages.error']
+        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
+
+    # If loadFunc or errorFunc are explicitly set to
+    # None, use these no-op load/error functions
+    if loadFunc  is None: loadFunc  = lambda s:    None
+    if errorFunc is None: errorFunc = lambda s, e: None
+
+    # Or if not provided, use the 
+    # default functions defined above
+    if loadFunc  == 'default': loadFunc  = defaultLoadFunc
+    if errorFunc == 'default': errorFunc = defaultErrorFunc
+    
+    images = []
+
+    # If using the default load 
+    # function, show the dialog
+    if defaultLoad:
+        loadDlg.CentreOnParent()
+        loadDlg.Show(True)
+        loadDlg.Update()
+
+    # Load the images
+    for path in paths:
+
+        loadFunc(path)
+
+        try:                   images.append(fslimage.Image(path))
+        except Exception as e: errorFunc(path, e)
+
+    if defaultLoad:
+        loadDlg.Close()
+            
+    return images
+
+
+def addImages(imageList,
+              fromDir=None,
+              addToEnd=True,
+              **kwargs):
     """Convenience method for interactively adding images to an
     :class:`fsl.data.image.ImageList`.
     If the :mod:`wx` package is available, pops up a file dialog
@@ -404,8 +498,8 @@ def addImages(imageList, fromDir=None, addToEnd=True):
 
     if dlg.ShowModal() != wx.ID_OK: return False
 
-    paths         = dlg.GetPaths()
-    images        = map(fslimage.Image, paths)
+    paths  = dlg.GetPaths()
+    images = loadImages(paths, **kwargs)
 
     if saveLastDir: addImages.lastDir = op.dirname(paths[-1])
 

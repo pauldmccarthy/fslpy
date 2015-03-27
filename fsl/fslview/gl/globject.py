@@ -118,6 +118,25 @@ class GLObject(object):
         raise NotImplementedError()
 
 
+    def drawAll(self, zposes, xforms):
+        """This method should do the same as multiple calls to the
+        :meth:`draw` method, one for each of the Z positions and
+        transformation matrices contained in the ``zposes`` and
+        ``xforms`` arrays.
+
+        In some circumstances (hint: the
+        :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`),
+        better performance may be achievbed in combining multiple
+        renders, rather than doing it with separate calls to :meth:`draw`.
+
+        The default implementation does exactly this, so this method
+        need only be overridden for subclasses which are able to get
+        better performance by combining the draws.
+        """
+        for (zpos, xform) in zip(zposes, xforms):
+            self.draw(zpos, xform)
+
+
     def postDraw(self):
         """This method is called after the :meth:`draw` method has been called
         one or more times.
@@ -225,7 +244,7 @@ def calculateSamplePoints(image, display, xax, yax):
     """
 
     transformCode = display.transform
-    transformMat  = display.voxToDisplayMat 
+    transformMat  = display.getTransform('voxel', 'display')
     worldRes      = display.resolution
     
     xVoxelRes     = np.round(worldRes / image.pixdim[xax])
@@ -525,8 +544,7 @@ def slice2D(dataShape, xax, yax, voxToDisplayMat):
     :arg voxToDisplayMat: Affine transformation matrix which transforms from
                           voxel/array indices into the display coordinate
                           system.
-
-
+    
     Returns a tuple containing:
     
       - A ``4*3`` ``numpy.float32`` array containing the vertex locations
@@ -599,3 +617,58 @@ def subsample(data, resolution, pixdim=None, volume=None):
                                               zstart::zstep]        
 
     return sample
+
+
+def broadcast(vertices, indices, zposes, xforms, zax):
+    """Given a set of vertices and indices (assumed to be 2D representations
+    of some geometry in a 3D space, with the depth axis specified by ``zax``),
+    replicates them across all of the specified Z positions, applying the
+    corresponding transformation to each set of vertices.
+
+    :arg vertices: Vertex array (a ``N*3`` numpy array).
+    
+    :arg indices:  Index array.
+    
+    :arg zposes:   Positions along the depth axis at which the vertices
+                   are to be replicated.
+    
+    :arg xforms:   Sequence of transformation matrices, one for each
+                   Z position.
+    
+    :arg zax:      Index of the 'depth' axis
+
+    Returns three values:
+    
+      - A numpy array containing all of the generated vertices
+    
+      - A numpy array containing the original vertices for each of the
+        generated vertices, which may be used as texture coordinates
+
+      - A new numpy array containing all of the generated indices.
+    """
+
+    vertices = np.array(vertices)
+    indices  = np.array(indices)
+    
+    nverts   = vertices.shape[0]
+    nidxs    = indices.shape[ 0]
+
+    allTexCoords  = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
+    allVertCoords = np.zeros((nverts * len(zposes), 3), dtype=np.float32)
+    allIndices    = np.zeros( nidxs  * len(zposes),     dtype=np.uint32)
+    
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+
+        vertices[:, zax] = zpos
+
+        vStart = i * nverts
+        vEnd   = vStart + nverts
+
+        iStart = i * nidxs
+        iEnd   = iStart + nidxs
+
+        allIndices[   iStart:iEnd]    = indices + i * nverts
+        allTexCoords[ vStart:vEnd, :] = vertices
+        allVertCoords[vStart:vEnd, :] = transform.transform(vertices, xform)
+        
+    return allVertCoords, allTexCoords, allIndices

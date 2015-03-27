@@ -13,11 +13,13 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import OpenGL.GL      as gl
-import numpy          as np
+import numpy     as np
+import OpenGL.GL as gl
 
-import                   slicecanvas
-import                   props
+import props
+
+import fsl.fslview.gl.slicecanvas as slicecanvas
+import fsl.fslview.gl.textures    as fsltextures
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
@@ -137,6 +139,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         screenPos = slicecanvas.SliceCanvas.canvasToWorld(
             self, xpos, ypos)
 
+        if screenPos is None:
+            return None
+
         screenx = screenPos[self.xax]
         screeny = screenPos[self.yax]
 
@@ -209,14 +214,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         self._slicePropsChanged()
 
-        def _refresh(*a): self._refresh()
-
         self.addListener('sliceSpacing',   self.name, self._slicePropsChanged)
         self.addListener('ncols',          self.name, self._slicePropsChanged)
         self.addListener('nrows',          self.name, self._slicePropsChanged)
         self.addListener('zrange',         self.name, self._slicePropsChanged)
-        self.addListener('showGridLines',  self.name, _refresh)
-        self.addListener('highlightSlice', self.name, _refresh)
+        self.addListener('showGridLines',  self.name, self._refresh)
+        self.addListener('highlightSlice', self.name, self._refresh)
 
         # Called when the top row changes -
         # adjusts display range and refreshes
@@ -248,6 +251,37 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._genSliceLocations()
         self._zPosChanged()
         self._updateDisplayBounds()
+        self._refresh()
+
+
+    def _onTwoStageRenderChange(self, *args, **kwargs):
+        """Overrides
+        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas._onTwoStageRenderChange`.
+        """
+
+        # The LightBoxCanvas does two-stage rendering
+        # a bit different to the SliceCanvas. The latter
+        # uses a separate render texture for each image,
+        # whereas here we're going to use a single
+        # render texture for all images.
+        if self._renderTextures == {}:
+            self._renderTextures = None
+            
+        # nothing to be done
+        if self.twoStageRender and self._renderTextures is not None:
+            return
+        
+        if not self.twoStageRender and self._renderTextures is None:
+            return
+
+        if not self.twoStageRender:
+            self._renderTextures.destroy()
+            self._renderTextures = None
+
+        else:
+            self._renderTextures = fsltextures.RenderTexture(
+                256, 256, gl.GL_LINEAR)
+
         self._refresh()
 
 
@@ -604,12 +638,20 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.getAnnotations().line(yverts[0], yverts[1], colour=(0, 1, 0))
 
         
-    def _draw(self):
+    def _draw(self, *a):
         """
         """
 
-        self._setGLContext()
-        self._setViewport()
+        if not self._setGLContext():
+            return
+
+        if self.twoStageRender:
+            log.debug('Rendering to off-screen frame buffer')
+            self._renderTextures.bindAsRenderTarget()
+            self._setViewport(size=self._renderTextures.getSize())
+            
+        else:
+            self._setViewport()
 
         startSlice   = self.ncols * self.topRow
         endSlice     = startSlice + self.nrows * self.ncols
@@ -617,43 +659,46 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if endSlice > self._nslices:
             endSlice = self._nslices    
 
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-        # disable interpolation
-        gl.glShadeModel(gl.GL_FLAT)
-
         # Draw all the slices for all the images.
         for image in self.displayCtx.getOrderedImages():
 
-            try: globj = image.getAttribute(self.name)
-            except KeyError:
-                continue
+            display = self.displayCtx.getDisplayProperties(image)
 
-            if (globj is None) or (not globj.ready()):
-                continue 
+            globj = self._glObjects.get(image, None)
+
+            if (globj is None) or (not globj.ready()) or not display.enabled:
+                continue
 
             log.debug('Drawing {} slices ({} - {}) for image {}'.format(
                 endSlice - startSlice, startSlice, endSlice, image))
 
-
             globj.preDraw()
 
-            for zi in range(startSlice, endSlice):
-                globj.draw(self._sliceLocs[ image][zi],
-                           self._transforms[image][zi])
+            zposes = self._sliceLocs[ image][startSlice:endSlice]
+            xforms = self._transforms[image][startSlice:endSlice]
+
+            globj.drawAll(zposes, xforms)
 
             globj.postDraw()
+
+        if self.twoStageRender:
+            self._renderTextures.unbind()
+            self._setViewport()
+            self._renderTextures.drawRender(
+                self.displayBounds.xlo,
+                self.displayBounds.xhi,
+                self.displayBounds.ylo,
+                self.displayBounds.yHi,
+                self.xax,
+                self.yax)
+
+        self.getAnnotations().draw(self.pos.z)
 
         if len(self.imageList) > 0:
             if self.showCursor:     self._drawCursor()
             if self.showGridLines:  self._drawGridLines()
             if self.highlightSlice: self._drawSliceHighlight()
 
-        self.getAnnotations().draw(self.pos.z)
-
+        self._annotations.draw(self.pos.z, skipHold=True)
+                
         self._postDraw()

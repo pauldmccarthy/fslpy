@@ -90,16 +90,41 @@ class Image(props.HasProperties):
     """
 
 
-    def __init__(self, image, xform=None, name=None):
+    def __init__(self,
+                 image,
+                 xform=None,
+                 name=None,
+                 header=None,
+                 loadData=True):
         """Initialise an Image object with the given image data or file name.
 
-        :arg image: A string containing the name of an image file to load, or
-                    a :mod:`numpy` array, or a :mod:`nibabel` image object.
+        :arg image:    A string containing the name of an image file to load, 
+                       or a :mod:`numpy` array, or a :mod:`nibabel` image
+                       object.
+
+        :arg xform:    A ``4*4`` affine transformation matrix which transforms
+                       voxel coordinates into real world coordinates.
+
+        :arg name:     A name for the image.
+
+        :arg header:   If not ``None``, assumed to be a
+                       :class:`nibabel.nifti1.Nifti1Header` to be used as the 
+                       image header. Not applied to images loaded from file,
+                       or existing :mod:`nibabel` images.
+
+        :arg loadData: Defaults to ``True``. If ``False``, the image data is
+                       not loaded - this is useful if you're only interested
+                       in the header data, as the file will be loaded much
+                       more quickly. The image data may subsequently be loaded
+                       via the :meth:`loadData` method.
         """
 
         self.nibImage  = None
         self.imageFile = None
         self.tempFile  = None
+
+        if header is not None:
+            header = header.copy()
 
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
@@ -124,10 +149,14 @@ class Image(props.HasProperties):
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
 
-            if xform is None: xform = np.identity(4)
+            if xform is None:
+                if header is None: xform = np.identity(4)
+                else:              xform = header.get_best_affine()
             if name  is None: name = 'Numpy array'
             
-            self.nibImage  = nib.nifti1.Nifti1Image(image, xform)
+            self.nibImage  = nib.nifti1.Nifti1Image(image,
+                                                    xform,
+                                                    header=header)
             self.name      = name
             
         # otherwise, we assume that it is a nibabel image
@@ -138,13 +167,15 @@ class Image(props.HasProperties):
             self.nibImage = image
             self.name     = name
 
-        self.data          = self.nibImage.get_data()
         self.shape         = self.nibImage.get_shape()
         self.pixdim        = self.nibImage.get_header().get_zooms()
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
-        
-        self.data.flags.writeable = False
+
+        if loadData:
+            self.loadData()
+        else:
+            self.data = None
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
@@ -153,6 +184,48 @@ class Image(props.HasProperties):
         # arbitrary data associated with this image.
         self._attributes = {}
 
+        # update the available image type(s)
+        imageTypeProp = self.getProp('imageType')
+
+        # the vector type is only
+        # applicable to X*Y*Z*3 images
+        if len(self.shape) != 4 or self.shape[3] != 3:
+            
+            log.debug('Disabling vector type for {} ({})'.format(
+                self, self.shape))
+            imageTypeProp.disableChoice('vector', self)
+        
+
+        
+    def loadData(self):
+        """Loads the image data from the file. This method only needs to
+        be called if the ``loadData`` parameter passed to :meth:`__init__`
+        was ``False``.
+        """
+        
+        data = self.nibImage.get_data()
+
+        # Squeeze out empty dimensions, as
+        # 3D image can sometimes be listed
+        # as having 4 or more dimensions
+        shape = data.shape
+        
+        for i in reversed(range(len(shape))):
+            if shape[i - 1] == 1:
+                data = data.squeeze(axis=i - 1)
+
+        data.flags.writeable = False
+
+        log.debug('Loaded image data ({}) - original '
+                  'shape {}, squeezed shape {}'.format(
+                      self.name,
+                      shape,
+                      data.shape))
+
+        self.data   = data
+        self.shape  = self.shape[ :len(data.shape)]
+        self.pixdim = self.pixdim[:len(data.shape)]
+        
         
     def applyChange(self, offset, newVals, vol=None):
         """Changes the image data according to the given new values.
@@ -229,7 +302,6 @@ class Image(props.HasProperties):
     def getXFormCode(self):
         """This method returns the code contained in the NIFTI1 header,
         indicating the space to which the (transformed) image is oriented.
-        
         """
         sform_code = self.nibImage.get_header()['sform_code']
 
@@ -249,13 +321,13 @@ class Image(props.HasProperties):
 
         This method returns one of the following values, indicating the
         direction in which coordinates along the specified axis increase:
-          - :attr:`~fsl.data.image.ORIENT_L2R`:     Left to right
-          - :attr:`~fsl.data.image.ORIENT_R2L`:     Right to left
-          - :attr:`~fsl.data.image.ORIENT_A2P`:     Anterior to posterior
-          - :attr:`~fsl.data.image.ORIENT_P2A`:     Posterior to anterior
-          - :attr:`~fsl.data.image.ORIENT_I2S`:     Inferior to superior
-          - :attr:`~fsl.data.image.ORIENT_S2I`:     Superior to inferior
-          - :attr:`~fsl.data.image.ORIENT_UNKNOWN`: Orientation is unknown
+          - :attr:`~fsl.data.constants.ORIENT_L2R`:     Left to right
+          - :attr:`~fsl.data.constants.ORIENT_R2L`:     Right to left
+          - :attr:`~fsl.data.constants.ORIENT_A2P`:     Anterior to posterior
+          - :attr:`~fsl.data.constants.ORIENT_P2A`:     Posterior to anterior
+          - :attr:`~fsl.data.constants.ORIENT_I2S`:     Inferior to superior
+          - :attr:`~fsl.data.constants.ORIENT_S2I`:     Superior to inferior
+          - :attr:`~fsl.data.constants.ORIENT_UNKNOWN`: Orientation is unknown
 
         The returned value is dictated by the XForm code contained in the
         image file header (see the :meth:`getXFormCode` method). Basically,
@@ -362,6 +434,16 @@ class ImageList(props.HasProperties):
         return iio.addImages(self, fromDir, addToEnd)
 
 
+    def find(self, name):
+        """Returns the first image with the given name, or ``None`` if
+        there is no image with said name.
+        """
+        for image in self.images:
+            if image.name == name:
+                return image
+        return None
+            
+
     # Wrappers around the images list property, allowing this
     # ImageList object to be used as if it is actually a list.
     def __len__(     self):               return self.images.__len__()
@@ -377,6 +459,7 @@ class ImageList(props.HasProperties):
     def extend(      self, iterable):     return self.images.extend(iterable)
     def pop(         self, index=-1):     return self.images.pop(index)
     def move(        self, from_, to):    return self.images.move(from_, to)
+    def remove(      self, item):         return self.images.remove(item)
     def insert(      self, index, item):  return self.images.insert(index,
                                                                     item)
     def insertAll(   self, index, items): return self.images.insertAll(index,

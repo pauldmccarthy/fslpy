@@ -21,13 +21,16 @@ The main interface to this module comprises two functions:
 
 import logging
 
-import OpenGL.GL as gl
-import numpy     as np
+import OpenGL.GL                        as gl
+import OpenGL.raw.GL._types             as gltypes
+import OpenGL.GL.EXT.framebuffer_object as glfbo
 
-import fsl.data.image               as fslimage
-import fsl.utils.transform          as transform
-import fsl.fslview.gl.globject      as globject
-import fsl.fslview.editor.selection as fslselection
+import numpy                            as np
+
+import fsl.utils.transform     as transform
+import fsl.utils.typedict      as typedict
+import fsl.fslview.gl.globject as globject
+
 
 
 log = logging.getLogger(__name__)
@@ -50,10 +53,10 @@ def getTexture(target, tag, *args, **kwargs):
                  will return the same :class:`ImageTexture` instance.
     """
 
-    textureMap = {
-        fslimage.Image         : ImageTexture,
-        fslselection.Selection : SelectionTexture
-    }    
+    textureMap = typedict.TypeDict({
+        'Image'     : ImageTexture,
+        'Selection' : SelectionTexture
+    })
 
     tag        = '{}_{}'.format(id(target), tag)
     textureObj = _allTextures.get(tag, None)
@@ -90,11 +93,12 @@ class ImageTexture(object):
     Once created, the following attributes are available on an
     :class:`ImageTexture` object:
 
-     - ``texture``:     The OpenGL texture identifier. 
+     - ``texture``:        The OpenGL texture identifier. 
 
-     - ``voxValXform``: An affine transformation matrix which encodes an
-                        offset and scale, for transforming from the
-                        texture values [0.0, 1.0] to the actual data values.
+     - ``voxValXform``:    An affine transformation matrix which encodes an
+                           offset and scale, for transforming from the
+                           texture values [0.0, 1.0] to the actual data values.
+     - ``invVoxValXform``: Inverted version of the ``voxValXform`` matrix.
     """
     
     def __init__(self,
@@ -154,11 +158,12 @@ class ImageTexture(object):
 
         texFmt, intFmt, texDtype, voxValXform = self._determineTextureType()
 
-        self.texFmt      = texFmt
-        self.texIntFmt   = intFmt
-        self.texDtype    = texDtype
-        self.voxValXform = voxValXform
-        self.texture     = gl.glGenTextures(1)
+        self.texFmt         = texFmt
+        self.texIntFmt      = intFmt
+        self.texDtype       = texDtype
+        self.voxValXform    = voxValXform
+        self.invVoxValXform = transform.invert(voxValXform)
+        self.texture        = gl.glGenTextures(1)
         
         log.debug('Created GL texture for {}: {}'.format(self.tag,
                                                          self.texture)) 
@@ -355,6 +360,49 @@ class ImageTexture(object):
 
         voxValXform = transform.scaleOffsetXform(scale, offset)
 
+        if log.getEffectiveLevel() == logging.DEBUG:
+
+            if   texDtype == gl.GL_UNSIGNED_BYTE:
+                sTexDtype = 'GL_UNSIGNED_BYTE'
+            elif texDtype == gl.GL_UNSIGNED_SHORT:
+                sTexDtype = 'GL_UNSIGNED_SHORT' 
+            
+            if   texFmt == gl.GL_LUMINANCE:
+                sTexFmt = 'GL_LUMINANCE'
+            elif texFmt == gl.GL_LUMINANCE_ALPHA:
+                sTexFmt = 'GL_LUMINANCE_ALPHA'
+            elif texFmt == gl.GL_RGB:
+                sTexFmt = 'GL_RGB'
+            elif texFmt == gl.GL_RGBA:
+                sTexFmt = 'GL_RGBA'
+                
+            if   intFmt == gl.GL_LUMINANCE8:
+                sIntFmt = 'GL_LUMINANCE8'
+            elif intFmt == gl.GL_LUMINANCE16:
+                sIntFmt = 'GL_LUMINANCE16' 
+            elif intFmt == gl.GL_LUMINANCE8_ALPHA8:
+                sIntFmt = 'GL_LUMINANCE8_ALPHA8'
+            elif intFmt == gl.GL_LUMINANCE16_ALPHA16:
+                sIntFmt = 'GL_LUMINANCE16_ALPHA16'
+            elif intFmt == gl.GL_RGB8:
+                sIntFmt = 'GL_RGB8'
+            elif intFmt == gl.GL_RGB16:
+                sIntFmt = 'GL_RGB16'
+            elif intFmt == gl.GL_RGBA8:
+                sIntFmt = 'GL_RGBA8'
+            elif intFmt == gl.GL_RGBA16:
+                sIntFmt = 'GL_RGBA16' 
+            
+            log.debug('Image texture ({}) is to be stored as {}/{}/{} '
+                      '(normalised: {} -  scale {}, offset {})'.format(
+                          self.image,
+                          sTexDtype,
+                          sTexFmt,
+                          sIntFmt,
+                          self.normalise,
+                          scale,
+                          offset))
+
         return texFmt, intFmt, texDtype, voxValXform
 
 
@@ -404,7 +452,7 @@ class ImageTexture(object):
             data = np.round(data * 255)
             data = np.array(data, dtype=np.uint8)
             
-        if   dtype == np.uint8:  pass
+        elif dtype == np.uint8:  pass
         elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
         elif dtype == np.uint16: pass
         elif dtype == np.int16:  data = np.array(data + 32768, dtype=np.uint16)
@@ -601,3 +649,268 @@ class SelectionTexture(object):
             data = new
 
         self.refresh(data, offset)
+
+        
+class RenderTexture(object):
+    """A 2D texture and frame buffer, intended to be used as a target for
+    off-screen rendering of a scene.
+    """
+    
+    def __init__(self, width, height, defaultInterp=gl.GL_NEAREST):
+        """
+
+        Note that a current target must have been set for the GL context
+        before a frameBuffer can be created ... in other words, call
+        ``context.SetCurrent`` before creating a ``RenderTexture``).
+        """
+
+        
+        self.texture     = gl   .glGenTextures(1)
+        self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
+        
+        log.debug('Created GL texture {} and fbo: {}'.format(
+            self.texture, self.frameBuffer))
+
+        self.defaultInterp = defaultInterp
+        self.width         = width
+        self.height        = height
+        self.refresh()        
+
+        
+    def destroy(self):
+
+        log.debug('Deleting GL texture {} and fbo {}'.format(
+            self.texture, self.frameBuffer))
+        gl   .glDeleteTextures(                      self.texture)
+        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
+
+        
+    def setSize(self, width, height):
+        self.width  = width
+        self.height = height
+        self.refresh()
+
+
+    def getSize(self):
+        return self.width, self.height
+
+        
+    def bindAsRenderTarget(self):
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, self.frameBuffer) 
+
+
+    @classmethod
+    def unbind(cls):
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
+
+        
+    def refresh(self, interp=None):
+        if interp is None:
+            interp = self.defaultInterp
+
+        log.debug('Configuring texture {}, fbo {}, size {}'.format(
+            self.texture, self.frameBuffer, (self.width, self.height)))
+
+        # Configure the texture
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+
+        gl.glTexImage2D(gl.GL_TEXTURE_2D,
+                        0,
+                        gl.GL_RGBA8,
+                        self.width,
+                        self.height,
+                        0,
+                        gl.GL_RGBA,
+                        gl.GL_UNSIGNED_BYTE,
+                        None)
+
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MIN_FILTER,
+                           interp)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
+                           gl.GL_TEXTURE_MAG_FILTER,
+                           interp)
+
+        # And configure the frame buffer
+        glfbo.glBindFramebufferEXT(     glfbo.GL_FRAMEBUFFER_EXT,
+                                        self.frameBuffer)
+        glfbo.glFramebufferTexture2DEXT(glfbo.GL_FRAMEBUFFER_EXT,
+                                        glfbo.GL_COLOR_ATTACHMENT0_EXT,
+                                        gl   .GL_TEXTURE_2D,
+                                        self.texture,
+                                        0)
+            
+        if glfbo.glCheckFramebufferStatusEXT(glfbo.GL_FRAMEBUFFER_EXT) != \
+           glfbo.GL_FRAMEBUFFER_COMPLETE_EXT:
+            raise RuntimeError('An error has occurred while '
+                               'configuring the frame buffer')
+
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+        
+    
+    def drawRender(self, xmin, xmax, ymin, ymax, xax, yax):
+
+        # gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        # gl.glEnable(gl.GL_BLEND)
+        # gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        indices    = np.arange(6,     dtype=np.uint32)
+        vertices   = np.zeros((6, 3), dtype=np.float32)
+        texCoords  = np.zeros((6, 2), dtype=np.float32)
+
+        vertices[ 0, [xax, yax]] = [xmin, ymin]
+        texCoords[0, :]          = [0,    0]
+        vertices[ 1, [xax, yax]] = [xmin, ymax]
+        texCoords[1, :]          = [0,    1]
+        vertices[ 2, [xax, yax]] = [xmax, ymin]
+        texCoords[2, :]          = [1,    0]
+        vertices[ 3, [xax, yax]] = [xmax, ymin]
+        texCoords[3, :]          = [1,    0]
+        vertices[ 4, [xax, yax]] = [xmin, ymax]
+        texCoords[4, :]          = [0,    1]
+        vertices[ 5, [xax, yax]] = [xmax, ymax]
+        texCoords[5, :]          = [1,    1]
+
+        texCoords = texCoords.ravel('C')
+        vertices  = vertices .ravel('C')
+
+        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV,
+                     gl.GL_TEXTURE_ENV_MODE,
+                     gl.GL_REPLACE)
+
+        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
+        gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, texCoords)
+
+        gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+
+
+class ImageRenderTexture(RenderTexture):
+    """A :class:`RenderTexture` for off-screen volumetric rendering of a 3D
+    image.
+    """
+    
+    def __init__(self, image, display, xax, yax):
+        """
+
+        Note that a current target must have been set for the GL context
+        before a frameBuffer can be created ... in other words, call
+        ``context.SetCurrent`` before creating a ``RenderTexture``).
+        """
+
+        self.name    = '{}_{}'.format(type(self).__name__, id(self))
+        self.image   = image
+        self.display = display
+        self.xax     = xax
+        self.yax     = yax
+
+        self._addListeners()        
+        self._updateSize()
+        
+        RenderTexture.__init__(self, self.width, self.height)
+
+        
+    def destroy(self):
+        
+        RenderTexture.destroy(self)
+        self.display.removeListener('resolution',    self.name)
+        self.display.removeListener('interpolation', self.name)
+        self.display.removeListener('transform',     self.name)
+        
+
+    def _addListeners(self):
+
+        # TODO Could change the resolution when
+        #      the image type changes - vector
+        #      images will need a higher
+        #      resolution than voxel space
+
+        self.display.addListener('resolution',    self.name, self._updateSize)
+        self.display.addListener('interpolation', self.name, self.refresh)
+        self.display.addListener('transform',     self.name, self._updateSize)
+
+        
+    def _updateSize(self, *a):
+        image      = self.image
+        display    = self.display
+
+        resolution = display.resolution / np.array(image.pixdim)
+        resolution = np.round(resolution)
+
+        if resolution[0] < 1: resolution[0] = 1
+        if resolution[1] < 1: resolution[1] = 1
+        if resolution[2] < 1: resolution[2] = 1
+        
+        # If the display transformation is 'id' or
+        # 'pixdim', then the display coordinate system
+        # axes line up with the voxel coordinate system
+        # axes, so we can just match the voxel resolution        
+        if display.transform in ('id', 'pixdim'):
+            
+            width  = image.shape[self.xax] / resolution[self.xax]
+            height = image.shape[self.yax] / resolution[self.yax]
+
+        # However, if we're displaying in world coordinates,
+        # we cannot assume any correspondence between the
+        # voxel coordinate system and the display coordinate
+        # system. So we'll use a fixed size render texture
+        # instead.
+        elif display.transform == 'affine':
+            width  = 256 / resolution.min()
+            height = 256 / resolution.min()
+
+        # Limit the width/height to an arbitrary maximum
+        if width > 256 or height > 256:
+            oldWidth, oldHeight = width, height
+            ratio = min(width, height) / max(width, height)
+            
+            if width > height:
+                width  = 256
+                height = width * ratio
+            else:
+                height = 256
+                width  = height * ratio
+
+            log.debug('Limiting texture resolution to {}x{} '
+                      '(for image resolution {}x{})'.format(
+                          *map(int, (width, height, oldWidth, oldHeight))))
+
+        width  = int(round(width))
+        height = int(round(height))
+            
+        self.width  = width
+        self.height = height 
+
+    
+    def setSize(self, width, height):
+        raise NotImplementedError(
+            'Texture size cannot be set for {} instances'.format(
+                type(self).__name__))
+
+    
+    def setAxes(self, xax, yax):
+        self.xax = xax
+        self.yax = yax
+        self.refresh()
+
+        
+    def refresh(self, *a):
+
+        if self.display.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                                    interp = gl.GL_LINEAR
+
+        RenderTexture.refresh(self, interp)

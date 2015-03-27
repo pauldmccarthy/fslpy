@@ -51,23 +51,26 @@ class VectorOpts(fsldisplay.DisplayOpts):
     modulate  = props.Choice()
     """Modulate the vector colours by another image."""
 
-
+    
+    # TODO This is currently a percentage
+    # of the modulation image data range.
+    # It should be an absolute value
     modThreshold = props.Percentage(default=0.0)
     """Hide voxels for which the modulation value is below this threshold."""
 
     
     def __init__(self, image, display, imageList, displayCtx, parent=None):
+        """Create a ``VectorOpts`` instance for the given image.
+
+        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
+        documentation for more details.
+        """
         fsldisplay.DisplayOpts.__init__(self,
                                         image,
                                         display,
                                         imageList,
                                         displayCtx,
                                         parent)
-        """Create a ``VectorOpts`` instance for the given image.
-
-        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
-        documentation for more details.
-        """
 
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
@@ -102,8 +105,7 @@ class VectorOpts(fsldisplay.DisplayOpts):
             # an image can only be used to modulate
             # the vector image if it shares the same
             # dimensions as said vector image
-            if image.shape  != self.image.shape[ :3] or \
-               image.pixdim != self.image.pixdim[:3]:
+            if image.shape != self.image.shape[:3]:
                 continue
 
             modOptions.append(image)

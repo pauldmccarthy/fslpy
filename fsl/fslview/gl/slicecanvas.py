@@ -30,6 +30,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.gl.globject    as globject
+import fsl.fslview.gl.textures    as fsltextures
 import fsl.fslview.gl.annotations as annotations
 
 
@@ -63,6 +64,15 @@ class SliceCanvas(props.HasProperties):
     range of the canvas, in display coordinates. This may be a larger area
     than the size of the displayed images, as it is adjusted to preserve the
     aspect ratio.
+    """
+
+    
+    twoStageRender = props.Boolean(default=False)
+    """If ``True``, the scene is rendered off-screen to a fixed-size texture;
+    this texture is then rendered to the canvas. If ``False``, the scene is
+    rendered directly to the canvas. Two-stage rendering will probably give
+    better performance on old graphics cards, and when software-based
+    rendering is being used.
     """
 
     
@@ -129,7 +139,7 @@ class SliceCanvas(props.HasProperties):
         realWidth                 = self.displayBounds.xlen
         realHeight                = self.displayBounds.ylen
         canvasWidth, canvasHeight = map(float, self._getSize())
-
+            
         if self.invertX: xpos = canvasWidth  - xpos
         if self.invertY: ypos = canvasHeight - ypos
 
@@ -260,9 +270,20 @@ class SliceCanvas(props.HasProperties):
 
         props.HasProperties.__init__(self)
 
-        self.imageList  = imageList
-        self.displayCtx = displayCtx
-        self.name       = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.imageList      = imageList
+        self.displayCtx     = displayCtx
+        self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
+
+
+        # A GLObject instance is created for
+        # every image in the image list, and
+        # stored in this dictionary
+        self._glObjects = {}
+
+        # If two stage rendering is enabled, this
+        # attribute will contain a RenderTexture
+        # instance for each image in the image list
+        self._renderTextures = {}
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -276,18 +297,24 @@ class SliceCanvas(props.HasProperties):
 
         # when any of the properties of this
         # canvas change, we need to redraw
-        def refresh(*a): self._refresh()
-
         self.addListener('zax',           self.name, self._zAxisChanged)
-        self.addListener('pos',           self.name, refresh)
-        self.addListener('showCursor',    self.name, refresh)
-        self.addListener('displayBounds', self.name, refresh)
-        self.addListener('invertX',       self.name, refresh)
-        self.addListener('invertY',       self.name, refresh)
+        self.addListener('pos',           self.name, self._draw)
+        self.addListener('displayBounds', self.name, self._draw)
+        self.addListener('showCursor',    self.name, self._refresh)
+        self.addListener('invertX',       self.name, self._refresh)
+        self.addListener('invertY',       self.name, self._refresh)
         self.addListener('zoom',
                          self.name,
                          lambda *a: self._updateDisplayBounds())
 
+        # When the two stage rendering option changes,
+        # make sure that, if it has been enabled, a
+        # rendering texture exists for every image
+        # in the list
+        self.addListener('twoStageRender',
+                         self.name,
+                         self._onTwoStageRenderChange)
+        
         # When the image list changes, refresh the
         # display, and update the display bounds
         self.imageList.addListener( 'images',
@@ -305,12 +332,59 @@ class SliceCanvas(props.HasProperties):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._imageListChanged()
- 
+
+
+    def _onTwoStageRenderChange(
+            self,
+            value=None,
+            valid=None,
+            ctx=None,
+            name=None,
+            recreate=False):
+        """Called when the :attr:`twoStageRender` property changes.
+        """
+
+        needRefresh = False
+        if recreate or not self.twoStageRender:
+
+            for image, texture in self._renderTextures.items():
+                self._renderTextures.pop(image)
+                texture.destroy()
+                needRefresh = True
+
+        if self.twoStageRender:
+
+            # If any images have been removed from the image
+            # list, destroy the associated render texture
+            for image, texture in self._renderTextures.items():
+                if image not in self.imageList:
+                    self._renderTextures.pop(image)
+                    texture.destroy()
+                    needRefresh = True
+
+            # If any images have been added to the list,
+            # create a new render textures for them
+            for image in self.imageList:
+
+                if image in self._renderTextures:
+                    continue
+
+                display = self.displayCtx.getDisplayProperties(image)
+                rt      = fsltextures.ImageRenderTexture(
+                    image, display, self.xax, self.yax)
+                
+                self._renderTextures[image] = rt
+                
+                needRefresh = True
+
+        if needRefresh:
+            self._refresh()
+
 
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
         the corresponding X and Y axes, and saves them as attributes of
-        the object. Also regenerates the GL index buffers for every
+        this object. Also regenerates the GL index buffers for every
         image in the image list, as they are dependent upon how the
         image is being displayed.
         """
@@ -333,15 +407,10 @@ class SliceCanvas(props.HasProperties):
 
         self._annotations.setAxes(self.xax, self.yax)
 
-        for image in self.imageList:
+        for image, globj in self._glObjects.items():
 
-            try:   glData = image.getAttribute(self.name)
-
-            # if this lookup fails, it means that the GL data
-            # for this image has not yet been generated.
-            except KeyError: continue
-
-            glData.setAxes(self.xax, self.yax)
+            if globj is not None:
+                globj.setAxes(self.xax, self.yax)
 
         self._imageBoundsChanged()
 
@@ -351,6 +420,12 @@ class SliceCanvas(props.HasProperties):
         self.pos.xyz = [pos[self.xax],
                         pos[self.yax],
                         pos[self.zax]]
+
+        # If two stage rendering is enabled, the
+        # render textures need to be updated, as
+        # they are configured in terms of the
+        # display axes
+        self._onTwoStageRenderChange(recreate=True)
  
             
     def _imageListChanged(self, *a):
@@ -361,7 +436,13 @@ class SliceCanvas(props.HasProperties):
         triggers a refresh.
         """
 
-        self._setGLContext()
+        # Destroy any GL objects for images 
+        # which are no longer in the list
+        for image, globj in self._glObjects.items():
+            if image not in self.imageList:
+                self._glObjects.pop(image)
+                if globj is not None:
+                    globj.destroy()
 
         # Create a GL object for any new images,
         # and attach a listener to their display
@@ -369,46 +450,43 @@ class SliceCanvas(props.HasProperties):
         # the canvas.
         for image in self.imageList:
 
-            try:
-                image.getAttribute(self.name)
+            # A GLObject already exists for this image
+            if image in self._glObjects:
                 continue
-                
-            except KeyError:
-                pass
 
             display = self.displayCtx.getDisplayProperties(image)
 
             # Called when the GL object representation
             # of the image needs to be re-created
-            def genGLObject(ctx=None,
-                            value=None,
+            def genGLObject(value=None,
                             valid=None,
+                            ctx=None,
                             name=None,
-                            disp=display):
+                            disp=display,
+                            img=image):
 
                 log.debug('GLObject representation for {} '
-                          'changed to {}'.format(display.name,
-                                                 display.imageType))
+                          'changed to {}'.format(disp.name,
+                                                 disp.imageType))
+
+                if not self._setGLContext():
+                    return
 
                 # Tell the previous GLObject (if
                 # any) to clean up after itself
-                try:
-                    globj = image.getAttribute(self.name)
+                globj = self._glObjects.get(img, None)
+                if globj is not None:
                     globj.destroy()
-                except KeyError:
-                    pass
                 
-                globj = globject.createGLObject(image, disp)
-                opts  = display.getDisplayOpts()
-
-                image.setAttribute(self.name, globj)
+                globj = globject.createGLObject(img, disp)
+                self._glObjects[img] = globj
 
                 if globj is not None:
                     globj.init()
                     globj.setAxes(self.xax, self.yax)
 
+                opts = disp.getDisplayOpts()
                 opts.addGlobalListener(self.name, self._refresh)
-                
                 self._refresh()
                 
             genGLObject()
@@ -424,6 +502,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('resolution',    self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 
+        self._onTwoStageRenderChange()
         self._refresh()
 
 
@@ -450,7 +529,7 @@ class SliceCanvas(props.HasProperties):
     def _applyZoom(self, xmin, xmax, ymin, ymax):
         """'Zooms' in to the given rectangle according to the
         current value of the zoom property, keeping the view
-        centre consistent with regards to the current value
+        centre consistent with respect to the current value
         of the :attr:`displayBounds` property. Returns a
         4-tuple containing the updated bound values.
         """
@@ -573,7 +652,8 @@ class SliceCanvas(props.HasProperties):
                      ymin=None,
                      ymax=None,
                      zmin=None,
-                     zmax=None):
+                     zmax=None,
+                     size=None):
         """Sets up the GL canvas size, viewport, and projection.
 
         If any of the min/max parameters are not provided, they are
@@ -597,7 +677,17 @@ class SliceCanvas(props.HasProperties):
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
-        width, height = self._getSize()
+        if size is None:
+            size = self._getSize()
+            
+        width, height = size
+
+        # clear the canvas
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        # enable transparency
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)        
         
         if (len(self.imageList) == 0) or \
            (width  == 0)              or \
@@ -606,9 +696,10 @@ class SliceCanvas(props.HasProperties):
            (ymin   == ymax):
             return
 
-        log.debug('Setting canvas bounds: '
+        log.debug('Setting canvas bounds (size {}, {}): '
                   'X {: 5.1f} - {: 5.1f},'
-                  'Y {: 5.1f} - {: 5.1f}'.format(xmin, xmax, ymin, ymax))
+                  'Y {: 5.1f} - {: 5.1f}'.format(
+                      width, height, xmin, xmax, ymin, ymax))
 
         # set up 2D orthographic drawing
         gl.glViewport(0, 0, width, height)
@@ -684,41 +775,101 @@ class SliceCanvas(props.HasProperties):
         self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0))
 
 
-    def _draw(self):
-        """Draws the current scene to the canvas. 
-
-        Ths actual drawing is managed by the OpenGL version-dependent
-        :func:`fsl.fslview.gl.slicecanvas_draw.drawScene` function, which does
-        the actual drawing.
+    def _drawRenderTextures(self):
         """
+        """
+        log.debug('Combining off-screen image textures, and rendering '
+                  'to canvas (size {})'.format(self._getSize()))
 
-        self._setGLContext()
         self._setViewport()
 
-        # clear the canvas
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        for image in self.displayCtx.getOrderedImages():
+            renderTexture = self._renderTextures.get(image, None)
+            display       = self.displayCtx.getDisplayProperties(image)
+            lo, hi        = display.getDisplayBounds()
 
-        # enable transparency
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            if renderTexture is None or not display.enabled:
+                continue
+
+            xmin, xmax = lo[self.xax], hi[self.xax]
+            ymin, ymax = lo[self.yax], hi[self.yax]
+
+            log.debug('Drawing image {} texture to {:0.3f}-{:0.3f}, '
+                      '{:0.3f}-{:0.3f}'.format(
+                          image, xmin, xmax, ymin, ymax))
+
+            renderTexture.drawRender(
+                xmin, xmax, ymin, ymax, self.xax, self.yax) 
+
+
+    def _draw(self, *a):
+        """Draws the current scene to the canvas. """
+        
+        width, height = self._getSize()
+        if width == 0 or height == 0:
+            return
+
+        if not self._setGLContext():
+            return
+
+        # If normal rendering, set the viewport to match
+        # the current display bounds and canvas size
+        if not self.twoStageRender:
+            self._setViewport()
 
         for image in self.displayCtx.getOrderedImages():
 
-            try: globj = image.getAttribute(self.name)
-            except KeyError:
+            display = self.displayCtx.getDisplayProperties(image)
+            globj   = self._glObjects.get(image, None)
+            
+            if (globj is None) or (not globj.ready()) or not display.enabled:
                 continue
 
-            if (globj is None) or (not globj.ready()):
-                continue 
+            # Two-stage rendering - each image is
+            # rendered to an off-screen texture -
+            # these textures are combined below.
+            # Set up this texture as the rendering
+            # target
+            if self.twoStageRender:
+                renderTexture = self._renderTextures.get(image, None)
+                lo, hi        = display.getDisplayBounds()
 
+                # Assume that all is well - the texture
+                # just has not yet been created
+                if renderTexture is None:
+                    return
+
+                renderTexture.bindAsRenderTarget()
+
+                self._setViewport(
+                    xmin=lo[self.xax],
+                    xmax=hi[self.xax],
+                    ymin=lo[self.yax],
+                    ymax=hi[self.yax],
+                    size=renderTexture.getSize())
+
+                log.debug('Rendering image {} to offscreen '
+                          'texture {} (size {})'.format(
+                              image,
+                              renderTexture.texture,
+                              renderTexture.getSize())) 
+                
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
-
+                
             globj.preDraw()
             globj.draw(self.pos.z)
             globj.postDraw()
-        
-        if self.showCursor: self._drawCursor()
+
+            if self.twoStageRender:
+                fsltextures.ImageRenderTexture.unbind()
+
+        if self.twoStageRender:
+            self._drawRenderTextures()
+
+        if self.showCursor:
+            self._drawCursor()
 
         self._annotations.draw(self.pos.z)
+
         self._postDraw()

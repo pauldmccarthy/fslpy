@@ -55,7 +55,6 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self.SetBackgroundColour('black')
 
         self.addListener('orientation', self._name, self._layout)
-        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
         
         self._imageList .addListener('images',
                                      self._name,
@@ -71,14 +70,12 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self._selectedImageChanged()
 
 
-    def _onDestroy(self, ev):
+    def destroy(self):
         """Removes all registered listeners from the image list, display
         context, and individual images.
         """
 
-        ev.Skip()
-        if ev.GetEventObject() is not self:
-            return
+        fslpanel.FSLViewPanel.destroy(self)
         
         self._imageList .removeListener('images',        self._name)
         self._displayCtx.removeListener('selectedImage', self._name)

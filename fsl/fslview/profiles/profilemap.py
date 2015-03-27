@@ -49,26 +49,44 @@ and profile identifier.
 """
 
 
+# For multi-key combinations, the modifier key
+# IDs must be provided as a tuple, in alphabetical
+# order. For example, to specify shift+ctrl, the
+# tuple must be (wx.WXK_CTRL, wx.WXK_SHIFT)
 tempModeMap = {
 
-    # Command/CTRL puts the
-    # user in zoom mode
-    OrthoViewProfile : OrderedDict((
-        (('nav', wx.WXK_CONTROL), 'zoom'),
-        (('pan', wx.WXK_CONTROL), 'zoom'))),
-
     # Command/CTRL puts the user in zoom mode,
-    # Shift puts the user in navigate mode,
-    # and alt switches between select/deselect
+    # and ALT puts the user in pan mode
+    OrthoViewProfile : OrderedDict((
+        (('nav',  wx.WXK_CONTROL), 'zoom'),
+        (('pan',  wx.WXK_CONTROL), 'zoom'),
+        (('nav',  wx.WXK_ALT),     'pan'),
+        (('zoom', wx.WXK_ALT),     'pan'))),
+
+    # OrthoEditProfile inherits all of the
+    # settings for OrthoViewProfile above,
+    # and adds new settings for the edit
+    # modes (sel, desel, and selint)
     OrthoEditProfile : OrderedDict((
-        (('sel',    wx.WXK_ALT),     'desel'),
-        (('selint', wx.WXK_ALT),     'desel'),
-        (('desel',  wx.WXK_ALT),     'sel'),
-        
+
+        # CTRL+Shift puts the user in
+        # deselect mode (or select
+        # mode if in deselect mode)
+        (('sel',    (wx.WXK_CONTROL, wx.WXK_SHIFT)), 'desel'),
+        (('selint', (wx.WXK_CONTROL, wx.WXK_SHIFT)), 'desel'),
+        (('desel',  (wx.WXK_CONTROL, wx.WXK_SHIFT)), 'sel'),
+
+        # ALT puts the user in pan mode,
+        (('sel',    wx.WXK_ALT),     'pan'),
+        (('selint', wx.WXK_ALT),     'pan'),
+        (('desel',  wx.WXK_ALT),     'pan'),
+
+        # Shift puts the user in navigate mode,
         (('sel',    wx.WXK_SHIFT),   'nav'),
         (('desel',  wx.WXK_SHIFT),   'nav'),
         (('selint', wx.WXK_SHIFT),   'nav'),
 
+        # Command/CTRL puts the user in zoom mode,
         (('sel',    wx.WXK_CONTROL), 'zoom'),
         (('desel',  wx.WXK_CONTROL), 'zoom'),
         (('selint', wx.WXK_CONTROL), 'zoom'))),
@@ -108,21 +126,38 @@ altHandlerMap = {
         (('zoom', 'MiddleMouseDrag'), ('pan',  'LeftMouseDrag')))),
 
     OrthoEditProfile : OrderedDict((
+
+        # In select and select-by-intensity 
+        # mode, the right mouse button deselects
         (('sel',    'RightMouseDown'),  ('desel',  'LeftMouseDown')),
         (('sel',    'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
         (('sel',    'RightMouseUp'),    ('desel',  'LeftMouseUp')),
-        
+        (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
+        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
+        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')), 
+
+        # In select/deselect/selint
+        # mode, the middle mouse buyton pans
         (('sel',    'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('sel',    'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
         (('desel',  'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
         (('selint', 'MiddleMouseDown'), ('pan',    'LeftMouseDown')),
         (('selint', 'MiddleMouseDrag'), ('pan',    'LeftMouseDrag')),
-         
+
+        # The selection cursor is shown in deselect
+        # mode the same as for select mode
         (('desel',  'MouseMove'),       ('sel',    'MouseMove')),
-        
-        (('selint', 'RightMouseDown'),  ('desel',  'LeftMouseDown')),
-        (('selint', 'RightMouseDrag'),  ('desel',  'LeftMouseDrag')),
-        (('selint', 'RightMouseUp'),    ('desel',  'LeftMouseUp')))),
+
+
+        # Keyboard navigation works in the select
+        # modes in the same way that it works
+        # in navigate mode (as defined in the
+        # OrthoViewProfile)
+        (('sel',    'Char'), ('nav', 'Char')),
+        (('desel',  'Char'), ('nav', 'Char')),
+        (('selint', 'Char'), ('nav', 'Char')),
+    )),
+
 
     LightBoxViewProfile : OrderedDict((
         (('view', 'LeftMouseDown'), ('view', 'LeftMouseDrag')), ))

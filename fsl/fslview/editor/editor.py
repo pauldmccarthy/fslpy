@@ -19,8 +19,9 @@ import fsl.data.image as fslimage
 
 
 class ValueChange(object):
-    def __init__(self, image, offset, oldVals, newVals):
+    def __init__(self, image, volume, offset, oldVals, newVals):
         self.image   = image
+        self.volume  = volume
         self.offset  = offset
         self.oldVals = oldVals
         self.newVals = newVals
@@ -85,8 +86,9 @@ class Editor(props.HasProperties):
         if self._currentImage == image:
             return
 
+        display            = self._displayCtx.getDisplayProperties(image)
         self._currentImage = image
-        self._selection    = selection.Selection(image.data)
+        self._selection    = selection.Selection(image.data, display)
 
         self._selection.addListener('selection',
                                     self._name,
@@ -108,7 +110,8 @@ class Editor(props.HasProperties):
 
     def fillSelection(self, newVals):
 
-        image = self._displayCtx.getSelectedImage()
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
 
         selectBlock, offset = self._selection.getBoundedSelection()
 
@@ -124,12 +127,17 @@ class Editor(props.HasProperties):
         yhi = ylo + selectBlock.shape[1]
         zhi = zlo + selectBlock.shape[2]
 
-        oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi]
+        if   len(image.shape) == 3:
+            oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi]
+        elif len(image.shape) == 4:
+            oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi, display.volume]
+        else:
+            raise RuntimeError('Only 3D and 4D images are currently supported')
 
         selectBlock = selectBlock == 0
         newVals[selectBlock] = oldVals[selectBlock]
         
-        change = ValueChange(image, offset, oldVals, newVals)
+        change = ValueChange(image, display.volume, offset, oldVals, newVals)
         self._applyChange(change)
         self._changeMade( change)
 
@@ -226,6 +234,9 @@ class Editor(props.HasProperties):
             self._displayCtx.selectImage(image)
 
         if isinstance(change, ValueChange):
+            log.debug('Changing image data - offset '
+                      '{}, volume {}, size {}'.format(
+                          change.offset, change.volume, change.oldVals.shape))
             change.image.applyChange(change.offset, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
@@ -260,10 +271,10 @@ class Editor(props.HasProperties):
         image    = self._imageList[imageIdx]
         mask     = np.array(self._selection.selection, dtype=np.uint8)
 
-        xform = image.voxToWorldMat
-        name  = '{}_mask'.format(image.name)
+        header = image.nibImage.get_header()
+        name   = '{}_mask'.format(image.name)
 
-        roiImage = fslimage.Image(mask, xform, name)
+        roiImage = fslimage.Image(mask, name=name, header=header)
         self._imageList.insert(imageIdx + 1, roiImage) 
 
 
@@ -271,13 +282,20 @@ class Editor(props.HasProperties):
 
         imageIdx = self._displayCtx.selectedImage
         image    = self._imageList[imageIdx]
+        display  = self._displayCtx.getDisplayProperties(image)
         
-        roi = np.zeros(image.shape, dtype=image.data.dtype)
-        
-        roi[self._selection.selection] = image.data[self._selection.selection]
+        roi       = np.zeros(image.shape[:3], dtype=image.data.dtype)
+        selection = self._selection.selection > 0
 
-        xform = image.voxToWorldMat
-        name  = '{}_roi'.format(image.name)
+        if   len(image.shape) == 3:
+            roi[selection] = image.data[selection]
+        elif len(image.shape) == 4:
+            roi[selection] = image.data[:, :, :, display.volume][selection]
+        else:
+            raise RuntimeError('Only 3D and 4D images are currently supported')
 
-        roiImage = fslimage.Image(roi, xform, name)
+        header = image.nibImage.get_header()
+        name   = '{}_roi'.format(image.name)
+
+        roiImage = fslimage.Image(roi, name=name, header=header)
         self._imageList.insert(imageIdx + 1, roiImage)

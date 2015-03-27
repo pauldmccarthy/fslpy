@@ -35,6 +35,16 @@ uniform bool useSpline;
 uniform mat4 voxValXform;
 
 /*
+ * Clip voxels below this value.
+ */
+uniform float clipLow;
+
+/*
+ * Clip voxels above this value.
+ */
+uniform float clipHigh;
+
+/*
  * Image display coordinates. 
  */
 varying vec3 fragDisplayCoords;
@@ -73,9 +83,18 @@ void main(void) {
                                             voxCoords).r;
 
     /*
+     * Clip out of range voxel values
+     */
+    if (voxValue < clipLow || voxValue > clipHigh) {
+      
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
+    }
+
+    /*
      * Transform the voxel value to a colour map texture
      * coordinate, and look up the colour for the voxel value
      */
     vec4 normVoxValue = voxValXform * vec4(voxValue, 0, 0, 1);
-    gl_FragColor      = briconalpha(texture1D(colourTexture, normVoxValue.x)); 
+    gl_FragColor      = texture1D(colourTexture, normVoxValue.x);
 }

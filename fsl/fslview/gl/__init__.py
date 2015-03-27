@@ -49,18 +49,37 @@ package-level attributes will be available:
                        instances.
 """
 
-import            logging 
-import            os
-import os.path as op
-import            OpenGL
+import logging 
+import os
 
 
 log = logging.getLogger(__name__)
 
 
+# When running under X, indirect rendering fails for
+# unknown reasons, so I'm forcing direct rendering.
+# If direct rendering is not available, I don't know
+# what to do.
+os.environ.pop('LIBGL_ALWAYS_INDIRECT', None)
+
+
+import OpenGL
+
+
 # Make PyOpenGL throw an error, instead of implicitly
 # converting, if we pass incorrect types to OpenGL functions.
-OpenGL.ERROR_ON_COPY = True 
+OpenGL.ERROR_ON_COPY = True
+
+
+# These flags should be set to True
+# for development, False for production
+OpenGL.ERROR_CHECKING = True
+OpenGL.ERROR_LOGGING  = True
+
+
+# If FULL_LOGGING is enabled,
+# every GL call will be logged.
+# OpenGL.FULL_LOGGING   = True
 
 
 # Using PyOpenGL 3.1 (and OSX Mavericks 10.9.4 on a MacbookPro11,3), the
@@ -124,7 +143,7 @@ def bootstrap(glVersion=None):
 
 
         # List any GL21 extensions here
-        exts = []
+        exts = ['GL_EXT_framebuffer_object']
         
         if not all(map(glexts.hasExtension, exts)):
             log.debug('One of these OpenGL extensions is '
@@ -139,7 +158,8 @@ def bootstrap(glVersion=None):
     # not present, we're screwed.
     if glpkg == gl14:
         
-        exts = ['GL_ARB_vertex_program',
+        exts = ['GL_EXT_framebuffer_object',
+                'GL_ARB_vertex_program',
                 'GL_ARB_fragment_program']
         
         if not all(map(glexts.hasExtension, exts)):
@@ -148,7 +168,45 @@ def bootstrap(glVersion=None):
                                'cannot run on the available graphics '
                                'hardware.'.format(', '.join(exts)))
 
-    log.debug('Using OpenGL {} implementation'.format(verstr))
+        # Spline interpolation is not currently
+        # available in the GL14 implementation
+        import fsl.fslview.displaycontext.display as di
+        di.Display.interpolation.removeChoice('spline')
+        
+
+    renderer = gl.glGetString(gl.GL_RENDERER)
+    log.debug('Using OpenGL {} implementation with renderer {}'.format(
+        verstr, renderer))
+
+    # If we're using a software based renderer,
+    # make two-stage rendering (off-screen rendering
+    # to a texture, then rendering said texture to the
+    # screen) the default.
+    # 
+    # There doesn't seem to be any quantitative
+    # method for determining whether we are using
+    # software-based rendering, so a hack is
+    # necessary. 
+    if 'software' in renderer.lower():
+        
+        log.debug('Software-based rendering detected - two-stage '
+                  'rendering will be the default method.')
+
+        import fsl.fslview.displaycontext.display    as di
+        import fsl.fslview.displaycontext.vectoropts as vo
+        import fsl.fslview.displaycontext.sceneopts  as so
+        import fsl.fslview.gl.slicecanvas            as sc
+
+        # Make two-stage rendering the default
+        so.SceneOpts  .twoStageRender.setConstraint(None, 'default',  True)
+        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default',  True)
+
+        # And disable some fancy options - spline
+        # may have been disabled above, so absorb
+        # the IndexError if it occurs
+        vo.VectorOpts  .displayMode  .removeChoice('line')
+        try: di.Display.interpolation.removeChoice('spline')
+        except IndexError: pass
 
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs
@@ -156,12 +214,27 @@ def bootstrap(glVersion=None):
     thismod._bootstrapped  = True
 
 
-def getWXGLContext():
+def getWXGLContext(parent=None):
     """Create and return a GL context object for rendering to a
     :class:`wx.glcanvas.GLCanvas` canvas.
 
     If a context object has already been created, it is returned.
-    Otherwise, one is created and returned.
+    Otherwise, one is created and returned. In the latter case,
+    the ``parent`` parameter must be a visible :mod:`wx` object.
+
+    In either case, this function returns two values:
+    
+      - A :class:`wx.glcanvas.GLContext` instance
+    
+      - If a context instance has previously been created, the second
+        return value is ``None``. Other a dummy
+        :class:`wx.glcanvas.GLCanvas` instance is returned. This canvas
+        should be destroyed by the caller when it is safe to do so. This
+        seems to primarily be a problem under Linux/GTK - it does not
+        seem to be possible to destroy the dummy canvas immediately after
+        creating the context. So the calling code needs to destroy it
+        at some point in the future (possibly after another, real
+        GLCanvas has been created, and set as the context target).
     """
 
     import sys
@@ -169,37 +242,35 @@ def getWXGLContext():
     import wx.glcanvas as wxgl
 
     thismod = sys.modules[__name__]
-    
-    if not hasattr(thismod, '_wxGLContext'):
 
-        # This is a ridiculous problem.  We can't create a
-        # wx GLContext without a wx GLCanvas. But we can
-        # create a dummy one, and destroy it immediately
-        # after the context has been created.  An excuse 
-        # to display a splash screen ...
-        splashfile  = op.join(op.dirname(__file__), 'splash.png')
-        frame = wx.SplashScreen(
-            wx.Bitmap(splashfile, wx.BITMAP_TYPE_PNG),
-            wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
-            -1,
-            None)
-        canvas = wxgl.GLCanvas(frame)
-        canvas.SetSize((0, 0))
+    # A context has already been created
+    if hasattr(thismod, '_wxGLContext'):
+        return thismod._wxGLContext, None
 
-        # Even worse - on Linux/GTK,the canvas
-        # has to visible before we are able to
-        # set it as the target of the GL context
-        frame.Update()
-        frame.Show()
-        wx.Yield()
-        
-        thismod._wxGLContext = wxgl.GLContext(canvas)
-        thismod._wxGLContext.SetCurrent(canvas)
-        
-        wx.CallAfter(frame.Close)
+    if parent is None or not parent.IsShown():
+        raise RuntimeError('A visible WX object is required '
+                           'to create a GL context')
 
+    # We can't create a wx GLContext without
+    # a wx GLCanvas. But we can create a
+    # dummy one, and destroy it after the
+    # context has been created. Destroying
+    # the canvas is the responsibility of the
+    # calling code.
+    canvas = wxgl.GLCanvas(parent)
+    canvas.SetSize((0, 0))
 
-    return thismod._wxGLContext
+    # The canvas must be visible before we are
+    # able to set it as the target of the GL context
+    canvas.Show(True)
+    canvas.Refresh()
+    canvas.Update()
+    wx.Yield()
+
+    thismod._wxGLContext = wxgl.GLContext(canvas)
+    thismod._wxGLContext.SetCurrent(canvas)
+
+    return thismod._wxGLContext, canvas
 
     
 def getOSMesaContext():
@@ -263,6 +334,7 @@ class OSMesaCanvasTarget(object):
                                  gl.GL_UNSIGNED_BYTE,
                                  self._width,
                                  self._height)
+        return True
 
         
     def _refresh(self, *a):
@@ -276,7 +348,7 @@ class OSMesaCanvasTarget(object):
         pass
 
 
-    def _draw(self):
+    def _draw(self, *a):
         """Must be provided by subclasses."""
         raise NotImplementedError()
 
@@ -353,7 +425,7 @@ class WXGLCanvasTarget(object):
         raise NotImplementedError()
 
 
-    def _draw(self):
+    def _draw(self, *a):
         """Must be implemented by subclasses.
 
         This method should implement the OpenGL drawing logic.
@@ -394,12 +466,16 @@ class WXGLCanvasTarget(object):
         this canvas take place (e.g. texture/data creation, drawing, etc).
         """
         if not self.IsShownOnScreen(): return False
-        getWXGLContext().SetCurrent(self)
+
+        log.debug('Setting context target to {} ({})'.format(
+            type(self).__name__, id(self)))
+        
+        getWXGLContext()[0].SetCurrent(self)
         return True
 
         
     def _refresh(self, *a):
-        """Triggers a redraw via the :mod:`wx` `Refresh` method."""
+        """Triggers a redraw via the :meth:`_draw` method."""
         self.Refresh()
 
         

@@ -9,66 +9,49 @@ details. The command line interface is defined (and parsed) by the
 :mod:`fslview_parseargs` module.
 """
 
-import logging
-log = logging.getLogger(__name__)
 
+import time
+import logging
 import argparse
 
 import fslview_parseargs
+
+import fsl.fslview.displaycontext as displaycontext
+import fsl.data.image             as fslimage
+
+
+log = logging.getLogger(__name__)
 
     
 def interface(parent, args, ctx):
 
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
-    import fsl.fslview.gl    as fslgl
 
-    imageList, displayCtx = ctx
+    imageList, displayCtx, splashFrame = ctx
+
+    # If a scene has not been specified, the default
+    # behaviour is to restore the previous frame layout
+    if args.scene is None: restore = True
+    else:                  restore = False
     
     frame = fslviewframe.FSLViewFrame(
-        parent, imageList, displayCtx, args.default)
+        parent, imageList, displayCtx, restore)
 
-    # Some platforms will crash if the GL Canvas is not
-    # visible before the GL context is set (which occurs
-    # in the fslgl.getWXGLContext call below).
-    frame.Show()
+    # Otherwise, we add the scene
+    # specified by the user
+    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
+    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
 
-    # initialise OpenGL version-specific module loads, and
-    # force the creation of a wx.glcanvas.GLContext object
-    fslgl.getWXGLContext()
-    fslgl.bootstrap(args.glversion)
-    
-    if args.lightbox: frame.addViewPanel(views.LightBoxPanel)
-    else:             frame.addViewPanel(views.OrthoPanel)
 
+    # The viewPanel is assumed to be a CanvasPanel 
+    # (i.e. either OrthoPanel or LightBoxPanel)
     viewPanel = frame.getViewPanels()[0][0]
+    viewOpts  = viewPanel.getSceneOptions()
 
-    # Look in fslview_parseargs to see all
-    # of the possible display options 
-    viewPanel.showCursor = not args.hideCursor
+    fslview_parseargs.applySceneArgs(args, imageList, displayCtx, viewOpts)
 
-    if args.lightbox:
-
-        for prop in ['sliceSpacing',
-                     'ncols',
-                     'nrows',
-                     'zrange',
-                     'showGridLines',
-                     'zax']:
-            val = getattr(args, prop, None)
-
-            if val is not None:
-                setattr(viewPanel, prop, val)
-
-    else:
-        if args.hidex:              viewPanel.showXCanvas = False
-        if args.hidey:              viewPanel.showYCanvas = False
-        if args.hidez:              viewPanel.showZCanvas = False
-        if args.hideLabels:         viewPanel.showLabels  = False
-        if args.layout is not None: viewPanel.layout      = args.layout 
-        if args.xzoom  is not None: viewPanel.xzoom       = args.xzoom
-        if args.yzoom  is not None: viewPanel.yzoom       = args.yzoom
-        if args.zzoom  is not None: viewPanel.zzoom       = args.zzoom
+    if args.scene == 'ortho':
 
         xcentre = args.xcentre
         ycentre = args.ycentre
@@ -82,13 +65,13 @@ def interface(parent, args, ctx):
         viewPanel._ycanvas.centreDisplayAt(*ycentre)
         viewPanel._zcanvas.centreDisplayAt(*zcentre)
 
-    if args.showColourBar:
-        viewPanel.showColourBar = True
+    # Make sure the new frame is shown
+    # before destroying the splash screen
+    frame.Show(True)
+    frame.Refresh()
+    frame.Update()
 
-        if args.colourBarLocation is not None:
-            viewPanel.colourBarLocation = args.colourBarLocation
-        if args.colourBarLabelSide is not None:
-            viewPanel.colourBarLabelSide = args.colourBarLabelSide 
+    splashFrame.Close()
     
     return frame
 
@@ -103,8 +86,6 @@ def parseArgs(argv):
     parser = argparse.ArgumentParser(add_help=False)
 
     # FSLView application options
-    parser.add_argument('-def', '--default',   action='store_true',
-                        help='Default layout')
     parser.add_argument('-gl', '--glversion',
                         metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
                         help='Desired (major, minor) OpenGL version')
@@ -116,8 +97,58 @@ def parseArgs(argv):
                                        'fslview',
                                        'Image viewer')
 
+def context(args):
+
+    import wx
+    import fsl.fslview.gl     as fslgl
+    import fsl.data.strings   as strings
+    import fsl.fslview.splash as fslsplash
+
+    # Create a splash screen, and use it
+    # to initialise the OpenGL context
+    
+    # The splash screen is used as the parent of the dummy
+    # canvas created by the gl.getWXGLContext function; the
+    # splash screen frame is returned by this function, and
+    # passed through to the interface function above, which
+    # takes care of destroying it.
+    frame = fslsplash.FSLViewSplash(None)
+
+    frame.CentreOnScreen()
+    frame.Show()
+    frame.Update()
+    wx.Yield()
+    time.sleep(0.5)
+    
+    # force the creation of a wx.glcanvas.GLContext object,
+    # and initialise OpenGL version-specific module loads.
+    fslgl.getWXGLContext(frame)
+    fslgl.bootstrap(args.glversion)
+
+    def status(image):
+        frame.SetStatus(strings.messages['fslview.loading'].format(image))
+        wx.Yield()
+
+    # Create the image list - only one of these
+    # ever exists; and the master DisplayContext.
+    # A new DisplayContext instance will be
+    # created for every new view that is opened
+    # in the FSLViewFrame (which is created in
+    # the interface function, above), but all
+    # child DisplayContext instances will be
+    # linked to this master one.
+    imageList  = fslimage.ImageList()
+    displayCtx = displaycontext.DisplayContext(imageList)
+    
+    # Load the images - the splash screen status will 
+    # be updated with the currently loading image name
+    fslview_parseargs.applyImageArgs(
+        args, imageList, displayCtx, loadFunc=status)  
+
+    return imageList, displayCtx, frame
+
 
 FSL_TOOLNAME  = 'FSLView'
 FSL_INTERFACE = interface
-FSL_CONTEXT   = fslview_parseargs.handleImageArgs
+FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs

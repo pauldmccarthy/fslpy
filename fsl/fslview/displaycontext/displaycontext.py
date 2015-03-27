@@ -41,7 +41,7 @@ class DisplayContext(props.SyncableHasProperties):
 
     location = props.Point(ndims=3, labels=('X', 'Y', 'Z'))
     """The location property contains the currently selected
-    3D location (xyz) in the image list space. 
+    3D location (xyz) in the current display coordinate system.
     """
 
     
@@ -113,6 +113,10 @@ class DisplayContext(props.SyncableHasProperties):
         If an :class:`ImageDisplay` object does not exist for the given image,
         one is created.
         """
+
+        if not isinstance(image, (int, fslimage.Image)):
+            raise ValueError('image must be an integer or an Image object')
+
         if isinstance(image, int):
             image = self._imageList[image]
 
@@ -271,6 +275,43 @@ class DisplayContext(props.SyncableHasProperties):
         is preserved, in the new display coordinate system.
         """
 
+        # This check is ugly, and is required due to
+        # an ugly circular relationship which exists
+        # between parent/child DCs and the transform/
+        # location properties:
+        # 
+        # 1. When the transform property of a child DC
+        #    Display object changes (this should always 
+        #    be due to user input), that change is 
+        #    propagated to the parent DC Display object.
+        #
+        # 2. This results in the DC._transformChanged
+        #    method (this method) being called on the
+        #    parent DC.
+        #
+        # 3. Said method correctly updates the DC.location
+        #    property, so that the world location of the
+        #    selected image is preserved.
+        #
+        # 4. This location update is propagated back to
+        #    the child DC.location property, which is
+        #    updated to have the new correct location
+        #    value.
+        #
+        # 5. Then, the child DC._transformChanged method
+        #    is called, which goes and updates the child
+        #    DC.location property to contain a bogus
+        #    value.
+        #
+        # So this test is in place to prevent this horrible
+        # circular loop behaviour from occurring. If the
+        # location properties are synced, and contain the
+        # same value, we assume that they don't need to be
+        # updated again, and escape from ths system.
+        if self.getParent() is not None and self.isSyncedToParent('location'):
+            if self.getParent().location == self.location:
+                return
+
         if display.image != self.getSelectedImage():
             self._updateBounds()
             return
@@ -279,17 +320,17 @@ class DisplayContext(props.SyncableHasProperties):
         # the old display<-> world transform, then
         # transform it back to the new world->display
         # transform
-        imgWorldLoc = transform.transform([self.location.xyz],
-                                          display._oldDisplayToWorldMat)[0]
-        newDispLoc  = transform.transform([imgWorldLoc],
-                                          display.worldToDisplayMat)[0]
-
-        # Update the display coordinate system bounds -
-        # this will also update the constraints on the
-        # location property, so we have to do this first
-        # before setting said location property.
-        self._updateBounds()
         
+        imgWorldLoc = transform.transform(
+            [self.location.xyz],
+            display.getTransform(display.getLastTransform(), 'world'))[0]
+        newDispLoc  = transform.transform(
+            [imgWorldLoc],
+            display.getTransform('world', 'display'))[0]
+
+        # Update the display coordinate 
+        # system bounds, and the location
+        self._updateBounds()
         self.location.xyz = newDispLoc
 
 
@@ -318,7 +359,7 @@ class DisplayContext(props.SyncableHasProperties):
 
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
-                          minBounds[2], maxBounds[2]] 
+                          minBounds[2], maxBounds[2]]
  
     
     def _volumeChanged(self, *a):
@@ -336,8 +377,7 @@ class DisplayContext(props.SyncableHasProperties):
             # be clamped to the possible value for that
             # image, so we don't need to check if the
             # current volume value is valid for each image
-            if display.syncVolume:
-                display.volume = self.volume
+            display.volume = self.volume
 
             
     def _boundsChanged(self, *a):

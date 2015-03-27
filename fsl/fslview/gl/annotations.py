@@ -144,17 +144,21 @@ class Annotations(object):
         self._holdq = []
         
 
-    def draw(self, zpos, xform=None):
+    def draw(self, zpos, xform=None, skipHold=False):
         """Draws all enqueued annotations.
 
-        :arg zpos:  Position along the Z axis, above which all annotations
-                    should be drawn.
+        :arg zpos:     Position along the Z axis, above which all annotations
+                       should be drawn.
 
-        :arg xform: Transformation matrix which should be applied to all
-                    objects.
+        :arg xform:    Transformation matrix which should be applied to all
+                       objects.
+
+        :arg skipHold: Do not draw items on the hold queue - only draw one-off
+                       items.
         """
 
-        objs = self._holdq + self._q
+        if not skipHold: objs = self._holdq + self._q
+        else:            objs = self._q
 
         if xform is not None:
             gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -218,6 +222,9 @@ class AnnotationObject(globject.GLSimpleObject):
         self.colour = colour
         self.width  = width
         self.xform  = xform
+
+        if self.xform is not None:
+            self.xform = np.array(self.xform, dtype=np.float32)
 
     def preDraw(self):
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)

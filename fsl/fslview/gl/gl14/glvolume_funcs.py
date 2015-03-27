@@ -41,8 +41,9 @@ import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.utils.transform    as transform
-import fsl.fslview.gl.shaders as shaders
+import fsl.utils.transform     as transform
+import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.shaders  as shaders
 
 
 log = logging.getLogger(__name__)
@@ -82,8 +83,12 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
+    display = self.display
+    opts    = self.displayOpts
+
     # enable drawing from a vertex array
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -97,7 +102,8 @@ def preDraw(self):
     # The vertex program needs to be
     # able to transform from display
     # coordinates to voxel coordinates
-    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
+    shaders.setVertexProgramMatrix(
+        0, display.getTransform('display', 'voxel').T)
 
     # The voxValXform transformation turns
     # an image texture value into a raw
@@ -122,12 +128,23 @@ def preDraw(self):
     # the fragment program 
     shape    = list(self.image.shape)
     invshape = [1.0 / s for s in shape]
-    bca      = [self.display.brightness / 100.0, 
-                self.display.contrast   / 100.0,
-                self.display.alpha      / 100.0]    
+    bca      = [display.brightness / 100.0, 
+                display.contrast   / 100.0,
+                display.alpha      / 100.0]
+
+    # And the clipping range, normalised
+    # to the image texture value range
+    clipLo = opts.clippingRange[0]             * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+    clipHi = opts.clippingRange[1]             * \
+        self.imageTexture.invVoxValXform[0, 0] + \
+        self.imageTexture.invVoxValXform[3, 0]
+    
     shaders.setFragmentProgramVector(4, shape    + [0])
     shaders.setFragmentProgramVector(5, invshape + [0])
     shaders.setFragmentProgramVector(6, bca      + [0])
+    shaders.setFragmentProgramVector(7, [clipLo, clipHi, 0, 0])
 
 
 def draw(self, zpos, xform=None):
@@ -145,12 +162,53 @@ def draw(self, zpos, xform=None):
 
     worldCoords = worldCoords.ravel('C')
 
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, worldCoords)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
     gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
+
+    
+def drawAll(self, zposes, xforms):
+    """Draws mutltiple slices of the given image at the given Z position,
+    applying the corresponding transformation to each of the slices.
+    """
+
+    # Don't use a custom world-to-world
+    # transformation matrix.
+    shaders.setVertexProgramMatrix(4, np.eye(4))
+    
+    # Instead, tell the vertex
+    # program to use texture coordinates
+    shaders.setFragmentProgramVector(8, -np.ones(4))
+
+    worldCoords = np.array(self.worldCoords)
+    indices     = np.array(self.indices)
+    
+    # The world coordinates are ordered to 
+    # be rendered as a triangle strip, but
+    # we want to render as quads. So we
+    # need to re-order them
+    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
+
+    # Replicate the world coordinates
+    # across all z positions, and with
+    # each corresponding transformation
+    worldCoords, texCoords, indices = globject.broadcast(
+        worldCoords, indices, zposes, xforms, self.zax)
+
+    worldCoords = worldCoords.ravel('C')
+    texCoords   = texCoords  .ravel('C')
+
+    # Draw all of the slices with 
+    # these four function calls.
+    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices)
 
 
 def postDraw(self):
@@ -159,6 +217,7 @@ def postDraw(self):
     """
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)

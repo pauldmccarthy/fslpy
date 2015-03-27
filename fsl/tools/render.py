@@ -12,13 +12,15 @@ See:
   - :mod:`fsl.tools.fslview_parseargs`
 """
 
+#
+# TODO Separate out lightbox/ortho canvas layout and option configuration.
+# 
+
 
 import os
 import sys
-import subprocess
 
 import logging
-log = logging.getLogger(__name__)
 
 import argparse
 
@@ -26,11 +28,20 @@ import matplotlib.image as mplimg
 
 import props
 import fslview_parseargs
-import fsl.utils.layout          as fsllayout
-import fsl.utils.colourbarbitmap as cbarbitmap
-import fsl.utils.textbitmap      as textbitmap
-import fsl.data.strings          as strings
-import fsl.data.constants        as constants
+
+import fsl
+import fsl.utils.layout                        as fsllayout
+import fsl.utils.colourbarbitmap               as cbarbitmap
+import fsl.utils.textbitmap                    as textbitmap
+import fsl.data.image                          as fslimage
+import fsl.data.strings                        as strings
+import fsl.data.constants                      as constants
+import fsl.fslview.displaycontext              as displaycontext
+import fsl.fslview.displaycontext.orthoopts    as orthoopts
+import fsl.fslview.displaycontext.lightboxopts as lightboxopts
+
+
+log = logging.getLogger(__name__)
 
 
 if   sys.platform.startswith('linux'): _LD_LIBRARY_PATH = 'LD_LIBRARY_PATH'
@@ -47,6 +58,12 @@ def buildLabelBitmaps(imageList,
                       canvasBmps,
                       bgColour,
                       alpha):
+    """Creates bitmaps containing anatomical orientation labels.
+
+    Returns a list of dictionaries, one dictionary for each canvas. Each
+    dictionary contains ``{label -> bitmap}`` mappings, where ``label`` is
+    either ``top``, ``bottom``, ``left`` or ``right``.
+    """
     
     # Default colour is white - if the orientation labels
     # cannot be determined, the foreground colour will be
@@ -118,6 +135,7 @@ def buildLabelBitmaps(imageList,
             
     return labelBmps
 
+
 def buildColourBarBitmap(imageList,
                          displayCtx,
                          width,
@@ -125,8 +143,11 @@ def buildColourBarBitmap(imageList,
                          cbarLocation,
                          cbarLabelSide,
                          bgColour):
+    """Creates and returns a bitmap containing a colour bar.
+    """
     
     display = displayCtx.getDisplayProperties(displayCtx.selectedImage)
+    opts    = display.getDisplayOpts()
     
     if   cbarLocation in ('top', 'bottom'): orient = 'horizontal'
     elif cbarLocation in ('left', 'right'): orient = 'vertical'
@@ -139,9 +160,9 @@ def buildColourBarBitmap(imageList,
         else:                      labelSide = 'right'            
     
     cbarBmp = cbarbitmap.colourBarBitmap(
-        display.cmap,
-        display.displayRange.xlo,
-        display.displayRange.xhi,
+        opts.cmap,
+        opts.displayRange.xlo,
+        opts.displayRange.xhi,
         width,
         height,
         display.name,
@@ -260,26 +281,29 @@ def run(args, context):
         log.warning('Restarting render.py with '
                     'off-screen rendering configured...')
 
-        # If fslpy has been called via
-        # 'python -c "import fsl; fsl.main()",
-        # python passes '-c' as the first
-        # argument.
+        # Restart render with the same arguments,
+        # but with an updated environment
         argv = list(sys.argv)
-        if argv[0] == '-c': argv = argv[1:]
-        
-        argv = ['fslpy'] + argv
-        
-        subprocess.call(argv, env=env)
+        argv = argv[argv.index('render') + 1:]
+
+        fsl.runTool('render', argv, env=env)
         sys.exit(0)
 
     import fsl.fslview.gl                      as fslgl
     import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
     import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
 
+    # Make sure than an OpenGL context 
+    # exists, and initalise OpenGL modules
     fslgl.getOSMesaContext()
     fslgl.bootstrap((1, 4))
 
     imageList, displayCtx = context
+
+    if   args.scene == 'ortho':    sceneOpts = orthoopts   .OrthoOpts()
+    elif args.scene == 'lightbox': sceneOpts = lightboxopts.LightBoxOpts()
+
+    fslview_parseargs.applySceneArgs(args, imageList, displayCtx, sceneOpts)
 
     # Calculate canvas and colour bar sizes
     # so that the entire scene will fit in
@@ -288,17 +312,17 @@ def run(args, context):
     (width, height), (cbarWidth, cbarHeight) = \
         adjustSizeForColourBar(width,
                                height,
-                               args.showColourBar,
-                               args.colourBarLocation)
+                               sceneOpts.showColourBar,
+                               sceneOpts.colourBarLocation)
     
     canvases = []
 
     # Lightbox view -> only one canvas
-    if args.lightbox:
+    if args.scene == 'lightbox':
         c = lightboxcanvas.OSMesaLightBoxCanvas(
             imageList,
             displayCtx,
-            zax=args.zax,
+            zax=sceneOpts.zax,
             width=width,
             height=height,
             bgColour=args.background)
@@ -307,32 +331,32 @@ def run(args, context):
         canvases.append(c)
 
     # Ortho view -> up to three canvases
-    else:
+    elif args.scene == 'ortho':
  
         # Build a list containing the horizontal 
         # and vertical axes for each canvas
         canvasAxes = []
         zooms      = []
         centres    = []
-        if not args.hidex:
+        if sceneOpts.showXCanvas:
             canvasAxes.append((1, 2))
-            zooms     .append(args.xzoom)
-            centres   .append(args.xcentre)
-        if not args.hidey:
+            zooms     .append(sceneOpts.xzoom)
+            centres   .append(args     .xcentre)
+        if sceneOpts.showYCanvas:
             canvasAxes.append((0, 2))
-            zooms     .append(args.yzoom)
-            centres   .append(args.ycentre)
-        if not args.hidez:
+            zooms     .append(sceneOpts.yzoom)
+            centres   .append(args     .ycentre)
+        if sceneOpts.showZCanvas:
             canvasAxes.append((0, 1))
-            zooms     .append(args.zzoom)
-            centres   .append(args.zcentre)
+            zooms     .append(sceneOpts.zzoom)
+            centres   .append(args     .zcentre)
 
         # Grid only makes sense if
         # we're displaying 3 canvases
-        if args.layout == 'grid' and len(canvasAxes) <= 2:
+        if sceneOpts.layout == 'grid' and len(canvasAxes) <= 2:
             args.layout = 'horizontal'
 
-        if args.layout == 'grid':
+        if sceneOpts.layout == 'grid':
             canvasAxes = [canvasAxes[1], canvasAxes[0], canvasAxes[2]]
             centres    = [centres[   1], centres[   0], centres[   2]]
             zooms      = [zooms[     1], zooms[     0], zooms[     2]]
@@ -342,8 +366,8 @@ def run(args, context):
                                           width,
                                           height,
                                           canvasAxes,
-                                          not args.hideLabels,
-                                          args.layout)
+                                          sceneOpts.showLabels,
+                                          sceneOpts.layout)
 
         for ((width, height), (xax, yax), zoom, centre) in zip(sizes,
                                                                canvasAxes,
@@ -372,7 +396,7 @@ def run(args, context):
     # lightbox canvases) and render them one by one
     for i, c in enumerate(canvases):
         
-        c.showCursor = not args.hideCursor
+        c.showCursor = sceneOpts.showCursor
         if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
         elif c.zax == 1: c.pos.xyz = displayCtx.location.xzy
         elif c.zax == 2: c.pos.xyz = displayCtx.location.xyz
@@ -381,8 +405,9 @@ def run(args, context):
 
         canvases[i] = c.getBitmap()
 
-    # Disable labels for now
-    if args.lightbox or args.hideLabels:
+    # Show/hide orientation labels -
+    # not supported on lightbox view
+    if args.scene == 'lightbox' or not sceneOpts.showLabels:
         labelBmps = None
     else:
         labelBmps = buildLabelBitmaps(imageList,
@@ -393,26 +418,28 @@ def run(args, context):
                                       args.background[ 3])
 
     # layout
-    if args.lightbox: layout = fsllayout.Bitmap(canvases[0])
-    else:             layout = fsllayout.buildOrthoLayout(canvases,
-                                                          labelBmps,
-                                                          args.layout,
-                                                          not args.hideLabels,
-                                                          LABEL_SIZE)
+    if args.scene == 'lightbox':
+        layout = fsllayout.Bitmap(canvases[0])
+    else:
+        layout = fsllayout.buildOrthoLayout(canvases,
+                                            labelBmps,
+                                            sceneOpts.layout,
+                                            sceneOpts.showLabels,
+                                            LABEL_SIZE)
 
     # Render a colour bar if required
-    if args.showColourBar:
+    if sceneOpts.showColourBar:
         cbarBmp = buildColourBarBitmap(imageList,
                                        displayCtx,
                                        cbarWidth,
                                        cbarHeight,
-                                       args.colourBarLocation,
-                                       args.colourBarLabelSide,
+                                       sceneOpts.colourBarLocation,
+                                       sceneOpts.colourBarLabelSide,
                                        args.background)
         layout  = buildColourBarLayout(layout,
                                        cbarBmp,
-                                       args.colourBarLocation,
-                                       args.colourBarLabelSide)
+                                       sceneOpts.colourBarLocation,
+                                       sceneOpts.colourBarLabelSide)
 
  
     if args.outfile is not None:
@@ -430,16 +457,16 @@ def parseArgs(argv):
 
     mainParser = argparse.ArgumentParser(add_help=False)
 
-    mainParser.add_argument('-of', '--outfile',  metavar='FILE',
+    mainParser.add_argument('-of', '--outfile',  metavar='OUTPUTFILE',
                             help='Output image file name')
     mainParser.add_argument('-sz', '--size', type=int, nargs=2,
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
-    mainParser.add_argument('-bg', '--background', type=int, nargs=4,
+    mainParser.add_argument('-bg', '--background', type=float, nargs=4,
                             metavar=('R', 'G', 'B', 'A'),
-                            help='Background colour', 
-                            default=(0, 0, 0, 255)) 
+                            help='Background colour (between 0.0 and 1.0)', 
+                            default=(0, 0, 0, 1.0)) 
     
     namespace = fslview_parseargs.parseArgs(mainParser,
                                             argv,
@@ -448,14 +475,45 @@ def parseArgs(argv):
                                             '-of outfile [options]')
 
     if namespace.outfile is None:
-        print 'Error: outfile is required'
+        log.error('outfile is required')
         mainParser.print_usage()
         sys.exit(1)
+
+    if namespace.scene is None:
+        log.info('Scene option not specified - defaulting to ortho')
+        namespace.scene = 'ortho'
  
     return namespace
+
+
+def context(args):
+
+    # Create an image list and display context 
+    imageList  = fslimage.ImageList()
+    displayCtx = displaycontext.DisplayContext(imageList)
+
+    # The handleImageArgs function uses the
+    # fsl.data.imageio.loadImages  function,
+    # which will call these functions as it
+    # goes through the list of images to be
+    # loaded.
+    def load(image):
+        log.info('Loading image {} ...'.format(image))
+    def error(image, error):
+        log.info('Error loading image {}: '.format(image, error))
+
+    # Load the images specified on the command
+    # line, and configure their display properties
+    fslview_parseargs.applyImageArgs(
+        args, imageList, displayCtx, loadFunc=load, errorFunc=error)
+
+    if len(imageList) == 0:
+        raise RuntimeError('At least one image must be specified')
+
+    return imageList, displayCtx
  
 
 FSL_TOOLNAME  = 'Render'
 FSL_EXECUTE   = run
-FSL_CONTEXT   = fslview_parseargs.handleImageArgs
+FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs

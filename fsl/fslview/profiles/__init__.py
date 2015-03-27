@@ -176,7 +176,7 @@ class Profile(actions.ActionProvider):
         # Configure temporary modes and alternate
         # event handlers - see the profilemap
         # module
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
         
         for cls in inspect.getmro(self.__class__):
             
@@ -272,15 +272,24 @@ class Profile(actions.ActionProvider):
         """
 
         mode  = self.mode
-        shift = ev.ShiftDown()
+        alt   = ev.AltDown()        
         ctrl  = ev.ControlDown()
-        alt   = ev.AltDown()
+        shift = ev.ShiftDown()
 
-        if shift: return self.__tempModeMap.get((mode, wx.WXK_SHIFT),   None)
-        if ctrl:  return self.__tempModeMap.get((mode, wx.WXK_CONTROL), None)
-        if alt:   return self.__tempModeMap.get((mode, wx.WXK_ALT),     None)
-        
-        return None
+        # Figure out the dictionary key to use,
+        # based on the modifier keys that are down
+        keys  = {
+            (False, False, False) :  None,
+            (False, False, True)  :  wx.WXK_SHIFT,
+            (False, True,  False) :  wx.WXK_CONTROL,
+            (False, True,  True)  : (wx.WXK_CONTROL, wx.WXK_SHIFT), 
+            (True,  False, False) :  wx.WXK_ALT,
+            (True,  False, True)  : (wx.WXK_ALT, wx.WXK_SHIFT),
+            (True,  True,  False) : (wx.WXK_ALT, wx.WXK_CONTROL),
+            (True,  True,  True)  : (wx.WXK_ALT, wx.WXK_CONTROL, wx.WXK_SHIFT)
+        }
+
+        return self.__tempModeMap.get((mode, keys[alt, ctrl, shift]), None)
 
     
     def __getMouseLocation(self, ev):
@@ -541,7 +550,7 @@ class ProfileManager(object):
                           instance which defines how images are being
                           displayed.
         """
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
         
         self._canvasPanel    = canvasPanel
         self._canvasCls      = canvasPanel.__class__
@@ -550,14 +559,16 @@ class ProfileManager(object):
         self._currentProfile = None
 
         profileProp = canvasPanel.getProp('profile')
-        profilez    = profilemap.profiles[canvasPanel.__class__]
+        profilez    = profilemap.profiles.get(canvasPanel.__class__, [])
 
         for profile in profilez:
             profileProp.addChoice(
                 profile,
                 strings.profiles[canvasPanel, profile],
                 canvasPanel)
-        canvasPanel.profile = profilez[0]
+
+        if len(profilez) > 0:
+            canvasPanel.profile = profilez[0]
 
 
     def getCurrentProfile(self):
@@ -570,7 +581,7 @@ class ProfileManager(object):
         and creates a new one corresponding to the named profile.
         """
 
-        import fsl.fslview.profilemap as profilemap
+        import profilemap
 
         profileCls = profilemap.profileHandlers[self._canvasCls, profile]
 

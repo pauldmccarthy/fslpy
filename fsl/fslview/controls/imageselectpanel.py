@@ -24,19 +24,16 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
     and allows it to be changed.
     """
 
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, imageList, displayCtx, showName=True):
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+
+        self.showName = showName
 
         # A button to select the previous image
         self._prevButton = wx.Button(self, label=u'\u25C0',
                                      style=wx.BU_EXACTFIT)
-
-        # A label showing the name of the current image
-        self._imageLabel = wx.StaticText(self,
-                                         style=wx.ALIGN_CENTRE |
-                                         wx.ST_ELLIPSIZE_MIDDLE)
-
+        
         # A button selecting the next image
         self._nextButton = wx.Button(self, label=u'\u25B6',
                                      style=wx.BU_EXACTFIT)
@@ -45,18 +42,30 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         self.SetSizer(self._sizer)
 
         self._sizer.Add(self._prevButton, flag=wx.EXPAND)
-        self._sizer.Add(self._imageLabel, flag=wx.EXPAND, proportion=1)
         self._sizer.Add(self._nextButton, flag=wx.EXPAND)
 
         # bind callbacks for next/prev buttons
         self._nextButton.Bind(wx.EVT_BUTTON, self._onNextButton)
         self._prevButton.Bind(wx.EVT_BUTTON, self._onPrevButton)
 
-        # Make the image name label font a bit smaller
-        font = self._imageLabel.GetFont()
-        font.SetPointSize(font.GetPointSize() - 2)
-        font.SetWeight(wx.FONTWEIGHT_LIGHT)
-        self._imageLabel.SetFont(font)
+        # A label showing the name of the current image
+        if not showName:
+            self._imageLabel = None
+        else:
+            self._imageLabel = wx.StaticText(self,
+                                             style=wx.ALIGN_CENTRE |
+                                             wx.ST_ELLIPSIZE_MIDDLE)
+
+            self._sizer.Insert(1,
+                               self._imageLabel,
+                               flag=wx.EXPAND,
+                               proportion=1)
+
+            # Make the image name label font a bit smaller
+            font = self._imageLabel.GetFont()
+            font.SetPointSize(font.GetPointSize() - 2)
+            font.SetWeight(wx.FONTWEIGHT_LIGHT)
+            self._imageLabel.SetFont(font)
         
         self._imageList.addListener(
             'images',
@@ -73,50 +82,51 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
             self._name,
             self._selectedImageChanged)
 
-        def onDestroy(ev):
-            ev.Skip()
-
-            if ev.GetEventObject() is not self:
-                return
-            
-            self._imageList. removeListener('images',        self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-
-            # the _imageListChanged method registers
-            # a listener on the name of each image
-            for image in imageList:
-                image.removeListener('name', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
         self._imageListChanged()
 
+        self.Layout()
+        self.SetMinSize(self._sizer.GetMinSize())
+
+
+    def destroy(self):
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._imageList. removeListener('images',        self._name)
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('imageOrder',    self._name)
+
+        # the _imageListChanged method registers
+        # a listener on the name of each image
+        for image in self._imageList:
+            image.removeListener('name', self._name)
+ 
         
     def _onPrevButton(self, ev):
         """Called when the previous button is pushed. Selects the previous
         image.
         """
+        allImages = self._displayCtx.getOrderedImages()
+        currImage = self._displayCtx.getSelectedImage()
+        currIdx   = allImages.index(currImage)
 
-        selectedImage = self._displayCtx.selectedImage
-
-        if selectedImage == 0:
+        if currIdx == 0:
             return
 
-        self._displayCtx.selectedImage = selectedImage - 1
+        self._displayCtx.selectImage(allImages[currIdx - 1])
 
         
     def _onNextButton(self, ev):
         """Called when the previous button is pushed. Selects the next
         image.
         """
-        
-        selectedImage = self._displayCtx.selectedImage
+        allImages = self._displayCtx.getOrderedImages()
+        currImage = self._displayCtx.getSelectedImage()
+        currIdx   = allImages.index(currImage)
 
-        if selectedImage == len(self._imageList) - 1:
+        if currIdx == len(allImages) - 1:
             return
 
-        self._displayCtx.selectedImage = selectedImage + 1
+        self._displayCtx.selectImage(allImages[currIdx + 1]) 
 
 
     def _imageListChanged(self, *a):
@@ -136,8 +146,12 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
             if idx == self._displayCtx.selectedImage:
                 self._selectedImageChanged()
 
-        for image in self._imageList:
-            image.addListener('name', self._name, nameChanged, overwrite=True)
+        if self._imageLabel is not None:
+            for image in self._imageList:
+                image.addListener('name',
+                                  self._name,
+                                  nameChanged,
+                                  overwrite=True)
 
         self._selectedImageChanged()
 
@@ -147,14 +161,20 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         label.
         """
 
-        idx   = self._displayCtx.selectedImage
-        image = self._displayCtx.getSelectedImage()
-        nimgs = len(self._imageList)
+        allImages = self._displayCtx.getOrderedImages()
+        image     = self._displayCtx.getSelectedImage()
+        nimgs     = len(allImages)
+        
+        if nimgs > 0: idx = allImages.index(image)
+        else:         idx = -1
 
-        self._prevButton.Enable(nimgs > 0 and idx != 0)
-        self._nextButton.Enable(nimgs > 0 and idx != len(self._imageList) - 1)
+        self._prevButton.Enable(nimgs > 0 and idx > 0)
+        self._nextButton.Enable(nimgs > 0 and idx < nimgs - 1)
 
-        if len(self._imageList) == 0:
+        if self._imageLabel is None:
+            return
+
+        if nimgs == 0:
             self._imageLabel.SetLabel('')
             return
 

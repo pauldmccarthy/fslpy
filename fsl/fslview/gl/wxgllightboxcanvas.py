@@ -48,6 +48,23 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             if ev.GetEventObject() is not self:
                 return
 
+            self.removeListener('zax',            self.name)
+            self.removeListener('pos',            self.name)
+            self.removeListener('pos',
+                                '{}_zPosChanged'.format(self.name))
+            self.removeListener('displayBounds',  self.name)
+            self.removeListener('showCursor',     self.name)
+            self.removeListener('invertX',        self.name)
+            self.removeListener('invertY',        self.name)
+            self.removeListener('zoom',           self.name)
+            self.removeListener('sliceSpacing',   self.name)
+            self.removeListener('ncols',          self.name)
+            self.removeListener('nrows',          self.name)
+            self.removeListener('zrange',         self.name)
+            self.removeListener('showGridLines',  self.name)
+            self.removeListener('highlightSlice', self.name)
+            self.removeListener('topRow',         self.name)
+
             self.imageList .removeListener('images',     self.name)
             self.displayCtx.removeListener('bounds',     self.name)
             self.displayCtx.removeListener('imageOrder', self.name)

@@ -5,187 +5,257 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
-log = logging.getLogger(__name__)
-
-import wx
+import wx.lib.agw.aui as aui
 
 import props
 
 import fsl.utils.typedict  as td
 
-import fsl.data.strings as strings
+import fsl.data.strings    as strings
+import fsl.fslview.actions as actions
 
-from fsl.fslview.profiles.orthoviewprofile   import OrthoViewProfile
-from fsl.fslview.profiles.orthoeditprofile   import OrthoEditProfile
-from fsl.fslview.views.canvaspanel           import CanvasPanel
-from fsl.fslview.views.orthopanel            import OrthoPanel
-from fsl.fslview.views.lightboxpanel         import LightBoxPanel
-from fsl.fslview.displaycontext              import Display
-from fsl.fslview.displaycontext.volumeopts   import VolumeOpts
-from fsl.fslview.displaycontext.maskopts     import MaskOpts
-from fsl.fslview.displaycontext.vectoropts   import VectorOpts
+from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
+
+from fsl.fslview.views.canvaspanel            import CanvasPanel
+from fsl.fslview.views.orthopanel             import OrthoPanel
+from fsl.fslview.views.lightboxpanel          import LightBoxPanel
+from fsl.fslview.views.histogrampanel         import HistogramPanel
+
+from fsl.fslview.controls.orthotoolbar        import OrthoToolBar
+from fsl.fslview.controls.lightboxtoolbar     import LightBoxToolBar
+from fsl.fslview.controls.imagedisplaytoolbar import ImageDisplayToolBar
+
+from fsl.fslview.displaycontext               import Display
+from fsl.fslview.displaycontext.volumeopts    import VolumeOpts
+from fsl.fslview.displaycontext.maskopts      import MaskOpts
+from fsl.fslview.displaycontext.vectoropts    import VectorOpts
+
+from fsl.fslview.displaycontext.sceneopts     import SceneOpts
+from fsl.fslview.displaycontext.orthoopts     import OrthoOpts
+from fsl.fslview.displaycontext.lightboxopts  import LightBoxOpts
 
 
-def widget(name, labelCls, *args, **kwargs):
+def widget(labelCls, name, *args, **kwargs):
     return props.Widget(name,
                         label=strings.properties[labelCls, name],
                         *args,
                         **kwargs)
 
 
-def actionButton(name, labelCls, *args, **kwargs):
-    def callback(i, *a):
-        i.run(name)
-    def setup(inst, parent, widget, *a):
-        inst.getAction(name).bindToWidget(parent, wx.EVT_BUTTON, widget)
-    return props.Button(name,
-                        text=strings.actions[labelCls, name],
-                        setup=setup,
-                        callback=callback)
+########################################
+# OrthoPanel related panels and toolbars
+########################################
 
 
-OrthoEditProfileLayout = props.HGroup(
-    (widget('mode',
-            OrthoEditProfile),
-     widget('selectionSize',
-            OrthoEditProfile,
-            visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget('selectionIs3D',  OrthoEditProfile,
-            visibleWhen=lambda p: p.mode in ['sel', 'desel']),
-     widget('fillValue',
-            OrthoEditProfile),
-     widget('intensityThres',
-            OrthoEditProfile,
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget('localFill',
-            OrthoEditProfile,
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget('searchRadius',
-            OrthoEditProfile,
-            visibleWhen=lambda p: p.mode == 'selint'),
-     widget('selectionCursorColour',  OrthoEditProfile),
-     widget('selectionOverlayColour', OrthoEditProfile)),
-    wrap=True,
-    vertLabels=True,
-)
-
-OrthoViewProfileLayout = props.HGroup(
-    (widget('mode', OrthoViewProfile), ),
-    wrap=True,
-    vertLabels=True)
-
-OrthoViewProfileActionLayout = props.HGroup(
-    (actionButton('resetZoom',    OrthoViewProfile),
-     actionButton('centreCursor', OrthoViewProfile)),
-    wrap=True,
-    showLabels=False)
-
-OrthoEditProfileActionLayout = props.HGroup(
-    (actionButton('resetZoom',               OrthoEditProfile),
-     actionButton('centreCursor',            OrthoEditProfile),
-     actionButton('clearSelection',          OrthoEditProfile),
-     actionButton('fillSelection',           OrthoEditProfile),
-     actionButton('createMaskFromSelection', OrthoEditProfile),
-     actionButton('createROIFromSelection',  OrthoEditProfile),
-     actionButton('undo',                    OrthoEditProfile),
-     actionButton('redo',                    OrthoEditProfile)),
-    wrap=True,
-    showLabels=False)
+OrthoToolBarLayout = [
+    actions.ActionButton(OrthoPanel,   'screenshot'),
+    widget(              OrthoOpts,    'zoom', spin=False, showLimits=False),
+    widget(              OrthoOpts,    'layout'),
+    widget(              OrthoOpts,    'showXCanvas'),
+    widget(              OrthoOpts,    'showYCanvas'),
+    widget(              OrthoOpts,    'showZCanvas'),
+    actions.ActionButton(OrthoToolBar, 'more')]
 
 
-CanvasPanelActionLayout = props.HGroup(
-    (widget('profile',
-            CanvasPanel,
-            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1),
-     actionButton('screenshot',               CanvasPanel),
-     actionButton('toggleColourBar',          CanvasPanel),
-     actionButton('toggleImageList',          CanvasPanel),
-     actionButton('toggleDisplayProperties',  CanvasPanel),
-     actionButton('toggleLocationPanel',      CanvasPanel),
-     actionButton('toggleCanvasProperties',   CanvasPanel)),
-    wrap=True,
-    showLabels=False)
+OrthoProfileToolBarViewLayout = [
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor')]
+
+
+# We cannot currently use the visibleWhen 
+# feature, as toolbar labels won't be hidden.
+OrthoProfileToolBarEditLayout = [
+    props.Widget('mode'),
+    actions.ActionButton(OrthoViewProfile, 'resetZoom'),
+    actions.ActionButton(OrthoViewProfile, 'centreCursor'),
+    actions.ActionButton(OrthoEditProfile, 'undo'),
+    actions.ActionButton(OrthoEditProfile, 'redo'),
+    actions.ActionButton(OrthoEditProfile, 'fillSelection'),
+    actions.ActionButton(OrthoEditProfile, 'clearSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createMaskFromSelection'),
+    actions.ActionButton(OrthoEditProfile, 'createROIFromSelection'),
+    props.Widget('selectionCursorColour'),
+    props.Widget('selectionOverlayColour'),    
+    props.Widget('selectionSize',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('selectionIs3D',
+                 enabledWhen=lambda p: p.mode in ['sel', 'desel']),
+    props.Widget('fillValue'),
+    props.Widget('intensityThres',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('localFill',
+                 enabledWhen=lambda p: p.mode == 'selint'),
+    props.Widget('searchRadius',
+                 enabledWhen=lambda p: p.mode == 'selint')]
+
 
 CanvasPanelLayout = props.VGroup((
-    widget('syncImageOrder',     CanvasPanel),
-    widget('syncLocation',       CanvasPanel),
-    widget('syncVolume',         CanvasPanel),
-    widget('colourBarLabelSide', CanvasPanel),
-    widget('colourBarLocation',  CanvasPanel)))
+    widget(CanvasPanel,
+           'profile',
+           visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
+    widget(CanvasPanel, 'syncImageOrder'),
+    widget(CanvasPanel, 'syncLocation')))
+
+SceneOptsLayout = props.VGroup((
+    widget(SceneOpts, 'showCursor'),
+    widget(SceneOpts, 'twoStageRender'),
+    widget(SceneOpts, 'showColourBar'),
+    widget(SceneOpts, 'colourBarLabelSide'),
+    widget(SceneOpts, 'colourBarLocation')))
+
 
 OrthoPanelLayout = props.VGroup((
-    widget('layout',     OrthoPanel), 
-    widget('zoom',       OrthoPanel),
-    props.HGroup((widget('showCursor', OrthoPanel),
-                  widget('showLabels', OrthoPanel))),
-    props.HGroup((widget('showXCanvas', OrthoPanel),
-                  widget('showYCanvas', OrthoPanel),
-                  widget('showZCanvas', OrthoPanel)))))
+    widget(OrthoOpts, 'layout'), 
+    widget(OrthoOpts, 'zoom', spin=False, showLimits=False),
+    widget(OrthoOpts, 'showLabels'),
+    props.HGroup((widget(OrthoOpts, 'showXCanvas'),
+                  widget(OrthoOpts, 'showYCanvas'),
+                  widget(OrthoOpts, 'showZCanvas')))))
+
+
+#######################################
+# LightBoxPanel control panels/toolbars
+#######################################
+
+LightBoxToolBarLayout = [
+    actions.ActionButton(LightBoxPanel, 'screenshot'),
+    widget(              LightBoxOpts, 'zax'),
+    
+    widget(LightBoxOpts, 'sliceSpacing', spin=False, showLimits=False),
+    widget(LightBoxOpts, 'zrange',       spin=False, showLimits=False),
+    widget(LightBoxOpts, 'zoom',         spin=False, showLimits=False),
+    actions.ActionButton(LightBoxToolBar, 'more')]
+
 
 LightBoxPanelLayout = props.VGroup((
-    widget('zax',            LightBoxPanel),
-    widget('zoom',           LightBoxPanel),
-    widget('sliceSpacing',   LightBoxPanel),
-    widget('zrange',         LightBoxPanel),
-    props.HGroup((widget('showCursor',     LightBoxPanel),
-                  widget('highlightSlice', LightBoxPanel),
-                  widget('showGridLines',  LightBoxPanel)))))
+    widget(LightBoxOpts, 'zax'),
+    widget(LightBoxOpts, 'zoom'),
+    widget(LightBoxOpts, 'sliceSpacing'),
+    widget(LightBoxOpts, 'zrange'),
+    widget(LightBoxOpts, 'highlightSlice'),
+    widget(LightBoxOpts, 'showGridLines')))
 
 
-DisplayLayout = props.VGroup((
-    widget('name',          Display),
-    widget('imageType',     Display),
-    widget('enabled',       Display),
-    widget('resolution',    Display),
-    widget('transform',     Display),
-    widget('interpolation', Display),
-    widget('alpha',         Display),
-    widget('brightness',    Display),
-    widget('contrast',      Display)))
+
+########################################
+# Image display property panels/toolbars
+########################################
 
 
-VolumeOptsLayout = props.VGroup((
-    widget('cmap',          VolumeOpts),
-    widget('clipLow',       VolumeOpts),
-    widget('clipHigh',      VolumeOpts),
-    widget('displayRange',  VolumeOpts)))
+DisplayToolBarLayout = [
+    widget(Display, 'name'),
+    widget(Display, 'imageType'),
+    widget(Display, 'alpha',      spin=False, showLimits=False),
+    widget(Display, 'brightness', spin=False, showLimits=False),
+    widget(Display, 'contrast',   spin=False, showLimits=False)]
 
 
-MaskOptsLayout = props.VGroup((
-    widget('colour',    MaskOpts),
-    widget('invert',    MaskOpts),
-    widget('threshold', MaskOpts)))
+VolumeOptsToolBarLayout = [
+    widget(VolumeOpts, 'cmap'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')]
+
+
+MaskOptsToolBarLayout = [
+    widget(MaskOpts, 'colour'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')]
+
+
+VectorOptsToolBarLayout = [
+    widget(VectorOpts, 'displayMode'),
+    actions.ActionButton(ImageDisplayToolBar, 'more')] 
+
+
+DisplayLayout = props.VGroup(
+    (widget(Display, 'name'),
+     widget(Display, 'imageType'),
+     widget(Display, 'resolution',    showLimits=False),
+     widget(Display, 'transform'),
+     widget(Display, 'interpolation'),
+     widget(Display, 'volume',        showLimits=False),
+     widget(Display, 'enabled'),
+     widget(Display, 'alpha',         showLimits=False, editLimits=False),
+     widget(Display, 'brightness',    showLimits=False, editLimits=False),
+     widget(Display, 'contrast',      showLimits=False, editLimits=False)))
+
+
+VolumeOptsLayout = props.VGroup(
+    (widget(VolumeOpts, 'cmap'),
+     widget(VolumeOpts, 'invert'),
+     widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
+     widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)))
+
+
+MaskOptsLayout = props.VGroup(
+    (widget(MaskOpts, 'colour'),
+     widget(MaskOpts, 'invert'),
+     widget(MaskOpts, 'threshold', showLimits=False)))
+
 
 VectorOptsLayout = props.VGroup((
-    widget('displayMode',   VectorOpts),
+    widget(VectorOpts, 'displayMode'),
     props.HGroup((
-        widget('xColour',   VectorOpts),
-        widget('yColour',   VectorOpts),
-        widget('zColour',   VectorOpts)),
+        widget(VectorOpts, 'xColour'),
+        widget(VectorOpts, 'yColour'),
+        widget(VectorOpts, 'zColour')),
         vertLabels=True),
     props.HGroup((
-        widget('suppressX', VectorOpts),
-        widget('suppressY', VectorOpts),
-        widget('suppressZ', VectorOpts)),
+        widget(VectorOpts, 'suppressX'),
+        widget(VectorOpts, 'suppressY'),
+        widget(VectorOpts, 'suppressZ')),
         vertLabels=True),
-    widget('modulate',      VectorOpts),
-    widget('modThreshold',  VectorOpts)))
+    widget(VectorOpts, 'modulate'),
+    widget(VectorOpts, 'modThreshold', showLimits=False)))
+
+
+##########################
+# Histogram toolbar/panels
+##########################
+
+
+# TODO add type-specific options here, to hide spin panels/limit
+# buttons for the numeric sliders, when the props module supports it
+HistogramToolBarLayout = [
+    actions.ActionButton(HistogramPanel, 'screenshot'),
+    props.Widget('dataRange', showLimits=False),
+    props.Widget('nbins',
+                 enabledWhen=lambda p: not p.autoHist,
+                 spin=False, showLimits=False),
+    props.Widget('autoHist')]
 
 
 layouts = td.TypeDict({
 
-    ('OrthoViewProfile', 'props')   : OrthoViewProfileLayout,
-    ('OrthoEditProfile', 'props')   : OrthoEditProfileLayout,
-    ('OrthoViewProfile', 'actions') : OrthoViewProfileActionLayout,
-    ('OrthoEditProfile', 'actions') : OrthoEditProfileActionLayout,
+    'CanvasPanel'   : CanvasPanelLayout,
+    'OrthoPanel'    : OrthoPanelLayout,
+    'LightBoxPanel' : LightBoxPanelLayout,
 
-    ('CanvasPanel',      'actions') : CanvasPanelActionLayout,
-    ('OrthoPanel',       'props')   : OrthoPanelLayout,
-    ('LightBoxPanel',    'props')   : LightBoxPanelLayout,
+    'SceneOpts' : SceneOptsLayout,
 
-    'Display'    : DisplayLayout,
-    'VolumeOpts' : VolumeOptsLayout,
-    'MaskOpts'   : MaskOptsLayout,
-    'VectorOpts' : VectorOptsLayout, 
+    ('ImageDisplayToolBar', 'Display')    : DisplayToolBarLayout,
+    ('ImageDisplayToolBar', 'VolumeOpts') : VolumeOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'MaskOpts')   : MaskOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'VectorOpts') : VectorOptsToolBarLayout,
+
+    ('ImageDisplayPanel',   'Display')    : DisplayLayout,
+    ('ImageDisplayPanel',   'VolumeOpts') : VolumeOptsLayout,
+    ('ImageDisplayPanel',   'MaskOpts')   : MaskOptsLayout,
+    ('ImageDisplayPanel',   'VectorOpts') : VectorOptsLayout, 
+
+    'OrthoToolBar'    : OrthoToolBarLayout,
+    'LightBoxToolBar' : LightBoxToolBarLayout,
+
+    ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
+    ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,
+    
+    'HistogramToolBar' : HistogramToolBarLayout,
+})
+
+
+locations = td.TypeDict({
+    'LocationPanel'       : aui.AUI_DOCK_BOTTOM,
+    'ImageListPanel'      : aui.AUI_DOCK_BOTTOM,
+    'AtlasPanel'          : aui.AUI_DOCK_BOTTOM,
+    'ImageDisplayToolBar' : aui.AUI_DOCK_TOP,
+    
 })

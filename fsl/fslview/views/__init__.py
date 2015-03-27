@@ -21,12 +21,14 @@ import fsl.fslview.panel as fslpanel
 import orthopanel
 import lightboxpanel
 import timeseriespanel
+import histogrampanel
 import spacepanel
 
 FSLViewPanel    = fslpanel       .FSLViewPanel
 OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
 TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
+HistogramPanel  = histogrampanel .HistogramPanel
 SpacePanel      = spacepanel     .SpacePanel
 
 

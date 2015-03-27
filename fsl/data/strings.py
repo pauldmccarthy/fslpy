@@ -10,12 +10,18 @@ import fsl.data.constants as constants
 
 messages = TypeDict({
 
+    'fslview.loading'              : 'Loading {} ...',
+    'FSLViewSplash.default'        : 'Loading ...',
+
     'imageio.saveImage.error'      : 'An error occurred saving the file. '
                                      'Details: {}',
-
     'imageio.loadImage.decompress' : '{} is a large file ({} MB) - '
                                      'decompressing to {}, to allow memory '
                                      'mapping...',
+
+    'imageio.loadImages.loading' : 'Loading {} ...',
+    'imageio.loadImages.error'   : 'An error occurred loading the image {}\n\n'
+                                   'Details: {}',
 
     'actions.loadcolourmap.loadcmap'    : 'Open colour map file',
     'actions.loadcolourmap.namecmap'    : 'Enter a name for the colour map - '
@@ -29,7 +35,23 @@ messages = TypeDict({
     'actions.loadcolourmap.invalidname'      : 'Please use only letters, '
                                                'numbers, and underscores.',
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
-                                               'installing the colour map', 
+                                               'installing the colour map',
+
+    'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
+                                     'images registered to MNI152 space',
+
+    'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
+    'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
+
+    'CanvasPanel.screenshot'            : 'Save screenshot',
+    'CanvasPanel.screenshot.notSaved'   : 'Image {} needs saving before a '
+                                          'screenshot can be taken.',
+    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
+                                          'please wait ...',
+    'CanvasPanel.screenshot.error'      : 'Sorry, there was an error '
+                                          'saving the screenshot. Try '
+                                          'calling render directly with '
+                                          'this command: \n{}',
 })
 
 
@@ -37,12 +59,33 @@ messages = TypeDict({
 titles = TypeDict({
     'imageio.saveImage.dialog' : 'Save image file',
     'imageio.addImages.dialog' : 'Open image files',
+    
+    'imageio.loadImages.error'  : 'Error loading image',
 
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
-    'SpacePanel'      : 'Space inspector', 
+    'HistogramPanel'  : 'Histogram',
+    'SpacePanel'      : 'Space inspector',
 
+    'CanvasPanel.screenshot'          : 'Save screenshot',
+    'CanvasPanel.screenshot.notSaved' : 'Save image before continuing',
+    'CanvasPanel.screenshot.error'    : 'Error saving screenshot',
+
+    'AtlasInfoPanel'      : 'Atlas information',
+    'AtlasOverlayPanel'   : 'Atlas overlays',
+
+    'ImageListPanel'        : 'Image list',
+    'AtlasPanel'            : 'Atlases',
+    'LocationPanel'         : 'Location',
+    'ImageDisplayToolBar'   : 'Display toolbar',
+    'ImageDisplayPanel'     : 'Display settings',
+    'OrthoToolBar'          : 'Ortho view toolbar',
+    'OrthoProfileToolBar'   : 'Ortho view mode toolbar',
+    'OrthoSettingsPanel'    : 'Ortho view settings',
+    'LightBoxToolBar'       : 'Lightbox view toolbar',
+    'LightBoxSettingsPanel' : 'Lightbox view settings',
+    'HistogramToolBar'      : 'Histogram settings', 
 })
 
 
@@ -55,11 +98,25 @@ actions = TypeDict({
     'LoadColourMapAction' : 'Load custom colour map',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
-    'CanvasPanel.toggleColourBar'         : 'Show/hide colour bar',
-    'CanvasPanel.toggleImageList'         : 'Show/hide image list',
-    'CanvasPanel.toggleDisplayProperties' : 'Show/hide display properties',
-    'CanvasPanel.toggleLocationPanel'     : 'Show/hide location panel',
-    'CanvasPanel.toggleCanvasProperties'  : 'Show/hide canvas properties',
+    'CanvasPanel.toggleColourBar'         : 'Colour bar',
+    'CanvasPanel.toggleImageList'         : 'Image list',
+    'CanvasPanel.toggleDisplayProperties' : 'Image display properties',
+    'CanvasPanel.toggleLocationPanel'     : 'Location panel',
+    'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
+    
+    'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
+    'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
+
+    'OrthoToolBar.more'           : 'More settings',
+    'LightBoxToolBar.more'        : 'More settings',
+    'ImageDisplayToolBar.more'    : 'More settings',
+    
+    'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
+
+
+    'PlotPanel.screenshot' : 'Take screenshot',
+
+    'HistogramPanel.toggleToolbar' : 'Histogram controls',
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
@@ -68,50 +125,61 @@ actions = TypeDict({
 
     'OrthoEditProfile.undo'                    : 'Undo',
     'OrthoEditProfile.redo'                    : 'Redo',
-    'OrthoEditProfile.fillSelection'           : 'Fill selected region',
-    'OrthoEditProfile.clearSelection'          : 'Clear selection',
-    'OrthoEditProfile.createMaskFromSelection' : 'Create mask from '
-                                                 'selected region',
-    'OrthoEditProfile.createROIFromSelection'  : 'Create ROI from ' 
-                                                 'selected region',
+    'OrthoEditProfile.fillSelection'           : 'Fill',
+    'OrthoEditProfile.clearSelection'          : 'Clear',
+    'OrthoEditProfile.createMaskFromSelection' : 'Mask',
+    'OrthoEditProfile.createROIFromSelection'  : 'ROI',
 })
 
 labels = TypeDict({
-    'LocationPanel.worldLabel'  : 'World location (mm)',
-    'LocationPanel.voxelLabel'  : 'Voxel location',
-    'LocationPanel.volumeLabel' : 'Volume',
-    'LocationPanel.spaceLabel'  : 'Space',
-    'LocationPanel.outOfBounds' : 'Out of bounds',
+    'LocationPanel.worldLocation' : 'World location (mm)',
+    'LocationPanel.voxelLocation' : 'Voxel location',
+    'LocationPanel.volume'        : 'Volume',
+    'LocationPanel.space'         : 'Space',
+    'LocationPanel.intensity'     : 'Intensity',
+    'LocationPanel.outOfBounds'   : 'Out of bounds',
+
+    'CanvasPanel.screenshot.notSaved.save'   : 'Save image now',
+    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip image (will not appear '
+                                               'in screenshot)',
+    'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
 })
 
 
 properties = TypeDict({
     
-    'Profile.mode' : 'Mode',
+    'Profile.mode' : 'Profile',
 
-    'CanvasPanel.showCursor'         : 'Show location cursor',
     'CanvasPanel.syncLocation'       : 'Sync location',
-    'CanvasPanel.syncImageOrder'     : 'Sync image order',
+    'CanvasPanel.syncImageOrder'     : 'Sync overlay order',
     'CanvasPanel.syncVolume'         : 'Sync volume',
-    'CanvasPanel.profile'            : 'Profile',
-    'CanvasPanel.zoom'               : 'Zoom',
-    'CanvasPanel.colourBarLocation'  : 'Colour bar location',
-    'CanvasPanel.colourBarLabelSide' : 'Colour bar label side',
+    'CanvasPanel.profile'            : 'Mode',
 
-    'LightBoxPanel.zax'            : 'Z axis',
-    'LightBoxPanel.highlightSlice' : 'Highlight slice',
-    'LightBoxPanel.showGridLines'  : 'Show grid lines',
-    'LightBoxPanel.sliceSpacing'   : 'Slice spacing',
-    'LightBoxPanel.zrange'         : 'Z range',
+    'SceneOpts.showCursor'         : 'Show location cursor',
+    'SceneOpts.showColourBar'      : 'Show colour bar',
+    'SceneOpts.twoStageRender'     : 'Two-stage rendering',
+    'SceneOpts.zoom'               : 'Zoom',
+    'SceneOpts.colourBarLocation'  : 'Colour bar location',
+    'SceneOpts.colourBarLabelSide' : 'Colour bar label side',
 
-    'OrthoPanel.showXCanvas' : 'Show X canvas',
-    'OrthoPanel.showYCanvas' : 'Show Y canvas',
-    'OrthoPanel.showZCanvas' : 'Show Z canvas',
-    'OrthoPanel.showLabels'  : 'Show labels',
-    'OrthoPanel.layout'      : 'Layout',
-    'OrthoPanel.xzoom'       : 'X zoom',
-    'OrthoPanel.yzoom'       : 'Y zoom',
-    'OrthoPanel.zzoom'       : 'Z zoom',
+    'LightBoxOpts.zax'            : 'Z axis',
+    'LightBoxOpts.highlightSlice' : 'Highlight slice',
+    'LightBoxOpts.showGridLines'  : 'Show grid lines',
+    'LightBoxOpts.sliceSpacing'   : 'Slice spacing',
+    'LightBoxOpts.zrange'         : 'Z range',
+
+    'OrthoOpts.showXCanvas' : 'Show X canvas',
+    'OrthoOpts.showYCanvas' : 'Show Y canvas',
+    'OrthoOpts.showZCanvas' : 'Show Z canvas',
+    'OrthoOpts.showLabels'  : 'Show labels',
+    'OrthoOpts.layout'      : 'Layout',
+    'OrthoOpts.xzoom'       : 'X zoom',
+    'OrthoOpts.yzoom'       : 'Y zoom',
+    'OrthoOpts.zzoom'       : 'Z zoom',
+
+    'HistogramPanel.dataRange'  : 'Data range',
+    'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
+    'HistogramPanel.nbins'      : 'Number of bins', 
 
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
@@ -132,14 +200,13 @@ properties = TypeDict({
     'Display.interpolation'     : 'Interpolation',
     'Display.resolution'        : 'Resolution',
     'Display.volume'            : 'Volume',
-    'Display.syncVolume'        : 'Synchronise volume',
     'Display.transform'         : 'Image transform',
     'Display.imageType'         : 'Image data type',
     
-    'VolumeOpts.displayRange' : 'Display range',
-    'VolumeOpts.clipLow'      : 'Low clipping',
-    'VolumeOpts.clipHigh'     : 'High clipping',
-    'VolumeOpts.cmap'         : 'Colour map',
+    'VolumeOpts.displayRange'  : 'Display range',
+    'VolumeOpts.clippingRange' : 'Clipping range',
+    'VolumeOpts.cmap'          : 'Colour map',
+    'VolumeOpts.invert'        : 'Invert colour map',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
@@ -185,10 +252,13 @@ modes = TypeDict({
 
 choices = TypeDict({
 
-    'CanvasPanel.colourBarLocation.top'    : 'Top',
-    'CanvasPanel.colourBarLocation.bottom' : 'Bottom',
-    'CanvasPanel.colourBarLocation.left'   : 'Left',
-    'CanvasPanel.colourBarLocation.right'  : 'Right',
+    'SceneOpts.colourBarLocation.top'    : 'Top',
+    'SceneOpts.colourBarLocation.bottom' : 'Bottom',
+    'SceneOpts.colourBarLocation.left'   : 'Left',
+    'SceneOpts.colourBarLocation.right'  : 'Right',
+
+    'HistogramPanel.dataRange.min' : 'Min.',
+    'HistogramPanel.dataRange.max' : 'Max.',
     
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',

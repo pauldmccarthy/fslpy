@@ -65,10 +65,11 @@ def rgbModeSetAxes(self):
 
     See :func:`~fsl.fslview.globject.slice2D` for more details.
     """
-    worldCoords, idxs = globject.slice2D(self.image.shape,
-                                         self.xax,
-                                         self.yax,
-                                         self.display.voxToDisplayMat)
+    worldCoords, idxs = globject.slice2D(
+        self.image.shape,
+        self.xax,
+        self.yax,
+        self.display.getTransform('voxel', 'display'))
 
     self.worldCoords = worldCoords
     self.indices     = idxs 
@@ -102,6 +103,9 @@ def preDraw(self):
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
 
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
@@ -110,7 +114,8 @@ def preDraw(self):
     # the vertex program needs to be able to
     # transform from display space to voxel
     # space
-    shaders.setVertexProgramMatrix(0, self.display.displayToVoxMat.T)
+    shaders.setVertexProgramMatrix(
+        0, self.display.getTransform('display', 'voxel').T)
 
     if self.displayOpts.displayMode == 'line':
         shaders.setFragmentProgramMatrix(0, self.imageTexture.voxValXform.T)
@@ -140,15 +145,25 @@ def draw(self, zpos, xform=None):
     """Calls one of :func:`lineModeDraw` or :func:`rgbModeDraw`, depending
     upon the current display mode.
     """
+    if xform is None:
+        xform = np.eye(4, dtype=np.float32)
+        
+    drawAll(self, [zpos], [xform])
+
+    
+def drawAll(self, zposes, xforms):
+    
+    if not self.display.enabled:
+        return
     
     if self.displayOpts.displayMode == 'line':
-        lineModeDraw(self, zpos, xform)
+        lineModeDrawAll(self, zposes, xforms)
         
     elif self.displayOpts.displayMode == 'rgb':
-        rgbModeDraw(self, zpos, xform)
+        rgbModeDrawAll( self, zposes, xforms)
 
         
-def lineModeDraw(self, zpos, xform=None):
+def lineModeDrawAll(self, zposes, xforms):
     """Creates a line, representing a vector, at each voxel at the specified
     ``zpos``, and renders them.
     """
@@ -156,16 +171,17 @@ def lineModeDraw(self, zpos, xform=None):
     image       = self.image
     display     = self.display
     worldCoords = self.worldCoords
+    nVerts      = worldCoords.shape[0]
+    nSlices     = len(zposes)
 
-    if not display.enabled:
-        return
-
-    worldCoords[:, self.zax] = zpos
+    worldCoords = np.vstack([worldCoords] * nSlices)
+    worldCoords[:, self.zax] = np.repeat(zposes, nVerts)
+    texCoords   = np.array(worldCoords)
 
     # Transform the world coordinates to
     # floating point voxel coordinates
-    dToVMat = display.displayToVoxMat
-    vToDMat = display.voxToDisplayMat
+    dToVMat = display.getTransform('display', 'voxel')
+    vToDMat = display.getTransform('voxel',   'display')
     
     voxCoords  = transform.transform(worldCoords, dToVMat).transpose()
     imageData  = image.data
@@ -173,7 +189,12 @@ def lineModeDraw(self, zpos, xform=None):
 
     # Get the image data at those 
     # voxel coordinates, using
-    # nearest neighbour interpolation
+    # nearest neighbour interpolation.
+    # 
+    # Three separate calls to map_coordinates
+    # is generally faster than constructing
+    # a 4D coordinate array, and performing
+    # one call to map_coordinates.
     xvals = ndi.map_coordinates(imageData[:, :, :, 0],
                                 voxCoords,
                                 order=0,
@@ -210,42 +231,51 @@ def lineModeDraw(self, zpos, xform=None):
     # Translate those line vertices
     # into display coordinates
     worldCoords = transform.transform(vecs, vToDMat)
-    worldCoords[:, self.zax] = zpos
+
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+        
+        start = i     * (nVerts * 2)
+        end   = start + (nVerts * 2)
+        c     = worldCoords[start:end, :]
+        
+        c[:, self.zax] = zpos
+        
+        worldCoords[start:end, :] = transform.transform(c, xform)
+
+    texCoords   = np.repeat(texCoords, 2, axis=0)
     worldCoords = np.array(worldCoords, dtype=np.float32).ravel('C')
 
     # Draw all the lines!
-    if xform is None: 
-        xform = np.eye(4)
-
-    shaders.setVertexProgramMatrix(4, xform.T) 
-
+    shaders.setVertexProgramMatrix(  4,  np.eye( 4, dtype=np.float32))
+    shaders.setFragmentProgramVector(8, -np.ones(4, dtype=np.float32))    
+ 
     gl.glLineWidth(2)
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    
     gl.glDrawArrays(gl.GL_LINES, 0, 2 * nVoxels) 
 
     
-def rgbModeDraw(self, zpos, xform=None):
+def rgbModeDrawAll(self, zposes, xforms):
     """Renders a rectangular slice through the vector image texture at the
     specified ``zpos``.
     """
 
-    worldCoords  = self.worldCoords
-    indices      = self.indices
-    worldCoords[:, self.zax] = zpos
+    worldCoords  = np.array(self.worldCoords)
+    indices      = np.array(self.indices)
 
-    worldCoords = worldCoords.ravel('C')
+    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
 
-    if xform is None:
-        xform = np.eye(4)
+    worldCoords, texCoords, indices = globject.broadcast(
+        worldCoords, indices, zposes, xforms, self.zax)
 
-    shaders.setVertexProgramMatrix(4, xform.T)
+    shaders.setVertexProgramMatrix(  4,  np.eye( 4, dtype=np.float32))
+    shaders.setFragmentProgramVector(8, -np.ones(4, dtype=np.float32))
 
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                      len(indices),
-                      gl.GL_UNSIGNED_INT,
-                      indices) 
+    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices) 
 
     
 def postDraw(self):
@@ -253,3 +283,6 @@ def postDraw(self):
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
+
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)

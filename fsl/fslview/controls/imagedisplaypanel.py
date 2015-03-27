@@ -19,200 +19,141 @@ import props
 import fsl.fslview.panel as fslpanel
 import imageselectpanel  as imageselect
 
-
+    
 class ImageDisplayPanel(fslpanel.FSLViewPanel):
-    """A panel which shows display control options for the currently selected
-    image.
-    """
 
     def __init__(self, parent, imageList, displayCtx):
-        """Create and lay out an :class:`ImageDisplayPanel`.
-
-        :param parent:     The :mod:`wx` parent object.
-        :param imageList:  A :class:`~fsl.data.image.ImageList` instance.
-        :param displayCtx: A
-                           :class:`~fsl.fslview.displaycontext.DisplayContext`
-                           instance. 
         """
+        """
+
+        # TODO Ability to link properties across images
 
         fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
 
-        # a dictionary containing {image : panel} mappings
-        self._displayPanels = {}
-
-        self._imageSelect = imageselect.ImageSelectPanel(
+        self.imageSelect = imageselect.ImageSelectPanel(
             self, imageList, displayCtx)
 
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
+        self.propPanel = wx.ScrolledWindow(self)
+        self.propPanel.SetScrollRate(0, 5)
+        self.dispPanel = wx.Panel(self.propPanel)
+        self.optsPanel = wx.Panel(self.propPanel)
+
+        self.divider = wx.StaticLine(
+            self.propPanel, size=(-1, -1), style=wx.LI_HORIZONTAL)
+
+        self.sizer     = wx.BoxSizer(wx.VERTICAL)
+        self.propSizer = wx.BoxSizer(wx.VERTICAL)
+        self.dispSizer = wx.BoxSizer(wx.VERTICAL)
+        self.optsSizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.SetSizer(self._sizer)
+        self          .SetSizer(self.sizer)
+        self.propPanel.SetSizer(self.propSizer)
+        self.dispPanel.SetSizer(self.dispSizer)
+        self.optsPanel.SetSizer(self.optsSizer)
 
-        self._sizer.Add(self._imageSelect, flag=wx.EXPAND)
+        self.sizer.Add(self.imageSelect, flag=wx.EXPAND)
+        self.sizer.Add(self.propPanel,   flag=wx.EXPAND, proportion=1)
 
-        self._imageList.addListener(
-            'images',
-            self._name,
-            self._imageListChanged)
- 
-        self._displayCtx.addListener(
-            'imageOrder',
-            self._name,
-            self._selectedImageChanged)
+        flags = wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL
         
-        self._displayCtx.addListener(
-            'selectedImage',
-            self._name,
-            self._selectedImageChanged)
+        self.propSizer.Add(self.dispPanel, border=20, flag=flags)
+        self.propSizer.Add(self.divider,              flag=flags)
+        self.propSizer.Add(self.optsPanel, border=20, flag=flags) 
         
+        displayCtx.addListener('selectedImage',
+                               self._name,
+                               self._selectedImageChanged)
+        imageList .addListener('images',
+                               self._name,
+                               self._selectedImageChanged)
 
-        def onDestroy(ev):
-            ev.Skip()
-
-            # Stupid. Window destroy handlers of a panel
-            # get called when children of said panel are
-            # destroyed.
-            if ev.GetEventObject() != self: return
-            
-            self._imageList .removeListener('images',        self._name)
-            self._displayCtx.removeListener('imageOrder',    self._name)
-            self._displayCtx.removeListener('selectedImage', self._name)
-
-        self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
-
-        # trigger initial display panel creation
-        self._imageListChanged()
-
-        
-    def _makeDisplayPanel(self, image):
-        """Creates and returns panel containing widgets allowing
-        the user to edit the display properties of the given
-        :class:`~fsl.data.image.Image` instance. 
-        """
-
-        import fsl.fslview.layouts as fsllayouts
-        
-        display      = self._displayCtx.getDisplayProperties(image)
-        opts         = display.getDisplayOpts()
-        displayPanel = wx.Panel(self)
-        panelSizer   = wx.BoxSizer(wx.VERTICAL)
-
-        displayPanel.SetSizer(panelSizer)
-
-        displayPropPanel = props.buildGUI(
-            displayPanel,
-            display,
-            view=fsllayouts.layouts[display])
-
-        optPropPanel = props.buildGUI(
-            displayPanel,
-            opts,
-            view=fsllayouts.layouts[opts]) 
-
-        panelSizer.Add(displayPropPanel, flag=wx.EXPAND)
-        panelSizer.Add(optPropPanel,     flag=wx.EXPAND)
-        
-        self._sizer.Add(displayPanel, flag=wx.EXPAND, proportion=1)
-
-        image.addListener('imageType', self._name, self._imageTypeChanged)
-        
-        return displayPanel
-
-
-    def _imageTypeChanged(self, value, valid, image, name):
-        
-        import fsl.fslview.layouts as fsllayouts
-
-        display      = self._displayCtx.getDisplayProperties(image)
-        opts         = display.getDisplayOpts()
-        displayPanel = self._getDisplayPanel(image)
-        panelSizer   = displayPanel.GetSizer()
-
-        item = panelSizer.GetItem(1).GetWindow()
-        panelSizer.Remove(1)
-        item.Destroy()
-
-        optPropPanel = props.buildGUI(
-            displayPanel,
-            opts,
-            view=fsllayouts.layouts[opts])
-
-        panelSizer.Add(optPropPanel, flag=wx.EXPAND)
-
-        displayPanel.Layout()
-        self.Layout()
-        self.GetParent().Layout()
-
-    
-    def _getDisplayPanel(self, image):
-        """Returns a display panel for the given image. One is created
-        if it does not already exist.
-        """
-        # check to see if a display
-        # panel exists for this image
-        try: panel = self._displayPanels[image]
-
-        # if one doesn't, make one and 
-        # add the image to the list box
-        except KeyError:
-                
-            log.debug('Creating display panel for '
-                      'image: {}'.format(image.name))
-            panel = self._makeDisplayPanel(image)
-            self._displayPanels[image] = panel
-
-        return panel
-
-        
-    def _imageListChanged(self, *a):
-        """Called when the :attr:`~fsl.data.image.ImageList.images` list
-        changes. Creates/destroys display panels for added/removed images,
-        and ensures that the correct display panel is visible.
-        """
-
-        # First check to see if there are any display
-        # panels for which the corresponding image is
-        # no longer present in the list.
-        for img, displayPanel in self._displayPanels.items():
-
-            if img not in self._imageList:
-                self._sizer.Detach(displayPanel)
-                displayPanel.Destroy()
-                self._displayPanels.pop(img)
-        
-        # Now check to see if any images have been added,
-        # and we need to create a display panel for them
-        for i, image in enumerate(self._imageList):
-            self._getDisplayPanel(image)
-
-        # When images are added/removed, the selected image
-        # index may not have changed, but the image which
-        # said index points to might have. So here we make
-        # sure that the correct display panel is visible.
+        self._lastImage = None
         self._selectedImageChanged()
+
+        self.propSizer.Layout()
+        self.Layout()
+        
+        pSize = self.propSizer.GetMinSize().Get()
+        size  = self.sizer    .GetMinSize().Get()
+        self.SetMinSize((max(pSize[0], size[0]), max(pSize[1], size[1]) + 20))
+
+        
+    def destroy(self):
+        fslpanel.FSLViewPanel.destroy(self)
+
+        self._displayCtx.removeListener('selectedImage', self._name)
+        self._imageList .removeListener('images',        self._name)
+        self.imageSelect.destroy()
+
+        for image in self._imageList:
+            image.removeListener('imageType', self._name)
 
 
     def _selectedImageChanged(self, *a):
-        """Called when the :attr:`~fsl.data.image.ImageList.selectedImage`
-        index changes. Ensures that the correct display panel is visible.
+
+        image     = self._displayCtx.getSelectedImage()
+        lastImage = self._lastImage
+
+        if image is None:
+            self._lastImage = None
+            self.dispPanel.DestroyChildren()
+            self.optsPanel.DestroyChildren()
+            self.Layout()
+            return
+
+        if image is lastImage:
+            return
+
+        if lastImage is not None:
+            lastDisplay = self._displayCtx.getDisplayProperties(lastImage)
+            lastImage  .removeListener('imageType', self._name)
+            lastDisplay.removeListener('transform', self._name)
+
+        display = self._displayCtx.getDisplayProperties(image)
+            
+        image  .addListener('imageType',
+                            self._name,
+                            lambda *a: self._updateProps(self.optsPanel, True))
+        display.addListener('transform', self._name, self._transformChanged)
+        
+        self._lastImage = image
+        self._updateProps(self.dispPanel, False)
+        self._updateProps(self.optsPanel, True)
+
+        
+    def _transformChanged(self, *a):
+        """Called when the transform setting of the currently selected image
+        changes. If affine transformation is selected, interpolation is
+        enabled, otherwise interpolation is disabled.
         """
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
 
-        idx = self._displayCtx.selectedImage
+        choices = display.getProp('interpolation').getChoices(display)
 
-        for i, image in enumerate(self._imageList):
-
-            displayPanel = self._getDisplayPanel(image)
+        if  display.transform in ('none', 'pixdim'):
+            display.interpolation = 'none'
             
-            if i == self._displayCtx.selectedImage:
-                log.debug('Showing display panel for '
-                          'image {} ({})'.format(image.name, idx))
-            
-            displayPanel.Show(i == idx)
+        elif display.transform == 'affine':
+            if 'spline' in choices: display.interpolation = 'spline'
+            else:                   display.interpolation = 'linear'
 
-        self.Layout()
-        self.Refresh()
+        
+    def _updateProps(self, parent, opts):
 
-        # If the image list is empty, or was empty and
-        # is now not empty, this panel will have changed
-        # size. So we tell our parent to refresh itself
-        self.GetParent().Layout()
-        self.GetParent().Refresh()
+        import fsl.fslview.layouts as layouts
+
+        image   = self._displayCtx.getSelectedImage()
+        display = self._displayCtx.getDisplayProperties(image)
+
+        if opts: optObj = display.getDisplayOpts()
+        else:    optObj = display
+
+        parent.DestroyChildren()
+        
+        panel = props.buildGUI(
+            parent, optObj, view=layouts.layouts[self, optObj])
+
+        parent.GetSizer().Add(panel, flag=wx.EXPAND, proportion=1)
+        panel .Layout()
+        parent.Layout()

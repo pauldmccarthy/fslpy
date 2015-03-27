@@ -169,6 +169,14 @@ class GLVolume(globject.GLImageObject):
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
+    def drawAll(self, zposes, xforms):
+        """Calls the module-specific ``drawAll`` function. """
+        
+        if not self.display.enabled:
+            return
+        fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
+
+        
     def postDraw(self):
         """Clears the GL state after drawing from this :class:`GLVolume`
         instance.
@@ -221,10 +229,11 @@ class GLVolume(globject.GLImageObject):
                       vertical screen axis (0, 1, or 2).
         """
 
-        return globject.slice2D(self.image.shape,
-                                self.xax,
-                                self.yax,
-                                self.display.voxToDisplayMat)
+        return globject.slice2D(
+            self.image.shape,
+            self.xax,
+            self.yax,
+            self.display.getTransform('voxel', 'display'))
 
     
     def refreshColourTexture(self, colourResolution):
@@ -238,7 +247,8 @@ class GLVolume(globject.GLImageObject):
         for more details.
         """
 
-        opts = self.displayOpts
+        display = self.display
+        opts    = self.displayOpts
 
         imin = opts.displayRange[0]
         imax = opts.displayRange[1]
@@ -249,8 +259,11 @@ class GLVolume(globject.GLImageObject):
         # or above the current display range will be mapped
         # to texture coordinate values less than 0.0 or greater
         # than 1.0 respectively.
+        if imax == imin: scale = 1
+        else:            scale = imax - imin
+        
         cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / (imax - imin)
+        cmapXform[0, 0] = 1.0 / scale
         cmapXform[3, 0] = -imin * cmapXform[0, 0]
 
         self.colourMapXform = cmapXform
@@ -258,14 +271,14 @@ class GLVolume(globject.GLImageObject):
         # Create [self.colourResolution] rgb values,
         # spanning the entire range of the image
         # colour map
-        colourRange     = np.linspace(0.0, 1.0, colourResolution)
-        colourmap       = opts.cmap(colourRange)
+        if opts.invert: colourRange = np.linspace(1.0, 0.0, colourResolution)
+        else:           colourRange = np.linspace(0.0, 1.0, colourResolution)
+        
+        colourmap = opts.cmap(colourRange)
 
-        # Make out-of-range values transparent
-        # if clipping is enabled 
-        if opts.clipLow:  colourmap[ 0, 3] = 0.0
-        if opts.clipHigh: colourmap[-1, 3] = 0.0 
-
+        # Apply global transparency
+        colourmap[:, 3] = display.alpha / 100.0
+        
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
         colourmap = np.floor(colourmap * 255)
@@ -319,10 +332,10 @@ class GLVolume(globject.GLImageObject):
             self.refreshColourTexture(self.colourResolution)
 
         display.addListener('transform',     lName, vertexUpdate)
+        display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
-        opts   .addListener('clipLow',       lName, colourUpdate)
-        opts   .addListener('clipHigh',      lName, colourUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
+        opts   .addListener('invert',        lName, colourUpdate)
 
 
     def removeDisplayListeners(self):
@@ -336,7 +349,7 @@ class GLVolume(globject.GLImageObject):
         lName = self.name
 
         display.removeListener('transform',     lName)
+        display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
-        opts   .removeListener('clipLow',       lName)
-        opts   .removeListener('clipHigh',      lName)
         opts   .removeListener('cmap',          lName)
+        opts   .removeListener('invert',        lName)

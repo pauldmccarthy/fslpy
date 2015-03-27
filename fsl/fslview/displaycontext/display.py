@@ -31,14 +31,28 @@ log = logging.getLogger(__name__)
 
 class DisplayOpts(props.SyncableHasProperties):
 
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
-        props.SyncableHasProperties.__init__(self, parent)
+    def __init__(
+            self,
+            image,
+            display,
+            imageList,
+            displayCtx,
+            parent=None,
+            *args,
+            **kwargs):
+        
+        props.SyncableHasProperties.__init__(self, parent, *args, **kwargs)
+        
         self.image      = image
         self.display    = display
         self.imageList  = imageList
         self.displayCtx = displayCtx
         self.imageType  = image.imageType
         self.name       = '{}_{}'.format(type(self).__name__, id(self))
+
+        
+    def destroy(self):
+        pass
 
 
 class Display(props.SyncableHasProperties):
@@ -62,10 +76,7 @@ class Display(props.SyncableHasProperties):
     """Should this image be displayed at all?"""
 
     
-    resolution = props.Real(maxval=10,
-                            default=1,
-                            clamped=True,
-                            editLimits=False)
+    resolution = props.Real(maxval=10, default=1, clamped=True)
     """Data resolution in world space. The minimum value is set in __init__.""" 
                               
     
@@ -73,9 +84,6 @@ class Display(props.SyncableHasProperties):
     """If a 4D image, the current volume to display."""
 
 
-    syncVolume = props.Boolean(default=True)
-
-    
     transform = props.Choice(
         ('affine', 'pixdim', 'id'),
         labels=[strings.choices['Display.transform.affine'],
@@ -131,6 +139,7 @@ class Display(props.SyncableHasProperties):
 
         :arg parent: 
         """
+        
         self.image      = image
         self.imageList  = imageList
         self.displayCtx = displayCtx
@@ -142,45 +151,16 @@ class Display(props.SyncableHasProperties):
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
-        self.voxToWorldMat     = image.voxToWorldMat.transpose()
-        self.worldToVoxMat     = image.worldToVoxMat.transpose()
-        self.voxToDisplayMat   = None
-        self.displayToVoxMat   = None
-        self.worldToDisplayMat = None
-        self.displayToWorldMat = None
+        self.__xforms = {}
+        self.__setupTransforms()
 
         # is this a 4D volume?
         if image.is4DImage():
             self.setConstraint('volume', 'maxval', image.shape[3] - 1)
 
-        # Update transformation matrices when
-        # the transform property changes
-        self.addListener(
-            'transform',
-            'Display_{}'.format(id(self)),
-            self.__transformChanged)
-
-        self.addListener(
-            'imageType',
-            'Display_{}'.format(id(self)),
-            self.__imageTypeChanged) 
-
+        self.__oldTransform = None
+        self.__transform    = self.transform
         self.__transformChanged()
-        
-        # When the transform property changes,
-        # the display<->* transformation matrices
-        # are recalculated. References to the
-        # previous matrices are stored here, just
-        # in case anything (hint the DisplayContext
-        # object) needs them for any particular
-        # reason (hint: so the DisplayContext can
-        # preserve the current display location,
-        # in terms of image world space, when the
-        # transform of the selected changes)
-        self._oldVoxToDisplayMat   = self.voxToDisplayMat
-        self._oldDisplayToVoxMat   = self.displayToVoxMat
-        self._oldWorldToDisplayMat = self.worldToDisplayMat
-        self._oldDisplayToWorldMat = self.displayToWorldMat
 
         # limit resolution to the image dimensions
         self.resolution = min(image.pixdim[:3])
@@ -205,10 +185,105 @@ class Display(props.SyncableHasProperties):
                       'volume',
                       'resolution',
                       'transform',
+                      'brightness',
+                      'contrast',
                       'imageType'])
 
+        # Set up listeners after caling Syncabole.__init__,
+        # so the callbacks don't get called during synchronisation
+        self.addListener(
+            'transform',
+            'Display_{}'.format(id(self)),
+            self.__transformChanged) 
+        self.addListener(
+            'imageType',
+            'Display_{}'.format(id(self)),
+            self.__imageTypeChanged)
+
+        # The imageTypeChanged method creates
+        # a new DisplayOpts instance - for this,
+        # it needs to be able to access this
+        # Dispaly instance's parent (so it can
+        # subsequently access a parent for the
+        # new DisplayOpts instance). Therefore,
+        # we do this after calling
+        # Syncable.__init__.
         self.__displayOpts = None
         self.__imageTypeChanged()
+
+        
+    def __setupTransforms(self):
+        """Calculates transformation matrices between all of the possible
+        spaces in which the image may be displayed.
+
+        These matrices are accessible via the :meth:`getTransform` method.
+        """
+
+        image          = self.image
+
+        voxToIdMat     = np.eye(4)
+        voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
+        voxToAffineMat = image.voxToWorldMat.T
+        
+        idToVoxMat        = transform.invert(voxToIdMat)
+        idToPixdimMat     = transform.concat(idToVoxMat, voxToPixdimMat)
+        idToAffineMat     = transform.concat(idToVoxMat, voxToAffineMat)
+
+        pixdimToVoxMat    = transform.invert(voxToPixdimMat)
+        pixdimToIdMat     = transform.concat(pixdimToVoxMat, voxToIdMat)
+        pixdimToAffineMat = transform.concat(pixdimToVoxMat, voxToAffineMat)
+
+        affineToVoxMat    = image.worldToVoxMat.T
+        affineToIdMat     = transform.concat(affineToVoxMat, voxToIdMat)
+        affineToPixdimMat = transform.concat(affineToVoxMat, voxToPixdimMat)
+        
+        self.__xforms['id',  'id']     = np.eye(4)
+        self.__xforms['id',  'pixdim'] = idToPixdimMat 
+        self.__xforms['id',  'affine'] = idToAffineMat
+
+        self.__xforms['pixdim', 'pixdim'] = np.eye(4)
+        self.__xforms['pixdim', 'id']     = pixdimToIdMat
+        self.__xforms['pixdim', 'affine'] = pixdimToAffineMat
+ 
+        self.__xforms['affine', 'affine'] = np.eye(4)
+        self.__xforms['affine', 'id']     = affineToIdMat
+        self.__xforms['affine', 'pixdim'] = affineToPixdimMat 
+
+
+    def getTransform(self, from_, to, xform=None):
+        """Return a matrix which may be used to transform coordinates
+        from ``from_`` to ``to``. Valid values for ``from_`` and ``to``
+        are:
+          - ``id``:      Voxel coordinates
+        
+          - ``pixdim``:  Voxel coordinates, scaled by voxel dimensions
+        
+          - ``affine``:  World coordinates, as defined by the NIFTI1
+                         ``qform``/``sform``. See
+                         :attr:`~fsl.data.image.Image.voxToWorldMat`.
+        
+          - ``voxel``:   Equivalent to ``id``.
+        
+          - ``display``: Equivalent to the current value of :attr:`transform`.
+        
+          - ``world``;   Equivalent to ``affine``.
+
+        If the ``xform`` parameter is provided, and one of ``from_`` or ``to``
+        is ``display``, the value of ``xform`` is used instead of the current
+        value of :attr:`transform`.
+        """
+
+        if xform is None:      xform = self.transform
+
+        if   from_ == 'display': from_ = xform
+        elif from_ == 'world':   from_ = 'affine'
+        elif from_ == 'voxel':   from_ = 'id'
+        
+        if   to    == 'display': to    = xform
+        elif to    == 'world':   to    = 'affine'
+        elif to    == 'voxel':   to    = 'id'
+
+        return self.__xforms[from_, to]
 
         
     def getDisplayBounds(self):
@@ -223,8 +298,28 @@ class Display(props.SyncableHasProperties):
         a sequence of three low bounds, and the second value a sequence
         of three high bounds.
         """
-        return transform.axisBounds(self.image.shape[:3], self.voxToDisplayMat)
+        return transform.axisBounds(
+            self.image.shape[:3], self.getTransform('voxel', 'display'))
 
+
+    def getLastTransform(self):
+        """Returns the most recent value of the :attr:`transform` property,
+        before its current value.
+        """
+        return self.__oldTransform
+
+
+    def __transformChanged(self, *a):
+        """Called when the :attr:`transform` property is changed."""
+
+        # Store references to the previous display related transformation
+        # matrices, just in case anything (hint the DisplayContext object)
+        # needs them for any particular reason (hint: so the DisplayContext
+        # can preserve the current display location, in terms of image world
+        # space, when the transform of the selected image changes)
+        self.__oldTransform = self.__transform
+        self.__transform    = self.transform
+    
     
     def getDisplayOpts(self):
         """
@@ -232,6 +327,9 @@ class Display(props.SyncableHasProperties):
 
         if (self.__displayOpts           is None) or \
            (self.__displayOpts.imageType != self.imageType):
+
+            if self.__displayOpts is not None:
+                self.__displayOpts.destroy()
             
             self.__displayOpts = self.__makeDisplayOpts()
             
@@ -276,51 +374,3 @@ class Display(props.SyncableHasProperties):
         # make sure that the display
         # options instance is up to date
         self.getDisplayOpts()
-
-        
-    def __transformChanged(self, *a):
-        """Called when the :attr:`transform` property is changed.
-
-        Generates transformation matrices for transforming between voxel and
-        display coordinate space.
-
-        If :attr:`transform` is set to ``affine``, the :attr:`interpolation`
-        property is changed to ``spline. Otherwise, it is set to ``none``.
-        """
-
-        # Store references to the previous display related
-        # transformation matrices (see comments in __init__)
-        self._oldVoxToDisplayMat   = self.voxToDisplayMat
-        self._oldDisplayToVoxMat   = self.displayToVoxMat
-        self._oldWorldToDisplayMat = self.worldToDisplayMat
-        self._oldDisplayToWorldMat = self.displayToWorldMat
-
-        # The transform property defines the way
-        # in which image voxel coordinates map
-        # to the display coordinate system
-        if self.transform == 'id':
-            pixdim          = [1.0, 1.0, 1.0]
-            voxToDisplayMat = np.eye(4)
-            
-        elif self.transform == 'pixdim':
-            pixdim          = self.image.pixdim
-            voxToDisplayMat = np.diag([pixdim[0], pixdim[1], pixdim[2], 1.0])
-            
-        elif self.transform == 'affine':
-            voxToDisplayMat = self.voxToWorldMat
-
-        # Transformation matrices for moving between the voxel
-        # coordinate system and the display coordinate system
-        self.voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32)
-        self.displayToVoxMat = transform.invert(self.voxToDisplayMat)
-
-        # Matrices for moving between the display coordinate
-        # system, and the image world coordinate system
-        self.displayToWorldMat = transform.concat(self.displayToVoxMat,
-                                                  self.voxToWorldMat)
-        self.worldToDisplayMat = transform.invert(self.displayToWorldMat)
-
-        # When transform is changed to 'affine', enable interpolation
-        # and, when changed to 'pixdim' or 'id', disable interpolation
-        if self.transform == 'affine': self.interpolation = 'spline'
-        else:                          self.interpolation = 'none'

@@ -79,10 +79,12 @@ class OrthoViewProfile(profiles.Profile):
 
     def resetZoom(self, *a):
 
-        self._canvasPanel.zoom  = 100
-        self._canvasPanel.xzoom = 100
-        self._canvasPanel.yzoom = 100
-        self._canvasPanel.zzoom = 100
+        opts = self._canvasPanel.getSceneOptions()
+
+        opts.zoom  = 100
+        opts.xzoom = 100
+        opts.yzoom = 100
+        opts.zzoom = 100
 
 
     def centreCursor(self, *a):
@@ -106,7 +108,10 @@ class OrthoViewProfile(profiles.Profile):
         :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
         the mouse location.
         """
-        
+
+        if canvasPos is None:
+            return
+
         self._displayCtx.location = canvasPos
 
         
@@ -118,19 +123,35 @@ class OrthoViewProfile(profiles.Profile):
         to the depth axis of the canvas which was the target of the event.
         """ 
 
-        pos = self._displayCtx.location.xyz
+        image = self._displayCtx.getSelectedImage()
+
+        if image is None:
+            return
+        
+        display = self._displayCtx.getDisplayProperties(image)
+        pos     = self._displayCtx.location.xyz
+
+        # If we're displaying voxel space,
+        # we want a keypress to move one
+        # voxel in the appropriate direction
+        if   display.transform == 'id':     offsets = [1, 1, 1]
+        elif display.transform == 'pixdim': offsets = image.pixdim
+
+        # Otherwise we'll just move an arbitrary 
+        # amount in the image world space - 2mm
+        else:                               offsets = [2, 2, 2]
 
         try:    ch = chr(key)
         except: ch = None
 
-        if   key == wx.WXK_LEFT:  pos[canvas.xax] -= 2
-        elif key == wx.WXK_RIGHT: pos[canvas.xax] += 2
-        elif key == wx.WXK_UP:    pos[canvas.yax] += 2
-        elif key == wx.WXK_DOWN:  pos[canvas.yax] -= 2
-        elif ch  in ('-', '_'):   pos[canvas.zax] -= 2
-        elif ch  in ('+', '='):   pos[canvas.zax] += 2
+        if   key == wx.WXK_LEFT:  pos[canvas.xax] -= offsets[canvas.xax]
+        elif key == wx.WXK_RIGHT: pos[canvas.xax] += offsets[canvas.xax]
+        elif key == wx.WXK_UP:    pos[canvas.yax] += offsets[canvas.yax]
+        elif key == wx.WXK_DOWN:  pos[canvas.yax] -= offsets[canvas.yax]
+        elif ch  in ('-', '_'):   pos[canvas.zax] -= offsets[canvas.zax]
+        elif ch  in ('+', '='):   pos[canvas.zax] += offsets[canvas.zax]
 
-        self._displayCtx.location = pos
+        self._displayCtx.location.xyz = pos
 
         
     ####################
@@ -181,6 +202,9 @@ class OrthoViewProfile(profiles.Profile):
         the canvas will be zoomed in to the drawn rectangle.
         """
 
+        if canvasPos is None:
+            return
+
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
 
         corner = [canvasDownPos[canvas.xax], canvasDownPos[canvas.yax]]
@@ -199,6 +223,9 @@ class OrthoViewProfile(profiles.Profile):
         canvas is zoomed in to the rectangle region that was drawn by the
         user.
         """
+
+        if canvasPos is None:
+            return
 
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
 
@@ -242,6 +269,9 @@ class OrthoViewProfile(profiles.Profile):
 
         If the target canvas is not zoomed in, this has no effect.
         """
+
+        if canvasPos is None:
+            return
         
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
 

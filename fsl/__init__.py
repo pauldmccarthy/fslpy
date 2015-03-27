@@ -56,11 +56,15 @@ import warnings
 import os
 import sys
 import argparse
+import subprocess
+
 
 log = logging.getLogger(__name__)
 
+
 # make matplotlib quiet
 warnings.filterwarnings('ignore', module='matplotlib')
+warnings.filterwarnings('ignore', module='mpl_toolkits')
 
 
 # There's a bug in OpenGL.GL.shaders (which has been fixed in
@@ -168,8 +172,11 @@ def parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
-    parser.add_argument('-n', '--noisy', metavar='MODULE', action='append',
-                        help='Make the specified module noisy')
+    
+    parser.add_argument(
+        '-n', '--noisy', metavar='MODULE', action='append',
+        help='Make the specified module noisy')
+    
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
@@ -232,6 +239,29 @@ def parseArgs(argv, allTools):
         print '\nUnknown FSL tool: {}\n'.format(namespace.tool)
         parser.print_help()
         sys.exit(1)
+
+    # Configure any logging verbosity 
+    # settings specified by the user
+    if namespace.verbose == 1:
+        log.setLevel(logging.DEBUG)
+
+        # make some noisy things quiet
+        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
+        logging.getLogger('props')            .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
+    elif namespace.verbose == 2:
+        log.setLevel(logging.DEBUG)
+        logging.getLogger('props')   .setLevel(logging.WARNING)
+        logging.getLogger('pwidgets').setLevel(logging.WARNING)
+    elif namespace.verbose == 3:
+        log.setLevel(logging.DEBUG)
+        logging.getLogger('props')   .setLevel(logging.DEBUG)
+        logging.getLogger('pwidgets').setLevel(logging.DEBUG)
+
+    if namespace.noisy is not None:
+        for mod in namespace.noisy:
+            logging.getLogger(mod).setLevel(logging.DEBUG)
 
     # otherwise, give the remaining arguments to the tool parser
     fslTool = allTools[namespace.tool]
@@ -301,8 +331,21 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
 
     return frame
 
+
+def runTool(toolName, args, **kwargs):
+    """Runs the tool with the specified name, with the specified arguments,
+    in a separate process. Returns the process exit code.
+    """
+
+    args = [toolName] + args
+    args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
+
+    log.debug('Executing {}'.format(' '.join(args)))
+
+    return subprocess.call(args, **kwargs)
+
     
-def main():
+def main(args=None):
     """Entry point.
 
     Parses command line arguments, loads the appropriate tool module, builds
@@ -312,36 +355,20 @@ def main():
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None
 
+    if args is None:
+        args = sys.argv[1:]
+
     allTools                = loadAllFSLTools()
-    fslTool, args, toolArgs = parseArgs(sys.argv[1:], allTools)
-
-    if args.verbose == 1:
-        log.setLevel(logging.DEBUG)
-
-        # make some noisy things quiet
-        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
-        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
-        logging.getLogger('props')            .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
-    elif args.verbose == 2:
-        log.setLevel(logging.DEBUG)
-        logging.getLogger('props')   .setLevel(logging.WARNING)
-        logging.getLogger('pwidgets').setLevel(logging.WARNING)
-    elif args.verbose == 3:
-        log.setLevel(logging.DEBUG)
-        logging.getLogger('props')   .setLevel(logging.DEBUG)
-        logging.getLogger('pwidgets').setLevel(logging.DEBUG)
-
-    if args.noisy is not None:
-        for mod in args.noisy:
-            logging.getLogger(mod).setLevel(logging.DEBUG)
-
-    if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-    else:                           ctx = None
+    fslTool, args, toolArgs = parseArgs(args, allTools)
 
     if fslTool.interface is not None:
         import wx
         app   = wx.App()
+
+        # Context creation may assume that a wx.App has been created
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+        
         frame = buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
         frame.Show()
 
@@ -354,5 +381,9 @@ def main():
         app.MainLoop()
         
     elif fslTool.execute is not None:
+        
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+        
         fslDirWarning( None, fslTool.toolName, fslEnvActive)
         fslTool.execute(toolArgs, ctx)

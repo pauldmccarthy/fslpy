@@ -6,16 +6,63 @@ have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
-* February 2015 internal release
-** Git release pipeline
-** UI design
-** Atlas tools
-** SSH / VNC performance
-** Fix all the bugs
-*** Command line
-*** Offscreen rendering
+* February/March 2015 internal release
+** OSX installer
+*** Make sure you disable GL error checking/logging
+*** Test screenshots
+*** Test GL14 and GL21 (shaders)
+*** Test two-stage rendering
+*** Test installing colour maps
+*** Test saving edited images
+*** Test atlas tools (this will only be available when it is run from command line)
 
+** Installation instructions on wiki
+*** Make sure they're up to date
+*** Usage - keyboard shortcuts
+** Linux compatibility
+*** DONE Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
+*** WONTFIX Toolbars not being resized appropriately when the parent viewpanel is resized?
+Can't reproduce right now ..
+** WONTFIX Ludoweird interpolation effect - wtf?
+It's an artifact of the fact that interpolation is applied in voxel space, rather than mm space.
+** DONE Fix all 'listener still registered' warnings.
+** DONE Progress dialog during screen shot
+** DONE VNC/X11 ortho panning 
+** DONE Change 'profile' to 'mode'
+** DONE Volume Option to invert colour map
+** DONE Make ImageDisplayPanel change interpolation when transformation is changed
+** DONE Disable image display widgets for disabled images
+** DONE Rename 'sync image order' -> 'sync overlay order'
+** DONE Remove 'sync volume' option
+** DONE -ISH Make VNC two stage render approach stablish
+** DONE Add 'blue-lightblue' colour map
+** DONE Rename 'autumn' to 'red-yellow' (change colour map)
+** DONE Colour map ordering
+** DONE Change 'ss' back to 'twostage'
+** DONE Command line
+** DONE? Little things
+*** DONE ViewPanel: New toolbars in a lower layer
+*** DONE Number spinboxes are no longer clamped
+*** Keyboard on number widgets .. Should be working by default?
+** DONE Default layout
+** DONE UI design
+Good enough for the time being
+** DONE Support for double precision images
+** DONE Histogram
+** DONE Atlas tools
+** DONE Keyboard shortcut for pan mode - can't use middle click when using a shitty laptop trackpad
+** DONE Git release pipeline
+We now have an 'oxford' branch, which is linked to the jalapeno installation.
+When you want to 'release' something, merge from the master branch to the
+oxford branch, and push to jalapeno
 
+** DONE Offscreen rendering
+** Other things/stretch objectives:
+*** Tooltips
+*** Save/restore window layout
+*** Movie mode
+*** Document all the code
+*** Fix all the bugs
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -25,19 +72,26 @@ I think that all the work performed by the PropertyOwner metaclass can be done i
 Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
 ** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
 * WX Bugs
-*** Floating panels get moved about when opening a new floating panel.
-*** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
-*** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
+** agw.aui
+*** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue; I've coded a workaround.
+*** Floating panels are resized to specified floating size, but the title bar is not taken into account. Coded a workaround
+** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
+** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** Ortho canvas resizing
+** VolumeOpts DisplayRange<->Bricon synchronisation.
+Breaks when brightness/contrast/displayRange sync (between multiple displays)
+is turned off .. I think the sync logic has to occur somewhere other than the
+VolumeOpts class ...
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
-** SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** Lightbox scrollbar under linux not visible?
 
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
+** DONE Image order synchronisation
+** DONE Ortho canvas resizing
 ** DONE LightBox - updated nrows/ncols when image list changes
 ** DONE ImageDisplay range  (and other properties?) on are reset when new view is opened
 ** DONE OrthoPanel/SliceCanvas - when zoom > 0 and bounds are not centred on cursor, window resize centres bounds on cursor.
@@ -102,12 +156,23 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
-** Ortho canvases not taking up all the available space 
-** 'Annotation' image type that allows the user to highlight regions in different colours.
+** Startup - ability to set $FSLDIR
+** Time Series - option to 'hold' voxel time course
+You could have a list panel which lists the image and voxel coordinates of the
+time courses that are currently plotted.
+** Histogram - mouse drag should zoom into plot but not change data range.
+** A proper GLMask class - deriving from GLVolume is inefficient
+** A top-level class, from which all things inherit, which has a destroy method that must be called when the object is destroy4ed
+** Editor - apply fill/mask/ROI to all volumes of a 4D image
+** Option to centre display range for volume images
+** Spline interpolation in GL14
+** Ability to display vector data as directional (i.e. starting from voxel centre)
+** 'Label' image type, which allows user to change colour for each label.
+Ability to draw region outlines instead of full label overlays
+** 'Annotation' image type that allows the user to highlight regions in different colours. Is this the same as the 'label' image above?
 ** Support ANALYZE75
 Pixdims stored in A75 header should be used, unchanged, as the affine
 diagonals (i.e. negative pixdims supported).
-** On startup, check to see if cached display location is valid (e.g. external display has been unplugged). Revert to default location/size if not.
 ** EListBox - Mouse drag to move items
 ** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
@@ -117,7 +182,6 @@ diagonals (i.e. negative pixdims supported).
 *** A switch to automatically choose colour maps/clipping thresholds for a provided set of images (like Eugene's fast fslview startup script)
 ** Scale values in colour map according to largest value?
 ** ColourBarPanel should only do stuff if it is being displayed
-** Arrow keys on image list change selected image
 ** View/view config panels persist across shutdown/restart
 This is tough, because the old agw.AUINotebook implementation does not have
 any ability to query layout.
@@ -141,6 +205,8 @@ Need to be able to specify the order that actions appear in the menu - perhaps
 just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE EListBox - Up/down keys change selected image
+** DONE On startup, check to see if cached display location is valid (e.g. external display has been unplugged). Revert to default location/size if not.
 ** DONE 'Create mask image' option
 ** DONE 'Mask' image type
 
@@ -210,6 +276,11 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Editor features
+*** Select all above/below a specified intensity
+*** Honour clipping range (i.e. don't select clipped voxels)
+** Ability to unlink image volume across displays
+** Link display properties across images
 ** Custom colour select widget - the OSX one is rubbish
 ** Transfer editor selection on selected image changes
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
@@ -220,22 +291,21 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 *** 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
-** IN PROGRESS Different settings for each view
+** Panel/profile mode which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE Different settings for each view
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
-*** IN PROGRESS Ability to display images in a different order for different view panels.
-*** IN PROGRESS Separate image displays for each view panel - this needs to be possible.
+*** DONE Ability to display images in a different order for different view panels.
+*** DONE Separate image displays for each view panel - this needs to be possible.
 And the ability to link/unlink said display properties
 ImageDisplay objects could be managed by DisplayContetx, rather than being
 tacked on as an image attribute (the same could be said of GLObjects, but
 that's irrelevant).
-*** IN PROGRESS Link display properties across all images
-** IN PROGRESS Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
+** DONE Profiles (e.g. 'view', 'edit', 'analyse?', etc etc). 
 This will probably dictate how you go about implementing keyboard/mouse control
-** IN PROGRESS Keyboard/mouse control
+** DONE Keyboard/mouse control
 *** Arrow keys to move cursor location - how to select which x/y axes are controlled?
 *** Mouse/keyboard controls for panning/zooming
-** Panel which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
 ** DONE Brightness/contrast control, common to all image types (i.e. in top level Display properties)
 ** DONE Image export/offscreen rendering.
 ** DONE Re-work image display resolution options.

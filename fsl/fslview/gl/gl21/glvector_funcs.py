@@ -119,7 +119,7 @@ def setAxes(self):
             self.image.shape,
             self.xax,
             self.yax,
-            self.display.voxToDisplayMat)
+            self.display.getTransform('voxel', 'display'))
 
     worldCoords    = worldCoords[:, [self.xax, self.yax]]
     worldCoords    = np.array(worldCoords, dtype=np.float32).ravel('C')
@@ -165,15 +165,17 @@ def preDraw(self):
     gl.glUseProgram(self.shaders)
     
     pars            = self.shaderParams
-    useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape,        dtype=np.float32)
-    imageDims       = np.array(self.image.pixdim,       dtype=np.float32) 
-    displayToVoxMat = np.array(display.displayToVoxMat, dtype=np.float32)
+    imageShape      = np.array(self.image.shape[ :3], dtype=np.float32)
+    imageDims       = np.array(self.image.pixdim[:3], dtype=np.float32) 
+    displayToVoxMat = np.array(
+        display.getTransform('display', 'voxel'), dtype=np.float32)
 
     if mode == 'line':
+        useSpline       = False
         imageValueXform = np.array(self.imageTexture.voxValXform.T,
                                    dtype=np.float32)
     elif mode == 'rgb':
+        useSpline       = display.interpolation == 'spline'
         imageValueXform = np.eye(4, dtype=np.float32)
 
     displayToVoxMat = displayToVoxMat.ravel('C')
@@ -214,7 +216,8 @@ def preDraw(self):
     # index buffer only needed for line mode
     if mode == 'line':
     
-        voxToDisplayMat = np.array(display.voxToDisplayMat, dtype=np.float32)
+        voxToDisplayMat = np.array(display.getTransform('voxel', 'display'),
+                                   dtype=np.float32)
         voxToDisplayMat = voxToDisplayMat.ravel('C')                
         gl.glUniformMatrix4fv(pars['voxToDisplayMat'],
                               1,
@@ -261,7 +264,14 @@ def draw(self, zpos, xform=None):
         gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
                           self.nVertices,
                           gl.GL_UNSIGNED_INT,
-                          None) 
+                          None)
+
+        
+def drawAll(self, zposes, xforms):
+    """Delegates to the :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`
+    method.
+    """
+    globject.GLObject.drawAll(self, zposes, xforms)
 
 
 def postDraw(self):

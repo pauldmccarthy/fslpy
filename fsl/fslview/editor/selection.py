@@ -26,8 +26,9 @@ class Selection(props.HasProperties):
     selection = props.Object()
 
     
-    def __init__(self, image):
+    def __init__(self, image, display):
         self._image                = image
+        self._display              = display
         self._lastChangeOffset     = None
         self._lastChangeOldBlock   = None
         self._lastChangeNewBlock   = None
@@ -45,9 +46,9 @@ class Selection(props.HasProperties):
         xlo = xs.min()
         ylo = ys.min()
         zlo = zs.min()
-        xhi = xs.max()
-        yhi = ys.max()
-        zhi = zs.max()
+        xhi = xs.max() + 1
+        yhi = ys.max() + 1
+        zhi = zs.max() + 1
 
         selection = self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
 
@@ -202,8 +203,16 @@ class Selection(props.HasProperties):
                       searchRadius=None,
                       local=False):
 
+        if   len(self._image.shape) == 3:
+            data = self._image
+        elif len(self._image.shape) == 4:
+            data = self._image[:, :, :, self._display.volume]
+        else:
+            raise RuntimeError('Only 3D and 4D images are currently supported')
+
         seedLoc = np.array(seedLoc)
-        value   = self._image[seedLoc[0], seedLoc[1], seedLoc[2]]
+        value   = data[seedLoc[0], seedLoc[1], seedLoc[2]]
+        
 
         # Search radius may be either None, a scalar value,
         # or a sequence of three values (one for each axis).
@@ -219,7 +228,7 @@ class Selection(props.HasProperties):
         # No search radius - search
         # through the entire image
         if np.any(searchRadius == 0):
-            searchSpace  = self._image
+            searchSpace  = data
             searchOffset = (0, 0, 0)
             searchMask   = None
 
@@ -233,7 +242,7 @@ class Selection(props.HasProperties):
 
             # Calculate xyz indices 
             # of the search space
-            shape = self._image.shape
+            shape = data.shape
             for ax in range(3):
 
                 idx = seedLoc[     ax]
@@ -267,7 +276,7 @@ class Selection(props.HasProperties):
 
             # Extract the search space, and
             # create the ellipsoid mask
-            searchSpace  = self._image[slices]
+            searchSpace  = data[slices]
             searchOffset = (ranges[0][0], ranges[1][0], ranges[2][0])
             searchMask   = dists <= 1
             

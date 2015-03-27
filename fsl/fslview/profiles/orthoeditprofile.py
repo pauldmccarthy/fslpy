@@ -21,20 +21,17 @@ import orthoviewprofile
 
 class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
-    selectionSize  = props.Int(minval=1, maxval=30, default=3, clamped=True)
+    selectionSize  = props.Int(minval=1, default=3)
     selectionIs3D  = props.Boolean(default=False)
     fillValue      = props.Real(default=0)
 
-    intensityThres = props.Real(minval=0.0, default=10, clamped=True)
+    intensityThres = props.Real(minval=0.0, default=10)
     localFill      = props.Boolean(default=False)
 
     selectionCursorColour  = props.Colour(default=(1, 1, 0, 0.7))
     selectionOverlayColour = props.Colour(default=(1, 0, 1, 0.7))
 
-    searchRadius   = props.Real(minval=0.0,
-                                default=0.0,
-                                maxval=250.0,
-                                clamped=True)
+    searchRadius   = props.Real(minval=0.0, default=0.0)
 
     
     def clearSelection(self, *a):
@@ -140,34 +137,53 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     def _selectedImageChanged(self, *a):
 
         image     = self._displayCtx.getSelectedImage()
-        selection = self._editor.getSelection()
-        display   = self._displayCtx.getDisplayProperties(image)
+        selection = self._editor.getSelection() 
         xannot    = self._xcanvas.getAnnotations()
         yannot    = self._ycanvas.getAnnotations()
-        zannot    = self._zcanvas.getAnnotations()
+        zannot    = self._zcanvas.getAnnotations()        
 
+        # If the selected image hasn't changed,
+        # we don't need to do anything
         if image == self._currentImage:
             return
 
-        self._currentImage = image
-
+        # If there's already an existing
+        # selection object, clear it 
         if self._selAnnotation is not None:
             xannot.dequeue(self._selAnnotation,  hold=True)
             yannot.dequeue(self._selAnnotation,  hold=True)
             zannot.dequeue(self._selAnnotation,  hold=True)
             self._selAnnotation  = None
 
-        # Edit mode is only supported on images with
-        # the 'volume' type for the time being
-        if image is None or image.imageType != 'volume':
+        self._currentImage = image
+
+        # If there is no selected image  (the image
+        # list is empty), don't do anything.
+        if image is None:
             return
+
+        display = self._displayCtx.getDisplayProperties(image)
+
+        # Edit mode is only supported on images with
+        # the 'volume' type, in 'id' or 'pixdim'
+        # transformation for the time being
+        if image.imageType != 'volume' or \
+           display.transform not in ('id', 'pixdim'):
+            
+            self._currentImage = None
+            log.warn('Editing is only possible on volume '
+                     'images, in ID or pixdim space.')
+            return
+
+        # Otherwise, create a selection annotation
+        # and queue it on the canvases for drawing
 
         selection.addListener('selection', self._name, self._selectionChanged)
 
         self._selAnnotation = annotations.VoxelSelection( 
             selection,
-            display.displayToVoxMat,
-            display.voxToDisplayMat,
+            display.getTransform('display', 'voxel'),
+            display.getTransform('voxel',   'display'),
             colour=self.selectionOverlayColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
@@ -199,7 +215,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         """
         display = self._displayCtx.getDisplayProperties(self._currentImage)
 
-        voxel = transform.transform([canvasPos], display.displayToVoxMat)[0]
+        voxel = transform.transform(
+            [canvasPos], display.getTransform('display', 'voxel'))[0]
 
         # Using floor(voxel+0.5) because, when at the
         # midpoint, I want to round up. np.round rounds
@@ -234,8 +251,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().grid(
                 block,
-                display.displayToVoxMat,
-                display.voxToDisplayMat,
+                display.getTransform('display', 'voxel'),
+                display.getTransform('voxel',   'display'),
                 offsets=offset,
                 colour=colour)
 
@@ -341,7 +358,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         image   = self._displayCtx.getSelectedImage()
         display = self._displayCtx.getDisplayProperties(image)
-        opts    = display.displayOpts
+        opts    = display.getDisplayOpts()
 
         step = opts.displayRange.xlen / 50.0
 
