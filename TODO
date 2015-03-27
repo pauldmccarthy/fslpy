@@ -8,12 +8,21 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * February/March 2015 internal release
 ** OSX installer
-Make sure you disable GL error checking/logging
+*** Make sure you disable GL error checking/logging
+*** Test screenshots
+*** Test GL14 and GL21 (shaders)
+*** Test two-stage rendering
+*** Test installing colour maps
+*** Test saving edited images
+*** Test atlas tools (this will only be available when it is run from command line)
+
 ** Installation instructions on wiki
+*** Make sure they're up to date
+*** Usage - keyboard shortcuts
 ** Linux compatibility
 *** DONE Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
-*** Toolbars not being resized appropriately when the parent viewpanel is resized?
-Toolbar mouse scrolling not working? Oh, this may be because of the above issue.
+*** WONTFIX Toolbars not being resized appropriately when the parent viewpanel is resized?
+Can't reproduce right now ..
 ** WONTFIX Ludoweird interpolation effect - wtf?
 It's an artifact of the fact that interpolation is applied in voxel space, rather than mm space.
 ** DONE Fix all 'listener still registered' warnings.
@@ -147,6 +156,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Startup - ability to set $FSLDIR
 ** Time Series - option to 'hold' voxel time course
 You could have a list panel which lists the image and voxel coordinates of the
 time courses that are currently plotted.
