@@ -46,9 +46,9 @@ class Selection(props.HasProperties):
         xlo = xs.min()
         ylo = ys.min()
         zlo = zs.min()
-        xhi = xs.max()
-        yhi = ys.max()
-        zhi = zs.max()
+        xhi = xs.max() + 1
+        yhi = ys.max() + 1
+        zhi = zs.max() + 1
 
         selection = self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
 

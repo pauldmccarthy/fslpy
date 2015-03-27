@@ -234,6 +234,9 @@ class Editor(props.HasProperties):
             self._displayCtx.selectImage(image)
 
         if isinstance(change, ValueChange):
+            log.debug('Changing image data - offset '
+                      '{}, volume {}, size {}'.format(
+                          change.offset, change.volume, change.oldVals.shape))
             change.image.applyChange(change.offset, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
