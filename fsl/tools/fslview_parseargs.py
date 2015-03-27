@@ -306,6 +306,10 @@ HELP = td.TypeDict({
 # complicated property transformations (i.e.
 # non-reversible ones), you'll need to have
 # an inverse transforms dictionary
+def _modTrans(i):
+    if i == 'none': return None
+    else:           return i.imageFile
+    
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
     'OrthoOpts.showXCanvas' : lambda b: not b,
@@ -317,7 +321,7 @@ TRANSFORMS = td.TypeDict({
     # when reading in command line arguments -
     # this transform function is only used when
     # generating arguments
-    'VectorOpts.modulate'   : lambda i: i.imageFile,
+    'VectorOpts.modulate'   : _modTrans,
 })
 
 
