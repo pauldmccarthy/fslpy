@@ -205,7 +205,7 @@ VectorOptsLayout = props.VGroup((
         widget(VectorOpts, 'suppressZ')),
         vertLabels=True),
     widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold')))
+    widget(VectorOpts, 'modThreshold', showLimits=False)))
 
 
 ##########################

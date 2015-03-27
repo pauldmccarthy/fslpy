@@ -321,9 +321,24 @@ class ViewPanel(fslpanel.FSLViewPanel):
         for panel in self.__panels.values():
             paneInfo = self.__auiMgr.GetPane(panel)
             parent   = panel.GetParent()
+            minSize  = panel.GetMinSize().Get()
 
-            minSize   = panel.GetMinSize() .Get()
-            bestSize  = panel.GetBestSize().Get()
+            # If the panel is floating, use its
+            # current size as its 'best' size,
+            # as otherwise it will immediately
+            # resize the panel to its best size
+            if paneInfo.IsFloating():
+                bestSize = panel.GetSize().Get()
+
+                # Unless it's current size is less
+                # than its minimum size (which probably
+                # means that it has just been added)
+                if bestSize[0] < minSize[0] or \
+                   bestSize[1] < minSize[1]:
+                    bestSize = panel.GetBestSize().Get()
+                    
+            else:
+                bestSize = panel.GetBestSize().Get()
 
             # See comments in __init__ about
             # this 'float offset' thing 
@@ -337,7 +352,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
             paneInfo.MinSize(     minSize)  \
                     .BestSize(    bestSize) \
                     .FloatingSize(floatSize)
-                
+
+            # Re-position floating panes, otherwise
+            # the AuiManager will reset their position
             if paneInfo.IsFloating() and \
                isinstance(parent, aui.AuiFloatingFrame):
                 paneInfo.FloatingPosition(parent.GetScreenPosition())
