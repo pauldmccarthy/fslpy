@@ -345,7 +345,7 @@ def runTool(toolName, args, **kwargs):
     return subprocess.call(args, **kwargs)
 
     
-def main():
+def main(args=None):
     """Entry point.
 
     Parses command line arguments, loads the appropriate tool module, builds
@@ -355,8 +355,11 @@ def main():
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None
 
+    if args is None:
+        args = sys.argv[1:]
+
     allTools                = loadAllFSLTools()
-    fslTool, args, toolArgs = parseArgs(sys.argv[1:], allTools)
+    fslTool, args, toolArgs = parseArgs(args, allTools)
 
     if fslTool.interface is not None:
         import wx
