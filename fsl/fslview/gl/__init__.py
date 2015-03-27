@@ -204,7 +204,7 @@ def bootstrap(glVersion=None):
         # And disable some fancy options - spline
         # may have been disabled above, so absorb
         # the IndexError if it occurs
-        vo.VectorOpts  .displayMode  .removeChoice('lines')
+        vo.VectorOpts  .displayMode  .removeChoice('line')
         try: di.Display.interpolation.removeChoice('spline')
         except IndexError: pass
 
