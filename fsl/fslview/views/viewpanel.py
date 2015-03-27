@@ -25,6 +25,58 @@ import fsl.data.strings     as strings
 log = logging.getLogger(__name__)
 
 
+#
+# Here I am monkey patching the wx.agw.aui.framemanager.AuiFloatingFrame
+# __init__ method.
+#
+# I am doing this because I have observed some strange behaviour when running
+# a remote instance of this application over an SSH/X11 session, with the X11
+# server (i.e. the local machine) running in OS X. When a combobox is embedded
+# in a floating frame (either a pane or a toolbar), its dropdown list appears
+# underneath the frame, meaning that the user is unable to actually select any
+# items from the list!
+#
+# I have only seen this behaviour when using XQuartz 2.7.6, running under OSX
+# 10.9 Mavericks.
+#
+# Ultimately, this appears to be caused by the wx.FRAME_TOOL_WINDOW style, as
+# passed to the wx.MiniFrame constructor (from which the AuiFloatingFrame
+# class derives). Removing this style flag fixes the problem, so this is
+# exactly what I'm doing. I haven't looked any deeper into the situation.
+#
+
+
+# Store a reference to the real constructor.
+AuiFloatingFrame__real__init__ = aui.AuiFloatingFrame.__init__
+
+
+# My new constructor, which makes sure that
+# the FRAME_TOOL_WINDOW style is not passed
+# through to the AuiFloatingFrame constructor
+def AuiFloatingFrame__init__(*args, **kwargs):
+
+    if 'style' in kwargs:
+        style = kwargs['style']
+
+    # This is the default style, as defined 
+    # in the AuiFloatingFrame constructor
+    else:
+        style = (wx.FRAME_TOOL_WINDOW     |
+                 wx.FRAME_FLOAT_ON_PARENT |
+                 wx.FRAME_NO_TASKBAR      |
+                 wx.CLIP_CHILDREN)
+
+    style &= ~wx.FRAME_TOOL_WINDOW
+
+    kwargs['style'] = style
+    
+    return AuiFloatingFrame__real__init__(*args, **kwargs)
+
+# Patch my constructor in
+# to the class definition
+aui.AuiFloatingFrame.__init__ = AuiFloatingFrame__init__
+
+
 class ViewPanel(fslpanel.FSLViewPanel):
 
     profile = props.Choice()
