@@ -7,7 +7,10 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * February/March 2015 internal release
-** OSX installer
+** Installation instructions on wiki
+*** Make sure they're up to date - test in a VM
+*** Usage - keyboard shortcuts
+** DONE OSX installer
 *** Make sure you disable GL error checking/logging
 *** Test screenshots
 *** Test GL14 and GL21 (shaders)
@@ -16,10 +19,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 *** Test saving edited images
 *** Test atlas tools (this will only be available when it is run from command line)
 
-** Installation instructions on wiki
-*** Make sure they're up to date
-*** Usage - keyboard shortcuts
-** Linux compatibility
+** DONE Linux compatibility
 *** DONE Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
 *** WONTFIX Toolbars not being resized appropriately when the parent viewpanel is resized?
 Can't reproduce right now ..

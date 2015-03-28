@@ -13,7 +13,7 @@ setup(
 
     name='fslpy',
 
-    version='0.0',
+    version='0.1',
 
     description='Front end to FSL tools',
 
@@ -44,8 +44,12 @@ setup(
 
     package_data={
         'fsl' : [
+            'fslview/splash.png',
+            'fslview/gl/gl14/*prog',
             'fslview/gl/gl21/*glsl',
-            'fslview/colourmaps/*cmap'
+            'fslview/colourmaps/*cmap',
+            'fslview/colourmaps/README',
+            'fslview/colourmaps/order.txt',
         ]
     },
 
