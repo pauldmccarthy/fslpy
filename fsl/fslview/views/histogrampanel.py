@@ -23,6 +23,8 @@ log = logging.getLogger(__name__)
 #
 # Ideas:
 #
+#    - Log scale
+#
 #    - Plot histogram for multiple images (how to select them?)
 #
 #    - Ability to apply a label mask image, and plot separate

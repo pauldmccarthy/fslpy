@@ -5,9 +5,11 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
+* Feedback
+** (Sean) In location panel, ability to display intensity for all images, not just the currently selected one
 
 * February/March 2015 internal release
-** Installation instructions on wiki
+** DONE Installation instructions on wiki
 *** Make sure they're up to date - test in a VM
 *** Usage - keyboard shortcuts
 ** DONE OSX installer
@@ -71,12 +73,14 @@ I think that all the work performed by the PropertyOwner metaclass can be done i
 ** DONE Add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
 Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
 ** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
-* WX Bugs
+* Bugs out of my control
 ** agw.aui
 *** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue; I've coded a workaround.
 *** Floating panels are resized to specified floating size, but the title bar is not taken into account. Coded a workaround
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
+** PyInstaller menu bar not showing
+http://dvitonis.net/blog/2015/01/07/menu-bar-not-visible-when-building-pyqt-app-bundle-pyinstaller-mac-osx-mavericks-yosemite/
 * Bugs to fix
 ** VolumeOpts DisplayRange<->Bricon synchronisation.
 Breaks when brightness/contrast/displayRange sync (between multiple displays)
