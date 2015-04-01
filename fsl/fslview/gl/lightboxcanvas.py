@@ -684,7 +684,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if self.twoStageRender:
             self._renderTextures.unbind()
             self._setViewport()
-            self._renderTextures.drawRender(
+            self._renderTextures.drawOnBounds(
                 self.displayBounds.xlo,
                 self.displayBounds.xhi,
                 self.displayBounds.ylo,

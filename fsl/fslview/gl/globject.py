@@ -35,14 +35,16 @@ def createGLObject(image, display):
     :arg display: A :class:`~fsl.fslview.displaycontext.Display` instance.
     """
 
-    import fsl.fslview.gl.glvolume as glvolume
-    import fsl.fslview.gl.glmask   as glmask
-    import fsl.fslview.gl.glvector as glvector
+    import fsl.fslview.gl.glvolume        as glvolume
+    import fsl.fslview.gl.glvolume_pregen as glvolume_pregen
+    import fsl.fslview.gl.glmask          as glmask
+    import fsl.fslview.gl.glvector        as glvector
 
     _objectmap = {
-        'volume' : glvolume.GLVolume,
-        'mask'   : glmask  .GLMask,
-        'vector' : glvector.GLVector
+        'volume'        : glvolume       .GLVolume,
+        'volume_pregen' : glvolume_pregen.GLVolume_pregen,
+        'mask'          : glmask         .GLMask,
+        'vector'        : glvector       .GLVector
     } 
 
     ctr = _objectmap.get(display.imageType, None)

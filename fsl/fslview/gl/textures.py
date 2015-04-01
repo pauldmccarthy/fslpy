@@ -747,33 +747,26 @@ class RenderTexture(object):
 
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
         
-    
-    def drawRender(self, xmin, xmax, ymin, ymax, xax, yax):
+    def draw(self, vertices):
+        
+        if vertices.shape != (6, 3):
+            raise ValueError('Six vertices must be provided')
 
-        # gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        # gl.glEnable(gl.GL_BLEND)
-        # gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        vertices  = np.array(vertices, dtype=np.float32)
+        texCoords = np.zeros((6, 2),   dtype=np.float32)
+        indices   = np.arange(6,       dtype=np.uint32)
 
-        indices    = np.arange(6,     dtype=np.uint32)
-        vertices   = np.zeros((6, 3), dtype=np.float32)
-        texCoords  = np.zeros((6, 2), dtype=np.float32)
+        texCoords[0, :] = [0, 0]
+        texCoords[1, :] = [0, 1]
+        texCoords[2, :] = [1, 0]
+        texCoords[3, :] = [1, 0]
+        texCoords[4, :] = [0, 1]
+        texCoords[5, :] = [1, 1]
 
-        vertices[ 0, [xax, yax]] = [xmin, ymin]
-        texCoords[0, :]          = [0,    0]
-        vertices[ 1, [xax, yax]] = [xmin, ymax]
-        texCoords[1, :]          = [0,    1]
-        vertices[ 2, [xax, yax]] = [xmax, ymin]
-        texCoords[2, :]          = [1,    0]
-        vertices[ 3, [xax, yax]] = [xmax, ymin]
-        texCoords[3, :]          = [1,    0]
-        vertices[ 4, [xax, yax]] = [xmin, ymax]
-        texCoords[4, :]          = [0,    1]
-        vertices[ 5, [xax, yax]] = [xmax, ymax]
-        texCoords[5, :]          = [1,    1]
-
-        texCoords = texCoords.ravel('C')
         vertices  = vertices .ravel('C')
+        texCoords = texCoords.ravel('C')
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
@@ -797,6 +790,20 @@ class RenderTexture(object):
 
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+ 
+        
+    def drawOnBounds(self, xmin, xmax, ymin, ymax, xax, yax):
+
+        vertices = np.zeros((6, 3), dtype=np.float32)
+
+        vertices[ 0, [xax, yax]] = [xmin, ymin]
+        vertices[ 1, [xax, yax]] = [xmin, ymax]
+        vertices[ 2, [xax, yax]] = [xmax, ymin]
+        vertices[ 3, [xax, yax]] = [xmax, ymin]
+        vertices[ 4, [xax, yax]] = [xmin, ymax]
+        vertices[ 5, [xax, yax]] = [xmax, ymax]
+
+        self.draw(vertices)
 
 
 class ImageRenderTexture(RenderTexture):

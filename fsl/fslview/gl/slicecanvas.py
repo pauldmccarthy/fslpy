@@ -477,7 +477,7 @@ class SliceCanvas(props.HasProperties):
                 globj = self._glObjects.get(img, None)
                 if globj is not None:
                     globj.destroy()
-                
+
                 globj = globject.createGLObject(img, disp)
                 self._glObjects[img] = globj
 
@@ -798,7 +798,7 @@ class SliceCanvas(props.HasProperties):
                       '{:0.3f}-{:0.3f}'.format(
                           image, xmin, xmax, ymin, ymax))
 
-            renderTexture.drawRender(
+            renderTexture.drawOnBounds(
                 xmin, xmax, ymin, ymax, self.xax, self.yax) 
 
 
