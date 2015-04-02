@@ -241,7 +241,7 @@ class GLVolume(globject.GLImageObject):
         display = self.display
         opts    = self.displayOpts
 
-        alpha  = display.alpha
+        alpha  = display.alpha / 100.0
         cmap   = opts.cmap
         invert = opts.invert
         dmin   = opts.displayRange[0]

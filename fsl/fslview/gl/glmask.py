@@ -21,7 +21,6 @@ import logging
 
 
 import numpy                   as np
-import OpenGL.GL               as gl
 
 import fsl.fslview.gl.glvolume as glvolume
 
@@ -96,61 +95,23 @@ class GLMask(glvolume.GLVolume):
         is set).
         """
 
-        opts   = self.displayOpts
-        colour = opts.colour
-        imin   = opts.threshold[0]
-        imax   = opts.threshold[1]
+        display = self.display
+        opts    = self.displayOpts
+        alpha   = display.alpha / 100.0
+        colour  = opts.colour
+        dmin    = opts.threshold[0]
+        dmax    = opts.threshold[1]
         
         colour[3] = 1.0
 
-        # This transformation is used to transform voxel values
-        # from their native range to the range [0.0, 1.0], which
-        # is required for texture colour lookup. Values below
-        # or above the current display range will be mapped
-        # to texture coordinate values less than 0.0 or greater
-        # than 1.0 respectively.
-        if imax == imin: scale = 1
-        else:            scale = imax - imin
-            
-        cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / scale
-        cmapXform[3, 0] = -imin * cmapXform[0, 0]
-
-        self.colourMapXform = cmapXform
-
         if opts.invert:
-            colourmap = np.tile([[0.0, 0.0, 0.0, 0.0]], (16, 1))
-            border    = np.array(opts.colour, dtype=np.float32)
+            cmap   = np.tile([0.0, 0.0, 0.0, 0.0], (4, 1))
+            border = np.array(opts.colour, dtype=np.float32)
         else:
-            colourmap = np.tile([[opts.colour]], (16, 1))
-            border    = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)            
+            cmap   = np.tile([opts.colour],        (4, 1))
+            border = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
 
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel('C')
-
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
-
-        gl.glTexParameterfv(gl.GL_TEXTURE_1D,
-                            gl.GL_TEXTURE_BORDER_COLOR,
-                            border)
-        
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_BORDER)
-
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        16,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)        
+        self.colourTexture.set(cmap=cmap,
+                               border=border,
+                               displayRange=(dmin, dmax),
+                               alpha=alpha)

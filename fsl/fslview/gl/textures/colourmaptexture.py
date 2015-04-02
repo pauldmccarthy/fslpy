@@ -29,13 +29,18 @@ class ColourMapTexture(texture.Texture):
         self.__invert       = False
         self.__alpha        = 1.0
         self.__displayRange = [0.0, 1.0]
+        self.__border       = None
         self.__coordXform   = None
 
-        
+
+    # CMAP can be either a function which transforms
+    # values to RGBA, or a N*4 numpy array containing
+    # RGBA values
     def setColourMap(   self, cmap):   self.set(cmap=cmap)
     def setAlpha(       self, alpha):  self.set(alpha=alpha)
     def setInvert(      self, invert): self.set(invert=invert)
     def setDisplayRange(self, drange): self.set(displayRange=drange)
+    def setBorder(      self, border): self.set(border=border)
 
 
     def getCoordinateTransform(self):
@@ -48,11 +53,13 @@ class ColourMapTexture(texture.Texture):
         invert       = kwargs.get('invert',       None)
         alpha        = kwargs.get('alpha',        None)
         displayRange = kwargs.get('displayRange', None)
+        border       = kwargs.get('border',       None)
 
         if cmap         is not None: self.__cmap         = cmap
         if invert       is not None: self.__invert       = invert
         if alpha        is not None: self.__alpha        = alpha
         if displayRange is not None: self.__displayRange = displayRange
+        if border       is not None: self.__border       = border
 
         self.__refresh()
 
@@ -65,6 +72,7 @@ class ColourMapTexture(texture.Texture):
         resolution = self.__resolution
         cmap       = self.__cmap
         alpha      = self.__alpha
+        border     = self.__border
 
         # This transformation is used to transform input values
         # from their native range to the range [0.0, 1.0], which
@@ -81,16 +89,24 @@ class ColourMapTexture(texture.Texture):
 
         self.__coordXform = coordXform
 
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
-        if invert: colourRange = np.linspace(1.0, 0.0, resolution)
-        else:      colourRange = np.linspace(0.0, 1.0, resolution)
-        
-        colourmap = cmap(colourRange)
+        # Assume that the provided cmap
+        # value contains rgb values
+        if isinstance(cmap, np.ndarray):
+            resolution = cmap.shape[0]
+            colourmap  = cmap
+            
+        # Create [self.colourResolution] 
+        # rgb values, spanning the entire 
+        # range of the image colour map            
+        else:
+            colourmap = cmap(np.linspace(0.0, 1.0, resolution))
 
         # Apply global transparency
-        colourmap[:, 3] = alpha / 100.0
+        colourmap[:, 3] = alpha
+
+        # invert if needed
+        if invert:
+            colourmap = colourmap[::-1, :]
         
         # The colour data is stored on
         # the GPU as 8 bit rgba tuples
@@ -100,15 +116,26 @@ class ColourMapTexture(texture.Texture):
 
         # GL texture creation stuff
         self.bindTexture()
+
+        if border is not None:
+            border[3] = alpha
+            gl.glTexParameterfv(gl.GL_TEXTURE_1D,
+                                gl.GL_TEXTURE_BORDER_COLOR,
+                                border)
+            gl.glTexParameteri( gl.GL_TEXTURE_1D,
+                                gl.GL_TEXTURE_WRAP_S,
+                                gl.GL_CLAMP_TO_BORDER) 
+        else:
+            gl.glTexParameteri(gl.GL_TEXTURE_1D,
+                               gl.GL_TEXTURE_WRAP_S,
+                               gl.GL_CLAMP_TO_EDGE)
+ 
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MAG_FILTER,
                            gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MIN_FILTER,
                            gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE)
 
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
