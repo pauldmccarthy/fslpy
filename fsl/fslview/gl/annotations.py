@@ -417,9 +417,13 @@ class VoxelSelection(AnnotationObject):
         self.voxToDisplayMat = voxToDisplayMat
         self.offsets         = offsets
         
-        self.texture = textures.getTexture(
-            selection,
-            '{}_{}'.format(type(self).__name__, id(selection)))
+        self.texture = textures.SelectionTexture(
+            '{}_{}'.format(type(self).__name__, id(selection)),
+            selection)
+
+    def destroy(self):
+        self.texture.destroy()
+        self.texture = None
 
 
     def draw(self, zpos):
@@ -443,9 +447,8 @@ class VoxelSelection(AnnotationObject):
         texs  = np.array(texs,  dtype=np.float32).ravel('C')
         idxs  = np.arange(4,    dtype=np.uint32)
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture.texture)
+        self.texture.bindTexture(gl.GL_TEXTURE0)
+
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
         # gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
@@ -456,10 +459,9 @@ class VoxelSelection(AnnotationObject):
         gl.glDrawElements(gl.GL_TRIANGLE_STRIP, 4, gl.GL_UNSIGNED_INT, idxs)
 
         # gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
+        self.texture.unbindTexture()
         
         
 # class Text(AnnotationObject) ?

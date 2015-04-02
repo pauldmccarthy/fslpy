@@ -150,10 +150,12 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         # If there's already an existing
         # selection object, clear it 
         if self._selAnnotation is not None:
-            xannot.dequeue(self._selAnnotation,  hold=True)
-            yannot.dequeue(self._selAnnotation,  hold=True)
-            zannot.dequeue(self._selAnnotation,  hold=True)
-            self._selAnnotation  = None
+            xannot.dequeue(self._selAnnotation, hold=True)
+            yannot.dequeue(self._selAnnotation, hold=True)
+            zannot.dequeue(self._selAnnotation, hold=True)
+            
+            self._selAnnotation.destroy()
+            self._selAnnotation = None
 
         self._currentImage = image
 
@@ -203,9 +205,13 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
     
     def deregister(self):
-        self._xcanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
-        self._ycanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
-        self._zcanvas.getAnnotations().dequeue(self._selAnnotation,  hold=True)
+        if self._selAnnotation is not None:
+            sa = self._selAnnotation
+            self._xcanvas.getAnnotations().dequeue(sa, hold=True)
+            self._ycanvas.getAnnotations().dequeue(sa, hold=True)
+            self._zcanvas.getAnnotations().dequeue(sa, hold=True)
+            sa.destroy()
+            
         orthoviewprofile.OrthoViewProfile.deregister(self)
 
         

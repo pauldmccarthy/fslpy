@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# selectiontexture.py -
+# selectiontexture.py - see fsl.fslview.editor.selection.Selection
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -10,22 +10,19 @@ import logging
 import numpy     as np
 import OpenGL.GL as gl
 
-import fsl.fslview.gl.textures as textures
+import texture
 
 
 log = logging.getLogger(__name__)
 
 
-class SelectionTexture(textures.Texture):
+class SelectionTexture(texture.Texture):
 
-    def __init__(self, selection, name):
+    def __init__(self, name, selection):
 
-        self.name      = name
+        texture.Texture.__init__(self, name, 3)
+
         self.selection = selection
-        self.texture   = gl.glGenTextures(1)
-
-        log.debug('Created GL texture for {}: {}'.format(self.name,
-                                                         self.texture)) 
 
         selection.addListener('selection', name, self._selectionChanged)
 
@@ -34,7 +31,8 @@ class SelectionTexture(textures.Texture):
 
 
     def _init(self):
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
+
+        self.bindTexture()
         
         gl.glTexParameteri(gl.GL_TEXTURE_3D,
                            gl.GL_TEXTURE_MAG_FILTER,
@@ -69,7 +67,7 @@ class SelectionTexture(textures.Texture):
                         gl.GL_UNSIGNED_BYTE,
                         None)
         
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        self.unbindTexture()
 
         
     def refresh(self, block=None, offset=None):
@@ -85,7 +83,7 @@ class SelectionTexture(textures.Texture):
         log.debug('Updating selection texture (offset {}, size {})'.format(
             offset, data.shape))
         
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture)
+        self.bindTexture()
         gl.glTexSubImage3D(gl.GL_TEXTURE_3D,
                            0,
                            offset[0],
@@ -97,7 +95,7 @@ class SelectionTexture(textures.Texture):
                            gl.GL_ALPHA,
                            gl.GL_UNSIGNED_BYTE,
                            data.ravel('F'))
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
+        self.unbindTexture()
  
     
     def _selectionChanged(self, *a):

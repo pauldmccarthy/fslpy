@@ -235,6 +235,9 @@ class Profile(actions.ActionProvider):
     def register(self):
         """This method must be called to register this :class:`Profile`
         instance as the target for mouse/keyboard events.
+
+        Subclasses may override this method to performa any initialisation,
+        but must make sure to call this implementation.
         """
         for t in self.getEventTargets():
             t.Bind(wx.EVT_LEFT_DOWN,   self.__onMouseDown)
@@ -251,7 +254,10 @@ class Profile(actions.ActionProvider):
     def deregister(self):
         """This method de-registers this :class:`Profile` instance from
         receiving mouse/keybouard events.
-        """  
+        
+        Subclasses may override this method to performa any initialisation,
+        but must make sure to call this implementation.        
+        """
         for t in self.getEventTargets():
             t.Bind(wx.EVT_LEFT_DOWN,  None)
             t.Bind(wx.EVT_MIDDLE_UP,  None)
