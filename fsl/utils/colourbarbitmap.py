@@ -34,6 +34,9 @@ def colourBarBitmap(cmap,
                     textColour='#ffffff'):
     """Plots a colour bar using matplotlib, and returns a RGBA bitmap
     of the specified width/height.
+
+    The bitmap is returned as a W*H*4 numpy array, with the top-left
+    pixel located at index ``[0, 0, :]``.
     """
 
     if orientation not in ['vertical', 'horizontal']:
@@ -112,12 +115,15 @@ def colourBarBitmap(cmap,
     ncols, nrows = canvas.get_width_height()
 
     bitmap = np.fromstring(buf, dtype=np.uint8)
-    bitmap = bitmap.reshape(nrows, ncols, 4)
+    bitmap = bitmap.reshape(nrows, ncols, 4).transpose([1, 0, 2])
 
+    # the bitmap is in argb order,
+    # but we want it in rgba
     rgb = bitmap[:, :, 1:]
     a   = bitmap[:, :, 0]
     bitmap = np.dstack((rgb, a))
 
     if orientation == 'vertical':
         bitmap = np.flipud(bitmap.transpose([1, 0, 2]))
+
     return bitmap

@@ -13,18 +13,18 @@ import OpenGL.GL.EXT.framebuffer_object as glfbo
 
 import numpy                            as np
 
-import texture 
+import texture
 
 
 log = logging.getLogger(__name__)
 
 
-class RenderTexture(texture.Texture):
+class RenderTexture(texture.Texture2D):
     """A 2D texture and frame buffer, intended to be used as a target for
     off-screen rendering of a scene.
     """
     
-    def __init__(self, name, width, height, defaultInterp=gl.GL_NEAREST):
+    def __init__(self, name, interp=gl.GL_NEAREST):
         """
 
         Note that a current target must have been set for the GL context
@@ -32,15 +32,11 @@ class RenderTexture(texture.Texture):
         ``context.SetCurrent`` before creating a ``RenderTexture``).
         """
 
-        texture.Texture.__init__(self, name, 2)
-
+        texture.Texture2D.__init__(self, name, interp)
         
         self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
         log.debug('Created fbo: {}'.format(self.frameBuffer))
 
-        self.defaultInterp = defaultInterp
-        self.width         = width
-        self.height        = height
         self.refresh()        
 
         
@@ -70,36 +66,11 @@ class RenderTexture(texture.Texture):
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
 
         
-    def refresh(self, interp=None):
-        if interp is None:
-            interp = self.defaultInterp
+    def refresh(self):
+        texture.Texture2D.refresh(self)
 
-        log.debug('Configuring texture {}, fbo {}, size {}'.format(
-            self.getTextureHandle(),
-            self.frameBuffer,
-            (self.width, self.height)))
-
-        # Configure the texture
+        # Configure the frame buffer
         self.bindTexture()
-
-        gl.glTexImage2D(gl.GL_TEXTURE_2D,
-                        0,
-                        gl.GL_RGBA8,
-                        self.width,
-                        self.height,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        None)
-
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           interp)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           interp)
-
-        # And configure the frame buffer
         self.bindAsRenderTarget()
         glfbo.glFramebufferTexture2DEXT(glfbo.GL_FRAMEBUFFER_EXT,
                                         glfbo.GL_COLOR_ATTACHMENT0_EXT,
@@ -114,59 +85,6 @@ class RenderTexture(texture.Texture):
 
         self.unbindAsRenderTarget()
         self.unbindTexture()
-
-        
-    def draw(self, vertices):
-        
-        if vertices.shape != (6, 3):
-            raise ValueError('Six vertices must be provided')
-
-        vertices  = np.array(vertices, dtype=np.float32)
-        texCoords = np.zeros((6, 2),   dtype=np.float32)
-        indices   = np.arange(6,       dtype=np.uint32)
-
-        texCoords[0, :] = [0, 0]
-        texCoords[1, :] = [0, 1]
-        texCoords[2, :] = [1, 0]
-        texCoords[3, :] = [1, 0]
-        texCoords[4, :] = [0, 1]
-        texCoords[5, :] = [1, 1]
-
-        vertices  = vertices .ravel('C')
-        texCoords = texCoords.ravel('C')
-
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-
-        self.bindTexture(gl.GL_TEXTURE0)
-
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV,
-                     gl.GL_TEXTURE_ENV_MODE,
-                     gl.GL_REPLACE)
-
-        gl.glVertexPointer(  3, gl.GL_FLOAT, 0, vertices)
-        gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, texCoords)
-
-        gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
-
-        self.unbindTexture()
-
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
- 
-        
-    def drawOnBounds(self, xmin, xmax, ymin, ymax, xax, yax):
-
-        vertices = np.zeros((6, 3), dtype=np.float32)
-
-        vertices[ 0, [xax, yax]] = [xmin, ymin]
-        vertices[ 1, [xax, yax]] = [xmin, ymax]
-        vertices[ 2, [xax, yax]] = [xmax, ymin]
-        vertices[ 3, [xax, yax]] = [xmax, ymin]
-        vertices[ 4, [xax, yax]] = [xmin, ymax]
-        vertices[ 5, [xax, yax]] = [xmax, ymax]
-
-        self.draw(vertices)
 
 
 class ImageRenderTexture(RenderTexture):
@@ -191,7 +109,8 @@ class ImageRenderTexture(RenderTexture):
         self._addListeners()        
         self._updateSize()
         
-        RenderTexture.__init__(self, self.name, self.width, self.height)
+        RenderTexture.__init__(self, self.name)
+        self.refresh()
 
 
     def _addListeners(self):
@@ -200,6 +119,11 @@ class ImageRenderTexture(RenderTexture):
         #      the image type changes - vector
         #      images will need a higher
         #      resolution than voxel space
+
+        def onInterp(*a):
+            if self.display.interpolation == 'none': interp = gl.GL_NEAREST
+            else:                                    interp = gl.GL_LINEAR
+            self.setInterpolation(interp)
 
         self.display.addListener('resolution',    self.name, self._updateSize)
         self.display.addListener('interpolation', self.name, self.refresh)
@@ -276,11 +200,3 @@ class ImageRenderTexture(RenderTexture):
         self.xax = xax
         self.yax = yax
         self.refresh()
-
-        
-    def refresh(self, *a):
-
-        if self.display.interpolation == 'none': interp = gl.GL_NEAREST
-        else:                                    interp = gl.GL_LINEAR
-
-        RenderTexture.refresh(self, interp)

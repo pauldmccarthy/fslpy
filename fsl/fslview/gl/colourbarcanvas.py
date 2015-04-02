@@ -24,6 +24,7 @@ import props
 
 import fsl.utils.colourbarbitmap as cbarbmp
 import fsl.data.strings          as strings
+import fsl.fslview.gl.textures   as textures
 
 
 class ColourBarCanvas(props.HasProperties):
@@ -116,42 +117,17 @@ class ColourBarCanvas(props.HasProperties):
                 self.label,
                 self.orientation,
                 labelSide)
-            bitmap = np.flipud(bitmap)
 
         if self._tex is None:
-            self._tex = gl.glGenTextures(1)
-            log.debug('Created GL texture: {}'.format(self._tex))
+            self._tex = textures.Texture2D('bab', gl.GL_LINEAR)
 
-        # Allow textures of any size
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-
-        gl.glBindTexture(  gl.GL_TEXTURE_2D, self._tex)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_BORDER)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D,
-                           gl.GL_TEXTURE_WRAP_T,
-                           gl.GL_CLAMP_TO_BORDER)
-
-        bitmap = bitmap.ravel('C')
-
-        gl.glTexImage2D(gl.GL_TEXTURE_2D,
-                        0,
-                        gl.GL_RGBA8,
-                        w,
-                        h,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        bitmap)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+        # The bitmap has shape W*H*4, but the
+        # Texture2D instance needs it in shape
+        # 4*W*H
+        bitmap = np.fliplr(bitmap).transpose([2, 0, 1])
+            
+        self._tex.setData(bitmap)
+        self._tex.refresh()
 
 
     def _draw(self):
@@ -175,26 +151,6 @@ class ColourBarCanvas(props.HasProperties):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glShadeModel(gl.GL_FLAT)
 
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-        gl.glActiveTexture(gl.GL_TEXTURE0) 
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_REPLACE) 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self._tex)
-
-        gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(0, 0)
-        gl.glVertex3f(  0, 0, 0)
-        gl.glTexCoord2f(0, 1)
-        gl.glVertex3f(  0, 1, 0)
-        gl.glTexCoord2f(1, 1)
-        gl.glVertex3f(  1, 1, 0)
-        gl.glTexCoord2f(1, 0)
-        gl.glVertex3f(  1, 0, 0)
-        gl.glEnd()
-
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-        gl.glDisable(gl.GL_TEXTURE_2D)
-
+        self._tex.drawOnBounds(0, 1, 0, 1, 0, 1)
+        
         self._postDraw()
