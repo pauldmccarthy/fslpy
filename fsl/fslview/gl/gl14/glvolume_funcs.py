@@ -113,7 +113,7 @@ def preDraw(self):
     # for looking up an appropriate colour
     # in the 1D colour map texture
     cmapXForm = transform.concat(self.imageTexture.voxValXform,
-                                 self.colourMapXform)
+                                 self.colourTexture.getCoordinateTransform())
     
     shaders.setFragmentProgramMatrix(0, cmapXForm.T)
 

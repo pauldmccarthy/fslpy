@@ -184,7 +184,7 @@ def preDraw(self):
     # and to scale voxel values to colour map
     # texture coordinates
     tcx = transform.concat(self.imageTexture.voxValXform,
-                           self.colourMapXform)
+                           self.colourTexture.getCoordinateTransform())
     w2v = np.array(
         display.getTransform('display', 'voxel'), dtype=np.float32).ravel('C')
     

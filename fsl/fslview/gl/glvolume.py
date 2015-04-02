@@ -52,10 +52,9 @@ import logging
 log = logging.getLogger(__name__)
 
 import OpenGL.GL               as gl
-import numpy                   as np
 
 import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.textures as fsltextures
+import fsl.fslview.gl.textures as textures
 import fsl.fslview.gl.globject as globject
 
 
@@ -100,16 +99,15 @@ class GLVolume(globject.GLImageObject):
 
         fslgl.glvolume_funcs.init(self)
 
-        self.imageTexture = fsltextures.getTexture(
-            self.image, type(self).__name__, self.display)
+        self.imageTexture = textures.getTexture(
+            textures.ImageTexture,
+            '{}_{}'.format(id(self.image), type(self).__name__),
+            self.image,
+            self.display)
 
-        # The colour map, used for converting 
-        # image data to a RGBA colour.
-        self.colourTexture = gl.glGenTextures(1)
-        log.debug('Created GL texture: {}'.format(self.colourTexture))
+        self.colourTexture = textures.ColourMapTexture(256)
         
-        self.colourResolution = 256
-        self.refreshColourTexture(self.colourResolution)
+        self.refreshColourTexture()
         
         self._ready = True
 
@@ -137,16 +135,10 @@ class GLVolume(globject.GLImageObject):
         if not self.display.enabled:
             return
 
-        # Set up the image data texture 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
+        # Set up the image and colour textures
+        self.imageTexture .bindTexture(gl.GL_TEXTURE0)
+        self.colourTexture.bindTexture(gl.GL_TEXTURE1)
 
-        # Set up the colour map texture
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
-        
         fslgl.glvolume_funcs.preDraw(self)
 
         
@@ -184,13 +176,8 @@ class GLVolume(globject.GLImageObject):
         if not self.display.enabled:
             return
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
-        
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-        gl.glDisable(gl.GL_TEXTURE_1D)
+        self.imageTexture .unbindTexture()
+        self.colourTexture.unbindTexture()
         
         fslgl.glvolume_funcs.postDraw(self) 
 
@@ -201,7 +188,11 @@ class GLVolume(globject.GLImageObject):
         deleting texture handles).
         """
 
-        fsltextures.deleteTexture(self.imageTexture)
+        self.imageTexture .destroy()
+        self.colourTexture.destroy()
+        self.imageTexture  = None
+        self.colourTexture = None
+        
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
@@ -236,7 +227,7 @@ class GLVolume(globject.GLImageObject):
             self.display.getTransform('voxel', 'display'))
 
     
-    def refreshColourTexture(self, colourResolution):
+    def refreshColourTexture(self):
         """Configures the colour texture used to colour image voxels.
 
         Also createss a transformation matrix which transforms an image voxel
@@ -250,62 +241,16 @@ class GLVolume(globject.GLImageObject):
         display = self.display
         opts    = self.displayOpts
 
-        imin = opts.displayRange[0]
-        imax = opts.displayRange[1]
+        alpha  = display.alpha
+        cmap   = opts.cmap
+        invert = opts.invert
+        dmin   = opts.displayRange[0]
+        dmax   = opts.displayRange[1]
 
-        # This transformation is used to transform voxel values
-        # from their native range to the range [0.0, 1.0], which
-        # is required for texture colour lookup. Values below
-        # or above the current display range will be mapped
-        # to texture coordinate values less than 0.0 or greater
-        # than 1.0 respectively.
-        if imax == imin: scale = 1
-        else:            scale = imax - imin
-        
-        cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / scale
-        cmapXform[3, 0] = -imin * cmapXform[0, 0]
-
-        self.colourMapXform = cmapXform
-
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
-        if opts.invert: colourRange = np.linspace(1.0, 0.0, colourResolution)
-        else:           colourRange = np.linspace(0.0, 1.0, colourResolution)
-        
-        colourmap = opts.cmap(colourRange)
-
-        # Apply global transparency
-        colourmap[:, 3] = display.alpha / 100.0
-        
-        # The colour data is stored on
-        # the GPU as 8 bit rgba tuples
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel(order='C')
-
-        # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE)
-
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        colourResolution,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+        self.colourTexture.set(cmap=cmap,
+                               invert=invert,
+                               alpha=alpha,
+                               displayRange=(dmin, dmax))
 
         
     def addDisplayListeners(self):
@@ -329,7 +274,7 @@ class GLVolume(globject.GLImageObject):
             self.setAxes(self.xax, self.yax)
 
         def colourUpdate(*a):
-            self.refreshColourTexture(self.colourResolution)
+            self.refreshColourTexture()
 
         display.addListener('transform',     lName, vertexUpdate)
         display.addListener('alpha',         lName, colourUpdate)
