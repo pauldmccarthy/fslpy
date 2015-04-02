@@ -30,7 +30,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.gl.globject    as globject
-import fsl.fslview.gl.textures    as fsltextures
+import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations
 
 
@@ -345,6 +345,10 @@ class SliceCanvas(props.HasProperties):
         """
 
         needRefresh = False
+
+        # If two stage rendering has been disabled, or
+        # the caller wants all render textures to be
+        # recreated, destroy all existing textures
         if recreate or not self.twoStageRender:
 
             for image, texture in self._renderTextures.items():
@@ -370,7 +374,7 @@ class SliceCanvas(props.HasProperties):
                     continue
 
                 display = self.displayCtx.getDisplayProperties(image)
-                rt      = fsltextures.ImageRenderTexture(
+                rt      = textures.ImageRenderTexture(
                     image, display, self.xax, self.yax)
                 
                 self._renderTextures[image] = rt
@@ -847,12 +851,6 @@ class SliceCanvas(props.HasProperties):
                     ymin=lo[self.yax],
                     ymax=hi[self.yax],
                     size=renderTexture.getSize())
-
-                log.debug('Rendering image {} to offscreen '
-                          'texture {} (size {})'.format(
-                              image,
-                              renderTexture.texture,
-                              renderTexture.getSize())) 
                 
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
@@ -862,7 +860,7 @@ class SliceCanvas(props.HasProperties):
             globj.postDraw()
 
             if self.twoStageRender:
-                fsltextures.ImageRenderTexture.unbind()
+                textures.ImageRenderTexture.unbindAsRenderTarget()
 
         if self.twoStageRender:
             self._drawRenderTextures()

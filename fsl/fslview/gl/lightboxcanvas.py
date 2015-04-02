@@ -280,7 +280,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         else:
             self._renderTextures = fsltextures.RenderTexture(
-                256, 256, gl.GL_LINEAR)
+                '{}_{}'.format(type(self).__name__, id(self)),
+                256,
+                256,
+                gl.GL_LINEAR)
 
         self._refresh()
 
@@ -682,7 +685,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             globj.postDraw()
 
         if self.twoStageRender:
-            self._renderTextures.unbind()
+            self._renderTextures.unbindAsRenderTarget()
             self._setViewport()
             self._renderTextures.drawOnBounds(
                 self.displayBounds.xlo,

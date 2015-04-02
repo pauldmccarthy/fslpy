@@ -4,42 +4,45 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains logic for creating OpenGL textureswhich will
-potentially be shared between multiple parts of the program.
+"""This package is a container for a collection of classes which use OpenGL
+textures for various purposes. It also contains a simple system for managing
+OpenGL textures which will potentially be shared between multiple parts of the
+program.
 
 The :mod:`.texture` sub-module contains the definition of the :class:`Texture`
 class, the base class for all texture types.
 
-The main interface to this module comprises two functions:
+The shared texture management interface comprises two functions:
 
   - :func:`getTexture`:    Return a :class:`Texture` instance, creating one if
                            it does not already exist.
 
-  - :func:`deleteTexture`: Cleans up the resources used by a :class:`Texture`
+  - :func:`deleteTexture`: Cleans up the resources used by a :class:`.Texture`
                            instance when it is no longer needed.
 
 You are also free to create and manage your own texture instances directly,
 if you know that it will not be needed by other parts of the application.
-
 """
 
 
 _allTextures = {}
-"""This dictionary contains all of the textures which currently exist. The
-key is the texture tag (see :func:`getTexture`), and the value is the
-corresponding :class:`ImageTexture` object.
+"""This dictionary contains all of the textures which currently exist. The key
+is a combination of the texture namem, and the texture type, and the value is
+the corresponding :class:`.Texture` object.
+
+See :func:`getTexture` and :func:`deleteTexture`.
 """
 
 
 def getTexture(textureType, name, *args, **kwargs):
-    """Retrieve a texture  object for the given target object (with
-    the given tag), creating one if it does not exist.
+    """Retrieve a texture object for the given target object (with
+    the given name), creating one if it does not exist.
 
     :arg textureType: The type of texture required.
     
     :arg name:        An application-unique string to be associated with the
                       given texture. Future requests for a texture with the
-                      same type and name will return the same :class:`Texture`
+                      same type and name will return the same :class:`.Texture`
                       instance.
     
     :arg args:        Texture type specific constructor arguments.
@@ -59,20 +62,19 @@ def getTexture(textureType, name, *args, **kwargs):
 
 def deleteTexture(texture):
     """Releases the OpenGL memory associated with the given
-    :class:`ImageTexture` instance, and removes it from the
+    :class:`.Texture` instance, and removes it from the
     :attr:`_allTextures` dictionary.
     """
-    
     
     if _allTextures.pop(texture.getTextureName(), None) is not None:
         texture.destroy()
 
 
-# All *Texture classes are made accessible at the
+# All *Texture classes are made available at the
 # textures package level due to these imports
 from texture          import Texture
 from imagetexture     import ImageTexture
 from colourmaptexture import ColourMapTexture
 from selectiontexture import SelectionTexture
-# from rendertexture    import RenderTexture
-# from rendertexture    import ImageRenderTexture
+from rendertexture    import RenderTexture
+from rendertexture    import ImageRenderTexture

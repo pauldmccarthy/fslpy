@@ -13,16 +13,18 @@ import OpenGL.GL.EXT.framebuffer_object as glfbo
 
 import numpy                            as np
 
+import texture 
+
 
 log = logging.getLogger(__name__)
 
 
-class RenderTexture(object):
+class RenderTexture(texture.Texture):
     """A 2D texture and frame buffer, intended to be used as a target for
     off-screen rendering of a scene.
     """
     
-    def __init__(self, width, height, defaultInterp=gl.GL_NEAREST):
+    def __init__(self, name, width, height, defaultInterp=gl.GL_NEAREST):
         """
 
         Note that a current target must have been set for the GL context
@@ -30,12 +32,11 @@ class RenderTexture(object):
         ``context.SetCurrent`` before creating a ``RenderTexture``).
         """
 
+        texture.Texture.__init__(self, name, 2)
+
         
-        self.texture     = gl   .glGenTextures(1)
         self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
-        
-        log.debug('Created GL texture {} and fbo: {}'.format(
-            self.texture, self.frameBuffer))
+        log.debug('Created fbo: {}'.format(self.frameBuffer))
 
         self.defaultInterp = defaultInterp
         self.width         = width
@@ -44,10 +45,9 @@ class RenderTexture(object):
 
         
     def destroy(self):
+        texture.Texture.destroy(self)
 
-        log.debug('Deleting GL texture {} and fbo {}'.format(
-            self.texture, self.frameBuffer))
-        gl   .glDeleteTextures(                      self.texture)
+        log.debug('Deleting fbo {}'.format(self.frameBuffer))
         glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
 
         
@@ -66,7 +66,7 @@ class RenderTexture(object):
 
 
     @classmethod
-    def unbind(cls):
+    def unbindAsRenderTarget(cls):
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
 
         
@@ -75,10 +75,12 @@ class RenderTexture(object):
             interp = self.defaultInterp
 
         log.debug('Configuring texture {}, fbo {}, size {}'.format(
-            self.texture, self.frameBuffer, (self.width, self.height)))
+            self.getTextureHandle(),
+            self.frameBuffer,
+            (self.width, self.height)))
 
         # Configure the texture
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+        self.bindTexture()
 
         gl.glTexImage2D(gl.GL_TEXTURE_2D,
                         0,
@@ -98,12 +100,11 @@ class RenderTexture(object):
                            interp)
 
         # And configure the frame buffer
-        glfbo.glBindFramebufferEXT(     glfbo.GL_FRAMEBUFFER_EXT,
-                                        self.frameBuffer)
+        self.bindAsRenderTarget()
         glfbo.glFramebufferTexture2DEXT(glfbo.GL_FRAMEBUFFER_EXT,
                                         glfbo.GL_COLOR_ATTACHMENT0_EXT,
                                         gl   .GL_TEXTURE_2D,
-                                        self.texture,
+                                        self.getTextureHandle(),
                                         0)
             
         if glfbo.glCheckFramebufferStatusEXT(glfbo.GL_FRAMEBUFFER_EXT) != \
@@ -111,8 +112,8 @@ class RenderTexture(object):
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
 
-        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+        self.unbindAsRenderTarget()
+        self.unbindTexture()
 
         
     def draw(self, vertices):
@@ -137,10 +138,7 @@ class RenderTexture(object):
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_2D)
-
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+        self.bindTexture(gl.GL_TEXTURE0)
 
         gl.glTexEnvf(gl.GL_TEXTURE_ENV,
                      gl.GL_TEXTURE_ENV_MODE,
@@ -151,8 +149,7 @@ class RenderTexture(object):
 
         gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, indices) 
 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        self.unbindTexture()
 
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
@@ -173,8 +170,8 @@ class RenderTexture(object):
 
 
 class ImageRenderTexture(RenderTexture):
-    """A :class:`RenderTexture` for off-screen volumetric rendering of a 3D
-    image.
+    """A :class:`RenderTexture` for off-screen volumetric rendering of an
+    :class:`.Image` instance.
     """
     
     def __init__(self, image, display, xax, yax):
@@ -194,16 +191,8 @@ class ImageRenderTexture(RenderTexture):
         self._addListeners()        
         self._updateSize()
         
-        RenderTexture.__init__(self, self.width, self.height)
+        RenderTexture.__init__(self, self.name, self.width, self.height)
 
-        
-    def destroy(self):
-        
-        RenderTexture.destroy(self)
-        self.display.removeListener('resolution',    self.name)
-        self.display.removeListener('interpolation', self.name)
-        self.display.removeListener('transform',     self.name)
-        
 
     def _addListeners(self):
 
@@ -216,6 +205,14 @@ class ImageRenderTexture(RenderTexture):
         self.display.addListener('interpolation', self.name, self.refresh)
         self.display.addListener('transform',     self.name, self._updateSize)
 
+        
+    def destroy(self):
+        
+        RenderTexture.destroy(self)
+        self.display.removeListener('resolution',    self.name)
+        self.display.removeListener('interpolation', self.name)
+        self.display.removeListener('transform',     self.name)
+        
         
     def _updateSize(self, *a):
         image      = self.image
