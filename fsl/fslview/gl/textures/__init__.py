@@ -63,8 +63,9 @@ def deleteTexture(texture):
     :attr:`_allTextures` dictionary.
     """
     
-    texture.destroy()
-    _allTextures.pop(texture.getTextureName(), None)
+    
+    if _allTextures.pop(texture.getTextureName(), None) is not None:
+        texture.destroy()
 
 
 # All *Texture classes are made accessible at the

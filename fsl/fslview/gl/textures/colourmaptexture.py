@@ -27,8 +27,8 @@ class ColourMapTexture(texture.Texture):
         self.__resolution   = resolution
         self.__cmap         = None
         self.__invert       = False
-        self.__alpha        = 1.0
-        self.__displayRange = [0.0, 1.0]
+        self.__alpha        = None
+        self.__displayRange = None
         self.__border       = None
         self.__coordXform   = None
 
@@ -48,29 +48,40 @@ class ColourMapTexture(texture.Texture):
 
     
     def set(self, **kwargs):
-        
-        cmap         = kwargs.get('cmap',         None)
-        invert       = kwargs.get('invert',       None)
-        alpha        = kwargs.get('alpha',        None)
-        displayRange = kwargs.get('displayRange', None)
-        border       = kwargs.get('border',       None)
 
-        if cmap         is not None: self.__cmap         = cmap
-        if invert       is not None: self.__invert       = invert
-        if alpha        is not None: self.__alpha        = alpha
-        if displayRange is not None: self.__displayRange = displayRange
-        if border       is not None: self.__border       = border
+        
+        # None is a valid value for any attributes,
+        # so we are using 'self' to test whether
+        # or not an attribute value was passed in
+        cmap         = kwargs.get('cmap',         self)
+        invert       = kwargs.get('invert',       self)
+        alpha        = kwargs.get('alpha',        self)
+        displayRange = kwargs.get('displayRange', self)
+        border       = kwargs.get('border',       self)
+
+        if cmap         is not self: self.__cmap         = cmap
+        if invert       is not self: self.__invert       = invert
+        if alpha        is not self: self.__alpha        = alpha
+        if displayRange is not self: self.__displayRange = displayRange
+        if border       is not self: self.__border       = border
 
         self.__refresh()
 
     
     def __refresh(self):
 
-        imin       = self.__displayRange[0]
-        imax       = self.__displayRange[1]
+        if self.__displayRange is None:
+            imin = 0.0
+            imax = 1.0
+        else:
+            imin = self.__displayRange[0]
+            imax = self.__displayRange[1]
+
+        if self.__cmap is None: cmap = np.zeros((4, 4), dtype=np.float32)
+        else:                   cmap = self.__cmap
+            
         invert     = self.__invert
         resolution = self.__resolution
-        cmap       = self.__cmap
         alpha      = self.__alpha
         border     = self.__border
 
@@ -102,7 +113,8 @@ class ColourMapTexture(texture.Texture):
             colourmap = cmap(np.linspace(0.0, 1.0, resolution))
 
         # Apply global transparency
-        colourmap[:, 3] = alpha
+        if alpha is not None:
+            colourmap[:, 3] = alpha
 
         # invert if needed
         if invert:
@@ -118,7 +130,9 @@ class ColourMapTexture(texture.Texture):
         self.bindTexture()
 
         if border is not None:
-            border[3] = alpha
+            if alpha is not None:
+                border[3] = alpha
+                
             gl.glTexParameterfv(gl.GL_TEXTURE_1D,
                                 gl.GL_TEXTURE_BORDER_COLOR,
                                 border)

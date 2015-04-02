@@ -30,8 +30,10 @@ class Texture(object):
         
         else:            raise ValueError('Invalid number of dimensions')
 
-        log.debug('Created GL texture for {}: {}'.format(self.__name,
-                                                         self.__texture))
+        log.debug('Created {} ({}) for {}: {}'.format(type(self).__name__,
+                                                      id(self),
+                                                      self.__name,
+                                                      self.__texture))
 
     def getTextureName(self):
         return self.__name
@@ -43,8 +45,10 @@ class Texture(object):
 
     def destroy(self):
 
-        log.debug('Deleting GL texture for {}: {}'.format(self.__name,
-                                                          self.__texture))
+        log.debug('Deleting {} ({}) for {}: {}'.format(type(self).__name__,
+                                                       id(self),
+                                                       self.__name,
+                                                       self.__texture))
  
         gl.glDeleteTextures(self.__texture)
         self.__texture = None
@@ -55,7 +59,7 @@ class Texture(object):
         if textureUnit is not None:
             gl.glActiveTexture(textureUnit)
             gl.glEnable(self.__ttype)
-            
+
         gl.glBindTexture(self.__ttype, self.__texture)
 
         self.__textureUnit = textureUnit

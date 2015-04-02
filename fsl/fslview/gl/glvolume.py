@@ -99,13 +99,15 @@ class GLVolume(globject.GLImageObject):
 
         fslgl.glvolume_funcs.init(self)
 
+        texName = '{}_{}'.format(id(self.image), type(self).__name__)
+
         self.imageTexture = textures.getTexture(
             textures.ImageTexture,
-            '{}_{}'.format(id(self.image), type(self).__name__),
+            texName,
             self.image,
             self.display)
 
-        self.colourTexture = textures.ColourMapTexture(256)
+        self.colourTexture = textures.ColourMapTexture(texName)
         
         self.refreshColourTexture()
         
@@ -188,7 +190,8 @@ class GLVolume(globject.GLImageObject):
         deleting texture handles).
         """
 
-        self.imageTexture .destroy()
+        textures.deleteTexture(self.imageTexture)
+        
         self.colourTexture.destroy()
         self.imageTexture  = None
         self.colourTexture = None

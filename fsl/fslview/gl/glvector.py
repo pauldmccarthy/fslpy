@@ -79,7 +79,7 @@ import OpenGL.GL               as gl
 
 import fsl.data.image          as fslimage
 import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.textures as fsltextures
+import fsl.fslview.gl.textures as textures
 import fsl.fslview.gl.globject as globject
 
 
@@ -143,9 +143,9 @@ class GLVector(globject.GLImageObject):
         opts    = self.displayOpts
         name    = self.name
 
-        self.xColourTexture = gl.glGenTextures(1)
-        self.yColourTexture = gl.glGenTextures(1)
-        self.zColourTexture = gl.glGenTextures(1)
+        self.xColourTexture = textures.ColourMapTexture('{}_x'.format(name))
+        self.yColourTexture = textures.ColourMapTexture('{}_y'.format(name))
+        self.zColourTexture = textures.ColourMapTexture('{}_z'.format(name))
         self.modTexture     = None
         self.imageTexture   = None
         
@@ -161,7 +161,7 @@ class GLVector(globject.GLImageObject):
         def coordUpdate(*a):
             self.setAxes(self.xax, self.yax)
 
-        display.addListener('alpha',       name, cmapUpdate)
+        # display.addListener('alpha',       name, cmapUpdate)
         display.addListener('transform',   name, coordUpdate)
         display.addListener('resolution',  name, coordUpdate) 
         opts   .addListener('xColour',     name, cmapUpdate)
@@ -176,9 +176,10 @@ class GLVector(globject.GLImageObject):
         if   opts.displayMode == 'line': prefilter = _lineModePrefilter
         elif opts.displayMode == 'rgb':  prefilter = _rgbModePrefilter
 
-        self.imageTexture = fsltextures.getTexture(
+        self.imageTexture = textures.getTexture(
+            textures.ImageTexture,
+            '{}_{}'.format(id(self.image), type(self).__name__),
             self.image,
-            type(self).__name__,
             display=self.display,
             nvals=3,
             normalise=True,
@@ -198,14 +199,14 @@ class GLVector(globject.GLImageObject):
         ``glvector_funcs.destroy`` function.
         """
 
-        gl.glDeleteTextures(self.xColourTexture)
-        gl.glDeleteTextures(self.yColourTexture)
-        gl.glDeleteTextures(self.zColourTexture)
+        self.xColourTexture.destroy()
+        self.yColourTexture.destroy()
+        self.zColourTexture.destroy()
 
-        fsltextures.deleteTexture(self.imageTexture)
-        fsltextures.deleteTexture(self.modTexture) 
+        textures.deleteTexture(self.imageTexture)
+        textures.deleteTexture(self.modTexture) 
 
-        self.display    .removeListener('alpha',       self.name)
+        # self.display    .removeListener('alpha',       self.name)
         self.display    .removeListener('transform',   self.name)
         self.display    .removeListener('resolution',  self.name)
         self.displayOpts.removeListener('xColour',     self.name)
@@ -271,7 +272,7 @@ class GLVector(globject.GLImageObject):
         modImage = self.displayOpts.modulate
 
         if self.modTexture is not None:
-            fsltextures.deleteTexture(self.modTexture)
+            textures.deleteTexture(self.modTexture)
 
         if modImage == 'none':
             textureData = np.zeros((5, 5, 5), dtype=np.uint8)
@@ -284,9 +285,10 @@ class GLVector(globject.GLImageObject):
             modDisplay = self.display
             norm       = True
 
-        self.modTexture = fsltextures.getTexture(
-            modImage,
+        self.modTexture = textures.getTexture(
+            textures.ImageTexture,
             '{}_{}_modulate'.format(type(self).__name__, id(self.image)),
+            modImage,
             display=modDisplay,
             normalise=norm)
 
@@ -301,17 +303,19 @@ class GLVector(globject.GLImageObject):
         Regenerates the colour textures.
         """
 
-        xcol = self.displayOpts.xColour
-        ycol = self.displayOpts.yColour
-        zcol = self.displayOpts.zColour
+        opts = self.displayOpts
+
+        xcol = opts.xColour
+        ycol = opts.yColour
+        zcol = opts.zColour
 
         xcol[3] = 1.0
         ycol[3] = 1.0
         zcol[3] = 1.0
 
-        xsup = self.displayOpts.suppressX
-        ysup = self.displayOpts.suppressY
-        zsup = self.displayOpts.suppressZ 
+        xsup = opts.suppressX
+        ysup = opts.suppressY
+        zsup = opts.suppressZ 
 
         xtex = self.xColourTexture
         ytex = self.yColourTexture
@@ -325,39 +329,17 @@ class GLVector(globject.GLImageObject):
             if not suppress:
                 
                 cmap = np.array(
-                    [np.linspace(0.0, i, colourRes) for i in colour])
+                    [np.linspace(0.0, i, colourRes) for i in colour]).T
                 
                 # Component magnitudes of 0 are
                 # transparent, but any other
                 # magnitude is fully opaque
-                cmap[3, :] = 1.0
-                cmap[3, 0] = 0.0 
+                cmap[:, 3] = 1.0
+                cmap[0, 3] = 0.0 
             else:
-                cmap = np.zeros((4, colourRes))
+                cmap = np.zeros((colourRes, 4))
 
-            cmap = np.array(np.floor(cmap * 255), dtype=np.uint8).ravel('F')
-
-            gl.glBindTexture(gl.GL_TEXTURE_1D, texture)
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_MAG_FILTER,
-                               gl.GL_NEAREST)
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_MIN_FILTER,
-                               gl.GL_NEAREST)
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_EDGE)
-
-            gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                            0,
-                            gl.GL_RGBA8,
-                            colourRes,
-                            0,
-                            gl.GL_RGBA,
-                            gl.GL_UNSIGNED_BYTE,
-                            cmap)
-
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+            texture.set(cmap=cmap)
     
 
     def setAxes(self, xax, yax):
@@ -381,25 +363,11 @@ class GLVector(globject.GLImageObject):
         if not self.display.enabled:
             return
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
-
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.modTexture.texture) 
-
-        gl.glActiveTexture(gl.GL_TEXTURE2)
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.xColourTexture)
-
-        gl.glActiveTexture(gl.GL_TEXTURE3)
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.yColourTexture)
-
-        gl.glActiveTexture(gl.GL_TEXTURE4)
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.zColourTexture) 
+        self.imageTexture  .bindTexture(gl.GL_TEXTURE0)
+        self.modTexture    .bindTexture(gl.GL_TEXTURE1)
+        self.xColourTexture.bindTexture(gl.GL_TEXTURE2)
+        self.yColourTexture.bindTexture(gl.GL_TEXTURE3)
+        self.zColourTexture.bindTexture(gl.GL_TEXTURE4)
  
         fslgl.glvector_funcs.preDraw(self)
 
@@ -412,6 +380,7 @@ class GLVector(globject.GLImageObject):
         
         fslgl.glvector_funcs.draw(self, zpos, xform)
 
+        
     def drawAll(self, zposes, xforms=None):
         """Calls the ``glvector_funcs.drawAll`` function. """
         
@@ -428,24 +397,10 @@ class GLVector(globject.GLImageObject):
         if not self.display.enabled:
             return
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
-
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
-
-        gl.glActiveTexture(gl.GL_TEXTURE2)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-        gl.glDisable(gl.GL_TEXTURE_1D)
-
-        gl.glActiveTexture(gl.GL_TEXTURE3)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-        gl.glDisable(gl.GL_TEXTURE_1D)
-
-        gl.glActiveTexture(gl.GL_TEXTURE4)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)    
-        gl.glDisable(gl.GL_TEXTURE_1D)
+        self.imageTexture  .unbindTexture()
+        self.modTexture    .unbindTexture()
+        self.xColourTexture.unbindTexture()
+        self.yColourTexture.unbindTexture()
+        self.zColourTexture.unbindTexture()
         
         fslgl.glvector_funcs.postDraw(self) 
