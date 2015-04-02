@@ -76,6 +76,8 @@ class GLVolume_pregen(glvolume.GLVolume):
 
         self.sliceDirty = [True] * self.numSlices
 
+        self.refresh = True
+
 
     def destroy(self):
         glvolume.GLVolume.destroy(self)
@@ -103,6 +105,50 @@ class GLVolume_pregen(glvolume.GLVolume):
 
         lo, hi = self.display.getDisplayBounds()
 
+        if self.refresh:
+            self.refresh = False
+
+            for i in range(self.numSlices):
+                zp = (float(i) / self.numSlices) * (self.zmax - self.zmin) + self.zmin
+                rt = self.sliceTextures[i]
+                
+                width, height = rt.getSize()
+                oldSize       = gl.glGetIntegerv(gl.GL_VIEWPORT)
+                oldProjMat    = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
+                oldMVMat      = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
+
+                gl.glViewport(0, 0, width, height)
+                gl.glMatrixMode(gl.GL_PROJECTION)
+                gl.glLoadIdentity()
+
+                gl.glOrtho(lo[self.xax], hi[self.xax],
+                           lo[self.yax], hi[self.yax],
+                           -1,           1)
+                gl.glMatrixMode(gl.GL_MODELVIEW)
+                gl.glLoadIdentity()
+                if self.zax == 0:
+                    gl.glRotatef(-90, 1, 0, 0)
+                    gl.glRotatef(-90, 0, 0, 1)
+                elif self.zax == 1:
+                    gl.glRotatef(270, 1, 0, 0)
+
+                trans = [0, 0, 0]
+                trans[self.zax] = -zp
+                gl.glTranslatef(*trans)                
+
+                rt.bindAsRenderTarget()
+                glvolume.GLVolume.preDraw( self)
+                glvolume.GLVolume.draw(    self, zp)
+                glvolume.GLVolume.postDraw(self)
+                rt.unbind()
+                self.sliceDirty[i] = False
+
+                gl.glViewport(*oldSize)
+                gl.glMatrixMode(gl.GL_PROJECTION)
+                gl.glLoadMatrixf(oldProjMat)
+                gl.glMatrixMode(gl.GL_MODELVIEW)
+                gl.glLoadMatrixf(oldMVMat)
+
         if self.sliceDirty[texIdx]:
 
             width, height = renderTexture.getSize()
@@ -118,9 +164,6 @@ class GLVolume_pregen(glvolume.GLVolume):
                        lo[self.yax], hi[self.yax],
                        -1,           1)
 
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity() 
-            
             renderTexture.bindAsRenderTarget()
             glvolume.GLVolume.preDraw( self)
             glvolume.GLVolume.draw(    self, zpos)
@@ -131,13 +174,8 @@ class GLVolume_pregen(glvolume.GLVolume):
             gl.glViewport(*oldSize)
             gl.glMatrixMode(gl.GL_PROJECTION)
             gl.glLoadMatrixf(oldProjMat)
-
-            gl.glOrtho(lo[self.xax], hi[self.xax],
-                       lo[self.yax], hi[self.yax],
-                       -1,           1)
-            print 'Drawing dirty slice {}'.format(texIdx)
-        else:
-            print 'Drawing clean slice {}'.format(texIdx)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadMatrixf(oldMVMat)
 
         vertices = np.zeros((6, 3), dtype=np.float32)
         vertices[:, self.zax] = zpos
