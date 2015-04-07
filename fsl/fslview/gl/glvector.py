@@ -107,6 +107,20 @@ class GLVector(globject.GLImageObject):
         """Create a :class:`GLVector` object bound to the given image and
         display.
 
+        Initialises the OpenGL data required to render the given image.
+        This method does the following:
+        
+          - Creates the image texture, the modulate texture, and the three
+            colour map textures.
+
+          - Adds listeners to the
+            :class:`~fsl.fslview.displaycontext.display.Display` and
+            :class:`~fsl.fslview.displaycontext.vectoropts.VectorOpts`
+            instances, so the textures and geometry can be updated when
+            necessary.
+
+          - Calls the GL version specific ``glvector_funcs.init`` function.        
+
         :arg image:        A :class:`~fsl.data.image.Image` object.
         
         :arg imageDisplay: A :class:`~fsl.fslview.displaycontext.Display`
@@ -119,24 +133,6 @@ class GLVector(globject.GLImageObject):
                              'representing the XYZ vector angles')
 
         globject.GLImageObject.__init__(self, image, display)
-
-        
-    def init(self):
-        """Initialise the OpenGL data required to render the given image.
-
-        This method does the following:
-        
-          - Creates the image texture, the modulate texture, and the three
-            colour map textures.
-
-          - Adds listeners to the
-            :class:`~fsl.fslview.displaycontext.display.Display` and
-            :class:`~fsl.fslview.displaycontext.vectoropts.VectorOpts`
-            instances, so the textures and geometry can be updated when
-            necessary.
-
-          - Calls the GTL version specific ``glvector_funcs.init`` function.
-        """
 
         display = self.display
         opts    = self.displayOpts

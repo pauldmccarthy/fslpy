@@ -62,17 +62,13 @@ class GLObject(object):
         """Create a :class:`GLObject`.  The constructor adds one attribute to
         this instance, ``name``, which is simply a unique name for this
         instance.
+
+        Subclass implementations should call this method, and should perform
+        any necessary OpenGL initialisation, such as creating textures.
         """
 
         self.name = '{}_{}'.format(type(self).__name__, id(self))
                 
-
-    def init(self):
-        """Perform any necessary OpenGL initialisation, such as
-        creating textures and vertices.
-        """
-        raise NotImplementedError()
-
     
     def setAxes(self, xax, yax):
         """This method is called when the display orientation for this
@@ -163,14 +159,13 @@ class GLSimpleObject(GLObject):
     def __init__(self):
         GLObject.__init__(self)
 
-    def init(   self): pass
-    def destroy(self): pass
-
     def setAxes(self, xax, yax):
         self.xax =  xax
         self.yax =  yax
         self.zax = 3 - xax - yax
 
+
+    def destroy(self): pass
     def preDraw( self): pass
     def postDraw(self): pass
 

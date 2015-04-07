@@ -67,6 +67,8 @@ class GLVolume(globject.GLImageObject):
         """Creates a GLVolume object bound to the given image, and associated
         image display.
 
+        Initialises the OpenGL data required to render the given image.
+
         :arg image:   A :class:`~fsl.data.image.Image` object.
         
         :arg display: A :class:`~fsl.fslview.displaycontext.Display`
@@ -76,14 +78,6 @@ class GLVolume(globject.GLImageObject):
 
         globject.GLImageObject.__init__(self, image, display)
 
-        
-    def init(self):
-        """Initialise the OpenGL data required to render the given image.
-
-        The real initialisation takes place in this method - it must
-        only be called after an OpenGL context has been created.
-        """
-        
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self.addDisplayListeners()

@@ -487,7 +487,6 @@ class SliceCanvas(props.HasProperties):
                 self._glObjects[img] = globj
 
                 if globj is not None:
-                    globj.init()
                     globj.setAxes(self.xax, self.yax)
 
                 opts = disp.getDisplayOpts()
