@@ -92,9 +92,29 @@ class Texture2D(Texture):
         self.refresh()
 
 
+    def setSize(self, width, height):
+        """
+        Sets the width/height for this texture.
+
+        This method also clears the data for this texture, if it has been
+        previously set via the :meth:`setData` method.
+        """
+        self.__width  = width
+        self.__height = height
+        self.__data   = None
+        self.refresh()
+
+
+    def getSize(self):
+        """
+        """
+        return self.__width, self.__height
+
+
     def setData(self, data):
         """
-        The data should have a shape of 4*W*H.
+        Sets the data for this texture - the width and height are determined
+        from data shape (which is assumed to be 4*width*height).
         """
 
         self.__data   = data
@@ -104,6 +124,9 @@ class Texture2D(Texture):
 
         
     def refresh(self):
+
+        if self.__width is None or self.__height is None:
+            return
 
         self.bindTexture()
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)

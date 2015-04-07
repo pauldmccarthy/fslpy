@@ -34,31 +34,25 @@ class RenderTexture(texture.Texture2D):
 
         texture.Texture2D.__init__(self, name, interp)
         
-        self.frameBuffer = glfbo.glGenFramebuffersEXT(1)
-        log.debug('Created fbo: {}'.format(self.frameBuffer))
-
-        self.refresh()        
+        self.__frameBuffer = glfbo.glGenFramebuffersEXT(1)
+        log.debug('Created fbo: {}'.format(self.__frameBuffer))
 
         
     def destroy(self):
         texture.Texture.destroy(self)
 
-        log.debug('Deleting fbo {}'.format(self.frameBuffer))
-        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.frameBuffer))
-
-        
-    def setSize(self, width, height):
-        self.width  = width
-        self.height = height
-        self.refresh()
+        log.debug('Deleting fbo {}'.format(self.__frameBuffer))
+        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.__frameBuffer))
 
 
-    def getSize(self):
-        return self.width, self.height
+    def setData(self, data):
+        raise NotImplementedError('Texture data cannot be set for {} '
+                                  'instances'.format(type(self).__name__))
 
-        
+
     def bindAsRenderTarget(self):
-        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, self.frameBuffer) 
+        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT,
+                                   self.__frameBuffer) 
 
 
     @classmethod
@@ -94,26 +88,21 @@ class ImageRenderTexture(RenderTexture):
     
     def __init__(self, image, display, xax, yax):
         """
-
-        Note that a current target must have been set for the GL context
-        before a frameBuffer can be created ... in other words, call
-        ``context.SetCurrent`` before creating a ``RenderTexture``).
         """
-
-        self.name    = '{}_{}'.format(type(self).__name__, id(self))
-        self.image   = image
-        self.display = display
-        self.xax     = xax
-        self.yax     = yax
-
-        self._addListeners()        
-        self._updateSize()
         
-        RenderTexture.__init__(self, self.name)
-        self.refresh()
+        self.__name    = '{}_{}'.format(type(self).__name__, id(self))
+        self.__image   = image
+        self.__display = display
+        self.__xax     = xax
+        self.__yax     = yax
+
+        RenderTexture.__init__(self, self.__name)
+
+        self.__addListeners()        
+        self.__updateSize()
 
 
-    def _addListeners(self):
+    def __addListeners(self):
 
         # TODO Could change the resolution when
         #      the image type changes - vector
@@ -121,26 +110,44 @@ class ImageRenderTexture(RenderTexture):
         #      resolution than voxel space
 
         def onInterp(*a):
-            if self.display.interpolation == 'none': interp = gl.GL_NEAREST
-            else:                                    interp = gl.GL_LINEAR
+            if self.__display.interpolation == 'none': interp = gl.GL_NEAREST
+            else:                                      interp = gl.GL_LINEAR
             self.setInterpolation(interp)
 
-        self.display.addListener('resolution',    self.name, self._updateSize)
-        self.display.addListener('interpolation', self.name, self.refresh)
-        self.display.addListener('transform',     self.name, self._updateSize)
+        self.__display.addListener('resolution',
+                                   self.__name,
+                                   self.__updateSize)
+        self.__display.addListener('interpolation',
+                                   self.__name,
+                                   self.refresh)
+        self.__display.addListener('transform',
+                                   self.__name,
+                                   self.__updateSize)
+
+    
+    def setAxes(self, xax, yax):
+        self.__xax = xax
+        self.__yax = yax
+        self.refresh()
 
         
     def destroy(self):
         
         RenderTexture.destroy(self)
-        self.display.removeListener('resolution',    self.name)
-        self.display.removeListener('interpolation', self.name)
-        self.display.removeListener('transform',     self.name)
+        self.__display.removeListener('resolution',    self.__name)
+        self.__display.removeListener('interpolation', self.__name)
+        self.__display.removeListener('transform',     self.__name)
+
+    
+    def setSize(self, width, height):
+        raise NotImplementedError(
+            'Texture size cannot be set for {} instances'.format(
+                type(self).__name__))
         
         
-    def _updateSize(self, *a):
-        image      = self.image
-        display    = self.display
+    def __updateSize(self, *a):
+        image      = self.__image
+        display    = self.__display
 
         resolution = display.resolution / np.array(image.pixdim)
         resolution = np.round(resolution)
@@ -155,8 +162,8 @@ class ImageRenderTexture(RenderTexture):
         # axes, so we can just match the voxel resolution        
         if display.transform in ('id', 'pixdim'):
             
-            width  = image.shape[self.xax] / resolution[self.xax]
-            height = image.shape[self.yax] / resolution[self.yax]
+            width  = image.shape[self.__xax] / resolution[self.__xax]
+            height = image.shape[self.__yax] / resolution[self.__yax]
 
         # However, if we're displaying in world coordinates,
         # we cannot assume any correspondence between the
@@ -185,18 +192,5 @@ class ImageRenderTexture(RenderTexture):
 
         width  = int(round(width))
         height = int(round(height))
-            
-        self.width  = width
-        self.height = height 
 
-    
-    def setSize(self, width, height):
-        raise NotImplementedError(
-            'Texture size cannot be set for {} instances'.format(
-                type(self).__name__))
-
-    
-    def setAxes(self, xax, yax):
-        self.xax = xax
-        self.yax = yax
-        self.refresh()
+        RenderTexture.setSize(self, width, height)

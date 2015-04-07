@@ -140,7 +140,7 @@ class GLVolume_pregen(glvolume.GLVolume):
                 glvolume.GLVolume.preDraw( self)
                 glvolume.GLVolume.draw(    self, zp)
                 glvolume.GLVolume.postDraw(self)
-                rt.unbind()
+                rt.unbindAsRenderTarget()
                 self.sliceDirty[i] = False
 
                 gl.glViewport(*oldSize)

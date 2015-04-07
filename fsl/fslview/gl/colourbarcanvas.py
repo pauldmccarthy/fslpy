@@ -119,7 +119,8 @@ class ColourBarCanvas(props.HasProperties):
                 labelSide)
 
         if self._tex is None:
-            self._tex = textures.Texture2D('bab', gl.GL_LINEAR)
+            self._tex = textures.Texture2D('{}_{}'.format(
+                type(self).__name__, id(self)), gl.GL_LINEAR)
 
         # The bitmap has shape W*H*4, but the
         # Texture2D instance needs it in shape
