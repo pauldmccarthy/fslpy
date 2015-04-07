@@ -401,7 +401,11 @@ class ImageTexture(texture.Texture):
 
         # Set up image texture sampling thingos
         # with appropriate interpolation method
-        if display is None or display.interpolation == 'none':
+        # 
+        # Spline interpolation is handled by the
+        # glvolume shader program, so the image
+        # texture is set to nearest neighbour
+        if display is None or display.interpolation != 'linear':
             interp = gl.GL_NEAREST
         else:
             interp = gl.GL_LINEAR

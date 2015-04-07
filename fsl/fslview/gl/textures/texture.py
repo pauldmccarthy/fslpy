@@ -15,6 +15,10 @@ log = logging.getLogger(__name__)
 
 
 class Texture(object):
+    """All subclasses must accept a ``name`` as the first parameter to their
+    ``__init__`` method, and must pass said ``name`` through to this
+    ``__init__`` method.
+    """
 
     def __init__(self, name, ndims):
 
