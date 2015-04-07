@@ -374,8 +374,9 @@ class SliceCanvas(props.HasProperties):
                     continue
 
                 display = self.displayCtx.getDisplayProperties(image)
+                name    = '{}_{}_{}'.format(image.name, self.xax, self.yax)
                 rt      = textures.ImageRenderTexture(
-                    image, display, self.xax, self.yax)
+                    name, image, display, self.xax, self.yax)
                 
                 self._renderTextures[image] = rt
                 

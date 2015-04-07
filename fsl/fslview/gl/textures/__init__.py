@@ -9,10 +9,13 @@ textures for various purposes. It also contains a simple system for managing
 OpenGL textures which will potentially be shared between multiple parts of the
 program.
 
+
 The :mod:`.texture` sub-module contains the definition of the :class:`Texture`
 class, the base class for all texture types.
 
+
 The shared texture management interface comprises two functions:
+
 
   - :func:`getTexture`:    Return a :class:`Texture` instance, creating one if
                            it does not already exist.
@@ -20,8 +23,16 @@ The shared texture management interface comprises two functions:
   - :func:`deleteTexture`: Cleans up the resources used by a :class:`.Texture`
                            instance when it is no longer needed.
 
+
 You are also free to create and manage your own texture instances directly,
 if you know that it will not be needed by other parts of the application.
+
+
+Use of the above functions is not actually restricted to :class:`Texture`
+instances - any type which takes a ``name`` argument as the first argument to
+its ``__init__`` method, and which has a ``destroy`` method and a
+:``getTextureName`` method, is compatible with the above functions.  See the
+:class:`.ImageSliceList` class for an example of such a class.
 """
 
 
@@ -79,3 +90,4 @@ from colourmaptexture import ColourMapTexture
 from selectiontexture import SelectionTexture
 from rendertexture    import RenderTexture
 from rendertexture    import ImageRenderTexture
+from imageslicelist   import ImageSliceList

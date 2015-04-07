@@ -86,17 +86,16 @@ class ImageRenderTexture(RenderTexture):
     :class:`.Image` instance.
     """
     
-    def __init__(self, image, display, xax, yax):
+    def __init__(self, name, image, display, xax, yax):
         """
         """
         
-        self.__name    = '{}_{}'.format(type(self).__name__, id(self))
         self.__image   = image
         self.__display = display
         self.__xax     = xax
         self.__yax     = yax
 
-        RenderTexture.__init__(self, self.__name)
+        RenderTexture.__init__(self, name)
 
         self.__addListeners()        
         self.__updateSize()
@@ -114,29 +113,27 @@ class ImageRenderTexture(RenderTexture):
             else:                                      interp = gl.GL_LINEAR
             self.setInterpolation(interp)
 
-        self.__display.addListener('resolution',
-                                   self.__name,
-                                   self.__updateSize)
-        self.__display.addListener('interpolation',
-                                   self.__name,
-                                   self.refresh)
-        self.__display.addListener('transform',
-                                   self.__name,
-                                   self.__updateSize)
+        name = '{}_{}'.format(self.getTextureName(), id(self))
+
+        self.__display.addListener('resolution',    name, self.__updateSize)
+        self.__display.addListener('interpolation', name, self.refresh)
+        self.__display.addListener('transform',     name, self.__updateSize)
 
     
     def setAxes(self, xax, yax):
         self.__xax = xax
         self.__yax = yax
-        self.refresh()
+        self.__updateSize()
 
         
     def destroy(self):
+
+        name = '{}_{}'.format(self.getTextureName(), id(self))
         
         RenderTexture.destroy(self)
-        self.__display.removeListener('resolution',    self.__name)
-        self.__display.removeListener('interpolation', self.__name)
-        self.__display.removeListener('transform',     self.__name)
+        self.__display.removeListener('resolution',    name)
+        self.__display.removeListener('interpolation', name)
+        self.__display.removeListener('transform',     name)
 
     
     def setSize(self, width, height):
