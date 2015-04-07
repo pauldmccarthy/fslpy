@@ -75,15 +75,6 @@ class GLVolume(globject.GLImageObject):
         """
 
         globject.GLImageObject.__init__(self, image, display)
-        
-        self._ready = False
-
-
-    def ready(self):
-        """Returns `True` when the OpenGL data/state has been initialised,
-        and the image is ready to be drawn, `False` before.
-        """
-        return self._ready
 
         
     def init(self):
@@ -110,8 +101,6 @@ class GLVolume(globject.GLImageObject):
         self.colourTexture = textures.ColourMapTexture(texName)
         
         self.refreshColourTexture()
-        
-        self._ready = True
 
 
     def setAxes(self, xax, yax):

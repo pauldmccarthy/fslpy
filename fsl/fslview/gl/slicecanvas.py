@@ -827,7 +827,7 @@ class SliceCanvas(props.HasProperties):
             display = self.displayCtx.getDisplayProperties(image)
             globj   = self._glObjects.get(image, None)
             
-            if (globj is None) or (not globj.ready()) or not display.enabled:
+            if (globj is None) or (not display.enabled):
                 continue
 
             # Two-stage rendering - each image is

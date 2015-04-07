@@ -74,13 +74,6 @@ class GLObject(object):
         raise NotImplementedError()
 
     
-    def ready(self):
-        """This method should return ``False`` if this :class:`GLObject` is
-        not yet ready to be displayed, ``True`` otherwise.
-        """
-        raise NotImplementedError()
-
-    
     def setAxes(self, xax, yax):
         """This method is called when the display orientation for this
         :class:`GLObject` changes. It should perform any necessary updates to
@@ -169,17 +162,14 @@ class GLSimpleObject(GLObject):
 
     def __init__(self):
         GLObject.__init__(self)
-        self.__ready = False
 
     def init(   self): pass
     def destroy(self): pass
-    def ready(  self): return self.__ready
 
     def setAxes(self, xax, yax):
-        self.xax     =  xax
-        self.yax     =  yax
-        self.zax     = 3 - xax - yax
-        self.__ready = True
+        self.xax =  xax
+        self.yax =  yax
+        self.zax = 3 - xax - yax
 
     def preDraw( self): pass
     def postDraw(self): pass

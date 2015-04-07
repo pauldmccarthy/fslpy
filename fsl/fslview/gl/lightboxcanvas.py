@@ -669,7 +669,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             globj = self._glObjects.get(image, None)
 
-            if (globj is None) or (not globj.ready()) or not display.enabled:
+            if (globj is None) or (not display.enabled):
                 continue
 
             log.debug('Drawing {} slices ({} - {}) for image {}'.format(

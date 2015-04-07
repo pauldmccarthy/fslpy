@@ -166,9 +166,6 @@ class Annotations(object):
             gl.glMultMatrixf(xform.ravel('C')) 
 
         for obj in objs:
-
-            if not obj.ready():
-                continue
             
             obj.setAxes(self._xax, self._yax)
 

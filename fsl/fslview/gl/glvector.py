@@ -119,7 +119,6 @@ class GLVector(globject.GLImageObject):
                              'representing the XYZ vector angles')
 
         globject.GLImageObject.__init__(self, image, display)
-        self._ready = False
 
         
     def init(self):
@@ -189,8 +188,6 @@ class GLVector(globject.GLImageObject):
         self.refreshColourTextures()
 
         fslgl.glvector_funcs.init(self)
-        
-        self._ready = True
 
         
     def destroy(self):
@@ -219,13 +216,6 @@ class GLVector(globject.GLImageObject):
         self.displayOpts.removeListener('displayMode', self.name)
 
         fslgl.glvector_funcs.destroy(self)
-
-        
-    def ready(self):
-        """Returns `True` when the OpenGL data/state has been initialised,
-        and the image is ready to be drawn, `False` before.
-        """ 
-        return self._ready
 
 
     def _onModeChange(self, *a):
