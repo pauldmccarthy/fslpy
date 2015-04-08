@@ -41,17 +41,24 @@ class GLImageObject_pregen(object):
             
     def __refreshAllTextures(self, *a):
 
-        # if self.__lastDrawnTexture is not None:
-        #     lastIdx = self.__lastDrawnTexture
-        # else:
-        #     lastIdx = len(self.__textures) / 2
+        if self.__lastDrawnTexture is not None:
+            lastIdx = self.__lastDrawnTexture
+        else:
+            lastIdx = len(self.__textures) / 2
+            
+        aboveIdxs = range(lastIdx, len(self.__textures))
+        belowIdxs = range(lastIdx, 0, -1)
 
-        # idxs   = np.zeros(len(self.__textures), dtype=np.uint32)
+        idxs = [0] * len(self.__textures)
 
-        idxs = list(range(len(self.__textures)))
-
-        # idxs[  0::2] = np.arange(lastIdx - 1,     -1,                 -1)
-        # idxs[  1::2] = np.arange(lastIdx,  len(self.__textures), 1)
+        for i in range(len(self.__textures)):
+            
+            if len(aboveIdxs) > 0 and len(belowIdxs) > 0:
+                if i % 2: idxs[i] = aboveIdxs.pop(0)
+                else:     idxs[i] = belowIdxs.pop(0)
+                
+            elif len(aboveIdxs) > 0: idxs[i] = aboveIdxs.pop(0)
+            else:                    idxs[i] = belowIdxs.pop(0) 
 
         self.__textureDirty = [True] * len(self.__textures)
         self.__updateQueue  = idxs
