@@ -120,7 +120,7 @@ class ImageRenderTexture(RenderTexture):
         name = '{}_{}'.format(self.getTextureName(), id(self))
 
         self.__display.addListener('resolution',    name, self.__updateSize)
-        self.__display.addListener('interpolation', name, self.refresh)
+        self.__display.addListener('interpolation', name, onInterp)
         self.__display.addListener('transform',     name, self.__updateSize)
 
     

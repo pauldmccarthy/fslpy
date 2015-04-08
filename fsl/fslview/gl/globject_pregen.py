@@ -30,6 +30,9 @@ class GLImageObject_pregen(object):
         self.__renderDirty    = []
         self.__numTextures    = 0
 
+        self.__updating       = False
+        self.__updateIdx      = 0
+
         self.__realGLObj.addUpdateListener(
             '{}_{}'.format(type(self).__name__, id(self)),
             self.__updateTextures)
@@ -37,40 +40,47 @@ class GLImageObject_pregen(object):
 
     def __updateTextures(self, *a):
 
-        # TODO
-        # 
-        # 1. Update the texture corresponding to the most
-        #    recently drawn zpos immediately (assuming that
-        #    it has been cached)
-        #
-        # 2. Update all other slices on a background thread,
-        #    subject to the restriction that said slices
-        #    may have already been updated by subsequent
-        #    calls to draw()
-        # 
         self.__renderDirty = [True] * self.__numTextures
 
+        # An update is already in
+        # progress - reset it
+        if self.__updating:
+            self.__updateIdx = 0
+            return
+
+        self.__updating = True
+        
         ntexes = self.__numTextures
         zmin   = self.__zmin
         zmax   = self.__zmax
         texes  = self.__renderTextures
         zposes = np.arange(ntexes) * (zmax - zmin) / ntexes + zmin
 
-        def updateOneTexture(idx):
+        def updateOneTexture():
 
+            idx  = self.__updateIdx
             tex  = texes[ idx]
             zpos = zposes[idx]
-            if not self.__renderDirty[idx]:
-                return
+            
+            if self.__renderDirty[idx]:
+                log.debug('Refreshing texture slice {} ({}, zax {})'.format(
+                    idx, zpos, self.__realGLObj.zax))
+                self.__refreshTexture(tex, idx, zpos)
 
-            self.__refreshTexture(tex, idx, zpos)
+            idx              = (idx + 1) % ntexes
+            self.__updateIdx = idx
 
-            idx = (idx + 1) % ntexes
+            # The update is finished - 
+            # clear the update flag
+            if idx == 0:
+                self.__updating = False
 
-            if idx > 0:
-                wx.CallLater(1, updateOneTexture, idx)
+            # Queue the next slice
+            else:
+                wx.CallLater(50, updateOneTexture)
+            
 
-        wx.CallAfter(updateOneTexture, 0)
+        wx.CallAfter(updateOneTexture)
 
             
     def getRealGLObject(self):
