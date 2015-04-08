@@ -28,10 +28,11 @@ import OpenGL.GL              as gl
 
 import props
 
-import fsl.data.image             as fslimage
-import fsl.fslview.gl.globject    as globject
-import fsl.fslview.gl.textures    as textures
-import fsl.fslview.gl.annotations as annotations
+import fsl.data.image                 as fslimage
+import fsl.fslview.gl.globject        as globject
+import fsl.fslview.gl.globject_pregen as globject_pregen
+import fsl.fslview.gl.textures        as textures
+import fsl.fslview.gl.annotations     as annotations
 
 
 class SliceCanvas(props.HasProperties):
@@ -74,6 +75,9 @@ class SliceCanvas(props.HasProperties):
     better performance on old graphics cards, and when software-based
     rendering is being used.
     """
+
+
+    pregenSlices = props.Boolean(default=False)
 
     
     showCursor = props.Boolean(default=True)
@@ -314,6 +318,10 @@ class SliceCanvas(props.HasProperties):
         self.addListener('twoStageRender',
                          self.name,
                          self._onTwoStageRenderChange)
+
+        self.addListener('pregenSlices',
+                         self.name,
+                         self._onPregenSlicesChange)        
         
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -384,6 +392,29 @@ class SliceCanvas(props.HasProperties):
 
         if needRefresh:
             self._refresh()
+
+
+    def _onPregenSlicesChange(self, *a):
+
+        for image in self._glObjects.keys():
+            globj = self._glObjects[image]
+
+            isPregen = isinstance(globj, globject_pregen.GLImageObject_pregen)
+
+            if self.pregenSlices:
+                if not isPregen:
+                    globj = globject_pregen.GLImageObject_pregen(globj)
+                    globj.setAxes(self.xax, self.yax)
+            else:
+                if isPregen:
+                    globjP = globj
+                    globj  = globjP.getRealGLObject()
+
+                    globjP.destroy()
+                    
+            self._glObjects[image] = globj
+
+        self._refresh()
 
 
     def _zAxisChanged(self, *a):
@@ -484,10 +515,15 @@ class SliceCanvas(props.HasProperties):
                     globj.destroy()
 
                 globj = globject.createGLObject(img, disp)
-                self._glObjects[img] = globj
 
                 if globj is not None:
                     globj.setAxes(self.xax, self.yax)
+
+                    if self.pregenSlices:
+                        globj = globject_pregen.GLImageObject_pregen(globj)
+                        globj.setAxes(self.xax, self.yax)
+
+                self._glObjects[img] = globj
 
                 opts = disp.getDisplayOpts()
                 opts.addGlobalListener(self.name, self._refresh)

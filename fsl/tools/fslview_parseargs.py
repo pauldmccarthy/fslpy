@@ -87,7 +87,8 @@ OPTIONS = td.TypeDict({
                        'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide',
-                       'twoStageRender'],
+                       'twoStageRender',
+                       'pregenSlices'],
 
     # From here on, all of the keys are
     # the names of HasProperties classes,
@@ -172,7 +173,8 @@ ARGUMENTS = td.TypeDict({
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
     'SceneOpts.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
     'SceneOpts.showCursor'         : ('hc',  'hideCursor'),
-    'SceneOpts.twoStageRender'     : ('tr',  'twoStageRendering'),
+    'SceneOpts.twoStageRender'     : ('tr',  'twoStageRender'),
+    'SceneOpts.pregenSlices'       : ('ps',  'pregenSlices'),
     
     'OrthoOpts.xzoom'       : ('xz', 'xzoom'),
     'OrthoOpts.yzoom'       : ('yz', 'yzoom'),
@@ -243,6 +245,7 @@ HELP = td.TypeDict({
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label orientation',
     'SceneOpts.twoStageRender'     : 'Enable two-stage rendering',
+    'SceneOpts.pregenSlices'       : 'Pre-generate slices',
     
     'OrthoOpts.xzoom'       : 'X canvas zoom',
     'OrthoOpts.yzoom'       : 'Y canvas zoom',

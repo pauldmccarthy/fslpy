@@ -281,9 +281,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         else:
             self._renderTextures = fsltextures.RenderTexture(
                 '{}_{}'.format(type(self).__name__, id(self)),
-                256,
-                256,
                 gl.GL_LINEAR)
+            self._renderTextures.setSize(512, 512)
 
         self._refresh()
 

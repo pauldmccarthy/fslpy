@@ -77,6 +77,9 @@ class RenderTexture(texture.Texture2D):
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
 
+        # Clear the texture data
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
         self.unbindAsRenderTarget()
         self.unbindTexture()
 
@@ -86,14 +89,15 @@ class ImageRenderTexture(RenderTexture):
     :class:`.Image` instance.
     """
     
-    def __init__(self, name, image, display, xax, yax):
+    def __init__(self, name, image, display, xax, yax, maxResolution=512):
         """
         """
         
-        self.__image   = image
-        self.__display = display
-        self.__xax     = xax
-        self.__yax     = yax
+        self.__image         = image
+        self.__display       = display
+        self.__xax           = xax
+        self.__yax           = yax
+        self.__maxResolution = maxResolution
 
         RenderTexture.__init__(self, name)
 
@@ -145,7 +149,8 @@ class ImageRenderTexture(RenderTexture):
     def __updateSize(self, *a):
         image      = self.__image
         display    = self.__display
-
+        maxRes     = self.__maxResolution
+        
         resolution = display.resolution / np.array(image.pixdim)
         resolution = np.round(resolution)
 
@@ -168,19 +173,19 @@ class ImageRenderTexture(RenderTexture):
         # system. So we'll use a fixed size render texture
         # instead.
         elif display.transform == 'affine':
-            width  = 256 / resolution.min()
-            height = 256 / resolution.min()
+            width  = maxRes / resolution.min()
+            height = maxRes / resolution.min()
 
         # Limit the width/height to an arbitrary maximum
-        if width > 256 or height > 256:
+        if width > maxRes or height > maxRes:
             oldWidth, oldHeight = width, height
             ratio = min(width, height) / max(width, height)
             
             if width > height:
-                width  = 256
+                width  = maxRes
                 height = width * ratio
             else:
-                height = 256
+                height = maxRes
                 width  = height * ratio
 
             log.debug('Limiting texture resolution to {}x{} '
