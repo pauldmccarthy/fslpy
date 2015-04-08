@@ -7,6 +7,8 @@
 
 import logging
 
+import wx
+
 import numpy                   as np
 import OpenGL.GL               as gl
 
@@ -47,8 +49,30 @@ class GLImageObject_pregen(object):
         #    calls to draw()
         # 
         self.__renderDirty = [True] * self.__numTextures
- 
 
+        ntexes = self.__numTextures
+        zmin   = self.__zmin
+        zmax   = self.__zmax
+        texes  = self.__renderTextures
+        zposes = np.arange(ntexes) * (zmax - zmin) / ntexes + zmin
+
+        def updateOneTexture(idx):
+
+            tex  = texes[ idx]
+            zpos = zposes[idx]
+            if not self.__renderDirty[idx]:
+                return
+
+            self.__refreshTexture(tex, idx, zpos)
+
+            idx = (idx + 1) % ntexes
+
+            if idx > 0:
+                wx.CallLater(1, updateOneTexture, idx)
+
+        wx.CallAfter(updateOneTexture, 0)
+
+            
     def getRealGLObject(self):
         return self.__realGLObj
 
@@ -83,6 +107,8 @@ class GLImageObject_pregen(object):
                     None, image, display, xax, yax))
 
         self.__renderDirty = [True] * self.__numTextures
+
+        self.__updateTextures()
 
     
     def destroy(self):
