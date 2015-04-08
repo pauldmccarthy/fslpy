@@ -26,61 +26,71 @@ class GLImageObject_pregen(object):
         self.__maxTextures = 256
         self.__realGLObj   = realGLObj
 
-        self.__renderTextures = []
-        self.__renderDirty    = []
-        self.__numTextures    = 0
+        self.__textureDirty   = []
+        self.__textures       = []
 
-        self.__updating       = False
-        self.__updateIdx      = 0
+        self.__lastDrawnTexture = None
+        self.__updateQueue      = []
 
         self.__realGLObj.addUpdateListener(
             '{}_{}'.format(type(self).__name__, id(self)),
-            self.__updateTextures)
+            self.__refreshAllTextures)
+
+        wx.GetApp().Bind(wx.EVT_IDLE, self.__textureUpdateLoop)
+
+            
+    def __refreshAllTextures(self, *a):
+
+        # if self.__lastDrawnTexture is not None:
+        #     lastIdx = self.__lastDrawnTexture
+        # else:
+        #     lastIdx = len(self.__textures) / 2
+
+        # idxs   = np.zeros(len(self.__textures), dtype=np.uint32)
+
+        idxs = list(range(len(self.__textures)))
+
+        # idxs[  0::2] = np.arange(lastIdx - 1,     -1,                 -1)
+        # idxs[  1::2] = np.arange(lastIdx,  len(self.__textures), 1)
+
+        self.__textureDirty = [True] * len(self.__textures)
+        self.__updateQueue  = idxs
 
 
-    def __updateTextures(self, *a):
+    def __zposToIndex(self, zpos):
+        zmin  = self.__zmin
+        zmax  = self.__zmax
+        ntexs = len(self.__textures)
+        return int(ntexs * (zpos - zmin) / (zmax - zmin))
 
-        self.__renderDirty = [True] * self.__numTextures
+    
+    def __indexToZpos(self, index):
+        zmin  = self.__zmin
+        zmax  = self.__zmax
+        ntexs = len(self.__textures)
+        return index * (zmax - zmin) / ntexs + zmin
 
-        # An update is already in
-        # progress - reset it
-        if self.__updating:
-            self.__updateIdx = 0
+
+    def __textureUpdateLoop(self, ev):
+        ev.Skip()
+
+        if len(self.__updateQueue) == 0 or len(self.__textures) == 0:
             return
 
-        self.__updating = True
+        idx = self.__updateQueue.pop(0)
+
+        if not self.__textureDirty[idx]:
+            return
+
+        tex = self.__textures[idx]
         
-        ntexes = self.__numTextures
-        zmin   = self.__zmin
-        zmax   = self.__zmax
-        texes  = self.__renderTextures
-        zposes = np.arange(ntexes) * (zmax - zmin) / ntexes + zmin
+        log.debug('Refreshing texture slice {} (zax {})'.format(
+            idx, self.__realGLObj.zax))
+        
+        self.__refreshTexture(tex, idx)
 
-        def updateOneTexture():
-
-            idx  = self.__updateIdx
-            tex  = texes[ idx]
-            zpos = zposes[idx]
-            
-            if self.__renderDirty[idx]:
-                log.debug('Refreshing texture slice {} ({}, zax {})'.format(
-                    idx, zpos, self.__realGLObj.zax))
-                self.__refreshTexture(tex, idx, zpos)
-
-            idx              = (idx + 1) % ntexes
-            self.__updateIdx = idx
-
-            # The update is finished - 
-            # clear the update flag
-            if idx == 0:
-                self.__updating = False
-
-            # Queue the next slice
-            else:
-                wx.CallLater(50, updateOneTexture)
-            
-
-        wx.CallAfter(updateOneTexture)
+        if len(self.__updateQueue) > 0:
+            ev.RequestMore()
 
             
     def getRealGLObject(self):
@@ -94,55 +104,53 @@ class GLImageObject_pregen(object):
         image   = self.__realGLObj.image
         display = self.__realGLObj.display
         zax     = self.__realGLObj.zax
-
-        # reconfigure render textures
-        for tex in self.__renderTextures:
-            tex.destroy()
  
         if display.transform in ('id', 'pixdim'):
-            self.__numTextures = image.shape[zax]
+            numTextures = image.shape[zax]
         else:
-            self.__numTextures = self.__maxTextures
+            numTextures = self.__maxTextures
 
         lo, hi = display.getDisplayBounds()
 
         self.__zmin = lo[zax]
         self.__zmax = hi[zax]
 
-        self.__renderTextures = []
-
-        for i in range(self.__numTextures):
-            self.__renderTextures.append(
+        self.__destroyTextures()
+        
+        for i in range(numTextures):
+            self.__textures.append(
                 textures.ImageRenderTexture(
                     None, image, display, xax, yax))
 
-        self.__renderDirty = [True] * self.__numTextures
+        self.__textureDirty = [True] * numTextures
+        self.__refreshAllTextures()
 
-        self.__updateTextures()
-
+        
+    def __destroyTextures(self):
+        texes = self.__textures
+        self.__textures = []
+        for tex in texes:
+            wx.CallLater(50, tex.destroy)
+        
     
     def destroy(self):
-
-        # This is slow, so should be done in a separate thread
-        for tex in self.__renderTextures:
-            tex.destroy()
-            
-        self.__renderTextures = []
+        self.__destroyTextures()
 
     
     def preDraw(self):
         pass
 
 
-    def __refreshTexture(self, tex, idx, zpos):
-
-        log.debug('Refreshing render texture for slice {} (zpos {}, '
-                  'zax {})'.format(idx, zpos, self.__realGLObj.zax))
+    def __refreshTexture(self, tex, idx):
 
         display = self.__realGLObj.display
         xax     = self.__realGLObj.xax
         yax     = self.__realGLObj.yax
         zax     = self.__realGLObj.zax
+        zpos    = self.__indexToZpos(idx)
+
+        log.debug('Refreshing render texture for slice {} (zpos {}, '
+                  'zax {})'.format(idx, zpos, self.__realGLObj.zax))
 
         lo, hi = display.getDisplayBounds() 
 
@@ -176,13 +184,13 @@ class GLImageObject_pregen(object):
         self.__realGLObj.postDraw()
         tex.unbindAsRenderTarget()
         
-        self.__renderDirty[idx] = False
-
         gl.glViewport(*oldSize)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadMatrixf(oldProjMat)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadMatrixf(oldMVMat)
+
+        self.__textureDirty[idx] = False
 
     
     def draw(self, zpos, xform=None):
@@ -191,22 +199,21 @@ class GLImageObject_pregen(object):
         xax     = self.__realGLObj.xax
         yax     = self.__realGLObj.yax
         zax     = self.__realGLObj.zax
-        zmin    = self.__zmin
-        zmax    = self.__zmax
 
         if not display.enabled:
             return
         
-        texIdx = int(self.__numTextures * (zpos - zmin) / (zmax - zmin))
+        texIdx                  = self.__zposToIndex(zpos)
+        self.__lastDrawnTexture = texIdx
 
-        if texIdx < 0 or texIdx >= self.__numTextures:
+        if texIdx < 0 or texIdx >= len(self.__textures):
             return
 
-        lo, hi        = display.getDisplayBounds()
-        renderTexture = self.__renderTextures[texIdx]
+        lo, hi  = display.getDisplayBounds()
+        texture = self.__textures[texIdx]
 
-        if self.__renderDirty[texIdx]:
-            self.__refreshTexture(renderTexture, texIdx, zpos)
+        if self.__textureDirty[texIdx]:
+            self.__refreshTexture(texture, texIdx)
 
         vertices = np.zeros((6, 3), dtype=np.float32)
         vertices[:, zax] = zpos
@@ -220,7 +227,7 @@ class GLImageObject_pregen(object):
         if xform is not None:
             vertices = transform.transform(vertices, xform=xform)
 
-        renderTexture.draw(vertices)
+        texture.draw(vertices)
 
 
     def drawAll(self, zposes, xforms):
