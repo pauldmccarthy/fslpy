@@ -31,8 +31,7 @@ if you know that it will not be needed by other parts of the application.
 Use of the above functions is not actually restricted to :class:`Texture`
 instances - any type which takes a ``name`` argument as the first argument to
 its ``__init__`` method, and which has a ``destroy`` method and a
-:``getTextureName`` method, is compatible with the above functions.  See the
-:class:`.ImageSliceList` class for an example of such a class.
+:``getTextureName`` method, is compatible with the above functions.  
 """
 
 
@@ -90,4 +89,3 @@ from colourmaptexture import ColourMapTexture
 from selectiontexture import SelectionTexture
 from rendertexture    import RenderTexture
 from rendertexture    import ImageRenderTexture
-from imageslicelist   import ImageSliceList
