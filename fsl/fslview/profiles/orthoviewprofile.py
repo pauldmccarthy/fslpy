@@ -70,6 +70,11 @@ class OrthoViewProfile(profiles.Profile):
         self._ycanvas = canvasPanel.getYCanvas()
         self._zcanvas = canvasPanel.getZCanvas()
 
+        # This attribute will occasionally store a
+        # reference to a gl.annotations.Rectangle -
+        # see the _zoomModeLeftMouse* handlers
+        self._lastRect = None
+
 
     def getEventTargets(self):
         """
@@ -229,7 +234,9 @@ class OrthoViewProfile(profiles.Profile):
 
         mouseDownPos, canvasDownPos = self.getMouseDownLocation()
 
-        canvas.getAnnotations().dequeue(self._lastRect)
+        if self._lastRect is not None:
+            canvas.getAnnotations().dequeue(self._lastRect)
+            self._lastRect = None
 
         rectXlen = abs(canvasPos[canvas.xax] - canvasDownPos[canvas.xax])
         rectYlen = abs(canvasPos[canvas.yax] - canvasDownPos[canvas.yax])

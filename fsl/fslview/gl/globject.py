@@ -61,12 +61,12 @@ class GLObject(object):
         this instance, ``name``, which is simply a unique name for this
         instance.
 
-        Subclass implementations should call this method, and should perform
-        any necessary OpenGL initialisation, such as creating textures.
+        Subclass implementations must call this method, and should also
+        perform any necessary OpenGL initialisation, such as creating
+        textures.
         """
 
         self.name = '{}_{}'.format(type(self).__name__, id(self))
-
         self.__updateListeners = {}
 
         
