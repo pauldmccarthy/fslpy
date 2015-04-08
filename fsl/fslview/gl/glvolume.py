@@ -258,9 +258,11 @@ class GLVolume(globject.GLImageObject):
         
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
+            self.onUpdate()
 
         def colourUpdate(*a):
             self.refreshColourTexture()
+            self.onUpdate()
 
         display.addListener('transform',     lName, vertexUpdate)
         display.addListener('alpha',         lName, colourUpdate)

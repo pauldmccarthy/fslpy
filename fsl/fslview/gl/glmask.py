@@ -49,9 +49,11 @@ class GLMask(glvolume.GLVolume):
         """
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
+            self.onUpdate()
 
         def colourUpdate(*a):
             self.refreshColourTexture()
+            self.onUpdate()
 
         lnrName = '{}_{}'.format(type(self).__name__, id(self))
 

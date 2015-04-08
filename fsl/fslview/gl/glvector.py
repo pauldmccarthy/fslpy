@@ -146,15 +146,19 @@ class GLVector(globject.GLImageObject):
         
         def modUpdate( *a):
             self.refreshModulateTexture()
+            self.onUpdate()
 
         def cmapUpdate(*a):
             self.refreshColourTextures()
+            self.onUpdate()
 
         def modeChange(*a):
             self._onModeChange()
+            self.onUpdate()
 
         def coordUpdate(*a):
             self.setAxes(self.xax, self.yax)
+            self.onUpdate()
 
         # display.addListener('alpha',       name, cmapUpdate)
         display.addListener('transform',   name, coordUpdate)

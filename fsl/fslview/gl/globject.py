@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines the :class:`GLObject` class, which is a superclass for
-all 2D OpenGL representations of :class:`fsl.data.image.Image` instances.
+all 2D representations of objects in OpenGL.
 
 This module also provides the :func:`createGLObject` function, which provides
 mappings between :class:`~fsl.data.image.Image` types, and their corresponding
@@ -35,16 +35,14 @@ def createGLObject(image, display):
     :arg display: A :class:`~fsl.fslview.displaycontext.Display` instance.
     """
 
-    import fsl.fslview.gl.glvolume        as glvolume
-    import fsl.fslview.gl.glvolume_pregen as glvolume_pregen
-    import fsl.fslview.gl.glmask          as glmask
-    import fsl.fslview.gl.glvector        as glvector
+    import fsl.fslview.gl.glvolume as glvolume
+    import fsl.fslview.gl.glmask   as glmask
+    import fsl.fslview.gl.glvector as glvector
 
     _objectmap = {
-        'volume'        : glvolume       .GLVolume,
-        'volume_pregen' : glvolume_pregen.GLVolume_pregen,
-        'mask'          : glmask         .GLMask,
-        'vector'        : glvector       .GLVector
+        'volume' : glvolume.GLVolume,
+        'mask'   : glmask  .GLMask,
+        'vector' : glvector.GLVector
     } 
 
     ctr = _objectmap.get(display.imageType, None)
@@ -68,6 +66,34 @@ class GLObject(object):
         """
 
         self.name = '{}_{}'.format(type(self).__name__, id(self))
+
+        self.__updateListeners = {}
+
+        
+    def addUpdateListener(self, name, listener):
+        """Adds a listener function which will be called whenever this
+        ``GLObject`` representation changes.
+
+        The listener function must accept a single parameter, which is
+        a reference to this ``GLObject``.
+        """
+        self.__updateListeners[name] = listener
+
+        
+    def removeUpdateListener(self, name, listener):
+        """Removes a listener previously registered via
+        :meth:`addUpdateListener`.
+        """
+        self.__updateListeners.pop(name, None)
+
+
+    def onUpdate(self):
+        """This method must be called by subclasses whenever the GL object
+        representation changes - it notifies any registered listeners of the
+        change.
+        """
+        for name, listener in self.__updateListeners.items():
+            listener(self)
                 
     
     def setAxes(self, xax, yax):
