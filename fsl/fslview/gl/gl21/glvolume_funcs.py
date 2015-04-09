@@ -77,6 +77,7 @@ def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
     _compileShaders(self)
+    setUniforms(self)
 
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.voxCoordBuffer = gl.glGenBuffers(1)
@@ -101,17 +102,12 @@ def destroy(self):
     gl.glDeleteProgram(self.shaders)
 
 
-def preDraw(self):
-    """Sets up the GL state to draw a slice from the given
-    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
-    """
+def setUniforms(self):
 
     display = self.display
     opts    = self.displayOpts
 
-    # load the shaders
     gl.glUseProgram(self.shaders)
-
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
@@ -145,9 +141,21 @@ def preDraw(self):
 
     # Set up the colour and image textures
     gl.glUniform1i(self.imageTexturePos,  0)
-    gl.glUniform1i(self.colourTexturePos, 1)
+    gl.glUniform1i(self.colourTexturePos, 1)    
 
 
+def preDraw(self):
+    """Sets up the GL state to draw a slice from the given
+    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
+    """
+
+    display = self.display
+    opts    = self.displayOpts
+
+    # load the shaders
+    gl.glUseProgram(self.shaders)
+
+    
 def draw(self, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 

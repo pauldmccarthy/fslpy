@@ -82,8 +82,6 @@ class GLVolume(globject.GLImageObject):
         # updated when its display properties are changed
         self.addDisplayListeners()
 
-        fslgl.glvolume_funcs.init(self)
-
         texName = '{}_{}'.format(id(self.image), type(self).__name__)
 
         self.imageTexture = textures.getTexture(
@@ -95,6 +93,8 @@ class GLVolume(globject.GLImageObject):
         self.colourTexture = textures.ColourMapTexture(texName)
         
         self.refreshColourTexture()
+        
+        fslgl.glvolume_funcs.init(self)
 
 
     def setAxes(self, xax, yax):
@@ -254,10 +254,12 @@ class GLVolume(globject.GLImageObject):
         
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
+            fslgl.glvolume_funcs.setUniforms(self)
             self.onUpdate()
 
         def colourUpdate(*a):
             self.refreshColourTexture()
+            fslgl.glvolume_funcs.setUniforms(self)
             self.onUpdate()
 
         display.addListener('transform',     lName, vertexUpdate)
