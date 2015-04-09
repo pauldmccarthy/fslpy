@@ -46,6 +46,8 @@ uniform float clipHigh;
  */
 varying vec3 fragVoxCoord;
 
+varying vec3 fragTexCoord;
+
 
 void main(void) {
 
@@ -57,21 +59,16 @@ void main(void) {
         return;
     }
 
-    /* 
-     * Normalise voxel coordinates to (0.0, 1.0)
-     */
-    vec3 texCoord = voxCoord / imageShape;
-
     /*
      * Look up the voxel value 
      */
     float voxValue;
     if (useSpline) voxValue = spline_interp(imageTexture,
-                                            texCoord,
+                                            fragTexCoord,
                                             imageShape,
                                             0);
     else           voxValue = texture3D(    imageTexture,
-                                            texCoord).r;
+                                            fragTexCoord).r;
 
     /*
      * Clip out of range voxel values
