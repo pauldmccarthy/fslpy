@@ -54,23 +54,25 @@ def _compileShaders(self):
 
     # indices of all vertex/fragment shader parameters
     self.vertexPos          = gl.glGetAttribLocation( self.shaders,
-                                                       'vertex')
+                                                      'vertex')
     self.voxCoordPos        = gl.glGetAttribLocation( self.shaders,
-                                                       'voxCoord') 
+                                                      'voxCoord')
+    self.texCoordPos        = gl.glGetAttribLocation( self.shaders,
+                                                      'texCoord') 
     self.imageTexturePos    = gl.glGetUniformLocation(self.shaders,
-                                                       'imageTexture')
+                                                      'imageTexture')
     self.colourTexturePos   = gl.glGetUniformLocation(self.shaders,
-                                                       'colourTexture') 
+                                                      'colourTexture') 
     self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
-                                                       'imageShape')
+                                                      'imageShape')
     self.useSplinePos       = gl.glGetUniformLocation(self.shaders,
-                                                       'useSpline')
+                                                      'useSpline')
     self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
-                                                       'voxValXform')
+                                                      'voxValXform')
     self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
-                                                       'clipLow')
+                                                      'clipLow')
     self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
-                                                       'clipHigh') 
+                                                      'clipHigh') 
 
 
 def init(self):
@@ -81,6 +83,7 @@ def init(self):
 
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.voxCoordBuffer = gl.glGenBuffers(1)
+    self.texCoordBuffer = gl.glGenBuffers(1)
     self.indexBuffer    = gl.glGenBuffers(1)
 
     indices = np.arange(6, dtype=np.uint32)
@@ -98,6 +101,7 @@ def destroy(self):
 
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.voxCoordBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
     gl.glDeleteProgram(self.shaders)
 
@@ -149,9 +153,6 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = self.display
-    opts    = self.displayOpts
-
     # load the shaders
     gl.glUseProgram(self.shaders)
 
@@ -183,8 +184,11 @@ def draw(self, zpos, xform=None):
     if xform is not None: 
         vertices = transform.transform(vertices, xform)
 
+    texCoords = voxCoords / self.image.shape[:3]
+
     vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
     voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
+    texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
 
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
@@ -213,7 +217,21 @@ def draw(self, zpos, xform=None):
         gl.GL_FALSE,
         0,
         None)
-    gl.glEnableVertexAttribArray(self.voxCoordPos)    
+    gl.glEnableVertexAttribArray(self.voxCoordPos)
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.texCoordBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                    texCoords.nbytes,
+                    texCoords,
+                    gl.GL_STATIC_DRAW)
+    gl.glVertexAttribPointer(
+        self.texCoordPos,
+        3,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+    gl.glEnableVertexAttribArray(self.texCoordPos) 
 
     # Bind the vertex index buffer
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
@@ -239,6 +257,7 @@ def postDraw(self):
 
     gl.glDisableVertexAttribArray(self.vertexPos)
     gl.glDisableVertexAttribArray(self.voxCoordPos)
+    gl.glDisableVertexAttribArray(self.texCoordPos)
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
     gl.glUseProgram(0)
