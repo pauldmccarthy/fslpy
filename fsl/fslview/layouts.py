@@ -99,6 +99,7 @@ CanvasPanelLayout = props.VGroup((
 
 SceneOptsLayout = props.VGroup((
     widget(SceneOpts, 'showCursor'),
+    widget(SceneOpts, 'twoStageRender'),
     widget(SceneOpts, 'showColourBar'),
     widget(SceneOpts, 'colourBarLabelSide'),
     widget(SceneOpts, 'colourBarLocation')))

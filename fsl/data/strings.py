@@ -157,6 +157,7 @@ properties = TypeDict({
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.showColourBar'      : 'Show colour bar',
+    'SceneOpts.twoStageRender'     : 'Two-stage rendering',
     'SceneOpts.zoom'               : 'Zoom',
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label side',

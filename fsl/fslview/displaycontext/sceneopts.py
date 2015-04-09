@@ -30,3 +30,10 @@ class SceneOpts(props.HasProperties):
 
     
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
+
+    twoStageRender = props.Boolean(default=False)
+    """Enable two-stage rendering, useful for low-performance graphics cards/
+    software rendering.
+
+    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.twoStageRender`.
+    """

@@ -194,8 +194,14 @@ def bootstrap(glVersion=None):
 
         import fsl.fslview.displaycontext.display    as di
         import fsl.fslview.displaycontext.vectoropts as vo
+        import fsl.fslview.displaycontext.sceneopts  as so
+        import fsl.fslview.gl.slicecanvas            as sc
 
-        # Disable some fancy options - spline
+        # Make two-stage rendering the default
+        so.SceneOpts  .twoStageRender.setConstraint(None, 'default',  True)
+        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default',  True)
+
+        # And disable some fancy options - spline
         # may have been disabled above, so absorb
         # the IndexError if it occurs
         vo.VectorOpts  .displayMode  .removeChoice('line')

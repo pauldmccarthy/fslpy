@@ -55,6 +55,39 @@ class RenderTexture(texture.Texture2D):
                                    self.__frameBuffer) 
 
 
+    def setRenderViewport(self, xax, yax, xmin, xmax, ymin, ymax):
+
+        width, height = self.getSize()
+        zax           = 3 - xax - yax
+        
+        self.__oldSize    = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        self.__oldProjMat = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
+        self.__oldMVMat   = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
+        
+        gl.glViewport(0, 0, width, height)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+
+        gl.glOrtho(xmin, xmax, ymin, ymax, -5000, 5000)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        
+        if zax == 0:
+            gl.glRotatef(-90, 1, 0, 0)
+            gl.glRotatef(-90, 0, 0, 1)
+        elif zax == 1:
+            gl.glRotatef(270, 1, 0, 0)
+            
+
+    def restoreViewport(self):
+
+        gl.glViewport(*self.__oldSize)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadMatrixf(self.__oldProjMat)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadMatrixf(self.__oldMVMat)        
+        
+
     @classmethod
     def unbindAsRenderTarget(cls):
         glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 

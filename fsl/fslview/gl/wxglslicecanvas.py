@@ -57,6 +57,7 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
             self.removeListener('invertX',        self.name)
             self.removeListener('invertY',        self.name)
             self.removeListener('zoom',           self.name)
+            self.removeListener('twoStageRender', self.name)
             
             self.imageList .removeListener('images',     self.name)
             self.displayCtx.removeListener('bounds',     self.name)

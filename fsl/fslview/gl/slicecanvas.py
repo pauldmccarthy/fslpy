@@ -30,6 +30,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.gl.globject    as globject
+import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations
 
 
@@ -63,6 +64,15 @@ class SliceCanvas(props.HasProperties):
     range of the canvas, in display coordinates. This may be a larger area
     than the size of the displayed images, as it is adjusted to preserve the
     aspect ratio.
+    """
+
+    
+    twoStageRender = props.Boolean(default=False)
+    """If ``True``, the scene is rendered off-screen to a fixed-size texture;
+    this texture is then rendered to the canvas. If ``False``, the scene is
+    rendered directly to the canvas. Two-stage rendering will probably give
+    better performance on old graphics cards, and when software-based
+    rendering is being used.
     """
 
     
@@ -297,6 +307,14 @@ class SliceCanvas(props.HasProperties):
                          self.name,
                          lambda *a: self._updateDisplayBounds())
 
+        # When the two stage rendering option changes,
+        # make sure that, if it has been enabled, a
+        # rendering texture exists for every image
+        # in the list
+        self.addListener('twoStageRender',
+                         self.name,
+                         self._onTwoStageRenderChange)
+        
         # When the image list changes, refresh the
         # display, and update the display bounds
         self.imageList.addListener( 'images',
@@ -314,6 +332,58 @@ class SliceCanvas(props.HasProperties):
         # Call the _imageListChanged method - it  will generate
         # any necessary GL data for each of the images
         self._imageListChanged()
+
+
+    def _onTwoStageRenderChange(
+            self,
+            value=None,
+            valid=None,
+            ctx=None,
+            name=None,
+            recreate=False):
+        """Called when the :attr:`twoStageRender` property changes.
+        """
+
+        needRefresh = False
+
+        # If two stage rendering has been disabled, or
+        # the caller wants all render textures to be
+        # recreated, destroy all existing textures
+        if recreate or not self.twoStageRender:
+
+            for image, texture in self._renderTextures.items():
+                self._renderTextures.pop(image)
+                texture.destroy()
+                needRefresh = True
+
+        if self.twoStageRender:
+
+            # If any images have been removed from the image
+            # list, destroy the associated render texture
+            for image, texture in self._renderTextures.items():
+                if image not in self.imageList:
+                    self._renderTextures.pop(image)
+                    texture.destroy()
+                    needRefresh = True
+
+            # If any images have been added to the list,
+            # create a new render textures for them
+            for image in self.imageList:
+
+                if image in self._renderTextures:
+                    continue
+
+                display = self.displayCtx.getDisplayProperties(image)
+                name    = '{}_{}_{}'.format(image.name, self.xax, self.yax)
+                rt      = textures.ImageRenderTexture(
+                    name, image, display, self.xax, self.yax)
+                
+                self._renderTextures[image] = rt
+                
+                needRefresh = True
+
+        if needRefresh:
+            self._refresh()
 
 
     def _zAxisChanged(self, *a):
@@ -356,6 +426,12 @@ class SliceCanvas(props.HasProperties):
                         pos[self.yax],
                         pos[self.zax]]
 
+        # If two stage rendering is enabled, the
+        # render textures need to be updated, as
+        # they are configured in terms of the
+        # display axes
+        self._onTwoStageRenderChange(recreate=True)
+ 
             
     def _imageListChanged(self, *a):
         """This method is called every time an image is added or removed
@@ -431,6 +507,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('resolution',    self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 
+        self._onTwoStageRenderChange()
         self._refresh()
 
 
@@ -709,8 +786,6 @@ class SliceCanvas(props.HasProperties):
         log.debug('Combining off-screen image textures, and rendering '
                   'to canvas (size {})'.format(self._getSize()))
 
-        self._setViewport()
-
         for image in self.displayCtx.getOrderedImages():
             renderTexture = self._renderTextures.get(image, None)
             display       = self.displayCtx.getDisplayProperties(image)
@@ -740,7 +815,10 @@ class SliceCanvas(props.HasProperties):
         if not self._setGLContext():
             return
 
-        self._setViewport()
+        # If normal rendering, set the viewport to match
+        # the current display bounds and canvas size
+        if not self.twoStageRender:
+            self._setViewport()
 
         for image in self.displayCtx.getOrderedImages():
 
@@ -750,12 +828,40 @@ class SliceCanvas(props.HasProperties):
             if (globj is None) or (not display.enabled):
                 continue
 
+            # Two-stage rendering - each image is
+            # rendered to an off-screen texture -
+            # these textures are combined below.
+            # Set up this texture as the rendering
+            # target
+            if self.twoStageRender:
+                renderTexture = self._renderTextures.get(image, None)
+                lo, hi        = display.getDisplayBounds()
+
+                # Assume that all is well - the texture
+                # just has not yet been created
+                if renderTexture is None:
+                    return
+
+                renderTexture.bindAsRenderTarget()
+                renderTexture.setRenderViewport(
+                    self.xax,
+                    self.yax, 
+                    lo[self.xax],
+                    hi[self.xax],
+                    lo[self.yax],
+                    hi[self.yax])
+                
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))
                 
             globj.preDraw()
             globj.draw(self.pos.z)
             globj.postDraw()
+
+        if self.twoStageRender:
+            textures.ImageRenderTexture.unbindAsRenderTarget()
+            self._setViewport()
+            self._drawRenderTextures()
 
         if self.showCursor:
             self._drawCursor()

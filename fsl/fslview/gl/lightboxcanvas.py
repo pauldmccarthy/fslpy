@@ -13,11 +13,13 @@ import logging
 
 log = logging.getLogger(__name__)
 
-import numpy as np
+import numpy     as np
+import OpenGL.GL as gl
 
 import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
+import fsl.fslview.gl.textures    as fsltextures
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
@@ -251,7 +253,40 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._updateDisplayBounds()
         self._refresh()
 
+
+    def _onTwoStageRenderChange(self, *args, **kwargs):
+        """Overrides
+        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas._onTwoStageRenderChange`.
+        """
+
+        # The LightBoxCanvas does two-stage rendering
+        # a bit different to the SliceCanvas. The latter
+        # uses a separate render texture for each image,
+        # whereas here we're going to use a single
+        # render texture for all images.
+        if self._renderTextures == {}:
+            self._renderTextures = None
+            
+        # nothing to be done
+        if self.twoStageRender and self._renderTextures is not None:
+            return
         
+        if not self.twoStageRender and self._renderTextures is None:
+            return
+
+        if not self.twoStageRender:
+            self._renderTextures.destroy()
+            self._renderTextures = None
+
+        else:
+            self._renderTextures = fsltextures.RenderTexture(
+                '{}_{}'.format(type(self).__name__, id(self)),
+                gl.GL_LINEAR)
+            self._renderTextures.setSize(512, 512)
+
+        self._refresh()
+
+
     def _calcNumSlices(self, *a):
         """Calculates the total number of slices to be displayed and
         the total number of rows.
@@ -612,7 +647,18 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if not self._setGLContext():
             return
 
-        self._setViewport()
+        if self.twoStageRender:
+            log.debug('Rendering to off-screen frame buffer')
+            self._renderTextures.bindAsRenderTarget()
+            self._renderTextures.setRenderViewport(
+                self.xax,
+                self.yax,
+                self.displayBounds.xlo,
+                self.displayBounds.xhi,
+                self.displayBounds.ylo,
+                self.displayBounds.yhi)
+        else:
+            self._setViewport()
 
         startSlice   = self.ncols * self.topRow
         endSlice     = startSlice + self.nrows * self.ncols
@@ -641,6 +687,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             globj.drawAll(zposes, xforms)
 
             globj.postDraw()
+
+        if self.twoStageRender:
+            self._renderTextures.unbindAsRenderTarget()
+            self._setViewport()
+            self._renderTextures.drawOnBounds(
+                self.displayBounds.xlo,
+                self.displayBounds.xhi,
+                self.displayBounds.ylo,
+                self.displayBounds.yHi,
+                self.xax,
+                self.yax)
 
         self.getAnnotations().draw(self.pos.z)
 
