@@ -430,10 +430,10 @@ class VoxelSelection(AnnotationObject):
         zax   = self.zax
         shape = self.selection.selection.shape
 
-        verts, _ = globject.slice2D(shape,
-                                    xax,
-                                    yax,
-                                    self.voxToDisplayMat)
+        verts, idxs = globject.slice2D(shape,
+                                       xax,
+                                       yax,
+                                       self.voxToDisplayMat)
 
         verts[:, zax] = zpos
 
@@ -442,7 +442,6 @@ class VoxelSelection(AnnotationObject):
 
         verts = np.array(verts, dtype=np.float32).ravel('C')
         texs  = np.array(texs,  dtype=np.float32).ravel('C')
-        idxs  = np.arange(4,    dtype=np.uint32)
 
         self.texture.bindTexture(gl.GL_TEXTURE0)
 
@@ -453,7 +452,7 @@ class VoxelSelection(AnnotationObject):
 
         gl.glVertexPointer(  3, gl.GL_FLOAT, 0, verts)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texs)
-        gl.glDrawElements(gl.GL_TRIANGLE_STRIP, 4, gl.GL_UNSIGNED_INT, idxs)
+        gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, idxs)
 
         # gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)

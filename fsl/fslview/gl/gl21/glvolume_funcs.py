@@ -234,7 +234,7 @@ def draw(self, zpos, xform=None):
     gl.glUniformMatrix4fv(self.worldToWorldMatPos, 1, False, w2w)
 
     # Draw all of the triangles!
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+    gl.glDrawElements(gl.GL_TRIANGLES,
                       self.nVertices,
                       gl.GL_UNSIGNED_INT,
                       None)

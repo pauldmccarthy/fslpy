@@ -166,7 +166,7 @@ def draw(self, zpos, xform=None):
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, worldCoords)
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
 
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+    gl.glDrawElements(gl.GL_TRIANGLES,
                       len(indices),
                       gl.GL_UNSIGNED_INT,
                       indices)
@@ -185,20 +185,14 @@ def drawAll(self, zposes, xforms):
     # program to use texture coordinates
     shaders.setFragmentProgramVector(8, -np.ones(4))
 
-    worldCoords = np.array(self.worldCoords)
-    indices     = np.array(self.indices)
-    
-    # The world coordinates are ordered to 
-    # be rendered as a triangle strip, but
-    # we want to render as quads. So we
-    # need to re-order them
-    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
+    # worldCoords = np.array(self.worldCoords)
+    # indices     = np.array(self.indices)
 
     # Replicate the world coordinates
     # across all z positions, and with
     # each corresponding transformation
     worldCoords, texCoords, indices = globject.broadcast(
-        worldCoords, indices, zposes, xforms, self.zax)
+        self.worldCoords, self.indices, zposes, xforms, self.zax)
 
     worldCoords = worldCoords.ravel('C')
     texCoords   = texCoords  .ravel('C')
@@ -208,7 +202,10 @@ def drawAll(self, zposes, xforms):
     gl.glActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices)
+    gl.glDrawElements(gl.GL_TRIANGLES,
+                      len(indices),
+                      gl.GL_UNSIGNED_INT,
+                      indices)
 
 
 def postDraw(self):

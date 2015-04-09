@@ -59,9 +59,8 @@ def setAxes(self):
 
     
 def rgbModeSetAxes(self):
-    """Creates four vertices which represent a slice through the image
-    texture, oriented according to the plane defined by
-    ``self.xax`` and  ``self.yax``.
+    """Creates six vertices which represent a slice through the image texture,
+    oriented according to the plane defined by ``self.xax`` and ``self.yax``.
 
     See :func:`~fsl.fslview.globject.slice2D` for more details.
     """
@@ -264,8 +263,6 @@ def rgbModeDrawAll(self, zposes, xforms):
     worldCoords  = np.array(self.worldCoords)
     indices      = np.array(self.indices)
 
-    worldCoords[[2, 3], :] = worldCoords[[3, 2], :]
-
     worldCoords, texCoords, indices = globject.broadcast(
         worldCoords, indices, zposes, xforms, self.zax)
 
@@ -275,7 +272,10 @@ def rgbModeDrawAll(self, zposes, xforms):
     gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    gl.glDrawElements(gl.GL_QUADS, len(indices), gl.GL_UNSIGNED_INT, indices) 
+    gl.glDrawElements(gl.GL_TRIANGLES,
+                      len(indices),
+                      gl.GL_UNSIGNED_INT,
+                      indices) 
 
     
 def postDraw(self):

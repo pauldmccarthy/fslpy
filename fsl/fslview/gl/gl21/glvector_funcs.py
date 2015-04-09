@@ -261,7 +261,7 @@ def draw(self, zpos, xform=None):
                           None)
         
     elif mode == 'rgb':
-        gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
+        gl.glDrawElements(gl.GL_TRIANGLES,
                           self.nVertices,
                           gl.GL_UNSIGNED_INT,
                           None)

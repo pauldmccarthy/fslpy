@@ -540,10 +540,19 @@ def voxelGrid(points, xax, yax, xpixdim, ypixdim):
 
 
 def slice2D(dataShape, xax, yax, voxToDisplayMat):
-    """Generates and returns four vertices which denote a slice through an
+    """Generates and returns six vertices which denote a slice through an
     array of the given ``dataShape``, parallel to the plane defined by the
     given ``xax`` and ``yax``, in the space defined by the given
     ``voxToDisplayMat``.
+
+    The six vertices define two triangles, arranged as follows:
+
+         4---5
+        1 \  |
+        |\ \ |
+        | \ \| 
+        |  \ 3
+        0---2
 
     :arg dataShape:       Number of elements along each dimension in the
                           image data.
@@ -560,26 +569,29 @@ def slice2D(dataShape, xax, yax, voxToDisplayMat):
     
     Returns a tuple containing:
     
-      - A ``4*3`` ``numpy.float32`` array containing the vertex locations
+      - A ``6*3`` ``numpy.float32`` array containing the vertex locations
         of a slice through the data. The values along the ``Z`` axis are set
         to ``0``.
     
       - A ``numpy.uint32`` array to be used as vertex indices.
+
     """
         
     xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax)
     ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax)
 
-    worldCoords = np.zeros((4, 3), dtype=np.float32)
+    vertices = np.zeros((6, 3), dtype=np.float32)
 
-    worldCoords[0, [xax, yax]] = (xmin, ymin)
-    worldCoords[1, [xax, yax]] = (xmin, ymax)
-    worldCoords[2, [xax, yax]] = (xmax, ymin)
-    worldCoords[3, [xax, yax]] = (xmax, ymax)
+    vertices[ 0, [xax, yax]] = [xmin, ymin]
+    vertices[ 1, [xax, yax]] = [xmin, ymax]
+    vertices[ 2, [xax, yax]] = [xmax, ymin]
+    vertices[ 3, [xax, yax]] = [xmax, ymin]
+    vertices[ 4, [xax, yax]] = [xmin, ymax]
+    vertices[ 5, [xax, yax]] = [xmax, ymax]    
 
-    indices = np.arange(0, 4, dtype=np.uint32)
+    indices = np.arange(0, 6, dtype=np.uint32)
 
-    return worldCoords, indices 
+    return vertices, indices 
 
 
 def subsample(data, resolution, pixdim=None, volume=None):
