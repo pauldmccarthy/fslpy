@@ -37,11 +37,13 @@ def createGLObject(image, display):
 
     import fsl.fslview.gl.glvolume as glvolume
     import fsl.fslview.gl.glmask   as glmask
+    import fsl.fslview.gl.gltest   as gltest
     import fsl.fslview.gl.glvector as glvector
 
     _objectmap = {
         'volume' : glvolume.GLVolume,
         'mask'   : glmask  .GLMask,
+        'test'   : gltest  .GLTest,
         'vector' : glvector.GLVector
     } 
 

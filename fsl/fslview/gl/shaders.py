@@ -220,9 +220,11 @@ def _getFileName(globj, shaderType):
     # than passing a GLObject instance
     import fsl.fslview.gl.glvolume as glvolume
     import fsl.fslview.gl.glvector as glvector
+    import fsl.fslview.gl.gltest   as gltest
     
     if   isinstance(globj, str):               prefix =  globj
     elif isinstance(globj, glvolume.GLVolume): prefix = 'glvolume'
+    elif isinstance(globj, gltest  .GLTest):   prefix = 'gltest'
     elif isinstance(globj, glvector.GLVector): prefix = 'glvector'
     else:
         raise RuntimeError('Unknown GL object type: '

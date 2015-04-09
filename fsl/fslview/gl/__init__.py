@@ -209,6 +209,7 @@ def bootstrap(glVersion=None):
         except IndexError: pass
 
     thismod.GL_VERSION     = verstr
+    thismod.gltest_funcs   = glpkg.gltest_funcs
     thismod.glvolume_funcs = glpkg.glvolume_funcs
     thismod.glvector_funcs = glpkg.glvector_funcs
     thismod._bootstrapped  = True

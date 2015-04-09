@@ -202,7 +202,7 @@ class Texture2D(Texture):
         self.unbindTexture()
 
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
  
         
     def drawOnBounds(self, xmin, xmax, ymin, ymax, xax, yax):
