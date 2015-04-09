@@ -103,13 +103,9 @@ class GLVolume(globject.GLImageObject):
         It regenerates vertex information accordingly.
         """
         
-        self.xax         = xax
-        self.yax         = yax
-        self.zax         = 3 - xax - yax
-        wc, idxs, nverts = fslgl.glvolume_funcs.genVertexData(self)
-        self.worldCoords = wc
-        self.indices     = idxs
-        self.nVertices   = nverts
+        self.xax = xax
+        self.yax = yax
+        self.zax = 3 - xax - yax
 
 
     def preDraw(self):

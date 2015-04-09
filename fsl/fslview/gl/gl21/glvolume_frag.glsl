@@ -7,7 +7,6 @@
 
 #pragma include spline_interp.glsl
 #pragma include test_in_bounds.glsl
-#pragma include briconalpha.glsl
 
 /*
  * image data texture
@@ -15,14 +14,12 @@
 uniform sampler3D imageTexture;
 
 /*
- * Image/texture dimensions
- */
-uniform vec3 imageShape;
-
-/*
  * Texture containing the colour map
  */
 uniform sampler1D colourTexture;
+
+
+uniform vec3 imageShape;
 
 /*
  * Use spline interpolation?
@@ -30,7 +27,7 @@ uniform sampler1D colourTexture;
 uniform bool useSpline;
 
 /*
- * Transformation matrix to apply to the 1D texture coordinate.
+ * Transformation matrix to apply to the voxel value.
  */
 uniform mat4 voxValXform;
 
@@ -45,22 +42,16 @@ uniform float clipLow;
 uniform float clipHigh;
 
 /*
- * Image display coordinates. 
- */
-varying vec3 fragDisplayCoords;
-
-
-/*
  * Image voxel coordinates
  */
-varying vec3 fragVoxCoords;
+varying vec3 fragVoxCoord;
 
 
 void main(void) {
 
-    vec3 voxCoords = fragVoxCoords;
+    vec3 voxCoord = fragVoxCoord;
 
-    if (!test_in_bounds(voxCoords, imageShape)) {
+    if (!test_in_bounds(voxCoord, imageShape)) {
         
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
@@ -69,18 +60,18 @@ void main(void) {
     /* 
      * Normalise voxel coordinates to (0.0, 1.0)
      */
-    voxCoords = voxCoords / imageShape;
+    vec3 texCoord = voxCoord / imageShape;
 
     /*
      * Look up the voxel value 
      */
     float voxValue;
     if (useSpline) voxValue = spline_interp(imageTexture,
-                                            voxCoords,
+                                            texCoord,
                                             imageShape,
                                             0);
     else           voxValue = texture3D(    imageTexture,
-                                            voxCoords).r;
+                                            texCoord).r;
 
     /*
      * Clip out of range voxel values

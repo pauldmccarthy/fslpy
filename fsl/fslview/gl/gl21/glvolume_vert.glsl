@@ -5,8 +5,14 @@
  */
 #version 120
 
-#pragma include common_vert.glsl
+attribute vec3 vertex;
+attribute vec3 voxCoord;
+
+varying vec3 fragVoxCoord;
 
 void main(void) {
-  common_vert();
+
+  fragVoxCoord = voxCoord;
+
+  gl_Position = gl_ModelViewProjectionMatrix * vec4(vertex, 1);
 }
