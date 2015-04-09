@@ -7,4 +7,3 @@
 
 import glvolume_funcs
 import glvector_funcs
-import gltest_funcs

@@ -351,7 +351,6 @@ class Display(props.SyncableHasProperties):
 
         optsMap = {
             'volume' : volumeopts.VolumeOpts,
-            'test'   : volumeopts.VolumeOpts,
             'vector' : vectoropts.VectorOpts,
             'mask'   : maskopts.  MaskOpts
         }

@@ -69,7 +69,6 @@ class Image(props.HasProperties):
         collections.OrderedDict([
             ('volume', '3D/4D volume'),
             ('mask',   '3D/4D mask image'),
-            ('test',   'I don\'t really know'),
             ('vector', '3-direction vector image')]),
         default='volume')
     """This property defines the type of image data."""
