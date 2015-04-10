@@ -24,10 +24,41 @@ import logging
 
 import os.path as op
 
-import fsl.fslview.gl as fslgl
+import fsl.fslview.gl     as fslgl
+import fsl.utils.typedict as td
 
 
 log = logging.getLogger(__name__)
+
+
+_shaderTypePrefixMap = td.TypeDict({
+    
+    'GLVolume' : 'glvolume',
+    'GLVector' : 'glvector',
+})
+"""This dictionary provides a mapping between :class:`.GLObject` types,
+and file name prefixes, identifying the shader programs to use.
+"""
+
+
+def getShaderPrefix(globj):
+    """Returns the prefix identifying the vertex/fragment shader programs to use
+    for the given :class:`.GLObject` instance. If ``globj`` is a string, it is
+    returned unchanged.
+    """
+    
+    if isinstance(globj, str):
+        return globj
+    
+    return _shaderTypePrefixMap[globj]
+
+
+def setShaderPrefix(globj, prefix):
+    """Updates the prefix identifying the vertex/fragment shader programs to use
+    for the given :class:`.GLObject` type or instance.
+    """
+    
+    _shaderTypePrefixMap[globj] = prefix
 
 
 def setVertexProgramVector(index, vector):
@@ -202,7 +233,8 @@ def _getShader(globj, shaderType):
 
 def _getFileName(globj, shaderType):
     """Returns the file name of the shader program for the given GL object
-    and shader type.
+    and shader type. The ``globj`` parameter may alternately be a string,
+    in which case it is used as the prefix for the shader program file name.
     """
 
     if   fslgl.GL_VERSION == '2.1':
@@ -215,18 +247,7 @@ def _getFileName(globj, shaderType):
     if shaderType not in ('vert', 'frag'):
         raise RuntimeError('Invalid shader type: {}'.format(shaderType))
 
-    # callers can request a specific
-    # shader by passing the name, rather
-    # than passing a GLObject instance
-    import fsl.fslview.gl.glvolume as glvolume
-    import fsl.fslview.gl.glvector as glvector
-    
-    if   isinstance(globj, str):               prefix =  globj
-    elif isinstance(globj, glvolume.GLVolume): prefix = 'glvolume'
-    elif isinstance(globj, glvector.GLVector): prefix = 'glvector'
-    else:
-        raise RuntimeError('Unknown GL object type: '
-                           '{}'.format(type(globj)))
+    prefix = getShaderPrefix(globj)
 
     return op.join(op.dirname(__file__), subdir, '{}_{}.{}'.format(
         prefix, shaderType, suffix))
