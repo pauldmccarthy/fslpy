@@ -69,6 +69,6 @@ void main(void) {
      * Transform the voxel value to a colour map texture
      * coordinate, and look up the colour for the voxel value
      */
-    vec4 normVoxValue = voxValXform * vec4(voxValue, 0, 0, 1);
-    gl_FragColor      = texture1D(colourTexture, normVoxValue.x);
+    voxValue     = voxValXform[0].x * voxValue + voxValXform[3].x;
+    gl_FragColor = texture1D(colourTexture, voxValue);
 }
