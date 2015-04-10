@@ -14,20 +14,7 @@ This module depends upon two OpenGL ARB extensions, ARB_vertex_program and
 ARB_fragment_program which, being ancient (2002) technology, should be
 available on pretty much any graphics card in the wild today.
 
-This module provides the following functions:
-
- - :func:`init`: Compiles the vertex/fragment programs used in rendering.
-
- - :func:`genVertexData`: Generates and returns vertex and texture coordinates
-   for rendering a single 2D slice of a 3D image.
-
- - :func:`preDraw: Prepares the GL state for drawing.
-
- - :func:`draw`: Renders the current image slice.
-
- - :func:`postDraw: Resets the GL state after drawing.
-
- - :func:`destroy`: Deletes handles to the vertex/fragment programs
+See the :mod:`.gl21.glvolume_funcs` module for more details.
 
 This PDF is quite useful:
  - http://www.renderguild.com/gpuguide.pdf
@@ -49,17 +36,32 @@ import fsl.fslview.gl.shaders  as shaders
 log = logging.getLogger(__name__)
 
 
-def init(self):
-    """Compiles the vertex and fragment programs used for rendering."""
+def compileShaders(self):
 
-    vertShaderSrc = shaders.getVertexShader(  self)
-    fragShaderSrc = shaders.getFragmentShader(self) 
+    if self.vertexProgram is not None:
+        arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
+        
+    if self.fragmentProgram is not None:
+        arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram)) 
+
+    vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
+    fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
         vertShaderSrc, fragShaderSrc)
 
     self.vertexProgram   = vertexProgram
-    self.fragmentProgram = fragmentProgram
+    self.fragmentProgram = fragmentProgram    
+
+
+def init(self):
+    """Compiles the vertex and fragment programs used for rendering."""
+
+    self.vertexProgram   = None
+    self.fragmentProgram = None
+    
+    compileShaders(   self)
+    updateShaderState(self)
 
     
 def destroy(self):
@@ -68,14 +70,9 @@ def destroy(self):
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
-    
-def genVertexData(self):
-    """Generates vertex coordinates required to render the image. See
-    :func:`fsl.fslview.gl.glvolume.genVertexData`.
-    """
-    
-    worldCoords, indices = self.genVertexData()
-    return worldCoords, indices, len(indices)
+
+def updateShaderState(self):
+    pass
 
 
 def preDraw(self):
@@ -83,8 +80,7 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    display = self.display
-    opts    = self.displayOpts
+    opts = self.displayOpts
 
     # enable drawing from a vertex array
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
@@ -99,12 +95,6 @@ def preDraw(self):
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
                            self.fragmentProgram)
 
-    # The vertex program needs to be
-    # able to transform from display
-    # coordinates to voxel coordinates
-    shaders.setVertexProgramMatrix(
-        0, display.getTransform('display', 'voxel').T)
-
     # The voxValXform transformation turns
     # an image texture value into a raw
     # voxel value. The colourMapXform
@@ -112,25 +102,11 @@ def preDraw(self):
     # into a value between 0 and 1, suitable
     # for looking up an appropriate colour
     # in the 1D colour map texture
-    cmapXForm = transform.concat(self.imageTexture.voxValXform,
-                                 self.colourTexture.getCoordinateTransform())
+    voxValXform = transform.concat(self.imageTexture.voxValXform,
+                                   self.colourTexture.getCoordinateTransform())
     
-    shaders.setFragmentProgramMatrix(0, cmapXForm.T)
-
-    # The fragment program needs to know
-    # the image shape, and its inverse,
-    # because there's no division operation,
-    # and the RCP operation only works on
-    # scalars
-    
-    # We also need to pass the global
-    # brightness/contrast/alpha values to
-    # the fragment program 
-    shape    = list(self.image.shape)
-    invshape = [1.0 / s for s in shape]
-    bca      = [display.brightness / 100.0, 
-                display.contrast   / 100.0,
-                display.alpha      / 100.0]
+    # The fragment program needs to know the image shape
+    shape = list(self.image.shape[:3])
 
     # And the clipping range, normalised
     # to the image texture value range
@@ -141,35 +117,46 @@ def preDraw(self):
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
     
-    shaders.setFragmentProgramVector(4, shape    + [0])
-    shaders.setFragmentProgramVector(5, invshape + [0])
-    shaders.setFragmentProgramVector(6, bca      + [0])
-    shaders.setFragmentProgramVector(7, [clipLo, clipHi, 0, 0])
+    shaders.setFragmentProgramMatrix(0, voxValXform)
+    shaders.setFragmentProgramVector(4, shape + [0])
+    shaders.setFragmentProgramVector(5, [clipLo, clipHi, 0, 0])
 
 
 def draw(self, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
 
-    worldCoords  = self.worldCoords
-    indices      = self.indices
-    worldCoords[:, self.zax] = zpos
+    vertices, _ = globject.slice2D(
+        self.image.shape[:3],
+        self.xax,
+        self.yax,
+        self.display.getTransform('voxel', 'display'))
 
-    # Apply the custom xform if provided.
-    if xform is None:
-        xform = np.eye(4)
+    vertices[:, self.zax] = zpos
+    
+    voxCoords = transform.transform(
+        vertices,
+        self.display.getTransform('display', 'voxel'))
 
-    shaders.setVertexProgramMatrix(4, xform.T)
+    if xform is not None: 
+        vertices = transform.transform(vertices, xform)
 
-    worldCoords = worldCoords.ravel('C')
+    texCoords = voxCoords / self.image.shape[:3]
 
-    gl.glActiveTexture(gl.GL_TEXTURE0)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, worldCoords)
+    # Vox coords are texture 0 coords
+    # Tex coords are texture 1 coords
+    vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
+    voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
+    texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
 
-    gl.glDrawElements(gl.GL_TRIANGLES,
-                      len(indices),
-                      gl.GL_UNSIGNED_INT,
-                      indices)
+    gl.glClientActiveTexture(gl.GL_TEXTURE0)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
+    
+    gl.glClientActiveTexture(gl.GL_TEXTURE1)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
+
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
     
 def drawAll(self, zposes, xforms):
