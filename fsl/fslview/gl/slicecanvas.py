@@ -102,6 +102,8 @@ class SliceCanvas(props.HasProperties):
     """
 
     
+    resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
+    """The minimum resolution at which image types should be drawn."""
 
 
     def calcPixelDims(self):
@@ -301,7 +303,11 @@ class SliceCanvas(props.HasProperties):
         # in the list
         self.addListener('twoStageRender',
                          self.name,
-                         self._onTwoStageRenderChange)
+                         self._twoStageRenderChange)
+
+        self.addListener('resolutionLimit',
+                         self.name,
+                         self._resolutionLimitChange) 
         
         # When the image list changes, refresh the
         # display, and update the display bounds
@@ -322,7 +328,7 @@ class SliceCanvas(props.HasProperties):
         self._imageListChanged()
 
 
-    def _onTwoStageRenderChange(
+    def _twoStageRenderChange(
             self,
             value=None,
             valid=None,
@@ -374,6 +380,20 @@ class SliceCanvas(props.HasProperties):
             self._refresh()
 
 
+    def _resolutionLimitChange(self, *a):
+
+        for image in self.imageList:
+            
+            display = self.displayCtx.getDisplayProperties(image)
+            minres  = min(image.pixdim[:3])
+
+            if self.resolutionLimit > minres:
+                minres = self.resolutionLimit
+            
+            display.setConstraint('resolution', 'minval', minres)
+            display.resolution = minres
+
+
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
         the corresponding X and Y axes, and saves them as attributes of
@@ -418,7 +438,7 @@ class SliceCanvas(props.HasProperties):
         # render textures need to be updated, as
         # they are configured in terms of the
         # display axes
-        self._onTwoStageRenderChange(recreate=True)
+        self._twoStageRenderChange(recreate=True)
  
             
     def _imageListChanged(self, *a):
@@ -499,7 +519,8 @@ class SliceCanvas(props.HasProperties):
             display.addListener('resolution',    self.name, self._refresh)
             display.addListener('volume',        self.name, self._refresh)
 
-        self._onTwoStageRenderChange()
+        self._twoStageRenderChange()
+        self._resolutionLimitChange()
         self._refresh()
 
 

@@ -31,6 +31,10 @@ class SceneOpts(props.HasProperties):
     
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
 
+    
+    performance = props.Int(default=4, minval=1, maxval=4, clamped=True)
+
+    
     twoStageRender = props.Boolean(default=False)
     """Enable two-stage rendering, useful for low-performance graphics cards/
     software rendering.
@@ -38,5 +42,37 @@ class SceneOpts(props.HasProperties):
     See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.twoStageRender`.
     """
 
+
+    resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
+
     
     fastMode = props.Boolean(default=False)
+
+
+    def __init__(self):
+        
+        name = '{}_{}'.format(type(self).__name__, id(self))
+        self.addListener('performance', name, self._onPerformanceChange)
+
+
+    def _onPerformanceChange(self, *a):
+
+        if   self.performance == 4:
+            self.twoStageRender  = False
+            self.fastMode        = False
+            self.resolutionLimit = 0
+            
+        elif self.performance == 3:
+            self.twoStageRender  = True
+            self.fastMode        = False
+            self.resolutionLimit = 0
+            
+        elif self.performance == 2:
+            self.twoStageRender  = True
+            self.fastMode        = True
+            self.resolutionLimit = 1
+            
+        elif self.performance == 1:
+            self.twoStageRender  = True
+            self.fastMode        = True
+            self.resolutionLimit = 1.5
