@@ -118,15 +118,15 @@ def preDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-
     # enable drawing from a vertex array
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-    gl.glClientActiveTexture(gl.GL_TEXTURE1)
-    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
+    if not self.display.fastMode:
+        gl.glClientActiveTexture(gl.GL_TEXTURE1)
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -161,17 +161,18 @@ def draw(self, zpos, xform=None):
     # Tex coords are texture 0 coords
     # Vox coords are texture 1 coords
     vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
-    voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
     texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
+    voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
+
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
 
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
-    
-    gl.glClientActiveTexture(gl.GL_TEXTURE1)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
-    
-    gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
 
+    if not self.display.fastMode:
+        gl.glClientActiveTexture(gl.GL_TEXTURE1)
+        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
+    
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
     
@@ -219,9 +220,10 @@ def postDraw(self):
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-    
-    gl.glClientActiveTexture(gl.GL_TEXTURE1)
-    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
+
+    if not self.display.fastMode:
+        gl.glClientActiveTexture(gl.GL_TEXTURE1)
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
