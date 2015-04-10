@@ -256,7 +256,6 @@ class GLVolume(globject.GLImageObject):
         
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
-            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
         def colourUpdate(*a):

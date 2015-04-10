@@ -14,19 +14,20 @@ program ``glvolume_frag.glsl``.
 
 This module provides the following functions:
 
- - :func:`init`: Compiles vertex and fragment shaders.
+ - :func:`init`:              Compiles vertex and fragment shaders.
 
- - :func:`genVertexData`: Generates and returns vertex and texture coordinates
-   for rendering a single 2D slice of a 3D image. Actually returns handles to
-   VBOs which encapsulate the vertex and texture coordinates.
+ - :func:`updateShaderState`: Refreshes the parameters used by the shader
+                              programs, controlling clipping and interpolation.
 
- - :func:`preDraw`:  Prepares the GL state for drawing.
+ - :func:`preDraw`:           Prepares the GL state for drawing.
 
- - :func:`draw`:     Draws the scene.
+ - :func:`draw`:              Draws the scene.
 
- - :func:`postDraw`: Resets the GL state after drawing.
+ - :func:`drawAll`:           Draws multiple scenes.
 
- - :func:`destroy`:  Deletes the vertex and texture coordinate VBOs.
+ - :func:`postDraw`:          Resets the GL state after drawing.
+
+ - :func:`destroy`:           Deletes the vertex and texture coordinate VBOs.
 """
 
 import logging
@@ -41,6 +42,7 @@ import fsl.utils.transform     as transform
 
 
 log = logging.getLogger(__name__)
+
 
 def _compileShaders(self):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
@@ -78,22 +80,13 @@ def _compileShaders(self):
 def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
-    _compileShaders(self)
+    
+    _compileShaders(  self)
     updateShaderState(self)
 
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.voxCoordBuffer = gl.glGenBuffers(1)
     self.texCoordBuffer = gl.glGenBuffers(1)
-    self.indexBuffer    = gl.glGenBuffers(1)
-
-    indices = np.arange(6, dtype=np.uint32)
-
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
-    gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
-                    indices.nbytes,
-                    indices,
-                    gl.GL_STATIC_DRAW)
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
                     
 
 def destroy(self):
@@ -102,7 +95,6 @@ def destroy(self):
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.voxCoordBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
     gl.glDeleteProgram(self.shaders)
 
 
@@ -112,6 +104,7 @@ def updateShaderState(self):
     opts    = self.displayOpts
 
     gl.glUseProgram(self.shaders)
+    
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
@@ -145,7 +138,9 @@ def updateShaderState(self):
 
     # Set up the colour and image textures
     gl.glUniform1i(self.imageTexturePos,  0)
-    gl.glUniform1i(self.colourTexturePos, 1)    
+    gl.glUniform1i(self.colourTexturePos, 1)
+
+    gl.glUseProgram(0)
 
 
 def preDraw(self):
@@ -155,6 +150,48 @@ def preDraw(self):
 
     # load the shaders
     gl.glUseProgram(self.shaders)
+
+
+def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
+    
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                    vertices.nbytes,
+                    vertices,
+                    gl.GL_STATIC_DRAW)
+    gl.glVertexAttribPointer(
+        self.vertexPos,
+        3,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.voxCoordBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                    voxCoords.nbytes,
+                    voxCoords,
+                    gl.GL_STATIC_DRAW)
+    gl.glVertexAttribPointer(
+        self.voxCoordPos,
+        3,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.texCoordBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                    texCoords.nbytes,
+                    texCoords,
+                    gl.GL_STATIC_DRAW)
+    gl.glVertexAttribPointer(
+        self.texCoordPos,
+        3,
+        gl.GL_FLOAT,
+        gl.GL_FALSE,
+        0,
+        None)    
 
     
 def draw(self, zpos, xform=None):
@@ -190,57 +227,14 @@ def draw(self, zpos, xform=None):
     voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
     texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
 
-    # Bind the world x/y coordinate buffer
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    vertices.nbytes,
-                    vertices,
-                    gl.GL_STATIC_DRAW)
-    gl.glVertexAttribPointer(
-        self.vertexPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
+    _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
+
     gl.glEnableVertexAttribArray(self.vertexPos)
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.voxCoordBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    voxCoords.nbytes,
-                    voxCoords,
-                    gl.GL_STATIC_DRAW)
-    gl.glVertexAttribPointer(
-        self.voxCoordPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
     gl.glEnableVertexAttribArray(self.voxCoordPos)
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.texCoordBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    texCoords.nbytes,
-                    texCoords,
-                    gl.GL_STATIC_DRAW)
-    gl.glVertexAttribPointer(
-        self.texCoordPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
     gl.glEnableVertexAttribArray(self.texCoordPos) 
 
-    # Bind the vertex index buffer
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
-
     # Draw all of the triangles!
-    gl.glDrawElements(gl.GL_TRIANGLES,
-                      6,
-                      gl.GL_UNSIGNED_INT,
-                      None)
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
 
 def drawAll(self, zposes, xforms):
@@ -258,6 +252,5 @@ def postDraw(self):
     gl.glDisableVertexAttribArray(self.vertexPos)
     gl.glDisableVertexAttribArray(self.voxCoordPos)
     gl.glDisableVertexAttribArray(self.texCoordPos)
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
     gl.glUseProgram(0)
