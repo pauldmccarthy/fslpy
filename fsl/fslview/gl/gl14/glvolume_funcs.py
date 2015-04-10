@@ -72,19 +72,7 @@ def destroy(self):
 
 
 def updateShaderState(self):
-    pass
-
-
-def preDraw(self):
-    """Prepares to draw a slice from the given
-    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
-    """
-
     opts = self.displayOpts
-
-    # enable drawing from a vertex array
-    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -120,6 +108,34 @@ def preDraw(self):
     shaders.setFragmentProgramMatrix(0, voxValXform)
     shaders.setFragmentProgramVector(4, shape + [0])
     shaders.setFragmentProgramVector(5, [clipLo, clipHi, 0, 0])
+
+    gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB) 
+    gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB) 
+
+
+def preDraw(self):
+    """Prepares to draw a slice from the given
+    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
+    """
+
+
+    # enable drawing from a vertex array
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+
+    gl.glClientActiveTexture(gl.GL_TEXTURE0)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
+    gl.glClientActiveTexture(gl.GL_TEXTURE1)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
+
+    # enable the vertex and fragment programs
+    gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
+    gl.glEnable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
+
+    arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
+                           self.vertexProgram)
+    arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
+                           self.fragmentProgram)
 
 
 def draw(self, zpos, xform=None):
@@ -201,7 +217,11 @@ def postDraw(self):
     """
 
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    
+    gl.glClientActiveTexture(gl.GL_TEXTURE1)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)

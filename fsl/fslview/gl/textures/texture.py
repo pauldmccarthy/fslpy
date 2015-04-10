@@ -186,9 +186,11 @@ class Texture2D(Texture):
         texCoords = texCoords.ravel('C')
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
         self.bindTexture(gl.GL_TEXTURE0)
+
+        gl.glClientActiveTexture(gl.GL_TEXTURE0)
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
         gl.glTexEnvf(gl.GL_TEXTURE_ENV,
                      gl.GL_TEXTURE_ENV_MODE,
