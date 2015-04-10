@@ -206,7 +206,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             if isinstance(toolSpec, actions.ActionButton):
                 label = None
             else:
-                label = strings.properties[targets[toolSpec.key], toolSpec.key]
+                
+                label = strings.properties.get(
+                    (targets[toolSpec.key], toolSpec.key), toolSpec.key)
 
             tools .append(tool)
             labels.append(label)

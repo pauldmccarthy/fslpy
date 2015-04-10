@@ -37,10 +37,9 @@ from fsl.fslview.displaycontext.lightboxopts  import LightBoxOpts
 
 
 def widget(labelCls, name, *args, **kwargs):
-    return props.Widget(name,
-                        label=strings.properties[labelCls, name],
-                        *args,
-                        **kwargs)
+
+    label = strings.properties.get((labelCls, name), name)
+    return props.Widget(name, label=label, *args, **kwargs)
 
 
 ########################################
