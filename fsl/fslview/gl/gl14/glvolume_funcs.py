@@ -158,17 +158,17 @@ def draw(self, zpos, xform=None):
 
     texCoords = voxCoords / self.image.shape[:3]
 
-    # Vox coords are texture 0 coords
-    # Tex coords are texture 1 coords
+    # Tex coords are texture 0 coords
+    # Vox coords are texture 1 coords
     vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
     voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
     texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
 
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
     
     gl.glClientActiveTexture(gl.GL_TEXTURE1)
-    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
     
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
 
