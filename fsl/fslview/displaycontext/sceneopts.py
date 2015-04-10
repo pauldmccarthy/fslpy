@@ -32,7 +32,17 @@ class SceneOpts(props.HasProperties):
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
 
     
-    performance = props.Int(default=4, minval=1, maxval=4, clamped=True)
+    performance = props.Int(default=4, minval=1, maxval=5, clamped=True)
+    
+    performance = props.Choice(
+        (1, 2, 3, 4, 5),
+        default=5,
+        labels=[strings.choices['SceneOpts.performance.1'],
+                strings.choices['SceneOpts.performance.2'],
+                strings.choices['SceneOpts.performance.3'],
+                strings.choices['SceneOpts.performance.4'],
+                strings.choices['SceneOpts.performance.5']])
+                
 
     
     twoStageRender = props.Boolean(default=False)
@@ -57,16 +67,21 @@ class SceneOpts(props.HasProperties):
 
     def _onPerformanceChange(self, *a):
 
-        if   self.performance == 4:
+        if   self.performance == 5:
             self.twoStageRender  = False
+            self.fastMode        = False
+            self.resolutionLimit = 0
+            
+        elif self.performance == 4:
+            self.twoStageRender  = True
             self.fastMode        = False
             self.resolutionLimit = 0
             
         elif self.performance == 3:
             self.twoStageRender  = True
-            self.fastMode        = False
+            self.fastMode        = True
             self.resolutionLimit = 0
-            
+
         elif self.performance == 2:
             self.twoStageRender  = True
             self.fastMode        = True

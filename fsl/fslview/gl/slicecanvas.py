@@ -389,8 +389,7 @@ class SliceCanvas(props.HasProperties):
 
             if self.resolutionLimit > minres:
                 minres = self.resolutionLimit
-            
-            display.setConstraint('resolution', 'minval', minres)
+                
             display.resolution = minres
 
 
@@ -863,6 +862,7 @@ class SliceCanvas(props.HasProperties):
                     hi[self.xax],
                     lo[self.yax],
                     hi[self.yax])
+                gl.glClear(gl.GL_COLOR_BUFFER_BIT)
                 
             log.debug('Drawing {} slice for image {}'.format(
                 self.zax, image.name))

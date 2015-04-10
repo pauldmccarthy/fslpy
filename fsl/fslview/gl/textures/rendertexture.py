@@ -110,9 +110,6 @@ class RenderTexture(texture.Texture2D):
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
 
-        # Clear the texture data
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-
         self.unbindAsRenderTarget()
         self.unbindTexture()
 
