@@ -1,5 +1,7 @@
 /*
  * OpenGL vertex shader used for rendering GLVolume instances.
+ * All this shader does is set the vertex position, and pass the
+ * voxel and texture coordinates through to the fragment shader.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */

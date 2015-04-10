@@ -29,14 +29,17 @@ These version dependent modules must provide the following functions:
 
   - ``destroy(GLVolume)``: Perform any necessary clean up.
 
-  - ``genVertexData(GLVolume)``: Create and prepare vertex coordinates, using
-    the :meth:`GLVolume.genVertexData` method.
+  - ``updateShaderState(GLVolume)``: Updates the shader program states
+    when display parameters are changed.
 
   - ``preDraw()``: Initialise the GL state, ready for drawing.
 
   - ``draw(GLVolume, zpos, xform=None)``: Draw a slice of the image at the
     given Z position. If xform is not None, it must be applied as a 
     transformation on the vertex coordinates.
+
+  - ``drawAll(Glvolume, zposes, xforms)`` - Draws slices at each of the
+    specified ``zposes``, applying the corresponding ``xforms`` to each.
 
   - ``postDraw()``: Clear the GL state after drawing.
 
@@ -249,22 +252,27 @@ class GLVolume(globject.GLImageObject):
 
         display = self.display
         opts    = self.displayOpts
-
-        lName = self.name
+        lName   = self.name
         
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
-            fslgl.glvolume_funcs.setUniforms(self)
+            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
         def colourUpdate(*a):
             self.refreshColourTexture()
-            fslgl.glvolume_funcs.setUniforms(self)
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
+
+        def shaderUpdate(*a):
+            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
         display.addListener('transform',     lName, vertexUpdate)
+        display.addListener('interpolation', lName, shaderUpdate)
         display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
+        opts   .addListener('clippingRange', lName, shaderUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
         opts   .addListener('invert',        lName, colourUpdate)
 
@@ -280,7 +288,9 @@ class GLVolume(globject.GLImageObject):
         lName = self.name
 
         display.removeListener('transform',     lName)
+        display.removeListener('interpolation', lName)
         display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
+        opts   .removeListener('clippingRange', lName)
         opts   .removeListener('cmap',          lName)
         opts   .removeListener('invert',        lName)

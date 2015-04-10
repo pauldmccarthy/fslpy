@@ -9,16 +9,19 @@
 #pragma include test_in_bounds.glsl
 
 /*
- * image data texture
+ * image data texture.
  */
 uniform sampler3D imageTexture;
 
 /*
- * Texture containing the colour map
+ * Texture containing the colour map.
  */
 uniform sampler1D colourTexture;
 
 
+/*
+ * Shape of the imageTexture.
+ */
 uniform vec3 imageShape;
 
 /*
@@ -27,7 +30,9 @@ uniform vec3 imageShape;
 uniform bool useSpline;
 
 /*
- * Transformation matrix to apply to the voxel value.
+ * Transformation matrix to apply to the voxel value,
+ * so it can be used as a texture coordinate in the
+ * colourTexture.
  */
 uniform mat4 voxValXform;
 
@@ -42,10 +47,14 @@ uniform float clipLow;
 uniform float clipHigh;
 
 /*
- * Image voxel coordinates
+ * Image voxel coordinates.
  */
 varying vec3 fragVoxCoord;
 
+
+/*
+ * Corresponding texture coordinates.
+ */
 varying vec3 fragTexCoord;
 
 
@@ -53,6 +62,9 @@ void main(void) {
 
     vec3 voxCoord = fragVoxCoord;
 
+    /*
+     * Skip voxels that are out of the image bounds
+     */
     if (!test_in_bounds(voxCoord, imageShape)) {
         
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);

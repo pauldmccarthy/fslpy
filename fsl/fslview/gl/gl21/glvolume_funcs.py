@@ -79,7 +79,7 @@ def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
     _compileShaders(self)
-    setUniforms(self)
+    updateShaderState(self)
 
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.voxCoordBuffer = gl.glGenBuffers(1)
@@ -106,7 +106,7 @@ def destroy(self):
     gl.glDeleteProgram(self.shaders)
 
 
-def setUniforms(self):
+def updateShaderState(self):
 
     display = self.display
     opts    = self.displayOpts
