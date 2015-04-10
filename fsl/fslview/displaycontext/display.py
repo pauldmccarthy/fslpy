@@ -125,6 +125,10 @@ class Display(props.SyncableHasProperties):
     
     contrast   = props.Percentage()
 
+
+    fastMode   = props.Boolean(default=False)
+    """Turn on for faster rendering on low performance machines."""
+
         
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.
@@ -185,6 +189,7 @@ class Display(props.SyncableHasProperties):
                       'volume',
                       'resolution',
                       'transform',
+                      'fastMode', 
                       'brightness',
                       'contrast',
                       'imageType'])

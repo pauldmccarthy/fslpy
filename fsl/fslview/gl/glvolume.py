@@ -29,6 +29,8 @@ These version dependent modules must provide the following functions:
 
   - ``destroy(GLVolume)``: Perform any necessary clean up.
 
+  - ``compileShaders(GLVolume)``: (Re-)Compile the shader programs.
+
   - ``updateShaderState(GLVolume)``: Updates the shader program states
     when display parameters are changed.
 
@@ -230,8 +232,14 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
+        def shaderCompile(*a):
+            fslgl.glvolume_funcs.compileShaders(   self)
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
+
         display.addListener('transform',     lName, vertexUpdate)
         display.addListener('interpolation', lName, shaderUpdate)
+        display.addListener('fastMode',      lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
         opts   .addListener('clippingRange', lName, shaderUpdate)
@@ -251,6 +259,7 @@ class GLVolume(globject.GLImageObject):
 
         display.removeListener('transform',     lName)
         display.removeListener('interpolation', lName)
+        display.removeListener('fastMode',      lName)
         display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
         opts   .removeListener('clippingRange', lName)

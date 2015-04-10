@@ -45,14 +45,17 @@ import fsl.utils.transform     as transform
 log = logging.getLogger(__name__)
 
 
-def _compileShaders(self):
+def compileShaders(self):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
     programs, and attaches a reference to the resulting program, and
     all GLSL variables, to the given :class:`.GLVolume` object. 
     """
 
-    vertShaderSrc = shaders.getVertexShader(  self)
-    fragShaderSrc = shaders.getFragmentShader(self)
+    if self.shaders is not None:
+        gl.glDeleteProgram(self.shaders)
+
+    vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
+    fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
     # indices of all vertex/fragment shader parameters
@@ -81,8 +84,10 @@ def _compileShaders(self):
 def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
+
+    self.shaders = None
     
-    _compileShaders(  self)
+    compileShaders(   self)
     updateShaderState(self)
     
     self.vertexAttrBuffer = gl.glGenBuffers(1)

@@ -500,6 +500,7 @@ class SliceCanvas(props.HasProperties):
             display.addListener('imageType',     self.name, genGLObject)
             display.addListener('enabled',       self.name, self._refresh)
             display.addListener('transform',     self.name, self._refresh)
+            display.addListener('fastMode',      self.name, self._refresh)
             display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
             display.addListener('brightness',    self.name, self._refresh)
