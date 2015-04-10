@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 def _compileShaders(self):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
     programs, and attaches a reference to the resulting program, and
-    all GLSL variables, to the given GLVolume object. 
+    all GLSL variables, to the given :class:`.GLVolume` object. 
     """
 
     vertShaderSrc = shaders.getVertexShader(  self)
@@ -84,17 +84,21 @@ def init(self):
     
     _compileShaders(  self)
     updateShaderState(self)
+    
     self.vertexAttrBuffer = gl.glGenBuffers(1)
                     
 
 def destroy(self):
-    """Cleans up VBO handles."""
+    """Cleans up the vertex buffer handle and shader programs."""
 
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexAttrBuffer))
     gl.glDeleteProgram(self.shaders)
 
 
 def updateShaderState(self):
+    """Updates the parameters used by the shader programs, reflecting the
+    current display properties.
+    """
 
     display = self.display
     opts    = self.displayOpts
@@ -185,7 +189,7 @@ def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
 def draw(self, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
-    :arg image:   The :class:`~fsl.fslview.gl.glvolume.GLVolume` object which
+    :arg self:    The :class:`~fsl.fslview.gl.glvolume.GLVolume` object which
                   is managing the image to be drawn.
     
     :arg zpos:    World Z position of slice to be drawn.
@@ -213,7 +217,6 @@ def draw(self, zpos, xform=None):
 
     _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
 
-    # Draw all of the triangles!
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
 

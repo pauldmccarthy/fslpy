@@ -46,9 +46,8 @@ These version dependent modules must provide the following functions:
 Images are rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
 as a 3D texture, and the current colour map as a 1D texture. A slice through
-the texture is rendered using four vertices, located at the respective corners
+the texture is rendered using six vertices, located at the respective corners
 of the image bounds.
-
 """
 
 import logging
@@ -85,8 +84,12 @@ class GLVolume(globject.GLImageObject):
         # updated when its display properties are changed
         self.addDisplayListeners()
 
+        # Create an image texture and a colour map texture
         texName = '{}_{}'.format(id(self.image), type(self).__name__)
 
+        # The image texture may be used elsewhere,
+        # so we'll use the texture management function
+        # rather than creating one directly
         self.imageTexture = textures.getTexture(
             textures.ImageTexture,
             texName,
@@ -101,10 +104,7 @@ class GLVolume(globject.GLImageObject):
 
 
     def setAxes(self, xax, yax):
-        """This method should be called when the image display axes change.
-        
-        It regenerates vertex information accordingly.
-        """
+        """This method should be called when the image display axes change."""
         
         self.xax = xax
         self.yax = yax
@@ -175,53 +175,16 @@ class GLVolume(globject.GLImageObject):
         textures.deleteTexture(self.imageTexture)
         
         self.colourTexture.destroy()
+        
         self.imageTexture  = None
         self.colourTexture = None
         
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
-
-    def genVertexData(self):
-        """Generates coordinates at the corners of the image bounds, along the
-        xax/yax plane, which define a slice through the 3D image.
-
-        This method is provided for use by the version-dependent
-        :mod:`fsl.fslview.gl.gl14.glvolume_funcs` and 
-        :mod:`fsl.fslview.gl.gl21.glvolume_funcs` modules, in their
-        implemntation of the ``genVertexData` function.
-
-        :arg image:   The :class:`~fsl.data.image.Image` object to
-                      generate vertex and texture coordinates for.
-
-        :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                      object which defines how the image is to be
-                      rendered.
-
-        :arg xax:     The world space axis which corresponds to the
-                      horizontal screen axis (0, 1, or 2).
-
-        :arg yax:     The world space axis which corresponds to the
-                      vertical screen axis (0, 1, or 2).
-        """
-
-        return globject.slice2D(
-            self.image.shape,
-            self.xax,
-            self.yax,
-            self.display.getTransform('voxel', 'display'))
-
     
     def refreshColourTexture(self):
-        """Configures the colour texture used to colour image voxels.
-
-        Also createss a transformation matrix which transforms an image voxel
-        value to the range (0-1), which may then be used as a texture
-        coordinate into the colour map texture. This matrix is stored as an
-        attribute of this :class:`GLVolume` object called
-        :attr:`colourMapXForm`. See also the :meth:`genImageTexture` method
-        for more details.
-        """
+        """Configures the colour texture used to colour image voxels."""
 
         display = self.display
         opts    = self.displayOpts
