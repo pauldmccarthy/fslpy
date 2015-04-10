@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 _shaderTypePrefixMap = td.TypeDict({
     
     ('GLVolume', 'vert', False) : 'glvolume',
-    ('GLVolume', 'vert', True)  : 'glvolume',
+    ('GLVolume', 'vert', True)  : 'glvolume_fast',
     ('GLVolume', 'frag', False) : 'glvolume',
     ('GLVolume', 'frag', True)  : 'glvolume_fast',
     

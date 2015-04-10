@@ -182,12 +182,17 @@ def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
     gl.glVertexAttribPointer(
         verPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, None)
     gl.glVertexAttribPointer(
-        voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
-    gl.glVertexAttribPointer(
         texPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(24))
 
+    # The fast shader does not use voxel coordinates
+    # so, on some GL drivers, attempting to bind it
+    # will cause an error
+    if not self.display.fastMode:
+        gl.glVertexAttribPointer(
+            voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
+        gl.glEnableVertexAttribArray(self.voxCoordPos)
+
     gl.glEnableVertexAttribArray(self.vertexPos)
-    gl.glEnableVertexAttribArray(self.voxCoordPos)
     gl.glEnableVertexAttribArray(self.texCoordPos) 
 
     
@@ -238,7 +243,10 @@ def postDraw(self):
     """
 
     gl.glDisableVertexAttribArray(self.vertexPos)
-    gl.glDisableVertexAttribArray(self.voxCoordPos)
     gl.glDisableVertexAttribArray(self.texCoordPos)
+
+    if not self.display.fastMode:
+        gl.glDisableVertexAttribArray(self.voxCoordPos)
+    
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
     gl.glUseProgram(0)
