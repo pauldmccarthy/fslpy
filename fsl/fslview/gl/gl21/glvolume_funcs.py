@@ -31,6 +31,7 @@ This module provides the following functions:
 """
 
 import logging
+import ctypes
 
 import numpy                  as np
 import OpenGL.GL              as gl
@@ -83,18 +84,13 @@ def init(self):
     
     _compileShaders(  self)
     updateShaderState(self)
-
-    self.vertexBuffer   = gl.glGenBuffers(1)
-    self.voxCoordBuffer = gl.glGenBuffers(1)
-    self.texCoordBuffer = gl.glGenBuffers(1)
+    self.vertexAttrBuffer = gl.glGenBuffers(1)
                     
 
 def destroy(self):
     """Cleans up VBO handles."""
 
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.voxCoordBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexAttrBuffer))
     gl.glDeleteProgram(self.shaders)
 
 
@@ -153,45 +149,37 @@ def preDraw(self):
 
 
 def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
+    """Prepares a data buffer which contains the given vertices,
+    voxel coordinates, and texture coordinates, ready to be passed in to
+    the shader programs.
+    """
+
+    buf    = np.zeros((vertices.shape[0] * 3, 3), dtype=np.float32)
+    verPos = self.vertexPos
+    voxPos = self.voxCoordPos
+    texPos = self.texCoordPos
+
+    # We store each of the three coordinate
+    # sets in a single interleaved buffer
+    buf[ ::3, :] = vertices
+    buf[1::3, :] = voxCoords
+    buf[2::3, :] = texCoords
+
+    buf = buf.ravel('C')
     
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    vertices.nbytes,
-                    vertices,
-                    gl.GL_STATIC_DRAW)
-    gl.glVertexAttribPointer(
-        self.vertexPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexAttrBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER, buf.nbytes, buf, gl.GL_STATIC_DRAW)
 
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.voxCoordBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    voxCoords.nbytes,
-                    voxCoords,
-                    gl.GL_STATIC_DRAW)
     gl.glVertexAttribPointer(
-        self.voxCoordPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
+        verPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, None)
+    gl.glVertexAttribPointer(
+        voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
+    gl.glVertexAttribPointer(
+        texPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(24))
 
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.texCoordBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                    texCoords.nbytes,
-                    texCoords,
-                    gl.GL_STATIC_DRAW)
-    gl.glVertexAttribPointer(
-        self.texCoordPos,
-        3,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)    
+    gl.glEnableVertexAttribArray(self.vertexPos)
+    gl.glEnableVertexAttribArray(self.voxCoordPos)
+    gl.glEnableVertexAttribArray(self.texCoordPos) 
 
     
 def draw(self, zpos, xform=None):
@@ -223,15 +211,7 @@ def draw(self, zpos, xform=None):
 
     texCoords = voxCoords / self.image.shape[:3]
 
-    vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
-    voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
-    texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
-
     _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
-
-    gl.glEnableVertexAttribArray(self.vertexPos)
-    gl.glEnableVertexAttribArray(self.voxCoordPos)
-    gl.glEnableVertexAttribArray(self.texCoordPos) 
 
     # Draw all of the triangles!
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
