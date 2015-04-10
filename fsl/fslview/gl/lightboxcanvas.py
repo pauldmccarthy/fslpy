@@ -74,33 +74,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """If True, a box will be drawn around the slice containing the current
     location.
     """
-
-    
-    _labels = dict(
-        slicecanvas.SliceCanvas._labels.items() +
-        [('sliceSpacing',   'Slice spacing'),
-         ('ncols',          'Number of columns'),
-         ('nrows',          'Number of rows'),
-         ('topRow',         'Top row'),
-         ('zrange',         'Slice range'),
-         ('showGridLines',  'Show grid lines'),
-         ('highlightSlice', 'Highlight current slice')])
-    """Labels for the properties which are intended to be user editable."""
-
-
-    _tooltips = dict(
-        slicecanvas.SliceCanvas._tooltips.items() +
-        [('sliceSpacing',   'Distance (mm) between consecutive slices'),
-         ('ncols',          'Number of slices to display on one row'),
-         ('nrows',          'Number of rows to display on the canvas'),
-         ('topRow',         'Index number of top row (from '
-                            '0 to nrows-1) to display'),
-         ('zrange',         'Range (mm) along Z axis of slices to display'),
-         ('showGridLines',  'Show grid lines between slices'),
-         ('highlightSlice', 'Highlights the currently selected slice')])
-    """Tooltips to be used as help text."""
-
-    _propHelp = _tooltips
     
     
     def worldToCanvas(self, xpos, ypos, zpos):

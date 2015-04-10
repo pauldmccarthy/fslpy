@@ -37,3 +37,6 @@ class SceneOpts(props.HasProperties):
 
     See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.twoStageRender`.
     """
+
+    
+    fastMode = props.Boolean(default=False)

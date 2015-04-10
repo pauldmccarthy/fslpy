@@ -67,15 +67,6 @@ class SliceCanvas(props.HasProperties):
     """
 
     
-    twoStageRender = props.Boolean(default=False)
-    """If ``True``, the scene is rendered off-screen to a fixed-size texture;
-    this texture is then rendered to the canvas. If ``False``, the scene is
-    rendered directly to the canvas. Two-stage rendering will probably give
-    better performance on old graphics cards, and when software-based
-    rendering is being used.
-    """
-
-    
     showCursor = props.Boolean(default=True)
     """If ``False``, the green crosshairs which show
     the current cursor location will not be drawn.
@@ -93,27 +84,24 @@ class SliceCanvas(props.HasProperties):
     
     invertY = props.Boolean(default=False)
     """If True, the display is inverted along the Y (vertical screen) axis.
-    """ 
+    """
 
     
-    _labels = {
-        'zoom'       : 'Zoom level',
-        'showCursor' : 'Show cursor',
-        'zax'        : 'Z axis',
-        'invertX'    : 'Invert X axis',
-        'invertY'    : 'Invert Y axis'}
-    """Labels for the properties which are intended to be user editable."""
+    twoStageRender = props.Boolean(default=False)
+    """If ``True``, the scene is rendered off-screen to a fixed-size texture;
+    this texture is then rendered to the canvas. If ``False``, the scene is
+    rendered directly to the canvas. Two-stage rendering will probably give
+    better performance on old graphics cards, and when software-based
+    rendering is being used.
+    """
 
     
-    _tooltips = {
-        'zoom'       : 'Zoom level (min: 1, max: 10)',
-        'showCursor' : 'Show/hide a green cursor indicating '
-                       'the currently displayed location',
-        'zax'        : 'Image axis which is used as the \'depth\' axis'}
-    """Property descriptions to be used as help text."""
+    fastMode = props.Boolean(default=False)
+    """If ``True``, the :attr:`.Display.fastMode` property for every displayed
+    image is set to ``True``.
+    """
 
     
-    _propHelp = _tooltips
 
 
     def calcPixelDims(self):
@@ -495,6 +483,9 @@ class SliceCanvas(props.HasProperties):
                 self._refresh()
                 
             genGLObject()
+
+            # Bind Display.fastMode to SliceCanvas.fastMode
+            display.bindProps('fastMode', self)
                 
             image  .addListener('data',          self.name, self._refresh)
             display.addListener('imageType',     self.name, genGLObject)
