@@ -14,7 +14,9 @@ program ``glvolume_frag.glsl``.
 
 This module provides the following functions:
 
- - :func:`init`:              Compiles vertex and fragment shaders.
+ - :func:`init`:              Initialises GL objects and memory buffers.
+
+ - :func:`compileShaders`:    Compiles vertex/fragment shaders.
 
  - :func:`updateShaderState`: Refreshes the parameters used by the shader
                               programs, controlling clipping and interpolation.
@@ -37,7 +39,6 @@ import numpy                  as np
 import OpenGL.GL              as gl
 import OpenGL.raw.GL._types   as gltypes
 
-import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.shaders  as shaders
 import fsl.utils.transform     as transform
 
@@ -207,24 +208,8 @@ def draw(self, zpos, xform=None):
     :arg xform:   A 4*4 transformation matrix to be applied to the vertex
                   data.
     """
-    
-    vertices, _ = globject.slice2D(
-        self.image.shape[:3],
-        self.xax,
-        self.yax,
-        self.display.getTransform('voxel', 'display'))
 
-    vertices[:, self.zax] = zpos
-    
-    voxCoords = transform.transform(
-        vertices,
-        self.display.getTransform('display', 'voxel'))
-
-    if xform is not None: 
-        vertices = transform.transform(vertices, xform)
-
-    texCoords = voxCoords / self.image.shape[:3]
-
+    vertices, voxCoords, texCoords = self.generateVertices(zpos, xform)
     _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
 
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
@@ -234,7 +219,21 @@ def drawAll(self, zposes, xforms):
     """Delegates to the default implementation in
     :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`.
     """
-    globject.GLObject.drawAll(self, zposes, xforms)
+
+    nslices   = len(zposes)
+    vertices  = np.zeros((nslices * 6, 3), dtype=np.float32)
+    voxCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
+    texCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
+
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+        
+        v, vc, tc = self.generateVertices(zpos, xform)
+        vertices[ i * 6: i * 6 + 6, :] = v
+        voxCoords[i * 6: i * 6 + 6, :] = vc
+        texCoords[i * 6: i * 6 + 6, :] = tc
+
+    _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6 * nslices)
 
 
 def postDraw(self):

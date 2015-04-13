@@ -179,9 +179,7 @@ def bootstrap(glVersion=None):
         verstr, renderer))
 
     # If we're using a software based renderer,
-    # make two-stage rendering (off-screen rendering
-    # to a texture, then rendering said texture to the
-    # screen) the default.
+    # reduce the default performance settings
     # 
     # There doesn't seem to be any quantitative
     # method for determining whether we are using
@@ -189,24 +187,19 @@ def bootstrap(glVersion=None):
     # necessary. 
     if 'software' in renderer.lower():
         
-        log.debug('Software-based rendering detected - two-stage '
-                  'rendering will be the default method.')
+        log.debug('Software-based rendering detected - '
+                  'lowering default performance settings.')
 
-        import fsl.fslview.displaycontext.display    as di
-        import fsl.fslview.displaycontext.vectoropts as vo
-        import fsl.fslview.displaycontext.sceneopts  as so
-        import fsl.fslview.gl.slicecanvas            as sc
+        import fsl.fslview.displaycontext.display   as di
+        import fsl.fslview.displaycontext.sceneopts as so
 
-        # Make two-stage rendering the default
-        so.SceneOpts  .twoStageRender.setConstraint(None, 'default',  True)
-        sc.SliceCanvas.twoStageRender.setConstraint(None, 'default',  True)
+        so.SceneOpts.performance.setConstraint(None, 'default', 2)
 
         # And disable some fancy options - spline
         # may have been disabled above, so absorb
-        # the IndexError if it occurs
-        vo.VectorOpts  .displayMode  .removeChoice('line')
+        # the ValueError if it occurs
         try: di.Display.interpolation.removeChoice('spline')
-        except IndexError: pass
+        except ValueError: pass
 
     thismod.GL_VERSION     = verstr
     thismod.glvolume_funcs = glpkg.glvolume_funcs

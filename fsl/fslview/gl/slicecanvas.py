@@ -39,6 +39,7 @@ class SliceCanvas(props.HasProperties):
     collection of 3D images (see :class:`fsl.data.image.ImageList`).
     """
 
+    
     pos = props.Point(ndims=3)
     """The currently displayed position. The ``pos.x`` and ``pos.y`` positions
     denote the position of a 'cursor', which is highlighted with green
@@ -50,6 +51,7 @@ class SliceCanvas(props.HasProperties):
     to 'depth'.
     """
 
+    
     zoom = props.Percentage(minval=100.0,
                             maxval=1000.0,
                             default=100.0,
@@ -336,6 +338,11 @@ class SliceCanvas(props.HasProperties):
             name=None,
             recreate=False):
         """Called when the :attr:`twoStageRender` property changes.
+
+        If ``twoStageRender`` has been enabled (set to ``True``), a 2D
+        :class:`.ImageRenderTexture` is created and used as the rendering
+        target for every image. These render textures are then combined
+        for on-screen rendering.
         """
 
         needRefresh = False
@@ -381,6 +388,10 @@ class SliceCanvas(props.HasProperties):
 
 
     def _resolutionLimitChange(self, *a):
+        """Called when the :attr:`resolutionLimit` property changes.
+
+        Updates the minimum resolution of all images in the image list.
+        """
 
         for image in self.imageList:
             
@@ -793,7 +804,11 @@ class SliceCanvas(props.HasProperties):
 
 
     def _drawRenderTextures(self):
-        """
+        """Draws all of the off-screen :class:`.ImageRenderTexture` instances to the
+        canvas.
+
+        This method is called by :meth:`_draw` if :attr:`twoStageRender` is
+        enabled.
         """
         log.debug('Combining off-screen image textures, and rendering '
                   'to canvas (size {})'.format(self._getSize()))

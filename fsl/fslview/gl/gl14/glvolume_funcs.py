@@ -28,9 +28,8 @@ import OpenGL.raw.GL._types           as gltypes
 import OpenGL.GL.ARB.fragment_program as arbfp
 import OpenGL.GL.ARB.vertex_program   as arbvp
 
-import fsl.utils.transform     as transform
-import fsl.fslview.gl.globject as globject
-import fsl.fslview.gl.shaders  as shaders
+import fsl.utils.transform    as transform
+import fsl.fslview.gl.shaders as shaders
 
 
 log = logging.getLogger(__name__)
@@ -141,23 +140,9 @@ def preDraw(self):
 def draw(self, zpos, xform=None):
     """Draws a slice of the image at the given Z location. """
 
-    vertices, _ = globject.slice2D(
-        self.image.shape[:3],
-        self.xax,
-        self.yax,
-        self.display.getTransform('voxel', 'display'))
-
-    vertices[:, self.zax] = zpos
     
-    voxCoords = transform.transform(
-        vertices,
-        self.display.getTransform('display', 'voxel'))
-
-    if xform is not None: 
-        vertices = transform.transform(vertices, xform)
-
-    texCoords = voxCoords / self.image.shape[:3]
-
+    vertices, voxCoords, texCoords = self.generateVertices(zpos, xform)
+    
     # Tex coords are texture 0 coords
     # Vox coords are texture 1 coords
     vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
@@ -181,35 +166,32 @@ def drawAll(self, zposes, xforms):
     applying the corresponding transformation to each of the slices.
     """
 
-    # Don't use a custom world-to-world
-    # transformation matrix.
-    shaders.setVertexProgramMatrix(4, np.eye(4))
-    
-    # Instead, tell the vertex
-    # program to use texture coordinates
-    shaders.setFragmentProgramVector(8, -np.ones(4))
+    nslices   = len(zposes)
+    vertices  = np.zeros((nslices * 6, 3), dtype=np.float32)
+    voxCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
+    texCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
 
-    # worldCoords = np.array(self.worldCoords)
-    # indices     = np.array(self.indices)
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+        
+        v, vc, tc = self.generateVertices(zpos, xform)
+        vertices[ i * 6: i * 6 + 6, :] = v
+        voxCoords[i * 6: i * 6 + 6, :] = vc
+        texCoords[i * 6: i * 6 + 6, :] = tc
 
-    # Replicate the world coordinates
-    # across all z positions, and with
-    # each corresponding transformation
-    worldCoords, texCoords, indices = globject.broadcast(
-        self.worldCoords, self.indices, zposes, xforms, self.zax)
+    vertices  = vertices .ravel('C')
+    voxCoords = voxCoords.ravel('C')
+    texCoords = texCoords.ravel('C')
 
-    worldCoords = worldCoords.ravel('C')
-    texCoords   = texCoords  .ravel('C')
+    gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
 
-    # Draw all of the slices with 
-    # these four function calls.
-    gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
-    gl.glVertexPointer(  3, gl.GL_FLOAT, 0, worldCoords)
-    gl.glDrawElements(gl.GL_TRIANGLES,
-                      len(indices),
-                      gl.GL_UNSIGNED_INT,
-                      indices)
+
+    if not self.display.fastMode:
+        gl.glClientActiveTexture(gl.GL_TEXTURE1)
+        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
+    
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, nslices * 6) 
 
 
 def postDraw(self):

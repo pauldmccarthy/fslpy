@@ -57,6 +57,7 @@ log = logging.getLogger(__name__)
 
 import OpenGL.GL               as gl
 
+import fsl.utils.transform     as transform
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.textures as textures
 import fsl.fslview.gl.globject as globject
@@ -126,6 +127,43 @@ class GLVolume(globject.GLImageObject):
         self.colourTexture.bindTexture(gl.GL_TEXTURE1)
 
         fslgl.glvolume_funcs.preDraw(self)
+
+
+    def generateVertices(self, zpos, xform=None):
+        """Generates vertex coordinates for a 2D slice through the given
+        ``zpos``, with the optional ``xform`` applied to the coordinates.
+        
+        This method is called by the :mod:`.gl14.glvolume_funcs` and
+        :mod:`.gl21.glvolume_funcs` modules.
+
+        A tuple of three values is returned, containing:
+        
+          - A ``6*3 numpy.float32`` array containing the vertex coordinates
+        
+          - A ``6*3 numpy.float32`` array containing the voxel coordinates
+            corresponding to each vertex
+        
+          - A ``6*3 numpy.float32`` array containing the texture coordinates
+            corresponding to each vertex
+        """
+        vertices, _ = globject.slice2D(
+            self.image.shape[:3],
+            self.xax,
+            self.yax,
+            self.display.getTransform('voxel', 'display'))
+
+        vertices[:, self.zax] = zpos
+
+        voxCoords = transform.transform(
+            vertices,
+            self.display.getTransform('display', 'voxel'))
+
+        if xform is not None: 
+            vertices = transform.transform(vertices, xform)
+
+        texCoords = voxCoords / self.image.shape[:3]
+
+        return vertices, voxCoords, texCoords
 
         
     def draw(self, zpos, xform=None):

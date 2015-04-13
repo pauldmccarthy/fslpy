@@ -14,13 +14,20 @@ import fsl.fslview.gl.colourbarcanvas as colourbarcanvas
 import fsl.data.strings as strings
 
 class SceneOpts(props.HasProperties):
+    """The ``SceneOpts`` class defines settings which are applied to
+    :class:`.CanvasPanel` views.
+    """
+
     
     showCursor = props.Boolean(default=True)
 
+    
     zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
 
+    
     showColourBar = props.Boolean(default=False)
 
+    
     colourBarLocation  = props.Choice(
         ('top', 'bottom', 'left', 'right'),
         labels=[strings.choices['SceneOpts.colourBarLocation.top'],
@@ -32,8 +39,6 @@ class SceneOpts(props.HasProperties):
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
 
     
-    performance = props.Int(default=4, minval=1, maxval=5, clamped=True)
-    
     performance = props.Choice(
         (1, 2, 3, 4, 5),
         default=5,
@@ -42,8 +47,16 @@ class SceneOpts(props.HasProperties):
                 strings.choices['SceneOpts.performance.3'],
                 strings.choices['SceneOpts.performance.4'],
                 strings.choices['SceneOpts.performance.5']])
-                
+    """User controllable performacne setting.
 
+    This property is linked to the :attr:`twoStageRender`,
+    :attr:`resolutionLimit`, and :attr:`fastMode` properties. Setting the
+    performance to a low value will result in faster rendering time, at the
+    cost of reduced features, and poorer rendering quality.
+
+    See the :meth:`_onPerformanceChange` method.
+    """
+                
     
     twoStageRender = props.Boolean(default=False)
     """Enable two-stage rendering, useful for low-performance graphics cards/
@@ -54,18 +67,40 @@ class SceneOpts(props.HasProperties):
 
 
     resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
+    """The highest resolution at which any image should be displayed.
+
+    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.resolutionLimit` and
+    :attr:`~fsl.fslview.displaycontext.display.Display.resolution`.
+    """
 
     
     fastMode = props.Boolean(default=False)
+    """If ``True``, all images should be displayed in a 'fast mode'.
+
+    The definition of 'fast mode' is intentionally left unspecified, but will
+    generally mean using a GL fragment shader which is optimised for speed,
+    possibly at the cost of omitting some features.
+
+    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.fastMode` and
+    :attr:`~fsl.fslview.displaycontext.display.Display.fastMode`.
+    """
 
 
     def __init__(self):
         
         name = '{}_{}'.format(type(self).__name__, id(self))
         self.addListener('performance', name, self._onPerformanceChange)
+        
+        self._onPerformanceChange()
 
 
     def _onPerformanceChange(self, *a):
+        """Called when the :attr:`performance` property changes.
+
+        Changes the values of the :attr:`twoStageRender`, :attr:`fastMode` and
+        :attr:`resolutionLimit` properties accoridng to the performance
+        setting.
+        """
 
         if   self.performance == 5:
             self.twoStageRender  = False

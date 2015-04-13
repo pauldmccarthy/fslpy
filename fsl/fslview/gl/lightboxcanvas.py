@@ -227,7 +227,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._refresh()
 
 
-    def _onTwoStageRenderChange(self, *args, **kwargs):
+    def _twoStageRenderChange(self, *args, **kwargs):
         """Overrides
         :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas._onTwoStageRenderChange`.
         """
@@ -630,6 +630,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                 self.displayBounds.xhi,
                 self.displayBounds.ylo,
                 self.displayBounds.yhi)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         else:
             self._setViewport()
 
