@@ -229,37 +229,14 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         :class:`~fsl.fslview.displaycontext.display.Display` instance change.
         
         Updates the :attr:`displayRange` property accordingly.
+
+        See :func:`.colourmaps.briconToDisplayRange`.
         """
 
-        # Turn the bricon percentages into
-        # values between 1 and 0 (inverted)
-        brightness = 1 - self.display.brightness / 100.0
-        contrast   = 1 - self.display.contrast   / 100.0
-
-        dmin, dmax = self.dataMin, self.dataMax
-        drange     = dmax - dmin
-        dmid       = dmin + 0.5 * drange
-
-        # The brightness is applied as a linear offset,
-        # with 0.5 equivalent to an offset of 0.0.                
-        offset = (brightness * 2 - 1) * drange
-
-        # If the contrast lies between 0.0 and 0.5, it is
-        # applied to the colour as a linear scaling factor.
-        scale = contrast * 2
-
-        # If the contrast lies between 0.5 and 0.1, it
-        # is applied as an exponential scaling factor,
-        # so lower values (closer to 0.5) have less of
-        # an effect than higher values (closer to 1.0).
-        if contrast > 0.5:
-            scale += np.exp((contrast - 0.5) * 6) - 1
-            
-        # Calculate the new display range, keeping it
-        # centered in the middle of the data range
-        # (but offset according to the brightness)
-        dlo = (dmid + offset) - 0.5 * drange * scale 
-        dhi = (dmid + offset) + 0.5 * drange * scale
+        dlo, dhi = fslcm.briconToDisplayRange(
+            (self.dataMin, self.dataMax),
+            self.display.brightness / 100.0,
+            self.display.contrast   / 100.0)
 
         self.__toggleListeners(False)
         self.displayRange.x = [dlo, dhi]
@@ -267,30 +244,22 @@ class VolumeOpts(fsldisplay.DisplayOpts):
 
         
     def displayRangeChanged(self, *a):
+        """Called when the `attr`:displayRange: property changes.
 
-        display    = self.display
+        Updates the :attr:`.Display.brightness` and :attr:`.Display.contrast`
+        properties accordingly.
+
+        See :func:`.colourmaps.displayRangeToBricon`.
+        """
+
+        brightness, contrast = fslcm.displayRangeToBricon(
+            (self.dataMin, self.dataMax),
+            self.displayRange.x)
         
-        dmin, dmax = self.dataMin, self.dataMax
-        drange     = dmax - dmin
-        dmid       = dmin + 0.5 * drange
-
-        dlo, dhi = self.displayRange.x
-
-        # Inversions of the equations in briconChanged
-        # above, which calculate the display ranges
-        # from the bricon offset/scale
-        offset = dlo + 0.5 * (dhi - dlo) - dmid
-        scale  = (dhi - dlo) / drange
-
-        brightness = 0.5 * (offset / drange + 1)
-
-        if scale <= 1: contrast = scale / 2.0
-        else:          contrast = np.log(scale + 1) / 6.0 + 0.5
-
         self.__toggleListeners(False)
 
         # update bricon
-        display.brightness = 100 - brightness * 100
-        display.contrast   = 100 - contrast   * 100
+        self.display.brightness = 100 - brightness * 100
+        self.display.contrast   = 100 - contrast   * 100
 
         self.__toggleListeners(True)
