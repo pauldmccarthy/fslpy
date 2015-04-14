@@ -190,8 +190,6 @@ class Display(props.SyncableHasProperties):
                       'resolution',
                       'transform',
                       'fastMode', 
-                      'brightness',
-                      'contrast',
                       'imageType'])
 
         # Set up listeners after caling Syncabole.__init__,

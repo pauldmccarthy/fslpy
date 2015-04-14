@@ -139,41 +139,90 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                                         display,
                                         imageList,
                                         displayCtx,
-                                        parent,
-                                        nounbind=('displayRange'))
+                                        parent)
 
-        # Bricon values are synchronised with
-        # displayRange values on the parent
-        # VolumeOpts instance. If these listeners
-        # are registered on child instances, and
-        # there are multiple children, horrible
-        # semi-infniite recursive listener callback
-        # madness will entail ...
-        #
-        # TODO Problem here is that if a child
-        #      instance disables synchronisation
-        #      on brightness/contrast with the
-        #      parent, the bricon-displayRange
-        #      synchronsiation no longer occurs
-        #      on the child .. This is why
-        #      displayRange currently cannot be
-        #      unbound between parent/child
-        #      instances (constructor above). 
-        #      Same goes for Display.bricon
-        #      properties
-        
-        if parent is None:
+        # The displayRange property of every child VolumeOpts
+        # instance is linked to the corresponding 
+        # Display.brightness/contrast properties, so changes
+        # in one are reflected in the other.
+        if parent is not None:
             display.addListener('brightness', self.name, self.briconChanged)
             display.addListener('contrast',   self.name, self.briconChanged)
             self   .addListener('displayRange',
                                 self.name,
                                 self.displayRangeChanged)
 
-    def destroy(self):
-        self.display.removeListener('brightness',   self.name)
-        self.display.removeListener('contrast',     self.name)
-        self        .removeListener('displayRange', self.name)
+            # Because displayRange and bri/con are intrinsically
+            # linked, it makes no sense to let the user sync/unsync
+            # them independently. So here we are binding the boolean
+            # sync properties which control whether the dRange/bricon
+            # properties are synced with their parent. So when one
+            # property is synced/unsynced, the other ones are too.
+            self.bindProps(self   .getSyncPropertyName('displayRange'),
+                           display,
+                           display.getSyncPropertyName('brightness'))
+            self.bindProps(self   .getSyncPropertyName('displayRange'), 
+                           display,
+                           display.getSyncPropertyName('contrast')) 
 
+    def destroy(self):
+
+        if self.getParent() is not None:
+            display = self.display
+            display.removeListener('brightness',   self.name)
+            display.removeListener('contrast',     self.name)
+            self   .removeListener('displayRange', self.name)
+            self.unbindProps(self   .getSyncPropertyName('displayRange'),
+                             display,
+                             display.getSyncPropertyName('brightness'))
+            self.unbindProps(self   .getSyncPropertyName('displayRange'), 
+                             display,
+                             display.getSyncPropertyName('contrast')) 
+
+
+    def __toggleListeners(self, enable=True):
+        """This method enables/disables the property listeners which
+        are registered on the :attr:`displayRange` and
+        :attr:`.Display.brightness`/:attr:`.Display.contrast`/ properties.
+        
+        Because these properties are linked via the :meth:`displayRangeChanged`
+        and :meth:`briconChanged` methods, we need to be careful about avoiding
+        recursive callbacks.
+
+        Furthermore, because the properties of both :class:`VolumeOpts` and
+        :class:`.Display` instances are possibly synchronised to a parent
+        instance (which in turn is synchronised to other children), we need to
+        make sure that the property listeners on these other sibling instances
+        are not called when our own property values change. So this method
+        disables/enables the property listeners on all sibling ``VolumeOpts``
+        and ``Display`` instances.
+        """
+
+        parent = self.getParent()
+
+        # this is the parent instance
+        if parent is None:
+            return
+
+        # The parent.getChildren() method will
+        # contain this VolumeOpts instance,
+        # so the below loop toggles listeners
+        # for this instance, the parent instance,
+        # and all of the other children of the
+        # parent
+        peers  = [parent] + parent.getChildren()
+
+        for peer in peers:
+
+            if enable:
+                peer.display.enableListener('brightness',   peer.name)
+                peer.display.enableListener('contrast',     peer.name)
+                peer        .enableListener('displayRange', peer.name)
+            else:
+                peer.display.disableListener('brightness',   peer.name)
+                peer.display.disableListener('contrast',     peer.name)
+                peer        .disableListener('displayRange', peer.name) 
+                
 
     def briconChanged(self, *a):
         """Called when the ``brightness``/``contrast`` properties of the
@@ -181,8 +230,6 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         
         Updates the :attr:`displayRange` property accordingly.
         """
-
-        display = self.display
 
         # Turn the bricon percentages into
         # values between 1 and 0 (inverted)
@@ -214,15 +261,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         dlo = (dmid + offset) - 0.5 * drange * scale 
         dhi = (dmid + offset) + 0.5 * drange * scale
 
-        self   .disableListener('displayRange', self.name)
-        display.disableListener('brightness',   self.name)
-        display.disableListener('contrast',     self.name)
-        
+        self.__toggleListeners(False)
         self.displayRange.x = [dlo, dhi]
-        
-        self   .enableListener('displayRange', self.name)
-        display.enableListener('brightness',   self.name)
-        display.enableListener('contrast',     self.name) 
+        self.__toggleListeners(True)
 
         
     def displayRangeChanged(self, *a):
@@ -246,14 +287,10 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         if scale <= 1: contrast = scale / 2.0
         else:          contrast = np.log(scale + 1) / 6.0 + 0.5
 
-        self   .disableListener('displayRange', self.name)
-        display.disableListener('brightness',   self.name)
-        display.disableListener('contrast',     self.name)
+        self.__toggleListeners(False)
 
         # update bricon
         display.brightness = 100 - brightness * 100
         display.contrast   = 100 - contrast   * 100
 
-        self   .enableListener('displayRange', self.name)
-        display.enableListener('brightness',   self.name)
-        display.enableListener('contrast',     self.name)
+        self.__toggleListeners(True)
