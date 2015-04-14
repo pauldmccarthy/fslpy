@@ -6,63 +6,6 @@ have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
-* February/March 2015 internal release
-** Installation instructions on wiki
-*** Make sure they're up to date - test in a VM
-*** Usage - keyboard shortcuts
-** DONE OSX installer
-*** Make sure you disable GL error checking/logging
-*** Test screenshots
-*** Test GL14 and GL21 (shaders)
-*** Test two-stage rendering
-*** Test installing colour maps
-*** Test saving edited images
-*** Test atlas tools (this will only be available when it is run from command line)
-
-** DONE Linux compatibility
-*** DONE Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
-*** WONTFIX Toolbars not being resized appropriately when the parent viewpanel is resized?
-Can't reproduce right now ..
-** WONTFIX Ludoweird interpolation effect - wtf?
-It's an artifact of the fact that interpolation is applied in voxel space, rather than mm space.
-** DONE Fix all 'listener still registered' warnings.
-** DONE Progress dialog during screen shot
-** DONE VNC/X11 ortho panning 
-** DONE Change 'profile' to 'mode'
-** DONE Volume Option to invert colour map
-** DONE Make ImageDisplayPanel change interpolation when transformation is changed
-** DONE Disable image display widgets for disabled images
-** DONE Rename 'sync image order' -> 'sync overlay order'
-** DONE Remove 'sync volume' option
-** DONE -ISH Make VNC two stage render approach stablish
-** DONE Add 'blue-lightblue' colour map
-** DONE Rename 'autumn' to 'red-yellow' (change colour map)
-** DONE Colour map ordering
-** DONE Change 'ss' back to 'twostage'
-** DONE Command line
-** DONE? Little things
-*** DONE ViewPanel: New toolbars in a lower layer
-*** DONE Number spinboxes are no longer clamped
-*** Keyboard on number widgets .. Should be working by default?
-** DONE Default layout
-** DONE UI design
-Good enough for the time being
-** DONE Support for double precision images
-** DONE Histogram
-** DONE Atlas tools
-** DONE Keyboard shortcut for pan mode - can't use middle click when using a shitty laptop trackpad
-** DONE Git release pipeline
-We now have an 'oxford' branch, which is linked to the jalapeno installation.
-When you want to 'release' something, merge from the master branch to the
-oxford branch, and push to jalapeno
-
-** DONE Offscreen rendering
-** Other things/stretch objectives:
-*** Tooltips
-*** Save/restore window layout
-*** Movie mode
-*** Document all the code
-*** Fix all the bugs
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -78,17 +21,17 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** VolumeOpts DisplayRange<->Bricon synchronisation.
-Breaks when brightness/contrast/displayRange sync (between multiple displays)
-is turned off .. I think the sync logic has to occur somewhere other than the
-VolumeOpts class ...
+** Spline intrpolation doing weird things
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
 ** Lightbox scrollbar under linux not visible?
-
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE VolumeOpts DisplayRange<->Bricon synchronisation.
+Breaks when brightness/contrast/displayRange sync (between multiple displays)
+is turned off .. I think the sync logic has to occur somewhere other than the
+VolumeOpts class ...
 ** DONE SpacePanel throwing errors on av.nii.gz (and seemingly not deregistering listeners)
 ** DONE Image order synchronisation
 ** DONE Ortho canvas resizing
@@ -368,3 +311,61 @@ on the image display object.
 ** (Ged).    First/third angle orthographic projection. 
 ** (Paul).   Image groups - may make life easier for grouping images which belong together for analysis purposes.
 ** (Paul).   An integrated python shell with images available in-memory to manipulate.
+
+* February/March 2015 internal release
+** DONE Installation instructions on wiki
+*** Make sure they're up to date - test in a VM
+*** Usage - keyboard shortcuts
+** DONE OSX installer
+*** Make sure you disable GL error checking/logging
+*** Test screenshots
+*** Test GL14 and GL21 (shaders)
+*** Test two-stage rendering
+*** Test installing colour maps
+*** Test saving edited images
+*** Test atlas tools (this will only be available when it is run from command line)
+
+** DONE Linux compatibility
+*** DONE Combobox drop down lists in dialogs are shown beneath the dialog?!? This may only be occurring under X11/SSH/OSX
+*** WONTFIX Toolbars not being resized appropriately when the parent viewpanel is resized?
+Can't reproduce right now ..
+** WONTFIX Ludoweird interpolation effect - wtf?
+It's an artifact of the fact that interpolation is applied in voxel space, rather than mm space.
+** DONE Fix all 'listener still registered' warnings.
+** DONE Progress dialog during screen shot
+** DONE VNC/X11 ortho panning 
+** DONE Change 'profile' to 'mode'
+** DONE Volume Option to invert colour map
+** DONE Make ImageDisplayPanel change interpolation when transformation is changed
+** DONE Disable image display widgets for disabled images
+** DONE Rename 'sync image order' -> 'sync overlay order'
+** DONE Remove 'sync volume' option
+** DONE -ISH Make VNC two stage render approach stablish
+** DONE Add 'blue-lightblue' colour map
+** DONE Rename 'autumn' to 'red-yellow' (change colour map)
+** DONE Colour map ordering
+** DONE Change 'ss' back to 'twostage'
+** DONE Command line
+** DONE? Little things
+*** DONE ViewPanel: New toolbars in a lower layer
+*** DONE Number spinboxes are no longer clamped
+*** Keyboard on number widgets .. Should be working by default?
+** DONE Default layout
+** DONE UI design
+Good enough for the time being
+** DONE Support for double precision images
+** DONE Histogram
+** DONE Atlas tools
+** DONE Keyboard shortcut for pan mode - can't use middle click when using a shitty laptop trackpad
+** DONE Git release pipeline
+We now have an 'oxford' branch, which is linked to the jalapeno installation.
+When you want to 'release' something, merge from the master branch to the
+oxford branch, and push to jalapeno
+
+** DONE Offscreen rendering
+** Other things/stretch objectives:
+*** Tooltips
+*** Save/restore window layout
+*** Movie mode
+*** Document all the code
+*** Fix all the bugs
