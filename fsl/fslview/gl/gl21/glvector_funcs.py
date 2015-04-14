@@ -22,6 +22,7 @@ import numpy                as np
 import OpenGL.GL            as gl
 import OpenGL.raw.GL._types as gltypes
 
+import fsl.utils.transform     as transform
 import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
 
@@ -72,14 +73,11 @@ def init(self):
     p['yColourTexture']  = gl.glGetUniformLocation(s, 'yColourTexture')
     p['zColourTexture']  = gl.glGetUniformLocation(s, 'zColourTexture')
     p['imageValueXform'] = gl.glGetUniformLocation(s, 'imageValueXform')
+    p['colourMapXform']  = gl.glGetUniformLocation(s, 'colourMapXform')
     p['imageShape']      = gl.glGetUniformLocation(s, 'imageShape')
     p['imageDims']       = gl.glGetUniformLocation(s, 'imageDims')
     p['useSpline']       = gl.glGetUniformLocation(s, 'useSpline')
     p['modThreshold']    = gl.glGetUniformLocation(s, 'modThreshold')
-
-    p['alpha']           = gl.glGetUniformLocation(s, 'alpha')
-    p['brightness']      = gl.glGetUniformLocation(s, 'brightness')
-    p['contrast']        = gl.glGetUniformLocation(s, 'contrast')
 
     
 def destroy(self):
@@ -169,11 +167,13 @@ def preDraw(self):
     imageDims       = np.array(self.image.pixdim[:3], dtype=np.float32) 
     displayToVoxMat = np.array(
         display.getTransform('display', 'voxel'), dtype=np.float32)
+    colourMapXform  = self.xColourTexture.getCoordinateTransform()
 
     if mode == 'line':
         useSpline       = False
         imageValueXform = np.array(self.imageTexture.voxValXform.T,
                                    dtype=np.float32)
+        colourMapXform  = transform.concat(imageValueXform, colourMapXform)
     elif mode == 'rgb':
         useSpline       = display.interpolation == 'spline'
         imageValueXform = np.eye(4, dtype=np.float32)
@@ -190,16 +190,13 @@ def preDraw(self):
     gl.glUniform1i(       pars['zax'],                       self.zax)
     gl.glUniformMatrix4fv(pars['displayToVoxMat'], 1, False, displayToVoxMat)
     gl.glUniformMatrix4fv(pars['imageValueXform'], 1, False, imageValueXform)
+    gl.glUniformMatrix4fv(pars['colourMapXform'],  1, False, colourMapXform)
     
     gl.glUniform1i(       pars['imageTexture'],   0)
     gl.glUniform1i(       pars['modTexture'],     1)
     gl.glUniform1i(       pars['xColourTexture'], 2)
     gl.glUniform1i(       pars['yColourTexture'], 3)
     gl.glUniform1i(       pars['zColourTexture'], 4)
-
-    gl.glUniform1f(       pars['alpha'],      display.alpha      / 100.0)
-    gl.glUniform1f(       pars['brightness'], display.brightness / 100.0)
-    gl.glUniform1f(       pars['contrast'],   display.contrast   / 100.0)
 
     # Bind the world x/y coordinate buffer
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoordBuffer)

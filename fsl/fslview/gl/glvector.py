@@ -78,6 +78,7 @@ import numpy                   as np
 import OpenGL.GL               as gl
 
 import fsl.data.image          as fslimage
+import fsl.fslview.colourmaps  as fslcm
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.textures as textures
 import fsl.fslview.gl.globject as globject
@@ -160,9 +161,11 @@ class GLVector(globject.GLImageObject):
             self.setAxes(self.xax, self.yax)
             self.onUpdate()
 
-        # display.addListener('alpha',       name, cmapUpdate)
+        display.addListener('alpha',       name, cmapUpdate)
+        display.addListener('brightness',  name, cmapUpdate)
+        display.addListener('contrast',    name, cmapUpdate) 
         display.addListener('transform',   name, coordUpdate)
-        display.addListener('resolution',  name, coordUpdate) 
+        display.addListener('resolution',  name, coordUpdate)
         opts   .addListener('xColour',     name, cmapUpdate)
         opts   .addListener('yColour',     name, cmapUpdate)
         opts   .addListener('zColour',     name, cmapUpdate)
@@ -203,7 +206,9 @@ class GLVector(globject.GLImageObject):
         textures.deleteTexture(self.imageTexture)
         textures.deleteTexture(self.modTexture) 
 
-        # self.display    .removeListener('alpha',       self.name)
+        self.display    .removeListener('alpha',       self.name)
+        self.display    .removeListener('brightness',  self.name)
+        self.display    .removeListener('contrast',    self.name)
         self.display    .removeListener('transform',   self.name)
         self.display    .removeListener('resolution',  self.name)
         self.displayOpts.removeListener('xColour',     self.name)
@@ -293,7 +298,8 @@ class GLVector(globject.GLImageObject):
         Regenerates the colour textures.
         """
 
-        opts = self.displayOpts
+        display = self.display
+        opts    = self.displayOpts
 
         xcol = opts.xColour
         ycol = opts.yColour
@@ -311,6 +317,11 @@ class GLVector(globject.GLImageObject):
         ytex = self.yColourTexture
         ztex = self.zColourTexture
 
+        drange = fslcm.briconToDisplayRange(
+            (0.0, 1.0),
+            display.brightness / 100.0,
+            display.contrast   / 100.0)
+        
         for colour, texture, suppress in zip(
                 (xcol, ycol, zcol),
                 (xtex, ytex, ztex),
@@ -324,13 +335,13 @@ class GLVector(globject.GLImageObject):
                 # Component magnitudes of 0 are
                 # transparent, but any other
                 # magnitude is fully opaque
-                cmap[:, 3] = 1.0
+                cmap[:, 3] = display.alpha / 100.0
                 cmap[0, 3] = 0.0 
             else:
                 cmap = np.zeros((colourRes, 4))
 
-            texture.set(cmap=cmap)
-    
+            texture.set(cmap=cmap, displayRange=drange)
+        
 
     def setAxes(self, xax, yax):
         """Calls the GL version-specific ``glvector_funcs.setAxes`` function,

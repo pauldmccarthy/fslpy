@@ -91,7 +91,7 @@ class ColourMapTexture(texture.Texture):
         # or above the current display range will be mapped
         # to texture coordinate values less than 0.0 or greater
         # than 1.0 respectively.
-        if imax == imin: scale = 1
+        if imax == imin: scale = 0.000000000001
         else:            scale = imax - imin
         
         coordXform = np.identity(4, dtype=np.float32)

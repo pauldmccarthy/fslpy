@@ -8,7 +8,6 @@
 
 #pragma include spline_interp.glsl
 #pragma include test_in_bounds.glsl
-#pragma include briconalpha.glsl
 
 /*
  * Vector image containing XYZ vector data.
@@ -48,6 +47,9 @@ uniform sampler1D zColourTexture;
  * texture values to their original data range.
  */
 uniform mat4 imageValueXform;
+
+
+uniform mat4 colourMapXform;
 
 /*
  * Shape of the image texture.
@@ -106,9 +108,9 @@ void main(void) {
    * into a range suitable for colour texture
    * lookup, and take the absolute value
    */
-  voxValue *= imageValueXform[0].x;
-  voxValue += imageValueXform[0].w;
   voxValue  = abs(voxValue);
+  voxValue *= colourMapXform[0].x;
+  voxValue += colourMapXform[3].x;
 
   /* Look up the modulation value */
   float modValue;
@@ -129,9 +131,10 @@ void main(void) {
 
   /* Apply the modulation value */
   voxColour.rgb = voxColour.rgb * modValue;
+  voxColour.a   = max(max(xColour.a, yColour.a), zColour.a);
 
   if (modValue < modThreshold)
     voxColour.a = 0.0;
 
-  gl_FragColor = briconalpha(voxColour);
+  gl_FragColor = voxColour;
 }

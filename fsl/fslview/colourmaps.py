@@ -279,7 +279,7 @@ def briconToDisplayRange(dataRange, brightness, contrast):
     # applied to the colour as a linear scaling factor.
     scale = contrast * 2
 
-    # If the contrast lies between 0.5 and 0.1, it
+    # If the contrast lies between 0.5 and 1, it
     # is applied as an exponential scaling factor,
     # so lower values (closer to 0.5) have less of
     # an effect than higher values (closer to 1.0).
