@@ -202,7 +202,6 @@ def selectHeadCentre(opts, button):
                                         displayCtx,
                                         opts.inputImage,
                                         style=wx.RESIZE_BORDER)
-    panel      = frame.panel
     v2dMat     = display.getTransform('voxel',   'display')
     d2vMat     = display.getTransform('display', 'voxel')
 
@@ -227,12 +226,11 @@ def selectHeadCentre(opts, button):
     displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
-    # TODO this ain't working, as it needs to be
-    # done after the frame has been displayed, i.e
-    # via wx.CallAfter or similar. 
-    voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
-    worldCoords = transform.transform([voxCoords], v2dMat)[0]
-    panel.pos   = worldCoords
+    voxCoords           = [opts.xCoordinate,
+                           opts.yCoordinate,
+                           opts.zCoordinate]
+    worldCoords         = transform.transform([voxCoords], v2dMat)[0]
+    displayCtx.location = worldCoords
 
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
@@ -277,15 +275,14 @@ def interface(parent, args, opts):
     
     import wx
     
-    frame    = wx.Frame(parent)
-    betPanel = props.buildGUI(
-        frame, opts, betView, optLabels, optTooltips)
+    frame = wx.Frame(parent)
+    
+    props.buildGUI(frame, opts, betView, optLabels, optTooltips)
 
     frame.Layout()
     frame.Fit()
 
     return frame
-    
 
 
 def runBet(parent, opts):
