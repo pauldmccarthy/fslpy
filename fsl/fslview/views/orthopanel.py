@@ -177,17 +177,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._locationChanged()
         self.initProfile()
 
-        # Set up a default layout (this is probably temporary)
-        import fsl.fslview.controls.imagelistpanel      as ilp
-        import fsl.fslview.controls.locationpanel       as lop
-        import fsl.fslview.controls.imagedisplaytoolbar as idt
-        import fsl.fslview.controls.orthotoolbar        as ot
-        
-        self.togglePanel(ilp.ImageListPanel)
-        self.togglePanel(lop.LocationPanel)
-        self.togglePanel(idt.ImageDisplayToolBar, False, self)
-        self.togglePanel(ot .OrthoToolBar,        False, self)
- 
 
     def destroy(self):
         """Called when this panel is closed. 

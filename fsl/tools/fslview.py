@@ -65,6 +65,19 @@ def interface(parent, args, ctx):
         viewPanel._ycanvas.centreDisplayAt(*ycentre)
         viewPanel._zcanvas.centreDisplayAt(*zcentre)
 
+        # Set up a default for ortho views
+        # layout (this will hopefully eventually
+        # be done by the FSLViewFrame instance)
+        import fsl.fslview.controls.imagelistpanel      as ilp
+        import fsl.fslview.controls.locationpanel       as lop
+        import fsl.fslview.controls.imagedisplaytoolbar as idt
+        import fsl.fslview.controls.orthotoolbar        as ot
+        
+        viewPanel.togglePanel(ilp.ImageListPanel)
+        viewPanel.togglePanel(lop.LocationPanel)
+        viewPanel.togglePanel(idt.ImageDisplayToolBar, False, viewPanel)
+        viewPanel.togglePanel(ot .OrthoToolBar,        False, viewPanel)
+
     # Make sure the new frame is shown
     # before destroying the splash screen
     frame.Show(True)
