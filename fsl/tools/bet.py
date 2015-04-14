@@ -307,16 +307,15 @@ def runBet(parent, opts):
 
         displayCtx = displaycontext.DisplayContext(imageList)
         outDisplay = displayCtx.getDisplayProperties(outImage)
+        outOpts    = outDisplay.getDisplayOpts()
 
-        outDisplay.cmap             = 'Reds'
-        outDisplay.displayRange.xlo = 1
-        outDisplay.clipLow          = True
-        outDisplay.clipHigh         = True
+        outOpts.cmap              = 'Red'
+        outOpts.clippingRange.xlo = 1
 
-        frame  = orthopanel.OrthoFrame(parent,
-                                       imageList,
-                                       displayCtx,
-                                       title=opts.outputImage)
+        frame = orthopanel.OrthoFrame(parent,
+                                      imageList,
+                                      displayCtx,
+                                      title=opts.outputImage)
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,
