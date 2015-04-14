@@ -188,19 +188,28 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         self.__opts = sceneOpts
         
-        # If the provided DisplayContext  does not
-        # have a parent, this will raise an error.
-        # But I don't think a CanvasPanel will ever
-        # be created with a 'master' DisplayContext.
-        self.bindProps('syncLocation',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('location'))
-        self.bindProps('syncImageOrder',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('imageOrder'))
-        self.bindProps('syncVolume',
-                       displayCtx,
-                       displayCtx.getSyncPropertyName('volume'))
+        # Bind the sync* properties of this
+        # CanvasPanel to the corresponding
+        # properties on the DisplayContext
+        # instance. 
+        if displayCtx.getParent() is not None:
+            self.bindProps('syncLocation',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('location'))
+            self.bindProps('syncImageOrder',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('imageOrder'))
+            self.bindProps('syncVolume',
+                           displayCtx,
+                           displayCtx.getSyncPropertyName('volume'))
+            
+        # If the displayCtx instance does not
+        # have a parent, this means that it is
+        # a top level instance
+        else:
+            self.disableProperty('syncLocation')
+            self.disableProperty('syncImageOrder')
+            self.disableProperty('syncVolume')
 
         self.__canvasContainer = wx.Panel(self)
         self.__canvasPanel     = wx.Panel(self.__canvasContainer)

@@ -13,6 +13,7 @@ import fsl.data.image               as fslimage
 import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
+import fsl.fslview.gl               as fslgl
 
 runChoices = OrderedDict((
 
@@ -187,6 +188,10 @@ def selectHeadCentre(opts, button):
     import                                 wx
     import fsl.fslview.views.orthopanel as orthopanel
 
+    # make sure that GL is initialised
+    fslgl.getWXGLContext(button.GetTopLevelParent())
+    fslgl.bootstrap()
+
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
@@ -291,6 +296,10 @@ def runBet(parent, opts):
     def onFinish(window, exitCode):
 
         if exitCode != 0: return
+
+        # make sure that GL is initialised
+        fslgl.getWXGLContext(window.GetTopLevelParent())
+        fslgl.bootstrap()        
 
         inImage   = fslimage.Image(opts.inputImage)
         outImage  = fslimage.Image(opts.outputImage)
