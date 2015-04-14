@@ -74,7 +74,7 @@ void main(void) {
    * data range
    */
   vector *= imageValueXform[0].x;
-  vector += imageValueXform[0].w;
+  vector += imageValueXform[3].x;
 
   vector *= 0.5;
 

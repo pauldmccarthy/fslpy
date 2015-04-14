@@ -108,6 +108,8 @@ void main(void) {
    * into a range suitable for colour texture
    * lookup, and take the absolute value
    */
+  voxValue *= imageValueXform[0].x;
+  voxValue += imageValueXform[3].x;
   voxValue  = abs(voxValue);
   voxValue *= colourMapXform[0].x;
   voxValue += colourMapXform[3].x;

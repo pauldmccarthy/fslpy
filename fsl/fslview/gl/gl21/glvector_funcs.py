@@ -22,7 +22,6 @@ import numpy                as np
 import OpenGL.GL            as gl
 import OpenGL.raw.GL._types as gltypes
 
-import fsl.utils.transform     as transform
 import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.gl.globject as globject
 
@@ -167,16 +166,13 @@ def preDraw(self):
     imageDims       = np.array(self.image.pixdim[:3], dtype=np.float32) 
     displayToVoxMat = np.array(
         display.getTransform('display', 'voxel'), dtype=np.float32)
+    
     colourMapXform  = self.xColourTexture.getCoordinateTransform()
+    imageValueXform = np.array(self.imageTexture.voxValXform,
+                               dtype=np.float32)    
 
-    if mode == 'line':
-        useSpline       = False
-        imageValueXform = np.array(self.imageTexture.voxValXform.T,
-                                   dtype=np.float32)
-        colourMapXform  = transform.concat(imageValueXform, colourMapXform)
-    elif mode == 'rgb':
-        useSpline       = display.interpolation == 'spline'
-        imageValueXform = np.eye(4, dtype=np.float32)
+    if   mode == 'line': useSpline = False
+    elif mode == 'rgb':  useSpline = display.interpolation == 'spline'
 
     displayToVoxMat = displayToVoxMat.ravel('C')
     imageValueXform = imageValueXform.ravel('C')

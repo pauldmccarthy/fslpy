@@ -84,19 +84,11 @@ import fsl.fslview.gl.textures as textures
 import fsl.fslview.gl.globject as globject
 
 
-def _lineModePrefilter(data):
-    """Prefilter method for the vector image texture, when it is being
-    displayed in ``line`` mode - see
+def _imageTexturePrefilter(data):
+    """Prefilter method for the vector image texture - see
     :meth:`~fsl.fslview.gl.textures.ImageTexture.setPrefilter`.
     """
     return data.transpose((3, 0, 1, 2))
-
-
-def _rgbModePrefilter(data):
-    """Prefilter method for the vector image texture, when it is being
-    displayed in ``rgb`` mode.
-    """ 
-    return np.abs(data.transpose((3, 0, 1, 2)))
 
 
 class GLVector(globject.GLImageObject):
@@ -175,9 +167,6 @@ class GLVector(globject.GLImageObject):
         opts   .addListener('modulate',    name, modUpdate)
         opts   .addListener('displayMode', name, modeChange)
 
-        if   opts.displayMode == 'line': prefilter = _lineModePrefilter
-        elif opts.displayMode == 'rgb':  prefilter = _rgbModePrefilter
-
         self.imageTexture = textures.getTexture(
             textures.ImageTexture,
             '{}_{}'.format(id(self.image), type(self).__name__),
@@ -185,7 +174,7 @@ class GLVector(globject.GLImageObject):
             display=self.display,
             nvals=3,
             normalise=True,
-            prefilter=prefilter) 
+            prefilter=_imageTexturePrefilter) 
 
         self.refreshModulateTexture()
         self.refreshColourTextures()
@@ -245,11 +234,8 @@ class GLVector(globject.GLImageObject):
         elif mode == 'rgb':
             self.display.enableProperty('interpolation')
 
-        if   mode == 'line': prefilter = _lineModePrefilter
-        elif mode == 'rgb':  prefilter = _rgbModePrefilter 
-            
         fslgl.glvector_funcs.destroy(self)
-        self.imageTexture.setPrefilter(prefilter)
+        self.imageTexture.setPrefilter(_imageTexturePrefilter)
         fslgl.glvector_funcs.init(self)
         self.setAxes(self.xax, self.yax)
         
