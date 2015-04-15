@@ -47,8 +47,8 @@ _shaderTypePrefixMap = td.TypeDict({
     ('GLLineVector', 'vert', False) : 'gllinevector',
     ('GLLineVector', 'vert', True)  : 'gllinevector',
     
-    ('GLLineVector', 'frag', False) : 'gllinevector',
-    ('GLLineVector', 'frag', True)  : 'gllinevector', 
+    ('GLLineVector', 'frag', False) : 'glvector',
+    ('GLLineVector', 'frag', True)  : 'glvector_fast', 
 })
 """This dictionary provides a mapping between :class:`.GLObject` types,
 and file name prefixes, identifying the shader programs to use.

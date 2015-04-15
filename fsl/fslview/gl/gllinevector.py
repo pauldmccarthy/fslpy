@@ -20,7 +20,7 @@ class GLLineVector(glvector.GLVector):
     def __init__(self, image, display):
         glvector.GLVector.__init__(self, image, display)
 
-        self.__generateLineVertices(self)
+        self.__generateLineVertices()
 
         def vertexUpdate(*a):
             self.__generateLineVertices()
@@ -65,9 +65,9 @@ class GLLineVector(glvector.GLVector):
 
         # Offset each vertex by the
         # corresponding voxel coordinates
-        vertices[:, :, :, 0] += np.arange(image.shape[0])
-        vertices[:, :, :, 1] += np.arange(image.shape[1])
-        vertices[:, :, :, 2] += np.arange(image.shape[2])
+        vertices[:, :, :, 0] += np.arange(image.shape[0]).reshape((image.shape[0], 1, 1))
+        vertices[:, :, :, 1] += np.arange(image.shape[1]).reshape((1, image.shape[1], 1))
+        vertices[:, :, :, 2] += np.arange(image.shape[2]).reshape((1, 1, image.shape[2]))
 
         self.voxelVertices = vertices
     

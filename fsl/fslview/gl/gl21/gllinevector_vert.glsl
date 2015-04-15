@@ -5,7 +5,7 @@
  */
 #version 120
 
-uniform mat4 voxToDisplayMat
+uniform mat4 voxToDisplayMat;
 uniform vec3 imageShape;
 
 attribute vec3 vertex;
@@ -19,5 +19,5 @@ void main(void) {
   fragVoxCoord = floor(vertex);
   fragTexCoord = fragVoxCoord / imageShape;
 
-  gl_Position = gl_ModelViewProjectionMatrix * voxToDisplayMat * vec4(vertex, 1);
+  gl_Position = gl_ModelViewProjectionMatrix * vec4(vertex, 1);
 }

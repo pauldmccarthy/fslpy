@@ -72,7 +72,13 @@ def updateShaderState(self):
     cmapXform       = self.xColourTexture.getCoordinateTransform()
     voxToDisplayMat = display.getTransform('voxel', 'display')
     useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape, dtype=np.float32) 
+    imageShape      = np.array(self.image.shape, dtype=np.float32)
+
+    voxValXform     = np.array(voxValXform,     dtype=np.float32).ravel('C')
+    cmapXform       = np.array(cmapXform,       dtype=np.float32).ravel('C')
+    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
+
+    print voxToDisplayMat
 
     gl.glUseProgram(self.shaders)
 
@@ -95,14 +101,36 @@ def updateShaderState(self):
 
 
 def preDraw(self):
-    pass
+    gl.glUseProgram(self.shaders)
 
+    
 def draw(self, zpos, xform=None):
-    pass
+
+    if self.display.transform != 'id':
+        print "oh no you don't ({})".format(self.display.transform)
+        return
+
+    slices           = [slice(None)] * 3
+    slices[self.zax] = np.floor(zpos)
+
+    vertices = self.voxelVertices[slices[0], slices[1], slices[2], :]
+
+    nvertices = vertices.size / 3
+
+    print vertices.shape
+    
+    vertices  = vertices.ravel('C')
+
+
+    gl.glDrawArrays(gl.GL_LINES, 0, nvertices)
 
 
 def drawAll(self, zposes, xforms):
-    pass 
+
+    # TODO a proper implementation
+    for zpos, xform in zip(zposes, xforms):
+        draw(zpos, xform)
+
 
 def postDraw(self):
-    pass 
+    gl.glUseProgram(0)
