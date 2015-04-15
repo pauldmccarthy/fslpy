@@ -881,8 +881,7 @@ def applyImageArgs(args, imageList, displayCtx, **kwargs):
             try:
                 modImage = fslimage.Image(args.images[i].modulate)
                 
-                if modImage.shape  != image.shape[ :3] or \
-                   modImage.pixdim != image.pixdim[:3]:
+                if modImage.shape != image.shape[ :3]:
                     raise RuntimeError(
                         'Image {} cannot be used to modulate {} - '
                         'dimensions don\'t match'.format(modImage, image))
