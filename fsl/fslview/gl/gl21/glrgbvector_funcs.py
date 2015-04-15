@@ -28,6 +28,9 @@ def destroy(self):
 
     
 def compileShaders(self):
+
+    if self.shaders is not None:
+        gl.glDeleteProgram(self.shaders) 
     
     vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
     fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
