@@ -5,17 +5,12 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
-import ctypes
-
 import numpy                as np
 import OpenGL.GL            as gl
 import OpenGL.raw.GL._types as gltypes
 
 import fsl.fslview.gl.shaders as shaders
-import fsl.utils.transform    as transform
 import                           glvolume_funcs
-
 
 
 def init(self):
