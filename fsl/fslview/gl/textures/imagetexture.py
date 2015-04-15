@@ -217,6 +217,10 @@ class ImageTexture(texture.Texture):
         """        
 
         data  = self.image.data
+
+        if self.prefilter is not None:
+            data = self.prefilter(data)
+        
         dtype = data.dtype
         dmin  = float(data.min())
         dmax  = float(data.max()) 
