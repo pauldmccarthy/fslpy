@@ -539,11 +539,11 @@ def voxelGrid(points, xax, yax, xpixdim, ypixdim):
     return vertices, indices
 
 
-def slice2D(dataShape, xax, yax, voxToDisplayMat):
+def slice2D(dataShape, xax, yax, zpos, voxToDisplayMat, displayToVoxMat):
     """Generates and returns six vertices which denote a slice through an
     array of the given ``dataShape``, parallel to the plane defined by the
-    given ``xax`` and ``yax``, in the space defined by the given
-    ``voxToDisplayMat``.
+    given ``xax`` and ``yax`` and at the given z position, in the space
+    defined by the given ``voxToDisplayMat``.
 
     The six vertices define two triangles, arranged as follows:
 
@@ -561,22 +561,29 @@ def slice2D(dataShape, xax, yax, voxToDisplayMat):
                           horizontal screen axis.
 
     :arg yax:             Index of display axis which corresponds to the
-                          vertical screen axis. 
+                          vertical screen axis.
+
+    :arg zpos:            Position of the slice along the screen z axis.
     
     :arg voxToDisplayMat: Affine transformation matrix which transforms from
                           voxel/array indices into the display coordinate
                           system.
+
+    :arg displayToVoxMat: Inverse of the ``voxToDisplayMat``.
     
     Returns a tuple containing:
     
       - A ``6*3`` ``numpy.float32`` array containing the vertex locations
-        of a slice through the data. The values along the ``Z`` axis are set
-        to ``0``.
-    
-      - A ``numpy.uint32`` array to be used as vertex indices.
+        of a slice through the data. 
 
+      - A ``6*3`` ``numpy.float32`` array containing the voxel coordinates
+        that correspond to the vertex locations.
+
+      - A ``6*3`` ``numpy.float32`` array containing the texture coordinates
+        that correspond to the voxel coordinates.
     """
-        
+
+    zax        = 3 - xax - yax
     xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax)
     ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax)
 
@@ -587,11 +594,14 @@ def slice2D(dataShape, xax, yax, voxToDisplayMat):
     vertices[ 2, [xax, yax]] = [xmax, ymin]
     vertices[ 3, [xax, yax]] = [xmax, ymin]
     vertices[ 4, [xax, yax]] = [xmin, ymax]
-    vertices[ 5, [xax, yax]] = [xmax, ymax]    
+    vertices[ 5, [xax, yax]] = [xmax, ymax]
 
-    indices = np.arange(0, 6, dtype=np.uint32)
+    vertices[:, zax] = zpos
 
-    return vertices, indices 
+    voxCoords = transform.transform(vertices, displayToVoxMat)
+    texCoords = voxCoords / dataShape
+
+    return vertices, voxCoords, texCoords
 
 
 def subsample(data, resolution, pixdim=None, volume=None):

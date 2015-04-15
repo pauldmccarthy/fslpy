@@ -427,18 +427,14 @@ class VoxelSelection(AnnotationObject):
 
         xax   = self.xax
         yax   = self.yax
-        zax   = self.zax
         shape = self.selection.selection.shape
 
-        verts, idxs = globject.slice2D(shape,
-                                       xax,
-                                       yax,
-                                       self.voxToDisplayMat)
-
-        verts[:, zax] = zpos
-
-        texs  = transform.transform(verts, self.displayToVoxMat) + 0.5
-        texs /= shape
+        verts, _, texs = globject.slice2D(shape,
+                                          xax,
+                                          yax,
+                                          zpos,
+                                          self.voxToDisplayMat,
+                                          self.displayToVoxMat)
 
         verts = np.array(verts, dtype=np.float32).ravel('C')
         texs  = np.array(texs,  dtype=np.float32).ravel('C')
@@ -452,7 +448,7 @@ class VoxelSelection(AnnotationObject):
 
         gl.glVertexPointer(  3, gl.GL_FLOAT, 0, verts)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texs)
-        gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, idxs)
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
         # gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)

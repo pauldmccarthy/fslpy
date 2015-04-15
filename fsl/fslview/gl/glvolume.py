@@ -146,22 +146,16 @@ class GLVolume(globject.GLImageObject):
           - A ``6*3 numpy.float32`` array containing the texture coordinates
             corresponding to each vertex
         """
-        vertices, _ = globject.slice2D(
+        vertices, voxCoords, texCoords = globject.slice2D(
             self.image.shape[:3],
             self.xax,
             self.yax,
-            self.display.getTransform('voxel', 'display'))
-
-        vertices[:, self.zax] = zpos
-
-        voxCoords = transform.transform(
-            vertices,
+            zpos, 
+            self.display.getTransform('voxel',   'display'),
             self.display.getTransform('display', 'voxel'))
 
         if xform is not None: 
             vertices = transform.transform(vertices, xform)
-
-        texCoords = voxCoords / self.image.shape[:3]
 
         return vertices, voxCoords, texCoords
 
