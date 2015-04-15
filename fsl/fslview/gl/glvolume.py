@@ -119,9 +119,6 @@ class GLVolume(globject.GLImageObject):
         instance.
         """
         
-        if not self.display.enabled:
-            return
-
         # Set up the image and colour textures
         self.imageTexture .bindTexture(gl.GL_TEXTURE0)
         self.colourTexture.bindTexture(gl.GL_TEXTURE1)
@@ -173,17 +170,12 @@ class GLVolume(globject.GLImageObject):
         :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
         """
         
-        if not self.display.enabled:
-            return
-        
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
     def drawAll(self, zposes, xforms):
         """Calls the module-specific ``drawAll`` function. """
         
-        if not self.display.enabled:
-            return
         fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
 
         
@@ -191,8 +183,6 @@ class GLVolume(globject.GLImageObject):
         """Clears the GL state after drawing from this :class:`GLVolume`
         instance.
         """
-        if not self.display.enabled:
-            return
 
         self.imageTexture .unbindTexture()
         self.colourTexture.unbindTexture()
@@ -251,10 +241,6 @@ class GLVolume(globject.GLImageObject):
         opts    = self.displayOpts
         lName   = self.name
         
-        def vertexUpdate(*a):
-            self.setAxes(self.xax, self.yax)
-            self.onUpdate()
-
         def colourUpdate(*a):
             self.refreshColourTexture()
             fslgl.glvolume_funcs.updateShaderState(self)
@@ -269,7 +255,6 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        display.addListener('transform',     lName, vertexUpdate)
         display.addListener('interpolation', lName, shaderUpdate)
         display.addListener('fastMode',      lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
@@ -289,7 +274,6 @@ class GLVolume(globject.GLImageObject):
 
         lName = self.name
 
-        display.removeListener('transform',     lName)
         display.removeListener('interpolation', lName)
         display.removeListener('fastMode',      lName)
         display.removeListener('alpha',         lName)

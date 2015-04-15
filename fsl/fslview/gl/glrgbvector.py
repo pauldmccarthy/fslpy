@@ -57,21 +57,11 @@ class GLRGBVector(glvector.GLVector):
 
 
     def draw(self, zpos, xform=None):
-
-        if not self.display.enabled:
-            return
-        
         fslgl.glrgbvector_funcs.draw(self, zpos, xform)
 
     
     def drawAll(self, zposes, xforms):
-        
-        if not self.display.enabled:
-            return
-
-        for zpos, xform in zip(zposes, xforms):
-        
-            fslgl.glrgbvector_funcs.draw(self, zpos, xform) 
+        fslgl.glrgbvector_funcs.drawAll(self, zposes, xforms) 
 
     
     def postDraw(self):

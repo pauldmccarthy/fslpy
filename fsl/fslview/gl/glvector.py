@@ -99,10 +99,6 @@ class GLVector(globject.GLImageObject):
             self.refreshColourTextures()
             self.updateShaderState()
             self.onUpdate()
-
-        def coordUpdate(*a):
-            self.setAxes(self.xax, self.yax)
-            self.onUpdate()
             
         def shaderUpdate(*a):
             self.updateShaderState()
@@ -118,8 +114,6 @@ class GLVector(globject.GLImageObject):
         display.addListener('alpha',         name, cmapUpdate)
         display.addListener('brightness',    name, cmapUpdate)
         display.addListener('contrast',      name, cmapUpdate) 
-        display.addListener('transform',     name, coordUpdate)
-        display.addListener('resolution',    name, coordUpdate)
         opts   .addListener('xColour',       name, cmapUpdate)
         opts   .addListener('yColour',       name, cmapUpdate)
         opts   .addListener('zColour',       name, cmapUpdate)
@@ -168,8 +162,6 @@ class GLVector(globject.GLImageObject):
         self.display    .removeListener('alpha',         self.name)
         self.display    .removeListener('brightness',    self.name)
         self.display    .removeListener('contrast',      self.name)
-        self.display    .removeListener('transform',     self.name)
-        self.display    .removeListener('resolution',    self.name)
         self.displayOpts.removeListener('xColour',       self.name)
         self.displayOpts.removeListener('yColour',       self.name)
         self.displayOpts.removeListener('zColour',       self.name)
@@ -292,9 +284,7 @@ class GLVector(globject.GLImageObject):
         and the three colour textures) are bound to texture units 0-4
         respectively.
         """
-        if not self.display.enabled:
-            return
-
+        
         self.imageTexture  .bindTexture(gl.GL_TEXTURE0)
         self.modTexture    .bindTexture(gl.GL_TEXTURE1)
         self.xColourTexture.bindTexture(gl.GL_TEXTURE2)
@@ -307,8 +297,6 @@ class GLVector(globject.GLImageObject):
 
         Unbindes the five GL textures.
         """
-        if not self.display.enabled:
-            return
 
         self.imageTexture  .unbindTexture()
         self.modTexture    .unbindTexture()

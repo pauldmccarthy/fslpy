@@ -113,3 +113,7 @@ class VectorOpts(fsldisplay.DisplayOpts):
 
         if modVal in images: self.modulate = modVal
         else:                self.modulate = 'none'
+
+
+# TODO RGBVector/LineVector subclasses for any type
+# specific options (e.g. line width for linevector)
