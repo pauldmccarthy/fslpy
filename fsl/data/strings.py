@@ -212,7 +212,6 @@ properties = TypeDict({
     'MaskOpts.invert'         : 'Invert',
     'MaskOpts.threshold'      : 'Threshold',
 
-    'VectorOpts.displayMode'   : 'Display mode',
     'VectorOpts.xColour'       : 'X Colour',
     'VectorOpts.yColour'       : 'Y Colour',
     'VectorOpts.zColour'       : 'Z Colour',

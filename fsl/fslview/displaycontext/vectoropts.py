@@ -16,13 +16,6 @@ import display          as fsldisplay
 
 class VectorOpts(fsldisplay.DisplayOpts):
 
-    displayMode = props.Choice(
-        ('line', 'rgb'),
-        default='rgb',
-        labels=[strings.choices['VectorOpts.displayType.line'],
-                strings.choices['VectorOpts.displayType.rgb']])
-    """Mode in which the ``GLVector`` instance is to be displayed."""
-
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
     """Colour used to represent the X vector magnitude."""

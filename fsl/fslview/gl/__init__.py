@@ -201,10 +201,10 @@ def bootstrap(glVersion=None):
         try: di.Display.interpolation.removeChoice('spline')
         except ValueError: pass
 
-    thismod.GL_VERSION     = verstr
-    thismod.glvolume_funcs = glpkg.glvolume_funcs
-    thismod.glvector_funcs = glpkg.glvector_funcs
-    thismod._bootstrapped  = True
+    thismod.GL_VERSION        = verstr
+    thismod.glvolume_funcs    = glpkg.glvolume_funcs
+    thismod.glrgbvector_funcs = glpkg.glrgbvector_funcs
+    thismod._bootstrapped     = True
 
 
 def getWXGLContext(parent=None):

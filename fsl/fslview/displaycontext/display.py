@@ -353,9 +353,9 @@ class Display(props.SyncableHasProperties):
             oParent = self.getParent().getDisplayOpts()
 
         optsMap = {
-            'volume' : volumeopts.VolumeOpts,
-            'vector' : vectoropts.VectorOpts,
-            'mask'   : maskopts.  MaskOpts
+            'volume'    : volumeopts.VolumeOpts,
+            'rgbvector' : vectoropts.VectorOpts,
+            'mask'      : maskopts.  MaskOpts
         }
 
         optType = optsMap[self.imageType]

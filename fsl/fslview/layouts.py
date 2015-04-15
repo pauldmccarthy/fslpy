@@ -161,7 +161,8 @@ MaskOptsToolBarLayout = [
 
 
 VectorOptsToolBarLayout = [
-    widget(VectorOpts, 'displayMode'),
+    widget(VectorOpts, 'modulate'),
+    widget(VectorOpts, 'modThreshold'),
     actions.ActionButton(ImageDisplayToolBar, 'more')] 
 
 
@@ -192,7 +193,6 @@ MaskOptsLayout = props.VGroup(
 
 
 VectorOptsLayout = props.VGroup((
-    widget(VectorOpts, 'displayMode'),
     props.HGroup((
         widget(VectorOpts, 'xColour'),
         widget(VectorOpts, 'yColour'),

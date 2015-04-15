@@ -129,8 +129,7 @@ OPTIONS = td.TypeDict({
     'MaskOpts'      : ['colour',
                        'invert',
                        'threshold'],
-    'VectorOpts'    : ['displayMode',
-                       'xColour',
+    'VectorOpts'    : ['xColour',
                        'yColour',
                        'zColour',
                        'suppressX',
@@ -214,7 +213,6 @@ ARGUMENTS = td.TypeDict({
     'MaskOpts.invert'    : ('mi', 'maskInvert'),
     'MaskOpts.threshold' : ('t',  'threshold'),
 
-    'VectorOpts.displayMode' : ('d',  'displayMode'),
     'VectorOpts.xColour'     : ('xc', 'xColour'),
     'VectorOpts.yColour'     : ('yc', 'yColour'),
     'VectorOpts.zColour'     : ('zc', 'zColour'),
@@ -285,7 +283,6 @@ HELP = td.TypeDict({
     'MaskOpts.invert'    : 'Invert',
     'MaskOpts.threshold' : 'Threshold',
 
-    'VectorOpts.displayMode'  : 'Display mode',
     'VectorOpts.xColour'      : 'X colour',
     'VectorOpts.yColour'      : 'Y colour',
     'VectorOpts.zColour'      : 'Z colour',

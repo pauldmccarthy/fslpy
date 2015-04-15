@@ -1,6 +1,6 @@
 /*
- * OpenGL fragment shader used for colouring GLVector instances in
- * both line and rgb modes.
+ * OpenGL fragment shader used for colouring GLRGBVector and GLLineVector
+ * instances.
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
@@ -46,10 +46,10 @@ uniform sampler1D zColourTexture;
  * Matrix which transforms from vector image
  * texture values to their original data range.
  */
-uniform mat4 imageValueXform;
+uniform mat4 voxValXform;
 
 
-uniform mat4 colourMapXform;
+uniform mat4 cmapXform;
 
 /*
  * Shape of the image texture.
@@ -61,23 +61,21 @@ uniform vec3 imageShape;
  */
 uniform bool useSpline;
 
-
-/*
- * Coordinates of the fragment in display
- * coordinates, passed from the vertex shader.
- */
-varying vec3 fragDisplayCoords;
-
 /*
  * Coordinates of the fragment in voxel
  * coordinates, passed from the vertex shader.
  */
-varying vec3 fragVoxCoords;
+varying vec3 fragVoxCoord;
+
+/*
+ * Corresponding texture coordinates
+ */
+varying vec3 fragTexCoord;
 
 
 void main(void) {
 
-  vec3 voxCoords = fragVoxCoords;
+  vec3 voxCoords = fragVoxCoord;
 
   if (!test_in_bounds(voxCoords, imageShape)) {
 
@@ -85,43 +83,41 @@ void main(void) {
     return;
   }
 
-  /* 
-   * Normalise voxel coordinates to (0.0, 1.0)
-   */
-  voxCoords = voxCoords / imageShape;
-
   /*
    * Look up the xyz vector values
    */
   vec3 voxValue;
   if (useSpline) {
-    voxValue.x = spline_interp(imageTexture, voxCoords, imageShape, 0);
-    voxValue.y = spline_interp(imageTexture, voxCoords, imageShape, 1);
-    voxValue.z = spline_interp(imageTexture, voxCoords, imageShape, 2);
+    voxValue.x = spline_interp(imageTexture, fragTexCoord, imageShape, 0);
+    voxValue.y = spline_interp(imageTexture, fragTexCoord, imageShape, 1);
+    voxValue.z = spline_interp(imageTexture, fragTexCoord, imageShape, 2);
   }
   else {
-    voxValue = texture3D(imageTexture, voxCoords).xyz;
+    voxValue = texture3D(imageTexture, fragTexCoord).xyz;
   }
+
+  /* Look up the modulation value */
+  float modValue;
+  if (useSpline) {
+    modValue = spline_interp(modTexture, fragTexCoord, imageShape, 0);
+  }
+  else {
+    modValue = texture3D(modTexture, fragTexCoord).x;
+  }  
 
   /*
    * Transform the voxel texture values 
    * into a range suitable for colour texture
    * lookup, and take the absolute value
    */
-  voxValue *= imageValueXform[0].x;
-  voxValue += imageValueXform[3].x;
+  voxValue *= voxValXform[0].x;
+  voxValue += voxValXform[3].x;
   voxValue  = abs(voxValue);
-  voxValue *= colourMapXform[0].x;
-  voxValue += colourMapXform[3].x;
+  voxValue *= cmapXform[0].x;
+  voxValue += cmapXform[3].x;
 
-  /* Look up the modulation value */
-  float modValue;
-  if (useSpline) {
-    modValue = spline_interp(modTexture, voxCoords, imageShape, 0);
-  }
-  else {
-    modValue = texture3D(modTexture, voxCoords).x;
-  }
+  /* Apply the modulation value */
+  voxValue *= modValue;
 
   /* Look up the colours for the xyz components */
   vec4 xColour = texture1D(xColourTexture, voxValue.x);
@@ -131,12 +127,12 @@ void main(void) {
   /* Combine those colours */
   vec4 voxColour = xColour + yColour + zColour;
 
-  /* Apply the modulation value */
-  voxColour.rgb = voxColour.rgb * modValue;
-  voxColour.a   = max(max(xColour.a, yColour.a), zColour.a);
+  /* Take the highest alpha of the three colour maps */
+  voxColour.a = max(max(xColour.a, yColour.a), zColour.a);
 
+  /* Knock out voxels where the modulation value is below the threshold */
   if (modValue < modThreshold)
-    voxColour.a = 0.0;
+      voxColour.a = 0.0;
 
   gl_FragColor = voxColour;
 }
