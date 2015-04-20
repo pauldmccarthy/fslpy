@@ -137,11 +137,6 @@ class ImageRenderTexture(RenderTexture):
 
     def __addListeners(self):
 
-        # TODO Could change the resolution when
-        #      the image type changes - vector
-        #      images will need a higher
-        #      resolution than voxel space
-
         def onInterp(*a):
             if self.__display.interpolation == 'none': interp = gl.GL_NEAREST
             else:                                      interp = gl.GL_LINEAR
@@ -149,6 +144,7 @@ class ImageRenderTexture(RenderTexture):
 
         name = '{}_{}'.format(self.getTextureName(), id(self))
 
+        self.__display.addListener('imageType',     name, self.__updateSize)
         self.__display.addListener('resolution',    name, self.__updateSize)
         self.__display.addListener('interpolation', name, onInterp)
         self.__display.addListener('transform',     name, self.__updateSize)
@@ -165,6 +161,7 @@ class ImageRenderTexture(RenderTexture):
         name = '{}_{}'.format(self.getTextureName(), id(self))
         
         RenderTexture.destroy(self)
+        self.__display.removeListener('imageType',     name)
         self.__display.removeListener('resolution',    name)
         self.__display.removeListener('interpolation', name)
         self.__display.removeListener('transform',     name)
@@ -187,12 +184,20 @@ class ImageRenderTexture(RenderTexture):
         if resolution[0] < 1: resolution[0] = 1
         if resolution[1] < 1: resolution[1] = 1
         if resolution[2] < 1: resolution[2] = 1
+
+        # For some image types, the display resolution
+        # does not affect performance, and needs to be
+        # higher than the image resolution
+        if display.imageType == 'linevector':
+
+            width  = 16 * image.shape[self.__xax] / resolution[self.__xax]
+            height = 16 * image.shape[self.__yax] / resolution[self.__yax]
         
         # If the display transformation is 'id' or
         # 'pixdim', then the display coordinate system
         # axes line up with the voxel coordinate system
         # axes, so we can just match the voxel resolution        
-        if display.transform in ('id', 'pixdim'):
+        elif display.transform in ('id', 'pixdim'):
             
             width  = image.shape[self.__xax] / resolution[self.__xax]
             height = image.shape[self.__yax] / resolution[self.__yax]
