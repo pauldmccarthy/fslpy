@@ -131,9 +131,10 @@ def draw(self, zpos, xform=None):
         coords = transform.transform(
             coords, self.display.getTransform('display', 'voxel'))
 
-        coords   = np.array(coords.round(), dtype=np.uint32)
+        coords   = np.array(coords.round(), dtype=np.int32)
+
+        coords   = coords[((coords >= [0, 0, 0]) & (coords < shape)).all(1), :]
         
-        coords   = coords.clip([0, 0, 0], shape - 1)
         vertices = self.voxelVertices[coords[:, 0],
                                       coords[:, 1],
                                       coords[:, 2], :, :]
