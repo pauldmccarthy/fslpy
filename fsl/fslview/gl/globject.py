@@ -601,7 +601,12 @@ def slice2D(dataShape, xax, yax, zpos, voxToDisplayMat, displayToVoxMat):
     vertices[:, zax] = zpos
 
     voxCoords = transform.transform(vertices, displayToVoxMat)
-    texCoords = voxCoords / dataShape
+
+    # offset by 0.5, because voxel coordinates are by
+    # default centered at 0 (i.e. the space of a voxel
+    # lies in the range [-0.5, 0.5]), but we want voxel
+    # coordinates to map to the effective range [0, 1]
+    texCoords = (voxCoords + 0.5) / dataShape
 
     return vertices, voxCoords, texCoords
 
