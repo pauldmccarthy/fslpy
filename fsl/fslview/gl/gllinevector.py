@@ -46,12 +46,19 @@ class GLLineVector(glvector.GLVector):
         data     = globject.subsample(image.data,
                                       display.resolution,
                                       image.pixdim)
-        
+
         vertices = np.array(data, dtype=np.float32)
-        
-        # scale the vector data
-        # to the range [0, 0.5]
-        vertices *= 0.5
+
+        x = vertices[:, :, :, 0]
+        y = vertices[:, :, :, 1]
+        z = vertices[:, :, :, 2]
+
+        lens = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+
+        # scale the vector lengths to 0.5
+        vertices[:, :, :, 0] = 0.5 * x / lens
+        vertices[:, :, :, 1] = 0.5 * y / lens
+        vertices[:, :, :, 2] = 0.5 * z / lens
 
         # Scale the vector data by the minimum
         # voxel length, so it is a unit vector
@@ -62,12 +69,17 @@ class GLLineVector(glvector.GLVector):
         # vector is represented by two vertices,
         # representing a line through the origin
         vertices = np.concatenate((-vertices, vertices), axis=3)
+        vertices = vertices.reshape((data.shape[0],
+                                     data.shape[1],
+                                     data.shape[2],
+                                     2,
+                                     3))
 
         # Offset each vertex by the
         # corresponding voxel coordinates
-        vertices[:, :, :, 0] += np.arange(image.shape[0]).reshape((image.shape[0], 1, 1))
-        vertices[:, :, :, 1] += np.arange(image.shape[1]).reshape((1, image.shape[1], 1))
-        vertices[:, :, :, 2] += np.arange(image.shape[2]).reshape((1, 1, image.shape[2]))
+        for i in range(data.shape[0]): vertices[i, :, :, :, 0] += i
+        for i in range(data.shape[1]): vertices[:, i, :, :, 1] += i
+        for i in range(data.shape[2]): vertices[:, :, i, :, 2] += i
 
         self.voxelVertices = vertices
     

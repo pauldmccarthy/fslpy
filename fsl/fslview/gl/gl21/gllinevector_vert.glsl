@@ -16,7 +16,7 @@ varying vec3 fragTexCoord;
 void main(void) {
 
   // TODO check voxel +0.5 offset
-  fragVoxCoord = floor(vertex);
+  fragVoxCoord = floor(vertex + 0.5);
   fragTexCoord = fragVoxCoord / imageShape;
 
   gl_Position = gl_ModelViewProjectionMatrix * vec4(vertex, 1);

@@ -78,8 +78,6 @@ def updateShaderState(self):
     cmapXform       = np.array(cmapXform,       dtype=np.float32).ravel('C')
     voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
 
-    print voxToDisplayMat
-
     gl.glUseProgram(self.shaders)
 
     gl.glUniform1f( self.useSplinePos,     useSpline)
@@ -110,18 +108,30 @@ def draw(self, zpos, xform=None):
         print "oh no you don't ({})".format(self.display.transform)
         return
 
-    slices           = [slice(None)] * 3
-    slices[self.zax] = np.floor(zpos)
+    zpos = np.floor(zpos + 0.5)
 
-    vertices = self.voxelVertices[slices[0], slices[1], slices[2], :]
+    slices           = [slice(None)] * 3
+    slices[self.zax] = zpos
+
+    if zpos >= self.voxelVertices.shape[self.zax]:
+        return
+
+    vertices = self.voxelVertices[slices[0], slices[1], slices[2], :, :]
 
     nvertices = vertices.size / 3
-
-    print vertices.shape
-    
     vertices  = vertices.ravel('C')
 
-
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+    
+    gl.glBufferData(
+        gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
+    
+    gl.glVertexAttribPointer(
+        self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+    
+    gl.glEnableVertexAttribArray(self.vertexPos)
+    
+    gl.glLineWidth(2)
     gl.glDrawArrays(gl.GL_LINES, 0, nvertices)
 
 
@@ -134,3 +144,5 @@ def drawAll(self, zposes, xforms):
 
 def postDraw(self):
     gl.glUseProgram(0)
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+    gl.glDisableVertexAttribArray(self.vertexPos)
