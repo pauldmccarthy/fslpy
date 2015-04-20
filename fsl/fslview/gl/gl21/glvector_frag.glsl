@@ -134,6 +134,5 @@ void main(void) {
   if (modValue < modThreshold)
       voxColour.a = 0.0;
 
-  // gl_FragColor = voxColour;
-  gl_FragColor = vec4(1, 0, 0, 1);
+  gl_FragColor = voxColour;
 }

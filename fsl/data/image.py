@@ -212,8 +212,8 @@ class Image(props.HasProperties):
         shape = data.shape
         
         for i in reversed(range(len(shape))):
-            if shape[i - 1] == 1:
-                data = data.squeeze(axis=i - 1)
+            if shape[i] == 1: data = data.squeeze(axis=i)
+            else:             break
 
         data.flags.writeable = False
 
