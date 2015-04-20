@@ -227,14 +227,14 @@ class GLImageObject(GLObject):
 def calculateSamplePoints(image, display, xax, yax):
     """Calculates a uniform grid of points, in the display coordinate system
     (as specified by the given
-    :class:`~fsl.fslview.displaycontext.ImageDisplay` object properties) along
-    the x-y plane (as specified by the xax/yax indices), at which the given
-    image should be sampled for display purposes.
+    :class:`~fsl.fslview.displaycontext.Display` object properties) along the
+    x-y plane (as specified by the xax/yax indices), at which the given image
+    should be sampled for display purposes.
 
     This function returns a tuple containing:
 
      - a numpy array of shape `(N, 3)`, containing the coordinates of the
-       centre of every sampling point in real world space.
+       centre of every sampling point in the display coordinate system.
 
      - the horizontal distance (along xax) between adjacent points
 
@@ -244,18 +244,15 @@ def calculateSamplePoints(image, display, xax, yax):
 
      - The number of samples along the vertical axis (yax)
 
-    :arg image:   The :class:`~fsl.data.image.Image` object to
-                  generate vertex and texture coordinates for.
+    :arg image:   The :class:`.Image` object to generate vertex and texture
+                  coordinates for.
 
-    :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                  object which defines how the image is to be
-                  rendered.
+    :arg display: A :class:`.Display` object which defines how the image is to
+                  be rendered.
 
-    :arg xax:     The world space axis which corresponds to the
-                  horizontal screen axis (0, 1, or 2).
+    :arg xax:     The horizontal display coordinate system axis (0, 1, or 2).
 
-    :arg yax:     The world space axis which corresponds to the
-                  vertical screen axis (0, 1, or 2).
+    :arg yax:     The vertical display coordinate system axis (0, 1, or 2).
     """
 
     transformCode = display.transform
@@ -273,7 +270,6 @@ def calculateSamplePoints(image, display, xax, yax):
     # the entire image
     xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
     ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
-
 
     # The width/height of a displayed voxel.
     # If we are displaying in real world space,
@@ -541,13 +537,20 @@ def voxelGrid(points, xax, yax, xpixdim, ypixdim):
     return vertices, indices
 
 
-def slice2D(dataShape, xax, yax, zpos, voxToDisplayMat, displayToVoxMat):
-    """Generates and returns six vertices which denote a slice through an
+def slice2D(dataShape,
+            xax,
+            yax,
+            zpos,
+            voxToDisplayMat,
+            displayToVoxMat,
+            geometry='triangles'):
+    """Generates and returns vertices which denote a slice through an
     array of the given ``dataShape``, parallel to the plane defined by the
     given ``xax`` and ``yax`` and at the given z position, in the space
     defined by the given ``voxToDisplayMat``.
 
-    The six vertices define two triangles, arranged as follows:
+    If ``geometry`` is ``triangles`` (the default), six vertices are returned,
+    arranged as follows:
 
          4---5
         1 \  |
@@ -555,6 +558,16 @@ def slice2D(dataShape, xax, yax, zpos, voxToDisplayMat, displayToVoxMat):
         | \ \| 
         |  \ 3
         0---2
+
+    Otherwise, if geometry is ``square``, four vertices are returned, arranged
+    as follows:
+
+         
+        3---2
+        |   |
+        |   |
+        |   |
+        0---1
 
     :arg dataShape:       Number of elements along each dimension in the
                           image data.
@@ -575,28 +588,42 @@ def slice2D(dataShape, xax, yax, zpos, voxToDisplayMat, displayToVoxMat):
     
     Returns a tuple containing:
     
-      - A ``6*3`` ``numpy.float32`` array containing the vertex locations
-        of a slice through the data. 
+      - A ``N*3`` ``numpy.float32`` array containing the vertex locations
+        of a slice through the data, where ``N=6`` if ``geometry=triangles``,
+        or ``N=4`` if ``geometry=square``,
 
-      - A ``6*3`` ``numpy.float32`` array containing the voxel coordinates
+      - A ``N*3`` ``numpy.float32`` array containing the voxel coordinates
         that correspond to the vertex locations.
 
-      - A ``6*3`` ``numpy.float32`` array containing the texture coordinates
+      - A ``N*3`` ``numpy.float32`` array containing the texture coordinates
         that correspond to the voxel coordinates.
+
     """
 
     zax        = 3 - xax - yax
     xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax)
     ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax)
 
-    vertices = np.zeros((6, 3), dtype=np.float32)
+    if geometry == 'triangles':
 
-    vertices[ 0, [xax, yax]] = [xmin, ymin]
-    vertices[ 1, [xax, yax]] = [xmin, ymax]
-    vertices[ 2, [xax, yax]] = [xmax, ymin]
-    vertices[ 3, [xax, yax]] = [xmax, ymin]
-    vertices[ 4, [xax, yax]] = [xmin, ymax]
-    vertices[ 5, [xax, yax]] = [xmax, ymax]
+        vertices = np.zeros((6, 3), dtype=np.float32)
+
+        vertices[ 0, [xax, yax]] = [xmin, ymin]
+        vertices[ 1, [xax, yax]] = [xmin, ymax]
+        vertices[ 2, [xax, yax]] = [xmax, ymin]
+        vertices[ 3, [xax, yax]] = [xmax, ymin]
+        vertices[ 4, [xax, yax]] = [xmin, ymax]
+        vertices[ 5, [xax, yax]] = [xmax, ymax]
+        
+    elif geometry == 'square':
+        vertices = np.zeros((4, 3), dtype=np.float32)
+
+        vertices[ 0, [xax, yax]] = [xmin, ymin]
+        vertices[ 1, [xax, yax]] = [xmax, ymin]
+        vertices[ 2, [xax, yax]] = [xmax, ymax]
+        vertices[ 3, [xax, yax]] = [xmin, ymax]
+    else:
+        raise ValueError('Unrecognised geometry type: {}'.format(geometry))
 
     vertices[:, zax] = zpos
 

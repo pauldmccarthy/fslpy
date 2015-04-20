@@ -162,7 +162,7 @@ MaskOptsToolBarLayout = [
 
 VectorOptsToolBarLayout = [
     widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold'),
+    widget(VectorOpts, 'modThreshold', showLimits=False, editLimits=False),
     actions.ActionButton(ImageDisplayToolBar, 'more')] 
 
 

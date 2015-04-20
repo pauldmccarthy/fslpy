@@ -5,11 +5,13 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import numpy                  as np
-import OpenGL.GL              as gl
-import OpenGL.raw.GL._types   as gltypes
+import numpy                   as np
+import OpenGL.GL               as gl
+import OpenGL.raw.GL._types    as gltypes
 
-import fsl.fslview.gl.shaders as shaders
+import fsl.utils.transform     as transform
+import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.shaders  as shaders
 
 
 def init(self):
@@ -72,7 +74,7 @@ def updateShaderState(self):
     cmapXform       = self.xColourTexture.getCoordinateTransform()
     voxToDisplayMat = display.getTransform('voxel', 'display')
     useSpline       = display.interpolation == 'spline'
-    imageShape      = np.array(self.image.shape, dtype=np.float32)
+    imageShape      = np.array(self.image.shape[:3], dtype=np.float32)
 
     voxValXform     = np.array(voxValXform,     dtype=np.float32).ravel('C')
     cmapXform       = np.array(cmapXform,       dtype=np.float32).ravel('C')
@@ -104,19 +106,38 @@ def preDraw(self):
     
 def draw(self, zpos, xform=None):
 
-    if self.display.transform != 'id':
-        print "oh no you don't ({})".format(self.display.transform)
-        return
+    if self.display.transform in ('id', 'pixdim'):
 
-    zpos = np.floor(zpos + 0.5)
+        if self.display.transform == 'pixdim':
+            zpos = zpos / self.image.pixdim[self.zax]
+            
+        zpos = np.floor(zpos + 0.5)
 
-    slices           = [slice(None)] * 3
-    slices[self.zax] = zpos
+        slices           = [slice(None)] * 3
+        slices[self.zax] = zpos
 
-    if zpos >= self.voxelVertices.shape[self.zax]:
-        return
+        if zpos >= self.voxelVertices.shape[self.zax]:
+            return
 
-    vertices = self.voxelVertices[slices[0], slices[1], slices[2], :, :]
+        vertices = self.voxelVertices[slices[0], slices[1], slices[2], :, :]
+        
+    else:
+        shape  = np.array(self.image.shape[:3])
+        coords = globject.calculateSamplePoints(
+            self.image, self.display, self.xax, self.yax)[0]
+
+        coords[:, self.zax] = zpos
+
+        coords = transform.transform(
+            coords, self.display.getTransform('display', 'voxel'))
+
+        coords   = np.array(coords.round(), dtype=np.uint32)
+        
+        coords   = coords.clip([0, 0, 0], shape - 1)
+        vertices = self.voxelVertices[coords[:, 0],
+                                      coords[:, 1],
+                                      coords[:, 2], :, :]
+
 
     nvertices = vertices.size / 3
     vertices  = vertices.ravel('C')
