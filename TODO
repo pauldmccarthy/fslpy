@@ -99,6 +99,9 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Make zoom more flexible
+** Make ortho aspect ratio/zoom thing better
+** RunWindow should print to stdout
 ** Startup - ability to set $FSLDIR
 ** Time Series - option to 'hold' voxel time course
 You could have a list panel which lists the image and voxel coordinates of the
