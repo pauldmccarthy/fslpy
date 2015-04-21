@@ -72,13 +72,11 @@ def updateShaderState(self):
     # each of the three colour textures are identical
     voxValXform     = self.imageTexture.voxValXform
     cmapXform       = self.xColourTexture.getCoordinateTransform()
-    voxToDisplayMat = display.getTransform('voxel', 'display')
     useSpline       = display.interpolation == 'spline'
     imageShape      = np.array(self.image.shape[:3], dtype=np.float32)
 
     voxValXform     = np.array(voxValXform,     dtype=np.float32).ravel('C')
     cmapXform       = np.array(cmapXform,       dtype=np.float32).ravel('C')
-    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
 
     gl.glUseProgram(self.shaders)
 
@@ -87,7 +85,6 @@ def updateShaderState(self):
     
     gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, voxValXform)
     gl.glUniformMatrix4fv(self.cmapXformPos,       1, False, cmapXform)
-    gl.glUniformMatrix4fv(self.voxToDisplayMatPos, 1, False, voxToDisplayMat)
 
     gl.glUniform1f(self.modThresholdPos,   opts.modThreshold / 100.0)
 
@@ -147,6 +144,14 @@ def draw(self, zpos, xform=None):
     nvertices = vertices.size / 3
     vertices  = vertices.ravel('C')
 
+    voxToDisplayMat = display.getTransform('voxel', 'display')
+    if xform is not None:
+        voxToDisplayMat = transform.concat(voxToDisplayMat, xform)
+    
+    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
+
+    gl.glUniformMatrix4fv(self.voxToDisplayMatPos, 1, False, voxToDisplayMat)
+
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
     
     gl.glBufferData(
@@ -165,7 +170,7 @@ def drawAll(self, zposes, xforms):
 
     # TODO a proper implementation
     for zpos, xform in zip(zposes, xforms):
-        draw(zpos, xform)
+        self.draw(zpos, xform)
 
 
 def postDraw(self):

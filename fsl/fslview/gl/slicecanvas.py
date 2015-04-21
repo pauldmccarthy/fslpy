@@ -799,8 +799,8 @@ class SliceCanvas(props.HasProperties):
         yverts[:, 0] = [xmin, xmax]
         yverts[:, 1] = y 
         
-        self._annotations.line(xverts[0], xverts[1], colour=(0, 1, 0))
-        self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0))
+        self._annotations.line(xverts[0], xverts[1], colour=(0, 1, 0), width=1)
+        self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0), width=1)
 
 
     def _drawRenderTextures(self):

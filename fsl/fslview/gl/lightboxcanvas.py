@@ -609,8 +609,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         yverts[0, 0] = xmin + (col)     * xlen
         yverts[1, 0] = xmin + (col + 1) * xlen
 
-        self.getAnnotations().line(xverts[0], xverts[1], colour=(0, 1, 0))
-        self.getAnnotations().line(yverts[0], yverts[1], colour=(0, 1, 0))
+        annot = self.getAnnotations()
+
+        annot.line(xverts[0], xverts[1], colour=(0, 1, 0), width=1)
+        annot.line(yverts[0], yverts[1], colour=(0, 1, 0), width=1)
 
         
     def _draw(self, *a):
