@@ -30,6 +30,7 @@ from fsl.fslview.displaycontext               import Display
 from fsl.fslview.displaycontext.volumeopts    import VolumeOpts
 from fsl.fslview.displaycontext.maskopts      import MaskOpts
 from fsl.fslview.displaycontext.vectoropts    import VectorOpts
+from fsl.fslview.displaycontext.vectoropts    import LineVectorOpts
 
 from fsl.fslview.displaycontext.sceneopts     import SceneOpts
 from fsl.fslview.displaycontext.orthoopts     import OrthoOpts
@@ -162,7 +163,7 @@ MaskOptsToolBarLayout = [
 
 VectorOptsToolBarLayout = [
     widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold', showLimits=False, editLimits=False),
+    widget(VectorOpts, 'modThreshold', showLimits=False, spin=False),
     actions.ActionButton(ImageDisplayToolBar, 'more')] 
 
 
@@ -204,7 +205,23 @@ VectorOptsLayout = props.VGroup((
         widget(VectorOpts, 'suppressZ')),
         vertLabels=True),
     widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold', showLimits=False)))
+    widget(VectorOpts, 'modThreshold', showLimits=False, spin=False)))
+
+LineVectorOptsLayout = props.VGroup((
+    props.HGroup((
+        widget(LineVectorOpts, 'xColour'),
+        widget(LineVectorOpts, 'yColour'),
+        widget(LineVectorOpts, 'zColour')),
+        vertLabels=True),
+    props.HGroup((
+        widget(LineVectorOpts, 'suppressX'),
+        widget(LineVectorOpts, 'suppressY'),
+        widget(LineVectorOpts, 'suppressZ')),
+        vertLabels=True),
+    widget(LineVectorOpts, 'directed'),
+    widget(LineVectorOpts, 'lineWidth'),
+    widget(LineVectorOpts, 'modulate'),
+    widget(LineVectorOpts, 'modThreshold', showLimits=False, spin=False)))
 
 
 ##########################
@@ -231,15 +248,16 @@ layouts = td.TypeDict({
 
     'SceneOpts' : SceneOptsLayout,
 
-    ('ImageDisplayToolBar', 'Display')    : DisplayToolBarLayout,
-    ('ImageDisplayToolBar', 'VolumeOpts') : VolumeOptsToolBarLayout,
-    ('ImageDisplayToolBar', 'MaskOpts')   : MaskOptsToolBarLayout,
-    ('ImageDisplayToolBar', 'VectorOpts') : VectorOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'Display')        : DisplayToolBarLayout,
+    ('ImageDisplayToolBar', 'VolumeOpts')     : VolumeOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'MaskOpts')       : MaskOptsToolBarLayout,
+    ('ImageDisplayToolBar', 'VectorOpts')     : VectorOptsToolBarLayout,
 
-    ('ImageDisplayPanel',   'Display')    : DisplayLayout,
-    ('ImageDisplayPanel',   'VolumeOpts') : VolumeOptsLayout,
-    ('ImageDisplayPanel',   'MaskOpts')   : MaskOptsLayout,
-    ('ImageDisplayPanel',   'VectorOpts') : VectorOptsLayout, 
+    ('ImageDisplayPanel',   'Display')        : DisplayLayout,
+    ('ImageDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
+    ('ImageDisplayPanel',   'MaskOpts')       : MaskOptsLayout,
+    ('ImageDisplayPanel',   'VectorOpts')     : VectorOptsLayout,
+    ('ImageDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout, 
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,

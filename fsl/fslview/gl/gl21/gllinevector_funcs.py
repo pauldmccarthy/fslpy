@@ -106,10 +106,14 @@ def preDraw(self):
     
 def draw(self, zpos, xform=None):
 
-    if self.display.transform in ('id', 'pixdim'):
+    image   = self.image
+    display = self.display
+    opts    = self.opts
 
-        if self.display.transform == 'pixdim':
-            zpos = zpos / self.image.pixdim[self.zax]
+    if display.transform in ('id', 'pixdim'):
+
+        if display.transform == 'pixdim':
+            zpos = zpos / image.pixdim[self.zax]
             
         zpos = np.floor(zpos + 0.5)
 
@@ -122,14 +126,14 @@ def draw(self, zpos, xform=None):
         vertices = self.voxelVertices[slices[0], slices[1], slices[2], :, :]
         
     else:
-        shape  = np.array(self.image.shape[:3])
+        shape  = np.array(image.shape[:3])
         coords = globject.calculateSamplePoints(
-            self.image, self.display, self.xax, self.yax)[0]
+            image, display, self.xax, self.yax)[0]
 
         coords[:, self.zax] = zpos
 
         coords = transform.transform(
-            coords, self.display.getTransform('display', 'voxel'))
+            coords, display.getTransform('display', 'voxel'))
 
         coords   = np.array(coords.round(), dtype=np.int32)
 
@@ -153,7 +157,7 @@ def draw(self, zpos, xform=None):
     
     gl.glEnableVertexAttribArray(self.vertexPos)
     
-    gl.glLineWidth(2)
+    gl.glLineWidth(opts.lineWidth)
     gl.glDrawArrays(gl.GL_LINES, 0, nvertices)
 
 

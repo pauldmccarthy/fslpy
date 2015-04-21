@@ -221,6 +221,9 @@ properties = TypeDict({
     'VectorOpts.suppressZ'     : 'Suppress Z value',
     'VectorOpts.modulate'      : 'Modulate by',
     'VectorOpts.modThreshold'  : 'Modulation threshold',
+
+    'LineVectorOpts.directed'  : 'Interpret vectors as directed',
+    'LineVectorOpts.lineWidth' : 'Line width',
 })
 
 

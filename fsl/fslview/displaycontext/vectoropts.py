@@ -52,7 +52,14 @@ class VectorOpts(fsldisplay.DisplayOpts):
     """Hide voxels for which the modulation value is below this threshold."""
 
     
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
+    def __init__(self,
+                 image,
+                 display,
+                 imageList,
+                 displayCtx,
+                 parent=None,
+                 *args,
+                 **kwargs):
         """Create a ``VectorOpts`` instance for the given image.
 
         See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
@@ -63,7 +70,9 @@ class VectorOpts(fsldisplay.DisplayOpts):
                                         display,
                                         imageList,
                                         displayCtx,
-                                        parent)
+                                        parent,
+                                        *args,
+                                        **kwargs)
 
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
@@ -117,3 +126,20 @@ class VectorOpts(fsldisplay.DisplayOpts):
 
 # TODO RGBVector/LineVector subclasses for any type
 # specific options (e.g. line width for linevector)
+
+class LineVectorOpts(VectorOpts):
+
+    lineWidth = props.Int(minval=1, maxval=10, default=1)
+
+    directed  = props.Boolean(default=False)
+    """
+
+    The directed property cannot be unbound across multiple LineVectorOpts
+    instances, as it affects the OpenGL representation
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        kwargs['nounbind'] = ['directed']
+
+        VectorOpts.__init__(self, *args, **kwargs)

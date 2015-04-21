@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 #
-# gllinevector.py -
+# gllinevector.py - Displays vector data as lines.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
 import logging
 
-
 import numpy                   as np
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.glvector as glvector
-import fsl.utils.transform     as transform
+
+
+log = logging.getLogger(__name__)
 
 
 class GLLineVector(glvector.GLVector):
 
+
+    __vertices = {}
+    
+
     def __init__(self, image, display):
         glvector.GLVector.__init__(self, image, display)
+
+        self.opts = display.getDisplayOpts()
 
         self.__generateLineVertices()
 
@@ -27,32 +34,51 @@ class GLLineVector(glvector.GLVector):
             self.updateShaderState()
             self.onUpdate()
 
-        display.addListener('transform',  self.name, vertexUpdate)
-        display.addListener('resolution', self.name, vertexUpdate)
+        display  .addListener('transform',  self.name, vertexUpdate)
+        display  .addListener('resolution', self.name, vertexUpdate)
+        self.opts.addListener('directed',   self.name, vertexUpdate)
 
         fslgl.gllinevector_funcs.init(self)
 
         
     def destroy(self):
+        
         fslgl.gllinevector_funcs.destroy(self)
         self.display.removeListener('transform',  self.name)
         self.display.removeListener('resolution', self.name)
+        self.opts   .removeListener('directed',   self.name)
 
 
     def __generateLineVertices(self):
 
-        display  = self.display
-        image    = self.image
+        display = self.display
+        opts    = self.opts
+        image   = self.image
+
+        vertices, oldHash = GLLineVector.__vertices.get(
+            image, (None, None))
+
+        newHash = (hash(display.transform)  ^
+                   hash(display.resolution) ^
+                   hash(opts   .directed))
+
+        if (vertices is not None) and (oldHash == newHash):
+            
+            log.debug('Using previously calculated line '
+                      'vertices for {}'.format(image))
+            self.voxelVertices = vertices
+            return
+
+        log.debug('Re-generating line vertices for {}'.format(image))
+
         data     = globject.subsample(image.data,
                                       display.resolution,
                                       image.pixdim)
-
         vertices = np.array(data, dtype=np.float32)
 
-        x = vertices[:, :, :, 0]
-        y = vertices[:, :, :, 1]
-        z = vertices[:, :, :, 2]
-
+        x    = vertices[:, :, :, 0]
+        y    = vertices[:, :, :, 1]
+        z    = vertices[:, :, :, 2]
         lens = np.sqrt(x ** 2 + y ** 2 + z ** 2)
 
         # scale the vector lengths to 0.5
@@ -82,6 +108,8 @@ class GLLineVector(glvector.GLVector):
         for i in range(data.shape[2]): vertices[:, :, i, :, 2] += i
 
         self.voxelVertices = vertices
+
+        GLLineVector.__vertices[image] = vertices, newHash
     
 
     def compileShaders(self):
