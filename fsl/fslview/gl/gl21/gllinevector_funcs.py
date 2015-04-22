@@ -14,13 +14,64 @@ import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.shaders  as shaders
 
 
+def cartesian(arrays, out=None):
+    """Generate a cartesian product of input arrays.
+
+    Courtesy of http://stackoverflow.com/a/1235363
+
+    Parameters
+    ----------
+    arrays : list of array-like
+        1-D arrays to form the cartesian product of.
+    out : ndarray
+        Array to place the cartesian product in.
+
+    Returns
+    -------
+    out : ndarray
+        2-D array of shape (M, len(arrays)) containing cartesian products
+        formed of input arrays.
+
+    Examples
+    --------
+    >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
+    array([[1, 4, 6],
+           [1, 4, 7],
+           [1, 5, 6],
+           [1, 5, 7],
+           [2, 4, 6],
+           [2, 4, 7],
+           [2, 5, 6],
+           [2, 5, 7],
+           [3, 4, 6],
+           [3, 4, 7],
+           [3, 5, 6],
+           [3, 5, 7]])
+    """
+
+    arrays = [np.asarray(x) for x in arrays]
+    dtype = arrays[0].dtype
+
+    n = np.prod([x.size for x in arrays])
+    if out is None:
+        out = np.zeros([n, len(arrays)], dtype=dtype)
+
+    m = n / arrays[0].size
+    out[:, 0] = np.repeat(arrays[0], m)
+    if arrays[1:]:
+        cartesian(arrays[1:], out=out[0:m, 1:])
+        for j in xrange(1, arrays[0].size):
+            out[j * m:(j + 1) * m, 1:] = out[0:m, 1:]
+    return out
+
+
 def init(self):
     self.shaders = None
 
+    self.vertexBuffer = gl.glGenBuffers(1)
+
     compileShaders(   self)
     updateShaderState(self)
-
-    self.vertexBuffer = gl.glGenBuffers(1) 
 
     
 def destroy(self):
@@ -39,8 +90,6 @@ def compileShaders(self):
 
     self.vertexPos          = gl.glGetAttribLocation( self.shaders,
                                                       'vertex')
-    self.voxToDisplayMatPos = gl.glGetUniformLocation(self.shaders,
-                                                      'voxToDisplayMat')
     self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
                                                       'imageShape') 
     self.imageTexturePos    = gl.glGetUniformLocation(self.shaders,
@@ -94,11 +143,30 @@ def updateShaderState(self):
     gl.glUniform1i(self.yColourTexturePos, 3)
     gl.glUniform1i(self.zColourTexturePos, 4)
 
+    # TODO share this buffer across instances
+    vertices  = self.voxelVertices.ravel('C')
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+    gl.glBufferData(
+        gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
+
     gl.glUseProgram(0) 
 
 
 def preDraw(self):
     gl.glUseProgram(self.shaders)
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+    gl.glVertexAttribPointer(
+        self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+    gl.glEnableVertexAttribArray(self.vertexPos)
+
+    voxToDisplayMat = self.display.getTransform('voxel', 'display')
+    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
+
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glPushMatrix()
+    gl.glMultMatrixf(voxToDisplayMat)
 
     
 def draw(self, zpos, xform=None):
@@ -114,56 +182,39 @@ def draw(self, zpos, xform=None):
             
         zpos = np.floor(zpos + 0.5)
 
-        slices           = [slice(None)] * 3
-        slices[self.zax] = zpos
-
-        if zpos >= self.voxelVertices.shape[self.zax]:
+        if zpos < 0 or zpos >= image.shape[self.zax]:
             return
 
-        vertices = self.voxelVertices[slices[0], slices[1], slices[2], :, :]
+        indices = [None] * 3
+        indices[self.xax] = np.arange(image.shape[self.xax], dtype=np.uint32)
+        indices[self.yax] = np.arange(image.shape[self.yax], dtype=np.uint32)
+        indices[self.zax] = np.array([zpos],                 dtype=np.uint32)
+
+        indices = cartesian((indices[0], indices[1], indices[2], [0, 1], [0]))
+
+        indices = np.ravel_multi_index((indices[:, 0],
+                                        indices[:, 1],
+                                        indices[:, 2],
+                                        indices[:, 3],
+                                        indices[:, 4]),
+                                       self.voxelVertices.shape,
+                                       order='C')
+        
+        indices = np.array(indices, dtype=np.uint32) / 3
         
     else:
-        shape  = np.array(image.shape[:3])
-        coords = globject.calculateSamplePoints(
-            image, display, self.xax, self.yax)[0]
+        print 'Too hard for now!'
+        return
 
-        coords[:, self.zax] = zpos
-
-        coords = transform.transform(
-            coords, display.getTransform('display', 'voxel'))
-
-        coords   = np.array(coords.round(), dtype=np.int32)
-
-        coords   = coords[((coords >= [0, 0, 0]) & (coords < shape)).all(1), :]
-        
-        vertices = self.voxelVertices[coords[:, 0],
-                                      coords[:, 1],
-                                      coords[:, 2], :, :]
-
-
-    nvertices = vertices.size / 3
-    vertices  = vertices.ravel('C')
-
-    voxToDisplayMat = display.getTransform('voxel', 'display')
     if xform is not None:
-        voxToDisplayMat = transform.concat(voxToDisplayMat, xform)
-    
-    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
-
-    gl.glUniformMatrix4fv(self.voxToDisplayMatPos, 1, False, voxToDisplayMat)
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    
-    gl.glBufferData(
-        gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
-    
-    gl.glVertexAttribPointer(
-        self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-    
-    gl.glEnableVertexAttribArray(self.vertexPos)
+        gl.glPushMatrix()
+        gl.glMultMatrixf(xform.ravel('C'))
     
     gl.glLineWidth(opts.lineWidth)
-    gl.glDrawArrays(gl.GL_LINES, 0, nvertices)
+    gl.glDrawElements(gl.GL_LINES, indices.size, gl.GL_UNSIGNED_INT, indices)
+
+    if xform is not None:
+        gl.glPopMatrix()
 
 
 def drawAll(self, zposes, xforms):
@@ -177,3 +228,6 @@ def postDraw(self):
     gl.glUseProgram(0)
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
     gl.glDisableVertexAttribArray(self.vertexPos)
+
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glPopMatrix()

@@ -94,7 +94,12 @@ class GLLineVector(glvector.GLVector):
         # Duplicate vector data so that each
         # vector is represented by two vertices,
         # representing a line through the origin
-        vertices = np.concatenate((-vertices, vertices), axis=3)
+        if opts.directed:
+            origins  = np.zeros(vertices.shape, dtype=np.float32)
+            vertices = np.concatenate((origins, vertices), axis=3)
+        else:
+            vertices = np.concatenate((-vertices, vertices), axis=3)
+            
         vertices = vertices.reshape((data.shape[0],
                                      data.shape[1],
                                      data.shape[2],
@@ -110,7 +115,7 @@ class GLLineVector(glvector.GLVector):
         self.voxelVertices = vertices
 
         GLLineVector.__vertices[image] = vertices, newHash
-    
+
 
     def compileShaders(self):
         fslgl.gllinevector_funcs.compileShaders(self)
