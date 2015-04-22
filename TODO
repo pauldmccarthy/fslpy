@@ -21,6 +21,7 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** Clipping range not working for some volumes in ~/analysis_prac_2015/rest/ICA/Group/groupmelodic_fix.ica/melodic_IC.nii.gz 
 ** Spline intrpolation doing weird things
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
@@ -99,6 +100,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Absolute clipping (e.g. clip [-3, 3])
 ** Make zoom more flexible
 ** Make ortho aspect ratio/zoom thing better
 ** RunWindow should print to stdout
