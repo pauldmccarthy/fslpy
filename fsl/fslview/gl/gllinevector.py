@@ -16,11 +16,66 @@ import fsl.fslview.gl.glvector as glvector
 log = logging.getLogger(__name__)
 
 
+def cartesian(arrays, out=None):
+    """Generate a cartesian product of input arrays.
+
+    This function is used to generate line vector vertex indices (see
+    :meth:`GLLineVector.generateLineVertices`).
+
+    Courtesy of http://stackoverflow.com/a/1235363
+
+    Parameters
+    ----------
+    arrays : list of array-like
+        1-D arrays to form the cartesian product of.
+    out : ndarray
+        Array to place the cartesian product in.
+
+    Returns
+    -------
+    out : ndarray
+        2-D array of shape (M, len(arrays)) containing cartesian products
+        formed of input arrays.
+
+    Examples
+    --------
+    >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
+    array([[1, 4, 6],
+           [1, 4, 7],
+           [1, 5, 6],
+           [1, 5, 7],
+           [2, 4, 6],
+           [2, 4, 7],
+           [2, 5, 6],
+           [2, 5, 7],
+           [3, 4, 6],
+           [3, 4, 7],
+           [3, 5, 6],
+           [3, 5, 7]])
+
+    """
+
+    arrays = [np.asarray(x) for x in arrays]
+    dtype = arrays[0].dtype
+
+    n = np.prod([x.size for x in arrays])
+    if out is None:
+        out = np.zeros([n, len(arrays)], dtype=dtype)
+
+    m = n / arrays[0].size
+    out[:, 0] = np.repeat(arrays[0], m)
+    if arrays[1:]:
+        cartesian(arrays[1:], out=out[0:m, 1:])
+        for j in xrange(1, arrays[0].size):
+            out[j * m:(j + 1) * m, 1:] = out[0:m, 1:]
+    return out
+
+
 class GLLineVector(glvector.GLVector):
 
 
     __vertices = {}
-    
+
 
     def __init__(self, image, display):
         glvector.GLVector.__init__(self, image, display)
@@ -115,6 +170,52 @@ class GLLineVector(glvector.GLVector):
         self.voxelVertices = vertices
 
         GLLineVector.__vertices[image] = vertices, newHash
+
+
+    def generateVertexIndices(self, zpos):
+
+        display = self.display
+        image   = self.image
+        xax     = self.xax
+        yax     = self.yax
+        zax     = self.zax
+        
+        if display.transform in ('id', 'pixdim'):
+
+            if display.transform == 'pixdim':
+                zpos = zpos / image.pixdim[zax]
+
+            zpos = np.floor(zpos + 0.5)
+
+            if zpos < 0 or zpos >= image.shape[zax]:
+                return np.array([], dtype=np.uint32)
+
+            indices = [None] * 3
+            indices[xax] = np.arange(image.shape[xax], dtype=np.uint32)
+            indices[yax] = np.arange(image.shape[yax], dtype=np.uint32)
+            indices[zax] = np.array([zpos],            dtype=np.uint32)
+
+            indices = cartesian((indices[0],
+                                 indices[1],
+                                 indices[2],
+                                 [0, 1],
+                                 [0]))
+
+            indices = np.ravel_multi_index((indices[:, 0],
+                                            indices[:, 1],
+                                            indices[:, 2],
+                                            indices[:, 3],
+                                            indices[:, 4]),
+                                           self.voxelVertices.shape,
+                                           order='C')
+
+            indices = np.array(indices, dtype=np.uint32) / 3
+
+        else:
+            print 'Too hard for now!'
+            indices = np.array([], dtype=np.uint32)
+
+        return indices
 
 
     def compileShaders(self):
