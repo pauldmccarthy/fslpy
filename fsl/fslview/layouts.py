@@ -219,7 +219,7 @@ LineVectorOptsLayout = props.VGroup((
         widget(LineVectorOpts, 'suppressZ')),
         vertLabels=True),
     widget(LineVectorOpts, 'directed'),
-    widget(LineVectorOpts, 'lineWidth'),
+    widget(LineVectorOpts, 'lineWidth', showLimits=False),
     widget(LineVectorOpts, 'modulate'),
     widget(LineVectorOpts, 'modThreshold', showLimits=False, spin=False)))
 
