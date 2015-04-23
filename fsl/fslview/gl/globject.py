@@ -633,7 +633,8 @@ def slice2D(dataShape,
     # default centered at 0 (i.e. the space of a voxel
     # lies in the range [-0.5, 0.5]), but we want voxel
     # coordinates to map to the effective range [0, 1]
-    texCoords = (voxCoords + 0.5) / dataShape
+    voxCoords = voxCoords + 0.5
+    texCoords = voxCoords / dataShape
 
     return vertices, voxCoords, texCoords
 
