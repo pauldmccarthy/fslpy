@@ -100,6 +100,10 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Buffer sharing 
+A gl/buffers.py module which checks for buffer capability. If buffer-capable,
+vertex data is copied to a buffer, and the buffer name/ID returned. Otherwise,
+the vertex data is returned unmodified.
 ** Absolute clipping (e.g. clip [-3, 3])
 ** Make zoom more flexible
 ** Make ortho aspect ratio/zoom thing better
