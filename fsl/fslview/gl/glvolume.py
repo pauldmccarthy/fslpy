@@ -256,7 +256,7 @@ class GLVolume(globject.GLImageObject):
             self.onUpdate()
 
         display.addListener('interpolation', lName, shaderUpdate)
-        display.addListener('fastMode',      lName, shaderCompile)
+        display.addListener('softwareMode',  lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
         opts   .addListener('clippingRange', lName, shaderUpdate)
@@ -275,7 +275,7 @@ class GLVolume(globject.GLImageObject):
         lName = self.name
 
         display.removeListener('interpolation', lName)
-        display.removeListener('fastMode',      lName)
+        display.removeListener('softwareMode',  lName)
         display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
         opts   .removeListener('clippingRange', lName)

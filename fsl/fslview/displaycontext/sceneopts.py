@@ -50,7 +50,7 @@ class SceneOpts(props.HasProperties):
     """User controllable performacne setting.
 
     This property is linked to the :attr:`twoStageRender`,
-    :attr:`resolutionLimit`, and :attr:`fastMode` properties. Setting the
+    :attr:`resolutionLimit`, and :attr:`softwareMode` properties. Setting the
     performance to a low value will result in faster rendering time, at the
     cost of reduced features, and poorer rendering quality.
 
@@ -74,15 +74,15 @@ class SceneOpts(props.HasProperties):
     """
 
     
-    fastMode = props.Boolean(default=False)
-    """If ``True``, all images should be displayed in a 'fast mode'.
+    softwareMode = props.Boolean(default=False)
+    """If ``True``, all images should be displayed in a mode optimised for
+    software based rendering.
 
-    The definition of 'fast mode' is intentionally left unspecified, but will
-    generally mean using a GL fragment shader which is optimised for speed,
-    possibly at the cost of omitting some features.
+    The definition of 'software mode' is intentionally left unspecified, but
+    will generally mean using GL vertex/fragment shaders which are optimised
+    for speed, possibly at the cost of omitting some features.
 
-    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.fastMode` and
-    :attr:`~fsl.fslview.displaycontext.display.Display.fastMode`.
+    See :attr:`.SliceCanvas.softwareMode` and :attr:`.Display.softwareMode`.
     """
 
 
@@ -97,32 +97,32 @@ class SceneOpts(props.HasProperties):
     def _onPerformanceChange(self, *a):
         """Called when the :attr:`performance` property changes.
 
-        Changes the values of the :attr:`twoStageRender`, :attr:`fastMode` and
-        :attr:`resolutionLimit` properties accoridng to the performance
+        Changes the values of the :attr:`twoStageRender`, :attr:`softwareMode`
+        and :attr:`resolutionLimit` properties accoridng to the performance
         setting.
         """
 
         if   self.performance == 5:
             self.twoStageRender  = False
-            self.fastMode        = False
+            self.softwareMode    = False
             self.resolutionLimit = 0
             
         elif self.performance == 4:
             self.twoStageRender  = True
-            self.fastMode        = False
+            self.softwareMode    = False
             self.resolutionLimit = 0
             
         elif self.performance == 3:
             self.twoStageRender  = True
-            self.fastMode        = True
+            self.softwareMode    = True
             self.resolutionLimit = 0
 
         elif self.performance == 2:
             self.twoStageRender  = True
-            self.fastMode        = True
+            self.softwareMode    = True
             self.resolutionLimit = 1
             
         elif self.performance == 1:
             self.twoStageRender  = True
-            self.fastMode        = True
+            self.softwareMode    = True
             self.resolutionLimit = 1.5

@@ -78,7 +78,7 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
                 disp .removeListener('imageType',     self.name)
                 disp .removeListener('enabled',       self.name)
                 disp .removeListener('transform',     self.name)
-                disp .removeListener('fastMode',      self.name)
+                disp .removeListener('softwareMode',  self.name)
                 disp .removeListener('interpolation', self.name)
                 disp .removeListener('alpha',         self.name)
                 disp .removeListener('brightness',    self.name)

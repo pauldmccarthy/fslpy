@@ -110,7 +110,7 @@ class GLVector(globject.GLImageObject):
             self.onUpdate()
 
         display.addListener('interpolation', name, shaderUpdate)
-        display.addListener('fastMode',      name, shaderCompile)
+        display.addListener('softwareMode',  name, shaderCompile)
         display.addListener('alpha',         name, cmapUpdate)
         display.addListener('brightness',    name, cmapUpdate)
         display.addListener('contrast',      name, cmapUpdate) 
@@ -158,7 +158,7 @@ class GLVector(globject.GLImageObject):
         textures.deleteTexture(self.modTexture) 
 
         self.display    .removeListener('interpolation', self.name)
-        self.display    .removeListener('fastMode',      self.name)
+        self.display    .removeListener('softwareMode',  self.name)
         self.display    .removeListener('alpha',         self.name)
         self.display    .removeListener('brightness',    self.name)
         self.display    .removeListener('contrast',      self.name)

@@ -55,8 +55,10 @@ def compileShaders(self):
     if self.shaders is not None:
         gl.glDeleteProgram(self.shaders)
 
-    vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
-    fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
+    vertShaderSrc = shaders.getVertexShader(  self,
+                                              sw=self.display.softwareMode)
+    fragShaderSrc = shaders.getFragmentShader(self,
+                                              sw=self.display.softwareMode)
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
     # indices of all vertex/fragment shader parameters
@@ -188,7 +190,7 @@ def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
     # The fast shader does not use voxel coordinates
     # so, on some GL drivers, attempting to bind it
     # will cause an error
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glVertexAttribPointer(
             voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
         gl.glEnableVertexAttribArray(self.voxCoordPos)
@@ -244,7 +246,7 @@ def postDraw(self):
     gl.glDisableVertexAttribArray(self.vertexPos)
     gl.glDisableVertexAttribArray(self.texCoordPos)
 
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glDisableVertexAttribArray(self.voxCoordPos)
     
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)

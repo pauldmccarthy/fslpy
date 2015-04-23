@@ -72,7 +72,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._lbCanvas.bindProps('showGridLines',   sceneOpts)
         self._lbCanvas.bindProps('highlightSlice',  sceneOpts)
         self._lbCanvas.bindProps('twoStageRender',  sceneOpts)
-        self._lbCanvas.bindProps('fastMode',        sceneOpts)
+        self._lbCanvas.bindProps('softwareMode',    sceneOpts)
         self._lbCanvas.bindProps('resolutionLimit', sceneOpts)
 
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)

@@ -98,9 +98,9 @@ class SliceCanvas(props.HasProperties):
     """
 
     
-    fastMode = props.Boolean(default=False)
-    """If ``True``, the :attr:`.Display.fastMode` property for every displayed
-    image is set to ``True``.
+    softwareMode = props.Boolean(default=False)
+    """If ``True``, the :attr:`.Display.softwareMode` property for every
+    displayed image is set to ``True``.
     """
 
     
@@ -514,14 +514,14 @@ class SliceCanvas(props.HasProperties):
                 
             genGLObject()
 
-            # Bind Display.fastMode to SliceCanvas.fastMode
-            display.bindProps('fastMode', self)
+            # Bind Display.softwareMode to SliceCanvas.softwareMode
+            display.bindProps('softwareMode', self)
                 
             image  .addListener('data',          self.name, self._refresh)
             display.addListener('imageType',     self.name, genGLObject)
             display.addListener('enabled',       self.name, self._refresh)
             display.addListener('transform',     self.name, self._refresh)
-            display.addListener('fastMode',      self.name, self._refresh)
+            display.addListener('softwareMode',  self.name, self._refresh)
             display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
             display.addListener('brightness',    self.name, self._refresh)

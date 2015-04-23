@@ -55,7 +55,7 @@ and file name prefixes, identifying the shader programs to use.
 """
 
 
-def getShaderPrefix(globj, shaderType, fast):
+def getShaderPrefix(globj, shaderType, sw):
     """Returns the prefix identifying the vertex/fragment shader programs to use
     for the given :class:`.GLObject` instance. If ``globj`` is a string, it is
     returned unchanged.
@@ -64,15 +64,15 @@ def getShaderPrefix(globj, shaderType, fast):
     if isinstance(globj, str):
         return globj
     
-    return _shaderTypePrefixMap[globj, shaderType, fast]
+    return _shaderTypePrefixMap[globj, shaderType, sw]
 
 
-def setShaderPrefix(globj, shaderType, fast, prefix):
+def setShaderPrefix(globj, shaderType, sw, prefix):
     """Updates the prefix identifying the vertex/fragment shader programs to use
     for the given :class:`.GLObject` type or instance.
     """
     
-    _shaderTypePrefixMap[globj, shaderType, fast] = prefix
+    _shaderTypePrefixMap[globj, shaderType, sw] = prefix
 
 
 def setVertexProgramVector(index, vector):
@@ -226,26 +226,26 @@ def compileShaders(vertShaderSrc, fragShaderSrc):
     return program
 
 
-def getVertexShader(globj, fast=False):
+def getVertexShader(globj, sw=False):
     """Returns the vertex shader source for the given GL object."""
-    return _getShader(globj, 'vert', fast)
+    return _getShader(globj, 'vert', sw)
 
 
-def getFragmentShader(globj, fast=False):
+def getFragmentShader(globj, sw=False):
     """Returns the fragment shader source for the given GL object.""" 
-    return _getShader(globj, 'frag', fast)
+    return _getShader(globj, 'frag', sw)
 
 
-def _getShader(globj, shaderType, fast):
+def _getShader(globj, shaderType, sw):
     """Returns the shader source for the given GL object and the given
     shader type ('vert' or 'frag').
     """
-    fname = _getFileName(globj, shaderType, fast)
+    fname = _getFileName(globj, shaderType, sw)
     with open(fname, 'rt') as f: src = f.read()
     return _preprocess(src)    
 
 
-def _getFileName(globj, shaderType, fast):
+def _getFileName(globj, shaderType, sw):
     """Returns the file name of the shader program for the given GL object
     and shader type. The ``globj`` parameter may alternately be a string,
     in which case it is used as the prefix for the shader program file name.
@@ -261,7 +261,7 @@ def _getFileName(globj, shaderType, fast):
     if shaderType not in ('vert', 'frag'):
         raise RuntimeError('Invalid shader type: {}'.format(shaderType))
 
-    prefix = getShaderPrefix(globj, shaderType, fast)
+    prefix = getShaderPrefix(globj, shaderType, sw)
 
     return op.join(op.dirname(__file__), subdir, '{}_{}.{}'.format(
         prefix, shaderType, suffix))

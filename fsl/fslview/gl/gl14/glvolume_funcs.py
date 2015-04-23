@@ -43,8 +43,10 @@ def compileShaders(self):
     if self.fragmentProgram is not None:
         arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram)) 
 
-    vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
-    fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
+    vertShaderSrc = shaders.getVertexShader(  self,
+                                              sw=self.display.softwareMode)
+    fragShaderSrc = shaders.getFragmentShader(self,
+                                              sw=self.display.softwareMode)
 
     vertexProgram, fragmentProgram = shaders.compilePrograms(
         vertShaderSrc, fragShaderSrc)
@@ -123,7 +125,7 @@ def preDraw(self):
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glClientActiveTexture(gl.GL_TEXTURE1)
         gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
@@ -154,7 +156,7 @@ def draw(self, zpos, xform=None):
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glClientActiveTexture(gl.GL_TEXTURE1)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
     
@@ -187,7 +189,7 @@ def drawAll(self, zposes, xforms):
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glClientActiveTexture(gl.GL_TEXTURE1)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
     
@@ -203,7 +205,7 @@ def postDraw(self):
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-    if not self.display.fastMode:
+    if not self.display.softwareMode:
         gl.glClientActiveTexture(gl.GL_TEXTURE1)
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 

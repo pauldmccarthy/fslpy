@@ -32,8 +32,10 @@ def compileShaders(self):
     if self.shaders is not None:
         gl.glDeleteProgram(self.shaders) 
     
-    vertShaderSrc = shaders.getVertexShader(  self, fast=self.display.fastMode)
-    fragShaderSrc = shaders.getFragmentShader(self, fast=self.display.fastMode)
+    vertShaderSrc = shaders.getVertexShader(  self,
+                                              sw=self.display.softwareMode)
+    fragShaderSrc = shaders.getFragmentShader(self,
+                                              sw=self.display.softwareMode)
     
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 

@@ -126,8 +126,8 @@ class Display(props.SyncableHasProperties):
     contrast   = props.Percentage()
 
 
-    fastMode   = props.Boolean(default=False)
-    """Turn on for faster rendering on low performance machines."""
+    softwareMode = props.Boolean(default=False)
+    """If possible, optimise for software-based rendering."""
 
         
     def is4DImage(self):
@@ -189,7 +189,7 @@ class Display(props.SyncableHasProperties):
                       'volume',
                       'resolution',
                       'transform',
-                      'fastMode', 
+                      'softwareMode', 
                       'imageType'])
 
         # Set up listeners after caling Syncabole.__init__,
