@@ -93,13 +93,6 @@ def updateShaderState(self):
     gl.glUniform1i(self.yColourTexturePos, 3)
     gl.glUniform1i(self.zColourTexturePos, 4)
 
-    # TODO share this buffer across instances
-    vertices = self.voxelVertices.ravel('C')
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    gl.glBufferData(
-        gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
-
     gl.glUseProgram(0) 
 
 
@@ -107,17 +100,12 @@ def preDraw(self):
     
     gl.glUseProgram(self.shaders)
 
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    gl.glVertexAttribPointer(
-        self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-    
-    gl.glEnableVertexAttribArray(self.vertexPos)
-
     
 def draw(self, zpos, xform=None):
-
-    opts    = self.opts
-    indices = self.generateVertexIndices(zpos)
+    
+    opts     = self.displayOpts
+    vertices = self.getVertices(zpos)
+    vertices = vertices.ravel('C')
 
     v2d = self.display.getTransform('voxel', 'display')
 
@@ -126,11 +114,24 @@ def draw(self, zpos, xform=None):
  
     gl.glPushMatrix()
     gl.glMultMatrixf(np.array(xform, dtype=np.float32).ravel('C'))
+
+    # upload the vertices
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+    
+    gl.glBufferData(
+        gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
+    
+    gl.glVertexAttribPointer(
+        self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+    
+    gl.glEnableVertexAttribArray(self.vertexPos) 
         
     gl.glLineWidth(opts.lineWidth)
-    gl.glDrawElements(gl.GL_LINES, indices.size, gl.GL_UNSIGNED_INT, indices)
+    gl.glDrawArrays(gl.GL_LINES, 0, vertices.size / 3)
 
     gl.glPopMatrix()
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+    gl.glDisableVertexAttribArray(self.vertexPos)
 
 
 def drawAll(self, zposes, xforms):
@@ -141,5 +142,3 @@ def drawAll(self, zposes, xforms):
 
 def postDraw(self):
     gl.glUseProgram(0)
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
-    gl.glDisableVertexAttribArray(self.vertexPos)

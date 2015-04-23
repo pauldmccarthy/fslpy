@@ -174,7 +174,7 @@ class GLLineVector(glvector.GLVector):
         GLLineVector.__vertices[image] = vertices, newHash
 
 
-    def generateVertexIndices(self, zpos):
+    def getVertices(self, zpos):
 
         display = self.display
         image   = self.image
@@ -191,58 +191,38 @@ class GLLineVector(glvector.GLVector):
             zpos = np.floor(zpos + 0.5)
 
             if zpos < 0 or zpos >= image.shape[zax]:
-                return np.array([], dtype=np.uint32)
+                return np.array([], dtype=np.float32)
 
-            indices = [None] * 3
-            indices[xax] = np.arange(image.shape[xax], dtype=np.uint32)
-            indices[yax] = np.arange(image.shape[yax], dtype=np.uint32)
-            indices[zax] = np.array([zpos],            dtype=np.uint32)
+            slices      = [slice(None)] * 3
+            slices[zax] = zpos
 
-            indices = cartesian(indices)
-            indices = np.ravel_multi_index((indices[:, 0],
-                                            indices[:, 1],
-                                            indices[:, 2]),
-                                           shape,
-                                           order='C')
+            vertices = self.voxelVertices[slices[0],
+                                          slices[1],
+                                          slices[2],
+                                          :, :] 
 
         else:
-
-            lo, hi = display.getDisplayBounds()
-
-            if zpos <= lo[self.zax] or zpos >= hi[self.zax]:
-                return np.array([], dtype=np.uint32)
-
-            # sample a plane at the given display
-            # coordinate system zpos, through the
-            # image coordinate system space
-
-            # TODO change calcSamPoin signature
-            indices = globject.calculateSamplePoints(
+            # sample a plane in the display coordinate system
+            coords = globject.calculateSamplePoints(
                 image, display, xax, yax)[0]
 
-            indices[:, zax] = zpos
+            coords[:, zax] = zpos
 
-            # transform to voxel space
-            indices = transform.transform(
-                indices,
-                display.getTransform('display', 'voxel'))
+            # transform that plane into voxel coordinates
+            coords = transform.transform(
+                coords, display.getTransform('display', 'voxel'))
 
-            indices = np.array(indices + 0.5, dtype=np.uint32)
+            # remove any out-of-bounds voxel coordinates
+            coords   = np.array(coords.round(), dtype=np.int32)
+            coords   = coords[((coords >= [0, 0, 0]) &
+                               (coords <  shape)).all(1), :]
 
-            indices = indices[((indices >= [0, 0, 0]) & (indices < shape)).all(1), :]
+            # pull out the vertex data
+            vertices = self.voxelVertices[coords[:, 0],
+                                          coords[:, 1],
+                                          coords[:, 2], :, :] 
 
-            # flatten to 1D indices
-            indices = np.ravel_multi_index((indices[:, 0],
-                                            indices[:, 1],
-                                            indices[:, 2]),
-                                           shape,
-                                           order='C')
-
-        indices        = (indices * 2).repeat(2)
-        indices[1::2] += 1 
-        indices = np.array(indices, dtype=np.uint32)
-
-        return indices
+        return vertices
 
 
     def compileShaders(self):
