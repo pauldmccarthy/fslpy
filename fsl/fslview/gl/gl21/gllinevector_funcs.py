@@ -9,6 +9,7 @@ import numpy                  as np
 import OpenGL.GL              as gl
 import OpenGL.raw.GL._types   as gltypes
 
+import fsl.utils.transform    as transform
 import fsl.fslview.gl.shaders as shaders
 
 
@@ -112,33 +113,28 @@ def preDraw(self):
     
     gl.glEnableVertexAttribArray(self.vertexPos)
 
-    voxToDisplayMat = self.display.getTransform('voxel', 'display')
-    voxToDisplayMat = np.array(voxToDisplayMat, dtype=np.float32).ravel('C')
-
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPushMatrix()
-    gl.glMultMatrixf(voxToDisplayMat)
-
     
 def draw(self, zpos, xform=None):
 
     opts    = self.opts
     indices = self.generateVertexIndices(zpos)
 
-    if xform is not None:
-        gl.glPushMatrix()
-        gl.glMultMatrixf(xform.ravel('C'))
-    
+    v2d = self.display.getTransform('voxel', 'display')
+
+    if xform is None: xform = v2d
+    else:             xform = transform.concat(v2d, xform)
+ 
+    gl.glPushMatrix()
+    gl.glMultMatrixf(np.array(xform, dtype=np.float32).ravel('C'))
+        
     gl.glLineWidth(opts.lineWidth)
     gl.glDrawElements(gl.GL_LINES, indices.size, gl.GL_UNSIGNED_INT, indices)
 
-    if xform is not None:
-        gl.glPopMatrix()
+    gl.glPopMatrix()
 
 
 def drawAll(self, zposes, xforms):
 
-    # TODO a proper implementation
     for zpos, xform in zip(zposes, xforms):
         self.draw(zpos, xform)
 
@@ -147,6 +143,3 @@ def postDraw(self):
     gl.glUseProgram(0)
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
     gl.glDisableVertexAttribArray(self.vertexPos)
-
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glPopMatrix()

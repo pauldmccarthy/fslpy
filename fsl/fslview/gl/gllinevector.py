@@ -8,6 +8,8 @@
 import logging
 
 import numpy                   as np
+
+import fsl.utils.transform     as transform
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.glvector as glvector
@@ -179,7 +181,7 @@ class GLLineVector(glvector.GLVector):
         xax     = self.xax
         yax     = self.yax
         zax     = self.zax
-        
+
         if display.transform in ('id', 'pixdim'):
 
             if display.transform == 'pixdim':
@@ -195,25 +197,47 @@ class GLLineVector(glvector.GLVector):
             indices[yax] = np.arange(image.shape[yax], dtype=np.uint32)
             indices[zax] = np.array([zpos],            dtype=np.uint32)
 
-            indices = cartesian((indices[0],
-                                 indices[1],
-                                 indices[2],
-                                 [0, 1],
-                                 [0]))
-
+            indices = cartesian(indices)
             indices = np.ravel_multi_index((indices[:, 0],
                                             indices[:, 1],
-                                            indices[:, 2],
-                                            indices[:, 3],
-                                            indices[:, 4]),
-                                           self.voxelVertices.shape,
+                                            indices[:, 2]),
+                                           self.voxelVertices.shape[:3],
                                            order='C')
 
-            indices = np.array(indices, dtype=np.uint32) / 3
-
         else:
-            print 'Too hard for now!'
-            indices = np.array([], dtype=np.uint32)
+
+            lo, hi = display.getDisplayBounds()
+
+            if zpos <= lo[self.zax] or zpos >= hi[self.zax]:
+                return np.array([], dtype=np.uint32)
+
+            # sample a plane at the given display
+            # coordinate system zpos, through the
+            # image coordinate system space
+
+            # TODO change calcSamPoin signature
+            indices = globject.calculateSamplePoints(
+                image, display, xax, yax)[0]
+
+            indices[:, zax] = zpos
+
+            # transform to voxel space
+            indices = transform.transform(
+                indices,
+                display.getTransform('display', 'voxel'))
+
+            indices = np.array(indices + 0.5, dtype=np.uint32)
+
+            # flatten to 1D indices
+            indices = np.ravel_multi_index((indices[:, 0],
+                                            indices[:, 1],
+                                            indices[:, 2]),
+                                           self.voxelVertices.shape[:3],
+                                           order='C')
+
+        indices        = (indices * 2).repeat(2)
+        indices[1::2] += 1 
+        indices = np.array(indices, dtype=np.uint32)
 
         return indices
 

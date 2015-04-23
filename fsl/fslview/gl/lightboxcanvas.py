@@ -9,9 +9,8 @@
 slices along a single axis from a collection of 3D images.
 """
 
+import sys
 import logging
-
-log = logging.getLogger(__name__)
 
 import numpy     as np
 import OpenGL.GL as gl
@@ -20,6 +19,9 @@ import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
 import fsl.fslview.gl.textures    as fsltextures
+
+
+log = logging.getLogger(__name__)
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
@@ -356,8 +358,25 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             # Pick a sensible default for the
             # slice spacing - the smallest pixdim
-            # across all images in the list
-            newZGap   = min([i.pixdim[self.zax] for i in self.imageList])
+            # across all images in the list 
+            newZGap = sys.float_info.max
+
+            for image in self.imageList:
+                display = self.displayCtx.getDisplayProperties(image)
+
+                # TODO this is specific to the Image type,
+                # and shouldn't be. We're going to need to
+                # support other overlay types soon...
+                if   display.transform == 'id':
+                    zgap = 1
+                elif display.transform == 'pixdim':
+                    zgap = image.pixdim[self.zax]
+                else:
+                    zgap = min(image.pixdim[:3])
+
+                if zgap < newZGap:
+                    newZGap = zgap
+
             newZRange = self.displayCtx.bounds.getRange(self.zax)
 
             # Changing the zrange/sliceSpacing properties will, in most cases,
