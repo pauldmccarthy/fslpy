@@ -34,21 +34,21 @@ log = logging.getLogger(__name__)
 _shaderTypePrefixMap = td.TypeDict({
     
     ('GLVolume',     'vert', False) : 'glvolume',
-    ('GLVolume',     'vert', True)  : 'glvolume_fast',
+    ('GLVolume',     'vert', True)  : 'glvolume_sw',
     ('GLVolume',     'frag', False) : 'glvolume',
-    ('GLVolume',     'frag', True)  : 'glvolume_fast',
+    ('GLVolume',     'frag', True)  : 'glvolume_sw',
     
     ('GLRGBVector',  'vert', False) : 'glvolume',
-    ('GLRGBVector',  'vert', True)  : 'glvolume_fast',
+    ('GLRGBVector',  'vert', True)  : 'glvolume_sw',
     
     ('GLRGBVector',  'frag', False) : 'glvector',
-    ('GLRGBVector',  'frag', True)  : 'glvector_fast',
+    ('GLRGBVector',  'frag', True)  : 'glvector_sw',
 
     ('GLLineVector', 'vert', False) : 'gllinevector',
     ('GLLineVector', 'vert', True)  : 'gllinevector',
     
     ('GLLineVector', 'frag', False) : 'glvector',
-    ('GLLineVector', 'frag', True)  : 'glvector_fast', 
+    ('GLLineVector', 'frag', True)  : 'glvector_sw', 
 })
 """This dictionary provides a mapping between :class:`.GLObject` types,
 and file name prefixes, identifying the shader programs to use.
