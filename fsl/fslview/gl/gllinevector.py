@@ -181,6 +181,7 @@ class GLLineVector(glvector.GLVector):
         xax     = self.xax
         yax     = self.yax
         zax     = self.zax
+        shape   = self.voxelVertices.shape[:3]
 
         if display.transform in ('id', 'pixdim'):
 
@@ -201,7 +202,7 @@ class GLLineVector(glvector.GLVector):
             indices = np.ravel_multi_index((indices[:, 0],
                                             indices[:, 1],
                                             indices[:, 2]),
-                                           self.voxelVertices.shape[:3],
+                                           shape,
                                            order='C')
 
         else:
@@ -228,11 +229,13 @@ class GLLineVector(glvector.GLVector):
 
             indices = np.array(indices + 0.5, dtype=np.uint32)
 
+            indices = indices[((indices >= [0, 0, 0]) & (indices < shape)).all(1), :]
+
             # flatten to 1D indices
             indices = np.ravel_multi_index((indices[:, 0],
                                             indices[:, 1],
                                             indices[:, 2]),
-                                           self.voxelVertices.shape[:3],
+                                           shape,
                                            order='C')
 
         indices        = (indices * 2).repeat(2)
