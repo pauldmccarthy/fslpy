@@ -57,8 +57,8 @@ class GLLineVector(glvector.GLVector):
         opts    = self.opts
         image   = self.image
 
-        vertices, oldHash = GLLineVector.__vertices.get(
-            image, (None, None))
+        vertices, starts, steps, oldHash = GLLineVector.__vertices.get(
+            image, (None, None, None, None))
 
         newHash = (hash(display.transform)  ^
                    hash(display.resolution) ^
@@ -69,19 +69,21 @@ class GLLineVector(glvector.GLVector):
             log.debug('Using previously calculated line '
                       'vertices for {}'.format(image))
             self.voxelVertices = vertices
+            self.sampleStarts  = starts
+            self.sampleSteps   = steps 
             return
 
         log.debug('Re-generating line vertices for {}'.format(image))
 
-        data     = globject.subsample(image.data,
-                                      display.resolution,
-                                      image.pixdim)
+        data, starts, steps = globject.subsample(image.data,
+                                                 display.resolution,
+                                                 image.pixdim)
+        
         vertices = np.array(data, dtype=np.float32)
-
-        x    = vertices[:, :, :, 0]
-        y    = vertices[:, :, :, 1]
-        z    = vertices[:, :, :, 2]
-        lens = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+        x        = vertices[:, :, :, 0]
+        y        = vertices[:, :, :, 1]
+        z        = vertices[:, :, :, 2]
+        lens     = np.sqrt(x ** 2 + y ** 2 + z ** 2)
 
         # scale the vector lengths to 0.5
         vertices[:, :, :, 0] = 0.5 * x / lens
@@ -110,13 +112,20 @@ class GLLineVector(glvector.GLVector):
 
         # Offset each vertex by the
         # corresponding voxel coordinates
-        for i in range(data.shape[0]): vertices[i, :, :, :, 0] += i
-        for i in range(data.shape[1]): vertices[:, i, :, :, 1] += i
-        for i in range(data.shape[2]): vertices[:, :, i, :, 2] += i
+        for i in range(data.shape[0]):
+            vertices[i, :, :, :, 0] += starts[0] + i * steps[0]
+            
+        for i in range(data.shape[1]):
+            vertices[:, i, :, :, 1] += starts[1] + i * steps[1]
+            
+        for i in range(data.shape[2]):
+            vertices[:, :, i, :, 2] += starts[2] + i * steps[2]
 
         self.voxelVertices = vertices
+        self.sampleStarts  = starts
+        self.sampleSteps   = steps
 
-        GLLineVector.__vertices[image] = vertices, newHash
+        GLLineVector.__vertices[image] = vertices, starts, steps, newHash
 
 
     def getVertices(self, zpos):
@@ -130,6 +139,9 @@ class GLLineVector(glvector.GLVector):
 
         if display.transform in ('id', 'pixdim'):
 
+            starts = self.sampleStarts
+            steps  = self.sampleSteps
+
             if display.transform == 'pixdim':
                 zpos = zpos / image.pixdim[zax]
 
@@ -139,17 +151,23 @@ class GLLineVector(glvector.GLVector):
                 return np.array([], dtype=np.float32)
 
             slices      = [slice(None)] * 3
-            slices[zax] = zpos
+            slices[zax] = np.floor((zpos - starts[zax]) / steps[zax])
 
             vertices = self.voxelVertices[slices[0],
                                           slices[1],
                                           slices[2],
-                                          :, :] 
+                                          :, :]
 
         else:
             # sample a plane in the display coordinate system
             coords = globject.calculateSamplePoints(
-                image, display, xax, yax)[0]
+                image.shape[:3],
+                image.pixdim[:3],
+                [display.resolution] * 3,
+                display.getTransform('voxel', 'display'),
+                xax,
+                yax,
+                upsample=True)[0]
 
             coords[:, zax] = zpos
 
