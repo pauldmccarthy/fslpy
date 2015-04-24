@@ -58,7 +58,7 @@ void main(void) {
   vec3 texCoord;
   vec3 vector;
 
-  vec3 voxCoord = (displayToVoxMat * vec4(vertex, 0)).xyz + 0.5;
+  vec3 voxCoord = (displayToVoxMat * vec4(vertex, 1)).xyz + 0.5;
   
   /*
    * Normalise the vertex coordinates to [0.0, 1.0],
@@ -100,17 +100,14 @@ void main(void) {
    */
   vector /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
 
-  vec3 v = vertex;
+  voxCoord = voxCoord + vector - 0.5;
 
-  if (mod(vertexID, 2) == 1) v += vec3(0.5, 0.5, 0.5);
-  else                       v += vec3(0,   0,   0);
-  
   /*
    * Output the final vertex position
    */
   gl_Position = gl_ModelViewProjectionMatrix *
                 voxToDisplayMat              *
-                vec4(v, 1);
+                vec4(voxCoord, 1);
 
   fragVoxCoord = voxCoord;
   fragTexCoord = texCoord;

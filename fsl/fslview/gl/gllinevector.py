@@ -75,10 +75,14 @@ class GLLineVector(glvector.GLVector):
 
         log.debug('Re-generating line vertices for {}'.format(image))
 
+        # Extract a sub-sample of the vector image
+        # at the current display resolution
         data, starts, steps = globject.subsample(image.data,
                                                  display.resolution,
                                                  image.pixdim)
-        
+
+        # Pull out the xyz components of the 
+        # vectors, and calculate vector lengths
         vertices = np.array(data, dtype=np.float32)
         x        = vertices[:, :, :, 0]
         y        = vertices[:, :, :, 1]
@@ -97,7 +101,9 @@ class GLLineVector(glvector.GLVector):
         
         # Duplicate vector data so that each
         # vector is represented by two vertices,
-        # representing a line through the origin
+        # representing a line through the origin.
+        # Or, if displaying directed vectors,
+        # add an origin point for each vector.
         if opts.directed:
             origins  = np.zeros(vertices.shape, dtype=np.float32)
             vertices = np.concatenate((origins, vertices), axis=3)
@@ -110,8 +116,11 @@ class GLLineVector(glvector.GLVector):
                                      2,
                                      3))
 
-        # Offset each vertex by the
-        # corresponding voxel coordinates
+        # Offset each vertex by the corresponding
+        # voxel coordinates, making sure to
+        # transform from the sub-sampled indices
+        # to the original data indices (offseting
+        # and scaling by the starts and steps)
         for i in range(data.shape[0]):
             vertices[i, :, :, :, 0] += starts[0] + i * steps[0]
             
@@ -130,62 +139,85 @@ class GLLineVector(glvector.GLVector):
 
     def getVertices(self, zpos):
 
-        display = self.display
-        image   = self.image
-        xax     = self.xax
-        yax     = self.yax
-        zax     = self.zax
-        shape   = self.voxelVertices.shape[:3]
+        display  = self.display
+        image    = self.image
+        xax      = self.xax
+        yax      = self.yax
+        zax      = self.zax
+        vertices = self.voxelVertices
+        starts   = self.sampleStarts
+        steps    = self.sampleSteps
 
+        # If in id/pixdim space, the display
+        # coordinate system axes are parallel
+        # to the voxeld coordinate system axes
         if display.transform in ('id', 'pixdim'):
 
-            starts = self.sampleStarts
-            steps  = self.sampleSteps
-
+            # Turn the z position into a voxel index
             if display.transform == 'pixdim':
                 zpos = zpos / image.pixdim[zax]
 
-            zpos = np.floor(zpos + 0.5)
+            zpos = round(zpos)
 
+            # Return no vertices if the requested z
+            # position is out of the image bounds
             if zpos < 0 or zpos >= image.shape[zax]:
                 return np.array([], dtype=np.float32)
 
+            # Extract a slice at the requested
+            # z position from the vertex matrix
             slices      = [slice(None)] * 3
             slices[zax] = np.floor((zpos - starts[zax]) / steps[zax])
 
-            vertices = self.voxelVertices[slices[0],
-                                          slices[1],
-                                          slices[2],
-                                          :, :]
+            coords = vertices[slices[0],
+                              slices[1],
+                              slices[2],
+                              :, :]
 
+        # If in affine space, the display
+        # coordinate system axes may not
+        # be parallel to the voxel
+        # coordinate system axes
         else:
-            # sample a plane in the display coordinate system
+            # Create a coordinate grid through
+            # a plane at the requested z pos 
+            # in the display coordinate system
             coords = globject.calculateSamplePoints(
-                image.shape[:3],
+                image.shape[ :3],
                 image.pixdim[:3],
                 [display.resolution] * 3,
                 display.getTransform('voxel', 'display'),
                 xax,
                 yax,
                 upsample=True)[0]
-
+            
             coords[:, zax] = zpos
 
-            # transform that plane into voxel coordinates
+            # transform that plane of display
+            # coordinates into voxel coordinates
             coords = transform.transform(
                 coords, display.getTransform('display', 'voxel'))
 
+            # The voxel vertex matrix may have
+            # been sub-sampled (see the
+            # __generateLineVertices method),
+            # so we need to transform the image
+            # data voxel coordinates to the
+            # sub-sampled data voxel coordinates.
+            coords = (coords - starts) / steps
+            
             # remove any out-of-bounds voxel coordinates
-            coords   = np.array(coords.round(), dtype=np.int32)
-            coords   = coords[((coords >= [0, 0, 0]) &
-                               (coords <  shape)).all(1), :]
+            shape  = vertices.shape[:3]
+            coords = np.array(coords.round(), dtype=np.int32)
+            coords = coords[((coords >= [0, 0, 0]) &
+                             (coords <  shape)).all(1), :]
 
             # pull out the vertex data
-            vertices = self.voxelVertices[coords[:, 0],
-                                          coords[:, 1],
-                                          coords[:, 2], :, :] 
-
-        return vertices
+            coords = vertices[coords[:, 0],
+                              coords[:, 1],
+                              coords[:, 2],
+                              :, :] 
+        return coords
 
 
     def compileShaders(self):
