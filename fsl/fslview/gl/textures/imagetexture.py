@@ -370,11 +370,11 @@ class ImageTexture(texture.Texture):
                 data = globject.subsample(self.image.data,
                                           self.display.resolution,
                                           self.image.pixdim, 
-                                          self.display.volume)
+                                          self.display.volume)[0]
             else:
                 data = globject.subsample(self.image.data,
                                           self.display.resolution,
-                                          self.image.pixdim)
+                                          self.image.pixdim)[0]
 
         if self.prefilter is not None:
             data = self.prefilter(data)

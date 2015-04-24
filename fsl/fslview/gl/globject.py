@@ -224,7 +224,13 @@ class GLImageObject(GLObject):
         self.displayOpts = display.getDisplayOpts()
 
 
-def calculateSamplePoints(image, display, xax, yax):
+def calculateSamplePoints(shape,
+                          dims,
+                          resolution,
+                          xform,
+                          xax,
+                          yax,
+                          upsample=False):
     """Calculates a uniform grid of points, in the display coordinate system
     (as specified by the given
     :class:`~fsl.fslview.displaycontext.Display` object properties) along the
@@ -244,73 +250,61 @@ def calculateSamplePoints(image, display, xax, yax):
 
      - The number of samples along the vertical axis (yax)
 
-    :arg image:   The :class:`.Image` object to generate vertex and texture
-                  coordinates for.
+    :arg shape:      The shape of the data to be sampled.
 
-    :arg display: A :class:`.Display` object which defines how the image is to
-                  be rendered.
+    :arg dims:       The dimensions, in display space, of one data point.
 
-    :arg xax:     The horizontal display coordinate system axis (0, 1, or 2).
+    :arg xform:      A transformation matrix which converts from data 
+                     coordinates to the display coordinate system.
 
-    :arg yax:     The vertical display coordinate system axis (0, 1, or 2).
+    :arg resolution: The desired resolution in display coordinates, along
+                     each display axis.
+
+    :arg xax:        The horizontal display coordinate system axis (0, 1, or
+                     2).
+
+    :arg yax:        The vertical display coordinate system axis (0, 1, or 2).
+
+    :arg upsample:   If ``True``, the same data point may be sampled more than
+                     once.
     """
 
-    transformCode = display.transform
-    transformMat  = display.getTransform('voxel', 'display')
-    worldRes      = display.resolution
-    
-    xVoxelRes     = np.round(worldRes / image.pixdim[xax])
-    yVoxelRes     = np.round(worldRes / image.pixdim[yax])
-
-    if xVoxelRes < 1: xVoxelRes = 1
-    if yVoxelRes < 1: yVoxelRes = 1
-
-    # These values give the min/max x/y values
-    # of a bounding box which encapsulates
-    # the entire image
-    xmin, xmax = transform.axisBounds(image.shape, transformMat, xax)
-    ymin, ymax = transform.axisBounds(image.shape, transformMat, yax)
-
-    # The width/height of a displayed voxel.
-    # If we are displaying in real world space,
-    # we use the world display resolution
-    if transformCode == 'affine':
-
-        xpixdim = worldRes
-        ypixdim = worldRes
-
-    # But if we're just displaying the data (the
-    # transform is 'id' or 'pixdim'), we display
-    # it in the resolution of said data.
-    elif transformCode == 'pixdim':
-        xpixdim = image.pixdim[xax] * xVoxelRes
-        ypixdim = image.pixdim[yax] * yVoxelRes
+    # Calculate the resolution along each display space axis
+    if not upsample:
+        xres = np.round(resolution[xax] / dims[xax])
+        yres = np.round(resolution[yax] / dims[yax])
         
-    elif transformCode == 'id':
-        xpixdim = 1.0 * xVoxelRes
-        ypixdim = 1.0 * yVoxelRes
+        if xres < 1: xres = 1
+        if yres < 1: yres = 1 
+    else:
+        xres = resolution[xax]
+        yres = resolution[yax]
 
-    # Number of samples across each dimension,
-    # given the current sample rate
-    xNumSamples = np.floor((xmax - xmin) / xpixdim)
-    yNumSamples = np.floor((ymax - ymin) / ypixdim)
+    # These values give the min/max x/y
+    # values of a bounding box which
+    # encapsulates the entire image,
+    # in the display coordinate system
+    xmin, xmax = transform.axisBounds(shape, xform, xax)
+    ymin, ymax = transform.axisBounds(shape, xform, yax)
 
-    # the adjusted width/height of our sample points
-    xpixdim = (xmax - xmin) / xNumSamples
-    ypixdim = (ymax - ymin) / yNumSamples
+    # Number of samples along each display
+    # axis, given the requested resolution
+    xNumSamples = np.floor((xmax - xmin) / xres)
+    yNumSamples = np.floor((ymax - ymin) / yres)
 
-    log.debug('Generating coordinate buffers for {} '
-              '({} resolution {}/({}, {}), num samples {})'.format(
-                  image.name, transformCode, worldRes, xVoxelRes, yVoxelRes,
-                  xNumSamples * yNumSamples))
+    # adjust the x/y resolution so
+    # the samples fit exactly into
+    # the data bounding box
+    xres = (xmax - xmin) / xNumSamples
+    yres = (ymax - ymin) / yNumSamples
 
-    # The location of every displayed
-    # point in real world space
-    worldX = np.linspace(xmin + 0.5 * xpixdim,
-                         xmax - 0.5 * xpixdim,
+    # Calculate the locations of every 
+    # sample point in display space
+    worldX = np.linspace(xmin + 0.5 * xres,
+                         xmax - 0.5 * xres,
                          xNumSamples)
-    worldY = np.linspace(ymin + 0.5 * ypixdim,
-                         ymax - 0.5 * ypixdim,
+    worldY = np.linspace(ymin + 0.5 * yres,
+                         ymax - 0.5 * yres,
                          yNumSamples)
 
     worldX, worldY = np.meshgrid(worldX, worldY)
@@ -319,7 +313,7 @@ def calculateSamplePoints(image, display, xax, yax):
     coords[:, xax] = worldX.flatten()
     coords[:, yax] = worldY.flatten()
 
-    return coords, xpixdim, ypixdim, xNumSamples, yNumSamples
+    return coords, xres, yres, xNumSamples, yNumSamples
 
 
 def samplePointsToTriangleStrip(coords,
@@ -640,7 +634,16 @@ def slice2D(dataShape,
 
 
 def subsample(data, resolution, pixdim=None, volume=None):
-    """Samples the given data according to the given resolution.
+    """Samples the given 3D data according to the given resolution.
+
+    Returns a tuple containing:
+
+      - A 3D numpy array containing the sub-sampled data.
+
+      - A tuple containing the ``(x, y, z)`` starting indices of the
+        sampled data.
+
+      - A tuple containing the ``(x, y, z)`` steps of the sampled data.
 
     :arg data:       The data to be sampled.
 
@@ -665,9 +668,9 @@ def subsample(data, resolution, pixdim=None, volume=None):
     if ystep < 1: ystep = 1
     if zstep < 1: zstep = 1
 
-    xstart = xstep / 2
-    ystart = ystep / 2
-    zstart = zstep / 2
+    xstart = np.floor(xstep / 2)
+    ystart = np.floor(ystep / 2)
+    zstart = np.floor(zstep / 2)
 
     if volume is not None:
         if len(data.shape) > 3: sample = data[xstart::xstep,
@@ -686,7 +689,7 @@ def subsample(data, resolution, pixdim=None, volume=None):
                                               ystart::ystep,
                                               zstart::zstep]        
 
-    return sample
+    return sample, (xstart, ystart, zstart), (xstep, ystep, zstep)
 
 
 def broadcast(vertices, indices, zposes, xforms, zax):
