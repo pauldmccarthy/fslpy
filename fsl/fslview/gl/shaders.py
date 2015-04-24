@@ -45,7 +45,7 @@ _shaderTypePrefixMap = td.TypeDict({
     ('GLRGBVector',  'frag', True)  : 'glvector_sw',
 
     ('GLLineVector', 'vert', False) : 'gllinevector',
-    ('GLLineVector', 'vert', True)  : 'gllinevector',
+    ('GLLineVector', 'vert', True)  : 'gllinevector_sw',
     
     ('GLLineVector', 'frag', False) : 'glvector',
     ('GLLineVector', 'frag', True)  : 'glvector_sw', 
