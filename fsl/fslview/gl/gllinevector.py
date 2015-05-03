@@ -184,12 +184,10 @@ class GLLineVector(glvector.GLVector):
             # in the display coordinate system
             coords = globject.calculateSamplePoints(
                 image.shape[ :3],
-                image.pixdim[:3],
                 [display.resolution] * 3,
                 display.getTransform('voxel', 'display'),
                 xax,
-                yax,
-                upsample=True)[0]
+                yax)[0]
             
             coords[:, zax] = zpos
 

@@ -224,13 +224,7 @@ class GLImageObject(GLObject):
         self.displayOpts = display.getDisplayOpts()
 
 
-def calculateSamplePoints(shape,
-                          dims,
-                          resolution,
-                          xform,
-                          xax,
-                          yax,
-                          upsample=False):
+def calculateSamplePoints(shape, resolution, xform, xax, yax):
     """Calculates a uniform grid of points, in the display coordinate system
     (as specified by the given
     :class:`~fsl.fslview.displaycontext.Display` object properties) along the
@@ -252,8 +246,6 @@ def calculateSamplePoints(shape,
 
     :arg shape:      The shape of the data to be sampled.
 
-    :arg dims:       The dimensions, in display space, of one data point.
-
     :arg xform:      A transformation matrix which converts from data 
                      coordinates to the display coordinate system.
 
@@ -264,21 +256,10 @@ def calculateSamplePoints(shape,
                      2).
 
     :arg yax:        The vertical display coordinate system axis (0, 1, or 2).
-
-    :arg upsample:   If ``True``, the same data point may be sampled more than
-                     once.
     """
 
-    # Calculate the resolution along each display space axis
-    if not upsample:
-        xres = np.round(resolution[xax] / dims[xax])
-        yres = np.round(resolution[yax] / dims[yax])
-        
-        if xres < 1: xres = 1
-        if yres < 1: yres = 1 
-    else:
-        xres = resolution[xax]
-        yres = resolution[yax]
+    xres = resolution[xax]
+    yres = resolution[yax]
 
     # These values give the min/max x/y
     # values of a bounding box which
