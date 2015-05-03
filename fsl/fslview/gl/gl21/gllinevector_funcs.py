@@ -173,25 +173,37 @@ def softwareDraw(self, zpos, xform=None):
 
 
 def hardwareDraw(self, zpos, xform=None):
-    
+
+    image    = self.image
+    display  = self.display
     opts     = self.displayOpts
     v2dMat   = self.display.getTransform('voxel', 'display')
+    upsample = display.transform == 'affine'
 
+    resolution = np.array([display.resolution] * 3)
+
+    if   display.transform == 'id':
+        pixdim     = [1, 1, 1]
+        resolution = resolution / min(image.pixdim[:3])
+        
+    elif display.transform == 'pixdim': pixdim = image.pixdim[:3]
+    elif display.transform == 'affine': pixdim = [1, 1, 1]
+    
     vertices = globject.calculateSamplePoints(
-        self.image, self.display, self.xax, self.yax)[0]
+        image.shape,
+        pixdim,
+        resolution,
+        v2dMat,
+        self.xax,
+        self.yax,
+        upsample=upsample)[0]
     
     vertices[:, self.zax] = zpos
 
     vertices = np.repeat(vertices, 2, 0)
-    indices  = np.arange(vertices.shape[0])
-
-    print 'indices  ({}): '.format(indices.shape)
-    print  indices
-    print 'vertices (hw, {}): '.format(vertices.shape)
-    print  vertices
-    
+    indices  = np.arange(vertices.shape[0], dtype=np.uint32)
     vertices = vertices.ravel('C')
-        
+
     if xform is None: xform = v2dMat
     else:             xform = transform.concat(xform, v2dMat)
     
