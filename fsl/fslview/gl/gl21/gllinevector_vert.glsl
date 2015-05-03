@@ -54,20 +54,36 @@ varying vec3 fragTexCoord;
 
 void main(void) {
 
-  vec3 vertexPos;
   vec3 texCoord;
   vec3 vector;
+  vec3 voxCoord;
+  vec3 vertVoxCoord;
 
-  vec3 voxCoord = (displayToVoxMat * vec4(vertex, 1)).xyz + 0.5;
+  /*
+   * The vertVoxCoord vector contains the floating
+   * point voxel coordinates which correspond to the
+   * display coordinates of the current vertex.
+   */
+  vertVoxCoord = (displayToVoxMat * vec4(vertex, 1)).xyz;
+
+  /*
+   * The voxCoord vector contains the exact integer
+   * voxel coordinates - we cannot interpolate vector
+   * directions.
+   *
+   * There is no round function in GLSL 1.2, so we use
+   * floor(x + 0.5).
+   */  
+  voxCoord = floor(vertVoxCoord + 0.5);
   
   /*
-   * Normalise the vertex coordinates to [0.0, 1.0],
-   * so they can be used for texture lookup. And make
-   * sure the voxel coordinates are exact integers 
-   * (actually, that they are centred within the
-   * voxel, as we cannot interpolate vector directions.
+   * Normalise the voxel coordinates to [0.0, 1.0],
+   * so they can be used for texture lookup. Add
+   * 0.5 to the voxel coordinates first, to re-centre
+   * voxel coordinates from  from [i - 0.5, i + 0.5]
+   * to [i, i + 1].
    */
-  texCoord = floor(voxCoord + 0.5) / imageShape;
+  texCoord = (voxCoord + 0.5) / imageShape;
 
   /*
    * Retrieve the vector values for this voxel
@@ -100,14 +116,14 @@ void main(void) {
    */
   vector /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
 
-  voxCoord = voxCoord + vector - 0.5;
-
   /*
-   * Output the final vertex position
+   * Output the final vertex position - offset
+   * the voxel coordinates by the vector values,
+   * and transform back to display coordinates
    */
   gl_Position = gl_ModelViewProjectionMatrix *
                 voxToDisplayMat              *
-                vec4(voxCoord, 1);
+                vec4(vertVoxCoord + vector, 1);
 
   fragVoxCoord = voxCoord;
   fragTexCoord = texCoord;
