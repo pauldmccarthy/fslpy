@@ -177,9 +177,10 @@ class ImageRenderTexture(RenderTexture):
         image      = self.__image
         display    = self.__display
         maxRes     = self.__maxResolution
-        
+
         resolution = display.resolution / np.array(image.pixdim)
         resolution = np.round(resolution)
+        keepAspectRatio = True
 
         if resolution[0] < 1: resolution[0] = 1
         if resolution[1] < 1: resolution[1] = 1
@@ -190,6 +191,7 @@ class ImageRenderTexture(RenderTexture):
         # higher than the image resolution
         if display.imageType == 'linevector':
 
+            keepAspectRatio = False
             width  = 16 * image.shape[self.__xax] / resolution[self.__xax]
             height = 16 * image.shape[self.__yax] / resolution[self.__yax]
         
@@ -212,7 +214,10 @@ class ImageRenderTexture(RenderTexture):
             height = maxRes / resolution.min()
 
         # Limit the width/height to an arbitrary maximum
-        if width > maxRes or height > maxRes:
+        if not keepAspectRatio:
+            if width  > maxRes: width  = maxRes
+            if height > maxRes: height = maxRes
+        elif width > maxRes or height > maxRes:
             oldWidth, oldHeight = width, height
             ratio = min(width, height) / max(width, height)
             
@@ -229,5 +234,8 @@ class ImageRenderTexture(RenderTexture):
 
         width  = int(round(width))
         height = int(round(height))
+
+        print 'RenderTexture zax {}: {}, {}'.format(
+            3 - self.__xax - self.__yax, width, height)
 
         RenderTexture.setSize(self, width, height)
