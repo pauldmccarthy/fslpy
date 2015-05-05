@@ -108,8 +108,8 @@ class SceneOpts(props.HasProperties):
             self.resolutionLimit = 0
             
         elif self.performance == 4:
-            self.twoStageRender  = True
-            self.softwareMode    = False
+            self.twoStageRender  = False
+            self.softwareMode    = True
             self.resolutionLimit = 0
             
         elif self.performance == 3:

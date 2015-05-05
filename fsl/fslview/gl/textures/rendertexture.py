@@ -235,7 +235,4 @@ class ImageRenderTexture(RenderTexture):
         width  = int(round(width))
         height = int(round(height))
 
-        print 'RenderTexture zax {}: {}, {}'.format(
-            3 - self.__xax - self.__yax, width, height)
-
         RenderTexture.setSize(self, width, height)

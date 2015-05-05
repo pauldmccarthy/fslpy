@@ -29,12 +29,12 @@ class GLLineVector(glvector.GLVector):
 
         self.opts = display.getDisplayOpts()
 
-        self.__generateLineVertices()
-
         def vertexUpdate(*a):
-            self.__generateLineVertices()
-            self.updateShaderState()
-            self.onUpdate()
+            
+            if display.softwareMode:
+                self.__generateLineVertices()
+                self.updateShaderState()
+                self.onUpdate()
 
         display  .addListener('transform',  self.name, vertexUpdate)
         display  .addListener('resolution', self.name, vertexUpdate)
@@ -219,6 +219,12 @@ class GLLineVector(glvector.GLVector):
 
 
     def compileShaders(self):
+        
+        if self.display.softwareMode:
+            self.__generateLineVertices()
+        else:
+            GLLineVector.__vertices.pop(self.image, None)
+            
         fslgl.gllinevector_funcs.compileShaders(self)
         
 
