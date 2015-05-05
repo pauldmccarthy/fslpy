@@ -100,6 +100,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Arrow keys on number widgets
 ** Buffer sharing 
 A gl/buffers.py module which checks for buffer capability. If buffer-capable,
 vertex data is copied to a buffer, and the buffer name/ID returned. Otherwise,
