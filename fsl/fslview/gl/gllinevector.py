@@ -130,10 +130,6 @@ class GLLineVector(glvector.GLVector):
         for i in range(data.shape[2]):
             vertices[:, :, i, :, 2] += starts[2] + i * steps[2]
 
-        self.voxelVertices = vertices
-        self.sampleStarts  = starts
-        self.sampleSteps   = steps
-
         GLLineVector.__vertices[image] = vertices, starts, steps, newHash
 
 
@@ -144,9 +140,8 @@ class GLLineVector(glvector.GLVector):
         xax      = self.xax
         yax      = self.yax
         zax      = self.zax
-        vertices = self.voxelVertices
-        starts   = self.sampleStarts
-        steps    = self.sampleSteps
+        
+        vertices, starts, steps, _ = GLLineVector.__vertices[image]
 
         # If in id/pixdim space, the display
         # coordinate system axes are parallel
