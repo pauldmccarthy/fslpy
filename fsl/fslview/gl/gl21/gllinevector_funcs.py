@@ -199,7 +199,7 @@ def hardwareDraw(self, zpos, xform=None):
     vertices = vertices.ravel('C')
 
     if xform is None: xform = v2dMat
-    else:             xform = transform.concat(xform, v2dMat)
+    else:             xform = transform.concat(v2dMat, xform)
     
     xform = np.array(xform, dtype=np.float32).ravel('C') 
     gl.glUniformMatrix4fv(self.voxToDisplayMatPos, 1, False, xform)
