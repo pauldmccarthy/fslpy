@@ -111,7 +111,7 @@ def updateShaderState(self):
     if not display.softwareMode:
         
         directed  = opts.directed
-        imageDims = self.image.shape[:3]
+        imageDims = self.image.pixdim[:3]
         d2vMat    = display.getTransform('display', 'voxel')
         v2dMat    = display.getTransform('voxel',   'display')
 

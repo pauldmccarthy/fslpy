@@ -102,6 +102,12 @@ void main(void) {
   vector /= 2 * length(vector);
 
   /*
+   * Scale the vector by the minimum voxel length,
+   * so it is a unit vector within real world space 
+   */
+  vector /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
+
+  /*
    * Vertices are coming in as line pairs - flip
    * every second vertex about the origin
    */
@@ -109,12 +115,6 @@ void main(void) {
     if (directed) vector = vec3(0, 0, 0);
     else          vector = -vector;
   }
-
-  /*
-   * Scale the vector by the minimum voxel length,
-   * so it is a unit vector within real world space 
-   */
-  vector /= imageDims / min(imageDims.x, min(imageDims.y, imageDims.z));
 
   /*
    * Output the final vertex position - offset
