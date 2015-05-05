@@ -182,7 +182,9 @@ def hardwareDraw(self, zpos, xform=None):
 
     if display.transform == 'id':
         resolution = resolution / min(image.pixdim[:3])
-    
+    elif display.transform == 'pixdim':
+        resolution = map(lambda r, p: max(r, p), resolution, image.pixdim[:3])
+
     vertices = globject.calculateSamplePoints(
         image.shape,
         resolution,
