@@ -156,7 +156,7 @@ class GLLineVector(glvector.GLVector):
 
             # The voxel vertex matrix may have
             # been sub-sampled (see the
-            # __generateLineVertices method),
+            # generateLineVertices method),
             # so we need to transform the image
             # data voxel coordinates to the
             # sub-sampled data voxel coordinates.

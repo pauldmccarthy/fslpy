@@ -36,8 +36,12 @@ def init(self):
     display = self.display
     opts    = self.opts
 
-    display.addListener('resolution', self.name, updateVertices)
-    opts   .addListener('directed',   self.name, updateVertices)
+    def vertexUpdate(*a):
+        updateVertices(self)
+        self.onUpdate()
+
+    display.addListener('resolution', self.name, vertexUpdate)
+    opts   .addListener('directed',   self.name, vertexUpdate)
 
 
 def destroy(self):
@@ -69,7 +73,7 @@ def compileShaders(self):
     self.fragmentProgram = fragmentProgram
 
 
-def updateVertices(self, *a):
+def updateVertices(self):
     
     image   = self.image
     display = self.display
