@@ -56,6 +56,8 @@ def destroy(self):
     self.display.removeListener('resolution', self.name)
     self.opts   .removeListener('directed',   self.name)
 
+    _vertices.pop(self.image, None)
+
 
 def compileShaders(self):
     
