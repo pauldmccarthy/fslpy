@@ -21,59 +21,24 @@ log = logging.getLogger(__name__)
 class GLLineVector(glvector.GLVector):
 
 
-    __vertices = {}
-
-
     def __init__(self, image, display):
+        
         glvector.GLVector.__init__(self, image, display)
-
+        
         self.opts = display.getDisplayOpts()
-
-        def vertexUpdate(*a):
-            
-            if display.softwareMode:
-                self.__generateLineVertices()
-                self.updateShaderState()
-                self.onUpdate()
-
-        display  .addListener('transform',  self.name, vertexUpdate)
-        display  .addListener('resolution', self.name, vertexUpdate)
-        self.opts.addListener('directed',   self.name, vertexUpdate)
-
+        
         fslgl.gllinevector_funcs.init(self)
 
         
     def destroy(self):
-        
         fslgl.gllinevector_funcs.destroy(self)
-        self.display.removeListener('transform',  self.name)
-        self.display.removeListener('resolution', self.name)
-        self.opts   .removeListener('directed',   self.name)
 
 
-    def __generateLineVertices(self):
+    def generateLineVertices(self):
 
         display = self.display
         opts    = self.opts
         image   = self.image
-
-        vertices, starts, steps, oldHash = GLLineVector.__vertices.get(
-            image, (None, None, None, None))
-
-        newHash = (hash(display.transform)  ^
-                   hash(display.resolution) ^
-                   hash(opts   .directed))
-
-        if (vertices is not None) and (oldHash == newHash):
-            
-            log.debug('Using previously calculated line '
-                      'vertices for {}'.format(image))
-            self.voxelVertices = vertices
-            self.sampleStarts  = starts
-            self.sampleSteps   = steps 
-            return
-
-        log.debug('Re-generating line vertices for {}'.format(image))
 
         # Extract a sub-sample of the vector image
         # at the current display resolution
@@ -130,19 +95,17 @@ class GLLineVector(glvector.GLVector):
         for i in range(data.shape[2]):
             vertices[:, :, i, :, 2] += starts[2] + i * steps[2]
 
-        GLLineVector.__vertices[image] = vertices, starts, steps, newHash
+        return vertices, starts, steps
 
 
-    def getVertices(self, zpos):
+    def getVertices(self, zpos, vertices, starts, steps):
 
-        display  = self.display
-        image    = self.image
-        xax      = self.xax
-        yax      = self.yax
-        zax      = self.zax
+        display = self.display
+        image   = self.image
+        xax     = self.xax
+        yax     = self.yax
+        zax     = self.zax
         
-        vertices, starts, steps, _ = GLLineVector.__vertices[image]
-
         # If in id/pixdim space, the display
         # coordinate system axes are parallel
         # to the voxeld coordinate system axes
@@ -214,12 +177,6 @@ class GLLineVector(glvector.GLVector):
 
 
     def compileShaders(self):
-        
-        if self.display.softwareMode:
-            self.__generateLineVertices()
-        else:
-            GLLineVector.__vertices.pop(self.image, None)
-            
         fslgl.gllinevector_funcs.compileShaders(self)
         
 

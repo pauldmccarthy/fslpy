@@ -5,6 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
 import numpy                   as np
 import OpenGL.GL               as gl
 import OpenGL.raw.GL._types    as gltypes
@@ -14,11 +16,32 @@ import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.shaders  as shaders
 
 
+log = logging.getLogger(__name__)
+
+
+_vertices = {}
+
+
 def init(self):
     
     self.shaders        = None
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.vertexIDBuffer = gl.glGenBuffers(1)
+    
+    display = self.display
+    opts    = self.opts
+
+    def vertexUpdate(*a):
+        
+        updateVertices(self)
+        
+        if display.softwareMode:
+            self.updateShaderState()
+            self.onUpdate()
+
+    display.addListener('transform',  self.name, vertexUpdate)
+    display.addListener('resolution', self.name, vertexUpdate)
+    opts   .addListener('directed',   self.name, vertexUpdate)
 
     compileShaders(   self)
     updateShaderState(self)
@@ -27,13 +50,17 @@ def init(self):
 def destroy(self):
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
-    gl.glDeleteProgram(self.shaders) 
+    gl.glDeleteProgram(self.shaders)
+
+    self.display.removeListener('transform',  self.name)
+    self.display.removeListener('resolution', self.name)
+    self.opts   .removeListener('directed',   self.name)
 
 
 def compileShaders(self):
     
     if self.shaders is not None:
-        gl.glDeleteProgram(self.shaders) 
+        gl.glDeleteProgram(self.shaders)
     
     vertShaderSrc = shaders.getVertexShader(  self,
                                               sw=self.display.softwareMode)
@@ -73,9 +100,11 @@ def compileShaders(self):
     self.displayToVoxMatPos = gl.glGetUniformLocation(self.shaders,
                                                       'displayToVoxMat') 
     self.cmapXformPos       = gl.glGetUniformLocation(self.shaders,
-                                                      'cmapXform')     
+                                                      'cmapXform')
+    
+    updateVertices(self)
 
-
+    
 def updateShaderState(self):
     
     display = self.display
@@ -128,8 +157,48 @@ def updateShaderState(self):
     gl.glUseProgram(0) 
 
 
-def preDraw(self):
+def updateVertices(self):
+
+    image   = self.image
+    display = self.display
+    opts    = self.opts
+
+    if not display.softwareMode:
+        log.debug('Clearing any cached line vertices for {}'.format(image))
+        _vertices.pop(image, None)
+        return
     
+    vertices, starts, steps, oldHash = _vertices.get(
+        image, (None, None, None, None))
+
+    newHash = (hash(display.transform)  ^
+               hash(display.resolution) ^
+               hash(opts   .directed))
+
+    if (vertices is not None) and (oldHash == newHash):
+        
+        log.debug('Using previously calculated line '
+                  'vertices for {}'.format(image))
+        print 'Using previously calculated line '\
+                  'vertices for {}'.format(image)
+        self.lineVertices = vertices
+        self.sampleStarts = starts
+        self.sampleSteps  = steps
+        return
+
+    log.debug('Re-generating line vertices for {}'.format(image))
+    print 'Re-generating line vertices for {}'.format(image)
+
+    vertices, starts, steps = self.generateLineVertices()
+
+    _vertices[image] = vertices, starts, steps, newHash
+    
+    self.lineVertices = vertices
+    self.sampleStarts = starts
+    self.sampleSteps  = steps
+
+
+def preDraw(self):
     gl.glUseProgram(self.shaders)
 
 
@@ -141,7 +210,11 @@ def draw(self, zpos, xform=None):
 def softwareDraw(self, zpos, xform=None):
 
     opts     = self.displayOpts
-    vertices = self.getVertices(zpos)
+    vertices = self.getVertices(
+        zpos,
+        self.lineVertices,
+        self.sampleStarts,
+        self.sampleSteps)
 
     vertices = vertices.ravel('C') 
 
