@@ -179,15 +179,12 @@ def updateVertices(self):
         
         log.debug('Using previously calculated line '
                   'vertices for {}'.format(image))
-        print 'Using previously calculated line '\
-                  'vertices for {}'.format(image)
         self.lineVertices = vertices
         self.sampleStarts = starts
         self.sampleSteps  = steps
         return
 
     log.debug('Re-generating line vertices for {}'.format(image))
-    print 'Re-generating line vertices for {}'.format(image)
 
     vertices, starts, steps = self.generateLineVertices()
 

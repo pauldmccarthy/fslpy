@@ -5,10 +5,14 @@
 # Inputs:
 #    state.matrix.mvp
 #    vertex.position
+#    vertex.texcoord[0]
+#    vertex.texcoord[1]
 #
 #
 # Outputs:
 #    result.position
+#    result.texcoord[0]
+#    result.texcoord[1]
 #
 
 # Transform the vertex position into display coordinates
