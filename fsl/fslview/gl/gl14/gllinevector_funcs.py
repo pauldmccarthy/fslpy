@@ -72,6 +72,8 @@ def compileShaders(self):
     self.vertexProgram   = vertexProgram
     self.fragmentProgram = fragmentProgram
 
+    updateVertices(self)
+
 
 def updateVertices(self):
     
@@ -79,31 +81,41 @@ def updateVertices(self):
     display = self.display
     opts    = self.opts
     
-    vertices, starts, steps, oldHash = _vertices.get(
-        image, (None, None, None, None))
+    vertices, texCoords, starts, steps, oldHash = _vertices.get(
+        image, (None, None, None, None, None))
 
-    newHash = (hash(display.transform)  ^
-               hash(display.resolution) ^
+    newHash = (hash(display.transform)    ^
+               hash(display.resolution)   ^
+               hash(display.softwareMode) ^
                hash(opts   .directed))
 
     if (vertices is not None) and (oldHash == newHash):
         
         log.debug('Using previously calculated line '
                   'vertices for {}'.format(image))
-        self.lineVertices = vertices
-        self.sampleStarts = starts
-        self.sampleSteps  = steps
+        self.lineVertices  = vertices
+        self.lineTexCoords = texCoords
+        self.sampleStarts  = starts
+        self.sampleSteps   = steps
         return
 
     log.debug('Re-generating line vertices for {}'.format(image))
 
     vertices, starts, steps = self.generateLineVertices()
 
-    _vertices[image] = vertices, starts, steps, newHash
-    
-    self.lineVertices = vertices
-    self.sampleStarts = starts
-    self.sampleSteps  = steps 
+    if display.softwareMode:
+        texCoords = vertices.round()
+        texCoords = (texCoords + 0.5) / np.array(image.shape[:3],
+                                                 dtype=np.float32)
+    else:
+        texCoords = None
+
+    _vertices[image] = vertices, texCoords, starts, steps, newHash
+
+    self.lineVertices  = vertices
+    self.lineTexCoords = texCoords
+    self.sampleStarts  = starts
+    self.sampleSteps   = steps 
 
 
 def updateShaderState(self):
@@ -142,6 +154,9 @@ def preDraw(self):
 
     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 
+    if self.display.softwareMode:
+        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
     arbvp.glBindProgramARB(arbvp.GL_VERTEX_PROGRAM_ARB,
                            self.vertexProgram)
     arbfp.glBindProgramARB(arbfp.GL_FRAGMENT_PROGRAM_ARB,
@@ -150,12 +165,23 @@ def preDraw(self):
 
 def draw(self, zpos, xform=None):
 
-    opts     = self.displayOpts
-    vertices = self.getVertices(
+    display          = self.display
+    opts             = self.displayOpts
+    vertices, coords = self.getVertices(
         zpos,
         self.lineVertices,
         self.sampleStarts,
         self.sampleSteps)
+
+    if display.softwareMode:
+        texCoords = self.lineTexCoords[coords[0],
+                                       coords[1],
+                                       coords[2],
+                                       :, :]
+
+        texCoords = texCoords.ravel('C')
+        gl.glClientActiveTexture(gl.GL_TEXTURE0)
+        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
     vertices = vertices.ravel('C')
     v2d      = self.display.getTransform('voxel', 'display')
@@ -185,3 +211,6 @@ def postDraw(self):
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
+    if self.display.softwareMode:
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)

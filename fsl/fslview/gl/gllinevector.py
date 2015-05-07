@@ -120,17 +120,13 @@ class GLLineVector(glvector.GLVector):
             # Return no vertices if the requested z
             # position is out of the image bounds
             if zpos < 0 or zpos >= image.shape[zax]:
-                return np.array([], dtype=np.float32)
+                return (np.array([], dtype=np.float32),
+                        np.array([], dtype=np.float32))
 
             # Extract a slice at the requested
             # z position from the vertex matrix
-            slices      = [slice(None)] * 3
-            slices[zax] = np.floor((zpos - starts[zax]) / steps[zax])
-
-            coords = vertices[slices[0],
-                              slices[1],
-                              slices[2],
-                              :, :]
+            coords      = [slice(None)] * 3
+            coords[zax] = np.floor((zpos - starts[zax]) / steps[zax])
 
         # If in affine space, the display
         # coordinate system axes may not
@@ -166,14 +162,15 @@ class GLLineVector(glvector.GLVector):
             shape  = vertices.shape[:3]
             coords = np.array(coords.round(), dtype=np.int32)
             coords = coords[((coords >= [0, 0, 0]) &
-                             (coords <  shape)).all(1), :]
+                             (coords <  shape)).all(1), :].T
 
-            # pull out the vertex data
-            coords = vertices[coords[:, 0],
-                              coords[:, 1],
-                              coords[:, 2],
-                              :, :] 
-        return coords
+        # pull out the vertex data
+        vertices = vertices[coords[0],
+                            coords[1],
+                            coords[2],
+                            :, :]
+        
+        return vertices, coords
 
 
     def compileShaders(self):

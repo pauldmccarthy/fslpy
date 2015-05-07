@@ -5,6 +5,7 @@
 # Inputs:
 #    state.matrix.mvp
 #    vertex.position
+#    vertex.texcoord[0]
 #
 #
 # Outputs:

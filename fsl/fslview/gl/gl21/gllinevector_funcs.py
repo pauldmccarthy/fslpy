@@ -208,8 +208,8 @@ def draw(self, zpos, xform=None):
 
 def softwareDraw(self, zpos, xform=None):
 
-    opts     = self.displayOpts
-    vertices = self.getVertices(
+    opts        = self.displayOpts
+    vertices, _ = self.getVertices(
         zpos,
         self.lineVertices,
         self.sampleStarts,
