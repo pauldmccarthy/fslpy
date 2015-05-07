@@ -26,6 +26,7 @@ def init(self):
     
     self.shaders        = None
     self.vertexBuffer   = gl.glGenBuffers(1)
+    self.texCoordBuffer = gl.glGenBuffers(1)
     self.vertexIDBuffer = gl.glGenBuffers(1)
     
     display = self.display
@@ -50,6 +51,7 @@ def init(self):
 def destroy(self):
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexBuffer))
     gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexIDBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
     gl.glDeleteProgram(self.shaders)
 
     self.display.removeListener('transform',  self.name)
@@ -74,7 +76,9 @@ def compileShaders(self):
     self.vertexPos          = gl.glGetAttribLocation( self.shaders,
                                                       'vertex')
     self.vertexIDPos        = gl.glGetAttribLocation( self.shaders,
-                                                      'vertexID') 
+                                                      'vertexID')
+    self.texCoordPos        = gl.glGetAttribLocation( self.shaders,
+                                                      'texCoord') 
     self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
                                                       'imageShape')
     self.imageDimsPos       = gl.glGetUniformLocation(self.shaders,
@@ -170,8 +174,8 @@ def updateVertices(self):
         _vertices.pop(image, None)
         return
     
-    vertices, starts, steps, oldHash = _vertices.get(
-        image, (None, None, None, None))
+    vertices, texCoords, starts, steps, oldHash = _vertices.get(
+        image, (None, None, None, None, None))
 
     newHash = (hash(display.transform)  ^
                hash(display.resolution) ^
@@ -181,20 +185,26 @@ def updateVertices(self):
         
         log.debug('Using previously calculated line '
                   'vertices for {}'.format(image))
-        self.lineVertices = vertices
-        self.sampleStarts = starts
-        self.sampleSteps  = steps
+        self.lineVertices  = vertices
+        self.lineTexCoords = texCoords
+        self.sampleStarts  = starts
+        self.sampleSteps   = steps
         return
 
     log.debug('Re-generating line vertices for {}'.format(image))
 
     vertices, starts, steps = self.generateLineVertices()
 
-    _vertices[image] = vertices, starts, steps, newHash
+    texCoords = vertices.round()
+    texCoords = (texCoords + 0.5) / np.array(image.shape[:3],
+                                             dtype=np.float32) 
+
+    _vertices[image] = vertices, texCoords, starts, steps, newHash
     
-    self.lineVertices = vertices
-    self.sampleStarts = starts
-    self.sampleSteps  = steps
+    self.lineVertices  = vertices
+    self.lineTexCoords = texCoords
+    self.sampleStarts  = starts
+    self.sampleSteps   = steps
 
 
 def preDraw(self):
@@ -208,14 +218,21 @@ def draw(self, zpos, xform=None):
 
 def softwareDraw(self, zpos, xform=None):
 
-    opts        = self.displayOpts
-    vertices, _ = self.getVertices(
+    opts             = self.displayOpts
+    vertices, coords = self.getVertices(
         zpos,
         self.lineVertices,
         self.sampleStarts,
         self.sampleSteps)
 
-    vertices = vertices.ravel('C') 
+    texCoords = self.lineTexCoords[coords[0],
+                                   coords[1],
+                                   coords[2],
+                                   :, :]
+
+    vertices  = vertices .ravel('C')
+    texCoords = texCoords.ravel('C')
+ 
 
     v2d = self.display.getTransform('voxel', 'display')
 
@@ -227,14 +244,19 @@ def softwareDraw(self, zpos, xform=None):
 
     # upload the vertices
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-    
     gl.glBufferData(
         gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
-    
     gl.glVertexAttribPointer(
         self.vertexPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-    
-    gl.glEnableVertexAttribArray(self.vertexPos) 
+    gl.glEnableVertexAttribArray(self.vertexPos)
+
+    # and the texture coordinates
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.texCoordBuffer)
+    gl.glBufferData(
+        gl.GL_ARRAY_BUFFER, texCoords.nbytes, texCoords, gl.GL_STATIC_DRAW)
+    gl.glVertexAttribPointer(
+        self.texCoordPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+    gl.glEnableVertexAttribArray(self.texCoordPos) 
         
     gl.glLineWidth(opts.lineWidth)
     gl.glDrawArrays(gl.GL_LINES, 0, vertices.size / 3)
