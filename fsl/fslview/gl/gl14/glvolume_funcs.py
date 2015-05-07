@@ -105,6 +105,8 @@ def updateShaderState(self):
     clipHi = opts.clippingRange[1]             * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
+
+    shaders.setVertexProgramVector(  0, shape + [0])
     
     shaders.setFragmentProgramMatrix(0, voxValXform)
     shaders.setFragmentProgramVector(4, shape + [0])
@@ -124,10 +126,6 @@ def preDraw(self):
 
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-
-    if not self.display.softwareMode:
-        gl.glClientActiveTexture(gl.GL_TEXTURE1)
-        gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
     # enable the vertex and fragment programs
     gl.glEnable(arbvp.GL_VERTEX_PROGRAM_ARB) 
@@ -149,16 +147,11 @@ def draw(self, zpos, xform=None):
     # Vox coords are texture 1 coords
     vertices  = np.array(vertices,  dtype=np.float32).ravel('C')
     texCoords = np.array(texCoords, dtype=np.float32).ravel('C')
-    voxCoords = np.array(voxCoords, dtype=np.float32).ravel('C')
 
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
 
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
-
-    if not self.display.softwareMode:
-        gl.glClientActiveTexture(gl.GL_TEXTURE1)
-        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
     
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
@@ -170,18 +163,15 @@ def drawAll(self, zposes, xforms):
 
     nslices   = len(zposes)
     vertices  = np.zeros((nslices * 6, 3), dtype=np.float32)
-    voxCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
     texCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
 
     for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
         
         v, vc, tc = self.generateVertices(zpos, xform)
         vertices[ i * 6: i * 6 + 6, :] = v
-        voxCoords[i * 6: i * 6 + 6, :] = vc
         texCoords[i * 6: i * 6 + 6, :] = tc
 
     vertices  = vertices .ravel('C')
-    voxCoords = voxCoords.ravel('C')
     texCoords = texCoords.ravel('C')
 
     gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
@@ -189,10 +179,6 @@ def drawAll(self, zposes, xforms):
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
-    if not self.display.softwareMode:
-        gl.glClientActiveTexture(gl.GL_TEXTURE1)
-        gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, voxCoords)
-    
     gl.glDrawArrays(gl.GL_TRIANGLES, 0, nslices * 6) 
 
 
@@ -204,10 +190,6 @@ def postDraw(self):
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
     gl.glClientActiveTexture(gl.GL_TEXTURE0)
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-
-    if not self.display.softwareMode:
-        gl.glClientActiveTexture(gl.GL_TEXTURE1)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB)
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB)
