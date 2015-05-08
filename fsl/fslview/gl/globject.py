@@ -103,7 +103,7 @@ class GLObject(object):
                                   'implemented by GLObject subclasses')
 
 
-    def getDataResolution(self):
+    def getDataResolution(self, xax, yax):
         return None
 
     
@@ -237,7 +237,7 @@ class GLImageObject(GLObject):
         return self.display.getDisplayBounds()
 
 
-    def getDataResolution(self):
+    def getDataResolution(self, xax, yax):
         
         if self.display.transform in ('id', 'pixdim'):
             return self.image.shape[:3]

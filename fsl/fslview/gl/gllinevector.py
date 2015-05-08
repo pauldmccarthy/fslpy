@@ -34,6 +34,15 @@ class GLLineVector(glvector.GLVector):
         fslgl.gllinevector_funcs.destroy(self)
 
 
+    def getDataResolution(self, xax, yax):
+
+        res       = list(glvector.GLVector.getDataResolution(self, xax, yax))
+        res[xax] *= 16
+        res[yax] *= 16
+        
+        return res
+
+
     def generateLineVertices(self):
 
         display = self.display

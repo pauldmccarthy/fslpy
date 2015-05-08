@@ -28,9 +28,9 @@ class RenderTextureStack(object):
             type(globj).__name__, id(self))
 
         self.__globj              = globj
-        self.__maxNumTextures     = 512
-        self.__maxWidth           = 512
-        self.__maxHeight          = 512
+        self.__maxNumTextures     = 256
+        self.__maxWidth           = 1024
+        self.__maxHeight          = 1024
         self.__defaultNumTextures = 64
         self.__defaultWidth       = 256
         self.__defaultHeight      = 256
@@ -121,10 +121,13 @@ class RenderTextureStack(object):
         self.__zax = zax
 
         lo, hi = self.__globj.getDisplayBounds()
-        res    = self.__globj.getDataResolution()
+        res    = self.__globj.getDataResolution(xax, yax)
 
         if res is not None: numTextures = res[zax]
         else:               numTextures = self.__defaultNumTextures
+
+        if numTextures > self.__maxNumTextures:
+            numTextures = self.__maxNumTextures
 
         self.__zmin = lo[zax]
         self.__zmax = hi[zax]
@@ -158,7 +161,7 @@ class RenderTextureStack(object):
         zax  = self.__zax
 
         lo, hi = self.__globj.getDisplayBounds()
-        res    = self.__globj.getDataResolution()
+        res    = self.__globj.getDataResolution(xax, yax)
 
         if res is not None:
             width  = res[xax]
@@ -166,6 +169,9 @@ class RenderTextureStack(object):
         else:
             width  = self.__defaultWidth
             height = self.__defaultHeight
+
+        if width  > self.__maxWidth:  width  = self.__maxWidth
+        if height > self.__maxHeight: height = self.__maxHeight
 
         log.debug('Refreshing render texture for slice {} (zpos {}, '
                   'zax {}): {} x {}'.format(idx, zpos, self.__zax,

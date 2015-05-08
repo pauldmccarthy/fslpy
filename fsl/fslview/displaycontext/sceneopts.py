@@ -110,8 +110,8 @@ class SceneOpts(props.HasProperties):
             self.resolutionLimit = 0
             
         elif self.performance == 4:
-            self.renderMode      = 'offscreen'
-            self.softwareMode    = False
+            self.renderMode      = 'onscreen'
+            self.softwareMode    = True
             self.resolutionLimit = 0
 
         elif self.performance == 3:
