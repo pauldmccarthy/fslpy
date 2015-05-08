@@ -244,9 +244,11 @@ class Texture2D(Texture):
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
  
         
-    def drawOnBounds(self, xmin, xmax, ymin, ymax, xax, yax):
+    def drawOnBounds(self, zpos, xmin, xmax, ymin, ymax, xax, yax):
 
-        vertices = np.zeros((6, 3), dtype=np.float32)
+        zax              = 3 - xax - yax
+        vertices         = np.zeros((6, 3), dtype=np.float32)
+        vertices[:, zax] = zpos
 
         vertices[ 0, [xax, yax]] = [xmin, ymin]
         vertices[ 1, [xax, yax]] = [xmin, ymax]

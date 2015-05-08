@@ -99,7 +99,7 @@ class SceneOpts(props.HasProperties):
     def _onPerformanceChange(self, *a):
         """Called when the :attr:`performance` property changes.
 
-        Changes the values of the :attr:`twoStageRender`, :attr:`softwareMode`
+        Changes the values of the :attr:`renderMode`, :attr:`softwareMode`
         and :attr:`resolutionLimit` properties accoridng to the performance
         setting.
         """

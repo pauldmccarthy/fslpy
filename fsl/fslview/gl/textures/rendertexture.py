@@ -13,7 +13,8 @@ import OpenGL.GL.EXT.framebuffer_object as glfbo
 
 import numpy                            as np
 
-import texture
+import                              texture
+import fsl.fslview.gl.glroutines as glroutines
 
 
 log = logging.getLogger(__name__)
@@ -55,28 +56,15 @@ class RenderTexture(texture.Texture2D):
                                    self.__frameBuffer) 
 
 
-    def setRenderViewport(self, xax, yax, xmin, xmax, ymin, ymax):
+    def setRenderViewport(self, xax, yax, zpos, lo, hi):
 
         width, height = self.getSize()
-        zax           = 3 - xax - yax
         
         self.__oldSize    = gl.glGetIntegerv(gl.GL_VIEWPORT)
         self.__oldProjMat = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
         self.__oldMVMat   = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
-        
-        gl.glViewport(0, 0, width, height)
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
 
-        gl.glOrtho(xmin, xmax, ymin, ymax, -5000, 5000)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        
-        if zax == 0:
-            gl.glRotatef(-90, 1, 0, 0)
-            gl.glRotatef(-90, 0, 0, 1)
-        elif zax == 1:
-            gl.glRotatef(270, 1, 0, 0)
+        glroutines.show2D(xax, yax, width, height, zpos, lo, hi)
             
 
     def restoreViewport(self):

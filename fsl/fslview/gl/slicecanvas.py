@@ -29,6 +29,7 @@ import OpenGL.GL              as gl
 import props
 
 import fsl.data.image             as fslimage
+import fsl.fslview.gl.glroutines  as glroutines
 import fsl.fslview.gl.globject    as globject
 import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations
@@ -735,13 +736,17 @@ class SliceCanvas(props.HasProperties):
         :arg zmin: Minimum z (depth) location
         :arg zmax: Maximum z location
         """
+
+        xax = self.xax
+        yax = self.yax
+        zax = self.zax
         
         if xmin is None: xmin = self.displayBounds.xlo
         if xmax is None: xmax = self.displayBounds.xhi
         if ymin is None: ymin = self.displayBounds.ylo
         if ymax is None: ymax = self.displayBounds.yhi
-        if zmin is None: zmin = self.displayCtx.bounds.getLo(self.zax)
-        if zmax is None: zmax = self.displayCtx.bounds.getHi(self.zax)
+        if zmin is None: zmin = self.displayCtx.bounds.getLo(zax)
+        if zmax is None: zmax = self.displayCtx.bounds.getHi(zax)
 
         # If there are no images to be displayed,
         # or no space to draw, do nothing
@@ -769,46 +774,19 @@ class SliceCanvas(props.HasProperties):
                   'Y {: 5.1f} - {: 5.1f}'.format(
                       width, height, xmin, xmax, ymin, ymax))
 
-        # set up 2D orthographic drawing
-        gl.glViewport(0, 0, width, height)
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-
         # Flip the viewport if necessary
         if self.invertX: xmin, xmax = xmax, xmin
         if self.invertY: ymin, ymax = ymax, ymin
-        
-        gl.glOrtho(xmin,        xmax,
-                   ymin,        ymax,
-                   zmin - 1000, zmax + 1000)
-        # I don't know why the above +/-1000 is necessary :(
-        # The '1000' is empirically arbitrary, but it seems
-        # that I need to extend the depth clipping range
-        # beyond the range of the data. This is despite the
-        # fact that below, I'm actually translating the
-        # displayed slice to Z=0! I don't understand OpenGL
-        # sometimes. Most of the time.
 
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
+        lo = [None] * 3
+        hi = [None] * 3
 
-        # Rotate world space so the displayed slice
-        # is visible and correctly oriented
-        # TODO There's got to be a more generic way
-        # to perform this rotation. This will break
-        # if I add functionality allowing the user
-        # to specifty the x/y axes on initialisation.
-        if self.zax == 0:
-            gl.glRotatef(-90, 1, 0, 0)
-            gl.glRotatef(-90, 0, 0, 1)
-            
-        elif self.zax == 1:
-            gl.glRotatef(270, 1, 0, 0)
+        lo[xax], hi[xax] = xmin, xmax
+        lo[yax], hi[yax] = ymin, ymax
+        lo[zax], hi[zax] = zmin, zmax
 
-        # move the currently displayed slice to screen Z coord 0
-        trans = [0, 0, 0]
-        trans[self.zax] = -self.pos.z
-        gl.glTranslatef(*trans)
+        # set up 2D orthographic drawing
+        glroutines.show2D(xax, yax, width, height, self.pos.z, lo, hi)
 
         
     def _drawCursor(self):
@@ -869,7 +847,7 @@ class SliceCanvas(props.HasProperties):
                           image, xmin, xmax, ymin, ymax))
 
             renderTexture.drawOnBounds(
-                xmin, xmax, ymin, ymax, self.xax, self.yax)         
+                self.pos.z, xmin, xmax, ymin, ymax, self.xax, self.yax) 
 
             
     def _draw(self, *a):
@@ -927,12 +905,8 @@ class SliceCanvas(props.HasProperties):
 
                 renderTexture.bindAsRenderTarget()
                 renderTexture.setRenderViewport(
-                    self.xax,
-                    self.yax, 
-                    lo[self.xax],
-                    hi[self.xax],
-                    lo[self.yax],
-                    hi[self.yax])
+                    self.xax, self.yax, self.pos.z, lo, hi)
+                
                 gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
                 globj.preDraw()

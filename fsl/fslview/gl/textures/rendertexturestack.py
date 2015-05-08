@@ -11,8 +11,9 @@ import              wx
 import numpy     as np
 import OpenGL.GL as gl
 
-import fsl.utils.transform as transform
-import                        rendertexture
+import fsl.fslview.gl.glroutines as glroutines
+import fsl.utils.transform       as transform
+import                              rendertexture
 
 
 log = logging.getLogger(__name__)
@@ -77,7 +78,14 @@ class RenderTextureStack(object):
         zmin  = self.__zmin
         zmax  = self.__zmax
         ntexs = len(self.__textures)
-        return int(ntexs * (zpos - zmin) / (zmax - zmin))
+        index = ntexs * (zpos - zmin) / (zmax - zmin)
+
+        limit = len(self.__textures) - 1
+
+        if index > limit and index <= limit + 1:
+            index = limit
+
+        return int(index)
 
     
     def __indexToZpos(self, index):
@@ -183,24 +191,7 @@ class RenderTextureStack(object):
         oldProjMat    = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
         oldMVMat      = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
 
-        gl.glViewport(0, 0, width, height)
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-
-        gl.glOrtho(lo[xax], hi[xax],
-                   lo[yax], hi[yax],
-                   -1,      1)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        if zax == 0:
-            gl.glRotatef(-90, 1, 0, 0)
-            gl.glRotatef(-90, 0, 0, 1)
-        elif zax == 1:
-            gl.glRotatef(270, 1, 0, 0)
-
-        trans = [0, 0, 0]
-        trans[zax] = -zpos
-        gl.glTranslatef(*trans)                
+        glroutines.show2D(xax, yax, width, height, zpos, lo, hi)
 
         tex.bindAsRenderTarget()
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
