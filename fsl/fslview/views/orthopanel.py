@@ -110,9 +110,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.bindProps('zoom', sceneOpts, 'yzoom')
         self._zcanvas.bindProps('zoom', sceneOpts, 'zzoom')
 
-        self._xcanvas.bindProps('twoStageRender',  sceneOpts)
-        self._ycanvas.bindProps('twoStageRender',  sceneOpts)
-        self._zcanvas.bindProps('twoStageRender',  sceneOpts)
+        self._xcanvas.bindProps('renderMode',      sceneOpts)
+        self._ycanvas.bindProps('renderMode',      sceneOpts)
+        self._zcanvas.bindProps('renderMode',      sceneOpts)
 
         self._xcanvas.bindProps('softwareMode',    sceneOpts)
         self._ycanvas.bindProps('softwareMode',    sceneOpts)

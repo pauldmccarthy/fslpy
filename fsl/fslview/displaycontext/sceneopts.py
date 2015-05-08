@@ -9,6 +9,7 @@ import copy
 
 import props
 
+import fsl.fslview.gl.slicecanvas     as slicecanvas
 import fsl.fslview.gl.colourbarcanvas as colourbarcanvas
 
 import fsl.data.strings as strings
@@ -56,9 +57,17 @@ class SceneOpts(props.HasProperties):
 
     See the :meth:`_onPerformanceChange` method.
     """
-                
+
+
+    resolutionLimit = copy.copy(slicecanvas.SliceCanvas.resolutionLimit)
+    """The highest resolution at which any image should be displayed.
+
+    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.resolutionLimit` and
+    :attr:`~fsl.fslview.displaycontext.display.Display.resolution`.
+    """
     
-    twoStageRender = props.Boolean(default=False)
+
+    renderMode = copy.copy(slicecanvas.SliceCanvas.renderMode)
     """Enable two-stage rendering, useful for low-performance graphics cards/
     software rendering.
 
@@ -66,15 +75,8 @@ class SceneOpts(props.HasProperties):
     """
 
 
-    resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
-    """The highest resolution at which any image should be displayed.
-
-    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.resolutionLimit` and
-    :attr:`~fsl.fslview.displaycontext.display.Display.resolution`.
-    """
-
     
-    softwareMode = props.Boolean(default=False)
+    softwareMode = copy.copy(slicecanvas.SliceCanvas.softwareMode)
     """If ``True``, all images should be displayed in a mode optimised for
     software based rendering.
 
@@ -103,26 +105,26 @@ class SceneOpts(props.HasProperties):
         """
 
         if   self.performance == 5:
-            self.twoStageRender  = False
+            self.renderMode      = 'onscreen'
             self.softwareMode    = False
             self.resolutionLimit = 0
             
         elif self.performance == 4:
-            self.twoStageRender  = False
-            self.softwareMode    = True
+            self.renderMode      = 'offscreen'
+            self.softwareMode    = False
             self.resolutionLimit = 0
-            
+
         elif self.performance == 3:
-            self.twoStageRender  = True
+            self.renderMode      = 'offscreen'
+            self.softwareMode    = True
+            self.resolutionLimit = 0 
+            
+        elif self.performance == 2:
+            self.renderMode      = 'prerender'
             self.softwareMode    = True
             self.resolutionLimit = 0
 
-        elif self.performance == 2:
-            self.twoStageRender  = True
+        elif self.performance == 1:
+            self.renderMode      = 'prerender'
             self.softwareMode    = True
             self.resolutionLimit = 1
-            
-        elif self.performance == 1:
-            self.twoStageRender  = True
-            self.softwareMode    = True
-            self.resolutionLimit = 1.5

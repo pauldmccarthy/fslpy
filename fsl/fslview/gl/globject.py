@@ -96,7 +96,16 @@ class GLObject(object):
         """
         for name, listener in self.__updateListeners.items():
             listener(self)
-                
+
+
+    def getDisplayBounds(self):
+        raise NotImplementedError('The getDisplayBounds method must be '
+                                  'implemented by GLObject subclasses')
+
+
+    def getDataResolution(self):
+        return None
+
     
     def setAxes(self, xax, yax):
         """This method is called when the display orientation for this
@@ -222,6 +231,19 @@ class GLImageObject(GLObject):
         self.image       = image
         self.display     = display
         self.displayOpts = display.getDisplayOpts()
+
+
+    def getDisplayBounds(self):
+        return self.display.getDisplayBounds()
+
+
+    def getDataResolution(self):
+        
+        if self.display.transform in ('id', 'pixdim'):
+            return self.image.shape[:3]
+        else:
+            lo, hi = self.display.getDisplayBounds()
+            return ((hi - lo) / self.display.resolution).min()
 
 
 def calculateSamplePoints(shape, resolution, xform, xax, yax):

@@ -225,6 +225,9 @@ def softwareDraw(self, zpos, xform=None):
         self.sampleStarts,
         self.sampleSteps)
 
+    if vertices.size == 0:
+        return
+
     texCoords = self.lineTexCoords[coords[0],
                                    coords[1],
                                    coords[2],
@@ -232,7 +235,6 @@ def softwareDraw(self, zpos, xform=None):
 
     vertices  = vertices .ravel('C')
     texCoords = texCoords.ravel('C')
- 
 
     v2d = self.display.getTransform('voxel', 'display')
 

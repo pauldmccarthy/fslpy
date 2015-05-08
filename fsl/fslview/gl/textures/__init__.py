@@ -82,10 +82,11 @@ def deleteTexture(texture):
 
 # All *Texture classes are made available at the
 # textures package level due to these imports
-from texture          import Texture
-from texture          import Texture2D
-from imagetexture     import ImageTexture
-from colourmaptexture import ColourMapTexture
-from selectiontexture import SelectionTexture
-from rendertexture    import RenderTexture
-from rendertexture    import ImageRenderTexture
+from texture            import Texture
+from texture            import Texture2D
+from imagetexture       import ImageTexture
+from colourmaptexture   import ColourMapTexture
+from selectiontexture   import SelectionTexture
+from rendertexture      import RenderTexture
+from rendertexture      import ImageRenderTexture
+from rendertexturestack import RenderTextureStack

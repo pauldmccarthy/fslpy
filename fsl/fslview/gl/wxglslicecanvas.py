@@ -50,14 +50,14 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
             if ev.GetEventObject() is not self:
                 return
 
-            self.removeListener('zax',            self.name)
-            self.removeListener('pos',            self.name)
-            self.removeListener('displayBounds',  self.name)
-            self.removeListener('showCursor',     self.name)
-            self.removeListener('invertX',        self.name)
-            self.removeListener('invertY',        self.name)
-            self.removeListener('zoom',           self.name)
-            self.removeListener('twoStageRender', self.name)
+            self.removeListener('zax',           self.name)
+            self.removeListener('pos',           self.name)
+            self.removeListener('displayBounds', self.name)
+            self.removeListener('showCursor',    self.name)
+            self.removeListener('invertX',       self.name)
+            self.removeListener('invertY',       self.name)
+            self.removeListener('zoom',          self.name)
+            self.removeListener('renderMode',    self.name)
             
             self.imageList .removeListener('images',     self.name)
             self.displayCtx.removeListener('bounds',     self.name)
