@@ -337,9 +337,6 @@ class SliceCanvas(props.HasProperties):
         Otherwise, creates/destroys :class:`.RenderTexture` or
         :class:`.RenderTextureStack` instances for newly added/removed images.
         """
-        
-        if self.renderMode == 'onscreen':
-            return
 
         needRefresh = False
 
@@ -350,6 +347,9 @@ class SliceCanvas(props.HasProperties):
                 self._renderTextures.pop(image)
                 texture.destroy()
                 needRefresh = True
+        
+        if self.renderMode == 'onscreen':
+            return
 
         # If any images have been added to the list,
         # create a new render textures for them
@@ -534,7 +534,7 @@ class SliceCanvas(props.HasProperties):
                     globj.destroy()
                     
                     if updateRenderTextures:
-                        tex = self._preRenderTextures.pop(globj, None)
+                        tex = self._renderTextures.pop(img, None)
                         if tex is not None:
                             tex.destroy()
 
