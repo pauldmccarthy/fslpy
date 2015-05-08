@@ -85,10 +85,12 @@ class Texture2D(Texture):
     def __init__(self, name, interp=gl.GL_NEAREST):
         Texture.__init__(self, name, 2)
 
-        self.__data   = None
-        self.__width  = None
-        self.__height = None
-        self.__interp = interp
+        self.__data      = None
+        self.__width     = None
+        self.__height    = None
+        self.__oldWidth  = None
+        self.__oldHeight = None 
+        self.__interp    = interp
 
         
     def setInterpolation(self, interp):
@@ -103,10 +105,22 @@ class Texture2D(Texture):
         This method also clears the data for this texture, if it has been
         previously set via the :meth:`setData` method.
         """
-        self.__width  = width
-        self.__height = height
-        self.__data   = None
+
+        self.__setSize(width, height)
+        self.__data = None
+        
         self.refresh()
+        
+
+    def __setSize(self, width, height):
+        """Sets the width/height attributes for this texture, and saves a
+        reference to the old width/height - see comments in the refresh
+        method.
+        """
+        self.__oldWidth  = self.__width
+        self.__oldHeight = self.__height
+        self.__width     = width
+        self.__height    = height        
 
 
     def getSize(self):
@@ -121,9 +135,9 @@ class Texture2D(Texture):
         from data shape (which is assumed to be 4*width*height).
         """
 
-        self.__data   = data
-        self.__width  = data.shape[1]
-        self.__height = data.shape[2]
+        self.__setSize(data.shape[1], data.shape[2])
+        self.__data = data
+
         self.refresh()
 
         
@@ -152,17 +166,40 @@ class Texture2D(Texture):
         data = self.__data
 
         if data is not None:
+            print data.shape, data.dtype
             data = data.ravel('F')
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D,
-                        0,
-                        gl.GL_RGBA8,
-                        self.__width,
-                        self.__height,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        data)
+        # If the width and height have not changed,
+        # then we don't need to re-define the texture.
+        if self.__width  == self.__oldWidth  and \
+           self.__height == self.__oldHeight:
+
+            # But we can use glTexSubImage2D 
+            # if we have data to upload
+            if data is not None:
+                gl.glTexSubImage2D(gl.GL_TEXTURE_2D,
+                                   0, 
+                                   0,
+                                   0,
+                                   self.__width,
+                                   self.__height,
+                                   gl.GL_RGBA,
+                                   gl.GL_UNSIGNED_BYTE,
+                                   data)
+                
+        # If the width and/or height have
+        # changed, we need to re-define
+        # the texture properties
+        else:
+            gl.glTexImage2D(gl.GL_TEXTURE_2D,
+                            0,
+                            gl.GL_RGBA8,
+                            self.__width,
+                            self.__height,
+                            0,
+                            gl.GL_RGBA,
+                            gl.GL_UNSIGNED_BYTE,
+                            data)
         self.unbindTexture()
 
         
