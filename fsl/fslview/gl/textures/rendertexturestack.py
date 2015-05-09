@@ -11,9 +11,9 @@ import              wx
 import numpy     as np
 import OpenGL.GL as gl
 
-import fsl.fslview.gl.glroutines as glroutines
-import fsl.utils.transform       as transform
-import                              rendertexture
+import fsl.fslview.gl.routines as glroutines
+import fsl.utils.transform     as transform
+import                            rendertexture
 
 
 log = logging.getLogger(__name__)

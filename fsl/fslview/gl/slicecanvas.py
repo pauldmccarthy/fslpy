@@ -29,7 +29,7 @@ import OpenGL.GL              as gl
 import props
 
 import fsl.data.image             as fslimage
-import fsl.fslview.gl.glroutines  as glroutines
+import fsl.fslview.gl.routines    as glroutines
 import fsl.fslview.gl.globject    as globject
 import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations

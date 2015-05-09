@@ -13,8 +13,8 @@ import OpenGL.GL.EXT.framebuffer_object as glfbo
 
 import numpy                            as np
 
-import                              texture
-import fsl.fslview.gl.glroutines as glroutines
+import                            texture
+import fsl.fslview.gl.routines as glroutines
 
 
 log = logging.getLogger(__name__)

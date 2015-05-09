@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# glroutines.py -
+# routines.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
