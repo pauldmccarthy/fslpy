@@ -89,7 +89,7 @@ class GLVolume(globject.GLImageObject):
         self.addDisplayListeners()
 
         # Create an image texture and a colour map texture
-        texName = '{}_{}'.format(id(self.image), type(self).__name__)
+        texName = '{}_{}'.format(type(self).__name__, id(self.image))
 
         # The image texture may be used elsewhere,
         # so we'll use the resource management

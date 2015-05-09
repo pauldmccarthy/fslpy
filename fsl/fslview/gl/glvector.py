@@ -33,13 +33,14 @@ The colour of each vector may be modulated by another image, specified by the
 
 """
 
-import numpy                   as np
-import OpenGL.GL               as gl
+import numpy                    as np
+import OpenGL.GL                as gl
 
-import fsl.data.image          as fslimage
-import fsl.fslview.colourmaps  as fslcm
-import fsl.fslview.gl.textures as textures
-import fsl.fslview.gl.globject as globject
+import fsl.data.image           as fslimage
+import fsl.fslview.colourmaps   as fslcm
+import fsl.fslview.gl.resources as glresources
+import fsl.fslview.gl.textures  as textures
+import fsl.fslview.gl.globject  as globject
 
 
 
@@ -130,9 +131,11 @@ class GLVector(globject.GLImageObject):
         else:
             realPrefilter = lambda d: prefilter(d.transpose((3, 0, 1, 2)))
 
-        self.imageTexture = textures.getTexture(
+        texName = '{}_{}'.format(type(self).__name__, id(self.image))
+        self.imageTexture = glresources.get(
+            texName,
             textures.ImageTexture,
-            '{}_{}'.format(id(self.image), type(self).__name__),
+            texName,
             self.image,
             display=self.display,
             nvals=3,
@@ -154,8 +157,11 @@ class GLVector(globject.GLImageObject):
         self.yColourTexture.destroy()
         self.zColourTexture.destroy()
 
-        textures.deleteTexture(self.imageTexture)
-        textures.deleteTexture(self.modTexture) 
+        glresources.delete(self.imageTexture.getTextureName())
+        glresources.delete(self.modTexture  .getTextureName())
+
+        self.imageTexture = None
+        self.modTexture   = None
 
         self.display    .removeListener('interpolation', self.name)
         self.display    .removeListener('softwareMode',  self.name)
@@ -192,10 +198,11 @@ class GLVector(globject.GLImageObject):
         values (and which result in the modulation texture having no effect).
         """
 
-        modImage = self.displayOpts.modulate
-
         if self.modTexture is not None:
-            textures.deleteTexture(self.modTexture)
+            glresources.delete(self.modTexture.getTextureName())
+            self.modTexture = None
+
+        modImage = self.displayOpts.modulate
 
         if modImage == 'none':
             textureData = np.zeros((5, 5, 5), dtype=np.uint8)
@@ -208,9 +215,12 @@ class GLVector(globject.GLImageObject):
             modDisplay = self.display
             norm       = True
 
-        self.modTexture = textures.getTexture(
+        texName = '{}_{}_{}_modulate'.format(
+            type(self).__name__, id(self.image), id(modImage))
+        self.modTexture = glresources.get(
+            texName,
             textures.ImageTexture,
-            '{}_{}_modulate'.format(type(self).__name__, id(self.image)),
+            texName,
             modImage,
             display=modDisplay,
             normalise=norm)
