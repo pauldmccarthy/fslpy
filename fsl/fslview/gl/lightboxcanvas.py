@@ -18,7 +18,7 @@ import OpenGL.GL as gl
 import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
-import fsl.fslview.gl.textures    as fsltextures
+import fsl.fslview.gl.textures    as textures
 
 
 log = logging.getLogger(__name__)
@@ -181,6 +181,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
 
+        # This will point to a RenderTexture if
+        # the offscreen render mode is enabled
+        self.__offscreenRenderTexture = None
+
         # default to showing the entire slice range
         zmin, zmax = displayCtx.bounds.getRange(self.zax)
         self.zrange.xmin = zmin
@@ -229,35 +233,66 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._refresh()
 
 
-    def _twoStageRenderChange(self, *args, **kwargs):
-        """Overrides
-        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas._onTwoStageRenderChange`.
+    def _renderModeChange(self, *a):
+        """Overrides :meth:`.SliceCanvas._renderModeChange`.
+        """
+        
+        if self.__offscreenRenderTexture is not None:
+            self.__offscreenRenderTexture.destroy()
+            self.__offscreenRenderTexture = None
+            
+        slicecanvas.SliceCanvas._renderModeChange(self, *a)
+
+
+    def _updateRenderTextures(self):
+        """Overrides :meth:`.SliceCanvas._updateRenderTextures`.
         """
 
-        # The LightBoxCanvas does two-stage rendering
+        if self.renderMode == 'onscreen':
+            return
+
+        # The LightBoxCanvas does offscreen rendering
         # a bit different to the SliceCanvas. The latter
         # uses a separate render texture for each image,
         # whereas here we're going to use a single
-        # render texture for all images.
-        if self._renderTextures == {}:
-            self._renderTextures = None
-            
-        # nothing to be done
-        if self.twoStageRender and self._renderTextures is not None:
-            return
-        
-        if not self.twoStageRender and self._renderTextures is None:
-            return
+        # render texture for all images. 
+        elif self.renderMode == 'offscreen':
+            if self.__offscreenRenderTexture is not None:
+                self.__offscreenRenderTexture.destroy()
 
-        if not self.twoStageRender:
-            self._renderTextures.destroy()
-            self._renderTextures = None
-
-        else:
-            self._renderTextures = fsltextures.RenderTexture(
+            self.__offscreenRenderTexture = textures.RenderTexture(
                 '{}_{}'.format(type(self).__name__, id(self)),
                 gl.GL_LINEAR)
-            self._renderTextures.setSize(512, 512)
+
+            self.__offscreenRenderTexture.setSize(768, 768)
+
+        # The LightBoxCanvas handles re-render mode
+        # the same way as the SliceCanvas - a separate
+        # RenderTextureStack for eacn globject
+        elif self.renderMode == 'prerender':
+            
+            # Delete any RenderTextureStack instances for
+            # images which have been removed from the list
+            for image, tex in self._renderTextures.items():
+                if image not in self._imageList:
+                    self._renderTextures.pop(image)
+                    tex.destroy()
+
+            # Create a RendeTextureStack for images
+            # which have been added to the list
+            for image in self._imageList:
+                if image in self._renderTextures:
+                    continue
+
+                globj = self._glObject.get(image, None)
+                
+                if globj is None:
+                    continue
+
+                rt = textures.RenderTextureStack(globj)
+                rt.setAxes(self.xax, self.yax)
+
+                self._renderTextures[image] = rt
 
         self._refresh()
 
@@ -641,22 +676,28 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if not self._setGLContext():
             return
 
-        if self.twoStageRender:
-            log.debug('Rendering to off-screen frame buffer')
-            self._renderTextures.bindAsRenderTarget()
-            self._renderTextures.setRenderViewport(
-                self.xax,
-                self.yax,
-                self.displayBounds.xlo,
-                self.displayBounds.xhi,
-                self.displayBounds.ylo,
-                self.displayBounds.yhi)
+        if self.renderMode == 'offscreen':
+            
+            log.debug('Rendering to off-screen texture')
+
+            rt = self.__offscreenRenderTexture
+            
+            lo = [None] * 3
+            hi = [None] * 3
+            
+            lo[self.xax], hi[self.xax] = self.displayBounds.x
+            lo[self.yax], hi[self.yax] = self.displayBounds.y
+            lo[self.zax], hi[self.zax] = self.zrange
+            
+            rt.bindAsRenderTarget()
+            rt.setRenderViewport(self.xax, self.yax, lo, hi)
             gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+            
         else:
             self._setViewport()
 
-        startSlice   = self.ncols * self.topRow
-        endSlice     = startSlice + self.nrows * self.ncols
+        startSlice = self.ncols * self.topRow
+        endSlice   = startSlice + self.nrows * self.ncols
 
         if endSlice > self._nslices:
             endSlice = self._nslices    
@@ -674,19 +715,22 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             log.debug('Drawing {} slices ({} - {}) for image {}'.format(
                 endSlice - startSlice, startSlice, endSlice, image))
 
-            globj.preDraw()
-
             zposes = self._sliceLocs[ image][startSlice:endSlice]
             xforms = self._transforms[image][startSlice:endSlice]
 
-            globj.drawAll(zposes, xforms)
+            if self.renderMode == 'prerender':
+                pass
+            else:
 
-            globj.postDraw()
+                globj.preDraw()
+                globj.drawAll(zposes, xforms)
+                globj.postDraw()
 
-        if self.twoStageRender:
-            self._renderTextures.unbindAsRenderTarget()
+        if self.renderMode == 'offscreen':
+            rt.unbindAsRenderTarget()
             self._setViewport()
-            self._renderTextures.drawOnBounds(
+            rt.drawOnBounds(
+                0,
                 self.displayBounds.xlo,
                 self.displayBounds.xhi,
                 self.displayBounds.ylo,

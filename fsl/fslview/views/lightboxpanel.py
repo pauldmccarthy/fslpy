@@ -71,7 +71,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._lbCanvas.bindProps('showCursor',      sceneOpts)
         self._lbCanvas.bindProps('showGridLines',   sceneOpts)
         self._lbCanvas.bindProps('highlightSlice',  sceneOpts)
-        self._lbCanvas.bindProps('twoStageRender',  sceneOpts)
+        self._lbCanvas.bindProps('renderMode',      sceneOpts)
         self._lbCanvas.bindProps('softwareMode',    sceneOpts)
         self._lbCanvas.bindProps('resolutionLimit', sceneOpts)
 

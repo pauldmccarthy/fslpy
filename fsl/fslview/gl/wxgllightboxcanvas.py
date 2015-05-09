@@ -64,7 +64,7 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             self.removeListener('showGridLines',  self.name)
             self.removeListener('highlightSlice', self.name)
             self.removeListener('topRow',         self.name)
-            self.removeListener('twoStageRender', self.name)
+            self.removeListener('renderMode',     self.name)
 
             self.imageList .removeListener('images',     self.name)
             self.displayCtx.removeListener('bounds',     self.name)
