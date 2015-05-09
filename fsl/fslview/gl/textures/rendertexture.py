@@ -56,7 +56,7 @@ class RenderTexture(texture.Texture2D):
                                    self.__frameBuffer) 
 
 
-    def setRenderViewport(self, xax, yax, zpos, lo, hi):
+    def setRenderViewport(self, xax, yax, lo, hi):
 
         width, height = self.getSize()
         
@@ -64,7 +64,7 @@ class RenderTexture(texture.Texture2D):
         self.__oldProjMat = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
         self.__oldMVMat   = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
 
-        glroutines.show2D(xax, yax, width, height, zpos, lo, hi)
+        glroutines.show2D(xax, yax, width, height, lo, hi)
             
 
     def restoreViewport(self):

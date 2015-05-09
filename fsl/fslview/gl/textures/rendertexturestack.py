@@ -166,7 +166,6 @@ class RenderTextureStack(object):
         zpos = self.__indexToZpos(idx)
         xax  = self.__xax
         yax  = self.__yax
-        zax  = self.__zax
 
         lo, hi = self.__globj.getDisplayBounds()
         res    = self.__globj.getDataResolution(xax, yax)
@@ -191,7 +190,7 @@ class RenderTextureStack(object):
         oldProjMat    = gl.glGetFloatv(  gl.GL_PROJECTION_MATRIX)
         oldMVMat      = gl.glGetFloatv(  gl.GL_MODELVIEW_MATRIX)
 
-        glroutines.show2D(xax, yax, width, height, zpos, lo, hi)
+        glroutines.show2D(xax, yax, width, height, lo, hi)
 
         tex.bindAsRenderTarget()
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)

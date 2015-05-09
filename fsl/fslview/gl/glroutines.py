@@ -8,14 +8,7 @@
 import OpenGL.GL as gl
 
 
-def show2D(
-        xax,
-        yax,
-        width,
-        height,
-        zpos,
-        lo,
-        hi):
+def show2D(xax, yax, width, height, lo, hi):
 
     zax = 3 - xax - yax
 
@@ -27,7 +20,9 @@ def show2D(
     gl.glMatrixMode(gl.GL_PROJECTION)
     gl.glLoadIdentity()
 
-    gl.glOrtho(xmin, xmax, ymin, ymax, zmin - 1, zmax + 1)
+    zdist = zmax - zmin
+
+    gl.glOrtho(xmin, xmax, ymin, ymax, -zdist, zdist)
     gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glLoadIdentity()
 
@@ -42,7 +37,3 @@ def show2D(
         gl.glRotatef(-90, 0, 0, 1)
     elif zax == 1:
         gl.glRotatef(270, 1, 0, 0)
-
-    trans = [0, 0, 0]
-    trans[zax] = -zpos
-    gl.glTranslatef(*trans) 

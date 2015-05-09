@@ -379,6 +379,7 @@ class SliceCanvas(props.HasProperties):
                     display,
                     self.xax,
                     self.yax)
+                
             # For prerender mode, slices of the
             # GLObjects are pre-rendered on a
             # stack of off-screen textures, which
@@ -771,8 +772,9 @@ class SliceCanvas(props.HasProperties):
 
         log.debug('Setting canvas bounds (size {}, {}): '
                   'X {: 5.1f} - {: 5.1f},'
-                  'Y {: 5.1f} - {: 5.1f}'.format(
-                      width, height, xmin, xmax, ymin, ymax))
+                  'Y {: 5.1f} - {: 5.1f},'
+                  'Z {: 5.1f} - {: 5.1f}'.format(
+                      width, height, xmin, xmax, ymin, ymax, zmin, zmax))
 
         # Flip the viewport if necessary
         if self.invertX: xmin, xmax = xmax, xmin
@@ -786,7 +788,7 @@ class SliceCanvas(props.HasProperties):
         lo[zax], hi[zax] = zmin, zmax
 
         # set up 2D orthographic drawing
-        glroutines.show2D(xax, yax, width, height, self.pos.z, lo, hi)
+        glroutines.show2D(xax, yax, width, height, lo, hi)
 
         
     def _drawCursor(self):
@@ -905,7 +907,7 @@ class SliceCanvas(props.HasProperties):
 
                 renderTexture.bindAsRenderTarget()
                 renderTexture.setRenderViewport(
-                    self.xax, self.yax, self.pos.z, lo, hi)
+                    self.xax, self.yax, lo, hi)
                 
                 gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
