@@ -274,17 +274,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             # Delete any RenderTextureStack instances for
             # images which have been removed from the list
             for image, tex in self._renderTextures.items():
-                if image not in self._imageList:
+                if image not in self.imageList:
                     self._renderTextures.pop(image)
                     tex.destroy()
 
             # Create a RendeTextureStack for images
             # which have been added to the list
-            for image in self._imageList:
+            for image in self.imageList:
                 if image in self._renderTextures:
                     continue
 
-                globj = self._glObject.get(image, None)
+                globj = self._glObjects.get(image, None)
                 
                 if globj is None:
                     continue
@@ -712,14 +712,28 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             if (globj is None) or (not display.enabled):
                 continue
 
-            log.debug('Drawing {} slices ({} - {}) for image {}'.format(
-                endSlice - startSlice, startSlice, endSlice, image))
+            log.debug('Drawing {} slices ({} - {}) for '
+                      'image {} directly to canvas'.format(
+                          endSlice - startSlice, startSlice, endSlice, image))
 
             zposes = self._sliceLocs[ image][startSlice:endSlice]
             xforms = self._transforms[image][startSlice:endSlice]
 
             if self.renderMode == 'prerender':
-                pass
+                rt = self._renderTextures.get(image, None)
+
+                if rt is None:
+                    continue
+                
+                log.debug('Drawing {} slices ({} - {}) for image {} '
+                          'from pre-rendered texture'.format(
+                              endSlice - startSlice,
+                              startSlice,
+                              endSlice,
+                              image))
+                
+                for zpos, xform in zip(zposes, xforms):
+                    rt.draw(zpos, xform)
             else:
 
                 globj.preDraw()
