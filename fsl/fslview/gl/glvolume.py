@@ -55,12 +55,13 @@ of the image bounds.
 import logging
 log = logging.getLogger(__name__)
 
-import OpenGL.GL               as gl
+import OpenGL.GL                as gl
 
-import fsl.utils.transform     as transform
-import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.textures as textures
-import fsl.fslview.gl.globject as globject
+import fsl.utils.transform      as transform
+import fsl.fslview.gl           as fslgl
+import fsl.fslview.gl.textures  as textures
+import fsl.fslview.gl.resources as glresources
+import fsl.fslview.gl.globject  as globject
 
 
 class GLVolume(globject.GLImageObject):
@@ -91,9 +92,10 @@ class GLVolume(globject.GLImageObject):
         texName = '{}_{}'.format(id(self.image), type(self).__name__)
 
         # The image texture may be used elsewhere,
-        # so we'll use the texture management function
-        # rather than creating one directly
-        self.imageTexture = textures.getTexture(
+        # so we'll use the resource management
+        # module rather than creating one directly
+        self.imageTexture = glresources.get(
+            texName, 
             textures.ImageTexture,
             texName,
             self.image,
@@ -196,7 +198,7 @@ class GLVolume(globject.GLImageObject):
         deleting texture handles).
         """
 
-        textures.deleteTexture(self.imageTexture)
+        glresources.delete(self.imageTexture.getTextureName())
         
         self.colourTexture.destroy()
         
