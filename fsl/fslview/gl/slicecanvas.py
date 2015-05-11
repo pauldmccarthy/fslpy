@@ -30,6 +30,7 @@ import props
 
 import fsl.data.image             as fslimage
 import fsl.fslview.gl.routines    as glroutines
+import fsl.fslview.gl.resources   as glresources
 import fsl.fslview.gl.globject    as globject
 import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations
@@ -271,11 +272,12 @@ class SliceCanvas(props.HasProperties):
         # stored in this dictionary
         self._glObjects = {}
 
-        # If render mode is offscren or prerender, this
-        # attribute will contain a RenderTexture or
+        # If render mode is offscren or prerender, these
+        # dictionaries will contain a RenderTexture or
         # RenderTextureStack instance for each image in
         # the image list
-        self._renderTextures = {}
+        self._offscreenTextures = {}
+        self._prerenderTextures = {}
 
         # The zax property is the image axis which maps to the
         # 'depth' axis of this canvas. The _zAxisChanged method
@@ -341,23 +343,36 @@ class SliceCanvas(props.HasProperties):
 
         needRefresh = False
 
-        # If any images have been removed from the image
-        # list, destroy the associated render texture stack
-        for image, texture in self._renderTextures.items():
-            if image not in self.imageList:
-                self._renderTextures.pop(image)
-                texture.destroy()
-                needRefresh = True
-        
         if self.renderMode == 'onscreen':
             return
+
+        # If any images have been removed from the image
+        # list, destroy the associated render texture stack
+        if self.renderMode == 'offscreen':
+            for image, texture in self._offscreenTextures.items():
+                if image not in self.imageList:
+                    self._offscreenTextures.pop(image)
+                    texture.destroy()
+                    needRefresh = True
+            
+        elif self.renderMode == 'prerender':
+            for image, (texture, name) in self._prerenderTextures.items():
+                if image not in self.imageList:
+                    self._prerenderTextures.pop(image)
+                    glresources.delete(name)
+                    needRefresh = True 
 
         # If any images have been added to the list,
         # create a new render textures for them
         for image in self.imageList:
 
-            if image in self._renderTextures:
-                continue
+            if self.renderMode == 'offscreen':
+                if image in self._offscreenTextures:
+                    continue
+                
+            elif self.renderMode == 'prerender':
+                if image in self._prerenderTextures:
+                    continue 
 
             globj = self._glObjects.get(image, None)
 
@@ -373,12 +388,15 @@ class SliceCanvas(props.HasProperties):
                 
                 display = self.displayCtx.getDisplayProperties(image)
                 name    = '{}_{}_{}'.format(image.name, self.xax, self.yax)
-                rt = textures.ImageRenderTexture(
+                rt      = textures.ImageRenderTexture(
                     name,
                     image,
                     display,
                     self.xax,
                     self.yax)
+
+                self._offscreenTextures[image] = rt
+
                 
             # For prerender mode, slices of the
             # GLObjects are pre-rendered on a
@@ -386,10 +404,21 @@ class SliceCanvas(props.HasProperties):
             # is managed by a RenderTextureStack
             # object.
             elif self.renderMode == 'prerender':
-                rt = textures.RenderTextureStack(globj)
-                rt.setAxes(self.xax, self.yax)
+                name = '{}_{}_{}_zax{}'.format(
+                    id(image),
+                    type(self).__name__,
+                    textures.RenderTextureStack.__name__,
+                    self.zax)
 
-            self._renderTextures[image] = rt
+                if glresources.exists(name):
+                    rt = glresources.get(name)
+                    
+                else:
+                    rt = textures.RenderTextureStack(globj)
+                    rt.setAxes(self.xax, self.yax)
+                    glresources.set(name, rt)
+
+                self._prerenderTextures[image] = rt, name
 
             needRefresh = True
 
@@ -403,9 +432,13 @@ class SliceCanvas(props.HasProperties):
         log.debug('Render mode changed: {}'.format(self.renderMode))
 
         # destroy any existing render textures
-        for image, texture in self._renderTextures.items():
-            self._renderTextures.pop(image)
+        for image, texture in self._offscreenTextures.items():
+            self._offscreenTextures.pop(image)
             texture.destroy()
+            
+        for image, (texture, name) in self._prerenderTextures.items():
+            self._prerenderTextures.pop(image)
+            glresources.delete(name)
 
         # Onscreen rendering - each GLObject
         # is rendered directly to the canvas
@@ -479,9 +512,9 @@ class SliceCanvas(props.HasProperties):
         # If pre-rendering is enabled, the
         # render textures need to be updated, as
         # they are configured in terms of the
-        # display axes
-        for image, renderTexture in self._renderTextures.items():
-            renderTexture.setAxes(self.xax, self.yax)
+        # display axes. Easiest way to do this
+        # is to destroy and re-create them
+        self._renderModeChange()
  
             
     def _imageListChanged(self, *a):
@@ -536,9 +569,13 @@ class SliceCanvas(props.HasProperties):
                     globj.destroy()
                     
                     if updateRenderTextures:
-                        tex = self._renderTextures.pop(img, None)
-                        if tex is not None:
+                        if self.renderMode == 'offscreen':
+                            tex = self._offscreeTextures.pop(img)
                             tex.destroy()
+                                
+                        elif self.renderMode == 'prerender':
+                            tex, name = self._offscreenTextures.pop(img)
+                            glresources.delete(name)
 
                 globj = globject.createGLObject(img, disp)
 
@@ -823,7 +860,7 @@ class SliceCanvas(props.HasProperties):
         self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0), width=1)
 
 
-    def _drawRenderTextures(self):
+    def _drawOffscreenTextures(self):
         """Draws all of the off-screen :class:`.ImageRenderTexture` instances to the
         canvas.
 
@@ -834,11 +871,11 @@ class SliceCanvas(props.HasProperties):
                   'to canvas (size {})'.format(self._getSize()))
 
         for image in self.displayCtx.getOrderedImages():
-            renderTexture = self._renderTextures.get(image, None)
-            display       = self.displayCtx.getDisplayProperties(image)
-            lo, hi        = display.getDisplayBounds()
+            rt      = self._offscreenTextures.get(image, None)
+            display = self.displayCtx.getDisplayProperties(image)
+            lo, hi  = display.getDisplayBounds()
 
-            if renderTexture is None or not display.enabled:
+            if rt is None or not display.enabled:
                 continue
 
             xmin, xmax = lo[self.xax], hi[self.xax]
@@ -848,7 +885,7 @@ class SliceCanvas(props.HasProperties):
                       '{:0.3f}-{:0.3f}'.format(
                           image, xmin, xmax, ymin, ymax))
 
-            renderTexture.drawOnBounds(
+            rt.drawOnBounds(
                 self.pos.z, xmin, xmax, ymin, ymax, self.xax, self.yax) 
 
             
@@ -893,21 +930,20 @@ class SliceCanvas(props.HasProperties):
             # target, and draw to it
             elif self.renderMode == 'offscreen':
                 
-                renderTexture = self._renderTextures.get(image, None)
-                lo, hi        = display.getDisplayBounds()
+                rt     = self._offscreenTextures.get(image, None)
+                lo, hi = display.getDisplayBounds()
 
                 # Assume that all is well - the texture
                 # just has not yet been created
-                if renderTexture is None:
+                if rt is None:
                     continue
                 
                 log.debug('Drawing {} slice for image {} '
                           'to off-screen texture'.format(
                               self.zax, image.name))
 
-                renderTexture.bindAsRenderTarget()
-                renderTexture.setRenderViewport(
-                    self.xax, self.yax, lo, hi)
+                rt.bindAsRenderTarget()
+                rt.setRenderViewport(self.xax, self.yax, lo, hi)
                 
                 gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
@@ -920,16 +956,16 @@ class SliceCanvas(props.HasProperties):
             # is rendered to the screen canvas
             elif self.renderMode == 'prerender':
                 
-                renderTexture = self._renderTextures.get(image, None)
+                rt, name = self._prerenderTextures.get(image, (None, None))
 
-                if renderTexture is None:
+                if rt is None:
                     continue
 
                 log.debug('Drawing {} slice for image {} '
                           'from pre-rendered texture'.format(
                               self.zax, image.name)) 
 
-                renderTexture.draw(self.pos.z)
+                rt.draw(self.pos.z)
 
         # For off-screen rendering, all of the globjects
         # were rendered to off-screen textures - here,
@@ -938,7 +974,7 @@ class SliceCanvas(props.HasProperties):
         if self.renderMode == 'offscreen':
             textures.ImageRenderTexture.unbindAsRenderTarget()
             self._setViewport()
-            self._drawRenderTextures() 
+            self._drawOffscreenTextures() 
 
         if self.showCursor:
             self._drawCursor()
