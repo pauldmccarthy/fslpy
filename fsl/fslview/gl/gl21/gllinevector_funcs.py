@@ -7,19 +7,18 @@
 
 import logging
 
-import numpy                   as np
-import OpenGL.GL               as gl
-import OpenGL.raw.GL._types    as gltypes
+import numpy                       as np
+import OpenGL.GL                   as gl
+import OpenGL.raw.GL._types        as gltypes
 
-import fsl.utils.transform     as transform
-import fsl.fslview.gl.globject as globject
-import fsl.fslview.gl.shaders  as shaders
+import fsl.utils.transform         as transform
+import fsl.fslview.gl.resources    as glresources
+import fsl.fslview.gl.globject     as globject
+import fsl.fslview.gl.gllinevector as gllinevector
+import fsl.fslview.gl.shaders      as shaders
 
 
 log = logging.getLogger(__name__)
-
-
-_vertices = {}
 
 
 def init(self):
@@ -28,6 +27,9 @@ def init(self):
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.texCoordBuffer = gl.glGenBuffers(1)
     self.vertexIDBuffer = gl.glGenBuffers(1)
+
+    self._vertexResourceName = '{}_{}_vertices'.format(
+        type(self).__name__, id(self.image))
     
     display = self.display
     opts    = self.opts
@@ -58,7 +60,7 @@ def destroy(self):
     self.display.removeListener('resolution', self.name)
     self.opts   .removeListener('directed',   self.name)
 
-    _vertices.pop(self.image, None)
+    glresources.delete(self._vertexResourceName)
 
 
 def compileShaders(self):
@@ -170,41 +172,26 @@ def updateVertices(self):
     opts    = self.opts
 
     if not display.softwareMode:
-        log.debug('Clearing any cached line vertices for {}'.format(image))
-        _vertices.pop(image, None)
-        return
-    
-    vertices, texCoords, starts, steps, oldHash = _vertices.get(
-        image, (None, None, None, None, None))
 
+        if glresources.exists(self._vertexResourceName):
+            log.debug('Clearing any cached line vertices for {}'.format(image))
+            glresources.delete(self._vertexResourceName)
+        return
+
+    vertices = glresources.get(
+        self._vertexResourceName, gllinevector.GLLineVertices, self)
+    
     newHash = (hash(display.transform)  ^
                hash(display.resolution) ^
                hash(opts   .directed))
 
-    if (vertices is not None) and (oldHash == newHash):
-        
-        log.debug('Using previously calculated line '
-                  'vertices for {}'.format(image))
-        self.lineVertices  = vertices
-        self.lineTexCoords = texCoords
-        self.sampleStarts  = starts
-        self.sampleSteps   = steps
-        return
+    if hash(vertices) != newHash:
 
-    log.debug('Re-generating line vertices for {}'.format(image))
-
-    vertices, starts, steps = self.generateLineVertices()
-
-    texCoords = vertices.round()
-    texCoords = (texCoords + 0.5) / np.array(image.shape[:3],
-                                             dtype=np.float32) 
-
-    _vertices[image] = vertices, texCoords, starts, steps, newHash
+        log.debug('Re-generating line vertices for {}'.format(image))
+        vertices.refresh(self)
+        glresources.set(self._vertexResourceName, vertices, overwrite=True)
     
-    self.lineVertices  = vertices
-    self.lineTexCoords = texCoords
-    self.sampleStarts  = starts
-    self.sampleSteps   = steps
+    self.lineVertices = vertices
 
 
 def preDraw(self):
@@ -218,21 +205,12 @@ def draw(self, zpos, xform=None):
 
 def softwareDraw(self, zpos, xform=None):
 
-    opts             = self.displayOpts
-    vertices, coords = self.getVertices(
-        zpos,
-        self.lineVertices,
-        self.sampleStarts,
-        self.sampleSteps)
+    opts                = self.displayOpts
+    vertices, texCoords = self.lineVertices.getVertices(self, zpos)
 
     if vertices.size == 0:
         return
-
-    texCoords = self.lineTexCoords[coords[0],
-                                   coords[1],
-                                   coords[2],
-                                   :, :]
-
+    
     vertices  = vertices .ravel('C')
     texCoords = texCoords.ravel('C')
 

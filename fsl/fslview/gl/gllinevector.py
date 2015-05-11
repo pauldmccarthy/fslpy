@@ -17,44 +17,30 @@ import fsl.fslview.gl.glvector as glvector
 
 log = logging.getLogger(__name__)
 
-
-class GLLineVector(glvector.GLVector):
-
-
-    def __init__(self, image, display):
+class GLLineVertices(object):
+    
+    def __init__(self, glvec):
         
-        glvector.GLVector.__init__(self, image, display)
-        
-        self.opts = display.getDisplayOpts()
-        
-        fslgl.gllinevector_funcs.init(self)
+        self.__hash = None
+        self.refresh(glvec)
 
 
-        def update(*a):
-            self.onUpdate()
-
-        self.opts.addListener('lineWidth', self.name, update)
-
-        
     def destroy(self):
-        fslgl.gllinevector_funcs.destroy(self)
-        self.opts.removeListener('lineWidth', self.name)
+        self.vertices  = None
+        self.texCoords = None
+        self.starts    = None
+        self.steps     = None
 
-
-    def getDataResolution(self, xax, yax):
-
-        res       = list(glvector.GLVector.getDataResolution(self, xax, yax))
-        res[xax] *= 16
-        res[yax] *= 16
         
-        return res
+    def __hash__(self):
+        return self.__hash
 
+        
+    def refresh(self, glvec):
 
-    def generateLineVertices(self):
-
-        display = self.display
-        opts    = self.opts
-        image   = self.image
+        display = glvec.display
+        opts    = glvec.opts
+        image   = glvec.image
 
         # Extract a sub-sample of the vector image
         # at the current display resolution
@@ -111,16 +97,31 @@ class GLLineVector(glvector.GLVector):
         for i in range(data.shape[2]):
             vertices[:, :, i, :, 2] += starts[2] + i * steps[2]
 
-        return vertices, starts, steps
+        texCoords = vertices.round()
+        texCoords = (texCoords + 0.5) / np.array(image.shape[:3],
+                                                 dtype=np.float32)
 
+        self.vertices  = vertices
+        self.texCoords = texCoords
+        self.starts    = starts
+        self.steps     = steps
+        self.__hash    = (hash(display.transform)  ^
+                          hash(display.resolution) ^
+                          hash(opts   .directed))
+ 
 
-    def getVertices(self, zpos, vertices, starts, steps):
+    def getVertices(self, glvec, zpos):
 
-        display = self.display
-        image   = self.image
-        xax     = self.xax
-        yax     = self.yax
-        zax     = self.zax
+        display = glvec.display
+        image   = glvec.image
+        xax     = glvec.xax
+        yax     = glvec.yax
+        zax     = glvec.zax
+
+        vertices  = self.vertices
+        texCoords = self.texCoords
+        starts    = self.starts
+        steps     = self.steps
         
         # If in id/pixdim space, the display
         # coordinate system axes are parallel
@@ -180,13 +181,45 @@ class GLLineVector(glvector.GLVector):
             coords = coords[((coords >= [0, 0, 0]) &
                              (coords <  shape)).all(1), :].T
 
-        # pull out the vertex data
-        vertices = vertices[coords[0],
-                            coords[1],
-                            coords[2],
-                            :, :]
+        # pull out the vertex data, and the
+        # corresponding texture coordinates
+        vertices  = vertices[ coords[0], coords[1], coords[2], :, :]
+        texCoords = texCoords[coords[0], coords[1], coords[2], :, :]
         
-        return vertices, coords
+        return vertices, texCoords
+
+
+class GLLineVector(glvector.GLVector):
+
+
+    def __init__(self, image, display):
+        
+        glvector.GLVector.__init__(self, image, display)
+        
+        self.opts = display.getDisplayOpts()
+        
+        fslgl.gllinevector_funcs.init(self)
+
+
+        def update(*a):
+            self.onUpdate()
+
+        self.opts.addListener('lineWidth', self.name, update)
+
+        
+    def destroy(self):
+        glvector.GLVector.destroy(self)
+        fslgl.gllinevector_funcs.destroy(self)
+        self.opts.removeListener('lineWidth', self.name)
+
+
+    def getDataResolution(self, xax, yax):
+
+        res       = list(glvector.GLVector.getDataResolution(self, xax, yax))
+        res[xax] *= 16
+        res[yax] *= 16
+        
+        return res
 
 
     def compileShaders(self):
