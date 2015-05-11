@@ -15,19 +15,22 @@ import OpenGL.GL.ARB.vertex_program   as arbvp
 import OpenGL.raw.GL._types           as gltypes
 
 import fsl.utils.transform            as transform
+import fsl.fslview.gl.gllinevector    as gllinevector
+import fsl.fslview.gl.resources       as glresources
 import fsl.fslview.gl.shaders         as shaders
 
 
 log = logging.getLogger(__name__)
 
 
-_vertices = {}
-
-
 def init(self):
 
     self.vertexProgram   = None
     self.fragmentProgram = None
+    self.lineVertices    = None
+
+    self._vertexResourceName = '{}_{}_vertices'.format(
+        type(self).__name__, id(self.image)) 
 
     compileShaders(   self)
     updateShaderState(self)
@@ -51,7 +54,7 @@ def destroy(self):
     self.display.removeListener('resolution', self.name)
     self.opts   .removeListener('directed',   self.name)
 
-    _vertices.pop(self.image, None)
+    glresources.delete(self._vertexResourceName)
 
 
 def compileShaders(self):
@@ -80,42 +83,22 @@ def updateVertices(self):
     image   = self.image
     display = self.display
     opts    = self.opts
-    
-    vertices, texCoords, starts, steps, oldHash = _vertices.get(
-        image, (None, None, None, None, None))
+
+    if self.lineVertices is None:
+        self.lineVertices = glresources.get(
+            self._vertexResourceName, gllinevector.GLLineVertices, self) 
 
     newHash = (hash(display.transform)    ^
                hash(display.resolution)   ^
-               hash(display.softwareMode) ^
                hash(opts   .directed))
 
-    if (vertices is not None) and (oldHash == newHash):
-        
-        log.debug('Using previously calculated line '
-                  'vertices for {}'.format(image))
-        self.lineVertices  = vertices
-        self.lineTexCoords = texCoords
-        self.sampleStarts  = starts
-        self.sampleSteps   = steps
-        return
+    if hash(self.lineVertices) != newHash:
 
-    log.debug('Re-generating line vertices for {}'.format(image))
-
-    vertices, starts, steps = self.generateLineVertices()
-
-    if display.softwareMode:
-        texCoords = vertices.round()
-        texCoords = (texCoords + 0.5) / np.array(image.shape[:3],
-                                                 dtype=np.float32)
-    else:
-        texCoords = None
-
-    _vertices[image] = vertices, texCoords, starts, steps, newHash
-
-    self.lineVertices  = vertices
-    self.lineTexCoords = texCoords
-    self.sampleStarts  = starts
-    self.sampleSteps   = steps 
+        log.debug('Re-generating line vertices for {}'.format(image))
+        self.lineVertices.refresh(self)
+        glresources.set(self._vertexResourceName,
+                        self.lineVertices,
+                        overwrite=True)
 
 
 def updateShaderState(self):
@@ -165,20 +148,14 @@ def preDraw(self):
 
 def draw(self, zpos, xform=None):
 
-    display          = self.display
-    opts             = self.displayOpts
-    vertices, coords = self.getVertices(
-        zpos,
-        self.lineVertices,
-        self.sampleStarts,
-        self.sampleSteps)
+    display             = self.display
+    opts                = self.displayOpts
+    vertices, texCoords = self.lineVertices.getVertices(self, zpos)
+
+    if vertices.size == 0:
+        return
 
     if display.softwareMode:
-        texCoords = self.lineTexCoords[coords[0],
-                                       coords[1],
-                                       coords[2],
-                                       :, :]
-
         texCoords = texCoords.ravel('C')
         gl.glClientActiveTexture(gl.GL_TEXTURE0)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)

@@ -27,6 +27,7 @@ def init(self):
     self.vertexBuffer   = gl.glGenBuffers(1)
     self.texCoordBuffer = gl.glGenBuffers(1)
     self.vertexIDBuffer = gl.glGenBuffers(1)
+    self.lineVertices   = None
 
     self._vertexResourceName = '{}_{}_vertices'.format(
         type(self).__name__, id(self.image))
@@ -173,25 +174,28 @@ def updateVertices(self):
 
     if not display.softwareMode:
 
+        self.lineVertices = None
+        
         if glresources.exists(self._vertexResourceName):
             log.debug('Clearing any cached line vertices for {}'.format(image))
             glresources.delete(self._vertexResourceName)
         return
 
-    vertices = glresources.get(
-        self._vertexResourceName, gllinevector.GLLineVertices, self)
+    if self.lineVertices is None:
+        self.lineVertices = glresources.get(
+            self._vertexResourceName, gllinevector.GLLineVertices, self)
     
     newHash = (hash(display.transform)  ^
                hash(display.resolution) ^
                hash(opts   .directed))
 
-    if hash(vertices) != newHash:
+    if hash(self.lineVertices) != newHash:
 
         log.debug('Re-generating line vertices for {}'.format(image))
-        vertices.refresh(self)
-        glresources.set(self._vertexResourceName, vertices, overwrite=True)
-    
-    self.lineVertices = vertices
+        self.lineVertices.refresh(self)
+        glresources.set(self._vertexResourceName,
+                        self.lineVertices,
+                        overwrite=True)
 
 
 def preDraw(self):
