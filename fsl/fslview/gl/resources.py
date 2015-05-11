@@ -19,6 +19,9 @@ class _Resource(object):
 
 _resources = {}
 
+def exists(key):
+    return key in _resources
+
 
 def get(key, createFunc=None, *args, **kwargs):
 
@@ -39,19 +42,25 @@ def get(key, createFunc=None, *args, **kwargs):
         return set(key, createFunc(*args, **kwargs))
 
 
-def set(key, resource):
+def set(key, resource, overwrite=False):
 
-    if key in _resources:
+    if (not overwrite) and (key in _resources):
         raise KeyError('Resource {} already exists'.format(str(key)))
 
-    log.debug('Adding resource {}'.format(str(key)))
+    if not overwrite:
+        log.debug('Adding resource {}'.format(str(key)))
 
-    r               = _Resource(key, resource)
-    r.refcount     += 1
-    _resources[key] = r
+        r               = _Resource(key, resource)
+        r.refcount     += 1
+        _resources[key] = r
 
-    log.debug('Resource {} reference count '
-              'increased to {}'.format(str(key), r.refcount)) 
+        log.debug('Resource {} reference count '
+                  'increased to {}'.format(str(key), r.refcount)) 
+        
+    else:
+        log.debug('Updating resource {}'.format(str(key)))
+
+        _resources[key].resource = resource
 
     return resource
 
