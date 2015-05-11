@@ -61,7 +61,8 @@ def destroy(self):
     self.display.removeListener('resolution', self.name)
     self.opts   .removeListener('directed',   self.name)
 
-    glresources.delete(self._vertexResourceName)
+    if self.display.softwareMode:
+        glresources.delete(self._vertexResourceName)
 
 
 def compileShaders(self):
