@@ -18,6 +18,7 @@ import OpenGL.GL as gl
 import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
+import fsl.fslview.gl.resources   as glresources
 import fsl.fslview.gl.textures    as textures
 
 
@@ -179,11 +180,11 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._nslices   = 0
         self._totalRows = 0
 
-        slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
-
         # This will point to a RenderTexture if
         # the offscreen render mode is enabled
         self.__offscreenRenderTexture = None
+
+        slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
 
         # default to showing the entire slice range
         zmin, zmax = displayCtx.bounds.getRange(self.zax)
@@ -273,26 +274,36 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             
             # Delete any RenderTextureStack instances for
             # images which have been removed from the list
-            for image, tex in self._renderTextures.items():
+            for image, (tex, name) in self._prerenderTextures.items():
                 if image not in self.imageList:
-                    self._renderTextures.pop(image)
-                    tex.destroy()
+                    self._prerenderTextures.pop(image)
+                    glresources.delete(name)
 
             # Create a RendeTextureStack for images
             # which have been added to the list
             for image in self.imageList:
-                if image in self._renderTextures:
+                if image in self._prerenderTextures:
                     continue
 
                 globj = self._glObjects.get(image, None)
                 
                 if globj is None:
                     continue
+                
+                name = '{}_{}_zax{}'.format(
+                    id(image),
+                    textures.RenderTextureStack.__name__,
+                    self.zax)
 
-                rt = textures.RenderTextureStack(globj)
-                rt.setAxes(self.xax, self.yax)
+                if glresources.exists(name):
+                    rt = glresources.get(name)
+                else:
 
-                self._renderTextures[image] = rt
+                    rt = textures.RenderTextureStack(globj)
+                    rt.setAxes(self.xax, self.yax)
+                    glresources.set(name, rt)
+
+                self._prerenderTextures[image] = rt, name
 
         self._refresh()
 
@@ -720,7 +731,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             xforms = self._transforms[image][startSlice:endSlice]
 
             if self.renderMode == 'prerender':
-                rt = self._renderTextures.get(image, None)
+                rt, name = self._prerenderTextures.get(image, (None, None))
 
                 if rt is None:
                     continue

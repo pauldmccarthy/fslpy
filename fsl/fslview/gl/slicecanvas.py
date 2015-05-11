@@ -396,7 +396,6 @@ class SliceCanvas(props.HasProperties):
                     self.yax)
 
                 self._offscreenTextures[image] = rt
-
                 
             # For prerender mode, slices of the
             # GLObjects are pre-rendered on a
@@ -404,9 +403,8 @@ class SliceCanvas(props.HasProperties):
             # is managed by a RenderTextureStack
             # object.
             elif self.renderMode == 'prerender':
-                name = '{}_{}_{}_zax{}'.format(
+                name = '{}_{}_zax{}'.format(
                     id(image),
-                    type(self).__name__,
                     textures.RenderTextureStack.__name__,
                     self.zax)
 
@@ -570,12 +568,15 @@ class SliceCanvas(props.HasProperties):
                     
                     if updateRenderTextures:
                         if self.renderMode == 'offscreen':
-                            tex = self._offscreeTextures.pop(img)
-                            tex.destroy()
+                            tex = self._offscreenTextures.pop(img, None)
+                            if tex is not None:
+                                tex.destroy()
                                 
                         elif self.renderMode == 'prerender':
-                            tex, name = self._offscreenTextures.pop(img)
-                            glresources.delete(name)
+                            tex, name = self._prerenderTextures.pop(
+                                img, (None, None))
+                            if tex is not None:
+                                glresources.delete(name)
 
                 globj = globject.createGLObject(img, disp)
 
