@@ -25,7 +25,7 @@ def show2D(xax, yax, width, height, lo, hi):
     gl.glMatrixMode(gl.GL_PROJECTION)
     gl.glLoadIdentity()
 
-    zdist = zmax - zmin
+    zdist = max(abs(zmin), abs(zmax))
 
     gl.glOrtho(xmin, xmax, ymin, ymax, -zdist, zdist)
     gl.glMatrixMode(gl.GL_MODELVIEW)
