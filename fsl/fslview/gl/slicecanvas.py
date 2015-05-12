@@ -382,12 +382,10 @@ class SliceCanvas(props.HasProperties):
             # by a RenderTexture object.
             if self.renderMode == 'offscreen':
                 
-                display = self.displayCtx.getDisplayProperties(image)
-                name    = '{}_{}_{}'.format(image.name, self.xax, self.yax)
-                rt      = textures.ImageRenderTexture(
+                name = '{}_{}_{}'.format(image.name, self.xax, self.yax)
+                rt   = textures.GLObjectRenderTexture(
                     name,
-                    image,
-                    display,
+                    globj,
                     self.xax,
                     self.yax)
 
@@ -968,7 +966,7 @@ class SliceCanvas(props.HasProperties):
         # those off-screen textures are all rendered on
         # to the screen canvas.
         if self.renderMode == 'offscreen':
-            textures.ImageRenderTexture.unbindAsRenderTarget()
+            textures.GLObjectRenderTexture.unbindAsRenderTarget()
             self._setViewport()
             self._drawOffscreenTextures() 
 

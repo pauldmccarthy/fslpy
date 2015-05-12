@@ -258,6 +258,10 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
+        def update(*a):
+            self.onUpdate()
+
+        display.addListener('resolution',    lName, update)
         display.addListener('interpolation', lName, shaderUpdate)
         display.addListener('softwareMode',  lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
@@ -277,6 +281,7 @@ class GLVolume(globject.GLImageObject):
 
         lName = self.name
 
+        display.removeListener('resolution',    lName)
         display.removeListener('interpolation', lName)
         display.removeListener('softwareMode',  lName)
         display.removeListener('alpha',         lName)

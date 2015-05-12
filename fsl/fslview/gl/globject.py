@@ -14,6 +14,9 @@ OpenGL representation.
 """
 
 
+import numpy as np
+
+
 def createGLObject(image, display):
     """Create :class:`GLObject` instance for the given
     :class:`~fsl.data.image.Image` instance.
@@ -69,7 +72,7 @@ class GLObject(object):
         self.__updateListeners[name] = listener
 
         
-    def removeUpdateListener(self, name, listener):
+    def removeUpdateListener(self, name):
         """Removes a listener previously registered via
         :meth:`addUpdateListener`.
         """
@@ -225,10 +228,20 @@ class GLImageObject(GLObject):
 
 
     def getDataResolution(self, xax, yax):
+
+        image   = self.image
+        display = self.display
+        res     = display.resolution 
         
-        if self.display.transform in ('id', 'pixdim'):
-            return self.image.shape[:3]
+        if display.transform in ('id', 'pixdim'):
+
+            pixdim = np.array(image.pixdim[:3])
+            steps  = [res, res, res] / pixdim
+            res    = image.shape[:3] / steps
+            
+            return np.array(res.round(), dtype=np.uint32)
+        
         else:
-            lo, hi = self.display.getDisplayBounds()
-            minres = int(round(((hi - lo) / self.display.resolution).min()))
+            lo, hi = display.getDisplayBounds()
+            minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3

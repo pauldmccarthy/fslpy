@@ -169,6 +169,12 @@ class Texture2D(Texture):
             print data.shape, data.dtype
             data = data.ravel('F')
 
+        log.debug('Configuring {} ({}) with size {}x{}'.format(
+            type(self).__name__,
+            self.getTextureHandle(),
+            self.__width,
+            self.__height))
+
         # If the width and height have not changed,
         # then we don't need to re-define the texture.
         if self.__width  == self.__oldWidth  and \

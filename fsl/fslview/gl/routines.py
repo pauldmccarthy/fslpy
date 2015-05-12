@@ -461,8 +461,11 @@ def subsample(data, resolution, pixdim=None, volume=None):
     if pixdim is None:
         pixdim = (1.0, 1.0, 1.0)
 
+    if volume is None:
+        volume = slice(None, None, None)
+
     xstep = np.round(resolution / pixdim[0])
-    ystep = np.round(resolution / pixdim[1])
+    ystep = np.round(resolution / pixdim[1]) 
     zstep = np.round(resolution / pixdim[2])
 
     if xstep < 1: xstep = 1
@@ -472,23 +475,14 @@ def subsample(data, resolution, pixdim=None, volume=None):
     xstart = np.floor(xstep / 2)
     ystart = np.floor(ystep / 2)
     zstart = np.floor(zstep / 2)
-
-    if volume is not None:
-        if len(data.shape) > 3: sample = data[xstart::xstep,
-                                              ystart::ystep,
-                                              zstart::zstep,
-                                              volume]
-        else:                   sample = data[xstart::xstep,
-                                              ystart::ystep,
-                                              zstart::zstep]
-    else:
-        if len(data.shape) > 3: sample = data[xstart::xstep,
-                                              ystart::ystep,
-                                              zstart::zstep,
-                                              :]
-        else:                   sample = data[xstart::xstep,
-                                              ystart::ystep,
-                                              zstart::zstep]        
+        
+    if len(data.shape) > 3: sample = data[xstart::xstep,
+                                          ystart::ystep,
+                                          zstart::zstep,
+                                          volume]
+    else:                   sample = data[xstart::xstep,
+                                          ystart::ystep,
+                                          zstart::zstep]
 
     return sample, (xstart, ystart, zstart), (xstep, ystep, zstep)
 

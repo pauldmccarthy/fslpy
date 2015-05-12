@@ -21,5 +21,5 @@ from imagetexture       import ImageTexture
 from colourmaptexture   import ColourMapTexture
 from selectiontexture   import SelectionTexture
 from rendertexture      import RenderTexture
-from rendertexture      import ImageRenderTexture
+from rendertexture      import GLObjectRenderTexture
 from rendertexturestack import RenderTextureStack
