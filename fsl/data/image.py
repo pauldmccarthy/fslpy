@@ -67,9 +67,10 @@ class Image(props.HasProperties):
 
     imageType = props.Choice(
         collections.OrderedDict([
-            ('volume', '3D/4D volume'),
-            ('mask',   '3D/4D mask image'),
-            ('vector', '3-direction vector image')]),
+            ('volume',     '3D/4D volume'),
+            ('mask',       '3D/4D mask image'),
+            ('rgbvector',  '3-direction vector image (RGB)'),
+            ('linevector', '3-direction vector image (Line)')]),
         default='volume')
     """This property defines the type of image data."""
 
@@ -211,8 +212,8 @@ class Image(props.HasProperties):
         shape = data.shape
         
         for i in reversed(range(len(shape))):
-            if shape[i - 1] == 1:
-                data = data.squeeze(axis=i - 1)
+            if shape[i] == 1: data = data.squeeze(axis=i)
+            else:             break
 
         data.flags.writeable = False
 

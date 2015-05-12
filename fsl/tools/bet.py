@@ -13,6 +13,7 @@ import fsl.data.image               as fslimage
 import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
+import fsl.fslview.gl               as fslgl
 
 runChoices = OrderedDict((
 
@@ -187,6 +188,10 @@ def selectHeadCentre(opts, button):
     import                                 wx
     import fsl.fslview.views.orthopanel as orthopanel
 
+    # make sure that GL is initialised
+    fslgl.getWXGLContext(button.GetTopLevelParent())
+    fslgl.bootstrap()
+
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
@@ -197,7 +202,6 @@ def selectHeadCentre(opts, button):
                                         displayCtx,
                                         opts.inputImage,
                                         style=wx.RESIZE_BORDER)
-    panel      = frame.panel
     v2dMat     = display.getTransform('voxel',   'display')
     d2vMat     = display.getTransform('display', 'voxel')
 
@@ -222,12 +226,11 @@ def selectHeadCentre(opts, button):
     displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
 
     # Set the initial location on the orthopanel.
-    # TODO this ain't working, as it needs to be
-    # done after the frame has been displayed, i.e
-    # via wx.CallAfter or similar. 
-    voxCoords   = [opts.xCoordinate, opts.yCoordinate, opts.zCoordinate]
-    worldCoords = transform.transform([voxCoords], v2dMat)[0]
-    panel.pos   = worldCoords
+    voxCoords           = [opts.xCoordinate,
+                           opts.yCoordinate,
+                           opts.zCoordinate]
+    worldCoords         = transform.transform([voxCoords], v2dMat)[0]
+    displayCtx.location = worldCoords
 
     # Position the dialog by the button that was clicked
     pos = button.GetScreenPosition()
@@ -272,15 +275,14 @@ def interface(parent, args, opts):
     
     import wx
     
-    frame    = wx.Frame(parent)
-    betPanel = props.buildGUI(
-        frame, opts, betView, optLabels, optTooltips)
+    frame = wx.Frame(parent)
+    
+    props.buildGUI(frame, opts, betView, optLabels, optTooltips)
 
     frame.Layout()
     frame.Fit()
 
     return frame
-    
 
 
 def runBet(parent, opts):
@@ -292,22 +294,25 @@ def runBet(parent, opts):
 
         if exitCode != 0: return
 
+        # make sure that GL is initialised
+        fslgl.getWXGLContext(window.GetTopLevelParent())
+        fslgl.bootstrap()        
+
         inImage   = fslimage.Image(opts.inputImage)
         outImage  = fslimage.Image(opts.outputImage)
         imageList = fslimage.ImageList([inImage, outImage])
 
         displayCtx = displaycontext.DisplayContext(imageList)
         outDisplay = displayCtx.getDisplayProperties(outImage)
+        outOpts    = outDisplay.getDisplayOpts()
 
-        outDisplay.cmap             = 'Reds'
-        outDisplay.displayRange.xlo = 1
-        outDisplay.clipLow          = True
-        outDisplay.clipHigh         = True
+        outOpts.cmap              = 'Red'
+        outOpts.clippingRange.xlo = 1
 
-        frame  = orthopanel.OrthoFrame(parent,
-                                       imageList,
-                                       displayCtx,
-                                       title=opts.outputImage)
+        frame = orthopanel.OrthoFrame(parent,
+                                      imageList,
+                                      displayCtx,
+                                      title=opts.outputImage)
         frame.Show()
         
     runwindow.checkAndRun('BET', opts, parent, Options.genBetCmd,

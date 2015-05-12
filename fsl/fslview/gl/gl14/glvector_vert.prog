@@ -1,6 +1,0 @@
-!!ARBvp1.0
-#
-# Vertex program for rendering GLVector instances.
-#
-#pragma include common_vert.prog
-END

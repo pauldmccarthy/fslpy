@@ -39,6 +39,16 @@ This module provides a number of functions, the most important of which are:
                               loads the data and registers it  with
                               :mod:`matplotlib`.
 
+
+Some utility functions are also kept in this module, related to calculating
+the relationship between a data display range, and brightness/contrast
+scales:
+
+ - :func:`displayRangeToBricon`: Given a data range, converts a display range
+                                 to brightness/contrast values.
+
+ - :func:`briconToDisplayRange`: Given a data range, converts brigtness/
+                                 contrast values to a display range.
 """
 
 import glob
@@ -238,3 +248,81 @@ def initColourMaps():
         except:
             log.warn('Error processing custom colour '
                      'map file: {}'.format(cmapFile))
+
+
+def briconToDisplayRange(dataRange, brightness, contrast):
+    """Converts the given brightness/contrast values to a display range,
+    given the data range.
+
+    :arg dataRange:  The full range of the data being displayed, a
+                     (min, max) tuple.
+    
+    :arg brightness: A brightness value between 0 and 1.
+    
+    :arg contrast:   A contrast value between 0 and 1.
+    """
+
+    # Turn the given bricon values into
+    # values between 1 and 0 (inverted)
+    brightness = 1.0 - brightness
+    contrast   = 1.0 - contrast
+
+    dmin, dmax = dataRange
+    drange     = dmax - dmin
+    dmid       = dmin + 0.5 * drange
+
+    # The brightness is applied as a linear offset,
+    # with 0.5 equivalent to an offset of 0.0.                
+    offset = (brightness * 2 - 1) * drange
+
+    # If the contrast lies between 0.0 and 0.5, it is
+    # applied to the colour as a linear scaling factor.
+    scale = contrast * 2
+
+    # If the contrast lies between 0.5 and 1, it
+    # is applied as an exponential scaling factor,
+    # so lower values (closer to 0.5) have less of
+    # an effect than higher values (closer to 1.0).
+    if contrast > 0.5:
+        scale += np.exp((contrast - 0.5) * 6) - 1
+
+    # Calculate the new display range, keeping it
+    # centered in the middle of the data range
+    # (but offset according to the brightness)
+    dlo = (dmid + offset) - 0.5 * drange * scale 
+    dhi = (dmid + offset) + 0.5 * drange * scale
+
+    return dlo, dhi
+
+
+def displayRangeToBricon(dataRange, displayRange):
+    """Converts the given brightness/contrast values to a display range,
+    given the data range.
+
+    :arg dataRange:    The full range of the data being displayed, a
+                       (min, max) tuple.
+    
+    :arg displayRange: A (min, max) tuple containing the display range.
+    """    
+
+    dmin, dmax = dataRange
+    dlo,  dhi  = displayRange
+    drange     = dmax - dmin
+    dmid       = dmin + 0.5 * drange
+
+    # These are inversions of the equations in
+    # the briconToDisplayRange function above,
+    # which calculate the display ranges from
+    # the bricon offset/scale
+    offset = dlo + 0.5 * (dhi - dlo) - dmid
+    scale  = (dhi - dlo) / drange
+
+    brightness = 0.5 * (offset / drange + 1)
+
+    if scale <= 1: contrast = scale / 2.0
+    else:          contrast = np.log(scale + 1) / 6.0 + 0.5
+
+    brightness = 1.0 - brightness
+    contrast   = 1.0 - contrast
+
+    return brightness, contrast

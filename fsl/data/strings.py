@@ -157,7 +157,7 @@ properties = TypeDict({
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.showColourBar'      : 'Show colour bar',
-    'SceneOpts.twoStageRender'     : 'Two-stage rendering',
+    'SceneOpts.performance'        : 'Rendering performance',
     'SceneOpts.zoom'               : 'Zoom',
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label side',
@@ -212,7 +212,6 @@ properties = TypeDict({
     'MaskOpts.invert'         : 'Invert',
     'MaskOpts.threshold'      : 'Threshold',
 
-    'VectorOpts.displayMode'   : 'Display mode',
     'VectorOpts.xColour'       : 'X Colour',
     'VectorOpts.yColour'       : 'Y Colour',
     'VectorOpts.zColour'       : 'Z Colour',
@@ -222,6 +221,9 @@ properties = TypeDict({
     'VectorOpts.suppressZ'     : 'Suppress Z value',
     'VectorOpts.modulate'      : 'Modulate by',
     'VectorOpts.modThreshold'  : 'Modulation threshold',
+
+    'LineVectorOpts.directed'  : 'Interpret vectors as directed',
+    'LineVectorOpts.lineWidth' : 'Line width',
 })
 
 
@@ -256,6 +258,12 @@ choices = TypeDict({
     'SceneOpts.colourBarLocation.bottom' : 'Bottom',
     'SceneOpts.colourBarLocation.left'   : 'Left',
     'SceneOpts.colourBarLocation.right'  : 'Right',
+
+    'SceneOpts.performance.1' : 'Fastest',
+    'SceneOpts.performance.2' : 'Faster',
+    'SceneOpts.performance.3' : 'Good looking',
+    'SceneOpts.performance.4' : 'Better looking',
+    'SceneOpts.performance.5' : 'Best looking',
 
     'HistogramPanel.dataRange.min' : 'Min.',
     'HistogramPanel.dataRange.max' : 'Max.',

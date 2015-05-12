@@ -21,6 +21,7 @@ import OpenGL.GL as gl
 
 
 import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.textures as textures
 import fsl.utils.transform     as transform
 
@@ -166,9 +167,6 @@ class Annotations(object):
             gl.glMultMatrixf(xform.ravel('C')) 
 
         for obj in objs:
-
-            if not obj.ready():
-                continue
             
             obj.setAxes(self._xax, self._yax)
 
@@ -388,7 +386,7 @@ class VoxelGrid(AnnotationObject):
                 off = 0
             voxels[:, ax] += off + self.offsets[ax]
 
-        verts, idxs = globject.voxelGrid(voxels, xax, yax, 1, 1)
+        verts, idxs = glroutines.voxelGrid(voxels, xax, yax, 1, 1)
 
         gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
         gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs)
@@ -417,35 +415,33 @@ class VoxelSelection(AnnotationObject):
         self.voxToDisplayMat = voxToDisplayMat
         self.offsets         = offsets
         
-        self.texture = textures.getTexture(
-            selection,
-            '{}_{}'.format(type(self).__name__, id(selection)))
+        self.texture = textures.SelectionTexture(
+            '{}_{}'.format(type(self).__name__, id(selection)),
+            selection)
+
+    def destroy(self):
+        self.texture.destroy()
+        self.texture = None
 
 
     def draw(self, zpos):
 
         xax   = self.xax
         yax   = self.yax
-        zax   = self.zax
         shape = self.selection.selection.shape
 
-        verts, _ = globject.slice2D(shape,
-                                    xax,
-                                    yax,
-                                    self.voxToDisplayMat)
-
-        verts[:, zax] = zpos
-
-        texs  = transform.transform(verts, self.displayToVoxMat) + 0.5
-        texs /= shape
+        verts, _, texs = glroutines.slice2D(shape,
+                                            xax,
+                                            yax,
+                                            zpos,
+                                            self.voxToDisplayMat,
+                                            self.displayToVoxMat)
 
         verts = np.array(verts, dtype=np.float32).ravel('C')
         texs  = np.array(texs,  dtype=np.float32).ravel('C')
-        idxs  = np.arange(4,    dtype=np.uint32)
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.texture.texture)
+        self.texture.bindTexture(gl.GL_TEXTURE0)
+
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
         # gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
@@ -453,13 +449,12 @@ class VoxelSelection(AnnotationObject):
 
         gl.glVertexPointer(  3, gl.GL_FLOAT, 0, verts)
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texs)
-        gl.glDrawElements(gl.GL_TRIANGLE_STRIP, 4, gl.GL_UNSIGNED_INT, idxs)
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
         # gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)        
+        gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
 
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
+        self.texture.unbindTexture()
         
         
 # class Text(AnnotationObject) ?

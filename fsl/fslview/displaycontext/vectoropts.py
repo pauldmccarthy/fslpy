@@ -16,13 +16,6 @@ import display          as fsldisplay
 
 class VectorOpts(fsldisplay.DisplayOpts):
 
-    displayMode = props.Choice(
-        ('line', 'rgb'),
-        default='rgb',
-        labels=[strings.choices['VectorOpts.displayType.line'],
-                strings.choices['VectorOpts.displayType.rgb']])
-    """Mode in which the ``GLVector`` instance is to be displayed."""
-
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
     """Colour used to represent the X vector magnitude."""
@@ -59,7 +52,14 @@ class VectorOpts(fsldisplay.DisplayOpts):
     """Hide voxels for which the modulation value is below this threshold."""
 
     
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
+    def __init__(self,
+                 image,
+                 display,
+                 imageList,
+                 displayCtx,
+                 parent=None,
+                 *args,
+                 **kwargs):
         """Create a ``VectorOpts`` instance for the given image.
 
         See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
@@ -70,7 +70,9 @@ class VectorOpts(fsldisplay.DisplayOpts):
                                         display,
                                         imageList,
                                         displayCtx,
-                                        parent)
+                                        parent,
+                                        *args,
+                                        **kwargs)
 
         imageList.addListener('images', self.name, self.imageListChanged)
         self.imageListChanged()
@@ -120,3 +122,24 @@ class VectorOpts(fsldisplay.DisplayOpts):
 
         if modVal in images: self.modulate = modVal
         else:                self.modulate = 'none'
+
+
+# TODO RGBVector/LineVector subclasses for any type
+# specific options (e.g. line width for linevector)
+
+class LineVectorOpts(VectorOpts):
+
+    lineWidth = props.Int(minval=1, maxval=10, default=1)
+
+    directed  = props.Boolean(default=False)
+    """
+
+    The directed property cannot be unbound across multiple LineVectorOpts
+    instances, as it affects the OpenGL representation
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        kwargs['nounbind'] = ['directed']
+
+        VectorOpts.__init__(self, *args, **kwargs)

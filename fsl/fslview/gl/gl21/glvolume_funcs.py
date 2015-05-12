@@ -14,156 +14,111 @@ program ``glvolume_frag.glsl``.
 
 This module provides the following functions:
 
- - :func:`init`: Compiles vertex and fragment shaders.
+ - :func:`init`:              Initialises GL objects and memory buffers.
 
- - :func:`genVertexData`: Generates and returns vertex and texture coordinates
-   for rendering a single 2D slice of a 3D image. Actually returns handles to
-   VBOs which encapsulate the vertex and texture coordinates.
+ - :func:`compileShaders`:    Compiles vertex/fragment shaders.
 
- - :func:`preDraw`:  Prepares the GL state for drawing.
+ - :func:`updateShaderState`: Refreshes the parameters used by the shader
+                              programs, controlling clipping and interpolation.
 
- - :func:`draw`:     Draws the scene.
+ - :func:`preDraw`:           Prepares the GL state for drawing.
 
- - :func:`postDraw`: Resets the GL state after drawing.
+ - :func:`draw`:              Draws the scene.
 
- - :func:`destroy`:  Deletes the vertex and texture coordinate VBOs.
+ - :func:`drawAll`:           Draws multiple scenes.
+
+ - :func:`postDraw`:          Resets the GL state after drawing.
+
+ - :func:`destroy`:           Deletes the vertex and texture coordinate VBOs.
 """
 
 import logging
+import ctypes
 
 import numpy                  as np
 import OpenGL.GL              as gl
 import OpenGL.raw.GL._types   as gltypes
 
-import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.shaders  as shaders
 import fsl.utils.transform     as transform
 
 
 log = logging.getLogger(__name__)
 
-def _compileShaders(self):
+
+def compileShaders(self):
     """Compiles and links the OpenGL GLSL vertex and fragment shader
     programs, and attaches a reference to the resulting program, and
-    all GLSL variables, to the given GLVolume object. 
+    all GLSL variables, to the given :class:`.GLVolume` object. 
     """
 
-    vertShaderSrc = shaders.getVertexShader(  self)
-    fragShaderSrc = shaders.getFragmentShader(self)
+    if self.shaders is not None:
+        gl.glDeleteProgram(self.shaders)
+
+    vertShaderSrc = shaders.getVertexShader(  self,
+                                              sw=self.display.softwareMode)
+    fragShaderSrc = shaders.getFragmentShader(self,
+                                              sw=self.display.softwareMode)
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
     # indices of all vertex/fragment shader parameters
-    self.worldToWorldMatPos = gl.glGetUniformLocation(self.shaders,
-                                                       'worldToWorldMat')
-    self.xaxPos             = gl.glGetUniformLocation(self.shaders,
-                                                       'xax')
-    self.yaxPos             = gl.glGetUniformLocation(self.shaders,
-                                                       'yax')
-    self.zaxPos             = gl.glGetUniformLocation(self.shaders,
-                                                       'zax')
-    self.worldCoordPos      = gl.glGetAttribLocation( self.shaders,
-                                                       'worldCoords') 
-    self.zCoordPos          = gl.glGetUniformLocation(self.shaders,
-                                                       'zCoord')
-    
+    self.vertexPos          = gl.glGetAttribLocation( self.shaders,
+                                                      'vertex')
+    self.voxCoordPos        = gl.glGetAttribLocation( self.shaders,
+                                                      'voxCoord')
+    self.texCoordPos        = gl.glGetAttribLocation( self.shaders,
+                                                      'texCoord') 
     self.imageTexturePos    = gl.glGetUniformLocation(self.shaders,
-                                                       'imageTexture')
-    self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
-                                                       'imageShape')
+                                                      'imageTexture')
     self.colourTexturePos   = gl.glGetUniformLocation(self.shaders,
-                                                       'colourTexture') 
+                                                      'colourTexture') 
+    self.imageShapePos      = gl.glGetUniformLocation(self.shaders,
+                                                      'imageShape')
     self.useSplinePos       = gl.glGetUniformLocation(self.shaders,
-                                                       'useSpline')
-    self.displayToVoxMatPos = gl.glGetUniformLocation(self.shaders,
-                                                       'displayToVoxMat')
+                                                      'useSpline')
     self.voxValXformPos     = gl.glGetUniformLocation(self.shaders,
-                                                       'voxValXform')
+                                                      'voxValXform')
     self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
-                                                       'clipLow')
+                                                      'clipLow')
     self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
-                                                       'clipHigh') 
-
-    # self.alphaPos      = gl.glGetUniformLocation(self.shaders, 'alpha')
-    # self.brightnessPos = gl.glGetUniformLocation(self.shaders, 'brightness')
-    # self.contrastPos   = gl.glGetUniformLocation(self.shaders, 'contrast')
+                                                      'clipHigh') 
 
 
 def init(self):
     """Compiles the vertex and fragment shaders used to render image slices.
     """
-    _compileShaders(self)
 
-    self.worldCoordBuffer = gl.glGenBuffers(1)
-    self.indexBuffer      = gl.glGenBuffers(1) 
-
+    self.shaders = None
+    
+    compileShaders(   self)
+    updateShaderState(self)
+    
+    self.vertexAttrBuffer = gl.glGenBuffers(1)
+                    
 
 def destroy(self):
-    """Cleans up VBO handles."""
+    """Cleans up the vertex buffer handle and shader programs."""
 
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.worldCoordBuffer))
-    gl.glDeleteBuffers(1, gltypes.GLuint(self.indexBuffer))
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexAttrBuffer))
     gl.glDeleteProgram(self.shaders)
 
 
-def genVertexData(self):
-    """Generates vertex and texture coordinates required to render the
-    image, and associates them with OpenGL VBOs . See
-    :func:`fsl.fslview.gl.glvolume.genVertexData`.
-    """ 
-    xax = self.xax
-    yax = self.yax
-
-    worldCoordBuffer     = self.worldCoordBuffer
-    indexBuffer          = self.indexBuffer
-    worldCoords, indices = self.genVertexData()
-
-    worldCoords = worldCoords[:, [xax, yax]]
-
-    worldCoords = worldCoords.ravel('C')
-    indices     = indices    .ravel('C')
-    
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, worldCoordBuffer)
-    gl.glBufferData(gl.GL_ARRAY_BUFFER, 
-                    worldCoords.nbytes,
-                    worldCoords,
-                    gl.GL_STATIC_DRAW)
-
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, indexBuffer)
-    gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
-                    indices.nbytes,
-                    indices,
-                    gl.GL_STATIC_DRAW)
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
-
-    return worldCoordBuffer, indexBuffer, len(indices)
-
-
-def preDraw(self):
-    """Sets up the GL state to draw a slice from the given
-    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
+def updateShaderState(self):
+    """Updates the parameters used by the shader programs, reflecting the
+    current display properties.
     """
 
     display = self.display
     opts    = self.displayOpts
 
-    # load the shaders
     gl.glUseProgram(self.shaders)
-
+    
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
     gl.glUniform1f( self.useSplinePos,     display.interpolation == 'spline')
     gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape,
                                                      dtype=np.float32))
-    gl.glUniform1i( self.xaxPos,           self.xax)
-    gl.glUniform1i( self.yaxPos,           self.yax)
-    gl.glUniform1i( self.zaxPos,           self.zax)
-
-    # gl.glUniform1f( self.alphaPos,      display.alpha      / 100.0)
-    # gl.glUniform1f( self.brightnessPos, display.brightness / 100.0)
-    # gl.glUniform1f( self.contrastPos,   display.contrast   / 100.0)
 
     # The clipping range options are in the voxel value
     # range, but the shader needs them to be in image
@@ -183,39 +138,71 @@ def preDraw(self):
     # display coordinates to voxel coordinates,
     # and to scale voxel values to colour map
     # texture coordinates
-    tcx = transform.concat(self.imageTexture.voxValXform,
-                           self.colourMapXform)
-    w2v = np.array(
-        display.getTransform('display', 'voxel'), dtype=np.float32).ravel('C')
+    vvx = transform.concat(self.imageTexture.voxValXform,
+                           self.colourTexture.getCoordinateTransform())
+    vvx = np.array(vvx, dtype=np.float32).ravel('C')
     
-    vvx = np.array(tcx, dtype=np.float32).ravel('C')
-    
-    gl.glUniformMatrix4fv(self.displayToVoxMatPos, 1, False, w2v)
-    gl.glUniformMatrix4fv(self.voxValXformPos,     1, False, vvx)
+    gl.glUniformMatrix4fv(self.voxValXformPos, 1, False, vvx)
 
     # Set up the colour and image textures
     gl.glUniform1i(self.imageTexturePos,  0)
-    gl.glUniform1i(self.colourTexturePos, 1) 
+    gl.glUniform1i(self.colourTexturePos, 1)
 
-    # Bind the world x/y coordinate buffer
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.worldCoords)
+    gl.glUseProgram(0)
+
+
+def preDraw(self):
+    """Sets up the GL state to draw a slice from the given
+    :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
+    """
+
+    # load the shaders
+    gl.glUseProgram(self.shaders)
+
+
+def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
+    """Prepares a data buffer which contains the given vertices,
+    voxel coordinates, and texture coordinates, ready to be passed in to
+    the shader programs.
+    """
+
+    buf    = np.zeros((vertices.shape[0] * 3, 3), dtype=np.float32)
+    verPos = self.vertexPos
+    voxPos = self.voxCoordPos
+    texPos = self.texCoordPos
+
+    # We store each of the three coordinate
+    # sets in a single interleaved buffer
+    buf[ ::3, :] = vertices
+    buf[1::3, :] = voxCoords
+    buf[2::3, :] = texCoords
+
+    buf = buf.ravel('C')
+    
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexAttrBuffer)
+    gl.glBufferData(gl.GL_ARRAY_BUFFER, buf.nbytes, buf, gl.GL_STATIC_DRAW)
+
     gl.glVertexAttribPointer(
-        self.worldCoordPos,
-        2,
-        gl.GL_FLOAT,
-        gl.GL_FALSE,
-        0,
-        None)
-    gl.glEnableVertexAttribArray(self.worldCoordPos)
+        verPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, None)
+    gl.glVertexAttribPointer(
+        texPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(24))
 
-    # Bind the vertex index buffer
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.indices)
+    # The fast shader does not use voxel coordinates
+    # so, on some GL drivers, attempting to bind it
+    # will cause an error
+    if not self.display.softwareMode:
+        gl.glVertexAttribPointer(
+            voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
+        gl.glEnableVertexAttribArray(self.voxCoordPos)
 
+    gl.glEnableVertexAttribArray(self.vertexPos)
+    gl.glEnableVertexAttribArray(self.texCoordPos) 
 
+    
 def draw(self, zpos, xform=None):
     """Draws the specified slice from the specified image on the canvas.
 
-    :arg image:   The :class:`~fsl.fslview.gl.glvolume.GLVolume` object which
+    :arg self:    The :class:`~fsl.fslview.gl.glvolume.GLVolume` object which
                   is managing the image to be drawn.
     
     :arg zpos:    World Z position of slice to be drawn.
@@ -223,27 +210,32 @@ def draw(self, zpos, xform=None):
     :arg xform:   A 4*4 transformation matrix to be applied to the vertex
                   data.
     """
-    
-    if xform is None: xform = np.identity(4)
-    
-    w2w = np.array(xform, dtype=np.float32).ravel('C')
 
-    # Bind the current world z position, and
-    # the xform transformation matrix
-    gl.glUniform1f(       self.zCoordPos,                    zpos)
-    gl.glUniformMatrix4fv(self.worldToWorldMatPos, 1, False, w2w)
+    vertices, voxCoords, texCoords = self.generateVertices(zpos, xform)
+    _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
 
-    # Draw all of the triangles!
-    gl.glDrawElements(gl.GL_TRIANGLE_STRIP,
-                      self.nVertices,
-                      gl.GL_UNSIGNED_INT,
-                      None)
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
 
 def drawAll(self, zposes, xforms):
     """Delegates to the default implementation in
     :meth:`~fsl.fslview.gl.globject.GLObject.drawAll`.
     """
-    globject.GLObject.drawAll(self, zposes, xforms)
+
+    nslices   = len(zposes)
+    vertices  = np.zeros((nslices * 6, 3), dtype=np.float32)
+    voxCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
+    texCoords = np.zeros((nslices * 6, 3), dtype=np.float32)
+
+    for i, (zpos, xform) in enumerate(zip(zposes, xforms)):
+        
+        v, vc, tc = self.generateVertices(zpos, xform)
+        vertices[ i * 6: i * 6 + 6, :] = v
+        voxCoords[i * 6: i * 6 + 6, :] = vc
+        texCoords[i * 6: i * 6 + 6, :] = tc
+
+    _prepareVertexAttributes(self, vertices, voxCoords, texCoords)
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6 * nslices)
 
 
 def postDraw(self):
@@ -251,7 +243,11 @@ def postDraw(self):
     :class:`~fsl.fslview.gl.glvolume.GLVolume` instance.
     """
 
-    gl.glDisableVertexAttribArray(self.worldCoordPos)
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER,         0)
-    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
+    gl.glDisableVertexAttribArray(self.vertexPos)
+    gl.glDisableVertexAttribArray(self.texCoordPos)
+
+    if not self.display.softwareMode:
+        gl.glDisableVertexAttribArray(self.voxCoordPos)
+    
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
     gl.glUseProgram(0)

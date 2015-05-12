@@ -9,9 +9,8 @@
 slices along a single axis from a collection of 3D images.
 """
 
+import sys
 import logging
-
-log = logging.getLogger(__name__)
 
 import numpy     as np
 import OpenGL.GL as gl
@@ -19,7 +18,11 @@ import OpenGL.GL as gl
 import props
 
 import fsl.fslview.gl.slicecanvas as slicecanvas
-import fsl.fslview.gl.textures    as fsltextures
+import fsl.fslview.gl.resources   as glresources
+import fsl.fslview.gl.textures    as textures
+
+
+log = logging.getLogger(__name__)
 
 
 class LightBoxCanvas(slicecanvas.SliceCanvas):
@@ -74,33 +77,6 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """If True, a box will be drawn around the slice containing the current
     location.
     """
-
-    
-    _labels = dict(
-        slicecanvas.SliceCanvas._labels.items() +
-        [('sliceSpacing',   'Slice spacing'),
-         ('ncols',          'Number of columns'),
-         ('nrows',          'Number of rows'),
-         ('topRow',         'Top row'),
-         ('zrange',         'Slice range'),
-         ('showGridLines',  'Show grid lines'),
-         ('highlightSlice', 'Highlight current slice')])
-    """Labels for the properties which are intended to be user editable."""
-
-
-    _tooltips = dict(
-        slicecanvas.SliceCanvas._tooltips.items() +
-        [('sliceSpacing',   'Distance (mm) between consecutive slices'),
-         ('ncols',          'Number of slices to display on one row'),
-         ('nrows',          'Number of rows to display on the canvas'),
-         ('topRow',         'Index number of top row (from '
-                            '0 to nrows-1) to display'),
-         ('zrange',         'Range (mm) along Z axis of slices to display'),
-         ('showGridLines',  'Show grid lines between slices'),
-         ('highlightSlice', 'Highlights the currently selected slice')])
-    """Tooltips to be used as help text."""
-
-    _propHelp = _tooltips
     
     
     def worldToCanvas(self, xpos, ypos, zpos):
@@ -204,6 +180,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._nslices   = 0
         self._totalRows = 0
 
+        # This will point to a RenderTexture if
+        # the offscreen render mode is enabled
+        self.__offscreenRenderTexture = None
+
         slicecanvas.SliceCanvas.__init__(self, imageList, displayCtx, zax)
 
         # default to showing the entire slice range
@@ -254,33 +234,76 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self._refresh()
 
 
-    def _onTwoStageRenderChange(self, *args, **kwargs):
-        """Overrides
-        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas._onTwoStageRenderChange`.
+    def _renderModeChange(self, *a):
+        """Overrides :meth:`.SliceCanvas._renderModeChange`.
+        """
+        
+        if self.__offscreenRenderTexture is not None:
+            self.__offscreenRenderTexture.destroy()
+            self.__offscreenRenderTexture = None
+            
+        slicecanvas.SliceCanvas._renderModeChange(self, *a)
+
+
+    def _updateRenderTextures(self):
+        """Overrides :meth:`.SliceCanvas._updateRenderTextures`.
         """
 
-        # The LightBoxCanvas does two-stage rendering
+        if self.renderMode == 'onscreen':
+            return
+
+        # The LightBoxCanvas does offscreen rendering
         # a bit different to the SliceCanvas. The latter
         # uses a separate render texture for each image,
         # whereas here we're going to use a single
-        # render texture for all images.
-        if self._renderTextures == {}:
-            self._renderTextures = None
+        # render texture for all images. 
+        elif self.renderMode == 'offscreen':
+            if self.__offscreenRenderTexture is not None:
+                self.__offscreenRenderTexture.destroy()
+
+            self.__offscreenRenderTexture = textures.RenderTexture(
+                '{}_{}'.format(type(self).__name__, id(self)),
+                gl.GL_LINEAR)
+
+            self.__offscreenRenderTexture.setSize(768, 768)
+
+        # The LightBoxCanvas handles re-render mode
+        # the same way as the SliceCanvas - a separate
+        # RenderTextureStack for eacn globject
+        elif self.renderMode == 'prerender':
             
-        # nothing to be done
-        if self.twoStageRender and self._renderTextures is not None:
-            return
-        
-        if not self.twoStageRender and self._renderTextures is None:
-            return
+            # Delete any RenderTextureStack instances for
+            # images which have been removed from the list
+            for image, (tex, name) in self._prerenderTextures.items():
+                if image not in self.imageList:
+                    self._prerenderTextures.pop(image)
+                    glresources.delete(name)
 
-        if not self.twoStageRender:
-            self._renderTextures.destroy()
-            self._renderTextures = None
+            # Create a RendeTextureStack for images
+            # which have been added to the list
+            for image in self.imageList:
+                if image in self._prerenderTextures:
+                    continue
 
-        else:
-            self._renderTextures = fsltextures.RenderTexture(
-                256, 256, gl.GL_LINEAR)
+                globj = self._glObjects.get(image, None)
+                
+                if globj is None:
+                    continue
+                
+                name = '{}_{}_zax{}'.format(
+                    id(image),
+                    textures.RenderTextureStack.__name__,
+                    self.zax)
+
+                if glresources.exists(name):
+                    rt = glresources.get(name)
+                else:
+
+                    rt = textures.RenderTextureStack(globj)
+                    rt.setAxes(self.xax, self.yax)
+                    glresources.set(name, rt)
+
+                self._prerenderTextures[image] = rt, name
 
         self._refresh()
 
@@ -381,8 +404,25 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             # Pick a sensible default for the
             # slice spacing - the smallest pixdim
-            # across all images in the list
-            newZGap   = min([i.pixdim[self.zax] for i in self.imageList])
+            # across all images in the list 
+            newZGap = sys.float_info.max
+
+            for image in self.imageList:
+                display = self.displayCtx.getDisplayProperties(image)
+
+                # TODO this is specific to the Image type,
+                # and shouldn't be. We're going to need to
+                # support other overlay types soon...
+                if   display.transform == 'id':
+                    zgap = 1
+                elif display.transform == 'pixdim':
+                    zgap = image.pixdim[self.zax]
+                else:
+                    zgap = min(image.pixdim[:3])
+
+                if zgap < newZGap:
+                    newZGap = zgap
+
             newZRange = self.displayCtx.bounds.getRange(self.zax)
 
             # Changing the zrange/sliceSpacing properties will, in most cases,
@@ -634,8 +674,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         yverts[0, 0] = xmin + (col)     * xlen
         yverts[1, 0] = xmin + (col + 1) * xlen
 
-        self.getAnnotations().line(xverts[0], xverts[1], colour=(0, 1, 0))
-        self.getAnnotations().line(yverts[0], yverts[1], colour=(0, 1, 0))
+        annot = self.getAnnotations()
+
+        annot.line(xverts[0], xverts[1], colour=(0, 1, 0), width=1)
+        annot.line(yverts[0], yverts[1], colour=(0, 1, 0), width=1)
 
         
     def _draw(self, *a):
@@ -645,16 +687,28 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if not self._setGLContext():
             return
 
-        if self.twoStageRender:
-            log.debug('Rendering to off-screen frame buffer')
-            self._renderTextures.bindAsRenderTarget()
-            self._setViewport(size=self._renderTextures.getSize())
+        if self.renderMode == 'offscreen':
+            
+            log.debug('Rendering to off-screen texture')
+
+            rt = self.__offscreenRenderTexture
+            
+            lo = [None] * 3
+            hi = [None] * 3
+            
+            lo[self.xax], hi[self.xax] = self.displayBounds.x
+            lo[self.yax], hi[self.yax] = self.displayBounds.y
+            lo[self.zax], hi[self.zax] = self.zrange
+            
+            rt.bindAsRenderTarget()
+            rt.setRenderViewport(self.xax, self.yax, lo, hi)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT)
             
         else:
             self._setViewport()
 
-        startSlice   = self.ncols * self.topRow
-        endSlice     = startSlice + self.nrows * self.ncols
+        startSlice = self.ncols * self.topRow
+        endSlice   = startSlice + self.nrows * self.ncols
 
         if endSlice > self._nslices:
             endSlice = self._nslices    
@@ -666,25 +720,42 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             globj = self._glObjects.get(image, None)
 
-            if (globj is None) or (not globj.ready()) or not display.enabled:
+            if (globj is None) or (not display.enabled):
                 continue
 
-            log.debug('Drawing {} slices ({} - {}) for image {}'.format(
-                endSlice - startSlice, startSlice, endSlice, image))
-
-            globj.preDraw()
+            log.debug('Drawing {} slices ({} - {}) for '
+                      'image {} directly to canvas'.format(
+                          endSlice - startSlice, startSlice, endSlice, image))
 
             zposes = self._sliceLocs[ image][startSlice:endSlice]
             xforms = self._transforms[image][startSlice:endSlice]
 
-            globj.drawAll(zposes, xforms)
+            if self.renderMode == 'prerender':
+                rt, name = self._prerenderTextures.get(image, (None, None))
 
-            globj.postDraw()
+                if rt is None:
+                    continue
+                
+                log.debug('Drawing {} slices ({} - {}) for image {} '
+                          'from pre-rendered texture'.format(
+                              endSlice - startSlice,
+                              startSlice,
+                              endSlice,
+                              image))
+                
+                for zpos, xform in zip(zposes, xforms):
+                    rt.draw(zpos, xform)
+            else:
 
-        if self.twoStageRender:
-            self._renderTextures.unbind()
+                globj.preDraw()
+                globj.drawAll(zposes, xforms)
+                globj.postDraw()
+
+        if self.renderMode == 'offscreen':
+            rt.unbindAsRenderTarget()
             self._setViewport()
-            self._renderTextures.drawRender(
+            rt.drawOnBounds(
+                0,
                 self.displayBounds.xlo,
                 self.displayBounds.xhi,
                 self.displayBounds.ylo,

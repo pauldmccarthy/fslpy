@@ -87,7 +87,7 @@ OPTIONS = td.TypeDict({
                        'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide',
-                       'twoStageRender'],
+                       'performance'],
 
     # From here on, all of the keys are
     # the names of HasProperties classes,
@@ -129,8 +129,7 @@ OPTIONS = td.TypeDict({
     'MaskOpts'      : ['colour',
                        'invert',
                        'threshold'],
-    'VectorOpts'    : ['displayMode',
-                       'xColour',
+    'VectorOpts'    : ['xColour',
                        'yColour',
                        'zColour',
                        'suppressX',
@@ -172,7 +171,7 @@ ARGUMENTS = td.TypeDict({
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
     'SceneOpts.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
     'SceneOpts.showCursor'         : ('hc',  'hideCursor'),
-    'SceneOpts.twoStageRender'     : ('tr',  'twoStageRendering'),
+    'SceneOpts.performance'        : ('p',   'performance'),
     
     'OrthoOpts.xzoom'       : ('xz', 'xzoom'),
     'OrthoOpts.yzoom'       : ('yz', 'yzoom'),
@@ -214,7 +213,6 @@ ARGUMENTS = td.TypeDict({
     'MaskOpts.invert'    : ('mi', 'maskInvert'),
     'MaskOpts.threshold' : ('t',  'threshold'),
 
-    'VectorOpts.displayMode' : ('d',  'displayMode'),
     'VectorOpts.xColour'     : ('xc', 'xColour'),
     'VectorOpts.yColour'     : ('yc', 'yColour'),
     'VectorOpts.zColour'     : ('zc', 'zColour'),
@@ -242,7 +240,8 @@ HELP = td.TypeDict({
     'SceneOpts.showColourBar'      : 'Show colour bar',
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label orientation',
-    'SceneOpts.twoStageRender'     : 'Enable two-stage rendering',
+    'SceneOpts.performance'        : 'Rendering performance '
+                                     '(1=fastest, 5=best looking)',
     
     'OrthoOpts.xzoom'       : 'X canvas zoom',
     'OrthoOpts.yzoom'       : 'Y canvas zoom',
@@ -284,7 +283,6 @@ HELP = td.TypeDict({
     'MaskOpts.invert'    : 'Invert',
     'MaskOpts.threshold' : 'Threshold',
 
-    'VectorOpts.displayMode'  : 'Display mode',
     'VectorOpts.xColour'      : 'X colour',
     'VectorOpts.yColour'      : 'Y colour',
     'VectorOpts.zColour'      : 'Z colour',
@@ -880,8 +878,7 @@ def applyImageArgs(args, imageList, displayCtx, **kwargs):
             try:
                 modImage = fslimage.Image(args.images[i].modulate)
                 
-                if modImage.shape  != image.shape[ :3] or \
-                   modImage.pixdim != image.pixdim[:3]:
+                if modImage.shape != image.shape[ :3]:
                     raise RuntimeError(
                         'Image {} cannot be used to modulate {} - '
                         'dimensions don\'t match'.format(modImage, image))

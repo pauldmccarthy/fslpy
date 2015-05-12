@@ -110,9 +110,17 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._ycanvas.bindProps('zoom', sceneOpts, 'yzoom')
         self._zcanvas.bindProps('zoom', sceneOpts, 'zzoom')
 
-        self._xcanvas.bindProps('twoStageRender', sceneOpts)
-        self._ycanvas.bindProps('twoStageRender', sceneOpts)
-        self._zcanvas.bindProps('twoStageRender', sceneOpts)
+        self._xcanvas.bindProps('renderMode',      sceneOpts)
+        self._ycanvas.bindProps('renderMode',      sceneOpts)
+        self._zcanvas.bindProps('renderMode',      sceneOpts)
+
+        self._xcanvas.bindProps('softwareMode',    sceneOpts)
+        self._ycanvas.bindProps('softwareMode',    sceneOpts)
+        self._zcanvas.bindProps('softwareMode',    sceneOpts)
+
+        self._xcanvas.bindProps('resolutionLimit', sceneOpts)
+        self._ycanvas.bindProps('resolutionLimit', sceneOpts)
+        self._zcanvas.bindProps('resolutionLimit', sceneOpts) 
 
         # And a global zoom which controls all canvases at once
         def onZoom(*a):
@@ -169,17 +177,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._locationChanged()
         self.initProfile()
 
-        # Set up a default layout (this is probably temporary)
-        import fsl.fslview.controls.imagelistpanel      as ilp
-        import fsl.fslview.controls.locationpanel       as lop
-        import fsl.fslview.controls.imagedisplaytoolbar as idt
-        import fsl.fslview.controls.orthotoolbar        as ot
-        
-        self.togglePanel(ilp.ImageListPanel)
-        self.togglePanel(lop.LocationPanel)
-        self.togglePanel(idt.ImageDisplayToolBar, False, self)
-        self.togglePanel(ot .OrthoToolBar,        False, self)
- 
 
     def destroy(self):
         """Called when this panel is closed. 

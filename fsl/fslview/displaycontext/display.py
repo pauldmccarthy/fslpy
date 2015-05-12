@@ -125,6 +125,10 @@ class Display(props.SyncableHasProperties):
     
     contrast   = props.Percentage()
 
+
+    softwareMode = props.Boolean(default=False)
+    """If possible, optimise for software-based rendering."""
+
         
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise.
@@ -185,8 +189,7 @@ class Display(props.SyncableHasProperties):
                       'volume',
                       'resolution',
                       'transform',
-                      'brightness',
-                      'contrast',
+                      'softwareMode', 
                       'imageType'])
 
         # Set up listeners after caling Syncabole.__init__,
@@ -350,9 +353,10 @@ class Display(props.SyncableHasProperties):
             oParent = self.getParent().getDisplayOpts()
 
         optsMap = {
-            'volume' : volumeopts.VolumeOpts,
-            'vector' : vectoropts.VectorOpts,
-            'mask'   : maskopts.  MaskOpts
+            'volume'     : volumeopts.VolumeOpts,
+            'rgbvector'  : vectoropts.VectorOpts,
+            'linevector' : vectoropts.LineVectorOpts,
+            'mask'       : maskopts.  MaskOpts
         }
 
         optType = optsMap[self.imageType]

@@ -29,8 +29,10 @@ These version dependent modules must provide the following functions:
 
   - ``destroy(GLVolume)``: Perform any necessary clean up.
 
-  - ``genVertexData(GLVolume)``: Create and prepare vertex coordinates, using
-    the :meth:`GLVolume.genVertexData` method.
+  - ``compileShaders(GLVolume)``: (Re-)Compile the shader programs.
+
+  - ``updateShaderState(GLVolume)``: Updates the shader program states
+    when display parameters are changed.
 
   - ``preDraw()``: Initialise the GL state, ready for drawing.
 
@@ -38,25 +40,29 @@ These version dependent modules must provide the following functions:
     given Z position. If xform is not None, it must be applied as a 
     transformation on the vertex coordinates.
 
+  - ``drawAll(Glvolume, zposes, xforms)`` - Draws slices at each of the
+    specified ``zposes``, applying the corresponding ``xforms`` to each.
+
   - ``postDraw()``: Clear the GL state after drawing.
 
 Images are rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
 as a 3D texture, and the current colour map as a 1D texture. A slice through
-the texture is rendered using four vertices, located at the respective corners
+the texture is rendered using six vertices, located at the respective corners
 of the image bounds.
-
 """
 
 import logging
 log = logging.getLogger(__name__)
 
-import OpenGL.GL               as gl
-import numpy                   as np
+import OpenGL.GL                as gl
 
-import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.textures as fsltextures
-import fsl.fslview.gl.globject as globject
+import fsl.utils.transform      as transform
+import fsl.fslview.gl           as fslgl
+import fsl.fslview.gl.textures  as textures
+import fsl.fslview.gl.resources as glresources
+import fsl.fslview.gl.globject  as globject
+import fsl.fslview.gl.routines  as glroutines
 
 
 class GLVolume(globject.GLImageObject):
@@ -68,6 +74,8 @@ class GLVolume(globject.GLImageObject):
         """Creates a GLVolume object bound to the given image, and associated
         image display.
 
+        Initialises the OpenGL data required to render the given image.
+
         :arg image:   A :class:`~fsl.data.image.Image` object.
         
         :arg display: A :class:`~fsl.fslview.displaycontext.Display`
@@ -76,57 +84,37 @@ class GLVolume(globject.GLImageObject):
         """
 
         globject.GLImageObject.__init__(self, image, display)
-        
-        self._ready = False
 
-
-    def ready(self):
-        """Returns `True` when the OpenGL data/state has been initialised,
-        and the image is ready to be drawn, `False` before.
-        """
-        return self._ready
-
-        
-    def init(self):
-        """Initialise the OpenGL data required to render the given image.
-
-        The real initialisation takes place in this method - it must
-        only be called after an OpenGL context has been created.
-        """
-        
         # Add listeners to this image so the view can be
         # updated when its display properties are changed
         self.addDisplayListeners()
 
+        # Create an image texture and a colour map texture
+        texName = '{}_{}'.format(type(self).__name__, id(self.image))
+
+        # The image texture may be used elsewhere,
+        # so we'll use the resource management
+        # module rather than creating one directly
+        self.imageTexture = glresources.get(
+            texName, 
+            textures.ImageTexture,
+            texName,
+            self.image,
+            self.display)
+
+        self.colourTexture = textures.ColourMapTexture(texName)
+        
+        self.refreshColourTexture()
+        
         fslgl.glvolume_funcs.init(self)
-
-        self.imageTexture = fsltextures.getTexture(
-            self.image, type(self).__name__, self.display)
-
-        # The colour map, used for converting 
-        # image data to a RGBA colour.
-        self.colourTexture = gl.glGenTextures(1)
-        log.debug('Created GL texture: {}'.format(self.colourTexture))
-        
-        self.colourResolution = 256
-        self.refreshColourTexture(self.colourResolution)
-        
-        self._ready = True
 
 
     def setAxes(self, xax, yax):
-        """This method should be called when the image display axes change.
+        """This method should be called when the image display axes change."""
         
-        It regenerates vertex information accordingly.
-        """
-        
-        self.xax         = xax
-        self.yax         = yax
-        self.zax         = 3 - xax - yax
-        wc, idxs, nverts = fslgl.glvolume_funcs.genVertexData(self)
-        self.worldCoords = wc
-        self.indices     = idxs
-        self.nVertices   = nverts
+        self.xax = xax
+        self.yax = yax
+        self.zax = 3 - xax - yax
 
 
     def preDraw(self):
@@ -134,20 +122,42 @@ class GLVolume(globject.GLImageObject):
         instance.
         """
         
-        if not self.display.enabled:
-            return
+        # Set up the image and colour textures
+        self.imageTexture .bindTexture(gl.GL_TEXTURE0)
+        self.colourTexture.bindTexture(gl.GL_TEXTURE1)
 
-        # Set up the image data texture 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glEnable(gl.GL_TEXTURE_3D)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, self.imageTexture.texture)
-
-        # Set up the colour map texture
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glEnable(gl.GL_TEXTURE_1D)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
-        
         fslgl.glvolume_funcs.preDraw(self)
+
+
+    def generateVertices(self, zpos, xform=None):
+        """Generates vertex coordinates for a 2D slice through the given
+        ``zpos``, with the optional ``xform`` applied to the coordinates.
+        
+        This method is called by the :mod:`.gl14.glvolume_funcs` and
+        :mod:`.gl21.glvolume_funcs` modules.
+
+        A tuple of three values is returned, containing:
+        
+          - A ``6*3 numpy.float32`` array containing the vertex coordinates
+        
+          - A ``6*3 numpy.float32`` array containing the voxel coordinates
+            corresponding to each vertex
+        
+          - A ``6*3 numpy.float32`` array containing the texture coordinates
+            corresponding to each vertex
+        """
+        vertices, voxCoords, texCoords = glroutines.slice2D(
+            self.image.shape[:3],
+            self.xax,
+            self.yax,
+            zpos, 
+            self.display.getTransform('voxel',   'display'),
+            self.display.getTransform('display', 'voxel'))
+
+        if xform is not None: 
+            vertices = transform.transform(vertices, xform)
+
+        return vertices, voxCoords, texCoords
 
         
     def draw(self, zpos, xform=None):
@@ -163,17 +173,12 @@ class GLVolume(globject.GLImageObject):
         :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
         """
         
-        if not self.display.enabled:
-            return
-        
         fslgl.glvolume_funcs.draw(self, zpos, xform)
 
         
     def drawAll(self, zposes, xforms):
         """Calls the module-specific ``drawAll`` function. """
         
-        if not self.display.enabled:
-            return
         fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
 
         
@@ -181,16 +186,9 @@ class GLVolume(globject.GLImageObject):
         """Clears the GL state after drawing from this :class:`GLVolume`
         instance.
         """
-        if not self.display.enabled:
-            return
 
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_3D, 0)
-        gl.glDisable(gl.GL_TEXTURE_3D)
-        
-        gl.glActiveTexture(gl.GL_TEXTURE1)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
-        gl.glDisable(gl.GL_TEXTURE_1D)
+        self.imageTexture .unbindTexture()
+        self.colourTexture.unbindTexture()
         
         fslgl.glvolume_funcs.postDraw(self) 
 
@@ -201,111 +199,33 @@ class GLVolume(globject.GLImageObject):
         deleting texture handles).
         """
 
-        fsltextures.deleteTexture(self.imageTexture)
+        glresources.delete(self.imageTexture.getTextureName())
+        
+        self.colourTexture.destroy()
+        
+        self.imageTexture  = None
+        self.colourTexture = None
+        
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
-
-    def genVertexData(self):
-        """Generates coordinates at the corners of the image bounds, along the
-        xax/yax plane, which define a slice through the 3D image.
-
-        This method is provided for use by the version-dependent
-        :mod:`fsl.fslview.gl.gl14.glvolume_funcs` and 
-        :mod:`fsl.fslview.gl.gl21.glvolume_funcs` modules, in their
-        implemntation of the ``genVertexData` function.
-
-        :arg image:   The :class:`~fsl.data.image.Image` object to
-                      generate vertex and texture coordinates for.
-
-        :arg display: A :class:`~fsl.fslview.displaycontext.ImageDisplay`
-                      object which defines how the image is to be
-                      rendered.
-
-        :arg xax:     The world space axis which corresponds to the
-                      horizontal screen axis (0, 1, or 2).
-
-        :arg yax:     The world space axis which corresponds to the
-                      vertical screen axis (0, 1, or 2).
-        """
-
-        return globject.slice2D(
-            self.image.shape,
-            self.xax,
-            self.yax,
-            self.display.getTransform('voxel', 'display'))
-
     
-    def refreshColourTexture(self, colourResolution):
-        """Configures the colour texture used to colour image voxels.
-
-        Also createss a transformation matrix which transforms an image voxel
-        value to the range (0-1), which may then be used as a texture
-        coordinate into the colour map texture. This matrix is stored as an
-        attribute of this :class:`GLVolume` object called
-        :attr:`colourMapXForm`. See also the :meth:`genImageTexture` method
-        for more details.
-        """
+    def refreshColourTexture(self):
+        """Configures the colour texture used to colour image voxels."""
 
         display = self.display
         opts    = self.displayOpts
 
-        imin = opts.displayRange[0]
-        imax = opts.displayRange[1]
+        alpha  = display.alpha / 100.0
+        cmap   = opts.cmap
+        invert = opts.invert
+        dmin   = opts.displayRange[0]
+        dmax   = opts.displayRange[1]
 
-        # This transformation is used to transform voxel values
-        # from their native range to the range [0.0, 1.0], which
-        # is required for texture colour lookup. Values below
-        # or above the current display range will be mapped
-        # to texture coordinate values less than 0.0 or greater
-        # than 1.0 respectively.
-        if imax == imin: scale = 1
-        else:            scale = imax - imin
-        
-        cmapXform = np.identity(4, dtype=np.float32)
-        cmapXform[0, 0] = 1.0 / scale
-        cmapXform[3, 0] = -imin * cmapXform[0, 0]
-
-        self.colourMapXform = cmapXform
-
-        # Create [self.colourResolution] rgb values,
-        # spanning the entire range of the image
-        # colour map
-        if opts.invert: colourRange = np.linspace(1.0, 0.0, colourResolution)
-        else:           colourRange = np.linspace(0.0, 1.0, colourResolution)
-        
-        colourmap = opts.cmap(colourRange)
-
-        # Apply global transparency
-        colourmap[:, 3] = display.alpha / 100.0
-        
-        # The colour data is stored on
-        # the GPU as 8 bit rgba tuples
-        colourmap = np.floor(colourmap * 255)
-        colourmap = np.array(colourmap, dtype=np.uint8)
-        colourmap = colourmap.ravel(order='C')
-
-        # GL texture creation stuff
-        gl.glBindTexture(gl.GL_TEXTURE_1D, self.colourTexture)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                           gl.GL_TEXTURE_WRAP_S,
-                           gl.GL_CLAMP_TO_EDGE)
-
-        gl.glTexImage1D(gl.GL_TEXTURE_1D,
-                        0,
-                        gl.GL_RGBA8,
-                        colourResolution,
-                        0,
-                        gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        colourmap)
-        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+        self.colourTexture.set(cmap=cmap,
+                               invert=invert,
+                               alpha=alpha,
+                               displayRange=(dmin, dmax))
 
         
     def addDisplayListeners(self):
@@ -322,18 +242,31 @@ class GLVolume(globject.GLImageObject):
 
         display = self.display
         opts    = self.displayOpts
-
-        lName = self.name
+        lName   = self.name
         
-        def vertexUpdate(*a):
-            self.setAxes(self.xax, self.yax)
-
         def colourUpdate(*a):
-            self.refreshColourTexture(self.colourResolution)
+            self.refreshColourTexture()
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
 
-        display.addListener('transform',     lName, vertexUpdate)
+        def shaderUpdate(*a):
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
+
+        def shaderCompile(*a):
+            fslgl.glvolume_funcs.compileShaders(   self)
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
+
+        def update(*a):
+            self.onUpdate()
+
+        display.addListener('resolution',    lName, update)
+        display.addListener('interpolation', lName, shaderUpdate)
+        display.addListener('softwareMode',  lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
         opts   .addListener('displayRange',  lName, colourUpdate)
+        opts   .addListener('clippingRange', lName, shaderUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
         opts   .addListener('invert',        lName, colourUpdate)
 
@@ -348,8 +281,11 @@ class GLVolume(globject.GLImageObject):
 
         lName = self.name
 
-        display.removeListener('transform',     lName)
+        display.removeListener('resolution',    lName)
+        display.removeListener('interpolation', lName)
+        display.removeListener('softwareMode',  lName)
         display.removeListener('alpha',         lName)
         opts   .removeListener('displayRange',  lName)
+        opts   .removeListener('clippingRange', lName)
         opts   .removeListener('cmap',          lName)
         opts   .removeListener('invert',        lName)

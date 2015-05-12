@@ -24,10 +24,55 @@ import logging
 
 import os.path as op
 
-import fsl.fslview.gl as fslgl
+import fsl.fslview.gl     as fslgl
+import fsl.utils.typedict as td
 
 
 log = logging.getLogger(__name__)
+
+
+_shaderTypePrefixMap = td.TypeDict({
+    
+    ('GLVolume',     'vert', False) : 'glvolume',
+    ('GLVolume',     'vert', True)  : 'glvolume_sw',
+    ('GLVolume',     'frag', False) : 'glvolume',
+    ('GLVolume',     'frag', True)  : 'glvolume_sw',
+    
+    ('GLRGBVector',  'vert', False) : 'glvolume',
+    ('GLRGBVector',  'vert', True)  : 'glvolume_sw',
+    
+    ('GLRGBVector',  'frag', False) : 'glvector',
+    ('GLRGBVector',  'frag', True)  : 'glvector_sw',
+
+    ('GLLineVector', 'vert', False) : 'gllinevector',
+    ('GLLineVector', 'vert', True)  : 'gllinevector_sw',
+    
+    ('GLLineVector', 'frag', False) : 'glvector',
+    ('GLLineVector', 'frag', True)  : 'glvector_sw', 
+})
+"""This dictionary provides a mapping between :class:`.GLObject` types,
+and file name prefixes, identifying the shader programs to use.
+"""
+
+
+def getShaderPrefix(globj, shaderType, sw):
+    """Returns the prefix identifying the vertex/fragment shader programs to use
+    for the given :class:`.GLObject` instance. If ``globj`` is a string, it is
+    returned unchanged.
+    """
+    
+    if isinstance(globj, str):
+        return globj
+    
+    return _shaderTypePrefixMap[globj, shaderType, sw]
+
+
+def setShaderPrefix(globj, shaderType, sw, prefix):
+    """Updates the prefix identifying the vertex/fragment shader programs to use
+    for the given :class:`.GLObject` type or instance.
+    """
+    
+    _shaderTypePrefixMap[globj, shaderType, sw] = prefix
 
 
 def setVertexProgramVector(index, vector):
@@ -181,28 +226,29 @@ def compileShaders(vertShaderSrc, fragShaderSrc):
     return program
 
 
-def getVertexShader(globj):
+def getVertexShader(globj, sw=False):
     """Returns the vertex shader source for the given GL object."""
-    return _getShader(globj, 'vert')
+    return _getShader(globj, 'vert', sw)
 
 
-def getFragmentShader(globj):
+def getFragmentShader(globj, sw=False):
     """Returns the fragment shader source for the given GL object.""" 
-    return _getShader(globj, 'frag')
+    return _getShader(globj, 'frag', sw)
 
 
-def _getShader(globj, shaderType):
+def _getShader(globj, shaderType, sw):
     """Returns the shader source for the given GL object and the given
     shader type ('vert' or 'frag').
     """
-    fname = _getFileName(globj, shaderType)
+    fname = _getFileName(globj, shaderType, sw)
     with open(fname, 'rt') as f: src = f.read()
     return _preprocess(src)    
 
 
-def _getFileName(globj, shaderType):
+def _getFileName(globj, shaderType, sw):
     """Returns the file name of the shader program for the given GL object
-    and shader type.
+    and shader type. The ``globj`` parameter may alternately be a string,
+    in which case it is used as the prefix for the shader program file name.
     """
 
     if   fslgl.GL_VERSION == '2.1':
@@ -215,18 +261,7 @@ def _getFileName(globj, shaderType):
     if shaderType not in ('vert', 'frag'):
         raise RuntimeError('Invalid shader type: {}'.format(shaderType))
 
-    # callers can request a specific
-    # shader by passing the name, rather
-    # than passing a GLObject instance
-    import fsl.fslview.gl.glvolume as glvolume
-    import fsl.fslview.gl.glvector as glvector
-    
-    if   isinstance(globj, str):               prefix =  globj
-    elif isinstance(globj, glvolume.GLVolume): prefix = 'glvolume'
-    elif isinstance(globj, glvector.GLVector): prefix = 'glvector'
-    else:
-        raise RuntimeError('Unknown GL object type: '
-                           '{}'.format(type(globj)))
+    prefix = getShaderPrefix(globj, shaderType, sw)
 
     return op.join(op.dirname(__file__), subdir, '{}_{}.{}'.format(
         prefix, shaderType, suffix))
