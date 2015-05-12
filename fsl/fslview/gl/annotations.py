@@ -21,6 +21,7 @@ import OpenGL.GL as gl
 
 
 import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.textures as textures
 import fsl.utils.transform     as transform
 
@@ -385,7 +386,7 @@ class VoxelGrid(AnnotationObject):
                 off = 0
             voxels[:, ax] += off + self.offsets[ax]
 
-        verts, idxs = globject.voxelGrid(voxels, xax, yax, 1, 1)
+        verts, idxs = glroutines.voxelGrid(voxels, xax, yax, 1, 1)
 
         gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ravel('C')) 
         gl.glDrawElements(gl.GL_LINES, len(idxs), gl.GL_UNSIGNED_INT, idxs)
@@ -429,12 +430,12 @@ class VoxelSelection(AnnotationObject):
         yax   = self.yax
         shape = self.selection.selection.shape
 
-        verts, _, texs = globject.slice2D(shape,
-                                          xax,
-                                          yax,
-                                          zpos,
-                                          self.voxToDisplayMat,
-                                          self.displayToVoxMat)
+        verts, _, texs = glroutines.slice2D(shape,
+                                            xax,
+                                            yax,
+                                            zpos,
+                                            self.voxToDisplayMat,
+                                            self.displayToVoxMat)
 
         verts = np.array(verts, dtype=np.float32).ravel('C')
         texs  = np.array(texs,  dtype=np.float32).ravel('C')

@@ -13,6 +13,7 @@ import OpenGL.raw.GL._types        as gltypes
 
 import fsl.utils.transform         as transform
 import fsl.fslview.gl.resources    as glresources
+import fsl.fslview.gl.routines     as glroutines
 import fsl.fslview.gl.globject     as globject
 import fsl.fslview.gl.gllinevector as gllinevector
 import fsl.fslview.gl.shaders      as shaders
@@ -264,7 +265,7 @@ def hardwareDraw(self, zpos, xform=None):
     elif display.transform == 'pixdim':
         resolution = map(lambda r, p: max(r, p), resolution, image.pixdim[:3])
 
-    vertices = globject.calculateSamplePoints(
+    vertices = glroutines.calculateSamplePoints(
         image.shape,
         resolution,
         v2dMat,

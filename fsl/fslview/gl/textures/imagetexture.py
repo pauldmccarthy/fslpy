@@ -12,7 +12,7 @@ import numpy     as np
 import OpenGL.GL as gl
 
 import fsl.utils.transform     as transform
-import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.routines as glroutines
 
 import texture
 
@@ -348,7 +348,7 @@ class ImageTexture(texture.Texture):
         This process potentially involves:
         
           - Resampling to a different resolution (see the
-            :mod:`~fsl.fslview.gl.globject.subsample` function).
+            :mod:`~fsl.fslview.gl.routines.subsample` function).
         
           - Pre-filtering (see the ``prefilter`` parameter to
             :meth:`__init__`).
@@ -367,14 +367,14 @@ class ImageTexture(texture.Texture):
             
         else:
             if self.nvals == 1 and self.image.is4DImage():
-                data = globject.subsample(self.image.data,
-                                          self.display.resolution,
-                                          self.image.pixdim, 
-                                          self.display.volume)[0]
+                data = glroutines.subsample(self.image.data,
+                                            self.display.resolution,
+                                            self.image.pixdim, 
+                                            self.display.volume)[0]
             else:
-                data = globject.subsample(self.image.data,
-                                          self.display.resolution,
-                                          self.image.pixdim)[0]
+                data = glroutines.subsample(self.image.data,
+                                            self.display.resolution,
+                                            self.image.pixdim)[0]
 
         if self.prefilter is not None:
             data = self.prefilter(data)

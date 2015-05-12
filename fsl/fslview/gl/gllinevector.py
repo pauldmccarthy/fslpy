@@ -11,8 +11,8 @@ import numpy                   as np
 
 import fsl.utils.transform     as transform
 import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.globject as globject
 import fsl.fslview.gl.glvector as glvector
+import fsl.fslview.gl.routines as glroutines
 
 
 log = logging.getLogger(__name__)
@@ -44,9 +44,9 @@ class GLLineVertices(object):
 
         # Extract a sub-sample of the vector image
         # at the current display resolution
-        data, starts, steps = globject.subsample(image.data,
-                                                 display.resolution,
-                                                 image.pixdim)
+        data, starts, steps = glroutines.subsample(image.data,
+                                                   display.resolution,
+                                                   image.pixdim)
 
         # Pull out the xyz components of the 
         # vectors, and calculate vector lengths
@@ -153,7 +153,7 @@ class GLLineVertices(object):
             # Create a coordinate grid through
             # a plane at the requested z pos 
             # in the display coordinate system
-            coords = globject.calculateSamplePoints(
+            coords = glroutines.calculateSamplePoints(
                 image.shape[ :3],
                 [display.resolution] * 3,
                 display.getTransform('voxel', 'display'),

@@ -10,7 +10,7 @@ vector images in RGB mode.
 
 import numpy                   as np
 import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.globject as globject
+import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.glvector as glvector
 import fsl.utils.transform     as transform
 
@@ -29,7 +29,7 @@ class GLRGBVector(glvector.GLVector):
 
 
     def generateVertices(self, zpos, xform):
-        vertices, voxCoords, texCoords = globject.slice2D(
+        vertices, voxCoords, texCoords = glroutines.slice2D(
             self.image.shape[:3],
             self.xax,
             self.yax,

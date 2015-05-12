@@ -62,6 +62,7 @@ import fsl.fslview.gl           as fslgl
 import fsl.fslview.gl.textures  as textures
 import fsl.fslview.gl.resources as glresources
 import fsl.fslview.gl.globject  as globject
+import fsl.fslview.gl.routines  as glroutines
 
 
 class GLVolume(globject.GLImageObject):
@@ -145,7 +146,7 @@ class GLVolume(globject.GLImageObject):
           - A ``6*3 numpy.float32`` array containing the texture coordinates
             corresponding to each vertex
         """
-        vertices, voxCoords, texCoords = globject.slice2D(
+        vertices, voxCoords, texCoords = glroutines.slice2D(
             self.image.shape[:3],
             self.xax,
             self.yax,
