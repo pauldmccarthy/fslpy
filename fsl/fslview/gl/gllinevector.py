@@ -200,7 +200,6 @@ class GLLineVector(glvector.GLVector):
         
         fslgl.gllinevector_funcs.init(self)
 
-
         def update(*a):
             self.onUpdate()
 
@@ -210,6 +209,7 @@ class GLLineVector(glvector.GLVector):
     def destroy(self):
         glvector.GLVector.destroy(self)
         fslgl.gllinevector_funcs.destroy(self)
+        
         self.opts.removeListener('lineWidth', self.name)
 
 

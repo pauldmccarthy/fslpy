@@ -42,7 +42,8 @@ def init(self):
         
         if display.softwareMode:
             self.updateShaderState()
-            self.onUpdate()
+            
+        self.onUpdate()
 
     display.addListener('transform',  self.name, vertexUpdate)
     display.addListener('resolution', self.name, vertexUpdate)

@@ -341,8 +341,6 @@ class SliceCanvas(props.HasProperties):
         :class:`.RenderTextureStack` instances for newly added/removed images.
         """
 
-        needRefresh = False
-
         if self.renderMode == 'onscreen':
             return
 
@@ -353,14 +351,12 @@ class SliceCanvas(props.HasProperties):
                 if image not in self.imageList:
                     self._offscreenTextures.pop(image)
                     texture.destroy()
-                    needRefresh = True
             
         elif self.renderMode == 'prerender':
             for image, (texture, name) in self._prerenderTextures.items():
                 if image not in self.imageList:
                     self._prerenderTextures.pop(image)
                     glresources.delete(name)
-                    needRefresh = True 
 
         # If any images have been added to the list,
         # create a new render textures for them
@@ -418,10 +414,7 @@ class SliceCanvas(props.HasProperties):
 
                 self._prerenderTextures[image] = rt, name
 
-            needRefresh = True
-
-        if needRefresh:
-            self._refresh()
+        self._refresh()
 
                 
     def _renderModeChange(self, *a):
@@ -443,6 +436,7 @@ class SliceCanvas(props.HasProperties):
         # displayed on the screen, so render
         # textures are not needed.
         if self.renderMode == 'onscreen':
+            self._refresh()
             return
 
         # Off-screen or prerender rendering - update
