@@ -5,7 +5,8 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
-
+* Feedback
+** (Sean) In location panel, ability to display intensity for all images, not just the currently selected one
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
