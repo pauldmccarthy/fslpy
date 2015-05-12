@@ -22,13 +22,13 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
 ** Clipping range not working for some volumes in ~/analysis_prac_2015/rest/ICA/Group/groupmelodic_fix.ica/melodic_IC.nii.gz 
-** Spline intrpolation doing weird things
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
 ** Lightbox scrollbar under linux not visible?
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
+** DONE Spline intrpolation doing weird things
 ** DONE VolumeOpts DisplayRange<->Bricon synchronisation.
 Breaks when brightness/contrast/displayRange sync (between multiple displays)
 is turned off .. I think the sync logic has to occur somewhere other than the
