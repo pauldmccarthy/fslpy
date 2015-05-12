@@ -152,6 +152,6 @@ class ColourBarCanvas(props.HasProperties):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glShadeModel(gl.GL_FLAT)
 
-        self._tex.drawOnBounds(0, 1, 0, 1, 0, 1)
+        self._tex.drawOnBounds(0, 0, 1, 0, 1, 0, 1)
         
         self._postDraw()
