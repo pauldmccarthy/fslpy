@@ -457,8 +457,9 @@ class SliceCanvas(props.HasProperties):
 
             if self.resolutionLimit > minres:
                 minres = self.resolutionLimit
-                
-            display.resolution = minres
+
+            if display.resolution < minres:
+                display.resolution = minres
 
 
     def _zAxisChanged(self, *a):
