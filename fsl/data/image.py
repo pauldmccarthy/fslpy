@@ -13,7 +13,6 @@ functionality.
 """
 
 import logging
-import collections
 import os.path as op
 
 import numpy   as np
@@ -33,10 +32,6 @@ log = logging.getLogger(__name__)
 class Image(props.HasProperties):
     """Class which represents a 3D/4D image. Internally, the image is
     loaded/stored using :mod:`nibabel`.
-
-    Arbitrary data may be associated with an :class:`Image` object, via the
-    :meth:`getAttribute` and :meth:`setAttribute` methods (which are just
-    front end wrappers around an internal ``dict`` object).
 
     In addition to the class-level properties defined below, the following
     attributes are present on an :class:`Image` object:
@@ -63,16 +58,6 @@ class Image(props.HasProperties):
                           the event that the image was large and was gzipped -
                           see :func:`_loadImageFile`).
     """
-
-
-    imageType = props.Choice(
-        collections.OrderedDict([
-            ('volume',     '3D/4D volume'),
-            ('mask',       '3D/4D mask image'),
-            ('rgbvector',  '3-direction vector image (RGB)'),
-            ('linevector', '3-direction vector image (Line)')]),
-        default='volume')
-    """This property defines the type of image data."""
 
 
     name = props.String()
@@ -180,22 +165,6 @@ class Image(props.HasProperties):
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
-
-        # This dictionary may be used to store
-        # arbitrary data associated with this image.
-        self._attributes = {}
-
-        # update the available image type(s)
-        imageTypeProp = self.getProp('imageType')
-
-        # the vector type is only
-        # applicable to X*Y*Z*3 images
-        if len(self.shape) != 4 or self.shape[3] != 3:
-            
-            log.debug('Disabling vector type for {} ({})'.format(
-                self, self.shape))
-            imageTypeProp.disableChoice('vector', self)
-        
 
         
     def loadData(self):
@@ -369,27 +338,3 @@ class Image(props.HasProperties):
              (constants.ORIENT_A2P, constants.ORIENT_P2A),
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
         return code
-
-    
-    def getAttribute(self, name):
-        """Retrieve the attribute with the given name.
-
-        :raise KeyError: if there is no attribute with the given name.
-        """
-        return self._attributes[name]
-
-    
-    def delAttribute(self, name):
-        """Delete and return the value of the attribute with the given name.
-
-        :raise KeyError: if there is no attribute with the given name.
-        """
-        return self._attributes.pop(name)
-
-        
-    def setAttribute(self, name, value):
-        """Set an attribute with the given name and the given value."""
-        self._attributes[name] = value
-        
-        log.debug('Attribute set on {}: {} = {}'.format(
-            self.name, name, str(value)))

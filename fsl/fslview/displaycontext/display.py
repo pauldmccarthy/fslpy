@@ -7,15 +7,15 @@
 """This module provides definitions of an important class - the
 :class:`Display` class.
 
-A ``Display`` contains a specification for the way in which an
-:class:`~fsl.data.image.Image` instance is to be displayed.
-
+A ``Display`` contains a specification for the way in which any overlays is to
+be displayed.
 
 ..note:: Put a description of the three coordinate systems which
          exist in the system.
 """
 
 import logging
+import collections
 
 import numpy               as np
 
@@ -33,9 +33,9 @@ class DisplayOpts(props.SyncableHasProperties):
 
     def __init__(
             self,
-            image,
+            overlay,
             display,
-            imageList,
+            overlayList,
             displayCtx,
             parent=None,
             *args,
@@ -43,12 +43,12 @@ class DisplayOpts(props.SyncableHasProperties):
         
         props.SyncableHasProperties.__init__(self, parent, *args, **kwargs)
         
-        self.image      = image
-        self.display    = display
-        self.imageList  = imageList
-        self.displayCtx = displayCtx
-        self.imageType  = image.imageType
-        self.name       = '{}_{}'.format(type(self).__name__, id(self))
+        self.overlay     = overlay
+        self.display     = display
+        self.overlayList = overlayList
+        self.displayCtx  = displayCtx
+        self.overlayType = display.overlayType
+        self.name        = '{}_{}'.format(type(self).__name__, id(self))
 
         
     def destroy(self):
@@ -60,20 +60,23 @@ class Display(props.SyncableHasProperties):
     """
 
     
-    name = fslimage.Image.name
-    """The image name.  This property is bound to the
-    :attr:`~fsl.data.image.Image.name` property.
-    """
+    name = props.String()
+    """The overlay name. """
 
-    
-    imageType = fslimage.Image.imageType
-    """The image data type. This property is bound to the
-    :attr:`~fsl.data.image.Image.imageType` property.
-    """
 
+    overlayType = props.Choice(
+        collections.OrderedDict([
+            ('volume',     '3D/4D volume'),
+            ('mask',       '3D/4D mask image'),
+            ('rgbvector',  '3-direction vector image (RGB)'),
+            ('linevector', '3-direction vector image (Line)')]),
+        default='volume')
+    """This property defines the overlay type - how the data is to be
+    displayed.
+    """
     
     enabled = props.Boolean(default=True)
-    """Should this image be displayed at all?"""
+    """Should this overlay be displayed at all?"""
 
     
     resolution = props.Real(maxval=10, default=1, clamped=True)
@@ -81,16 +84,17 @@ class Display(props.SyncableHasProperties):
                               
     
     volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """If a 4D image, the current volume to display."""
+    """If the data is 4D , the current volume to display."""
 
 
+    # TODO This is very specific to volumetric (NIFTI) data
     transform = props.Choice(
         ('affine', 'pixdim', 'id'),
         labels=[strings.choices['Display.transform.affine'],
                 strings.choices['Display.transform.pixdim'],
                 strings.choices['Display.transform.id']],
         default='pixdim')
-    """This property defines how the image should be transformd into the display
+    """This property defines how the overlay should be transformd into the display
     coordinate system.
     
       - ``affine``: Use the affine transformation matrix stored in the image
@@ -111,7 +115,7 @@ class Display(props.SyncableHasProperties):
                 strings.choices['Display.interpolation.linear'],
                 strings.choices['Display.interpolation.spline']])
     """How the value shown at a real world location is derived from the
-    corresponding voxel value(s). 'No interpolation' is equivalent to nearest
+    corresponding data value(s). 'No interpolation' is equivalent to nearest
     neighbour interpolation.
     """
 
@@ -129,29 +133,45 @@ class Display(props.SyncableHasProperties):
     softwareMode = props.Boolean(default=False)
     """If possible, optimise for software-based rendering."""
 
-        
-    def is4DImage(self):
-        """Returns ``True`` if this image is 4D, ``False`` otherwise.
+
+    def is4D(self):
+        """Returns ``True`` if this overlay is 4D, ``False`` otherwise.
         """
-        return self.image.is4DImage()
+
+        if not isinstance(self.__overlay, fslimage.Image):
+            raise RuntimeError('Non-volumetric types not supported yet')
+        
+        return self.__overlay.is4DImage()
+
+    
+    def getOverlay(self):
+        return self.__overlay
 
 
-    def __init__(self, image, imageList, displayCtx, parent=None):
-        """Create a :class:`Display` for the specified image.
+    def __init__(self, overlay, overlayList, displayCtx, parent=None):
+        """Create a :class:`Display` for the specified overlay.
 
-        :arg image: A :class:`~fsl.data.image.Image` object.
+        :arg overlay:     The overlay object.
 
-        :arg parent: 
+        :arg overlayList: The :class:`.OverlayList` instance which contains
+                          all overlays.
+
+        :arg displayCtx:  A :class:`.DisplayContext` instance describing how
+                          the overlays are to be displayed.
+
+        :arg parent:      
         """
         
-        self.image      = image
-        self.imageList  = imageList
-        self.displayCtx = displayCtx
+        self.__overlay     = overlay
+        self.__overlayList = overlayList
+        self.__displayCtx  = displayCtx
 
-        # bind self.name to image.name, so changes
+        # bind self.name to overlay.name, so changes
         # in one are propagated to the other
-        self.bindProps('name',      image)
-        self.bindProps('imageType', image)
+        
+        # TODO non-volumettric overlay types
+        if isinstance(overlay, fslimage.Image):
+            self.bindProps('name', overlay)
 
         # The display<->* transformation matrices
         # are created in the _transformChanged method
@@ -159,16 +179,18 @@ class Display(props.SyncableHasProperties):
         self.__setupTransforms()
 
         # is this a 4D volume?
-        if image.is4DImage():
-            self.setConstraint('volume', 'maxval', image.shape[3] - 1)
+        if self.is4D():
+            self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
         self.__oldTransform = None
         self.__transform    = self.transform
         self.__transformChanged()
 
         # limit resolution to the image dimensions
-        self.resolution = min(image.pixdim[:3])
-        self.setConstraint('resolution',   'minval', self.resolution)
+        # TODO non-volumetric types
+        if isinstance(overlay, fslimage.Image):
+            self.resolution = min(overlay.pixdim[:3])
+            self.setConstraint('resolution', 'minval', self.resolution)
 
         # Call the super constructor after our own
         # initialisation, in case the provided parent
@@ -178,11 +200,6 @@ class Display(props.SyncableHasProperties):
             self,
             parent,
             
-            # The name property is implicitly bound
-            # through the image object so it doesn't
-            # need to be linked between ImageDisplays 
-            nobind=['name'],
-            
             # These properties cannot be unbound, as
             # they affect the OpenGL representation
             nounbind=['interpolation',
@@ -190,7 +207,7 @@ class Display(props.SyncableHasProperties):
                       'resolution',
                       'transform',
                       'softwareMode', 
-                      'imageType'])
+                      'overlayType'])
 
         # Set up listeners after caling Syncabole.__init__,
         # so the callbacks don't get called during synchronisation
@@ -199,30 +216,49 @@ class Display(props.SyncableHasProperties):
             'Display_{}'.format(id(self)),
             self.__transformChanged) 
         self.addListener(
-            'imageType',
+            'overlayType',
             'Display_{}'.format(id(self)),
-            self.__imageTypeChanged)
+            self.__overlayTypeChanged)
 
-        # The imageTypeChanged method creates
+
+        # update the available overlay type(s)
+        # based on the overlay type. Makes sense
+        overlayTypeProp = self.getProp('overlayType')
+
+        # the vector type is only
+        # applicable to X*Y*Z*3 images
+        if isinstance(overlay, fslimage.Image):
+            if len(overlay.shape) != 4 or overlay.shape[3] != 3:
+            
+                log.debug('Disabling vector type for {} ({})'.format(
+                    self, self.shape))
+                overlayTypeProp.disableChoice('vector', self)
+
+        # The __overlayTypeChanged method creates
         # a new DisplayOpts instance - for this,
         # it needs to be able to access this
-        # Dispaly instance's parent (so it can
+        # Display instance's parent (so it can
         # subsequently access a parent for the
         # new DisplayOpts instance). Therefore,
         # we do this after calling
         # Syncable.__init__.
         self.__displayOpts = None
-        self.__imageTypeChanged()
+        self.__overlayTypeChanged()
 
         
     def __setupTransforms(self):
         """Calculates transformation matrices between all of the possible
-        spaces in which the image may be displayed.
+        spaces in which the overlay may be displayed.
 
         These matrices are accessible via the :meth:`getTransform` method.
         """
 
-        image          = self.image
+        # TODO This is obviously volumetric specific
+
+        if not isinstance(self.__overlay, fslimage.Image):
+            raise RuntimeError('Non-volumetric types not supported yet')
+
+        image          = self.__overlay
 
         voxToIdMat     = np.eye(4)
         voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
@@ -276,7 +312,12 @@ class Display(props.SyncableHasProperties):
         value of :attr:`transform`.
         """
 
-        if xform is None:      xform = self.transform
+        # TODO non-volumetric types
+        if not isinstance(self.__overlay, fslimage.Image):
+            raise RuntimeError('Non-volumetric types not supported yet')
+
+        if xform is None:
+            xform = self.transform
 
         if   from_ == 'display': from_ = xform
         elif from_ == 'world':   from_ = 'affine'
@@ -292,7 +333,7 @@ class Display(props.SyncableHasProperties):
     def getDisplayBounds(self):
         """Calculates and returns the min/max values of a 3D bounding box,
         in the display coordinate system, which is big enough to contain
-        the image associated with this :class:`ImageDisplay` instance.
+        the overlay associated with this :class:`Display` instance.
 
         The coordinate system in which the bounding box is defined is
         determined by the current value of the :attr:`transform` property.
@@ -301,8 +342,12 @@ class Display(props.SyncableHasProperties):
         a sequence of three low bounds, and the second value a sequence
         of three high bounds.
         """
+
+        if not isinstance(self.__overlay, fslimage.Image):
+            raise RuntimeError('Non-volumetric types not supported yet')
+        
         return transform.axisBounds(
-            self.image.shape[:3], self.getTransform('voxel', 'display'))
+            self.__overlay.shape[:3], self.getTransform('voxel', 'display'))
 
 
     def getLastTransform(self):
@@ -359,19 +404,19 @@ class Display(props.SyncableHasProperties):
             'mask'       : maskopts.  MaskOpts
         }
 
-        optType = optsMap[self.imageType]
-        log.debug('Creating DisplayOpts for image {}: {}'.format(
+        optType = optsMap[self.overlayType]
+        log.debug('Creating DisplayOpts for overlay {}: {}'.format(
             self.name,
             optType.__name__))
         
-        return optType(self.image,
+        return optType(self.__overlay,
                        self,
-                       self.imageList,
+                       self.__overlayList,
                        self.displayCtx,
                        oParent)
 
     
-    def __imageTypeChanged(self, *a):
+    def __overlayTypeChanged(self, *a):
         """
         """
 
