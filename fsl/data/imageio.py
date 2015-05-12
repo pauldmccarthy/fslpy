@@ -444,15 +444,11 @@ def loadImages(paths, loadFunc='default', errorFunc='default'):
     return images
 
 
-def addImages(imageList,
-              fromDir=None,
-              addToEnd=True,
-              **kwargs):
-    """Convenience method for interactively adding images to an
-    :class:`fsl.data.image.ImageList`.
+def interactiveLoadImages(fromDir=None, **kwargs):
+    """Convenience method for interactively loading one or more images.
+    
     If the :mod:`wx` package is available, pops up a file dialog
-    prompting the user to select one or more images to append to the
-    image list.
+    prompting the user to select one or more images to load.
 
     :param str fromDir:   Directory in which the file dialog should start.
                           If ``None``, the most recently visited directory
@@ -460,12 +456,7 @@ def addImages(imageList,
                           an already loaded image, or the current working
                           directory.
 
-    :param bool addToEnd: If True (the default), the new images are added
-                          to the end of the list. Otherwise, they are added
-                          to the beginning of the list.
-
-    Returns: True if images were successfully added, False if no images
-    were added.
+    Returns: A list containing the images that were loaded.
     
     :raise ImportError:  if :mod:`wx` is not present.
     :raise RuntimeError: if a :class:`wx.App` has not been created.
@@ -477,13 +468,10 @@ def addImages(imageList,
     if app is None:
         raise RuntimeError('A wx.App has not been created')
 
-    lastDir = getattr(addImages, 'lastDir', None)
+    lastDir = getattr(interactiveLoadImages, 'lastDir', None)
 
     if lastDir is None:
-        if len(imageList) > 0 and imageList[-1].imageFile is not None:
-            lastDir = op.dirname(imageList[-1].imageFile)
-        else:
-            lastDir = os.getcwd()
+        lastDir = os.getcwd()
 
     saveLastDir = False
     if fromDir is None:
@@ -496,14 +484,13 @@ def addImages(imageList,
                         wildcard=makeWildcard(),
                         style=wx.FD_OPEN | wx.FD_MULTIPLE)
 
-    if dlg.ShowModal() != wx.ID_OK: return False
+    if dlg.ShowModal() != wx.ID_OK:
+        return []
 
     paths  = dlg.GetPaths()
     images = loadImages(paths, **kwargs)
 
-    if saveLastDir: addImages.lastDir = op.dirname(paths[-1])
+    if saveLastDir:
+        interactiveLoadImages.lastDir = op.dirname(paths[-1])
 
-    if addToEnd: imageList.extend(      images)
-    else:        imageList.insertAll(0, images)
-
-    return True
+    return images

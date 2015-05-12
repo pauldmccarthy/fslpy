@@ -17,7 +17,7 @@ import argparse
 import fslview_parseargs
 
 import fsl.fslview.displaycontext as displaycontext
-import fsl.data.image             as fslimage
+import fsl.fslview.overlay        as fsloverlay
 
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def interface(parent, args, ctx):
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
 
-    imageList, displayCtx, splashFrame = ctx
+    overlayList, displayCtx, splashFrame = ctx
 
     # If a scene has not been specified, the default
     # behaviour is to restore the previous frame layout
@@ -36,7 +36,7 @@ def interface(parent, args, ctx):
     else:                  restore = False
     
     frame = fslviewframe.FSLViewFrame(
-        parent, imageList, displayCtx, restore)
+        parent, overlayList, displayCtx, restore)
 
     # Otherwise, we add the scene
     # specified by the user
@@ -49,7 +49,7 @@ def interface(parent, args, ctx):
     viewPanel = frame.getViewPanels()[0][0]
     viewOpts  = viewPanel.getSceneOptions()
 
-    fslview_parseargs.applySceneArgs(args, imageList, displayCtx, viewOpts)
+    fslview_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
 
     if args.scene == 'ortho':
 
@@ -125,27 +125,27 @@ def context(args):
     fslgl.getWXGLContext(frame)
     fslgl.bootstrap(args.glversion)
 
-    def status(image):
-        frame.SetStatus(strings.messages['fslview.loading'].format(image))
+    def status(overlay):
+        frame.SetStatus(strings.messages['fslview.loading'].format(overlay))
         wx.Yield()
 
-    # Create the image list - only one of these
-    # ever exists; and the master DisplayContext.
+    # Create the overlay list (only one of these
+    # ever exists) and the master DisplayContext.
     # A new DisplayContext instance will be
     # created for every new view that is opened
     # in the FSLViewFrame (which is created in
     # the interface function, above), but all
     # child DisplayContext instances will be
     # linked to this master one.
-    imageList  = fslimage.ImageList()
-    displayCtx = displaycontext.DisplayContext(imageList)
+    overlayList = fsloverlay.OverlayList()
+    displayCtx  = displaycontext.DisplayContext(overlayList)
     
     # Load the images - the splash screen status will 
-    # be updated with the currently loading image name
-    fslview_parseargs.applyImageArgs(
-        args, imageList, displayCtx, loadFunc=status)  
+    # be updated with the currently loading overlay name
+    fslview_parseargs.applyOverlayArgs(
+        args, overlayList, displayCtx, loadFunc=status)  
 
-    return imageList, displayCtx, frame
+    return overlayList, displayCtx, frame
 
 
 FSL_TOOLNAME  = 'FSLView'
