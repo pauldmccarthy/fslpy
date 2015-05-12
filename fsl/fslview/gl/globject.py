@@ -11,20 +11,7 @@ all 2D representations of objects in OpenGL.
 This module also provides the :func:`createGLObject` function, which provides
 mappings between :class:`~fsl.data.image.Image` types, and their corresponding
 OpenGL representation.
-
-Some other convenience functions are also provided, for generating
-OpenGL vertex data.
 """
-
-
-import logging
-
-import itertools           as it
-import numpy               as np
-import fsl.utils.transform as transform
-
-
-log = logging.getLogger(__name__)
 
 
 def createGLObject(image, display):
@@ -243,4 +230,5 @@ class GLImageObject(GLObject):
             return self.image.shape[:3]
         else:
             lo, hi = self.display.getDisplayBounds()
-            return ((hi - lo) / self.display.resolution).min()
+            minres = int(round(((hi - lo) / self.display.resolution).min()))
+            return [minres] * 3

@@ -44,7 +44,6 @@ def show2D(xax, yax, width, height, lo, hi):
         gl.glRotatef(270, 1, 0, 0)
 
 
-
 def calculateSamplePoints(shape, resolution, xform, xax, yax):
     """Calculates a uniform grid of points, in the display coordinate system
     (as specified by the given
