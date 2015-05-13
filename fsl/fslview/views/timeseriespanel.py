@@ -74,10 +74,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     def destroy(self):
         plotpanel.PlotPanel.destroy(self)
 
-        self._overlayList.removeListener('overlays',        self._name)
-        self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('location',        self._name)
-        self._displayCtx .removeListener('volume',          self._name)
+        self._overlayList.removeListener('overlays', self._name)
+        self._displayCtx .removeListener('location', self._name)
+        self._displayCtx .removeListener('volume',   self._name)
         
         
     def _locationChanged(self, *a):

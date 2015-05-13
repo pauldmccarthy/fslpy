@@ -101,6 +101,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Colour bar for other image types (e.g. vectors)
 ** Arrow keys on number widgets
 ** Buffer sharing 
 A gl/buffers.py module which checks for buffer capability. If buffer-capable,
