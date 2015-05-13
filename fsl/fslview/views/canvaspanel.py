@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# canvaspanel.py - Base class for all panels that display image data.
+# canvaspanel.py - Base class for all panels that display overlay data.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -16,36 +16,38 @@ import logging
 import wx
 
 import fsl
-import fsl.tools.fslview_parseargs              as fslview_parseargs
-import fsl.data.imageio                         as iio
-import fsl.data.strings                         as strings
-import fsl.fslview.displaycontext               as displayctx
-import fsl.fslview.displaycontext.orthoopts     as orthoopts
-import fsl.fslview.controls.imagelistpanel      as imagelistpanel
-import fsl.fslview.controls.imagedisplaytoolbar as imagedisplaytoolbar
-import fsl.fslview.controls.locationpanel       as locationpanel
-import fsl.fslview.controls.atlaspanel          as atlaspanel
-import                                             colourbarpanel
-import                                             viewpanel
+import fsl.tools.fslview_parseargs as fslview_parseargs
+import fsl.data.image              as fslimage
+import fsl.data.imageio            as iio
+import fsl.data.strings            as strings
+import fsl.fslview.displaycontext  as displayctx
+import fsl.fslview.controls        as fslcontrols
+import                                colourbarpanel
+import                                viewpanel
 
 
 log = logging.getLogger(__name__)
 
 
-def _takeScreenShot(imageList, displayCtx, canvas):
+def _takeScreenShot(overlayList, displayCtx, canvas):
 
-    # Check to make sure that all images are saved
-    # on disk, and ask the  user what they want to
+    log.warn('Non-volumetric overlay types are not supported yet')
+
+    overlays = displayCtx.getOrderedOverlays()
+    overlays = [o for o in overlays if isinstance(o, fslimage.Image)]
+
+    # Check to make sure that all overlays are saved
+    # on disk, and ask the user what they want to
     # do about the ones that aren't.
-    for image in displayCtx.getOrderedImages():
+    for overlay in overlays:
 
         # If the image is not saved, popup a dialog
         # telling the user they must save the image
         # before the screenshot can proceed
-        if not image.saved:
+        if not overlay.saved:
             title = strings.titles[  'CanvasPanel.screenshot.notSaved']
             msg   = strings.messages['CanvasPanel.screenshot.notSaved']
-            msg   = msg.format(image.name)
+            msg   = msg.format(overlay.name)
 
             dlg = wx.MessageDialog(canvas,
                                    message=msg,
@@ -63,7 +65,7 @@ def _takeScreenShot(imageList, displayCtx, canvas):
 
             # The user chose to save the image
             if result == wx.ID_YES:
-                iio.saveImage(image)
+                iio.saveImage(overlay)
 
             # The user chose to skip the image
             elif result == wx.ID_NO:
@@ -103,11 +105,11 @@ def _takeScreenShot(imageList, displayCtx, canvas):
 
     # Add scene options
     argv += fslview_parseargs.generateSceneArgs(
-        imageList, displayCtx, sceneOpts)
+        overlayList, displayCtx, sceneOpts)
 
     # Add ortho specific options, if it's 
     # an orthopanel we're dealing with
-    if isinstance(sceneOpts, orthoopts.OrthoOpts):
+    if isinstance(sceneOpts, displayctx.OrthoOpts):
 
         xcanvas = canvas.getXCanvas()
         ycanvas = canvas.getYCanvas()
@@ -123,18 +125,22 @@ def _takeScreenShot(imageList, displayCtx, canvas):
                                                            'zcentre'][1])]
         argv += ['{}'.format(c) for c in zcanvas.pos.xy]
 
-    # Add display options for each image
-    for image in displayCtx.getOrderedImages():
+    # Add display options for each overlay
+    for overlay in displayCtx.getOrderedOverlays():
 
-        display = displayCtx.getDisplayProperties(image)
-        fname   = image.imageFile
-
-        # Skip invisible/unsaved/in-memory images
-        if not (display.enabled and image.saved):
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric images not supported yet')
             continue
 
-        imgArgv = fslview_parseargs.generateImageArgs(image, displayCtx)
-        argv   += [fname] + imgArgv
+        display = displayCtx.getDisplayProperties(overlay)
+        fname   = overlay.imageFile
+
+        # Skip invisible/unsaved/in-memory images
+        if not (display.enabled and overlay.saved):
+            continue
+
+        ovlArgv = fslview_parseargs.generateOverlayArgs(overlay, displayCtx)
+        argv   += [fname] + ovlArgv
 
     log.debug('Generating screenshot with call '
               'to render: {}'.format(' '.join(argv)))
@@ -157,13 +163,14 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-    syncLocation   = displayctx.DisplayContext.getSyncProperty('location')
-    syncImageOrder = displayctx.DisplayContext.getSyncProperty('imageOrder')
-    syncVolume     = displayctx.DisplayContext.getSyncProperty('volume')
+    syncLocation     = displayctx.DisplayContext.getSyncProperty('location')
+    syncVolume       = displayctx.DisplayContext.getSyncProperty('volume')
+    syncOverlayOrder = displayctx.DisplayContext.getSyncProperty(
+        'overlayOrder')
 
     def __init__(self,
                  parent,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  sceneOpts,
                  extraActions=None):
@@ -173,18 +180,18 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         actionz = dict({
             'screenshot'              : self.screenshot,
-            'toggleImageList'         : lambda *a: self.togglePanel(
-                imagelistpanel.ImageListPanel),
+            'toggleOverlayList'         : lambda *a: self.togglePanel(
+                fslcontrols.OverlayListPanel),
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
-                atlaspanel.AtlasPanel),
+                fslcontrols.AtlasPanel),
             'toggleDisplayProperties' : lambda *a: self.togglePanel(
-                imagedisplaytoolbar.ImageDisplayToolBar, False, self),
+                fslcontrols.ImageDisplayToolBar, False, self),
             'toggleLocationPanel'     : lambda *a: self.togglePanel(
-                locationpanel.LocationPanel),
+                fslcontrols.LocationPanel),
         }.items() + extraActions.items())
         
         viewpanel.ViewPanel.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
 
         self.__opts = sceneOpts
         
@@ -196,9 +203,9 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.bindProps('syncLocation',
                            displayCtx,
                            displayCtx.getSyncPropertyName('location'))
-            self.bindProps('syncImageOrder',
+            self.bindProps('syncOverlayOrder',
                            displayCtx,
-                           displayCtx.getSyncPropertyName('imageOrder'))
+                           displayCtx.getSyncPropertyName('overlayOrder'))
             self.bindProps('syncVolume',
                            displayCtx,
                            displayCtx.getSyncPropertyName('volume'))
@@ -208,7 +215,7 @@ class CanvasPanel(viewpanel.ViewPanel):
         # a top level instance
         else:
             self.disableProperty('syncLocation')
-            self.disableProperty('syncImageOrder')
+            self.disableProperty('syncOverlayOrder')
             self.disableProperty('syncVolume')
 
         self.__canvasContainer = wx.Panel(self)
@@ -246,7 +253,7 @@ class CanvasPanel(viewpanel.ViewPanel):
 
     
     def screenshot(self, *a):
-        _takeScreenShot(self._imageList, self._displayCtx, self)
+        _takeScreenShot(self._overlayList, self._displayCtx, self)
 
         
     def getCanvasPanel(self):

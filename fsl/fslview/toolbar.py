@@ -71,9 +71,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
                 self.labelText)
 
             
-    def __init__(self, parent, imageList, displayCtx, actionz=None):
+    def __init__(self, parent, overlayList, displayCtx, actionz=None):
         wx.PyPanel.__init__(self, parent)
-        fslpanel._FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
+        fslpanel._FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
 
         self.__tools      = []
         self.__index      = 0

@@ -88,7 +88,7 @@ class FSLViewFrame(wx.Frame):
         self.__overlayList = overlayList
         self.__displayCtx  = displayCtx
 
-        self._centrePane = aui.AuiNotebook(
+        self.__centrePane = aui.AuiNotebook(
             self,
             style=aui.AUI_NB_TOP | 
             aui.AUI_NB_TAB_SPLIT | 
