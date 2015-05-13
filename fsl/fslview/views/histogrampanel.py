@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # histogrampanel.py - A panel which plots a histogram for the data from the
-#                     currently selected image.
+#                     currently selected overlay.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -13,6 +13,7 @@ import numpy as np
 
 import props
 
+import fsl.data.image                        as fslimage
 import fsl.data.strings                      as strings
 import fsl.fslview.controls.histogramtoolbar as histogramtoolbar
 import                                          plotpanel
@@ -51,13 +52,13 @@ class HistogramPanel(plotpanel.PlotPanel):
     autoHist  = props.Boolean(default=True)
 
 
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
 
         actionz = {'toggleToolbar' : lambda *a: self.togglePanel(
             histogramtoolbar.HistogramToolBar, False, self)}
 
         plotpanel.PlotPanel.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
 
         figure = self.getFigure()
         canvas = self.getCanvas()
@@ -67,14 +68,14 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         figure.patch.set_visible(False)
 
-        self._imageList.addListener(
-            'images',
+        self._overlayList.addListener(
+            'overlays',
             self._name,
-            self._selectedImageChanged) 
+            self._selectedOveralyChanged) 
         self._displayCtx.addListener(
-            'selectedImage',
+            'selectedOverlay',
             self._name,
-            self._selectedImageChanged)
+            self._selectedOverlayChanged)
 
         self._mouseDown = False
         canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
@@ -87,7 +88,7 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         self._domainHighlight = None
         
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
 
         self.Layout()
 
@@ -96,11 +97,11 @@ class HistogramPanel(plotpanel.PlotPanel):
         """De-registers property listeners. """
         plotpanel.PlotPanel.destroy(self)
 
-        self            .removeListener('dataRange',     self._name)
-        self            .removeListener('nbins',         self._name)
-        self            .removeListener('autoHist',      self._name)
-        self._imageList .removeListener('images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
+        self             .removeListener('dataRange',       self._name)
+        self             .removeListener('nbins',           self._name)
+        self             .removeListener('autoHist',        self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
 
         
     def _autoHistogramBins(self, data):
@@ -151,15 +152,18 @@ class HistogramPanel(plotpanel.PlotPanel):
         return histX, histY
 
     
-    def _selectedImageChanged(self, *a):
+    def _selectedOverlayChanged(self, *a):
 
-        if len(self._imageList) == 0:
+        if len(self._overlayList) == 0:
             return
 
-        image = self._displayCtx.getSelectedImage()
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        minval = float(image.data.min())
-        maxval = float(image.data.max())
+        if not isinstance(overlay, fslimage.Image):
+            return
+
+        minval = float(overlay.data.min())
+        maxval = float(overlay.data.max())
 
         # update the  histgram range from the data range
         self.disableListener('dataRange', self._name)
@@ -176,8 +180,6 @@ class HistogramPanel(plotpanel.PlotPanel):
     def _onPlotMouseDown(self, ev):
         
         if ev.inaxes != self.getAxis():
-            return
-        if self._displayCtx.getSelectedImage() is None:
             return
 
         self._mouseDown       = True
@@ -211,9 +213,13 @@ class HistogramPanel(plotpanel.PlotPanel):
     
     def _drawPlot(self, *a):
 
-        axis = self.getAxis()
-        image = self._displayCtx.getSelectedImage()
-        x, y  = self._calcHistogram(image.data)
+        overlay = self._displayCtx.getSelectedOverlay()
+
+        if overlay is None or not isinstance(overlay, fslimage.Image):
+            return
+
+        axis    = self.getAxis()
+        x, y    = self._calcHistogram(overlay.data)
 
         axis.clear()
         axis.step(x, y)
@@ -242,7 +248,6 @@ class HistogramPanel(plotpanel.PlotPanel):
             
         for tick in axis.xaxis.get_major_ticks():
             tick.set_pad(-20)
-
 
         if self._domainHighlight is not None:
             axis.axvspan(self._domainHighlight[0],

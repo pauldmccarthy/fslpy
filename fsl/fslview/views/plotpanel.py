@@ -16,15 +16,19 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from mpl_toolkits.mplot3d import Axes3D
 
-import                     viewpanel
-import fsl.data.strings as strings
+import viewpanel
 
 
 log = logging.getLogger(__name__)
 
 
 class PlotPanel(viewpanel.ViewPanel):
-    def __init__(self, parent, imageList, displayCtx, actionz=None, proj=None):
+    def __init__(self,
+                 parent,
+                 overlayList,
+                 displayCtx,
+                 actionz=None,
+                 proj=None):
         
         if actionz is None:
             actionz = {}
@@ -32,7 +36,7 @@ class PlotPanel(viewpanel.ViewPanel):
         actionz = dict([('screenshot', self.screenshot)] + actionz.items())
         
         viewpanel.ViewPanel.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
 
         # There is currently no screenshot functionality
         # because I haven't gotten around to implementing

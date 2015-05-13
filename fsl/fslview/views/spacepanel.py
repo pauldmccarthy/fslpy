@@ -11,15 +11,16 @@ log = logging.getLogger(__name__)
 import numpy               as np
 
 import fsl.data.strings    as strings
+import fsl.data.image      as fslimage
 import fsl.utils.transform as transform
 import                        plotpanel
 
 class SpacePanel(plotpanel.PlotPanel):
 
     
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         plotpanel.PlotPanel.__init__(
-            self, parent, imageList, displayCtx, proj='3d')
+            self, parent, overlayList, displayCtx, proj='3d')
 
         figure = self.getFigure()
         canvas = self.getCanvas()
@@ -41,12 +42,12 @@ class SpacePanel(plotpanel.PlotPanel):
 
         figure.patch.set_visible(False)
 
-        self._imageList .addListener('images', self._name,
-                                     self._selectedImageChanged)
-        self._displayCtx.addListener('selectedImage', self._name,
-                                     self._selectedImageChanged)
+        self._overlayList.addListener('overlays', self._name,
+                                      self._selectedOverlayChanged)
+        self._displayCtx .addListener('selectedOverlay', self._name,
+                                      self._selectedOverlayChanged)
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
 
 
     def destroy(self):
@@ -54,56 +55,58 @@ class SpacePanel(plotpanel.PlotPanel):
 
         plotpanel.PlotPanel.destroy(self)
         
-        self._imageList .removeListener('images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
+        self._overlayList.removeListener('overlays',      self._name)
+        self._displayCtx .removeListener('selectedImage', self._name)
 
-        for image in self._imageList:
-            display = self._displayCtx.getDisplayProperties(image)
+        for overlay in self._overlayList:
+            display = self._displayCtx.getDisplayProperties(overlay)
             display.removeListener('transform', self._name)
 
 
-    def _selectedImageChanged(self, *a):
+    def _selectedOverlayChanged(self, *a):
 
         axis   = self.getAxis()
         canvas = self.getCanvas()
 
         axis.clear()
 
-        if len(self._imageList) == 0:
+        if len(self._overlayList) == 0:
             canvas.draw()
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric types not supported yet')
+            return
 
         display.addListener('transform',
                             self._name,
-                            self._selectedImageChanged,
+                            self._selectedOverlayChanged,
                             overwrite=True)
 
-        axis.set_title(image.name)
+        axis.set_title(display.name)
         axis.set_xlabel('X')
         axis.set_ylabel('Y')
         axis.set_zlabel('Z')
 
-        self._plotImageCorners()
-        self._plotImageBounds()
-        self._plotImageLabels()
-        self._plotAxisLengths()
+        self._plotOverlayCorners(overlay, display)
+        self._plotOverlayBounds( overlay, display)
+        self._plotOverlayLabels( overlay, display)
+        self._plotAxisLengths(   overlay, display)
 
         axis.legend()
         canvas.draw()
 
 
-    def _plotImageBounds(self):
+    def _plotOverlayBounds(self, overlay, display):
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
         v2DMat  = display.getTransform('voxel', 'display')
 
-        xlo, xhi = transform.axisBounds(image.shape, v2DMat, 0)
-        ylo, yhi = transform.axisBounds(image.shape, v2DMat, 1)
-        zlo, zhi = transform.axisBounds(image.shape, v2DMat, 2)
+        xlo, xhi = transform.axisBounds(overlay.shape, v2DMat, 0)
+        ylo, yhi = transform.axisBounds(overlay.shape, v2DMat, 1)
+        zlo, zhi = transform.axisBounds(overlay.shape, v2DMat, 2)
 
         points = np.zeros((8, 3), dtype=np.float32)
         points[0, :] = [xlo, ylo, zlo]
@@ -119,22 +122,19 @@ class SpacePanel(plotpanel.PlotPanel):
                                color='r', s=40)
 
         
-    def _plotImageLabels(self):
+    def _plotOverlayLabels(self, overlay, display):
 
-        axis    = self.getAxis()
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        
-        centre = np.array(image.shape[:3]) / 2.0
+        axis   = self.getAxis()
+        centre = np.array(overlay.shape[:3]) / 2.0
 
         for ax, colour in zip(range(3), ['r', 'g', 'b']):
 
             voxSpan = np.vstack((centre, centre))
             
             voxSpan[0, ax] = 0
-            voxSpan[1, ax] = image.shape[ax]
+            voxSpan[1, ax] = overlay.shape[ax]
 
-            orient = image.getVoxelOrientation(ax)
+            orient = overlay.getVoxelOrientation(ax)
 
             lblLo = strings.anatomy['Image', 'lowshort',  orient]
             lblHi = strings.anatomy['Image', 'highshort', orient]
@@ -152,12 +152,9 @@ class SpacePanel(plotpanel.PlotPanel):
             axis.text(wldSpan[1, 0], wldSpan[1, 1], wldSpan[1, 2], lblHi)
 
 
-    def _plotAxisLengths(self):
+    def _plotAxisLengths(self, overlay, display):
 
-        axis    = self.getAxis()
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-
+        axis  = self.getAxis()
         xform = display.getTransform('voxel', 'display')
 
         for ax, colour, label in zip(range(3),
@@ -166,10 +163,10 @@ class SpacePanel(plotpanel.PlotPanel):
 
             points = np.zeros((2, 3), dtype=np.float32)
             points[:]     = [-0.5, -0.5, -0.5]
-            points[1, ax] = image.shape[ax] - 0.5
+            points[1, ax] = overlay.shape[ax] - 0.5
 
             tx    = transform.transform(points, xform)
-            axlen = transform.axisLength(image.shape, xform, ax)
+            axlen = transform.axisLength(overlay.shape, xform, ax)
 
             axis.plot(tx[:, 0],
                       tx[:, 1],
@@ -180,12 +177,9 @@ class SpacePanel(plotpanel.PlotPanel):
                       label='Axis {} (length {:0.2f})'.format(label, axlen))
 
 
-    def _plotImageCorners(self):
+    def _plotOverlayCorners(self, overlay, display):
         
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        
-        x, y, z = image.shape[:3]
+        x, y, z = overlay.shape[:3]
 
         x = x - 0.5
         y = y - 0.5

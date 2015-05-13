@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 #
 # lightboxpanel.py - A panel which contains a LightBoxCanvas, for displaying
-# multiple slices from a collection of images.
+# multiple slices from a collection of overlays.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines the :class:`LightBoxPanel, a panel which contains a
 :class:`~fsl.fslview.gl.LightBoxCanvas`, for displaying multiple slices from a
-collection of images.
+collection of overlays.
 """
 
 import logging
@@ -18,6 +18,7 @@ import wx
 import numpy as np
 
 import fsl.utils.layout                        as fsllayout
+import fsl.data.image                          as fslimage
 import fsl.fslview.gl.wxgllightboxcanvas       as lightboxcanvas
 import fsl.fslview.controls.lightboxtoolbar    as lightboxtoolbar
 import fsl.fslview.displaycontext.lightboxopts as lightboxopts
@@ -31,7 +32,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
     """
 
 
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         """
         """
 
@@ -44,13 +45,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         canvaspanel.CanvasPanel.__init__(self,
                                          parent,
-                                         imageList,
+                                         overlayList,
                                          displayCtx,
                                          sceneOpts,
                                          actionz)
-
-        imageList  = self._imageList
-        displayCtx = self._displayCtx
 
         self._scrollbar = wx.ScrollBar(
             self.getCanvasPanel(),
@@ -58,7 +56,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         
         self._lbCanvas  = lightboxcanvas.LightBoxCanvas(
             self.getCanvasPanel(),
-            imageList,
+            overlayList,
             displayCtx)
 
         # My properties are the canvas properties
@@ -84,15 +82,15 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         # When the display context location changes,
         # make sure the location is shown on the canvas
         self._lbCanvas.pos.xyz = self._displayCtx.location
-        self._displayCtx.addListener('location',
-                                     self._name,
-                                     self._onLocationChange)
-        self._displayCtx.addListener('selectedImage',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._imageList.addListener('images',
-                                     self._name,
-                                     self._selectedImageChanged) 
+        self._displayCtx .addListener('location',
+                                      self._name,
+                                      self._onLocationChange)
+        self._displayCtx .addListener('selectedOverlay',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._overlayList.addListener('overlays',
+                                      self._name,
+                                      self._selectedOverlayChanged) 
 
         sceneOpts.zoom = 750
 
@@ -124,7 +122,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         self.Layout()
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
         self.initProfile()
 
 
@@ -132,34 +130,32 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """Removes property listeners"""
         canvaspanel.CanvasPanel.destroy(self)
 
-        self._displayCtx.removeListener('location',      self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._imageList .removeListener('images',        self._name)
+        self._displayCtx .removeListener('location',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
 
         
-    def _selectedImageChanged(self, *a):
-        """Called when the selected image changes.
+    def _selectedOverlayChanged(self, *a):
+        """Called when the selected overlay changes.
 
-        Registers a listener on the
-        :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform` property
-        associated with the selected image, so that the
+        Registers a listener on the :attr:`.Display.transform` property
+        associated with the selected overlay, so that the
         :meth:`_transformChanged` method will be called on ``transform``
         changes.
         """
 
-        image = self._displayCtx.getSelectedImage()
-
-        # do nothing if the image list is empty
-        if image is None:
+        if len(self._overlayList) == 0:
             return
 
-        for img in self._imageList:
+        selectedOverlay = self._displayCtx.getSelectedOverlay()
 
-            display = self._displayCtx.getDisplayProperties(img)
+        for overlay in self._overlayList:
+
+            display = self._displayCtx.getDisplayProperties(overlay)
 
             display.removeListener('transform', self._name)
 
-            if img == image:
+            if overlay == selectedOverlay:
                 display.addListener('transform',
                                     self._name,
                                     self._transformChanged)
@@ -168,27 +164,32 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
 
     def _transformChanged(self, *a):
-        """Called when the transform for the currently selected image changes.
+        """Called when the transform for the currently selected overlay
+        changes.
 
         Updates the ``sliceSpacing`` and ``zrange`` properties to values
-        sensible to the new image display space.
+        sensible to the new overlay display space.
         """
         
-        image = self._displayCtx.getSelectedImage()
-        opts  = self.getSceneOptions()
+        overlay = self._displayCtx.getSelectedOverlay()
+        opts    = self.getSceneOptions()
 
-        if image is None:
+        if overlay is None:
+            return
+
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric overlay types not supported yet')
             return
         
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(overlay)
 
         loBounds, hiBounds = display.getDisplayBounds()
 
         if display.transform == 'id':
             opts.sliceSpacing = 1
-            opts.zrange.x     = (0, image.shape[opts.zax] - 1)
+            opts.zrange.x     = (0, overlay.shape[opts.zax] - 1)
         else:
-            opts.sliceSpacing = image.pixdim[opts.zax]
+            opts.sliceSpacing = overlay.pixdim[opts.zax]
             opts.zrange.x     = (loBounds[opts.zax], hiBounds[opts.zax])
 
         self._onResize()
