@@ -8,20 +8,18 @@
 """Defines the :class:`GLVolume` class, which creates and encapsulates the
 data and logic required to render 2D slice of a 3D image. The
 :class:`GLVolume` class provides the interface defined in the
-:class:`~fsl.fslview.gl.globject.GLObject` class.
+:class:`.GLObject` class.
 
-A :class:`GLVolume` instance may be used to render an
-:class:`~fsl.data.image.Image` instance which has an ``imageType`` of
-``volume``. It is assumed that this ``Image`` instance is associated with a
-:class:`~fsl.fslview.displaycontext.Display` instance which contains a
-:class:`~fsl.fslview.displaycontext.volumeopts.VolumeOpts` instance,
-containing display options specific to volume rendering.
+A :class:`GLVolume` instance may be used to render an :class:`.Image` instance
+which has an ``overlayType`` of ``volume``. It is assumed that this ``Image``
+instance is associated with a :class:`.Display` instance which, in turn,
+contains a :class:`.VolumeOpts` instance, containing display options specific
+to volume rendering.
 
 The :class:`GLVolume` class makes use of the functions defined in the
-:mod:`fsl.fslview.gl.gl14.glvolume_funcs` or the
-:mod:`fsl.fslview.gl.gl21.glvolume_funcs` modules, which provide OpenGL 
-version specific details for creation/storage of vertex data, and for
-rendering.
+:mod:`.gl14.glvolume_funcs` or the :mod:`.gl21.glvolume_funcs` modules, which
+provide OpenGL version specific details for creation/storage of vertex data,
+and for rendering.
 
 These version dependent modules must provide the following functions:
 
@@ -34,7 +32,7 @@ These version dependent modules must provide the following functions:
   - ``updateShaderState(GLVolume)``: Updates the shader program states
     when display parameters are changed.
 
-  - ``preDraw()``: Initialise the GL state, ready for drawing.
+  - ``preDraw(GLVolume)``: Initialise the GL state, ready for drawing.
 
   - ``draw(GLVolume, zpos, xform=None)``: Draw a slice of the image at the
     given Z position. If xform is not None, it must be applied as a 
@@ -43,7 +41,7 @@ These version dependent modules must provide the following functions:
   - ``drawAll(Glvolume, zposes, xforms)`` - Draws slices at each of the
     specified ``zposes``, applying the corresponding ``xforms`` to each.
 
-  - ``postDraw()``: Clear the GL state after drawing.
+  - ``postDraw(GLVolume)``: Clear the GL state after drawing.
 
 Images are rendered in essentially the same way, regardless of which OpenGL
 version-specific module is used.  The image data itself is stored on the GPU
@@ -76,11 +74,10 @@ class GLVolume(globject.GLImageObject):
 
         Initialises the OpenGL data required to render the given image.
 
-        :arg image:   A :class:`~fsl.data.image.Image` object.
+        :arg image:   An :class:`.Image` object.
         
-        :arg display: A :class:`~fsl.fslview.displaycontext.Display`
-                      object which describes how the image is to be
-                      displayed. 
+        :arg display: A :class:`.Display` object which describes how the image
+                      is to be displayed.
         """
 
         globject.GLImageObject.__init__(self, image, display)

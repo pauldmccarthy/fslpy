@@ -24,7 +24,7 @@ class OSMesaSliceCanvas(sc.SliceCanvas,
     """
     
     def __init__(self,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  zax=0,
                  width=0,
@@ -41,4 +41,4 @@ class OSMesaSliceCanvas(sc.SliceCanvas,
         """
 
         fslgl.OSMesaCanvasTarget.__init__(self, width, height, bgColour)
-        sc.SliceCanvas          .__init__(self, imageList, displayCtx, zax)
+        sc.SliceCanvas          .__init__(self, overlayList, displayCtx, zax)

@@ -9,10 +9,9 @@
 
 This package contains the OpenGL rendering code used by FSLView. It contains a
 number of modules which contain logic that is independent of the available
-OpenGL version (e.g. the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`
-class), and also contains a number of sub-packages (currently two) which
-contain OpenGL-version-dependent modules that are used by the version
-independent ones.
+OpenGL version (e.g. the :class:`.SliceCanvas` class), and also contains a
+number of sub-packages (currently two) which contain OpenGL-version-dependent
+modules that are used by the version independent ones.
 
 The available OpenGL API version can only be determined once an OpenGL context
 has been created, and a display is available for rendering. Therefore, the
@@ -20,9 +19,8 @@ package-level :func:`bootstrap` function is called by the version-independent
 module classes as needed, to dynamically determine which version-dependent
 modules should be loaded.  Users of this package should not need to worry
 about any of this - just instantiate the GUI classes provided by the
-version-independent modules (e.g. the
-:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` class) as you would any
-other :mod:`wx` widget.
+version-independent modules (e.g. the :class:`.LightBoxCanvas` class) as you
+would any other :mod:`wx` widget.
 
 Two methods of OpenGL usage are supported:
 
@@ -41,12 +39,17 @@ Two super classes are provided for each of these cases:
 After the :func:`boostrap` function has been called, the following
 package-level attributes will be available:
 
- - ``GL_VERSION``:     A string containing the target OpenGL version, in the
-                       format ``major.minor``, e.g. ``2.1``.
+ - ``GL_VERSION``:         A string containing the target OpenGL version, in 
+                           the format ``major.minor``, e.g. ``2.1``.
 
- - ``glvolume_funcs``: The version-specific module containing functions for
-                       rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
-                       instances.
+ - ``glvolume_funcs``:     The version-specific module containing functions for
+                           rendering :class:`.GLVolume` instances.
+
+ - ``glrgbvector_funcs``:  The version-specific module containing functions for
+                           rendering :class:`.GLRGBVector` instances.
+
+ - ``gllinevector_funcs``: The version-specific module containing functions for
+                           rendering :class:`.GLLineVector` instances. 
 """
 
 import logging 

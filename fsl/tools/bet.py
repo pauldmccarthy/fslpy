@@ -9,6 +9,11 @@ from collections import OrderedDict
 
 import props
 
+# The colour maps module must be initialised
+# before the displaycontext module can be loaded
+import fsl.fslview.colourmaps       as colourmaps
+colourmaps.initColourMaps()
+
 import fsl.data.image               as fslimage
 import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform

@@ -9,7 +9,6 @@ details. The command line interface is defined (and parsed) by the
 :mod:`fslview_parseargs` module.
 """
 
-
 import time
 import logging
 import argparse

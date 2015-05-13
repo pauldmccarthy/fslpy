@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# globject.py - Mapping between fsl.data.image types and OpenGL
-# representations.
+# globject.py - Mapping between overlay types and OpenGL representations.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -9,20 +8,22 @@
 all 2D representations of objects in OpenGL.
 
 This module also provides the :func:`createGLObject` function, which provides
-mappings between :class:`~fsl.data.image.Image` types, and their corresponding
-OpenGL representation.
+mappings between overlay objects and their corresponding OpenGL
+representation.
 """
 
 
 import numpy as np
 
 
-def createGLObject(image, display):
-    """Create :class:`GLObject` instance for the given
-    :class:`~fsl.data.image.Image` instance.
+def createGLObject(overlay, display):
+    """Create :class:`GLObject` instance for the given overlay, as specified
+    by the :attr:`.Display.overlayType` property.
 
-    :arg image:   A :class:`~fsl.data.image.Image` instance.
-    :arg display: A :class:`~fsl.fslview.displaycontext.Display` instance.
+    :arg overlay: An overlay object (e.g. a :class:`.Image` instance).
+    
+    :arg display: A :class:`.Display` instance describing how the overlay
+                  should be displayed.
     """
 
     import fsl.fslview.gl.glvolume     as glvolume
@@ -37,9 +38,9 @@ def createGLObject(image, display):
         'linevector' : gllinevector.GLLineVector
     } 
 
-    ctr = _objectmap.get(display.imageType, None)
+    ctr = _objectmap.get(display.overlayType, None)
 
-    if ctr is not None: return ctr(image, display)
+    if ctr is not None: return ctr(overlay, display)
     else:               return None
 
 
@@ -142,14 +143,13 @@ class GLObject(object):
         transformation matrices contained in the ``zposes`` and
         ``xforms`` arrays.
 
-        In some circumstances (hint: the
-        :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`),
-        better performance may be achievbed in combining multiple
-        renders, rather than doing it with separate calls to :meth:`draw`.
+        In some circumstances (hint: the :class:`.LightBoxCanvas`), better
+        performance may be achievbed in combining multiple renders, rather
+        than doing it with separate calls to :meth:`draw`.
 
-        The default implementation does exactly this, so this method
-        need only be overridden for subclasses which are able to get
-        better performance by combining the draws.
+        The default implementation does exactly this, so this method need only
+        be overridden for subclasses which are able to get better performance
+        by combining the draws.
         """
         for (zpos, xform) in zip(zposes, xforms):
             self.draw(zpos, xform)
@@ -179,6 +179,7 @@ class GLSimpleObject(GLObject):
 
       - ``xax``: Index of the display coordinate system axis that corresponds
                  to the horizontal screen axis.
+    
       - ``yax``: Index of the display coordinate system axis that corresponds
                  to the vertical screen axis.
     """
@@ -199,7 +200,7 @@ class GLSimpleObject(GLObject):
 
 class GLImageObject(GLObject):
     """The ``GLImageObject` class is the superclass for all GL representations
-    of :class:`~fsl.data.image.Image` instances.
+    of :class:`.Image` instances.
     """
     
     def __init__(self, image, display):
@@ -212,9 +213,9 @@ class GLImageObject(GLObject):
           - ``displayOpts``: A reference to the image type-specific display
                              options.
 
-        :arg image:   The :class:`~fsl.data.image.Image` instance
-        :arg display: An associated
-                      :class:`~fsl.fslview.displaycontext.Display` instance.
+        :arg image:   The :class:`.Image` instance
+        
+        :arg display: An associated :class:`.Display` instance.
         """
         
         GLObject.__init__(self)

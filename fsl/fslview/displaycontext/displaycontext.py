@@ -97,10 +97,10 @@ class DisplayContext(props.SyncableHasProperties):
                                 self.__name,
                                 self.__overlayListChanged)
         self.addListener(       'bounds',
-                                self._name,
+                                self.__name,
                                 self.__boundsChanged)
         self.addListener(       'volume',
-                                self._name,
+                                self.__name,
                                 self.__volumeChanged)
 
         

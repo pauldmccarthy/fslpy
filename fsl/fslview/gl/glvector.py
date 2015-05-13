@@ -6,9 +6,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """Defines the :class:`GLVector` class, which encapsulates the logic for
-rendering 2D slices of a ``X*Y*Z*3`` image as a vector. The ``GLVector`` class
-provides the interface defined by the
-:class:`.GLObject` class.
+rendering 2D slices of a ``X*Y*Z*3`` :class:`.Image` as a vector. The
+``GLVector`` class provides the interface defined by the :class:`.GLObject`
+class.
 
 
 The ``GLVector`` class is a base class whcih is not intended to be
@@ -27,10 +27,10 @@ Three 1D textures are used to store a colour table for each of the ``x``,
 ``xyz`` vector values, looks up colours for each of them, and combines the
 three colours to form the final fragment colour.
 
+
 The colour of each vector may be modulated by another image, specified by the
 :attr:`.VectorOpts.modulate` property.  This modulation image is stored as a
 3D single-channel texture.
-
 """
 
 import numpy                    as np

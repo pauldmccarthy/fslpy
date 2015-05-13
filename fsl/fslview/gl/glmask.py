@@ -8,17 +8,15 @@
 for OpenGL rendering of a 3D volume as a binary mask.
 
 When created, a :class:`GLMask` instance assumes that the provided
-:class:`~fsl.data.image.Image` instance has an ``imageType`` of ``mask``, and
-that its associated :class:`~fsl.fslview.displaycontext.Display` instance
-contains a :class:`~fsl.fslview.displatcontext.maskopts.MaskOpts` instance,
+:class:`.Image` instance has an ``overlayType`` of ``mask``, and that its
+associated :class:`.Display` instance contains a :class:`.MaskOpts` instance,
 containing mask-specific display properties.
 
-The :class:`GLMask` class uses the functionality of the
-:class:`~fsl.fslview.gl.glvolume.GLVolume` class through inheritance.
+The :class:`GLMask` class uses the functionality of the :class:`.GLVolume`
+class through inheritance.
 """
 
 import logging
-
 
 import numpy                   as np
 
@@ -30,22 +28,20 @@ log = logging.getLogger(__name__)
 
 class GLMask(glvolume.GLVolume):
     """The :class:`GLMask` class encapsulates logic to render 2D slices of a
-    :class:`~fsl.data.image.Image` instance as a binary mask in OpenGL.
+    :class:`.Image` instance as a binary mask in OpenGL.
 
-    ``GLMask`` is a subclass of the :class:`~fsl.fslview.gl.glvolume.GLVolume
-    class. It overrides a few key methods of ``GLVolume``, but most of the
-    logic is provided by ``GLVolume``.
+    ``GLMask`` is a subclass of the :class:`.GLVolume class. It overrides a
+    few key methods of ``GLVolume``, but most of the logic is provided by
+    ``GLVolume``.
     """
 
 
     def addDisplayListeners(self):
-        """Overrides
-        :meth:`~fsl.fslview.gl.glvolume.GLVolume.addDisplayListeners`.
+        """Overrides :meth:`.GLVolume.addDisplayListeners`.
 
-        Adds a bunch of listeners to the
-        :class:`~fsl.fslview.displaycontext.Display` object, and the
-        associated :class:`~fsl.fslview.displaycontext.maskopts.MaskOpts`
-        instance, which define how the mask image should be displayed.
+        Adds a bunch of listeners to the :class:`.Display` object, and the
+        associated :class:`.MaskOpts` instance, which define how the mask
+        image should be displayed.
         """
         def vertexUpdate(*a):
             self.setAxes(self.xax, self.yax)
@@ -65,8 +61,7 @@ class GLMask(glvolume.GLVolume):
 
 
     def removeDisplayListeners(self):
-        """Overrides
-        :meth:`~fsl.fslview.gl.glvolume.GLVolume.removeDisplayListeners`.
+        """Overrides :meth:`.GLVolume.removeDisplayListeners`.
 
         Removes all the listeners added by :meth:`addDisplayListeners`.
         """
@@ -85,16 +80,14 @@ class GLMask(glvolume.GLVolume):
 
         
     def refreshColourTexture(self, *a):
-        """Overrides
-        :meth:`~fsl.fslview.gl.glvolume.GLVolume.refreshColourTexture`.
+        """Overrides :meth:`.GLVolume.refreshColourTexture`.
 
-        Creates a colour texture which contains the current mask colour,
-        and a transformation matrix which maps from the current
-        :attr:`~fsl.fslview.displaycontext.maskopts.MaskOpts.threshold` range
-        to the texture range, so that voxels within this range are coloured,
-        and voxels outside the range are transparent (or vice versa, if the
-        :attr:`~fsl.fslview.displaycontext.maskopts.MaskOpts.invert` flag
-        is set).
+        Creates a colour texture which contains the current mask colour, and a
+        transformation matrix which maps from the current
+        :attr:`.MaskOpts.threshold` range to the texture range, so that voxels
+        within this range are coloured, and voxels outside the range are
+        transparent (or vice versa, if the :attr:`.MaskOpts.invert` flag is
+        set).
         """
 
         display = self.display

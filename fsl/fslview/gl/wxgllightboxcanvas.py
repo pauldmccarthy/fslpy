@@ -5,28 +5,31 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :class:`WXGLLightBoxCanvas`, which is both a
-:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`, and a 
-:class:`wx.glcanvas.GLCanvas`. 
+:class:`.LightBoxCanvas`, and a :class:`wx.glcanvas.GLCanvas`.
 """
 
 import logging
-log = logging.getLogger(__name__)
 
 import wx
 import wx.glcanvas    as wxgl
 
 import lightboxcanvas as lightboxcanvas
 import fsl.fslview.gl as fslgl
+import fsl.data.image as fslimage
+
+
+log = logging.getLogger(__name__)
+
 
 class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
                          wxgl.GLCanvas,
                          fslgl.WXGLCanvasTarget):
-    """A :class:`wx.glcanvas.GLCanvas` and a
-    :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`, for on-screen
-    interactive 2D slice rendering from a collection of 3D images.
+    """A :class:`wx.glcanvas.GLCanvas` and a :class:`.SliceCanvas`, for 
+    on-screen interactive 2D slice rendering from a collection of 3D
+    overlays.
     """
 
-    def __init__(self, parent, imageList, displayCtx, zax=0):
+    def __init__(self, parent, overlayList, displayCtx, zax=0):
         """Configures a few event handlers for cleaning up property
         listeners when the canvas is destroyed, and for redrawing on
         paint/resize events.
@@ -34,12 +37,12 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
 
         wxgl.GLCanvas                .__init__(self, parent)
         lightboxcanvas.LightBoxCanvas.__init__(self,
-                                               imageList,
+                                               overlayList,
                                                displayCtx,
                                                zax)
         fslgl.WXGLCanvasTarget       .__init__(self)
         
-        # the image list is probably going to outlive
+        # the overlay list is probably going to outlive
         # this SliceCanvas object, so we do the right
         # thing and remove our listeners when we die
         def onDestroy(ev):
@@ -66,16 +69,19 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             self.removeListener('topRow',         self.name)
             self.removeListener('renderMode',     self.name)
 
-            self.imageList .removeListener('images',     self.name)
-            self.displayCtx.removeListener('bounds',     self.name)
-            self.displayCtx.removeListener('imageOrder', self.name)
-            for image in self.imageList:
+            self.overlayList.removeListener('overlays',     self.name)
+            self.displayCtx .removeListener('bounds',       self.name)
+            self.displayCtx .removeListener('overlayOrder', self.name)
+            
+            for overlay in self.overlayList:
                 
-                disp = self.displayCtx.getDisplayProperties(image)
+                disp = self.displayCtx.getDisplayProperties(overlay)
                 opts = disp.getDisplayOpts()
-                
-                image.removeListener('data',          self.name)
-                disp .removeListener('imageType',     self.name)
+
+                if isinstance(overlay, fslimage.Image):
+                    overlay.removeListener('data',    self.name)
+                    
+                disp .removeListener('overlayType',   self.name)
                 disp .removeListener('enabled',       self.name)
                 disp .removeListener('transform',     self.name)
                 disp .removeListener('softwareMode',  self.name)
