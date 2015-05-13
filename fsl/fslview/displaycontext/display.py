@@ -373,8 +373,8 @@ class Display(props.SyncableHasProperties):
         """
         """
 
-        if (self.__displayOpts           is None) or \
-           (self.__displayOpts.imageType != self.imageType):
+        if (self.__displayOpts             is None) or \
+           (self.__displayOpts.overlayType != self.overlayType):
 
             if self.__displayOpts is not None:
                 self.__displayOpts.destroy()

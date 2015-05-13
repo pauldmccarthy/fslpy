@@ -6,12 +6,12 @@
 #
 """This module provides the :class:`LocationPanel` class, a panel which
 displays controls allowing the user to change the currently displayed location
-in both real world and voxel coordinates, both in the space of the currently
-selected image.
+in both world and local coordinates, both in the space of the currently
+selected overlay.
 
 These changes are propagated to the current display coordinate system
 location, managed by the display context (and external changes to the display
-context location are propagated back to the voxel/world location properties
+context location are propagated back to the local/world location properties
 managed by a :class:`LocationPanel`).
 """
 
@@ -24,6 +24,7 @@ import numpy as np
 import props
 
 import fsl.utils.transform as transform
+import fsl.data.image      as fslimage
 import fsl.data.strings    as strings
 import fsl.fslview.panel   as fslpanel
 
@@ -40,7 +41,11 @@ class LocationPanel(fslpanel.FSLViewPanel):
     currently selected voxel.
     """
 
-    
+
+    # TODO This should be renamed to 'localLocation',
+    #      (and possibly made floating point instead
+    #      of integer) so it makes more sense for
+    #      non-volumetric overlays
     voxelLocation = props.Point(ndims=3, real=False, labels=('X', 'Y', 'Z'))
 
     
@@ -59,13 +64,13 @@ class LocationPanel(fslpanel.FSLViewPanel):
         label.SetFont(font)
 
         
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         """
         Creates and lays out the LocationPanel, and sets up a few property
         event listeners.
         """
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
         voxX, voxY, voxZ = props.makeListWidgets(
             self,
@@ -140,29 +145,29 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self.Layout()
         
-        self._imageList.addListener( 'images',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._displayCtx.addListener('imageOrder',
-                                     self._name,
-                                     self._selectedImageChanged) 
-        self._displayCtx.addListener('selectedImage',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._displayCtx.addListener('volume',
-                                     self._name,
-                                     self._volumeChanged) 
-        self._displayCtx.addListener('location',
-                                     self._name,
-                                     self._displayLocationChanged)
-        self.addListener(            'voxelLocation',
-                                     self._name,
-                                     self._voxelLocationChanged)
-        self.addListener(            'worldLocation',
-                                     self._name,
-                                     self._worldLocationChanged)
+        self._overlayList.addListener('overlays',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._displayCtx .addListener('overlayOrder',
+                                      self._name,
+                                      self._selectedOverlayChanged) 
+        self._displayCtx .addListener('selectedOVerlay',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._displayCtx .addListener('volume',
+                                      self._name,
+                                      self._volumeChanged) 
+        self._displayCtx .addListener('location',
+                                      self._name,
+                                      self._displayLocationChanged)
+        self.addListener(             'voxelLocation',
+                                      self._name,
+                                      self._voxelLocationChanged)
+        self.addListener(             'worldLocation',
+                                      self._name,
+                                      self._worldLocationChanged)
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
         self._volumeChanged()
 
         self.SetMinSize(self.sizer.GetMinSize())
@@ -172,11 +177,11 @@ class LocationPanel(fslpanel.FSLViewPanel):
         """Deregisters property listeners."""
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._imageList.removeListener( 'images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
-        self._displayCtx.removeListener('volume',        self._name)
-        self._displayCtx.removeListener('location',      self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
+        self._displayCtx .removeListener('volume',          self._name)
+        self._displayCtx .removeListener('location',        self._name)
 
 
     def _updateVoxelValue(self, voxVal=None):
@@ -187,15 +192,21 @@ class LocationPanel(fslpanel.FSLViewPanel):
         the value at the current voxel location is displayed.
         """
 
-        if len(self._imageList) == 0:
+        if len(self._overlayList) == 0:
             voxVal = ''
 
         if voxVal is not None:
             self.intensity.SetValue('{}'.format(voxVal))
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        # TODO support for other overlay types
+        if not isinstance(overlay, fslimage.Image):
+            self.intensity.SetValue(
+                '{}'.format(strings.labels[self, 'nonVolumetric']))
+            return
 
         dloc   = self._displayCtx.location.xyz
         vloc   = transform.transform(
@@ -207,11 +218,11 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # location/volume is out of bounds
         inBounds = True
         for i in range(3):
-            if vloc[i] < 0 or vloc[i] >= image.shape[i]:
+            if vloc[i] < 0 or vloc[i] >= overlay.shape[i]:
                 inBounds = False
 
-        if image.is4DImage():
-            if volume >= image.shape[3]:
+        if overlay.is4DImage():
+            if volume >= overlay.shape[3]:
                 inBounds = False
 
         # If the value is out of the voxel bounds,
@@ -222,16 +233,16 @@ class LocationPanel(fslpanel.FSLViewPanel):
         else:
             
             log.debug('Looking up voxel value in {} ({}, {} -> {})'.format(
-                image, vloc, volume, image.shape))
+                overlay, vloc, volume, overlay.shape))
             
             # 3D image
-            if len(image.shape) == 3:
-                voxVal = image.data[vloc[0], vloc[1], vloc[2]]
+            if len(overlay.shape) == 3:
+                voxVal = overlay.data[vloc[0], vloc[1], vloc[2]]
 
             # No support for images of more
             # than 4 dimensions at the moment
             else:
-                voxVal = image.data[vloc[0], vloc[1], vloc[2], volume]
+                voxVal = overlay.data[vloc[0], vloc[1], vloc[2], volume]
 
             if   np.isnan(voxVal): voxVal = 'NaN'
             elif np.isinf(voxVal): voxVal = 'Inf'
@@ -240,19 +251,22 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         
     def _volumeChanged(self, *a):
-        """Called when the
-        :attr:`fsl.fslview.displaycontext.DisplayContext.volume`
-        property changes. Updates the voxel value label.
+        """Called when the :attr:.DisplayContext.volume` property changes.
+        Updates the voxel value label.
         """
         self._updateVoxelValue()
         
 
     def _displayLocationChanged(self, *a):
 
-        if len(self._imageList) == 0: return
+        if len(self._overlayList) == 0: return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric overlays are not supported yet')
+            return
 
         dloc = self._displayCtx.location.xyz
         vloc = transform.transform(
@@ -289,10 +303,14 @@ class LocationPanel(fslpanel.FSLViewPanel):
         change on to the display context world location.
         """
 
-        if len(self._imageList) == 0: return
+        if len(self._overlayList) == 0: return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric overlays are not supported yet')
+            return 
         
         vloc = self.voxelLocation.xyz
         dloc = transform.transform(
@@ -321,11 +339,15 @@ class LocationPanel(fslpanel.FSLViewPanel):
         selected image.
         """
 
-        if len(self._imageList) == 0: return
+        if len(self._overlayList) == 0: return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
         
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric overlays are not supported yet')
+            return         
+
         wloc = self.worldLocation.xyz
         dloc = transform.transform(
             [wloc], display.getTransform('world', 'display'))[0]
@@ -346,23 +368,28 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._updateVoxelValue()
 
         
-    def _selectedImageChanged(self, *a):
+    def _selectedOverlayChanged(self, *a):
         """
-        Called when the selected image is changed. Updates the voxel label
-        (which contains the image name), and sets the voxel location limits.
+        Called when the selected overlay is changed. Updates the voxel label
+        (which contains the overlay name), and sets the voxel location limits.
         """
 
-        if len(self._imageList) == 0:
-            self._updateVoxelValue(   '')
+        if len(self._overlayList) == 0:
+            self._updateVoxelValue('')
             self.space.SetValue('')
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        if not isinstance(overlay, fslimage.Image):
+            self._updateVoxelValue('')
+            self.space.SetValue(strings.labels[self, 'nonVolumetric'])
+            return
 
         # Update the label which
         # displays the image space 
-        spaceLabel = strings.anatomy['Image', 'space', image.getXFormCode()]
+        spaceLabel = strings.anatomy['Image', 'space', overlay.getXFormCode()]
         self.space.SetValue(spaceLabel)
 
         # Update the voxel and world location limits,
@@ -374,9 +401,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._displayCtx.disableListener('location', self._name)
         
         for i in range(3):
-            vlo, vhi = 0, image.shape[i] - 1
+            vlo, vhi = 0, overlay.shape[i] - 1
             wlo, whi = transform.axisBounds(
-                image.shape, display.getTransform('voxel', 'world'), i)
+                overlay.shape, display.getTransform('voxel', 'world'), i)
 
             self.voxelLocation.setLimits(i, vlo, vhi)
             self.worldLocation.setLimits(i, wlo, whi)

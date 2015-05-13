@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 class LightBoxSettingsPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx, ortho):
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+    def __init__(self, parent, overlayList, displayCtx, lb):
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
         import fsl.fslview.layouts as layouts
 
@@ -31,14 +31,14 @@ class LightBoxSettingsPanel(fslpanel.FSLViewPanel):
         self.sizer.Add(self.panel, flag=wx.EXPAND, proportion=1)
 
         self.canvasSettings = props.buildGUI(
-            self.panel, ortho, layouts.layouts['CanvasPanel'])
+            self.panel, lb, layouts.layouts['CanvasPanel'])
         
         self.divider1 = wx.StaticLine(
             self.panel, size=(-1, -1), style=wx.LI_HORIZONTAL)
         
         self.sceneSettings = props.buildGUI(
             self.panel,
-            ortho.getSceneOptions(),
+            lb.getSceneOptions(),
             layouts.layouts['SceneOpts']) 
 
         self.divider2 = wx.StaticLine(
@@ -46,7 +46,7 @@ class LightBoxSettingsPanel(fslpanel.FSLViewPanel):
 
         self.lightBoxSettings = props.buildGUI(
             self.panel,
-            ortho.getSceneOptions(),
+            lb.getSceneOptions(),
             layouts.layouts['LightBoxPanel'])
 
         self.panelSizer = wx.BoxSizer(wx.VERTICAL)

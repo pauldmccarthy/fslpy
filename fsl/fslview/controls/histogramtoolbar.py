@@ -14,11 +14,14 @@ log = logging.getLogger(__name__)
 
 class HistogramToolBar(fsltoolbar.FSLViewToolBar):
 
-    def __init__(self, parent, imageList, displayCtx, histPanel):
+    def __init__(self, parent, overlayList, displayCtx, histPanel):
 
         import fsl.fslview.layouts as layouts
         
-        fsltoolbar.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+        fsltoolbar.FSLViewToolBar.__init__(self,
+                                           parent,
+                                           overlayList,
+                                           displayCtx)
         
         self.GenerateTools(layouts.layouts[self], histPanel)
 

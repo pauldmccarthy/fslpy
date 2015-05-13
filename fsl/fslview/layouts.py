@@ -14,27 +14,27 @@ import fsl.utils.typedict  as td
 import fsl.data.strings    as strings
 import fsl.fslview.actions as actions
 
-from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
-from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
+from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
+from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 
-from fsl.fslview.views.canvaspanel            import CanvasPanel
-from fsl.fslview.views.orthopanel             import OrthoPanel
-from fsl.fslview.views.lightboxpanel          import LightBoxPanel
-from fsl.fslview.views.histogrampanel         import HistogramPanel
+from fsl.fslview.views                     import CanvasPanel
+from fsl.fslview.views                     import OrthoPanel
+from fsl.fslview.views                     import LightBoxPanel
+from fsl.fslview.views                     import HistogramPanel
 
-from fsl.fslview.controls.orthotoolbar        import OrthoToolBar
-from fsl.fslview.controls.lightboxtoolbar     import LightBoxToolBar
-from fsl.fslview.controls.imagedisplaytoolbar import ImageDisplayToolBar
+from fsl.fslview.controls                  import OrthoToolBar
+from fsl.fslview.controls                  import LightBoxToolBar
+from fsl.fslview.controls                  import OverlayDisplayToolBar
 
-from fsl.fslview.displaycontext               import Display
-from fsl.fslview.displaycontext.volumeopts    import VolumeOpts
-from fsl.fslview.displaycontext.maskopts      import MaskOpts
-from fsl.fslview.displaycontext.vectoropts    import VectorOpts
-from fsl.fslview.displaycontext.vectoropts    import LineVectorOpts
+from fsl.fslview.displaycontext            import Display
+from fsl.fslview.displaycontext            import VolumeOpts
+from fsl.fslview.displaycontext            import MaskOpts
+from fsl.fslview.displaycontext            import VectorOpts
+from fsl.fslview.displaycontext            import LineVectorOpts
 
-from fsl.fslview.displaycontext.sceneopts     import SceneOpts
-from fsl.fslview.displaycontext.orthoopts     import OrthoOpts
-from fsl.fslview.displaycontext.lightboxopts  import LightBoxOpts
+from fsl.fslview.displaycontext            import SceneOpts
+from fsl.fslview.displaycontext            import OrthoOpts
+from fsl.fslview.displaycontext            import LightBoxOpts
 
 
 def widget(labelCls, name, *args, **kwargs):
@@ -94,7 +94,7 @@ CanvasPanelLayout = props.VGroup((
     widget(CanvasPanel,
            'profile',
            visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
-    widget(CanvasPanel, 'syncImageOrder'),
+    widget(CanvasPanel, 'syncOverlayOrder'),
     widget(CanvasPanel, 'syncLocation')))
 
 SceneOptsLayout = props.VGroup((
@@ -138,14 +138,14 @@ LightBoxPanelLayout = props.VGroup((
 
 
 
-########################################
-# Image display property panels/toolbars
-########################################
+##########################################
+# Overlay display property panels/toolbars
+##########################################
 
 
 DisplayToolBarLayout = [
     widget(Display, 'name'),
-    widget(Display, 'imageType'),
+    widget(Display, 'overlayType'),
     widget(Display, 'alpha',      spin=False, showLimits=False),
     widget(Display, 'brightness', spin=False, showLimits=False),
     widget(Display, 'contrast',   spin=False, showLimits=False)]
@@ -153,23 +153,23 @@ DisplayToolBarLayout = [
 
 VolumeOptsToolBarLayout = [
     widget(VolumeOpts, 'cmap'),
-    actions.ActionButton(ImageDisplayToolBar, 'more')]
+    actions.ActionButton(OverlayDisplayToolBar, 'more')]
 
 
 MaskOptsToolBarLayout = [
     widget(MaskOpts, 'colour'),
-    actions.ActionButton(ImageDisplayToolBar, 'more')]
+    actions.ActionButton(OverlayDisplayToolBar, 'more')]
 
 
 VectorOptsToolBarLayout = [
     widget(VectorOpts, 'modulate'),
     widget(VectorOpts, 'modThreshold', showLimits=False, spin=False),
-    actions.ActionButton(ImageDisplayToolBar, 'more')] 
+    actions.ActionButton(OverlayDisplayToolBar, 'more')] 
 
 
 DisplayLayout = props.VGroup(
     (widget(Display, 'name'),
-     widget(Display, 'imageType'),
+     widget(Display, 'overlayType'),
      widget(Display, 'resolution',    showLimits=False),
      widget(Display, 'transform'),
      widget(Display, 'interpolation'),
@@ -248,16 +248,16 @@ layouts = td.TypeDict({
 
     'SceneOpts' : SceneOptsLayout,
 
-    ('ImageDisplayToolBar', 'Display')        : DisplayToolBarLayout,
-    ('ImageDisplayToolBar', 'VolumeOpts')     : VolumeOptsToolBarLayout,
-    ('ImageDisplayToolBar', 'MaskOpts')       : MaskOptsToolBarLayout,
-    ('ImageDisplayToolBar', 'VectorOpts')     : VectorOptsToolBarLayout,
+    ('OverlayDisplayToolBar', 'Display')        : DisplayToolBarLayout,
+    ('OverlayDisplayToolBar', 'VolumeOpts')     : VolumeOptsToolBarLayout,
+    ('OverlayDisplayToolBar', 'MaskOpts')       : MaskOptsToolBarLayout,
+    ('OverlayDisplayToolBar', 'VectorOpts')     : VectorOptsToolBarLayout,
 
-    ('ImageDisplayPanel',   'Display')        : DisplayLayout,
-    ('ImageDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
-    ('ImageDisplayPanel',   'MaskOpts')       : MaskOptsLayout,
-    ('ImageDisplayPanel',   'VectorOpts')     : VectorOptsLayout,
-    ('ImageDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout, 
+    ('OverlayDisplayPanel',   'Display')        : DisplayLayout,
+    ('OverlayDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
+    ('OverlayDisplayPanel',   'MaskOpts')       : MaskOptsLayout,
+    ('OverlayDisplayPanel',   'VectorOpts')     : VectorOptsLayout,
+    ('OverlayDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout, 
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,
@@ -271,7 +271,7 @@ layouts = td.TypeDict({
 
 locations = td.TypeDict({
     'LocationPanel'       : aui.AUI_DOCK_BOTTOM,
-    'ImageListPanel'      : aui.AUI_DOCK_BOTTOM,
+    'OverlayListPanel'    : aui.AUI_DOCK_BOTTOM,
     'AtlasPanel'          : aui.AUI_DOCK_BOTTOM,
     'ImageDisplayToolBar' : aui.AUI_DOCK_TOP,
     

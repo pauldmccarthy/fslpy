@@ -16,14 +16,14 @@ log = logging.getLogger(__name__)
 
 class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
 
-    def __init__(self, parent, imageList, displayCtx, lb):
+    def __init__(self, parent, overlayList, displayCtx, lb):
 
         import fsl.fslview.layouts as layouts
 
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
         self.lightBoxPanel = lb
 
         sceneOpts = lb.getSceneOptions()
