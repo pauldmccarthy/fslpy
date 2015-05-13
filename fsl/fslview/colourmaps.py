@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
-# colourmaps.py - Manage colour maps for image rendering.
+# colourmaps.py - Manage colour maps for overlay rendering.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Module which manages the colour maps available for image rendering.
+"""Module which manages the colour maps available for overlay rendering.
 
 When this module is first initialised, it searches in the
 ``fsl/fslview/colourmaps/`` directory, and attempts to load all files within

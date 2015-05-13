@@ -7,44 +7,48 @@
 """A 3D image viewer.
 
 This module provides the :class:`FSLViewFrame` which is the top level frame
-for the FSLView application, providing functionality to view 3D/4D MR images.
+for the FSLView application, providing functionality to view 3D/4D images,
+and other types of data.
 
 The application logic is spread across several sub-packages:
 
- - :mod:`actions`   - Global actions (e.g. load file), and abstract base
-                      classes for other actions, and entities which provide
-                      actions.
+ - :mod:`actions`        - Global actions (e.g. load file), and abstract base
+                           classes for other actions, and entities which 
+                           provide actions.
 
- - :mod:`controls`  - GUI panels which provide an interface to control the
-                      display of a single view.
+ - :mod:`controls`       - GUI panels which provide an interface to control 
+                           the display of a single view.
 
- - :mod:`views`     - GUI panels which display image data.
+ - :mod:`displaycontext` - Classes which define options controlling the
+                           display.
 
- - :mod:`gl`        - OpenGL visualisation logic.
+ - :mod:`editor`         - Image editing functionality.
 
- - :mod:`profiles`  - Mouse/keyboard interaction profiles.
+ - :mod:`gl`             - OpenGL visualisation logic.
 
- - :mod:`editor`    - Image editing functionality.
+ - :mod:`profiles`       - Mouse/keyboard interaction profiles.
 
- - :mod:`widgets`   - General purpose custom :mod:`wx` widgets.
+ - :mod:`views`          - GUI panels which display image data.
+
+ - :mod:`widgets`        - General purpose custom :mod:`wx` widgets.
 
 
 A :class:`FSLViewFrame` is a container for one or more 'views' - all of the
-possible views are contained within the :mod:`views` sub-package, and the
+possible views are contained within the :mod:`.views` sub-package, and the
 views which may be opened by the user are defined by the
-:func:`views.listViewPanels` function. View panels may contain one or more
-'control' panels (all defined in the :mod:controls` sub-package), which
+:func:`.views.listViewPanels` function. View panels may contain one or more
+'control' panels (all defined in the :mod:`.controls` sub-package), which
 provide an interface allowing the user to control the view.
 
 
-All view (and control) panels are derived from the :class:`panel.FSLViewPanel`
-which, in turn, is derived from the :class:`actions.ActionProvider` class.
+All view (and control) panels are derived from the :class:`.FSLViewPanel`
+which, in turn, is derived from the :class:`.ActionProvider` class.
 As such, view panels may expose both actions, and properties, which can be
 performed or modified by the user.
 """
 
+
 import logging
-log = logging.getLogger(__name__)
 
 import wx
 import wx.aui as aui
@@ -56,18 +60,21 @@ import actions
 import displaycontext
 
 
+log = logging.getLogger(__name__)
+
+
 class FSLViewFrame(wx.Frame):
     """A frame which implements a 3D image viewer."""
 
     def __init__(self,
                  parent,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  restore=True):
         """
         :arg parent:
         
-        :arg imageList:
+        :arg overlayList:
         
         :arg displayCtx:
         
@@ -78,8 +85,8 @@ class FSLViewFrame(wx.Frame):
         
         wx.Frame.__init__(self, parent, title='FSLView')
         
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
+        self.__overlayList = overlayList
+        self.__displayCtx  = displayCtx
 
         self._centrePane = aui.AuiNotebook(
             self,
@@ -90,16 +97,16 @@ class FSLViewFrame(wx.Frame):
 
         # Keeping track of all
         # open view panels
-        self._viewPanels      = []
-        self._viewPanelTitles = {}
-        self._viewPanelMenus  = {}
-        self._viewPanelCount  = 0
+        self.__viewPanels      = []
+        self.__viewPanelTitles = {}
+        self.__viewPanelMenus  = {}
+        self.__viewPanelCount  = 0
 
-        self._makeMenuBar()
-        self._restoreState(restore)
+        self.__makeMenuBar()
+        self.__restoreState(restore)
 
-        self._centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
-                              self._onViewPanelClose)
+        self.__centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
+                               self._onViewPanelClose)
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 
@@ -108,8 +115,8 @@ class FSLViewFrame(wx.Frame):
         """Returns a list of all view panels that currently exist, and a list
         of their titles.
         """
-        return (self._viewPanels,
-                [self._viewPanelTitles[vp] for vp in self._viewPanels])
+        return (self.__viewPanels,
+                [self.__viewPanelTitles[vp] for vp in self.__viewPanels])
 
 
     def addViewPanel(self, panelCls):
@@ -119,31 +126,31 @@ class FSLViewFrame(wx.Frame):
 
         title = '{} {}'.format(
             strings.titles[panelCls],
-            self._viewPanelCount + 1)
+            self.__viewPanelCount + 1)
         
         childDC = displaycontext.DisplayContext(
-            self._imageList,
-            self._displayCtx)
+            self.__overlayList,
+            self.__displayCtx)
         
         panel = panelCls(
-            self._centrePane,
-            self._imageList,
+            self.__centrePane,
+            self.__overlayList,
             childDC) 
 
-        self._viewPanelCount = self._viewPanelCount + 1
+        self.__viewPanelCount = self.__viewPanelCount + 1
 
-        self._viewPanels.append(panel)
-        self._viewPanelTitles[panel] = title
+        self.__viewPanels.append(panel)
+        self.__viewPanelTitles[panel] = title
         
-        self._centrePane.AddPage(panel, title, True)
-        self._centrePane.Split(
-            self._centrePane.GetPageIndex(panel),
+        self.__centrePane.AddPage(panel, title, True)
+        self.__centrePane.Split(
+            self.__centrePane.GetPageIndex(panel),
             wx.RIGHT)
 
-        self._addViewPanelMenu(panel, title)
+        self.__addViewPanelMenu(panel, title)
 
 
-    def _addViewPanelMenu(self, panel, title):
+    def __addViewPanelMenu(self, panel, title):
 
         actionz = panel.getActions()
 
@@ -154,7 +161,7 @@ class FSLViewFrame(wx.Frame):
         menu    = wx.Menu()
         menuBar.Append(menu, title)
 
-        self._viewPanelMenus[panel] = menu
+        self.__viewPanelMenus[panel] = menu
 
         for actionName, actionObj in actionz.items():
             
@@ -164,18 +171,18 @@ class FSLViewFrame(wx.Frame):
             actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
     
 
-    def _onViewPanelClose(self, ev):
+    def __onViewPanelClose(self, ev):
 
         ev.Skip()
         
         pageIdx = ev.GetSelection()
-        panel   = self._centrePane.GetPage(pageIdx)
+        panel   = self.__centrePane.GetPage(pageIdx)
 
-        if panel not in self._viewPanels:
+        if panel not in self.__viewPanels:
             return
 
-        self._viewPanels             .remove(panel)
-        title = self._viewPanelTitles.pop(   panel)
+        self.__viewPanels             .remove(panel)
+        title = self.__viewPanelTitles.pop(   panel)
 
         log.debug('Destroying view panel {} ({})'.format(
             title, type(panel).__name__))
@@ -191,7 +198,7 @@ class FSLViewFrame(wx.Frame):
             menuBar.Remove(menuIdx)
 
         
-    def _onClose(self, ev):
+    def __onClose(self, ev):
         """Called on requests to close this :class:`FSLViewFrame`.
 
         Saves the frame position, size, and layout, so it may be preserved the
@@ -205,7 +212,7 @@ class FSLViewFrame(wx.Frame):
         size     = self.GetSize().Get()
         position = self.GetScreenPosition().Get()
 
-        log.debug('Saving size: {}'    .format(str(size)))
+        log.debug('Saving size:     {}'.format(str(size)))
         log.debug('Saving position: {}'.format(str(position)))
 
         config.Write('size',     str(size))
@@ -214,11 +221,11 @@ class FSLViewFrame(wx.Frame):
         # It's nice to explicitly clean
         # up our FSLViewPanels, otherwise
         # they'll probably complain
-        for panel in self._viewPanels:
+        for panel in self.__viewPanels:
             panel.destroy()
 
         
-    def _parseSavedSize(self, size):
+    def __parseSavedSize(self, size):
         """Parses the given string, which is assumed to contain a size tuple.
         """
         
@@ -226,12 +233,12 @@ class FSLViewFrame(wx.Frame):
         except: return None
 
         
-    _parseSavedPoint = _parseSavedSize
-    """A proxy for the :meth:`_parseSavedSize` method.
+    __parseSavedPoint = __parseSavedSize
+    """A proxy for the :meth:`__parseSavedSize` method.
     """ 
 
             
-    def _parseSavedLayout(self, layout):
+    def __parseSavedLayout(self, layout):
         """Parses the given string, which is assumed to contain an encoded
         :class:`wx.aui.AuiManager` perspective (see
         :meth:`~wx.aui.AuiManager.SavePerspective`).
@@ -261,7 +268,7 @@ class FSLViewFrame(wx.Frame):
             return []
 
         
-    def _restoreState(self, restore=True):
+    def __restoreState(self, restore=True):
         """Called on :meth:`__init__`. If any frame size/layout properties
         have previously been saved, they are applied to this frame.
 
@@ -273,8 +280,8 @@ class FSLViewFrame(wx.Frame):
         config   = wx.Config('FSLView')
 
         # Restore the saved frame size/position
-        size     = self._parseSavedSize( config.Read('size'))
-        position = self._parseSavedPoint(config.Read('position'))        
+        size     = self.__parseSavedSize( config.Read('size'))
+        position = self.__parseSavedPoint(config.Read('position'))        
 
         if (size is not None) and (position is not None):
 
@@ -363,7 +370,7 @@ class FSLViewFrame(wx.Frame):
 
             # Set up a default for ortho views
             # layout (this will hopefully eventually
-            # be done by the FSLViewFrame instance)
+            # be restored from a saved state)
             import fsl.fslview.controls.imagelistpanel      as ilp
             import fsl.fslview.controls.locationpanel       as lop
             import fsl.fslview.controls.imagedisplaytoolbar as idt
@@ -375,10 +382,8 @@ class FSLViewFrame(wx.Frame):
             viewPanel.togglePanel(ot .OrthoToolBar,        False, viewPanel) 
 
             
-    def _makeMenuBar(self):
-        """Constructs a bunch of menu items for working with the given
-        :class:`~fsl.fslview.fslviewframe.FslViewFrame`.
-        """
+    def __makeMenuBar(self):
+        """Constructs a bunch of menu items for this :class:`FSLViewFrame`."""
 
         menuBar = wx.MenuBar()
         self.SetMenuBar(menuBar)
@@ -389,8 +394,8 @@ class FSLViewFrame(wx.Frame):
         viewMenu = wx.Menu()
         menuBar.Append(viewMenu, 'View')
 
-        self._fileMenu = fileMenu
-        self._viewMenu = viewMenu
+        self.__fileMenu = fileMenu
+        self.__viewMenu = viewMenu
 
         viewPanels = views   .listViewPanels()
         actionz    = actions .listGlobalActions()
@@ -398,7 +403,7 @@ class FSLViewFrame(wx.Frame):
         for action in actionz:
             menuItem = fileMenu.Append(wx.ID_ANY, strings.actions[action])
             
-            actionObj = action(self._imageList, self._displayCtx)
+            actionObj = action(self.__overlayList, self.__displayCtx)
 
             actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
 
