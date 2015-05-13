@@ -64,56 +64,61 @@ class OverlayListWidget(wx.Panel):
 
 class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx, atlasPanel):
+    def __init__(self, parent, overlayList, displayCtx, atlasPanel):
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.enabledOverlays = {}
-        self.atlasPanel      = atlasPanel
-        self.contentPanel    = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        self.atlasList       = elistbox.EditableListBox(
+        self.__enabledOverlays = {}
+        self.__atlasPanel      = atlasPanel
+        self.__contentPanel    = wx.SplitterWindow(self,
+                                                   style=wx.SP_LIVE_UPDATE)
+        self.__atlasList       = elistbox.EditableListBox(
             self.contentPanel,
             style=(elistbox.ELB_NO_ADD    |
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
-        self.regionPanel     = wx.Panel(   self.contentPanel)
-        self.regionFilter    = wx.TextCtrl(self.regionPanel)
+        self.__regionPanel     = wx.Panel(   self.__contentPanel)
+        self.__regionFilter    = wx.TextCtrl(self.__regionPanel)
 
         atlasDescs = atlases.listAtlases()
 
-        self.regionLists = [None] * len(atlasDescs)
+        self.__regionLists = [None] * len(atlasDescs)
 
-        self.contentPanel.SetMinimumPaneSize(50)
-        self.contentPanel.SplitVertically(self.atlasList, self.regionPanel)
-        self.contentPanel.SetSashGravity(0.5) 
+        self.__contentPanel.SetMinimumPaneSize(50)
+        self.__contentPanel.SplitVertically(self.__atlasList,
+                                            self.__regionPanel)
+        self.__contentPanel.SetSashGravity(0.5) 
         
-        self.sizer       = wx.BoxSizer(wx.HORIZONTAL)
-        self.regionSizer = wx.BoxSizer(wx.VERTICAL)
+        self.__sizer       = wx.BoxSizer(wx.HORIZONTAL)
+        self.__regionSizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.regionSizer.Add(self.regionFilter, flag=wx.EXPAND)
-        self.regionSizer.AddStretchSpacer()        
+        self.__regionSizer.Add(self.__regionFilter, flag=wx.EXPAND)
+        self.__regionSizer.AddStretchSpacer()        
         
-        self.sizer      .Add(self.contentPanel, flag=wx.EXPAND, proportion=1)
+        self.__sizer      .Add(self.__contentPanel,
+                               flag=wx.EXPAND,
+                               proportion=1)
         
-        self.regionPanel.SetSizer(self.regionSizer) 
-        self            .SetSizer(self.sizer)
+        self.__regionPanel.SetSizer(self.__regionSizer) 
+        self              .SetSizer(self.__sizer)
 
         for i, atlasDesc in enumerate(atlasDescs):
-            self.atlasList.Append(atlasDesc.name, atlasDesc)
-            self._updateAtlasState(i)
-            widget = OverlayListWidget(self.atlasList,
+            self.__atlasList.Append(atlasDesc.name, atlasDesc)
+            self.__updateAtlasState(i)
+            widget = OverlayListWidget(self.__atlasList,
                                        atlasDesc.atlasID,
                                        atlasPanel)
-            self.atlasList.SetItemWidget(i, widget)
+            self.__atlasList.SetItemWidget(i, widget)
         
-        self.regionFilter.Bind(wx.EVT_TEXT, self._onRegionFilter)
-        self.atlasList.Bind(elistbox.EVT_ELB_SELECT_EVENT, self._onAtlasSelect)
+        self.__regionFilter.Bind(wx.EVT_TEXT, self.__onRegionFilter)
+        self.__atlasList.Bind(elistbox.EVT_ELB_SELECT_EVENT,
+                              self.__onAtlasSelect)
 
-        self.regionSizer.Layout()
-        self.sizer      .Layout()
+        self.__regionSizer.Layout()
+        self.__sizer      .Layout()
 
-        self.SetMinSize(self.sizer.GetMinSize())
+        self.SetMinSize(self.__sizer.GetMinSize())
 
 
     def setOverlayState(self, atlasID, labelIdx, summary, state):
@@ -123,31 +128,31 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
             atlasID, labelIdx, state))
 
         if labelIdx is None:
-            widget = self.atlasList.GetItemWidget(atlasDesc.index)
+            widget = self.__atlasList.GetItemWidget(atlasDesc.index)
             widget.enableBox.SetValue(state)
         else:
-            regionList = self.regionLists[atlasDesc.index]
+            regionList = self.__regionLists[atlasDesc.index]
             
             if regionList is not None:
                 regionList.GetItemWidget(labelIdx).enableBox.SetValue(state)
 
 
-    def _onRegionFilter(self, ev):
+    def __onRegionFilter(self, ev):
         
-        filterStr = self.regionFilter.GetValue().lower()
+        filterStr = self.__regionFilter.GetValue().lower()
 
-        for i, listBox in enumerate(self.regionLists):
+        for i, listBox in enumerate(self.__regionLists):
 
             if listBox is None:
                 continue
             
             listBox.ApplyFilter(filterStr, ignoreCase=True)
-            self._updateAtlasState(i)
+            self.__updateAtlasState(i)
 
 
-    def _updateAtlasState(self, atlasIdx):
+    def __updateAtlasState(self, atlasIdx):
 
-        listBox = self.regionLists[atlasIdx]
+        listBox = self.__regionLists[atlasIdx]
         
         if listBox is None:
             weight = wx.FONTWEIGHT_LIGHT
@@ -160,23 +165,23 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
             weight = wx.FONTWEIGHT_BOLD
             colour = '#000000'
 
-        font = self.atlasList.GetItemFont(atlasIdx)
+        font = self.__atlasList.GetItemFont(atlasIdx)
         font.SetWeight(weight)
         
-        self.atlasList.SetItemFont(atlasIdx, font)
-        self.atlasList.SetItemForegroundColour(atlasIdx, colour, colour) 
+        self.__atlasList.SetItemFont(atlasIdx, font)
+        self.__atlasList.SetItemForegroundColour(atlasIdx, colour, colour) 
  
             
-    def _onAtlasSelect(self, ev):
+    def __onAtlasSelect(self, ev):
 
         atlasDesc  = ev.data
         atlasIdx   = ev.idx
-        regionList = self.regionLists[atlasIdx]
+        regionList = self.__regionLists[atlasIdx]
 
         if regionList is None:
             
             regionList = elistbox.EditableListBox(
-                self.regionPanel,
+                self.__regionPanel,
                 style=(elistbox.ELB_NO_ADD    |
                        elistbox.ELB_NO_REMOVE |
                        elistbox.ELB_NO_MOVE))
@@ -184,33 +189,31 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
             log.debug('Creating region list for {} ({})'.format(
                 atlasDesc.atlasID, id(regionList)))
             
-            self.regionLists[atlasIdx] = regionList
+            self.__regionLists[atlasIdx] = regionList
 
             for i, label in enumerate(atlasDesc.labels):
                 regionList.Append(label.name)
                 widget = OverlayListWidget(regionList,
                                            atlasDesc.atlasID,
-                                           self.atlasPanel,
+                                           self.__atlasPanel,
                                            label.index)
                 regionList.SetItemWidget(i, widget)
                                            
-
-
-            filterStr = self.regionFilter.GetValue().lower()
+            filterStr = self.__regionFilter.GetValue().lower()
             regionList.ApplyFilter(filterStr, ignoreCase=True)
 
-            self._updateAtlasState(atlasIdx)
+            self.__updateAtlasState(atlasIdx)
             
         log.debug('Showing region list for {} ({})'.format(
             atlasDesc.atlasID, id(regionList)))
 
-        old = self.regionSizer.GetItem(1).GetWindow()
+        old = self.__regionSizer.GetItem(1).GetWindow()
         
         if old is not None:
             old.Show(False)
             
         regionList.Show(True)
-        self.regionSizer.Remove(1)
+        self.__regionSizer.Remove(1)
         
-        self.regionSizer.Insert(1, regionList, flag=wx.EXPAND, proportion=1)
-        self.regionSizer.Layout()
+        self.__regionSizer.Insert(1, regionList, flag=wx.EXPAND, proportion=1)
+        self.__regionSizer.Layout()

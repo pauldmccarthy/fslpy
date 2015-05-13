@@ -14,6 +14,7 @@ import pwidgets.elistbox   as elistbox
 
 import fsl.fslview.panel   as fslpanel
 import fsl.data.atlases    as atlases
+import fsl.data.image      as fslimage
 import fsl.data.strings    as strings
 import fsl.data.constants  as constants
 import fsl.utils.transform as transform
@@ -49,51 +50,55 @@ class AtlasListWidget(wx.CheckBox):
 # that the user can choose from
 class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx, atlasPanel):
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+    def __init__(self, parent, overlayList, displayCtx, atlasPanel):
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.enabledAtlases = {}
-        self.atlasPanel     = atlasPanel
-        self.contentPanel   = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        self.infoPanel      = wxhtml.HtmlWindow(self.contentPanel)
-        self.atlasList      = elistbox.EditableListBox(
-            self.contentPanel,
+        self.__enabledAtlases = {}
+        self.__atlasPanel     = atlasPanel
+        self.__contentPanel   = wx.SplitterWindow(self,
+                                                  style=wx.SP_LIVE_UPDATE)
+        self.__infoPanel      = wxhtml.HtmlWindow(self.__contentPanel)
+        self.__atlasList      = elistbox.EditableListBox(
+            self.__contentPanel,
             style=(elistbox.ELB_NO_ADD    | 
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.contentPanel, flag=wx.EXPAND, proportion=1)
-        self.SetSizer(self.sizer)
+        self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.__sizer.Add(self.__contentPanel, flag=wx.EXPAND, proportion=1)
+        self.SetSizer(self.__sizer)
 
-        self.contentPanel.SetMinimumPaneSize(50)
-        self.contentPanel.SplitVertically(self.atlasList, self.infoPanel) 
-        self.contentPanel.SetSashGravity(0.4)
+        self.__contentPanel.SetMinimumPaneSize(50)
+        self.__contentPanel.SplitVertically(self.__atlasList,
+                                            self.__infoPanel) 
+        self.__contentPanel.SetSashGravity(0.4)
         
         for i, atlasDesc in enumerate(atlases.listAtlases()):
             
-            self.atlasList.Append(atlasDesc.name, atlasDesc.atlasID)
-            widget = AtlasListWidget(self.atlasList, self, atlasDesc.atlasID)
-            self.atlasList.SetItemWidget(i, widget)        
+            self.__atlasList.Append(atlasDesc.name, atlasDesc.atlasID)
+            widget = AtlasListWidget(self.__atlasList,
+                                     self,
+                                     atlasDesc.atlasID)
+            self.__atlasList.SetItemWidget(i, widget)        
 
         # The info panel contains clickable links
         # for the currently displayed regions -
         # when a link is clicked, the location
         # is centred at the corresponding region
-        self.infoPanel.Bind(wxhtml.EVT_HTML_LINK_CLICKED,
-                            self._infoPanelLinkClicked)
+        self.__infoPanel.Bind(wxhtml.EVT_HTML_LINK_CLICKED,
+                              self.__infoPanelLinkClicked)
 
         displayCtx.addListener('location',
                                self._name,
-                               self._locationChanged)
-        displayCtx.addListener('selectedImage',
+                               self.__locationChanged)
+        displayCtx.addListener('selectedOverlay',
                                self._name,
-                               self._locationChanged)
+                               self.__locationChanged)
 
-        self._locationChanged()
+        self.__locationChanged()
         self.Layout()
 
-        self.SetMinSize(self.sizer.GetMinSize())
+        self.SetMinSize(self.__sizer.GetMinSize())
 
         
     def destroy(self):
@@ -102,23 +107,23 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         """
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._displayCtx.removeListener('location',      self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
+        self._displayCtx.removeListener('location',        self._name)
+        self._displayCtx.removeListener('selectedOverlay', self._name)
 
 
     def enableAtlasInfo(self, atlasID):
-        self.enabledAtlases[atlasID] = self.atlasPanel.loadAtlas(atlasID,
-                                                                 False)
-        self._locationChanged()
+        self.__enabledAtlases[atlasID] = self.atlasPanel.loadAtlas(atlasID,
+                                                                   False)
+        self.__locationChanged()
 
         
     def disableAtlasInfo(self, atlasID):
-        self.enabledAtlases.pop(atlasID)
-        self.atlasPanel.clearAtlas(atlasID, False)
-        self._locationChanged()
+        self.__enabledAtlases.pop(atlasID)
+        self.__atlasPanel.clearAtlas(atlasID, False)
+        self.__locationChanged()
 
 
-    def _infoPanelLinkClicked(self, ev):
+    def __infoPanelLinkClicked(self, ev):
 
         showType, atlasID, labelIndex = ev.GetLinkInfo().GetHref().split()
         
@@ -131,37 +136,41 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         # is loaded
         summary = showType != 'prob'
 
-        self.atlasPanel.toggleOverlay(atlasID, labelIndex, summary)
+        self.__atlasPanel.toggleOverlay(atlasID, labelIndex, summary)
 
 
-    def _locationChanged(self, *a):
+    def __locationChanged(self, *a):
         
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        loc     = self._displayCtx.location
+        overlay = self._displayCtx.getSelectedOverlay()
         text    = self.infoPanel
-        loc     = transform.transform(
-            [loc], display.getTransform('display', 'world'))[0]
-
 
         if len(atlases.listAtlases()) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.atlasDisabled'])
             return
 
-        if image.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
+        if not isinstance(overlay, fslimage.Image):
+            text.SetPage(strings.messages['AtlasInfoPanel.nonVolumetric'])
+            return 
+
+        if overlay.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
             text.SetPage(strings.messages['AtlasInfoPanel.notMNISpace'])
             return
 
-        if len(self.enabledAtlases) == 0:
+        if len(self.__enabledAtlases) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
+
+        display = self._displayCtx.getDisplayProperties(overlay)
+        loc     = self._displayCtx.location
+        loc     = transform.transform(
+            [loc], display.getTransform('display', 'world'))[0]
 
         lines         = []
         titleTemplate = '<b>{}</b> (<a href="summary {} {}">Show/Hide</a>)'
         labelTemplate = '{} (<a href="label {} {}">Show/Hide</a>)'
         probTemplate  = '{:0.1f}% {} (<a href="prob {} {}">Show/Hide</a>)'
 
-        for atlasID in self.enabledAtlases:
+        for atlasID in self.__enabledAtlases:
 
             atlas = self.enabledAtlases[atlasID]
 

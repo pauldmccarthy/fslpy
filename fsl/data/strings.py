@@ -40,11 +40,14 @@ messages = TypeDict({
     'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
                                      'images registered to MNI152 space',
 
+    'AtlasInfoPanel.nonVolumetric' : 'Atlas lookup can only be performed on '
+                                     'volumetric images',
+
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
 
     'CanvasPanel.screenshot'            : 'Save screenshot',
-    'CanvasPanel.screenshot.notSaved'   : 'Image {} needs saving before a '
+    'CanvasPanel.screenshot.notSaved'   : 'Overlay {} needs saving before a '
                                           'screenshot can be taken.',
     'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
                                           'please wait ...',
@@ -69,17 +72,17 @@ titles = TypeDict({
     'SpacePanel'      : 'Space inspector',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
-    'CanvasPanel.screenshot.notSaved' : 'Save image before continuing',
+    'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
     'CanvasPanel.screenshot.error'    : 'Error saving screenshot',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'ImageListPanel'        : 'Image list',
+    'OverlayListPanel'      : 'Overlay list',
     'AtlasPanel'            : 'Atlases',
     'LocationPanel'         : 'Location',
-    'ImageDisplayToolBar'   : 'Display toolbar',
-    'ImageDisplayPanel'     : 'Display settings',
+    'OverlayDisplayToolBar' : 'Display toolbar',
+    'OverlayDisplayPanel'   : 'Display settings',
     'OrthoToolBar'          : 'Ortho view toolbar',
     'OrthoProfileToolBar'   : 'Ortho view mode toolbar',
     'OrthoSettingsPanel'    : 'Ortho view settings',
@@ -91,16 +94,16 @@ titles = TypeDict({
 
 actions = TypeDict({
 
-    'OpenFileAction'      : 'Add image file',
+    'OpenFileAction'      : 'Add overlay file',
     'OpenStandardAction'  : 'Add standard',
-    'CopyImageAction'     : 'Copy image',
-    'SaveImageAction'     : 'Save image',
+    'CopyOverlayAction'   : 'Copy overlay',
+    'SaveOverlayAction'   : 'Save overlay',
     'LoadColourMapAction' : 'Load custom colour map',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
     'CanvasPanel.toggleColourBar'         : 'Colour bar',
-    'CanvasPanel.toggleImageList'         : 'Image list',
-    'CanvasPanel.toggleDisplayProperties' : 'Image display properties',
+    'CanvasPanel.toggleOverlayList'       : 'Overlay list',
+    'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',
     'CanvasPanel.toggleLocationPanel'     : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
     
@@ -109,7 +112,7 @@ actions = TypeDict({
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
-    'ImageDisplayToolBar.more'    : 'More settings',
+    'OverlayDisplayToolBar.more'  : 'More settings',
     
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
@@ -139,8 +142,8 @@ labels = TypeDict({
     'LocationPanel.intensity'     : 'Intensity',
     'LocationPanel.outOfBounds'   : 'Out of bounds',
 
-    'CanvasPanel.screenshot.notSaved.save'   : 'Save image now',
-    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip image (will not appear '
+    'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
+    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
                                                'in screenshot)',
     'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
 })
@@ -151,7 +154,7 @@ properties = TypeDict({
     'Profile.mode' : 'Profile',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
-    'CanvasPanel.syncImageOrder'     : 'Sync overlay order',
+    'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
     'CanvasPanel.syncVolume'         : 'Sync volume',
     'CanvasPanel.profile'            : 'Mode',
 
@@ -192,7 +195,7 @@ properties = TypeDict({
     'OrthoEditProfile.selectionCursorColour'  : 'Selection cursor',
     
 
-    'Display.name'              : 'Image name',
+    'Display.name'              : 'Overlay name',
     'Display.enabled'           : 'Enabled',
     'Display.alpha'             : 'Opacity',
     'Display.brightness'        : 'Brightness',
@@ -200,8 +203,8 @@ properties = TypeDict({
     'Display.interpolation'     : 'Interpolation',
     'Display.resolution'        : 'Resolution',
     'Display.volume'            : 'Volume',
-    'Display.transform'         : 'Image transform',
-    'Display.imageType'         : 'Image data type',
+    'Display.transform'         : 'Overlay transform',
+    'Display.overlayType'       : 'Overlay data type',
     
     'VolumeOpts.displayRange'  : 'Display range',
     'VolumeOpts.clippingRange' : 'Clipping range',
