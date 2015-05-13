@@ -14,6 +14,7 @@ import fsl.fslview.gl.colourbarcanvas as colourbarcanvas
 
 import fsl.data.strings as strings
 
+
 class SceneOpts(props.HasProperties):
     """The ``SceneOpts`` class defines settings which are applied to
     :class:`.CanvasPanel` views.
@@ -50,30 +51,28 @@ class SceneOpts(props.HasProperties):
                 strings.choices['SceneOpts.performance.5']])
     """User controllable performacne setting.
 
-    This property is linked to the :attr:`twoStageRender`,
+    This property is linked to the :attr:`renderMode`,
     :attr:`resolutionLimit`, and :attr:`softwareMode` properties. Setting the
     performance to a low value will result in faster rendering time, at the
     cost of reduced features, and poorer rendering quality.
 
-    See the :meth:`_onPerformanceChange` method.
+    See the :meth:`__onPerformanceChange` method.
     """
 
 
     resolutionLimit = copy.copy(slicecanvas.SliceCanvas.resolutionLimit)
     """The highest resolution at which any image should be displayed.
 
-    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.resolutionLimit` and
-    :attr:`~fsl.fslview.displaycontext.display.Display.resolution`.
+    See :attr:`.SliceCanvas.resolutionLimit` and :attr:`.Display.resolution`.
     """
     
 
     renderMode = copy.copy(slicecanvas.SliceCanvas.renderMode)
-    """Enable two-stage rendering, useful for low-performance graphics cards/
+    """Controls the rendering mode, useful for low-performance graphics cards/
     software rendering.
 
-    See :attr:`~fsl.fslview.gl.slicecanvas.SliceCanvas.twoStageRender`.
+    See :attr:`.SliceCanvas.renderMode`.
     """
-
 
     
     softwareMode = copy.copy(slicecanvas.SliceCanvas.softwareMode)
@@ -93,10 +92,10 @@ class SceneOpts(props.HasProperties):
         name = '{}_{}'.format(type(self).__name__, id(self))
         self.addListener('performance', name, self._onPerformanceChange)
         
-        self._onPerformanceChange()
+        self.__onPerformanceChange()
 
 
-    def _onPerformanceChange(self, *a):
+    def __onPerformanceChange(self, *a):
         """Called when the :attr:`performance` property changes.
 
         Changes the values of the :attr:`renderMode`, :attr:`softwareMode`

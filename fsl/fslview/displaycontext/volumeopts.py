@@ -5,8 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines the :class:`VolumeOpts` class, which contains
-display options for rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
-instances.
+display options for rendering :class:`.GLVolume` instances.
 """
 
 import logging
@@ -15,6 +14,7 @@ import numpy as np
 
 import props
 
+import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
 import fsl.fslview.colourmaps as fslcm
 
@@ -35,12 +35,11 @@ log = logging.getLogger(__name__)
 
 
 class VolumeOpts(fsldisplay.DisplayOpts):
-    """A class which describes how an :class:`~fsl.data.image.Image` should
-    be displayed.
+    """A class which describes how an :class:`.Image` should be displayed.
 
     This class doesn't have much functionality - it is up to things which
-    actually display an :class:`~fsl.data.image.Image` to adhere to the
-    properties stored in the associated :class:`ImageDisplay` object.
+    actually display an :class:`.Image` to adhere to the properties stored in
+    the associated :class:`.Display` and :class:`VolumeOpts` object.
     """
 
     
@@ -91,12 +90,12 @@ class VolumeOpts(fsldisplay.DisplayOpts):
 
 
 
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
-        """Create an :class:`ImageDisplay` for the specified image.
+    def __init__(self, overlay, display, overlayList, displayCtx, parent=None):
+        """Create a :class:`VolumeOpts` instance for the specified image."""
 
-        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
-        documentation for more details. 
-        """
+        if not isinstance(overlay, fslimage.Image):
+            raise RuntimeError('{} can only be used with an {} overlay'.format(
+                type(self).__name__, fslimage.Image.__name__)) 
 
         # Attributes controlling image display. Only
         # determine the real min/max for small images -
@@ -104,13 +103,13 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         # it may be! So we calculate the min/max of a
         # sample (either a slice or an image, depending
         # on whether the image is 3D or 4D)
-        if np.prod(image.shape) > 2 ** 30:
-            sample = image.data[..., image.shape[-1] / 2]
+        if np.prod(overlay.shape) > 2 ** 30:
+            sample = overlay.data[..., overlay.shape[-1] / 2]
             self.dataMin = float(sample.min())
             self.dataMax = float(sample.max())
         else:
-            self.dataMin = float(image.data.min())
-            self.dataMax = float(image.data.max())
+            self.dataMin = float(overlay.data.min())
+            self.dataMax = float(overlay.data.max())
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
@@ -135,9 +134,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
         fsldisplay.DisplayOpts.__init__(self,
-                                        image,
+                                        overlay,
                                         display,
-                                        imageList,
+                                        overlayList,
                                         displayCtx,
                                         parent)
 
@@ -146,11 +145,11 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         # Display.brightness/contrast properties, so changes
         # in one are reflected in the other.
         if parent is not None:
-            display.addListener('brightness', self.name, self.briconChanged)
-            display.addListener('contrast',   self.name, self.briconChanged)
+            display.addListener('brightness', self.name, self.__briconChanged)
+            display.addListener('contrast',   self.name, self.__briconChanged)
             self   .addListener('displayRange',
                                 self.name,
-                                self.displayRangeChanged)
+                                self.__displayRangeChanged)
 
             # Because displayRange and bri/con are intrinsically
             # linked, it makes no sense to let the user sync/unsync
@@ -185,9 +184,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         are registered on the :attr:`displayRange` and
         :attr:`.Display.brightness`/:attr:`.Display.contrast`/ properties.
         
-        Because these properties are linked via the :meth:`displayRangeChanged`
-        and :meth:`briconChanged` methods, we need to be careful about avoiding
-        recursive callbacks.
+        Because these properties are linked via the
+        :meth:`__displayRangeChanged` and :meth:`__briconChanged` methods,
+        we need to be careful about avoiding recursive callbacks.
 
         Furthermore, because the properties of both :class:`VolumeOpts` and
         :class:`.Display` instances are possibly synchronised to a parent
@@ -224,9 +223,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                 peer        .disableListener('displayRange', peer.name) 
                 
 
-    def briconChanged(self, *a):
+    def __briconChanged(self, *a):
         """Called when the ``brightness``/``contrast`` properties of the
-        :class:`~fsl.fslview.displaycontext.display.Display` instance change.
+        :class:`.Display` instance change.
         
         Updates the :attr:`displayRange` property accordingly.
 
@@ -243,7 +242,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.__toggleListeners(True)
 
         
-    def displayRangeChanged(self, *a):
+    def __displayRangeChanged(self, *a):
         """Called when the `attr`:displayRange: property changes.
 
         Updates the :attr:`.Display.brightness` and :attr:`.Display.contrast`

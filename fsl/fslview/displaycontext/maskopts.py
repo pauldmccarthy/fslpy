@@ -11,6 +11,7 @@ import numpy as np
 
 import props
 
+import fsl.data.image   as fslimage
 import fsl.data.strings as strings
 import display          as fsldisplay
 
@@ -23,15 +24,19 @@ class MaskOpts(fsldisplay.DisplayOpts):
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']]) 
 
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
+    def __init__(self, overlay, display, overlayList, displayCtx, parent=None):
 
-        if np.prod(image.shape) > 2 ** 30:
-            sample = image.data[..., image.shape[-1] / 2]
+        if not isinstance(overlay, fslimage.Image):
+            raise RuntimeError('{} can only be used with an {} overlay'.format(
+                type(self).__name__, fslimage.Image.__name__))
+
+        if np.prod(overlay.shape) > 2 ** 30:
+            sample = overlay.data[..., overlay.shape[-1] / 2]
             self.dataMin = float(sample.min())
             self.dataMax = float(sample.max())
         else:
-            self.dataMin = float(image.data.min())
-            self.dataMax = float(image.data.max())
+            self.dataMin = float(overlay.data.min())
+            self.dataMax = float(overlay.data.max())
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
@@ -52,8 +57,8 @@ class MaskOpts(fsldisplay.DisplayOpts):
         self.setConstraint('threshold', 'minDistance', dMinDistance)
 
         fsldisplay.DisplayOpts.__init__(self,
-                                        image,
+                                        overlay,
                                         display,
-                                        imageList,
+                                        overlayList,
                                         displayCtx,
                                         parent)
