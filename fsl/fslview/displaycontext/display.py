@@ -231,7 +231,7 @@ class Display(props.SyncableHasProperties):
             if len(overlay.shape) != 4 or overlay.shape[3] != 3:
             
                 log.debug('Disabling vector type for {} ({})'.format(
-                    self, self.shape))
+                    self, overlay.shape))
                 overlayTypeProp.disableChoice('vector', self)
 
         # The __overlayTypeChanged method creates
@@ -412,7 +412,7 @@ class Display(props.SyncableHasProperties):
         return optType(self.__overlay,
                        self,
                        self.__overlayList,
-                       self.displayCtx,
+                       self.__displayCtx,
                        oParent)
 
     
