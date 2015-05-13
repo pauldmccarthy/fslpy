@@ -81,7 +81,7 @@ OPTIONS = td.TypeDict({
     'Main'          : ['scene',
                        'voxelLoc',
                        'worldLoc',
-                       'selectedImage'],
+                       'selectedOverlay'],
     
     'SceneOpts'     : ['showCursor',
                        'showColourBar',
@@ -115,7 +115,7 @@ OPTIONS = td.TypeDict({
     # interpolation!
     'Display'       : ['name',
                        'transform',
-                       'imageType',
+                       'overlayType',
                        'interpolation',
                        'resolution',
                        'volume',
@@ -145,7 +145,7 @@ GROUPNAMES = td.TypeDict({
     'OrthoOpts'    : 'Ortho display options',
     'LightBoxOpts' : 'LightBox display options',
     
-    'Display'      : 'Image display options',
+    'Display'      : 'Overlay display options',
     'VolumeOpts'   : 'Volume options',
     'VectorOpts'   : 'Vector options',
     'MaskOpts'     : 'Mask options',
@@ -162,10 +162,10 @@ GROUPNAMES = td.TypeDict({
 # Display options and the *Opts options.
 ARGUMENTS = td.TypeDict({
 
-    'Main.scene'         : ('s',  'scene'),
-    'Main.voxelLoc'      : ('v',  'voxelloc'),
-    'Main.worldLoc'      : ('w',  'worldloc'),
-    'Main.selectedImage' : ('i',  'selectedImage'),
+    'Main.scene'           : ('s',  'scene'),
+    'Main.voxelLoc'        : ('v',  'voxelloc'),
+    'Main.worldLoc'        : ('w',  'worldloc'),
+    'Main.selectedOverlay' : ('o',  'selectedOverlay'),
     
     'SceneOpts.showColourBar'      : ('cb',  'showColourBar'),
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
@@ -198,7 +198,7 @@ ARGUMENTS = td.TypeDict({
     'Display.interpolation' : ('in', 'interp'),
     'Display.resolution'    : ('r',  'resolution'),
     'Display.transform'     : ('tf', 'transform'),
-    'Display.imageType'     : ('it', 'imageType'),
+    'Display.overlayType'   : ('ot', 'overlayType'),
     'Display.volume'        : ('vl', 'volume'),
     'Display.alpha'         : ('a',  'alpha'),
     'Display.brightness'    : ('b',  'brightness'),
@@ -229,11 +229,13 @@ HELP = td.TypeDict({
 
     'Main.scene'         : 'Scene to show. If not provided, the '
                            'previous scene layout is restored.',
-    'Main.voxelLoc'      : 'Location to show (voxel coordinates of '
-                           'first image)',
-    'Main.worldLoc'      : 'Location to show (world coordinates, '
-                           'takes precedence over --voxelloc)',
-    'Main.selectedImage' : 'Selected image (default: last)',
+
+    # TODO how about other overlay types?
+    'Main.voxelLoc'        : 'Location to show (voxel coordinates of '
+                             'first overlay)',
+    'Main.worldLoc'        : 'Location to show (world coordinates, '
+                             'takes precedence over --voxelloc)',
+    'Main.selectedOverlay' : 'Selected overlay (default: last)',
 
     'SceneOpts.showCursor'         : 'Do not display the green cursor '
                                      'highlighting the current location',
@@ -264,11 +266,11 @@ HELP = td.TypeDict({
     'LightBoxOpts.highlightSlice' : 'Highlight current slice',
     'LightBoxOpts.zax'            : 'Z axis',
 
-    'Display.name'          : 'Image name',
+    'Display.name'          : 'Overlay name',
     'Display.interpolation' : 'Interpolation',
     'Display.resolution'    : 'Resolution',
     'Display.transform'     : 'Transformation',
-    'Display.imageType'     : 'Image type',
+    'Display.overlayType'   : 'Overlay type',
     'Display.volume'        : 'Volume',
     'Display.alpha'         : 'Opacity',
     'Display.brightness'    : 'Brightness',
@@ -306,7 +308,7 @@ HELP = td.TypeDict({
 # an inverse transforms dictionary
 def _modTrans(i):
     if i == 'none': return None
-    else:           return i.imageFile
+    else:           return i.overlayFile
     
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
@@ -360,9 +362,9 @@ def _configMainParser(mainParser):
                              type=float,
                              nargs=3,
                              help=mainHelp['worldLoc'])
-    sceneParser.add_argument(*mainArgs['selectedImage'],
+    sceneParser.add_argument(*mainArgs['selectedOverlay'],
                              type=int,
-                             help=mainHelp['selectedImage'])
+                             help=mainHelp['selectedOverlay'])
 
     # Separate parser groups for ortho/lightbox, and for colour bar options
     sceneParser =  mainParser.add_argument_group(GROUPNAMES['SceneOpts']) 
@@ -477,7 +479,7 @@ def _configOverlayParser(ovlParser):
 
         # We need to process the modulate option
         # manually, rather than using the props.cli
-        # module - see the handleImageArgs function.
+        # module - see the handleOverlayArgs function.
         if addModulate:
             shortArg, longArg = ARGUMENTS[target, 'modulate']
             helpText          = HELP[     target, 'modulate']
@@ -535,7 +537,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     _configMainParser(mainParser)
 
-    # And the ovlParser parses image display options
+    # And the ovlParser parses overlay display options
     # for a single overlay - below we're going to
     # manually step through the list of arguments,
     # and pass each block of arguments to the ovlParser
@@ -547,7 +549,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     def printHelp(shortHelp=False):
 
         # Print help for the main parser first,
-        # and then separately for the image parser
+        # and then separately for the overlay parser
         if shortHelp: mainParser.print_usage()
         else:         mainParser.print_help()
 
@@ -562,7 +564,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
             # and then proceeds to give short help for all the
             # possible arguments. Here, we're removing this
             # 'usage [toolname]:' section, and replacing it with
-            # spaces. We're also adding the image display argument
+            # spaces. We're also adding the overlay display argument
             # group title to the beginning of the usage text
             start      = ' '.join(ovlHelp[0].split()[:2])
             ovlHelp[0] = ovlHelp[0].replace(start, ' ' * len(start))
@@ -757,12 +759,12 @@ def applySceneArgs(args, overlayList, displayCtx, sceneOpts):
     
     # First apply all command line options
     # related to the display context 
-    if args.selectedImage is not None:
-        if args.selectedImage < len(overlayList):
-            displayCtx.selectedImage = args.selectedImage
+    if args.selectedOverlay is not None:
+        if args.selectedOverlay < len(overlayList):
+            displayCtx.selectedOverlay = args.selectedOverlay
     else:
         if len(overlayList) > 0:
-            displayCtx.selectedImage = len(overlayList) - 1
+            displayCtx.selectedOverlay = len(overlayList) - 1
 
     # voxel/world location
     if len(overlayList) > 0:
@@ -805,9 +807,9 @@ def generateSceneArgs(overlayList, displayCtx, sceneOpts):
         args += ['--{}'.format(ARGUMENTS['Main.worldLoc'][1])]
         args += ['{}'.format(c) for c in displayCtx.location.xyz]
 
-    if displayCtx.selectedImage is not None:
-        args += ['--{}'.format(ARGUMENTS['Main.selectedImage'][1])]
-        args += ['{}'.format(displayCtx.selectedImage)]
+    if displayCtx.selectedOverlay is not None:
+        args += ['--{}'.format(ARGUMENTS['Main.selectedOverlay'][1])]
+        args += ['{}'.format(displayCtx.selectedOverlay)]
 
     args += _generateArgs(sceneOpts, OPTIONS['SceneOpts'])
     args += _generateArgs(sceneOpts, OPTIONS[ sceneOpts])
@@ -832,8 +834,8 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     :arg args:        A :class:`~argparse.Namespace` instance, as returned
                       by the :func:`parseArgs` function.
     
-    :arg overlayList: An :class:`.OverlayList` instance, to which the images
-                      should be added.
+    :arg overlayList: An :class:`.OverlayList` instance, to which the
+                      overlays should be added.
     
     :arg displayCtx:  A :class:`~fsl.fslview.displaycontext.DisplayContext`
                       instance, which manages the scene and overlay display.
