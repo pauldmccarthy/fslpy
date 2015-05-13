@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines a mouse/keyboard interaction 'view' profile for the
-:class:`~fsl.fslview.views.orthopanel.OrthoPanel'` class.
+:class:`.OrthoPanel'` class.
 
 There are three view 'modes' available in this profile:
 
@@ -25,12 +25,14 @@ switch into one mode from another; these temporary modes are defined in the
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import wx
 
 import fsl.fslview.profiles as profiles
+import fsl.data.image       as fslimage
+
+
+log = logging.getLogger(__name__)
 
 
 class OrthoViewProfile(profiles.Profile):
@@ -38,13 +40,13 @@ class OrthoViewProfile(profiles.Profile):
 
     def __init__(self,
                  canvasPanel,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  extraModes=None,
                  extraActions=None):
         """Creates an :class:`OrthoViewProfile`, which can be registered
-        with the given ``canvasPanel`` which is assumed to be a
-        :class:`~fsl.fslview.views.orthopanel.OrthoPanel` instance.
+        with the given ``canvasPanel`` which is assumed to be an
+        :class:`.OrthoPanel` instance.
         """
 
         if extraModes   is None: extraModes   = []
@@ -61,7 +63,7 @@ class OrthoViewProfile(profiles.Profile):
 
         profiles.Profile.__init__(self,
                                   canvasPanel,
-                                  imageList,
+                                  overlayList,
                                   displayCtx,
                                   modes,
                                   actionz)
@@ -110,8 +112,7 @@ class OrthoViewProfile(profiles.Profile):
 
     def _navModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
-        :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
-        the mouse location.
+        :attr:`.DisplayContext.location` to follow the mouse location.
         """
 
         if canvasPos is None:
@@ -122,25 +123,29 @@ class OrthoViewProfile(profiles.Profile):
         
     def _navModeChar(self, ev, canvas, key):
         """Left mouse drags in location mode update the
-        :attr:`~fsl.fslview.displaycontext.DisplayContext.location`.
+        :attr:`.DisplayContext.location`.
 
         Arrow keys map to the horizontal/vertical axes, and -/+ keys map
         to the depth axis of the canvas which was the target of the event.
         """ 
 
-        image = self._displayCtx.getSelectedImage()
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        if image is None:
+        if overlay is None:
             return
         
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(overlay)
         pos     = self._displayCtx.location.xyz
+
+        if not isinstance(overlay, fslimage.Image):
+            log.warn('Non-volumetric overlay types not supported yet')
+            return
 
         # If we're displaying voxel space,
         # we want a keypress to move one
         # voxel in the appropriate direction
         if   display.transform == 'id':     offsets = [1, 1, 1]
-        elif display.transform == 'pixdim': offsets = image.pixdim
+        elif display.transform == 'pixdim': offsets = overlay.pixdim
 
         # Otherwise we'll just move an arbitrary 
         # amount in the image world space - 2mm

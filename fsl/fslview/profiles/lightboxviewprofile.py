@@ -14,10 +14,10 @@ import fsl.fslview.profiles as profiles
 
 
 class LightBoxViewProfile(profiles.Profile):
-    def __init__(self, canvasPanel, imageList, displayCtx):
+    def __init__(self, canvasPanel, overlayList, displayCtx):
         profiles.Profile.__init__(self,
                                   canvasPanel,
-                                  imageList,
+                                  overlayList,
                                   displayCtx,
                                   modes=['view', 'zoom'])
 

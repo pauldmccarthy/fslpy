@@ -5,20 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """The :mod:`profiles` module contains logic for mouse/keyboard interaction
-with :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` panels.
+with :class:`.CanvasPanel` panels.
 
 This logic is encapsulated in two classes:
 
  - The :class:`Profile` class is intended to be subclassed. A :class:`Profile`
    instance contains the mouse/keyboard event handlers for a particular type
    of ``CanvasPanel`` to allow the user to interact with the canvas in a
-   particular way. For example, the
-   :class:`~fsl.fslview.profiles.orthoviewprofile.OrthoViewProfile` class
-   allows the user to navigate through the image space in an
-   :class:`~fsl.fslview.views.orthopanel.OrthoPanel` canvas, wherease the
-   :class:`~fsl.fslview.profiles.orthoeditprofile.OrthoEditProfile` class
-   contains interaction logic for selecting and editing image voxels in an
-   ``OrthoPanel``.
+   particular way. For example, the :class:`.OrthoViewProfile` class allows
+   the user to navigate through the display space in an :class:`.OrthoPanel`
+   canvas, wherease the :class:`.OrthoEditProfile` class contains interaction
+   logic for selecting and editing image voxels in an ``OrthoPanel``.
 
  - The :class:`ProfileManager` class is used by ``CanvasPanel`` instances to
    create and change the ``Profile`` instance currently in use.
@@ -37,14 +34,16 @@ import fsl.fslview.actions as actions
 
 class Profile(actions.ActionProvider):
     """A :class:`Profile` class implements keyboard/mouse interaction behaviour
-    for a :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance.
+    for a :class:`.CanvasPanel` instance.
 
+    
     Subclasses should specify at least one 'mode' of operation, which defines
     a sort of sub-profile. The user is able to change the mode via the
     :attr:`mode` property. Subclasses must also override the
     :meth:`getEventTargets` method, to return the :mod:`wx` objects that
     are to be the targets for mouse/keyboard interaction.
 
+    
     In order to receive mouse or keyboard events, subclasses simply need to
     implement methods which handle the events of interest for the relevant
     mode, and name them appropriately. The name of a method handler must be 
@@ -67,31 +66,33 @@ class Profile(actions.ActionProvider):
       - ``MouseWheel``
       - ``Char``
 
+    
     For example, if a particular profile has defined a mode called ``nav``,
     and is interested in left clicks, the profile class must provide a method
     called `_navModeLeftMouseDown`. Then, whenever the profile is in the
     ``nav`` mode, this method will be called on left mouse clicks.
 
-    The :mod:`~fsl.fslview.profilemap` module contains a ``tempModeMap``
-    which, for each profile and each mode, defines a keyboard modifier which
-    may be used to temporarily redirect mouse/keyboard events to the handlers
-    for a different mode. For example, if while in ``nav`` mode, you would
-    like the user to be able to switch to ``zoom`` mode with the control key,
-    you can add a temporary mode map in the
-    :attr:`~fsl.fslview.profilemap.tempModeMap`
-
-
-    The :mod:`~fsl.fslview.profilemap` contains another dictionary, called
-    the ``altHandlerMap``. This dictionary allows you to re-use event
-    handlers that have been defined for one mode in another mode. For example,
-    if you would like right clicks in ``zoom`` mode to behave like left clicks
-    in ``nav`` mode, you can set up such a mapping using the
-    :attr:`~fsl.fslview.profilemap.altHandlerMap`` dictionary.
     
-    As the :class:`Profile` class derives from the
-    :class:`~fsl.fslview.actions.ActionProvider` class, :class:`Profile`
-    subclasses may define properties and actions for the user to configure
-    the profile behaviour, and/or to perform any relevant actions. 
+    The :mod:`.profilemap` module contains a ``tempModeMap`` which, for each
+    profile and each mode, defines a keyboard modifier which may be used to
+    temporarily redirect mouse/keyboard events to the handlers for a different
+    mode. For example, if while in ``nav`` mode, you would like the user to be
+    able to switch to ``zoom`` mode with the control key, you can add a
+    temporary mode map in the ``tempModeMap``.
+
+
+    The :mod:`.profilemap` module contains another dictionary, called the
+    ``altHandlerMap``. This dictionary allows you to re-use event handlers
+    that have been defined for one mode in another mode. For example, if you
+    would like right clicks in ``zoom`` mode to behave like left clicks in
+    ``nav`` mode, you can set up such a mapping using the
+    ``altHandlerMap`` dictionary.
+
+    
+    As the :class:`Profile` class derives from the :class:`.ActionProvider`
+    class, :class:`Profile` subclasses may define properties and actions for
+    the user to configure the profile behaviour, and/or to perform any
+    relevant actions.
     """
 
 
@@ -103,32 +104,28 @@ class Profile(actions.ActionProvider):
 
     def __init__(self,
                  canvasPanel,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  modes=None,
                  actionz=None):
         """Create a :class:`Profile` instance.
 
-        :arg canvasPanel: The
-                          :class:`~fsl.fslview.views.canvaspanel.CanvasPanel`
-                          instance for which this :class:`Profile` instance
-                          defines mouse/keyboard interaction behaviour.
+        :arg canvasPanel: The :class:`.CanvasPanel` instance for which this
+                          :class:`Profile` instance defines mouse/keyboard
+                          interaction behaviour.
 
-        :arg imageList:   The :class:`~fsl.data.image.ImageList` instance
-                          which contains the list of images being displayed.
+        :arg overlayList: The :class:`.OverlayList` instance which contains
+                          the list of overlays being displayed.
 
-        :arg displayCtx:  The
-                          :class:`~fsl.fslview.displaycontext.DisplayContext`
-                          instance which defines how the images are to be
-                          displayed.
+        :arg displayCtx: The :class:`.DisplayContext` instance which defines
+                          how the overlays are to be displayed.
 
         :arg modes:       A sequence of strings, containing the mode
                           identifiers for this profile.
 
-        :arg actionz:     A dictionary of ``{name : function}`` mappings
-                          defining any actions provided by this instance; see
-                          the :class:`~fsl.fslview.actions.ActionProvider`
-                          class.
+        :arg actionz:     A dictionary of ``{name : function}`` mappings 
+                          defining any actions provided by this instance; 
+                          see the :class:`.ActionProvider` class.
         """
 
         if actionz is not None:
@@ -138,10 +135,10 @@ class Profile(actions.ActionProvider):
                     canvasPanel.Refresh()
                 actionz[name] = wrap
 
-        actions.ActionProvider.__init__(self, imageList, displayCtx, actionz)
+        actions.ActionProvider.__init__(self, overlayList, displayCtx, actionz)
         
         self._canvasPanel = canvasPanel
-        self._imageList   = imageList
+        self._overlayList = overlayList
         self._displayCtx  = displayCtx
         self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
 
@@ -195,7 +192,7 @@ class Profile(actions.ActionProvider):
         :mod:`wx` objects that are the targets of mouse/keyboard interaction.
 
         It is assumed that all of the objects in the sequence derive from the
-        :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class.
+        :class:`.SliceCanvas` class.
         """
         raise NotImplementedError('Profile subclasses must implement '
                                   'the getEventTargets method')
@@ -528,39 +525,34 @@ class Profile(actions.ActionProvider):
 
 
 class ProfileManager(object):
-    """Manages creation/registration/de-regsistration of
-    :class:`Profile` instances for a
-    :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance.
+    """Manages creation/registration/de-regsistration of :class:`Profile`
+    instances for a :class:`.CanvasPanel` instance.
 
     A :class:`ProfileManager` instance is created and used by every
-    :class:~fsl.fslview.views.canvaspanel.CanvasPanel` instance. The
-    :mod:`~fsl.fslview.profilemap` defines the :class:`Profile` types
-    which should be used for specific
-    :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` types.
+    :class:`.CanvasPanel` instance. The :mod:`.profilemap` defines the
+    :class:`Profile` types which should be used for specific
+    :class:`.CanvasPanel` types.
     """
 
 
-    def __init__(self, canvasPanel, imageList, displayCtx):
+    def __init__(self, canvasPanel, overlayList, displayCtx):
         """Create a :class:`ProfileManager`.
 
-        :arg canvasPanel: The 
-                          :class:`~fsl.fslview.views.canvaspanel.CanvasPanel`
-                          instance which this :class:`ProfileManager` is
-                          to manage.
+        :arg canvasPanel: The :class:`.CanvasPanel` instance which this
+                          :class:`ProfileManager` is to manage.
         
-        :arg imageList:   The :class:`~fsl.data.image.ImageList` instance
-                          containing the images that are being displayed.
+        :arg overlayList: The :class:`.OverlayList` instance containing the
+                          overlays that are being displayed.
         
-        :arg displayCtx:  The
-                          :class:`~fsl.fslview.displaycontext.DisplayContext`
-                          instance which defines how images are being
-                          displayed.
+        :arg displayCtx:  The :class:`.DisplayContext` instance which defines
+                          how overlays are being displayed.
+
         """
         import profilemap
         
         self._canvasPanel    = canvasPanel
         self._canvasCls      = canvasPanel.__class__
-        self._imageList      = imageList
+        self._overlayList    = overlayList
         self._displayCtx     = displayCtx
         self._currentProfile = None
 
@@ -603,7 +595,7 @@ class ProfileManager(object):
             self._currentProfile.deregister()
                
         self._currentProfile = profileCls(self._canvasPanel,
-                                          self._imageList,
+                                          self._overlayList,
                                           self._displayCtx)
         
         log.debug('Registering {} profile with {}'.format(

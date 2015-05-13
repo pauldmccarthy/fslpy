@@ -4,17 +4,15 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module is used by the :class:`~fsl.fslview.proflies.Profile` and
-:class:`~fsl.fslview.proflies.ProfileManager` classes.
+"""This module is used by the :class:`.Profile` and :class:`.ProfileManager`
+classes.
 
 It defines a few dictionaries which define the profile type to use for each
-:class:`~fsl.fslview.views.canvaspanel.CanvasPanel` type, temporary
-mouse/keyboard interaction modes, and alternate mode handlers for the
-profiles contained in the profiles package.
+:class:`.CanvasPanel` type, temporary mouse/keyboard interaction modes, and
+alternate mode handlers for the profiles contained in the profiles package.
 """
 
 import logging
-log = logging.getLogger(__name__)
 
 from collections import OrderedDict
 
@@ -27,13 +25,16 @@ from fsl.fslview.profiles.orthoviewprofile    import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile    import OrthoEditProfile
 from fsl.fslview.profiles.lightboxviewprofile import LightBoxViewProfile
 
+
+log = logging.getLogger(__name__)
+
+
 profiles  = {
     OrthoPanel    : ['view', 'edit'],
     LightBoxPanel : ['view']
 }
-"""This dictionary is used by the :class:`~fsl.fslview.profiles.ProfileManager`
-to figure out which profiles are available for each
-:class:`~fsl.fslview.views.canvaspanel.CanvasPanel`.
+"""This dictionary is used by the :class:`.ProfileManager` to figure out which
+profiles are available for each :class:`.CanvasPanel`.
 """
 
 
@@ -42,10 +43,9 @@ profileHandlers = {
     (OrthoPanel,    'edit') : OrthoEditProfile,
     (LightBoxPanel, 'view') : LightBoxViewProfile
 }
-"""This dictionary is used by the :class:`~fsl.fslview.profiles.ProfileManager`
-class to figure out which :class:`~fsl.fslview.profiles.Profile` instance to
-create for a given :class:`~fsl.fslview.views.canvaspanel.CanvasPanel` instance
-and profile identifier.
+"""This dictionary is used by the :class:`.ProfileManager` class to figure out
+which :class:`.Profile` instance to create for a given :class:`.CanvasPanel`
+instance and profile identifier.
 """
 
 
@@ -94,6 +94,7 @@ tempModeMap = {
     LightBoxViewProfile : OrderedDict((
         (('view', wx.WXK_CONTROL), 'zoom'), ))
 }
+
 
 altHandlerMap = {
 
