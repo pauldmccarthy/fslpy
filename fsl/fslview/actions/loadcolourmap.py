@@ -85,8 +85,8 @@ class LoadColourMapAction(actions.Action):
             fslcmap.getColourMaps())
 
         # and for any existing VolumeOpts instances
-        for image in self._imageList:
-            display = self._displayCtx.getDisplayProperties(image)
+        for overlay in self._overlayList:
+            display = self._displayCtx.getDisplayProperties(overlay)
             opts    = display.getDisplayOpts()
             if isinstance(opts, volumeopts.VolumeOpts):
                 opts.setConstraint('cmap',

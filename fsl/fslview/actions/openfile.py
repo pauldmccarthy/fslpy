@@ -13,5 +13,6 @@ import fsl.fslview.actions as actions
 class OpenFileAction(actions.Action):
     def doAction(self):
         
-        if self._imageList.addImages():
-            self._displayCtx.selectedImage = self._displayCtx.imageOrder[-1]
+        if self._overlayList.addOverlays():
+            self._displayCtx.selectedOverlay = \
+                self._displayCtx.overlayOrder[-1]
