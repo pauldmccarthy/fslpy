@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 class OrthoSettingsPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx, ortho):
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+    def __init__(self, parent, overlayList, displayCtx, ortho):
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
         import fsl.fslview.layouts as layouts
 

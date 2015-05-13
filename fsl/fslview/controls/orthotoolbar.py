@@ -17,14 +17,14 @@ log = logging.getLogger(__name__)
 class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
     
-    def __init__(self, parent, imageList, displayCtx, ortho):
+    def __init__(self, parent, overlayList, displayCtx, ortho):
 
         import fsl.fslview.layouts as layouts
 
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
         self.orthoPanel = ortho
 
         orthoOpts = ortho.getSceneOptions()

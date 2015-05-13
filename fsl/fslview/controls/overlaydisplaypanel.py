@@ -1,37 +1,39 @@
 #!/usr/bin/env python
 #
-# imagedisplaypanel.py - A panel which shows display control options for the
-#                        currently selected image.
+# overlaydisplaypanel.py - A panel which shows display control options for the
+#                          currently selected overlay.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 
 """A :class:`wx.panel` which shows display control optionns for the currently
-selected image - see :attr:`fsl.data.image.ImageList.selectedImage`.
+selected overlay.
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import wx
 import props
 
-import fsl.fslview.panel as fslpanel
-import imageselectpanel  as imageselect
+import fsl.data.image     as fslimage
+import fsl.fslview.panel  as fslpanel
+import overlayselectpanel as overlayselect
+
+
+log = logging.getLogger(__name__)
 
     
-class ImageDisplayPanel(fslpanel.FSLViewPanel):
+class OverlayDisplayPanel(fslpanel.FSLViewPanel):
 
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         """
         """
 
         # TODO Ability to link properties across images
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.imageSelect = imageselect.ImageSelectPanel(
-            self, imageList, displayCtx)
+        self.overlaySelect = overlayselect.OverlaySelectPanel(
+            self, overlayList, displayCtx)
 
         self.propPanel = wx.ScrolledWindow(self)
         self.propPanel.SetScrollRate(0, 5)
@@ -51,8 +53,8 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         self.dispPanel.SetSizer(self.dispSizer)
         self.optsPanel.SetSizer(self.optsSizer)
 
-        self.sizer.Add(self.imageSelect, flag=wx.EXPAND)
-        self.sizer.Add(self.propPanel,   flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.overlaySelect, flag=wx.EXPAND)
+        self.sizer.Add(self.propPanel,     flag=wx.EXPAND, proportion=1)
 
         flags = wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL
         
@@ -60,15 +62,15 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
         self.propSizer.Add(self.divider,              flag=flags)
         self.propSizer.Add(self.optsPanel, border=20, flag=flags) 
         
-        displayCtx.addListener('selectedImage',
-                               self._name,
-                               self._selectedImageChanged)
-        imageList .addListener('images',
-                               self._name,
-                               self._selectedImageChanged)
+        displayCtx .addListener('selectedOverlay',
+                                 self._name,
+                                 self._selectedOverlayChanged)
+        overlayList.addListener('overlays',
+                                 self._name,
+                                 self._selectedOverlayChanged)
 
-        self._lastImage = None
-        self._selectedImageChanged()
+        self._lastOverlay = None
+        self._selectedOverlayChanged()
 
         self.propSizer.Layout()
         self.Layout()
@@ -81,53 +83,58 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._imageList .removeListener('images',        self._name)
-        self.imageSelect.destroy()
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self.overlaySelect.destroy()
 
-        for image in self._imageList:
-            image.removeListener('imageType', self._name)
+        for ovl in self._overlayList:
+            display = self._displayCtx.getDisplayProperties(ovl)
+            display.removeListener('overlayType', self._name)
 
 
-    def _selectedImageChanged(self, *a):
+    def _selectedOverlayChanged(self, *a):
 
-        image     = self._displayCtx.getSelectedImage()
-        lastImage = self._lastImage
+        overlay     = self._displayCtx.getSelectedOverlay()
+        lastOverlay = self._lastOverlay
 
-        if image is None:
-            self._lastImage = None
+        if overlay is None:
+            self._lastOverlay = None
             self.dispPanel.DestroyChildren()
             self.optsPanel.DestroyChildren()
             self.Layout()
             return
 
-        if image is lastImage:
+        if overlay is lastOverlay:
             return
 
-        if lastImage is not None:
-            lastDisplay = self._displayCtx.getDisplayProperties(lastImage)
-            lastImage  .removeListener('imageType', self._name)
-            lastDisplay.removeListener('transform', self._name)
+        if lastOverlay is not None:
+            lastDisplay = self._displayCtx.getDisplayProperties(lastOverlay)
+            lastOverlay.removeListener('overlayType', self._name)
+            lastDisplay.removeListener('transform',   self._name)
 
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(overlay)
             
-        image  .addListener('imageType',
+        display.addListener('overlayType',
                             self._name,
                             lambda *a: self._updateProps(self.optsPanel, True))
         display.addListener('transform', self._name, self._transformChanged)
         
-        self._lastImage = image
+        self._lastOverlay = overlay
         self._updateProps(self.dispPanel, False)
         self._updateProps(self.optsPanel, True)
 
         
     def _transformChanged(self, *a):
-        """Called when the transform setting of the currently selected image
+        """Called when the transform setting of the currently selected overlay
         changes. If affine transformation is selected, interpolation is
         enabled, otherwise interpolation is disabled.
         """
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        # TODO necessary for other overlay types?
+        if not isinstance(overlay, fslimage.Image):
+            return
 
         choices = display.getProp('interpolation').getChoices(display)
 
@@ -143,8 +150,8 @@ class ImageDisplayPanel(fslpanel.FSLViewPanel):
 
         import fsl.fslview.layouts as layouts
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._displayCtx.getSelectedOverlay()
+        display = self._displayCtx.getDisplayProperties(overlay)
 
         if opts: optObj = display.getDisplayOpts()
         else:    optObj = display

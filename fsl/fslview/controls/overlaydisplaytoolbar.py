@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
-# imagedisplaytoolbar.py - A toolbar which shows display control options for
-#                          the currently selected image.
+# overlaydisplaytoolbar.py - A toolbar which shows display control options for
+#                            the currently selected overlay.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 
-"""A :class:`wx.panel` which shows display control optionns for the currently
-selected image - see :attr:`fsl.data.image.ImageList.selectedImage`.
+"""A :class:`wx.Panel` which shows display control options for the currently
+selected overlay.
 """
 
 import logging
@@ -14,121 +14,121 @@ log = logging.getLogger(__name__)
 
 
 import fsl.fslview.toolbar as fsltoolbar
-import imagedisplaypanel   as imagedisplay
+import overlaydisplaypanel as overlaydisplay
 
 
-class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
+class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
     
-    def __init__(self, parent, imageList, displayCtx, viewPanel):
+    def __init__(self, parent, overlayList, displayCtx, viewPanel):
 
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
 
-        self._viewPanel    = viewPanel
-        self._imageTools   = {}
-        self._currentImage = None
+        self._viewPanel      = viewPanel
+        self._overlayTools   = {}
+        self._currentOverlay = None
 
         self._displayCtx.addListener(
-            'selectedImage',
+            'selectedOverlay',
             self._name,
-            self._selectedImageChanged)
+            self._selectedOverlayChanged)
         self._displayCtx.addListener(
-            'imageOrder',
+            'overlayOrder',
             self._name,
-            self._selectedImageChanged) 
-        self._imageList.addListener(
-            'images',
+            self._selectedOverlayChanged) 
+        self._overlayList.addListener(
+            'overlays',
             self._name,
-            self._imageListChanged) 
+            self._overlayListChanged) 
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
 
 
     def destroy(self):
         """Deregisters property listeners. """
         fsltoolbar.FSLViewToolBar.destroy(self)
 
-        self._imageList .removeListener('images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
 
-        for image in self._imageList:
+        for ovl in self._overlayList:
             
-            display = self._displayCtx.getDisplayProperties(image)
-            image  .removeListener('imageType', self._name)
-            display.removeListener('enabled',   self._name)
+            display = self._displayCtx.getDisplayProperties(ovl)
+            display.removeListener('overlayType', self._name)
+            display.removeListener('enabled',     self._name)
 
 
     def showMoreSettings(self, *a):
-        self._viewPanel.togglePanel(imagedisplay.ImageDisplayPanel, True)
+        self._viewPanel.togglePanel(overlaydisplay.OverlayDisplayPanel, True)
 
 
-    def _imageListChanged(self, *a):
+    def _overlayListChanged(self, *a):
 
-        for image in self._imageTools.keys():
-            if image not in self._imageList:
+        for ovl in self._overlayTools.keys():
+            if ovl not in self._overlayList:
 
-                dispTools, optsTools = self._imageTools.pop(image)
+                dispTools, optsTools = self._overlayTools.pop(ovl)
 
-                log.debug('Destroying all tools for {}'.format(image))
+                log.debug('Destroying all tools for {}'.format(ovl))
 
-                if image is self._currentImage:
+                if ovl is self._currentOverlay:
                     self.ClearTools()
 
                 for tool, _ in dispTools: tool.Destroy()
                 for tool, _ in optsTools: tool.Destroy()
     
 
-    def _imageTypeChanged(self, value, valid, image, name, refresh=True):
+    def _overlayTypeChanged(self, value, valid, ovl, name, refresh=True):
 
-        dispTools, oldOptsTools = self._imageTools[image]
+        dispTools, oldOptsTools = self._overlayTools[ovl]
 
-        newOptsTools = self._makeOptsWidgets(image, self)
+        newOptsTools = self._makeOptsWidgets(ovl, self)
 
-        self._imageTools[image] = (dispTools, newOptsTools)
+        self._overlayTools[ovl] = (dispTools, newOptsTools)
 
-        if refresh and (image is self._displayCtx.getSelectedImage()):
-            self._refreshTools(image)
+        if refresh and (ovl is self._displayCtx.getSelectedOverlay()):
+            self._refreshTools(ovl)
 
-        log.debug('Destroying opts tools for {}'.format(image))
+        log.debug('Destroying opts tools for {}'.format(ovl))
 
         for tool, _ in oldOptsTools:
             tool.Destroy()
 
             
-    def _toggleEnabled(self, value, valid, image, name):
+    def _toggleEnabled(self, value, valid, ovl, name):
         
-        if image is not self._displayCtx.getSelectedImage():
+        if ovl is not self._displayCtx.getSelectedOverlay():
             return
         
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(ovl)
 
         self.Enable(display.enabled)
             
 
-    def _selectedImageChanged(self, *a):
-        """Called when the :attr:`~fsl.data.image.ImageList.selectedImage`
+    def _selectedOverlayChanged(self, *a):
+        """Called when the :attr:`.DisplayContext.selectedOverlay`
         index changes. Ensures that the correct display panel is visible.
         """
 
-        image = self._displayCtx.getSelectedImage()
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        if image is None:
+        if overlay is None:
             self.ClearTools()
             return
 
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplayProperties(overlay)
 
         # Call _toggleEnabled when
         # the image is enabled/disabled
         self.Enable(display.enabled)
-        for i in self._imageList:
+        for ovl in self._overlayList:
             
-            d = self._displayCtx.getDisplayProperties(i)
+            d = self._displayCtx.getDisplayProperties(ovl)
             
-            if i == image:
+            if ovl == overlay:
                 d.addListener('enabled',
                               self._name,
                               self._toggleEnabled,
@@ -137,28 +137,28 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
                 d.removeListener('enabled', self._name)
 
         # Build/refresh the toolbar widgets for this image
-        tools = self._imageTools.get(image, None)
+        tools = self._imageTools.get(overlay, None)
  
         if tools is None:
-            displayTools = self._makeDisplayWidgets(image, self)
-            optsTools    = self._makeOptsWidgets(   image, self)
+            displayTools = self._makeDisplayWidgets(overlay, self)
+            optsTools    = self._makeOptsWidgets(   overlay, self)
             
-            self._imageTools[image] = (displayTools, optsTools)
+            self._imageTools[overlay] = (displayTools, optsTools)
 
-            image.addListener(
-                'imageType',
+            display.addListener(
+                'overlayType',
                 self._name,
-                self._imageTypeChanged,
+                self._overlayTypeChanged,
                 overwrite=True)
 
-        self._refreshTools(image)
+        self._refreshTools(overlay)
 
 
-    def _refreshTools(self, image):
+    def _refreshTools(self, overlay):
 
-        self._currentImage = image
+        self._currentOverlay = overlay
 
-        log.debug('Showing tools for {}'.format(image))
+        log.debug('Showing tools for {}'.format(overlay))
 
         tools = self.GetTools()
         for widget in tools:
@@ -166,10 +166,10 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
                 
         self.ClearTools(postevent=False)
 
-        if image is None:
+        if overlay is None:
             self.Layout()
 
-        dispTools, optsTools = self._imageTools[image]
+        dispTools, optsTools = self._overlayTools[overlay]
 
         dispTools, dispLabels = zip(*dispTools)
         optsTools, optsLabels = zip(*optsTools)
@@ -183,32 +183,32 @@ class ImageDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self.SetTools(tools, labels)
 
         
-    def _makeDisplayWidgets(self, image, parent):
+    def _makeDisplayWidgets(self, overlay, parent):
         """Creates and returns panel containing widgets allowing
         the user to edit the display properties of the given
-        :class:`~fsl.data.image.Image` instance. 
+        overlay object. 
         """
 
         import fsl.fslview.layouts as layouts
 
-        display   = self._displayCtx.getDisplayProperties(image)
+        display   = self._displayCtx.getDisplayProperties(overlay)
         toolSpecs = layouts.layouts[self, display]
 
-        log.debug('Creating display tools for {}'.format(image))
+        log.debug('Creating display tools for {}'.format(overlay))
         
         return self.GenerateTools(toolSpecs, display, add=False)
 
     
-    def _makeOptsWidgets(self, image, parent):
+    def _makeOptsWidgets(self, overlay, parent):
 
         import fsl.fslview.layouts as layouts
 
-        display   = self._displayCtx.getDisplayProperties(image)
+        display   = self._displayCtx.getDisplayProperties(overlay)
         opts      = display.getDisplayOpts()
         toolSpecs = layouts.layouts[self, opts]
         targets   = { s.key : self if s.key == 'more' else opts
                       for s in toolSpecs}
         
-        log.debug('Creating options tools for {}'.format(image))
+        log.debug('Creating options tools for {}'.format(overlay))
 
         return self.GenerateTools(toolSpecs, targets, add=False) 

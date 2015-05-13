@@ -1,32 +1,33 @@
 #!/usr/bin/env python
 #
-# imageselectpanel.py - A little panel which allows the currently selected
-# image to be changed.
+# overlayselectpanel.py - A little panel which allows the currently selected
+# overlay to be changed.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Defines the :class:`ImageSelectPanel` which is a little panel that allows
-the currently selected image to be changed.
+"""Defines the :class:`OverlaySelectPanel` which is a little panel that allows
+the currently selected overlay to be changed.
 
 This panel is generally embedded within other control panels.
 """
 
 import logging
-log = logging.getLogger(__name__)
 
 import wx
 
 import fsl.fslview.panel as fslpanel
 
+log = logging.getLogger(__name__)
 
-class ImageSelectPanel(fslpanel.FSLViewPanel):
-    """A panel which displays the currently selected image,
+
+class OverlaySelectPanel(fslpanel.FSLViewPanel):
+    """A panel which displays the currently selected overlay,
     and allows it to be changed.
     """
 
-    def __init__(self, parent, imageList, displayCtx, showName=True):
+    def __init__(self, parent, overlayList, displayCtx, showName=True):
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
         self.showName = showName
 
@@ -48,41 +49,41 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
         self._nextButton.Bind(wx.EVT_BUTTON, self._onNextButton)
         self._prevButton.Bind(wx.EVT_BUTTON, self._onPrevButton)
 
-        # A label showing the name of the current image
+        # A label showing the name of the current overlay
         if not showName:
-            self._imageLabel = None
+            self._overlayLabel = None
         else:
-            self._imageLabel = wx.StaticText(self,
-                                             style=wx.ALIGN_CENTRE |
-                                             wx.ST_ELLIPSIZE_MIDDLE)
+            self._overlayLabel = wx.StaticText(self,
+                                               style=wx.ALIGN_CENTRE |
+                                               wx.ST_ELLIPSIZE_MIDDLE)
 
             self._sizer.Insert(1,
-                               self._imageLabel,
+                               self._overlayLabel,
                                flag=wx.EXPAND,
                                proportion=1)
 
             # Make the image name label font a bit smaller
-            font = self._imageLabel.GetFont()
+            font = self._overlayLabel.GetFont()
             font.SetPointSize(font.GetPointSize() - 2)
             font.SetWeight(wx.FONTWEIGHT_LIGHT)
-            self._imageLabel.SetFont(font)
+            self._overlayLabel.SetFont(font)
         
-        self._imageList.addListener(
-            'images',
+        self._overlayList.addListener(
+            'overlays',
             self._name,
-            self._imageListChanged)
+            self._overlayListChanged)
 
         self._displayCtx.addListener(
-            'imageOrder',
+            'overlayOrder',
             self._name,
-            self._imageListChanged) 
+            self._overlayListChanged) 
 
         self._displayCtx.addListener(
-            'selectedImage',
+            'selectedOverlay',
             self._name,
-            self._selectedImageChanged)
+            self._selectedOverlayChanged)
 
-        self._imageListChanged()
+        self._overlayListChanged()
 
         self.Layout()
         self.SetMinSize(self._sizer.GetMinSize())
@@ -91,97 +92,100 @@ class ImageSelectPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._imageList. removeListener('images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
 
-        # the _imageListChanged method registers
-        # a listener on the name of each image
-        for image in self._imageList:
-            image.removeListener('name', self._name)
+        # the _overlayListChanged method registers
+        # a listener on the name of each overlay
+        for overlay in self._overlayList:
+            display = self._displayCtx.getDisplayProperties(overlay)
+            display.removeListener('name', self._name)
  
         
     def _onPrevButton(self, ev):
         """Called when the previous button is pushed. Selects the previous
-        image.
+        overlay.
         """
-        allImages = self._displayCtx.getOrderedImages()
-        currImage = self._displayCtx.getSelectedImage()
-        currIdx   = allImages.index(currImage)
+        allOverlays = self._displayCtx.getOrderedOverlays()
+        currOverlay = self._displayCtx.getSelectedOverlay()
+        currIdx     = allOverlays.index(currOverlay)
 
         if currIdx == 0:
             return
 
-        self._displayCtx.selectImage(allImages[currIdx - 1])
+        self._displayCtx.selectOverlay(allOverlays[currIdx - 1])
 
         
     def _onNextButton(self, ev):
         """Called when the previous button is pushed. Selects the next
-        image.
+        overlay.
         """
-        allImages = self._displayCtx.getOrderedImages()
-        currImage = self._displayCtx.getSelectedImage()
-        currIdx   = allImages.index(currImage)
+        allOverlays = self._displayCtx.getOrderedOverlays()
+        currOverlay = self._displayCtx.getSelectedOverlay()
+        currIdx     = allOverlays.index(currOverlay)
 
-        if currIdx == len(allImages) - 1:
+        if currIdx == len(allOverlays) - 1:
             return
 
-        self._displayCtx.selectImage(allImages[currIdx + 1]) 
+        self._displayCtx.selectOverlay(allOverlays[currIdx + 1]) 
 
 
-    def _imageListChanged(self, *a):
-        """Called when the :class:`~fsl.data.image.ImageList.images`
-        list changes.
+    def _overlayListChanged(self, *a):
+        """Called when the :class:`.OverlayList.overlays` list changes.
 
-        Ensures that the currently selected image is displayed on the panel,
-        and that listeners are registered on the name property of each image.
+        Ensures that the currently selected overlay is displayed on the panel,
+        and that listeners are registered on the name property for each
+        overlay.
         """
 
-        def nameChanged(value, valid, image, name):
+        def nameChanged(value, valid, ovl, name):
 
-            idx = self._imageList.index(image)
+            idx = self._overlayList.index(ovl)
             
-            # if the name of the currently selected image has changed,
+            # if the name of the currently selected overlay has changed,
             # make sure that this panel updates to reflect the change
-            if idx == self._displayCtx.selectedImage:
-                self._selectedImageChanged()
+            if idx == self._displayCtx.selectedOverlay:
+                self._selectedOverlayChanged()
 
-        if self._imageLabel is not None:
-            for image in self._imageList:
-                image.addListener('name',
-                                  self._name,
-                                  nameChanged,
-                                  overwrite=True)
+        if self._overlayLabel is not None:
+            for overlay in self._overlayList:
+                display = self._displayCtx.getDisplayProperties(overlay)
+                display.addListener('name',
+                                    self._name,
+                                    nameChanged,
+                                    overwrite=True)
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
 
         
-    def _selectedImageChanged(self, *a):
-        """Called when the selected image is changed. Updates the image name
-        label.
+    def _selectedOverlayChanged(self, *a):
+        """Called when the selected overlay is changed. Updates the overlay
+        name label.
         """
 
-        allImages = self._displayCtx.getOrderedImages()
-        image     = self._displayCtx.getSelectedImage()
-        nimgs     = len(allImages)
+        allOverlays = self._displayCtx.getOrderedOverlays()
+        overlay     = self._displayCtx.getSelectedOverlay()
+        novls       = len(allOverlays)
         
-        if nimgs > 0: idx = allImages.index(image)
+        if novls > 0: idx = allOverlays.index(overlay)
         else:         idx = -1
 
-        self._prevButton.Enable(nimgs > 0 and idx > 0)
-        self._nextButton.Enable(nimgs > 0 and idx < nimgs - 1)
+        self._prevButton.Enable(novls > 0 and idx > 0)
+        self._nextButton.Enable(novls > 0 and idx < novls - 1)
 
-        if self._imageLabel is None:
+        if self._overlayLabel is None:
             return
 
-        if nimgs == 0:
-            self._imageLabel.SetLabel('')
+        if novls == 0:
+            self._overlayLabel.SetLabel('')
             return
 
-        name = image.name
+        display = self._displayCtx.getDisplayProperties(overlay)
+        name    = display.name
         
         if name is None: name = ''
-        self._imageLabel.SetLabel('{}'.format(name))
+        self._overlayLabel.SetLabel('{}'.format(name))
 
         self.Layout()
         self.Refresh() 
