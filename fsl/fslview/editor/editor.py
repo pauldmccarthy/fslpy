@@ -19,8 +19,8 @@ import fsl.data.image as fslimage
 
 
 class ValueChange(object):
-    def __init__(self, image, volume, offset, oldVals, newVals):
-        self.image   = image
+    def __init__(self, overlay, volume, offset, oldVals, newVals):
+        self.overlay = overlay
         self.volume  = volume
         self.offset  = offset
         self.oldVals = oldVals
@@ -28,8 +28,8 @@ class ValueChange(object):
 
 
 class SelectionChange(object):
-    def __init__(self, image, offset, oldSelection, newSelection):
-        self.image        = image
+    def __init__(self, overlay, offset, oldSelection, newSelection):
+        self.overlay      = overlay
         self.offset       = offset
         self.oldSelection = oldSelection
         self.newSelection = newSelection
@@ -40,13 +40,14 @@ class Editor(props.HasProperties):
     canUndo = props.Boolean(default=False)
     canRedo = props.Boolean(default=False)
 
-    def __init__(self, imageList, displayCtx):
+    def __init__(self, overlayList, displayCtx):
 
-        self._name         = '{}_{}'.format(self.__class__.__name__, id(self))
-        self._imageList    = imageList
-        self._displayCtx   = displayCtx
-        self._selection    = None
-        self._currentImage = None
+        self._name           = '{}_{}'.format(self.__class__.__name__,
+                                              id(self))
+        self._overlayList    = overlayList
+        self._displayCtx     = displayCtx
+        self._selection      = None
+        self._currentOverlay = None
  
         # A list of state objects, providing
         # records of what has been done. The
@@ -60,35 +61,42 @@ class Editor(props.HasProperties):
         self._doneIndex = -1
         self._inGroup   = False
 
-        self._displayCtx.addListener('selectedImage',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._imageList .addListener('images',
-                                     self._name,
-                                     self._selectedImageChanged) 
+        self._displayCtx .addListener('selectedOverlay',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._overlayList.addListener('overlays',
+                                      self._name,
+                                      self._selectedOverlayChanged) 
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
 
         
     def __del__(self):
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._imageList .removeListener('images',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
 
 
-    def _selectedImageChanged(self, *a):
-        image = self._displayCtx.getSelectedImage()
+    def _selectedOverlayChanged(self, *a):
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        if image is None:
-            self._currentImage = None
-            self._selection    = None
+        if self._currentOverlay == overlay:
             return
 
-        if self._currentImage == image:
+        if overlay is None:
+            self._currentOverlay = None
+            self._selection      = None
             return
 
-        display            = self._displayCtx.getDisplayProperties(image)
-        self._currentImage = image
-        self._selection    = selection.Selection(image.data, display)
+        display = self._displayCtx.getDisplayProperties(overlay)
+
+        if not isinstance(overlay, fslimage.Image) or \
+           display.overlayType != 'volume':
+            self._currentOverlay = None
+            self._selection      = None
+            return
+        
+        self._currentOverlay = overlay
+        self._selection      = selection.Selection(overlay.data, display)
 
         self._selection.addListener('selection',
                                     self._name,
@@ -97,10 +105,9 @@ class Editor(props.HasProperties):
 
     def _selectionChanged(self, *a):
 
-        image            = self._displayCtx.getSelectedImage()
         old, new, offset = self._selection.getLastChange()
         
-        change = SelectionChange(image, offset, old, new)
+        change = SelectionChange(self._currentOverlay, offset, old, new)
         self._changeMade(change)
 
 
@@ -110,8 +117,12 @@ class Editor(props.HasProperties):
 
     def fillSelection(self, newVals):
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = self._currentOverlay
+
+        if overlay is None:
+            return
+        
+        display = self._displayCtx.getDisplayProperties(overlay)
 
         selectBlock, offset = self._selection.getBoundedSelection()
 
@@ -127,17 +138,17 @@ class Editor(props.HasProperties):
         yhi = ylo + selectBlock.shape[1]
         zhi = zlo + selectBlock.shape[2]
 
-        if   len(image.shape) == 3:
-            oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi]
-        elif len(image.shape) == 4:
-            oldVals = image.data[xlo:xhi, ylo:yhi, zlo:zhi, display.volume]
+        if   len(overlay.shape) == 3:
+            oldVals = overlay.data[xlo:xhi, ylo:yhi, zlo:zhi]
+        elif len(overlay.shape) == 4:
+            oldVals = overlay.data[xlo:xhi, ylo:yhi, zlo:zhi, display.volume]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 
         selectBlock = selectBlock == 0
         newVals[selectBlock] = oldVals[selectBlock]
         
-        change = ValueChange(image, display.volume, offset, oldVals, newVals)
+        change = ValueChange(overlay, display.volume, offset, oldVals, newVals)
         self._applyChange(change)
         self._changeMade( change)
 
@@ -224,20 +235,19 @@ class Editor(props.HasProperties):
 
     def _applyChange(self, change):
 
-        image   = change.image
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = change.overlay
+        display = self._displayCtx.getDisplayProperties(overlay)
 
-        if image.is4DImage(): volume = display.volume
-        else:                 volume = None
+        if overlay.is4DImage(): volume = display.volume
+        else:                   volume = None
         
-        if self._displayCtx.getSelectedImage() != image:
-            self._displayCtx.selectImage(image)
+        self._displayCtx.selectOverlay(overlay)
 
         if isinstance(change, ValueChange):
             log.debug('Changing image data - offset '
                       '{}, volume {}, size {}'.format(
                           change.offset, change.volume, change.oldVals.shape))
-            change.image.applyChange(change.offset, change.newVals, volume)
+            change.overlay.applyChange(change.offset, change.newVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
@@ -247,17 +257,16 @@ class Editor(props.HasProperties):
         
     def _revertChange(self, change):
 
-        image   = change.image
-        display = self._displayCtx.getDisplayProperties(image)
+        overlay = change.ovelay
+        display = self._displayCtx.getDisplayProperties(overlay)
         
-        if self._displayCtx.getSelectedImage() != image:
-            self._displayCtx.selectImage(image)
+        self._displayCtx.selectOverlay(overlay)
 
-        if image.is4DImage(): volume = display.volume
-        else:                 volume = None 
+        if overlay.is4DImage(): volume = display.volume
+        else:                   volume = None 
 
         if isinstance(change, ValueChange):
-            change.image.applyChange(change.offset, change.oldVals, volume)
+            change.overlay.applyChange(change.offset, change.oldVals, volume)
             
         elif isinstance(change, SelectionChange):
             self._selection.disableListener('selection', self._name)
@@ -267,35 +276,40 @@ class Editor(props.HasProperties):
 
     def createMaskFromSelection(self):
 
-        imageIdx = self._displayCtx.selectedImage
-        image    = self._imageList[imageIdx]
-        mask     = np.array(self._selection.selection, dtype=np.uint8)
+        overlay = self._currentOverlay
+        if overlay is None:
+            return
 
-        header = image.nibImage.get_header()
-        name   = '{}_mask'.format(image.name)
+        overlayIdx = self._overlayList.index(overlay)
+        mask       = np.array(self._selection.selection, dtype=np.uint8)
+        header     = overlay.nibImage.get_header()
+        name       = '{}_mask'.format(overlay.name)
 
         roiImage = fslimage.Image(mask, name=name, header=header)
-        self._imageList.insert(imageIdx + 1, roiImage) 
+        self._overlayList.insert(overlayIdx + 1, roiImage) 
 
 
     def createROIFromSelection(self):
 
-        imageIdx = self._displayCtx.selectedImage
-        image    = self._imageList[imageIdx]
-        display  = self._displayCtx.getDisplayProperties(image)
+        overlay = self._currentOverlay
+        if overlay is None:
+            return
+
+        overlayIdx = self._overlayList.index(overlay) 
+        display    = self._displayCtx.getDisplayProperties(overlay)
         
-        roi       = np.zeros(image.shape[:3], dtype=image.data.dtype)
+        roi       = np.zeros(overlay.shape[:3], dtype=overlay.data.dtype)
         selection = self._selection.selection > 0
 
-        if   len(image.shape) == 3:
-            roi[selection] = image.data[selection]
-        elif len(image.shape) == 4:
-            roi[selection] = image.data[:, :, :, display.volume][selection]
+        if   len(overlay.shape) == 3:
+            roi[selection] = overlay.data[selection]
+        elif len(overlay.shape) == 4:
+            roi[selection] = overlay.data[:, :, :, display.volume][selection]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 
-        header = image.nibImage.get_header()
-        name   = '{}_roi'.format(image.name)
+        header = overlay.nibImage.get_header()
+        name   = '{}_roi'.format(overlay.name)
 
         roiImage = fslimage.Image(roi, name=name, header=header)
-        self._imageList.insert(imageIdx + 1, roiImage)
+        self._overlayList.insert(overlayIdx + 1, roiImage)
