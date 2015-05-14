@@ -136,7 +136,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Callbacks for overlay list/selected overlay changes
         self._overlayList.addListener('overlays',
-                                      self._nname,
+                                      self._name,
                                       self._overlayListChanged)
         self._displayCtx .addListener('bounds',
                                       self._name,

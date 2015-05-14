@@ -106,9 +106,9 @@ class FSLViewFrame(wx.Frame):
         self.__restoreState(restore)
 
         self.__centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
-                               self._onViewPanelClose)
+                               self.__onViewPanelClose)
 
-        self.Bind(wx.EVT_CLOSE, self._onClose)
+        self.Bind(wx.EVT_CLOSE, self.__onClose)
 
         
     def getViewPanels(self):
@@ -371,15 +371,15 @@ class FSLViewFrame(wx.Frame):
             # Set up a default for ortho views
             # layout (this will hopefully eventually
             # be restored from a saved state)
-            import fsl.fslview.controls.imagelistpanel      as ilp
-            import fsl.fslview.controls.locationpanel       as lop
-            import fsl.fslview.controls.imagedisplaytoolbar as idt
-            import fsl.fslview.controls.orthotoolbar        as ot
+            import fsl.fslview.controls.overlaylistpanel      as olp
+            import fsl.fslview.controls.locationpanel         as lop
+            import fsl.fslview.controls.overlaydisplaytoolbar as odt
+            import fsl.fslview.controls.orthotoolbar          as ot
 
-            viewPanel.togglePanel(ilp.ImageListPanel)
+            viewPanel.togglePanel(olp.OverlayListPanel)
             viewPanel.togglePanel(lop.LocationPanel)
-            viewPanel.togglePanel(idt.ImageDisplayToolBar, False, viewPanel)
-            viewPanel.togglePanel(ot .OrthoToolBar,        False, viewPanel) 
+            viewPanel.togglePanel(odt.OverlayDisplayToolBar, False, viewPanel)
+            viewPanel.togglePanel(ot .OrthoToolBar,          False, viewPanel) 
 
             
     def __makeMenuBar(self):

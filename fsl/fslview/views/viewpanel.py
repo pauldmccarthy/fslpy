@@ -103,7 +103,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         
         self.addListener('profile', lName, self.__profileChanged)
         
-        overlayList.addListener('overlay',
+        overlayList.addListener('overlays',
                                 lName,
                                 self.__selectedOverlayChanged)
         displayCtx .addListener('selectedOverlay',

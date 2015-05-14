@@ -5,13 +5,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
 
-import fsl.fslview.toolbar                        as fsltoolbar
-import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
-
-
-log = logging.getLogger(__name__)
+import fsl.fslview.toolbar as fsltoolbar
+import                        lightboxsettingspanel
 
 
 class LightBoxToolBar(fsltoolbar.FSLViewToolBar):

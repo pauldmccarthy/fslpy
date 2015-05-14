@@ -110,7 +110,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
     """
     
     def __init__(self, parent, overlayList, displayCtx):
-        """Create and lay out an :class:`ImageListPanel`.
+        """Create and lay out an :class:`OverlayListPanel`.
 
         :param parent:      The :mod:`wx` parent object.
         :param overlayList: An :class:`.OverlayList` instance.
@@ -168,7 +168,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._overlayList.removeListener('overlay',         self._name)
+        self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('overlayOrder',    self._name)
 
@@ -257,7 +257,8 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         :attr:`.DisplayContext.selectedOverlay` property.
         """
         self._displayCtx.disableListener('selectedOverlay', self._name)
-        self._displayCtx.selectedImage = self._displayCtx.overlayOrder[ev.idx]
+        self._displayCtx.selectedOverlay = \
+            self._displayCtx.overlayOrder[ev.idx]
         self._displayCtx.enableListener('selectedOverlay', self._name)
 
         
@@ -273,7 +274,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
     def _lbRemove(self, ev):
         """Called when an item is removed from the overlay listbox.
 
-        Removes the corresponding image from the :class:`.OverlayList`.
+        Removes the corresponding overlay from the :class:`.OverlayList`.
         """
         self._overlayList.pop(self._displayCtx.overlayOrder[ev.idx])
 

@@ -5,13 +5,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
 
-import fsl.fslview.toolbar                     as fsltoolbar
-import fsl.fslview.controls.orthosettingspanel as orthosettingspanel
-
-
-log = logging.getLogger(__name__)
+import fsl.fslview.toolbar as fsltoolbar
+import                        orthosettingspanel
 
 
 class OrthoToolBar(fsltoolbar.FSLViewToolBar):

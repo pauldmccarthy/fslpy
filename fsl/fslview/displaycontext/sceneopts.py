@@ -90,7 +90,7 @@ class SceneOpts(props.HasProperties):
     def __init__(self):
         
         name = '{}_{}'.format(type(self).__name__, id(self))
-        self.addListener('performance', name, self._onPerformanceChange)
+        self.addListener('performance', name, self.__onPerformanceChange)
         
         self.__onPerformanceChange()
 

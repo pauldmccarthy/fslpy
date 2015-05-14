@@ -13,3 +13,4 @@ from lightboxopts   import LightBoxOpts
 from volumeopts     import VolumeOpts
 from maskopts       import MaskOpts
 from vectoropts     import VectorOpts
+from vectoropts     import LineVectorOpts

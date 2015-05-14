@@ -800,10 +800,10 @@ class SliceCanvas(props.HasProperties):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)        
         
-        if (len(self.imageList) == 0) or \
-           (width  == 0)              or \
-           (height == 0)              or \
-           (xmin   == xmax)           or \
+        if (len(self.overlayList) == 0) or \
+           (width  == 0)                or \
+           (height == 0)                or \
+           (xmin   == xmax)             or \
            (ymin   == ymax):
             return
 

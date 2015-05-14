@@ -151,7 +151,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._displayCtx .addListener('overlayOrder',
                                       self._name,
                                       self._selectedOverlayChanged) 
-        self._displayCtx .addListener('selectedOVerlay',
+        self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._selectedOverlayChanged)
         self._displayCtx .addListener('volume',

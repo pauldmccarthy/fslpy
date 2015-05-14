@@ -109,7 +109,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
 
         if lastOverlay is not None:
             lastDisplay = self._displayCtx.getDisplayProperties(lastOverlay)
-            lastOverlay.removeListener('overlayType', self._name)
+            lastDisplay.removeListener('overlayType', self._name)
             lastDisplay.removeListener('transform',   self._name)
 
         display = self._displayCtx.getDisplayProperties(overlay)

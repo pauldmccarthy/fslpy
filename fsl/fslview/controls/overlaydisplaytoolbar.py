@@ -81,18 +81,20 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
                 for tool, _ in optsTools: tool.Destroy()
     
 
-    def _overlayTypeChanged(self, value, valid, ovl, name, refresh=True):
+    def _overlayTypeChanged(self, value, valid, display, name, refresh=True):
 
-        dispTools, oldOptsTools = self._overlayTools[ovl]
+        overlay = display.getOverlay()
 
-        newOptsTools = self._makeOptsWidgets(ovl, self)
+        dispTools, oldOptsTools = self._overlayTools[overlay]
 
-        self._overlayTools[ovl] = (dispTools, newOptsTools)
+        newOptsTools = self._makeOptsWidgets(overlay, self)
 
-        if refresh and (ovl is self._displayCtx.getSelectedOverlay()):
-            self._refreshTools(ovl)
+        self._overlayTools[overlay] = (dispTools, newOptsTools)
 
-        log.debug('Destroying opts tools for {}'.format(ovl))
+        if refresh and (overlay is self._displayCtx.getSelectedOverlay()):
+            self._refreshTools(overlay)
+
+        log.debug('Destroying opts tools for {}'.format(overlay))
 
         for tool, _ in oldOptsTools:
             tool.Destroy()
@@ -122,7 +124,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         display = self._displayCtx.getDisplayProperties(overlay)
 
         # Call _toggleEnabled when
-        # the image is enabled/disabled
+        # the overlay is enabled/disabled
         self.Enable(display.enabled)
         for ovl in self._overlayList:
             
@@ -136,14 +138,14 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             else:
                 d.removeListener('enabled', self._name)
 
-        # Build/refresh the toolbar widgets for this image
-        tools = self._imageTools.get(overlay, None)
+        # Build/refresh the toolbar widgets for this overlay
+        tools = self._overlayTools.get(overlay, None)
  
         if tools is None:
             displayTools = self._makeDisplayWidgets(overlay, self)
             optsTools    = self._makeOptsWidgets(   overlay, self)
             
-            self._imageTools[overlay] = (displayTools, optsTools)
+            self._overlayTools[overlay] = (displayTools, optsTools)
 
             display.addListener(
                 'overlayType',

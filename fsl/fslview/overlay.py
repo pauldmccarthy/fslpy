@@ -50,7 +50,7 @@ class OverlayList(props.HasProperties):
         """
 
         # TODO this only supports volumetric images
-        images = iio.interactiveLoadImages(fromDir, addToEnd)
+        images = iio.interactiveLoadImages(fromDir)
         
         if addToEnd: self.extend(      images)
         else:        self.insertAll(0, images)
