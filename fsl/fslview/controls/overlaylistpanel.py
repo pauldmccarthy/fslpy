@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 #
-# imagelistpanel.py - A panel which displays a list of images in the image
-# list.
+# overlaylistpanel.py - A panel which displays a list of overlays in the 
+# overlay list.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A panel which displays a list of image list in the image list (see
-:class:`~fsl.data.image.ImageList`), and allows the user to add/remove
-images, and to change their order.
+"""A panel which displays a list of overlays in the overlay list (see and
+allows the user to add/remove overlays, and to change their order.
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import wx
 
@@ -21,16 +18,21 @@ import props
 import pwidgets.elistbox as elistbox
 
 import fsl.fslview.panel as fslpanel
+import fsl.data.image    as fslimage
+
+
+log = logging.getLogger(__name__)
+
 
 class ListItemWidget(wx.Panel):
 
     _enabledFG  = '#000000'
     _disabledFG = '#CCCCCC'
 
-    def __init__(self, parent, image, display, listBox):
+    def __init__(self, parent, overlay, display, listBox):
         wx.Panel.__init__(self, parent)
 
-        self.image   = image
+        self.overlay = overlay
         self.display = display
         self.listBox = listBox
         self.name    = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -46,11 +48,16 @@ class ListItemWidget(wx.Panel):
         self.sizer.Add(self.visibility, flag=wx.EXPAND, proportion=1)
 
         self.display.addListener('enabled', self.name, self._vizChanged)
-        self.image  .addListener('saved',   self.name, self._saveStateChanged)
 
+        if isinstance(overlay, fslimage.Image):
+            self.overlay.addListener('saved',
+                                     self.name,
+                                     self._saveStateChanged)
+        else:
+            log.warn('No support for non-volumetric overlays yet')
+            self.saveButton.Enable(False)
 
         self.saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton)
-                             
 
         self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
 
@@ -59,7 +66,7 @@ class ListItemWidget(wx.Panel):
 
         
     def _onSaveButton(self, ev):
-        self.image.save()
+        self.overlay.save()
 
         
     def _onDestroy(self, ev):
@@ -68,15 +75,17 @@ class ListItemWidget(wx.Panel):
             return
 
         self.display.removeListener('enabled', self.name)
-        self.image  .removeListener('saved',   self.name)
+
+        if isinstance(self.overlay, fslimage.Image):
+            self.overlay.removeListener('saved', self.name)
 
         
     def _saveStateChanged(self, *a):
-        idx = self.listBox.IndexOf(self.image)
+        idx = self.listBox.IndexOf(self.overlay)
 
-        self.saveButton.Enable(not self.image.saved)
+        self.saveButton.Enable(not self.overlay.saved)
 
-        if self.image.saved:
+        if self.overlay.saved:
             self.listBox.SetItemBackgroundColour(idx)
         else:
             self.listBox.SetItemBackgroundColour(idx, '#ffaaaa', '#aa4444') 
@@ -84,7 +93,7 @@ class ListItemWidget(wx.Panel):
             
     def _vizChanged(self, *a):
 
-        idx = self.listBox.IndexOf(self.image)
+        idx = self.listBox.IndexOf(self.overlay)
 
         if self.display.enabled: fgColour = ListItemWidget._enabledFG
         else:                    fgColour = ListItemWidget._disabledFG
@@ -92,28 +101,26 @@ class ListItemWidget(wx.Panel):
         self.listBox.SetItemForegroundColour(idx, fgColour)
 
 
-class ImageListPanel(fslpanel.FSLViewPanel):
-    """A :class:`~fsl.fslview.panel.ControlPanel` which contains an
-    :class:`~pwidgets.EditableListBox` displaying the list of loaded images.
+class OverlayListPanel(fslpanel.FSLViewPanel):
+    """A :class:`.ControlPanel` which contains an :class:`.EditableListBox`
+    displaying the list of loaded overlays.
     
-    The list box allows the image order to be changed, and allows images to be
-    added and removed from the list.
+    The list box allows the overlay order to be changed, and allows overlays
+    to be added and removed from the list.
     """
     
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         """Create and lay out an :class:`ImageListPanel`.
 
-        :param parent:     The :mod:`wx` parent object.
-        :param imageList:  A :class:`~fsl.data.image.ImageList` instance.
-        :param displayCtx: A
-                           :class:`~fsl.fslview.displaycontext.DisplayContext`
-                           instance.
+        :param parent:      The :mod:`wx` parent object.
+        :param overlayList: An :class:`.OverlayList` instance.
+        :param displayCtx:  A :class:`.DisplayContext` instance.
         """
         
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        # list box containing the list of images - it 
-        # is populated in the _imageListChanged method
+        # list box containing the list of overlays - it 
+        # is populated in the _overlayListChanged method
         self._listBox = elistbox.EditableListBox(
             self,
             style=(elistbox.ELB_REVERSE    | 
@@ -133,23 +140,23 @@ class ImageListPanel(fslpanel.FSLViewPanel):
 
         self._sizer.Add(self._listBox, flag=wx.EXPAND, proportion=1)
 
-        self._imageList.addListener(
-            'images',
+        self._overlayList.addListener(
+            'overlays',
             self._name,
-            self._imageListChanged)
+            self._overlayListChanged)
         
         self._displayCtx.addListener(
-            'imageOrder',
+            'overlayOrder',
             self._name,
-            self._imageListChanged) 
+            self._overlayListChanged) 
 
         self._displayCtx.addListener(
-            'selectedImage',
+            'selectedOverlay',
             self._name,
-            self._selectedImageChanged)
+            self._selectedOverlayChanged)
 
-        self._imageListChanged()
-        self._selectedImageChanged()
+        self._overlayListChanged()
+        self._selectedOverlayChanged()
 
         self.Layout()
 
@@ -161,106 +168,121 @@ class ImageListPanel(fslpanel.FSLViewPanel):
         
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._imageList .removeListener('images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
+        self._overlayList.removeListener('overlay',         self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
 
         # A listener on name was added 
-        # in the_imageListChanged method
-        for image in self._imageList:
-            image.removeListener('name', self._name)
+        # in the _overlayListChanged method
+        for overlay in self._overlayList:
+            display = self._displayCtx.getDisplayProperties(overlay)
+            display.removeListener('name', self._name)
 
         
-    def _selectedImageChanged(self, *a):
-        """Called when the
-        :attr:`~fsl.fslview.displaycontext.DisplayContext.selectedImage`
-        property changes. Updates the selected item in the list box.
+    def _selectedOverlayChanged(self, *a):
+        """Called when the :attr:`.DisplayContext.selectedOverlay` property
+        changes. Updates the selected item in the list box.
         """
 
-        if len(self._imageList) > 0:
+        if len(self._overlayList) > 0:
             self._listBox.SetSelection(
-                self._displayCtx.getImageOrder(
-                    self._displayCtx.selectedImage))
+                self._displayCtx.getOverlayOrder(
+                    self._displayCtx.selectedOverlay))
+
+
+    def _overlayNameChanged(self, value, valid, overlay, propName):
+
+        idx     = self._displayCtx.getOverlayOrder(     overlay)
+        display = self._displayCtx.getDisplayProperties(overlay)
+        name    = display.name
+        
+        if name is None:
+            name = ''
+            
+        self._listBox.SetString(idx, name) 
 
         
-    def _imageListChanged(self, *a):
-        """Called when the :class:`~fsl.data.image.ImageList.images`
-        list changes.
+    def _overlayListChanged(self, *a):
+        """Called when the :class:`.OverlayList.overlays` list changes.
 
-        If the change was due to user action on the
-        :class:`~pwidgets.EditableListBox`, this method does nothing.
-        Otherwise, this method updates the :class:`~pwidgets.EditableListBox`
+        If the change was due to user action on the :class:`.EditableListBox`,
+        this method does nothing.  Otherwise, this method updates the
+        :class:`.EditableListBox`
         """
         
         self._listBox.Clear()
 
-        for i, image in enumerate(self._displayCtx.getOrderedImages()):
+        for i, overlay in enumerate(self._displayCtx.getOrderedOverlays()):
 
-            display  = self._displayCtx.getDisplayProperties(image)
-            name     = image.name
+            display  = self._displayCtx.getDisplayProperties(overlay)
+            name     = display.name
             if name is None: name = ''
 
-            self._listBox.Append(name, image, image.imageFile)
+            if isinstance(overlay, fslimage.Image):
+                tooltip = overlay.imageFile
+                
+            else:
+                log.warn('No support for non-volumetric overlays yet')
+                tooltip = 'Non-volumetric overlay - I don\'t know what to do'
+            
+            self._listBox.Append(name, overlay, tooltip)
 
-            widget = ListItemWidget(self, image, display, self._listBox)
+            widget = ListItemWidget(self, overlay, display, self._listBox)
 
             self._listBox.SetItemWidget(i, widget)
 
-            def nameChanged(value, valid, image, name):
-                idx  = self._displayCtx.getImageOrder(image)
-                name = image.name 
-                if name is None: name = ''
-                self._listBox.SetString(idx, name)
+            display.addListener('name',
+                                self._name,
+                                self._overlayNameChanged,
+                                overwrite=True)
 
-            image.addListener('name', self._name, nameChanged, overwrite=True)
-
-        if len(self._imageList) > 0:
+        if len(self._overlayList) > 0:
             self._listBox.SetSelection(
-                self._displayCtx.getImageOrder(
-                    self._displayCtx.selectedImage))
+                self._displayCtx.getOverlayOrder(
+                    self._displayCtx.selectedOverlay))
         
         
     def _lbMove(self, ev):
-        """Called when an image name is moved in the
-        :class:`~pwidgets.elistbox.EditableListBox`. Reorders the
-        :class:`~fsl.data.image.ImageList` to reflect the change.
+        """Called when an overlay is moved in the :class:`.EditableListBox`.
+        Reorders the :class:`.OverlayList` to reflect the change.
         """
-        self._displayCtx.disableListener('imageOrder', self._name)
-        self._displayCtx.imageOrder.move(ev.oldIdx, ev.newIdx)
-        self._displayCtx.enableListener('imageOrder', self._name)
+        self._displayCtx.disableListener('overlayOrder', self._name)
+        self._displayCtx.overlayOrder.move(ev.oldIdx, ev.newIdx)
+        self._displayCtx.enableListener('overlayOrder', self._name)
 
         
     def _lbSelect(self, ev):
-        """Called when an image is selected in the
-        :class:`~pwidgets.elistbox.EditableListBox`. Sets the
-        :attr:`fsl.data.image.ImageList.selectedImage property.
+        """Called when an overlay is selected in the
+        :class:`.EditableListBox`. Sets the
+        :attr:`.DisplayContext.selectedOverlay` property.
         """
-        self._displayCtx.disableListener('selectedImage', self._name)
-        self._displayCtx.selectedImage = self._displayCtx.imageOrder[ev.idx]
-        self._displayCtx.enableListener('selectedImage', self._name)
+        self._displayCtx.disableListener('selectedOverlay', self._name)
+        self._displayCtx.selectedImage = self._displayCtx.overlayOrder[ev.idx]
+        self._displayCtx.enableListener('selectedOverlay', self._name)
 
         
     def _lbAdd(self, ev):
         """Called when the 'add' button on the list box is pressed.
-        Calls the :meth:`~fsl.data.image.ImageList.addImages` method.
+        
+        Calls the :meth:`.OverlayList.addOverlays` method.
         """
-        if self._imageList.addImages():
-            self._displayCtx.selectedImage = len(self._imageList) - 1
+        if self._overlayList.addOverlays():
+            self._displayCtx.selectedOverlay = len(self._OverlayList) - 1
 
 
     def _lbRemove(self, ev):
-        """Called when an item is removed from the image listbox.
+        """Called when an item is removed from the overlay listbox.
 
-        Removes the corresponding image from the
-        :class:`~fsl.data.image.ImageList`. 
+        Removes the corresponding image from the :class:`.OverlayList`.
         """
-        self._imageList.pop(self._displayCtx.imageOrder[ev.idx])
+        self._overlayList.pop(self._displayCtx.overlayOrder[ev.idx])
 
 
     def _lbEdit(self, ev):
-        """Called when an item label is edited on the image list box.
-        Sets the corresponding image name to the new label.
+        """Called when an item label is edited on the overlay list box.
+        Sets the corresponding overlay name to the new label.
         """
-        idx      = self._displayCtx.imageOrder[ev.idx]
-        img      = self._imageList[idx]
-        img.name = ev.label
+        idx          = self._displayCtx.overlayOrder[ev.idx]
+        overlay      = self._overlayList[idx]
+        display      = self._displayCtx.getDisplayProperties(overlay)
+        display.name = ev.label
