@@ -540,3 +540,41 @@ def broadcast(vertices, indices, zposes, xforms, zax):
         allVertCoords[vStart:vEnd, :] = transform.transform(vertices, xform)
         
     return allVertCoords, allTexCoords, allIndices
+
+
+def planeEquation(xyz1, xyz2, xyz3):
+    """Calculates the equation of a plane which contains each
+    of the given points.
+
+    Returns a tuple containing four values, the coefficients of the
+    equation:
+
+        a * x + b * y + c * z = d
+
+    for any point (x, y, z) that lies on the plane.
+    """
+    
+    xyz1 = np.array(xyz1)
+    xyz2 = np.array(xyz2)
+    xyz3 = np.array(xyz3)
+
+    # calculate two vectors
+    # which lie on the plane
+    vec1 = xyz1 - xyz3
+    vec2 = xyz2 - xyz3
+
+    # calculate the normal
+    # of those two vectors
+    a, b, c = np.cross(vec1, vec2)
+
+    # Now, for any point xyz on 
+    # the plane, the plane equation:
+    #
+    # a * x + b * y + c * z = d
+    #
+    # So we take one of the
+    # points, and solve for d:
+    x, y, z = xyz3
+    d       = a * x + b * y + c * z
+    
+    return (a, b, c, d)
