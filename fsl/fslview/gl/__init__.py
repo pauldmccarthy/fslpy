@@ -91,7 +91,7 @@ OpenGL.ERROR_LOGGING  = True
 if os.environ.get('PYOPENGL_PLATFORM', None) == 'osmesa':
     OpenGL.STORE_POINTERS = False
 
-    
+
 def bootstrap(glVersion=None):
     """Imports modules appropriate to the specified OpenGL version.
 
@@ -254,7 +254,24 @@ def getWXGLContext(parent=None):
     # context has been created. Destroying
     # the canvas is the responsibility of the
     # calling code.
-    canvas = wxgl.GLCanvas(parent)
+
+    # There's something wrong with wxPython's
+    # GLCanvas (on OSX at least) - the pixel
+    # format attributes have to be set on the
+    # *first* GLCanvas that is created -
+    # setting them on subsequent canvases will
+    # have no effect. But if you set them on
+    # the first canvas, all canvases that are
+    # subsequently created will inherit the
+    # same properties.
+    attribs = [wxgl.WX_GL_RGBA,
+               wxgl.WX_GL_DOUBLEBUFFER,
+               wxgl.WX_GL_STENCIL_SIZE, 4,
+               wxgl.WX_GL_DEPTH_SIZE,   8,
+               0,
+               0] 
+
+    canvas = wxgl.GLCanvas(parent, attribList=attribs)
     canvas.SetSize((0, 0))
 
     # The canvas must be visible before we are
