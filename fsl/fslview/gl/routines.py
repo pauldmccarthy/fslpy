@@ -552,29 +552,20 @@ def planeEquation(xyz1, xyz2, xyz3):
         a * x + b * y + c * z = d
 
     for any point (x, y, z) that lies on the plane.
+
+    See http://paulbourke.net/geometry/pointlineplane/
     """
-    
-    xyz1 = np.array(xyz1)
-    xyz2 = np.array(xyz2)
-    xyz3 = np.array(xyz3)
+    x1, y1, z1 = xyz1
+    x2, y2, z2 = xyz2
+    x3, y3, z3 = xyz3
 
-    # calculate two vectors
-    # which lie on the plane
-    vec1 = xyz1 - xyz3
-    vec2 = xyz2 - xyz3
+    eq = np.zeros(4, dtype=np.float64)
 
-    # calculate the normal
-    # of those two vectors
-    a, b, c = np.cross(vec1, vec2)
+    eq[0] = (y1 * (z2 - z3)) + (y2 * (z3 - z1)) + (y3 * (z1 - z2))
+    eq[1] = (z1 * (x2 - x3)) + (z2 * (x3 - x1)) + (z3 * (x1 - x2))
+    eq[2] = (x1 * (y2 - y3)) + (x2 * (y3 - y1)) + (x3 * (y1 - y2))
+    eq[3] = -((x1 * ((y2 * z3) - (y3 * z2))) +
+              (x2 * ((y3 * z1) - (y1 * z3))) +
+              (x3 * ((y1 * z2) - (y2 * z1))))
 
-    # Now, for any point xyz on 
-    # the plane, the plane equation:
-    #
-    # a * x + b * y + c * z = d
-    #
-    # So we take one of the
-    # points, and solve for d:
-    x, y, z = xyz3
-    d       = a * x + b * y + c * z
-    
-    return (a, b, c, d)
+    return eq

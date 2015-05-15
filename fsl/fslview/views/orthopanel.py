@@ -301,8 +301,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         # Are we showing or hiding the labels?
         if   len(self._overlayList) == 0:             show = False
-        elif self.getSceneOptions().showLabels:       show = True
+
+        # Labels are only supported on
+        # volumetric image data (i.e. NIFTI)
         elif not isinstance(overlay, fslimage.Image): show = False
+        elif self.getSceneOptions().showLabels:       show = True
         else:                                         show = False
 
         for lbl in allLabels:

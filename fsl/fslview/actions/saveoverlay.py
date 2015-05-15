@@ -39,16 +39,17 @@ class SaveOverlayAction(actions.Action):
                         isinstance(overlay, fslimage.Image) and 
                         (not overlay.saved))
 
-        for i in self._overlayList:
-            if not isinstance(overlay, fslimage.Image):
+        for ovl in self._overlayList:
+            if not isinstance(ovl, fslimage.Image):
+                log.warn('Non-volumetric overlay types not supported yet')
                 continue
             
-            i.removeListener('saved', self._name)
+            ovl.removeListener('saved', self._name)
             
-            if i is overlay:
-                i.addListener('saved',
-                              self._name,
-                              self.__overlaySaveStateChanged)
+            if ovl is overlay:
+                ovl.addListener('saved',
+                                self._name,
+                                self.__overlaySaveStateChanged)
  
 
     def __overlaySaveStateChanged(self, *a):

@@ -139,7 +139,8 @@ class Display(props.SyncableHasProperties):
         """
 
         if not isinstance(self.__overlay, fslimage.Image):
-            raise RuntimeError('Non-volumetric types not supported yet')
+            log.warn('Non-volumetric types not supported yet')
+            return False
         
         return self.__overlay.is4DImage()
 
@@ -256,7 +257,8 @@ class Display(props.SyncableHasProperties):
         # TODO This is obviously volumetric specific
 
         if not isinstance(self.__overlay, fslimage.Image):
-            raise RuntimeError('Non-volumetric types not supported yet')
+            log.warn('Non-volumetric types not supported yet')
+            return
 
         image          = self.__overlay
 

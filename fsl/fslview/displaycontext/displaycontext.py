@@ -255,7 +255,8 @@ class DisplayContext(props.SyncableHasProperties):
         for overlay in self.__overlayList:
 
             if not isinstance(overlay, fslimage.Image):
-                raise RuntimeError('Non-volumetric types not supported yet')
+                log.warn('Non-volumetric types not supported yet')
+                continue
             
             if not overlay.is4DImage():
                 continue
