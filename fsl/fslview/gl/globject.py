@@ -15,6 +15,25 @@ representation.
 
 import numpy as np
 
+import glvolume
+import glmask
+import glrgbvector
+import gllinevector
+import glmodel
+
+
+GLOBJECT_OVERLAY_TYPE_MAP = {
+    'volume'     : glvolume    .GLVolume,
+    'mask'       : glmask      .GLMask,
+    'rgbvector'  : glrgbvector .GLRGBVector,
+    'linevector' : gllinevector.GLLineVector,
+    'model'      : glmodel     .GLModel
+}
+"""This dictionary provides a mapping between all available overlay types (see
+the :attr:`.Display.overlayType` property), and the :class:`GLObject` subclass
+used to represent them.
+"""
+
 
 def createGLObject(overlay, display):
     """Create :class:`GLObject` instance for the given overlay, as specified
@@ -25,20 +44,7 @@ def createGLObject(overlay, display):
     :arg display: A :class:`.Display` instance describing how the overlay
                   should be displayed.
     """
-
-    import fsl.fslview.gl.glvolume     as glvolume
-    import fsl.fslview.gl.glmask       as glmask
-    import fsl.fslview.gl.glrgbvector  as glrgbvector
-    import fsl.fslview.gl.gllinevector as gllinevector
-
-    _objectmap = {
-        'volume'     : glvolume    .GLVolume,
-        'mask'       : glmask      .GLMask,
-        'rgbvector'  : glrgbvector .GLRGBVector,
-        'linevector' : gllinevector.GLLineVector
-    } 
-
-    ctr = _objectmap.get(display.overlayType, None)
+    ctr = GLOBJECT_OVERLAY_TYPE_MAP.get(display.overlayType, None)
 
     if ctr is not None: return ctr(overlay, display)
     else:               return None
@@ -225,7 +231,7 @@ class GLImageObject(GLObject):
 
 
     def getDisplayBounds(self):
-        return self.display.getDisplayBounds()
+        return self.displayOpts.getDisplayBounds()
 
 
     def getDataResolution(self, xax, yax):

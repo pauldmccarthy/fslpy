@@ -30,7 +30,7 @@ class GLModel(globject.GLObject):
 
         
     def getDisplayBounds(self):
-        return self.overlay.getBounds()
+        return self.opts.getDisplayBounds()
         
     
     def setAxes(self, xax, yax):
