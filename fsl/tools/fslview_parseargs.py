@@ -50,6 +50,7 @@ import props
 import fsl.utils.typedict  as td
 import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
+import fsl.data.vtkmodel   as vtkmodel
 import fsl.utils.transform as transform
 
 # The colour maps module needs to be imported
@@ -135,6 +136,8 @@ OPTIONS = td.TypeDict({
                        'suppressZ',
                        'modulate',
                        'modThreshold'],
+    'ModelOpts'     : ['colour',
+                       'outline'],
 })
 
 # Headings for each of the option groups
@@ -147,7 +150,7 @@ GROUPNAMES = td.TypeDict({
     'VolumeOpts'   : 'Volume options',
     'VectorOpts'   : 'Vector options',
     'MaskOpts'     : 'Mask options',
-
+    'ModelOpts'    : 'Model options',
 })
 
 # Short/long arguments for all of those options
@@ -207,7 +210,7 @@ ARGUMENTS = td.TypeDict({
     'VolumeOpts.cmap'          : ('cm', 'cmap'),
     'VolumeOpts.invert'        : ('ci', 'cmapInvert'),
 
-    'MaskOpts.colour'    : ('co', 'colour'),
+    'MaskOpts.colour'    : ('co', 'maskColour'),
     'MaskOpts.invert'    : ('mi', 'maskInvert'),
     'MaskOpts.threshold' : ('t',  'threshold'),
 
@@ -220,6 +223,8 @@ ARGUMENTS = td.TypeDict({
     'VectorOpts.modulate'    : ('m',  'modulate'),
     'VectorOpts.modThreshold': ('mt', 'modThreshold'),
 
+    'ModelOpts.colour'       : ('mc', 'modelColour'),
+    'ModelOpts.outline'      : ('mo', 'modelOutline'),
 })
 
 # Help text for all of the options
@@ -293,6 +298,9 @@ HELP = td.TypeDict({
     'VectorOpts.modThreshold' : 'Hide voxels where modulation '
                                 'value is below this threshold '
                                 '(expressed as a percentage)',
+
+    'ModelOpts.colour'     : 'Model colour',
+    'ModelOpts.outline'    : 'Show model outline',
 })
 
 # Transform functions for properties where the
@@ -640,6 +648,10 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
             # file that needs to be loaded
             ovlIdxs.append(i)
         except:
+            
+            log.warn('Applying hack to load VTK model files')
+            if argv[i].endswith('vtk'):
+                ovlIdxs.append(i)
             continue
         
     ovlIdxs.append(len(argv))
@@ -846,8 +858,16 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
     # TODO You are only supporting
     #      volumetric overlays here
-    overlays = iio.loadImages(paths, **kwargs)
-        
+
+    log.warn('Applying hack to support vtk model files')
+
+    nonVolOverlays = [p for p in paths if     p.endswith('.vtk')]
+    volOverlays    = [p for p in paths if not p.endswith('.vtk')]
+
+    overlays = iio.loadImages(volOverlays, **kwargs)
+
+    overlays.extend([vtkmodel.PolygonModel(o) for o in nonVolOverlays])
+
     overlayList.extend(overlays)
 
     # per-overlay display arguments
