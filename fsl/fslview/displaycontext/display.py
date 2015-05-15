@@ -22,39 +22,8 @@ import fsl.data.image   as fslimage
 import fsl.data.model   as fslmodel
 import fsl.data.strings as strings
 
-import volumeopts
-import vectoropts
-import maskopts
-import modelopts
-
 
 log = logging.getLogger(__name__)
-
-
-OVERLAY_TYPES = {
-
-    fslimage.Image        : ['volume', 'mask', 'rgbvector', 'linevector'],
-    fslmodel.PolygonModel : ['model']
-}
-"""This dictionary provides a mapping between the overlay classes, and
-the way in which they may be represented.
-
-For each overlay class, the first entry in the corresponding overlay type
-list is used as the default overlay type.
-"""
-
-
-DISPLAY_OPTS_MAP = {
-    'volume'     : volumeopts.VolumeOpts,
-    'rgbvector'  : vectoropts.VectorOpts,
-    'linevector' : vectoropts.LineVectorOpts,
-    'mask'       : maskopts.  MaskOpts,
-    'model'      : modelopts. ModelOpts
-}
-"""This dictionary provides a mapping between each overlay type, and
-the :class:`DisplayOpts` subclass which contains overlay type-specific
-display options.
-"""
 
 
 class DisplayOpts(props.SyncableHasProperties):
@@ -245,3 +214,35 @@ class Display(props.SyncableHasProperties):
         # make sure that the display
         # options instance is up to date
         self.getDisplayOpts()
+
+
+import volumeopts
+import vectoropts
+import maskopts
+import modelopts
+
+
+OVERLAY_TYPES = {
+
+    fslimage.Image        : ['volume', 'mask', 'rgbvector', 'linevector'],
+    fslmodel.PolygonModel : ['model']
+}
+"""This dictionary provides a mapping between the overlay classes, and
+the way in which they may be represented.
+
+For each overlay class, the first entry in the corresponding overlay type
+list is used as the default overlay type.
+"""
+
+
+DISPLAY_OPTS_MAP = {
+    'volume'     : volumeopts.VolumeOpts,
+    'rgbvector'  : vectoropts.VectorOpts,
+    'linevector' : vectoropts.LineVectorOpts,
+    'mask'       : maskopts.  MaskOpts,
+    'model'      : modelopts. ModelOpts
+}
+"""This dictionary provides a mapping between each overlay type, and
+the :class:`DisplayOpts` subclass which contains overlay type-specific
+display options.
+"""

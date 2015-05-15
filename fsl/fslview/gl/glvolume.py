@@ -57,10 +57,10 @@ import OpenGL.GL                as gl
 
 import fsl.utils.transform      as transform
 import fsl.fslview.gl           as fslgl
-import fsl.fslview.gl.textures  as textures
-import fsl.fslview.gl.resources as glresources
-import fsl.fslview.gl.globject  as globject
-import fsl.fslview.gl.routines  as glroutines
+import                             textures
+import                             globject
+import routines                 as glroutines
+import resources                as glresources
 
 
 class GLVolume(globject.GLImageObject):

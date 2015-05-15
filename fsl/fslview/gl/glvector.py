@@ -38,9 +38,9 @@ import OpenGL.GL                as gl
 
 import fsl.data.image           as fslimage
 import fsl.fslview.colourmaps   as fslcm
-import fsl.fslview.gl.resources as glresources
-import fsl.fslview.gl.textures  as textures
-import fsl.fslview.gl.globject  as globject
+import resources                as glresources
+import                             textures
+import                             globject
 
 
 

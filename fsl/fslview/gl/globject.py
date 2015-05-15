@@ -15,25 +15,6 @@ representation.
 
 import numpy as np
 
-import glvolume
-import glmask
-import glrgbvector
-import gllinevector
-import glmodel
-
-
-GLOBJECT_OVERLAY_TYPE_MAP = {
-    'volume'     : glvolume    .GLVolume,
-    'mask'       : glmask      .GLMask,
-    'rgbvector'  : glrgbvector .GLRGBVector,
-    'linevector' : gllinevector.GLLineVector,
-    'model'      : glmodel     .GLModel
-}
-"""This dictionary provides a mapping between all available overlay types (see
-the :attr:`.Display.overlayType` property), and the :class:`GLObject` subclass
-used to represent them.
-"""
-
 
 def createGLObject(overlay, display):
     """Create :class:`GLObject` instance for the given overlay, as specified
@@ -252,3 +233,23 @@ class GLImageObject(GLObject):
             lo, hi = display.getDisplayBounds()
             minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3
+
+
+import glvolume
+import glmask
+import glrgbvector
+import gllinevector
+import glmodel
+
+
+GLOBJECT_OVERLAY_TYPE_MAP = {
+    'volume'     : glvolume    .GLVolume,
+    'mask'       : glmask      .GLMask,
+    'rgbvector'  : glrgbvector .GLRGBVector,
+    'linevector' : gllinevector.GLLineVector,
+    'model'      : glmodel     .GLModel
+}
+"""This dictionary provides a mapping between all available overlay types (see
+the :attr:`.Display.overlayType` property), and the :class:`GLObject` subclass
+used to represent them.
+"""
