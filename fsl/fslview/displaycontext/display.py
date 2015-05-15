@@ -18,9 +18,8 @@ import logging
 
 import props
 
-import fsl.data.image   as fslimage
-import fsl.data.model   as fslmodel
-import fsl.data.strings as strings
+import fsl.data.strings   as strings
+import fsl.utils.typedict as td
 
 
 log = logging.getLogger(__name__)
@@ -222,11 +221,11 @@ import maskopts
 import modelopts
 
 
-OVERLAY_TYPES = {
+OVERLAY_TYPES = td.TypeDict({
 
-    fslimage.Image        : ['volume', 'mask', 'rgbvector', 'linevector'],
-    fslmodel.PolygonModel : ['model']
-}
+    'Image'        : ['volume', 'mask', 'rgbvector', 'linevector'],
+    'PolygonModel' : ['model']
+})
 """This dictionary provides a mapping between the overlay classes, and
 the way in which they may be represented.
 
@@ -244,5 +243,5 @@ DISPLAY_OPTS_MAP = {
 }
 """This dictionary provides a mapping between each overlay type, and
 the :class:`DisplayOpts` subclass which contains overlay type-specific
-display options.
+\display options.
 """

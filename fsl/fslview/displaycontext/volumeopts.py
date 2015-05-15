@@ -14,7 +14,6 @@ import numpy as np
 
 import props
 
-import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
 import fsl.utils.transform    as transform
 import fsl.fslview.colourmaps as fslcm
@@ -76,7 +75,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
         self.__setupTransforms()
 
         # is this a 4D volume?
-        if self.is4D():
+        if self.overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
         self.addListener('transform', self.name, self.__transformChanged) 
@@ -108,7 +107,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
         """
 
         return transform.axisBounds(
-            self.__overlay.shape[:3], self.getTransform('voxel', 'display'))
+            self.overlay.shape[:3], self.getTransform('voxel', 'display'))
     
                             
     def __setupTransforms(self):
@@ -118,13 +117,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
         These matrices are accessible via the :meth:`getTransform` method.
         """
 
-        # TODO This is obviously volumetric specific
-
-        if not isinstance(self.__overlay, fslimage.Image):
-            log.warn('Non-volumetric types not supported yet')
-            return
-
-        image          = self.__overlay
+        image          = self.overlay
 
         voxToIdMat     = np.eye(4)
         voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
@@ -177,10 +170,6 @@ class ImageOpts(fsldisplay.DisplayOpts):
         is ``display``, the value of ``xform`` is used instead of the current
         value of :attr:`transform`.
         """
-
-        # TODO non-volumetric types
-        if not isinstance(self.__overlay, fslimage.Image):
-            raise RuntimeError('Non-volumetric types not supported yet')
 
         if xform is None:
             xform = self.transform

@@ -60,14 +60,7 @@ import fsl.utils.transform as transform
 import fsl.fslview.colourmaps as colourmaps
 colourmaps.initColourMaps()
 
-import fsl.fslview.displaycontext.display      as fsldisplay
-import fsl.fslview.displaycontext.volumeopts   as volumeopts
-import fsl.fslview.displaycontext.vectoropts   as vectoropts
-import fsl.fslview.displaycontext.maskopts     as maskopts
-
-import fsl.fslview.displaycontext.sceneopts    as sceneopts
-import fsl.fslview.displaycontext.orthoopts    as orthoopts
-import fsl.fslview.displaycontext.lightboxopts as lightboxopts
+import fsl.fslview.displaycontext as fsldisplay
 
 
 log = logging.getLogger(__name__)
@@ -113,14 +106,14 @@ OPTIONS = td.TypeDict({
     # - so make sure transform is listed before
     # interpolation!
     'Display'       : ['name',
-                       'transform',
                        'overlayType',
                        'interpolation',
-                       'resolution',
-                       'volume',
                        'alpha',
                        'brightness',
                        'contrast'],
+    'ImageOpts'     : ['transform',
+                       'resolution',
+                       'volume'],
     'VolumeOpts'    : ['displayRange',
                        'clippingRange',
                        'invert',
@@ -147,6 +140,7 @@ GROUPNAMES = td.TypeDict({
     'LightBoxOpts' : 'LightBox display options',
     
     'Display'      : 'Overlay display options',
+    'ImageOpts'    : 'Image options',
     'VolumeOpts'   : 'Volume options',
     'VectorOpts'   : 'Vector options',
     'MaskOpts'     : 'Mask options',
@@ -197,13 +191,14 @@ ARGUMENTS = td.TypeDict({
 
     'Display.name'          : ('n',  'name'),
     'Display.interpolation' : ('in', 'interp'),
-    'Display.resolution'    : ('r',  'resolution'),
-    'Display.transform'     : ('tf', 'transform'),
     'Display.overlayType'   : ('ot', 'overlayType'),
-    'Display.volume'        : ('vl', 'volume'),
     'Display.alpha'         : ('a',  'alpha'),
     'Display.brightness'    : ('b',  'brightness'),
     'Display.contrast'      : ('c',  'contrast'),
+
+    'ImageOpts.resolution'    : ('r',  'resolution'),
+    'ImageOpts.transform'     : ('tf', 'transform'),
+    'ImageOpts.volume'        : ('vl', 'volume'),
 
     'VolumeOpts.displayRange'  : ('dr', 'displayRange'),
     'VolumeOpts.clippingRange' : ('cr', 'clippingRange'),
@@ -271,13 +266,15 @@ HELP = td.TypeDict({
 
     'Display.name'          : 'Overlay name',
     'Display.interpolation' : 'Interpolation',
-    'Display.resolution'    : 'Resolution',
-    'Display.transform'     : 'Transformation',
+
     'Display.overlayType'   : 'Overlay type',
-    'Display.volume'        : 'Volume',
     'Display.alpha'         : 'Opacity',
     'Display.brightness'    : 'Brightness',
     'Display.contrast'      : 'Contrast',
+
+    'ImageOpts.resolution' : 'Resolution',
+    'ImageOpts.transform'  : 'Transformation',
+    'ImageOpts.volume'     : 'Volume',
 
     'VolumeOpts.displayRange'  : 'Display range',
     'VolumeOpts.clippingRange' : 'Clipping range',
@@ -411,7 +408,7 @@ def _configSceneParser(sceneParser):
     """Adds options to the given argument parser which allow
     the user to specify colour bar properties.
     """
-    _configParser(sceneopts.SceneOpts, sceneParser)
+    _configParser(fsldisplay.SceneOpts, sceneParser)
    
 
 def _configOrthoParser(orthoParser):
@@ -419,7 +416,7 @@ def _configOrthoParser(orthoParser):
     configure an orthographic display.
     """
 
-    OrthoOpts = orthoopts.OrthoOpts
+    OrthoOpts = fsldisplay.OrthoOpts
     _configParser(OrthoOpts, orthoParser)
                              
     # Extra configuration options that are
@@ -446,7 +443,7 @@ def _configLightBoxParser(lbParser):
     """Adds options to the given parser allowing the user to
     configure a lightbox display.
     """    
-    _configParser(lightboxopts.LightBoxOpts, lbParser)
+    _configParser(fsldisplay.LightBoxOpts, lbParser)
 
 
 def _configOverlayParser(ovlParser):
@@ -455,9 +452,9 @@ def _configOverlayParser(ovlParser):
     """
 
     Display    = fsldisplay.Display
-    VolumeOpts = volumeopts.VolumeOpts
-    VectorOpts = vectoropts.VectorOpts
-    MaskOpts   = maskopts  .MaskOpts
+    VolumeOpts = fsldisplay.VolumeOpts
+    VectorOpts = fsldisplay.VectorOpts
+    MaskOpts   = fsldisplay.MaskOpts
     
     dispDesc = 'Each display option will be applied to the '\
                'overlay which is listed before that option.'
@@ -617,7 +614,7 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # the user to specify another image file
     # by which the vector image colours are
     # to be modulated
-    fileOpts.append(ARGUMENTS[vectoropts.VectorOpts, 'modulate'])
+    fileOpts.append(ARGUMENTS[fsldisplay.VectorOpts, 'modulate'])
 
     # There is a possibility that the user
     # may specify an overlay name which is the
@@ -807,8 +804,8 @@ def generateSceneArgs(overlayList, displayCtx, sceneOpts):
 
 
     args += ['--{}'.format(ARGUMENTS['Main.scene'][1])]
-    if   isinstance(sceneOpts, orthoopts   .OrthoOpts):    args += ['ortho']
-    elif isinstance(sceneOpts, lightboxopts.LightBoxOpts): args += ['lightbox']
+    if   isinstance(sceneOpts, fsldisplay.OrthoOpts):    args += ['ortho']
+    elif isinstance(sceneOpts, fsldisplay.LightBoxOpts): args += ['lightbox']
     else: raise ValueError('Unrecognised SceneOpts '
                            'type: {}'.format(type(sceneOpts).__name__))
 
@@ -898,7 +895,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
         # value. If the modulate file is not valid,
         # I print a warning, and clear the modulate
         # option.
-        if isinstance(opts, vectoropts.VectorOpts) and \
+        if isinstance(opts, fsldisplay.VectorOpts) and \
            isinstance(overlay, fslimage.Image)     and \
            args.overlays[i].modulate is not None:
 
