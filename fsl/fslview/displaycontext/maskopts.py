@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 #
-# maskdisplay.py -
+# maskopts.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-
 import numpy as np
-
 
 import props
 
-import fsl.data.image   as fslimage
 import fsl.data.strings as strings
-import display          as fsldisplay
+import                     volumeopts
 
-class MaskOpts(fsldisplay.DisplayOpts):
+
+class MaskOpts(volumeopts.ImageOpts):
 
     colour     = props.Colour()
     invert     = props.Boolean(default=False)
@@ -24,11 +22,7 @@ class MaskOpts(fsldisplay.DisplayOpts):
         labels=[strings.choices['VolumeOpts.displayRange.min'],
                 strings.choices['VolumeOpts.displayRange.max']]) 
 
-    def __init__(self, overlay, display, overlayList, displayCtx, parent=None):
-
-        if not isinstance(overlay, fslimage.Image):
-            raise RuntimeError('{} can only be used with an {} overlay'.format(
-                type(self).__name__, fslimage.Image.__name__))
+    def __init__(self, overlay, *args, **kwargs):
 
         if np.prod(overlay.shape) > 2 ** 30:
             sample = overlay.data[..., overlay.shape[-1] / 2]
@@ -56,9 +50,4 @@ class MaskOpts(fsldisplay.DisplayOpts):
         self.threshold.xhi  = self.dataMax + dMinDistance 
         self.setConstraint('threshold', 'minDistance', dMinDistance)
 
-        fsldisplay.DisplayOpts.__init__(self,
-                                        overlay,
-                                        display,
-                                        overlayList,
-                                        displayCtx,
-                                        parent)
+        volumeopts.ImageOpts.__init__(self, overlay, *args, **kwargs)

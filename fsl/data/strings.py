@@ -195,17 +195,17 @@ properties = TypeDict({
     'OrthoEditProfile.selectionOverlayColour' : 'Selection overlay',
     'OrthoEditProfile.selectionCursorColour'  : 'Selection cursor',
     
-
     'Display.name'              : 'Overlay name',
+    'Display.overlayType'       : 'Overlay data type',
     'Display.enabled'           : 'Enabled',
     'Display.alpha'             : 'Opacity',
     'Display.brightness'        : 'Brightness',
     'Display.contrast'          : 'Contrast',
     'Display.interpolation'     : 'Interpolation',
-    'Display.resolution'        : 'Resolution',
-    'Display.volume'            : 'Volume',
-    'Display.transform'         : 'Overlay transform',
-    'Display.overlayType'       : 'Overlay data type',
+
+    'ImageOpts.resolution' : 'Resolution',
+    'ImageOpts.transform'  : 'Image transform',
+    'ImageOpts.volume'     : 'Volume',
     
     'VolumeOpts.displayRange'  : 'Display range',
     'VolumeOpts.clippingRange' : 'Clipping range',
@@ -228,6 +228,9 @@ properties = TypeDict({
 
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
+
+    'ModelOpts.colour'  : 'Colour',
+    'ModelOpts.outline' : 'Show outline only',
 })
 
 
@@ -253,7 +256,6 @@ modes = TypeDict({
     ('LightBoxViewProfile', 'zoom')   : 'Zoom',
 
 })
-
 
 
 choices = TypeDict({
@@ -285,14 +287,20 @@ choices = TypeDict({
     'VectorOpts.displayType.rgb'  : 'RGB',
 
     'VectorOpts.modulate.none'    : 'No modulation',
-    
-    'Display.transform.affine' : 'Use qform/sform transformation matrix',
-    'Display.transform.pixdim' : 'Use pixdims only',
-    'Display.transform.id'     : 'Do not use qform/sform or pixdims',
+
+    'ImageOpts.transform.affine' : 'Use qform/sform transformation matrix',
+    'ImageOpts.transform.pixdim' : 'Use pixdims only',
+    'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
 
     'Display.interpolation.none'   : 'No interpolation', 
     'Display.interpolation.linear' : 'Linear interpolation', 
-    'Display.interpolation.spline' : 'Spline interpolation', 
+    'Display.interpolation.spline' : 'Spline interpolation',
+
+    'Display.overlayType.volume'     : '3D/4D volume',
+    'Display.overlayType.mask'       : '3D/4D mask image',
+    'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
+    'Display.overlayType.linevector' : '3-direction vector image (Line)',
+    'Display.overlayType.model'      : '3D model' 
 })
 
 

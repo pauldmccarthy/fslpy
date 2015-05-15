@@ -12,10 +12,10 @@ import props
 
 import fsl.data.image   as fslimage
 import fsl.data.strings as strings
-import display          as fsldisplay
+import                     volumeopts
 
 
-class VectorOpts(fsldisplay.DisplayOpts):
+class VectorOpts(volumeopts.ImageOpts):
 
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
@@ -53,38 +53,29 @@ class VectorOpts(fsldisplay.DisplayOpts):
     """Hide voxels for which the modulation value is below this threshold."""
 
     
-    def __init__(self,
-                 overlay,
-                 display,
-                 overlayList,
-                 displayCtx,
-                 parent=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, *args, **kwargs):
         """Create a ``VectorOpts`` instance for the given image.
 
-        See the :class:`.DisplayOpts` documentation for more details.
+        See the :class:`.ImageOpts` documentation for more details.
         """
-
-        if not isinstance(overlay, fslimage.Image):
-            raise RuntimeError('{} can only be used with an {} overlay'.format(
-                type(self).__name__, fslimage.Image.__name__)) 
         
-        fsldisplay.DisplayOpts.__init__(self,
-                                        overlay,
-                                        display,
-                                        overlayList,
-                                        displayCtx,
-                                        parent,
-                                        *args,
-                                        **kwargs)
+        volumeopts.ImageOpts.__init__(self, *args, **kwargs)
 
-        overlayList.addListener('overlays',
-                                self.name,
-                                self.__overlayListChanged)
+        self.overlayList.addListener('overlays',
+                                     self.name,
+                                     self.__overlayListChanged)
+        
         self.__overlayListChanged()
 
 
+    def destroy(self):
+        volumeopts.ImageOpts.destroy(self)
+        self.overlayList.removeListener('overlays', self.name)
+
+        for overlay in self.overlayList:
+            overlay.removeListeneR('name', self.name)
+
+        
     def __overlayListChanged(self, *a):
         """Called when the overlay list changes. Updates the ``modulate``
         property so that it contains a list of overlays which could be used
@@ -135,9 +126,6 @@ class VectorOpts(fsldisplay.DisplayOpts):
         if modVal in overlays: self.modulate = modVal
         else:                  self.modulate = 'none'
 
-
-# TODO RGBVector/LineVector subclasses for any type
-# specific options (e.g. line width for linevector)
 
 class LineVectorOpts(VectorOpts):
 

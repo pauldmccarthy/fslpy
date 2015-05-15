@@ -15,7 +15,7 @@ import display as fsldisplay
 class ModelOpts(fsldisplay.DisplayOpts):
 
     colour  = props.Colour()
-    outline = props.Boolean(default=True)
+    outline = props.Boolean(default=False)
 
 
     def __init__(self, *args, **kwargs):

@@ -16,6 +16,7 @@ import props
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
+import fsl.utils.transform    as transform
 import fsl.fslview.colourmaps as fslcm
 
 import display as fsldisplay
@@ -24,17 +25,180 @@ import display as fsldisplay
 log = logging.getLogger(__name__)
 
 
-# TODO Define a super/mixin class which
-# has a displayRange and colour map. This
-# will allow other bits of code which
-# need display range/cmap options to
-# test for their presence without having
-# to explicitly test against the VolumeOpts
-# class (and other future *Opts classes
-# which have a display range/cmap).
+class ImageOpts(fsldisplay.DisplayOpts):
+    """A class which describes how an :class:`.Image` should be displayed. 
+    """
+
+    
+    resolution = props.Real(maxval=10, default=1, clamped=True)
+    """Data resolution in world space. The minimum value is set in __init__.""" 
+
+    
+    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
+    """If the data is 4D , the current volume to display."""
 
 
-class VolumeOpts(fsldisplay.DisplayOpts):
+    transform = props.Choice(
+        ('affine', 'pixdim', 'id'),
+        labels=[strings.choices['ImageOpts.transform.affine'],
+                strings.choices['ImageOpts.transform.pixdim'],
+                strings.choices['ImageOpts.transform.id']],
+        default='pixdim')
+    """This property defines how the overlay should be transformd into the display
+    coordinate system.
+    
+      - ``affine``: Use the affine transformation matrix stored in the image
+        (the ``qform``/``sform`` fields in NIFTI1 headers).
+                    
+      - ``pixdim``: Scale voxel sizes by the ``pixdim`` fields in the image
+        header.
+    
+      - ``id``: Perform no scaling or transformation - voxels will be
+        interpreted as :math:`1mm^3` isotropic, with the origin at voxel
+        (0,0,0).
+    """
+
+ 
+    def __init__(self, *args, **kwargs):
+
+        nounbind = kwargs.get('nounbind', [])
+        nounbind.extend(('transform', 'resolution', 'volume'))
+        
+        kwargs['nounbind'] = nounbind
+        
+        fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
+
+        overlay = self.overlay
+
+        # The display<->* transformation matrices
+        # are created in the _transformChanged method
+        self.__xforms = {}
+        self.__setupTransforms()
+
+        # is this a 4D volume?
+        if self.is4D():
+            self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
+
+        self.addListener('transform', self.name, self.__transformChanged) 
+
+        self.__oldTransform = None
+        self.__transform    = self.transform
+        self.__transformChanged()
+
+        # limit resolution to the image dimensions
+        self.resolution = min(overlay.pixdim[:3])
+        self.setConstraint('resolution', 'minval', self.resolution)
+
+
+    def destroy(self):
+        self.removeListener('transform',  self.name)
+
+                            
+    def __setupTransforms(self):
+        """Calculates transformation matrices between all of the possible
+        spaces in which the overlay may be displayed.
+
+        These matrices are accessible via the :meth:`getTransform` method.
+        """
+
+        # TODO This is obviously volumetric specific
+
+        if not isinstance(self.__overlay, fslimage.Image):
+            log.warn('Non-volumetric types not supported yet')
+            return
+
+        image          = self.__overlay
+
+        voxToIdMat     = np.eye(4)
+        voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
+        voxToAffineMat = image.voxToWorldMat.T
+        
+        idToVoxMat        = transform.invert(voxToIdMat)
+        idToPixdimMat     = transform.concat(idToVoxMat, voxToPixdimMat)
+        idToAffineMat     = transform.concat(idToVoxMat, voxToAffineMat)
+
+        pixdimToVoxMat    = transform.invert(voxToPixdimMat)
+        pixdimToIdMat     = transform.concat(pixdimToVoxMat, voxToIdMat)
+        pixdimToAffineMat = transform.concat(pixdimToVoxMat, voxToAffineMat)
+
+        affineToVoxMat    = image.worldToVoxMat.T
+        affineToIdMat     = transform.concat(affineToVoxMat, voxToIdMat)
+        affineToPixdimMat = transform.concat(affineToVoxMat, voxToPixdimMat)
+        
+        self.__xforms['id',  'id']     = np.eye(4)
+        self.__xforms['id',  'pixdim'] = idToPixdimMat 
+        self.__xforms['id',  'affine'] = idToAffineMat
+
+        self.__xforms['pixdim', 'pixdim'] = np.eye(4)
+        self.__xforms['pixdim', 'id']     = pixdimToIdMat
+        self.__xforms['pixdim', 'affine'] = pixdimToAffineMat
+ 
+        self.__xforms['affine', 'affine'] = np.eye(4)
+        self.__xforms['affine', 'id']     = affineToIdMat
+        self.__xforms['affine', 'pixdim'] = affineToPixdimMat 
+
+
+    def getTransform(self, from_, to, xform=None):
+        """Return a matrix which may be used to transform coordinates
+        from ``from_`` to ``to``. Valid values for ``from_`` and ``to``
+        are:
+          - ``id``:      Voxel coordinates
+        
+          - ``pixdim``:  Voxel coordinates, scaled by voxel dimensions
+        
+          - ``affine``:  World coordinates, as defined by the NIFTI1
+                         ``qform``/``sform``. See
+                         :attr:`~fsl.data.image.Image.voxToWorldMat`.
+        
+          - ``voxel``:   Equivalent to ``id``.
+        
+          - ``display``: Equivalent to the current value of :attr:`transform`.
+        
+          - ``world``;   Equivalent to ``affine``.
+
+        If the ``xform`` parameter is provided, and one of ``from_`` or ``to``
+        is ``display``, the value of ``xform`` is used instead of the current
+        value of :attr:`transform`.
+        """
+
+        # TODO non-volumetric types
+        if not isinstance(self.__overlay, fslimage.Image):
+            raise RuntimeError('Non-volumetric types not supported yet')
+
+        if xform is None:
+            xform = self.transform
+
+        if   from_ == 'display': from_ = xform
+        elif from_ == 'world':   from_ = 'affine'
+        elif from_ == 'voxel':   from_ = 'id'
+        
+        if   to    == 'display': to    = xform
+        elif to    == 'world':   to    = 'affine'
+        elif to    == 'voxel':   to    = 'id'
+
+        return self.__xforms[from_, to]
+
+
+    def getLastTransform(self):
+        """Returns the most recent value of the :attr:`transform` property,
+        before its current value.
+        """
+        return self.__oldTransform
+
+
+    def __transformChanged(self, *a):
+        """Called when the :attr:`transform` property is changed."""
+
+        # Store references to the previous display related transformation
+        # matrices, just in case anything (hint the DisplayContext object)
+        # needs them for any particular reason (hint: so the DisplayContext
+        # can preserve the current display location, in terms of image world
+        # space, when the transform of the selected image changes)
+        self.__oldTransform = self.__transform
+        self.__transform    = self.transform
+
+
+class VolumeOpts(ImageOpts):
     """A class which describes how an :class:`.Image` should be displayed.
 
     This class doesn't have much functionality - it is up to things which
@@ -93,10 +257,6 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     def __init__(self, overlay, display, overlayList, displayCtx, parent=None):
         """Create a :class:`VolumeOpts` instance for the specified image."""
 
-        if not isinstance(overlay, fslimage.Image):
-            raise RuntimeError('{} can only be used with an {} overlay'.format(
-                type(self).__name__, fslimage.Image.__name__)) 
-
         # Attributes controlling image display. Only
         # determine the real min/max for small images -
         # if it's memory mapped, we have no idea how big
@@ -133,12 +293,12 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
-        fsldisplay.DisplayOpts.__init__(self,
-                                        overlay,
-                                        display,
-                                        overlayList,
-                                        displayCtx,
-                                        parent)
+        ImageOpts.__init__(self,
+                           overlay,
+                           display,
+                           overlayList,
+                           displayCtx,
+                           parent)
 
         # The displayRange property of every child VolumeOpts
         # instance is linked to the corresponding 
@@ -165,6 +325,8 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                            display.getSyncPropertyName('contrast')) 
 
     def destroy(self):
+
+        ImageOpts.destroy(self)
 
         if self.getParent() is not None:
             display = self.display
