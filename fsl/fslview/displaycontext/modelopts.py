@@ -25,3 +25,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
         colour      = np.random.random(4)
         colour[3]   = 1.0
         self.colour = colour
+
+
+    def getDisplayBounds(self):
+        return self.overlay.getBounds()

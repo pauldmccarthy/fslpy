@@ -93,6 +93,23 @@ class ImageOpts(fsldisplay.DisplayOpts):
     def destroy(self):
         self.removeListener('transform',  self.name)
 
+
+    def getDisplayBounds(self):
+        """Calculates and returns the min/max values of a 3D bounding box,
+        in the display coordinate system, which is big enough to contain
+        the image.
+
+        The coordinate system in which the bounding box is defined is
+        determined by the current value of the :attr:`transform` property.
+
+        A tuple containing two values is returned, with the first value
+        a sequence of three low bounds, and the second value a sequence
+        of three high bounds.
+        """
+
+        return transform.axisBounds(
+            self.__overlay.shape[:3], self.getTransform('voxel', 'display'))
+    
                             
     def __setupTransforms(self):
         """Calculates transformation matrices between all of the possible
