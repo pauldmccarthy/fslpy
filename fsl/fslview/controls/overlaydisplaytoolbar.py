@@ -56,7 +56,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         for ovl in self._overlayList:
             
-            display = self._displayCtx.getDisplayProperties(ovl)
+            display = self._displayCtx.getDisplay(ovl)
             display.removeListener('overlayType', self._name)
             display.removeListener('enabled',     self._name)
 
@@ -105,7 +105,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         if ovl is not self._displayCtx.getSelectedOverlay():
             return
         
-        display = self._displayCtx.getDisplayProperties(ovl)
+        display = self._displayCtx.getDisplay(ovl)
 
         self.Enable(display.enabled)
             
@@ -121,14 +121,14 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             self.ClearTools()
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         # Call _toggleEnabled when
         # the overlay is enabled/disabled
         self.Enable(display.enabled)
         for ovl in self._overlayList:
             
-            d = self._displayCtx.getDisplayProperties(ovl)
+            d = self._displayCtx.getDisplay(ovl)
             
             if ovl == overlay:
                 d.addListener('enabled',
@@ -193,7 +193,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         import fsl.fslview.layouts as layouts
 
-        display   = self._displayCtx.getDisplayProperties(overlay)
+        display   = self._displayCtx.getDisplay(overlay)
         toolSpecs = layouts.layouts[self, display]
 
         log.debug('Creating display tools for {}'.format(overlay))
@@ -205,7 +205,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         import fsl.fslview.layouts as layouts
 
-        display   = self._displayCtx.getDisplayProperties(overlay)
+        display   = self._displayCtx.getDisplay(overlay)
         opts      = display.getDisplayOpts()
         toolSpecs = layouts.layouts[self, opts]
         targets   = { s.key : self if s.key == 'more' else opts

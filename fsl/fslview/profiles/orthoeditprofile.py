@@ -165,7 +165,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         if overlay is None:
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         # Edit mode is only supported on images with
         # the 'volume' type, in 'id' or 'pixdim'
@@ -221,7 +221,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         """Returns the voxel location, for the currently selected overlay,
         which corresponds to the specified canvas position.
         """
-        display = self._displayCtx.getDisplayProperties(self._currentOverlay)
+        display = self._displayCtx.getDisplay(self._currentOverlay)
 
         voxel = transform.transform(
             [canvasPos], display.getTransform('display', 'voxel'))[0]
@@ -241,7 +241,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         were to click.
         """
 
-        display = self._displayCtx.getDisplayProperties(self._currentOverlay)
+        display = self._displayCtx.getDisplay(self._currentOverlay)
         shape   = self._currentOverlay.shape
         
         if self.selectionIs3D: axes = (0, 1, 2)
@@ -365,7 +365,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
         step = opts.displayRange.xlen / 50.0

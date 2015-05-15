@@ -132,7 +132,7 @@ def _takeScreenShot(overlayList, displayCtx, canvas):
             log.warn('Non-volumetric images not supported yet')
             continue
 
-        display = displayCtx.getDisplayProperties(overlay)
+        display = displayCtx.getDisplay(overlay)
         fname   = overlay.imageFile
 
         # Skip invisible/unsaved/in-memory images

@@ -194,7 +194,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # listeners to individual overlays,
         # so we have to remove them too
         for ovl in self._overlayList:
-            display = self._displayCtx.getDisplayProperties(ovl)
+            display = self._displayCtx.getDisplay(ovl)
             display.removeListener('transform', self._name)
 
 
@@ -264,7 +264,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         
         for i, ovl in enumerate(self._overlayList):
 
-            display = self._displayCtx.getDisplayProperties(ovl)
+            display = self._displayCtx.getDisplay(ovl)
 
             # Update anatomy labels when the overlay
             # transformation matrix changes
@@ -321,7 +321,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # changed to red
         colour  = 'white'
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         # The image is being displayed as it is stored on
         # disk - the image.getOrientation method calculates

@@ -107,7 +107,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                          'not supported yet'.format(overlay))
                 continue
 
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             xform   = display.getTransform('display', 'voxel')
 
             ix, iy, iz = transform.transform([[x, y, z]], xform)[0]
@@ -157,7 +157,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         
     def _drawPlotOneOverlay(self, overlay, x, y, z):
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not overlay.is4DImage(): return None
         if not display.enabled:     return None

@@ -778,7 +778,7 @@ def applySceneArgs(args, overlayList, displayCtx, sceneOpts):
         if args.worldloc:
             loc = args.worldloc
         elif args.voxelloc:
-            display = displayCtx.getDisplayProperties(overlayList[0])
+            display = displayCtx.getDisplay(overlayList[0])
             xform   = display.getTransform('voxel', 'display')
             loc     = transform.transform([args.voxelloc], xform)[0]
           
@@ -827,7 +827,7 @@ def generateSceneArgs(overlayList, displayCtx, sceneOpts):
 def generateOverlayArgs(overlay, displayCtx):
     """
     """
-    display = displayCtx.getDisplayProperties(overlay)
+    display = displayCtx.getDisplay(overlay)
     opts    = display   .getDisplayOpts()
     args    = _generateArgs(display) + _generateArgs(opts)
 
@@ -870,7 +870,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     # per-overlay display arguments
     for i, overlay in enumerate(overlayList):
 
-        display = displayCtx.getDisplayProperties(overlay)
+        display = displayCtx.getDisplay(overlay)
         _applyArgs(args.overlays[i], display)
 
         # Retrieve the DisplayOpts instance

@@ -254,7 +254,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         if overlay is None:
             return
 
-        display     = self._displayCtx.getDisplayProperties(overlay)
+        display     = self._displayCtx.getDisplay(overlay)
         profileProp = self.getProp('profile')
 
         # edit profile is not an option -

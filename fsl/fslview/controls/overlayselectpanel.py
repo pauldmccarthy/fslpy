@@ -99,7 +99,7 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
         # the _overlayListChanged method registers
         # a listener on the name of each overlay
         for overlay in self._overlayList:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             display.removeListener('name', self._name)
  
         
@@ -150,7 +150,7 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
 
         if self._overlayLabel is not None:
             for overlay in self._overlayList:
-                display = self._displayCtx.getDisplayProperties(overlay)
+                display = self._displayCtx.getDisplay(overlay)
                 display.addListener('name',
                                     self._name,
                                     nameChanged,
@@ -181,7 +181,7 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
             self._overlayLabel.SetLabel('')
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         name    = display.name
         
         if name is None: name = ''

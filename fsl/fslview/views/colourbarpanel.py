@@ -81,7 +81,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         overlay = self._selectedOverlay
 
         if overlay is not None:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             opts    = display.getDisplayOpts()
 
             if isinstance(opts, volumeopts.VolumeOpts):
@@ -110,7 +110,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
 
         overlay = self._selectedOverlay
         if overlay is not None:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             opts    = display.getDisplayOpts()
 
             opts   .removeListener('displayRange', self._name)
@@ -128,7 +128,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         if not isinstance(overlay, fslimage.Image):
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
         # TODO support for other types (where applicable)
@@ -176,7 +176,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
 
         if overlay is not None:
             
-            display    = self._displayCtx.getDisplayProperties(overlay)
+            display    = self._displayCtx.getDisplay(overlay)
             opts       = display.getDisplayOpts()
             dmin, dmax = opts.displayRange.getRange(0)
         else:
@@ -192,7 +192,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         overlay = self._selectedOverlay
 
         if overlay is not None:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             opts    = display.getDisplayOpts()
             cmap    = opts.cmap
         else:

@@ -194,7 +194,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         log.debug('Added overlay {}'.format(overlayName))
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if labelIdx is not None:
             if summary: display.getDisplayOpts().colour = np.random.random(3)
@@ -214,7 +214,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         label     = atlasDesc.labels[labelIdx]
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image):
             raise RuntimeError('Non-volumetric types not supported yet')

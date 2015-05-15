@@ -134,7 +134,7 @@ class OrthoViewProfile(profiles.Profile):
         if overlay is None:
             return
         
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         pos     = self._displayCtx.location.xyz
 
         if not isinstance(overlay, fslimage.Image):

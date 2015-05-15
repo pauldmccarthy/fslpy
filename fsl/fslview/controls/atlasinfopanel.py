@@ -160,7 +160,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
             text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         loc     = self._displayCtx.location
         loc     = transform.transform(
             [loc], display.getTransform('display', 'world'))[0]

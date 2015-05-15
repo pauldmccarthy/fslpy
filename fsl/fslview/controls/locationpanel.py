@@ -200,7 +200,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         # TODO support for other overlay types
         if not isinstance(overlay, fslimage.Image):
@@ -262,7 +262,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image):
             log.warn('Non-volumetric overlays are not supported yet')
@@ -306,7 +306,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image):
             log.warn('Non-volumetric overlays are not supported yet')
@@ -342,7 +342,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         
         if not isinstance(overlay, fslimage.Image):
             log.warn('Non-volumetric overlays are not supported yet')
@@ -380,7 +380,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image):
             self._updateVoxelValue('')

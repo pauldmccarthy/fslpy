@@ -67,7 +67,7 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
             self.displayCtx .removeListener('overlayOrder', self.name)
             
             for overlay in self.overlayList:
-                disp = self.displayCtx.getDisplayProperties(overlay)
+                disp = self.displayCtx.getDisplay(overlay)
                 opts = disp.getDisplayOpts()
                 
                 # TODO I think I need an overlay superclass

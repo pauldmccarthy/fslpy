@@ -88,7 +88,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         self.overlaySelect.destroy()
 
         for ovl in self._overlayList:
-            display = self._displayCtx.getDisplayProperties(ovl)
+            display = self._displayCtx.getDisplay(ovl)
             display.removeListener('overlayType', self._name)
 
 
@@ -108,11 +108,11 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             return
 
         if lastOverlay is not None:
-            lastDisplay = self._displayCtx.getDisplayProperties(lastOverlay)
+            lastDisplay = self._displayCtx.getDisplay(lastOverlay)
             lastDisplay.removeListener('overlayType', self._name)
             lastDisplay.removeListener('transform',   self._name)
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
             
         display.addListener('overlayType',
                             self._name,
@@ -130,7 +130,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         enabled, otherwise interpolation is disabled.
         """
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         # TODO necessary for other overlay types?
         if not isinstance(overlay, fslimage.Image):
@@ -151,7 +151,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         import fsl.fslview.layouts as layouts
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if opts: optObj = display.getDisplayOpts()
         else:    optObj = display

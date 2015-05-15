@@ -75,7 +75,7 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             
             for overlay in self.overlayList:
                 
-                disp = self.displayCtx.getDisplayProperties(overlay)
+                disp = self.displayCtx.getDisplay(overlay)
                 opts = disp.getDisplayOpts()
 
                 if isinstance(overlay, fslimage.Image):

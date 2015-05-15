@@ -364,7 +364,7 @@ class SliceCanvas(props.HasProperties):
                     continue 
 
             globj   = self._glObjects.get(overlay, None)
-            display = self.displayCtx.getDisplayProperties(overlay)
+            display = self.displayCtx.getDisplay(overlay)
 
             if globj is None:
                 continue
@@ -449,7 +449,7 @@ class SliceCanvas(props.HasProperties):
                 log.warn('No support for non-volumetric overlay types yet')
                 continue
 
-            display = self.displayCtx.getDisplayProperties(ovl)
+            display = self.displayCtx.getDisplay(ovl)
             minres  = min(ovl.pixdim[:3])
 
             if self.resolutionLimit > minres:
@@ -535,7 +535,7 @@ class SliceCanvas(props.HasProperties):
             if overlay in self._glObjects:
                 continue
 
-            display = self.displayCtx.getDisplayProperties(overlay)
+            display = self.displayCtx.getDisplay(overlay)
 
             # Called when the GL object representation
             # of the overlay needs to be re-created
@@ -874,7 +874,7 @@ class SliceCanvas(props.HasProperties):
         for overlay in self.displayCtx.getOrderedOverlays():
             
             rt      = self._offscreenTextures.get(overlay, None)
-            display = self.displayCtx.getDisplayProperties(overlay)
+            display = self.displayCtx.getDisplay(overlay)
             lo, hi  = display.getDisplayBounds()
 
             if rt is None or not display.enabled:
@@ -908,7 +908,7 @@ class SliceCanvas(props.HasProperties):
 
         for overlay in self.displayCtx.getOrderedOverlays():
 
-            display = self.displayCtx.getDisplayProperties(overlay)
+            display = self.displayCtx.getDisplay(overlay)
             globj   = self._glObjects.get(overlay, None)
             
             if (globj is None) or (not display.enabled):

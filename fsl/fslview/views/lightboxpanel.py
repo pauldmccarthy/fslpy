@@ -151,7 +151,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         for overlay in self._overlayList:
 
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
 
             display.removeListener('transform', self._name)
 
@@ -181,7 +181,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             log.warn('Non-volumetric overlay types not supported yet')
             return
         
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         loBounds, hiBounds = display.getDisplayBounds()
 

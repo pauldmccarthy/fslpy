@@ -104,7 +104,7 @@ class DisplayContext(props.SyncableHasProperties):
                                 self.__volumeChanged)
 
         
-    def getDisplayProperties(self, overlay):
+    def getDisplay(self, overlay):
         """Returns the display property object (e.g. a :class:`.Display`
         object) for the specified overlay (or overlay index).
 
@@ -123,7 +123,7 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent() is None:
                 dParent = None
             else:
-                dParent = self.getParent().getDisplayProperties(overlay)
+                dParent = self.getParent().getDisplay(overlay)
 
             display = fsldisplay.Display(overlay,
                                          self.__overlayList,
@@ -178,10 +178,10 @@ class DisplayContext(props.SyncableHasProperties):
         # exists for every overlay
         for overlay in self.__overlayList:
 
-            # The getDisplayProperties method
+            # The getDisplay method
             # will create a Display object
             # if one does not already exist
-            display = self.getDisplayProperties(overlay)
+            display = self.getDisplay(overlay)
 
             # Register a listener with the transform property
             # of every overlay display so that when it changes,

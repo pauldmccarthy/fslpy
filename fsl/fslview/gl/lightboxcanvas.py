@@ -402,7 +402,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             newZGap = sys.float_info.max
 
             for overlay in self.overlayList:
-                display = self.displayCtx.getDisplayProperties(overlay)
+                display = self.displayCtx.getDisplay(overlay)
 
 
                 if not isinstance(overlay, fslimage.Image):
@@ -710,7 +710,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # Draw all the slices for all the overlays.
         for overlay in self.displayCtx.getOrderedOverlays():
 
-            display = self.displayCtx.getDisplayProperties(overlay)
+            display = self.displayCtx.getDisplay(overlay)
             globj   = self._glObjects.get(overlay, None)
 
             if (globj is None) or (not display.enabled):

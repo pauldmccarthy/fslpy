@@ -59,7 +59,7 @@ class SpacePanel(plotpanel.PlotPanel):
         self._displayCtx .removeListener('selectedImage', self._name)
 
         for overlay in self._overlayList:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             display.removeListener('transform', self._name)
 
 
@@ -75,7 +75,7 @@ class SpacePanel(plotpanel.PlotPanel):
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image):
             log.warn('Non-volumetric types not supported yet')

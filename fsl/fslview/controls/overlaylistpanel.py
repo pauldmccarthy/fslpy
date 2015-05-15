@@ -175,7 +175,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         # A listener on name was added 
         # in the _overlayListChanged method
         for overlay in self._overlayList:
-            display = self._displayCtx.getDisplayProperties(overlay)
+            display = self._displayCtx.getDisplay(overlay)
             display.removeListener('name', self._name)
 
         
@@ -193,7 +193,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
     def _overlayNameChanged(self, value, valid, overlay, propName):
 
         idx     = self._displayCtx.getOverlayOrder(     overlay)
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         name    = display.name
         
         if name is None:
@@ -214,7 +214,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
 
         for i, overlay in enumerate(self._displayCtx.getOrderedOverlays()):
 
-            display  = self._displayCtx.getDisplayProperties(overlay)
+            display  = self._displayCtx.getDisplay(overlay)
             name     = display.name
             if name is None: name = ''
 
@@ -285,5 +285,5 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         """
         idx          = self._displayCtx.overlayOrder[ev.idx]
         overlay      = self._overlayList[idx]
-        display      = self._displayCtx.getDisplayProperties(overlay)
+        display      = self._displayCtx.getDisplay(overlay)
         display.name = ev.label

@@ -87,7 +87,7 @@ class Editor(props.HasProperties):
             self._selection      = None
             return
 
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if not isinstance(overlay, fslimage.Image) or \
            display.overlayType != 'volume':
@@ -122,7 +122,7 @@ class Editor(props.HasProperties):
         if overlay is None:
             return
         
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         selectBlock, offset = self._selection.getBoundedSelection()
 
@@ -236,7 +236,7 @@ class Editor(props.HasProperties):
     def _applyChange(self, change):
 
         overlay = change.overlay
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
 
         if overlay.is4DImage(): volume = display.volume
         else:                   volume = None
@@ -258,7 +258,7 @@ class Editor(props.HasProperties):
     def _revertChange(self, change):
 
         overlay = change.ovelay
-        display = self._displayCtx.getDisplayProperties(overlay)
+        display = self._displayCtx.getDisplay(overlay)
         
         self._displayCtx.selectOverlay(overlay)
 
@@ -296,7 +296,7 @@ class Editor(props.HasProperties):
             return
 
         overlayIdx = self._overlayList.index(overlay) 
-        display    = self._displayCtx.getDisplayProperties(overlay)
+        display    = self._displayCtx.getDisplay(overlay)
         
         roi       = np.zeros(overlay.shape[:3], dtype=overlay.data.dtype)
         selection = self._selection.selection > 0
