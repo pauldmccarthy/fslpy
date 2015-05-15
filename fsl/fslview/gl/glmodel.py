@@ -10,6 +10,7 @@ import numpy     as np
 import OpenGL.GL as gl
 
 import                            globject
+import fsl.utils.transform     as transform
 import fsl.fslview.gl.routines as glroutines
 
 
@@ -73,6 +74,9 @@ class GLModel(globject.GLObject):
         yax = self.yax
         zax = self.zax
 
+        vertices = self.overlay.vertices
+        indices  = self.overlay.indices
+
         lo, hi = self.getDisplayBounds()
 
         xmin = lo[xax]
@@ -87,13 +91,16 @@ class GLModel(globject.GLObject):
         clipPlaneVerts[3, [xax, yax]] = [xmax, ymin]
         clipPlaneVerts[:,  zax]       =  zpos
 
+
+        if xform is not None:
+            clipPlaneVerts = transform.transform(clipPlaneVerts, xform)
+            vertices       = transform.transform(vertices, xform).ravel('C')
+            
+
         planeEq = glroutines.planeEquation(clipPlaneVerts[0, :],
                                            clipPlaneVerts[1, :],
                                            clipPlaneVerts[2, :])
 
-        vertices = self.overlay.vertices
-        indices  = self.overlay.indices
-        
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnable(gl.GL_CLIP_PLANE0)
         gl.glEnable(gl.GL_CULL_FACE)
