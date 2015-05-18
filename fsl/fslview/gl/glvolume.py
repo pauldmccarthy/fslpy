@@ -148,8 +148,8 @@ class GLVolume(globject.GLImageObject):
             self.xax,
             self.yax,
             zpos, 
-            self.display.getTransform('voxel',   'display'),
-            self.display.getTransform('display', 'voxel'))
+            self.displayOpts.getTransform('voxel',   'display'),
+            self.displayOpts.getTransform('display', 'voxel'))
 
         if xform is not None: 
             vertices = transform.transform(vertices, xform)
@@ -258,10 +258,11 @@ class GLVolume(globject.GLImageObject):
         def update(*a):
             self.onUpdate()
 
-        display.addListener('resolution',    lName, update)
+        
         display.addListener('interpolation', lName, shaderUpdate)
         display.addListener('softwareMode',  lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
+        opts   .addListener('resolution',    lName, update)
         opts   .addListener('displayRange',  lName, colourUpdate)
         opts   .addListener('clippingRange', lName, shaderUpdate)
         opts   .addListener('cmap',          lName, colourUpdate)
@@ -278,10 +279,10 @@ class GLVolume(globject.GLImageObject):
 
         lName = self.name
 
-        display.removeListener('resolution',    lName)
         display.removeListener('interpolation', lName)
         display.removeListener('softwareMode',  lName)
         display.removeListener('alpha',         lName)
+        opts   .removeListener('resolution',    lName)
         opts   .removeListener('displayRange',  lName)
         opts   .removeListener('clippingRange', lName)
         opts   .removeListener('cmap',          lName)

@@ -450,13 +450,14 @@ class SliceCanvas(props.HasProperties):
                 continue
 
             display = self.displayCtx.getDisplay(ovl)
+            opts    = display.getDisplayOpts()
             minres  = min(ovl.pixdim[:3])
 
             if self.resolutionLimit > minres:
                 minres = self.resolutionLimit
 
-            if display.resolution < minres:
-                display.resolution = minres
+            if opts.resolution < minres:
+                opts.resolution = minres
 
 
     def _zAxisChanged(self, *a):
@@ -599,14 +600,11 @@ class SliceCanvas(props.HasProperties):
                 
             display.addListener('overlayType',   self.name, genGLObject)
             display.addListener('enabled',       self.name, self._refresh)
-            display.addListener('transform',     self.name, self._refresh)
             display.addListener('softwareMode',  self.name, self._refresh)
             display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
             display.addListener('brightness',    self.name, self._refresh)
             display.addListener('contrast',      self.name, self._refresh)
-            display.addListener('resolution',    self.name, self._refresh)
-            display.addListener('volume',        self.name, self._refresh)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()

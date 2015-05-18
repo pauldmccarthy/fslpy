@@ -10,10 +10,9 @@ import logging
 
 import props
 
-import fsl.data.image      as fslimage
 import fsl.utils.transform as transform
-
-import display as fsldisplay
+import display             as fsldisplay
+import                        volumeopts
 
 
 log = logging.getLogger(__name__)
@@ -53,13 +52,6 @@ class DisplayContext(props.SyncableHasProperties):
     """
 
 
-    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """The volume property contains the currently selected volume across the 4D
-    overlays in the :class:`.OverlayList`.  This property is only relevant for
-    4D overlays in the overlay list.
-    """
-
-
     overlayOrder = props.List(props.Int())
     """A list of indices into the :attr:`.OverlayList.overlays`
     list, defining the order in which the overlays are to be displayed.
@@ -77,7 +69,7 @@ class DisplayContext(props.SyncableHasProperties):
         as the parent of this instance.
         """
 
-        props.SyncableHasProperties.__init__(self, parent, nounbind=('volume'))
+        props.SyncableHasProperties.__init__(self, parent)
         
         self.__overlayList = overlayList
         self.__name         = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -99,9 +91,6 @@ class DisplayContext(props.SyncableHasProperties):
         self.addListener(       'bounds',
                                 self.__name,
                                 self.__boundsChanged)
-        self.addListener(       'volume',
-                                self.__name,
-                                self.__volumeChanged)
 
         
     def getDisplay(self, overlay):
@@ -169,9 +158,10 @@ class DisplayContext(props.SyncableHasProperties):
         """Called when the :attr:`.OverlayList.overlays` property
         changes.
 
-        Ensures that a :class:`.Display` object exists for every image,
-        and updates the constraints on the :attr:`selectedOverlay` and
-        :attr:`volume` properties.
+        Ensures that a :class:`.Display` and :class:`.DisplayOpts` object
+        exists for every image, updates the :attr:`bounds` property, makes
+        sure that the :attr:`overlayOrder` property is consistent, and updates
+        constraints on the :attr:`selectedOverlay` property.
         """
 
         # Ensure that a Display object
@@ -182,24 +172,16 @@ class DisplayContext(props.SyncableHasProperties):
             # will create a Display object
             # if one does not already exist
             display = self.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
 
-            # Register a listener with the transform property
-            # of every overlay display so that when it changes,
-            # we can update the display bounds, and preserve
-            # the current display location so that it is in
-            # terms of the world location of the currently
-            # selected overlay
-            # 
-            # This listener may be registered multiple times
-            # on each overlay, but it doesn't matter, as any
-            # listener which has previously been registered
-            # with an overlay display will just be replaced
-            # by the new one here.
-            display.addListener(
-                'transform',
-                self.__class__.__name__,
-                self.__transformChanged,
-                overwrite=True)
+            # Register a listener on the DisplayOpts
+            # object for every overlay - if any
+            # DisplayOpts properties change, the
+            # overlay display bounds may have changed,
+            # so we need to know when this happens.
+            opts.addGlobalListener(self.__name,
+                                   self.__displayOptsChanged,
+                                   overwrite=True)
 
         # Ensure that the overlayOrder
         # property is valid ...
@@ -246,36 +228,10 @@ class DisplayContext(props.SyncableHasProperties):
         else:
             self.setConstraint('selectedOverlay', 'maxval', 0)
 
-        # Limit the volume property so it cannot
-        # take a value greater than the longest
-        # 4D volume in the overlay list
-        maxvols = 0
-
-        # TODO This only works with Image types
-        for overlay in self.__overlayList:
-
-            if not isinstance(overlay, fslimage.Image):
-                log.warn('Non-volumetric types not supported yet')
-                continue
             
-            if not overlay.is4DImage():
-                continue
-
-            if overlay.shape[3] > maxvols:
-                maxvols = overlay.shape[3]
-
-        if maxvols > 0:
-            self.setConstraint('volume', 'maxval', maxvols - 1)
-        else:
-            self.setConstraint('volume', 'maxval', 0)
-
-
-    def __transformChanged(self, xform, valid, display, propName):
-        """Called when the
-        :attr:`.Display.transform property
-        changes for any overlay in the :class:`.OverlayList`. Sets the 
-        :attr:`location` property, so that the selected world
-        location is preserved, in the new display coordinate system.
+    def __displayOptsChanged(self, value, valid, opts, name):
+        """Called when the :class:`.DisplayOpts` properties of any overlay
+        change. Updates the :attr:`bounds` property.
         """
 
         # This check is ugly, and is required due to
@@ -315,21 +271,29 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent().location == self.location:
                 return
 
+        display = opts.display
+
         if display.getOverlay() != self.getSelectedOverlay():
             self.__updateBounds()
             return
 
+        # If the currently selected overlay is an Image, and its
+        # transformation matrix property has changed, we want the
+        # current display location to be preserved, in terms of
+        # the corresponding image world coordinates.
+        if not isinstance(opts, volumeopts.ImageOpts):
+            return
+        
         # Calculate the image world location using
         # the old display<-> world transform, then
         # transform it back to the new world->display
-        # transform
-        
+        # transform. 
         imgWorldLoc = transform.transform(
             [self.location.xyz],
-            display.getTransform(display.getLastTransform(), 'world'))[0]
+            opts.getTransform(opts.getLastTransform(), 'world'))[0]
         newDispLoc  = transform.transform(
             [imgWorldLoc],
-            display.getTransform('world', 'display'))[0]
+            opts.getTransform('world', 'display'))[0]
 
         # Update the display coordinate 
         # system bounds, and the location
@@ -353,7 +317,8 @@ class DisplayContext(props.SyncableHasProperties):
         for ovl in self.__overlayList:
 
             display = self.__displays[ovl]
-            lo, hi  = display.getDisplayBounds()
+            opts    = display.getDisplayOpts()
+            lo, hi  = opts   .getDisplayBounds()
 
             for ax in range(3):
 
@@ -364,24 +329,6 @@ class DisplayContext(props.SyncableHasProperties):
                           minBounds[1], maxBounds[1],
                           minBounds[2], maxBounds[2]]
  
-    
-    def __volumeChanged(self, *a):
-        """Called when the :attr:`volume` property changes.
-
-        Propagates the change on to the :attr:`.Display.volume` property
-        for each overlay in the :class:`.OverlayList`.
-        """
-
-        for ovl in self.__overlayList:
-
-            display = self.__displays[ovl]
-            
-            # The volume property for each should
-            # be clamped to the possible value for that
-            # image, so we don't need to check if the
-            # current volume value is valid for each image
-            display.volume = self.volume
-
             
     def __boundsChanged(self, *a):
         """Called when the :attr:`bounds` property changes.

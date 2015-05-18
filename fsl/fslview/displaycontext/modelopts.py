@@ -29,3 +29,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
     def getDisplayBounds(self):
         return self.overlay.getBounds()
+
+
+    def getOldDisplayBounds(self):
+        return self.overlay.getBounds()

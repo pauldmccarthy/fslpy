@@ -15,6 +15,8 @@ import logging
 
 import wx
 
+import props
+
 import fsl
 import fsl.tools.fslview_parseargs as fslview_parseargs
 import fsl.data.image              as fslimage
@@ -164,7 +166,10 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
 
     syncLocation     = displayctx.DisplayContext.getSyncProperty('location')
-    syncVolume       = displayctx.DisplayContext.getSyncProperty('volume')
+    # syncVolume       = displayctx.DisplayContext.getSyncProperty('volume')
+
+    # TODO
+    syncVolume       = props.Boolean(default=True)
     syncOverlayOrder = displayctx.DisplayContext.getSyncProperty(
         'overlayOrder')
 
@@ -206,9 +211,10 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.bindProps('syncOverlayOrder',
                            displayCtx,
                            displayCtx.getSyncPropertyName('overlayOrder'))
-            self.bindProps('syncVolume',
-                           displayCtx,
-                           displayCtx.getSyncPropertyName('volume'))
+
+            log.warn('Skipping parent syncVolume binding, '
+                     'as it is not working yet.')
+
             
         # If the displayCtx instance does not
         # have a parent, this means that it is

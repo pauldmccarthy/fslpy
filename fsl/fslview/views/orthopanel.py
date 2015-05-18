@@ -265,16 +265,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         for i, ovl in enumerate(self._overlayList):
 
             display = self._displayCtx.getDisplay(ovl)
+            opts    = display.getDisplayOpts()
 
-            # Update anatomy labels when the overlay
-            # transformation matrix changes
+            # Update anatomy labels when any 
+            # overlay display properties change
             if i == self._displayCtx.selectedOverlay:
-                display.addListener('transform',
-                                    self._name,
-                                    self._refreshLabels,
-                                    overwrite=True)
+                opts.addGlobalListener(self._name,
+                                       self._refreshLabels,
+                                       overwrite=True)
             else:
-                display.removeListener('transform', self._name)
+                opts.removeGlobalListener(self._name)
                 
         # anatomical orientation may have changed with an image change
         self._refreshLabels()
@@ -322,11 +322,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         colour  = 'white'
 
         display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
 
         # The image is being displayed as it is stored on
         # disk - the image.getOrientation method calculates
         # and returns labels for each voxelwise axis.
-        if display.transform in ('pixdim', 'id'):
+        if opts.transform in ('pixdim', 'id'):
             xorient = overlay.getVoxelOrientation(0)
             yorient = overlay.getVoxelOrientation(1)
             zorient = overlay.getVoxelOrientation(2)

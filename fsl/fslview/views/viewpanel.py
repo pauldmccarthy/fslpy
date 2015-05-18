@@ -255,6 +255,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
             return
 
         display     = self._displayCtx.getDisplay(overlay)
+        opts        = display.getDisplayOpts()
         profileProp = self.getProp('profile')
 
         # edit profile is not an option -
@@ -264,7 +265,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         if not isinstance(overlay, fslimage.Image) or \
            display.overlayType != 'volume'         or \
-           display.transform not in ('id', 'pixdim'):
+           opts.transform not in ('id', 'pixdim'):
             
             # change profile if needed,
             if self.profile == 'edit':

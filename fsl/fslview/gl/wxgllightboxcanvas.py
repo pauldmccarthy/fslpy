@@ -81,17 +81,14 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
                 if isinstance(overlay, fslimage.Image):
                     overlay.removeListener('data',    self.name)
                     
-                disp .removeListener('overlayType',   self.name)
-                disp .removeListener('enabled',       self.name)
-                disp .removeListener('transform',     self.name)
-                disp .removeListener('softwareMode',  self.name)
-                disp .removeListener('interpolation', self.name)
-                disp .removeListener('alpha',         self.name)
-                disp .removeListener('brightness',    self.name)
-                disp .removeListener('contrast',      self.name)
-                disp .removeListener('resolution',    self.name)
-                disp .removeListener('volume',        self.name)
-                opts .removeGlobalListener(           self.name)
+                disp.removeListener('overlayType',   self.name)
+                disp.removeListener('enabled',       self.name)
+                disp.removeListener('softwareMode',  self.name)
+                disp.removeListener('interpolation', self.name)
+                disp.removeListener('alpha',         self.name)
+                disp.removeListener('brightness',    self.name)
+                disp.removeListener('contrast',      self.name)
+                opts.removeGlobalListener(           self.name)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

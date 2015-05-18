@@ -108,6 +108,14 @@ class ImageOpts(fsldisplay.DisplayOpts):
 
         return transform.axisBounds(
             self.overlay.shape[:3], self.getTransform('voxel', 'display'))
+
+
+    def getOldDisplayBounds(self):
+        """Returns the most recent display bounds before the current bounds.
+        """
+        return transform.axisBounds(
+            self.overlay.shape[:3],
+            self.getTransform('voxel', self.__oldTransform)) 
     
                             
     def __setupTransforms(self):
