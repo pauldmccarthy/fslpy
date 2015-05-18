@@ -54,7 +54,7 @@ class ListItemWidget(wx.Panel):
                                      self.name,
                                      self._saveStateChanged)
         else:
-            log.warn('No support for non-volumetric overlays yet')
+            log.warn('No save button support for non-volumetric overlays')
             self.saveButton.Enable(False)
 
         self.saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton)
@@ -81,8 +81,12 @@ class ListItemWidget(wx.Panel):
 
         
     def _saveStateChanged(self, *a):
-        idx = self.listBox.IndexOf(self.overlay)
 
+        if not isinstance(self.overlay, fslimage.Image):
+            return
+        
+        idx = self.listBox.IndexOf(self.overlay)
+        
         self.saveButton.Enable(not self.overlay.saved)
 
         if self.overlay.saved:
@@ -192,8 +196,8 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
 
     def _overlayNameChanged(self, value, valid, overlay, propName):
 
-        idx     = self._displayCtx.getOverlayOrder(     overlay)
-        display = self._displayCtx.getDisplay(overlay)
+        idx     = self._displayCtx.getOverlayOrder(overlay)
+        display = self._displayCtx.getDisplay(     overlay)
         name    = display.name
         
         if name is None:
@@ -218,12 +222,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
             name     = display.name
             if name is None: name = ''
 
-            if isinstance(overlay, fslimage.Image):
-                tooltip = overlay.imageFile
-                
-            else:
-                log.warn('No support for non-volumetric overlays yet')
-                tooltip = 'Non-volumetric overlay - I don\'t know what to do'
+            tooltip = overlay.dataSource
             
             self._listBox.Append(name, overlay, tooltip)
 

@@ -884,7 +884,9 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     # per-overlay display arguments
     for i, overlay in enumerate(overlayList):
 
-        display = displayCtx.getDisplay(overlay)
+        display      = displayCtx.getDisplay(overlay)
+        display.name = overlay.name
+        
         _applyArgs(args.overlays[i], display)
 
         # Retrieve the DisplayOpts instance

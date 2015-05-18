@@ -4,7 +4,12 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module defines the :class:`OverlayList` class, which is a simple but
+fundamental class in FSLView - it is a container for all displayed overlays.
 
+Only one ``OverlayList`` ever exists, and it is shared throughout the entire
+application.
+"""
 
 import logging
 
@@ -27,12 +32,23 @@ class OverlayList(props.HasProperties):
     :attr:`overlays` property, allowing the :class:`OverlayList` to be used
     as if it were a list itself.
 
+    There are no restrictions on the type of objects which may be contained
+    in the ``OverlayList``, but all objects must have a few attributes:
 
-    An overlay object must have an attribute called ``name``.
+      - ``name`` ...
+    
+      - ``dataSoruce`` ..
     """
 
 
-    overlays = props.List()
+    def __validateOverlay(self, atts, overlay):
+        return (hasattr(overlay, 'name')      and 
+                hasattr(overlay, 'dataSource'))
+
+        
+    overlays = props.List(
+        listType=props.Object(allowInvalid=False,
+                              validateFunc=__validateOverlay))
     """A list of overlay objects to be displayed"""
 
     

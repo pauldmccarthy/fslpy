@@ -135,7 +135,7 @@ def _takeScreenShot(overlayList, displayCtx, canvas):
             continue
 
         display = displayCtx.getDisplay(overlay)
-        fname   = overlay.imageFile
+        fname   = overlay.dataSource
 
         # Skip invisible/unsaved/in-memory images
         if not (display.enabled and overlay.saved):

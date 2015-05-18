@@ -281,13 +281,13 @@ def saveImage(image, imageList=None, fromDir=None):
     lastDir = getattr(saveImage, 'lastDir', None)
 
     if lastDir is None:
-        if image.imageFile is None: lastDir = os.getcwd()
-        else:                       lastDir = op.dirname(image.imageFile)
+        if image.dataSource is None: lastDir = os.getcwd()
+        else:                        lastDir = op.dirname(image.dataSource)
 
     # TODO make image.name safe (spaces to 
     # underscores, filter non-alphanumeric)
-    if image.imageFile is None: filename = image.name
-    else:                       filename = op.basename(image.imageFile)
+    if image.dataSource is None: filename = image.name
+    else:                        filename = op.basename(image.dataSource)
 
     filename = removeExt(filename)
 
@@ -338,7 +338,7 @@ def saveImage(image, imageList=None, fromDir=None):
             log.debug('Saving image ({}) to {}'.format(image, path))
 
             nib.save(nibImage, path)
-            image.imageFile = path
+            image.dataSource = path
             
     except Exception as e:
 

@@ -5,8 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-
-import numpy as np
+import os.path as op
+import numpy   as np
 
 
 def loadVTKPolydataFile(infile):
@@ -62,6 +62,12 @@ class PolygonModel(object):
             if np.any(lengths != 3):
                 raise RuntimeError('All polygons in VTK file must be '
                                    'triangles ({})'.format(infile))
+
+            self.name       = op.basename(infile)
+            self.dataSource = infile
+        else:
+            self.name       = 'Model'
+            self.dataSource = 'Model'
             
         if indices is None:
             indices = np.arange(data.shape[0], dtype=np.uint32)

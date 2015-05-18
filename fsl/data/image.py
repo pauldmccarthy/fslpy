@@ -9,7 +9,6 @@
 
 See the :mod:`fsl.data.imageio` module for image loading/saving 
 functionality.
-
 """
 
 import logging
@@ -52,7 +51,7 @@ class Image(props.HasProperties):
                           for transforming real world coordinates into voxel
                           coordinates.
 
-    :ivar imageFile:      The name of the file that the image was loaded from.
+    :ivar dataSource:     The name of the file that the image was loaded from.
 
     :ivar tempFile:       The name of the temporary file which was created (in
                           the event that the image was large and was gzipped -
@@ -105,9 +104,9 @@ class Image(props.HasProperties):
                        via the :meth:`loadData` method.
         """
 
-        self.nibImage  = None
-        self.imageFile = None
-        self.tempFile  = None
+        self.nibImage   = None
+        self.dataSource = None
+        self.tempFile   = None
 
         if header is not None:
             header = header.copy()
@@ -117,16 +116,16 @@ class Image(props.HasProperties):
             
             nibImage, filename = iio.loadImage(iio.addExt(image))
             self.nibImage      = nibImage
-            self.imageFile     = image
+            self.dataSource    = image
 
             # if the returned file name is not the same as
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                self.name     = iio.removeExt(op.basename(self.imageFile))
+                self.name     = iio.removeExt(op.basename(self.dataSource))
                 self.tempFile = nibImage.get_filename()
             else:
-                self.name     = iio.removeExt(op.basename(self.imageFile))
+                self.name     = iio.removeExt(op.basename(self.dataSource))
 
             self.saved = True
                 
@@ -255,7 +254,7 @@ class Image(props.HasProperties):
         """Return a string representation of this :class:`Image`."""
         return '{}({}, {})'.format(self.__class__.__name__,
                                    self.name,
-                                   self.imageFile)
+                                   self.dataSource)
 
         
     def __repr__(self):
