@@ -140,8 +140,8 @@ labels = TypeDict({
     'LocationPanel.volume'        : 'Volume',
     'LocationPanel.space'         : 'Space',
     'LocationPanel.intensity'     : 'Intensity',
-    'LocationPanel.outOfBounds'   : 'Out of bounds',
-    'LocationPanel.nonVolumetric' : 'Non-volumetric overlays not supported',
+    'LocationPanel.outOfBounds'   : 'N/A',
+    'LocationPanel.nonVolumetric' : 'N/A',
 
     'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
