@@ -33,7 +33,9 @@ class TypeDict(object):
 
     def __str__( self): return self.__dict.__str__()
     def __repr__(self): return self.__dict.__repr__()
-
+    def keys(    self): return self.__dict.keys()
+    def values(  self): return self.__dict.values()
+    def items(   self): return self.__dict.items()
 
     def __setitem__(self, key, value):
         self.__dict[self.__tokenifyKey(key)] = value

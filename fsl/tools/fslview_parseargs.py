@@ -300,6 +300,14 @@ HELP = td.TypeDict({
     'ModelOpts.outline'    : 'Show model outline',
 })
 
+
+# Extra settings for some properties, passed through 
+# to the props.cli.addParserArguments function.
+EXTRA = td.TypeDict({
+    'Display.overlayType' : {'choices' : fsldisplay.ALL_OVERLAY_TYPES,
+                             'default' : fsldisplay.ALL_OVERLAY_TYPES[0]}
+}) 
+
 # Transform functions for properties where the
 # value passed in on the command line needs to
 # be manipulated before the property value is
@@ -386,22 +394,28 @@ def _configParser(target, parser, propNames=None):
     shortArgs = {}
     longArgs  = {}
     helpTexts = {}
+    extra     = {}
 
     for propName in propNames:
 
-        shortArg, longArg = ARGUMENTS[target, propName]
-        helpText          = HELP[     target, propName]
+        shortArg, longArg = ARGUMENTS[ target, propName]
+        helpText          = HELP[      target, propName]
+        propExtra         = EXTRA.get((target, propName), None)
 
         shortArgs[propName] = shortArg
         longArgs[ propName] = longArg
         helpTexts[propName] = helpText
+
+        if propExtra is not None:
+            extra[propName] = propExtra
 
     props.addParserArguments(target,
                              parser,
                              cliProps=propNames,
                              shortArgs=shortArgs,
                              longArgs=longArgs,
-                             propHelp=helpTexts)
+                             propHelp=helpTexts,
+                             extra=extra)
 
 
 def _configSceneParser(sceneParser):
