@@ -141,8 +141,8 @@ class ImageTexture(texture.Texture):
         when necessary.
         """
 
-        display = self.display
         image   = self.image
+        display = self.display
         
         def refreshInterp(*a):
             self._updateInterpolationMethod()
@@ -152,9 +152,11 @@ class ImageTexture(texture.Texture):
         image.addListener('data', name, self.refresh)
 
         if display is not None:
+            opts    = display.getDisplayOpts()
+                    
             display.addListener('interpolation', name, refreshInterp)
-            display.addListener('volume',        name, self.refresh)
-            display.addListener('resolution',    name, self.refresh)
+            opts   .addListener('volume',        name, self.refresh)
+            opts   .addListener('resolution',    name, self.refresh)
 
         
     def _removeListeners(self):
@@ -163,14 +165,18 @@ class ImageTexture(texture.Texture):
         method.
         """
 
-        name = '{}_{}'.format(type(self).__name__, id(self))
+        image   = self.image
+        display = self.display
+        name    = '{}_{}'.format(type(self).__name__, id(self))
         
-        self.image.removeListener('data', name)
+        image.removeListener('data', name)
 
-        if self.display is not None:
-            self.display.removeListener('interpolation', name)
-            self.display.removeListener('volume',        name)
-            self.display.removeListener('resolution',    name)
+        if display is not None:
+            opts = display.getDisplayOpts()
+ 
+            display.removeListener('interpolation', name)
+            opts   .removeListener('volume',        name)
+            opts   .removeListener('resolution',    name)
 
 
     def _determineTextureType(self):
@@ -360,21 +366,26 @@ class ImageTexture(texture.Texture):
             be used as-is).
         """
 
-        dtype = self.image.data.dtype
+        image   = self.image
+        display = self.display
 
-        if self.display is None:
-            data = self.image.data
+        dtype = image.data.dtype
+
+        if display is None:
+            data = image.data
             
         else:
-            if self.nvals == 1 and self.image.is4DImage():
-                data = glroutines.subsample(self.image.data,
-                                            self.display.resolution,
-                                            self.image.pixdim, 
-                                            self.display.volume)[0]
+            opts = display.getDisplayOpts()
+            
+            if self.nvals == 1 and image.is4DImage():
+                data = glroutines.subsample(image.data,
+                                            opts.resolution,
+                                            image.pixdim, 
+                                            opts.volume)[0]
             else:
-                data = glroutines.subsample(self.image.data,
-                                            self.display.resolution,
-                                            self.image.pixdim)[0]
+                data = glroutines.subsample(image.data,
+                                            opts.resolution,
+                                            image.pixdim)[0]
 
         if self.prefilter is not None:
             data = self.prefilter(data)

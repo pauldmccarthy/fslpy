@@ -151,14 +151,18 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         for overlay in self._overlayList:
 
-            display = self._displayCtx.getDisplay(overlay)
+            if not isinstance(overlay, fslimage.Image):
+                continue
 
-            display.removeListener('transform', self._name)
+            display = self._displayCtx.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
+
+            opts.removeListener('transform', self._name)
 
             if overlay == selectedOverlay:
-                display.addListener('transform',
-                                    self._name,
-                                    self._transformChanged)
+                opts.addListener('transform',
+                                 self._name,
+                                 self._transformChanged)
 
         self._transformChanged()
 
@@ -171,8 +175,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         sensible to the new overlay display space.
         """
         
-        overlay = self._displayCtx.getSelectedOverlay()
-        opts    = self.getSceneOptions()
+        overlay   = self._displayCtx.getSelectedOverlay()
+        sceneOpts = self.getSceneOptions()
 
         if overlay is None:
             return
@@ -181,16 +185,18 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             log.warn('Non-volumetric overlay types not supported yet')
             return
         
-        display = self._displayCtx.getDisplay(overlay)
+        display  = self._displayCtx.getDisplay(overlay)
+        dispOpts = display.getDisplayOpts()
 
         loBounds, hiBounds = display.getDisplayBounds()
 
-        if display.transform == 'id':
-            opts.sliceSpacing = 1
-            opts.zrange.x     = (0, overlay.shape[opts.zax] - 1)
+        if dispOpts.transform == 'id':
+            sceneOpts.sliceSpacing = 1
+            sceneOpts.zrange.x     = (0, overlay.shape[sceneOpts.zax] - 1)
         else:
-            opts.sliceSpacing = overlay.pixdim[opts.zax]
-            opts.zrange.x     = (loBounds[opts.zax], hiBounds[opts.zax])
+            sceneOpts.sliceSpacing = overlay.pixdim[sceneOpts.zax]
+            sceneOpts.zrange.x     = (loBounds[sceneOpts.zax],
+                                      hiBounds[sceneOpts.zax])
 
         self._onResize()
 

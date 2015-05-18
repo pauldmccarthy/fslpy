@@ -50,7 +50,7 @@ import props
 import fsl.utils.typedict  as td
 import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
-import fsl.data.vtkmodel   as vtkmodel
+import fsl.data.model      as model
 import fsl.utils.transform as transform
 
 # The colour maps module needs to be imported
@@ -863,7 +863,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
     overlays = iio.loadImages(volOverlays, **kwargs)
 
-    overlays.extend([vtkmodel.PolygonModel(o) for o in nonVolOverlays])
+    overlays.extend([model.PolygonModel(o) for o in nonVolOverlays])
 
     overlayList.extend(overlays)
 

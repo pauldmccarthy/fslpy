@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
 # slicecanvas.py - Provides the SliceCanvas class, which contains the
-# functionality to display a single slice from a collection of 3D images.
+# functionality to display a single slice from a collection of 3D overlays.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """Provides the :class:`SliceCanvas` class, which contains the functionality
-to display a single slice from a collection of 3D images.
+to display a single slice from a collection of 3D overlays.
 
 The :class:`SliceCanvas` class is not intended to be instantiated - use one
 of the subclasses:
@@ -439,12 +439,11 @@ class SliceCanvas(props.HasProperties):
     def _resolutionLimitChange(self, *a):
         """Called when the :attr:`resolutionLimit` property changes.
 
-        Updates the minimum resolution of all overlays in the overly list.
+        Updates the minimum resolution of all overlays in the overlay list.
         """
 
         for ovl in self.overlayList:
             
-            # TODO Support for non-volumetric overlays
             if not isinstance(ovl, fslimage.Image):
                 log.warn('No support for non-volumetric overlay types yet')
                 continue

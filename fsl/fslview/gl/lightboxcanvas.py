@@ -402,16 +402,17 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             newZGap = sys.float_info.max
 
             for overlay in self.overlayList:
-                display = self.displayCtx.getDisplay(overlay)
-
-
+                
                 if not isinstance(overlay, fslimage.Image):
                     log.warn('No support for non-volumetric overlay types yet')
                     continue
+                
+                display = self.displayCtx.getDisplay(overlay)
+                opts    = display.getDisplayOpts()
 
-                if   display.transform == 'id':
+                if   opts.transform == 'id':
                     zgap = 1
-                elif display.transform == 'pixdim':
+                elif opts.transform == 'pixdim':
                     zgap = overlay.pixdim[self.zax]
                 else:
                     zgap = min(overlay.pixdim[:3])

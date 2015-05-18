@@ -195,7 +195,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # so we have to remove them too
         for ovl in self._overlayList:
             display = self._displayCtx.getDisplay(ovl)
-            display.removeListener('transform', self._name)
+            opts    = display.getDisplayOpts()
+            opts.removeGlobalListener(self._name)
 
 
     def getXCanvas(self):
