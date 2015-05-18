@@ -34,8 +34,8 @@ class GLRGBVector(glvector.GLVector):
             self.xax,
             self.yax,
             zpos, 
-            self.display.getTransform('voxel',   'display'),
-            self.display.getTransform('display', 'voxel'))
+            self.displayOpts.getTransform('voxel',   'display'),
+            self.displayOpts.getTransform('display', 'voxel'))
 
         if xform is not None: 
             vertices = transform.transform(vertices, xform)

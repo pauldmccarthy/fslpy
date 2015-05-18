@@ -36,23 +36,22 @@ def init(self):
     updateShaderState(self)
     updateVertices(   self)
 
-    display = self.display
-    opts    = self.opts
+    opts = self.displayOpts
 
     def vertexUpdate(*a):
         updateVertices(self)
         self.onUpdate()
 
-    display.addListener('resolution', self.name, vertexUpdate)
-    opts   .addListener('directed',   self.name, vertexUpdate)
+    opts.addListener('resolution', self.name, vertexUpdate)
+    opts.addListener('directed',   self.name, vertexUpdate)
 
 
 def destroy(self):
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
-    self.display.removeListener('resolution', self.name)
-    self.opts   .removeListener('directed',   self.name)
+    self.displayOpts.removeListener('resolution', self.name)
+    self.displayOpts.removeListener('directed',   self.name)
 
     glresources.delete(self._vertexResourceName)
 
@@ -80,17 +79,16 @@ def compileShaders(self):
 
 def updateVertices(self):
     
-    image   = self.image
-    display = self.display
-    opts    = self.opts
+    image = self.image
+    opts  = self.displayOpts
 
     if self.lineVertices is None:
         self.lineVertices = glresources.get(
             self._vertexResourceName, gllinevector.GLLineVertices, self) 
 
-    newHash = (hash(display.transform)    ^
-               hash(display.resolution)   ^
-               hash(opts   .directed))
+    newHash = (hash(opts.transform)  ^
+               hash(opts.resolution) ^
+               hash(opts.directed))
 
     if hash(self.lineVertices) != newHash:
 
@@ -161,7 +159,7 @@ def draw(self, zpos, xform=None):
         gl.glTexCoordPointer(3, gl.GL_FLOAT, 0, texCoords)
 
     vertices = vertices.ravel('C')
-    v2d      = self.display.getTransform('voxel', 'display')
+    v2d      = opts.getTransform('voxel', 'display')
 
     if xform is None: xform = v2d
     else:             xform = transform.concat(v2d, xform)

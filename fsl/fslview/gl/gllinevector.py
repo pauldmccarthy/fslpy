@@ -38,14 +38,13 @@ class GLLineVertices(object):
         
     def refresh(self, glvec):
 
-        display = glvec.display
-        opts    = glvec.opts
-        image   = glvec.image
+        opts  = glvec.displayOpts
+        image = glvec.image
 
         # Extract a sub-sample of the vector image
         # at the current display resolution
         data, starts, steps = glroutines.subsample(image.data,
-                                                   display.resolution,
+                                                   opts.resolution,
                                                    image.pixdim)
 
         # Pull out the xyz components of the 
@@ -105,18 +104,18 @@ class GLLineVertices(object):
         self.texCoords = texCoords
         self.starts    = starts
         self.steps     = steps
-        self.__hash    = (hash(display.transform)  ^
-                          hash(display.resolution) ^
-                          hash(opts   .directed))
+        self.__hash    = (hash(opts.transform)  ^
+                          hash(opts.resolution) ^
+                          hash(opts.directed))
  
 
     def getVertices(self, glvec, zpos):
 
-        display = glvec.display
-        image   = glvec.image
-        xax     = glvec.xax
-        yax     = glvec.yax
-        zax     = glvec.zax
+        opts  = glvec.displayOpts
+        image = glvec.image
+        xax   = glvec.xax
+        yax   = glvec.yax
+        zax   = glvec.zax
 
         vertices  = self.vertices
         texCoords = self.texCoords
@@ -126,10 +125,10 @@ class GLLineVertices(object):
         # If in id/pixdim space, the display
         # coordinate system axes are parallel
         # to the voxeld coordinate system axes
-        if display.transform in ('id', 'pixdim'):
+        if opts.transform in ('id', 'pixdim'):
 
             # Turn the z position into a voxel index
-            if display.transform == 'pixdim':
+            if opts.transform == 'pixdim':
                 zpos = zpos / image.pixdim[zax]
 
             zpos = round(zpos)
@@ -155,8 +154,8 @@ class GLLineVertices(object):
             # in the display coordinate system
             coords = glroutines.calculateSamplePoints(
                 image.shape[ :3],
-                [display.resolution] * 3,
-                display.getTransform('voxel', 'display'),
+                [opts.resolution] * 3,
+                opts.getTransform('voxel', 'display'),
                 xax,
                 yax)[0]
             
@@ -165,7 +164,7 @@ class GLLineVertices(object):
             # transform that plane of display
             # coordinates into voxel coordinates
             coords = transform.transform(
-                coords, display.getTransform('display', 'voxel'))
+                coords, opts.getTransform('display', 'voxel'))
 
             # The voxel vertex matrix may have
             # been sub-sampled (see the
@@ -196,21 +195,19 @@ class GLLineVector(glvector.GLVector):
         
         glvector.GLVector.__init__(self, image, display)
         
-        self.opts = display.getDisplayOpts()
-        
         fslgl.gllinevector_funcs.init(self)
 
         def update(*a):
             self.onUpdate()
 
-        self.opts.addListener('lineWidth', self.name, update)
+        self.displayOpts.addListener('lineWidth', self.name, update)
 
         
     def destroy(self):
         glvector.GLVector.destroy(self)
         fslgl.gllinevector_funcs.destroy(self)
         
-        self.opts.removeListener('lineWidth', self.name)
+        self.displayOpts.removeListener('lineWidth', self.name)
 
 
     def getDataResolution(self, xax, yax):

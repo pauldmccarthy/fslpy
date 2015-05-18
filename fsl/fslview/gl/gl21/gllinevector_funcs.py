@@ -31,9 +31,8 @@ def init(self):
 
     self._vertexResourceName = '{}_{}_vertices'.format(
         type(self).__name__, id(self.image))
-    
-    display = self.display
-    opts    = self.opts
+
+    opts = self.displayOpts
 
     def vertexUpdate(*a):
         
@@ -41,9 +40,9 @@ def init(self):
         self.updateShaderState()
         self.onUpdate()
 
-    display.addListener('transform',  self.name, vertexUpdate)
-    display.addListener('resolution', self.name, vertexUpdate)
-    opts   .addListener('directed',   self.name, vertexUpdate)
+    opts.addListener('transform',  self.name, vertexUpdate)
+    opts.addListener('resolution', self.name, vertexUpdate)
+    opts.addListener('directed',   self.name, vertexUpdate)
 
     compileShaders(   self)
     updateShaderState(self)
@@ -55,9 +54,9 @@ def destroy(self):
     gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
     gl.glDeleteProgram(self.shaders)
 
-    self.display.removeListener('transform',  self.name)
-    self.display.removeListener('resolution', self.name)
-    self.opts   .removeListener('directed',   self.name)
+    self.displayOpts.removeListener('transform',  self.name)
+    self.displayOpts.removeListener('resolution', self.name)
+    self.displayOpts.removeListener('directed',   self.name)
 
     if self.display.softwareMode:
         glresources.delete(self._vertexResourceName)
@@ -149,8 +148,8 @@ def updateShaderState(self):
         
         directed  = opts.directed
         imageDims = self.image.pixdim[:3]
-        d2vMat    = display.getTransform('display', 'voxel')
-        v2dMat    = display.getTransform('voxel',   'display')
+        d2vMat    = opts.getTransform('display', 'voxel')
+        v2dMat    = opts.getTransform('voxel',   'display')
 
         imageDims = np.array(imageDims, dtype=np.float32)
         d2vMat    = np.array(d2vMat,    dtype=np.float32).ravel('C')
@@ -169,7 +168,7 @@ def updateVertices(self):
 
     image   = self.image
     display = self.display
-    opts    = self.opts
+    opts    = self.displayOpts
 
     if not display.softwareMode:
 
@@ -184,9 +183,9 @@ def updateVertices(self):
         self.lineVertices = glresources.get(
             self._vertexResourceName, gllinevector.GLLineVertices, self)
     
-    newHash = (hash(display.transform)  ^
-               hash(display.resolution) ^
-               hash(opts   .directed))
+    newHash = (hash(opts.transform)  ^
+               hash(opts.resolution) ^
+               hash(opts.directed))
 
     if hash(self.lineVertices) != newHash:
 
@@ -217,7 +216,7 @@ def softwareDraw(self, zpos, xform=None):
     vertices  = vertices .ravel('C')
     texCoords = texCoords.ravel('C')
 
-    v2d = self.display.getTransform('voxel', 'display')
+    v2d = opts.getTransform('voxel', 'display')
 
     if xform is None: xform = v2d
     else:             xform = transform.concat(v2d, xform)
@@ -252,14 +251,13 @@ def softwareDraw(self, zpos, xform=None):
 def hardwareDraw(self, zpos, xform=None):
 
     image      = self.image
-    display    = self.display
     opts       = self.displayOpts
-    v2dMat     = self.display.getTransform('voxel', 'display')
-    resolution = np.array([display.resolution] * 3)
+    v2dMat     = opts.getTransform('voxel', 'display')
+    resolution = np.array([opts.resolution] * 3)
 
-    if display.transform == 'id':
+    if opts.transform == 'id':
         resolution = resolution / min(image.pixdim[:3])
-    elif display.transform == 'pixdim':
+    elif opts.transform == 'pixdim':
         resolution = map(lambda r, p: max(r, p), resolution, image.pixdim[:3])
 
     vertices = glroutines.calculateSamplePoints(
