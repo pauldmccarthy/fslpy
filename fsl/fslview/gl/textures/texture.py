@@ -166,7 +166,6 @@ class Texture2D(Texture):
         data = self.__data
 
         if data is not None:
-            print data.shape, data.dtype
             data = data.ravel('F')
 
         log.debug('Configuring {} ({}) with size {}x{}'.format(
