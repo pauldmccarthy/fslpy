@@ -326,3 +326,41 @@ def displayRangeToBricon(dataRange, displayRange):
     contrast   = 1.0 - contrast
 
     return brightness, contrast
+
+
+def applyBricon(rgb, brightness, contrast):
+    """Applies the given ``brightness`` and ``contrast`` levels to
+    the given ``rgb`` colour.
+
+    :arg rgb:        A sequence of three floating point numbers in the 
+                     range ``[0, 1]`` specifying an RGB value.
+
+    :arg brightness: A brightness ledvel in the range ``[0, 1]``.
+
+    :arg contrast:   A brightness ledvel in the range ``[0, 1]``.
+    """
+    rgb = np.array(rgb)
+
+    # The brightness is applied as a linear offset,
+    # with 0.5 equivalent to an offset of 0.0.
+    offset = (brightness * 2 - 1)
+
+    # If the contrast lies between 0.0 and 0.5, it is
+    # applied to the colour as a linear scaling factor.
+    scale = contrast * 2
+
+    # If the contrast lies between 0.5 and 0.1, it
+    # is applied as an exponential scaling factor,
+    # so lower values (closer to 0.5) have less of
+    # an effect than higher values (closer to 1.0).
+    if (contrast > 0.5):
+        scale += np.exp((contrast - 0.5) * 6) - 1
+
+    # The contrast factor scales the existing colour
+    # range, but keeps the new range centred at 0.5.
+    rgb += offset
+  
+    rgb  = np.clip(rgb, 0.0, 1.0)
+    rgb  = (rgb - 0.5) * scale + 0.5
+  
+    return np.clip(rgb, 0.0, 1.0)

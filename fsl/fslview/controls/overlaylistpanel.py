@@ -194,10 +194,10 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
                     self._displayCtx.selectedOverlay))
 
 
-    def _overlayNameChanged(self, value, valid, overlay, propName):
+    def _overlayNameChanged(self, value, valid, display, propName):
 
+        overlay = display.getOverlay()
         idx     = self._displayCtx.getOverlayOrder(overlay)
-        display = self._displayCtx.getDisplay(     overlay)
         name    = display.name
         
         if name is None:

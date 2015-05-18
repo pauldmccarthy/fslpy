@@ -190,7 +190,7 @@ class CanvasPanel(viewpanel.ViewPanel):
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
                 fslcontrols.AtlasPanel),
             'toggleDisplayProperties' : lambda *a: self.togglePanel(
-                fslcontrols.ImageDisplayToolBar, False, self),
+                fslcontrols.OverlayDisplayToolBar, False, self),
             'toggleLocationPanel'     : lambda *a: self.togglePanel(
                 fslcontrols.LocationPanel),
         }.items() + extraActions.items())

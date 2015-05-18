@@ -18,6 +18,7 @@ from volumeopts     import VolumeOpts
 from maskopts       import MaskOpts
 from vectoropts     import VectorOpts
 from vectoropts     import LineVectorOpts
+from modelopts      import ModelOpts
 
 
 ALL_OVERLAY_TYPES = list(set(

@@ -12,6 +12,7 @@ import OpenGL.GL as gl
 import                            globject
 import fsl.utils.transform     as transform
 import fsl.fslview.gl.routines as glroutines
+import fsl.fslview.colourmaps  as fslcmaps
 
 
 class GLModel(globject.GLObject):
@@ -70,6 +71,9 @@ class GLModel(globject.GLObject):
 
     def drawFilled(self, zpos, xform):
 
+        display = self.display 
+        opts    = self.opts
+
         xax = self.xax
         yax = self.yax
         zax = self.zax
@@ -96,7 +100,6 @@ class GLModel(globject.GLObject):
             clipPlaneVerts = transform.transform(clipPlaneVerts, xform)
             vertices       = transform.transform(vertices, xform).ravel('C')
             
-
         planeEq = glroutines.planeEquation(clipPlaneVerts[0, :],
                                            clipPlaneVerts[1, :],
                                            clipPlaneVerts[2, :])
@@ -143,8 +146,12 @@ class GLModel(globject.GLObject):
 
         gl.glStencilFunc(gl.GL_NOTEQUAL, 0, 255)
 
-        colour    = self.opts.colour
-        colour[3] = self.display.alpha
+        colour = list(fslcmaps.applyBricon(
+            opts.colour[:3],
+            display.brightness / 100.0,
+            display.contrast   / 100.0))
+        
+        colour.append(display.alpha / 100.0)
         
         gl.glColor(*colour)
         gl.glBegin(gl.GL_QUADS)
@@ -160,6 +167,10 @@ class GLModel(globject.GLObject):
 
     
     def drawOutline(self, zpos, xform):
+
+        display = self.display
+        opts    = self.opts
+        
         xax = self.xax
         yax = self.yax
         zax = self.zax
@@ -242,9 +253,14 @@ class GLModel(globject.GLObject):
 
         gl.glStencilFunc(gl.GL_EQUAL, 3, 255)
 
-        colour    = self.opts.colour
-        colour[3] = self.display.alpha
+        colour = list(fslcmaps.applyBricon(
+            opts.colour[:3],
+            display.brightness / 100.0,
+            display.contrast   / 100.0))
         
+        colour.append(display.alpha / 100.0) 
+        
+        gl.glColor(*colour)        
         gl.glColor(*colour)
         gl.glBegin(gl.GL_QUADS)
 
@@ -256,10 +272,6 @@ class GLModel(globject.GLObject):
 
         gl.glStencilFunc(gl.GL_EQUAL, 1, 255)
 
-        colour    = self.opts.colour
-        colour[3] = self.display.alpha
-        
-        gl.glColor(*colour)
         gl.glBegin(gl.GL_QUADS)
 
         gl.glVertex3f(*clipPlaneVerts[0, :])

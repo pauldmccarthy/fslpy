@@ -31,6 +31,7 @@ from fsl.fslview.displaycontext            import VolumeOpts
 from fsl.fslview.displaycontext            import MaskOpts
 from fsl.fslview.displaycontext            import VectorOpts
 from fsl.fslview.displaycontext            import LineVectorOpts
+from fsl.fslview.displaycontext            import ModelOpts
 
 from fsl.fslview.displaycontext            import SceneOpts
 from fsl.fslview.displaycontext            import OrthoOpts
@@ -164,7 +165,11 @@ MaskOptsToolBarLayout = [
 VectorOptsToolBarLayout = [
     widget(VectorOpts, 'modulate'),
     widget(VectorOpts, 'modThreshold', showLimits=False, spin=False),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')] 
+    actions.ActionButton(OverlayDisplayToolBar, 'more')]
+
+ModelOptsToolBarLayout = [
+    widget(ModelOpts, 'colour'),
+    widget(ModelOpts, 'outline')] 
 
 
 DisplayLayout = props.VGroup(
@@ -252,6 +257,7 @@ layouts = td.TypeDict({
     ('OverlayDisplayToolBar', 'VolumeOpts')     : VolumeOptsToolBarLayout,
     ('OverlayDisplayToolBar', 'MaskOpts')       : MaskOptsToolBarLayout,
     ('OverlayDisplayToolBar', 'VectorOpts')     : VectorOptsToolBarLayout,
+    ('OverlayDisplayToolBar', 'ModelOpts')      : ModelOptsToolBarLayout,
 
     ('OverlayDisplayPanel',   'Display')        : DisplayLayout,
     ('OverlayDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
