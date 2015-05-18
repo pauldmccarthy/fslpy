@@ -57,7 +57,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         
         self._overlayList.addListener('overlays',
                                       self._name,
-                                      self._selectedImageChanged)
+                                      self._selectedOverlayChanged)
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._selectedOverlayChanged)
@@ -120,19 +120,19 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self._selectedOverlay = None
             
         overlay = self._displayCtx.getSelectedOverlay()
-
+ 
         if overlay is None:
-            return
-
-        # TODO support for other overlay types
-        if not isinstance(overlay, fslimage.Image):
+            self._refreshColourBar()
             return
 
         display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
+        # TODO support for other overlay types
         # TODO support for other types (where applicable)
-        if not isinstance(opts, volumeopts.VolumeOpts):
+        if not isinstance(overlay, fslimage.Image) or \
+           not isinstance(opts,    volumeopts.VolumeOpts):
+            self._refreshColourBar()
             return
 
         self._selectedOverlay = overlay
@@ -149,7 +149,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
                             self._refreshColourBar)
         display.addListener('name',
                             self._name,
-                            self._imageNameChanged)
+                            self._overlayNameChanged)
 
         self._overlayNameChanged()
         self._displayRangeChanged()

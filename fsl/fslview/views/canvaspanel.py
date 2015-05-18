@@ -289,7 +289,7 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         if self.__colourBar is None:
             self.__colourBar = colourbarpanel.ColourBarPanel(
-                self.__canvasContainer, self._imageList, self._displayCtx)
+                self.__canvasContainer, self._overlayList, self._displayCtx)
 
         self.__opts.bindProps('colourBarLabelSide',
                               self.__colourBar,
