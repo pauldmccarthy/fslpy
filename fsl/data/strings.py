@@ -229,9 +229,10 @@ properties = TypeDict({
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
 
-    'ModelOpts.colour'   : 'Colour',
-    'ModelOpts.outline'  : 'Show outline only',
-    'ModelOpts.refImage' : 'Reference image',
+    'ModelOpts.colour'     : 'Colour',
+    'ModelOpts.outline'    : 'Show outline only',
+    'ModelOpts.refImage'   : 'Reference image',
+    'ModelOpts.coordSpace' : 'Model coordinate space',
 })
 
 

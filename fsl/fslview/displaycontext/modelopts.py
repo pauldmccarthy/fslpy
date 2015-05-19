@@ -5,6 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import copy
+
 import numpy as np
 
 import props
@@ -14,17 +16,21 @@ import display as fsldisplay
 import fsl.data.image   as fslimage
 import fsl.data.strings as strings
 
+import volumeopts
+
 
 class ModelOpts(fsldisplay.DisplayOpts):
 
-    colour  = props.Colour()
-    outline = props.Boolean(default=False)
+    colour   = props.Colour()
+    outline  = props.Boolean(default=False)
 
     refImage = props.Choice()
 
+    coordSpace = copy.copy(volumeopts.ImageOpts.transform)
+
 
     def __init__(self, *args, **kwargs):
-        
+
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
         
         colour                  = np.random.random(3)
@@ -95,3 +101,11 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
         if imgVal in overlays: self.refImage = imgVal
         else:                  self.refImage = 'none' 
+
+# The coordSpace property replicates the ImageOpts.transform
+# property. But, where the ImageOpts.transform property
+# defaults to 'pixdim' (so that volumes are displayed with
+# scaled voxels by default), the coordSpace property needs to
+# default to 'id' (because FIRST .vtk model coordinates are
+# in terms of the source image voxel coordinates).
+ModelOpts.coordSpace.setConstraint(None, 'default', 'id')

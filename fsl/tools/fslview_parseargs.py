@@ -913,8 +913,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     # per-overlay display arguments
     for i, overlay in enumerate(overlayList):
 
-        display      = displayCtx.getDisplay(overlay)
-        display.name = overlay.name
+        display = displayCtx.getDisplay(overlay)
         
         _applyArgs(args.overlays[i], display)
 

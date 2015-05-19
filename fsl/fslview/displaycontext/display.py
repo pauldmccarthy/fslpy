@@ -133,6 +133,7 @@ class Display(props.SyncableHasProperties):
         self.__overlay     = overlay
         self.__overlayList = overlayList
         self.__displayCtx  = displayCtx
+        self.name          = overlay.name
 
         # Populate the possible choices
         # for the overlayType property

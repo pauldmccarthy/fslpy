@@ -230,6 +230,14 @@ LineVectorOptsLayout = props.VGroup((
     widget(LineVectorOpts, 'modThreshold', showLimits=False, spin=False)))
 
 
+ModelOptsLayout = props.VGroup((
+    widget(ModelOpts, 'colour'),
+    widget(ModelOpts, 'outline'),
+    widget(ModelOpts, 'refImage'),
+    widget(ModelOpts, 'coordSpace',
+           visibleWhen=lambda o: o.refImage != 'none')))
+
+
 ##########################
 # Histogram toolbar/panels
 ##########################
@@ -264,7 +272,8 @@ layouts = td.TypeDict({
     ('OverlayDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
     ('OverlayDisplayPanel',   'MaskOpts')       : MaskOptsLayout,
     ('OverlayDisplayPanel',   'VectorOpts')     : VectorOptsLayout,
-    ('OverlayDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout, 
+    ('OverlayDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout,
+    ('OverlayDisplayPanel',   'ModelOpts')      : ModelOptsLayout, 
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,
