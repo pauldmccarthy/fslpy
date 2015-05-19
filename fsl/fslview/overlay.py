@@ -38,6 +38,11 @@ class OverlayList(props.HasProperties):
       - ``name`` ...
     
       - ``dataSoruce`` ..
+
+
+    Furthermore, all overlay types must be able to be created with a single
+    __init__ parameter, which is a string specifying the data source location
+    (e.g. a file).
     """
 
 
@@ -73,11 +78,11 @@ class OverlayList(props.HasProperties):
 
 
     def find(self, name):
-        """Returns the first overlay with the given name, or ``None`` if
-        there is no overlay with said name.
+        """Returns the first overlay with the given ``name`` or ``dataSource``,
+        or ``None`` if there is no overlay with said ``name``/``dataSource``.
         """
         for overlay in self.overlays:
-            if overlay.name == name:
+            if overlay.name == name or overlay.dataSource == name:
                 return overlay
         return None
             

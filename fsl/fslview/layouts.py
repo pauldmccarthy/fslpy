@@ -170,7 +170,7 @@ VectorOptsToolBarLayout = [
 ModelOptsToolBarLayout = [
     widget(ModelOpts, 'colour'),
     widget(ModelOpts, 'outline'),
-    widget(ModelOpts, 'image')] 
+    widget(ModelOpts, 'refImage')] 
 
 
 DisplayLayout = props.VGroup(

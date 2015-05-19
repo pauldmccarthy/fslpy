@@ -50,7 +50,7 @@ import props
 import fsl.utils.typedict  as td
 import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
-import fsl.data.model      as model
+import fsl.data.model      as fslmodel
 import fsl.utils.transform as transform
 
 # The colour maps module needs to be imported
@@ -137,7 +137,8 @@ OPTIONS = td.TypeDict({
                        'modulate',
                        'modThreshold'],
     'ModelOpts'     : ['colour',
-                       'outline'],
+                       'outline',
+                       'refImage'],
 })
 
 # Headings for each of the option groups
@@ -227,6 +228,7 @@ ARGUMENTS = td.TypeDict({
 
     'ModelOpts.colour'       : ('mc', 'modelColour'),
     'ModelOpts.outline'      : ('mo', 'modelOutline'),
+    'ModelOpts.refImage'     : ('mri', 'refImage'),
 })
 
 # Help text for all of the options
@@ -305,6 +307,7 @@ HELP = td.TypeDict({
 
     'ModelOpts.colour'     : 'Model colour',
     'ModelOpts.outline'    : 'Show model outline',
+    'ModelOpts.refImage'   : 'Reference image for model',
 })
 
 
@@ -324,7 +327,7 @@ EXTRA = td.TypeDict({
 # complicated property transformations (i.e.
 # non-reversible ones), you'll need to have
 # an inverse transforms dictionary
-def _modTrans(i):
+def _imageTrans(i):
     if i == 'none': return None
     else:           return i.overlayFile
     
@@ -335,11 +338,12 @@ TRANSFORMS = td.TypeDict({
     'OrthoOpts.showZCanvas' : lambda b: not b,
     'OrthoOpts.showLabels'  : lambda b: not b,
 
-    # The modulate property is handled specially
+    # These properties are handled specially
     # when reading in command line arguments -
-    # this transform function is only used when
-    # generating arguments
-    'VectorOpts.modulate'   : _modTrans,
+    # the transform function specified here
+    # is only used when generating arguments
+    'VectorOpts.modulate'   : _imageTrans,
+    'ModelOpts.refImage'    : _imageTrans,
 })
 
 
@@ -499,23 +503,29 @@ def _configOverlayParser(ovlParser):
 
     for target, parser in targets:
 
-        propNames = list(OPTIONS[target])
-
-        # The VectorOpts.modulate option needs
-        # special treatment - see below
-        addModulate = False
+        propNames      = list(OPTIONS[target])
+        specialOptions = []
+        
+        # The VectorOpts.modulate
+        # option needs special treatment
         if target == VectorOpts and 'modulate' in propNames:
-            addModulate = True
+            specialOptions.append('modulate')
             propNames.remove('modulate')
+
+        # The same goes for the
+        # ModelOpts.refImage option
+        if target == ModelOpts and 'refImage' in propNames:
+            specialOptions.append('refImage')
+            propNames.remove('refImage') 
 
         _configParser(target, parser, propNames)
 
-        # We need to process the modulate option
+        # We need to process the special options
         # manually, rather than using the props.cli
         # module - see the handleOverlayArgs function.
-        if addModulate:
-            shortArg, longArg = ARGUMENTS[target, 'modulate']
-            helpText          = HELP[     target, 'modulate']
+        for opt in specialOptions:
+            shortArg, longArg = ARGUMENTS[target, opt]
+            helpText          = HELP[     target, opt]
 
             shortArg =  '-{}'.format(shortArg)
             longArg  = '--{}'.format(longArg)
@@ -643,8 +653,10 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # The VectorOpts.modulate option allows
     # the user to specify another image file
     # by which the vector image colours are
-    # to be modulated
+    # to be modulated. The same goes for the
+    # ModelOpts.refImage option
     fileOpts.append(ARGUMENTS[fsldisplay.VectorOpts, 'modulate'])
+    fileOpts.append(ARGUMENTS[fsldisplay.ModelOpts,  'refImage']) 
 
     # There is a possibility that the user
     # may specify an overlay name which is the
@@ -894,7 +906,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
     overlays = iio.loadImages(volOverlays, **kwargs)
 
-    overlays.extend([model.PolygonModel(o) for o in nonVolOverlays])
+    overlays.extend([fslmodel.PolygonModel(o) for o in nonVolOverlays])
 
     overlayList.extend(overlays)
 
@@ -926,30 +938,58 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
         # If it can, I add it to the image list - the
         # applyArguments function will apply the
         # value. If the modulate file is not valid,
-        # I print a warning, and clear the modulate
-        # option.
+        # an error is raised.
         if isinstance(opts, fsldisplay.VectorOpts) and \
            isinstance(overlay, fslimage.Image)     and \
            args.overlays[i].modulate is not None:
 
-            try:
-                modImage = fslimage.Image(args.images[i].modulate)
-                
-                if modImage.shape != overlay.shape[ :3]:
-                    raise RuntimeError(
-                        'Image {} cannot be used to modulate {} - '
-                        'dimensions don\'t match'.format(modImage, overlay))
+            modImage = _findOrLoad(overlayList,
+                                   args.overlays[i].modulate,
+                                   fslimage.Image)
 
-                overlayList.insert(0, modImage)
-                opts.modulate = modImage
-                args.overlays[i].modulate = None
+            if modImage.shape != overlay.shape[ :3]:
+                raise RuntimeError(
+                    'Image {} cannot be used to modulate {} - '
+                    'dimensions don\'t match'.format(modImage, overlay))
 
-                log.debug('Set {} to be modulated by {}'.format(
-                    overlay, modImage))
-                
-            except Exception as e:
-                log.warn(e) 
+            opts.modulate             = modImage
+            args.overlays[i].modulate = None
 
-        # After handling the special cases above, we can
-        # apply the CLI options to the Opts instance
+            log.debug('Set {} to be modulated by {}'.format(
+                overlay, modImage))
+
+        # A similar process is followed for 
+        # the ModelOpts.refImage property
+        if isinstance(overlay, fslmodel.PolygonModel) and \
+           isinstance(opts,    fsldisplay.ModelOpts)  and \
+           args.overlays[i].refImage is not None:
+
+            refImage = _findOrLoad(overlayList,
+                                   args.overlays[i].refImage,
+                                   fslimage.Image)
+
+            opts.refImage             = refImage
+            args.overlays[i].refImage = None
+            
+            log.debug('Set {} reference image to {}'.format(
+                overlay, refImage)) 
+
+        # After handling the special cases
+        # above, we can apply the CLI
+        # options to the Opts instance
         _applyArgs(args.overlays[i], opts)
+
+        
+def _findOrLoad(overlayList, overlayFile, overlayType):
+    """Searches for the given ``overlayFile`` in the ``overlayList``. If not
+    present, it is created using the given ``overlayType`` constructor, and
+    inserted into the ``overlayList``.
+    """
+
+    overlay = overlayList.find(overlayFile)
+
+    if overlay is None:
+        overlay = overlayType(overlayFile)
+        overlayList.insert(0, overlay)
+
+    return overlay

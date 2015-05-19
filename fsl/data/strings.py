@@ -229,9 +229,9 @@ properties = TypeDict({
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
 
-    'ModelOpts.colour'  : 'Colour',
-    'ModelOpts.outline' : 'Show outline only',
-    'ModelOpts.image'   : 'Reference image',
+    'ModelOpts.colour'   : 'Colour',
+    'ModelOpts.outline'  : 'Show outline only',
+    'ModelOpts.refImage' : 'Reference image',
 })
 
 
@@ -293,7 +293,7 @@ choices = TypeDict({
     'ImageOpts.transform.pixdim' : 'Use pixdims only',
     'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
 
-    'ModelOpts.image.none' : 'None',
+    'ModelOpts.refImage.none' : 'None',
 
     'Display.interpolation.none'   : 'No interpolation', 
     'Display.interpolation.linear' : 'Linear interpolation', 

@@ -20,7 +20,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
     colour  = props.Colour()
     outline = props.Boolean(default=False)
 
-    image   = props.Choice()
+    refImage = props.Choice()
 
 
     def __init__(self, *args, **kwargs):
@@ -64,8 +64,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
         associated with the model.
         """
         
-        imgProp  = self.getProp('image')
-        imgVal   = self.image
+        imgProp  = self.getProp('refImage')
+        imgVal   = self.refImage
         overlays = self.displayCtx.getOrderedOverlays()
 
         # the overlay for this ModelOpts
@@ -75,7 +75,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
             return
 
         imgOptions = ['none']
-        imgLabels  = [strings.choices['ModelOpts.image.none']]
+        imgLabels  = [strings.choices['ModelOpts.refImage.none']]
 
         for overlay in overlays:
             
@@ -93,5 +93,5 @@ class ModelOpts(fsldisplay.DisplayOpts):
             
         imgProp.setChoices(imgOptions, imgLabels, self)
 
-        if imgVal in overlays: self.image = imgVal
-        else:                  self.image = 'none' 
+        if imgVal in overlays: self.refImage = imgVal
+        else:                  self.refImage = 'none' 
