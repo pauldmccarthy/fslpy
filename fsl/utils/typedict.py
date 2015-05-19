@@ -6,6 +6,8 @@
 #
 
 import logging
+
+
 log = logging.getLogger(__name__)
 
 
@@ -49,12 +51,22 @@ class TypeDict(object):
         return key
 
         
-    def get(self, key, default):
-        try:             return self.__getitem__(key)
+    def get(self, key, default=None, allhits=False):
+        """Retrieve the value associated with the given key. If
+        no value is present, return the specified ``default`` value,
+        which itself defaults to ``None``.
+
+        If the specified key contains a class or instance, and the
+        ``allhits`` argument evaluates to ``True``, the entire class
+        hierarchy is searched, and all values present for the class,
+        and any base class, are returned as a sequence.
+        """
+
+        try:             return self.__getitem__(key, allhits)
         except KeyError: return default
 
         
-    def __getitem__(self, key):
+    def __getitem__(self, key, allhits=False):
         
         origKey = key
         key     = self.__tokenifyKey(key)
@@ -84,6 +96,8 @@ class TypeDict(object):
                 bases .append(None)
 
         key = newKey
+
+        hits = []
             
         while True:
 
@@ -94,9 +108,16 @@ class TypeDict(object):
             else:             lKey = tuple(key)
 
             val = self.__dict.get(lKey, None)
-            
+
+            # We've found a value for the key
             if val is not None:
-                return val
+
+                # If allhits is false, just return the value
+                if not allhits: return val
+
+                # Otherwise, accumulate the value, and keep
+                # searching
+                else:           hits.append(val)
 
             # No more base classes to search for - there
             # really is no value associated with this key
@@ -116,10 +137,14 @@ class TypeDict(object):
                     newKey    = list(key)
                     newKey[i] = elemBase
 
-                    try:
-                        return self.__getitem__(tuple(newKey))
-                    except KeyError:
-                        continue
+                    try:             val = self.__getitem__(tuple(newKey))
+                    except KeyError: continue
+
+                    if not allhits: return val
+                    else:           hits.append(val)
 
             # No value for any base classes either
-            raise KeyError(origKey)
+            if len(hits) == 0:
+                raise KeyError(origKey)
+            else:
+                return hits
