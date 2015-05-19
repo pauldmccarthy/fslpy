@@ -22,9 +22,13 @@ class ModelOpts(fsldisplay.DisplayOpts):
         
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
         
-        colour      = np.random.random(4)
-        colour[3]   = 1.0
-        self.colour = colour
+        colour                  = np.random.random(3)
+        colour[colour.argmax()] = 1
+        colour[colour.argmin()] = 0
+        
+        np.random.shuffle(colour)
+
+        self.colour = np.concatenate((colour, [1.0]))
 
 
     def getDisplayBounds(self):
