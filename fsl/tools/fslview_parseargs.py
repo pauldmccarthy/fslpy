@@ -66,6 +66,13 @@ import fsl.fslview.displaycontext as fsldisplay
 log = logging.getLogger(__name__)
 
 
+def concat(lists):
+    """Concatenates a list of lists. Used a few times, and writing
+    concat(lists) is nicer-looking than writing lambda blah blah each time.
+    """
+    return reduce(lambda a, b: a + b, lists)
+
+
 # Names of all of the property which are 
 # customisable via command line arguments.
 OPTIONS = td.TypeDict({
@@ -140,7 +147,7 @@ GROUPNAMES = td.TypeDict({
     'LightBoxOpts' : 'LightBox display options',
     
     'Display'      : 'Overlay display options',
-    'ImageOpts'    : 'Image options',
+    'ImageOpts'    : 'Options for NIFTI images',
     'VolumeOpts'   : 'Volume options',
     'VectorOpts'   : 'Vector options',
     'MaskOpts'     : 'Mask options',
@@ -466,22 +473,31 @@ def _configOverlayParser(ovlParser):
     """
 
     Display    = fsldisplay.Display
+    ImageOpts  = fsldisplay.ImageOpts
     VolumeOpts = fsldisplay.VolumeOpts
     VectorOpts = fsldisplay.VectorOpts
     MaskOpts   = fsldisplay.MaskOpts
+    ModelOpts  = fsldisplay.ModelOpts
     
     dispDesc = 'Each display option will be applied to the '\
                'overlay which is listed before that option.'
 
     dispParser = ovlParser.add_argument_group(GROUPNAMES[Display],
                                               dispDesc)
-    volParser  = ovlParser.add_argument_group(GROUPNAMES[VolumeOpts])
-    vecParser  = ovlParser.add_argument_group(GROUPNAMES[VectorOpts])
-    maskParser = ovlParser.add_argument_group(GROUPNAMES[MaskOpts])
+    imgParser   = ovlParser.add_argument_group(GROUPNAMES[ImageOpts])
+    volParser   = ovlParser.add_argument_group(GROUPNAMES[VolumeOpts])
+    vecParser   = ovlParser.add_argument_group(GROUPNAMES[VectorOpts])
+    maskParser  = ovlParser.add_argument_group(GROUPNAMES[MaskOpts])
+    modelParser = ovlParser.add_argument_group(GROUPNAMES[ModelOpts])
 
-    for target, parser in zip(
-            [Display,    VolumeOpts, VectorOpts, MaskOpts],
-            [dispParser, volParser,  vecParser,  maskParser]):
+    targets = [(Display,    dispParser),
+               (ImageOpts,  imgParser),
+               (VolumeOpts, volParser),
+               (VectorOpts, vecParser),
+               (MaskOpts,   maskParser),
+               (ModelOpts,  modelParser)]
+
+    for target, parser in targets:
 
         propNames = list(OPTIONS[target])
 
@@ -660,8 +676,8 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
             ovlIdxs.append(i)
         except:
             
-            log.warn('Applying hack to load VTK model files')
             if argv[i].endswith('vtk'):
+                log.warn('Applying hack to load VTK model files')
                 ovlIdxs.append(i)
             continue
         
@@ -723,7 +739,7 @@ def _applyArgs(args, target, propNames=None):
     """Applies the given command line arguments to the given target object."""
 
     if propNames is None:
-        propNames = OPTIONS[target]
+        propNames = concat(OPTIONS.get(target, allhits=True))
         
     longArgs  = {name : ARGUMENTS[target, name][1] for name in propNames}
     xforms    = {}
@@ -732,6 +748,10 @@ def _applyArgs(args, target, propNames=None):
         xform = TRANSFORMS.get((target, name), None)
         if xform is not None:
             xforms[name] = xform
+
+    log.debug('Applying arguments to {}: {}'.format(
+        type(target).__name__,
+        propNames))
 
     props.applyArguments(target,
                          args,
@@ -747,7 +767,7 @@ def _generateArgs(source, propNames=None):
     """
 
     if propNames is None:
-        propNames = OPTIONS[source]
+        propNames = OPTIONS.get(source, allhits=True)
         
     longArgs  = {name : ARGUMENTS[source, name][1] for name in propNames}
     xforms    = {}
@@ -803,10 +823,7 @@ def applySceneArgs(args, overlayList, displayCtx, sceneOpts):
 
         displayCtx.location.xyz = loc
 
-    # It is assuemd that the given sceneOpts 
-    # object is a subclass of SceneOpts
-    sceneProps  = OPTIONS['SceneOpts'] + OPTIONS[sceneOpts]
-    _applyArgs(args, sceneOpts, sceneProps)
+    _applyArgs(args, sceneOpts)
 
 
 def generateSceneArgs(overlayList, displayCtx, sceneOpts):
