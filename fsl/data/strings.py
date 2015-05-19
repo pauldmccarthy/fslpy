@@ -231,6 +231,7 @@ properties = TypeDict({
 
     'ModelOpts.colour'  : 'Colour',
     'ModelOpts.outline' : 'Show outline only',
+    'ModelOpts.image'   : 'Reference image',
 })
 
 
@@ -291,6 +292,8 @@ choices = TypeDict({
     'ImageOpts.transform.affine' : 'Use qform/sform transformation matrix',
     'ImageOpts.transform.pixdim' : 'Use pixdims only',
     'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
+
+    'ModelOpts.image.none' : 'None',
 
     'Display.interpolation.none'   : 'No interpolation', 
     'Display.interpolation.linear' : 'Linear interpolation', 

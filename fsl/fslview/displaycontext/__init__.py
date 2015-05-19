@@ -14,6 +14,7 @@ from display        import Display
 from sceneopts      import SceneOpts
 from orthoopts      import OrthoOpts
 from lightboxopts   import LightBoxOpts
+from volumeopts     import ImageOpts
 from volumeopts     import VolumeOpts
 from maskopts       import MaskOpts
 from vectoropts     import VectorOpts

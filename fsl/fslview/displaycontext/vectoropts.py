@@ -73,7 +73,7 @@ class VectorOpts(volumeopts.ImageOpts):
         self.overlayList.removeListener('overlays', self.name)
 
         for overlay in self.overlayList:
-            overlay.removeListeneR('name', self.name)
+            overlay.removeListener('name', self.name)
 
         
     def __overlayListChanged(self, *a):
