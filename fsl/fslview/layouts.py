@@ -176,10 +176,7 @@ ModelOptsToolBarLayout = [
 DisplayLayout = props.VGroup(
     (widget(Display, 'name'),
      widget(Display, 'overlayType'),
-     widget(Display, 'resolution',    showLimits=False),
-     widget(Display, 'transform'),
      widget(Display, 'interpolation'),
-     widget(Display, 'volume',        showLimits=False),
      widget(Display, 'enabled'),
      widget(Display, 'alpha',         showLimits=False, editLimits=False),
      widget(Display, 'brightness',    showLimits=False, editLimits=False),
@@ -187,19 +184,28 @@ DisplayLayout = props.VGroup(
 
 
 VolumeOptsLayout = props.VGroup(
-    (widget(VolumeOpts, 'cmap'),
+    (widget(VolumeOpts, 'resolution',    showLimits=False),
+     widget(VolumeOpts, 'transform'),
+     widget(VolumeOpts, 'volume',        showLimits=False),
+     widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
      widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
      widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)))
 
 
 MaskOptsLayout = props.VGroup(
-    (widget(MaskOpts, 'colour'),
+    (widget(VolumeOpts, 'resolution',    showLimits=False),
+     widget(VolumeOpts, 'transform'),
+     widget(VolumeOpts, 'volume',        showLimits=False),
+     widget(MaskOpts, 'colour'),
      widget(MaskOpts, 'invert'),
      widget(MaskOpts, 'threshold', showLimits=False)))
 
 
 VectorOptsLayout = props.VGroup((
+    widget(VolumeOpts, 'resolution',    showLimits=False),
+    widget(VolumeOpts, 'transform'),
+    widget(VolumeOpts, 'volume',        showLimits=False),
     props.HGroup((
         widget(VectorOpts, 'xColour'),
         widget(VectorOpts, 'yColour'),
@@ -214,6 +220,9 @@ VectorOptsLayout = props.VGroup((
     widget(VectorOpts, 'modThreshold', showLimits=False, spin=False)))
 
 LineVectorOptsLayout = props.VGroup((
+    widget(VolumeOpts, 'resolution',    showLimits=False),
+    widget(VolumeOpts, 'transform'),
+    widget(VolumeOpts, 'volume',        showLimits=False),
     props.HGroup((
         widget(LineVectorOpts, 'xColour'),
         widget(LineVectorOpts, 'yColour'),

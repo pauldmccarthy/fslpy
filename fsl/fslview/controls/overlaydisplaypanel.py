@@ -14,9 +14,9 @@ import logging
 import wx
 import props
 
-import fsl.data.image     as fslimage
-import fsl.fslview.panel  as fslpanel
-import overlayselectpanel as overlayselect
+import fsl.fslview.panel          as fslpanel
+import fsl.fslview.displaycontext as fsldisplay
+import overlayselectpanel         as overlayselect
 
 
 log = logging.getLogger(__name__)
@@ -65,6 +65,9 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         displayCtx .addListener('selectedOverlay',
                                  self._name,
                                  self._selectedOverlayChanged)
+        displayCtx .addListener('overlayOrder', 
+                                 self._name,
+                                 self._selectedOverlayChanged) 
         overlayList.addListener('overlays',
                                  self._name,
                                  self._selectedOverlayChanged)
@@ -109,15 +112,21 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
 
         if lastOverlay is not None:
             lastDisplay = self._displayCtx.getDisplay(lastOverlay)
+            lastOpts    = lastDisplay.getDisplayOpts()
             lastDisplay.removeListener('overlayType', self._name)
-            lastDisplay.removeListener('transform',   self._name)
+
+            if isinstance(lastOpts, fsldisplay.ImageOpts):
+                lastOpts.removeListener('transform', self._name)
 
         display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
             
         display.addListener('overlayType',
                             self._name,
                             lambda *a: self._updateProps(self.optsPanel, True))
-        display.addListener('transform', self._name, self._transformChanged)
+
+        if isinstance(opts, fsldisplay.ImageOpts):
+            opts.addListener('transform', self._name, self._transformChanged)
         
         self._lastOverlay = overlay
         self._updateProps(self.dispPanel, False)
@@ -131,17 +140,17 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         """
         overlay = self._displayCtx.getSelectedOverlay()
         display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
 
-        # TODO necessary for other overlay types?
-        if not isinstance(overlay, fslimage.Image):
+        if not isinstance(opts, fsldisplay.ImageOpts):
             return
 
         choices = display.getProp('interpolation').getChoices(display)
 
-        if  display.transform in ('none', 'pixdim'):
+        if  opts.transform in ('none', 'pixdim'):
             display.interpolation = 'none'
             
-        elif display.transform == 'affine':
+        elif opts.transform == 'affine':
             if 'spline' in choices: display.interpolation = 'spline'
             else:                   display.interpolation = 'linear'
 
