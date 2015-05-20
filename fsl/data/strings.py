@@ -135,13 +135,10 @@ actions = TypeDict({
 })
 
 labels = TypeDict({
-    'LocationPanel.worldLocation' : 'World location (mm)',
-    'LocationPanel.voxelLocation' : 'Voxel location',
-    'LocationPanel.volume'        : 'Volume',
-    'LocationPanel.space'         : 'Space',
-    'LocationPanel.intensity'     : 'Intensity',
-    'LocationPanel.outOfBounds'   : 'N/A',
-    'LocationPanel.nonVolumetric' : 'N/A',
+    'LocationPanel.worldLocation'         : 'Coordinates: ',
+    'LocationPanel.worldLocation.unknown' : 'Unknown',
+    'LocationPanel.voxelLocation'         : 'Voxel location',
+    'LocationPanel.volume'                : 'Volume',
 
     'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
