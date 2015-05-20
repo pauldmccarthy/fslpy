@@ -209,7 +209,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._updateWidgets()
 
         if len(self._overlayList) == 0:
-            self._displayLocationChanged()
+            self._updateLocationInfo()
             return
 
         # Register a listener on the DisplayOpts 
@@ -408,9 +408,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
         log.debug('Updating location ({} {} -> {} {})'.format(
             source, coords, target, xformed))
 
-        if   target == 'display': self._displayCtx.location.xyz = xformed
-        elif target == 'voxel':   self.voxelLocation.xyz        = xformed
-        elif target == 'world':   self.worldLocation.xyz        = xformed
+        if   target == 'display': self._displayCtx.location.xyz =   xformed
+        elif target == 'voxel':   self.voxelLocation.xyz = np.round(xformed)
+        elif target == 'world':   self.worldLocation.xyz =          xformed
         
     
     def _postPropagate(self):
@@ -435,6 +435,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._propagate('display', 'voxel', self._displayToVoxMat)
         self._propagate('display', 'world', self._displayToWorldMat)
         self._postPropagate()
+        self._updateLocationInfo()
 
 
     def _worldLocationChanged(self, *a):
@@ -445,6 +446,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._propagate('world', 'voxel',   self._worldToVoxMat)
         self._propagate('world', 'display', self._worldToDisplayMat)
         self._postPropagate()
+        self._updateLocationInfo()
 
         
     def _voxelLocationChanged(self, *a):
@@ -455,3 +457,60 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._propagate('voxel', 'world',   self._voxToWorldMat)
         self._propagate('voxel', 'display', self._voxToDisplayMat)
         self._postPropagate()
+        self._updateLocationInfo()
+
+
+    def _updateLocationInfo(self):
+
+        if len(self._overlayList) == 0:
+            self.info.SetPage('')
+            return
+        
+
+        overlays = self._displayCtx.getOrderedOverlays()
+        selOvl   = self._displayCtx.getSelectedOverlay()
+        
+        overlays.remove(selOvl)
+        overlays.insert(0, selOvl)
+
+        lines = []
+        for overlay in overlays:
+
+            title = '<b>{}</b>'.format(overlay.name)
+            info  = None
+
+            if not isinstance(overlay, fslimage.Image):
+                info = '{}'.format(strings.labels[self, 'noData'])
+            else:
+                opts = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+                vloc = transform.transform(
+                    [self._displayCtx.location.xyz],
+                    opts.getTransform('display', 'voxel'))[0]
+
+                # The above transformation gives us
+                # values between [x - 0.5, x + 0.5]
+                # for voxel x, so we need to round
+                # to the nearest integer to get the
+                # corresponding voxel coordinates
+                vloc = tuple(map(int, np.round(vloc)))
+
+                if overlay.is4DImage():
+                    vloc = vloc + (opts.volume,)
+
+                inBounds = True
+                for i in range(3):
+                    if vloc[i] < 0 or vloc[i] >= overlay.shape[i]:
+                        inBounds = False
+
+                if inBounds:
+                    vval = overlay.data[vloc]
+                    info = '[{}]: {}'.format(' '.join(map(str, vloc)), vval)
+                else:
+                    info = strings.labels[self, 'outOfBounds']
+
+            lines.append(title)
+            if info is not None:
+                lines.append(info)
+
+            self.info.SetPage('<br>'.join(lines))
+            self.info.Refresh()

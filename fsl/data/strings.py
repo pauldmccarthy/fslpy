@@ -139,6 +139,9 @@ labels = TypeDict({
     'LocationPanel.worldLocation.unknown' : 'Unknown',
     'LocationPanel.voxelLocation'         : 'Voxel location',
     'LocationPanel.volume'                : 'Volume',
+    'LocationPanel.noData'                : 'No data',
+    'LocationPanel.outOfBounds'           : 'Out of bounds',
+    'LocationPanel.notAvailable'          : 'N/A',
 
     'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
