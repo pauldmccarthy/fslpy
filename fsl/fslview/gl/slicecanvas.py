@@ -308,7 +308,7 @@ class SliceCanvas(props.HasProperties):
                                      self._overlayListChanged)
         self.displayCtx .addListener('overlayOrder',
                                      self.name,
-                                     self._overlayListChanged) 
+                                     self._refresh) 
         self.displayCtx .addListener('bounds',
                                      self.name,
                                      self._overlayBoundsChanged)
