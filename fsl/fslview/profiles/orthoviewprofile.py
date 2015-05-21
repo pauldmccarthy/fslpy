@@ -29,7 +29,6 @@ import logging
 import wx
 
 import fsl.fslview.profiles as profiles
-import fsl.data.image       as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -109,6 +108,33 @@ class OrthoViewProfile(profiles.Profile):
     # Navigate mode handlers
     ########################
 
+    def __getNavOffsets(self):
+        
+        overlay = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
+
+        # The currently selected overlay is non-volumetric,
+        # and does not have a reference image
+        if overlay is None:
+            offsets = [1, 1, 1]
+
+        # We have a voluemtric reference image to play with
+        else:
+
+            opts = self._displayCtx.getOpts(overlay)
+
+            # If we're displaying voxel space,
+            # we want a keypress to move one
+            # voxel in the appropriate direction
+            if   opts.transform == 'id':     offsets = [1, 1, 1]
+            elif opts.transform == 'pixdim': offsets = overlay.pixdim
+
+            # Otherwise we'll just move an arbitrary 
+            # amount in the image world space - 1mm
+            else:                            offsets = [1, 1, 1]
+
+        return offsets
+
 
     def _navModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
@@ -127,29 +153,14 @@ class OrthoViewProfile(profiles.Profile):
 
         Arrow keys map to the horizontal/vertical axes, and -/+ keys map
         to the depth axis of the canvas which was the target of the event.
-        """ 
+        """
 
-        overlay = self._displayCtx.getSelectedOverlay()
 
-        if overlay is None:
+        if len(self._overlayList) == 0:
             return
-        
-        display = self._displayCtx.getDisplay(overlay)
+
         pos     = self._displayCtx.location.xyz
-
-        if not isinstance(overlay, fslimage.Image):
-            log.warn('Non-volumetric overlay types not supported yet')
-            return
-
-        # If we're displaying voxel space,
-        # we want a keypress to move one
-        # voxel in the appropriate direction
-        if   display.transform == 'id':     offsets = [1, 1, 1]
-        elif display.transform == 'pixdim': offsets = overlay.pixdim
-
-        # Otherwise we'll just move an arbitrary 
-        # amount in the image world space - 2mm
-        else:                               offsets = [2, 2, 2]
+        offsets = self.__getNavOffsets()
 
         try:    ch = chr(key)
         except: ch = None
@@ -162,6 +173,20 @@ class OrthoViewProfile(profiles.Profile):
         elif ch  in ('+', '='):   pos[canvas.zax] += offsets[canvas.zax]
 
         self._displayCtx.location.xyz = pos
+
+
+    def _navModeMouseWheel(self, ev, canvas, wheel, mousePos, canvasPos):
+
+        if len(self._overlayList) == 0:
+            return
+
+        pos     = self._displayCtx.location.xyz
+        offsets = self.__getNavOffsets()
+
+        if   wheel > 0: pos[canvas.zax] -= offsets[canvas.zax]
+        elif wheel < 0: pos[canvas.zax] += offsets[canvas.zax]
+
+        self._displayCtx.location.xyz = pos        
 
         
     ####################

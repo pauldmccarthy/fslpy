@@ -396,14 +396,22 @@ class LocationPanel(fslpanel.FSLViewPanel):
         elif source == 'world':   coords = self.worldLocation.xyz
 
         if xform is not None: xformed = transform.transform([coords], xform)[0]
-        else:                 xformed = coords
+        else:                 xformed = np.array(coords)
 
         log.debug('Updating location ({} {} -> {} {})'.format(
             source, coords, target, xformed))
 
-        if   target == 'display': self._displayCtx.location.xyz =   xformed
-        elif target == 'voxel':   self.voxelLocation.xyz = np.round(xformed)
-        elif target == 'world':   self.worldLocation.xyz =          xformed
+        if target == 'display':
+            self._displayCtx.location.xyz = xformed
+
+        # Voxel coordinates are transformed to [x - 0.5, x + 0.5],
+        # so we floor(x + 0.5) to get the corresponding integer
+        # coordinates
+        elif target == 'voxel':
+            self.voxelLocation.xyz = np.floor(xformed + 0.5)
+            
+        elif target == 'world':
+            self.worldLocation.xyz = xformed
         
     
     def _postPropagate(self):
@@ -485,11 +493,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
                     opts.getTransform('display', 'voxel'))[0]
 
                 # The above transformation gives us
-                # values between [x - 0.5, x + 0.5]
-                # for voxel x, so we need to round
-                # to the nearest integer to get the
-                # corresponding voxel coordinates
-                vloc = tuple(map(int, np.round(vloc)))
+                # values between [x - 0.5, x + 0.5] for
+                # voxel x, so we need to floor(x + 0.5)
+                # to get the actual voxel coordinates
+                vloc = tuple(map(int, np.floor(vloc + 0.5)))
 
                 if overlay.is4DImage():
                     vloc = vloc + (opts.volume,)
