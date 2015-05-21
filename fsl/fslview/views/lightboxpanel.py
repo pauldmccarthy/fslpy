@@ -59,19 +59,25 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             overlayList,
             displayCtx)
 
-        # My properties are the canvas properties
         self._lbCanvas.bindProps('zax',             sceneOpts)
-        self._lbCanvas.bindProps('nrows',           sceneOpts)
-        self._lbCanvas.bindProps('ncols',           sceneOpts)
-        self._lbCanvas.bindProps('topRow',          sceneOpts)
-        self._lbCanvas.bindProps('sliceSpacing',    sceneOpts)
-        self._lbCanvas.bindProps('zrange',          sceneOpts)
         self._lbCanvas.bindProps('showCursor',      sceneOpts)
         self._lbCanvas.bindProps('showGridLines',   sceneOpts)
         self._lbCanvas.bindProps('highlightSlice',  sceneOpts)
         self._lbCanvas.bindProps('renderMode',      sceneOpts)
         self._lbCanvas.bindProps('softwareMode',    sceneOpts)
         self._lbCanvas.bindProps('resolutionLimit', sceneOpts)
+
+        # Bind these properties the other way around,
+        # so that the sensible values calcualted by
+        # the LBCanvas during its initialisation are
+        # propagated to the LBOpts instance, rather
+        # than the non-sensible default values in the
+        # LBOpts instance.
+        sceneOpts     .bindProps('nrows',           self._lbCanvas)
+        sceneOpts     .bindProps('ncols',           self._lbCanvas)
+        sceneOpts     .bindProps('topRow',          self._lbCanvas)
+        sceneOpts     .bindProps('sliceSpacing',    self._lbCanvas)
+        sceneOpts     .bindProps('zrange',          self._lbCanvas)
 
         self._canvasSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.getCanvasPanel().SetSizer(self._canvasSizer)
