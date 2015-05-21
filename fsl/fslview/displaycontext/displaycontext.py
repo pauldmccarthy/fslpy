@@ -292,9 +292,15 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent().location == self.location:
                 return
 
-        display = opts.display
 
-        if display.getOverlay() != self.getSelectedOverlay():
+        overlay  = opts.display.getOverlay()
+        refImage = self.getReferenceImage(overlay)
+
+        if refImage is not None:
+            opts = self.getOpts(refImage)
+
+        if (overlay != self.getSelectedOverlay()) or \
+           not isinstance(opts, volumeopts.ImageOpts):
             self.__updateBounds()
             return
 
@@ -302,8 +308,6 @@ class DisplayContext(props.SyncableHasProperties):
         # transformation matrix property has changed, we want the
         # current display location to be preserved, in terms of
         # the corresponding image world coordinates.
-        if not isinstance(opts, volumeopts.ImageOpts):
-            return
         
         # Calculate the image world location using
         # the old display<-> world transform, then

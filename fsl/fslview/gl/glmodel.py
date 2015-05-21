@@ -25,9 +25,31 @@ class GLModel(globject.GLObject):
         self.display = display
         self.opts    = display.getDisplayOpts()
 
+        self.opts.addListener('refImage',   self.name, self._updateVertices)
+        self.opts.addListener('coordSpace', self.name, self._updateVertices)
+        self.opts.addListener('transform',  self.name, self._updateVertices)
+
+        self._updateVertices()
+
 
     def destroy(self):
         pass
+
+
+    def _updateVertices(self, *a):
+
+        vertices = self.overlay.vertices
+        indices  = self.overlay.indices
+
+        if self.opts.refImage is not None:
+            xform = self.opts.getCoordSpaceTransform()
+
+            if xform is not None:
+                vertices = transform.transform(vertices, xform)
+
+        self.vertices = np.array(vertices, dtype=np.float32)
+        self.indices  = np.array(indices,  dtype=np.uint32)
+        self.onUpdate()
 
         
     def getDisplayBounds(self):
@@ -38,25 +60,7 @@ class GLModel(globject.GLObject):
         self.xax = xax
         self.yax = yax
         self.zax = 3 - xax - yax
-
-        self._prepareOutlineVertices()
  
-
-
-    def _prepareOutlineVertices(self):
-
-        verts   = self.overlay.vertices
-        mean    = verts.mean(axis=0)
-
-        verts   = verts - mean
-        
-        verts[:, self.xax] *= 0.9
-        verts[:, self.yax] *= 0.9
-
-        verts += mean
-
-        self.outlineVertices = verts
-
 
     def preDraw(self):
 
@@ -65,12 +69,6 @@ class GLModel(globject.GLObject):
     
     def draw(self, zpos, xform=None):
 
-        if self.opts.outline: self.drawOutline(zpos, xform)
-        else:                 self.drawFilled( zpos, xform)
-
-
-    def drawFilled(self, zpos, xform):
-
         display = self.display 
         opts    = self.opts
 
@@ -78,8 +76,8 @@ class GLModel(globject.GLObject):
         yax = self.yax
         zax = self.zax
 
-        vertices = self.overlay.vertices
-        indices  = self.overlay.indices
+        vertices = self.vertices
+        indices  = self.indices
 
         lo, hi = self.getDisplayBounds()
 
@@ -95,11 +93,21 @@ class GLModel(globject.GLObject):
         clipPlaneVerts[3, [xax, yax]] = [xmax, ymin]
         clipPlaneVerts[:,  zax]       =  zpos
 
-
         if xform is not None:
             clipPlaneVerts = transform.transform(clipPlaneVerts, xform)
-            vertices       = transform.transform(vertices, xform).ravel('C')
-            
+            vertices       = transform.transform(vertices, xform)
+
+        if zax == 0:
+            print 'Z {}: {} -- clipping plane vertices: {}'.format(
+                zax,
+                zpos,
+                clipPlaneVerts)
+
+            print 'vertex limits: {} - {}'.format(
+                vertices.min(axis=0), vertices.max(axis=0))
+
+        vertices = vertices.ravel('C')
+        
         planeEq = glroutines.planeEquation(clipPlaneVerts[0, :],
                                            clipPlaneVerts[1, :],
                                            clipPlaneVerts[2, :])
@@ -166,123 +174,5 @@ class GLModel(globject.GLObject):
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY) 
 
     
-    def drawOutline(self, zpos, xform):
-
-        display = self.display
-        opts    = self.opts
-        
-        xax = self.xax
-        yax = self.yax
-        zax = self.zax
-
-        lo, hi = self.getDisplayBounds()
-
-        xmin = lo[xax]
-        ymin = lo[yax]
-        xmax = hi[xax]
-        ymax = hi[yax]
-
-        clipPlaneVerts                = np.zeros((4, 3), dtype=np.float32)
-        clipPlaneVerts[0, [xax, yax]] = [xmin, ymin]
-        clipPlaneVerts[1, [xax, yax]] = [xmin, ymax]
-        clipPlaneVerts[2, [xax, yax]] = [xmax, ymax]
-        clipPlaneVerts[3, [xax, yax]] = [xmax, ymin]
-        clipPlaneVerts[:,  zax]       =  zpos
-
-        planeEq = glroutines.planeEquation(clipPlaneVerts[0, :],
-                                           clipPlaneVerts[1, :],
-                                           clipPlaneVerts[2, :])
-
-        vertices   = self.overlay.vertices
-        olVertices = self.outlineVertices
-        indices    = self.overlay.indices
-        
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glEnable(gl.GL_CLIP_PLANE0)
-        gl.glEnable(gl.GL_CULL_FACE)
-        gl.glEnable(gl.GL_STENCIL_TEST)
-        
-        gl.glClipPlane(gl.GL_CLIP_PLANE0, planeEq)
-        
-        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
-
-        gl.glColorMask(gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE)
-
-        # first pass - render front faces
-        gl.glStencilFunc(gl.GL_ALWAYS, 0, 0)
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_INCR)
-        gl.glCullFace(gl.GL_BACK)
-
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices)
-
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_INCR)
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, olVertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices) 
-
-        # Second pass - render back faces
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_INCR)
-        gl.glCullFace(gl.GL_FRONT)
-        
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices)
-
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_INCR)
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, olVertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices) 
- 
-        # third pass - render the intersection
-        # of the front and back faces from the
-        # stencil buffer
-        gl.glColorMask(gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE)
-
-        gl.glDisable(gl.GL_CLIP_PLANE0)
-        gl.glDisable(gl.GL_CULL_FACE)
-
-        gl.glStencilFunc(gl.GL_EQUAL, 3, 255)
-
-        colour = list(fslcmaps.applyBricon(
-            opts.colour[:3],
-            display.brightness / 100.0,
-            display.contrast   / 100.0))
-        
-        colour.append(display.alpha / 100.0) 
-        
-        gl.glColor(*colour)        
-        gl.glColor(*colour)
-        gl.glBegin(gl.GL_QUADS)
-
-        gl.glVertex3f(*clipPlaneVerts[0, :])
-        gl.glVertex3f(*clipPlaneVerts[1, :])
-        gl.glVertex3f(*clipPlaneVerts[2, :])
-        gl.glVertex3f(*clipPlaneVerts[3, :])
-        gl.glEnd()
-
-        gl.glStencilFunc(gl.GL_EQUAL, 1, 255)
-
-        gl.glBegin(gl.GL_QUADS)
-
-        gl.glVertex3f(*clipPlaneVerts[0, :])
-        gl.glVertex3f(*clipPlaneVerts[1, :])
-        gl.glVertex3f(*clipPlaneVerts[2, :])
-        gl.glVertex3f(*clipPlaneVerts[3, :])
-        gl.glEnd() 
-
-        gl.glDisable(gl.GL_STENCIL_TEST)
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY) 
-
-        
     def postDraw(self):
         pass

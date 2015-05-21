@@ -11,23 +11,31 @@ import numpy as np
 
 import props
 
-import display          as fsldisplay
+import display                as fsldisplay
 
 import fsl.fslview.colourmaps as colourmaps
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
+import fsl.utils.transform    as transform
 
 import volumeopts
 
 
 class ModelOpts(fsldisplay.DisplayOpts):
 
-    colour   = props.Colour()
-    outline  = props.Boolean(default=False)
+    colour     = props.Colour()
 
-    refImage = props.Choice()
+    
+    outline    = props.Boolean(default=False)
 
+    
+    refImage   = props.Choice()
+
+    
     coordSpace = copy.copy(volumeopts.ImageOpts.transform)
+
+
+    transform  = copy.copy(volumeopts.ImageOpts.transform)
 
 
     def __init__(self, *args, **kwargs):
@@ -44,9 +52,13 @@ class ModelOpts(fsldisplay.DisplayOpts):
         # one we generated above.
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
 
+        self.__oldRefImage = None
+
         self.overlayList.addListener('overlays',
                                      self.name,
                                      self.__overlayListChanged)
+
+        self.addListener('refImage', self.name, self.__refImageChanged)
         
         self.__overlayListChanged() 
 
@@ -65,22 +77,54 @@ class ModelOpts(fsldisplay.DisplayOpts):
         If a :attr:`refImage` is selected, it is returned. Otherwise,``None``
         is returned.
         """
-
-        if self.refImage is not 'none':
-            return self.refImage
-        return None
+        return self.refImage
             
 
     def getDisplayBounds(self):
-        return self.overlay.getBounds()
+
+        lo, hi = self.overlay.getBounds()
+        xform  = self.getCoordSpaceTransform()
+
+        if xform is None:
+            return lo, hi
+
+        lohi = transform.transform([lo, hi], xform)
+
+        return lohi[0, :], lohi[1, :]
 
 
     def getOldDisplayBounds(self):
         return self.overlay.getBounds()
 
+
+    def getCoordSpaceTransform(self):
+
+        if self.refImage is None:
+            return None
+
+        if self.coordSpace == self.transform:
+            return None
+
+        opts = self.displayCtx.getOpts(self.refImage)
+
+        return opts.getTransform(self.coordSpace, self.transform)
+
+
+    def __refImageChanged(self, *a):
+        
+        if self.__oldRefImage is not None:
+            opts = self.displayCtx.getOpts(self.__oldRefImage)
+            opts.unbindProps('transform', self)
+
+        self.__oldRefImage = self.refImage
+        
+        if self.refImage is not None:
+            opts = self.displayCtx.getOpts(self.refImage)
+            opts.bindProps('transform', self)
+            
     
     def __overlayListChanged(self, *a):
-        """Called when the overlay list changes. Updates the ``image``
+        """Called when the overlay list changes. Updates the ``refImage``
         property so that it contains a list of overlays which can be
         associated with the model.
         """
@@ -95,7 +139,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
             self.overlayList.removeListener('overlays', self.name)
             return
 
-        imgOptions = ['none']
+        imgOptions = [None]
         imgLabels  = [strings.choices['ModelOpts.refImage.none']]
 
         for overlay in overlays:
@@ -115,13 +159,4 @@ class ModelOpts(fsldisplay.DisplayOpts):
         imgProp.setChoices(imgOptions, imgLabels, self)
 
         if imgVal in overlays: self.refImage = imgVal
-        else:                  self.refImage = 'none'
-    
-
-# The coordSpace property replicates the ImageOpts.transform
-# property. But, where the ImageOpts.transform property
-# defaults to 'pixdim' (so that volumes are displayed with
-# scaled voxels by default), the coordSpace property needs to
-# default to 'id' (because FIRST .vtk model coordinates are
-# in terms of the source image voxel coordinates).
-ModelOpts.coordSpace.setConstraint(None, 'default', 'id')
+        else:                  self.refImage = None
