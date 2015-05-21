@@ -301,8 +301,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # Are we showing or hiding the labels?
         if   len(self._overlayList) == 0:       show = False
 
-        overlay   = self._displayCtx.getSelectedOverlay()
-        overlay   = self._displayCtx.getOpts(overlay).getReferenceImage()
+        overlay = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
 
         # Labels are only supported if we
         # have a volumetric reference image 

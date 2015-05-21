@@ -131,11 +131,17 @@ class DisplayContext(props.SyncableHasProperties):
         See :meth:`.Display.getDisplayOpts`.
         """
 
-        if isinstance(overlay, int):
-            overlay = self.__overlayList[overlay]
-
         try:             return self.getDisplay(overlay).getDisplayOpts()
         except KeyError: return None
+
+
+    def getReferenceImage(self, overlay):
+        """Convenience method which returns the reference image associated
+        with the given overlay, or ``None`` if there is no reference image.
+
+        See the :class:`.DisplayOpts.getReferenceImage` method.
+        """
+        return self.getOpts(overlay).getReferenceImage()
 
         
     def selectOverlay(self, overlay):

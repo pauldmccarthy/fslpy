@@ -246,8 +246,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) > 0:
 
             overlay  = self._displayCtx.getSelectedOverlay()
-            opts     = self._displayCtx.getOpts(overlay)
-            refImage = opts.getReferenceImage()
+            refImage = self._displayCtx.getReferenceImage(overlay)
 
             log.debug('Reference image for overlay {}: {}'.format(
                 overlay, refImage))

@@ -215,9 +215,8 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         atlasDesc = atlases.getAtlasDescription(atlasID)
         label     = atlasDesc.labels[labelIdx]
-        overlay   = self._displayCtx.getSelectedOverlay()
-        opts      = self._displayCtx.getOpts(overlay)
-        overlay   = opts.getReferenceImage()
+        overlay   = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
 
         if overlay is None:
             log.warn('No reference image available - cannot locate region')

@@ -172,11 +172,10 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
     def __locationChanged(self, *a):
         
-        overlay = self._displayCtx.getSelectedOverlay()
-        opts    = self._displayCtx.getOpts(overlay)
-        overlay = opts.getReferenceImage()
         text    = self.__infoPanel
-
+        overlay = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
+        
         if len(atlases.listAtlases()) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.atlasDisabled'])
             return
@@ -192,7 +191,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         if len(self.__enabledAtlases) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
-        
+
         opts = self._displayCtx.getOpts(overlay)
         loc  = self._displayCtx.location
         loc  = transform.transform(

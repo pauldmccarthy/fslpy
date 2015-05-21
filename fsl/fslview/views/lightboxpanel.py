@@ -159,8 +159,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         for overlay in self._overlayList:
 
-            opts     = self._displayCtx.getOpts(overlay)
-            refImage = opts.getReferenceImage()
+            refImage = self._displayCtx.getReferenceImage(overlay)
 
             if refImage is None:
                 continue
@@ -184,10 +183,10 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         Updates the ``sliceSpacing`` and ``zrange`` properties to values
         sensible to the new overlay display space.
         """
-        
-        overlay   = self._displayCtx.getSelectedOverlay()
-        overlay   = self._displayCtx.getOpts(overlay).getReferenceImage()
+
         sceneOpts = self.getSceneOptions()
+        overlay   = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
 
         if overlay is None:
             return

@@ -402,7 +402,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
             for overlay in self.overlayList:
 
-                overlay = self.displayCtx.getOpts(overlay).getReferenceImage()
+                overlay = self.displayCtx.getReferenceImage(overlay)
                 
                 if overlay is None:
                     continue
