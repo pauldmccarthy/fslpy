@@ -24,12 +24,10 @@ import numpy as np
 
 import props
 
-import fsl.utils.transform        as transform
-import fsl.data.image             as fslimage
-import fsl.data.model             as fslmodel
-import fsl.data.strings           as strings
-import fsl.fslview.panel          as fslpanel
-import fsl.fslview.displaycontext as displaycontext
+import fsl.utils.transform as transform
+import fsl.data.image      as fslimage
+import fsl.data.strings    as strings
+import fsl.fslview.panel   as fslpanel
 
 
 log = logging.getLogger(__name__)
@@ -247,16 +245,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # that can be used as a reference image
         if len(self._overlayList) > 0:
 
-            overlay = self._displayCtx.getSelectedOverlay()
-            opts    = self._displayCtx.getDisplay(overlay).getDisplayOpts()
-
-            if isinstance(overlay, fslimage.Image):
-                refImage = overlay
-
-            elif isinstance(overlay, fslmodel.Model)      and \
-               isinstance(opts, displaycontext.ModelOpts) and \
-               opts.refImage != 'none':
-                refImage = opts.refImage
+            overlay  = self._displayCtx.getSelectedOverlay()
+            opts     = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+            refImage = opts.getReferenceImage()
 
             log.debug('Reference image for overlay {}: {}'.format(
                 overlay, refImage))
