@@ -73,7 +73,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
         self.__contentPanel    = wx.SplitterWindow(self,
                                                    style=wx.SP_LIVE_UPDATE)
         self.__atlasList       = elistbox.EditableListBox(
-            self.contentPanel,
+            self.__contentPanel,
             style=(elistbox.ELB_NO_ADD    |
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
