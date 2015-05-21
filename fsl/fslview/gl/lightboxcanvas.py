@@ -20,7 +20,6 @@ import props
 import fsl.fslview.gl.slicecanvas as slicecanvas
 import fsl.fslview.gl.resources   as glresources
 import fsl.fslview.gl.textures    as textures
-import fsl.data.image             as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -402,9 +401,10 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             newZGap = sys.float_info.max
 
             for overlay in self.overlayList:
+
+                overlay = self.displayCtx.getOpts(overlay).getReferenceImage()
                 
-                if not isinstance(overlay, fslimage.Image):
-                    log.warn('No support for non-volumetric overlay types yet')
+                if overlay is None:
                     continue
                 
                 opts = self.displayCtx.getOpts(overlay)
@@ -420,6 +420,12 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                     newZGap = zgap
 
             newZRange = self.displayCtx.bounds.getRange(self.zax)
+
+            # If there were no volumetric overlays
+            # in the overlay list, choose an arbitrary
+            # default slice spacing
+            if newZGap == sys.float_info.max:
+                newZGap = (newZRange[1] - newZRange[0]) / 10.0
 
             # Changing the zrange/sliceSpacing properties will, in most cases,
             # trigger a call to _slicePropsChanged. But for overlays which have

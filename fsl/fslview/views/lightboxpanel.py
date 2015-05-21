@@ -18,7 +18,6 @@ import wx
 import numpy as np
 
 import fsl.utils.layout                        as fsllayout
-import fsl.data.image                          as fslimage
 import fsl.fslview.gl.wxgllightboxcanvas       as lightboxcanvas
 import fsl.fslview.controls.lightboxtoolbar    as lightboxtoolbar
 import fsl.fslview.displaycontext.lightboxopts as lightboxopts
@@ -94,9 +93,12 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._selectedOverlayChanged)
-        self._overlayList.addListener('overlays',
+        self._displayCtx .addListener('overlayOrder',
                                       self._name,
                                       self._selectedOverlayChanged) 
+        self._overlayList.addListener('overlays',
+                                      self._name,
+                                      self._selectedOverlayChanged)
 
         sceneOpts.zoom = 750
 
@@ -157,10 +159,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
         for overlay in self._overlayList:
 
-            if not isinstance(overlay, fslimage.Image):
+            opts     = self._displayCtx.getOpts(overlay)
+            refImage = opts.getReferenceImage()
+
+            if refImage is None:
                 continue
 
-            opts = self._displayCtx.getOpts(overlay)
+            opts = self._displayCtx.getOpts(refImage)
 
             opts.removeListener('transform', self._name)
 
@@ -181,17 +186,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         """
         
         overlay   = self._displayCtx.getSelectedOverlay()
+        overlay   = self._displayCtx.getOpts(overlay).getReferenceImage()
         sceneOpts = self.getSceneOptions()
 
         if overlay is None:
             return
-
-        if not isinstance(overlay, fslimage.Image):
-            log.warn('Non-volumetric overlay types not supported yet')
-            return
         
-        opts  = self._displayCtx.getOpts(overlay)
-
+        opts               = self._displayCtx.getOpts(overlay)
         loBounds, hiBounds = opts.getDisplayBounds()
 
         if opts.transform == 'id':
