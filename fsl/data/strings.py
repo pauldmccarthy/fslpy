@@ -54,6 +54,8 @@ messages = TypeDict({
                                           'saving the screenshot. Try '
                                           'calling render directly with '
                                           'this command: \n{}',
+
+    'HistogramPanel.noData'             : 'Selected overlay has no data',
 })
 
 

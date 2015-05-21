@@ -71,7 +71,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._overlayList.addListener(
             'overlays',
             self._name,
-            self._selectedOveralyChanged) 
+            self._selectedOverlayChanged) 
         self._displayCtx.addListener(
             'selectedOverlay',
             self._name,
@@ -160,6 +160,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         overlay = self._displayCtx.getSelectedOverlay()
 
         if not isinstance(overlay, fslimage.Image):
+            self._displayMessage(strings.messages[self, 'noData'])
             return
 
         minval = float(overlay.data.min())
@@ -209,6 +210,18 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._mouseDown       = False
         self._domainHighlight = None
         self.dataRange.x      = newRange
+
+
+    def _displayMessage(self, msg):
+
+        axis = self.getAxis()
+        axis.clear()
+        axis.set_xlim((0.0, 1.0))
+        axis.set_ylim((0.0, 1.0))
+        axis.text(0.5, 0.5, msg, ha='center', va='center')
+        
+        self.getCanvas().draw()
+        self.Refresh() 
 
     
     def _drawPlot(self, *a):
