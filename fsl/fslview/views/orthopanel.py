@@ -18,7 +18,6 @@ import logging
 import wx
 
 import fsl.data.strings                         as strings
-import fsl.data.image                           as fslimage
 import fsl.data.constants                       as constants
 import fsl.utils.layout                         as fsllayout
 import fsl.fslview.gl                           as fslgl
@@ -144,6 +143,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._overlayListChanged)
+        self._displayCtx .addListener('overlayOrder',
+                                      self._name,
+                                      self._overlayListChanged) 
 
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
@@ -296,16 +298,17 @@ class OrthoPanel(canvaspanel.CanvasPanel):
                     self._yLabels.values() + \
                     self._zLabels.values()
 
-        overlay   = self._displayCtx.getSelectedOverlay()
-
         # Are we showing or hiding the labels?
-        if   len(self._overlayList) == 0:             show = False
+        if   len(self._overlayList) == 0:       show = False
 
-        # Labels are only supported on
-        # volumetric image data (i.e. NIFTI)
-        elif not isinstance(overlay, fslimage.Image): show = False
-        elif self.getSceneOptions().showLabels:       show = True
-        else:                                         show = False
+        overlay   = self._displayCtx.getSelectedOverlay()
+        overlay   = self._displayCtx.getOpts(overlay).getReferenceImage()
+
+        # Labels are only supported if we
+        # have a volumetric reference image 
+        if   overlay is None:                   show = False
+        elif self.getSceneOptions().showLabels: show = True
+        else:                                   show = False
 
         for lbl in allLabels:
             self._canvasSizer.Show(lbl, show)
