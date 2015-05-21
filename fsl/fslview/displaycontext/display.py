@@ -18,6 +18,7 @@ import logging
 
 import props
 
+import fsl.data.image     as fslimage
 import fsl.data.strings   as strings
 import fsl.utils.typedict as td
 
@@ -50,6 +51,24 @@ class DisplayOpts(props.SyncableHasProperties):
     def destroy(self):
         pass
 
+
+    def getReferenceImage(self):
+        """Some non-volumetric overlay types (e.g. the :class:`.Model` - see
+        :class:`.ModelOpts`) may have a 'reference' :class:`.Image` instance
+        associated with them, allowing the overlay to be localised in the
+        coordinate space defined by the :class:`.Image`. The
+        :class:`.DisplayOpts` class which corresponds to such non-volumetric
+        overlays should override this method to return the reference image.
+
+        :class:`.DisplayOpts` subclasses which are associated with volumetric
+        overlays (i.e. :class:`.Image` instances) do not need to override
+        this method.
+        """
+
+        if isinstance(self.overlay, fslimage.Image):
+            return self.overlay
+        return None
+    
     
     def getDisplayBounds(self):
         """

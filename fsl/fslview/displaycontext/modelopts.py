@@ -54,6 +54,18 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
         for overlay in self.overlayList:
             overlay.removeListener('name', self.name)
+
+
+    def getReferenceImage(self):
+        """Overrides :meth:`.DisplayOpts.getReferenceIamge`.
+
+        If a :attr:`refImage` is selected, it is returned. Otherwise,``None``
+        is returned.
+        """
+
+        if self.refImage is not 'none':
+            return self.refImage
+        return None
             
 
     def getDisplayBounds(self):
@@ -100,7 +112,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
         imgProp.setChoices(imgOptions, imgLabels, self)
 
         if imgVal in overlays: self.refImage = imgVal
-        else:                  self.refImage = 'none' 
+        else:                  self.refImage = 'none'
+    
 
 # The coordSpace property replicates the ImageOpts.transform
 # property. But, where the ImageOpts.transform property
