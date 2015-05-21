@@ -31,15 +31,22 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
     def __init__(self, *args, **kwargs):
 
-        fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
-        
+        # Create a random, highly
+        # saturated colour
         colour                  = np.random.random(3)
         colour[colour.argmax()] = 1
         colour[colour.argmin()] = 0
-        
+
         np.random.shuffle(colour)
 
         self.colour = np.concatenate((colour, [1.0]))
+ 
+        # But create that colour before
+        # base class initialisation, as
+        # there may be a parent colour
+        # value which will override the
+        # one we generated above.
+        fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
 
         self.overlayList.addListener('overlays',
                                      self.name,
