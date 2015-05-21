@@ -364,3 +364,19 @@ def applyBricon(rgb, brightness, contrast):
     rgb  = (rgb - 0.5) * scale + 0.5
   
     return np.clip(rgb, 0.0, 1.0)
+
+
+def randomColour():
+    """Generates a random RGB colour. """
+    return np.random.random(3)
+
+
+def randomBrightColour():
+    """Generates a random saturated RGB colour. """
+    colour                  = np.random.random(3)
+    colour[colour.argmax()] = 1
+    colour[colour.argmin()] = 0
+
+    np.random.shuffle(colour)
+
+    return colour

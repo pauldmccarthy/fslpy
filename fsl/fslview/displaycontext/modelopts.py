@@ -11,10 +11,11 @@ import numpy as np
 
 import props
 
-import display as fsldisplay
+import display          as fsldisplay
 
-import fsl.data.image   as fslimage
-import fsl.data.strings as strings
+import fsl.fslview.colourmaps as colourmaps
+import fsl.data.image         as fslimage
+import fsl.data.strings       as strings
 
 import volumeopts
 
@@ -33,12 +34,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
         # Create a random, highly
         # saturated colour
-        colour                  = np.random.random(3)
-        colour[colour.argmax()] = 1
-        colour[colour.argmin()] = 0
-
-        np.random.shuffle(colour)
-
+        colour      = colourmaps.randomBrightColour()
         self.colour = np.concatenate((colour, [1.0]))
  
         # But create that colour before
