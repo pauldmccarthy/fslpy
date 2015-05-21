@@ -87,6 +87,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         fslpanel.FSLViewPanel.destroy(self)
 
         self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
         self._overlayList.removeListener('overlays',        self._name)
         self.overlaySelect.destroy()
 
@@ -115,7 +116,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             lastOpts    = lastDisplay.getDisplayOpts()
             lastDisplay.removeListener('overlayType', self._name)
 
-            if isinstance(lastOpts, fsldisplay.ImageOpts):
+            if isinstance(lastOpts, fsldisplay.VolumeOpts):
                 lastOpts.removeListener('transform', self._name)
 
         display = self._displayCtx.getDisplay(overlay)
@@ -125,7 +126,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
                             self._name,
                             lambda *a: self._updateProps(self.optsPanel, True))
 
-        if isinstance(opts, fsldisplay.ImageOpts):
+        if isinstance(opts, fsldisplay.VolumeOpts):
             opts.addListener('transform', self._name, self._transformChanged)
         
         self._lastOverlay = overlay
@@ -135,14 +136,18 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         
     def _transformChanged(self, *a):
         """Called when the transform setting of the currently selected overlay
-        changes. If affine transformation is selected, interpolation is
-        enabled, otherwise interpolation is disabled.
+        changes.
+
+        If the current overlay has an :attr:`.Display.overlayType` of
+        ``volume``, and the :attr:`.ImageOpts.transform` property has been set
+        to ``affine``, the :attr:`.Display.interpolation` property is set to
+        ``spline``.  Otherwise interpolation is disabled.
         """
         overlay = self._displayCtx.getSelectedOverlay()
         display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
-        if not isinstance(opts, fsldisplay.ImageOpts):
+        if not isinstance(opts, fsldisplay.VolumeOpts):
             return
 
         choices = display.getProp('interpolation').getChoices(display)

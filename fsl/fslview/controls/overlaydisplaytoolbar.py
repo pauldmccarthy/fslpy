@@ -79,6 +79,8 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
                 for tool, _ in dispTools: tool.Destroy()
                 for tool, _ in optsTools: tool.Destroy()
+
+        self._selectedOverlayChanged()
     
 
     def _overlayTypeChanged(self, value, valid, display, name, refresh=True):

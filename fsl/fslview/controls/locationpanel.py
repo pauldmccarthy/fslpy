@@ -212,13 +212,18 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # instance of the currently selected overlay
         overlay = self._displayCtx.getSelectedOverlay()
         for ovl in self._overlayList:
-            opts = self._displayCtx.getOpts(ovl)
+            display = self._displayCtx.getDisplay(ovl)
+            opts    = display.getDisplayOpts()
             if ovl is overlay:
-                opts.addGlobalListener(self._name,
-                                       self._overlayOptsChanged,
-                                       overwrite=True)
+                opts   .addGlobalListener(self._name,
+                                          self._overlayOptsChanged,
+                                          overwrite=True)
+                display.addGlobalListener(self._name,
+                                          self._overlayOptsChanged,
+                                          overwrite=True) 
             else:
-                opts.removeGlobalListener(self._name)
+                opts   .removeGlobalListener(self._name)
+                display.removeGlobalListener(self._name)
 
         # Refresh the world/voxel location properties
         self._displayLocationChanged()
@@ -453,7 +458,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0:
             self.info.SetPage('')
             return
-        
 
         overlays = self._displayCtx.getOrderedOverlays()
         selOvl   = self._displayCtx.getSelectedOverlay()
@@ -463,6 +467,11 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         lines = []
         for overlay in overlays:
+
+            display = self._displayCtx.getDisplay(overlay)
+            
+            if not display.enabled:
+                continue
 
             title = '<b>{}</b>'.format(overlay.name)
             info  = None
@@ -499,6 +508,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
             lines.append(title)
             if info is not None:
                 lines.append(info)
-
-            self.info.SetPage('<br>'.join(lines))
-            self.info.Refresh()
+                
+        self.info.SetPage('<br>'.join(lines))
+        self.info.Refresh()
