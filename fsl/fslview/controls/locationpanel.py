@@ -136,19 +136,17 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self.column2Sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer        = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.column1Sizer.Add(self.worldLabel,  flag=wx.EXPAND, proportion=1)
-        self.column1Sizer.Add(self.worldX,      flag=wx.EXPAND, proportion=1)
-        self.column1Sizer.Add(self.worldY,      flag=wx.EXPAND, proportion=1)
-        self.column1Sizer.Add(self.worldZ,      flag=wx.EXPAND, proportion=1)
-        self.column1Sizer.Add(self.volumeLabel,
-                              flag=wx.ALIGN_RIGHT,
-                              proportion=1)
+        self.column1Sizer.Add(self.worldLabel,  flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldX,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldY,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldZ,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.volumeLabel, flag=wx.ALIGN_RIGHT)
 
-        self.column2Sizer.Add(self.voxelLabel, flag=wx.EXPAND, proportion=1)
-        self.column2Sizer.Add(self.voxelX,     flag=wx.EXPAND, proportion=1)
-        self.column2Sizer.Add(self.voxelY,     flag=wx.EXPAND, proportion=1)
-        self.column2Sizer.Add(self.voxelZ,     flag=wx.EXPAND, proportion=1)
-        self.column2Sizer.Add(self.volume,     flag=wx.EXPAND, proportion=1)
+        self.column2Sizer.Add(self.voxelLabel, flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelX,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelY,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelZ,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.volume,     flag=wx.EXPAND)
         
         self.sizer.Add(self.column1, flag=wx.EXPAND)
         self.sizer.Add((5, -1))
