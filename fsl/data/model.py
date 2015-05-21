@@ -49,7 +49,7 @@ def loadVTKPolydataFile(infile):
     return vertices, polygonLengths, indices
     
 
-class PolygonModel(object):
+class Model(object):
 
     def __init__(self, data, indices=None):
         """

@@ -255,8 +255,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
             if isinstance(overlay, fslimage.Image):
                 refImage = overlay
 
-            elif isinstance(overlay, fslmodel.PolygonModel) and \
-               isinstance(opts, displaycontext.ModelOpts)   and \
+            elif isinstance(overlay, fslmodel.Model)      and \
+               isinstance(opts, displaycontext.ModelOpts) and \
                opts.refImage != 'none':
                 refImage = opts.refImage
 

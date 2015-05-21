@@ -139,8 +139,9 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
         overlay.
         """
 
-        def nameChanged(value, valid, ovl, name):
+        def nameChanged(value, valid, display, name):
 
+            ovl = display.getOverlay()
             idx = self._overlayList.index(ovl)
             
             # if the name of the currently selected overlay has changed,

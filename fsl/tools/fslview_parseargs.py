@@ -906,7 +906,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
     overlays = iio.loadImages(volOverlays, **kwargs)
 
-    overlays.extend([fslmodel.PolygonModel(o) for o in nonVolOverlays])
+    overlays.extend([fslmodel.Model(o) for o in nonVolOverlays])
 
     overlayList.extend(overlays)
 
@@ -959,7 +959,7 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
         # A similar process is followed for 
         # the ModelOpts.refImage property
-        if isinstance(overlay, fslmodel.PolygonModel) and \
+        if isinstance(overlay, fslmodel.Model)        and \
            isinstance(opts,    fsldisplay.ModelOpts)  and \
            args.overlays[i].refImage is not None:
 

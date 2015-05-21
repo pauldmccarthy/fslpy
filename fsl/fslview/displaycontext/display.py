@@ -232,8 +232,8 @@ import modelopts
 
 OVERLAY_TYPES = td.TypeDict({
 
-    'Image'        : ['volume', 'mask', 'rgbvector', 'linevector'],
-    'PolygonModel' : ['model']
+    'Image' : ['volume', 'mask', 'rgbvector', 'linevector'],
+    'Model' : ['model']
 })
 """This dictionary provides a mapping between the overlay classes, and
 the way in which they may be represented.
