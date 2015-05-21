@@ -93,9 +93,6 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._selectedOverlayChanged)
-        self._displayCtx .addListener('overlayOrder',
-                                      self._name,
-                                      self._selectedOverlayChanged) 
         self._overlayList.addListener('overlays',
                                       self._name,
                                       self._selectedOverlayChanged)

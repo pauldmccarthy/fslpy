@@ -13,13 +13,19 @@ of overlay objects stored in an :class:`.OverlayList`.
 """
 
 import logging
+
+import numpy                      as np
+
+import                               plotpanel
+import fsl.data.image             as fslimage
+import fsl.data.strings           as strings
+import fsl.fslview.displaycontext as fsldisplay
+import fsl.utils.transform        as transform
+
+
 log = logging.getLogger(__name__)
 
-import numpy as np
 
-import                        plotpanel
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
 
 # TODO
 #      - Whack a scrollbar in there, to allow 
@@ -58,35 +64,65 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self._overlayList.addListener(
             'overlays',
             self._name,
-            self._locationChanged) 
+            self._selectedOverlayChanged)
+        self._displayCtx.addListener(
+            'selectedOverlay',
+            self._name,
+            self._selectedOverlayChanged) 
         self._displayCtx.addListener(
             'location',
             self._name,
             self._locationChanged)
-        self._displayCtx.addListener(
-            'volume',
-            self._name,
-            self._locationChanged) 
 
         self.Layout()
+        self._selectedOverlayChanged()
 
 
     def destroy(self):
         plotpanel.PlotPanel.destroy(self)
 
-        self._overlayList.removeListener('overlays', self._name)
-        self._displayCtx .removeListener('location', self._name)
-        self._displayCtx .removeListener('volume',   self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('location',        self._name)
+
+        for ovl in self._overlayList:
+            opts = self._displayCtx.getOpts(ovl)
+
+            if isinstance(opts, fsldisplay.ImageOpts):
+                opts.removeListener('volume', self._name)
+
+
+    def _selectedOverlayChanged(self, *a):
+
+        overlay = self._displayCtx.getSelectedOverlay()
+
+        for ovl in self._overlayList:
+
+            if not isinstance(ovl, fslimage.Image):
+                continue
+
+            opts = self._displayCtx.getOpts(ovl)
+
+            if ovl is overlay:
+                opts.addListener('volume',
+                                 self._name,
+                                 self._locationChanged,
+                                 overwrite=True)
+            else:
+                opts.removeListener('volume', self._name)
+
+        self._locationChanged()
+        
         
         
     def _locationChanged(self, *a):
         
         self.getAxis().clear()
-
         if len(self._overlayList) == 0:
-            return 
-
-        self._drawPlot() 
+            self.getCanvas().draw()
+            self.Refresh()
+        else:
+            self._drawPlot() 
 
 
     def _drawPlot(self):
@@ -94,62 +130,33 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         axis    = self.getAxis()
         canvas  = self.getCanvas()
         x, y, z = self._displayCtx.location.xyz
-        vol     = self._displayCtx.volume
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        mins = []
-        maxs = []
-        vols = []
+        if not isinstance(overlay, fslimage.Image):
+            self.message(strings.messages[self, 'noData'])
 
-        for overlay in self._overlayList:
+        elif not overlay.is4DImage():
+            self.message(strings.messages[self, 'not4D'])
 
-            if not isinstance(overlay, fslimage.Image):
-                log.warn('{}: Non-volumetric overlay types '
-                         'not supported yet'.format(overlay))
-                continue
+        else:
+            opts  = self._displayCtx.getOpts(overlay)
+            xform = opts.getTransform('display', 'voxel')
 
-            display = self._displayCtx.getDisplay(overlay)
-            xform   = display.getTransform('display', 'voxel')
+            vox = transform.transform([[x, y, z]], xform)[0]
+            vox = np.floor(vox + 0.5)
 
-            ix, iy, iz = transform.transform([[x, y, z]], xform)[0]
-
-            ix = round(ix)
-            iy = round(iy)
-            iz = round(iz)
-
-            minmaxvol = self._drawPlotOneOverlay(overlay, ix, iy, iz)
-
-            if minmaxvol is not None:
-                mins.append(minmaxvol[0])
-                maxs.append(minmaxvol[1])
-                vols.append(minmaxvol[2])
-
-        axis.axvline(vol, c='#000080', lw=2, alpha=0.4)
-
-        if len(mins) > 0:
-
-            xmin = 0
-            xmax = max(vols) - 1
-            ymin = min(mins)
-            ymax = max(maxs)
-
-            xlen = xmax - xmin
-            ylen = ymax - ymin
-
-            axis.grid(True)
-            axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
-            axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
-
-            if ymin != ymax: yticks = np.linspace(ymin, ymax, 5)
-            else:            yticks = [ymin]
-
-            axis.set_yticks(yticks)
-
-            for tick in axis.yaxis.get_major_ticks():
-                tick.set_pad(-15)
-                tick.label1.set_horizontalalignment('left')
+            if vox[0] < 0                 or \
+               vox[1] < 0                 or \
+               vox[2] < 0                 or \
+               vox[0] >= overlay.shape[0] or \
+               vox[1] >= overlay.shape[1] or \
+               vox[2] >= overlay.shape[2]:
                 
-            for tick in axis.xaxis.get_major_ticks():
-                tick.set_pad(-20)
+                self.message(strings.messages[self, 'outOfBounds'])
+
+            else:
+                self._drawPlotOneOverlay(overlay, *vox)
+                axis.axvline(opts.volume, c='#000080', lw=2, alpha=0.4)
 
         canvas.draw()
         self.Refresh()
@@ -174,8 +181,15 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     def _onPlotMouseDown(self, ev):
         if ev.inaxes != self.getAxis(): return
+
+        overlay = self._displayCtx.getSelectedOverlay()
+
+        if not isinstance(overlay, fslimage.Image) or not overlay.is4DImage():
+            return
         self._mouseDown = True
-        self._displayCtx.volume = np.floor(ev.xdata)
+
+        opts = self._displayCtx.getOpts(overlay)
+        opts.volume = np.floor(ev.xdata)
         
 
     def _onPlotMouseUp(self, ev):
@@ -185,4 +199,12 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     def _onPlotMouseMove(self, ev):
         if not self._mouseDown:         return
         if ev.inaxes != self.getAxis(): return
-        self._displayCtx.volume = np.floor(ev.xdata)
+        
+        overlay = self._displayCtx.getSelectedOverlay()
+
+        if not isinstance(overlay, fslimage.Image) or not overlay.is4DImage():
+            return
+
+        opts = self._displayCtx.getOpts(overlay)
+        
+        opts.volume = np.floor(ev.xdata)

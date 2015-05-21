@@ -56,6 +56,11 @@ messages = TypeDict({
                                           'this command: \n{}',
 
     'HistogramPanel.noData'             : 'Selected overlay has no data',
+    'TimeSeriesPanel.noData'            : 'Selected overlay has no data',
+    'TimeSeriesPanel.not4D'             : 'Selected overlay is '
+                                          'not four dimensional',
+    'TimeSeriesPanel.outOfBounds'       : 'Selected overlay has no data '
+                                          'at the current coordinates',
 })
 
 
