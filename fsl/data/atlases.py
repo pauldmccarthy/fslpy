@@ -297,6 +297,6 @@ class ProbabilisticAtlas(Atlas):
            voxelLoc[0] >= self.shape[0] or \
            voxelLoc[1] >= self.shape[1] or \
            voxelLoc[2] >= self.shape[2]:
-            return np.nan
+            return []
         
         return self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]

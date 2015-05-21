@@ -151,7 +151,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         if overlay is not None:
             self.clearAtlas(atlasID, summary)
             self._overlayList.remove(overlay)
-            self.overlayPanel.setOverlayState(
+            self.__overlayPanel.setOverlayState(
                 atlasID, labelIdx, summary, False)
             log.debug('Removed overlay {}'.format(overlayName))
             return
@@ -201,9 +201,12 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             else:       display.getDisplayOpts().cmap   = 'hot'
         else:
             # The Harvard-Oxford atlases have special colour maps
-            if   atlasID == 'HarvardOxford-Cortical':    cmap = 'cortical'
-            elif atlasID == 'HarvardOxford-Subcortical': cmap = 'subcortical'
-            else:                                        cmap = 'random'
+            if   atlasID == 'HarvardOxford-Cortical':
+                cmap = 'MGH Cortical'
+            elif atlasID == 'HarvardOxford-Subcortical':
+                cmap = 'MGH Sub-cortical'
+            else:
+                cmap = 'Random'
                 
             display.getDisplayOpts().cmap = cmap
 
@@ -212,15 +215,17 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         atlasDesc = atlases.getAtlasDescription(atlasID)
         label     = atlasDesc.labels[labelIdx]
+        overlay   = self._displayCtx.getSelectedOverlay()
+        opts      = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+        overlay   = opts.getReferenceImage()
 
-        overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplay(overlay)
-
-        if not isinstance(overlay, fslimage.Image):
-            raise RuntimeError('Non-volumetric types not supported yet')
+        if overlay is None:
+            log.warn('No reference image available - cannot locate region')
+        
+        opts     = self._displayCtx.getDisplay(overlay).getDisplayOpts()
 
         worldLoc = (label.x, label.y, label.z)
         dispLoc  = transform.transform(
-            [worldLoc], display.getTransform('world', 'display'))[0]
+            [worldLoc], opts.getTransform('world', 'display'))[0]
 
         self._displayCtx.location.xyz = dispLoc

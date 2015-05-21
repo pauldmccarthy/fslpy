@@ -38,10 +38,9 @@ messages = TypeDict({
                                                'installing the colour map',
 
     'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
-                                     'images registered to MNI152 space',
+                                     'images oriented to MNI152 space',
 
-    'AtlasInfoPanel.nonVolumetric' : 'Atlas lookup can only be performed on '
-                                     'volumetric images',
+    'AtlasInfoPanel.noReference' : 'No reference image available',
 
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',

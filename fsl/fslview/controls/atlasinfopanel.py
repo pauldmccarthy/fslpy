@@ -14,7 +14,6 @@ import pwidgets.elistbox   as elistbox
 
 import fsl.fslview.panel   as fslpanel
 import fsl.data.atlases    as atlases
-import fsl.data.image      as fslimage
 import fsl.data.strings    as strings
 import fsl.data.constants  as constants
 import fsl.utils.transform as transform
@@ -88,14 +87,20 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         self.__infoPanel.Bind(wxhtml.EVT_HTML_LINK_CLICKED,
                               self.__infoPanelLinkClicked)
 
-        displayCtx.addListener('location',
-                               self._name,
-                               self.__locationChanged)
-        displayCtx.addListener('selectedOverlay',
-                               self._name,
-                               self.__locationChanged)
+        overlayList.addListener('overlays',
+                                self._name,
+                                self.__selectedOverlayChanged)
+        displayCtx .addListener('selectedOverlay',
+                                self._name,
+                                self.__selectedOverlayChanged)
+        displayCtx .addListener('overlayOrder',
+                                self._name,
+                                self.__selectedOverlayChanged)
+        displayCtx .addListener('location',
+                                self._name,
+                                self.__locationChanged)
 
-        self.__locationChanged()
+        self.__selectedOverlayChanged()
         self.Layout()
 
         self.SetMinSize(self.__sizer.GetMinSize())
@@ -107,8 +112,10 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         """
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._displayCtx.removeListener('location',        self._name)
-        self._displayCtx.removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('location',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
 
 
     def enableAtlasInfo(self, atlasID):
@@ -139,17 +146,43 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         self.__atlasPanel.toggleOverlay(atlasID, labelIndex, summary)
 
 
+    def __selectedOverlayChanged(self, *a):
+        """
+        """
+
+        if len(self._overlayList) == 0:
+            self.__locationChanged()
+            return
+
+        selOverlay = self._displayCtx.getSelectedOverlay()
+
+        for ovl in self._overlayList:
+
+            opts = self._displayCtx.getDisplay(ovl).getDisplayOpts()
+
+            if ovl == selOverlay:
+                opts.addGlobalListener(   self._name,
+                                          self.__locationChanged,
+                                          overwrite=True)
+            else:
+                opts.removeGlobalListener(self._name)
+
+        self.__locationChanged()
+
+
     def __locationChanged(self, *a):
         
         overlay = self._displayCtx.getSelectedOverlay()
+        opts    = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+        overlay = opts.getReferenceImage()
         text    = self.__infoPanel
 
         if len(atlases.listAtlases()) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.atlasDisabled'])
             return
 
-        if not isinstance(overlay, fslimage.Image):
-            text.SetPage(strings.messages['AtlasInfoPanel.nonVolumetric'])
+        if overlay is None:
+            text.SetPage(strings.messages['AtlasInfoPanel.noReference'])
             return 
 
         if overlay.getXFormCode() != constants.NIFTI_XFORM_MNI_152:
@@ -159,11 +192,11 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         if len(self.__enabledAtlases) == 0:
             text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
-
-        display = self._displayCtx.getDisplay(overlay)
+        
+        opts    = self._displayCtx.getDisplay(overlay).getDisplayOpts()
         loc     = self._displayCtx.location
         loc     = transform.transform(
-            [loc], display.getTransform('display', 'world'))[0]
+            [loc], opts.getTransform('display', 'world'))[0]
 
         lines         = []
         titleTemplate = '<b>{}</b> (<a href="summary {} {}">Show/Hide</a>)'
@@ -172,7 +205,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
         for atlasID in self.__enabledAtlases:
 
-            atlas = self.enabledAtlases[atlasID]
+            atlas = self.__enabledAtlases[atlasID]
 
             lines.append(titleTemplate.format(atlas.desc.name, atlasID, None))
 
