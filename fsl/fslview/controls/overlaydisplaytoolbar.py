@@ -34,10 +34,6 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             'selectedOverlay',
             self._name,
             self._selectedOverlayChanged)
-        self._displayCtx.addListener(
-            'overlayOrder',
-            self._name,
-            self._selectedOverlayChanged) 
         self._overlayList.addListener(
             'overlays',
             self._name,
@@ -52,7 +48,6 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('overlayOrder',    self._name)
 
         for ovl in self._overlayList:
             

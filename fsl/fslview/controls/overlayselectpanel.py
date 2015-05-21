@@ -72,12 +72,6 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
             'overlays',
             self._name,
             self._overlayListChanged)
-
-        self._displayCtx.addListener(
-            'overlayOrder',
-            self._name,
-            self._overlayListChanged) 
-
         self._displayCtx.addListener(
             'selectedOverlay',
             self._name,
@@ -94,7 +88,6 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('overlayOrder',    self._name)
 
         # the _overlayListChanged method registers
         # a listener on the name of each overlay

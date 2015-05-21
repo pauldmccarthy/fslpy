@@ -93,9 +93,6 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         displayCtx .addListener('selectedOverlay',
                                 self._name,
                                 self.__selectedOverlayChanged)
-        displayCtx .addListener('overlayOrder',
-                                self._name,
-                                self.__selectedOverlayChanged)
         displayCtx .addListener('location',
                                 self._name,
                                 self.__locationChanged)
@@ -115,7 +112,6 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('location',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('overlayOrder',    self._name)
 
 
     def enableAtlasInfo(self, atlasID):
