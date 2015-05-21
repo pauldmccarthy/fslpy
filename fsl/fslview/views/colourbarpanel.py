@@ -176,8 +176,7 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
 
         if overlay is not None:
             
-            display    = self._displayCtx.getDisplay(overlay)
-            opts       = display.getDisplayOpts()
+            opts       = self._displayCtx.getOpts(overlay)
             dmin, dmax = opts.displayRange.getRange(0)
         else:
             dmin, dmax = 0.0, 0.0
@@ -192,9 +191,8 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         overlay = self._selectedOverlay
 
         if overlay is not None:
-            display = self._displayCtx.getDisplay(overlay)
-            opts    = display.getDisplayOpts()
-            cmap    = opts.cmap
+            opts = self._displayCtx.getOpts(overlay)
+            cmap = opts.cmap
         else:
             cmap = None
 

@@ -122,7 +122,22 @@ class DisplayContext(props.SyncableHasProperties):
         
         return display
 
-    
+
+    def getOpts(self, overlay):
+        """Returns the :class:`.DisplayOpts` instance associated with the
+        specified overlay, or ``None`` if the overlay is not in the overlay
+        list.
+
+        See :meth:`.Display.getDisplayOpts`.
+        """
+
+        if isinstance(overlay, int):
+            overlay = self.__overlayList[overlay]
+
+        try:             return self.getDisplay(overlay).getDisplayOpts()
+        except KeyError: return None
+
+        
     def selectOverlay(self, overlay):
         self.selectedOverlay = self.__overlayList.index(overlay)
 

@@ -194,11 +194,11 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         log.debug('Added overlay {}'.format(overlayName))
 
-        display = self._displayCtx.getDisplay(overlay)
+        opts = self._displayCtx.getOpts(overlay)
 
         if labelIdx is not None:
-            if summary: display.getDisplayOpts().colour = np.random.random(3)
-            else:       display.getDisplayOpts().cmap   = 'hot'
+            if summary: opts.colour = np.random.random(3)
+            else:       opts.cmap   = 'hot'
         else:
             # The Harvard-Oxford atlases have special colour maps
             if   atlasID == 'HarvardOxford-Cortical':
@@ -208,7 +208,7 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             else:
                 cmap = 'Random'
                 
-            display.getDisplayOpts().cmap = cmap
+            opts.cmap = cmap
 
 
     def locateRegion(self, atlasID, labelIdx):
@@ -216,14 +216,13 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         atlasDesc = atlases.getAtlasDescription(atlasID)
         label     = atlasDesc.labels[labelIdx]
         overlay   = self._displayCtx.getSelectedOverlay()
-        opts      = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+        opts      = self._displayCtx.getOpts(overlay)
         overlay   = opts.getReferenceImage()
 
         if overlay is None:
             log.warn('No reference image available - cannot locate region')
         
-        opts     = self._displayCtx.getDisplay(overlay).getDisplayOpts()
-
+        opts     = self._displayCtx.getOpts(overlay)
         worldLoc = (label.x, label.y, label.z)
         dispLoc  = transform.transform(
             [worldLoc], opts.getTransform('world', 'display'))[0]

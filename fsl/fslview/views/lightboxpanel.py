@@ -154,8 +154,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             if not isinstance(overlay, fslimage.Image):
                 continue
 
-            display = self._displayCtx.getDisplay(overlay)
-            opts    = display.getDisplayOpts()
+            opts = self._displayCtx.getOpts(overlay)
 
             opts.removeListener('transform', self._name)
 
@@ -185,12 +184,11 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             log.warn('Non-volumetric overlay types not supported yet')
             return
         
-        display  = self._displayCtx.getDisplay(overlay)
-        dispOpts = display.getDisplayOpts()
+        opts  = self._displayCtx.getOpts(overlay)
 
-        loBounds, hiBounds = display.getDisplayBounds()
+        loBounds, hiBounds = opts.getDisplayBounds()
 
-        if dispOpts.transform == 'id':
+        if opts.transform == 'id':
             sceneOpts.sliceSpacing = 1
             sceneOpts.zrange.x     = (0, overlay.shape[sceneOpts.zax] - 1)
         else:

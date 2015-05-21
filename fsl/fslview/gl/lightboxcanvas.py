@@ -407,8 +407,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                     log.warn('No support for non-volumetric overlay types yet')
                     continue
                 
-                display = self.displayCtx.getDisplay(overlay)
-                opts    = display.getDisplayOpts()
+                opts = self.displayCtx.getOpts(overlay)
 
                 if   opts.transform == 'id':
                     zgap = 1

@@ -365,8 +365,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplay(overlay)
-        opts    = display.getDisplayOpts()
+        opts    = self._displayCtx.getOpts(overlay)
 
         step = opts.displayRange.xlen / 50.0
 

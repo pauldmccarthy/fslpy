@@ -212,7 +212,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # instance of the currently selected overlay
         overlay = self._displayCtx.getSelectedOverlay()
         for ovl in self._overlayList:
-            opts = self._displayCtx.getDisplay(ovl).getDisplayOpts()
+            opts = self._displayCtx.getOpts(ovl)
             if ovl is overlay:
                 opts.addGlobalListener(self._name,
                                        self._overlayOptsChanged,
@@ -246,7 +246,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) > 0:
 
             overlay  = self._displayCtx.getSelectedOverlay()
-            opts     = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+            opts     = self._displayCtx.getOpts(overlay)
             refImage = opts.getReferenceImage()
 
             log.debug('Reference image for overlay {}: {}'.format(
@@ -255,7 +255,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._refImage = refImage
 
         if refImage is not None:
-            opts = self._displayCtx.getDisplay(refImage).getDisplayOpts()
+            opts = self._displayCtx.getOpts(refImage)
             self._voxToDisplayMat   = opts.getTransform('voxel',   'display')
             self._displayToVoxMat   = opts.getTransform('display', 'voxel')
             self._worldToDisplayMat = opts.getTransform('world',   'display')
@@ -352,7 +352,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # the widget to the volume property of
         # the associated ImageOpts instance
         if haveRef and refImage.is4DImage():
-            opts = self._displayCtx.getDisplay(refImage).getDisplayOpts()
+            opts = self._displayCtx.getOpts(refImage)
             self.volumeTarget = opts
 
             def onMouse(ev):
@@ -471,7 +471,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
             if not isinstance(overlay, fslimage.Image):
                 info = '{}'.format(strings.labels[self, 'noData'])
             else:
-                opts = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+                opts = self._displayCtx.getOpts(overlay)
                 vloc = transform.transform(
                     [self._displayCtx.location.xyz],
                     opts.getTransform('display', 'voxel'))[0]

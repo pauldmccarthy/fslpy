@@ -158,7 +158,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
         for ovl in self._overlayList:
 
-            opts = self._displayCtx.getDisplay(ovl).getDisplayOpts()
+            opts = self._displayCtx.getOpts(ovl)
 
             if ovl == selOverlay:
                 opts.addGlobalListener(   self._name,
@@ -173,7 +173,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
     def __locationChanged(self, *a):
         
         overlay = self._displayCtx.getSelectedOverlay()
-        opts    = self._displayCtx.getDisplay(overlay).getDisplayOpts()
+        opts    = self._displayCtx.getOpts(overlay)
         overlay = opts.getReferenceImage()
         text    = self.__infoPanel
 
@@ -193,9 +193,9 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
             text.SetPage(strings.messages['AtlasInfoPanel.chooseAnAtlas'])
             return
         
-        opts    = self._displayCtx.getDisplay(overlay).getDisplayOpts()
-        loc     = self._displayCtx.location
-        loc     = transform.transform(
+        opts = self._displayCtx.getOpts(overlay)
+        loc  = self._displayCtx.location
+        loc  = transform.transform(
             [loc], opts.getTransform('display', 'world'))[0]
 
         lines         = []

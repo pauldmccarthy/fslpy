@@ -205,8 +205,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         import fsl.fslview.layouts as layouts
 
-        display   = self._displayCtx.getDisplay(overlay)
-        opts      = display.getDisplayOpts()
+        opts      = self._displayCtx.getOpts(overlay)
         toolSpecs = layouts.layouts[self, opts]
         targets   = { s.key : self if s.key == 'more' else opts
                       for s in toolSpecs}

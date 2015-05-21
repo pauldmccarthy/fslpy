@@ -86,8 +86,7 @@ class LoadColourMapAction(actions.Action):
 
         # and for any existing VolumeOpts instances
         for overlay in self._overlayList:
-            display = self._displayCtx.getDisplay(overlay)
-            opts    = display.getDisplayOpts()
+            opts = self._displayCtx.getOpts(overlay)
             if isinstance(opts, volumeopts.VolumeOpts):
                 opts.setConstraint('cmap',
                                    'cmapNames',

@@ -448,9 +448,8 @@ class SliceCanvas(props.HasProperties):
                 log.warn('No support for non-volumetric overlay types yet')
                 continue
 
-            display = self.displayCtx.getDisplay(ovl)
-            opts    = display.getDisplayOpts()
-            minres  = min(ovl.pixdim[:3])
+            opts   = self.displayCtx.getOpts(ovl)
+            minres = min(ovl.pixdim[:3])
 
             if self.resolutionLimit > minres:
                 minres = self.resolutionLimit
