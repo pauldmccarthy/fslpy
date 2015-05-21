@@ -61,6 +61,9 @@ messages = TypeDict({
                                           'not four dimensional',
     'TimeSeriesPanel.outOfBounds'       : 'Selected overlay has no data '
                                           'at the current coordinates',
+
+    'SpacePanel.nonVolumetric'          : 'Non-volumetric overlays '
+                                          'are not supported',
 })
 
 

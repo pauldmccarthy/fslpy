@@ -76,7 +76,11 @@ class PlotPanel(viewpanel.ViewPanel):
         axis.clear()
         axis.set_xlim((0.0, 1.0))
         axis.set_ylim((0.0, 1.0))
-        axis.text(0.5, 0.5, msg, ha='center', va='center')
+
+        if isinstance(axis, Axes3D):
+            axis.text(0.5, 0.5, 0.5, msg, ha='center', va='center')
+        else:
+            axis.text(0.5, 0.5, msg, ha='center', va='center')
         
         self.getCanvas().draw()
         self.Refresh() 

@@ -55,8 +55,8 @@ class SpacePanel(plotpanel.PlotPanel):
 
         plotpanel.PlotPanel.destroy(self)
         
-        self._overlayList.removeListener('overlays',      self._name)
-        self._displayCtx .removeListener('selectedImage', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
 
         for overlay in self._overlayList:
             display = self._displayCtx.getDisplay(overlay)
@@ -76,33 +76,34 @@ class SpacePanel(plotpanel.PlotPanel):
 
         overlay = self._displayCtx.getSelectedOverlay()
         display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
 
         if not isinstance(overlay, fslimage.Image):
-            log.warn('Non-volumetric types not supported yet')
+            self.message(strings.messages[self, 'nonVolumetric'])
             return
 
-        display.addListener('transform',
-                            self._name,
-                            self._selectedOverlayChanged,
-                            overwrite=True)
+        opts.addListener('transform',
+                         self._name,
+                         self._selectedOverlayChanged,
+                         overwrite=True)
 
         axis.set_title(display.name)
         axis.set_xlabel('X')
         axis.set_ylabel('Y')
         axis.set_zlabel('Z')
 
-        self._plotOverlayCorners(overlay, display)
-        self._plotOverlayBounds( overlay, display)
-        self._plotOverlayLabels( overlay, display)
-        self._plotAxisLengths(   overlay, display)
+        self._plotOverlayCorners(overlay, opts)
+        self._plotOverlayBounds( overlay, opts)
+        self._plotOverlayLabels( overlay, opts)
+        self._plotAxisLengths(   overlay, opts)
 
         axis.legend()
         canvas.draw()
 
 
-    def _plotOverlayBounds(self, overlay, display):
+    def _plotOverlayBounds(self, overlay, opts):
 
-        v2DMat  = display.getTransform('voxel', 'display')
+        v2DMat  = opts.getTransform('voxel', 'display')
 
         xlo, xhi = transform.axisBounds(overlay.shape, v2DMat, 0)
         ylo, yhi = transform.axisBounds(overlay.shape, v2DMat, 1)
@@ -122,7 +123,7 @@ class SpacePanel(plotpanel.PlotPanel):
                                color='r', s=40)
 
         
-    def _plotOverlayLabels(self, overlay, display):
+    def _plotOverlayLabels(self, overlay, opts):
 
         axis   = self.getAxis()
         centre = np.array(overlay.shape[:3]) / 2.0
@@ -140,7 +141,7 @@ class SpacePanel(plotpanel.PlotPanel):
             lblHi = strings.anatomy['Image', 'highshort', orient]
 
             wldSpan = transform.transform(
-                voxSpan, display.getTransform('voxel', 'display'))
+                voxSpan, opts.getTransform('voxel', 'display'))
 
             axis.plot(wldSpan[:, 0],
                       wldSpan[:, 1],
@@ -152,10 +153,10 @@ class SpacePanel(plotpanel.PlotPanel):
             axis.text(wldSpan[1, 0], wldSpan[1, 1], wldSpan[1, 2], lblHi)
 
 
-    def _plotAxisLengths(self, overlay, display):
+    def _plotAxisLengths(self, overlay, opts):
 
         axis  = self.getAxis()
-        xform = display.getTransform('voxel', 'display')
+        xform = opts.getTransform('voxel', 'display')
 
         for ax, colour, label in zip(range(3),
                                      ['r', 'g', 'b'],
@@ -177,7 +178,7 @@ class SpacePanel(plotpanel.PlotPanel):
                       label='Axis {} (length {:0.2f})'.format(label, axlen))
 
 
-    def _plotOverlayCorners(self, overlay, display):
+    def _plotOverlayCorners(self, overlay, opts):
         
         x, y, z = overlay.shape[:3]
 
@@ -197,7 +198,7 @@ class SpacePanel(plotpanel.PlotPanel):
         points[7, :] = [x,     y,    z] 
 
         points = transform.transform(
-            points, display.getTransform('voxel', 'display'))
+            points, opts.getTransform('voxel', 'display'))
 
         self.getAxis().scatter(points[:, 0], points[:, 1], points[:, 2],
                                color='b', s=40)
