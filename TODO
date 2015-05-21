@@ -101,6 +101,9 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** OrthoViewProfile - mouse wheel on canvas scrolls through displayed slice
+** LineVector - modulate line length
+** LineVector - Threshold on vector length
 ** Colour bar for other image types (e.g. vectors)
 ** Arrow keys on number widgets
 ** Buffer sharing 
@@ -114,7 +117,8 @@ the vertex data is returned unmodified.
 ** Startup - ability to set $FSLDIR
 ** Time Series - option to 'hold' voxel time course
 You could have a list panel which lists the image and voxel coordinates of the
-time courses that are currently plotted.
+time courses that are currently plotted. Allow voxels to be held, and images
+to be held.
 ** Histogram - mouse drag should zoom into plot but not change data range.
 ** A proper GLMask class - deriving from GLVolume is inefficient
 ** A top-level class, from which all things inherit, which has a destroy method that must be called when the object is destroy4ed
@@ -231,6 +235,18 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Edge detection algorithm
+For drawing outline images (both model and volumetric). A Sobel filter looks
+perfect, but I think I would need to be able to run it within fragment
+shader. This means that I would have to render an overlay to an off-screen
+texture, and run the shader on said texture ...
+
+ - A fragment shader which just runs a Sobel filter on a 2D texture.
+ - A new GLImageObject subclass, GLOutline, which renders to offscreen 
+   texture, and applies Sobel filter to said texture before rendering to 
+   screen.
+ - Build same functionality into the GLModel class.
+
 ** Editor features
 *** Select all above/below a specified intensity
 *** Honour clipping range (i.e. don't select clipped voxels)
