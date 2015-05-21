@@ -114,13 +114,13 @@ class ModelOpts(fsldisplay.DisplayOpts):
         
         if self.__oldRefImage is not None:
             opts = self.displayCtx.getOpts(self.__oldRefImage)
-            opts.unbindProps('transform', self)
+            self.unbindProps('transform', opts)
 
         self.__oldRefImage = self.refImage
         
         if self.refImage is not None:
             opts = self.displayCtx.getOpts(self.refImage)
-            opts.bindProps('transform', self)
+            self.bindProps('transform', opts)
             
     
     def __overlayListChanged(self, *a):
