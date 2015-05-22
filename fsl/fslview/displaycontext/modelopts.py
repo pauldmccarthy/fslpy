@@ -44,6 +44,10 @@ class ModelOpts(fsldisplay.DisplayOpts):
         # saturated colour
         colour      = colourmaps.randomBrightColour()
         self.colour = np.concatenate((colour, [1.0]))
+
+        nounbind = kwargs.get('nounbind', [])
+        nounbind.extend(['refImage', 'coordSpace', 'transform'])
+        kwargs['nounbind'] = nounbind
  
         # But create that colour before
         # base class initialisation, as
@@ -52,7 +56,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
         # one we generated above.
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
 
-        self.__oldRefImage = None
+        self.__oldRefImage = 'none'
 
         self.overlayList.addListener('overlays',
                                      self.name,
@@ -77,6 +81,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
         If a :attr:`refImage` is selected, it is returned. Otherwise,``None``
         is returned.
         """
+        if self.refImage == 'none':
+            return None
         return self.refImage
             
 
@@ -99,7 +105,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
     def getCoordSpaceTransform(self):
 
-        if self.refImage is None:
+        if self.refImage == 'none':
             return None
 
         if self.coordSpace == self.transform:
@@ -112,13 +118,13 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
     def __refImageChanged(self, *a):
         
-        if self.__oldRefImage is not None:
+        if self.__oldRefImage != 'none':
             opts = self.displayCtx.getOpts(self.__oldRefImage)
             self.unbindProps('transform', opts)
 
         self.__oldRefImage = self.refImage
         
-        if self.refImage is not None:
+        if self.refImage != 'none':
             opts = self.displayCtx.getOpts(self.refImage)
             self.bindProps('transform', opts)
             
@@ -139,7 +145,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
             self.overlayList.removeListener('overlays', self.name)
             return
 
-        imgOptions = [None]
+        imgOptions = ['none']
         imgLabels  = [strings.choices['ModelOpts.refImage.none']]
 
         for overlay in overlays:
@@ -159,4 +165,4 @@ class ModelOpts(fsldisplay.DisplayOpts):
         imgProp.setChoices(imgOptions, imgLabels, self)
 
         if imgVal in overlays: self.refImage = imgVal
-        else:                  self.refImage = None
+        else:                  self.refImage = 'none'

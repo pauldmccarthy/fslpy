@@ -41,11 +41,10 @@ class GLModel(globject.GLObject):
         vertices = self.overlay.vertices
         indices  = self.overlay.indices
 
-        if self.opts.refImage is not None:
-            xform = self.opts.getCoordSpaceTransform()
+        xform = self.opts.getCoordSpaceTransform()
 
-            if xform is not None:
-                vertices = transform.transform(vertices, xform)
+        if xform is not None:
+            vertices = transform.transform(vertices, xform)
 
         self.vertices = np.array(vertices, dtype=np.float32)
         self.indices  = np.array(indices,  dtype=np.uint32)

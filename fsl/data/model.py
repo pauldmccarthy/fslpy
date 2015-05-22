@@ -58,7 +58,7 @@ class Model(object):
         """
         """
 
-        if isinstance(data, str):
+        if isinstance(data, basestring):
             infile = data
             data, lengths, indices = loadVTKPolydataFile(infile)
 
@@ -77,6 +77,15 @@ class Model(object):
 
         self.vertices = np.array(data, dtype=np.float32)
         self.indices  = indices
+
+
+    def __repr__(self):
+        return '{}({}, {})'.format(type(self).__name__,
+                                   self.name,
+                                   self.dataSource)
+
+    def __str__(self):
+        return self.__repr__()
 
 
     def getBounds(self):

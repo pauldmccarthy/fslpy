@@ -844,7 +844,6 @@ def generateSceneArgs(overlayList, displayCtx, sceneOpts):
 
     args = []
 
-
     args += ['--{}'.format(ARGUMENTS['Main.scene'][1])]
     if   isinstance(sceneOpts, fsldisplay.OrthoOpts):    args += ['ortho']
     elif isinstance(sceneOpts, fsldisplay.LightBoxOpts): args += ['lightbox']
@@ -886,11 +885,11 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     :arg overlayList: An :class:`.OverlayList` instance, to which the
                       overlays should be added.
     
-    :arg displayCtx:  A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                      instance, which manages the scene and overlay display.
+    :arg displayCtx:  A :class:`.DisplayContext` instance, which manages the
+                      scene and overlay display.
     
-    :arg kwargs:     Passed through to the
-                     :func:`fsl.data.imageio.loadImages` function.
+    :arg kwargs:      Passed through to the :func:`.Overlay.loadOverlays`
+                      function.
     """
 
     paths    = [o.overlay for o in args.overlays]
