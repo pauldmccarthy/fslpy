@@ -101,6 +101,9 @@ class DisplayContext(props.SyncableHasProperties):
         one is created.
         """
 
+        if overlay is None:
+            raise ValueError('No overlay specified')
+
         if isinstance(overlay, int):
             overlay = self.__overlayList[overlay]
 
@@ -131,6 +134,9 @@ class DisplayContext(props.SyncableHasProperties):
         See :meth:`.Display.getDisplayOpts`.
         """
 
+        if overlay is None:
+            raise ValueError('No overlay specified') 
+
         try:             return self.getDisplay(overlay).getDisplayOpts()
         except KeyError: return None
 
@@ -141,6 +147,9 @@ class DisplayContext(props.SyncableHasProperties):
 
         See the :class:`.DisplayOpts.getReferenceImage` method.
         """
+        if overlay is None:
+            return None
+        
         return self.getOpts(overlay).getReferenceImage()
 
         

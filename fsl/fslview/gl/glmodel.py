@@ -97,56 +97,50 @@ class GLModel(globject.GLObject):
             clipPlaneVerts = transform.transform(clipPlaneVerts, xform)
             vertices       = transform.transform(vertices, xform)
 
-        if zax == 0:
-            print 'Z {}: {} -- clipping plane vertices: {}'.format(
-                zax,
-                zpos,
-                clipPlaneVerts)
-
-            print 'vertex limits: {} - {}'.format(
-                vertices.min(axis=0), vertices.max(axis=0))
-
         vertices = vertices.ravel('C')
-        
-        planeEq = glroutines.planeEquation(clipPlaneVerts[0, :],
-                                           clipPlaneVerts[1, :],
-                                           clipPlaneVerts[2, :])
+        planeEq  = glroutines.planeEquation(clipPlaneVerts[0, :],
+                                            clipPlaneVerts[1, :],
+                                            clipPlaneVerts[2, :])
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnable(gl.GL_CLIP_PLANE0)
         gl.glEnable(gl.GL_CULL_FACE)
         gl.glEnable(gl.GL_STENCIL_TEST)
-        
-        gl.glClipPlane(gl.GL_CLIP_PLANE0, planeEq)
-        
-        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
+        gl.glDisable(gl.GL_DEPTH_TEST)
 
+        # If we're in negative Z space, we need to
+        # subtract the front face mask from the back
+        # face mask, and vice-versa in positive z
+        # space.
+        direction = [gl.GL_INCR, gl.GL_DECR]
+        if zpos < 0: faceOrder = [gl.GL_FRONT, gl.GL_BACK]
+        else:        faceOrder = [gl.GL_BACK,  gl.GL_FRONT]
+
+        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
+        gl.glClipPlane(gl.GL_CLIP_PLANE0, planeEq)
         gl.glColorMask(gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE)
 
-        # first pass - render front faces
+        # First and second passes - render front and
+        # back faces separately. In the stencil buffer,
+        # subtract the mask created by the second
+        # render from the mask created by the first -
+        # this gives us a mask which shows the
+        # intersection of the model with the clipping
+        # plane.
         gl.glStencilFunc(gl.GL_ALWAYS, 0, 0)
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_INCR)
-        gl.glCullFace(gl.GL_BACK)
-
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices) 
-
-        # Second pass - render back faces
-        gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, gl.GL_DECR)
-        gl.glCullFace(gl.GL_FRONT)
-        
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          len(indices),
-                          gl.GL_UNSIGNED_INT,
-                          indices)
  
-        # third pass - render the intersection
-        # of the front and back faces from the
-        # stencil buffer
+        for face, direction in zip(faceOrder, direction):
+            gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, direction)
+            gl.glCullFace(face)
+
+            gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices)
+            gl.glDrawElements(gl.GL_TRIANGLES,
+                              len(indices),
+                              gl.GL_UNSIGNED_INT,
+                              indices)
+
+        # third pass - render the intersection of the 
+        # front and back faces from the stencil buffer
         gl.glColorMask(gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE)
 
         gl.glDisable(gl.GL_CLIP_PLANE0)
