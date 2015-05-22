@@ -871,7 +871,8 @@ class SliceCanvas(props.HasProperties):
             
             rt      = self._offscreenTextures.get(overlay, None)
             display = self.displayCtx.getDisplay(overlay)
-            lo, hi  = display.getDisplayBounds()
+            opts    = display.getDisplayOpts()
+            lo, hi  = opts.getDisplayBounds()
 
             if rt is None or not display.enabled:
                 continue
@@ -905,6 +906,7 @@ class SliceCanvas(props.HasProperties):
         for overlay in self.displayCtx.getOrderedOverlays():
 
             display = self.displayCtx.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
             globj   = self._glObjects.get(overlay, None)
             
             if (globj is None) or (not display.enabled):
@@ -929,7 +931,7 @@ class SliceCanvas(props.HasProperties):
             elif self.renderMode == 'offscreen':
                 
                 rt     = self._offscreenTextures.get(overlay, None)
-                lo, hi = display.getDisplayBounds()
+                lo, hi = opts.getDisplayBounds()
 
                 # Assume that all is well - the texture
                 # just has not yet been created

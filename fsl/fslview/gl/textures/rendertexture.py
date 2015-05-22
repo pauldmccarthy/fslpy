@@ -144,6 +144,11 @@ class GLObjectRenderTexture(RenderTexture):
 
         resolution = globj.getDataResolution(self.__xax, self.__yax)
 
+        if resolution is None:
+            log.warn('Appying hacky default resolution '
+                     'for GLObject {}'.format(type(globj).__name__))
+            resolution = [256, 256, 256]
+
         width  = resolution[self.__xax]
         height = resolution[self.__yax]
 

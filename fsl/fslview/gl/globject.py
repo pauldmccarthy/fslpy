@@ -218,10 +218,10 @@ class GLImageObject(GLObject):
     def getDataResolution(self, xax, yax):
 
         image   = self.image
-        display = self.display
-        res     = display.resolution 
+        opts    = self.displayOpts
+        res     = opts.resolution 
         
-        if display.transform in ('id', 'pixdim'):
+        if opts.transform in ('id', 'pixdim'):
 
             pixdim = np.array(image.pixdim[:3])
             steps  = [res, res, res] / pixdim
@@ -230,7 +230,7 @@ class GLImageObject(GLObject):
             return np.array(res.round(), dtype=np.uint32)
         
         else:
-            lo, hi = display.getDisplayBounds()
+            lo, hi = opts.getDisplayBounds()
             minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3
 
