@@ -101,6 +101,8 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Colour command line (e.g. renderpy background) should be floating point  in the range [0, 1]
+** GLModel - annotate view with model name
 ** OrthoViewProfile - mouse wheel on canvas scrolls through displayed slice
 ** LineVector - modulate line length
 ** LineVector - Threshold on vector length
