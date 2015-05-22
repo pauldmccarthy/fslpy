@@ -437,6 +437,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             self.setConstraint('zrange',       'minDistance', newZGap)
             self.setConstraint('sliceSpacing', 'minval',      newZGap)
 
+            self.zrange.x     = newZRange
+            self.sliceSpacing = newZGap
+
 
     def _overlayBoundsChanged(self, *a):
         """Overrides :meth:`.SliceCanvas._overlayBoundsChanged`.
