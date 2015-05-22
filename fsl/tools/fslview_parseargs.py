@@ -329,7 +329,7 @@ EXTRA = td.TypeDict({
 # an inverse transforms dictionary
 def _imageTrans(i):
     if i == 'none': return None
-    else:           return i.overlayFile
+    else:           return i.dataSource
     
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
@@ -778,7 +778,7 @@ def _generateArgs(source, propNames=None):
     """
 
     if propNames is None:
-        propNames = OPTIONS.get(source, allhits=True)
+        propNames = concat(OPTIONS.get(source, allhits=True))
         
     longArgs  = {name : ARGUMENTS[source, name][1] for name in propNames}
     xforms    = {}
