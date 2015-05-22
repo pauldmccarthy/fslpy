@@ -122,7 +122,7 @@ class Editor(props.HasProperties):
         if overlay is None:
             return
         
-        display = self._displayCtx.getDisplay(overlay)
+        opts = self._displayCtx.getOpts(overlay)
 
         selectBlock, offset = self._selection.getBoundedSelection()
 
@@ -141,14 +141,14 @@ class Editor(props.HasProperties):
         if   len(overlay.shape) == 3:
             oldVals = overlay.data[xlo:xhi, ylo:yhi, zlo:zhi]
         elif len(overlay.shape) == 4:
-            oldVals = overlay.data[xlo:xhi, ylo:yhi, zlo:zhi, display.volume]
+            oldVals = overlay.data[xlo:xhi, ylo:yhi, zlo:zhi, opts.volume]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 
         selectBlock = selectBlock == 0
         newVals[selectBlock] = oldVals[selectBlock]
         
-        change = ValueChange(overlay, display.volume, offset, oldVals, newVals)
+        change = ValueChange(overlay, opts.volume, offset, oldVals, newVals)
         self._applyChange(change)
         self._changeMade( change)
 
@@ -236,9 +236,9 @@ class Editor(props.HasProperties):
     def _applyChange(self, change):
 
         overlay = change.overlay
-        display = self._displayCtx.getDisplay(overlay)
+        opts    = self._displayCtx.getOpts(overlay)
 
-        if overlay.is4DImage(): volume = display.volume
+        if overlay.is4DImage(): volume = opts.volume
         else:                   volume = None
         
         self._displayCtx.selectOverlay(overlay)
@@ -258,11 +258,11 @@ class Editor(props.HasProperties):
     def _revertChange(self, change):
 
         overlay = change.ovelay
-        display = self._displayCtx.getDisplay(overlay)
+        opts    = self._displayCtx.getOpts(overlay)
         
         self._displayCtx.selectOverlay(overlay)
 
-        if overlay.is4DImage(): volume = display.volume
+        if overlay.is4DImage(): volume = opts.volume
         else:                   volume = None 
 
         if isinstance(change, ValueChange):
@@ -296,7 +296,7 @@ class Editor(props.HasProperties):
             return
 
         overlayIdx = self._overlayList.index(overlay) 
-        display    = self._displayCtx.getDisplay(overlay)
+        opts       = self._displayCtx.getDisplay(overlay)
         
         roi       = np.zeros(overlay.shape[:3], dtype=overlay.data.dtype)
         selection = self._selection.selection > 0
@@ -304,7 +304,7 @@ class Editor(props.HasProperties):
         if   len(overlay.shape) == 3:
             roi[selection] = overlay.data[selection]
         elif len(overlay.shape) == 4:
-            roi[selection] = overlay.data[:, :, :, display.volume][selection]
+            roi[selection] = overlay.data[:, :, :, opts.volume][selection]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 

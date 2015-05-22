@@ -29,6 +29,7 @@ class Selection(props.HasProperties):
     def __init__(self, image, display):
         self._image                = image
         self._display              = display
+        self._opts                 = display.getDisplayOpts()
         self._lastChangeOffset     = None
         self._lastChangeOldBlock   = None
         self._lastChangeNewBlock   = None
@@ -206,7 +207,7 @@ class Selection(props.HasProperties):
         if   len(self._image.shape) == 3:
             data = self._image
         elif len(self._image.shape) == 4:
-            data = self._image[:, :, :, self._display.volume]
+            data = self._image[:, :, :, self._opts.volume]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 

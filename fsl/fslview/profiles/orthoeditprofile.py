@@ -166,13 +166,14 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             return
 
         display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
 
         # Edit mode is only supported on images with
         # the 'volume' type, in 'id' or 'pixdim'
         # transformation for the time being
         if not isinstance(overlay, fslimage.Image) or \
            display.overlayType != 'volume'         or \
-           display.transform not in ('id', 'pixdim'):
+           opts.transform not in ('id', 'pixdim'):
             
             self._currentOverlay = None
             log.warn('Editing is only possible on volume '
@@ -186,8 +187,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         self._selAnnotation = annotations.VoxelSelection( 
             selection,
-            display.getTransform('display', 'voxel'),
-            display.getTransform('voxel',   'display'),
+            opts.getTransform('display', 'voxel'),
+            opts.getTransform('voxel',   'display'),
             colour=self.selectionOverlayColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
@@ -221,10 +222,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         """Returns the voxel location, for the currently selected overlay,
         which corresponds to the specified canvas position.
         """
-        display = self._displayCtx.getDisplay(self._currentOverlay)
+        opts = self._displayCtx.getOpts(self._currentOverlay)
 
         voxel = transform.transform(
-            [canvasPos], display.getTransform('display', 'voxel'))[0]
+            [canvasPos], opts.getTransform('display', 'voxel'))[0]
 
         # Using floor(voxel+0.5) because, when at the
         # midpoint, I want to round up. np.round rounds
@@ -241,8 +242,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         were to click.
         """
 
-        display = self._displayCtx.getDisplay(self._currentOverlay)
-        shape   = self._currentOverlay.shape
+        opts  = self._displayCtx.getOpts(self._currentOverlay)
+        shape = self._currentOverlay.shape
         
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)
@@ -259,8 +260,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().grid(
                 block,
-                display.getTransform('display', 'voxel'),
-                display.getTransform('voxel',   'display'),
+                opts.getTransform('display', 'voxel'),
+                opts.getTransform('voxel',   'display'),
                 offsets=offset,
                 colour=colour)
 
