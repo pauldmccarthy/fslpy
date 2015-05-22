@@ -48,9 +48,9 @@ import logging
 import props
 
 import fsl.utils.typedict  as td
-import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
 import fsl.data.model      as fslmodel
+import fsl.fslview.overlay as fsloverlay
 import fsl.utils.transform as transform
 
 # The colour maps module needs to be imported
@@ -669,29 +669,28 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     ovlIdxs = []
     for i in range(len(argv)):
-        try:
 
-            # TODO You are only supporting
-            #      volumetric images here
-            
-            # imageio.addExt will raise an error if
-            # the argument is not a valid image file
-            argv[i] = iio.addExt(op.expanduser(argv[i]), mustExist=True)
+        # See if the current argument looks like a data source
+        dtype, fname = fsloverlay.guessDataSourceType(argv[i])
 
-            # Check that this overlay file was 
-            # not a parameter to a file option
-            if i > 0 and argv[i - 1].strip('-') in fileOpts:
-                continue
-
-            # Otherwise, it's an overlay
-            # file that needs to be loaded
-            ovlIdxs.append(i)
-        except:
-            
-            if argv[i].endswith('vtk'):
-                log.warn('Applying hack to load VTK model files')
-                ovlIdxs.append(i)
+        # If the file name refers to a file that
+        # does not exist, assume it is an argument
+        if not op.exists(fname):
             continue
+
+        # Check that this overlay file was 
+        # not a parameter to a file option
+        if i > 0 and argv[i - 1].strip('-') in fileOpts:
+            continue
+
+        # Unrecognised overlay type -
+        # I don't know what to do
+        if dtype is None:
+            raise RuntimeError('Unrecognised overlay type: {}'.format(fname))
+
+        # Otherwise, it's an overlay
+        # file that needs to be loaded
+        ovlIdxs.append(i)
         
     ovlIdxs.append(len(argv))
 
@@ -894,19 +893,8 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
                      :func:`fsl.data.imageio.loadImages` function.
     """
 
-    paths  = [o.overlay for o in args.overlays]
-
-    # TODO You are only supporting
-    #      volumetric overlays here
-
-    log.warn('Applying hack to support vtk model files')
-
-    nonVolOverlays = [p for p in paths if     p.endswith('.vtk')]
-    volOverlays    = [p for p in paths if not p.endswith('.vtk')]
-
-    overlays = iio.loadImages(volOverlays, **kwargs)
-
-    overlays.extend([fslmodel.Model(o) for o in nonVolOverlays])
+    paths    = [o.overlay for o in args.overlays]
+    overlays = fsloverlay.loadOverlays(paths, **kwargs)
 
     overlayList.extend(overlays)
 
@@ -939,7 +927,6 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
         # value. If the modulate file is not valid,
         # an error is raised.
         if isinstance(opts, fsldisplay.VectorOpts) and \
-           isinstance(overlay, fslimage.Image)     and \
            args.overlays[i].modulate is not None:
 
             modImage = _findOrLoad(overlayList,

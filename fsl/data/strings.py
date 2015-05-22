@@ -13,15 +13,18 @@ messages = TypeDict({
     'fslview.loading'              : 'Loading {} ...',
     'FSLViewSplash.default'        : 'Loading ...',
 
-    'imageio.saveImage.error'      : 'An error occurred saving the file. '
-                                     'Details: {}',
-    'imageio.loadImage.decompress' : '{} is a large file ({} MB) - '
-                                     'decompressing to {}, to allow memory '
-                                     'mapping...',
-
-    'imageio.loadImages.loading' : 'Loading {} ...',
-    'imageio.loadImages.error'   : 'An error occurred loading the image {}\n\n'
+    'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
+    
+    'image.loadImage.decompress' : '{} is a large file ({} MB) - '
+                                   'decompressing to {}, to allow memory '
+                                   'mapping...',
+
+    'overlay.loadOverlays.loading'     : 'Loading {} ...',
+    'overlay.loadOverlays.error'       : 'An error occurred loading the image {}\n\n'
+                                         'Details: {}',
+
+    'overlay.loadOverlays.unknownType' : 'Unknown data type',
 
     'actions.loadcolourmap.loadcmap'    : 'Open colour map file',
     'actions.loadcolourmap.namecmap'    : 'Enter a name for the colour map - '
@@ -69,10 +72,12 @@ messages = TypeDict({
 
 
 titles = TypeDict({
-    'imageio.saveImage.dialog' : 'Save image file',
-    'imageio.addImages.dialog' : 'Open image files',
+    'image.saveImage.dialog' : 'Save image file',
+
     
-    'imageio.loadImages.error'  : 'Error loading image',
+    'overlay.addOverlays.dialog' : 'Open overlay files',
+    
+    'overlay.loadOverlays.error'  : 'Error loading overlay',
 
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',

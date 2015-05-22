@@ -8,6 +8,9 @@
 import os.path as op
 import numpy   as np
 
+ALLOWED_EXTENSIONS     = ['.vtk']
+EXTENSION_DESCRIPTIONS = ['VTK polygon model file']
+
 
 def loadVTKPolydataFile(infile):
     

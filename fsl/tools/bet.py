@@ -15,7 +15,6 @@ import fsl.fslview.colourmaps       as colourmaps
 colourmaps.initColourMaps()
 
 import fsl.data.image               as fslimage
-import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
 import fsl.fslview.gl               as fslgl
@@ -40,12 +39,12 @@ class Options(props.HasProperties):
 
     inputImage           = props.FilePath(
         exists=True,
-        suffixes=iio.ALLOWED_EXTENSIONS,
+        suffixes=fslimage.ALLOWED_EXTENSIONS,
         required=True)
     outputImage          = props.FilePath(required=True)
     t2Image              = props.FilePath(
         exists=True,
-        suffixes=iio.ALLOWED_EXTENSIONS,
+        suffixes=fslimage.ALLOWED_EXTENSIONS,
         required=lambda i: i.runChoice == '-A2')
 
     runChoice            = props.Choice(runChoices)
@@ -72,7 +71,7 @@ class Options(props.HasProperties):
         """
 
         if not valid: return
-        value = iio.removeExt(value)
+        value = fslimage.removeExt(value)
         self.outputImage = value + '_brain'
 
         

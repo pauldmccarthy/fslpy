@@ -12,10 +12,14 @@ application.
 """
 
 import logging
+import os
+import os.path as op
 
 import props
 
-import fsl.data.imageio as iio
+import fsl.data.image   as fslimage
+import fsl.data.strings as strings
+import fsl.data.model   as fslmodel
 
 
 log = logging.getLogger(__name__)
@@ -70,11 +74,10 @@ class OverlayList(props.HasProperties):
         :class:`OverlayList`.
         """
 
-        # TODO this only supports volumetric images
-        images = iio.interactiveLoadImages(fromDir)
+        overlays = interactiveLoadOverlays(fromDir)
         
-        if addToEnd: self.extend(      images)
-        else:        self.insertAll(0, images)
+        if addToEnd: self.extend(      overlays)
+        else:        self.insertAll(0, overlays)
 
 
     def find(self, name):
@@ -133,3 +136,219 @@ class OverlayList(props.HasProperties):
     
     def insertAll(self, index, items):
         return self.overlays.insertAll(index, items) 
+
+
+def guessDataSourceType(filename):
+    """A convenience function which, given the name of a file, figures out a
+    suitable data source type.
+
+    Returns a tuple containing two values - a type which should be able to
+    load the filename, and the filename, possibly adjusted. If the file type
+    is unrecognised, the first tuple value will be ``None``.
+    """
+
+    if filename.endswith('.vtk'):
+        return fslmodel.Model, filename
+    
+    else:
+        filename = fslimage.addExt(filename, False)
+        if any([filename.endswith(e) for e in fslimage.ALLOWED_EXTENSIONS]):
+            return fslimage.Image, filename
+
+    return None, filename
+
+
+def makeWildcard():
+    """Returns a wildcard string for use in a file dialog, to limit
+    the acceptable file types.
+    
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
+    """
+    
+    allowedExts  = fslimage.ALLOWED_EXTENSIONS     + \
+                   fslmodel.ALLOWED_EXTENSIONS
+    descs        = fslimage.EXTENSION_DESCRIPTIONS + \
+                   fslmodel.EXTENSION_DESCRIPTIONS
+
+    exts  = ['*{}'.format(ext) for ext in allowedExts]
+    exts  = [';'.join(exts)]        + exts
+    descs = ['All supported files'] + descs
+
+    wcParts = ['|'.join((desc, ext)) for (desc, ext) in zip(descs, exts)]
+
+    return '|'.join(wcParts)
+
+
+def loadOverlays(paths, loadFunc='default', errorFunc='default'):
+    """Loads all of the overlays specified in the sequence of files
+    contained in ``paths``.
+
+    :param loadFunc:  A function which is called just before each overlay
+                      is loaded, and is passed the overlay path. The default
+                      load function uses a :mod:`wx` popup frame to display
+                      the name of the overlay currently being loaded. Pass in
+                      ``None`` to disable this default behaviour.
+
+    :param errorFunc: A function which is called if an error occurs while
+                      loading an overlay, being passed the name of the
+                      overlay, and either the :class:`Exception` which 
+                      occurred, or a string containing an error message.  The
+                      default function pops up a :class:`wx.MessageBox` with
+                      an error message. Pass in ``None`` to disable this
+                      default behaviour.
+
+    :Returns a list of overlay objects
+    """
+
+    defaultLoad = loadFunc == 'default'
+
+    # If the default load function is
+    # being used, create a dialog window
+    # to show the currently loading image
+    if defaultLoad:
+        import wx
+        loadDlg       = wx.Frame(wx.GetApp().GetTopWindow(), style=0)
+        loadDlgStatus = wx.StaticText(loadDlg, style=wx.ST_ELLIPSIZE_MIDDLE)
+        
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(loadDlgStatus,
+                  border=25,
+                  proportion=1,
+                  flag=wx.EXPAND | wx.ALL | wx.ALIGN_CENTRE)
+        loadDlg.SetSizer(sizer)
+        
+        loadDlg.SetSize((400, 100))
+        loadDlg.Layout()
+
+    # The default load function updates
+    # the dialog window created above
+    def defaultLoadFunc(s):
+        msg = strings.messages['overlay.loadOverlays.loading'].format(s)
+        loadDlgStatus.SetLabel(msg)
+        loadDlg.Layout()
+        loadDlg.Refresh()
+        loadDlg.Update()
+
+    # The default error function
+    # shows an error dialog
+    def defaultErrorFunc(s, e):
+        import wx
+        e     = str(e)
+        msg   = strings.messages['overlay.loadOverlays.error'].format(s, e)
+        title = strings.titles[  'overlay.loadOverlays.error']
+        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
+
+    # If loadFunc or errorFunc are explicitly set to
+    # None, use these no-op load/error functions
+    if loadFunc  is None: loadFunc  = lambda s:    None
+    if errorFunc is None: errorFunc = lambda s, e: None
+
+    # Or if not provided, use the 
+    # default functions defined above
+    if loadFunc  == 'default': loadFunc  = defaultLoadFunc
+    if errorFunc == 'default': errorFunc = defaultErrorFunc
+    
+    overlays = []
+
+    # If using the default load 
+    # function, show the dialog
+    if defaultLoad:
+        loadDlg.CentreOnParent()
+        loadDlg.Show(True)
+        loadDlg.Update()
+
+    # Load the images
+    for path in paths:
+
+        loadFunc(path)
+
+        dtype, path = guessDataSourceType(path)
+
+        if dtype is None:
+            errorFunc(
+                path,
+                strings.messages['overlay.loadOverlays.unknownType'])
+            continue
+
+        try:                   overlays.append(dtype(path))
+        except Exception as e: errorFunc(path, e)
+
+    if defaultLoad:
+        loadDlg.Close()
+            
+    return overlays
+
+
+def interactiveLoadOverlays(fromDir=None, **kwargs):
+    """Convenience method for interactively loading one or more overlays.
+    
+    If the :mod:`wx` package is available, pops up a file dialog
+    prompting the user to select one or more overlays to load.
+
+    :param str fromDir:   Directory in which the file dialog should start.
+                          If ``None``, the most recently visited directory
+                          (via this method) is used, or a directory from
+                          an already loaded overlay, or the current working
+                          directory.
+
+    Returns: A list containing the overlays that were loaded.
+    
+    :raise ImportError:  if :mod:`wx` is not present.
+    :raise RuntimeError: if a :class:`wx.App` has not been created.
+    """
+    import wx
+
+    app = wx.GetApp()
+
+    if app is None:
+        raise RuntimeError('A wx.App has not been created')
+
+    lastDir = getattr(interactiveLoadOverlays, 'lastDir', None)
+
+    if lastDir is None:
+        lastDir = os.getcwd()
+
+    saveLastDir = False
+    if fromDir is None:
+        fromDir = lastDir
+        saveLastDir = True
+
+    dlg = wx.FileDialog(app.GetTopWindow(),
+                        message=strings.titles['overlay.addOverlays.dialog'],
+                        defaultDir=fromDir,
+                        wildcard=makeWildcard(),
+                        style=wx.FD_OPEN | wx.FD_MULTIPLE)
+
+    if dlg.ShowModal() != wx.ID_OK:
+        return []
+
+    paths  = dlg.GetPaths()
+    images = loadOverlays(paths, **kwargs)
+
+    if saveLastDir:
+        interactiveLoadOverlays.lastDir = op.dirname(paths[-1])
+
+    return images
+    
+
+def saveOverlay(overlay, fromDir=None):
+    """Convenience function for interactively saving changes to an overlay.
+
+    .. note:: Only :class:`.Image` overlays are supported at the moment.
+
+    :param overlay: The overlay instance to be saved.
+
+    :param fromDir: Directory in which the file dialog should start.
+                    If ``None``, the most recently visited directory
+                    (via this method) is used, or the directory from
+                    the given image, or the current working directory.
+
+    :raise ImportError:  if :mod:`wx` is not present.
+    :raise RuntimeError: if a :class:`wx.App` has not been created.
+    """
+
+    if not isinstance(overlay, fslimage.Image):
+        raise ValueError('Only Image overlays are supported')
+    
+    fslimage.saveImage(overlay, fromDir)

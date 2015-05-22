@@ -20,8 +20,8 @@ import props
 import fsl
 import fsl.tools.fslview_parseargs as fslview_parseargs
 import fsl.data.image              as fslimage
-import fsl.data.imageio            as iio
 import fsl.data.strings            as strings
+import fsl.fslview.overlay         as fsloverlay
 import fsl.fslview.displaycontext  as displayctx
 import fsl.fslview.controls        as fslcontrols
 import                                colourbarpanel
@@ -33,20 +33,25 @@ log = logging.getLogger(__name__)
 
 def _takeScreenShot(overlayList, displayCtx, canvas):
 
-    log.warn('Non-volumetric overlay types are not supported yet')
-
     overlays = displayCtx.getOrderedOverlays()
-    overlays = [o for o in overlays if isinstance(o, fslimage.Image)]
+    ovlCopy  = list(overlays)
 
     # Check to make sure that all overlays are saved
     # on disk, and ask the user what they want to
     # do about the ones that aren't.
     for overlay in overlays:
 
+        # Skip disabled overlays
+        display = displayCtx.getDisplay(overlay)
+        
+        if not display.enabled:
+            ovlCopy.remove(overlay)
+            continue
+
         # If the image is not saved, popup a dialog
         # telling the user they must save the image
         # before the screenshot can proceed
-        if not overlay.saved:
+        if isinstance(overlay, fslimage.Image) and not overlay.saved:
             title = strings.titles[  'CanvasPanel.screenshot.notSaved']
             msg   = strings.messages['CanvasPanel.screenshot.notSaved']
             msg   = msg.format(overlay.name)
@@ -67,15 +72,18 @@ def _takeScreenShot(overlayList, displayCtx, canvas):
 
             # The user chose to save the image
             if result == wx.ID_YES:
-                iio.saveImage(overlay)
+                fsloverlay.saveOverlay(overlay)
 
             # The user chose to skip the image
             elif result == wx.ID_NO:
+                ovlCopy.remove(overlay)
                 continue
 
             # the user clicked cancel, or closed the dialog
             else:
-                return    
+                return
+
+    overlays = ovlCopy
 
     # Ask the user where they want 
     # the screenshot to be saved
@@ -128,19 +136,10 @@ def _takeScreenShot(overlayList, displayCtx, canvas):
         argv += ['{}'.format(c) for c in zcanvas.pos.xy]
 
     # Add display options for each overlay
-    for overlay in displayCtx.getOrderedOverlays():
-
-        if not isinstance(overlay, fslimage.Image):
-            log.warn('Non-volumetric images not supported yet')
-            continue
+    for overlay in overlays:
 
         display = displayCtx.getDisplay(overlay)
         fname   = overlay.dataSource
-
-        # Skip invisible/unsaved/in-memory images
-        if not (display.enabled and overlay.saved):
-            continue
-
         ovlArgv = fslview_parseargs.generateOverlayArgs(overlay, displayCtx)
         argv   += [fname] + ovlArgv
 

@@ -41,7 +41,6 @@ class SaveOverlayAction(actions.Action):
 
         for ovl in self._overlayList:
             if not isinstance(ovl, fslimage.Image):
-                log.warn('Non-volumetric overlay types not supported yet')
                 continue
             
             ovl.removeListener('saved', self._name)

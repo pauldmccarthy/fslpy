@@ -492,6 +492,8 @@ def context(args):
     imageList  = fslimage.ImageList()
     displayCtx = displaycontext.DisplayContext(imageList)
 
+    # TODO rewrite for non-volumetric
+    # 
     # The handleImageArgs function uses the
     # fsl.data.imageio.loadImages  function,
     # which will call these functions as it
