@@ -13,6 +13,7 @@ import                            globject
 import fsl.utils.transform     as transform
 import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.textures as textures
+import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.colourmaps  as fslcmaps
 
 
@@ -35,8 +36,20 @@ class GLModel(globject.GLObject):
         self._renderTexture = textures.GLObjectRenderTexture(
             self.name, self, 0, 1)
 
+        vertShaderSrc = shaders.getVertexShader(  self)
+        fragShaderSrc = shaders.getFragmentShader(self)
+        self.shaders  = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
+
+        self.texPos = gl.glGetUniformLocation(self.shaders, 'tex')
+
+        gl.glUseProgram(self.shaders)
+        gl.glUniform1i( self.texPos, 0)
+        gl.glUseProgram(0)
+
+        
     def destroy(self):
         self._renderTexture.destroy()
+        gl.glDeleteProgram(self.shaders)
 
 
     def _updateVertices(self, *a):
@@ -180,8 +193,12 @@ class GLModel(globject.GLObject):
         self._renderTexture.unbindAsRenderTarget()
         self._renderTexture.restoreViewport()
 
+        gl.glUseProgram(self.shaders)
+
         self._renderTexture.drawOnBounds(
             zpos, xmin, xmax, ymin, ymax, xax, yax)
+
+        gl.glUseProgram(0)
                    
 
     
