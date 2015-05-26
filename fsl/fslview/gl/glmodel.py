@@ -40,10 +40,14 @@ class GLModel(globject.GLObject):
         fragShaderSrc = shaders.getFragmentShader(self)
         self.shaders  = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
-        self.texPos = gl.glGetUniformLocation(self.shaders, 'tex')
+        self.texPos       = gl.glGetUniformLocation(self.shaders, 'tex')
+        self.texWidthPos  = gl.glGetUniformLocation(self.shaders, 'texWidth')
+        self.texHeightPos = gl.glGetUniformLocation(self.shaders, 'texHeight')
 
         gl.glUseProgram(self.shaders)
         gl.glUniform1i( self.texPos, 0)
+        gl.glUniform1f( self.texWidthPos,  256.0)
+        gl.glUniform1f( self.texHeightPos, 256.0)
         gl.glUseProgram(0)
 
         
@@ -193,12 +197,14 @@ class GLModel(globject.GLObject):
         self._renderTexture.unbindAsRenderTarget()
         self._renderTexture.restoreViewport()
 
-        gl.glUseProgram(self.shaders)
+        if self.opts.outline:
+            gl.glUseProgram(self.shaders)
 
         self._renderTexture.drawOnBounds(
             zpos, xmin, xmax, ymin, ymax, xax, yax)
 
-        gl.glUseProgram(0)
+        if self.opts.outline:
+            gl.glUseProgram(0)
                    
 
     
