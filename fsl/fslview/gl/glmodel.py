@@ -12,6 +12,7 @@ import OpenGL.GL as gl
 import                            globject
 import fsl.utils.transform     as transform
 import fsl.fslview.gl.routines as glroutines
+import fsl.fslview.gl.textures as textures
 import fsl.fslview.colourmaps  as fslcmaps
 
 
@@ -31,9 +32,11 @@ class GLModel(globject.GLObject):
 
         self._updateVertices()
 
+        self._renderTexture = textures.GLObjectRenderTexture(
+            self.name, self, 0, 1)
 
     def destroy(self):
-        pass
+        self._renderTexture.destroy()
 
 
     def _updateVertices(self, *a):
@@ -59,10 +62,11 @@ class GLModel(globject.GLObject):
         self.xax = xax
         self.yax = yax
         self.zax = 3 - xax - yax
+
+        self._renderTexture.setAxes(xax, yax)
  
 
     def preDraw(self):
-
         pass
 
     
@@ -101,21 +105,18 @@ class GLModel(globject.GLObject):
                                             clipPlaneVerts[1, :],
                                             clipPlaneVerts[2, :])
 
+        self._renderTexture.bindAsRenderTarget()
+        self._renderTexture.setRenderViewport(xax, yax, lo, hi)
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
+
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnable(gl.GL_CLIP_PLANE0)
         gl.glEnable(gl.GL_CULL_FACE)
         gl.glEnable(gl.GL_STENCIL_TEST)
-        gl.glDisable(gl.GL_DEPTH_TEST)
 
-        # If we're in negative Z space, we need to
-        # subtract the front face mask from the back
-        # face mask, and vice-versa in positive z
-        # space.
-        direction = [gl.GL_INCR, gl.GL_DECR]
-        if zpos < 0: faceOrder = [gl.GL_FRONT, gl.GL_BACK]
-        else:        faceOrder = [gl.GL_BACK,  gl.GL_FRONT]
-
-        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
         gl.glClipPlane(gl.GL_CLIP_PLANE0, planeEq)
         gl.glColorMask(gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE, gl.GL_FALSE)
 
@@ -127,8 +128,18 @@ class GLModel(globject.GLObject):
         # intersection of the model with the clipping
         # plane.
         gl.glStencilFunc(gl.GL_ALWAYS, 0, 0)
- 
+
+        # I don't understand why, but if any of the
+        # display system axes are inverted, we need
+        # to render the back faces first, otherwise
+        # the cross-section mask will not be created
+        # correctly.
+        direction = [gl.GL_INCR, gl.GL_DECR]
+        if np.any(hi < lo): faceOrder = [gl.GL_FRONT, gl.GL_BACK]
+        else:               faceOrder = [gl.GL_BACK,  gl.GL_FRONT]
+        
         for face, direction in zip(faceOrder, direction):
+            
             gl.glStencilOp(gl.GL_KEEP, gl.GL_KEEP, direction)
             gl.glCullFace(face)
 
@@ -144,6 +155,7 @@ class GLModel(globject.GLObject):
 
         gl.glDisable(gl.GL_CLIP_PLANE0)
         gl.glDisable(gl.GL_CULL_FACE)
+        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
 
         gl.glStencilFunc(gl.GL_NOTEQUAL, 0, 255)
 
@@ -164,7 +176,13 @@ class GLModel(globject.GLObject):
         gl.glEnd()
 
         gl.glDisable(gl.GL_STENCIL_TEST)
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY) 
+
+        self._renderTexture.unbindAsRenderTarget()
+        self._renderTexture.restoreViewport()
+
+        self._renderTexture.drawOnBounds(
+            zpos, xmin, xmax, ymin, ymax, xax, yax)
+                   
 
     
     def postDraw(self):

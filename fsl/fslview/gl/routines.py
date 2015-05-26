@@ -5,12 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
 import itertools           as it
 
 import OpenGL.GL           as gl
 import numpy               as np
 
 import fsl.utils.transform as transform
+
+
+log = logging.getLogger(__name__)
 
 
 def show2D(xax, yax, width, height, lo, hi):
@@ -26,6 +31,10 @@ def show2D(xax, yax, width, height, lo, hi):
     gl.glLoadIdentity()
 
     zdist = max(abs(zmin), abs(zmax))
+
+    log.debug('Configuring orthographic viewport: '
+              'X: [{} - {}] Y: [{} - {}] Z: [{} - {}]'.format(
+                  xmin, xmax, ymin, ymax, -zdist, zdist))
 
     gl.glOrtho(xmin, xmax, ymin, ymax, -zdist, zdist)
     gl.glMatrixMode(gl.GL_MODELVIEW)
