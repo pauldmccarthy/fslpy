@@ -32,16 +32,21 @@ class RenderTexture(texture.Texture2D):
         """
 
         texture.Texture2D.__init__(self, name, interp)
-        
-        self.__frameBuffer = glfbo.glGenFramebuffersEXT(1)
-        log.debug('Created fbo: {}'.format(self.__frameBuffer))
+
+        self.__frameBuffer  = glfbo.glGenFramebuffersEXT(1)
+        self.__renderBuffer = glfbo.glGenRenderbuffersEXT(1)
+        log.debug('Created fbo {} and render buffer {}'.format(
+            self.__frameBuffer, self.__renderBuffer))
 
         
     def destroy(self):
         texture.Texture.destroy(self)
 
-        log.debug('Deleting fbo {}'.format(self.__frameBuffer))
-        glfbo.glDeleteFramebuffersEXT(gltypes.GLuint(self.__frameBuffer))
+        log.debug('Deleting fbo {} and render buffer {}'.format(
+            self.__frameBuffer,
+            self.__renderBuffer))
+        glfbo.glDeleteFramebuffersEXT(    gltypes.GLuint(self.__frameBuffer))
+        glfbo.glDeleteRenderbuffersEXT(1, gltypes.GLuint(self.__renderBuffer))
 
 
     def setData(self, data):
@@ -50,8 +55,10 @@ class RenderTexture(texture.Texture2D):
 
 
     def bindAsRenderTarget(self):
-        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT,
-                                   self.__frameBuffer) 
+        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,
+                                    self.__frameBuffer) 
+        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT,
+                                    self.__renderBuffer)
 
 
     def setRenderViewport(self, xax, yax, lo, hi):
@@ -76,20 +83,37 @@ class RenderTexture(texture.Texture2D):
 
     @classmethod
     def unbindAsRenderTarget(cls):
-        glfbo.glBindFramebufferEXT(glfbo.GL_FRAMEBUFFER_EXT, 0) 
+        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,  0)
+        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT, 0) 
 
         
     def refresh(self):
         texture.Texture2D.refresh(self)
 
+        width, height = self.getSize()
+
         # Configure the frame buffer
         self.bindTexture()
         self.bindAsRenderTarget()
-        glfbo.glFramebufferTexture2DEXT(glfbo.GL_FRAMEBUFFER_EXT,
-                                        glfbo.GL_COLOR_ATTACHMENT0_EXT,
-                                        gl   .GL_TEXTURE_2D,
-                                        self.getTextureHandle(),
-                                        0)
+        glfbo.glFramebufferTexture2DEXT(
+            glfbo.GL_FRAMEBUFFER_EXT,
+            glfbo.GL_COLOR_ATTACHMENT0_EXT,
+            gl   .GL_TEXTURE_2D,
+            self.getTextureHandle(),
+            0)
+
+        # and the render buffer
+        glfbo.glRenderbufferStorageEXT(
+            glfbo.GL_RENDERBUFFER_EXT,
+            gl.GL_DEPTH24_STENCIL8,
+            width,
+            height)
+
+        glfbo.glFramebufferRenderbufferEXT(
+            glfbo.GL_FRAMEBUFFER_EXT,
+            gl.GL_DEPTH_STENCIL_ATTACHMENT,
+            glfbo.GL_RENDERBUFFER_EXT,
+            self.__renderBuffer)
             
         if glfbo.glCheckFramebufferStatusEXT(glfbo.GL_FRAMEBUFFER_EXT) != \
            glfbo.GL_FRAMEBUFFER_COMPLETE_EXT:
