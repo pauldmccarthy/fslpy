@@ -109,14 +109,6 @@ class ImageOpts(fsldisplay.DisplayOpts):
         return transform.axisBounds(
             self.overlay.shape[:3], self.getTransform('voxel', 'display'))
 
-
-    def getOldDisplayBounds(self):
-        """Returns the most recent display bounds before the current bounds.
-        """
-        return transform.axisBounds(
-            self.overlay.shape[:3],
-            self.getTransform('voxel', self.__oldTransform)) 
-    
                             
     def __setupTransforms(self):
         """Calculates transformation matrices between all of the possible
@@ -202,6 +194,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
 
     def __transformChanged(self, *a):
         """Called when the :attr:`transform` property is changed."""
+
 
         # Store references to the previous display related transformation
         # matrices, just in case anything (hint the DisplayContext object)

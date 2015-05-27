@@ -76,14 +76,6 @@ class DisplayOpts(props.SyncableHasProperties):
         raise NotImplementedError(
             'The getDisplayBounds method must be implemented by subclasses')
 
-    
-    def getOldDisplayBounds(self):
-        """When the display bounds change, this method must return the previous
-        value of the display bounds.
-        """
-        raise NotImplementedError(
-            'The getOldDisplayBounds method must be implemented by subclasses') 
-
 
 class Display(props.SyncableHasProperties):
     """

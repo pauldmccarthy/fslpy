@@ -98,11 +98,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
         return lohi[0, :], lohi[1, :]
 
-
-    def getOldDisplayBounds(self):
-        return self.overlay.getBounds()
-
-
+    
     def getCoordSpaceTransform(self):
 
         if self.refImage == 'none':
