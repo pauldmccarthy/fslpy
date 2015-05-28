@@ -324,15 +324,18 @@ class DisplayContext(props.SyncableHasProperties):
         # currently selected overlay.
         newDispLoc = opts.transformDisplayLocation(name, oldDispLoc)
 
-        log.debug('Preserving display location in '
-                  'terms of overlay {} ({}.{}): {} -> {}'.format(
-                      overlay,
-                      type(opts).__name__,
-                      name,
-                      oldDispLoc,
-                      newDispLoc))
-        
-        self.location.xyz = newDispLoc
+        # Ignore the new display location
+        # if it is not in the display bounds
+        if self.bounds.inBounds(newDispLoc):
+            log.debug('Preserving display location in '
+                      'terms of overlay {} ({}.{}): {} -> {}'.format(
+                          overlay,
+                          type(opts).__name__,
+                          name,
+                          oldDispLoc,
+                          newDispLoc))
+
+            self.location.xyz = newDispLoc
 
 
     def __updateBounds(self, *a):
