@@ -113,10 +113,6 @@ class GLModel(globject.GLObject):
         clipPlaneVerts[3, [xax, yax]] = [xmax, ymin]
         clipPlaneVerts[:,  zax]       =  zpos
 
-        if xform is not None:
-            clipPlaneVerts = transform.transform(clipPlaneVerts, xform)
-            vertices       = transform.transform(vertices, xform)
-
         vertices = vertices.ravel('C')
         planeEq  = glroutines.planeEquation(clipPlaneVerts[0, :],
                                             clipPlaneVerts[1, :],
@@ -201,8 +197,8 @@ class GLModel(globject.GLObject):
             gl.glUseProgram(self.shaders)
 
         self._renderTexture.drawOnBounds(
-            zpos, xmin, xmax, ymin, ymax, xax, yax)
-
+            zpos, xmin, xmax, ymin, ymax, xax, yax, xform)
+        
         if self.opts.outline:
             gl.glUseProgram(0)
                    
