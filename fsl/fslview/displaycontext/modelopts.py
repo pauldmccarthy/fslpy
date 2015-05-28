@@ -112,14 +112,58 @@ class ModelOpts(fsldisplay.DisplayOpts):
         return opts.getTransform(self.coordSpace, self.transform)
 
 
-    def __refImageChanged(self, *a):
+    def transformDisplayLocation(self, propName, oldLoc):
+
+        newLoc = oldLoc
         
+        if propName == 'refImage':
+
+            refImage    = self.refImage
+            oldRefImage = self.getLastValue('refImage')
+
+            if oldRefImage == 'none':
+                refOpts = self.displayCtx.getOpts(refImage)
+                newLoc  = transform.transform(
+                    [oldLoc],
+                    refOpts.getTransform(self.coordSpace, 'display'))[0] 
+
+            elif refImage == 'none':
+                oldRefOpts = self.displayCtx.getOpts(oldRefImage)
+                newLoc = transform.transform(
+                    [oldLoc],
+                    oldRefOpts.getTransform('display', self.coordSpace))[0]
+
+        elif propName == 'coordSpace':
+            if self.refImage != 'none':
+                refOpts  = self.displayCtx.getOpts(self.refImage)
+                worldLoc = transform.transform(
+                    [oldLoc],
+                    refOpts.getTransform(
+                        self.getLastValue('coordSpace'),
+                        'world'))[0]
+                newLoc   = transform.transform(
+                    [worldLoc],
+                    refOpts.getTransform(
+                        'world',
+                        self.coordSpace))[0]
+
+        elif propName == 'transform':
+
+            if self.refImage != 'none':
+                refOpts = self.displayCtx.getOpts(self.refImage)
+                newLoc  = refOpts.transformDisplayLocation(propName, oldLoc)
+
+        return newLoc
+
+
+    def __refImageChanged(self, *a):
+
         if self.__oldRefImage != 'none':
             opts = self.displayCtx.getOpts(self.__oldRefImage)
             self.unbindProps('transform', opts)
 
         self.__oldRefImage = self.refImage
-        
+
         if self.refImage != 'none':
             opts = self.displayCtx.getOpts(self.refImage)
             self.bindProps('transform', opts)

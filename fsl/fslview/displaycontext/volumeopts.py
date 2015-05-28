@@ -70,7 +70,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
         overlay = self.overlay
 
         # The display<->* transformation matrices
-        # are created in the _transformChanged method
+        # are created in the _setupTransforms method
         self.__xforms = {}
         self.__setupTransforms()
 
@@ -78,19 +78,13 @@ class ImageOpts(fsldisplay.DisplayOpts):
         if self.overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
-        self.addListener('transform', self.name, self.__transformChanged) 
-
-        self.__oldTransform = None
-        self.__transform    = self.transform
-        self.__transformChanged()
-
         # limit resolution to the image dimensions
         self.resolution = min(overlay.pixdim[:3])
         self.setConstraint('resolution', 'minval', self.resolution)
 
 
     def destroy(self):
-        self.removeListener('transform',  self.name)
+        pass
 
 
     def getDisplayBounds(self):
@@ -185,24 +179,23 @@ class ImageOpts(fsldisplay.DisplayOpts):
         return self.__xforms[from_, to]
 
 
-    def getLastTransform(self):
-        """Returns the most recent value of the :attr:`transform` property,
-        before its current value.
-        """
-        return self.__oldTransform
+    def transformDisplayLocation(self, propName, oldLoc):
 
+        if propName != 'transform':
+            return oldLoc
 
-    def __transformChanged(self, *a):
-        """Called when the :attr:`transform` property is changed."""
-
-
-        # Store references to the previous display related transformation
-        # matrices, just in case anything (hint the DisplayContext object)
-        # needs them for any particular reason (hint: so the DisplayContext
-        # can preserve the current display location, in terms of image world
-        # space, when the transform of the selected image changes)
-        self.__oldTransform = self.__transform
-        self.__transform    = self.transform
+        # Calculate the image world location using the
+        # old display<-> world transform, then transform
+        # it back to the new world->display transform. 
+        worldLoc = transform.transform(
+            [oldLoc],
+            self.getTransform(self.getLastValue('transform'), 'world'))[0]
+        
+        newLoc  = transform.transform(
+            [worldLoc],
+            self.getTransform('world', 'display'))[0]
+        
+        return newLoc
 
 
 class VolumeOpts(ImageOpts):

@@ -10,9 +10,7 @@ import logging
 
 import props
 
-import fsl.utils.transform as transform
-import display             as fsldisplay
-import                        volumeopts
+import display as fsldisplay
 
 
 log = logging.getLogger(__name__)
@@ -88,9 +86,6 @@ class DisplayContext(props.SyncableHasProperties):
         overlayList.addListener('overlays',
                                 self.__name,
                                 self.__overlayListChanged)
-        self.addListener(       'bounds',
-                                self.__name,
-                                self.__boundsChanged)
 
         
     def getDisplay(self, overlay):
@@ -261,33 +256,35 @@ class DisplayContext(props.SyncableHasProperties):
             
     def __displayOptsChanged(self, value, valid, opts, name):
         """Called when the :class:`.DisplayOpts` properties of any overlay
-        change. Updates the :attr:`bounds` property.
+        change. If the bounds o the Updates the :attr:`bounds` property and,
+        if the currently selected 
         """
 
         # This check is ugly, and is required due to
         # an ugly circular relationship which exists
-        # between parent/child DCs and the transform/
+        # between parent/child DCs and the *Opts/
         # location properties:
         # 
-        # 1. When the transform property of a child DC
-        #    Display object changes (this should always 
-        #    be due to user input), that change is 
-        #    propagated to the parent DC Display object.
+        # 1. When a property of a child DC DisplayOpts
+        #    object changes (e.g. ImageOpts.transform)
+        #    this should always be due to user input),
+        #    that change is propagated to the parent DC
+        #    DisplayOpts object.
         #
-        # 2. This results in the DC._transformChanged
+        # 2. This results in the DC._displayOptsChanged
         #    method (this method) being called on the
         #    parent DC.
         #
         # 3. Said method correctly updates the DC.location
         #    property, so that the world location of the
-        #    selected image is preserved.
+        #    selected overlay is preserved.
         #
         # 4. This location update is propagated back to
         #    the child DC.location property, which is
         #    updated to have the new correct location
         #    value.
         #
-        # 5. Then, the child DC._transformChanged method
+        # 5. Then, the child DC._displayOpteChanged method
         #    is called, which goes and updates the child
         #    DC.location property to contain a bogus
         #    value.
@@ -301,37 +298,40 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent().location == self.location:
                 return
 
+        overlay = opts.display.getOverlay()
 
-        overlay  = opts.display.getOverlay()
-        refImage = self.getReferenceImage(overlay)
+        # Save a copy of the location before
+        # updating the bounds, as the change
+        # to the bounds may result in the
+        # location being modified
+        oldDispLoc = self.location.xyz
 
-        if refImage is not None:
-            opts = self.getOpts(refImage)
-
-        if (overlay != self.getSelectedOverlay()) or \
-           not isinstance(opts, volumeopts.ImageOpts):
-            self.__updateBounds()
+        # Update the display context bounds
+        # to take into account any changes 
+        # to individual overlay bounds
+        self.__updateBounds()
+ 
+        # The main purpose of this method is to preserve
+        # the current display location in terms of the
+        # currently selected overlay, when the overlay
+        # bounds have changed. We don't care about changes
+        # to the options for other overlays.
+        if (overlay != self.getSelectedOverlay()):
             return
 
-        # If the currently selected overlay is an Image, and its
-        # transformation matrix property has changed, we want the
-        # current display location to be preserved, in terms of
-        # the corresponding image world coordinates.
-        
-        # Calculate the image world location using
-        # the old display<-> world transform, then
-        # transform it back to the new world->display
-        # transform. 
-        imgWorldLoc = transform.transform(
-            [self.location.xyz],
-            opts.getTransform(opts.getLastTransform(), 'world'))[0]
-        newDispLoc  = transform.transform(
-            [imgWorldLoc],
-            opts.getTransform('world', 'display'))[0]
+        # Now we want to update the display location
+        # so that it is preserved with respect to the
+        # currently selected overlay.
+        newDispLoc = opts.transformDisplayLocation(name, oldDispLoc)
 
-        # Update the display coordinate 
-        # system bounds, and the location
-        self.__updateBounds()
+        log.debug('Preserving display location in '
+                  'terms of overlay {} ({}.{}): {} -> {}'.format(
+                      overlay,
+                      type(opts).__name__,
+                      name,
+                      oldDispLoc,
+                      newDispLoc))
+        
         self.location.xyz = newDispLoc
 
 
@@ -362,14 +362,9 @@ class DisplayContext(props.SyncableHasProperties):
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
                           minBounds[2], maxBounds[2]]
- 
-            
-    def __boundsChanged(self, *a):
-        """Called when the :attr:`bounds` property changes.
-
-        Updates the constraints on the :attr:`location` property.
-        """
-
+        
+        # Update the constraints on the :attr:`location` 
+        # property to be aligned with the new bounds
         self.location.setLimits(0, self.bounds.xlo, self.bounds.xhi)
         self.location.setLimits(1, self.bounds.ylo, self.bounds.yhi)
         self.location.setLimits(2, self.bounds.zlo, self.bounds.zhi)

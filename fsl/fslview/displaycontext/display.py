@@ -77,6 +77,12 @@ class DisplayOpts(props.SyncableHasProperties):
             'The getDisplayBounds method must be implemented by subclasses')
 
 
+    def transformDisplayLocation(self, propName, oldLoc):
+        """
+        """
+        return oldLoc
+
+
 class Display(props.SyncableHasProperties):
     """
     """
