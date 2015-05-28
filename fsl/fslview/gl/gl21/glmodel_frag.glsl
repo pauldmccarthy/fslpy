@@ -11,7 +11,13 @@ varying vec2 texCoord;
 
 void main(void) {
 
-  gl_FragColor = sobel(tex, texWidth, texHeight, texCoord);
-  // gl_FragColor = texture2D(tex, texCoord);
+  vec4 colour   = texture2D(tex, texCoord);
+  vec4 filtered = sobel(tex, texWidth, texHeight, texCoord);
+
+  if (filtered.w == 0.0)
+      colour = vec4(0, 0, 0, 0);
+
+  gl_FragColor = colour;
+  
 }
 

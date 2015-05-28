@@ -443,9 +443,10 @@ class SliceCanvas(props.HasProperties):
         """
 
         for ovl in self.overlayList:
-            
+
+            # No support for non-volumetric overlay 
+            # types yet (or maybe ever?)
             if not isinstance(ovl, fslimage.Image):
-                log.warn('No support for non-volumetric overlay types yet')
                 continue
 
             opts   = self.displayCtx.getOpts(ovl)

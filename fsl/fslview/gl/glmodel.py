@@ -73,6 +73,39 @@ class GLModel(globject.GLObject):
         
     def getDisplayBounds(self):
         return self.opts.getDisplayBounds()
+
+    
+    def getDataResolution(self, xax, yax):
+
+        # TODO How can I have this resolution tied
+        # to the rendering target resolution (i.e.
+        # the screen), instead of being fixed?
+        # 
+        # Perhaps the DisplayContext class should 
+        # have a method which returns the current
+        # rendering resolution for a given display
+        # space axis/length ..
+        #
+        # Also, isn't it a bit dodgy to be accessing
+        # the DisplayContext instance through the
+        # DisplayOpts instance? Why not just pass
+        # the displayCtx instance to the GLObject
+        # constructor, and have it directly accessible
+        # by all GLobjects?
+
+        xDisplayLen = self.opts.displayCtx.bounds.getLen(xax)
+        yDisplayLen = self.opts.displayCtx.bounds.getLen(yax)
+
+        lo, hi = self.getDisplayBounds()
+
+        xModelLen = abs(hi[xax] - lo[xax])
+        yModelLen = abs(hi[yax] - lo[yax])
+
+        resolution      = [1, 1, 1]
+        resolution[xax] = int(round(2048.0 * xModelLen / xDisplayLen))
+        resolution[yax] = int(round(2048.0 * yModelLen / yDisplayLen))
+        
+        return resolution
         
     
     def setAxes(self, xax, yax):
