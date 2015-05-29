@@ -35,8 +35,15 @@ class RenderTexture(texture.Texture2D):
 
         self.__frameBuffer  = glfbo.glGenFramebuffersEXT(1)
         self.__renderBuffer = glfbo.glGenRenderbuffersEXT(1)
+        
         log.debug('Created fbo {} and render buffer {}'.format(
             self.__frameBuffer, self.__renderBuffer))
+
+        self.__oldSize         = None
+        self.__oldProjMat      = None
+        self.__oldMVMat        = None
+        self.__oldFrameBuffer  = None
+        self.__oldRenderBuffer = None
 
         
     def destroy(self):
@@ -54,14 +61,13 @@ class RenderTexture(texture.Texture2D):
                                   'instances'.format(type(self).__name__))
 
 
-    def bindAsRenderTarget(self):
-        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,
-                                    self.__frameBuffer) 
-        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT,
-                                    self.__renderBuffer)
-
-
     def setRenderViewport(self, xax, yax, lo, hi):
+
+        if self.__oldSize    is not None or \
+           self.__oldProjMat is not None or \
+           self.__oldMVMat   is not None:
+            raise RuntimeError('This RenderTexture has already '
+                               'configured the viewport') 
 
         width, height = self.getSize()
         
@@ -74,17 +80,54 @@ class RenderTexture(texture.Texture2D):
 
     def restoreViewport(self):
 
+        if self.__oldSize    is None or \
+           self.__oldProjMat is None or \
+           self.__oldMVMat   is None:
+            raise RuntimeError('This RenderTexture has not '
+                               'configured the viewport')
+
         gl.glViewport(*self.__oldSize)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadMatrixf(self.__oldProjMat)
         gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadMatrixf(self.__oldMVMat)        
-        
+        gl.glLoadMatrixf(self.__oldMVMat)
 
-    @classmethod
-    def unbindAsRenderTarget(cls):
-        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,  0)
-        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT, 0) 
+        self.__oldSize    = None
+        self.__oldProjMat = None
+        self.__oldMVMat   = None
+
+        
+    def bindAsRenderTarget(self):
+
+        if self.__oldFrameBuffer  is not None or \
+           self.__oldRenderBuffer is not None:
+            raise RuntimeError('This RenderTexture is already bound')
+
+        self.__oldFrameBuffer  = gl.glGetIntegerv(
+            glfbo.GL_FRAMEBUFFER_BINDING_EXT)
+        self.__oldRenderBuffer = gl.glGetIntegerv(
+            glfbo.GL_RENDERBUFFER_BINDING_EXT)
+
+        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,
+                                    self.__frameBuffer) 
+        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT,
+                                    self.__renderBuffer)
+
+
+    def unbindAsRenderTarget(self):
+        
+        if self.__oldFrameBuffer  is None or \
+           self.__oldRenderBuffer is None:
+            raise RuntimeError('This RenderTexture is not '
+                               'the current render target')
+
+        glfbo.glBindFramebufferEXT( glfbo.GL_FRAMEBUFFER_EXT,
+                                    self.__oldFrameBuffer)
+        glfbo.glBindRenderbufferEXT(glfbo.GL_RENDERBUFFER_EXT, 
+                                    self.__oldRenderBuffer)
+
+        self.__oldFrameBuffer  = None
+        self.__oldRenderBuffer = None
 
         
     def refresh(self):

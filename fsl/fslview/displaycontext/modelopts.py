@@ -128,10 +128,11 @@ class ModelOpts(fsldisplay.DisplayOpts):
                     refOpts.getTransform(self.coordSpace, 'display'))[0] 
 
             elif refImage == 'none':
-                oldRefOpts = self.displayCtx.getOpts(oldRefImage)
-                newLoc = transform.transform(
-                    [oldLoc],
-                    oldRefOpts.getTransform('display', self.coordSpace))[0]
+                if oldRefImage is not None:
+                    oldRefOpts = self.displayCtx.getOpts(oldRefImage)
+                    newLoc = transform.transform(
+                        [oldLoc],
+                        oldRefOpts.getTransform('display', self.coordSpace))[0]
 
         elif propName == 'coordSpace':
             if self.refImage != 'none':

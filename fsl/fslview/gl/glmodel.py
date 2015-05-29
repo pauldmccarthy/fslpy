@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# glvtkobject.py -
+# glmodel.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -93,17 +93,22 @@ class GLModel(globject.GLObject):
         # constructor, and have it directly accessible
         # by all GLobjects?
 
+        zax = 3 - xax - yax
+
         xDisplayLen = self.opts.displayCtx.bounds.getLen(xax)
         yDisplayLen = self.opts.displayCtx.bounds.getLen(yax)
+        zDisplayLen = self.opts.displayCtx.bounds.getLen(zax)
 
         lo, hi = self.getDisplayBounds()
 
         xModelLen = abs(hi[xax] - lo[xax])
         yModelLen = abs(hi[yax] - lo[yax])
+        zModelLen = abs(hi[zax] - lo[zax])
 
         resolution      = [1, 1, 1]
         resolution[xax] = int(round(2048.0 * xModelLen / xDisplayLen))
         resolution[yax] = int(round(2048.0 * yModelLen / yDisplayLen))
+        resolution[zax] = int(round(2048.0 * zModelLen / zDisplayLen))
         
         return resolution
         
@@ -211,7 +216,7 @@ class GLModel(globject.GLObject):
             display.contrast   / 100.0))
         
         colour.append(display.alpha / 100.0)
-        
+
         gl.glColor(*colour)
         gl.glBegin(gl.GL_QUADS)
 
@@ -226,15 +231,14 @@ class GLModel(globject.GLObject):
         self._renderTexture.unbindAsRenderTarget()
         self._renderTexture.restoreViewport()
 
-        if self.opts.outline:
+        if opts.outline:
             gl.glUseProgram(self.shaders)
 
         self._renderTexture.drawOnBounds(
             zpos, xmin, xmax, ymin, ymax, xax, yax, xform)
         
-        if self.opts.outline:
+        if opts.outline:
             gl.glUseProgram(0)
-                   
 
     
     def postDraw(self):

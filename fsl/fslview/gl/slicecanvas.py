@@ -952,6 +952,8 @@ class SliceCanvas(props.HasProperties):
                 globj.draw(self.pos.z)
                 globj.postDraw()
 
+                rt.unbindAsRenderTarget()
+
             # Pre-rendering - a pre-generated 2D
             # texture of the current z position
             # is rendered to the screen canvas
@@ -973,7 +975,6 @@ class SliceCanvas(props.HasProperties):
         # those off-screen textures are all rendered on
         # to the screen canvas.
         if self.renderMode == 'offscreen':
-            textures.GLObjectRenderTexture.unbindAsRenderTarget()
             self._setViewport()
             self._drawOffscreenTextures() 
 
