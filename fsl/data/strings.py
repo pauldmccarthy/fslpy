@@ -10,7 +10,7 @@ import fsl.data.constants as constants
 
 messages = TypeDict({
 
-    'fslview.loading'              : 'Loading {} ...',
+    'fslview.loading'              : 'Loading {}',
     'FSLViewSplash.default'        : 'Loading ...',
 
     'image.saveImage.error'      : 'An error occurred saving the file. '
