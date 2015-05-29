@@ -49,7 +49,10 @@ package-level attributes will be available:
                            rendering :class:`.GLRGBVector` instances.
 
  - ``gllinevector_funcs``: The version-specific module containing functions for
-                           rendering :class:`.GLLineVector` instances. 
+                           rendering :class:`.GLLineVector` instances.
+
+ - ``glmodel_funcs``:      The version-specific module containing functions for
+                           rendering :class:`.GLModel` instances. 
 """
 
 import logging 
@@ -208,6 +211,7 @@ def bootstrap(glVersion=None):
     thismod.glvolume_funcs     = glpkg.glvolume_funcs
     thismod.glrgbvector_funcs  = glpkg.glrgbvector_funcs
     thismod.gllinevector_funcs = glpkg.gllinevector_funcs
+    thismod.glmodel_funcs      = glpkg.glmodel_funcs
     thismod._bootstrapped      = True
 
 

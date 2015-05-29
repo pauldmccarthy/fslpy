@@ -11,9 +11,9 @@ import OpenGL.GL as gl
 
 import                            globject
 import fsl.utils.transform     as transform
+import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.textures as textures
-import fsl.fslview.gl.shaders  as shaders
 import fsl.fslview.colourmaps  as fslcmaps
 
 
@@ -35,25 +35,15 @@ class GLModel(globject.GLObject):
 
         self._renderTexture = textures.GLObjectRenderTexture(
             self.name, self, 0, 1)
+        self._renderTexture.setInterpolation(gl.GL_LINEAR)
 
-        vertShaderSrc = shaders.getVertexShader(  self)
-        fragShaderSrc = shaders.getFragmentShader(self)
-        self.shaders  = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
+        fslgl.glmodel_funcs.compileShaders(self)
+        fslgl.glmodel_funcs.updateShaders( self)
 
-        self.texPos       = gl.glGetUniformLocation(self.shaders, 'tex')
-        self.texWidthPos  = gl.glGetUniformLocation(self.shaders, 'texWidth')
-        self.texHeightPos = gl.glGetUniformLocation(self.shaders, 'texHeight')
 
-        gl.glUseProgram(self.shaders)
-        gl.glUniform1i( self.texPos, 0)
-        gl.glUniform1f( self.texWidthPos,  256.0)
-        gl.glUniform1f( self.texHeightPos, 256.0)
-        gl.glUseProgram(0)
-
-        
     def destroy(self):
         self._renderTexture.destroy()
-        gl.glDeleteProgram(self.shaders)
+        fslgl.glmodel_funcs.destroy(self)
 
 
     def _updateVertices(self, *a):
@@ -232,13 +222,13 @@ class GLModel(globject.GLObject):
         self._renderTexture.restoreViewport()
 
         if opts.outline:
-            gl.glUseProgram(self.shaders)
+            fslgl.glmodel_funcs.loadShaders(self)
 
         self._renderTexture.drawOnBounds(
             zpos, xmin, xmax, ymin, ymax, xax, yax, xform)
         
         if opts.outline:
-            gl.glUseProgram(0)
+            fslgl.glmodel_funcs.unloadShaders(self)
 
     
     def postDraw(self):

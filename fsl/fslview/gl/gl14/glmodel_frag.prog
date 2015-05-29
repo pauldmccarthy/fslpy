@@ -1,0 +1,41 @@
+!!ARBfp1.0
+#
+# Fragment program used for rendering GLModel instances.
+#
+# Inputs:
+#   fragment.texcoord[0]
+#
+#   program.local[0]
+#    program.local[0] - 0:   Inverse of texture width
+#                     - 1:   Inverse of texture height
+#                     - 2-3: Unused
+#
+
+TEMP invShape;
+TEMP coord;
+TEMP output;
+TEMP colour;
+
+MOV invShape, program.local[0];
+MOV coord,    fragment.texcoord[0];
+
+TEX colour, coord, texture[0], 2D;
+
+#pragma include sobel.prog
+
+# Test to see if the filtered colour has an
+# opacity of 0.0. First, invert the opacity
+# value  (i.e. 0.0 will become 1.0, and vice
+# versa). Then, set the opacity value if
+# it is less than 1.0.
+
+SUB output.w, { 1, 1, 1, 1 }, output.w;
+SLT output.w, output.w,       { 1, 1, 1, 1 };
+
+# If opacity is 0, clear the
+# output colour opacity
+MUL colour.w, colour.w, output.w;
+
+MOV result.color, colour;
+
+END
