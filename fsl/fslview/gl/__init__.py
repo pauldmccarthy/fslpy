@@ -212,6 +212,7 @@ def bootstrap(glVersion=None):
     thismod.glrgbvector_funcs  = glpkg.glrgbvector_funcs
     thismod.gllinevector_funcs = glpkg.gllinevector_funcs
     thismod.glmodel_funcs      = glpkg.glmodel_funcs
+    thismod.gllabel_funcs      = glpkg.gllabel_funcs
     thismod._bootstrapped      = True
 
 

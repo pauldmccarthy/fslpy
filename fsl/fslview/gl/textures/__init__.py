@@ -19,6 +19,7 @@ from texture            import Texture
 from texture            import Texture2D
 from imagetexture       import ImageTexture
 from colourmaptexture   import ColourMapTexture
+from lookuptabletexture import LookupTableTexture
 from selectiontexture   import SelectionTexture
 from rendertexture      import RenderTexture
 from rendertexture      import GLObjectRenderTexture

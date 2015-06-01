@@ -37,6 +37,11 @@ _shaderTypePrefixMap = td.TypeDict({
     ('GLVolume',     'vert', True)  : 'glvolume_sw',
     ('GLVolume',     'frag', False) : 'glvolume',
     ('GLVolume',     'frag', True)  : 'glvolume_sw',
+
+    ('GLLabel',      'vert', False) : 'glvolume',
+    ('GLLabel',      'vert', True)  : 'glvolume_sw', 
+    ('GLLabel',      'frag', False) : 'gllabel',
+    ('GLLabel',      'frag', True)  : 'gllabel_sw', 
     
     ('GLRGBVector',  'vert', False) : 'glvolume',
     ('GLRGBVector',  'vert', True)  : 'glvolume_sw',
@@ -53,7 +58,7 @@ _shaderTypePrefixMap = td.TypeDict({
     ('GLModel',      'vert', False) : 'glmodel',
     ('GLModel',      'vert', True)  : 'glmodel',
     ('GLModel',      'frag', False) : 'glmodel',
-    ('GLModel',      'frag', True)  : 'glmodel', 
+    ('GLModel',      'frag', True)  : 'glmodel',
 })
 """This dictionary provides a mapping between :class:`.GLObject` types,
 and file name prefixes, identifying the shader programs to use.

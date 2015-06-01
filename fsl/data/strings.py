@@ -316,6 +316,7 @@ choices = TypeDict({
 
     'Display.overlayType.volume'     : '3D/4D volume',
     'Display.overlayType.mask'       : '3D/4D mask image',
+    'Display.overlayType.label'      : 'Label image',
     'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
     'Display.overlayType.linevector' : '3-direction vector image (Line)',
     'Display.overlayType.model'      : '3D model' 

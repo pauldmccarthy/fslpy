@@ -244,12 +244,13 @@ class Display(props.SyncableHasProperties):
 import volumeopts
 import vectoropts
 import maskopts
+import labelopts
 import modelopts
 
 
 OVERLAY_TYPES = td.TypeDict({
 
-    'Image' : ['volume', 'mask', 'rgbvector', 'linevector'],
+    'Image' : ['volume', 'mask', 'rgbvector', 'linevector', 'label'],
     'Model' : ['model']
 })
 """This dictionary provides a mapping between the overlay classes, and
@@ -265,7 +266,8 @@ DISPLAY_OPTS_MAP = {
     'rgbvector'  : vectoropts.VectorOpts,
     'linevector' : vectoropts.LineVectorOpts,
     'mask'       : maskopts.  MaskOpts,
-    'model'      : modelopts. ModelOpts
+    'model'      : modelopts. ModelOpts,
+    'label'      : labelopts. LabelOpts,
 }
 """This dictionary provides a mapping between each overlay type, and
 the :class:`DisplayOpts` subclass which contains overlay type-specific

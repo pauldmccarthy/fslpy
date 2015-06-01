@@ -28,6 +28,9 @@ class ModelOpts(fsldisplay.DisplayOpts):
     
     outline    = props.Boolean(default=False)
 
+
+    showName   = props.Boolean(default=False)
+
     
     refImage   = props.Choice()
 

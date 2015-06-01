@@ -240,6 +240,7 @@ import glmask
 import glrgbvector
 import gllinevector
 import glmodel
+import gllabel
 
 
 GLOBJECT_OVERLAY_TYPE_MAP = {
@@ -247,7 +248,8 @@ GLOBJECT_OVERLAY_TYPE_MAP = {
     'mask'       : glmask      .GLMask,
     'rgbvector'  : glrgbvector .GLRGBVector,
     'linevector' : gllinevector.GLLineVector,
-    'model'      : glmodel     .GLModel
+    'model'      : glmodel     .GLModel,
+    'label'      : gllabel     .GLLabel
 }
 """This dictionary provides a mapping between all available overlay types (see
 the :attr:`.Display.overlayType` property), and the :class:`GLObject` subclass
