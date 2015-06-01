@@ -99,6 +99,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Add 'load colour map' button to VolumeOpts settings panel. If you do this, you could probably remove the option from the file menu.
 ** Colour command line (e.g. renderpy background) should be floating point  in the range [0, 1]
 ** GLModel - annotate view with model name
 ** LineVector - Threshold on vector length
@@ -236,6 +237,9 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Lightbox - ability to specify exactly which slices are displayed
+** Lightbox/SliceCanvas - annotate displayed slice with Z coordinates
+** Lightbox - Ability to show cutting planes from specified locations on an orthogonal axis
 ** Edge detection algorithm
 For drawing outline images (both model and volumetric). A Sobel filter looks
 perfect, but I think I would need to be able to run it within fragment
