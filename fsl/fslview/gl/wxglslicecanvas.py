@@ -77,7 +77,6 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
                 disp.removeListener('overlayType',   self.name)
                 disp.removeListener('enabled',       self.name)
                 disp.removeListener('softwareMode',  self.name)
-                disp.removeListener('interpolation', self.name)
                 disp.removeListener('alpha',         self.name)
                 disp.removeListener('brightness',    self.name)
                 disp.removeListener('contrast',      self.name)

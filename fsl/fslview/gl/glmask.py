@@ -18,9 +18,11 @@ class through inheritance.
 
 import logging
 
-import numpy                   as np
+import numpy                  as np
 
-import fsl.fslview.gl.glvolume as glvolume
+import fsl.fslview.gl         as fslgl
+import fsl.fslview.colourmaps as colourmaps
+import                           glvolume
 
 
 log = logging.getLogger(__name__)
@@ -47,17 +49,28 @@ class GLMask(glvolume.GLVolume):
             self.setAxes(self.xax, self.yax)
             self.onUpdate()
 
+        def shaderUpdate(*a):
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate() 
+            
         def colourUpdate(*a):
             self.refreshColourTexture()
             self.onUpdate()
 
+        def update(*a):
+            self.onUpdate()
+
         lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
-        self.display    .addListener('transform',     lnrName, vertexUpdate)
-        self.display    .addListener('alpha',         lnrName, colourUpdate)
-        self.displayOpts.addListener('colour',        lnrName, colourUpdate)
-        self.displayOpts.addListener('threshold',     lnrName, colourUpdate)
-        self.displayOpts.addListener('invert',        lnrName, colourUpdate)
+        self.display    .addListener('softwareMode', lnrName, shaderUpdate)
+        self.display    .addListener('alpha',        lnrName, colourUpdate)
+        self.display    .addListener('brightness',   lnrName, colourUpdate)
+        self.display    .addListener('contrast',     lnrName, colourUpdate)
+        self.displayOpts.addListener('resolution',   lnrName, update)
+        self.displayOpts.addListener('transform',    lnrName, vertexUpdate)
+        self.displayOpts.addListener('colour',       lnrName, colourUpdate)
+        self.displayOpts.addListener('threshold',    lnrName, colourUpdate)
+        self.displayOpts.addListener('invert',       lnrName, colourUpdate)
 
 
     def removeDisplayListeners(self):
@@ -68,15 +81,15 @@ class GLMask(glvolume.GLVolume):
         
         lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
-        self.display    .removeListener('transform',     lnrName)
-        self.display    .removeListener('interpolation', lnrName)
-        self.display    .removeListener('alpha',         lnrName)
-        self.display    .removeListener('resolution',    lnrName)
-        self.display    .removeListener('volume',        lnrName)
-        self.image      .removeListener('data',          lnrName)
-        self.displayOpts.removeListener('colour',        lnrName)
-        self.displayOpts.removeListener('threshold',     lnrName)
-        self.displayOpts.removeListener('invert',        lnrName) 
+        self.display    .removeListener('softwareMode', lnrName)
+        self.display    .removeListener('alpha',        lnrName)
+        self.display    .removeListener('brightness',   lnrName)
+        self.display    .removeListener('contrast',     lnrName)
+        self.displayOpts.removeListener('resolution',   lnrName)
+        self.displayOpts.removeListener('transform',    lnrName)
+        self.displayOpts.removeListener('colour',       lnrName)
+        self.displayOpts.removeListener('threshold',    lnrName)
+        self.displayOpts.removeListener('invert',       lnrName)
 
         
     def refreshColourTexture(self, *a):
@@ -98,6 +111,9 @@ class GLMask(glvolume.GLVolume):
         dmax    = opts.threshold[1]
         
         colour[3] = 1.0
+        colour = colourmaps.applyBricon(colour,
+                                        display.brightness / 100.0,
+                                        display.contrast   / 100.0)
 
         if opts.invert:
             cmap   = np.tile([0.0, 0.0, 0.0, 0.0], (4, 1))

@@ -8,6 +8,8 @@
 options for rendering :class:`.GLVector` instances.
 """
 
+import copy
+
 import props
 
 import fsl.data.image   as fslimage
@@ -143,3 +145,9 @@ class LineVectorOpts(VectorOpts):
         kwargs['nounbind'] = ['directed']
 
         VectorOpts.__init__(self, *args, **kwargs)
+
+
+
+class RGBVectorOpts(VectorOpts):
+
+    interpolation = copy.copy(volumeopts.VolumeOpts.interpolation)

@@ -122,7 +122,7 @@ def updateShaderState(self):
     # so we'll just use the xColourTexture matrix
     cmapXform   = self.xColourTexture.getCoordinateTransform()
     voxValXform = self.imageTexture.voxValXform
-    useSpline   = display.interpolation == 'spline'
+    useSpline   = False
     imageShape  = np.array(self.image.shape[:3], dtype=np.float32)
 
     voxValXform = np.array(voxValXform, dtype=np.float32).ravel('C')

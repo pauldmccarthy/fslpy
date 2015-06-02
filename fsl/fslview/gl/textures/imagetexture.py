@@ -49,7 +49,8 @@ class ImageTexture(texture.Texture):
                  display=None,
                  nvals=1,
                  normalise=False,
-                 prefilter=None):
+                 prefilter=None,
+                 interp=gl.GL_NEAREST):
         """Create an :class:`ImageTexture`.
         
         :arg name:      A name for the texture.
@@ -108,6 +109,8 @@ class ImageTexture(texture.Texture):
         self.invVoxValXform = transform.invert(voxValXform)
 
         self._addListeners()
+
+        self.setInterpolation(interp)
         self.refresh()
 
 
@@ -143,20 +146,15 @@ class ImageTexture(texture.Texture):
 
         image   = self.image
         display = self.display
-        
-        def refreshInterp(*a):
-            self._updateInterpolationMethod()
-            
-        name = '{}_{}'.format(type(self).__name__, id(self))
+        name    = '{}_{}'.format(type(self).__name__, id(self))
 
         image.addListener('data', name, self.refresh)
 
         if display is not None:
             opts    = display.getDisplayOpts()
                     
-            display.addListener('interpolation', name, refreshInterp)
-            opts   .addListener('volume',        name, self.refresh)
-            opts   .addListener('resolution',    name, self.refresh)
+            opts.addListener('volume',     name, self.refresh)
+            opts.addListener('resolution', name, self.refresh)
 
         
     def _removeListeners(self):
@@ -174,7 +172,6 @@ class ImageTexture(texture.Texture):
         if display is not None:
             opts = display.getDisplayOpts()
  
-            display.removeListener('interpolation', name)
             opts   .removeListener('volume',        name)
             opts   .removeListener('resolution',    name)
 
@@ -406,20 +403,8 @@ class ImageTexture(texture.Texture):
         return data
 
 
-    def _updateInterpolationMethod(self, *a):
-        """Sets the interpolation method for the texture from the value of the
-        :attr:`~fsl.fslview.displaycontext.display.Display.interpolation`
-        property.
-        """
-
-        display = self.display
-
-        # Set up image texture sampling thingos
-        # with appropriate interpolation method
-        if display is None or display.interpolation == 'none':
-            interp = gl.GL_NEAREST
-        else:
-            interp = gl.GL_LINEAR
+    def setInterpolation(self, interp):
+        """Sets the texture interpolation method."""
 
         self.bindTexture()
         
@@ -458,10 +443,6 @@ class ImageTexture(texture.Texture):
         # our texture shape does not have to be divisible by 4).
         gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)
-
-        # Set the texture filtering
-        # (interpolation) method
-        self._updateInterpolationMethod()
 
         self.bindTexture()
 

@@ -250,6 +250,15 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
+        def interpUpdate(*a):
+            
+            if opts.interpolation == 'none': interp = gl.GL_NEAREST
+            else:                            interp = gl.GL_LINEAR
+            
+            self.imageTexture.setInterpolation(interp)
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate()
+
         def shaderCompile(*a):
             fslgl.glvolume_funcs.compileShaders(   self)
             fslgl.glvolume_funcs.updateShaderState(self)
@@ -257,11 +266,10 @@ class GLVolume(globject.GLImageObject):
 
         def update(*a):
             self.onUpdate()
-
         
-        display.addListener('interpolation', lName, shaderUpdate)
         display.addListener('softwareMode',  lName, shaderCompile)
         display.addListener('alpha',         lName, colourUpdate)
+        opts   .addListener('interpolation', lName, interpUpdate)
         opts   .addListener('resolution',    lName, update)
         opts   .addListener('displayRange',  lName, colourUpdate)
         opts   .addListener('clippingRange', lName, shaderUpdate)
@@ -278,10 +286,10 @@ class GLVolume(globject.GLImageObject):
         opts    = self.displayOpts
 
         lName = self.name
-
-        display.removeListener('interpolation', lName)
+        
         display.removeListener('softwareMode',  lName)
         display.removeListener('alpha',         lName)
+        opts   .removeListener('interpolation', lName)
         opts   .removeListener('resolution',    lName)
         opts   .removeListener('displayRange',  lName)
         opts   .removeListener('clippingRange', lName)

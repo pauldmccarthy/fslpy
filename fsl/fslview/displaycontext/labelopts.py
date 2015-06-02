@@ -15,9 +15,10 @@ import fsl.fslview.lookuptables as lookuptables
 class LabelOpts(volumeopts.ImageOpts):
 
     
-    lut       = props.Choice()
-    outline   = props.Boolean(default=False)
-    showNames = props.Boolean(default=False)
+    lut          = props.Choice()
+    outline      = props.Boolean(default=False)
+    outlineWidth = props.Real(minval=0, maxval=1, default=0.25, clamped=True)
+    showNames    = props.Boolean(default=False)
 
 
     def __init__(self, overlay, *args, **kwargs):

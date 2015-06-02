@@ -136,7 +136,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
 
         If the current overlay has an :attr:`.Display.overlayType` of
         ``volume``, and the :attr:`.ImageOpts.transform` property has been set
-        to ``affine``, the :attr:`.Display.interpolation` property is set to
+        to ``affine``, the :attr:`.VolumeOpts.interpolation` property is set to
         ``spline``.  Otherwise interpolation is disabled.
         """
         overlay = self._displayCtx.getSelectedOverlay()
@@ -146,14 +146,14 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         if not isinstance(opts, fsldisplay.VolumeOpts):
             return
 
-        choices = display.getProp('interpolation').getChoices(display)
+        choices = opts.getProp('interpolation').getChoices(display)
 
         if  opts.transform in ('none', 'pixdim'):
-            display.interpolation = 'none'
+            opts.interpolation = 'none'
             
         elif opts.transform == 'affine':
-            if 'spline' in choices: display.interpolation = 'spline'
-            else:                   display.interpolation = 'linear'
+            if 'spline' in choices: opts.interpolation = 'spline'
+            else:                   opts.interpolation = 'linear'
 
         
     def _updateProps(self, parent, opts):

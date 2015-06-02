@@ -27,6 +27,7 @@ class ColourMapTexture(texture.Texture):
         self.__resolution   = resolution
         self.__cmap         = None
         self.__invert       = False
+        self.__interp       = None
         self.__alpha        = None
         self.__displayRange = None
         self.__border       = None
@@ -39,6 +40,7 @@ class ColourMapTexture(texture.Texture):
     def setColourMap(   self, cmap):   self.set(cmap=cmap)
     def setAlpha(       self, alpha):  self.set(alpha=alpha)
     def setInvert(      self, invert): self.set(invert=invert)
+    def setInterp(      self, interp): self.set(interp=interp)
     def setDisplayRange(self, drange): self.set(displayRange=drange)
     def setBorder(      self, border): self.set(border=border)
 
@@ -55,12 +57,14 @@ class ColourMapTexture(texture.Texture):
         # or not an attribute value was passed in
         cmap         = kwargs.get('cmap',         self)
         invert       = kwargs.get('invert',       self)
+        interp       = kwargs.get('interp',       self)
         alpha        = kwargs.get('alpha',        self)
         displayRange = kwargs.get('displayRange', self)
         border       = kwargs.get('border',       self)
 
         if cmap         is not self: self.__cmap         = cmap
         if invert       is not self: self.__invert       = invert
+        if interp       is not self: self.__interp       = interp
         if alpha        is not self: self.__alpha        = alpha
         if displayRange is not self: self.__displayRange = displayRange
         if border       is not self: self.__border       = border
@@ -81,6 +85,7 @@ class ColourMapTexture(texture.Texture):
         else:                   cmap = self.__cmap
             
         invert     = self.__invert
+        interp     = self.__interp
         resolution = self.__resolution
         alpha      = self.__alpha
         border     = self.__border
@@ -143,13 +148,16 @@ class ColourMapTexture(texture.Texture):
             gl.glTexParameteri(gl.GL_TEXTURE_1D,
                                gl.GL_TEXTURE_WRAP_S,
                                gl.GL_CLAMP_TO_EDGE)
+
+        if interp is None:
+            interp = gl.GL_NEAREST
  
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
 
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,

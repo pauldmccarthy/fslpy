@@ -358,12 +358,12 @@ def applyBricon(rgb, brightness, contrast):
 
     # The contrast factor scales the existing colour
     # range, but keeps the new range centred at 0.5.
-    rgb += offset
+    rgb[:3] += offset
   
-    rgb  = np.clip(rgb, 0.0, 1.0)
-    rgb  = (rgb - 0.5) * scale + 0.5
+    rgb[:3]  = np.clip(rgb[:3], 0.0, 1.0)
+    rgb[:3]  = (rgb[:3] - 0.5) * scale + 0.5
   
-    return np.clip(rgb, 0.0, 1.0)
+    return np.clip(rgb[:3], 0.0, 1.0)
 
 
 def randomColour():

@@ -24,6 +24,7 @@ class LookupTableTexture(texture.Texture):
         
         self.__lut    = None
         self.__alpha  = None
+        self.__interp = None
         self.__border = None
 
 
@@ -32,10 +33,12 @@ class LookupTableTexture(texture.Texture):
         lut    = kwargs.get('lut',    self)
         alpha  = kwargs.get('alpha',  self)
         border = kwargs.get('border', self)
+        interp = kwargs.get('interp', self)
 
         if lut    is not self: self.__lut    = lut
         if alpha  is not self: self.__alpha  = alpha
         if border is not self: self.__border = border
+        if interp is not self: self.__interp = interp
 
         self.__refresh()
 
@@ -48,6 +51,7 @@ class LookupTableTexture(texture.Texture):
 
         alpha  = self.__alpha
         border = self.__border
+        interp = self.__interp
 
         # TODO check maximum lut label value,
         #      and use corresponding number 
@@ -85,12 +89,16 @@ class LookupTableTexture(texture.Texture):
                                gl.GL_TEXTURE_WRAP_S,
                                gl.GL_CLAMP_TO_EDGE)
 
+
+        if interp is None:
+            interp = gl.GL_NEAREST
+
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MAG_FILTER,
-                           gl.GL_NEAREST)
+                           interp)
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MIN_FILTER,
-                           gl.GL_NEAREST) 
+                           interp) 
 
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,

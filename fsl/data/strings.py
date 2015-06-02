@@ -215,7 +215,6 @@ properties = TypeDict({
     'Display.alpha'             : 'Opacity',
     'Display.brightness'        : 'Brightness',
     'Display.contrast'          : 'Contrast',
-    'Display.interpolation'     : 'Interpolation',
 
     'ImageOpts.resolution' : 'Resolution',
     'ImageOpts.transform'  : 'Image transform',
@@ -225,6 +224,7 @@ properties = TypeDict({
     'VolumeOpts.clippingRange' : 'Clipping range',
     'VolumeOpts.cmap'          : 'Colour map',
     'VolumeOpts.invert'        : 'Invert colour map',
+    'VolumeOpts.interpolation' : 'Interpolation',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
@@ -240,6 +240,8 @@ properties = TypeDict({
     'VectorOpts.modulate'      : 'Modulate by',
     'VectorOpts.modThreshold'  : 'Modulation threshold',
 
+    'RGBVectorOpts.interpolation' : 'Interpolation',
+
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
 
@@ -247,6 +249,11 @@ properties = TypeDict({
     'ModelOpts.outline'    : 'Show outline only',
     'ModelOpts.refImage'   : 'Reference image',
     'ModelOpts.coordSpace' : 'Model coordinate space',
+    'ModelOpts.showName'   : 'Show model name',
+
+    'LabelOpts.lut'       : 'Look-up table',
+    'LabelOpts.outline'   : 'Show outline only',
+    'LabelOpts.showNames' : 'Show label names',
 })
 
 
@@ -310,9 +317,9 @@ choices = TypeDict({
 
     'ModelOpts.refImage.none' : 'None',
 
-    'Display.interpolation.none'   : 'No interpolation', 
-    'Display.interpolation.linear' : 'Linear interpolation', 
-    'Display.interpolation.spline' : 'Spline interpolation',
+    'VolumeOpts.interpolation.none'   : 'No interpolation', 
+    'VolumeOpts.interpolation.linear' : 'Linear interpolation', 
+    'VolumeOpts.interpolation.spline' : 'Spline interpolation',
 
     'Display.overlayType.volume'     : '3D/4D volume',
     'Display.overlayType.mask'       : '3D/4D mask image',

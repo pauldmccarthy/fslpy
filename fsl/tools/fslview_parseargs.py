@@ -109,50 +109,53 @@ OPTIONS = td.TypeDict({
                        'zax'],
 
     # The order in which properties are listed
-    # here is the order in which they are applied
-    # - so make sure transform is listed before
-    # interpolation!
-    'Display'       : ['name',
-                       'overlayType',
-                       'interpolation',
-                       'alpha',
-                       'brightness',
-                       'contrast'],
-    'ImageOpts'     : ['transform',
-                       'resolution',
-                       'volume'],
-    'VolumeOpts'    : ['displayRange',
-                       'clippingRange',
-                       'invert',
-                       'cmap'],
-    'MaskOpts'      : ['colour',
-                       'invert',
-                       'threshold'],
-    'VectorOpts'    : ['xColour',
-                       'yColour',
-                       'zColour',
-                       'suppressX',
-                       'suppressY',
-                       'suppressZ',
-                       'modulate',
-                       'modThreshold'],
-    'ModelOpts'     : ['colour',
-                       'outline',
-                       'refImage'],
+    # here is the order in which they are applied.
+    'Display'        : ['name',
+                        'overlayType',
+                        'alpha',
+                        'brightness',
+                        'contrast'],
+    'ImageOpts'      : ['transform',
+                        'resolution',
+                        'volume'],
+    'VolumeOpts'     : ['displayRange',
+                        'interpolation',
+                        'clippingRange',
+                        'invert',
+                        'cmap'],
+    'MaskOpts'       : ['colour',
+                        'invert',
+                        'threshold'],
+    'VectorOpts'     : ['xColour',
+                        'yColour',
+                        'zColour',
+                        'suppressX',
+                        'suppressY',
+                        'suppressZ',
+                        'modulate',
+                        'modThreshold'],
+    'LineVectorOpts' : ['lineWidth',
+                        'directed'],
+    'RGBVectorOpts'  : ['interpolation'],
+    'ModelOpts'      : ['colour',
+                        'outline',
+                        'refImage'],
 })
 
 # Headings for each of the option groups
 GROUPNAMES = td.TypeDict({
-    'SceneOpts'    : 'Scene options',
-    'OrthoOpts'    : 'Ortho display options',
-    'LightBoxOpts' : 'LightBox display options',
+    'SceneOpts'      : 'Scene options',
+    'OrthoOpts'      : 'Ortho display options',
+    'LightBoxOpts'   : 'LightBox display options',
     
-    'Display'      : 'Overlay display options',
-    'ImageOpts'    : 'Options for NIFTI images',
-    'VolumeOpts'   : 'Volume options',
-    'VectorOpts'   : 'Vector options',
-    'MaskOpts'     : 'Mask options',
-    'ModelOpts'    : 'Model options',
+    'Display'        : 'Overlay display options',
+    'ImageOpts'      : 'Options for NIFTI images',
+    'VolumeOpts'     : 'Volume options',
+    'VectorOpts'     : 'Vector options',
+    'LineVectorOpts' : 'Line vector options',
+    'RGBVectorOpts'  : 'RGB vector options',
+    'MaskOpts'       : 'Mask options',
+    'ModelOpts'      : 'Model options',
 })
 
 # Short/long arguments for all of those options
@@ -198,7 +201,6 @@ ARGUMENTS = td.TypeDict({
     'LightBoxOpts.zax'            : ('zx', 'zaxis'),
 
     'Display.name'          : ('n',  'name'),
-    'Display.interpolation' : ('in', 'interp'),
     'Display.overlayType'   : ('ot', 'overlayType'),
     'Display.alpha'         : ('a',  'alpha'),
     'Display.brightness'    : ('b',  'brightness'),
@@ -209,6 +211,7 @@ ARGUMENTS = td.TypeDict({
     'ImageOpts.volume'        : ('vl', 'volume'),
 
     'VolumeOpts.displayRange'  : ('dr', 'displayRange'),
+    'VolumeOpts.interpolation' : ('in', 'interp'),
     'VolumeOpts.clippingRange' : ('cr', 'clippingRange'),
     'VolumeOpts.cmap'          : ('cm', 'cmap'),
     'VolumeOpts.invert'        : ('ci', 'cmapInvert'),
@@ -225,6 +228,10 @@ ARGUMENTS = td.TypeDict({
     'VectorOpts.suppressZ'   : ('zs', 'suppressZ'),
     'VectorOpts.modulate'    : ('m',  'modulate'),
     'VectorOpts.modThreshold': ('mt', 'modThreshold'),
+
+    'LineVectorOpts.lineWidth'   : ('lvw', 'lineWidth'),
+    'LineVectorOpts.directed'    : ('lvi', 'directed'),
+    'RGBVectorOpts.interpolaion' : ('rvi', 'rvInterpolation'),
 
     'ModelOpts.colour'       : ('mc', 'modelColour'),
     'ModelOpts.outline'      : ('mo', 'modelOutline'),
@@ -274,8 +281,6 @@ HELP = td.TypeDict({
     'LightBoxOpts.zax'            : 'Z axis',
 
     'Display.name'          : 'Overlay name',
-    'Display.interpolation' : 'Interpolation',
-
     'Display.overlayType'   : 'Overlay type',
     'Display.alpha'         : 'Opacity',
     'Display.brightness'    : 'Brightness',
@@ -288,6 +293,7 @@ HELP = td.TypeDict({
     'VolumeOpts.displayRange'  : 'Display range',
     'VolumeOpts.clippingRange' : 'Clipping range',
     'VolumeOpts.cmap'          : 'Colour map',
+    'VolumeOpts.interpolation' : 'Interpolation',
     'VolumeOpts.invert'        : 'Invert colour map',
 
     'MaskOpts.colour'    : 'Colour',
@@ -304,6 +310,10 @@ HELP = td.TypeDict({
     'VectorOpts.modThreshold' : 'Hide voxels where modulation '
                                 'value is below this threshold '
                                 '(expressed as a percentage)',
+
+    'LineVectorOpts.lineWidth'    : 'Line width',
+    'LineVectorOpts.directed'     : 'Interpret vectors as directed',
+    'RGBVectorOpts.interpolation' : 'Interpolation',
 
     'ModelOpts.colour'     : 'Model colour',
     'ModelOpts.outline'    : 'Show model outline',

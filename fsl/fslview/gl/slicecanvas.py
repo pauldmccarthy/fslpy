@@ -596,11 +596,11 @@ class SliceCanvas(props.HasProperties):
 
             if isinstance(overlay, fslimage.Image):
                 overlay.addListener('data',      self.name, self._refresh)
-                
+
+
             display.addListener('overlayType',   self.name, genGLObject)
             display.addListener('enabled',       self.name, self._refresh)
             display.addListener('softwareMode',  self.name, self._refresh)
-            display.addListener('interpolation', self.name, self._refresh)
             display.addListener('alpha',         self.name, self._refresh)
             display.addListener('brightness',    self.name, self._refresh)
             display.addListener('contrast',      self.name, self._refresh)

@@ -224,6 +224,17 @@ class VolumeOpts(ImageOpts):
                            cmapNames=fslcm.getColourMaps())
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 
+    
+    interpolation = props.Choice(
+        ('none', 'linear', 'spline'),
+        labels=[strings.choices['VolumeOpts.interpolation.none'],
+                strings.choices['VolumeOpts.interpolation.linear'],
+                strings.choices['VolumeOpts.interpolation.spline']])
+    """How the value shown at a real world location is derived from the
+    corresponding data value(s). 'No interpolation' is equivalent to nearest
+    neighbour interpolation.
+    """
+
 
     invert = props.Boolean(default=False)
     """Invert the colour map."""
@@ -254,7 +265,13 @@ class VolumeOpts(ImageOpts):
 
 
 
-    def __init__(self, overlay, display, overlayList, displayCtx, parent=None):
+    def __init__(self,
+                 overlay,
+                 display,
+                 overlayList,
+                 displayCtx,
+                 parent=None,
+                 **kwargs):
         """Create a :class:`VolumeOpts` instance for the specified image."""
 
         # Attributes controlling image display. Only
@@ -293,12 +310,16 @@ class VolumeOpts(ImageOpts):
         
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
+        nounbind = kwargs.get('nounbind', [])
+        nounbind.extend(('interpolation')) 
+
         ImageOpts.__init__(self,
                            overlay,
                            display,
                            overlayList,
                            displayCtx,
-                           parent)
+                           parent,
+                           **kwargs)
 
         # The displayRange property of every child VolumeOpts
         # instance is linked to the corresponding 

@@ -116,7 +116,7 @@ def updateShaderState(self):
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
-    gl.glUniform1f( self.useSplinePos,     display.interpolation == 'spline')
+    gl.glUniform1f( self.useSplinePos,     opts.interpolation == 'spline')
     gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape,
                                                      dtype=np.float32))
 

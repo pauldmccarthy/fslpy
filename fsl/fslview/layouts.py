@@ -30,6 +30,7 @@ from fsl.fslview.displaycontext            import Display
 from fsl.fslview.displaycontext            import VolumeOpts
 from fsl.fslview.displaycontext            import MaskOpts
 from fsl.fslview.displaycontext            import VectorOpts
+from fsl.fslview.displaycontext            import RGBVectorOpts
 from fsl.fslview.displaycontext            import LineVectorOpts
 from fsl.fslview.displaycontext            import ModelOpts
 from fsl.fslview.displaycontext            import LabelOpts
@@ -176,13 +177,14 @@ ModelOptsToolBarLayout = [
 
 LabelOptsToolBarLayout = [
     widget(LabelOpts, 'lut'),
-    widget(LabelOpts, 'outline')]
+    widget(LabelOpts, 'outline'),
+    widget(LabelOpts, 'outlineWidth', showLimits=False, spin=False),
+    actions.ActionButton(OverlayDisplayToolBar, 'more')]
 
 
 DisplayLayout = props.VGroup(
     (widget(Display, 'name'),
      widget(Display, 'overlayType'),
-     widget(Display, 'interpolation'),
      widget(Display, 'enabled'),
      widget(Display, 'alpha',         showLimits=False, editLimits=False),
      widget(Display, 'brightness',    showLimits=False, editLimits=False),
@@ -193,6 +195,7 @@ VolumeOptsLayout = props.VGroup(
     (widget(VolumeOpts, 'resolution',    showLimits=False),
      widget(VolumeOpts, 'transform'),
      widget(VolumeOpts, 'volume',        showLimits=False),
+     widget(VolumeOpts, 'interpolation'),
      widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
      widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
@@ -208,27 +211,28 @@ MaskOptsLayout = props.VGroup(
      widget(MaskOpts, 'threshold', showLimits=False)))
 
 
-VectorOptsLayout = props.VGroup((
-    widget(VolumeOpts, 'resolution',    showLimits=False),
-    widget(VolumeOpts, 'transform'),
-    widget(VolumeOpts, 'volume',        showLimits=False),
+RGBVectorOptsLayout = props.VGroup((
+    widget(RGBVectorOpts, 'resolution',    showLimits=False),
+    widget(RGBVectorOpts, 'transform'),
+    widget(RGBVectorOpts, 'volume',        showLimits=False),
+    widget(RGBVectorOpts, 'interpolation'),
     props.HGroup((
-        widget(VectorOpts, 'xColour'),
-        widget(VectorOpts, 'yColour'),
-        widget(VectorOpts, 'zColour')),
+        widget(RGBVectorOpts, 'xColour'),
+        widget(RGBVectorOpts, 'yColour'),
+        widget(RGBVectorOpts, 'zColour')),
         vertLabels=True),
     props.HGroup((
-        widget(VectorOpts, 'suppressX'),
-        widget(VectorOpts, 'suppressY'),
-        widget(VectorOpts, 'suppressZ')),
+        widget(RGBVectorOpts, 'suppressX'),
+        widget(RGBVectorOpts, 'suppressY'),
+        widget(RGBVectorOpts, 'suppressZ')),
         vertLabels=True),
-    widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold', showLimits=False, spin=False)))
+    widget(RGBVectorOpts, 'modulate'),
+    widget(RGBVectorOpts, 'modThreshold', showLimits=False, spin=False)))
 
 LineVectorOptsLayout = props.VGroup((
-    widget(VolumeOpts, 'resolution',    showLimits=False),
-    widget(VolumeOpts, 'transform'),
-    widget(VolumeOpts, 'volume',        showLimits=False),
+    widget(LineVectorOpts, 'resolution',    showLimits=False),
+    widget(LineVectorOpts, 'transform'),
+    widget(LineVectorOpts, 'volume',        showLimits=False),
     props.HGroup((
         widget(LineVectorOpts, 'xColour'),
         widget(LineVectorOpts, 'yColour'),
@@ -249,8 +253,19 @@ ModelOptsLayout = props.VGroup((
     widget(ModelOpts, 'colour'),
     widget(ModelOpts, 'outline'),
     widget(ModelOpts, 'refImage'),
+    widget(ModelOpts, 'showName'),
     widget(ModelOpts, 'coordSpace',
            visibleWhen=lambda o: o.refImage != 'none')))
+
+
+LabelOptsLayout = props.VGroup((
+    widget(LabelOpts, 'lut'),
+    widget(LabelOpts, 'outline'),
+    widget(LabelOpts, 'outlineWidth', showLimits=False),
+    widget(LabelOpts, 'showNames'),
+    widget(LabelOpts, 'resolution', showLimits=False),
+    widget(LabelOpts, 'transform'),
+    widget(LabelOpts, 'volume',     showLimits=False)))
 
 
 ##########################
@@ -287,9 +302,10 @@ layouts = td.TypeDict({
     ('OverlayDisplayPanel',   'Display')        : DisplayLayout,
     ('OverlayDisplayPanel',   'VolumeOpts')     : VolumeOptsLayout,
     ('OverlayDisplayPanel',   'MaskOpts')       : MaskOptsLayout,
-    ('OverlayDisplayPanel',   'VectorOpts')     : VectorOptsLayout,
+    ('OverlayDisplayPanel',   'RGBVectorOpts')  : RGBVectorOptsLayout,
     ('OverlayDisplayPanel',   'LineVectorOpts') : LineVectorOptsLayout,
-    ('OverlayDisplayPanel',   'ModelOpts')      : ModelOptsLayout, 
+    ('OverlayDisplayPanel',   'ModelOpts')      : ModelOptsLayout,
+    ('OverlayDisplayPanel',   'LabelOpts')      : LabelOptsLayout, 
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,

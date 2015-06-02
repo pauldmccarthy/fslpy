@@ -176,8 +176,9 @@ def bootstrap(glVersion=None):
 
         # Spline interpolation is not currently
         # available in the GL14 implementation
-        import fsl.fslview.displaycontext.display as di
-        di.Display.interpolation.removeChoice('spline')
+        import fsl.fslview.displaycontext as dc
+        dc.VolumeOpts   .interpolation.removeChoice('spline')
+        dc.RGBVectorOpts.interpolation.removeChoice('spline')
         
 
     renderer = gl.glGetString(gl.GL_RENDERER)
@@ -204,7 +205,12 @@ def bootstrap(glVersion=None):
         # And disable some fancy options - spline
         # may have been disabled above, so absorb
         # the ValueError if it occurs
-        try: di.Display.interpolation.removeChoice('spline')
+
+        # TODO Remove this code duplication
+        try:
+            di.VolumeOpts   .interpolation.removeChoice('spline')
+            di.RGBVectorOpts.interpolation.removeChoice('spline')
+            
         except ValueError: pass
 
     thismod.GL_VERSION         = verstr

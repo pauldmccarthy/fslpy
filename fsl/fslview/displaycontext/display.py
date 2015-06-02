@@ -103,17 +103,6 @@ class Display(props.SyncableHasProperties):
     enabled = props.Boolean(default=True)
     """Should this overlay be displayed at all?"""
 
-
-    interpolation = props.Choice(
-        ('none', 'linear', 'spline'),
-        labels=[strings.choices['Display.interpolation.none'],
-                strings.choices['Display.interpolation.linear'],
-                strings.choices['Display.interpolation.spline']])
-    """How the value shown at a real world location is derived from the
-    corresponding data value(s). 'No interpolation' is equivalent to nearest
-    neighbour interpolation.
-    """
-
     
     alpha = props.Percentage(default=100.0)
     """Opacity - 100% is fully opaque, and 0% is fully transparent."""
@@ -172,9 +161,7 @@ class Display(props.SyncableHasProperties):
             
             # These properties cannot be unbound, as
             # they affect the OpenGL representation
-            nounbind=['interpolation',
-                      'softwareMode', 
-                      'overlayType'])
+            nounbind=['softwareMode', 'overlayType'])
 
         # Set up listeners after caling Syncable.__init__,
         # so the callbacks don't get called during
@@ -263,7 +250,7 @@ list is used as the default overlay type.
 
 DISPLAY_OPTS_MAP = {
     'volume'     : volumeopts.VolumeOpts,
-    'rgbvector'  : vectoropts.VectorOpts,
+    'rgbvector'  : vectoropts.RGBVectorOpts,
     'linevector' : vectoropts.LineVectorOpts,
     'mask'       : maskopts.  MaskOpts,
     'model'      : modelopts. ModelOpts,

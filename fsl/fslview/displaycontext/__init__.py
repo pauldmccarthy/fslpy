@@ -18,6 +18,7 @@ from volumeopts     import ImageOpts
 from volumeopts     import VolumeOpts
 from maskopts       import MaskOpts
 from vectoropts     import VectorOpts
+from vectoropts     import RGBVectorOpts
 from vectoropts     import LineVectorOpts
 from modelopts      import ModelOpts
 from labelopts      import LabelOpts

@@ -22,7 +22,6 @@ class GLLabel(globject.GLImageObject):
 
         globject.GLImageObject.__init__(self, image, display)
 
-
         imageTexName = '{}_{}' .format(type(self).__name__, id(image))
         lutTexName   = '{}_lut'.format(self.name)
 
@@ -36,8 +35,7 @@ class GLLabel(globject.GLImageObject):
 
         self.vertexAttrBuffer = gl.glGenBuffers(1)
 
-        fslgl.gllabel_funcs.compileShaders(   self)
-        fslgl.gllabel_funcs.updateShaderState(self)
+        fslgl.gllabel_funcs.compileShaders(self)
         
         self.refreshLutTexture()
 
@@ -57,22 +55,25 @@ class GLLabel(globject.GLImageObject):
             self.refreshLutTexture()
             self.onUpdate()
 
-        opts   .addListener('outline',    self.name, shaderUpdate)
-        opts   .addListener('lut',        self.name, lutUpdate)
-        display.addListener('alpha',      self.name, lutUpdate)
-        display.addListener('brightness', self.name, lutUpdate)
-        display.addListener('contrast',   self.name, lutUpdate)
+        opts   .addListener('outline',       self.name, shaderUpdate)
+        opts   .addListener('outlineWidth',  self.name, shaderUpdate)
+        opts   .addListener('lut',           self.name, lutUpdate)
+        display.addListener('alpha',         self.name, lutUpdate)
+        display.addListener('brightness',    self.name, lutUpdate)
+        display.addListener('contrast',      self.name, lutUpdate)
+        
 
 
     def removeListeners(self):
         display = self.display
         opts    = self.displayOpts
 
-        opts   .removeListener('outline',    self.name)
-        opts   .removeListener('lut',        self.name)
-        display.removeListener('alpha',      self.name)
-        display.removeListener('brightness', self.name)
-        display.removeListener('contrast',   self.name) 
+        opts   .removeListener('outline',       self.name)
+        opts   .removeListener('outlineWidth',  self.name)
+        opts   .removeListener('lut',           self.name)
+        display.removeListener('alpha',         self.name)
+        display.removeListener('brightness',    self.name)
+        display.removeListener('contrast',      self.name)
 
     
     def destroy(self):
@@ -90,6 +91,8 @@ class GLLabel(globject.GLImageObject):
         self.xax = xax
         self.yax = yax
         self.zax = 3 - xax - yax
+
+        fslgl.gllabel_funcs.updateShaderState(self)
 
         
     def generateVertices(self, zpos, xform):

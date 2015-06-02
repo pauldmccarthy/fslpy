@@ -199,6 +199,15 @@ class DisplayContext(props.SyncableHasProperties):
             display = self.getDisplay(overlay)
             opts    = display.getDisplayOpts()
 
+            # Register a listener on the overlay type,
+            # because when it changes, the DisplayOpts
+            # instance will change, and we will need to
+            # re-register the next listener
+            display.addListener('overlayType',
+                                self.__name,
+                                self.__overlayListChanged,
+                                overwrite=True)
+
             # Register a listener on the DisplayOpts
             # object for every overlay - if any
             # DisplayOpts properties change, the

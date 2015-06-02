@@ -76,7 +76,7 @@ def updateShaderState(self):
     # each of the three colour textures are identical
     voxValXform = self.imageTexture.voxValXform
     cmapXform   = self.xColourTexture.getCoordinateTransform()
-    useSpline   = display.interpolation == 'spline'
+    useSpline   = opts.interpolation == 'spline'
     imageShape  = np.array(self.image.shape, dtype=np.float32)
 
     gl.glUseProgram(self.shaders)
