@@ -115,7 +115,9 @@ class GLLabel(globject.GLImageObject):
         display = self.display
         opts    = self.displayOpts
 
-        self.lutTexture.set(alpha=display.alpha / 100.0,
+        self.lutTexture.set(alpha=display.alpha           / 100.0,
+                            brightness=display.brightness / 100.0,
+                            contrast=display.contrast     / 100.0,
                             lut=opts.lut)
 
         

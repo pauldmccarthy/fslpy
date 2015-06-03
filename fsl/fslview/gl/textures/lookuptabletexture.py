@@ -10,7 +10,9 @@ import logging
 import OpenGL.GL as gl
 import numpy     as np
 
-import texture
+
+import                           texture
+import fsl.fslview.colourmaps as fslcm
 
 
 log = logging.getLogger(__name__)
@@ -22,23 +24,29 @@ class LookupTableTexture(texture.Texture):
         
         texture.Texture.__init__(self, name, 1)
         
-        self.__lut    = None
-        self.__alpha  = None
-        self.__interp = None
-        self.__border = None
+        self.__lut        = None
+        self.__alpha      = None
+        self.__brightness = None
+        self.__contrast   = None
+        self.__interp     = None
+        self.__border     = None
 
 
     def set(self, **kwargs):
 
-        lut    = kwargs.get('lut',    self)
-        alpha  = kwargs.get('alpha',  self)
-        border = kwargs.get('border', self)
-        interp = kwargs.get('interp', self)
+        lut        = kwargs.get('lut',        self)
+        alpha      = kwargs.get('alpha',      self)
+        brightness = kwargs.get('brightness', self)
+        contrast   = kwargs.get('contrast',   self)
+        border     = kwargs.get('border',     self)
+        interp     = kwargs.get('interp',     self)
 
-        if lut    is not self: self.__lut    = lut
-        if alpha  is not self: self.__alpha  = alpha
-        if border is not self: self.__border = border
-        if interp is not self: self.__interp = interp
+        if lut        is not self: self.__lut        = lut
+        if alpha      is not self: self.__alpha      = alpha
+        if border     is not self: self.__border     = border
+        if brightness is not self: self.__brightness = brightness
+        if contrast   is not self: self.__contrast   = contrast
+        if interp     is not self: self.__interp     = interp
 
         self.__refresh()
 
@@ -46,29 +54,42 @@ class LookupTableTexture(texture.Texture):
     def refresh(self):
         self.__refresh()
 
+
+    def size(self):
+        
+        if self.__lut is None:
+            return 0
+
+        return max(self.__lut.values()) + 1
+
         
     def __refresh(self):
 
-        alpha  = self.__alpha
-        border = self.__border
-        interp = self.__interp
+        lut        = self.__lut
+        alpha      = self.__alpha
+        border     = self.__border
+        brightness = self.__brightness
+        contrast   = self.__contrast
+        interp     = self.__interp
 
-        # TODO check maximum lut label value,
-        #      and use corresponding number 
-        #      of slots in colour map
-        data   = np.zeros((64, 4), dtype=np.uint8)
+        if lut is None:
+            raise RuntimeError('Lookup table has not been defined')
 
-        if self.__lut is not None:
-            values  = self.__lut.values()
-            colours = self.__lut.colours()
+        if brightness is None: brightness = 0.5 
+        if contrast   is None: contrast   = 0.5
 
-            for value, colour in zip(values, colours):
+        values  = lut.values()
+        colours = lut.colours()
+        colours = fslcm.applyBricon(colours, brightness, contrast)
+        nvals   = max(values) + 1
+        data    = np.zeros((nvals, 4), dtype=np.uint8)
 
-                data[value, :3] = [np.floor(c * 255) for c in colour]
+        for value, colour in zip(values, colours):
 
-                if alpha is not None: data[value, 3] = alpha * 255
-                else:                 data[value, 3] = 255
+            data[value, :3] = [np.floor(c * 255) for c in colour]
 
+            if alpha is not None: data[value, 3] = alpha * 255
+            else:                 data[value, 3] = 255
 
         data = data.ravel('C')
 
@@ -103,7 +124,7 @@ class LookupTableTexture(texture.Texture):
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
                         gl.GL_RGBA8,
-                        64,
+                        nvals,
                         0,
                         gl.GL_RGBA,
                         gl.GL_UNSIGNED_BYTE,

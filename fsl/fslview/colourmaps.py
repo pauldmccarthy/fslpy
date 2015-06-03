@@ -550,16 +550,23 @@ def displayRangeToBricon(dataRange, displayRange):
 
 def applyBricon(rgb, brightness, contrast):
     """Applies the given ``brightness`` and ``contrast`` levels to
-    the given ``rgb`` colour.
+    the given ``rgb`` colour(s).
 
-    :arg rgb:        A sequence of three floating point numbers in the 
-                     range ``[0, 1]`` specifying an RGB value.
+    Passing in ``0.5`` for both the ``brightness``  and ``contrast`` will
+    result in the colour being returned unchanged.
 
-    :arg brightness: A brightness ledvel in the range ``[0, 1]``.
+    :arg rgb:        A sequence of three or four floating point numbers in 
+                     the range ``[0, 1]`` specifying an RGB(A) value, or a
+                     :mod:`numpy` array of shape ``(n, 3)`` or ``(n, 4)``
+                     specifying ``n`` colours. If alpha values are passed
+                     in, they are returned unchanged.
 
-    :arg contrast:   A brightness ledvel in the range ``[0, 1]``.
+    :arg brightness: A brightness level in the range ``[0, 1]``.
+
+    :arg contrast:   A brightness level in the range ``[0, 1]``.
     """
     rgb = np.array(rgb)
+    rgb = rgb.reshape(-1, rgb.shape[-1])
 
     # The brightness is applied as a linear offset,
     # with 0.5 equivalent to an offset of 0.0.
@@ -578,12 +585,12 @@ def applyBricon(rgb, brightness, contrast):
 
     # The contrast factor scales the existing colour
     # range, but keeps the new range centred at 0.5.
-    rgb[:3] += offset
+    rgb[:, :3] += offset
   
-    rgb[:3]  = np.clip(rgb[:3], 0.0, 1.0)
-    rgb[:3]  = (rgb[:3] - 0.5) * scale + 0.5
+    rgb[:, :3]  = np.clip(rgb[:, :3], 0.0, 1.0)
+    rgb[:, :3]  = (rgb[:, :3] - 0.5) * scale + 0.5
   
-    return np.clip(rgb[:3], 0.0, 1.0)
+    return np.clip(rgb[:, :3], 0.0, 1.0)
 
 
 def randomColour():
