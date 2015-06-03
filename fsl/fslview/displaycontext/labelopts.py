@@ -9,7 +9,7 @@ import props
 
 import volumeopts
 
-import fsl.fslview.lookuptables as lookuptables
+import fsl.fslview.colourmaps as fslcm
 
 
 class LabelOpts(volumeopts.ImageOpts):
@@ -23,7 +23,7 @@ class LabelOpts(volumeopts.ImageOpts):
 
     def __init__(self, overlay, *args, **kwargs):
 
-        luts  = lookuptables.all_luts
+        luts  = fslcm.getLookupTables()
         names = [lut.lutName() for lut in luts]
 
         self.getProp('lut').setChoices(luts, names, self)

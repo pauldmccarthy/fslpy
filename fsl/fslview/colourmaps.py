@@ -1,54 +1,122 @@
 #!/usr/bin/env python
 #
-# colourmaps.py - Manage colour maps for overlay rendering.
+# colourmaps.py - Manage colour maps and lookup tables for overlay rendering.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Module which manages the colour maps available for overlay rendering.
+"""Module which manages the colour maps and lookup tables available for
+overlay rendering.
 
-When this module is first initialised, it searches in the
-``fsl/fslview/colourmaps/`` directory, and attempts to load all files within
-which have the suffix ``.cmap``. Such a file is assumed to contain a list of
-RGB colours, one per line, with each colour specified by three space-separated
-floating point values in the range 0.0 - 1.0.
 
-This list of RGB values is used to create a
-:class:`matplotlib.colors.ListedColormap` object, which is then registered
-with the :mod:`matplotlib.cm` module (using the file name prefix as the colour
-map name), and thus made available for rendering purposes.
+The :func:`init` function must be called before any colour maps or lookup
+tables can be accessed. When :func:`init` is called, it searches in the
+``fsl/fslview/colourmaps/`` and ``fsl/fslview/luts/``directories, and attempts
+to load all files within which have the suffix ``.cmap`` or ``.lut``
+respectively.
+
+
+-----------
+Colour maps
+-----------
+
+
+A ``.cmap`` file defines a colour map which may be used to display a range of
+intensity values - see the :attr:`.VolumeOpts.cmap` property for an example. A
+``.cmap`` file must contain a list of RGB colours, one per line, with each
+colour specified by three space-separated floating point values in the range
+0.0 - 1.0, for example::
+
+
+        1.000000 0.260217 0.000000
+        0.000000 0.687239 1.000000
+        0.738949 0.000000 1.000000
+
+
+This list of RGB values is used to create a :class:`.ListedColormap` object,
+which is then registered with the :mod:`matplotlib.cm` module (using the file
+name prefix as the colour map name), and thus made available for rendering
+purposes.
+
 
 If a file named ``order.txt`` exists in the ``fsl/fslview/colourmaps/``
 directory, it is assumed to contain a list of colour map names, and colour map
 identifiers, defining the order in which the colour maps should be displayed
 to the user. Any colour maps which are not listed in the ``order.txt`` file
-will be appended to the end of the list.
+will be appended to the end of the list, and their name will be derived from
+the file name.
+
 
 This module provides a number of functions, the most important of which are:
 
- - :func:`initColourMaps`:    This function must be called before any of the
-                              other functions will work. It loads all present
-                              colourmap files.
+ - :func:`getColourMaps`:         Returns a list of the names of all available
+                                  colourmaps.
 
- - :func:`getDefault`:        Returns the name of the colourmap to be used
-                              as the default.
+ - :func:`registerColourMap`:     Given a text file containing RGB values,
+                                  loads the data and registers it  with
+                                  :mod:`matplotlib`.
 
- - :func:`getColourMaps`:     Returns a list of the names of all available
-                              colourmaps.
+ - :func:`installColourMap`:
 
- - :func:`registerColourMap`: Given a text file containing RGB values,
-                              loads the data and registers it  with
-                              :mod:`matplotlib`.
+ - :func:`isColourMapRegistered`: 
+
+ - :func:`isColourMapInstalled`:  
+
+
+-------------
+Lookup tables
+-------------
+
+
+A `.lut` file defines a lookup table which may be used to display images
+wherein each voxel has a discrete integer label. Each of the possible voxel
+values such an image has an associated colour and name. Each line in a
+``.lut`` file must specify the label value, RGB colour, and associated name.
+The first column (where columns are space-separated) defines the label value,
+the second to fourth columns specify the RGB values, and all remaining columns
+give the label name. For example::
+
+
+        1  0.00000 0.93333 0.00000 Frontal Pole
+        2  0.62745 0.32157 0.17647 Insular Cortex
+        3  1.00000 0.85490 0.72549 Superior Frontal Gyrus
+
+
+ - :func:`getLookupTables`:
+
+ - :func:`registerLookupTable`:
+
+ - :func:`installLookupTable`:
+
+ - :func:`isLookupTableRegistered`: 
+
+ - :func:`isLookupTableInstalled`:
+
+ - :func:`saveLookupTable`:         TODO - update an installed lookup table
+
+
+-------------
+Miscellaneous
+-------------
 
 
 Some utility functions are also kept in this module, related to calculating
-the relationship between a data display range, and brightness/contrast
-scales:
+the relationship between a data display range and brightness/contrast scales,
+and generating/manipulating colours.:
 
  - :func:`displayRangeToBricon`: Given a data range, converts a display range
                                  to brightness/contrast values.
 
  - :func:`briconToDisplayRange`: Given a data range, converts brigtness/
                                  contrast values to a display range.
+
+ - :func:`applyBricon`:          Given a RGB colour, brightness, and contrast
+                                 value, scales the colour according to the
+                                 brightness and contrast.
+
+ - :func:`randomColour`:         Generates a random RGB colour.
+
+ - :func:`randomBrightColour`:   Generates a random saturated RGB colour.
+
 """
 
 import glob
@@ -68,97 +136,198 @@ log = logging.getLogger(__name__)
 
 
 _cmapDir = op.join(op.dirname(__file__), 'colourmaps')
+_lutDir  = op.join(op.dirname(__file__), 'luts')
+
 _cmaps   = None
+_luts    = None
 
 
-class _ColourMap(object):
-    """A little struct for storing details on each installed/available
-    colour map.
+class _Map(object):
+    """A little class for storing details on each installed/available
+    colour map/lookup table. This class is only used internally.
     """
 
-    def __init__(self, name, cmfile, installed):
+    def __init__(self, name, mapObj, mapFile, installed):
         """
-        :arg name:       The name of the colour map (as registered with
-                         :mod:`matplotlib.cm`).
+        :arg name:       The name of the colour map/lookup table.
 
-        :arg cmfile:     The file from which this colour map was loaded,
-                         or ``None`` if this is a built in :mod:`matplotlib`
+        :arg mapObj:     The colourmap/lut object, either a
+                        :class:`matplotlib.col.lors..Colormap`, or a
+                        :class:`LookupTable` instance.
+
+        :arg mapFile:    The file from which this map was loaded,
+                         or ``None`` if this cmap/lookup table only
+                         exists in memory, or is a built in :mod:`matplotlib`
                          colourmap.
 
         :arg installed:  ``True`` if this is a built in :mod:`matplotlib`
                          colourmap or is installed in the
-                         ``fsl/fslview/colourmaps/`` directory, ``False``
-                         otherwise.
+                         ``fsl/fslview/colourmaps/`` or ``fsl/fslview/luts/``
+                         directory, ``False`` otherwise.
         """
         self.name      = name
-        self.cmfile    = cmfile
+        self.mapObj    = mapObj
+        self.mapFile   = mapFile
         self.installed = installed
 
+        
     def __str__(self):
-        if self.cmfile is not None: return self.cmfile
-        else:                       return self.name
+        if self.mapFile is not None: return self.mapFile
+        else:                        return self.name
+
         
     def __repr__(self):
         return self.__str__()
 
+    
+class LookupTable(object):
+    """Class which encapsulates a list of labels and associated colours and names,
+    defining a lookup table to be used for colouring label images.
+    """
+
+    
+    def __init__(self, lutName):
+        self.__lutName = lutName
+        self.__names   = {}
+        self.__colours = {}
+
+
+    def __len__(self):
+        return len(self.__names.keys())
+
         
-def getDefault():
-    """Returns the name of the default colour map."""
-    return getColourMaps()[0]
+    def lutName(self):
+        return self.__lutName
 
 
-def getColourMaps():
-    """Returns a list containing the names of all available colour maps."""
-    return  _cmaps.keys()
+    def values(self):
+        return sorted(self.__names.keys())
 
 
-def isRegistered(cmapName):
-    """Returns ``True`` if the specified colourmap is registered, ``False``
-    otherwise. 
-    """ 
-    return cmapName in _cmaps
+    def names(self):
+        return [self.__names[v] for v in self.values()]
+
+    
+    def colours(self):
+        return [self.__colours[v] for v in self.values()]
+
+    
+    def name(self, value):
+        return self.__names[value]
+
+        
+    def colour(self, value):
+        return self.__colours[value]
 
 
-def isInstalled(cmapName):
-    """Returns ``True`` if the specified colourmap is installed, ``False``
-    otherwise.  A ``KeyError`` is raised if the colourmap is not registered.
+    def set(self, value, name, colour):
+
+        # At the moment, we are restricting
+        # lookup tables to be unsigned 16 bit.
+        # See gl/textures/lookuptabletexture.py
+        if not isinstance(value, (int, long)) or \
+           value < 0 or value > 65535:
+            raise ValueError('Lookup table values must be '
+                             '16 bit unsigned integers.')
+          
+        self.__names[  value] = name
+        self.__colours[value] = colour
+
+
+    def load(self, lutFile):
+        
+        with open(lutFile, 'rt') as f:
+            lines = f.readlines()
+
+            for line in lines:
+                tkns = line.split()
+
+                label = int(     tkns[0])
+                r     = float(   tkns[1])
+                g     = float(   tkns[2])
+                b     = float(   tkns[3])
+                lName = ' '.join(tkns[4:])
+
+                self.set(label, lName, (r, g, b))
+
+        return self
+
+
+def init():
+    """This function must be called before any of the other functions in this
+    module can be used.
+
+    It initialises the colour map and lookup table registers, loading all
+    colour map and lookup table files that exist.
     """
-    return _cmaps[cmapName].installed
 
+    global _cmaps
+    global _luts
 
-def installColourMap(cmapName):
-    """Attempts to install a previously registered colourmap into the
-    ``fsl/fslview/colourmaps`` directory.
+    registers = []
 
-    A ``KeyError`` is raised if the colourmap is not registered, a
-    ``RuntimeError`` if the colourmap cannot be installed, or an
-    ``IOError`` if the colourmap file cannot be copied.
-    """
+    if _cmaps is None:
+        _cmaps = OrderedDict()
+        registers.append((_cmaps, _cmapDir, 'cmap'))
 
-    # keyerror if not registered
-    cmap = _cmaps[cmapName]
+    if _luts is None:
+        _luts = OrderedDict()
+        registers.append((_luts, _lutDir, 'lut'))
 
-    # built-in, or already installed
-    if cmap.installed:
+    if len(registers) == 0:
         return
 
-    # cmap has been incorrectly registered
-    if cmap.cmfile is None:
-        raise RuntimeError('Colour map {} appears to have been '
-                           'incorrectly registered'.format(cmapName))
+    for register, rdir, suffix in registers:
 
-    destfile = op.join(op.dirname(__file__),
-                       'colourmaps',
-                       '{}.cmap'.format(cmapName))
+        # Build up a list of key -> name mappings,
+        # from the order.txt file, and any other
+        # colour map/lookup table  files in the
+        # cmap/lut directory
+        allmaps   = OrderedDict()
+        orderFile = op.join(rdir, 'order.txt')
 
-    # destination file already exists
-    if op.exists(destfile):
-        raise RuntimeError('Destination file for colour map {} already '
-                           'exists: {}'.format(cmapName, destfile))
+        if op.exists(orderFile):
+            with open(orderFile, 'rt') as f:
+                lines = f.read().split('\n')
 
-    log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
-        
-    shutil.copyfile(cmap.cmfile, destfile)
+                for line in lines:
+                    if line.strip() == '':
+                        continue
+                    
+                    # The order.txt file is assumed to
+                    # contain one row per cmap/lut,
+                    # where the first word is the key
+                    # (the cmap/lut file name prefix),
+                    # and the remainder of the line is
+                    # the cmap/lut name
+                    key, name = line.split(' ', 1)
+
+                    allmaps[key.strip()] = name.strip()
+
+        # Search through all cmap/lut files that exist -
+        # any which were not specified in order.txt
+        # are added to the end of the list, and their
+        # name is just set to the file name prefix
+        for mapFile in sorted(glob.glob(op.join(rdir, '*.{}'.format(suffix)))):
+
+            name = op.basename(mapFile).split('.')[0]
+
+            if name not in allmaps:
+                allmaps[name] = name
+
+        # Now load all of the cmaps/luts
+        for key, name in allmaps.items():
+            mapFile = op.join(rdir, '{}.{}'.format(key, suffix))
+
+            try:
+                if   suffix == 'cmap': registerColourMap(  mapFile, name)
+                elif suffix == 'lut':  registerLookupTable(mapFile, name)
+                
+                register[name].installed = True
+
+            except:
+                log.warn('Error processing custom {} '
+                         'file: {}'.format(suffix, mapFile))
 
 
 def registerColourMap(cmapFile, name=None):
@@ -182,72 +351,123 @@ def registerColourMap(cmapFile, name=None):
 
     mplcm.register_cmap(name, cmap)
 
-    _cmaps[name] = _ColourMap(name, cmapFile, False)
+    _cmaps[name] = _Map(name, cmap, cmapFile, False)
+                
 
-    
-# Load all custom colour maps from the colourmaps/*.cmap files,
-# honouring the naming/order specified in order.txt (if it exists).
-def initColourMaps():
-    """This function must be called before any of the other functions in this
-    module can be used.
+def registerLookupTable(lut, name=None):
 
-    It initialises the colour map 'register', loading all colour map files
-    that exist.
+    if isinstance(lut, basestring): lutFile = lut
+    else:                           lutFile = None
+
+    # lut may be either a file name
+    # or a LookupTable instance
+    if lutFile is not None:
+
+        if name is None:
+            name = op.basename(lutFile).split('.')[0]
+
+        log.debug('Loading and registering custom '
+                  'lookup table: {}'.format(lutFile)) 
+        
+        lut = LookupTable(name).load(lutFile)
+
+    _luts[name] = _Map(name, lut, lutFile, False)
+
+
+def getLookupTables():
+    """Returns a list containing all available lookup tables."""
+    return [_luts[lutName].mapObj for lutName in _luts.keys()]
+
+        
+def getColourMaps():
+    """Returns a list containing the names of all available colour maps."""
+    return  _cmaps.keys()
+
+
+def isColourMapRegistered(cmapName):
+    """Returns ``True`` if the specified colourmap is registered, ``False``
+    otherwise. 
+    """ 
+    return cmapName in _cmaps
+
+
+def isLookupTableRegistered(lutName):
+    """Returns ``True`` if the specified lookup table is registered, ``False``
+    otherwise. 
+    """ 
+    return lutName in _luts
+
+
+def isColourMapInstalled(cmapName):
+    """Returns ``True`` if the specified colourmap is installed, ``False``
+    otherwise.  A ``KeyError`` is raised if the colourmap is not registered.
+    """
+    return _cmaps[cmapName].installed
+
+
+def isLookupTableInstalled(lutName):
+    """Returns ``True`` if the specified loolup table is installed, ``False``
+    otherwise.  A ``KeyError`` is raised if the lookup tabler is not
+    registered.
+    """
+    return _luts[lutName].installed 
+
+
+def installColourMap(cmapName):
+    """Attempts to install a previously registered colourmap into the
+    ``fsl/fslview/colourmaps`` directory.
+
+    A ``KeyError`` is raised if the colourmap is not registered, a
+    ``RuntimeError`` if the colourmap cannot be installed, or an
+    ``IOError`` if the colourmap file cannot be copied.
     """
 
-    global _cmaps
+    # keyerror if not registered
+    cmap = _cmaps[cmapName]
 
-    if _cmaps is not None:
+    # built-in, or already installed
+    if cmap.installed:
         return
 
-    _cmaps = OrderedDict()
+    # cmap has been incorrectly registered
+    if cmap.mapFile is None:
+        raise RuntimeError('Colour map {} appears to have been '
+                           'incorrectly registered'.format(cmapName))
 
-    # Build up a list of cmapKey -> cmapName
-    # mappings, from the order.txt file, and
-    # any other colour map files in the cmap
-    # directory
-    allcmaps  = OrderedDict()
-    orderFile = op.join(_cmapDir, 'order.txt')
+    destfile = op.join(op.dirname(__file__),
+                       'colourmaps',
+                       '{}.cmap'.format(cmapName))
 
-    if op.exists(orderFile):
-        with open(orderFile, 'rt') as f:
-            lines = f.read().split('\n')
+    # destination file already exists
+    if op.exists(destfile):
+        raise RuntimeError('Destination file for colour map {} already '
+                           'exists: {}'.format(cmapName, destfile))
 
-            for line in lines:
-                if line.strip() == '':
-                    continue
-                # The order.txt file is assumed to
-                # contain one row per colour map,
-                # where the first word is the colour
-                # map key (the cmap file name prefix),
-                # and the remainder of the line is
-                # the colour map name
-                key, name = line.split(' ', 1)
-
-                allcmaps[key.strip()] = name.strip()
-
-    # Search through all cmap files that exist -
-    # any which were not specified in order.txt
-    # are added to the end of the list, and their
-    # name is just set to the file name prefix
-    for cmapFile in sorted(glob.glob(op.join(_cmapDir, '*.cmap'))):
-
-        name = op.basename(cmapFile).split('.')[0]
-
-        if name not in allcmaps:
-            allcmaps[name] = name
-
-    # Now load all of the colour maps
-    for key, name in allcmaps.items():
-        cmapFile = op.join(_cmapDir, '{}.cmap'.format(key))
+    log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
         
-        try:
-            registerColourMap(cmapFile, name)
-            _cmaps[name].installed = True
+    shutil.copyfile(cmap.cmfile, destfile)
 
-        except:
-            log.warn('Error processing custom colour '
-                     'map file: {}'.format(cmapFile))
+
+def installLookupTable(lutName):
+    
+    # keyerror if not registered
+    lut = _luts[lutName]
+
+    # built-in, or already installed
+    if lut.installed:
+        return
+
+    # cmap has been incorrectly registered
+    if lut.mapFile is None:
+        raise RuntimeError('Lookup table {} appears to have been '
+                           'incorrectly registered'.format(lutName))
+    
+    log.warn('Lookup table installation not implemented yet')
+
+
+###############
+# Miscellaneous
+###############
 
 
 def briconToDisplayRange(dataRange, brightness, contrast):

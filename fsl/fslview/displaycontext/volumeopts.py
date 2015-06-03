@@ -220,7 +220,7 @@ class VolumeOpts(ImageOpts):
                 strings.choices['VolumeOpts.displayRange.max']]) 
 
     
-    cmap = props.ColourMap(default=fslcm.getDefault(),
+    cmap = props.ColourMap(default=fslcm.getColourMaps()[0],
                            cmapNames=fslcm.getColourMaps())
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 

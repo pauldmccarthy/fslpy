@@ -12,7 +12,7 @@ import props
 # The colour maps module must be initialised
 # before the displaycontext module can be loaded
 import fsl.fslview.colourmaps       as colourmaps
-colourmaps.initColourMaps()
+colourmaps.init()
 
 import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform

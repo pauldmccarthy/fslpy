@@ -58,7 +58,7 @@ import fsl.utils.transform as transform
 # imported, as some of their class definitions
 # rely on the colourmaps being initialised
 import fsl.fslview.colourmaps as colourmaps
-colourmaps.initColourMaps()
+colourmaps.init()
 
 import fsl.fslview.displaycontext as fsldisplay
 
