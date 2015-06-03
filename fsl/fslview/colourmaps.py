@@ -179,7 +179,10 @@ class _Map(object):
     def __repr__(self):
         return self.__str__()
 
-    
+
+# TODO Maybe this should be a HasProps class, so
+#      that interested parties can be# notified
+#      of changes to colours/names/etc.
 class LookupTable(object):
     """Class which encapsulates a list of labels and associated colours and names,
     defining a lookup table to be used for colouring label images.

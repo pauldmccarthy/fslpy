@@ -12,6 +12,7 @@ from overlayselectpanel    import OverlaySelectPanel
 from lightboxsettingspanel import LightBoxSettingsPanel
 from locationpanel         import LocationPanel
 from orthosettingspanel    import OrthoSettingsPanel
+from lookuptablepanel      import LookupTablePanel
 
 from orthotoolbar          import OrthoToolBar
 from orthoprofiletoolbar   import OrthoProfileToolBar

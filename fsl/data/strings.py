@@ -67,6 +67,10 @@ messages = TypeDict({
 
     'SpacePanel.nonVolumetric'          : 'Non-volumetric overlays '
                                           'are not supported',
+
+    'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
+                                       'uses a lookup table',
+    
 })
 
 
@@ -102,7 +106,8 @@ titles = TypeDict({
     'OrthoSettingsPanel'    : 'Ortho view settings',
     'LightBoxToolBar'       : 'Lightbox view toolbar',
     'LightBoxSettingsPanel' : 'Lightbox view settings',
-    'HistogramToolBar'      : 'Histogram settings', 
+    'HistogramToolBar'      : 'Histogram settings',
+    'LookupTablePanel'      : 'Lookup tables'
 })
 
 
@@ -120,6 +125,7 @@ actions = TypeDict({
     'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',
     'CanvasPanel.toggleLocationPanel'     : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
+    'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
@@ -161,6 +167,12 @@ labels = TypeDict({
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
                                                'in screenshot)',
     'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
+
+
+    'LookupTablePanel.addLabel' : 'Add label',
+    'LookupTablePanel.newLut'   : 'New LUT',
+    'LookupTablePanel.saveLut'  : 'Save LUT',
+    'LookupTablePanel.loadLut'  : 'Load LUT',
 })
 
 

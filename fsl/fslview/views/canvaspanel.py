@@ -192,6 +192,8 @@ class CanvasPanel(viewpanel.ViewPanel):
                 fslcontrols.OverlayDisplayToolBar, False, self),
             'toggleLocationPanel'     : lambda *a: self.togglePanel(
                 fslcontrols.LocationPanel),
+            'toggleLookupTablePanel'  : lambda *a: self.togglePanel(
+                fslcontrols.LookupTablePanel), 
         }.items() + extraActions.items())
         
         viewpanel.ViewPanel.__init__(
