@@ -88,8 +88,9 @@ class LookupTableTexture(texture.Texture):
 
             data[value, :3] = [np.floor(c * 255) for c in colour]
 
-            if alpha is not None: data[value, 3] = alpha * 255
-            else:                 data[value, 3] = 255
+            if not lut.enabled(value): data[value, 3] = 0
+            elif alpha is not None:    data[value, 3] = alpha * 255
+            else:                      data[value, 3] = 255
 
         data = data.ravel('C')
 

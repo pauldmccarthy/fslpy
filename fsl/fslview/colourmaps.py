@@ -189,6 +189,7 @@ class LookupTable(object):
     def __init__(self, lutName):
         self.__lutName = lutName
         self.__names   = {}
+        self.__enabled = {}
         self.__colours = {}
 
 
@@ -220,7 +221,11 @@ class LookupTable(object):
         return self.__colours[value]
 
 
-    def set(self, value, name, colour):
+    def enabled(self, value):
+        return self.__enabled[value]
+
+
+    def set(self, value, **kwargs):
 
         # At the moment, we are restricting
         # lookup tables to be unsigned 16 bit.
@@ -229,9 +234,14 @@ class LookupTable(object):
            value < 0 or value > 65535:
             raise ValueError('Lookup table values must be '
                              '16 bit unsigned integers.')
+
+        name    = kwargs.get('name',    self.__names  .get(value, 'Label'))
+        colour  = kwargs.get('colour',  self.__colours.get(value, (0, 0, 0)))
+        enabled = kwargs.get('enabled', self.__enabled.get(value, True))
           
         self.__names[  value] = name
         self.__colours[value] = colour
+        self.__enabled[value] = enabled
 
 
     def load(self, lutFile):
@@ -248,7 +258,7 @@ class LookupTable(object):
                 b     = float(   tkns[3])
                 lName = ' '.join(tkns[4:])
 
-                self.set(label, lName, (r, g, b))
+                self.set(label, name=lName, colour=(r, g, b), enabled=True)
 
         return self
 
@@ -325,9 +335,9 @@ def init():
                 
                 register[name].installed = True
 
-            except:
+            except Exception as e:
                 log.warn('Error processing custom {} '
-                         'file: {}'.format(suffix, mapFile))
+                         'file {}: {}'.format(suffix, mapFile, str(e)))
 
 
 def registerColourMap(cmapFile, name=None):

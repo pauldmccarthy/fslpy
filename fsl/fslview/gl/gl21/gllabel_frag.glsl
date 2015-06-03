@@ -37,7 +37,8 @@ void main(void) {
     float voxValue;
     voxValue = texture3D(imageTexture, fragTexCoord).r;
 
-    float lutCoord = (voxValXform * vec4(voxValue, 0, 0, 1)).x / numLabels;
+
+    float lutCoord = ((voxValXform * vec4(voxValue, 0, 0, 1)).x + 0.5) / numLabels;
     vec4  colour   = texture1D(lutTexture, lutCoord);
 
     if (!outline) {
