@@ -11,8 +11,7 @@ import OpenGL.GL as gl
 import numpy     as np
 
 
-import                           texture
-import fsl.fslview.colourmaps as fslcm
+import texture
 
 
 log = logging.getLogger(__name__)
@@ -41,7 +40,18 @@ class LookupTableTexture(texture.Texture):
         border     = kwargs.get('border',     self)
         interp     = kwargs.get('interp',     self)
 
-        if lut        is not self: self.__lut        = lut
+        if lut is not self:
+
+            if self.__lut is not None:
+                self.__lut.removeListener('labels', self.getTextureName())
+                
+            self.__lut = lut
+
+            if self.__lut is not None:
+                self.__lut.addListener('labels',
+                                       self.getTextureName(),
+                                       self.__refresh)
+                
         if alpha      is not self: self.__alpha      = alpha
         if border     is not self: self.__border     = border
         if brightness is not self: self.__brightness = brightness
@@ -60,10 +70,10 @@ class LookupTableTexture(texture.Texture):
         if self.__lut is None:
             return 0
 
-        return max(self.__lut.values()) + 1
+        return len(self.__lut) + 1
 
         
-    def __refresh(self):
+    def __refresh(self, *a):
 
         lut        = self.__lut
         alpha      = self.__alpha
@@ -78,19 +88,18 @@ class LookupTableTexture(texture.Texture):
         if brightness is None: brightness = 0.5 
         if contrast   is None: contrast   = 0.5
 
-        values  = lut.values()
-        colours = lut.colours()
-        colours = fslcm.applyBricon(colours, brightness, contrast)
-        nvals   = max(values) + 1
-        data    = np.zeros((nvals, 4), dtype=np.uint8)
+        nvals = len(lut) + 1
+        data  = np.zeros((nvals, 4), dtype=np.uint8)
 
-        for value, colour in zip(values, colours):
+        for lbl in lut.labels:
 
-            data[value, :3] = [np.floor(c * 255) for c in colour]
+            value = lbl.value()
 
-            if not lut.enabled(value): data[value, 3] = 0
-            elif alpha is not None:    data[value, 3] = alpha * 255
-            else:                      data[value, 3] = 255
+            data[value, :3] = [np.floor(c * 255) for c in lbl.colour()]
+
+            if not lbl.enabled():   data[value, 3] = 0
+            elif alpha is not None: data[value, 3] = 255 * alpha
+            else:                   data[value, 3] = 255
 
         data = data.ravel('C')
 

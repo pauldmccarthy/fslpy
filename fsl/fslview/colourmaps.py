@@ -129,6 +129,8 @@ import numpy             as np
 import matplotlib.colors as colors
 import matplotlib.cm     as mplcm
 
+import props
+
 import logging
 
 
@@ -180,52 +182,72 @@ class _Map(object):
         return self.__str__()
 
 
+
+class LutLabel(object):
+    def __init__(self, value, name, colour, enabled):
+
+        if value   is None: raise ValueError('LutLabel value cannot be None')
+        if name    is None: name    = 'Label'
+        if colour  is None: colour  = (0, 0, 0)
+        if enabled is None: enabled = True
+        
+        self.__value   = value
+        self.__name    = name
+        self.__colour  = colour
+        self.__enabled = enabled
+
+
+    def value(  self): return self.__value
+    def name(   self): return self.__name
+    def colour( self): return self.__colour
+    def enabled(self): return self.__enabled
+        
+
+    def __eq__(self, other):
+        return (self.__value   == other.__value  and
+                self.__name    == other.__name   and
+                self.__colour  == other.__colour and
+                self.__enabled == other.__enabled)
+
+    def __hash__(self):
+        return (hash(self.__value)  ^
+                hash(self.__name)   ^
+                hash(self.__colour) ^
+                hash(self.__enabled))
+    
+
 # TODO Maybe this should be a HasProps class, so
 #      that interested parties can be# notified
 #      of changes to colours/names/etc.
-class LookupTable(object):
+class LookupTable(props.HasProperties):
     """Class which encapsulates a list of labels and associated colours and names,
     defining a lookup table to be used for colouring label images.
     """
 
-    
-    def __init__(self, lutName):
-        self.__lutName = lutName
-        self.__names   = {}
-        self.__enabled = {}
-        self.__colours = {}
+    name   = props.String()
 
+    labels = props.List(objType=LutLabel)
+
+    
+    def __init__(self, name):
+        self.name = name
+        
 
     def __len__(self):
-        return len(self.__names.keys())
-
-        
-    def lutName(self):
-        return self.__lutName
+        return len(self.labels)
 
 
-    def values(self):
-        return sorted(self.__names.keys())
+    def __find(self, value):
+
+        for i, label in enumerate(self.labels):
+            if label.value() == value:
+                return i, label
+
+        return (-1, None)
 
 
-    def names(self):
-        return [self.__names[v] for v in self.values()]
-
-    
-    def colours(self):
-        return [self.__colours[v] for v in self.values()]
-
-    
-    def name(self, value):
-        return self.__names[value]
-
-        
-    def colour(self, value):
-        return self.__colours[value]
-
-
-    def enabled(self, value):
-        return self.__enabled[value]
+    def get(self, value):
+        return self.__find(value)[1]
 
 
     def set(self, value, **kwargs):
@@ -238,14 +260,24 @@ class LookupTable(object):
             raise ValueError('Lookup table values must be '
                              '16 bit unsigned integers.')
 
-        name    = kwargs.get('name',    self.__names  .get(value, 'Label'))
-        colour  = kwargs.get('colour',  self.__colours.get(value, (0, 0, 0)))
-        enabled = kwargs.get('enabled', self.__enabled.get(value, True))
-          
-        self.__names[  value] = name
-        self.__colours[value] = colour
-        self.__enabled[value] = enabled
+        idx, label = self.__find(value)
 
+        # No label exists for the given value,
+        # so create a new LutLabel instance
+        # with default values
+        if idx == -1:
+            label = LutLabel(value, None, None, None)
+
+        # Create a new LutLabel instance with the
+        # new, existing, or default label settings
+        name    = kwargs.get('name',    label.name())
+        colour  = kwargs.get('colour',  label.colour())
+        enabled = kwargs.get('enabled', label.enabled())
+        label   = LutLabel(value, name, colour, enabled)
+
+        if idx == -1: self.labels.append(label)
+        else:         self.labels[idx] = label
+        
 
     def load(self, lutFile):
         

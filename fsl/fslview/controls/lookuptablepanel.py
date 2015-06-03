@@ -49,11 +49,12 @@ class LabelWidget(wx.Panel):
         self.sizer.Add(self.enableBox,    flag=wx.ALIGN_CENTRE, proportion=1)
         self.sizer.Add(self.colourButton, flag=wx.ALIGN_CENTRE, proportion=1)
 
-        colour = [np.floor(c * 255.0) for c in lut.colour(value)]
+        label  = lut.get(value)
+        colour = [np.floor(c * 255.0) for c in label.colour()]
 
         self.valueLabel  .SetLabel(str(value))
         self.colourButton.SetColour(colour)
-        self.enableBox   .SetValue(lut.enabled(value))
+        self.enableBox   .SetValue(label.enabled())
 
         self.enableBox   .Bind(wx.EVT_CHECKBOX,             self.__onEnable)
         self.colourButton.Bind(wx.EVT_COLOURPICKER_CHANGED, self.__onColour)
@@ -263,18 +264,28 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         opts = self.__selectedOpts
         lut  = opts.lut
+        
 
-        names   = lut.names()
-        colours = lut.colours()
-        values  = lut.values()
+        for i, label in enumerate(lut.labels):
 
-        for i, (name, colour, value) in enumerate(zip(names, colours, values)):
-            self.__labelList.Append(name)
+            self.__labelList.Append(label.name())
 
-            widget = LabelWidget(self, opts, lut, value)
+            widget = LabelWidget(self, opts, lut, label.value())
             self.__labelList.SetItemWidget(i, widget)
 
 
+    def __onNewLut(self, ev):
+        pass
+
+    
+    def __onLoadLut(self, ev):
+        pass
+
+    
+    def __onSaveLut(self, ev):
+        pass 
+
+    
     def __onLabelAdd(self, ev):
         pass
 
