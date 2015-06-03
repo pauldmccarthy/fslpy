@@ -1,0 +1,2 @@
+harvard-oxford-cortical    MGH Cortical
+harvard-oxford-subcortical MGH Sub-cortical
