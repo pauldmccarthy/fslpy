@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 
 
 
+
 class LabelWidget(wx.Panel):
     
     def __init__(self, lutPanel, overlayOpts, lut, value):
@@ -59,31 +60,23 @@ class LabelWidget(wx.Panel):
         self.enableBox   .Bind(wx.EVT_CHECKBOX,             self.__onEnable)
         self.colourButton.Bind(wx.EVT_COLOURPICKER_CHANGED, self.__onColour)
 
-
     def __onEnable(self, ev):
 
+        # Disable the LutPanel listener, otherwise
+        # it will recreate the label list (see
+        # LookupTablePanel._initLabelList)
+        self.lut.disableListener('labels', self.lutPanel._name)
         self.lut.set(self.value, enabled=self.enableBox.GetValue())
-        self.__notifyLut()
-
-
-    def __notifyLut(self):
-
-        # Disable the LookupTablePanel listener
-        # on the lut property, otherwise it will
-        # re-create the label list
-        self.opts.disableListener('lut', self.lutPanel._name)
-        self.opts.notify('lut')
-        self.opts.enableListener('lut', self.lutPanel._name)        
-
+        self.lut.enableListener('labels', self.lutPanel._name)
 
     def __onColour(self, ev):
 
         newColour = self.colourButton.GetColour()
         newColour = [c / 255.0 for c in newColour]
 
+        self.lut.disableListener('labels', self.lutPanel._name)
         self.lut.set(self.value, colour=newColour)
-        self.__notifyLut()
-
+        self.lut.enableListener('labels', self.lutPanel._name)
 
 
 class LookupTablePanel(fslpanel.FSLViewPanel):
@@ -166,8 +159,9 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self.__loadLutButton.Bind(wx.EVT_BUTTON, self.__onLoadLut)
         self.__saveLutButton.Bind(wx.EVT_BUTTON, self.__onSaveLut)
 
-        self.__selectedOpts    = None
         self.__selectedOverlay = None
+        self.__selectedOpts    = None
+        self.__selectedLut     = None
 
         overlayList.addListener('overlays',
                                 self._name,
@@ -177,6 +171,28 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
                                 self.__selectedOverlayChanged)
 
         self.__selectedOverlayChanged()
+
+    def destroy(self):
+
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+
+        overlay = self.__selectedOverlay
+        opts    = self.__selectedOpts
+        lut     = self.__selectedLut
+
+        if overlay is not None:
+
+            display = self._displayCtx.getDisplay(overlay)
+
+            display.removeListener('name',        self._name)
+            display.removeListener('overlayType', self._name)
+
+        if opts is not None:
+            opts.removeListener('lut', self._name)
+
+        if lut is not None:
+            lut.removeListener('labels', self._name)
     
 
     def __selectedOverlayChanged(self, *a):
@@ -252,7 +268,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         opts = self._displayCtx.getOpts(overlay)
 
-        opts.addListener('lut', self._name, self.__initLabelList)
+        opts.addListener('lut', self._name, self.__lutChanged)
         
         self.__selectedOpts = opts
         self.__lutWidget    = props.makeWidget(
@@ -261,11 +277,28 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self.__controlRowSizer.Insert(
             0, self.__lutWidget, flag=wx.EXPAND, proportion=1)
 
-        self.__initLabelList()
+        self.__lutChanged()
 
         self.Layout()
 
 
+    def __lutChanged(self, *a):
+
+        if self.__selectedLut is not None:
+            self.__selectedLut.removeListener('labels', self._name)
+            self.__selecedLut = None
+
+        opts = self.__selectedOpts
+
+        if opts is not None:
+            self.__selectedLut = opts.lut
+
+            self.__selectedLut.addListener(
+                'labels', self._name, self.__initLabelList)
+
+        self.__initLabelList()
+
+        
     def __initLabelList(self, *a):
 
         self.__labelList.Clear()
@@ -275,7 +308,6 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         opts = self.__selectedOpts
         lut  = opts.lut
-        
 
         for i, label in enumerate(lut.labels):
 
@@ -302,20 +334,112 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
     
     def __onLabelAdd(self, ev):
-        # Prompt for value and name
-        # Add to lut
-        pass
+
+        dlg = LutLabelDialog(self.GetTopLevelParent())
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        opts   = self.__selectedOpts
+        value  = dlg.value
+        name   = dlg.name
+        colour = dlg.colour[:3]
+        colour = [c / 255.0 for c in colour]
+
+        if opts.lut.get(value) is not None:
+            wx.MessageBox(
+                strings.messages[self, 'labelExists'].format(
+                    opts.lut.name, value),
+                strings.titles[  self, 'labelExists'],
+                wx.ICON_INFORMATION | wx.OK)
+            return
+
+        log.debug('New lut label for {}: {}, {}, {}'.format(
+            opts.lut.name,
+            value,
+            name,
+            colour))
+
+        opts.lut.set(value, name=name, colour=colour)
 
     
     def __onLabelRemove(self, ev):
 
-        opts  = self._displayCtx.getOpts(self.__selectedOverlay)
+        opts  = self.__selectedOpts
         value = opts.lut.labels[ev.idx].value()
+
+        self.__selectedLut.disableListener('labels', self._name)
         opts.lut.delete(value)
+        self.__selectedLut.enableListener('labels', self._name)
 
 
     def __onLabelEdit(self, ev):
 
-        opts  = self._displayCtx.getOpts(self.__selectedOverlay)
+        opts  = self.__selectedOpts
         value = opts.lut.labels[ev.idx].value()
+
+        self.__selectedLut.disableListener('labels', self._name)
         opts.lut.set(value, name=ev.label)
+        self.__selectedLut.enableListener('labels', self._name)
+
+
+class LutLabelDialog(wx.Dialog):
+
+    def __init__(self, parent):
+
+        wx.Dialog.__init__(self, parent, title=strings.titles[self])
+
+        self._value  = wx.SpinCtrl(        self)
+        self._name   = wx.TextCtrl(        self)
+        self._colour = wx.ColourPickerCtrl(self)
+
+        self._valueLabel  = wx.StaticText(self)
+        self._nameLabel   = wx.StaticText(self)
+        self._colourLabel = wx.StaticText(self)
+
+        self._ok     = wx.Button(self)
+        self._cancel = wx.Button(self)
+
+        self._valueLabel .SetLabel(strings.labels[self, 'value'])
+        self._nameLabel  .SetLabel(strings.labels[self, 'name'])
+        self._colourLabel.SetLabel(strings.labels[self, 'colour'])
+        self._ok         .SetLabel(strings.labels[self, 'ok'])
+        self._cancel     .SetLabel(strings.labels[self, 'cancel'])
+
+        self._value.SetValue(0)
+        self._name .SetValue('New label')
+
+        self._sizer = wx.GridSizer(4, 2)
+        self.SetSizer(self._sizer)
+
+        self._sizer.Add(self._valueLabel,  flag=wx.EXPAND)
+        self._sizer.Add(self._value,       flag=wx.EXPAND)
+        self._sizer.Add(self._nameLabel,   flag=wx.EXPAND)
+        self._sizer.Add(self._name,        flag=wx.EXPAND)
+        self._sizer.Add(self._colourLabel, flag=wx.EXPAND)
+        self._sizer.Add(self._colour,      flag=wx.EXPAND)
+        self._sizer.Add(self._ok,          flag=wx.EXPAND)
+        self._sizer.Add(self._cancel,      flag=wx.EXPAND)
+
+        self._ok    .Bind(wx.EVT_BUTTON, self.onOk)
+        self._cancel.Bind(wx.EVT_BUTTON, self.onCancel)
+
+        self.Fit()
+        self.Layout()
+
+        self.CentreOnParent()
+
+        self.value  = None
+        self.name   = None
+        self.colour = None
+
+
+    def onOk(self, ev):
+        self.value  = self._value .GetValue()
+        self.name   = self._name  .GetValue()
+        self.colour = self._colour.GetColour()
+
+        self.EndModal(wx.ID_OK)
+
+
+    def onCancel(self, ev):
+        self.EndModal(wx.ID_CANCEL)

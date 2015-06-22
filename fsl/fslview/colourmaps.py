@@ -91,8 +91,6 @@ give the label name. For example::
 
  - :func:`isLookupTableInstalled`:
 
- - :func:`saveLookupTable`:         TODO - update an installed lookup table
-
 
 -------------
 Miscellaneous
@@ -120,6 +118,7 @@ and generating/manipulating colours.:
 
 import glob
 import shutil
+import bisect
 import os.path as op
 
 from collections import OrderedDict
@@ -213,6 +212,11 @@ class LutLabel(object):
                 self.__colour  == other.__colour and
                 self.__enabled == other.__enabled)
 
+
+    def __cmp__(self, other):
+        return self.__value.__cmp__(other.__value)
+
+    
     def __hash__(self):
         return (hash(self.__value)  ^
                 hash(self.__name)   ^
@@ -232,7 +236,11 @@ class LookupTable(props.HasProperties):
     
     labels = props.List()
     """A list of :class:`LutLabel` instances, defining the label ->
-    colour/name mappings.
+    colour/name mappings. This list is sorted in increasing order
+    by the label value.
+
+    If you modify this list directly, you will probably break things. Use
+    the get/set methods instead.
     """
 
     
@@ -288,7 +296,9 @@ class LookupTable(props.HasProperties):
         enabled = kwargs.get('enabled', label.enabled())
         label   = LutLabel(value, name, colour, enabled)
 
-        if idx == -1: self.labels.append(label)
+        # Use the bisect module to
+        # maintain the list order
+        if idx == -1: bisect.insort(self.labels, label)
         else:         self.labels[idx] = label
 
 

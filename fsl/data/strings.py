@@ -21,8 +21,8 @@ messages = TypeDict({
                                    'mapping...',
 
     'overlay.loadOverlays.loading'     : 'Loading {} ...',
-    'overlay.loadOverlays.error'       : 'An error occurred loading the image {}\n\n'
-                                         'Details: {}',
+    'overlay.loadOverlays.error'       : 'An error occurred loading the image '
+                                         '{}\n\nDetails: {}',
 
     'overlay.loadOverlays.unknownType' : 'Unknown data type',
 
@@ -70,6 +70,9 @@ messages = TypeDict({
 
     'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
                                        'uses a lookup table',
+
+    'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
+                                     'label with value {}'
     
 })
 
@@ -107,7 +110,10 @@ titles = TypeDict({
     'LightBoxToolBar'       : 'Lightbox view toolbar',
     'LightBoxSettingsPanel' : 'Lightbox view settings',
     'HistogramToolBar'      : 'Histogram settings',
-    'LookupTablePanel'      : 'Lookup tables'
+    'LookupTablePanel'      : 'Lookup tables',
+    'LutLabelDialog'        : 'New LUT label',
+
+    'LookupTablePanel.labelExists' : 'Label already exists',
 })
 
 
@@ -174,6 +180,12 @@ labels = TypeDict({
     'LookupTablePanel.copyLut'  : 'Copy',
     'LookupTablePanel.saveLut'  : 'Save',
     'LookupTablePanel.loadLut'  : 'Load',
+
+    'LutLabelDialog.value'  : 'Value',
+    'LutLabelDialog.name'   : 'Name',
+    'LutLabelDialog.colour' : 'Colour',
+    'LutLabelDialog.ok'     : 'Ok',
+    'LutLabelDialog.cancel' : 'Cancel',
 })
 
 
