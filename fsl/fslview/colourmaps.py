@@ -673,8 +673,9 @@ def applyBricon(rgb, brightness, contrast):
 
     :arg contrast:   A brightness level in the range ``[0, 1]``.
     """
-    rgb = np.array(rgb)
-    rgb = rgb.reshape(-1, rgb.shape[-1])
+    rgb       = np.array(rgb)
+    oneColour = len(rgb.shape) == 1
+    rgb       = rgb.reshape(-1, rgb.shape[-1])
 
     # The brightness is applied as a linear offset,
     # with 0.5 equivalent to an offset of 0.0.
@@ -697,8 +698,11 @@ def applyBricon(rgb, brightness, contrast):
   
     rgb[:, :3]  = np.clip(rgb[:, :3], 0.0, 1.0)
     rgb[:, :3]  = (rgb[:, :3] - 0.5) * scale + 0.5
-  
-    return np.clip(rgb[:, :3], 0.0, 1.0)
+    
+    rgb[:, :3]  = np.clip(rgb[:, :3], 0.0, 1.0)
+
+    if oneColour: return rgb[0]
+    else:         return rgb
 
 
 def randomColour():

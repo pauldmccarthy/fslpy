@@ -12,6 +12,7 @@ import numpy     as np
 
 
 import texture
+import fsl.fslview.colourmaps as fslcmaps
 
 
 log = logging.getLogger(__name__)
@@ -87,9 +88,10 @@ class LookupTableTexture(texture.Texture):
 
         for lbl in lut.labels:
 
-            value = lbl.value()
+            value  = lbl.value()
+            colour = fslcmaps.applyBricon(lbl.colour(), brightness, contrast)
 
-            data[value, :3] = [np.floor(c * 255) for c in lbl.colour()]
+            data[value, :3] = [np.floor(c * 255) for c in colour]
 
             if not lbl.enabled():   data[value, 3] = 0
             elif alpha is not None: data[value, 3] = 255 * alpha
