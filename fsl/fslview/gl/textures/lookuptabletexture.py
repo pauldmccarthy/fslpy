@@ -40,18 +40,7 @@ class LookupTableTexture(texture.Texture):
         border     = kwargs.get('border',     self)
         interp     = kwargs.get('interp',     self)
 
-        if lut is not self:
-
-            if self.__lut is not None:
-                self.__lut.removeListener('labels', self.getTextureName())
-                
-            self.__lut = lut
-
-            if self.__lut is not None:
-                self.__lut.addListener('labels',
-                                       self.getTextureName(),
-                                       self.__refresh)
-                
+        if lut        is not self: self.__lut        = lut
         if alpha      is not self: self.__alpha      = alpha
         if border     is not self: self.__border     = border
         if brightness is not self: self.__brightness = brightness
@@ -88,8 +77,13 @@ class LookupTableTexture(texture.Texture):
         if brightness is None: brightness = 0.5 
         if contrast   is None: contrast   = 0.5
 
-        nvals = len(lut) + 1
-        data  = np.zeros((nvals, 4), dtype=np.uint8)
+        # Enough memory is allocated for the lut texture
+        # so that shader programs can use label values
+        # as indices into the texture. Not very memory
+        # efficient, but greatly reduces complexity.
+        maxval = max([lbl.value() for lbl in lut.labels])
+        nvals  = maxval + 1
+        data   = np.zeros((nvals, 4), dtype=np.uint8)
 
         for lbl in lut.labels:
 

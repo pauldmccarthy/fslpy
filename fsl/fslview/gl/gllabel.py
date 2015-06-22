@@ -33,10 +33,9 @@ class GLLabel(globject.GLImageObject):
             image,
             display)
 
-        self.vertexAttrBuffer = gl.glGenBuffers(1)
-
-        fslgl.gllabel_funcs.compileShaders(self)
         
+        fslgl.gllabel_funcs.compileShaders(self)
+
         self.refreshLutTexture()
 
         self.addListeners()
@@ -55,12 +54,26 @@ class GLLabel(globject.GLImageObject):
             self.refreshLutTexture()
             self.onUpdate()
 
-        opts   .addListener('outline',       self.name, shaderUpdate)
-        opts   .addListener('outlineWidth',  self.name, shaderUpdate)
-        opts   .addListener('lut',           self.name, lutUpdate)
-        display.addListener('alpha',         self.name, lutUpdate)
-        display.addListener('brightness',    self.name, lutUpdate)
-        display.addListener('contrast',      self.name, lutUpdate)
+        def lutChanged(*a):
+            if self.__lut is not None:
+                self.__lut.removeListener('labels', self.name)
+                
+            self.__lut = opts.lut
+
+            if self.__lut is not None:
+                self.__lut.addListener('labels', self.name, lutUpdate)
+ 
+            lutUpdate()
+
+        self.__lut = opts.lut
+
+        opts    .addListener('outline',       self.name, shaderUpdate)
+        opts    .addListener('outlineWidth',  self.name, shaderUpdate)
+        opts    .addListener('lut',           self.name, lutChanged)
+        opts.lut.addListener('labels',        self.name, lutUpdate)
+        display .addListener('alpha',         self.name, lutUpdate)
+        display .addListener('brightness',    self.name, lutUpdate)
+        display .addListener('contrast',      self.name, lutUpdate)
         
 
 
@@ -119,7 +132,6 @@ class GLLabel(globject.GLImageObject):
                             brightness=display.brightness / 100.0,
                             contrast=display.contrast     / 100.0,
                             lut=opts.lut)
-
         
     def preDraw(self):
 

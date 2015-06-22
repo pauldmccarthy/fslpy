@@ -170,9 +170,10 @@ labels = TypeDict({
 
 
     'LookupTablePanel.addLabel' : 'Add label',
-    'LookupTablePanel.newLut'   : 'New LUT',
-    'LookupTablePanel.saveLut'  : 'Save LUT',
-    'LookupTablePanel.loadLut'  : 'Load LUT',
+    'LookupTablePanel.newLut'   : 'New',
+    'LookupTablePanel.copyLut'  : 'Copy',
+    'LookupTablePanel.saveLut'  : 'Save',
+    'LookupTablePanel.loadLut'  : 'Load',
 })
 
 

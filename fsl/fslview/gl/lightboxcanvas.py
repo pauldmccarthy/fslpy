@@ -180,7 +180,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         # This will point to a RenderTexture if
         # the offscreen render mode is enabled
-        self.__offscreenRenderTexture = None
+        self._offscreenRenderTexture = None
 
         slicecanvas.SliceCanvas.__init__(self, overlayList, displayCtx, zax)
 
@@ -235,9 +235,9 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     def _renderModeChange(self, *a):
         """Overrides :meth:`.SliceCanvas._renderModeChange`."""
         
-        if self.__offscreenRenderTexture is not None:
-            self.__offscreenRenderTexture.destroy()
-            self.__offscreenRenderTexture = None
+        if self._offscreenRenderTexture is not None:
+            self._offscreenRenderTexture.destroy()
+            self._offscreenRenderTexture = None
             
         slicecanvas.SliceCanvas._renderModeChange(self, *a)
 
@@ -254,14 +254,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         # whereas here we're going to use a single
         # render texture for all overlays. 
         elif self.renderMode == 'offscreen':
-            if self.__offscreenRenderTexture is not None:
-                self.__offscreenRenderTexture.destroy()
+            if self._offscreenRenderTexture is not None:
+                self._offscreenRenderTexture.destroy()
 
-            self.__offscreenRenderTexture = textures.RenderTexture(
+            self._offscreenRenderTexture = textures.RenderTexture(
                 '{}_{}'.format(type(self).__name__, id(self)),
                 gl.GL_LINEAR)
 
-            self.__offscreenRenderTexture.setSize(768, 768)
+            self._offscreenRenderTexture.setSize(768, 768)
 
         # The LightBoxCanvas handles re-render mode
         # the same way as the SliceCanvas - a separate
@@ -694,7 +694,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
             
             log.debug('Rendering to off-screen texture')
 
-            rt = self.__offscreenRenderTexture
+            rt = self._offscreenRenderTexture
             
             lo = [None] * 3
             hi = [None] * 3

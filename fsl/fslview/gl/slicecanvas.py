@@ -585,8 +585,8 @@ class SliceCanvas(props.HasProperties):
                 if updateRenderTextures:
                     self._updateRenderTextures()
 
-                opts = disp.getDisplayOpts()
-                opts.addGlobalListener(self.name, self._refresh)
+                globj.addUpdateListener(self.name, self._refresh)
+                
                 self._refresh()
                 
             genGLObject(updateRenderTextures=False)
@@ -594,16 +594,9 @@ class SliceCanvas(props.HasProperties):
             # Bind Display.softwareMode to SliceCanvas.softwareMode
             display.bindProps('softwareMode', self)
 
-            if isinstance(overlay, fslimage.Image):
-                overlay.addListener('data',      self.name, self._refresh)
-
-
             display.addListener('overlayType',   self.name, genGLObject)
             display.addListener('enabled',       self.name, self._refresh)
             display.addListener('softwareMode',  self.name, self._refresh)
-            display.addListener('alpha',         self.name, self._refresh)
-            display.addListener('brightness',    self.name, self._refresh)
-            display.addListener('contrast',      self.name, self._refresh)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()

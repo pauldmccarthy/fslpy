@@ -16,11 +16,11 @@ data (although most of the functionality is provided by the
 import logging
 
 import wx
-import wx.glcanvas    as wxgl
+import wx.glcanvas              as wxgl
 
-import slicecanvas    as slicecanvas
-import fsl.data.image as fslimage
-import fsl.fslview.gl as fslgl
+import slicecanvas              as slicecanvas
+import fsl.fslview.gl.resources as glresources
+import fsl.fslview.gl           as fslgl
 
 
 log = logging.getLogger(__name__)
@@ -67,20 +67,20 @@ class WXGLSliceCanvas(slicecanvas.SliceCanvas,
             self.displayCtx .removeListener('overlayOrder', self.name)
             
             for overlay in self.overlayList:
-                disp = self.displayCtx.getDisplay(overlay)
-                opts = disp.getDisplayOpts()
-                
-                # TODO I think I need an overlay superclass
-                if isinstance(overlay, fslimage.Image):
-                    overlay.removeListener('data',      self.name)
+                disp  = self.displayCtx.getDisplay(overlay)
+                globj = self._glObjects[overlay]
                     
-                disp.removeListener('overlayType',   self.name)
-                disp.removeListener('enabled',       self.name)
-                disp.removeListener('softwareMode',  self.name)
-                disp.removeListener('alpha',         self.name)
-                disp.removeListener('brightness',    self.name)
-                disp.removeListener('contrast',      self.name)
-                opts.removeGlobalListener(           self.name)
+                disp.removeListener('overlayType',  self.name)
+                disp.removeListener('enabled',      self.name)
+                disp.removeListener('softwareMode', self.name)
+
+                globj.destroy()
+
+                rt, rtName = self._prerenderTextures.get(overlay, (None, None))
+                ot         = self._offscreenTextures.get(overlay, None)
+
+                if rt is not None: glresources.delete(rtName)
+                if ot is not None: ot   .destroy()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

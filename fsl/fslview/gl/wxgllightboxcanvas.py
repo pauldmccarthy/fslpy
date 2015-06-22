@@ -11,11 +11,11 @@
 import logging
 
 import wx
-import wx.glcanvas    as wxgl
+import wx.glcanvas              as wxgl
 
-import lightboxcanvas as lightboxcanvas
-import fsl.fslview.gl as fslgl
-import fsl.data.image as fslimage
+import lightboxcanvas           as lightboxcanvas
+import fsl.fslview.gl           as fslgl
+import fsl.fslview.gl.resources as glresources
 
 
 log = logging.getLogger(__name__)
@@ -75,19 +75,22 @@ class WXGLLightBoxCanvas(lightboxcanvas.LightBoxCanvas,
             
             for overlay in self.overlayList:
                 
-                disp = self.displayCtx.getDisplay(overlay)
-                opts = disp.getDisplayOpts()
+                disp  = self.displayCtx.getDisplay(overlay)
+                globj = self._glObjects[overlay]
 
-                if isinstance(overlay, fslimage.Image):
-                    overlay.removeListener('data',    self.name)
-                    
                 disp.removeListener('overlayType',   self.name)
                 disp.removeListener('enabled',       self.name)
                 disp.removeListener('softwareMode',  self.name)
-                disp.removeListener('alpha',         self.name)
-                disp.removeListener('brightness',    self.name)
-                disp.removeListener('contrast',      self.name)
-                opts.removeGlobalListener(           self.name)
+
+                globj.destroy()
+
+                rt, rtName = self._prerenderTextures.get(overlay, (None, None))
+
+                if rt is not None:
+                    glresources.delete(rtName)
+
+            if self._offscreenRenderTexture is not None:
+                self._offscreenRenderTexture.destroy()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, onDestroy)
 

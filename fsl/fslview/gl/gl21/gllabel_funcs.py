@@ -5,14 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import OpenGL.GL              as gl
 import numpy                  as np
+import OpenGL.GL              as gl
+import OpenGL.raw.GL._types   as gltypes
 
 import fsl.fslview.gl.shaders as shaders
 import                           glvolume_funcs
 
-
+# TODO make an init() function
 def compileShaders(self):
+
+    self.vertexAttrBuffer = gl.glGenBuffers(1)
 
     vertShaderSrc = shaders.getVertexShader(  self,
                                               sw=self.display.softwareMode)
@@ -41,7 +44,11 @@ def compileShaders(self):
     self.outlinePos        = gl.glGetUniformLocation(self.shaders,
                                                      'outline') 
     self.outlineOffsetsPos = gl.glGetUniformLocation(self.shaders,
-                                                     'outlineOffsets') 
+                                                     'outlineOffsets')
+
+def destroy(self):
+    gl.glDeleteBuffers(1, gltypes.GLuint(self.vertexAttrBuffer))
+    gl.glDeleteProgram(self.shaders) 
 
 
 def updateShaderState(self):

@@ -67,7 +67,7 @@ Lookup tables
 -------------
 
 
-A `.lut` file defines a lookup table which may be used to display images
+A ``.lut`` file defines a lookup table which may be used to display images
 wherein each voxel has a discrete integer label. Each of the possible voxel
 values such an image has an associated colour and name. Each line in a
 ``.lut`` file must specify the label value, RGB colour, and associated name.
@@ -116,7 +116,6 @@ and generating/manipulating colours.:
  - :func:`randomColour`:         Generates a random RGB colour.
 
  - :func:`randomBrightColour`:   Generates a random saturated RGB colour.
-
 """
 
 import glob
@@ -184,6 +183,11 @@ class _Map(object):
 
 
 class LutLabel(object):
+    """This class represents a label -> name/colour mapping; a list of
+    ``LutLabel`` instances is managed by each :class:`LookupTable` instance.
+
+    ``LutLabel`` objects are immutable.
+    """
     def __init__(self, value, name, colour, enabled):
 
         if value   is None: raise ValueError('LutLabel value cannot be None')
@@ -216,17 +220,20 @@ class LutLabel(object):
                 hash(self.__enabled))
     
 
-# TODO Maybe this should be a HasProps class, so
-#      that interested parties can be# notified
-#      of changes to colours/names/etc.
 class LookupTable(props.HasProperties):
-    """Class which encapsulates a list of labels and associated colours and names,
-    defining a lookup table to be used for colouring label images.
+    """Class which encapsulates a list of labels and associated colours and
+    names, defining a lookup table to be used for colouring label images.
     """
 
-    name   = props.String()
+    
+    name = props.String()
+    """The name of this lut. """
 
-    labels = props.List(objType=LutLabel)
+    
+    labels = props.List()
+    """A list of :class:`LutLabel` instances, defining the label ->
+    colour/name mappings.
+    """
 
     
     def __init__(self, name):
@@ -247,10 +254,16 @@ class LookupTable(props.HasProperties):
 
 
     def get(self, value):
+        """Returns the :class:`LutLabel` instance associated with the given
+        ``value``, or ``None`` if there is no label.
+        """
         return self.__find(value)[1]
 
 
     def set(self, value, **kwargs):
+        """Sets the colour/name/enabled states associated with the given
+        value.
+        """
 
         # At the moment, we are restricting
         # lookup tables to be unsigned 16 bit.
@@ -277,9 +290,21 @@ class LookupTable(props.HasProperties):
 
         if idx == -1: self.labels.append(label)
         else:         self.labels[idx] = label
-        
 
+
+    def delete(self, value):
+        """Removes the given label value from the lookup table."""
+
+        idx, label = self.__find(value)
+
+        if idx == -1:
+            raise ValueError('Value {} is not in lookup table')
+
+        self.labels.pop(idx)
+
+        
     def load(self, lutFile):
+        """Loads a ``LookupTable`` specification from the given file."""
         
         with open(lutFile, 'rt') as f:
             lines = f.readlines()
@@ -296,6 +321,20 @@ class LookupTable(props.HasProperties):
                 self.set(label, name=lName, colour=(r, g, b), enabled=True)
 
         return self
+
+
+    def save(self, lutFile):
+        """Saves this ``LookupTable`` instance to the specified ``lutFile``."""
+        with open(lutFile, 'wt') as f:
+            for label in self.labels:
+                value  = label.value()
+                colour = label.colour()
+                name   = label.name()
+
+                tkns   = [value, colour[0], colour[1], colour[2], name]
+                line   = ' '.join(map(str, tkns))
+
+                f.write('{}\n'.format(line))
 
 
 def init():
@@ -400,6 +439,15 @@ def registerColourMap(cmapFile, name=None):
                 
 
 def registerLookupTable(lut, name=None):
+    """Registers the given ``LookupTable`` instance (if ``lut`` is a string,
+    it is assumed to be the name of a ``.lut`` file, which is loaded).
+
+    :arg lut:      A :class:`LookupTable` instance, or the name of a
+                   ``.lut`` file.
+    
+    :arg name:     Name to give the lookup table. If ``None``, defaults
+                   to the file name prefix.    
+    """
 
     if isinstance(lut, basestring): lutFile = lut
     else:                           lutFile = None
@@ -490,25 +538,30 @@ def installColourMap(cmapName):
 
     log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
         
-    shutil.copyfile(cmap.cmfile, destfile)
+    shutil.copyfile(cmap.mapFile, destfile)
+    
+    cmap.installed = True
 
 
 def installLookupTable(lutName):
+    """Attempts to install/save a previously registered lookup table into
+    the ``fsl/fslview/luts`` directory.
+
+    A ``KeyError`` is raised if the lookup table is not registered, or an
+    ``IOError`` if the lookup table cannot be saved. 
+    """
     
     # keyerror if not registered
     lut = _luts[lutName]
 
-    # built-in, or already installed
-    if lut.installed:
-        return
+    if lut.mapFile is not None: destFile = lut.mapFile
+    else:                       op.join(_lutDir, '{}.lut'.format(lutName))
 
-    # cmap has been incorrectly registered
-    if lut.mapFile is None:
-        raise RuntimeError('Lookup table {} appears to have been '
-                           'incorrectly registered'.format(lutName))
+    lut.mapObj.save(destFile)
+
+    lut.mapFile   = destFile
+    lut.installed = True
     
-    log.warn('Lookup table installation not implemented yet')
-
 
 ###############
 # Miscellaneous

@@ -97,6 +97,8 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         # Overlay name
         # Change lookup table
         # Add label
+        # New lut
+        # Copy lut
         # Save lut
         # Load lut
 
@@ -114,6 +116,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         self.__lutWidget        = None
         self.__newLutButton     = wx.Button(self.__controlRow)
+        self.__copyLutButton    = wx.Button(self.__controlRow)
         self.__saveLutButton    = wx.Button(self.__controlRow)
         self.__loadLutButton    = wx.Button(self.__controlRow)
 
@@ -124,6 +127,8 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self             .SetSizer(self.__sizer)
 
         self.__controlRowSizer.Add(self.__newLutButton,
+                                   flag=wx.EXPAND, proportion=1)
+        self.__controlRowSizer.Add(self.__copyLutButton,
                                    flag=wx.EXPAND, proportion=1) 
         self.__controlRowSizer.Add(self.__loadLutButton,
                                    flag=wx.EXPAND, proportion=1)
@@ -138,6 +143,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         # Label the labels and buttons
         self.__disabledLabel.SetLabel(strings.messages[self, 'notLutOverlay'])
         self.__newLutButton .SetLabel(strings.labels[  self, 'newLut'])
+        self.__copyLutButton.SetLabel(strings.labels[  self, 'copyLut'])
         self.__loadLutButton.SetLabel(strings.labels[  self, 'loadLut'])
         self.__saveLutButton.SetLabel(strings.labels[  self, 'saveLut'])
 
@@ -153,7 +159,12 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self.__labelList.Bind(elistbox.EVT_ELB_REMOVE_EVENT,
                               self.__onLabelRemove)
         self.__labelList.Bind(elistbox.EVT_ELB_EDIT_EVENT,
-                              self.__onLabelEdit) 
+                              self.__onLabelEdit)
+
+        self.__newLutButton .Bind(wx.EVT_BUTTON, self.__onNewLut)
+        self.__copyLutButton.Bind(wx.EVT_BUTTON, self.__onCopyLut)
+        self.__loadLutButton.Bind(wx.EVT_BUTTON, self.__onLoadLut)
+        self.__saveLutButton.Bind(wx.EVT_BUTTON, self.__onSaveLut)
 
         self.__selectedOpts    = None
         self.__selectedOverlay = None
@@ -277,6 +288,10 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
     def __onNewLut(self, ev):
         pass
 
+
+    def __onCopyLut(self, ev):
+        pass
+
     
     def __onLoadLut(self, ev):
         pass
@@ -287,12 +302,20 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
     
     def __onLabelAdd(self, ev):
+        # Prompt for value and name
+        # Add to lut
         pass
 
     
     def __onLabelRemove(self, ev):
-        pass
+
+        opts  = self._displayCtx.getOpts(self.__selectedOverlay)
+        value = opts.lut.labels[ev.idx].value()
+        opts.lut.delete(value)
 
 
     def __onLabelEdit(self, ev):
-        pass
+
+        opts  = self._displayCtx.getOpts(self.__selectedOverlay)
+        value = opts.lut.labels[ev.idx].value()
+        opts.lut.set(value, name=ev.label)
