@@ -53,14 +53,12 @@ of the image bounds.
 import logging
 log = logging.getLogger(__name__)
 
-import OpenGL.GL                as gl
+import OpenGL.GL      as gl
 
-import fsl.utils.transform      as transform
-import fsl.fslview.gl           as fslgl
-import                             textures
-import                             globject
-import routines                 as glroutines
-import resources                as glresources
+import fsl.fslview.gl as fslgl
+import                   textures
+import                   globject
+import resources      as glresources
 
 
 class GLVolume(globject.GLImageObject):
@@ -106,14 +104,6 @@ class GLVolume(globject.GLImageObject):
         fslgl.glvolume_funcs.init(self)
 
 
-    def setAxes(self, xax, yax):
-        """This method should be called when the image display axes change."""
-        
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-
-
     def preDraw(self):
         """Sets up the GL state to draw a slice from this :class:`GLVolume`
         instance.
@@ -124,37 +114,6 @@ class GLVolume(globject.GLImageObject):
         self.colourTexture.bindTexture(gl.GL_TEXTURE1)
 
         fslgl.glvolume_funcs.preDraw(self)
-
-
-    def generateVertices(self, zpos, xform=None):
-        """Generates vertex coordinates for a 2D slice through the given
-        ``zpos``, with the optional ``xform`` applied to the coordinates.
-        
-        This method is called by the :mod:`.gl14.glvolume_funcs` and
-        :mod:`.gl21.glvolume_funcs` modules.
-
-        A tuple of three values is returned, containing:
-        
-          - A ``6*3 numpy.float32`` array containing the vertex coordinates
-        
-          - A ``6*3 numpy.float32`` array containing the voxel coordinates
-            corresponding to each vertex
-        
-          - A ``6*3 numpy.float32`` array containing the texture coordinates
-            corresponding to each vertex
-        """
-        vertices, voxCoords, texCoords = glroutines.slice2D(
-            self.image.shape[:3],
-            self.xax,
-            self.yax,
-            zpos, 
-            self.displayOpts.getTransform('voxel',   'display'),
-            self.displayOpts.getTransform('display', 'voxel'))
-
-        if xform is not None: 
-            vertices = transform.transform(vertices, xform)
-
-        return vertices, voxCoords, texCoords
 
         
     def draw(self, zpos, xform=None):

@@ -276,14 +276,6 @@ class GLVector(globject.GLImageObject):
 
             texture.set(cmap=cmap, displayRange=drange)
         
-
-    def setAxes(self, xax, yax):
-        """Stores the new x/y/z axes."""
-
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-
         
     def preDraw(self):
         """Must be called by subclass implementations.

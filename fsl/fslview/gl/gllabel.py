@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 #
-# gllabel.py -
+# gllabel.py - OpenGL representation for label/atlas images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import OpenGL.GL           as gl
+import OpenGL.GL      as gl
 
-import fsl.utils.transform as transform
-import fsl.fslview.gl      as fslgl
-import resources           as glresources
-import routines            as glroutines
-import                        globject
-import                        textures
+import fsl.fslview.gl as fslgl
+import resources      as glresources
+import                   globject
+import                   textures
 
 
 class GLLabel(globject.GLImageObject):
@@ -32,13 +30,20 @@ class GLLabel(globject.GLImageObject):
             imageTexName,
             image,
             display)
-
         
-        fslgl.gllabel_funcs.compileShaders(self)
+        fslgl.gllabel_funcs.init(self)
 
         self.refreshLutTexture()
-
         self.addListeners()
+
+        
+    def destroy(self):
+
+        glresources.delete(self.imageTexture.getTextureName())
+        self.lutTexture.destroy()
+
+        self.removeListeners()
+        fslgl.gllabel_funcs.destroy(self)
 
 
     def addListeners(self):
@@ -68,6 +73,10 @@ class GLLabel(globject.GLImageObject):
 
         self.__lut = opts.lut
 
+        # TODO If you add a software shader, you will
+        #      need to call gllabel_funcs.compileShaders
+        #      when display.softwareMode changes
+
         opts    .addListener('outline',       self.name, shaderUpdate)
         opts    .addListener('outlineWidth',  self.name, shaderUpdate)
         opts    .addListener('lut',           self.name, lutChanged)
@@ -75,7 +84,6 @@ class GLLabel(globject.GLImageObject):
         display .addListener('alpha',         self.name, lutUpdate)
         display .addListener('brightness',    self.name, lutUpdate)
         display .addListener('contrast',      self.name, lutUpdate)
-        
 
 
     def removeListeners(self):
@@ -89,39 +97,10 @@ class GLLabel(globject.GLImageObject):
         display.removeListener('brightness',    self.name)
         display.removeListener('contrast',      self.name)
 
-    
-    def destroy(self):
-
-        glresources.delete(self.imageTexture.getTextureName())
-        self.lutTexture.destroy()
-
-        self.removeListeners()
-        fslgl.gllabel_funcs.destroy(self)
-
         
     def setAxes(self, xax, yax):
-        """This method should be called when the image display axes change."""
-        
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-
+        globject.GLImageObject.setAxes(self, xax, yax)
         fslgl.gllabel_funcs.updateShaderState(self)
-
-        
-    def generateVertices(self, zpos, xform):
-        vertices, voxCoords, texCoords = glroutines.slice2D(
-            self.image.shape[:3],
-            self.xax,
-            self.yax,
-            zpos, 
-            self.displayOpts.getTransform('voxel',   'display'),
-            self.displayOpts.getTransform('display', 'voxel'))
-
-        if xform is not None: 
-            vertices = transform.transform(vertices, xform)
-
-        return vertices, voxCoords, texCoords 
 
 
     def refreshLutTexture(self, *a):

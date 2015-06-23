@@ -15,6 +15,9 @@ representation.
 
 import numpy as np
 
+import routines            as glroutines
+import fsl.utils.transform as transform
+
 
 def createGLObject(overlay, display):
     """Create :class:`GLObject` instance for the given overlay, as specified
@@ -34,21 +37,43 @@ def createGLObject(overlay, display):
 class GLObject(object):
     """The :class:`GLObject` class is a superclass for all 2D OpenGL
     objects.
+
+    The following attributes will always be available on ``GLObject``
+    instances:
+
+      - ``name``: A unique name for this ``GLObject`` instance.
+
+      - ``xax``:  Index of the display coordinate system axis that
+                  corresponds to the horizontal screen axis.
+    
+      - ``yax``:  Index of the display coordinate system axis that 
+                  corresponds to the vertical screen axis.
+    
+      - ``zax``:  Index of the display coordinate system axis that 
+                  corresponds to the depth screen axis. 
     """
 
+    
     def __init__(self):
-        """Create a :class:`GLObject`.  The constructor adds one attribute to
-        this instance, ``name``, which is simply a unique name for this
-        instance.
+        """Create a :class:`GLObject`.  The constructor adds one attribute
+        to this instance, ``name``, which is simply a unique name for this
+        instance, and gives default values to the ``xax``, ``yax``, and
+        ``zax`` attributes.
 
         Subclass implementations must call this method, and should also
         perform any necessary OpenGL initialisation, such as creating
         textures.
         """
 
+        # Give this instance a name, and set 
+        # initial values for the display axes
         self.name = '{}_{}'.format(type(self).__name__, id(self))
+        self.xax  = 0
+        self.yax  = 1
+        self.zax  = 2
+        
         self.__updateListeners = {}
-
+        
         
     def addUpdateListener(self, name, listener):
         """Adds a listener function which will be called whenever this
@@ -87,10 +112,15 @@ class GLObject(object):
     
     def setAxes(self, xax, yax):
         """This method is called when the display orientation for this
-        :class:`GLObject` changes. It should perform any necessary updates to
-        the GL data (e.g. regenerating/moving vertices).
+        :class:`GLObject` changes. It sets :attr:`xax`, :attr:`yax`,
+        and :attr:`zax` attributes on this ``GLObject`` instance.
+
+        Subclass implementations should call this method, or should set
+        the ``xax``, ``yax``, and ``zax`` attributes themselves.
         """
-        raise NotImplementedError()
+        self.xax = xax
+        self.yax = yax
+        self.zax = 3 - xax - yax
 
     
     def destroy(self):
@@ -131,7 +161,7 @@ class GLObject(object):
         ``xforms`` arrays.
 
         In some circumstances (hint: the :class:`.LightBoxCanvas`), better
-        performance may be achievbed in combining multiple renders, rather
+        performance may be achieved in combining multiple renders, rather
         than doing it with separate calls to :meth:`draw`.
 
         The default implementation does exactly this, so this method need only
@@ -160,27 +190,12 @@ class GLSimpleObject(GLObject):
 
     Subclasses should not assume that any of the other methods will ever
     be called.
-
-    On calls to :meth:`draw`, the following attributes will be available on
-    ``GLSimpleObject`` instances:
-
-      - ``xax``: Index of the display coordinate system axis that corresponds
-                 to the horizontal screen axis.
-    
-      - ``yax``: Index of the display coordinate system axis that corresponds
-                 to the vertical screen axis.
     """
 
     def __init__(self):
         GLObject.__init__(self)
 
-    def setAxes(self, xax, yax):
-        self.xax =  xax
-        self.yax =  yax
-        self.zax = 3 - xax - yax
-
-
-    def destroy(self): pass
+    def destroy( self): pass
     def preDraw( self): pass
     def postDraw(self): pass
 
@@ -233,6 +248,37 @@ class GLImageObject(GLObject):
             lo, hi = opts.getDisplayBounds()
             minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3
+
+        
+    def generateVertices(self, zpos, xform):
+        """Generates vertex coordinates for a 2D slice through the given
+        ``zpos``, with the optional ``xform`` applied to the coordinates.
+        
+        This method is called by the :mod:`.gl14.glvolume_funcs` and
+        :mod:`.gl21.glvolume_funcs` modules.
+
+        A tuple of three values is returned, containing:
+        
+          - A ``6*3 numpy.float32`` array containing the vertex coordinates
+        
+          - A ``6*3 numpy.float32`` array containing the voxel coordinates
+            corresponding to each vertex
+        
+          - A ``6*3 numpy.float32`` array containing the texture coordinates
+            corresponding to each vertex
+        """ 
+        vertices, voxCoords, texCoords = glroutines.slice2D(
+            self.image.shape[:3],
+            self.xax,
+            self.yax,
+            zpos, 
+            self.displayOpts.getTransform('voxel',   'display'),
+            self.displayOpts.getTransform('display', 'voxel'))
+
+        if xform is not None: 
+            vertices = transform.transform(vertices, xform)
+
+        return vertices, voxCoords, texCoords 
 
 
 import glvolume

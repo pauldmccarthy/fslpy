@@ -108,8 +108,7 @@ def updateShaderState(self):
     current display properties.
     """
 
-    display = self.display
-    opts    = self.displayOpts
+    opts = self.displayOpts
 
     gl.glUseProgram(self.shaders)
     
@@ -124,10 +123,10 @@ def updateShaderState(self):
     # range, but the shader needs them to be in image
     # texture value range (0.0 - 1.0). So let's scale 
     # them.
-    clipLow = opts.clippingRange[0]           * \
+    clipLow = opts.clippingRange[0]            * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0]
-    clipHigh = opts.clippingRange[1]          * \
+    clipHigh = opts.clippingRange[1]           * \
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0] 
 

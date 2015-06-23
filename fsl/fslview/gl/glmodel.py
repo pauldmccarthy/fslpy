@@ -104,10 +104,7 @@ class GLModel(globject.GLObject):
         
     
     def setAxes(self, xax, yax):
-        self.xax = xax
-        self.yax = yax
-        self.zax = 3 - xax - yax
-
+        globject.GLObject.setAxes(self, xax, yax)
         self._renderTexture.setAxes(xax, yax)
  
 
