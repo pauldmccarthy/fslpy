@@ -197,10 +197,9 @@ def bootstrap(glVersion=None):
         log.debug('Software-based rendering detected - '
                   'lowering default performance settings.')
 
-        import fsl.fslview.displaycontext.display   as di
-        import fsl.fslview.displaycontext.sceneopts as so
+        import fsl.fslview.displaycontext as dc
 
-        so.SceneOpts.performance.setConstraint(None, 'default', 2)
+        dc.SceneOpts.performance.setConstraint(None, 'default', 2)
 
         # And disable some fancy options - spline
         # may have been disabled above, so absorb
@@ -208,8 +207,8 @@ def bootstrap(glVersion=None):
 
         # TODO Remove this code duplication
         try:
-            di.VolumeOpts   .interpolation.removeChoice('spline')
-            di.RGBVectorOpts.interpolation.removeChoice('spline')
+            dc.VolumeOpts   .interpolation.removeChoice('spline')
+            dc.RGBVectorOpts.interpolation.removeChoice('spline')
             
         except ValueError: pass
 

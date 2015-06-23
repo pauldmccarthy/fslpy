@@ -8,14 +8,10 @@
 import logging
 import os.path as op
 
-import fsl.data.strings                      as strings
-import fsl.fslview.actions                   as actions
-import fsl.fslview.colourmaps                as fslcmap
-import fsl.fslview.displaycontext.volumeopts as volumeopts
+import fsl.data.strings       as strings
+import fsl.fslview.actions    as actions
+import fsl.fslview.colourmaps as fslcmap
 
-
-# TODO You will need to patch ColourMap instances
-# for any new display option types
 
 
 log = logging.getLogger(__name__)
@@ -74,23 +70,10 @@ class LoadColourMapAction(actions.Action):
             break
 
         # register the selected colour map file
-        fslcmap.registerColourMap(cmapFile, cmapName)
-
-        # update the VolumeOpts colour map property ...
-        #
-        # for future images
-        volumeopts.VolumeOpts.cmap.setConstraint(
-            None,
-            'cmapNames',
-            fslcmap.getColourMaps())
-
-        # and for any existing VolumeOpts instances
-        for overlay in self._overlayList:
-            opts = self._displayCtx.getOpts(overlay)
-            if isinstance(opts, volumeopts.VolumeOpts):
-                opts.setConstraint('cmap',
-                                   'cmapNames',
-                                   fslcmap.getColourMaps())
+        fslcmap.registerColourMap(cmapFile,
+                                  self._overlayList,
+                                  self._displayCtx,
+                                  cmapName)
 
         # ask the user if they want to install
         # the colour map for future use

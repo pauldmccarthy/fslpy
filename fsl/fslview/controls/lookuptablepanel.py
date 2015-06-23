@@ -17,6 +17,7 @@ import pwidgets.elistbox          as elistbox
 
 import fsl.fslview.panel          as fslpanel
 import fsl.fslview.displaycontext as fsldisplay
+import fsl.fslview.colourmaps     as fslcmaps
 import fsl.data.strings           as strings
 
 
@@ -330,7 +331,17 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
 
     def __onNewLut(self, ev):
-        pass
+
+        dlg = NewLutDialog(self.GetTopLevelParent())
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+
+        log.debug('Creating and registering new '
+                  'LookupTable: {}'.format(dlg.name))
+
+        lut = fslcmaps.LookupTable(dlg.name)
+        fslcmaps.registerLookupTable(lut, self._overlayList, self._displayCtx)
 
 
     def __onCopyLut(self, ev):
@@ -394,7 +405,64 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self.__selectedLut.enableListener('labels', self._name)
 
 
+class NewLutDialog(wx.Dialog):
+    """A dialog which is displayed when the user chooses to create a new LUT.
+
+    Prompts the user to enter a name.
+    """
+    
+    def __init__(self, parent):
+
+        wx.Dialog.__init__(self, parent, title=strings.titles[self])
+
+        self._message = wx.StaticText(self)
+        self._name    = wx.TextCtrl(  self)
+        self._ok      = wx.Button(    self)
+        self._cancel  = wx.Button(    self)
+
+        self._message.SetLabel(strings.messages[self, 'newLut'])
+        self._ok     .SetLabel(strings.labels[  self, 'ok'])
+        self._cancel .SetLabel(strings.labels[  self, 'cancel'])
+        self._name   .SetValue(strings.labels[  self, 'newLut'])
+
+        self._sizer    = wx.BoxSizer(wx.VERTICAL)
+        self._btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.SetSizer(self._sizer)
+
+        self._sizer   .Add(self._message,  flag=wx.EXPAND | wx.ALL, border=10)
+        self._sizer   .Add(self._name,     flag=wx.EXPAND | wx.ALL, border=10)
+        self._sizer   .Add(self._btnSizer, flag=wx.EXPAND)
+        self._btnSizer.Add(self._ok,       flag=wx.EXPAND, proportion=1)
+        self._btnSizer.Add(self._cancel,   flag=wx.EXPAND, proportion=1)
+
+        self._ok    .Bind(wx.EVT_BUTTON, self.onOk)
+        self._cancel.Bind(wx.EVT_BUTTON, self.onCancel)
+
+        self.Fit()
+        self.Layout()
+
+        self.CentreOnParent()
+
+        self.name = None
+
+
+    def onOk(self, ev):
+        self.name = self._name.GetValue()
+        self.EndModal(wx.ID_OK)
+
+
+    def onCancel(self, ev):
+        self.EndModal(wx.ID_CANCEL)
+ 
+        
+
 class LutLabelDialog(wx.Dialog):
+    """A dialog which is displayed when the user adds a new label to the
+    current :class:`.LookupTable`.
+
+    Prompts the user to enter a label value, name, and colour.
+    """
 
     def __init__(self, parent):
 
@@ -416,9 +484,8 @@ class LutLabelDialog(wx.Dialog):
         self._colourLabel.SetLabel(strings.labels[self, 'colour'])
         self._ok         .SetLabel(strings.labels[self, 'ok'])
         self._cancel     .SetLabel(strings.labels[self, 'cancel'])
-
-        self._value.SetValue(0)
-        self._name .SetValue('New label')
+        self._name       .SetValue(strings.labels[self, 'newLabel'])
+        self._value      .SetValue(0)
 
         self._sizer = wx.GridSizer(4, 2)
         self.SetSizer(self._sizer)

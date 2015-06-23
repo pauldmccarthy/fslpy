@@ -72,7 +72,9 @@ messages = TypeDict({
                                        'uses a lookup table',
 
     'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
-                                     'label with value {}'
+                                     'label with value {}',
+
+    'NewLutDialog.newLut' : 'Enter a name for the new LUT', 
     
 })
 
@@ -112,6 +114,7 @@ titles = TypeDict({
     'HistogramToolBar'      : 'Histogram settings',
     'LookupTablePanel'      : 'Lookup tables',
     'LutLabelDialog'        : 'New LUT label',
+    'NewLutDialog'          : 'New LUT',
 
     'LookupTablePanel.labelExists' : 'Label already exists',
 })
@@ -181,11 +184,16 @@ labels = TypeDict({
     'LookupTablePanel.saveLut'  : 'Save',
     'LookupTablePanel.loadLut'  : 'Load',
 
-    'LutLabelDialog.value'  : 'Value',
-    'LutLabelDialog.name'   : 'Name',
-    'LutLabelDialog.colour' : 'Colour',
-    'LutLabelDialog.ok'     : 'Ok',
-    'LutLabelDialog.cancel' : 'Cancel',
+    'LutLabelDialog.value'    : 'Value',
+    'LutLabelDialog.name'     : 'Name',
+    'LutLabelDialog.colour'   : 'Colour',
+    'LutLabelDialog.ok'       : 'Ok',
+    'LutLabelDialog.cancel'   : 'Cancel',
+    'LutLabelDialog.newLabel' : 'New label',
+
+    'NewLutDialog.ok'     : 'Ok',
+    'NewLutDialog.cancel' : 'Cancel',
+    'NewLutDialog.newLut' : 'New LUT', 
 })
 
 
