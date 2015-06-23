@@ -37,11 +37,16 @@ void main(void) {
     float voxValue;
     voxValue = texture3D(imageTexture, fragTexCoord).r;
 
-
     float lutCoord = ((voxValXform * vec4(voxValue, 0, 0, 1)).x + 0.5) / numLabels;
-    vec4  colour   = texture1D(lutTexture, lutCoord);
 
-    if (!outline) {
+    if (lutCoord < 0 || lutCoord > 1) {
+        gl_FragColor.a = 0.0;
+        return;
+    }
+    
+    vec4 colour = texture1D(lutTexture, lutCoord);
+
+    if (!outline || colour.a == 0) {
       gl_FragColor = colour;
     }
     else {

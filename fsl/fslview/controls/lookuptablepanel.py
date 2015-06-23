@@ -302,7 +302,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
             self.__selectedLut.addListener(
                 'labels', self._name, self.__initLabelList)
             self.__selectedLut.addListener(
-                'saved', self._name, self.__lutSaveStateChanged) 
+                'saved', self._name, self.__lutSaveStateChanged)
 
         self.__initLabelList()
         self.__lutSaveStateChanged()
@@ -336,16 +336,40 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         if dlg.ShowModal() != wx.ID_OK:
             return
 
-
         log.debug('Creating and registering new '
                   'LookupTable: {}'.format(dlg.name))
 
         lut = fslcmaps.LookupTable(dlg.name)
         fslcmaps.registerLookupTable(lut, self._overlayList, self._displayCtx)
 
+        if self.__selectedOpts is not None:
+            self.__selectedOpts.lut = lut
+
 
     def __onCopyLut(self, ev):
-        pass
+
+        name = self.__selectedLut.name
+
+        dlg = NewLutDialog(self.GetTopLevelParent(), name)
+        
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        log.debug('Creating and registering new '
+                  'LookupTable {} (copied from {})'.format(dlg.name, name))
+
+        lut = fslcmaps.LookupTable(dlg.name)
+
+        for label in self.__selectedLut.labels:
+            lut.set(label.value(),
+                    name=label.name(),
+                    colour=label.colour(),
+                    enabled=label.enabled())
+        
+        fslcmaps.registerLookupTable(lut, self._overlayList, self._displayCtx)
+
+        if self.__selectedOpts is not None:
+            self.__selectedOpts.lut = lut 
 
     
     def __onLoadLut(self, ev):
@@ -411,7 +435,10 @@ class NewLutDialog(wx.Dialog):
     Prompts the user to enter a name.
     """
     
-    def __init__(self, parent):
+    def __init__(self, parent, name=None):
+
+        if name is None:
+            name = strings.labels[self, 'newLut']
 
         wx.Dialog.__init__(self, parent, title=strings.titles[self])
 
@@ -423,7 +450,7 @@ class NewLutDialog(wx.Dialog):
         self._message.SetLabel(strings.messages[self, 'newLut'])
         self._ok     .SetLabel(strings.labels[  self, 'ok'])
         self._cancel .SetLabel(strings.labels[  self, 'cancel'])
-        self._name   .SetValue(strings.labels[  self, 'newLut'])
+        self._name   .SetValue(name)
 
         self._sizer    = wx.BoxSizer(wx.VERTICAL)
         self._btnSizer = wx.BoxSizer(wx.HORIZONTAL)

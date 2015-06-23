@@ -52,6 +52,7 @@ class GLLabel(globject.GLImageObject):
 
         def lutUpdate(*a):
             self.refreshLutTexture()
+            fslgl.gllabel_funcs.updateShaderState(self)
             self.onUpdate()
 
         def lutChanged(*a):
