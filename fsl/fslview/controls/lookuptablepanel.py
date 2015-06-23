@@ -444,8 +444,8 @@ class NewLutDialog(wx.Dialog):
 
         self._message = wx.StaticText(self)
         self._name    = wx.TextCtrl(  self)
-        self._ok      = wx.Button(    self)
-        self._cancel  = wx.Button(    self)
+        self._ok      = wx.Button(    self, id=wx.ID_OK)
+        self._cancel  = wx.Button(    self, id=wx.ID_CANCEL)
 
         self._message.SetLabel(strings.messages[self, 'newLut'])
         self._ok     .SetLabel(strings.labels[  self, 'ok'])
@@ -466,6 +466,8 @@ class NewLutDialog(wx.Dialog):
         self._ok    .Bind(wx.EVT_BUTTON, self.onOk)
         self._cancel.Bind(wx.EVT_BUTTON, self.onCancel)
 
+        self._ok.SetDefault()
+        
         self.Fit()
         self.Layout()
 
@@ -482,7 +484,6 @@ class NewLutDialog(wx.Dialog):
     def onCancel(self, ev):
         self.EndModal(wx.ID_CANCEL)
  
-        
 
 class LutLabelDialog(wx.Dialog):
     """A dialog which is displayed when the user adds a new label to the
@@ -503,8 +504,8 @@ class LutLabelDialog(wx.Dialog):
         self._nameLabel   = wx.StaticText(self)
         self._colourLabel = wx.StaticText(self)
 
-        self._ok     = wx.Button(self)
-        self._cancel = wx.Button(self)
+        self._ok     = wx.Button(self, id=wx.ID_OK)
+        self._cancel = wx.Button(self, id=wx.ID_CANCEL)
 
         self._valueLabel .SetLabel(strings.labels[self, 'value'])
         self._nameLabel  .SetLabel(strings.labels[self, 'name'])
@@ -528,6 +529,8 @@ class LutLabelDialog(wx.Dialog):
 
         self._ok    .Bind(wx.EVT_BUTTON, self.onOk)
         self._cancel.Bind(wx.EVT_BUTTON, self.onCancel)
+
+        self._ok.SetDefault()
 
         self.Fit()
         self.Layout()
