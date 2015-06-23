@@ -60,6 +60,7 @@ class LabelWidget(wx.Panel):
         self.enableBox   .Bind(wx.EVT_CHECKBOX,             self.__onEnable)
         self.colourButton.Bind(wx.EVT_COLOURPICKER_CHANGED, self.__onColour)
 
+        
     def __onEnable(self, ev):
 
         # Disable the LutPanel listener, otherwise
@@ -69,6 +70,7 @@ class LabelWidget(wx.Panel):
         self.lut.set(self.value, enabled=self.enableBox.GetValue())
         self.lut.enableListener('labels', self.lutPanel._name)
 
+        
     def __onColour(self, ev):
 
         newColour = self.colourButton.GetColour()
@@ -172,6 +174,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         self.__selectedOverlayChanged()
 
+        
     def destroy(self):
 
         self._overlayList.removeListener('overlays',        self._name)
@@ -193,6 +196,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         if lut is not None:
             lut.removeListener('labels', self._name)
+            lut.removeListener('saved',  self._name)
     
 
     def __selectedOverlayChanged(self, *a):
@@ -286,6 +290,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         if self.__selectedLut is not None:
             self.__selectedLut.removeListener('labels', self._name)
+            self.__selectedLut.removeListener('saved',  self._name)
             self.__selecedLut = None
 
         opts = self.__selectedOpts
@@ -295,8 +300,15 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
             self.__selectedLut.addListener(
                 'labels', self._name, self.__initLabelList)
+            self.__selectedLut.addListener(
+                'saved', self._name, self.__lutSaveStateChanged) 
 
         self.__initLabelList()
+        self.__lutSaveStateChanged()
+
+        
+    def __lutSaveStateChanged(self, *a):
+        self.__saveLutButton.Enable(not self.__selectedLut.saved)
 
         
     def __initLabelList(self, *a):

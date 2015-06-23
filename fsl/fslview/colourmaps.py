@@ -52,7 +52,7 @@ This module provides a number of functions, the most important of which are:
                                   colourmaps.
 
  - :func:`registerColourMap`:     Given a text file containing RGB values,
-                                  loads the data and registers it  with
+                                  loads the data and registers it with
                                   :mod:`matplotlib`.
 
  - :func:`installColourMap`:
@@ -80,6 +80,20 @@ give the label name. For example::
         2  0.62745 0.32157 0.17647 Insular Cortex
         3  1.00000 0.85490 0.72549 Superior Frontal Gyrus
 
+
+This list of label, colour, and name mappings is used to create a
+:class:`LookupTable` instance, which can be used to access the colours and
+names associated with each label value.
+
+
+Once created, ``LookupTable`` instances may be modified - labels can be
+added/removed, and the name/colour of existing labels can be modified.  The
+:func:`.installLookupTable` method will install a new lookup table, or save
+any changes made to an existing one.
+
+
+The following functions are available to access and manage
+:class:`LookupTable` instances:
 
  - :func:`getLookupTables`:
 
@@ -115,6 +129,7 @@ and generating/manipulating colours.:
 
  - :func:`randomBrightColour`:   Generates a random saturated RGB colour.
 """
+
 
 import glob
 import shutil
@@ -180,7 +195,6 @@ class _Map(object):
         return self.__str__()
 
 
-
 class LutLabel(object):
     """This class represents a label -> name/colour mapping; a list of
     ``LutLabel`` instances is managed by each :class:`LookupTable` instance.
@@ -204,13 +218,25 @@ class LutLabel(object):
     def name(   self): return self.__name
     def colour( self): return self.__colour
     def enabled(self): return self.__enabled
-        
+
 
     def __eq__(self, other):
+        
         return (self.__value   == other.__value  and
                 self.__name    == other.__name   and
                 self.__colour  == other.__colour and
                 self.__enabled == other.__enabled)
+
+    
+    def __str__(self):
+        return '{}: {} / {} ({})'.format(self.__value,
+                                         self.__name,
+                                         self.__colour,
+                                         self.__enabled)
+
+
+    def __repr__(self):
+        return self.__str__()
 
 
     def __cmp__(self, other):
@@ -218,15 +244,16 @@ class LutLabel(object):
 
     
     def __hash__(self):
-        return (hash(self.__value)  ^
-                hash(self.__name)   ^
-                hash(self.__colour) ^
-                hash(self.__enabled))
+        return (hash(self.__value) ^
+                hash(self.__name)  ^
+                hash(self.__colour))
     
 
 class LookupTable(props.HasProperties):
     """Class which encapsulates a list of labels and associated colours and
     names, defining a lookup table to be used for colouring label images.
+
+    :attr:`lutFile`
     """
 
     
@@ -243,9 +270,18 @@ class LookupTable(props.HasProperties):
     the get/set methods instead.
     """
 
+
+    saved = props.Boolean(default=False)
+
     
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name, lutFile=None):
+        
+        self.name    = name
+        self.lutFile = lutFile
+
+        if lutFile is not None:
+            self._load(lutFile)
+            self.saved = True
         
 
     def __len__(self):
@@ -298,8 +334,27 @@ class LookupTable(props.HasProperties):
 
         # Use the bisect module to
         # maintain the list order
-        if idx == -1: bisect.insort(self.labels, label)
-        else:         self.labels[idx] = label
+        # when inserting new labels
+        if idx == -1:
+            
+            log.debug('Adding new label to {}: {}'.format(
+                self.name, label))
+            
+            lutChanged = True
+            bisect.insort(self.labels, label)
+        else:
+            lutChanged = not (self.labels[idx].name()   == label.name() and 
+                              self.labels[idx].colour() == label.colour())
+
+            log.debug('Updating label in {}: {} -> {} (changed: {})'.format(
+                self.name, self.labels[idx], label, lutChanged))
+            
+            self.labels[idx] = label            
+
+        # Update the saved state if a new label has been added,
+        # or an existing label name/colour has been changed
+        if lutChanged:
+            self.saved = False
 
 
     def delete(self, value):
@@ -311,9 +366,10 @@ class LookupTable(props.HasProperties):
             raise ValueError('Value {} is not in lookup table')
 
         self.labels.pop(idx)
+        self.saved = False
 
         
-    def load(self, lutFile):
+    def _load(self, lutFile):
         """Loads a ``LookupTable`` specification from the given file."""
         
         with open(lutFile, 'rt') as f:
@@ -330,11 +386,21 @@ class LookupTable(props.HasProperties):
 
                 self.set(label, name=lName, colour=(r, g, b), enabled=True)
 
-        return self
 
+    def save(self, lutFile=None):
+        """Saves this ``LookupTable`` instance to the specified ``lutFile``.
 
-    def save(self, lutFile):
-        """Saves this ``LookupTable`` instance to the specified ``lutFile``."""
+        If ``lutFile`` is not provided, saves the lut information to the
+        ``lutFile`` specified in :meth:`__init__`, or on a previous call to
+        this method.
+        """
+
+        if lutFile is None:
+            lutFile = self.lutFile
+
+        if lutFile is None:
+            raise ValueError('No lookup table file specified')
+
         with open(lutFile, 'wt') as f:
             for label in self.labels:
                 value  = label.value()
@@ -345,6 +411,9 @@ class LookupTable(props.HasProperties):
                 line   = ' '.join(map(str, tkns))
 
                 f.write('{}\n'.format(line))
+
+        self.lutFile = lutFile
+        self.saved   = True
 
 
 def init():
@@ -472,7 +541,7 @@ def registerLookupTable(lut, name=None):
         log.debug('Loading and registering custom '
                   'lookup table: {}'.format(lutFile)) 
         
-        lut = LookupTable(name).load(lutFile)
+        lut = LookupTable(name, lutFile)
 
     _luts[name] = _Map(name, lut, lutFile, False)
 
