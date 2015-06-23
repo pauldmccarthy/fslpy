@@ -28,8 +28,6 @@ class LookupTableTexture(texture.Texture):
         self.__alpha      = None
         self.__brightness = None
         self.__contrast   = None
-        self.__interp     = None
-        self.__border     = None
 
 
     def set(self, **kwargs):
@@ -38,15 +36,11 @@ class LookupTableTexture(texture.Texture):
         alpha      = kwargs.get('alpha',      self)
         brightness = kwargs.get('brightness', self)
         contrast   = kwargs.get('contrast',   self)
-        border     = kwargs.get('border',     self)
-        interp     = kwargs.get('interp',     self)
 
         if lut        is not self: self.__lut        = lut
         if alpha      is not self: self.__alpha      = alpha
-        if border     is not self: self.__border     = border
         if brightness is not self: self.__brightness = brightness
         if contrast   is not self: self.__contrast   = contrast
-        if interp     is not self: self.__interp     = interp
 
         self.__refresh()
 
@@ -67,10 +61,8 @@ class LookupTableTexture(texture.Texture):
 
         lut        = self.__lut
         alpha      = self.__alpha
-        border     = self.__border
         brightness = self.__brightness
         contrast   = self.__contrast
-        interp     = self.__interp
 
         if lut is None:
             raise RuntimeError('Lookup table has not been defined')
@@ -82,8 +74,11 @@ class LookupTableTexture(texture.Texture):
         # so that shader programs can use label values
         # as indices into the texture. Not very memory
         # efficient, but greatly reduces complexity.
-        maxval = max([lbl.value() for lbl in lut.labels])
-        nvals  = maxval + 1
+        if len(lut) > 0:
+            maxval = max([lbl.value() for lbl in lut.labels])
+            nvals  = maxval + 1
+        else:
+            nvals  = 1
         data   = np.zeros((nvals, 4), dtype=np.uint8)
 
         for lbl in lut.labels:
@@ -101,31 +96,21 @@ class LookupTableTexture(texture.Texture):
 
         self.bindTexture()
 
-        if border is not None:
-            if alpha is not None:
-                border[3] = alpha * 255
-                
-            gl.glTexParameterfv(gl.GL_TEXTURE_1D,
-                                gl.GL_TEXTURE_BORDER_COLOR,
-                                border)
-            gl.glTexParameteri( gl.GL_TEXTURE_1D,
-                                gl.GL_TEXTURE_WRAP_S,
-                                gl.GL_CLAMP_TO_BORDER) 
-        else:
-            gl.glTexParameteri(gl.GL_TEXTURE_1D,
-                               gl.GL_TEXTURE_WRAP_S,
-                               gl.GL_CLAMP_TO_EDGE)
+        # Values out of range are clipped
+        gl.glTexParameterfv(gl.GL_TEXTURE_1D,
+                            gl.GL_TEXTURE_BORDER_COLOR,
+                            np.array([0, 0, 0, 0], dtype=np.float32))
+        gl.glTexParameteri( gl.GL_TEXTURE_1D,
+                            gl.GL_TEXTURE_WRAP_S,
+                            gl.GL_CLAMP_TO_BORDER) 
 
-
-        if interp is None:
-            interp = gl.GL_NEAREST
-
+        # Nearest neighbour interpolation
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MAG_FILTER,
-                           interp)
+                           gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_1D,
                            gl.GL_TEXTURE_MIN_FILTER,
-                           interp) 
+                           gl.GL_NEAREST) 
 
         gl.glTexImage1D(gl.GL_TEXTURE_1D,
                         0,
