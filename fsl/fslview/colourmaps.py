@@ -133,7 +133,6 @@ and generating/manipulating colours.:
 
 import logging
 import glob
-import shutil
 import bisect
 import os.path as op
 
@@ -250,8 +249,6 @@ class LutLabel(object):
 class LookupTable(props.HasProperties):
     """Class which encapsulates a list of labels and associated colours and
     names, defining a lookup table to be used for colouring label images.
-
-    :attr:`lutFile`
     """
 
     
@@ -274,12 +271,10 @@ class LookupTable(props.HasProperties):
     
     def __init__(self, name, lutFile=None):
         
-        self.name    = name
-        self.lutFile = lutFile
+        self.name = name
 
         if lutFile is not None:
             self._load(lutFile)
-            self.saved = True
         
 
     def __len__(self):
@@ -385,19 +380,9 @@ class LookupTable(props.HasProperties):
                 self.set(label, name=lName, colour=(r, g, b), enabled=True)
 
 
-    def save(self, lutFile=None):
+    def _save(self, lutFile):
         """Saves this ``LookupTable`` instance to the specified ``lutFile``.
-
-        If ``lutFile`` is not provided, saves the lut information to the
-        ``lutFile`` specified in :meth:`__init__`, or on a previous call to
-        this method.
         """
-
-        if lutFile is None:
-            lutFile = self.lutFile
-
-        if lutFile is None:
-            raise ValueError('No lookup table file specified')
 
         with open(lutFile, 'wt') as f:
             for label in self.labels:
@@ -409,9 +394,6 @@ class LookupTable(props.HasProperties):
                 line   = ' '.join(map(str, tkns))
 
                 f.write('{}\n'.format(line))
-
-        self.lutFile = lutFile
-        self.saved   = True
 
 
 def init():
@@ -522,7 +504,7 @@ def registerColourMap(cmapFile, overlayList=None, displayCtx=None, name=None):
 
     mplcm.register_cmap(name, cmap)
 
-    _cmaps[name] = _Map(name, cmap, cmapFile, False)
+    _cmaps[name] = _Map(name, cmap, None, False)
 
     # TODO Any new Opts types which have a colour
     #      map will need to be patched here
@@ -586,8 +568,14 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
     else:
         if name is None:
             name = lut.name
+        else:
+            lut.name = name
+
+    # Even though the lut may have been loaded from
+    # a file, it has not necessarily been installed
+    lut.saved = False
             
-    _luts[name] = _Map(name, lut, lutFile, False)
+    _luts[name] = _Map(name, lut, None, False)
 
     log.debug('Patching LabelOpts classes to support '
               'new LookupTable {}'.format(name))
@@ -607,6 +595,8 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
 
     # and for any future label overlays
     fsldisplay.LabelOpts.lut.addChoice(lut, lut.name)
+    
+    return lut
 
 
 def getLookupTables():
@@ -651,36 +641,24 @@ def isLookupTableInstalled(lutName):
 def installColourMap(cmapName):
     """Attempts to install a previously registered colourmap into the
     ``fsl/fslview/colourmaps`` directory.
-
-    A ``KeyError`` is raised if the colourmap is not registered, a
-    ``RuntimeError`` if the colourmap cannot be installed, or an
-    ``IOError`` if the colourmap file cannot be copied.
     """
 
     # keyerror if not registered
     cmap = _cmaps[cmapName]
 
-    # built-in, or already installed
-    if cmap.installed:
-        return
+    if cmap.mapFile is not None:
+        destFile = cmap.mapFile
+    else:
+        destFile = op.join(op.dirname(__file__),
+                           'colourmaps',
+                           '{}.cmap'.format(cmapName))
 
-    # cmap has been incorrectly registered
-    if cmap.mapFile is None:
-        raise RuntimeError('Colour map {} appears to have been '
-                           'incorrectly registered'.format(cmapName))
+    log.debug('Installing colour map {} to {}'.format(cmapName, destFile))
 
-    destfile = op.join(op.dirname(__file__),
-                       'colourmaps',
-                       '{}.cmap'.format(cmapName))
-
-    # destination file already exists
-    if op.exists(destfile):
-        raise RuntimeError('Destination file for colour map {} already '
-                           'exists: {}'.format(cmapName, destfile))
-
-    log.debug('Installing colour map {} to {}'.format(cmapName, destfile))
-        
-    shutil.copyfile(cmap.mapFile, destfile)
+    # I think the colors attribute is only
+    # available on ListedColormap instances ...
+    data = cmap.mapObj.colors
+    np.savetxt(destFile, data, '%0.6f')
     
     cmap.installed = True
 
@@ -688,21 +666,25 @@ def installColourMap(cmapName):
 def installLookupTable(lutName):
     """Attempts to install/save a previously registered lookup table into
     the ``fsl/fslview/luts`` directory.
-
-    A ``KeyError`` is raised if the lookup table is not registered, or an
-    ``IOError`` if the lookup table cannot be saved. 
     """
     
     # keyerror if not registered
     lut = _luts[lutName]
 
-    if lut.mapFile is not None: destFile = lut.mapFile
-    else:                       op.join(_lutDir, '{}.lut'.format(lutName))
+    if lut.mapFile is not None:
+        destFile = lut.mapFile
+    else:
+        destFile = op.join(
+            _lutDir,
+            '{}.lut'.format(lutName.lower().replace(' ', '_')))
 
-    lut.mapObj.save(destFile)
+    log.debug('Installing lookup table {} to {}'.format(lutName, destFile))
 
-    lut.mapFile   = destFile
-    lut.installed = True
+    lut.mapObj._save(destFile)
+
+    lut.mapFile      = destFile
+    lut.installed    = True
+    lut.mapObj.saved = True
     
 
 ###############

@@ -116,6 +116,7 @@ titles = TypeDict({
     'LutLabelDialog'        : 'New LUT label',
     'NewLutDialog'          : 'New LUT',
 
+    'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
 })
 

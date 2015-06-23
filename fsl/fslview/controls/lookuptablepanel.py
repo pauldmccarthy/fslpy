@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os
 import logging
 
 import wx
@@ -88,18 +89,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        # If non-lut image is shown, just show a message
-
-        # Overlay name
-        # Change lookup table
-        # Add label
-        # New lut
-        # Copy lut
-        # Save lut
-        # Load lut
-
-        self.__controlRow = wx.Panel(self)
-
+        self.__controlRow    = wx.Panel(self)
         self.__disabledLabel = wx.StaticText(self,
                                              style=wx.ALIGN_CENTER_VERTICAL |
                                                    wx.ALIGN_CENTER_HORIZONTAL)
@@ -177,6 +167,8 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
         
     def destroy(self):
+
+        fslpanel.FSLViewPanel.destroy(self)
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
@@ -373,11 +365,34 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
 
     
     def __onLoadLut(self, ev):
-        pass
 
+        nameDlg = NewLutDialog(self.GetTopLevelParent())
+        
+        if nameDlg.ShowModal() != wx.ID_OK:
+            return
+        
+        fileDlg = wx.FileDialog(wx.GetApp().GetTopWindow(),
+                                message=strings.titles[self, 'loadLut'],
+                                defaultDir=os.getcwd(),
+                                style=wx.FD_OPEN)
+
+        if fileDlg.ShowModal() != wx.ID_OK:
+            return
+
+        name = nameDlg.name
+        path = fileDlg.GetPath()
+
+        lut = fslcmaps.registerLookupTable(path,
+                                           self._overlayList,
+                                           self._displayCtx,
+                                           name)
+
+        if self.__selectedOpts is not None:
+            self.__selectedOpts.lut = lut
+        
     
     def __onSaveLut(self, ev):
-        pass 
+        fslcmaps.installLookupTable(self.__selectedLut.name)
 
     
     def __onLabelAdd(self, ev):
