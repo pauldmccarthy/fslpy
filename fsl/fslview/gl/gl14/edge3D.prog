@@ -90,6 +90,7 @@ ABS front, front;
 SLT isEdgeBack.z,  tol, back;
 SLT isEdgeFront.z, tol, front;
 
+
 # Set isEdge to 1 whereever either
 # isEdgeBack or isEdgeFront are 1
 MAX isEdge, isEdgeBack, isEdgeFront;
