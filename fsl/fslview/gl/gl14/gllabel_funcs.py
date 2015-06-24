@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import numpy                          as np
 
 import OpenGL.GL                      as gl
 import OpenGL.raw.GL._types           as gltypes
@@ -61,14 +62,24 @@ def updateShaderState(self):
 
     voxValXform  = self.imageTexture.voxValXform
     shape        = list(self.image.shape[:3])
-    outline      = [0, 0, 0, 0]
+    offsets      = opts.outlineWidth / \
+                   np.array(self.image.shape[:3], dtype=np.float32)    
     invNumLabels = 1.0 / (opts.lut.max() + 1)
+
+    if opts.transform == 'affine':
+        minOffset = offsets.min()
+        offsets   = np.array([minOffset] * 3)
+    else:
+        offsets[self.zax] = -1
+
+    if opts.outline: offsets = [1] + list(offsets)
+    else:            offsets = [0] + list(offsets)
 
     shaders.setVertexProgramVector(  0, shape + [0])
     shaders.setFragmentProgramMatrix(0, voxValXform)
     shaders.setFragmentProgramVector(4, shape + [0])
     shaders.setFragmentProgramVector(5, [invNumLabels, 0, 0, 0])
-    shaders.setFragmentProgramVector(6, outline)
+    shaders.setFragmentProgramVector(6, offsets)
 
     gl.glDisable(arbvp.GL_VERTEX_PROGRAM_ARB) 
     gl.glDisable(arbfp.GL_FRAGMENT_PROGRAM_ARB) 

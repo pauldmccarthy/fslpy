@@ -47,16 +47,21 @@ void main(void) {
     
     vec4 colour = texture1D(lutTexture, lutCoord);
 
-    if (!outline || colour.a == 0) {
-      gl_FragColor = colour;
-    }
-    else {
+    float tol    = 0.001 / numLabels;
+    bool  isEdge = edge3D(imageTexture, fragTexCoord, voxValue, tol, outlineOffsets);
 
-        float tol = 0.01 / numLabels;
-
-        if (edge3D(imageTexture, fragTexCoord, voxValue, tol, outlineOffsets))
-          gl_FragColor = colour;
-        else
-          gl_FragColor.a = 0.0;
-    }
+    /* 
+     * I want the fragment to be filled if outlines
+     * are enabled, and the fragment lies on an edge,
+     * or if outlines are disabled and the fragment
+     * does not lie on an edge. The corresponding
+     * boolean logic:
+     * 
+     *     (isEdge && outline) || !(isEdge || outline);
+     *
+     * is a negated exclusive or, which reduces
+     * down to a simple equality test ...
+     */
+    if (isEdge == outline) gl_FragColor   = colour;
+    else                   gl_FragColor.a = 0.0;
 }
