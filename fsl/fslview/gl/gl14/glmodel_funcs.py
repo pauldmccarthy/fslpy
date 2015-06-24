@@ -33,10 +33,10 @@ def destroy(self):
 
 def updateShaders(self):
 
-    width, height = self._renderTexture.getSize()
+    offsets = self.getOutlineOffsets()
     
     loadShaders(self)
-    shaders.setFragmentProgramVector(0, [1.0 / width, 1.0 / height, 0, 0])
+    shaders.setFragmentProgramVector(0, list(offsets) + [0, 0])
     unloadShaders(self)
 
 

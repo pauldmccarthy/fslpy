@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import numpy                  as np
 import OpenGL.GL              as gl
 
 import fsl.fslview.gl.shaders as shaders
@@ -15,9 +16,8 @@ def compileShaders(self):
     fragShaderSrc = shaders.getFragmentShader(self)
     self.shaders  = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
 
-    self.texPos       = gl.glGetUniformLocation(self.shaders, 'tex')
-    self.texWidthPos  = gl.glGetUniformLocation(self.shaders, 'texWidth')
-    self.texHeightPos = gl.glGetUniformLocation(self.shaders, 'texHeight') 
+    self.texPos    = gl.glGetUniformLocation(self.shaders, 'tex')
+    self.offsetPos = gl.glGetUniformLocation(self.shaders, 'offsets')
 
 
 def destroy(self):
@@ -27,10 +27,19 @@ def destroy(self):
 def updateShaders(self):
 
     width, height = self._renderTexture.getSize()
+    outlineWidth  = self.opts.outlineWidth
+
+    # outlineWidth is a value between 0.0 and 1.0 - 
+    # we use this value so that it effectly sets the
+    # outline to between 0% and 10% of the model
+    # width/height (whichever is smaller)
+    outlineWidth *= 10
+    offsets = 2 * [min(outlineWidth / width, outlineWidth / height)]
+    offsets = np.array(offsets, dtype=np.float32)
+
     gl.glUseProgram(self.shaders)
-    gl.glUniform1i( self.texPos,       0)
-    gl.glUniform1f( self.texWidthPos,  width)
-    gl.glUniform1f( self.texHeightPos, height)
+    gl.glUniform1i( self.texPos,    0)
+    gl.glUniform2fv(self.offsetPos, 1, offsets)
     gl.glUseProgram(0)
 
 

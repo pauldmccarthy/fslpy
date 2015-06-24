@@ -11,6 +11,8 @@
 #     #pragma INPUTS  (coord, val, tol, offsets)
 #     #pragma OUTPUTS (isEdge)
 
+# This only works for single-channel textures
+
 TEMP off;
 TEMP back;
 TEMP front;
@@ -39,6 +41,8 @@ SUB front, front, val;
 ABS back,  back;
 ABS front, front;
 
+# Unsafe operation - will only work
+# for single channel textures
 SLT isEdgeBack.x,  tol, back;
 SLT isEdgeFront.x, tol, front; 
 

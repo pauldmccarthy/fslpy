@@ -23,22 +23,13 @@ import volumeopts
 
 class ModelOpts(fsldisplay.DisplayOpts):
 
-    colour     = props.Colour()
-
-    
-    outline    = props.Boolean(default=False)
-
-
-    showName   = props.Boolean(default=False)
-
-    
-    refImage   = props.Choice()
-
-    
-    coordSpace = copy.copy(volumeopts.ImageOpts.transform)
-
-
-    transform  = copy.copy(volumeopts.ImageOpts.transform)
+    colour       = props.Colour()
+    outline      = props.Boolean(default=False)
+    outlineWidth = props.Real(minval=0, maxval=1, default=0.25, clamped=True)
+    showName     = props.Boolean(default=False)
+    refImage     = props.Choice()
+    coordSpace   = copy.copy(volumeopts.ImageOpts.transform)
+    transform    = copy.copy(volumeopts.ImageOpts.transform)
 
 
     def __init__(self, *args, **kwargs):

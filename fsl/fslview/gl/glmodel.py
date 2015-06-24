@@ -27,10 +27,7 @@ class GLModel(globject.GLObject):
         self.display = display
         self.opts    = display.getDisplayOpts()
 
-        self.opts.addListener('refImage',   self.name, self._updateVertices)
-        self.opts.addListener('coordSpace', self.name, self._updateVertices)
-        self.opts.addListener('transform',  self.name, self._updateVertices)
-
+        self.addListeners()
         self._updateVertices()
 
         self._renderTexture = textures.GLObjectRenderTexture(
@@ -40,10 +37,47 @@ class GLModel(globject.GLObject):
         fslgl.glmodel_funcs.compileShaders(self)
         fslgl.glmodel_funcs.updateShaders( self)
 
-
+        
     def destroy(self):
         self._renderTexture.destroy()
         fslgl.glmodel_funcs.destroy(self)
+        self.removeListeners()
+
+        
+    def addListeners(self):
+
+        display = self.display
+        opts    = self.opts
+
+        def refresh(*a):
+            self.onUpdate()
+
+        def shaderUpdate(*a):
+            fslgl.glmodel_funcs.updateShaders(self)
+            self.onUpdate()
+        
+        opts   .addListener('refImage',     self.name, self._updateVertices)
+        opts   .addListener('coordSpace',   self.name, self._updateVertices)
+        opts   .addListener('transform',    self.name, self._updateVertices)
+        opts   .addListener('colour',       self.name, refresh)
+        opts   .addListener('outline',      self.name, refresh)
+        opts   .addListener('outlineWidth', self.name, shaderUpdate)
+        opts   .addListener('showName',     self.name, refresh)
+        display.addListener('brightness',   self.name, refresh)
+        display.addListener('contrast',     self.name, refresh)
+        display.addListener('alpha',        self.name, refresh)
+
+        
+    def removeListeners(self):
+        self.opts   .removeListener('refImage',     self.name)
+        self.opts   .removeListener('coordSpace',   self.name)
+        self.opts   .removeListener('transform',    self.name)
+        self.opts   .removeListener('colour',       self.name)
+        self.opts   .removeListener('outline',      self.name)
+        self.opts   .removeListener('outlineWidth', self.name)
+        self.display.removeListener('brightness',   self.name)
+        self.display.removeListener('contrast',     self.name)
+        self.display.removeListener('alpha',        self.name)
 
 
     def _updateVertices(self, *a):
@@ -106,6 +140,22 @@ class GLModel(globject.GLObject):
     def setAxes(self, xax, yax):
         globject.GLObject.setAxes(self, xax, yax)
         self._renderTexture.setAxes(xax, yax)
+
+        
+    def getOutlineOffsets(self):
+        """Used by the :mod:`glmodel_funcs` modules.
+        """
+        width, height = self._renderTexture.getSize()
+        outlineWidth  = self.opts.outlineWidth
+
+        # outlineWidth is a value between 0.0 and 1.0 - 
+        # we use this value so that it effectly sets the
+        # outline to between 0% and 10% of the model
+        # width/height (whichever is smaller)
+        outlineWidth *= 10
+        offsets = 2 * [min(outlineWidth / width, outlineWidth / height)]
+        offsets = np.array(offsets, dtype=np.float32) 
+        return offsets
  
 
     def preDraw(self):

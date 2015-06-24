@@ -12,10 +12,9 @@ TEMP off;
 TEMP back;
 TEMP front;
 TEMP tempCoord;
-TEMP isEdgeBack;
-TEMP isEdgeFront;
+TEMP isEdgeBack[2];
+TEMP isEdgeFront[2];
 TEMP isEdge;
-
 
 # Test along the x axis
 MOV off, offsets;
@@ -36,9 +35,8 @@ SUB front, front, val;
 ABS back,  back;
 ABS front, front;
 
-SLT isEdgeBack.x,  tol, back;
-SLT isEdgeFront.x, tol, front; 
-
+SLT isEdgeBack[0],  tol, back;
+SLT isEdgeFront[0], tol, front; 
 
 
 # Test along the y axis
@@ -60,12 +58,25 @@ SUB front, front, val;
 ABS back,  back;
 ABS front, front;
 
-SLT isEdgeBack.y,  tol, back;
-SLT isEdgeFront.y, tol, front;  
+SLT isEdgeBack[1],  tol, back;
+SLT isEdgeFront[1], tol, front;  
 
-# Set isEdge to 1 whereever either
-# isEdgeBack or isEdgeFront are 1
-MAX isEdge, isEdgeBack, isEdgeFront;
+
+# For each of the isEdgeBack/isEdgeFront
+# vectors, set all components to 1 if an
+# edge was found on any component.
+DP4 isEdgeBack[ 0], isEdgeBack[ 0], isEdgeBack[ 0];
+DP4 isEdgeFront[0], isEdgeFront[0], isEdgeFront[0];
+DP4 isEdgeBack[ 1], isEdgeBack[ 1], isEdgeBack[ 1];
+DP4 isEdgeFront[1], isEdgeFront[1], isEdgeFront[1];
+
+# Set isEdge.i  if there was an edge
+# on any component of the i axis.
+MAX isEdge.x, isEdgeBack[0], isEdgeFront[0];
+MAX isEdge.y, isEdgeBack[1], isEdgeFront[1];
+
+# Clamp the isEdge values to 1
+SGE isEdge, isEdge, 1;
 
 # Clear if offsets[i] < 0
 CMP isEdge, offsets, 0, isEdge;

@@ -172,7 +172,7 @@ VectorOptsToolBarLayout = [
 ModelOptsToolBarLayout = [
     widget(ModelOpts, 'colour'),
     widget(ModelOpts, 'outline'),
-    widget(ModelOpts, 'refImage'),
+    widget(ModelOpts, 'outlineWidth', showLimits=False, spin=False),
     actions.ActionButton(OverlayDisplayToolBar, 'more')]
 
 LabelOptsToolBarLayout = [
@@ -252,8 +252,9 @@ LineVectorOptsLayout = props.VGroup((
 ModelOptsLayout = props.VGroup((
     widget(ModelOpts, 'colour'),
     widget(ModelOpts, 'outline'),
+    widget(ModelOpts, 'outlineWidth', showLimits=False),
     widget(ModelOpts, 'refImage'),
-    widget(ModelOpts, 'showName'),
+    # widget(ModelOpts, 'showName'),
     widget(ModelOpts, 'coordSpace',
            visibleWhen=lambda o: o.refImage != 'none')))
 
@@ -262,7 +263,7 @@ LabelOptsLayout = props.VGroup((
     widget(LabelOpts, 'lut'),
     widget(LabelOpts, 'outline'),
     widget(LabelOpts, 'outlineWidth', showLimits=False),
-    widget(LabelOpts, 'showNames'),
+    # widget(LabelOpts, 'showNames'),
     widget(LabelOpts, 'resolution', showLimits=False),
     widget(LabelOpts, 'transform'),
     widget(LabelOpts, 'volume',     showLimits=False)))

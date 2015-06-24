@@ -5,42 +5,32 @@
 # Inputs:
 #   fragment.texcoord[0]
 #
-#   program.local[0]
-#    program.local[0] - 0:   Inverse of texture width
-#                     - 1:   Inverse of texture height
-#                     - 2-3: Unused
+#   program.local[0] - Offsets
 #
 
-TEMP invShape;
+TEMP val;
 TEMP coord;
 TEMP output;
-TEMP colour;
 
-MOV invShape, program.local[0];
-MOV coord,    fragment.texcoord[0];
+# edge detection tolerance is
+# 1 / 255 - a colour change of 1 bit
+PARAM tol     = 0.00392156862745098;
+PARAM offsets = program.local[0];
 
-TEX colour, coord, texture[0], 2D;
+MOV coord, fragment.texcoord[0];
 
-MOV result.color, colour;
-
-TEMP val;
-TEMP offsets;
-TEMP tol;
-
-MOV val, colour;
-MOV offsets, 10;
-MUL offsets, offsets, invShape;
-MOV tol, 255;
-RCP tol, tol.x;
+TEX val, coord, texture[0], 2D;
 
 #pragma include edge2D.prog
 
-# Kill the fragment if it is not on an edge
+# Kill the fragment if
+# it is not on an edge
 TEMP fill;
 MAX fill, isEdge.x, isEdge.y;
-MAX fill, fill,     isEdge.z;
-SUB fill, fill, 0.5;
+SUB fill, fill, 0.1;
 
 KIL fill;
+
+MOV result.color, val;
 
 END
