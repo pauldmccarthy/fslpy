@@ -54,6 +54,11 @@ class GLLabel(globject.GLImageObject):
         def shaderUpdate(*a):
             fslgl.gllabel_funcs.updateShaderState(self)
             self.onUpdate()
+            
+        def shaderCompile(*a):
+            fslgl.gllabel_funcs.compileShaders(self)
+            fslgl.gllabel_funcs.updateShaderState(self)
+            self.onUpdate() 
 
         def lutUpdate(*a):
             self.refreshLutTexture()
@@ -84,6 +89,7 @@ class GLLabel(globject.GLImageObject):
         display .addListener('alpha',         self.name, lutUpdate)
         display .addListener('brightness',    self.name, lutUpdate)
         display .addListener('contrast',      self.name, lutUpdate)
+        display .addListener('softwareMode',  self.name, shaderCompile)
 
 
     def removeListeners(self):
@@ -96,6 +102,7 @@ class GLLabel(globject.GLImageObject):
         display.removeListener('alpha',         self.name)
         display.removeListener('brightness',    self.name)
         display.removeListener('contrast',      self.name)
+        display.removeListener('softwareMode',  self.name)
 
         
     def setAxes(self, xax, yax):
