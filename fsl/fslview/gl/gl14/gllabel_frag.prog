@@ -59,7 +59,7 @@ MUL tol,   tol, 0.001;
 
 MOV offsets, outline.yzww;
 
-#pragma include edge3d_onechannel.prog
+#pragma include edge3D_onechannel.prog
 
 
 # Figure out if we want to fill the
