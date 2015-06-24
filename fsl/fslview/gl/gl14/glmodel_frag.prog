@@ -21,21 +21,26 @@ MOV coord,    fragment.texcoord[0];
 
 TEX colour, coord, texture[0], 2D;
 
-#pragma include sobel.prog
-
-# Test to see if the filtered colour has an
-# opacity of 0.0. First, invert the opacity
-# value  (i.e. 0.0 will become 1.0, and vice
-# versa). Then, set the opacity value if
-# it is less than 1.0.
-
-SUB output.w, { 1, 1, 1, 1 }, output.w;
-SLT output.w, output.w,       { 1, 1, 1, 1 };
-
-# If opacity is 0, clear the
-# output colour opacity
-MUL colour.w, colour.w, output.w;
-
 MOV result.color, colour;
+
+TEMP val;
+TEMP offsets;
+TEMP tol;
+
+MOV val, colour;
+MOV offsets, 10;
+MUL offsets, offsets, invShape;
+MOV tol, 255;
+RCP tol, tol.x;
+
+#pragma include edge2D.prog
+
+# Kill the fragment if it is not on an edge
+TEMP fill;
+MAX fill, isEdge.x, isEdge.y;
+MAX fill, fill,     isEdge.z;
+SUB fill, fill, 0.5;
+
+KIL fill;
 
 END
