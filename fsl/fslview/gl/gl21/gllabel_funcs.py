@@ -84,7 +84,7 @@ def updateShaderState(self):
     else:
         outlineOffsets[self.zax] = -1
 
-    gl.glUniform1fv(self.outlineOffsetsPos, 3, outlineOffsets)
+    gl.glUniform3fv(self.outlineOffsetsPos, 1, outlineOffsets)
 
     gl.glUniform1i(self.imageTexturePos, 0)
     gl.glUniform1i(self.lutTexturePos,   1) 

@@ -1,5 +1,6 @@
 #version 120
 
+#pragma include edge.glsl
 #pragma include spline_interp.glsl
 #pragma include test_in_bounds.glsl
 
@@ -17,7 +18,7 @@ uniform bool      useSpline;
 
 uniform bool      outline;
 
-uniform float     outlineOffsets[3];
+uniform vec3      outlineOffsets;
 
 varying vec3      fragVoxCoord;
 
@@ -52,26 +53,10 @@ void main(void) {
     else {
 
         float tol = 0.01 / numLabels;
-        vec3  off;
-        
-        for (int i = 0; i < outlineOffsets.length(); i++) {
 
-            if (outlineOffsets[i] <= 0)
-                continue;
-
-            off    = vec3(0, 0, 0);
-            off[i] = outlineOffsets[i];
-
-            float back  = texture3D(imageTexture, fragTexCoord + off).r;
-            float front = texture3D(imageTexture, fragTexCoord - off).r;
-
-            if (abs(voxValue - back)  > tol ||
-                abs(voxValue - front) > tol) {
-                gl_FragColor = colour;
-                return;
-            }
-        }
-
-        gl_FragColor.a = 0.0;
+        if (edge3D(imageTexture, fragTexCoord, voxValue, tol, outlineOffsets))
+          gl_FragColor = colour;
+        else
+          gl_FragColor.a = 0.0;
     }
 }
