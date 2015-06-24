@@ -285,9 +285,10 @@ properties = TypeDict({
     'ModelOpts.coordSpace' : 'Model coordinate space',
     'ModelOpts.showName'   : 'Show model name',
 
-    'LabelOpts.lut'       : 'Look-up table',
-    'LabelOpts.outline'   : 'Show outline only',
-    'LabelOpts.showNames' : 'Show label names',
+    'LabelOpts.lut'          : 'Look-up table',
+    'LabelOpts.outline'      : 'Show outline only',
+    'LabelOpts.outlineWidth' : 'Outline width',
+    'LabelOpts.showNames'    : 'Show label names',
 })
 
 

@@ -28,11 +28,6 @@ class LabelOpts(volumeopts.ImageOpts):
 
         self.getProp('lut').setChoices(luts, names, self)
         
-        # TODO create a copy of this LUT? If the user
-        # modifies a LUT for a specific image, do we
-        # want those modfications to be propagated to
-        # other images which also use the same LUT?
-        # Because that's what's happening currently.
         self.lut = luts[0]
 
         volumeopts.ImageOpts.__init__(self, overlay, *args, **kwargs)

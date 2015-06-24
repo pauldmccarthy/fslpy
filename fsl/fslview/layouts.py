@@ -273,8 +273,6 @@ LabelOptsLayout = props.VGroup((
 ##########################
 
 
-# TODO add type-specific options here, to hide spin panels/limit
-# buttons for the numeric sliders, when the props module supports it
 HistogramToolBarLayout = [
     actions.ActionButton(HistogramPanel, 'screenshot'),
     props.Widget('dataRange', showLimits=False),
