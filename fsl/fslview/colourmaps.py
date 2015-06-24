@@ -281,7 +281,17 @@ class LookupTable(props.HasProperties):
         return len(self.labels)
 
 
+    def max(self):
+        """Returns the maximum label value in this lookup table. """
+        if len(self.labels) == 0: return 0
+        else:                     return max([l.value() for l in self.labels])
+
+
     def __find(self, value):
+        """Finds the label associated with the specified value.  Returns the
+        index and the label object, or ``(-1, None)`` if there is no label
+        associated with the given value.
+        """
 
         for i, label in enumerate(self.labels):
             if label.value() == value:

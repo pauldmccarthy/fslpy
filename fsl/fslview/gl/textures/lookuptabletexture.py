@@ -48,14 +48,6 @@ class LookupTableTexture(texture.Texture):
     def refresh(self):
         self.__refresh()
 
-
-    def size(self):
-        
-        if self.__lut is None:
-            return 0
-
-        return len(self.__lut) + 1
-
         
     def __refresh(self, *a):
 
@@ -74,11 +66,7 @@ class LookupTableTexture(texture.Texture):
         # so that shader programs can use label values
         # as indices into the texture. Not very memory
         # efficient, but greatly reduces complexity.
-        if len(lut) > 0:
-            maxval = max([lbl.value() for lbl in lut.labels])
-            nvals  = maxval + 1
-        else:
-            nvals  = 1
+        nvals  = lut.max() + 1
         data   = np.zeros((nvals, 4), dtype=np.uint8)
 
         for lbl in lut.labels:

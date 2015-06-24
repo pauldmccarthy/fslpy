@@ -68,7 +68,7 @@ def updateShaderState(self):
     gl.glUseProgram(self.shaders)
 
     gl.glUniform1f( self.outlinePos,       opts.outline)
-    gl.glUniform1f( self.numLabelsPos,     self.lutTexture.size())
+    gl.glUniform1f( self.numLabelsPos,     opts.lut.max() + 1)
     gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape[:3],
                                                      dtype=np.float32))
     
