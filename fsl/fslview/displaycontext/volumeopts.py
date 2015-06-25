@@ -60,6 +60,15 @@ class ImageOpts(fsldisplay.DisplayOpts):
  
     def __init__(self, *args, **kwargs):
 
+        # The transform property cannot be unsynced
+        # across different displays, as it affects
+        # the display context bounds, wich also
+        # cannot be unsynced
+        nounbind = kwargs.get('nounbind', [])
+        nounbind.append('transform')
+
+        kwargs['nounbind'] = nounbind
+
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
 
         overlay = self.overlay

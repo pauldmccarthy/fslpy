@@ -20,19 +20,15 @@ class GLLabel(globject.GLImageObject):
 
         globject.GLImageObject.__init__(self, image, display)
 
-        imageTexName = '{}_{}' .format(type(self).__name__, id(image))
         lutTexName   = '{}_lut'.format(self.name)
 
         self.lutTexture   = textures.LookupTableTexture(lutTexName)
-        self.imageTexture = glresources.get(
-            imageTexName,
-            textures.ImageTexture,
-            imageTexName,
-            image)
-        
-        fslgl.gllabel_funcs.init(self)
+        self.imageTexture = None
 
+        self.refreshImageTexture()
         self.refreshLutTexture()
+ 
+        fslgl.gllabel_funcs.init(self)
         self.addListeners()
 
         
@@ -49,6 +45,7 @@ class GLLabel(globject.GLImageObject):
 
         display = self.display
         opts    = self.displayOpts
+        name    = self.name
 
         def shaderUpdate(*a):
             fslgl.gllabel_funcs.updateShaderState(self)
@@ -75,38 +72,84 @@ class GLLabel(globject.GLImageObject):
  
             lutUpdate()
 
+        def imageRefresh(*a):
+            self.refreshImageTexture()
+            fslgl.gllabel_funcs.updateShaderState(self)
+            self.onUpdate()
+            
+        def imageUpdate(*a):
+            self.imageTexture.set(volume=opts.volume,
+                                  resolution=opts.resolution)
+            
+            fslgl.gllabel_funcs.updateShaderState(self)
+            self.onUpdate() 
+
         self.__lut = opts.lut
 
         # TODO If you add a software shader, you will
         #      need to call gllabel_funcs.compileShaders
         #      when display.softwareMode changes
 
-        opts    .addListener('outline',       self.name, shaderUpdate)
-        opts    .addListener('outlineWidth',  self.name, shaderUpdate)
-        opts    .addListener('lut',           self.name, lutChanged)
-        opts.lut.addListener('labels',        self.name, lutUpdate)
-        display .addListener('alpha',         self.name, lutUpdate)
-        display .addListener('brightness',    self.name, lutUpdate)
-        display .addListener('contrast',      self.name, lutUpdate)
-        display .addListener('softwareMode',  self.name, shaderCompile)
+        display .addListener(          'alpha',        name, lutUpdate)
+        display .addListener(          'brightness',   name, lutUpdate)
+        display .addListener(          'contrast',     name, lutUpdate)
+        display .addListener(          'softwareMode', name, shaderCompile)
+        opts    .addListener(          'outline',      name, shaderUpdate)
+        opts    .addListener(          'outlineWidth', name, shaderUpdate)
+        opts    .addListener(          'lut',          name, lutChanged)
+        opts    .addListener(          'volume',       name, imageUpdate)
+        opts    .addListener(          'resolution',   name, imageUpdate)
+        opts    .addSyncChangeListener('volume',       name, imageRefresh)
+        opts    .addSyncChangeListener('resolution',   name, imageRefresh)
+        opts.lut.addListener(          'labels',       name, lutUpdate)
 
 
     def removeListeners(self):
         display = self.display
         opts    = self.displayOpts
+        name    = self.name
 
-        opts   .removeListener('outline',       self.name)
-        opts   .removeListener('outlineWidth',  self.name)
-        opts   .removeListener('lut',           self.name)
-        display.removeListener('alpha',         self.name)
-        display.removeListener('brightness',    self.name)
-        display.removeListener('contrast',      self.name)
-        display.removeListener('softwareMode',  self.name)
+        display .removeListener(          'alpha',        name)
+        display .removeListener(          'brightness',   name)
+        display .removeListener(          'contrast',     name)
+        display .removeListener(          'softwareMode', name)
+        opts    .removeListener(          'outline',      name)
+        opts    .removeListener(          'outlineWidth', name)
+        opts    .removeListener(          'lut',          name)
+        opts    .removeListener(          'volume',       name)
+        opts    .removeListener(          'resolution',   name)
+        opts    .removeSyncChangeListener('volume',       name)
+        opts    .removeSyncChangeListener('resolution',   name)
+        opts.lut.removeListener(          'labels',       name) 
+
 
         
     def setAxes(self, xax, yax):
+        """Overrides :meth:`.GLImageObject.setAxes`.
+        """
         globject.GLImageObject.setAxes(self, xax, yax)
         fslgl.gllabel_funcs.updateShaderState(self)
+
+
+    def refreshImageTexture(self):
+        
+        opts     = self.displayOpts
+        texName  = '{}_{}' .format(type(self).__name__, id(self.image))
+
+        unsynced = (not opts.isSyncedToParent('volume') or
+                    not opts.isSyncedToParent('resolution'))
+
+        if unsynced:
+            texName = '{}_unsync_{}'.format(texName, id(opts))
+
+        if self.imageTexture is not None:
+            glresources.delete(self.imageTexture.getTextureName())
+            
+        self.imageTexture = glresources.get(
+            texName, 
+            textures.ImageTexture,
+            texName,
+            self.image) 
 
 
     def refreshLutTexture(self, *a):
