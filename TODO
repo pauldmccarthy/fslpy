@@ -29,6 +29,7 @@ models/residuals/whatever.
 ** Move TODO list to Gitlab
 ** A pre-processor for GL14 shader programs
 ** Unify/remove duplication across gl*_funcs modules
+** Unify/remove duplication across texture classes - the set(**kwargs) method, and all the GL texture function calls
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -44,6 +45,7 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** Toolbar labels don't refresh properly on selected overlay change
 ** Clipping range not working for some volumes in ~/analysis_prac_2015/rest/ICA/Group/groupmelodic_fix.ica/melodic_IC.nii.gz 
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
@@ -148,22 +150,17 @@ to be held.
 ** Editor - apply fill/mask/ROI to all volumes of a 4D image
 ** Option to centre display range for volume images
 ** Spline interpolation in GL14
-** Ability to display vector data as directional (i.e. starting from voxel centre)
-** 'Label' image type, which allows user to change colour for each label.
-Ability to draw region outlines instead of full label overlays
 ** 'Annotation' image type that allows the user to highlight regions in different colours. Is this the same as the 'label' image above?
 ** Support ANALYZE75
 Pixdims stored in A75 header should be used, unchanged, as the affine
 diagonals (i.e. negative pixdims supported).
 ** EListBox - Mouse drag to move items
-** VNC - using software rendering (wrong LD_LIBARY_PATH ?!?)
 ** CLI options
 *** DONE Show/hide labels
 *** DONE Ortho layout (horiz/vert/grid)
 *** DONE Check that show/hide cursor is being applied correctly
 *** A switch to automatically choose colour maps/clipping thresholds for a provided set of images (like Eugene's fast fslview startup script)
 ** Scale values in colour map according to largest value?
-** ColourBarPanel should only do stuff if it is being displayed
 ** View/view config panels persist across shutdown/restart
 This is tough, because the old agw.AUINotebook implementation does not have
 any ability to query layout.
@@ -187,6 +184,10 @@ Need to be able to specify the order that actions appear in the menu - perhaps
 just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE 'Label' image type, which allows user to change colour for each label.
+Ability to draw region outlines instead of full label overlays
+** DONE ColourBarPanel should only do stuff if it is being displayed
+** DONE Ability to display vector data as directional (i.e. starting from voxel centre)
 ** DONE LineVector - modulate line length
 ** DONE OrthoViewProfile - mouse wheel on canvas scrolls through displayed slice
 ** DONE (Sean) In location panel, ability to display intensity for all images, not just the currently selected one
@@ -264,7 +265,22 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** Lightbox - ability to specify exactly which slices are displayed
 ** Lightbox/SliceCanvas - annotate displayed slice with Z coordinates
 ** Lightbox - Ability to show cutting planes from specified locations on an orthogonal axis
-** Edge detection algorithm
+** Editor features
+*** Select all above/below a specified intensity
+*** Honour clipping range (i.e. don't select clipped voxels)
+** Link display properties across images
+** Custom colour select widget - the OSX one is rubbish
+** Transfer editor selection on selected image changes
+** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
+** Tensors
+*** DONE RGB display
+*** DONE Tensor angles are in real world space, so are currently being displayed incorrectly for non isotropic voxels 
+*** Option to make displayed tensor lines all the same length
+*** DONE 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
+*** Option to show tensors as ellipsoids
+** Display fnirt warp images
+** Panel/profile mode which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE Edge detection algorithm
 For drawing outline images (both model and volumetric). A Sobel filter looks
 perfect, but I think I would need to be able to run it within fragment
 shader. This means that I would have to render an overlay to an off-screen
@@ -275,23 +291,7 @@ texture, and run the shader on said texture ...
    texture, and applies Sobel filter to said texture before rendering to 
    screen.
  - Build same functionality into the GLModel class.
-
-** Editor features
-*** Select all above/below a specified intensity
-*** Honour clipping range (i.e. don't select clipped voxels)
-** Ability to unlink image volume across displays
-** Link display properties across images
-** Custom colour select widget - the OSX one is rubbish
-** Transfer editor selection on selected image changes
-** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
-** Tensors
-*** RGB display
-*** Tensor angles are in real world space, so are currently being displayed incorrectly for non isotropic voxels 
-*** Option to make displayed tensor lines all the same length
-*** 'Modulate' one image by another (e.g. modulate DTI tensors by FA values)
-*** Option to show tensors as ellipsoids
-** Display fnirt warp images
-** Panel/profile mode which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE Ability to unlink image volume across displays
 ** DONE Different settings for each view
 Keep a 'master' image list, but mainain an index list in separate view
 panels - make it editable as a view panel property.
