@@ -116,6 +116,7 @@ titles = TypeDict({
     'LookupTablePanel'      : 'Lookup tables',
     'LutLabelDialog'        : 'New LUT label',
     'NewLutDialog'          : 'New LUT',
+    'TimeSeriesListPanel'   : 'Time series list',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -148,9 +149,11 @@ actions = TypeDict({
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
 
-    'PlotPanel.screenshot' : 'Take screenshot',
+    'PlotPanel.screenshot'                 : 'Take screenshot',
 
-    'HistogramPanel.toggleToolbar' : 'Histogram controls',
+    'TimeSeriesPanel.toggleTimeSeriesList' : 'Time series list',
+    'HistogramPanel.toggleToolbar'         : 'Histogram controls',
+    
 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',

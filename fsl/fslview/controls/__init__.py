@@ -13,6 +13,7 @@ from lightboxsettingspanel import LightBoxSettingsPanel
 from locationpanel         import LocationPanel
 from orthosettingspanel    import OrthoSettingsPanel
 from lookuptablepanel      import LookupTablePanel
+from timeserieslistpanel   import TimeSeriesListPanel
 
 from orthotoolbar          import OrthoToolBar
 from orthoprofiletoolbar   import OrthoProfileToolBar
