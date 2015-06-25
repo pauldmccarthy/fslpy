@@ -40,14 +40,22 @@ log = logging.getLogger(__name__)
 #        of each persistent time course
 
 
-class TimeSeries(object):
+class TimeSeries(props.HasProperties):
 
-    def __init__(self, overlay, coords, data, colour, label):
+    colour    = props.Colour()
+    alpha     = props.Real(minval=0.0, maxval=1.0, default=1.0, clamped=True)
+    label     = props.String()
+    lineWidth = props.Choice((1, 2, 3, 4, 5))
+    lineStyle = props.Choice(
+        *zip(*[('-',  'Solid line'),
+               ('--', 'Dashed line'),
+               ('-.', 'Dash-dot line'),
+               (':',  'Dotted line')]))
+
+    def __init__(self, overlay, coords, data):
         self.overlay = overlay
-        self.coords  = coords
+        self.coords  = map(int, coords)
         self.data    = data
-        self.colour  = colour
-        self.label   = label
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
@@ -60,6 +68,16 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
 
     timeSeries = props.List()
+
+    demean = props.Boolean(default=True)
+
+    
+    legend = props.Boolean(default=True)
+
+
+    def export(self, *a):
+        # Export all displayed time series to text file
+        pass
     
 
     def __init__(self, parent, overlayList, displayCtx):
@@ -82,10 +100,15 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         name = self._name
         draw = self._draw
 
+        def tsChanged(*a):
+            for ts in self.timeSeries:
+                ts.addGlobalListener(name, draw, overwrite=True)
+            draw()
+
         self._overlayList.addListener('overlays',        name, draw)
         self._displayCtx .addListener('selectedOverlay', name, draw) 
         self._displayCtx .addListener('location',        name, draw)
-        self             .addListener('timeSeries',      name, draw)
+        self             .addListener('timeSeries',      name, tsChanged)
 
         self.Layout()
         self._draw()
@@ -100,6 +123,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         
     def getCurrent(self):
+
+        if len(self._overlayList) == 0:
+            return None
 
         x, y, z = self._displayCtx.location.xyz
         overlay = self._displayCtx.getSelectedOverlay()
@@ -122,12 +148,15 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[2] >= overlay.shape[2]:
             return None
 
-        return TimeSeries(
+        ts = TimeSeries(
             overlay,
             vox,
-            overlay.data[vox[0], vox[1], vox[2], :],
-            [0.5, 0.5, 0.5],
-            '{} [{} {} {}]'.format(overlay.name, vox[0], vox[1], vox[2]))
+            overlay.data[vox[0], vox[1], vox[2], :])
+        ts.colour    = [0.2, 0.2, 0.2]
+        ts.lineWidth = 1
+        ts.lineStyle = ':'
+        ts.label     = None
+        return ts
 
 
     def _draw(self, *a):
@@ -141,7 +170,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         currentTs = self.getCurrent()
 
         if currentTs is not None:
-            toPlot = [currentTs] + toPlot
+            toPlot =  [currentTs] + toPlot
 
         if len(toPlot) == 0:
             canvas.draw()
@@ -152,7 +181,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         ylims = []
 
         for ts in toPlot:
-            xlim, ylim = self._drawTimeSeries(ts)
+            if ts is currentTs:
+                xlim, ylim = self._drawTimeSeries(ts)
+            else:
+                xlim, ylim = self._drawTimeSeries(ts)
             xlims.append(xlim)
             ylims.append(ylim)
 
@@ -162,8 +194,22 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         ymin = min([lim[0] for lim in ylims])
         ymax = max([lim[1] for lim in ylims])
 
-        axis.set_xlim((xmin, xmax))
-        axis.set_ylim((ymin, ymax))
+        xpad = 0.05 * (xmax - xmin)
+        ypad = 0.05 * (ymax - ymin)
+
+        axis.set_xlim((xmin - xpad, xmax + xpad))
+        axis.set_ylim((ymin - ypad, ymax + ypad))
+
+        # legend - don't show if we're only
+        # plotting the current location
+        if len(self.timeSeries) > 0 and self.legend:
+            handles, labels = axis.get_legend_handles_labels()
+            legend          = axis.legend(
+                handles,
+                labels,
+                loc='upper right',
+                fancybox=True)
+            legend.get_frame().set_alpha(0.3)
 
         canvas.draw()
         self.Refresh()
@@ -171,14 +217,22 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     def _drawTimeSeries(self, ts):
 
-        display = self._displayCtx.getDisplay(ts.overlay)
-
-        if not display.enabled:
-            return None
-
-        data = ts.data
+        if ts.alpha == 0:
+            return (0, 0), (0, 0)
         
-        self.getAxis().plot(data, lw=2, c=ts.colour, label=ts.label)
+        data = ts.data
+
+        if self.demean:
+            data = data - data.mean()
+
+        kwargs = {}
+        kwargs['lw']    = ts.lineWidth
+        kwargs['alpha'] = ts.alpha
+        kwargs['color'] = ts.colour
+        kwargs['label'] = ts.label
+        kwargs['ls']    = ts.lineStyle
+        
+        self.getAxis().plot(data, **kwargs)
 
         # TODO take into account TR
         return (0, len(data)), (data.min(), data.max())
