@@ -85,68 +85,15 @@ class GLVolume(globject.GLImageObject):
         self.addDisplayListeners()
 
         # Create an image texture and a colour map texture
-        texName = '{}_{}'.format(type(self).__name__, id(self.image))
+        self.texName = '{}_{}'.format(type(self).__name__, id(self.image))
 
-        # The image texture may be used elsewhere,
-        # so we'll use the resource management
-        # module rather than creating one directly
-        self.imageTexture = glresources.get(
-            texName, 
-            textures.ImageTexture,
-            texName,
-            self.image,
-            self.display)
-
-        self.colourTexture = textures.ColourMapTexture(texName)
-        
+        self.imageTexture  = None
+        self.colourTexture = textures.ColourMapTexture(self.texName)
+ 
+        self.refreshImageTexture()
         self.refreshColourTexture()
         
         fslgl.glvolume_funcs.init(self)
-
-
-    def preDraw(self):
-        """Sets up the GL state to draw a slice from this :class:`GLVolume`
-        instance.
-        """
-        
-        # Set up the image and colour textures
-        self.imageTexture .bindTexture(gl.GL_TEXTURE0)
-        self.colourTexture.bindTexture(gl.GL_TEXTURE1)
-
-        fslgl.glvolume_funcs.preDraw(self)
-
-        
-    def draw(self, zpos, xform=None):
-        """Draws a 2D slice of the image at the given real world Z location.
-        This is performed via a call to the OpenGL version-dependent `draw`
-        function, contained in one of the :mod:`~fsl.fslview.gl.gl14` or
-        :mod:`~fsl.fslview.gl.gl21` packages.
-
-        If `xform` is not None, it is applied as an affine transformation to
-        the vertex coordinates of the rendered image data.
-
-        Note: Calls to this method must be preceded by a call to
-        :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
-        """
-        
-        fslgl.glvolume_funcs.draw(self, zpos, xform)
-
-        
-    def drawAll(self, zposes, xforms):
-        """Calls the module-specific ``drawAll`` function. """
-        
-        fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
-
-        
-    def postDraw(self):
-        """Clears the GL state after drawing from this :class:`GLVolume`
-        instance.
-        """
-
-        self.imageTexture .unbindTexture()
-        self.colourTexture.unbindTexture()
-        
-        fslgl.glvolume_funcs.postDraw(self) 
 
 
     def destroy(self):
@@ -164,6 +111,32 @@ class GLVolume(globject.GLImageObject):
         
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
+
+
+    def refreshImageTexture(self):
+
+        opts    = self.displayOpts
+        texName = self.texName
+
+        unsynced = (not opts.isSyncedToParent('volume')        or
+                    not opts.isSyncedToParent('transform')     or
+                    not opts.isSyncedToParent('resolution')    or
+                    not opts.isSyncedToParent('interpolation'))
+
+        if unsynced:
+            texName = '{}_unsync_{}'.format(texName, id(opts))
+
+        if self.imageTexture is not None:
+            glresources.delete(self.imageTexture.getTextureName())
+
+        # The image texture may be used elsewhere,
+        # so we'll use the resource management
+        # module rather than creating one directly
+        self.imageTexture = glresources.get(
+            texName, 
+            textures.ImageTexture,
+            texName,
+            self.image)        
 
     
     def refreshColourTexture(self):
@@ -209,31 +182,44 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        def interpUpdate(*a):
-            
-            if opts.interpolation == 'none': interp = gl.GL_NEAREST
-            else:                            interp = gl.GL_LINEAR
-            
-            self.imageTexture.setInterpolation(interp)
+        def shaderCompile(*a):
+            fslgl.glvolume_funcs.compileShaders(   self)
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        def shaderCompile(*a):
-            fslgl.glvolume_funcs.compileShaders(   self)
+        def imageRefresh(*a):
+            self.refreshImageTexture()
+            self.onUpdate()
+
+        def imageUpdate(*a):
+            volume     = opts.volume
+            resolution = opts.resolution
+
+            if opts.interpolation == 'none': interp = gl.GL_NEAREST
+            else:                            interp = gl.GL_LINEAR
+            
+            self.imageTexture.set(volume=volume,
+                                  interp=interp,
+                                  resolution=resolution)
+            
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
         def update(*a):
             self.onUpdate()
         
-        display.addListener('softwareMode',  lName, shaderCompile)
-        display.addListener('alpha',         lName, colourUpdate)
-        opts   .addListener('interpolation', lName, interpUpdate)
-        opts   .addListener('resolution',    lName, update)
-        opts   .addListener('displayRange',  lName, colourUpdate)
-        opts   .addListener('clippingRange', lName, shaderUpdate)
-        opts   .addListener('cmap',          lName, colourUpdate)
-        opts   .addListener('invert',        lName, colourUpdate)
+        display.addListener(          'softwareMode',  lName, shaderCompile)
+        display.addListener(          'alpha',         lName, colourUpdate)
+        opts   .addListener(          'displayRange',  lName, colourUpdate)
+        opts   .addListener(          'clippingRange', lName, shaderUpdate)
+        opts   .addListener(          'cmap',          lName, colourUpdate)
+        opts   .addListener(          'invert',        lName, colourUpdate)
+        opts   .addListener(          'volume',        lName, imageUpdate)
+        opts   .addListener(          'resolution',    lName, imageUpdate)
+        opts   .addListener(          'interpolation', lName, imageUpdate)
+        opts   .addSyncChangeListener('volume',        lName, imageRefresh)
+        opts   .addSyncChangeListener('resolution',    lName, imageRefresh)
+        opts   .addSyncChangeListener('interpolation', lName, imageRefresh)
 
 
     def removeDisplayListeners(self):
@@ -246,11 +232,60 @@ class GLVolume(globject.GLImageObject):
 
         lName = self.name
         
-        display.removeListener('softwareMode',  lName)
-        display.removeListener('alpha',         lName)
-        opts   .removeListener('interpolation', lName)
-        opts   .removeListener('resolution',    lName)
-        opts   .removeListener('displayRange',  lName)
-        opts   .removeListener('clippingRange', lName)
-        opts   .removeListener('cmap',          lName)
-        opts   .removeListener('invert',        lName)
+        display.removeListener(          'softwareMode',  lName)
+        display.removeListener(          'alpha',         lName)
+        opts   .removeListener(          'displayRange',  lName)
+        opts   .removeListener(          'clippingRange', lName)
+        opts   .removeListener(          'cmap',          lName)
+        opts   .removeListener(          'invert',        lName)
+        opts   .removeListener(          'volume',        lName)
+        opts   .removeListener(          'resolution',    lName)
+        opts   .removeListener(          'interpolation', lName)
+        opts   .removeSyncChangeListener('volume',        lName)
+        opts   .removeSyncChangeListener('resolution',    lName)
+        opts   .removeSyncChangeListener('interpolation', lName)
+
+        
+    def preDraw(self):
+        """Sets up the GL state to draw a slice from this :class:`GLVolume`
+        instance.
+        """
+        
+        # Set up the image and colour textures
+        self.imageTexture .bindTexture(gl.GL_TEXTURE0)
+        self.colourTexture.bindTexture(gl.GL_TEXTURE1)
+
+        fslgl.glvolume_funcs.preDraw(self)
+
+        
+    def draw(self, zpos, xform=None):
+        """Draws a 2D slice of the image at the given real world Z location.
+        This is performed via a call to the OpenGL version-dependent `draw`
+        function, contained in one of the :mod:`~fsl.fslview.gl.gl14` or
+        :mod:`~fsl.fslview.gl.gl21` packages.
+
+        If `xform` is not None, it is applied as an affine transformation to
+        the vertex coordinates of the rendered image data.
+
+        Note: Calls to this method must be preceded by a call to
+        :meth:`preDraw`, and followed by a call to :meth:`postDraw`.
+        """
+        
+        fslgl.glvolume_funcs.draw(self, zpos, xform)
+
+        
+    def drawAll(self, zposes, xforms):
+        """Calls the module-specific ``drawAll`` function. """
+        
+        fslgl.glvolume_funcs.drawAll(self, zposes, xforms)
+
+        
+    def postDraw(self):
+        """Clears the GL state after drawing from this :class:`GLVolume`
+        instance.
+        """
+
+        self.imageTexture .unbindTexture()
+        self.colourTexture.unbindTexture()
+        
+        fslgl.glvolume_funcs.postDraw(self) 

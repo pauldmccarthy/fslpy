@@ -29,12 +29,12 @@ class ImageOpts(fsldisplay.DisplayOpts):
     """
 
     
-    resolution = props.Real(maxval=10, default=1, clamped=True)
-    """Data resolution in world space. The minimum value is set in __init__.""" 
+    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
+    """If the data is 4D , the current volume to display."""    
 
     
-    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """If the data is 4D , the current volume to display."""
+    resolution = props.Real(maxval=10, default=1, clamped=True)
+    """Data resolution in world space. The minimum value is set in __init__.""" 
 
 
     transform = props.Choice(
@@ -60,11 +60,6 @@ class ImageOpts(fsldisplay.DisplayOpts):
  
     def __init__(self, *args, **kwargs):
 
-        nounbind = kwargs.get('nounbind', [])
-        nounbind.extend(('transform', 'resolution', 'volume'))
-        
-        kwargs['nounbind'] = nounbind
-        
         fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
 
         overlay = self.overlay
@@ -239,31 +234,6 @@ class VolumeOpts(ImageOpts):
     invert = props.Boolean(default=False)
     """Invert the colour map."""
 
-    
-    _tooltips = {
-        'name'          : 'The name of this image',
-        'enabled'       : 'Enable/disable this image',
-        'alpha'         : 'Opacity, between 0.0 (transparent) '
-                          'and 100.0 (opaque)',
-        'displayRange'  : 'Minimum/maximum display values',
-        'clipLow'       : 'Do not show image values which are '
-                          'lower than the display range',
-        'clipHigh'      : 'Do not show image values which are '
-                          'higher than the display range', 
-        'interpolation' : 'Interpolate between voxel values at '
-                          'each displayed real world location',
-        'resolution'    : 'Data resolution in voxels',
-        'volume'        : 'Volume number (for 4D images)',
-        'transform'     : 'The transformation matrix which specifies the '
-                          'conversion from voxel coordinates to a real '
-                          'world location',
-        'imageType'     : 'the type of data contained in the image',
-        'cmap'          : 'Colour map'}
-
-    
-    _propHelp = _tooltips
-
-
 
     def __init__(self,
                  overlay,
@@ -309,9 +279,6 @@ class VolumeOpts(ImageOpts):
         self.displayRange.xmax = self.dataMax + 10 * dRangeLen
         
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
-
-        nounbind = kwargs.get('nounbind', [])
-        nounbind.extend(('interpolation')) 
 
         ImageOpts.__init__(self,
                            overlay,

@@ -203,9 +203,9 @@ VolumeOptsLayout = props.VGroup(
 
 
 MaskOptsLayout = props.VGroup(
-    (widget(VolumeOpts, 'resolution',    showLimits=False),
-     widget(VolumeOpts, 'transform'),
-     widget(VolumeOpts, 'volume',        showLimits=False),
+    (widget(MaskOpts, 'resolution',    showLimits=False),
+     widget(MaskOpts, 'transform'),
+     widget(MaskOpts, 'volume',        showLimits=False),
      widget(MaskOpts, 'colour'),
      widget(MaskOpts, 'invert'),
      widget(MaskOpts, 'threshold', showLimits=False)))
@@ -214,7 +214,6 @@ MaskOptsLayout = props.VGroup(
 RGBVectorOptsLayout = props.VGroup((
     widget(RGBVectorOpts, 'resolution',    showLimits=False),
     widget(RGBVectorOpts, 'transform'),
-    widget(RGBVectorOpts, 'volume',        showLimits=False),
     widget(RGBVectorOpts, 'interpolation'),
     props.HGroup((
         widget(RGBVectorOpts, 'xColour'),
@@ -232,7 +231,6 @@ RGBVectorOptsLayout = props.VGroup((
 LineVectorOptsLayout = props.VGroup((
     widget(LineVectorOpts, 'resolution',    showLimits=False),
     widget(LineVectorOpts, 'transform'),
-    widget(LineVectorOpts, 'volume',        showLimits=False),
     props.HGroup((
         widget(LineVectorOpts, 'xColour'),
         widget(LineVectorOpts, 'yColour'),

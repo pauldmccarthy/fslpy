@@ -136,7 +136,6 @@ class GLVector(globject.GLImageObject):
             textures.ImageTexture,
             texName,
             self.image,
-            display=self.display,
             nvals=3,
             normalise=True,
             prefilter=realPrefilter) 
@@ -220,7 +219,6 @@ class GLVector(globject.GLImageObject):
             textures.ImageTexture,
             texName,
             modImage,
-            display=modDisplay,
             normalise=norm)
 
 

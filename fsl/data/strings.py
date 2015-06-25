@@ -202,10 +202,9 @@ properties = TypeDict({
     
     'Profile.mode' : 'Profile',
 
-    'CanvasPanel.syncLocation'       : 'Sync location',
-    'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
-    'CanvasPanel.syncVolume'         : 'Sync volume',
-    'CanvasPanel.profile'            : 'Mode',
+    'CanvasPanel.syncLocation'     : 'Sync location',
+    'CanvasPanel.syncOverlayOrder' : 'Sync overlay order',
+    'CanvasPanel.profile'          : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.showColourBar'      : 'Show colour bar',

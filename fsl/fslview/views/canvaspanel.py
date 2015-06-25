@@ -164,13 +164,8 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-    syncLocation     = displayctx.DisplayContext.getSyncProperty('location')
-    # syncVolume       = displayctx.DisplayContext.getSyncProperty('volume')
-
-    # TODO
-    syncVolume       = props.Boolean(default=True)
-    syncOverlayOrder = displayctx.DisplayContext.getSyncProperty(
-        'overlayOrder')
+    syncLocation     = props.Boolean(default=True)
+    syncOverlayOrder = props.Boolean(default=True)
 
     def __init__(self,
                  parent,
@@ -212,10 +207,6 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.bindProps('syncOverlayOrder',
                            displayCtx,
                            displayCtx.getSyncPropertyName('overlayOrder'))
-
-            log.warn('Skipping parent syncVolume binding, '
-                     'as it is not working yet.')
-
             
         # If the displayCtx instance does not
         # have a parent, this means that it is
@@ -223,7 +214,6 @@ class CanvasPanel(viewpanel.ViewPanel):
         else:
             self.disableProperty('syncLocation')
             self.disableProperty('syncOverlayOrder')
-            self.disableProperty('syncVolume')
 
         self.__canvasContainer = wx.Panel(self)
         self.__canvasPanel     = wx.Panel(self.__canvasContainer)

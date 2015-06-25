@@ -28,8 +28,7 @@ class GLLabel(globject.GLImageObject):
             imageTexName,
             textures.ImageTexture,
             imageTexName,
-            image,
-            display)
+            image)
         
         fslgl.gllabel_funcs.init(self)
 
