@@ -139,7 +139,11 @@ OPTIONS = td.TypeDict({
     'RGBVectorOpts'  : ['interpolation'],
     'ModelOpts'      : ['colour',
                         'outline',
+                        'outlineWidth',
                         'refImage'],
+    'LabelOpts'      : ['lut',
+                        'outline',
+                        'outlineWidth'],
 })
 
 # Headings for each of the option groups
@@ -151,11 +155,12 @@ GROUPNAMES = td.TypeDict({
     'Display'        : 'Overlay display options',
     'ImageOpts'      : 'Options for NIFTI images',
     'VolumeOpts'     : 'Volume options',
+    'MaskOpts'       : 'Mask options',
     'VectorOpts'     : 'Vector options',
     'LineVectorOpts' : 'Line vector options',
     'RGBVectorOpts'  : 'RGB vector options',
-    'MaskOpts'       : 'Mask options',
     'ModelOpts'      : 'Model options',
+    'LabelOpts'      : 'Label options',
 })
 
 # Short/long arguments for all of those options
@@ -233,9 +238,14 @@ ARGUMENTS = td.TypeDict({
     'LineVectorOpts.directed'    : ('lvi', 'directed'),
     'RGBVectorOpts.interpolaion' : ('rvi', 'rvInterpolation'),
 
-    'ModelOpts.colour'       : ('mc', 'modelColour'),
-    'ModelOpts.outline'      : ('mo', 'modelOutline'),
-    'ModelOpts.refImage'     : ('mri', 'refImage'),
+    'ModelOpts.colour'       : ('mc',  'modelColour'),
+    'ModelOpts.outline'      : ('mo',  'modelOutline'),
+    'ModelOpts.outlineWidth' : ('mw',  'modelOutlineWidth'),
+    'ModelOpts.refImage'     : ('mr',  'modelRefImage'),
+
+    'LabelOpts.lut'          : ('ll',  'lut'),
+    'LabelOpts.outline'      : ('lo',  'labelOutline'),
+    'LabelOpts.outlineWidth' : ('lw',  'labelOutlineWidth'),
 })
 
 # Help text for all of the options
@@ -315,9 +325,14 @@ HELP = td.TypeDict({
     'LineVectorOpts.directed'     : 'Interpret vectors as directed',
     'RGBVectorOpts.interpolation' : 'Interpolation',
 
-    'ModelOpts.colour'     : 'Model colour',
-    'ModelOpts.outline'    : 'Show model outline',
-    'ModelOpts.refImage'   : 'Reference image for model',
+    'ModelOpts.colour'       : 'Model colour',
+    'ModelOpts.outline'      : 'Show model outline',
+    'ModelOpts.outlineWidth' : 'Model outline width',
+    'ModelOpts.refImage'     : 'Reference image for model',
+    
+    'LabelOpts.lut'          : 'Label image LUT',
+    'LabelOpts.outline'      : 'Show label outlines',
+    'LabelOpts.outlineWidth' : 'Label outline width', 
 })
 
 
@@ -325,7 +340,11 @@ HELP = td.TypeDict({
 # to the props.cli.addParserArguments function.
 EXTRA = td.TypeDict({
     'Display.overlayType' : {'choices' : fsldisplay.ALL_OVERLAY_TYPES,
-                             'default' : fsldisplay.ALL_OVERLAY_TYPES[0]}
+                             'default' : fsldisplay.ALL_OVERLAY_TYPES[0]},
+
+    'LabelOpts.lut'       : {
+        'choices' : [l.name for l in colourmaps.getLookupTables()]
+    }
 }) 
 
 # Transform functions for properties where the
@@ -340,6 +359,11 @@ EXTRA = td.TypeDict({
 def _imageTrans(i):
     if i == 'none': return None
     else:           return i.dataSource
+
+def _lutTrans(i):
+    if isinstance(i, basestring): return colourmaps.getLookupTable(i)
+    else:                         return i.name
+    
     
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
@@ -347,6 +371,8 @@ TRANSFORMS = td.TypeDict({
     'OrthoOpts.showYCanvas' : lambda b: not b,
     'OrthoOpts.showZCanvas' : lambda b: not b,
     'OrthoOpts.showLabels'  : lambda b: not b,
+
+    'LabelOpts.lut'         : _lutTrans,
 
     # These properties are handled specially
     # when reading in command line arguments -
@@ -492,24 +518,27 @@ def _configOverlayParser(ovlParser):
     VectorOpts = fsldisplay.VectorOpts
     MaskOpts   = fsldisplay.MaskOpts
     ModelOpts  = fsldisplay.ModelOpts
+    LabelOpts  = fsldisplay.LabelOpts
     
     dispDesc = 'Each display option will be applied to the '\
                'overlay which is listed before that option.'
 
-    dispParser = ovlParser.add_argument_group(GROUPNAMES[Display],
-                                              dispDesc)
+    dispParser  = ovlParser.add_argument_group(GROUPNAMES[Display],
+                                               dispDesc)
     imgParser   = ovlParser.add_argument_group(GROUPNAMES[ImageOpts])
     volParser   = ovlParser.add_argument_group(GROUPNAMES[VolumeOpts])
     vecParser   = ovlParser.add_argument_group(GROUPNAMES[VectorOpts])
     maskParser  = ovlParser.add_argument_group(GROUPNAMES[MaskOpts])
     modelParser = ovlParser.add_argument_group(GROUPNAMES[ModelOpts])
+    labelParser = ovlParser.add_argument_group(GROUPNAMES[LabelOpts])
 
     targets = [(Display,    dispParser),
                (ImageOpts,  imgParser),
                (VolumeOpts, volParser),
                (VectorOpts, vecParser),
                (MaskOpts,   maskParser),
-               (ModelOpts,  modelParser)]
+               (ModelOpts,  modelParser),
+               (LabelOpts,  labelParser)]
 
     for target, parser in targets:
 
@@ -711,20 +740,6 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     # Parse the application options with the mainParser
     namespace = mainParser.parse_args(progArgv)
-
-    # If the user asked for help, print some help and exit
-    def print_help():
-        mainParser.print_help()
-
-        # Did I mention that I hate argparse?  Why
-        # can't we customise the help text? Here
-        # we're skipping over the top section of
-        # the overlay parser help text
-        ovlHelp   = ovlParser.format_help()
-        dispGroup = GROUPNAMES[fsldisplay.Display]
-        print 
-        print ovlHelp[ovlHelp.index(dispGroup):]
-        sys.exit(0)
 
     if namespace.help:
         printHelp()
@@ -957,14 +972,14 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
         # the ModelOpts.refImage property
         if isinstance(overlay, fslmodel.Model)        and \
            isinstance(opts,    fsldisplay.ModelOpts)  and \
-           args.overlays[i].refImage is not None:
+           args.overlays[i].modelRefImage is not None:
 
             refImage = _findOrLoad(overlayList,
-                                   args.overlays[i].refImage,
+                                   args.overlays[i].modelRefImage,
                                    fslimage.Image)
 
-            opts.refImage             = refImage
-            args.overlays[i].refImage = None
+            opts.refImage                  = refImage
+            args.overlays[i].modelRefImage = None
             
             log.debug('Set {} reference image to {}'.format(
                 overlay, refImage)) 
