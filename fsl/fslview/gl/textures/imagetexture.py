@@ -73,10 +73,15 @@ class ImageTexture(texture.Texture):
         self.image        = image
         self.nvals        = nvals
         self.__interp     = None
-        self.__prefilter  = None
         self.__resolution = None
         self.__volume     = None
         self.__normalise  = None
+        self.__prefilter  = prefilter
+        # The __prefilter attribute is needed
+        # by the __imageDataChanged method,
+        # so we set it above. The other
+        # attributes are configured in the
+        # call to the set method, below.
 
         self.__name = '{}_{}'.format(type(self).__name__, id(self))
         self.image.addListener('data',
@@ -84,7 +89,6 @@ class ImageTexture(texture.Texture):
                                lambda *a: self.__imageDataChanged())
 
         self.__imageDataChanged(False)
-
         self.set(interp=interp,
                  prefilter=prefilter,
                  resolution=None,
@@ -128,10 +132,7 @@ class ImageTexture(texture.Texture):
 
         if not changed:
             return
-
-        if prefilter != self.__prefilter:
-            self.__imageDataChanged()
-
+        
         self.__interp     = interp
         self.__prefilter  = prefilter
         self.__resolution = resolution
@@ -147,6 +148,10 @@ class ImageTexture(texture.Texture):
                                                       np.int8,
                                                       np.uint16,
                                                       np.int16)
+
+        if prefilter != self.__prefilter:
+            self.__imageDataChanged(False)
+ 
         self.refresh()
 
 

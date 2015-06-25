@@ -234,9 +234,9 @@ ARGUMENTS = td.TypeDict({
     'VectorOpts.modulate'    : ('m',  'modulate'),
     'VectorOpts.modThreshold': ('mt', 'modThreshold'),
 
-    'LineVectorOpts.lineWidth'   : ('lvw', 'lineWidth'),
-    'LineVectorOpts.directed'    : ('lvi', 'directed'),
-    'RGBVectorOpts.interpolaion' : ('rvi', 'rvInterpolation'),
+    'LineVectorOpts.lineWidth'    : ('lvw', 'lineWidth'),
+    'LineVectorOpts.directed'     : ('lvi', 'directed'),
+    'RGBVectorOpts.interpolation' : ('rvi', 'rvInterpolation'),
 
     'ModelOpts.colour'       : ('mc',  'modelColour'),
     'ModelOpts.outline'      : ('mo',  'modelOutline'),

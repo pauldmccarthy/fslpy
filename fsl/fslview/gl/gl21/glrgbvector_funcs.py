@@ -69,8 +69,7 @@ def compileShaders(self):
 
 def updateShaderState(self):
 
-    display = self.display
-    opts    = self.displayOpts
+    opts = self.displayOpts
 
     # The coordinate transformation matrices for 
     # each of the three colour textures are identical

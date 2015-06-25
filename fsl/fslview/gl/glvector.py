@@ -81,65 +81,17 @@ class GLVector(globject.GLImageObject):
 
         globject.GLImageObject.__init__(self, image, display)
 
-        display = self.display
-        opts    = self.displayOpts
-        name    = self.name
+        name = self.name
 
         self.xColourTexture = textures.ColourMapTexture('{}_x'.format(name))
         self.yColourTexture = textures.ColourMapTexture('{}_y'.format(name))
         self.zColourTexture = textures.ColourMapTexture('{}_z'.format(name))
         self.modTexture     = None
         self.imageTexture   = None
-        
-        def modUpdate( *a):
-            self.refreshModulateTexture()
-            self.updateShaderState()
-            self.onUpdate()
+        self.prefilter      = prefilter
 
-        def cmapUpdate(*a):
-            self.refreshColourTextures()
-            self.updateShaderState()
-            self.onUpdate()
-            
-        def shaderUpdate(*a):
-            self.updateShaderState()
-            self.onUpdate() 
-
-        def shaderCompile(*a):
-            self.compileShaders()
-            self.updateShaderState()
-            self.onUpdate()
-
-        display.addListener('softwareMode',  name, shaderCompile)
-        display.addListener('alpha',         name, cmapUpdate)
-        display.addListener('brightness',    name, cmapUpdate)
-        display.addListener('contrast',      name, cmapUpdate) 
-        opts   .addListener('xColour',       name, cmapUpdate)
-        opts   .addListener('yColour',       name, cmapUpdate)
-        opts   .addListener('zColour',       name, cmapUpdate)
-        opts   .addListener('suppressX',     name, cmapUpdate)
-        opts   .addListener('suppressY',     name, cmapUpdate)
-        opts   .addListener('suppressZ',     name, cmapUpdate)
-        opts   .addListener('modulate',      name, modUpdate)
-        opts   .addListener('modThreshold',  name, shaderUpdate)
-
-        # the fourth dimension (the vector directions) 
-        # must be the fastest changing in the texture data
-        if prefilter is None:
-            realPrefilter = lambda d:           d.transpose((3, 0, 1, 2))
-        else:
-            realPrefilter = lambda d: prefilter(d.transpose((3, 0, 1, 2)))
-
-        texName = '{}_{}'.format(type(self).__name__, id(self.image))
-        self.imageTexture = glresources.get(
-            texName,
-            textures.ImageTexture,
-            texName,
-            self.image,
-            nvals=3,
-            normalise=True,
-            prefilter=realPrefilter) 
-
+        self.addListeners()
+        self.refreshImageTexture()
         self.refreshModulateTexture()
         self.refreshColourTextures()
 
@@ -161,18 +113,117 @@ class GLVector(globject.GLImageObject):
         self.imageTexture = None
         self.modTexture   = None
 
-        self.display    .removeListener('softwareMode',  self.name)
-        self.display    .removeListener('alpha',         self.name)
-        self.display    .removeListener('brightness',    self.name)
-        self.display    .removeListener('contrast',      self.name)
-        self.displayOpts.removeListener('xColour',       self.name)
-        self.displayOpts.removeListener('yColour',       self.name)
-        self.displayOpts.removeListener('zColour',       self.name)
-        self.displayOpts.removeListener('suppressX',     self.name)
-        self.displayOpts.removeListener('suppressY',     self.name)
-        self.displayOpts.removeListener('suppressZ',     self.name)
-        self.displayOpts.removeListener('modulate',      self.name)
-        self.displayOpts.removeListener('modThreshold',  self.name)
+        self.removeListeners()
+
+
+    def addListeners(self):
+
+        display = self.display
+        opts    = self.displayOpts
+        name    = self.name
+        
+        def modUpdate( *a):
+            self.refreshModulateTexture()
+            self.updateShaderState()
+            self.onUpdate()
+
+        def cmapUpdate(*a):
+            self.refreshColourTextures()
+            self.updateShaderState()
+            self.onUpdate()
+            
+        def shaderUpdate(*a):
+            self.updateShaderState()
+            self.onUpdate() 
+
+        def shaderCompile(*a):
+            self.compileShaders()
+            self.updateShaderState()
+            self.onUpdate()
+
+        def imageRefresh(*a):
+            self.refreshImageTexture()
+            self.updateShaderState()
+            self.onUpdate()
+
+        def imageUpdate(*a):
+            self.imageTexture.set(volume=opts.volume,
+                                  resolution=opts.resolution)
+            self.updateShaderState()
+            self.onUpdate()
+
+        display.addListener(          'softwareMode',  name, shaderCompile)
+        display.addListener(          'alpha',         name, cmapUpdate)
+        display.addListener(          'brightness',    name, cmapUpdate)
+        display.addListener(          'contrast',      name, cmapUpdate) 
+        opts   .addListener(          'xColour',       name, cmapUpdate)
+        opts   .addListener(          'yColour',       name, cmapUpdate)
+        opts   .addListener(          'zColour',       name, cmapUpdate)
+        opts   .addListener(          'suppressX',     name, cmapUpdate)
+        opts   .addListener(          'suppressY',     name, cmapUpdate)
+        opts   .addListener(          'suppressZ',     name, cmapUpdate)
+        opts   .addListener(          'modulate',      name, modUpdate)
+        opts   .addListener(          'modThreshold',  name, shaderUpdate)
+        opts   .addListener(          'volume',        name, imageUpdate)
+        opts   .addListener(          'resolution',    name, imageUpdate)
+        opts   .addSyncChangeListener('volume',        name, imageRefresh)
+        opts   .addSyncChangeListener('resolution',    name, imageRefresh) 
+
+
+    def removeListeners(self):
+
+        display = self.display
+        opts    = self.displayOpts
+        name    = self.name
+
+        display.removeListener(          'softwareMode', name)
+        display.removeListener(          'alpha',        name)
+        display.removeListener(          'brightness',   name)
+        display.removeListener(          'contrast',     name)
+        opts   .removeListener(          'xColour',      name)
+        opts   .removeListener(          'yColour',      name)
+        opts   .removeListener(          'zColour',      name)
+        opts   .removeListener(          'suppressX',    name)
+        opts   .removeListener(          'suppressY',    name)
+        opts   .removeListener(          'suppressZ',    name)
+        opts   .removeListener(          'modulate',     name)
+        opts   .removeListener(          'modThreshold', name)
+        opts   .removeListener(          'volume',       name)
+        opts   .removeListener(          'resolution',   name)
+        opts   .removeSyncChangeListener('volume',       name)
+        opts   .removeSyncChangeListener('resolution',   name)
+
+
+    def refreshImageTexture(self):
+
+        opts      = self.displayOpts
+        prefilter = self.prefilter
+        texName   = '{}_{}'.format(type(self).__name__, id(self.image))
+        
+        if self.imageTexture is not None:
+            glresources.delete(self.imageTexture.getTextureName())
+            
+        # the fourth dimension (the vector directions) 
+        # must be the fastest changing in the texture data
+        if prefilter is None:
+            realPrefilter = lambda d:           d.transpose((3, 0, 1, 2))
+        else:
+            realPrefilter = lambda d: prefilter(d.transpose((3, 0, 1, 2)))
+
+        unsynced = (not opts.isSyncedToParent('resolution') or
+                    not opts.isSyncedToParent('volume'))
+
+        if unsynced:
+            texName = '{}_unsync_{}'.format(texName, id(opts))
+        
+        self.imageTexture = glresources.get(
+            texName,
+            textures.ImageTexture,
+            texName,
+            self.image,
+            nvals=3,
+            normalise=True,
+            prefilter=realPrefilter) 
 
 
     def updateShaderState(self):
@@ -197,7 +248,6 @@ class GLVector(globject.GLImageObject):
 
         if self.modTexture is not None:
             glresources.delete(self.modTexture.getTextureName())
-            self.modTexture = None
 
         modImage = self.displayOpts.modulate
 
@@ -205,15 +255,27 @@ class GLVector(globject.GLImageObject):
             textureData = np.zeros((5, 5, 5), dtype=np.uint8)
             textureData[:] = 255
             modImage   = fslimage.Image(textureData)
-            modDisplay = None
+            modOpts    = None
             norm       = False
             
         else:
-            modDisplay = self.display
-            norm       = True
+            modOpts = self.displayCtx.getOpts(modImage)
+            norm    = True
 
         texName = '{}_{}_{}_modulate'.format(
             type(self).__name__, id(self.image), id(modImage))
+
+        if modOpts is not None:
+            unsynced = (not modOpts.isSyncedToParent('resolution') or
+                        not modOpts.isSyncedToParent('volume'))
+
+            # TODO If unsynced, this GLVector needs to 
+            # update the modulate texture whenever its
+            # volume/resolution properties change.
+            # Right?
+            if unsynced:
+                texName = '{}_unsync_{}'.format(texName, id(modOpts))
+ 
         self.modTexture = glresources.get(
             texName,
             textures.ImageTexture,

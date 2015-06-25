@@ -40,9 +40,12 @@ def init(self):
         self.updateShaderState()
         self.onUpdate()
 
-    opts.addListener('transform',  self.name, vertexUpdate)
-    opts.addListener('resolution', self.name, vertexUpdate)
-    opts.addListener('directed',   self.name, vertexUpdate)
+
+    name = '{}_vertices'.format(self.name)
+
+    opts.addListener('transform',  name, vertexUpdate)
+    opts.addListener('resolution', name, vertexUpdate)
+    opts.addListener('directed',   name, vertexUpdate)
 
     compileShaders(   self)
     updateShaderState(self)
@@ -54,9 +57,10 @@ def destroy(self):
     gl.glDeleteBuffers(1, gltypes.GLuint(self.texCoordBuffer))
     gl.glDeleteProgram(self.shaders)
 
-    self.displayOpts.removeListener('transform',  self.name)
-    self.displayOpts.removeListener('resolution', self.name)
-    self.displayOpts.removeListener('directed',   self.name)
+    name = '{}_vertices'.format(self.name)
+    self.displayOpts.removeListener('transform',  name)
+    self.displayOpts.removeListener('resolution', name)
+    self.displayOpts.removeListener('directed',   name)
 
     if self.display.softwareMode:
         glresources.delete(self._vertexResourceName)
