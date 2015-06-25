@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+
 import numpy as np
 
 import props
@@ -20,7 +21,7 @@ class MaskOpts(volumeopts.ImageOpts):
     threshold  = props.Bounds(
         ndims=1,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
-                strings.choices['VolumeOpts.displayRange.max']]) 
+                strings.choices['VolumeOpts.displayRange.max']])
 
     def __init__(self, overlay, *args, **kwargs):
 
@@ -37,12 +38,13 @@ class MaskOpts(volumeopts.ImageOpts):
 
         # This is a hack. Mask images are rendered
         # using GLMask, which inherits from GLVolume.
-        # The latter assumes that a 'clippingRange'
-        # attribute is present on Opts instances
-        # (see GLVolume.clippingRange). So we're
-        # adding a dummy attribute to make the
+        # The latter assumes that 'clippingRange'
+        # and 'interpolation' attributes are present
+        # on Opts instances (see the VolumeOpts class).
+        # So we're adding dummy attributes to make the
         # GLVolume rendering code happy.
         self.clippingRange = (self.dataMin - 1, self.dataMax + 1)
+        self.interpolation = 'none'
 
         self.threshold.xmin = self.dataMin - dMinDistance
         self.threshold.xmax = self.dataMax + dMinDistance

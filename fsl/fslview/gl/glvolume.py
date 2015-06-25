@@ -112,16 +112,25 @@ class GLVolume(globject.GLImageObject):
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
 
+        
+    def testUnsynced(self):
+        """Used by the :meth:`refreshImageTexture` method.
+        
+        Returns ``True`` if certain critical :class:`VolumeOpts` properties
+        have been unsynced from the parent instance, meaning that this
+        :class:`GLVolume` instance needs to create its own image texture;
+        returns ``False`` otherwise.
+        """
+        return (not self.displayOpts.isSyncedToParent('volume')     or
+                not self.displayOpts.isSyncedToParent('resolution') or
+                not self.displayOpts.isSyncedToParent('interpolation'))
+        
 
     def refreshImageTexture(self):
 
-        opts    = self.displayOpts
-        texName = self.texName
-
-        unsynced = (not opts.isSyncedToParent('volume')        or
-                    not opts.isSyncedToParent('transform')     or
-                    not opts.isSyncedToParent('resolution')    or
-                    not opts.isSyncedToParent('interpolation'))
+        opts     = self.displayOpts
+        texName  = self.texName
+        unsynced = self.testUnsynced()
 
         if unsynced:
             texName = '{}_unsync_{}'.format(texName, id(opts))
@@ -136,7 +145,7 @@ class GLVolume(globject.GLImageObject):
             texName, 
             textures.ImageTexture,
             texName,
-            self.image)        
+            self.image) 
 
     
     def refreshColourTexture(self):
@@ -189,6 +198,7 @@ class GLVolume(globject.GLImageObject):
 
         def imageRefresh(*a):
             self.refreshImageTexture()
+            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
         def imageUpdate(*a):
@@ -205,9 +215,6 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        def update(*a):
-            self.onUpdate()
-        
         display.addListener(          'softwareMode',  lName, shaderCompile)
         display.addListener(          'alpha',         lName, colourUpdate)
         opts   .addListener(          'displayRange',  lName, colourUpdate)

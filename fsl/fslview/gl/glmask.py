@@ -45,32 +45,45 @@ class GLMask(glvolume.GLVolume):
         associated :class:`.MaskOpts` instance, which define how the mask
         image should be displayed.
         """
-        def vertexUpdate(*a):
-            self.setAxes(self.xax, self.yax)
-            self.onUpdate()
 
+        display = self.display
+        opts    = self.displayOpts
+        name    = self.name
+        
         def shaderUpdate(*a):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate() 
             
         def colourUpdate(*a):
             self.refreshColourTexture()
+            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        def update(*a):
+        def imageRefresh(*a):
+            self.refreshImageTexture()
+            fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        lnrName = '{}_{}'.format(type(self).__name__, id(self))
+        def imageUpdate(*a):
+            volume     = opts.volume
+            resolution = opts.resolution
 
-        self.display    .addListener('softwareMode', lnrName, shaderUpdate)
-        self.display    .addListener('alpha',        lnrName, colourUpdate)
-        self.display    .addListener('brightness',   lnrName, colourUpdate)
-        self.display    .addListener('contrast',     lnrName, colourUpdate)
-        self.displayOpts.addListener('resolution',   lnrName, update)
-        self.displayOpts.addListener('transform',    lnrName, vertexUpdate)
-        self.displayOpts.addListener('colour',       lnrName, colourUpdate)
-        self.displayOpts.addListener('threshold',    lnrName, colourUpdate)
-        self.displayOpts.addListener('invert',       lnrName, colourUpdate)
+            self.imageTexture.set(volume=volume, resolution=resolution)
+            
+            fslgl.glvolume_funcs.updateShaderState(self) 
+            self.onUpdate()
+
+        display.addListener(          'softwareMode',  name, shaderUpdate)
+        display.addListener(          'alpha',         name, colourUpdate)
+        display.addListener(          'brightness',    name, colourUpdate)
+        display.addListener(          'contrast',      name, colourUpdate)
+        opts   .addListener(          'colour',        name, colourUpdate)
+        opts   .addListener(          'threshold',     name, colourUpdate)
+        opts   .addListener(          'invert',        name, colourUpdate)
+        opts   .addListener(          'volume',        name, imageUpdate)
+        opts   .addListener(          'resolution',    name, imageUpdate)
+        opts   .addSyncChangeListener('volume',        name, imageRefresh)
+        opts   .addSyncChangeListener('resolution',    name, imageRefresh)
 
 
     def removeDisplayListeners(self):
@@ -78,18 +91,29 @@ class GLMask(glvolume.GLVolume):
 
         Removes all the listeners added by :meth:`addDisplayListeners`.
         """
-        
-        lnrName = '{}_{}'.format(type(self).__name__, id(self))
 
-        self.display    .removeListener('softwareMode', lnrName)
-        self.display    .removeListener('alpha',        lnrName)
-        self.display    .removeListener('brightness',   lnrName)
-        self.display    .removeListener('contrast',     lnrName)
-        self.displayOpts.removeListener('resolution',   lnrName)
-        self.displayOpts.removeListener('transform',    lnrName)
-        self.displayOpts.removeListener('colour',       lnrName)
-        self.displayOpts.removeListener('threshold',    lnrName)
-        self.displayOpts.removeListener('invert',       lnrName)
+        display = self.display
+        opts    = self.displayOpts
+        name    = self.name
+        
+        display.removeListener(          'softwareMode',  name)
+        display.removeListener(          'alpha',         name)
+        display.removeListener(          'brightness',    name)
+        display.removeListener(          'contrast',      name)
+        opts   .removeListener(          'colour',        name)
+        opts   .removeListener(          'threshold',     name)
+        opts   .removeListener(          'invert',        name)
+        opts   .removeListener(          'volume',        name)
+        opts   .removeListener(          'resolution',    name)
+        opts   .removeSyncChangeListener('volume',        name)
+        opts   .removeSyncChangeListener('resolution',    name)
+
+
+    def testUnsynced(self):
+        """Overrides :meth:`.GLVolume.testUnsynced`.
+        """
+        return (not self.displayOpts.isSyncedToParent('volume') or
+                not self.displayOpts.isSyncedToParent('resolution'))
 
         
     def refreshColourTexture(self, *a):
@@ -121,7 +145,7 @@ class GLMask(glvolume.GLVolume):
         else:
             cmap   = np.tile([opts.colour],        (4, 1))
             border = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
-
+            
         self.colourTexture.set(cmap=cmap,
                                border=border,
                                displayRange=(dmin, dmax),
