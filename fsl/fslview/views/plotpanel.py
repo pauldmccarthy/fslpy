@@ -7,16 +7,23 @@
 
 import logging
 
+import wx
+
 import matplotlib as mpl
+import numpy      as np
+
 
 mpl.use('WxAgg')
 
+
 import matplotlib.pyplot as plt
+import matplotlib.image  as mplimg
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d              import Axes3D
 
-import viewpanel
+import                     viewpanel
+import fsl.data.strings as strings
 
 
 log = logging.getLogger(__name__)
@@ -41,7 +48,7 @@ class PlotPanel(viewpanel.ViewPanel):
         # There is currently no screenshot functionality
         # because I haven't gotten around to implementing
         # it ...
-        self.disable('screenshot')
+        # self.disable('screenshot')
 
         self.__figure = plt.Figure()
         self.__axis   = self.__figure.add_subplot(111, projection=proj)
@@ -67,7 +74,27 @@ class PlotPanel(viewpanel.ViewPanel):
 
         
     def screenshot(self, *a):
-        pass
+
+        dlg = wx.FileDialog(self,
+                            message=strings.messages[self, 'screenshot'],
+                            style=wx.FD_SAVE)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        path = dlg.GetPath()
+
+        buf          = self.__canvas.tostring_argb()
+        ncols, nrows = self.__canvas.get_width_height()
+
+        bitmap = np.fromstring(buf, dtype=np.uint8)
+        bitmap = bitmap.reshape(nrows, ncols, 4)
+
+        rgb    = bitmap[:, :, 1:]
+        a      = bitmap[:, :, 0]
+        bitmap = np.dstack((rgb, a))
+
+        mplimg.imsave(path, bitmap)
 
 
     def message(self, msg):
