@@ -5,6 +5,30 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
+Command line for models and labels
+
+* Required feature list before next internal release
+** DONE Label support
+** DONE VTK support
+** Overlay groups
+** Improve time series
+** Improve histogram
+** Cluster browser
+** A better way of managing colour maps/luts
+** Feat mode 
+This could be an option on the time series panel - if a .feat directory 
+is detected, display a check box allowing the user to turn on/off 
+models/residuals/whatever.
+** Iconify/clean up interface
+** Rename to FSLEyes
+* Things to do once the feature list is complete
+** Startup time
+** Complete code documentation, commenting and clean-up
+** Text annotations for models and labels
+** Bug fixes
+** Move TODO list to Gitlab
+** A pre-processor for GL14 shader programs
+** Unify/remove duplication across gl*_funcs modules
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
