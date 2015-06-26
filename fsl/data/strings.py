@@ -102,21 +102,22 @@ titles = TypeDict({
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'OverlayListPanel'      : 'Overlay list',
-    'AtlasPanel'            : 'Atlases',
-    'LocationPanel'         : 'Location',
-    'OverlayDisplayToolBar' : 'Display toolbar',
-    'OverlayDisplayPanel'   : 'Display settings',
-    'OrthoToolBar'          : 'Ortho view toolbar',
-    'OrthoProfileToolBar'   : 'Ortho view mode toolbar',
-    'OrthoSettingsPanel'    : 'Ortho view settings',
-    'LightBoxToolBar'       : 'Lightbox view toolbar',
-    'LightBoxSettingsPanel' : 'Lightbox view settings',
-    'HistogramToolBar'      : 'Histogram settings',
-    'LookupTablePanel'      : 'Lookup tables',
-    'LutLabelDialog'        : 'New LUT label',
-    'NewLutDialog'          : 'New LUT',
-    'TimeSeriesListPanel'   : 'Time series list',
+    'OverlayListPanel'       : 'Overlay list',
+    'AtlasPanel'             : 'Atlases',
+    'LocationPanel'          : 'Location',
+    'OverlayDisplayToolBar'  : 'Display toolbar',
+    'OverlayDisplayPanel'    : 'Display settings',
+    'OrthoToolBar'           : 'Ortho view toolbar',
+    'OrthoProfileToolBar'    : 'Ortho view mode toolbar',
+    'OrthoSettingsPanel'     : 'Ortho view settings',
+    'LightBoxToolBar'        : 'Lightbox view toolbar',
+    'LightBoxSettingsPanel'  : 'Lightbox view settings',
+    'HistogramToolBar'       : 'Histogram settings',
+    'LookupTablePanel'       : 'Lookup tables',
+    'LutLabelDialog'         : 'New LUT label',
+    'NewLutDialog'           : 'New LUT',
+    'TimeSeriesListPanel'    : 'Time series list',
+    'TimeSeriesControlPanel' : 'Time series control',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -149,10 +150,10 @@ actions = TypeDict({
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
 
-    'PlotPanel.screenshot'                 : 'Take screenshot',
-
-    'TimeSeriesPanel.toggleTimeSeriesList' : 'Time series list',
-    'HistogramPanel.toggleToolbar'         : 'Histogram controls',
+    'PlotPanel.screenshot'                    : 'Take screenshot',
+    'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
+    'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
+    'HistogramPanel.toggleToolbar'            : 'Histogram controls',
     
 
 
@@ -198,7 +199,12 @@ labels = TypeDict({
 
     'NewLutDialog.ok'     : 'Ok',
     'NewLutDialog.cancel' : 'Cancel',
-    'NewLutDialog.newLut' : 'New LUT', 
+    'NewLutDialog.newLut' : 'New LUT',
+
+    'TimeSeriesControlPanel.xlim'   : 'X limits',
+    'TimeSeriesControlPanel.ylim'   : 'Y limits',
+    'TimeSeriesControlPanel.xlabel' : 'X label',
+    'TimeSeriesControlPanel.ylabel' : 'Y label',
 })
 
 
@@ -234,8 +240,19 @@ properties = TypeDict({
 
     'HistogramPanel.dataRange'  : 'Data range',
     'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
-    'HistogramPanel.nbins'      : 'Number of bins', 
+    'HistogramPanel.nbins'      : 'Number of bins',
 
+    'TimeSeriesPanel.demean'    : 'Demean',
+    'TimeSeriesPanel.usePixdim' : 'Use pixdims',
+    'TimeSeriesPanel.legend'    : 'Show legend',
+    'TimeSeriesPanel.ticks'     : 'Show ticks',
+    'TimeSeriesPanel.grid'      : 'Show grid',
+    'TimeSeriesPanel.autoScale' : 'Auto-scale',
+    'TimeSeriesPanel.xLogScale' : 'Log scale (x axis)',
+    'TimeSeriesPanel.yLogScale' : 'Log scale (y axis)',
+    'TimeSeriesPanel.xlabel'    : 'X label',
+    'TimeSeriesPanel.ylabel'    : 'Y label',
+    
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

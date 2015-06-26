@@ -14,30 +14,19 @@ of overlay objects stored in an :class:`.OverlayList`.
 
 import logging
 
+import                               wx
 import numpy                      as np
 
 import                               props
 
 import                               plotpanel
 import fsl.data.image             as fslimage
-import fsl.data.strings           as strings
 import fsl.fslview.displaycontext as fsldisplay
-import fsl.fslview.colourmaps     as fslcm
 import fsl.fslview.controls       as fslcontrols
 import fsl.utils.transform        as transform
 
 
 log = logging.getLogger(__name__)
-
-
-
-# TODO
-#      - Whack a scrollbar in there, to allow 
-#        zooming/scrolling on the horizontal axis
-# 
-#      - Add a list, allowing the user to persist
-#        time-courses. The list has overlay name and coordinates
-#        of each persistent time course
 
 
 class TimeSeries(props.HasProperties):
@@ -69,10 +58,20 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     timeSeries = props.List()
 
-    demean = props.Boolean(default=True)
-
-    
-    legend = props.Boolean(default=True)
+    demean    = props.Boolean(default=True)
+    legend    = props.Boolean(default=True)
+    usePixdim = props.Boolean(default=False)
+    autoScale = props.Boolean(default=True)
+    xLogScale = props.Boolean(default=False)
+    yLogScale = props.Boolean(default=False) 
+    ticks     = props.Boolean(default=True)
+    grid      = props.Boolean(default=True)
+    xlabel    = props.String()
+    ylabel    = props.String()
+    xmin      = props.Real()
+    xmax      = props.Real()
+    ymin      = props.Real()
+    ymax      = props.Real()
 
 
     def export(self, *a):
@@ -83,8 +82,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     def __init__(self, parent, overlayList, displayCtx):
 
         actionz = {
-            'toggleTimeSeriesList' : lambda *a: self.togglePanel(
-                fslcontrols.TimeSeriesListPanel, False, self)
+            'toggleTimeSeriesList'    : lambda *a: self.togglePanel(
+                fslcontrols.TimeSeriesListPanel,    False, self),
+            'toggleTimeSeriesControl' : lambda *a: self.togglePanel(
+                fslcontrols.TimeSeriesControlPanel, False, self) 
         }
 
         plotpanel.PlotPanel.__init__(
@@ -97,18 +98,16 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         figure.patch.set_visible(False)
 
-        name = self._name
-        draw = self._draw
+        overlayList.addListener('overlays',
+                                self._name,
+                                self.__overlaysChanged)
+        
+        displayCtx .addListener('selectedOverlay', self._name, self._draw) 
+        displayCtx .addListener('location',        self._name, self._draw)
+        
+        self.addGlobalListener(self._name, self.__propChanged)
 
-        def tsChanged(*a):
-            for ts in self.timeSeries:
-                ts.addGlobalListener(name, draw, overwrite=True)
-            draw()
-
-        self._overlayList.addListener('overlays',        name, draw)
-        self._displayCtx .addListener('selectedOverlay', name, draw) 
-        self._displayCtx .addListener('location',        name, draw)
-        self             .addListener('timeSeries',      name, tsChanged)
+        self.Bind(wx.EVT_SIZE, self._draw)
 
         self.Layout()
         self._draw()
@@ -121,11 +120,29 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('location',        self._name)
 
+
+    def __propChanged(self, value, valid, ctx, name):
+
+        if name == 'timeSeries':
+            for ts in self.timeSeries:
+                ts.addGlobalListener(self._name, self._draw, overwrite=True)
+        self._draw()
         
-    def getCurrent(self):
+
+    def __overlaysChanged(self, *a):
+
+        for ts in self.timeSeries[:]:
+            if ts.overlay not in self._overlayList:
+                self.timeSeries.remove(ts)
+        self._draw()
+
+        
+    def __calcCurrent(self):
+
+        self.__current = None
 
         if len(self._overlayList) == 0:
-            return None
+            return 
 
         x, y, z = self._displayCtx.location.xyz
         overlay = self._displayCtx.getSelectedOverlay()
@@ -134,7 +151,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         if not isinstance(overlay, fslimage.Image)        or \
            not isinstance(opts,    fsldisplay.VolumeOpts) or \
            not overlay.is4DImage():
-            return None
+            return 
         
         xform = opts.getTransform('display', 'voxel')
         vox   = transform.transform([[x, y, z]], xform)[0]
@@ -146,7 +163,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[0] >= overlay.shape[0] or \
            vox[1] >= overlay.shape[1] or \
            vox[2] >= overlay.shape[2]:
-            return None
+            return 
 
         ts = TimeSeries(
             overlay,
@@ -156,13 +173,47 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         ts.lineWidth = 1
         ts.lineStyle = ':'
         ts.label     = None
-        return ts
+
+        self.__current = ts
+
+        
+    def getCurrent(self):
+        return self.__current
+
+
+    def __calcLimits(self, xlims, ylims):
+
+        if self.autoScale:
+            xmin = min([lim[0] for lim in xlims])
+            xmax = max([lim[1] for lim in xlims])
+            ymin = min([lim[0] for lim in ylims])
+            ymax = max([lim[1] for lim in ylims])
+        else:
+            xmin = self.xmin
+            xmax = self.xmax
+            ymin = self.ymin
+            ymax = self.ymax
+
+        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
+            self.disableListener(prop, self._name)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
+            self.enableListener(prop, self._name)
+
+        return (xmin, xmax), (ymin, ymax)
+
 
 
     def _draw(self, *a):
 
-        axis   = self.getAxis()
-        canvas = self.getCanvas()
+        self.__calcCurrent()
+
+        axis          = self.getAxis()
+        canvas        = self.getCanvas()
+        width, height = canvas.get_width_height()
 
         axis.clear()
         
@@ -188,17 +239,55 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             xlims.append(xlim)
             ylims.append(ylim)
 
-        # Set x/ylim
-        xmin = min([lim[0] for lim in xlims])
-        xmax = max([lim[1] for lim in xlims])
-        ymin = min([lim[0] for lim in ylims])
-        ymax = max([lim[1] for lim in ylims])
+        if self.xLogScale: axis.set_xscale('log')
+        else:              axis.set_xscale('linear')
+        if self.yLogScale: axis.set_yscale('log')
+        else:              axis.set_yscale('linear')
 
-        xpad = 0.05 * (xmax - xmin)
-        ypad = 0.05 * (ymax - ymin)
+        xlim, ylim = self.__calcLimits(xlims, ylims)
 
-        axis.set_xlim((xmin - xpad, xmax + xpad))
-        axis.set_ylim((ymin - ypad, ymax + ypad))
+        bPad = (ylim[1] - ylim[0]) * (50.0 / height)
+        tPad = (ylim[1] - ylim[0]) * (20.0 / height)
+        lPad = (xlim[1] - xlim[0]) * (50.0 / width)
+        rPad = (xlim[1] - xlim[0]) * (20.0 / width)
+
+        axis.set_xlim((xlim[0] - lPad, xlim[1] + rPad))
+        axis.set_ylim((ylim[0] - bPad, ylim[1] + tPad))
+
+        xlabel = self.xlabel 
+        ylabel = self.ylabel
+
+        if xlabel is None: xlabel = ''
+        if ylabel is None: ylabel = ''
+
+        xlabel = xlabel.strip()
+        ylabel = ylabel.strip()
+
+        if xlabel != '':
+            axis.set_xlabel(self.xlabel, va='bottom')
+            axis.xaxis.set_label_coords(0.5, 10.0 / height)
+            
+        if ylabel != '':
+            axis.set_ylabel(self.ylabel, va='top')
+            axis.yaxis.set_label_coords(10.0 / width, 0.5)
+
+        if self.ticks:
+            xticks = np.linspace(xlim[0], xlim[1], 4)
+            yticks = np.linspace(ylim[0], ylim[1], 4)
+
+            axis.tick_params(direction='in', pad=-5)
+
+            axis.set_xticks(xticks)
+            axis.set_yticks(yticks)
+
+            for ytl in axis.yaxis.get_ticklabels():
+                ytl.set_horizontalalignment('left')
+                
+            for xtl in axis.xaxis.get_ticklabels():
+                xtl.set_verticalalignment('bottom')
+        else:
+            axis.set_xticks([])
+            axis.set_yticks([])
 
         # legend - don't show if we're only
         # plotting the current location
@@ -211,6 +300,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                 fancybox=True)
             legend.get_frame().set_alpha(0.3)
 
+
+        if self.grid:
+            axis.grid()
+
         canvas.draw()
         self.Refresh()
 
@@ -220,10 +313,13 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         if ts.alpha == 0:
             return (0, 0), (0, 0)
         
-        data = ts.data
+        ydata = ts.data
 
         if self.demean:
-            data = data - data.mean()
+            ydata = ydata - ydata.mean()
+
+        if self.usePixdim: xdata = np.arange(len(ydata)) * ts.overlay.pixdim[3]
+        else:              xdata = np.arange(len(ydata))
 
         kwargs = {}
         kwargs['lw']    = ts.lineWidth
@@ -232,7 +328,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         kwargs['label'] = ts.label
         kwargs['ls']    = ts.lineStyle
         
-        self.getAxis().plot(data, **kwargs)
+        self.getAxis().plot(xdata, ydata, **kwargs)
 
-        # TODO take into account TR
-        return (0, len(data)), (data.min(), data.max())
+        return ((xdata.min(), xdata.max()), 
+                (ydata.min(), ydata.max()))

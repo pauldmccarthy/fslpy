@@ -74,6 +74,9 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         displayCtx    .addListener('selectedOverlay',
                                    self._name,
                                    self.__locationChanged)
+        displayCtx    .addListener('location',
+                                   self._name,
+                                   self.__locationChanged) 
         overlayList   .addListener('overlays',
                                    self._name,
                                    self.__locationChanged)
@@ -93,6 +96,14 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         self.__tsPanel   .removeListener('timeSeries',      self._name)
 
 
+
+    def __makeLabel(self, ts):
+        return '{} [{} {} {}]'.format(ts.overlay.name,
+                                      ts.coords[0],
+                                      ts.coords[1],
+                                      ts.coords[2])    
+
+
     def __timeSeriesChanged(self, *a):
 
         self.__tsList.Clear()
@@ -103,8 +114,16 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
 
     def __locationChanged(self, *a):
-        pass
 
+        ts = self.__tsPanel.getCurrent()
+
+        if ts is None:
+            self.__currentLabel.SetLabel('')
+            return
+        
+        self.__currentLabel.SetLabel(self.__makeLabel(ts))
+
+ 
     
     def __onListAdd(self, ev):
         
@@ -117,10 +136,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         ts.lineWidth = 1
         ts.lineStyle = '-'
         ts.colour    = fslcm.randomColour()
-        ts.label     = '{} [{} {} {}]'.format(ts.overlay.name,
-                                              ts.coords[0],
-                                              ts.coords[1],
-                                              ts.coords[2])
+        ts.label     = self.__makeLabel(ts)
         self.__tsPanel.timeSeries.append(ts)
 
         
