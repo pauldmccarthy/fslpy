@@ -133,7 +133,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
             return
         
         ts.alpha     = 1
-        ts.lineWidth = 1
+        ts.lineWidth = 2
         ts.lineStyle = '-'
         ts.colour    = fslcm.randomColour()
         ts.label     = self.__makeLabel(ts)

@@ -15,6 +15,7 @@ of overlay objects stored in an :class:`.OverlayList`.
 import logging
 
 import                               wx
+import scipy.interpolate          as interp
 import numpy                      as np
 
 import                               props
@@ -66,6 +67,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     yLogScale = props.Boolean(default=False) 
     ticks     = props.Boolean(default=True)
     grid      = props.Boolean(default=True)
+    smooth    = props.Boolean(default=False)
     xlabel    = props.String()
     ylabel    = props.String()
     xmin      = props.Real()
@@ -239,21 +241,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             xlims.append(xlim)
             ylims.append(ylim)
 
-        if self.xLogScale: axis.set_xscale('log')
-        else:              axis.set_xscale('linear')
-        if self.yLogScale: axis.set_yscale('log')
-        else:              axis.set_yscale('linear')
+        (xmin, xmax), (ymin, ymax) = self.__calcLimits(xlims, ylims)
 
-        xlim, ylim = self.__calcLimits(xlims, ylims)
-
-        bPad = (ylim[1] - ylim[0]) * (50.0 / height)
-        tPad = (ylim[1] - ylim[0]) * (20.0 / height)
-        lPad = (xlim[1] - xlim[0]) * (50.0 / width)
-        rPad = (xlim[1] - xlim[0]) * (20.0 / width)
-
-        axis.set_xlim((xlim[0] - lPad, xlim[1] + rPad))
-        axis.set_ylim((ylim[0] - bPad, ylim[1] + tPad))
-
+        # x/y axis labels
         xlabel = self.xlabel 
         ylabel = self.ylabel
 
@@ -271,9 +261,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             axis.set_ylabel(self.ylabel, va='top')
             axis.yaxis.set_label_coords(10.0 / width, 0.5)
 
+        # Ticks
         if self.ticks:
-            xticks = np.linspace(xlim[0], xlim[1], 4)
-            yticks = np.linspace(ylim[0], ylim[1], 4)
+            xticks = np.linspace(xmin, xmax, 4)
+            yticks = np.linspace(ymin, ymax, 4)
 
             axis.tick_params(direction='in', pad=-5)
 
@@ -289,6 +280,15 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             axis.set_xticks([])
             axis.set_yticks([])
 
+        # Limits
+        bPad = (ymax - ymin) * (50.0 / height)
+        tPad = (ymax - ymin) * (20.0 / height)
+        lPad = (xmax - xmin) * (50.0 / width)
+        rPad = (xmax - xmin) * (20.0 / width)
+        
+        axis.set_xlim((xmin - lPad, xmax + rPad))
+        axis.set_ylim((ymin - bPad, ymax + tPad))
+
         # legend - don't show if we're only
         # plotting the current location
         if len(self.timeSeries) > 0 and self.legend:
@@ -299,7 +299,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                 loc='upper right',
                 fancybox=True)
             legend.get_frame().set_alpha(0.3)
-
 
         if self.grid:
             axis.grid()
@@ -312,14 +311,29 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         if ts.alpha == 0:
             return (0, 0), (0, 0)
-        
-        ydata = ts.data
 
+        ydata   = np.array(ts.data, dtype=np.float32)
+        npoints = len(ydata)
+        
         if self.demean:
             ydata = ydata - ydata.mean()
 
-        if self.usePixdim: xdata = np.arange(len(ydata)) * ts.overlay.pixdim[3]
-        else:              xdata = np.arange(len(ydata))
+        if self.smooth:
+            tck   = interp.splrep(np.arange(npoints), ydata)
+            ydata = interp.splev(np.linspace(0, npoints - 1, 5 * npoints), tck)
+
+        xdata = np.linspace(0, npoints - 1, len(ydata), dtype=np.float32)
+
+        if self.usePixdim:
+            xdata *= ts.overlay.pixdim[3]
+
+        if self.xLogScale: xdata = np.log10(xdata)
+        if self.yLogScale: ydata = np.log10(ydata)
+
+        nans = ~(np.isfinite(xdata) & np.isfinite(ydata))
+
+        xdata[nans] = np.nan
+        ydata[nans] = np.nan
 
         kwargs = {}
         kwargs['lw']    = ts.lineWidth
@@ -330,5 +344,5 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         
         self.getAxis().plot(xdata, ydata, **kwargs)
 
-        return ((xdata.min(), xdata.max()), 
-                (ydata.min(), ydata.max()))
+        return ((np.nanmin(xdata), np.nanmax(xdata)),
+                (np.nanmin(ydata), np.nanmax(ydata)))

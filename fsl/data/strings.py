@@ -203,8 +203,9 @@ labels = TypeDict({
 
     'TimeSeriesControlPanel.xlim'   : 'X limits',
     'TimeSeriesControlPanel.ylim'   : 'Y limits',
-    'TimeSeriesControlPanel.xlabel' : 'X label',
-    'TimeSeriesControlPanel.ylabel' : 'Y label',
+    'TimeSeriesControlPanel.labels' : 'Labels',
+    'TimeSeriesControlPanel.xlabel' : 'X',
+    'TimeSeriesControlPanel.ylabel' : 'Y',
 })
 
 
@@ -247,6 +248,7 @@ properties = TypeDict({
     'TimeSeriesPanel.legend'    : 'Show legend',
     'TimeSeriesPanel.ticks'     : 'Show ticks',
     'TimeSeriesPanel.grid'      : 'Show grid',
+    'TimeSeriesPanel.smooth'    : 'Smooth data',
     'TimeSeriesPanel.autoScale' : 'Auto-scale',
     'TimeSeriesPanel.xLogScale' : 'Log scale (x axis)',
     'TimeSeriesPanel.yLogScale' : 'Log scale (y axis)',
@@ -355,7 +357,7 @@ choices = TypeDict({
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',
     
-    'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
+   'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
     'ColourBarCanvas.labelSide.bottom-right' : 'Bottom / Right', 
 
     'VolumeOpts.displayRange.min' : 'Min.',
