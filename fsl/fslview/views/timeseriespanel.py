@@ -94,6 +94,15 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             self, parent, overlayList, displayCtx, actionz=actionz)
 
         figure = self.getFigure()
+        canvas = self.getCanvas()
+
+        self.__zoomMode        = False
+        self.__mouseDown       = None
+        self.__mouseDownLimits = None
+        
+        canvas.mpl_connect('button_press_event',   self.__onMouseDown)
+        canvas.mpl_connect('button_release_event', self.__onMouseUp)
+        canvas.mpl_connect('motion_notify_event',  self.__onMouseMove)        
 
         figure.subplots_adjust(
             top=1.0, bottom=0.0, left=0.0, right=1.0)
@@ -185,7 +194,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     def __calcLimits(self, xlims, ylims):
 
-        if self.autoScale:
+        if (self.autoScale and self.__mouseDown is None) or \
+           (self.xmin == self.xmax) or \
+           (self.ymin == self.ymax):
             xmin = min([lim[0] for lim in xlims])
             xmax = max([lim[1] for lim in xlims])
             ymin = min([lim[0] for lim in ylims])
@@ -346,3 +357,87 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         return ((np.nanmin(xdata), np.nanmax(xdata)),
                 (np.nanmin(ydata), np.nanmax(ydata)))
+
+        
+    def __xform(self, axis, xdata, ydata):
+        
+        xlim = axis.get_xlim()
+        ylim = axis.get_ylim()
+        x    = (xdata - xlim[0]) / (xlim[1] - xlim[0])
+        y    = (ydata - ylim[0]) / (ylim[1] - ylim[0])
+
+        return x, y
+        
+
+    def __onMouseDown(self, ev):
+
+        axis = self.getAxis()
+        
+        if ev.inaxes != axis:
+            return
+
+        if ev.key == 'shift': self.__zoomMode = True
+        else:                 self.__zoomMode = False
+
+        self.__mouseDown       = ev.xdata, ev.ydata
+        self.__mouseDownLimits = ((self.xmin, self.xmax),
+                                  (self.ymin, self.ymax))
+
+    
+    def __onMouseUp(self, ev):
+        self.__mouseDown = None
+
+        
+    def __onMouseMove(self, ev):
+
+        axis = self.getAxis()
+
+        if self.__mouseDown is None: return
+        if ev.inaxes != axis:        return
+
+        if self.__zoomMode: newxlim, newylim = self.__zoomLimits(ev)
+        else:               newxlim, newylim = self.__panLimits( ev)
+        
+        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
+            self.disableListener(prop, self._name)
+
+        self.xmin = newxlim[0]
+        self.xmax = newxlim[1]
+        self.ymin = newylim[0]
+        self.ymax = newylim[1]
+
+        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
+            self.enableListener(prop, self._name)
+
+        self._draw()
+            
+
+    def __zoomLimits(self, ev):
+
+        xlim, ylim = self.__mouseDownLimits
+
+        xlen = xlim[1] - xlim[0]
+        ylen = ylim[1] - ylim[0]
+
+        xmid = xlim[0] + 0.5 * xlen
+        ymid = ylim[0] + 0.5 * ylen
+
+        xdist = 2 * (ev.xdata - self.__mouseDown[0])
+        ydist = 2 * (ev.ydata - self.__mouseDown[1])
+
+        newxlen = xlen * xlen / (xlen + xdist)
+        newylen = ylen * ylen / (ylen + ydist)
+
+        newxlim = (xmid - newxlen * 0.5, xmid + newxlen * 0.5)
+        newylim = (ymid - newylen * 0.5, ymid + newylen * 0.5)
+
+        return newxlim, newylim
+
+    
+    def __panLimits(self, mouseEv):
+
+        xdist = self.__mouseDown[0] - mouseEv.xdata
+        ydist = self.__mouseDown[1] - mouseEv.ydata
+
+        return ((self.xmin + xdist, self.xmax + xdist),
+                (self.ymin + ydist, self.ymax + ydist))
