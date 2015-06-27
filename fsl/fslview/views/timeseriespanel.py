@@ -70,10 +70,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     smooth    = props.Boolean(default=False)
     xlabel    = props.String()
     ylabel    = props.String()
-    xmin      = props.Real()
-    xmax      = props.Real()
-    ymin      = props.Real()
-    ymax      = props.Real()
+    limits    = props.Bounds(ndims=2)
 
 
     def export(self, *a):
@@ -194,30 +191,24 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     def __calcLimits(self, xlims, ylims):
 
-        if (self.autoScale and self.__mouseDown is None) or \
-           (self.xmin == self.xmax) or \
-           (self.ymin == self.ymax):
-            xmin = min([lim[0] for lim in xlims])
-            xmax = max([lim[1] for lim in xlims])
-            ymin = min([lim[0] for lim in ylims])
-            ymax = max([lim[1] for lim in ylims])
+        xmin = min([lim[0] for lim in xlims])
+        xmax = max([lim[1] for lim in xlims])
+        ymin = min([lim[0] for lim in ylims])
+        ymax = max([lim[1] for lim in ylims])
+
+        if (self.autoScale and self.__mouseDown is None):
+            
+            self.disableListener('limits', self._name)
+            self.limits[:] = [xmin, xmax, ymin, ymax]
+            self.enableListener('limits', self._name)            
+
         else:
-            xmin = self.xmin
-            xmax = self.xmax
-            ymin = self.ymin
-            ymax = self.ymax
-
-        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
-            self.disableListener(prop, self._name)
-        self.xmin = xmin
-        self.xmax = xmax
-        self.ymin = ymin
-        self.ymax = ymax
-        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
-            self.enableListener(prop, self._name)
-
+            xmin = self.limits.xlo
+            xmax = self.limits.xhi
+            ymin = self.limits.ylo
+            ymax = self.limits.yhi
+            
         return (xmin, xmax), (ymin, ymax)
-
 
 
     def _draw(self, *a):
@@ -380,8 +371,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         else:                 self.__zoomMode = False
 
         self.__mouseDown       = ev.xdata, ev.ydata
-        self.__mouseDownLimits = ((self.xmin, self.xmax),
-                                  (self.ymin, self.ymax))
+        self.__mouseDownLimits = (self.limits.x, self.limits.y)
 
     
     def __onMouseUp(self, ev):
@@ -398,16 +388,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         if self.__zoomMode: newxlim, newylim = self.__zoomLimits(ev)
         else:               newxlim, newylim = self.__panLimits( ev)
         
-        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
-            self.disableListener(prop, self._name)
-
-        self.xmin = newxlim[0]
-        self.xmax = newxlim[1]
-        self.ymin = newylim[0]
-        self.ymax = newylim[1]
-
-        for prop in ['xmin', 'xmax', 'ymin', 'ymax']:
-            self.enableListener(prop, self._name)
+        self.disableListener('limits', self._name)
+        self.limits[:] = newxlim + newylim
+        self.enableListener('limits', self._name)
 
         self._draw()
             
@@ -422,14 +405,23 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         xmid = xlim[0] + 0.5 * xlen
         ymid = ylim[0] + 0.5 * ylen
 
-        xdist = 2 * (ev.xdata - self.__mouseDown[0])
-        ydist = 2 * (ev.ydata - self.__mouseDown[1])
+        mdx, mdy = self.__mouseDown
+        evx, evy = ev.xdata, ev.ydata
 
-        newxlen = xlen * xlen / (xlen + xdist)
-        newylen = ylen * ylen / (ylen + ydist)
+        mdx = (mdx - xlim[0]) / xlen
+        mdy = (mdy - ylim[0]) / ylen
+        
+        evx = (evx - self.limits.xlo) / self.limits.xlen
+        evy = (evy - self.limits.ylo) / self.limits.ylen
 
-        newxlim = (xmid - newxlen * 0.5, xmid + newxlen * 0.5)
-        newylim = (ymid - newylen * 0.5, ymid + newylen * 0.5)
+        xdist = 2 * xlen * (evx - mdx)
+        ydist = 2 * ylen * (evy - mdy)
+
+        newxlen = abs(xlen - xdist)
+        newylen = abs(ylen - ydist)
+
+        newxlim = [xmid - newxlen * 0.5, xmid + newxlen * 0.5]
+        newylim = [ymid - newylen * 0.5, ymid + newylen * 0.5]
 
         return newxlim, newylim
 
@@ -439,5 +431,5 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         xdist = self.__mouseDown[0] - mouseEv.xdata
         ydist = self.__mouseDown[1] - mouseEv.ydata
 
-        return ((self.xmin + xdist, self.xmax + xdist),
-                (self.ymin + ydist, self.ymax + ydist))
+        return ((self.limits.xlo + xdist, self.limits.xhi + xdist),
+                (self.limits.ylo + ydist, self.limits.yhi + ydist))

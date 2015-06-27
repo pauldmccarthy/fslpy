@@ -34,10 +34,11 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         self.__xlabel    = props.makeWidget(self, tsPanel, 'xlabel')
         self.__ylabel    = props.makeWidget(self, tsPanel, 'ylabel')
 
-        self.__xmin      = props.makeWidget(self, tsPanel, 'xmin')
-        self.__xmax      = props.makeWidget(self, tsPanel, 'xmax')
-        self.__ymin      = props.makeWidget(self, tsPanel, 'ymin')
-        self.__ymax      = props.makeWidget(self, tsPanel, 'ymax')
+        limits           = props.makeListWidgets(self, tsPanel, 'limits')
+        self.__xmin      = limits[0]
+        self.__xmax      = limits[1]
+        self.__ymin      = limits[2]
+        self.__ymax      = limits[3]
 
         self.__lblLabel  = wx.StaticText(self)
         self.__xlblLabel = wx.StaticText(self)
