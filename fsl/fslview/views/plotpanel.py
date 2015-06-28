@@ -42,11 +42,13 @@ class DataSeries(props.HasProperties):
                ('-.', 'Dash-dot line'),
                (':',  'Dotted line')]))
 
-    def __init__(self, overlay, coords, data):
+    def __init__(self, overlay):
         self.overlay = overlay
-        self.coords  = map(int, coords)
-        self.data    = data
 
+
+    def getData(self):
+        raise NotImplementedError('The getData method must be '
+                                  'implemented by subclasses')
 
 
 class PlotPanel(viewpanel.ViewPanel):
@@ -120,6 +122,7 @@ class PlotPanel(viewpanel.ViewPanel):
         
     def destroy(self):
         viewpanel.ViewPanel.destroy(self)
+        self.removeGlobalListener(self.__name)
 
 
     def getFigure(self):
@@ -254,7 +257,7 @@ class PlotPanel(viewpanel.ViewPanel):
         if ds.alpha == 0:
             return (0, 0), (0, 0)
 
-        ydata   = np.array(ds.data, dtype=np.float32)
+        ydata   = np.array(ds.getData(), dtype=np.float32)
         npoints = len(ydata)
         
         if self.demean:

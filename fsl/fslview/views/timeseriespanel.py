@@ -27,6 +27,19 @@ import fsl.utils.transform        as transform
 
 log = logging.getLogger(__name__)
 
+class TimeSeries(plotpanel.DataSeries):
+
+    
+    def __init__(self, overlay, coords):
+        plotpanel.DataSeries.__init__(self, overlay)
+        
+        self.coords = map(int, coords)
+        self.data   = overlay.data[coords[0], coords[1], coords[2], :]
+
+        
+    def getData(self):
+        return self.data
+
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
@@ -123,10 +136,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[2] >= overlay.shape[2]:
             return 
 
-        ts = plotpanel.DataSeries(
-            overlay,
-            vox,
-            overlay.data[vox[0], vox[1], vox[2], :])
+        ts = TimeSeries(overlay, vox)
         ts.colour    = [0.2, 0.2, 0.2]
         ts.lineWidth = 1
         ts.lineStyle = ':'
