@@ -284,9 +284,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         # Limits
         bPad = (ymax - ymin) * (50.0 / height)
-        tPad = (ymax - ymin) * (20.0 / height)
+        tPad = (ymax - ymin) * (50.0 / height)
         lPad = (xmax - xmin) * (50.0 / width)
-        rPad = (xmax - xmin) * (20.0 / width)
+        rPad = (xmax - xmin) * (50.0 / width)
         
         axis.set_xlim((xmin - lPad, xmax + rPad))
         axis.set_ylim((ymin - bPad, ymax + tPad))

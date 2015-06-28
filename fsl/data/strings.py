@@ -248,7 +248,7 @@ properties = TypeDict({
     'TimeSeriesPanel.legend'    : 'Show legend',
     'TimeSeriesPanel.ticks'     : 'Show ticks',
     'TimeSeriesPanel.grid'      : 'Show grid',
-    'TimeSeriesPanel.smooth'    : 'Smooth data',
+    'TimeSeriesPanel.smooth'    : 'Smooth',
     'TimeSeriesPanel.autoScale' : 'Auto-scale',
     'TimeSeriesPanel.xLogScale' : 'Log scale (x axis)',
     'TimeSeriesPanel.yLogScale' : 'Log scale (y axis)',

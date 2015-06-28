@@ -146,12 +146,15 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         
     def __onListSelect(self, ev):
 
-        opts = self._displayCtx.getOpts(ev.data.overlay)
-        vox   = np.array(ev.data.coords)
-        xform = opts.getTransform('voxel', 'display')
-        disp  = transform.transform([vox], xform)[0]
+        overlay = ev.data.overlay
+        coords  = ev.data.coords
+        opts    = self._displayCtx.getOpts(overlay)
+        vox     = np.array(coords)
+        xform   = opts.getTransform('voxel', 'display')
+        disp    = transform.transform([vox], xform)[0]
 
-        self._displayCtx.location = disp
+        self._displayCtx.selectedOverlay = self._overlayList.index(overlay)
+        self._displayCtx.location        = disp
 
         
     def __onListRemove(self, ev):
