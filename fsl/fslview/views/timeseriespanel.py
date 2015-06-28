@@ -30,23 +30,33 @@ log = logging.getLogger(__name__)
 class TimeSeries(plotpanel.DataSeries):
 
     
-    def __init__(self, overlay, coords):
+    def __init__(self, tsPanel, overlay, coords):
         plotpanel.DataSeries.__init__(self, overlay)
-        
-        self.coords = map(int, coords)
-        self.data   = overlay.data[coords[0], coords[1], coords[2], :]
+
+        self.tsPanel = tsPanel
+        self.coords  = map(int, coords)
+        self.data    = overlay.data[coords[0], coords[1], coords[2], :]
 
         
     def getData(self):
-        return self.data
+        ydata = np.array( self.data,  dtype=np.float32)
+        xdata = np.arange(len(ydata), dtype=np.float32)
+
+        if self.tsPanel.usePixdim:
+            xdata *= self.overlay.pixdim[3]
+        
+        if self.tsPanel.demean:
+            ydata = ydata - ydata.mean()
+            
+        return xdata, ydata
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
     """A panel with a :mod:`matplotlib` canvas embedded within.
 
     The volume data for each of the overlay objects in the
-    :class:`.OverlayList`, at the current :attr:`.DisplayContext.location` is
-    plotted on the canvas.
+    :class:`.OverlayList`, at the current :attr:`.DisplayContext.location`
+    is plotted on the canvas.
     """
 
     
@@ -136,7 +146,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[2] >= overlay.shape[2]:
             return 
 
-        ts = TimeSeries(overlay, vox)
+        ts = TimeSeries(self, overlay, vox)
         ts.colour    = [0.2, 0.2, 0.2]
         ts.lineWidth = 1
         ts.lineStyle = ':'

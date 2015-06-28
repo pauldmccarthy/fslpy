@@ -42,6 +42,7 @@ class DataSeries(props.HasProperties):
                ('-.', 'Dash-dot line'),
                (':',  'Dotted line')]))
 
+    
     def __init__(self, overlay):
         self.overlay = overlay
 
@@ -257,20 +258,15 @@ class PlotPanel(viewpanel.ViewPanel):
         if ds.alpha == 0:
             return (0, 0), (0, 0)
 
-        ydata   = np.array(ds.getData(), dtype=np.float32)
-        npoints = len(ydata)
-        
-        if self.demean:
-            ydata = ydata - ydata.mean()
+        xdata, ydata = ds.getData()
 
         if self.smooth:
-            tck   = interp.splrep(np.arange(npoints), ydata)
-            ydata = interp.splev(np.linspace(0, npoints - 1, 5 * npoints), tck)
-
-        xdata = np.linspace(0, npoints - 1, len(ydata), dtype=np.float32)
-
-        if self.usePixdim:
-            xdata *= ds.overlay.pixdim[3]
+            tck   = interp.splrep(xdata, ydata)
+            xdata = np.linspace(xdata[0],
+                                xdata[-1],
+                                len(xdata) * 5,
+                                dtype=np.float32)
+            ydata = interp.splev(xdata, tck)
 
         if self.xLogScale: xdata = np.log10(xdata)
         if self.yLogScale: ydata = np.log10(ydata)
