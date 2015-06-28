@@ -80,7 +80,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         overlayList   .addListener('overlays',
                                    self._name,
                                    self.__locationChanged)
-        self.__tsPanel.addListener('timeSeries',
+        self.__tsPanel.addListener('dataSeries',
                                    self._name,
                                    self.__timeSeriesChanged)
 
@@ -93,7 +93,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         fslpanel.FSLViewPanel.destroy(self)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
-        self.__tsPanel   .removeListener('timeSeries',      self._name)
+        self.__tsPanel   .removeListener('dataSeries',      self._name)
 
 
 
@@ -108,7 +108,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
         self.__tsList.Clear()
 
-        for ts in self.__tsPanel.timeSeries:
+        for ts in self.__tsPanel.dataSeries:
             widg = TimeSeriesWidget(self, ts)
             self.__tsList.Append(ts.label, clientData=ts, extraWidget=widg)
 
@@ -137,7 +137,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         ts.lineStyle = '-'
         ts.colour    = fslcm.randomColour()
         ts.label     = self.__makeLabel(ts)
-        self.__tsPanel.timeSeries.append(ts)
+        self.__tsPanel.dataSeries.append(ts)
 
         
     def __onListEdit(self, ev):
@@ -158,4 +158,4 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
         
     def __onListRemove(self, ev):
-        self.__tsPanel.timeSeries.remove(ev.data)
+        self.__tsPanel.dataSeries.remove(ev.data)

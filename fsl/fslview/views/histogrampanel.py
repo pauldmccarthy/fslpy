@@ -77,11 +77,6 @@ class HistogramPanel(plotpanel.PlotPanel):
             self._name,
             self._selectedOverlayChanged)
 
-        self._mouseDown = False
-        canvas.mpl_connect('button_press_event',   self._onPlotMouseDown)
-        canvas.mpl_connect('button_release_event', self._onPlotMouseUp)
-        canvas.mpl_connect('motion_notify_event',  self._onPlotMouseMove)        
-
         self.addListener('dataRange', self._name, self._drawPlot)
         self.addListener('nbins',     self._name, self._drawPlot)
         self.addListener('autoHist',  self._name, self._drawPlot)
@@ -178,40 +173,6 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._drawPlot()
 
 
-    def _onPlotMouseDown(self, ev):
-        
-        if ev.inaxes != self.getAxis():
-            return
-
-        self._mouseDown       = True
-        self._domainHighlight = [ev.xdata, ev.xdata]
-
-    
-    def _onPlotMouseMove(self, ev):
-        if not self._mouseDown:
-            return
-        
-        if ev.inaxes != self.getAxis():
-            return
-
-        self._domainHighlight[1] = ev.xdata
-        self._drawPlot()
-
-    
-    def _onPlotMouseUp(self, ev):
-
-        if not self._mouseDown or self._domainHighlight is None:
-            return
-
-        # Sort the domain min/max in case the mouse was
-        # dragged from right to left, in which case the
-        # second value would be less than the first
-        newRange              = sorted(self._domainHighlight)
-        self._mouseDown       = False
-        self._domainHighlight = None
-        self.dataRange.x      = newRange
-
-
     def _drawPlot(self, *a):
 
         overlay = self._displayCtx.getSelectedOverlay()
@@ -249,14 +210,6 @@ class HistogramPanel(plotpanel.PlotPanel):
             
         for tick in axis.xaxis.get_major_ticks():
             tick.set_pad(-20)
-
-        if self._domainHighlight is not None:
-            axis.axvspan(self._domainHighlight[0],
-                         self._domainHighlight[1],
-                         fill=True,
-                         facecolor='#000080',
-                         edgecolor='none',
-                         alpha=0.4)
 
         self.getCanvas().draw()
         self.Refresh() 
