@@ -198,11 +198,11 @@ labels = TypeDict({
     'NewLutDialog.cancel' : 'Cancel',
     'NewLutDialog.newLut' : 'New LUT',
 
-    'TimeSeriesControlPanel.xlim'   : 'X limits',
-    'TimeSeriesControlPanel.ylim'   : 'Y limits',
-    'TimeSeriesControlPanel.labels' : 'Labels',
-    'TimeSeriesControlPanel.xlabel' : 'X',
-    'TimeSeriesControlPanel.ylabel' : 'Y',
+    'PlotControlPanel.xlim'   : 'X limits',
+    'PlotControlPanel.ylim'   : 'Y limits',
+    'PlotControlPanel.labels' : 'Labels',
+    'PlotControlPanel.xlabel' : 'X',
+    'PlotControlPanel.ylabel' : 'Y',
 })
 
 
@@ -236,22 +236,22 @@ properties = TypeDict({
     'OrthoOpts.yzoom'       : 'Y zoom',
     'OrthoOpts.zzoom'       : 'Z zoom',
 
+    'PlotPanel.legend'    : 'Show legend',
+    'PlotPanel.ticks'     : 'Show ticks',
+    'PlotPanel.grid'      : 'Show grid',
+    'PlotPanel.smooth'    : 'Smooth',
+    'PlotPanel.autoScale' : 'Auto-scale',
+    'PlotPanel.xLogScale' : 'Log scale (x axis)',
+    'PlotPanel.yLogScale' : 'Log scale (y axis)',
+    'PlotPanel.xlabel'    : 'X label',
+    'PlotPanel.ylabel'    : 'Y label',
+    
+    'TimeSeriesPanel.demean'    : 'Demean',
+    'TimeSeriesPanel.usePixdim' : 'Use pixdims',
+    
     'HistogramPanel.dataRange'  : 'Data range',
     'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
     'HistogramPanel.nbins'      : 'Number of bins',
-
-    'TimeSeriesPanel.demean'    : 'Demean',
-    'TimeSeriesPanel.usePixdim' : 'Use pixdims',
-    'TimeSeriesPanel.legend'    : 'Show legend',
-    'TimeSeriesPanel.ticks'     : 'Show ticks',
-    'TimeSeriesPanel.grid'      : 'Show grid',
-    'TimeSeriesPanel.smooth'    : 'Smooth',
-    'TimeSeriesPanel.autoScale' : 'Auto-scale',
-    'TimeSeriesPanel.xLogScale' : 'Log scale (x axis)',
-    'TimeSeriesPanel.yLogScale' : 'Log scale (y axis)',
-    'TimeSeriesPanel.xlabel'    : 'X label',
-    'TimeSeriesPanel.ylabel'    : 'Y label',
-    
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
@@ -354,7 +354,7 @@ choices = TypeDict({
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',
     
-   'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
+    'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
     'ColourBarCanvas.labelSide.bottom-right' : 'Bottom / Right', 
 
     'VolumeOpts.displayRange.min' : 'Min.',
