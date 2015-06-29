@@ -60,10 +60,8 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     """
 
     
-    demean    = props.Boolean(default=True)
-    usePixdim = props.Boolean(default=False)
-
-    # TODO make this setting functional
+    demean      = props.Boolean(default=True)
+    usePixdim   = props.Boolean(default=False)
     showCurrent = props.Boolean(default=True)
 
 
@@ -92,6 +90,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
  
         displayCtx .addListener('selectedOverlay', self._name, self.draw) 
         displayCtx .addListener('location',        self._name, self.draw)
+        self.addGlobalListener(self._name, self.draw)
         
         self.Layout()
         self.draw()
@@ -102,6 +101,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('location',        self._name)
+        self.removeGlobalListener(self._name)
 
 
     def __overlaysChanged(self, *a):
@@ -144,9 +144,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             return 
 
         ts = TimeSeries(self, overlay, vox)
-        ts.colour    = [0.2, 0.2, 0.2]
+        ts.colour    = [0, 0, 0]
         ts.alpha     = 1
-        ts.lineWidth = 0.5
+        ts.lineWidth = 2
         ts.lineStyle = ':'
         ts.label     = None
 
@@ -162,5 +162,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.__calcCurrent()
         current = self.getCurrent()
         
-        if current is not None: self.drawDataSeries([current])
+        if self.showCurrent and \
+           current is not None: self.drawDataSeries([current])
         else:                   self.drawDataSeries()

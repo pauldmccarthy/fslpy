@@ -17,9 +17,9 @@ from plotcontrolpanel       import PlotControlPanel
 from timeserieslistpanel    import TimeSeriesListPanel
 from timeseriescontrolpanel import TimeSeriesControlPanel
 from histogramlistpanel     import HistogramListPanel
+from histogramcontrolpanel  import HistogramControlPanel
 
 from orthotoolbar          import OrthoToolBar
 from orthoprofiletoolbar   import OrthoProfileToolBar
 from lightboxtoolbar       import LightBoxToolBar
 from overlaydisplaytoolbar import OverlayDisplayToolBar
-from histogramtoolbar      import HistogramToolBar

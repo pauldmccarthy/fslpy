@@ -58,13 +58,7 @@ messages = TypeDict({
                                           'calling render directly with '
                                           'this command: \n{}',
 
-    'HistogramPanel.noData'             : 'Selected overlay has no data',
-    'TimeSeriesPanel.noData'            : 'Selected overlay has no data',
-    'TimeSeriesPanel.not4D'             : 'Selected overlay is '
-                                          'not four dimensional',
-    'TimeSeriesPanel.outOfBounds'       : 'Selected overlay has no data '
-                                          'at the current coordinates',
-    'TimeSeriesPanel.screenshot'        : 'Save screenshot',
+    'PlotPanel.screenshot'              : 'Save screenshot',
 
     'SpacePanel.nonVolumetric'          : 'Non-volumetric overlays '
                                           'are not supported',
@@ -118,6 +112,7 @@ titles = TypeDict({
     'TimeSeriesListPanel'    : 'Time series list',
     'TimeSeriesControlPanel' : 'Time series control',
     'HistogramListPanel'     : 'Histogram list',
+    'HistogramControlPanel'  : 'Histogram control',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -153,6 +148,7 @@ actions = TypeDict({
     'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
     'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
     'HistogramPanel.toggleHistogramList'      : 'Histogram list',
+    'HistogramPanel.toggleHistogramControl'   : 'Histogram control', 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',
@@ -246,12 +242,14 @@ properties = TypeDict({
     'PlotPanel.xlabel'    : 'X label',
     'PlotPanel.ylabel'    : 'Y label',
     
-    'TimeSeriesPanel.demean'    : 'Demean',
-    'TimeSeriesPanel.usePixdim' : 'Use pixdims',
+    'TimeSeriesPanel.demean'      : 'Demean',
+    'TimeSeriesPanel.usePixdim'   : 'Use pixdims',
+    'TimeSeriesPanel.showCurrent' : 'Plot time series for current voxel',
     
-    'HistogramPanel.dataRange'  : 'Data range',
-    'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
-    'HistogramPanel.nbins'      : 'Number of bins',
+    'HistogramPanel.histType'      : 'Histogram type',
+    'HistogramPanel.autoBin'       : 'Automatic histogram binning', 
+    'HistogramPanel.showCurrent'   : 'Plot histogram for current overlay',
+    'HistogramPanel.enableOverlay' : 'Enable 3D histogram overlay',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

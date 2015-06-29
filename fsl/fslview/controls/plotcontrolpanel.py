@@ -93,9 +93,6 @@ class PlotControlPanel(fslpanel.FSLViewPanel):
 
         self.Layout()
 
-        self.SetMinSize(self.__sizer.GetMinSize())
-        self.SetMaxSize(self.__sizer.GetMinSize())
-
         plotPanel.addListener('autoScale', self._name, self.__autoScaleChanged)
 
         self.__autoScaleChanged()

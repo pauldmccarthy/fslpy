@@ -22,30 +22,33 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
 
         self.__tsPanel   = tsPanel
 
-        self.__tsControl = plotcontrolpanel.PlotControlPanel(
+        self.__plotControl = plotcontrolpanel.PlotControlPanel(
             self, overlayList, displayCtx, tsPanel)
 
-        self.__tsControl.SetWindowStyleFlag(wx.SUNKEN_BORDER)
+        self.__plotControl.SetWindowStyleFlag(wx.SUNKEN_BORDER)
 
-        self.__demean    = props.makeWidget(self, tsPanel, 'demean')
-        self.__usePixdim = props.makeWidget(self, tsPanel, 'usePixdim')
+        self.__demean      = props.makeWidget(self, tsPanel, 'demean')
+        self.__usePixdim   = props.makeWidget(self, tsPanel, 'usePixdim')
+        self.__showCurrent = props.makeWidget(self, tsPanel, 'showCurrent')
 
-        self.__demean   .SetLabel(strings.properties[tsPanel, 'demean'])
-        self.__usePixdim.SetLabel(strings.properties[tsPanel, 'usePixdim'])
+        self.__demean     .SetLabel(strings.properties[tsPanel, 'demean'])
+        self.__usePixdim  .SetLabel(strings.properties[tsPanel, 'usePixdim'])
+        self.__showCurrent.SetLabel(strings.properties[tsPanel, 'showCurrent'])
 
-        self.__optSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.__optSizer.Add(self.__demean,    flag=wx.EXPAND)
-        self.__optSizer.Add(self.__usePixdim, flag=wx.EXPAND)
+        self.__optSizer = wx.GridSizer(1, 3)
+        self.__optSizer.Add(self.__demean,      flag=wx.EXPAND)
+        self.__optSizer.Add(self.__usePixdim,   flag=wx.EXPAND)
+        self.__optSizer.Add(self.__showCurrent, flag=wx.EXPAND)
  
         self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
 
-        self.__sizer.Add(self.__optSizer,
-                         flag=wx.EXPAND)
-        self.__sizer.Add(self.__tsControl,
+        self.__sizer.Add(self.__plotControl,
                          flag=wx.EXPAND | wx.ALL,
                          border=5,
                          proportion=1)
+        self.__sizer.Add(self.__optSizer,
+                         flag=wx.EXPAND)
 
         self.Layout()
 

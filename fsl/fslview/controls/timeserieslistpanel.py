@@ -92,6 +92,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
         self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('location',        self._name)
         self._overlayList.removeListener('overlays',        self._name)
         self.__tsPanel   .removeListener('dataSeries',      self._name)
 

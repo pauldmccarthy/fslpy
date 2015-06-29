@@ -113,23 +113,19 @@ class PlotPanel(viewpanel.ViewPanel):
             canvas.mpl_connect('motion_notify_event',  self.__onMouseMove)
 
         self.__name = '{}_{}'.format(type(self).__name__, self._name)
-        self.addGlobalListener(self.__name, self.__propChanged)
+        self.addListener('dataSeries', self.__name, self.__dataSeriesChanged)
+
         self.Bind(wx.EVT_SIZE, lambda *a: self.draw())
 
 
-    def draw(self):
+    def draw(self, *a):
         raise NotImplementedError('The draw method must be '
                                   'implemented by PlotPanel subclasses')
 
 
-    def __propChanged(self, value, valid, ctx, name):
-
-        draw = lambda *a: self.draw()
-
-        if name == 'dataSeries':
-            for ds in self.dataSeries:
-                ds.addGlobalListener(self.__name, draw, overwrite=True)
-        self.draw()
+    def __dataSeriesChanged(self, *a):
+        for ds in self.dataSeries:
+            ds.addGlobalListener(self.__name, self.draw, overwrite=True)
 
         
     def destroy(self):
@@ -268,6 +264,8 @@ class PlotPanel(viewpanel.ViewPanel):
 
         if ds.alpha == 0:
             return (0, 0), (0, 0)
+
+        log.debug('Drawing plot for {}'.format(ds.overlay))
 
         xdata, ydata = ds.getData()
 
