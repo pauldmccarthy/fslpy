@@ -547,9 +547,9 @@ class LutLabelDialog(wx.Dialog):
 
         self._ok.SetDefault()
 
-        self.Fit()
         self.Layout()
-
+        self.Fit()
+        
         self.CentreOnParent()
 
         self.value  = None

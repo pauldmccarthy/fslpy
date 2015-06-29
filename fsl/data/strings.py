@@ -251,6 +251,13 @@ properties = TypeDict({
     'HistogramPanel.showCurrent'   : 'Plot histogram for current overlay',
     'HistogramPanel.enableOverlay' : 'Enable 3D histogram overlay',
 
+    'HistogramSeries.nbins'       : 'Number of bins',
+    'HistogramSeries.ignoreZeros' : 'Ignore zeros',
+    'HistogramSeries.volume'      : 'Volume',
+    'HistogramSeries.allVolumes'  : 'Use all volumes',
+    'HistogramSeries.dataRange'   : 'Data range',
+    
+
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
     'OrthoEditProfile.fillValue'              : 'Fill value',

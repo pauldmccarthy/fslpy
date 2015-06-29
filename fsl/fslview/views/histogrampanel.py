@@ -185,10 +185,10 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         self._overlayList.addListener('overlays',
                                       self._name,
-                                      self.__updateCurrent) 
+                                      self.__overlaysChanged)
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
-                                      self.__updateCurrent)
+                                      self.draw)
 
         # Re draw whenever any PlotPanel or
         # HistogramPanel property changes.
@@ -216,6 +216,15 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
+
+    def __overlaysChanged(self, *a):
+        self.disableListener('dataSeries', self._name)
+        for ds in self.dataSeries:
+            if ds.overlay not in self._overlayList:
+                self.dataSeries.remove(ds)
+        self.enableListener('dataSeries', self._name)
+        self.draw() 
+
         
     def __autoBinChanged(self, *a):
         """Called when the :attr:`autoBin` property changes. Makes sure that
@@ -230,7 +239,6 @@ class HistogramPanel(plotpanel.PlotPanel):
             self.__current.histPropsChanged()
 
         self.draw()
-
         
 
     def __updateCurrent(self, *a):
@@ -239,14 +247,15 @@ class HistogramPanel(plotpanel.PlotPanel):
         currentHs      = self.__current
         self.__current = None
 
-        if len(self._overlayList) == 0:
-            pass
-        elif not isinstance(overlay, fslimage.Image):
-            pass
-        elif overlay in [hs.overlay for hs in self.dataSeries]:
-            pass
-        elif currentHs is not None and overlay == currentHs.overlay:
+        if len(self._overlayList) == 0             or \
+           not isinstance(overlay, fslimage.Image) or \
+           overlay in [hs.overlay for hs in self.dataSeries]:
+            return
+        
+        if currentHs is not None and \
+           currentHs.overlay not in [hs.overlay for hs in self.dataSeries]:
             self.__current = currentHs
+            
         else:
             hs             = HistogramSeries(self, overlay)
             hs.colour      = [0, 0, 0]
@@ -256,8 +265,6 @@ class HistogramPanel(plotpanel.PlotPanel):
             hs.label       = None
 
             self.__current = hs
-            
-        self.draw()
 
 
     def getCurrent(self): 
@@ -266,6 +273,7 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     def draw(self, *a):
 
+        self.__updateCurrent()
         current = self.getCurrent()
 
         if self.showCurrent and \

@@ -14,11 +14,6 @@ import fsl.data.strings  as strings
 import                      plotcontrolpanel
 
 
-class OverlayHistOptionsPanel(fslpanel.FSLViewPanel):
-    def __init__(self, parent, overlayList, displayCtx, hsPanel):
-        pass
-
-
 class HistogramControlPanel(fslpanel.FSLViewPanel):
 
 

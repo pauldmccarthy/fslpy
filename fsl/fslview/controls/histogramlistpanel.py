@@ -8,8 +8,11 @@
 
 import wx
 
+import props
+
 import pwidgets.elistbox      as elistbox
 import fsl.fslview.panel      as fslpanel
+import fsl.data.strings       as strings
 import fsl.fslview.colourmaps as fslcm
 
 import                           timeserieslistpanel 
@@ -55,10 +58,28 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
 
         for hs in self.__hsPanel.dataSeries:
             widg = timeserieslistpanel.TimeSeriesWidget(self, hs)
+
+            widg.more = wx.Button(widg, label='More')
+            widg.sizer.Add(widg.more)
+            widg.Layout()
+            widg.more.target = hs
+            widg.more.Bind(wx.EVT_BUTTON, self.__showHsControlPanel)
+            
             self.__hsList.Append(hs.overlay.name,
                                  clientData=hs,
                                  extraWidget=widg)
 
+        if len(self.__hsPanel.dataSeries) > 0:
+            self.__hsList.SetSelection(0)
+
+
+    def __showHsControlPanel(self, ev):
+
+        hs  = ev.GetEventObject().target
+        dlg = HistSeriesDialog(self, self.__hsPanel, hs)
+
+        dlg.Show()
+        
     
     def __onListAdd(self, ev):
         
@@ -72,6 +93,7 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
         hs.lineStyle = '-'
         hs.colour    = fslcm.randomColour()
         hs.label     = hs.overlay.name
+        
         self.__hsPanel.dataSeries.append(hs)
 
         
@@ -86,3 +108,98 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
         
     def __onListRemove(self, ev):
         self.__hsPanel.dataSeries.remove(ev.data)
+
+
+
+class HistSeriesDialog(wx.Dialog):
+    def __init__(self, parent, hsPanel, hs):
+        wx.Dialog.__init__(self,
+                           parent,
+                           title=hs.overlay.name,
+                           style=wx.CLOSE_BOX | wx.STAY_ON_TOP)
+
+        self.__name    = '{}_{}'.format(type(self).__name__, id(self))
+        self.__hsPanel = hsPanel
+        self.__hs      = hs
+
+        self.__nbins       = props.makeWidget(self, hs, 'nbins',
+                                              showLimits=False)
+        self.__ignoreZeros = props.makeWidget(self, hs, 'ignoreZeros')
+        self.__volume      = props.makeWidget(self, hs, 'volume',
+                                              showLimits=False)
+        self.__allVolumes  = props.makeWidget(self, hs, 'allVolumes')
+        self.__dataRange   = props.makeWidget(self, hs, 'dataRange',
+                                              showLimits=False)
+
+        self.__nbinsLbl       = wx.StaticText(self)
+        self.__ignoreZerosLbl = wx.StaticText(self)
+        self.__volumeLbl      = wx.StaticText(self)
+        self.__allVolumesLbl  = wx.StaticText(self)
+        self.__dataRangeLbl   = wx.StaticText(self)
+
+        self.__nbinsLbl      .SetLabel(strings.properties[hs, 'nbins'])
+        self.__ignoreZerosLbl.SetLabel(strings.properties[hs, 'ignoreZeros'])
+        self.__volumeLbl     .SetLabel(strings.properties[hs, 'volume'])     
+        self.__allVolumesLbl .SetLabel(strings.properties[hs, 'allVolumes']) 
+        self.__dataRangeLbl  .SetLabel(strings.properties[hs, 'dataRange'])  
+
+        self.__sizer = wx.FlexGridSizer(5, 2)
+
+        self.SetSizer(self.__sizer)
+
+        self.__sizer.Add(self.__nbinsLbl,       flag=wx.EXPAND)
+        self.__sizer.Add(self.__nbins,          flag=wx.EXPAND)
+        self.__sizer.Add(self.__ignoreZerosLbl, flag=wx.EXPAND)
+        self.__sizer.Add(self.__ignoreZeros,    flag=wx.EXPAND)
+        self.__sizer.Add(self.__volumeLbl,      flag=wx.EXPAND)
+        self.__sizer.Add(self.__volume,         flag=wx.EXPAND)
+        self.__sizer.Add(self.__allVolumesLbl,  flag=wx.EXPAND)
+        self.__sizer.Add(self.__allVolumes,     flag=wx.EXPAND)
+        self.__sizer.Add(self.__dataRangeLbl,   flag=wx.EXPAND)
+        self.__sizer.Add(self.__dataRange,      flag=wx.EXPAND)
+
+        self.__volume       .Enable(hs.overlay.is4DImage())
+        self.__volumeLbl    .Enable(hs.overlay.is4DImage())
+        self.__allVolumes   .Enable(hs.overlay.is4DImage())
+        self.__allVolumesLbl.Enable(hs.overlay.is4DImage())
+        self.__autoBinChanged()
+
+        hsPanel.addListener('autoBin',
+                            self.__name, 
+                            self.__autoBinChanged)
+        hsPanel.addListener('dataSeries',
+                            self.__name, 
+                            self.__dataSeriesChanged) 
+        hs     .addListener('allVolumes',
+                            self.__name,
+                            self.__allVolumesChanged)
+
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.__onDestroy)
+
+        self.Layout()
+        self.Fit()
+        self.CentreOnParent()
+
+
+    def __onDestroy(self, ev=None):
+        if ev is not None:
+            ev.Skip()
+        self.__hsPanel.removeListener('autoBin',    self.__name)
+        self.__hs     .removeListener('allVolumes', self.__name)
+
+
+    def __dataSeriesChanged(self, *a):
+        if self.__hs not in self.__hsPanel.dataSeries:
+            self.Close()
+            self.Destroy()
+            self.__onDestroy()
+    
+        
+    def __allVolumesChanged(self, *a):
+        self.__volume   .Enable(not self.__hs.allVolumes)
+        self.__volumeLbl.Enable(not self.__hs.allVolumes)
+
+        
+    def __autoBinChanged(self, *a):
+        self.__nbins   .Enable(not self.__hsPanel.autoBin)
+        self.__nbinsLbl.Enable(not self.__hsPanel.autoBin)
