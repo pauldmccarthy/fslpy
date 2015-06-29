@@ -135,15 +135,19 @@ class ColourMapTexture(texture.Texture):
         self.bindTexture()
 
         if border is not None:
-            if alpha is not None:
-                border[3] = alpha
+
+            if len(border) == 3:
+                newBorder     = np.ones(4, dtype=np.float32)
+                newBorder[:3] = border
+                if alpha is not None:
+                    newBorder[3] = alpha
                 
             gl.glTexParameterfv(gl.GL_TEXTURE_1D,
                                 gl.GL_TEXTURE_BORDER_COLOR,
                                 border)
             gl.glTexParameteri( gl.GL_TEXTURE_1D,
                                 gl.GL_TEXTURE_WRAP_S,
-                                gl.GL_CLAMP_TO_BORDER) 
+                                gl.GL_CLAMP_TO_BORDER)
         else:
             gl.glTexParameteri(gl.GL_TEXTURE_1D,
                                gl.GL_TEXTURE_WRAP_S,

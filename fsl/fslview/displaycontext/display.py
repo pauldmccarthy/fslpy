@@ -122,7 +122,12 @@ class Display(props.SyncableHasProperties):
         return self.__overlay
 
 
-    def __init__(self, overlay, overlayList, displayCtx, parent=None):
+    def __init__(self,
+                 overlay,
+                 overlayList,
+                 displayCtx,
+                 parent=None,
+                 overlayType=None):
         """Create a :class:`Display` for the specified overlay.
 
         :arg overlay:     The overlay object.
@@ -133,7 +138,10 @@ class Display(props.SyncableHasProperties):
         :arg displayCtx:  A :class:`.DisplayContext` instance describing how
                           the overlays are to be displayed.
 
-        :arg parent:      
+        :arg parent:      A parent ``Display`` instance - see
+                          :mod:`props.syncable`.
+
+        :arg overlayType: Initial overlay type.
         """
         
         self.__overlay     = overlay
@@ -150,6 +158,9 @@ class Display(props.SyncableHasProperties):
             log.debug('Enabling overlay type {} for {}'.format(pt, overlay))
             label = strings.choices[self, 'overlayType', pt]
             overlayTypeProp.addChoice(pt, label, self)
+
+        if overlayType is not None:
+            self.overlayType = overlayType
 
         # Call the super constructor after our own
         # initialisation, in case the provided parent

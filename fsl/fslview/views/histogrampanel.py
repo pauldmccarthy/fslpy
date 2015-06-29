@@ -62,30 +62,39 @@ class HistogramSeries(plotpanel.DataSeries):
                 strings.choices['HistogramPanel.dataRange.max']])
 
     
-    def __init__(self, hsPanel, overlay, volume=0):
+    def __init__(self, overlay, hsPanel, displayCtx, overlayList, volume=0):
 
         plotpanel.DataSeries.__init__(self, overlay)
-        self.hsPanel = hsPanel
-        self.name    = '{}_{}'.format(type(self).__name__, id(self))
-        self.volume  = volume
+        self.hsPanel     = hsPanel
+        self.name        = '{}_{}'.format(type(self).__name__, id(self))
+        self.volume      = volume
+
+        self.displayCtx  = displayCtx
+        self.overlayList = overlayList
+        self.overlay3D   = None
 
         if overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
-        self.__calcInitDataRange()
+        self.calcInitDataRange()
         self.histPropsChanged()
-
+        
+        overlayList.addListener('overlays', self.name, self.overlaysChanged)
+        
         self.addListener('nbins',       self.name, self.histPropsChanged)
         self.addListener('ignoreZeros', self.name, self.histPropsChanged)
         self.addListener('volume',      self.name, self.histPropsChanged)
         self.addListener('dataRange',   self.name, self.histPropsChanged)
+        self.addListener('showOverlay', self.name, self.showOverlayChanged)
 
         
     def __del__(self):
-        self.hsPanel.removeListener('autoBin', self.name)
+        # Remove 3D overlay if present
+        if self.overlay3D is not None:
+            self.overlayList.remove(self.overlay3D)
 
         
-    def __calcInitDataRange(self):
+    def calcInitDataRange(self):
         
         data = self.overlay.data[:]
 
@@ -137,6 +146,40 @@ class HistogramSeries(plotpanel.DataSeries):
         self.xdata = np.array(histX, dtype=np.float32)
         self.ydata = np.array(histY, dtype=np.float32)
         self.nvals = nvals
+
+
+    def showOverlayChanged(self, *a):
+
+        if not self.showOverlay and self.overlay3D is not None:
+            self.overlayList.remove(self.overlay3D)
+            self.overlay3D = None
+
+        else:
+            self.overlay3D = fslimage.Image(
+                self.overlay.data,
+                name='{}/histogram/mask'.format(self.overlay.name),
+                header=self.overlay.nibImage.get_header())
+
+            self.overlayList.append(self.overlay3D)
+
+            print 'Appended new mask overlay'
+            opts = self.displayCtx.getOpts(self.overlay3D, overlayType='mask')
+
+            print 'Got overlay options'
+
+            opts.bindProps('volume',    self)
+            opts.bindProps('colour',    self)
+            opts.bindProps('threshold', self, 'dataRange')
+
+
+    def overlaysChanged(self, *a):
+        
+        if self.overlay3D is None:
+            return
+
+        if self.overlay3D not in self.overlayList:
+            self.overlay3D = None
+            self.showOverlay = False
 
 
     def getData(self):
@@ -247,7 +290,10 @@ class HistogramPanel(plotpanel.PlotPanel):
            overlay in [hs.overlay for hs in self.dataSeries]:
             return
 
-        hs             = HistogramSeries(self, overlay)
+        hs             = HistogramSeries(overlay,
+                                         self,
+                                         self._displayCtx,
+                                         self._overlayList)
         hs.colour      = [0, 0, 0]
         hs.alpha       = 1
         hs.lineWidth   = 2

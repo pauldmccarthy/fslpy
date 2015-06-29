@@ -125,6 +125,7 @@ class HistSeriesDialog(wx.Dialog):
         self.__nbins       = props.makeWidget(self, hs, 'nbins',
                                               showLimits=False)
         self.__ignoreZeros = props.makeWidget(self, hs, 'ignoreZeros')
+        self.__showOverlay = props.makeWidget(self, hs, 'showOverlay')
         self.__volume      = props.makeWidget(self, hs, 'volume',
                                               showLimits=False)
         self.__dataRange   = props.makeWidget(self, hs, 'dataRange',
@@ -132,15 +133,17 @@ class HistSeriesDialog(wx.Dialog):
 
         self.__nbinsLbl       = wx.StaticText(self)
         self.__ignoreZerosLbl = wx.StaticText(self)
+        self.__showOverlayLbl = wx.StaticText(self)
         self.__volumeLbl      = wx.StaticText(self)
         self.__dataRangeLbl   = wx.StaticText(self)
 
         self.__nbinsLbl      .SetLabel(strings.properties[hs, 'nbins'])
         self.__ignoreZerosLbl.SetLabel(strings.properties[hs, 'ignoreZeros'])
+        self.__showOverlayLbl.SetLabel(strings.properties[hs, 'showOverlay'])
         self.__volumeLbl     .SetLabel(strings.properties[hs, 'volume'])     
         self.__dataRangeLbl  .SetLabel(strings.properties[hs, 'dataRange'])  
 
-        self.__sizer = wx.FlexGridSizer(4, 2)
+        self.__sizer = wx.FlexGridSizer(5, 2)
 
         self.SetSizer(self.__sizer)
 
@@ -148,6 +151,8 @@ class HistSeriesDialog(wx.Dialog):
         self.__sizer.Add(self.__nbins,          flag=wx.EXPAND)
         self.__sizer.Add(self.__ignoreZerosLbl, flag=wx.EXPAND)
         self.__sizer.Add(self.__ignoreZeros,    flag=wx.EXPAND)
+        self.__sizer.Add(self.__showOverlayLbl, flag=wx.EXPAND)
+        self.__sizer.Add(self.__showOverlay,    flag=wx.EXPAND) 
         self.__sizer.Add(self.__volumeLbl,      flag=wx.EXPAND)
         self.__sizer.Add(self.__volume,         flag=wx.EXPAND)
         self.__sizer.Add(self.__dataRangeLbl,   flag=wx.EXPAND)

@@ -88,12 +88,20 @@ class DisplayContext(props.SyncableHasProperties):
                                 self.__overlayListChanged)
 
         
-    def getDisplay(self, overlay):
+    def getDisplay(self, overlay, overlayType=None):
         """Returns the display property object (e.g. a :class:`.Display`
         object) for the specified overlay (or overlay index).
 
         If a :class:`Display` object does not exist for the given overlay,
         one is created.
+
+        :arg overlay:     The overlay to retrieve a ``Display``
+                          instance for.
+
+        :arg overlayType: If a ``Display`` instance for the specified
+                          ``overlay`` does not exist, one is created - the
+                          specified ``overlayType`` is passed to the
+                          :meth:`.Display.__init__` method.
         """
 
         if overlay is None:
@@ -110,30 +118,33 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent() is None:
                 dParent = None
             else:
-                dParent = self.getParent().getDisplay(overlay)
-
+                dParent = self.getParent().getDisplay(overlay, overlayType)
+                
             display = fsldisplay.Display(overlay,
                                          self.__overlayList,
                                          self,
-                                         dParent)
+                                         parent=dParent,
+                                         overlayType=overlayType)
             self.__displays[overlay] = display
         
         return display
 
 
-    def getOpts(self, overlay):
+    def getOpts(self, overlay, overlayType=None):
         """Returns the :class:`.DisplayOpts` instance associated with the
         specified overlay, or ``None`` if the overlay is not in the overlay
         list.
 
-        See :meth:`.Display.getDisplayOpts`.
+        See :meth:`.Display.getDisplayOpts` and :meth:`getDisplay`. 
         """
 
         if overlay is None:
             raise ValueError('No overlay specified') 
 
-        try:             return self.getDisplay(overlay).getDisplayOpts()
-        except KeyError: return None
+        try:
+            return self.getDisplay(overlay, overlayType).getDisplayOpts()
+        except KeyError:
+            return None
 
 
     def getReferenceImage(self, overlay):
