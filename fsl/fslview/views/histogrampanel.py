@@ -15,7 +15,7 @@ import props
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
-import fsl.fslview.colourmaps as fslcm
+import fsl.fslview.controls   as fslcontrols
 import                           plotpanel
 
 
@@ -50,26 +50,6 @@ def autoBin(data, dataRange):
     return nbins
 
 
-#
-# Ideas:
-#
-#    - Plot histogram for multiple images (how to select them?)
-#
-#    - Ability to apply a label mask image, and plot separate
-#      histograms for each label
-# 
-#    - Ability to put an overlay on the display, showing the
-#      voxels that are within the histogram range
-#
-#    - For 4D images, add an option to plot the histogram for
-#      the current volume only, or for all volumes
-#
-#    - For different image types (e.g. vector), add anoption
-#      to plot the histogram of calculated values, e.g.
-#      magnitude, or separate histogram lines for xyz
-#      components?
-#
-
 class HistogramSeries(plotpanel.DataSeries):
 
     nbins       = props.Int(minval=10, maxval=500, default=100, clamped=True)
@@ -92,12 +72,12 @@ class HistogramSeries(plotpanel.DataSeries):
         if overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
+        self.__calcInitDataRange()
+        self.histPropsChanged()
+
         hsPanel.addListener('autoBin',   self.name, self.histPropsChanged)
         self   .addListener('nbins',     self.name, self.histPropsChanged)
         self   .addListener('dataRange', self.name, self.histPropsChanged)
-
-        self.__calcInitDataRange()
-        self.histPropsChanged()
 
         
     def __del__(self):
@@ -133,7 +113,13 @@ class HistogramSeries(plotpanel.DataSeries):
         if self.ignoreZeros:
             data = data[data != 0]
 
+        nvals     = data.size
         dataRange = self.dataRange.x
+
+        log.debug('Calculating histogram for overlay '
+                  '{} (number of values {})'.format(
+                      self.overlay.name,
+                      nvals))
         
         if self.hsPanel.autoBin: nbins = autoBin(data, dataRange)
         else:                    nbins = self.nbins
@@ -153,10 +139,18 @@ class HistogramSeries(plotpanel.DataSeries):
 
         self.xdata = np.array(histX, dtype=np.float32)
         self.ydata = np.array(histY, dtype=np.float32)
+        self.nvals = nvals
 
 
     def getData(self):
-        return self.xdata, self.ydata
+
+        xdata    = self.xdata
+        ydata    = self.ydata
+        nvals    = self.nvals
+        histType = self.hsPanel.histType
+
+        if   histType == 'count':       return xdata, ydata
+        elif histType == 'probability': return xdata, ydata / nvals
 
     
 class HistogramPanel(plotpanel.PlotPanel):
@@ -164,13 +158,15 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     autoBin       = props.Boolean(default=True)
     showCurrent   = props.Boolean(default=True)
-
     enableOverlay = props.Boolean(default=False)
+    histType      = props.Choice(('probability', 'count'))
     
 
     def __init__(self, parent, overlayList, displayCtx):
 
-        actionz = {}
+        actionz = {'toggleHistogramList' : lambda *a: self.togglePanel(
+            fslcontrols.HistogramListPanel, False, self)
+        }
 
         plotpanel.PlotPanel.__init__(
             self, parent, overlayList, displayCtx, actionz)
@@ -185,13 +181,14 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._overlayList.addListener(
             'overlays',
             self._name,
-            self.__selectedOverlayChanged) 
+            self.__updateCurrent) 
         self._displayCtx.addListener(
             'selectedOverlay',
             self._name,
-            self.__selectedOverlayChanged)
+            self.__updateCurrent)
+        self.addGlobalListener(self._name, self.__updateCurrent)
 
-        self.__selectedOverlayChanged()
+        self.__updateCurrent()
 
         self.Layout()
 
@@ -204,7 +201,8 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
 
-    def __calcCurrent(self):
+    def __updateCurrent(self, *a):
+
         self.__current = None
 
         if self._overlayList == 0:
@@ -213,6 +211,9 @@ class HistogramPanel(plotpanel.PlotPanel):
         overlay = self._displayCtx.getSelectedOverlay()
 
         if not isinstance(overlay, fslimage.Image):
+            return
+
+        if overlay in [hs.overlay for hs in self.dataSeries]:
             return
 
         hs             = HistogramSeries(self, overlay)
@@ -228,19 +229,9 @@ class HistogramPanel(plotpanel.PlotPanel):
     def getCurrent(self): 
         return self.__current
 
-    
-    def __selectedOverlayChanged(self, *a):
-
-        if len(self._overlayList) == 0:
-            return
-
-
-        self.draw()
-
 
     def draw(self, *a):
 
-        self.__calcCurrent()
         current = self.getCurrent()
 
         if current is not None: self.drawDataSeries([current])

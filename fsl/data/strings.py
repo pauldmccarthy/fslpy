@@ -112,12 +112,12 @@ titles = TypeDict({
     'OrthoSettingsPanel'     : 'Ortho view settings',
     'LightBoxToolBar'        : 'Lightbox view toolbar',
     'LightBoxSettingsPanel'  : 'Lightbox view settings',
-    'HistogramToolBar'       : 'Histogram settings',
     'LookupTablePanel'       : 'Lookup tables',
     'LutLabelDialog'         : 'New LUT label',
     'NewLutDialog'           : 'New LUT',
     'TimeSeriesListPanel'    : 'Time series list',
     'TimeSeriesControlPanel' : 'Time series control',
+    'HistogramListPanel'     : 'Histogram list',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -149,13 +149,10 @@ actions = TypeDict({
     
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
-
     'PlotPanel.screenshot'                    : 'Take screenshot',
     'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
     'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
-    'HistogramPanel.toggleToolbar'            : 'Histogram controls',
-    
-
+    'HistogramPanel.toggleHistogramList'      : 'Histogram list',
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',

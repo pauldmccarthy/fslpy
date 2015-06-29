@@ -15,6 +15,7 @@ from orthosettingspanel     import OrthoSettingsPanel
 from lookuptablepanel       import LookupTablePanel
 from timeserieslistpanel    import TimeSeriesListPanel
 from timeseriescontrolpanel import TimeSeriesControlPanel
+from histogramlistpanel     import HistogramListPanel
 
 from orthotoolbar          import OrthoToolBar
 from orthoprofiletoolbar   import OrthoProfileToolBar
