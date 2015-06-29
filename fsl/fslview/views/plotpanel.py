@@ -35,7 +35,7 @@ class DataSeries(props.HasProperties):
     colour    = props.Colour()
     alpha     = props.Real(minval=0.0, maxval=1.0, default=1.0, clamped=True)
     label     = props.String()
-    lineWidth = props.Choice((1, 2, 3, 4, 5))
+    lineWidth = props.Choice((0.5, 1, 2, 3, 4, 5))
     lineStyle = props.Choice(
         *zip(*[('-',  'Solid line'),
                ('--', 'Dashed line'),
@@ -65,7 +65,18 @@ class PlotPanel(viewpanel.ViewPanel):
     smooth     = props.Boolean(default=False)
     xlabel     = props.String()
     ylabel     = props.String()
-    limits     = props.Bounds(ndims=2) 
+    limits     = props.Bounds(ndims=2)
+
+
+    def importDataSeries(self, *a):
+        # TODO import data series from text file
+        pass
+
+
+    def exportDataSeries(self, *a):
+        # TODO export all displayed data series to text file
+        pass
+    
     
     def __init__(self,
                  parent,
@@ -244,7 +255,7 @@ class PlotPanel(viewpanel.ViewPanel):
                 labels,
                 loc='upper right',
                 fancybox=True)
-            legend.get_frame().set_alpha(0.3)
+            legend.get_frame().set_alpha(0.6)
 
         if self.grid:
             axis.grid()

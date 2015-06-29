@@ -13,13 +13,42 @@ import numpy as np
 
 import props
 
-import fsl.data.image                        as fslimage
-import fsl.data.strings                      as strings
-import fsl.fslview.controls.histogramtoolbar as histogramtoolbar
-import                                          plotpanel
+import fsl.data.image         as fslimage
+import fsl.data.strings       as strings
+import fsl.fslview.colourmaps as fslcm
+import                           plotpanel
 
 
 log = logging.getLogger(__name__)
+
+
+        
+def autoBin(data, dataRange):
+
+    # Automatic histogram bin calculation
+    # as implemented in the original FSLView
+
+    dMin, dMax = dataRange
+    dRange     = dMax - dMin
+
+    binSize = np.power(10, np.ceil(np.log10(dRange) - 1) - 1)
+
+    nbins = dRange / binSize
+    
+    while nbins < 100:
+        binSize /= 2
+        nbins    = dRange / binSize
+
+    if issubclass(data.dtype.type, np.integer):
+        binSize = max(1, np.ceil(binSize))
+
+    adjMin = np.floor(dMin / binSize) * binSize
+    adjMax = np.ceil( dMax / binSize) * binSize
+
+    nbins = int((adjMax - adjMin) / binSize) + 1
+
+    return nbins
+
 
 #
 # Ideas:
@@ -39,101 +68,79 @@ log = logging.getLogger(__name__)
 #      to plot the histogram of calculated values, e.g.
 #      magnitude, or separate histogram lines for xyz
 #      components?
-# 
-class HistogramPanel(plotpanel.PlotPanel):
+#
 
-    
-    dataRange = props.Bounds(
+class HistogramSeries(plotpanel.DataSeries):
+
+    nbins       = props.Int(minval=10, maxval=500, default=100, clamped=True)
+    ignoreZeros = props.Boolean(default=True)
+    volume      = props.Int(minval=0, maxval=0, clamped=True)
+    allVolumes  = props.Boolean(default=False)
+    dataRange   = props.Bounds(
         ndims=1,
         labels=[strings.choices['HistogramPanel.dataRange.min'],
                 strings.choices['HistogramPanel.dataRange.max']])
-    
-    nbins     = props.Int( minval=10,  maxval=500, default=100, clamped=True)
-    autoHist  = props.Boolean(default=True)
-
-
-    def __init__(self, parent, overlayList, displayCtx):
-
-        actionz = {'toggleToolbar' : lambda *a: self.togglePanel(
-            histogramtoolbar.HistogramToolBar, False, self)}
-
-        plotpanel.PlotPanel.__init__(
-            self, parent, overlayList, displayCtx, actionz)
-
-        figure = self.getFigure()
-        canvas = self.getCanvas()
-        
-        figure.subplots_adjust(
-            top=1.0, bottom=0.0, left=0.0, right=1.0)
-
-        figure.patch.set_visible(False)
-
-        self._overlayList.addListener(
-            'overlays',
-            self._name,
-            self._selectedOverlayChanged) 
-        self._displayCtx.addListener(
-            'selectedOverlay',
-            self._name,
-            self._selectedOverlayChanged)
-
-        self.addListener('dataRange', self._name, self._drawPlot)
-        self.addListener('nbins',     self._name, self._drawPlot)
-        self.addListener('autoHist',  self._name, self._drawPlot)
-
-        self._domainHighlight = None
-        
-        self._selectedOverlayChanged()
-
-        self.Layout()
-
-        
-    def destroy(self):
-        """De-registers property listeners. """
-        plotpanel.PlotPanel.destroy(self)
-
-        self             .removeListener('dataRange',       self._name)
-        self             .removeListener('nbins',           self._name)
-        self             .removeListener('autoHist',        self._name)
-        self._overlayList.removeListener('overlays',        self._name)
-        self._displayCtx .removeListener('selectedOverlay', self._name)
-
-        
-    def _autoHistogramBins(self, data):
-
-        # Automatic histogram bin calculation
-        # as implemented in the original FSLView
-
-        dMin, dMax = self.dataRange.x
-        dRange     = dMax - dMin
-
-        binSize = np.power(10, np.ceil(np.log10(dRange) - 1) - 1)
-
-        nbins = dRange / binSize
-        
-        while nbins < 100:
-            binSize /= 2
-            nbins    = dRange / binSize
-
-        if issubclass(data.dtype.type, np.integer):
-            binSize = max(1, np.ceil(binSize))
-
-        adjMin = np.floor(dMin / binSize) * binSize
-        adjMax = np.ceil( dMax / binSize) * binSize
-
-        nbins = int((adjMax - adjMin) / binSize) + 1
-
-        return nbins
 
     
-    def _calcHistogram(self, data):
+    def __init__(self, hsPanel, overlay, volume=0):
+
+        plotpanel.DataSeries.__init__(self, overlay)
+        self.hsPanel = hsPanel
+        self.name    = '{}_{}'.format(type(self).__name__, id(self))
+        self.volume  = volume
+
+        if overlay.is4DImage():
+            self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
+
+        hsPanel.addListener('autoBin',   self.name, self.histPropsChanged)
+        self   .addListener('nbins',     self.name, self.histPropsChanged)
+        self   .addListener('dataRange', self.name, self.histPropsChanged)
+
+        self.__calcInitDataRange()
+        self.histPropsChanged()
+
         
-        if self.autoHist: nbins = self._autoHistogramBins(data)
-        else:             nbins = self.nbins
+    def __del__(self):
+        self.hsPanel.removeListener('autoBin', self.name)
+
+        
+    def __calcInitDataRange(self):
+        
+        if self.overlay.is4DImage():
+            if self.allVolumes: data = self.overlay.data[:]
+            else:               data = self.overlay.data[..., self.volume]
+        else:
+            data = self.overlay.data[:]
+
+        data = data[np.isfinite(data)]
+
+        if self.ignoreZeros:
+            data = data[data != 0]
+
+        self.dataRange.x = data.min(), data.max()
+
+    
+    def histPropsChanged(self, *a):
+
+        if self.overlay.is4DImage():
+            if self.allVolumes: data = self.overlay.data[:]
+            else:               data = self.overlay.data[..., self.volume]
+        else:
+            data = self.overlay.data[:]
+
+        data = data[np.isfinite(data)]
+
+        if self.ignoreZeros:
+            data = data[data != 0]
+
+        dataRange = self.dataRange.x
+        
+        if self.hsPanel.autoBin: nbins = autoBin(data, dataRange)
+        else:                    nbins = self.nbins
         
         histY, histX = np.histogram(data.flat,
                                     bins=nbins,
-                                    range=self.dataRange.x)
+                                    range=dataRange)
         
         # np.histogram returns all bin
         # edges, including the right hand
@@ -144,72 +151,97 @@ class HistogramPanel(plotpanel.PlotPanel):
         histX  = histX[:-1]
         histX += (histX[1] - histX[0]) / 2.0
 
-        return histX, histY
+        self.xdata = np.array(histX, dtype=np.float32)
+        self.ydata = np.array(histY, dtype=np.float32)
+
+
+    def getData(self):
+        return self.xdata, self.ydata
 
     
-    def _selectedOverlayChanged(self, *a):
+class HistogramPanel(plotpanel.PlotPanel):
 
-        if len(self._overlayList) == 0:
+
+    autoBin       = props.Boolean(default=True)
+    showCurrent   = props.Boolean(default=True)
+
+    enableOverlay = props.Boolean(default=False)
+    
+
+    def __init__(self, parent, overlayList, displayCtx):
+
+        actionz = {}
+
+        plotpanel.PlotPanel.__init__(
+            self, parent, overlayList, displayCtx, actionz)
+
+        figure = self.getFigure()
+        
+        figure.subplots_adjust(
+            top=1.0, bottom=0.0, left=0.0, right=1.0)
+
+        figure.patch.set_visible(False)
+
+        self._overlayList.addListener(
+            'overlays',
+            self._name,
+            self.__selectedOverlayChanged) 
+        self._displayCtx.addListener(
+            'selectedOverlay',
+            self._name,
+            self.__selectedOverlayChanged)
+
+        self.__selectedOverlayChanged()
+
+        self.Layout()
+
+        
+    def destroy(self):
+        """De-registers property listeners. """
+        plotpanel.PlotPanel.destroy(self)
+
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+
+
+    def __calcCurrent(self):
+        self.__current = None
+
+        if self._overlayList == 0:
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
 
         if not isinstance(overlay, fslimage.Image):
-            self.message(strings.messages[self, 'noData'])
             return
 
-        minval = float(overlay.data.min())
-        maxval = float(overlay.data.max())
+        hs             = HistogramSeries(self, overlay)
+        hs.colour      = [0.2, 0.2, 0.2]
+        hs.alpha       = 1
+        hs.lineWidth   = 0.5
+        hs.lineStyle   = ':'
+        hs.label       = None
 
-        # update the  histgram range from the data range
-        self.disableListener('dataRange', self._name)
-        
-        self.dataRange.setMin(  0, minval)
-        self.dataRange.setMax(  0, maxval)
-        self.dataRange.setRange(0, minval, maxval)
-        
-        self.enableListener('dataRange', self._name)
-
-        self._drawPlot()
+        self.__current = hs
 
 
-    def _drawPlot(self, *a):
+    def getCurrent(self): 
+        return self.__current
 
-        overlay = self._displayCtx.getSelectedOverlay()
+    
+    def __selectedOverlayChanged(self, *a):
 
-        if overlay is None or not isinstance(overlay, fslimage.Image):
+        if len(self._overlayList) == 0:
             return
 
-        axis    = self.getAxis()
-        x, y    = self._calcHistogram(overlay.data)
 
-        axis.clear()
-        axis.step(x, y)
-        axis.grid(True)
-        
-        xmin = x.min()
-        xmax = x.max()
-        ymin = y.min()
-        ymax = y.max()
+        self.draw()
 
-        xlen = xmax - xmin
-        ylen = ymax - ymin
 
-        axis.grid(True)
-        axis.set_xlim((xmin - xlen * 0.05, xmax + xlen * 0.05))
-        axis.set_ylim((ymin - ylen * 0.05, ymax + ylen * 0.05))
+    def draw(self, *a):
 
-        if ymin != ymax: yticks = np.linspace(ymin, ymax, 5)
-        else:            yticks = [ymin]
+        self.__calcCurrent()
+        current = self.getCurrent()
 
-        axis.set_yticks(yticks)
-
-        for tick in axis.yaxis.get_major_ticks():
-            tick.set_pad(-15)
-            tick.label1.set_horizontalalignment('left')
-            
-        for tick in axis.xaxis.get_major_ticks():
-            tick.set_pad(-20)
-
-        self.getCanvas().draw()
-        self.Refresh() 
+        if current is not None: self.drawDataSeries([current])
+        else:                   self.drawDataSeries()

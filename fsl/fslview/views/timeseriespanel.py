@@ -63,11 +63,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     demean    = props.Boolean(default=True)
     usePixdim = props.Boolean(default=False)
 
+    # TODO make this setting functional
+    showCurrent = props.Boolean(default=True)
 
-    def export(self, *a):
-        # Export all displayed time series to text file
-        pass
-    
 
     def __init__(self, parent, overlayList, displayCtx):
 
@@ -87,7 +85,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             top=1.0, bottom=0.0, left=0.0, right=1.0)
 
         figure.patch.set_visible(False)
-
 
         overlayList.addListener('overlays',
                                 self._name,
@@ -148,7 +145,8 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         ts = TimeSeries(self, overlay, vox)
         ts.colour    = [0.2, 0.2, 0.2]
-        ts.lineWidth = 1
+        ts.alpha     = 1
+        ts.lineWidth = 0.5
         ts.lineStyle = ':'
         ts.label     = None
 
@@ -164,5 +162,5 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.__calcCurrent()
         current = self.getCurrent()
         
-        if current is not None: self.drawDataSeries([self.getCurrent()])
+        if current is not None: self.drawDataSeries([current])
         else:                   self.drawDataSeries()
