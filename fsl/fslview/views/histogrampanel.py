@@ -54,6 +54,7 @@ class HistogramSeries(plotpanel.DataSeries):
 
     nbins       = props.Int(minval=10, maxval=500, default=100, clamped=True)
     ignoreZeros = props.Boolean(default=True)
+    showOverlay = props.Boolean(default=False)
     volume      = props.Int(minval=0, maxval=0, clamped=True)
     dataRange   = props.Bounds(
         ndims=1,
@@ -152,10 +153,9 @@ class HistogramSeries(plotpanel.DataSeries):
 class HistogramPanel(plotpanel.PlotPanel):
 
 
-    autoBin       = props.Boolean(default=True)
-    showCurrent   = props.Boolean(default=True)
-    enableOverlay = props.Boolean(default=False)
-    histType      = props.Choice(('probability', 'count'))
+    autoBin     = props.Boolean(default=True)
+    showCurrent = props.Boolean(default=True)
+    histType    = props.Choice(('probability', 'count'))
     
 
     def __init__(self, parent, overlayList, displayCtx):
@@ -188,10 +188,10 @@ class HistogramPanel(plotpanel.PlotPanel):
         # HistogramPanel property changes.
         self.addGlobalListener(self._name, self.draw)
 
-        # But a separate listener for autoBin -
-        # this overwrites the one added by the
-        # addGlobalListener method above. See
-        # the __autoBinChanged method.
+        # Custom listener for autoBin - this
+        # overwrites the one added by the
+        # addGlobalListener method above.
+        # See the __autoBinChanged method.
         self.addListener('autoBin',
                          self._name,
                          self.__autoBinChanged,

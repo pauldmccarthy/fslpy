@@ -246,16 +246,15 @@ properties = TypeDict({
     'TimeSeriesPanel.usePixdim'   : 'Use pixdims',
     'TimeSeriesPanel.showCurrent' : 'Plot time series for current voxel',
     
-    'HistogramPanel.histType'      : 'Histogram type',
-    'HistogramPanel.autoBin'       : 'Automatic histogram binning', 
-    'HistogramPanel.showCurrent'   : 'Plot histogram for current overlay',
-    'HistogramPanel.enableOverlay' : 'Enable 3D histogram overlay',
-
+    'HistogramPanel.histType'    : 'Histogram type',
+    'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
+    'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+    
     'HistogramSeries.nbins'       : 'Number of bins',
     'HistogramSeries.ignoreZeros' : 'Ignore zeros',
     'HistogramSeries.volume'      : 'Volume',
     'HistogramSeries.dataRange'   : 'Data range',
-    
+    'HistogramSeries.showOverlay' : 'Show 3D histogram overlay',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

@@ -25,32 +25,28 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
             self, overlayList, displayCtx, hsPanel)
         self.__plotControl.SetWindowStyleFlag(wx.SUNKEN_BORDER)
 
+        self.__histType      = props.makeWidget(self, hsPanel, 'histType')
         self.__autoBin       = props.makeWidget(self, hsPanel, 'autoBin')
         self.__showCurrent   = props.makeWidget(self, hsPanel, 'showCurrent')
-        self.__histType      = props.makeWidget(self, hsPanel, 'histType')
-        self.__enableOverlay = props.makeWidget(self, hsPanel, 'enableOverlay')
 
         self.__histTypeLabel = wx.StaticText(self)
 
+        self.__histTypeLabel.SetLabel(strings.properties[hsPanel,
+                                                         'histType'])
         self.__autoBin      .SetLabel(strings.properties[hsPanel,
                                                          'autoBin'])
         self.__showCurrent  .SetLabel(strings.properties[hsPanel,
                                                          'showCurrent'])
-        self.__enableOverlay.SetLabel(strings.properties[hsPanel,
-                                                         'enableOverlay'])
-        self.__histTypeLabel.SetLabel(strings.properties[hsPanel,
-                                                         'histType'])
 
         self.__htSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__htSizer.Add(self.__histTypeLabel, flag=wx.EXPAND)
         self.__htSizer.Add(self.__histType,      flag=wx.EXPAND, proportion=1)
  
-        self.__optSizer = wx.GridSizer(2, 2)
+        self.__optSizer = wx.GridSizer(1, 3)
 
+        self.__optSizer.Add(self.__htSizer,       flag=wx.EXPAND)
         self.__optSizer.Add(self.__autoBin,       flag=wx.EXPAND)
         self.__optSizer.Add(self.__showCurrent,   flag=wx.EXPAND)
-        self.__optSizer.Add(self.__htSizer,       flag=wx.EXPAND)
-        self.__optSizer.Add(self.__enableOverlay, flag=wx.EXPAND)
 
         self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
