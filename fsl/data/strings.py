@@ -254,7 +254,6 @@ properties = TypeDict({
     'HistogramSeries.nbins'       : 'Number of bins',
     'HistogramSeries.ignoreZeros' : 'Ignore zeros',
     'HistogramSeries.volume'      : 'Volume',
-    'HistogramSeries.allVolumes'  : 'Use all volumes',
     'HistogramSeries.dataRange'   : 'Data range',
     
 

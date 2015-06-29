@@ -55,7 +55,6 @@ class HistogramSeries(plotpanel.DataSeries):
     nbins       = props.Int(minval=10, maxval=500, default=100, clamped=True)
     ignoreZeros = props.Boolean(default=True)
     volume      = props.Int(minval=0, maxval=0, clamped=True)
-    allVolumes  = props.Boolean(default=False)
     dataRange   = props.Bounds(
         ndims=1,
         labels=[strings.choices['HistogramPanel.dataRange.min'],
@@ -78,7 +77,6 @@ class HistogramSeries(plotpanel.DataSeries):
         self.addListener('nbins',       self.name, self.histPropsChanged)
         self.addListener('ignoreZeros', self.name, self.histPropsChanged)
         self.addListener('volume',      self.name, self.histPropsChanged)
-        self.addListener('allVolumes',  self.name, self.histPropsChanged)
         self.addListener('dataRange',   self.name, self.histPropsChanged)
 
         
@@ -88,27 +86,23 @@ class HistogramSeries(plotpanel.DataSeries):
         
     def __calcInitDataRange(self):
         
-        if self.overlay.is4DImage():
-            if self.allVolumes: data = self.overlay.data[:]
-            else:               data = self.overlay.data[..., self.volume]
-        else:
-            data = self.overlay.data[:]
+        data = self.overlay.data[:]
 
         data = data[np.isfinite(data)]
 
-        if self.ignoreZeros:
-            data = data[data != 0]
+        dmin = data.min()
+        dmax = data.max()
 
-        self.dataRange.x = data.min(), data.max()
+        self.dataRange.xmin = dmin
+        self.dataRange.xmax = dmax
+        self.dataRange.xlo  = dmin
+        self.dataRange.xhi  = dmax
 
     
     def histPropsChanged(self, *a):
 
-        if self.overlay.is4DImage():
-            if self.allVolumes: data = self.overlay.data[:]
-            else:               data = self.overlay.data[..., self.volume]
-        else:
-            data = self.overlay.data[:]
+        if self.overlay.is4DImage(): data = self.overlay.data[..., self.volume]
+        else:                        data = self.overlay.data[:]
 
         data = data[np.isfinite(data)]
 
@@ -218,11 +212,13 @@ class HistogramPanel(plotpanel.PlotPanel):
 
 
     def __overlaysChanged(self, *a):
+        
         self.disableListener('dataSeries', self._name)
         for ds in self.dataSeries:
             if ds.overlay not in self._overlayList:
                 self.dataSeries.remove(ds)
         self.enableListener('dataSeries', self._name)
+        
         self.draw() 
 
         
@@ -244,27 +240,21 @@ class HistogramPanel(plotpanel.PlotPanel):
     def __updateCurrent(self, *a):
 
         overlay        = self._displayCtx.getSelectedOverlay()
-        currentHs      = self.__current
         self.__current = None
 
         if len(self._overlayList) == 0             or \
            not isinstance(overlay, fslimage.Image) or \
            overlay in [hs.overlay for hs in self.dataSeries]:
             return
-        
-        if currentHs is not None and \
-           currentHs.overlay not in [hs.overlay for hs in self.dataSeries]:
-            self.__current = currentHs
-            
-        else:
-            hs             = HistogramSeries(self, overlay)
-            hs.colour      = [0, 0, 0]
-            hs.alpha       = 1
-            hs.lineWidth   = 2
-            hs.lineStyle   = ':'
-            hs.label       = None
 
-            self.__current = hs
+        hs             = HistogramSeries(self, overlay)
+        hs.colour      = [0, 0, 0]
+        hs.alpha       = 1
+        hs.lineWidth   = 2
+        hs.lineStyle   = ':'
+        hs.label       = None
+
+        self.__current = hs
 
 
     def getCurrent(self): 

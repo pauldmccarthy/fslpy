@@ -127,23 +127,20 @@ class HistSeriesDialog(wx.Dialog):
         self.__ignoreZeros = props.makeWidget(self, hs, 'ignoreZeros')
         self.__volume      = props.makeWidget(self, hs, 'volume',
                                               showLimits=False)
-        self.__allVolumes  = props.makeWidget(self, hs, 'allVolumes')
         self.__dataRange   = props.makeWidget(self, hs, 'dataRange',
                                               showLimits=False)
 
         self.__nbinsLbl       = wx.StaticText(self)
         self.__ignoreZerosLbl = wx.StaticText(self)
         self.__volumeLbl      = wx.StaticText(self)
-        self.__allVolumesLbl  = wx.StaticText(self)
         self.__dataRangeLbl   = wx.StaticText(self)
 
         self.__nbinsLbl      .SetLabel(strings.properties[hs, 'nbins'])
         self.__ignoreZerosLbl.SetLabel(strings.properties[hs, 'ignoreZeros'])
         self.__volumeLbl     .SetLabel(strings.properties[hs, 'volume'])     
-        self.__allVolumesLbl .SetLabel(strings.properties[hs, 'allVolumes']) 
         self.__dataRangeLbl  .SetLabel(strings.properties[hs, 'dataRange'])  
 
-        self.__sizer = wx.FlexGridSizer(5, 2)
+        self.__sizer = wx.FlexGridSizer(4, 2)
 
         self.SetSizer(self.__sizer)
 
@@ -153,15 +150,11 @@ class HistSeriesDialog(wx.Dialog):
         self.__sizer.Add(self.__ignoreZeros,    flag=wx.EXPAND)
         self.__sizer.Add(self.__volumeLbl,      flag=wx.EXPAND)
         self.__sizer.Add(self.__volume,         flag=wx.EXPAND)
-        self.__sizer.Add(self.__allVolumesLbl,  flag=wx.EXPAND)
-        self.__sizer.Add(self.__allVolumes,     flag=wx.EXPAND)
         self.__sizer.Add(self.__dataRangeLbl,   flag=wx.EXPAND)
         self.__sizer.Add(self.__dataRange,      flag=wx.EXPAND)
 
-        self.__volume       .Enable(hs.overlay.is4DImage())
-        self.__volumeLbl    .Enable(hs.overlay.is4DImage())
-        self.__allVolumes   .Enable(hs.overlay.is4DImage())
-        self.__allVolumesLbl.Enable(hs.overlay.is4DImage())
+        self.__volume   .Enable(hs.overlay.is4DImage())
+        self.__volumeLbl.Enable(hs.overlay.is4DImage())
         self.__autoBinChanged()
 
         hsPanel.addListener('autoBin',
@@ -170,9 +163,6 @@ class HistSeriesDialog(wx.Dialog):
         hsPanel.addListener('dataSeries',
                             self.__name, 
                             self.__dataSeriesChanged) 
-        hs     .addListener('allVolumes',
-                            self.__name,
-                            self.__allVolumesChanged)
 
         self.Bind(wx.EVT_WINDOW_DESTROY, self.__onDestroy)
 
@@ -184,8 +174,7 @@ class HistSeriesDialog(wx.Dialog):
     def __onDestroy(self, ev=None):
         if ev is not None:
             ev.Skip()
-        self.__hsPanel.removeListener('autoBin',    self.__name)
-        self.__hs     .removeListener('allVolumes', self.__name)
+        self.__hsPanel.removeListener('autoBin', self.__name)
 
 
     def __dataSeriesChanged(self, *a):
@@ -193,11 +182,6 @@ class HistSeriesDialog(wx.Dialog):
             self.Close()
             self.Destroy()
             self.__onDestroy()
-    
-        
-    def __allVolumesChanged(self, *a):
-        self.__volume   .Enable(not self.__hs.allVolumes)
-        self.__volumeLbl.Enable(not self.__hs.allVolumes)
 
         
     def __autoBinChanged(self, *a):
