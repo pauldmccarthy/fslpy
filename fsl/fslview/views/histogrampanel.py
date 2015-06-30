@@ -162,10 +162,7 @@ class HistogramSeries(plotpanel.DataSeries):
 
             self.overlayList.append(self.overlay3D)
 
-            print 'Appended new mask overlay'
             opts = self.displayCtx.getOpts(self.overlay3D, overlayType='mask')
-
-            print 'Got overlay options'
 
             opts.bindProps('volume',    self)
             opts.bindProps('colour',    self)
@@ -250,6 +247,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         """De-registers property listeners. """
         plotpanel.PlotPanel.destroy(self)
 
+        self.removeGlobalListener(self._name)
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 

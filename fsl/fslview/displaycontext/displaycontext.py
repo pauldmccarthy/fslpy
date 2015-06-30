@@ -119,6 +119,8 @@ class DisplayContext(props.SyncableHasProperties):
                 dParent = None
             else:
                 dParent = self.getParent().getDisplay(overlay, overlayType)
+                if overlayType is None:
+                    overlayType = dParent.overlayType
                 
             display = fsldisplay.Display(overlay,
                                          self.__overlayList,
