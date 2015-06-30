@@ -250,11 +250,12 @@ properties = TypeDict({
     'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
     'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
     
-    'HistogramSeries.nbins'       : 'Number of bins',
-    'HistogramSeries.ignoreZeros' : 'Ignore zeros',
-    'HistogramSeries.volume'      : 'Volume',
-    'HistogramSeries.dataRange'   : 'Data range',
-    'HistogramSeries.showOverlay' : 'Show 3D histogram overlay',
+    'HistogramSeries.nbins'           : 'Number of bins',
+    'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
+    'HistogramSeries.includeOutliers' : 'Include values out of data range',
+    'HistogramSeries.volume'          : 'Volume',
+    'HistogramSeries.dataRange'       : 'Data range',
+    'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

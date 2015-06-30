@@ -21,7 +21,6 @@ import                           plotpanel
 
 log = logging.getLogger(__name__)
 
-
         
 def autoBin(data, dataRange):
 
@@ -52,11 +51,15 @@ def autoBin(data, dataRange):
 
 class HistogramSeries(plotpanel.DataSeries):
 
-    nbins       = props.Int(minval=10, maxval=500, default=100, clamped=True)
-    ignoreZeros = props.Boolean(default=True)
-    showOverlay = props.Boolean(default=False)
-    volume      = props.Int(minval=0, maxval=0, clamped=True)
-    dataRange   = props.Bounds(
+    nbins           = props.Int(minval=10,
+                                maxval=500,
+                                default=100,
+                                clamped=True)
+    ignoreZeros     = props.Boolean(default=True)
+    showOverlay     = props.Boolean(default=False)
+    includeOutliers = props.Boolean(default=False)
+    volume          = props.Int(minval=0, maxval=0, clamped=True)
+    dataRange       = props.Bounds(
         ndims=1,
         labels=[strings.choices['HistogramPanel.dataRange.min'],
                 strings.choices['HistogramPanel.dataRange.max']])
@@ -76,37 +79,54 @@ class HistogramSeries(plotpanel.DataSeries):
         if overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
-        self.calcInitDataRange()
+        self.initProperties()
         self.histPropsChanged()
         
         overlayList.addListener('overlays', self.name, self.overlaysChanged)
         
-        self.addListener('nbins',       self.name, self.histPropsChanged)
-        self.addListener('ignoreZeros', self.name, self.histPropsChanged)
-        self.addListener('volume',      self.name, self.histPropsChanged)
-        self.addListener('dataRange',   self.name, self.histPropsChanged)
-        self.addListener('showOverlay', self.name, self.showOverlayChanged)
+        self.addListener('nbins',           self.name, self.histPropsChanged)
+        self.addListener('ignoreZeros',     self.name, self.histPropsChanged)
+        self.addListener('includeOutliers', self.name, self.histPropsChanged)
+        self.addListener('volume',          self.name, self.histPropsChanged)
+        self.addListener('dataRange',       self.name, self.histPropsChanged)
+        self.addListener('showOverlay',     self.name, self.showOverlayChanged)
 
         
-    def __del__(self):
-        # Remove 3D overlay if present
-        if self.overlay3D is not None:
-            self.overlayList.remove(self.overlay3D)
-
+    def initProperties(self):
         
-    def calcInitDataRange(self):
+        data  = self.overlay.data[:]
         
-        data = self.overlay.data[:]
+        data  = data[np.isfinite(data)]
+        dmin  = data.min()
+        dmax  = data.max()
 
-        data = data[np.isfinite(data)]
-
-        dmin = data.min()
-        dmax = data.max()
+        data  = data[data != 0]
+        nzmin = data.min()
+        nzmax = data.max()
 
         self.dataRange.xmin = dmin
         self.dataRange.xmax = dmax
-        self.dataRange.xlo  = dmin
-        self.dataRange.xhi  = dmax
+        self.dataRange.xlo  = nzmin
+        self.dataRange.xhi  = nzmax
+
+        self.nbins = autoBin(data, self.dataRange.x)
+
+        
+    def destroy(self):
+        """This needs to be called when this ``HistogramSeries`` instance
+        is no longer being used.
+        """
+        self            .removeListener('nbins',           self.name)
+        self            .removeListener('ignoreZeros',     self.name)
+        self            .removeListener('includeOutliers', self.name)
+        self            .removeListener('volume',          self.name)
+        self            .removeListener('dataRange',       self.name)
+        self            .removeListener('nbins',           self.name)
+        self.overlayList.removeListener('overlays',        self.name)
+        
+        if self.overlay3D is not None:
+            self.overlayList.remove(self.overlay3D)
+            self.overlay3D = None
 
     
     def histPropsChanged(self, *a):
@@ -118,41 +138,58 @@ class HistogramSeries(plotpanel.DataSeries):
 
         if self.ignoreZeros:
             data = data[data != 0]
+        
+        if self.hsPanel.autoBin:
+            nbins = autoBin(data, self.dataRange.x)
 
-        nvals     = data.size
-        dataRange = self.dataRange.x
+            self.disableListener('nbins', self.name)
+            self.nbins = nbins
+            self.enableListener('nbins', self.name)
 
-        log.debug('Calculating histogram for overlay '
-                  '{} (number of values {})'.format(
+        # Calculate bin edges
+        bins = np.linspace(self.dataRange.xlo,
+                           self.dataRange.xhi,
+                           self.nbins + 1)
+
+        if self.includeOutliers:
+            bins[ 0] = self.dataRange.xmin
+            bins[-1] = self.dataRange.xmax
+        else:
+            data = data[(data >= self.dataRange.xlo) &
+                        (data <= self.dataRange.xhi)]
+
+        # Calculate the histogram, but leave
+        # some space at the start and end of
+        # the output arrays
+        histX = np.zeros(self.nbins + 3, dtype=np.float32)
+        histY = np.zeros(self.nbins + 3, dtype=np.float32)
+        
+        histY[1:-2], histX[1:-1] = np.histogram(data.flat, bins=bins)
+
+        # Fill in the ends of those arrays so
+        # the histogram data is plotted nicely
+        histX[ 0] = histX[ 1]
+        histX[-1] = histX[-2]
+        histY[-2] = histY[-3]
+            
+        self.xdata = histX
+        self.ydata = histY
+        self.nvals = histY.sum()
+
+        log.debug('Calculated histogram for overlay '
+                  '{} (number of values: {}, number '
+                  'of bins: {})'.format(
                       self.overlay.name,
-                      nvals))
-        
-        if self.hsPanel.autoBin: nbins = autoBin(data, dataRange)
-        else:                    nbins = self.nbins
-        
-        histY, histX = np.histogram(data.flat,
-                                    bins=nbins,
-                                    range=dataRange)
-        
-        # np.histogram returns all bin
-        # edges, including the right hand
-        # side of the final bin. Remove it.
-        # And also shift the remaining
-        # bin edges so they are centred
-        # within each bin
-        histX  = histX[:-1]
-        histX += (histX[1] - histX[0]) / 2.0
-
-        self.xdata = np.array(histX, dtype=np.float32)
-        self.ydata = np.array(histY, dtype=np.float32)
-        self.nvals = nvals
+                      self.nvals,
+                      self.nbins))
 
 
     def showOverlayChanged(self, *a):
 
-        if not self.showOverlay and self.overlay3D is not None:
-            self.overlayList.remove(self.overlay3D)
-            self.overlay3D = None
+        if not self.showOverlay:
+            if self.overlay3D is not None:
+                self.overlayList.remove(self.overlay3D)
+                self.overlay3D = None
 
         else:
             self.overlay3D = fslimage.Image(
@@ -283,9 +320,8 @@ class HistogramPanel(plotpanel.PlotPanel):
         overlay        = self._displayCtx.getSelectedOverlay()
         self.__current = None
 
-        if len(self._overlayList) == 0             or \
-           not isinstance(overlay, fslimage.Image) or \
-           overlay in [hs.overlay for hs in self.dataSeries]:
+        if len(self._overlayList) == 0 or \
+           not isinstance(overlay, fslimage.Image):
             return
 
         hs             = HistogramSeries(overlay,
@@ -301,15 +337,22 @@ class HistogramPanel(plotpanel.PlotPanel):
         self.__current = hs
 
 
-    def getCurrent(self): 
+    def getCurrent(self):
+        if self.__current is None:
+            self.__updateCurrent()
         return self.__current
 
 
     def draw(self, *a):
 
-        self.__updateCurrent()
-        current = self.getCurrent()
+        extra = None
 
-        if self.showCurrent and \
-           current is not None: self.drawDataSeries([current])
-        else:                   self.drawDataSeries()
+        if self.showCurrent:
+            self.__updateCurrent()
+            current = self.getCurrent()
+            
+            if current is not None:
+                extra = [current]
+
+        if self.smooth: self.drawDataSeries(extra)
+        else:           self.drawDataSeries(extra, drawstyle='steps-post')

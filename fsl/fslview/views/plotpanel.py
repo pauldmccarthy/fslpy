@@ -167,10 +167,10 @@ class PlotPanel(viewpanel.ViewPanel):
         return (xmin, xmax), (ymin, ymax)
 
 
-    def drawDataSeries(self, extra=None):
+    def drawDataSeries(self, extraSeries=None, **plotArgs):
 
-        if extra is None:
-            extra = []
+        if extraSeries is None:
+            extraSeries = []
 
         axis          = self.getAxis()
         canvas        = self.getCanvas()
@@ -179,7 +179,7 @@ class PlotPanel(viewpanel.ViewPanel):
         axis.clear()
 
         toPlot = self.dataSeries[:]
-        toPlot = extra + toPlot
+        toPlot = extraSeries + toPlot
 
         if len(toPlot) == 0:
             canvas.draw()
@@ -190,7 +190,7 @@ class PlotPanel(viewpanel.ViewPanel):
         ylims = []
 
         for ds in toPlot:
-            xlim, ylim = self.__drawOneDataSeries(ds)
+            xlim, ylim = self.__drawOneDataSeries(ds, **plotArgs)
             xlims.append(xlim)
             ylims.append(ylim)
 
@@ -260,7 +260,7 @@ class PlotPanel(viewpanel.ViewPanel):
         self.Refresh()
 
 
-    def __drawOneDataSeries(self, ds):
+    def __drawOneDataSeries(self, ds, **plotArgs):
 
         if ds.alpha == 0:
             return (0, 0), (0, 0)
@@ -285,13 +285,13 @@ class PlotPanel(viewpanel.ViewPanel):
         xdata[nans] = np.nan
         ydata[nans] = np.nan
 
-        kwargs = {}
-        kwargs['lw']    = ds.lineWidth
-        kwargs['alpha'] = ds.alpha
-        kwargs['color'] = ds.colour
-        kwargs['label'] = ds.label
-        kwargs['ls']    = ds.lineStyle
-        
+        kwargs = plotArgs
+        kwargs['lw']    = kwargs.get('lw',    ds.lineWidth)
+        kwargs['alpha'] = kwargs.get('alpha', ds.alpha)
+        kwargs['color'] = kwargs.get('color', ds.colour)
+        kwargs['label'] = kwargs.get('label', ds.label)
+        kwargs['ls']    = kwargs.get('ls',    ds.lineStyle)
+
         self.getAxis().plot(xdata, ydata, **kwargs)
 
         return ((np.nanmin(xdata), np.nanmax(xdata)),
