@@ -64,8 +64,14 @@ class HistogramSeries(plotpanel.DataSeries):
         labels=[strings.choices['HistogramPanel.dataRange.min'],
                 strings.choices['HistogramPanel.dataRange.max']])
 
-    
-    def __init__(self, overlay, hsPanel, displayCtx, overlayList, volume=0):
+
+    def __init__(self,
+                 overlay,
+                 hsPanel,
+                 displayCtx,
+                 overlayList,
+                 volume=0,
+                 baseHs=None):
 
         plotpanel.DataSeries.__init__(self, overlay)
         self.hsPanel     = hsPanel
@@ -79,8 +85,17 @@ class HistogramSeries(plotpanel.DataSeries):
         if overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
-        self.initProperties()
-        self.histPropsChanged()
+        if baseHs is not None:
+            self.dataRange.xmin = baseHs.dataRange.xmin
+            self.dataRange.xmax = baseHs.dataRange.xmax
+            self.dataRange.x    = baseHs.dataRange.x
+            self.nbins          = baseHs.nbins
+            self.xdata          = np.array(baseHs.xdata)
+            self.ydata          = np.array(baseHs.ydata)
+            self.nvals          = np.array(baseHs.nvals)
+        else:
+            self.initProperties()
+            self.histPropsChanged()
         
         overlayList.addListener('overlays', self.name, self.overlaysChanged)
         
@@ -318,16 +333,21 @@ class HistogramPanel(plotpanel.PlotPanel):
     def __updateCurrent(self, *a):
 
         overlay        = self._displayCtx.getSelectedOverlay()
+        current        = self.__current
         self.__current = None
 
         if len(self._overlayList) == 0 or \
            not isinstance(overlay, fslimage.Image):
             return
 
+        if current is not None and current.overlay == overlay: baseHs = current
+        else:                                                  baseHs = None
+
         hs             = HistogramSeries(overlay,
                                          self,
                                          self._displayCtx,
-                                         self._overlayList)
+                                         self._overlayList,
+                                         baseHs=baseHs)
         hs.colour      = [0, 0, 0]
         hs.alpha       = 1
         hs.lineWidth   = 2

@@ -186,7 +186,9 @@ class HistSeriesDialog(wx.Dialog):
     def __onDestroy(self, ev=None):
         if ev is not None:
             ev.Skip()
-        self.__hsPanel.removeListener('autoBin', self.__name)
+        self.__hsPanel.removeListener('autoBin',    self.__name)
+        self.__hsPanel.removeListener('dataSeries', self.__name)
+        
 
 
     def __dataSeriesChanged(self, *a):
