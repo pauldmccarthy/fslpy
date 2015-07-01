@@ -74,6 +74,10 @@ class HistogramSeries(plotpanel.DataSeries):
                  volume=0,
                  baseHs=None):
 
+        log.debug('New HistogramSeries instance for {} '
+                  '(based on existing instance: {})'.format(
+                      overlay.name, baseHs is not None)) 
+
         plotpanel.DataSeries.__init__(self, overlay)
         self.hsPanel     = hsPanel
         self.name        = '{}_{}'.format(type(self).__name__, id(self))
@@ -87,46 +91,75 @@ class HistogramSeries(plotpanel.DataSeries):
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
         if baseHs is not None:
-            self.dataRange.xmin = baseHs.dataRange.xmin
-            self.dataRange.xmax = baseHs.dataRange.xmax
-            self.dataRange.x    = baseHs.dataRange.x
-            self.nbins          = baseHs.nbins
-            self.xdata          = np.array(baseHs.xdata)
-            self.ydata          = np.array(baseHs.ydata)
-            self.nvals          = np.array(baseHs.nvals)
+            self.dataRange.xmin  = baseHs.dataRange.xmin
+            self.dataRange.xmax  = baseHs.dataRange.xmax
+            self.dataRange.x     = baseHs.dataRange.x
+            self.nbins           = baseHs.nbins
+            self.volume          = baseHs.volume
+            self.ignoreZeros     = baseHs.ignoreZeros
+            self.includeOutliers = baseHs.includeOutliers
+            self.nvals           = baseHs.nvals
+            self.xdata           = np.array(baseHs.xdata)
+            self.ydata           = np.array(baseHs.ydata)
+            self.finiteData      = np.array(baseHs.finiteData)
+            self.nonZeroData     = np.array(baseHs.nonZeroData)
+ 
         else:
-
             self.initProperties()
-            self.histPropsChanged()
         
         overlayList.addListener('overlays', self.name, self.overlaysChanged)
 
+        self.addListener('volume',          self.name, self.volumeChanged)
         self.addListener('nbins',           self.name, self.histPropsChanged)
         self.addListener('ignoreZeros',     self.name, self.histPropsChanged)
         self.addListener('includeOutliers', self.name, self.histPropsChanged)
-        self.addListener('volume',          self.name, self.histPropsChanged)
         self.addListener('dataRange',       self.name, self.histPropsChanged)
         self.addListener('showOverlay',     self.name, self.showOverlayChanged)
 
         
     def initProperties(self):
 
+        log.debug('Performining initial histogram '
+                  'calculations for overlay {}'.format(
+                      self.overlay.name))
+
         data  = self.overlay.data[:]
         
-        data  = data[np.isfinite(data)]
-        dmin  = data.min()
-        dmax  = data.max()
-
-        data  = data[data != 0]
-        nzmin = data.min()
-        nzmax = data.max()
+        finData = data[np.isfinite(data)]
+        dmin    = finData.min()
+        dmax    = finData.max()
+        
+        nzData = finData[finData != 0]
+        nzmin  = nzData.min()
+        nzmax  = nzData.max()
 
         self.dataRange.xmin = dmin
         self.dataRange.xmax = dmax
         self.dataRange.xlo  = nzmin
         self.dataRange.xhi  = nzmax
 
-        self.nbins = autoBin(data, self.dataRange.x)
+        self.nbins = autoBin(nzData, self.dataRange.x)
+
+        if not self.overlay.is4DImage():
+            self.finiteData  = finData
+            self.nonZeroData = nzData
+            self.histPropsChanged()
+            
+        else:
+            self.volumeChanged()
+
+        
+    def volumeChanged(self, *a):
+
+        if self.overlay.is4DImage(): data = self.overlay.data[..., self.volume]
+        else:                        data = self.overlay.data[:]
+
+        data = data[np.isfinite(data)]
+
+        self.finiteData  = data
+        self.nonZeroData = data[data != 0]
+
+        self.histPropsChanged()
 
         
     def destroy(self):
@@ -148,13 +181,12 @@ class HistogramSeries(plotpanel.DataSeries):
     
     def histPropsChanged(self, *a):
 
-        if self.overlay.is4DImage(): data = self.overlay.data[..., self.volume]
-        else:                        data = self.overlay.data[:]
 
-        data = data[np.isfinite(data)]
+        log.debug('Calculating histogram for '
+                  'overlay {}'.format(self.overlay.name))
 
-        if self.ignoreZeros:
-            data = data[data != 0]
+        if self.ignoreZeros: data = self.nonZeroData
+        else:                data = self.finiteData
         
         if self.hsPanel.autoBin:
             nbins = autoBin(data, self.dataRange.x)
@@ -205,10 +237,17 @@ class HistogramSeries(plotpanel.DataSeries):
 
         if not self.showOverlay:
             if self.overlay3D is not None:
+
+                log.debug('Removing 3D histogram overlay mask for {}'.format(
+                    self.overlay.name))
                 self.overlayList.remove(self.overlay3D)
                 self.overlay3D = None
 
         else:
+
+            log.debug('Creating 3D histogram overlay mask for {}'.format(
+                self.overlay.name))
+            
             self.overlay3D = fslimage.Image(
                 self.overlay.data,
                 name='{}/histogram/mask'.format(self.overlay.name),
@@ -228,9 +267,16 @@ class HistogramSeries(plotpanel.DataSeries):
         if self.overlay3D is None:
             return
 
+        # If a 3D overlay was being shown, and it
+        # has been removed from the overlay list
+        # by the user, turn the showOverlay property
+        # off
         if self.overlay3D not in self.overlayList:
-            self.overlay3D = None
+            
+            self.disableListener('showOverlay', self.name)
             self.showOverlay = False
+            self.showOverlayChanged()
+            self.enableListener('showOverlay', self.name)
 
 
     def getData(self):
@@ -291,7 +337,8 @@ class HistogramPanel(plotpanel.PlotPanel):
                          self.__autoBinChanged,
                          overwrite=True)
 
-        self.__current = None
+        self.__histCache = {}
+        self.__current   = None
         self.__updateCurrent()
 
         self.Layout()
@@ -305,14 +352,28 @@ class HistogramPanel(plotpanel.PlotPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
+        for hs in set(self.dataSeries[:] + self.__histCache.values()):
+            hs.destroy()
+
 
     def __overlaysChanged(self, *a):
         
         self.disableListener('dataSeries', self._name)
+        
         for ds in self.dataSeries:
             if ds.overlay not in self._overlayList:
                 self.dataSeries.remove(ds)
+                
         self.enableListener('dataSeries', self._name)
+
+        # Remove any dead overlays
+        # from the histogram cache
+        for overlay in self.__histCache:
+            if overlay not in self._overlayList:
+                log.debug('Removing cached histogram series '
+                          'for overlay {}'.format(overlay.name))
+                hs = self.__histCache.pop(overlay)
+                hs.destroy()
         
         self.__selectedOverlayChanged()
 
@@ -341,15 +402,21 @@ class HistogramPanel(plotpanel.PlotPanel):
     def __updateCurrent(self):
 
         overlay        = self._displayCtx.getSelectedOverlay()
-        current        = self.__current
         self.__current = None
 
         if len(self._overlayList) == 0 or \
            not isinstance(overlay, fslimage.Image):
             return
 
-        if current is not None and current.overlay == overlay: baseHs = current
-        else:                                                  baseHs = None
+        # See if there is already a HistogramSeries based on the
+        # current overlay - if there is, use it as the 'base' HS
+        # for the new one, as it will save us some processing time
+        if overlay in self.__histCache:
+            log.debug('Creating new histogram series for overlay {} '
+                      'from cached copy'.format(overlay.name))
+            baseHs = self.__histCache[overlay]
+        else:
+            baseHs = None
 
         def loadHs():
             return HistogramSeries(overlay,
@@ -366,6 +433,13 @@ class HistogramPanel(plotpanel.PlotPanel):
             hs = messagedlg.ProcessingDialog(
                 loadHs,
                 strings.messages[self, 'calcHist'].format(overlay.name)).Run()
+
+            # Put the initial HS instance for this
+            # overlay in the cache so we don't have
+            # to re-calculate it later
+            log.debug('Caching histogram series for '
+                      'overlay {}'.format(overlay.name))
+            self.__histCache[overlay] = hs
             
         # The new HS instance is being based on the
         # current instance, so it can just copy the
