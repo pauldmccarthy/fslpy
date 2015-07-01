@@ -20,6 +20,9 @@ messages = TypeDict({
                                    'decompressing to {}, to allow memory '
                                    'mapping...',
 
+    'ProcessingDialog.error' : 'An error has occurred: {}'
+                               '\n\nDetails: {}',
+
     'overlay.loadOverlays.loading'     : 'Loading {} ...',
     'overlay.loadOverlays.error'       : 'An error occurred loading the image '
                                          '{}\n\nDetails: {}',
@@ -60,6 +63,8 @@ messages = TypeDict({
 
     'PlotPanel.screenshot'              : 'Save screenshot',
 
+    'HistogramPanel.calcHist'           : 'Calculating histogram for {} ...',
+
     'SpacePanel.nonVolumetric'          : 'Non-volumetric overlays '
                                           'are not supported',
 
@@ -78,6 +83,7 @@ messages = TypeDict({
 titles = TypeDict({
     'image.saveImage.dialog' : 'Save image file',
 
+    'ProcessingDialog.error' : 'Error',
     
     'overlay.addOverlays.dialog' : 'Open overlay files',
     

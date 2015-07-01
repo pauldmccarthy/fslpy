@@ -15,6 +15,7 @@ import props
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
+import fsl.utils.messagedlg   as messagedlg
 import fsl.fslview.controls   as fslcontrols
 import                           plotpanel
 
@@ -94,11 +95,12 @@ class HistogramSeries(plotpanel.DataSeries):
             self.ydata          = np.array(baseHs.ydata)
             self.nvals          = np.array(baseHs.nvals)
         else:
+
             self.initProperties()
             self.histPropsChanged()
         
         overlayList.addListener('overlays', self.name, self.overlaysChanged)
-        
+
         self.addListener('nbins',           self.name, self.histPropsChanged)
         self.addListener('ignoreZeros',     self.name, self.histPropsChanged)
         self.addListener('includeOutliers', self.name, self.histPropsChanged)
@@ -108,7 +110,7 @@ class HistogramSeries(plotpanel.DataSeries):
 
         
     def initProperties(self):
-        
+
         data  = self.overlay.data[:]
         
         data  = data[np.isfinite(data)]
@@ -274,7 +276,7 @@ class HistogramPanel(plotpanel.PlotPanel):
                                       self.__overlaysChanged)
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
-                                      self.draw)
+                                      self.__selectedOverlayChanged)
 
         # Re draw whenever any PlotPanel or
         # HistogramPanel property changes.
@@ -312,7 +314,13 @@ class HistogramPanel(plotpanel.PlotPanel):
                 self.dataSeries.remove(ds)
         self.enableListener('dataSeries', self._name)
         
-        self.draw() 
+        self.__selectedOverlayChanged()
+
+        
+    def __selectedOverlayChanged(self, *a):
+
+        self.__updateCurrent()
+        self.draw()
 
         
     def __autoBinChanged(self, *a):
@@ -330,7 +338,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         self.draw()
         
 
-    def __updateCurrent(self, *a):
+    def __updateCurrent(self):
 
         overlay        = self._displayCtx.getSelectedOverlay()
         current        = self.__current
@@ -343,11 +351,29 @@ class HistogramPanel(plotpanel.PlotPanel):
         if current is not None and current.overlay == overlay: baseHs = current
         else:                                                  baseHs = None
 
-        hs             = HistogramSeries(overlay,
-                                         self,
-                                         self._displayCtx,
-                                         self._overlayList,
-                                         baseHs=baseHs)
+        def loadHs():
+            return HistogramSeries(overlay,
+                                   self,
+                                   self._displayCtx,
+                                   self._overlayList,
+                                   baseHs=baseHs)
+
+        # We are creating a new HS instance, so it
+        # needs to do some initla data range/histogram
+        # calculations. Show a message while this is
+        # happening.
+        if baseHs is None:
+            hs = messagedlg.ProcessingDialog(
+                loadHs,
+                strings.messages[self, 'calcHist'].format(overlay.name)).Run()
+            
+        # The new HS instance is being based on the
+        # current instance, so it can just copy the
+        # histogram data over - no message dialog
+        # is needed
+        else:
+            hs = loadHs()
+
         hs.colour      = [0, 0, 0]
         hs.alpha       = 1
         hs.lineWidth   = 2
@@ -360,7 +386,15 @@ class HistogramPanel(plotpanel.PlotPanel):
     def getCurrent(self):
         if self.__current is None:
             self.__updateCurrent()
-        return self.__current
+
+        if self.__current is None:
+            return None
+
+        return HistogramSeries(self.__current.overlay,
+                               self,
+                               self._displayCtx,
+                               self._overlayList,
+                               baseHs=self.__current) 
 
 
     def draw(self, *a):
@@ -368,11 +402,9 @@ class HistogramPanel(plotpanel.PlotPanel):
         extra = None
 
         if self.showCurrent:
-            self.__updateCurrent()
-            current = self.getCurrent()
             
-            if current is not None:
-                extra = [current]
+            if self.__current is not None:
+                extra = [self.__current]
 
         if self.smooth: self.drawDataSeries(extra)
         else:           self.drawDataSeries(extra, drawstyle='steps-post')
