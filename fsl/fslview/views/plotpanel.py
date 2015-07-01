@@ -269,7 +269,12 @@ class PlotPanel(viewpanel.ViewPanel):
 
         xdata, ydata = ds.getData()
 
+        # Note to self: If the smoothed data is
+        # filled with NaNs, it is possibly due
+        # to duplicate values in the x data, which
+        # are not handled very well by splrep.
         if self.smooth:
+
             tck   = interp.splrep(xdata, ydata)
             xdata = np.linspace(xdata[0],
                                 xdata[-1],

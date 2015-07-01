@@ -238,19 +238,9 @@ class HistogramSeries(plotpanel.DataSeries):
             bins[ 0] = self.dataRange.xmin
             bins[-1] = self.dataRange.xmax
             
-        # Calculate the histogram, but leave
-        # some space at the start and end of
-        # the output arrays
-        histX = np.zeros(self.nbins + 3, dtype=np.float32)
-        histY = np.zeros(self.nbins + 3, dtype=np.float32)
-        
-        histY[1:-2], histX[1:-1] = np.histogram(data.flat, bins=bins)
-
-        # Fill in the ends of those arrays so
-        # the histogram data is plotted nicely
-        histX[ 0] = histX[ 1]
-        histX[-1] = histX[-2]
-        histY[-2] = histY[-3]
+        # Calculate the histogram
+        histX    = bins
+        histY, _ = np.histogram(data.flat, bins=bins)
             
         self.xdata = histX
         self.ydata = histY
@@ -312,11 +302,34 @@ class HistogramSeries(plotpanel.DataSeries):
 
     def getData(self):
 
-        xdata    = self.xdata
-        ydata    = self.ydata
+        # If smoothing is not enabled, we'll
+        # munge the histogram data a bit so
+        # that plt.plot(drawstyle='steps-post')
+        # plots it nicely.
+        if not self.hsPanel.smooth:
+
+            xdata = np.zeros(len(self.xdata) + 2, dtype=np.float32)
+            ydata = np.zeros(len(self.ydata) + 3, dtype=np.float32)
+
+            xdata[1:-1] = self.xdata
+            ydata[1:-2] = self.ydata
+
+            # Fill in the ends of those arrays so
+            # the histogram data is plotted nicely
+            xdata[ 0] = xdata[ 1]
+            xdata[-1] = xdata[-2]
+            ydata[-2] = ydata[-3]
+
+        # If smoothing is enabled, the above munge
+        # is not necessary, and will probably cause
+        # the spline interpolation to fail
+        else:
+            xdata = np.array(self.xdata[:-1], dtype=np.float32)
+            ydata = np.array(self.ydata,      dtype=np.float32)
+
         nvals    = self.nvals
         histType = self.hsPanel.histType
-
+            
         if   histType == 'count':       return xdata, ydata
         elif histType == 'probability': return xdata, ydata / nvals
 
