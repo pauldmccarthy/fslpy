@@ -215,6 +215,12 @@ class HistogramSeries(plotpanel.DataSeries):
         log.debug('Calculating histogram for '
                   'overlay {}'.format(self.overlay.name))
 
+        if self.dataRange.xhi - self.dataRange.xlo < 0.00000001:
+            self.xdata = np.array([])
+            self.ydata = np.array([])
+            self.nvals = 0
+            return
+
         if self.ignoreZeros:
             if self.includeOutliers: data = self.nonZeroData
             else:                    data = self.clippedNonZeroData

@@ -196,6 +196,13 @@ class PlotPanel(viewpanel.ViewPanel):
 
         (xmin, xmax), (ymin, ymax) = self.__calcLimits(xlims, ylims)
 
+        if xmax - xmin < 0.0000000001 or \
+           ymax - ymin < 0.0000000001:
+            axis.clear()
+            canvas.draw()
+            self.Refresh()
+            return
+
         # x/y axis labels
         xlabel = self.xlabel 
         ylabel = self.ylabel
@@ -269,6 +276,9 @@ class PlotPanel(viewpanel.ViewPanel):
 
         xdata, ydata = ds.getData()
 
+        if len(xdata) != len(ydata) or len(xdata) == 0:
+            return (0, 0), (0, 0)
+
         # Note to self: If the smoothed data is
         # filled with NaNs, it is possibly due
         # to duplicate values in the x data, which
@@ -289,6 +299,9 @@ class PlotPanel(viewpanel.ViewPanel):
 
         xdata[nans] = np.nan
         ydata[nans] = np.nan
+
+        if np.all(np.isnan(xdata) | np.isnan(ydata)):
+            return (0, 0), (0, 0)
 
         kwargs = plotArgs
         kwargs['lw']    = kwargs.get('lw',    ds.lineWidth)
