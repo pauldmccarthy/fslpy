@@ -91,18 +91,20 @@ class HistogramSeries(plotpanel.DataSeries):
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
 
         if baseHs is not None:
-            self.dataRange.xmin  = baseHs.dataRange.xmin
-            self.dataRange.xmax  = baseHs.dataRange.xmax
-            self.dataRange.x     = baseHs.dataRange.x
-            self.nbins           = baseHs.nbins
-            self.volume          = baseHs.volume
-            self.ignoreZeros     = baseHs.ignoreZeros
-            self.includeOutliers = baseHs.includeOutliers
-            self.nvals           = baseHs.nvals
-            self.xdata           = np.array(baseHs.xdata)
-            self.ydata           = np.array(baseHs.ydata)
-            self.finiteData      = np.array(baseHs.finiteData)
-            self.nonZeroData     = np.array(baseHs.nonZeroData)
+            self.dataRange.xmin     = baseHs.dataRange.xmin
+            self.dataRange.xmax     = baseHs.dataRange.xmax
+            self.dataRange.x        = baseHs.dataRange.x
+            self.nbins              = baseHs.nbins
+            self.volume             = baseHs.volume
+            self.ignoreZeros        = baseHs.ignoreZeros
+            self.includeOutliers    = baseHs.includeOutliers
+            self.nvals              = baseHs.nvals
+            self.xdata              = np.array(baseHs.xdata)
+            self.ydata              = np.array(baseHs.ydata)
+            self.finiteData         = np.array(baseHs.finiteData)
+            self.nonZeroData        = np.array(baseHs.nonZeroData)
+            self.clippedFiniteData  = np.array(baseHs.finiteData)
+            self.clippedNonZeroData = np.array(baseHs.nonZeroData) 
  
         else:
             self.initProperties()
@@ -110,10 +112,10 @@ class HistogramSeries(plotpanel.DataSeries):
         overlayList.addListener('overlays', self.name, self.overlaysChanged)
 
         self.addListener('volume',          self.name, self.volumeChanged)
+        self.addListener('dataRange',       self.name, self.dataRangeChanged)
         self.addListener('nbins',           self.name, self.histPropsChanged)
         self.addListener('ignoreZeros',     self.name, self.histPropsChanged)
         self.addListener('includeOutliers', self.name, self.histPropsChanged)
-        self.addListener('dataRange',       self.name, self.histPropsChanged)
         self.addListener('showOverlay',     self.name, self.showOverlayChanged)
 
         
@@ -143,13 +145,20 @@ class HistogramSeries(plotpanel.DataSeries):
         if not self.overlay.is4DImage():
             self.finiteData  = finData
             self.nonZeroData = nzData
-            self.histPropsChanged()
-            
+            self.dataRangeChanged(callHistPropsChanged=False)
         else:
-            self.volumeChanged()
+            self.volumeChanged(callHistPropsChanged=False)
+
+        self.histPropsChanged()
 
         
-    def volumeChanged(self, *a):
+    def volumeChanged(
+            self,
+            ctx=None,
+            value=None,
+            valid=None,
+            name=None,
+            callHistPropsChanged=True):
 
         if self.overlay.is4DImage(): data = self.overlay.data[..., self.volume]
         else:                        data = self.overlay.data[:]
@@ -159,7 +168,29 @@ class HistogramSeries(plotpanel.DataSeries):
         self.finiteData  = data
         self.nonZeroData = data[data != 0]
 
-        self.histPropsChanged()
+        self.dataRangeChanged(callHistPropsChanged=False)
+
+        if callHistPropsChanged:
+            self.histPropsChanged()
+
+
+    def dataRangeChanged(
+            self,
+            ctx=None,
+            value=None,
+            valid=None,
+            name=None,
+            callHistPropsChanged=True):
+        finData = self.finiteData
+        nzData  = self.nonZeroData
+        
+        self.clippedFiniteData  = finData[(finData >= self.dataRange.xlo) &
+                                          (finData <= self.dataRange.xhi)]
+        self.clippedNonZeroData = nzData[ (nzData  >= self.dataRange.xlo) &
+                                          (nzData  <= self.dataRange.xhi)]
+
+        if callHistPropsChanged:
+            self.histPropsChanged()
 
         
     def destroy(self):
@@ -181,12 +212,15 @@ class HistogramSeries(plotpanel.DataSeries):
     
     def histPropsChanged(self, *a):
 
-
         log.debug('Calculating histogram for '
                   'overlay {}'.format(self.overlay.name))
 
-        if self.ignoreZeros: data = self.nonZeroData
-        else:                data = self.finiteData
+        if self.ignoreZeros:
+            if self.includeOutliers: data = self.nonZeroData
+            else:                    data = self.clippedNonZeroData
+        else:
+            if self.includeOutliers: data = self.finiteData
+            else:                    data = self.clippedFiniteData 
         
         if self.hsPanel.autoBin:
             nbins = autoBin(data, self.dataRange.x)
@@ -203,10 +237,7 @@ class HistogramSeries(plotpanel.DataSeries):
         if self.includeOutliers:
             bins[ 0] = self.dataRange.xmin
             bins[-1] = self.dataRange.xmax
-        else:
-            data = data[(data >= self.dataRange.xlo) &
-                        (data <= self.dataRange.xhi)]
-
+            
         # Calculate the histogram, but leave
         # some space at the start and end of
         # the output arrays
