@@ -90,7 +90,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
  
         displayCtx .addListener('selectedOverlay', self._name, self.draw) 
         displayCtx .addListener('location',        self._name, self.draw)
-        self.addGlobalListener(self._name, self.draw)
         
         self.Layout()
         self.draw()
@@ -101,7 +100,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('location',        self._name)
-        self.removeGlobalListener(self._name)
 
 
     def __overlaysChanged(self, *a):

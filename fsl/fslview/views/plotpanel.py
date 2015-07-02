@@ -16,10 +16,12 @@ import scipy.interpolate as interp
 
 mpl.use('WxAgg')
 
+
 import matplotlib.pyplot as plt
 import matplotlib.image  as mplimg
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
+from matplotlib.backends.backend_wx    import NavigationToolbar2Wx
 from mpl_toolkits.mplot3d              import Axes3D
 
 import                     props
@@ -53,6 +55,13 @@ class DataSeries(props.HasProperties):
 
 
 class PlotPanel(viewpanel.ViewPanel):
+    """A ``PlotPanel`` instance adds a listener to every one of its properties,
+    using :attr:`FSLViewPanel._name` as the listener name.
+
+    Therefore, If ``PlotPanel`` subclasses add a listener to any of their
+    properties, they should use ``overwrite=True``, and should ensure that the
+    custom listener calls the :meth:`draw` method.
+    """
 
 
     dataSeries = props.List()
@@ -100,20 +109,41 @@ class PlotPanel(viewpanel.ViewPanel):
 
         self.setCentrePanel(canvas)
 
-        self.__figure          = figure
-        self.__axis            = axis
-        self.__canvas          = canvas
-        self.__zoomMode        = False
-        self.__mouseDown       = None
-        self.__mouseDownLimits = None
+        self.__figure = figure
+        self.__axis   = axis
+        self.__canvas = canvas
 
         if interactive:
+            
+            # Pan/zoom functionality is implemented
+            # by the NavigationToolbar2Wx, but the
+            # toolbar is not actually shown.
+            self.__mouseDown = False
+            self.__toolbar = NavigationToolbar2Wx(canvas)
+            self.__toolbar.Show(False)
+            self.__toolbar.pan()
+            
             canvas.mpl_connect('button_press_event',   self.__onMouseDown)
-            canvas.mpl_connect('button_release_event', self.__onMouseUp)
             canvas.mpl_connect('motion_notify_event',  self.__onMouseMove)
+            canvas.mpl_connect('button_release_event', self.__onMouseUp)
+            canvas.mpl_connect('axes_leave_event',     self.__onMouseUp)
 
-        self.__name = '{}_{}'.format(type(self).__name__, self._name)
-        self.addListener('dataSeries', self.__name, self.__dataSeriesChanged)
+        # Redraw whenever any property changes
+        self.addGlobalListener(self._name, self.draw)
+
+        # Custom listeners for these properties
+        
+        # TODO Should you use a different listener
+        # name for these properties? Things will
+        # break if subclasses overwrite them ..
+        self.addListener('dataSeries',
+                         self._name,
+                         self.__dataSeriesChanged,
+                         overwrite=True)
+        self.addListener('limits',
+                         self._name,
+                         self.__limitsChanged,
+                         overwrite=True)
 
         self.Bind(wx.EVT_SIZE, lambda *a: self.draw())
 
@@ -125,12 +155,13 @@ class PlotPanel(viewpanel.ViewPanel):
 
     def __dataSeriesChanged(self, *a):
         for ds in self.dataSeries:
-            ds.addGlobalListener(self.__name, self.draw, overwrite=True)
+            ds.addGlobalListener(self._name, self.draw, overwrite=True)
+        self.draw()
 
         
     def destroy(self):
         viewpanel.ViewPanel.destroy(self)
-        self.removeGlobalListener(self.__name)
+        self.removeGlobalListener(self._name)
 
 
     def getFigure(self):
@@ -144,26 +175,73 @@ class PlotPanel(viewpanel.ViewPanel):
     def getCanvas(self):
         return self.__canvas
 
+    
+    def __onMouseDown(self, ev):
+        self.__mouseDown  = True
 
-    def __calcLimits(self, xlims, ylims):
+        
+    def __onMouseUp(self, ev):
+        self.__mouseUp  = False
 
-        xmin = min([lim[0] for lim in xlims])
-        xmax = max([lim[1] for lim in xlims])
-        ymin = min([lim[0] for lim in ylims])
-        ymax = max([lim[1] for lim in ylims])
+        
+    def __onMouseMove(self, ev):
 
-        if (self.autoScale and self.__mouseDown is None):
+        if not self.__mouseDown:
+            return
+
+        xlims = list(self.__axis.get_xlim())
+        ylims = list(self.__axis.get_ylim())
+
+        self.disableListener('limits', self._name)
+        self.limits.x = xlims
+        self.limits.y = ylims
+        self.enableListener( 'limits', self._name)
+
+
+    def __limitsChanged(self, *a):
+
+        axis = self.getAxis()
+        axis.set_xlim(self.limits.x)
+        axis.set_ylim(self.limits.y)
+
+        self.draw()
+
+        
+    def __calcLimits(self,
+                     dataxlims,
+                     dataylims,
+                     axisxlims,
+                     axisylims,
+                     axWidth,
+                     axHeight):
+
+        if self.autoScale:
+
+            xmin = min([lim[0] for lim in dataxlims])
+            xmax = max([lim[1] for lim in dataxlims])
+            ymin = min([lim[0] for lim in dataylims])
+            ymax = max([lim[1] for lim in dataylims])
+
+            bPad = (ymax - ymin) * (50.0 / axHeight)
+            tPad = (ymax - ymin) * (50.0 / axHeight)
+            lPad = (xmax - xmin) * (50.0 / axWidth)
+            rPad = (xmax - xmin) * (50.0 / axWidth)
+
+            xmin = xmin - lPad
+            xmax = xmax + rPad
+            ymin = ymin - bPad
+            ymax = ymax + tPad 
             
-            self.disableListener('limits', self._name)
-            self.limits[:] = [xmin, xmax, ymin, ymax]
-            self.enableListener('limits', self._name)            
-
         else:
-            xmin = self.limits.xlo
-            xmax = self.limits.xhi
-            ymin = self.limits.ylo
-            ymax = self.limits.yhi
-            
+            xmin = axisxlims[0]
+            xmax = axisxlims[1]
+            ymin = axisylims[0]
+            ymax = axisylims[1]
+
+        self.disableListener('limits', self._name)
+        self.limits[:] = [xmin, xmax, ymin, ymax]
+        self.enableListener('limits', self._name)            
+ 
         return (xmin, xmax), (ymin, ymax)
 
 
@@ -175,6 +253,15 @@ class PlotPanel(viewpanel.ViewPanel):
         axis          = self.getAxis()
         canvas        = self.getCanvas()
         width, height = canvas.get_width_height()
+
+        # Before clearing/redrawing, save
+        # a copy of the x/y axis limits -
+        # the user may have changed them
+        # via panning/zooming, and we may
+        # want to preserve the limits that
+        # the user set
+        axxlim = axis.get_xlim()
+        axylim = axis.get_ylim()
 
         axis.clear()
 
@@ -194,7 +281,8 @@ class PlotPanel(viewpanel.ViewPanel):
             xlims.append(xlim)
             ylims.append(ylim)
 
-        (xmin, xmax), (ymin, ymax) = self.__calcLimits(xlims, ylims)
+        (xmin, xmax), (ymin, ymax) = self.__calcLimits(
+            xlims, ylims, axxlim, axylim, width, height)
 
         if xmax - xmin < 0.0000000001 or \
            ymax - ymin < 0.0000000001:
@@ -223,13 +311,7 @@ class PlotPanel(viewpanel.ViewPanel):
 
         # Ticks
         if self.ticks:
-            xticks = np.linspace(xmin, xmax, 4)
-            yticks = np.linspace(ymin, ymax, 4)
-
             axis.tick_params(direction='in', pad=-5)
-
-            axis.set_xticks(xticks)
-            axis.set_yticks(yticks)
 
             for ytl in axis.yaxis.get_ticklabels():
                 ytl.set_horizontalalignment('left')
@@ -241,13 +323,8 @@ class PlotPanel(viewpanel.ViewPanel):
             axis.set_yticks([])
 
         # Limits
-        bPad = (ymax - ymin) * (50.0 / height)
-        tPad = (ymax - ymin) * (50.0 / height)
-        lPad = (xmax - xmin) * (50.0 / width)
-        rPad = (xmax - xmin) * (50.0 / width)
-        
-        axis.set_xlim((xmin - lPad, xmax + rPad))
-        axis.set_ylim((ymin - bPad, ymax + tPad))
+        axis.set_xlim((xmin, xmax))
+        axis.set_ylim((ymin, ymax))
 
         # legend
         labels = [ds.label for ds in toPlot if ds.label is not None]
@@ -260,8 +337,7 @@ class PlotPanel(viewpanel.ViewPanel):
                 fancybox=True)
             legend.get_frame().set_alpha(0.6)
 
-        if self.grid:
-            axis.grid()
+        axis.grid(self.grid)
 
         canvas.draw()
         self.Refresh()
@@ -292,105 +368,46 @@ class PlotPanel(viewpanel.ViewPanel):
                                 dtype=np.float32)
             ydata = interp.splev(xdata, tck)
 
-        if self.xLogScale: xdata = np.log10(xdata)
-        if self.yLogScale: ydata = np.log10(ydata)
-
-        nans = ~(np.isfinite(xdata) & np.isfinite(ydata))
-
+        nans        = ~(np.isfinite(xdata) & np.isfinite(ydata))
         xdata[nans] = np.nan
         ydata[nans] = np.nan
+
+        if self.xLogScale: xdata[xdata <= 0] = np.nan
+        if self.yLogScale: ydata[ydata <= 0] = np.nan
 
         if np.all(np.isnan(xdata) | np.isnan(ydata)):
             return (0, 0), (0, 0)
 
         kwargs = plotArgs
+
         kwargs['lw']    = kwargs.get('lw',    ds.lineWidth)
         kwargs['alpha'] = kwargs.get('alpha', ds.alpha)
         kwargs['color'] = kwargs.get('color', ds.colour)
         kwargs['label'] = kwargs.get('label', ds.label)
         kwargs['ls']    = kwargs.get('ls',    ds.lineStyle)
 
-        self.getAxis().plot(xdata, ydata, **kwargs)
-
-        return ((np.nanmin(xdata), np.nanmax(xdata)),
-                (np.nanmin(ydata), np.nanmax(ydata)))
-
-
-    def __onMouseDown(self, ev):
-
-        axis = self.getAxis()
-        
-        if ev.inaxes != axis:
-            return
-
-        if ev.key == 'shift': self.__zoomMode = True
-        else:                 self.__zoomMode = False
-
-        self.__mouseDown       = ev.xdata, ev.ydata
-        self.__mouseDownLimits = (self.limits.x, self.limits.y)
-
-    
-    def __onMouseUp(self, ev):
-        self.__mouseDown = None
-
-        
-    def __onMouseMove(self, ev):
-
         axis = self.getAxis()
 
-        if self.__mouseDown is None: return
-        if ev.inaxes != axis:        return
+        axis.plot(xdata, ydata, **kwargs)
 
-        if self.__zoomMode: newxlim, newylim = self.__zoomLimits(ev)
-        else:               newxlim, newylim = self.__panLimits( ev)
-        
-        self.disableListener('limits', self._name)
-        self.limits[:] = newxlim + newylim
-        self.enableListener('limits', self._name)
-
-        self.draw()
+        if self.xLogScale:
+            axis.set_xscale('log')
+            posx    = xdata[xdata > 0]
+            xlimits = np.nanmin(posx), np.nanmax(posx)
             
-
-    def __zoomLimits(self, ev):
-
-        xlim, ylim = self.__mouseDownLimits
-
-        xlen = xlim[1] - xlim[0]
-        ylen = ylim[1] - ylim[0]
-
-        xmid = xlim[0] + 0.5 * xlen
-        ymid = ylim[0] + 0.5 * ylen
-
-        mdx, mdy = self.__mouseDown
-        evx, evy = ev.xdata, ev.ydata
-
-        mdx = (mdx - xlim[0]) / xlen
-        mdy = (mdy - ylim[0]) / ylen
-        
-        evx = (evx - self.limits.xlo) / self.limits.xlen
-        evy = (evy - self.limits.ylo) / self.limits.ylen
-
-        xdist = 2 * xlen * (evx - mdx)
-        ydist = 2 * ylen * (evy - mdy)
-
-        newxlen = abs(xlen - xdist)
-        newylen = abs(ylen - ydist)
-
-        newxlim = [xmid - newxlen * 0.5, xmid + newxlen * 0.5]
-        newylim = [ymid - newylen * 0.5, ymid + newylen * 0.5]
-
-        return newxlim, newylim
+        else:
+            xlimits = np.nanmin(xdata), np.nanmax(xdata)
+            
+        if self.yLogScale:
+            axis.set_yscale('log')
+            posy    = ydata[ydata > 0]
+            ylimits = np.nanmin(posy), np.nanmax(posy)
+        else:
+            ylimits = np.nanmin(ydata), np.nanmax(ydata)
+            
+        return xlimits, ylimits
 
     
-    def __panLimits(self, mouseEv):
-
-        xdist = self.__mouseDown[0] - mouseEv.xdata
-        ydist = self.__mouseDown[1] - mouseEv.ydata
-
-        return ((self.limits.xlo + xdist, self.limits.xhi + xdist),
-                (self.limits.ylo + ydist, self.limits.yhi + ydist))
-
-        
     def screenshot(self, *a):
 
         dlg = wx.FileDialog(self,

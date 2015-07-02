@@ -310,21 +310,17 @@ class HistogramSeries(plotpanel.DataSeries):
 
         # If smoothing is not enabled, we'll
         # munge the histogram data a bit so
-        # that plt.plot(drawstyle='steps-post')
+        # that plt.plot(drawstyle='steps-pre')
         # plots it nicely.
         if not self.hsPanel.smooth:
 
-            xdata = np.zeros(len(self.xdata) + 2, dtype=np.float32)
-            ydata = np.zeros(len(self.ydata) + 3, dtype=np.float32)
+            xdata = np.zeros(len(self.xdata) + 1, dtype=np.float32)
+            ydata = np.zeros(len(self.ydata) + 2, dtype=np.float32)
 
-            xdata[1:-1] = self.xdata
-            ydata[1:-2] = self.ydata
+            xdata[ :-1] = self.xdata
+            xdata[  -1] = self.xdata[-1]
+            ydata[1:-1] = self.ydata
 
-            # Fill in the ends of those arrays so
-            # the histogram data is plotted nicely
-            xdata[ 0] = xdata[ 1]
-            xdata[-1] = xdata[-2]
-            ydata[-2] = ydata[-3]
 
         # If smoothing is enabled, the above munge
         # is not necessary, and will probably cause
@@ -374,14 +370,10 @@ class HistogramPanel(plotpanel.PlotPanel):
                                       self._name,
                                       self.__selectedOverlayChanged)
 
-        # Re draw whenever any PlotPanel or
-        # HistogramPanel property changes.
-        self.addGlobalListener(self._name, self.draw)
-
         # Custom listener for autoBin - this
         # overwrites the one added by the
-        # addGlobalListener method above.
-        # See the __autoBinChanged method.
+        # PlotPanel.__init__ method. See the
+        # __autoBinChanged method.
         self.addListener('autoBin',
                          self._name,
                          self.__autoBinChanged,
@@ -531,4 +523,4 @@ class HistogramPanel(plotpanel.PlotPanel):
                 extra = [self.__current]
 
         if self.smooth: self.drawDataSeries(extra)
-        else:           self.drawDataSeries(extra, drawstyle='steps-post')
+        else:           self.drawDataSeries(extra, drawstyle='steps-pre')
