@@ -63,10 +63,12 @@ messages = TypeDict({
 
     'PlotPanel.screenshot'              : 'Save screenshot',
 
+    'PlotPanel.screenshot.error'       : 'An error occurred while saving the '
+                                         'screenshot.\n\n'
+                                         'Details: {}',
+
     'HistogramPanel.calcHist'           : 'Calculating histogram for {} ...',
 
-    'SpacePanel.nonVolumetric'          : 'Non-volumetric overlays '
-                                          'are not supported',
 
     'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
                                        'uses a lookup table',
@@ -98,6 +100,8 @@ titles = TypeDict({
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
     'CanvasPanel.screenshot.error'    : 'Error saving screenshot',
+
+    'PlotPanel.screenshot.error'      : 'Error saving screenshot',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',

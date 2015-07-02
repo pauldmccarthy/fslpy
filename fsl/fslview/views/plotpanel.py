@@ -18,7 +18,6 @@ mpl.use('WxAgg')
 
 
 import matplotlib.pyplot as plt
-import matplotlib.image  as mplimg
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from matplotlib.backends.backend_wx    import NavigationToolbar2Wx
@@ -410,8 +409,14 @@ class PlotPanel(viewpanel.ViewPanel):
     
     def screenshot(self, *a):
 
+        formats  = self.__canvas.get_supported_filetypes().items()
+
+        wildcard = ['{}|*.{}'.format(desc, fmt) for fmt, desc in formats]
+        wildcard = '|'.join(wildcard)
+
         dlg = wx.FileDialog(self,
                             message=strings.messages[self, 'screenshot'],
+                            wildcard=wildcard,
                             style=wx.FD_SAVE)
 
         if dlg.ShowModal() != wx.ID_OK:
@@ -419,17 +424,13 @@ class PlotPanel(viewpanel.ViewPanel):
 
         path = dlg.GetPath()
 
-        buf          = self.__canvas.tostring_argb()
-        ncols, nrows = self.__canvas.get_width_height()
-
-        bitmap = np.fromstring(buf, dtype=np.uint8)
-        bitmap = bitmap.reshape(nrows, ncols, 4)
-
-        rgb    = bitmap[:, :, 1:]
-        a      = bitmap[:, :, 0]
-        bitmap = np.dstack((rgb, a))
-
-        mplimg.imsave(path, bitmap)
+        try:
+            self.__figure.savefig(path)
+        except Exception as e:
+            wx.MessageBox(
+                strings.messages[self, 'screenshot', 'error'].format(str(e)),
+                strings.titles[  self, 'screenshot', 'error'],
+                wx.ICON_ERROR)
 
 
     def message(self, msg):
