@@ -12,7 +12,6 @@ import logging
 import numpy as np
 
 import props
-import pwidgets.elistbox      as elistbox
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings

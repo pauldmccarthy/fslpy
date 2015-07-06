@@ -204,12 +204,15 @@ labels = TypeDict({
     'NewLutDialog.cancel' : 'Cancel',
     'NewLutDialog.newLut' : 'New LUT',
 
-    'HistogramControlPanel.plotSettings' : 'General plot settings',
-    'HistogramControlPanel.xlim'         : 'X limits',
-    'HistogramControlPanel.ylim'         : 'Y limits',
-    'HistogramControlPanel.labels'       : 'Labels',
-    'HistogramControlPanel.xlabel'       : 'X',
-    'HistogramControlPanel.ylabel'       : 'Y',
+    'HistogramControlPanel.plotSettings'    : 'General plot settings',
+    'HistogramControlPanel.currentSettings' : 'Settings for currently '
+                                              'selected plot ({})',
+    'HistogramControlPanel.xlim'            : 'X limits',
+    'HistogramControlPanel.ylim'            : 'Y limits',
+    'HistogramControlPanel.labels'          : 'Labels',
+    'HistogramControlPanel.xlabel'          : 'X',
+    'HistogramControlPanel.ylabel'          : 'Y',
+    
 })
 
 

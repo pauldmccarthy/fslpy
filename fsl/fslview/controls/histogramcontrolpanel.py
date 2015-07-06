@@ -99,17 +99,84 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         self.__selectedSeriesChanged()
 
 
+    def destroy(self):
+        self.__hsPanel.removeListener('selectedSeries', self._name)
+        self.__hsPanel.removeListener('dataSeries',     self._name)
+        if self.__currentHs is not None:
+            self.__currentHs.removeListener('label', self._name)
+
+
     def __selectedSeriesChanged(self, *a):
 
         panel = self.__hsPanel 
         
         if len(panel.dataSeries) == 0:
             self.__currentHs = None
+
+        else:
+            self.__currentHs = panel.dataSeries[panel.selectedSeries]
+
+        self.__updateCurrentProperties()
+
+
+    def __updateCurrentProperties(self):
+
+        expanded  = False
+        scrollPos = self.__widgets.GetViewStart()
+        
+        if self.__widgets.HasGroup('currentSettings'):
+            expanded = self.__widgets.IsExpanded('currentSettings')
+            self.__widgets.RemoveGroup('currentSettings')
+
+        if self.__currentHs is None:
             return
+        else:
+            self.__currentHs.removeListener('label', self._name)
 
-        hs = panel.dataSeries[panel.selectedSeries]
+        self.__widgets.AddGroup(
+            'currentSettings',
+            strings.labels[self, 'currentSettings'].format(
+                self.__currentHs.label))
 
-        if hs == self.__currentHs:
-            return
+        wlist = self.__widgets
+        hs    = self.__currentHs
 
-        self.__currentHs = hs
+        def updateGroupName(*a):
+            self.__widgets.RenameGroup(
+                'currentSettings',
+                strings.labels[self, 'currentSettings'].format(
+                    self.__currentHs.label))
+
+        hs.addListener('label', self._name, updateGroupName)
+
+        nbins     = props.makeWidget(wlist, hs, 'nbins',     showLimits=False)
+        volume    = props.makeWidget(wlist, hs, 'volume',    showLimits=False)
+        dataRange = props.makeWidget(wlist, hs, 'dataRange', showLimits=False)
+        
+        ignoreZeros     = props.makeWidget(wlist, hs, 'ignoreZeros')
+        showOverlay     = props.makeWidget(wlist, hs, 'showOverlay')
+        includeOutliers = props.makeWidget(wlist, hs, 'includeOutliers')
+
+        wlist.AddWidget(ignoreZeros,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'ignoreZeros'])
+        wlist.AddWidget(showOverlay,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'showOverlay'])
+        wlist.AddWidget(includeOutliers,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'includeOutliers']) 
+        wlist.AddWidget(nbins,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'nbins'])
+        wlist.AddWidget(volume,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'volume'])
+        wlist.AddWidget(dataRange,
+                        groupName='currentSettings',
+                        displayName=strings.properties[hs, 'dataRange'])
+
+        if expanded:
+            wlist.Expand('currentSettings')
+
+        self.__widgets.Scroll(scrollPos)
