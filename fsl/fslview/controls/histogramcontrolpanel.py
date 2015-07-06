@@ -45,7 +45,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
 
         self.__widgets.AddGroup(
             'plotSettings',
-            strings.labels[self, 'plotSettings'])
+            strings.labels[hsPanel, 'plotSettings'])
         
         for prop in plotProps:
             self.__widgets.AddWidget(
@@ -59,10 +59,10 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         labels = wx.BoxSizer(wx.HORIZONTAL)
 
         labels.Add(wx.StaticText(self.__widgets,
-                                 label=strings.labels[self, 'xlabel']))
+                                 label=strings.labels[hsPanel, 'xlabel']))
         labels.Add(xlabel, flag=wx.EXPAND, proportion=1)
         labels.Add(wx.StaticText(self.__widgets,
-                                 label=strings.labels[self, 'ylabel']))
+                                 label=strings.labels[hsPanel, 'ylabel']))
         labels.Add(ylabel, flag=wx.EXPAND, proportion=1) 
 
         limits = props.makeListWidgets(self.__widgets, hsPanel, 'limits')
@@ -76,15 +76,15 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
 
         self.__widgets.AddWidget(
             labels,
-            strings.labels[self, 'labels'],
+            strings.labels[hsPanel, 'labels'],
             groupName='plotSettings')
         self.__widgets.AddWidget(
             xlims,
-            strings.labels[self, 'xlim'],
+            strings.labels[hsPanel, 'xlim'],
             groupName='plotSettings')
         self.__widgets.AddWidget(
             ylims,
-            strings.labels[self, 'ylim'],
+            strings.labels[hsPanel, 'ylim'],
             groupName='plotSettings')
 
         self.__currentHs = None

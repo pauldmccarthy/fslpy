@@ -7,11 +7,11 @@
 
 import wx
 
-import props
+import                        props
+import pwidgets.widgetlist as widgetlist
 
 import fsl.fslview.panel as fslpanel
 import fsl.data.strings  as strings
-import                      plotcontrolpanel
 
 
 class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
@@ -20,37 +20,69 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
 
         fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.__tsPanel   = tsPanel
+        self.__tsPanel = tsPanel
+        self.__widgets = widgetlist.WidgetList(self)
+        self.__sizer   = wx.BoxSizer(wx.VERTICAL)
 
-        self.__plotControl = plotcontrolpanel.PlotControlPanel(
-            self, overlayList, displayCtx, tsPanel)
-
-        self.__plotControl.SetWindowStyleFlag(wx.SUNKEN_BORDER)
-
-        self.__demean      = props.makeWidget(self, tsPanel, 'demean')
-        self.__usePixdim   = props.makeWidget(self, tsPanel, 'usePixdim')
-        self.__showCurrent = props.makeWidget(self, tsPanel, 'showCurrent')
-
-        self.__demean     .SetLabel(strings.properties[tsPanel, 'demean'])
-        self.__usePixdim  .SetLabel(strings.properties[tsPanel, 'usePixdim'])
-        self.__showCurrent.SetLabel(strings.properties[tsPanel, 'showCurrent'])
-
-        self.__optSizer = wx.GridSizer(1, 3)
-        self.__optSizer.Add(self.__demean,      flag=wx.EXPAND)
-        self.__optSizer.Add(self.__usePixdim,   flag=wx.EXPAND)
-        self.__optSizer.Add(self.__showCurrent, flag=wx.EXPAND)
- 
-        self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
+        self.__sizer.Add(self.__widgets, flag=wx.EXPAND, proportion=1)
 
-        self.__sizer.Add(self.__plotControl,
-                         flag=wx.EXPAND | wx.ALL,
-                         border=5,
-                         proportion=1)
-        self.__sizer.Add(self.__optSizer,
-                         flag=wx.EXPAND)
+        tsProps   = ['demean',
+                     'usePixdim',
+                     'showCurrent']
+        plotProps = ['xLogScale',
+                     'yLogScale',
+                     'smooth',
+                     'legend',
+                     'ticks',
+                     'grid',
+                     'autoScale']
 
-        self.Layout()
+        for prop in tsProps:
+            self.__widgets.AddWidget(
+                props.makeWidget(self.__widgets, tsPanel, prop),
+                displayName=strings.properties[tsPanel, prop])
 
-        self.SetMinSize(self.__sizer.GetMinSize())
-        self.SetMaxSize(self.__sizer.GetMinSize())
+        self.__widgets.AddGroup(
+            'plotSettings',
+            strings.labels[tsPanel, 'plotSettings'])
+        
+        for prop in plotProps:
+            self.__widgets.AddWidget(
+                props.makeWidget(self.__widgets, tsPanel, prop),
+                displayName=strings.properties[tsPanel, prop],
+                groupName='plotSettings')
+
+        xlabel = props.makeWidget(self.__widgets, tsPanel, 'xlabel')
+        ylabel = props.makeWidget(self.__widgets, tsPanel, 'ylabel')
+
+        labels = wx.BoxSizer(wx.HORIZONTAL)
+
+        labels.Add(wx.StaticText(self.__widgets,
+                                 label=strings.labels[tsPanel, 'xlabel']))
+        labels.Add(xlabel, flag=wx.EXPAND, proportion=1)
+        labels.Add(wx.StaticText(self.__widgets,
+                                 label=strings.labels[tsPanel, 'ylabel']))
+        labels.Add(ylabel, flag=wx.EXPAND, proportion=1) 
+
+        limits = props.makeListWidgets(self.__widgets, tsPanel, 'limits')
+        xlims  = wx.BoxSizer(wx.HORIZONTAL)
+        ylims  = wx.BoxSizer(wx.HORIZONTAL)
+        
+        xlims.Add(limits[0], flag=wx.EXPAND, proportion=1)
+        xlims.Add(limits[1], flag=wx.EXPAND, proportion=1)
+        ylims.Add(limits[2], flag=wx.EXPAND, proportion=1)
+        ylims.Add(limits[3], flag=wx.EXPAND, proportion=1) 
+
+        self.__widgets.AddWidget(
+            labels,
+            strings.labels[tsPanel, 'labels'],
+            groupName='plotSettings')
+        self.__widgets.AddWidget(
+            xlims,
+            strings.labels[tsPanel, 'xlim'],
+            groupName='plotSettings')
+        self.__widgets.AddWidget(
+            ylims,
+            strings.labels[tsPanel, 'ylim'],
+            groupName='plotSettings')

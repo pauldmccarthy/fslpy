@@ -13,7 +13,6 @@ from lightboxsettingspanel  import LightBoxSettingsPanel
 from locationpanel          import LocationPanel
 from orthosettingspanel     import OrthoSettingsPanel
 from lookuptablepanel       import LookupTablePanel
-from plotcontrolpanel       import PlotControlPanel
 from timeserieslistpanel    import TimeSeriesListPanel
 from timeseriescontrolpanel import TimeSeriesControlPanel
 from histogramlistpanel     import HistogramListPanel
