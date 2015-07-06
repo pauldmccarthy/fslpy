@@ -115,7 +115,7 @@ class Image(props.HasProperties):
             
             nibImage, filename = loadImage(addExt(image))
             self.nibImage      = nibImage
-            self.dataSource    = image
+            self.dataSource    = op.abspath(image)
 
             # if the returned file name is not the same as
             # the provided file name, that means that the

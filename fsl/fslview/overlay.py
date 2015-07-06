@@ -17,9 +17,10 @@ import os.path as op
 
 import props
 
-import fsl.data.image   as fslimage
-import fsl.data.strings as strings
-import fsl.data.model   as fslmodel
+import fsl.data.image     as fslimage
+import fsl.data.featimage as fslfeatimage
+import fsl.data.strings   as strings
+import fsl.data.model     as fslmodel
 
 
 log = logging.getLogger(__name__)
@@ -153,7 +154,10 @@ def guessDataSourceType(filename):
     else:
         filename = fslimage.addExt(filename, False)
         if any([filename.endswith(e) for e in fslimage.ALLOWED_EXTENSIONS]):
-            return fslimage.Image, filename
+            if fslfeatimage.isFEATData(filename):
+                return fslfeatimage.FEATImage, filename
+            else:
+                return fslimage.Image,         filename
 
     return None, filename
 
@@ -237,6 +241,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default'):
         e     = str(e)
         msg   = strings.messages['overlay.loadOverlays.error'].format(s, e)
         title = strings.titles[  'overlay.loadOverlays.error']
+        log.debug('Error loading overlay ({}), ({})'.format(s, e))
         wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
 
     # If loadFunc or errorFunc are explicitly set to
@@ -271,6 +276,8 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default'):
                 strings.messages['overlay.loadOverlays.unknownType'])
             continue
 
+        log.debug('Loading overlay {} (guessed data type: {}'.format(
+            path, dtype.__name__))
         try:                   overlays.append(dtype(path))
         except Exception as e: errorFunc(path, e)
 
