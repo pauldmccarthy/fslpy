@@ -5,22 +5,32 @@ A mixture of things to do, things which might be nice to do, and things which
 have been done.  Order is arbitrary. Check
 https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
-Command line for models and labels
 
 * Required feature list before next internal release
 ** DONE Label support
 ** DONE VTK support
-** Overlay groups
-** Improve time series
-** Improve histogram
-** Cluster browser
-** A better way of managing colour maps/luts
+** DONE Improve time series
+** DONE Improve histogram
 ** Feat mode 
 This could be an option on the time series panel - if a .feat directory 
 is detected, display a check box allowing the user to turn on/off 
 models/residuals/whatever.
+** Cluster browser
+** Overlay groups
+** Movie mode
 ** Iconify/clean up interface
+*** Icons for buttons
+*** Fix toolbar refresh behaviour
+*** Fix location panel size.
+*** Sensible layout when new views are opened
+*** Global font settings
+*** A 'WidgetList'/'PropertyList' panel
+which displays a list of control widgets, each with a name, in a scrollable
+panel. You could use the wx.CollabisblePane to group properties/widgets 
+sensibly.
 ** Rename to FSLEyes
+** A better way of managing colour maps/luts
+** (related to above) Command line for models and labels
 * Things to do once the feature list is complete
 ** Startup time
 ** Complete code documentation, commenting and clean-up
@@ -262,6 +272,13 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** HistogramListPanel 
+*** When a histogram is added for a 4D image, prompt user to choose one of
+  - Histogram for current volume
+  - Histogram across all volumes
+  - Histogram for every volume
+*** Mouse click interaction - when clicking on a plot, the current overlay/volume should be selected
+** Save animated gif from movie mode
 ** Lightbox - ability to specify exactly which slices are displayed
 ** Lightbox/SliceCanvas - annotate displayed slice with Z coordinates
 ** Lightbox - Ability to show cutting planes from specified locations on an orthogonal axis
