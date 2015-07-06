@@ -95,6 +95,9 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         hsPanel.addListener('dataSeries',
                             self._name,
                             self.__selectedSeriesChanged)
+        hsPanel.addListener('autoBin',
+                            self._name,
+                            self.__autoBinChanged) 
 
         self.__selectedSeriesChanged()
 
@@ -149,7 +152,8 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
 
         hs.addListener('label', self._name, updateGroupName)
 
-        nbins     = props.makeWidget(wlist, hs, 'nbins',     showLimits=False)
+        self.__nbins = props.makeWidget(wlist, hs, 'nbins', showLimits=False)
+        
         volume    = props.makeWidget(wlist, hs, 'volume',    showLimits=False)
         dataRange = props.makeWidget(wlist, hs, 'dataRange', showLimits=False)
         
@@ -166,7 +170,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         wlist.AddWidget(includeOutliers,
                         groupName='currentSettings',
                         displayName=strings.properties[hs, 'includeOutliers']) 
-        wlist.AddWidget(nbins,
+        wlist.AddWidget(self.__nbins,
                         groupName='currentSettings',
                         displayName=strings.properties[hs, 'nbins'])
         wlist.AddWidget(volume,
@@ -180,3 +184,10 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
             wlist.Expand('currentSettings')
 
         self.__widgets.Scroll(scrollPos)
+
+        volume      .Enable(hs.overlay.is4DImage())
+        self.__nbins.Enable(not self.__hsPanel.autoBin)
+        
+
+    def __autoBinChanged(self, *a):
+        self.__nbins.Enable(not self.__hsPanel.autoBin)
