@@ -272,12 +272,12 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** PlotPanel - Mouse click interaction: when clicking on a plot, the current overlay/volume should be selected
 ** HistogramListPanel 
 *** When a histogram is added for a 4D image, prompt user to choose one of
   - Histogram for current volume
   - Histogram across all volumes
   - Histogram for every volume
-*** Mouse click interaction - when clicking on a plot, the current overlay/volume should be selected
 ** Save animated gif from movie mode
 ** Lightbox - ability to specify exactly which slices are displayed
 ** Lightbox/SliceCanvas - annotate displayed slice with Z coordinates
