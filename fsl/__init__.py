@@ -263,6 +263,12 @@ def parseArgs(argv, allTools):
         for mod in namespace.noisy:
             logging.getLogger(mod).setLevel(logging.DEBUG)
 
+    # The trace module monkey-patches some
+    # things if its logging level has been
+    # set to DEBUG, so we import it now so
+    # it can set itself up.
+    import fsl.utils.trace 
+
     # otherwise, give the remaining arguments to the tool parser
     fslTool = allTools[namespace.tool]
 
