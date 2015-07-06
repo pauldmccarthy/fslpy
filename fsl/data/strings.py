@@ -204,11 +204,12 @@ labels = TypeDict({
     'NewLutDialog.cancel' : 'Cancel',
     'NewLutDialog.newLut' : 'New LUT',
 
-    'PlotControlPanel.xlim'   : 'X limits',
-    'PlotControlPanel.ylim'   : 'Y limits',
-    'PlotControlPanel.labels' : 'Labels',
-    'PlotControlPanel.xlabel' : 'X',
-    'PlotControlPanel.ylabel' : 'Y',
+    'HistogramControlPanel.plotSettings' : 'General plot settings',
+    'HistogramControlPanel.xlim'         : 'X limits',
+    'HistogramControlPanel.ylim'         : 'Y limits',
+    'HistogramControlPanel.labels'       : 'Labels',
+    'HistogramControlPanel.xlabel'       : 'X',
+    'HistogramControlPanel.ylabel'       : 'Y',
 })
 
 
@@ -252,9 +253,11 @@ properties = TypeDict({
     'PlotPanel.xlabel'    : 'X label',
     'PlotPanel.ylabel'    : 'Y label',
     
-    'TimeSeriesPanel.demean'      : 'Demean',
-    'TimeSeriesPanel.usePixdim'   : 'Use pixdims',
-    'TimeSeriesPanel.showCurrent' : 'Plot time series for current voxel',
+    'TimeSeriesPanel.demean'           : 'Demean',
+    'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
+    'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
+    'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
+    'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     
     'HistogramPanel.histType'    : 'Histogram type',
     'HistogramPanel.autoBin'     : 'Automatic histogram binning', 

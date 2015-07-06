@@ -52,6 +52,10 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
         self.__hsPanel.removeListener('dataSeries', self._name)
 
 
+    def getListBox(self):
+        return self.__hsList
+
+
     def __histSeriesChanged(self, *a):
 
         self.__hsList.Clear()
@@ -82,7 +86,6 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
         
     
     def __onListAdd(self, ev):
-        
         hs = self.__hsPanel.getCurrent()
 
         if hs is None:
@@ -93,8 +96,9 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
         hs.lineStyle = '-'
         hs.colour    = fslcm.randomColour()
         hs.label     = hs.overlay.name
-        
+
         self.__hsPanel.dataSeries.append(hs)
+        self.__hsPanel.selectedSeries = self.__hsList.GetSelection()
 
         
     def __onListEdit(self, ev):
@@ -104,10 +108,12 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
     def __onListSelect(self, ev):
         overlay = ev.data.overlay
         self._displayCtx.selectedOverlay = self._overlayList.index(overlay)
+        self.__hsPanel.selectedSeries = ev.idx
 
         
     def __onListRemove(self, ev):
         self.__hsPanel.dataSeries.remove(ev.data)
+        self.__hsPanel.selectedSeries = self.__hsList.GetSelection()
         ev.data.destroy()
 
 

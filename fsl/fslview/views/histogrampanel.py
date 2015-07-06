@@ -12,6 +12,7 @@ import logging
 import numpy as np
 
 import props
+import pwidgets.elistbox      as elistbox
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
@@ -343,15 +344,13 @@ class HistogramPanel(plotpanel.PlotPanel):
     showCurrent = props.Boolean(default=True)
     histType    = props.Choice(('probability', 'count'))
 
-    
     selectedSeries = props.Int(minval=0, clamped=True)
     
 
     def __init__(self, parent, overlayList, displayCtx):
 
         actionz = {
-            'toggleHistogramList'    : lambda *a: self.togglePanel(
-                fslcontrols.HistogramListPanel,    False, self),
+            'toggleHistogramList'    : self.toggleHistogramList,
             'toggleHistogramControl' : lambda *a: self.togglePanel(
                 fslcontrols.HistogramControlPanel, False, self) 
         }
@@ -385,6 +384,19 @@ class HistogramPanel(plotpanel.PlotPanel):
         self.Layout()
 
 
+    def toggleHistogramList(self, *a):
+        self.togglePanel(fslcontrols.HistogramListPanel, False, self)
+
+        panel = self.getPanel(fslcontrols.HistogramListPanel)
+
+        if panel is None:
+            return
+
+        def listSelect(ev):
+            ev.Skip()
+            self.selectedSeries = panel.GetSelection()
+
+
     def destroy(self):
         """De-registers property listeners. """
         plotpanel.PlotPanel.destroy(self)
@@ -406,7 +418,14 @@ class HistogramPanel(plotpanel.PlotPanel):
                            'maxval',
                            len(self.dataSeries) - 1)
 
+        listPanel = self.getPanel(fslcontrols.HistogramListPanel)
 
+        if listPanel is None:
+            self.selectedSeries = 0
+        else:
+            self.selectedSeries = listPanel.getListBox().GetSelection()
+
+            
     def __overlaysChanged(self, *a):
         
         self.disableListener('dataSeries', self._name)

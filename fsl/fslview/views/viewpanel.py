@@ -237,6 +237,14 @@ class ViewPanel(fslpanel.FSLViewPanel):
             self.__auiMgr.AddPane(window, paneInfo)
             self.__panels[panelType] = window
             self.__auiMgrUpdate()
+
+
+    def getPanel(self, panelType):
+        """If an instance of ``panelType`` exists, it is returned.
+        Otherwise ``None`` is returned.
+        """
+        if panelType in self.__panels: return self.__panels[panelType]
+        else:                          return None
  
 
     def __selectedOverlayChanged(self, *a):

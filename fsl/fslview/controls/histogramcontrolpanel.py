@@ -7,58 +7,109 @@
 
 import wx
 
-import props
+import                        props
+import pwidgets.widgetlist as widgetlist
 
-import fsl.fslview.panel as fslpanel
-import fsl.data.strings  as strings
-import                      plotcontrolpanel
+import fsl.fslview.panel   as fslpanel
+import fsl.data.strings    as strings
 
 
 class HistogramControlPanel(fslpanel.FSLViewPanel):
-
 
     def __init__(self, parent, overlayList, displayCtx, hsPanel):
 
         fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.__plotControl = plotcontrolpanel.PlotControlPanel(
-            self, overlayList, displayCtx, hsPanel)
-        self.__plotControl.SetWindowStyleFlag(wx.SUNKEN_BORDER)
-
-        self.__histType      = props.makeWidget(self, hsPanel, 'histType')
-        self.__autoBin       = props.makeWidget(self, hsPanel, 'autoBin')
-        self.__showCurrent   = props.makeWidget(self, hsPanel, 'showCurrent')
-
-        self.__histTypeLabel = wx.StaticText(self)
-
-        self.__histTypeLabel.SetLabel(strings.properties[hsPanel,
-                                                         'histType'])
-        self.__autoBin      .SetLabel(strings.properties[hsPanel,
-                                                         'autoBin'])
-        self.__showCurrent  .SetLabel(strings.properties[hsPanel,
-                                                         'showCurrent'])
-
-        self.__htSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.__htSizer.Add(self.__histTypeLabel, flag=wx.EXPAND)
-        self.__htSizer.Add(self.__histType,      flag=wx.EXPAND, proportion=1)
- 
-        self.__optSizer = wx.GridSizer(1, 3)
-
-        self.__optSizer.Add(self.__htSizer,       flag=wx.EXPAND)
-        self.__optSizer.Add(self.__autoBin,       flag=wx.EXPAND)
-        self.__optSizer.Add(self.__showCurrent,   flag=wx.EXPAND)
-
-        self.__sizer = wx.BoxSizer(wx.VERTICAL)
+        self.__hsPanel  = hsPanel
+        self.__widgets  = widgetlist.WidgetList(self)
+        self.__sizer    = wx.BoxSizer(wx.VERTICAL)
+        
         self.SetSizer(self.__sizer)
-        
-        self.__sizer.Add(self.__plotControl,
-                         flag=wx.EXPAND | wx.ALL,
-                         border=5,
-                         proportion=1)
-        self.__sizer.Add(self.__optSizer,
-                         flag=wx.EXPAND)
+        self.__sizer.Add(self.__widgets, flag=wx.EXPAND, proportion=1)
 
-        self.Layout()
+        histProps = ['histType',
+                     'autoBin',
+                     'showCurrent']
+        plotProps = ['xLogScale',
+                     'yLogScale',
+                     'smooth',
+                     'legend',
+                     'ticks',
+                     'grid',
+                     'autoScale']
+
+        for prop in histProps:
+            self.__widgets.AddWidget(
+                props.makeWidget(self.__widgets, hsPanel, prop),
+                displayName=strings.properties[hsPanel, prop])
+
+        self.__widgets.AddGroup(
+            'plotSettings',
+            strings.labels[self, 'plotSettings'])
         
-        self.SetMinSize(self.__sizer.GetMinSize())
-        self.SetMaxSize(self.__sizer.GetMinSize())
+        for prop in plotProps:
+            self.__widgets.AddWidget(
+                props.makeWidget(self.__widgets, hsPanel, prop),
+                displayName=strings.properties[hsPanel, prop],
+                groupName='plotSettings')
+
+        xlabel = props.makeWidget(self.__widgets, hsPanel, 'xlabel')
+        ylabel = props.makeWidget(self.__widgets, hsPanel, 'ylabel')
+
+        labels = wx.BoxSizer(wx.HORIZONTAL)
+
+        labels.Add(wx.StaticText(self.__widgets,
+                                 label=strings.labels[self, 'xlabel']))
+        labels.Add(xlabel, flag=wx.EXPAND, proportion=1)
+        labels.Add(wx.StaticText(self.__widgets,
+                                 label=strings.labels[self, 'ylabel']))
+        labels.Add(ylabel, flag=wx.EXPAND, proportion=1) 
+
+        limits = props.makeListWidgets(self.__widgets, hsPanel, 'limits')
+        xlims  = wx.BoxSizer(wx.HORIZONTAL)
+        ylims  = wx.BoxSizer(wx.HORIZONTAL)
+        
+        xlims.Add(limits[0], flag=wx.EXPAND, proportion=1)
+        xlims.Add(limits[1], flag=wx.EXPAND, proportion=1)
+        ylims.Add(limits[2], flag=wx.EXPAND, proportion=1)
+        ylims.Add(limits[3], flag=wx.EXPAND, proportion=1) 
+
+        self.__widgets.AddWidget(
+            labels,
+            strings.labels[self, 'labels'],
+            groupName='plotSettings')
+        self.__widgets.AddWidget(
+            xlims,
+            strings.labels[self, 'xlim'],
+            groupName='plotSettings')
+        self.__widgets.AddWidget(
+            ylims,
+            strings.labels[self, 'ylim'],
+            groupName='plotSettings')
+
+        self.__currentHs = None
+        hsPanel.addListener('selectedSeries',
+                            self._name,
+                            self.__selectedSeriesChanged)
+        
+        hsPanel.addListener('dataSeries',
+                            self._name,
+                            self.__selectedSeriesChanged)
+
+        self.__selectedSeriesChanged()
+
+
+    def __selectedSeriesChanged(self, *a):
+
+        panel = self.__hsPanel 
+        
+        if len(panel.dataSeries) == 0:
+            self.__currentHs = None
+            return
+
+        hs = panel.dataSeries[panel.selectedSeries]
+
+        if hs == self.__currentHs:
+            return
+
+        self.__currentHs = hs
