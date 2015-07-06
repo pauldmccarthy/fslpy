@@ -342,6 +342,9 @@ class HistogramPanel(plotpanel.PlotPanel):
     autoBin     = props.Boolean(default=True)
     showCurrent = props.Boolean(default=True)
     histType    = props.Choice(('probability', 'count'))
+
+    
+    selectedSeries = props.Int(minval=0, clamped=True)
     
 
     def __init__(self, parent, overlayList, displayCtx):
@@ -370,14 +373,10 @@ class HistogramPanel(plotpanel.PlotPanel):
                                       self._name,
                                       self.__selectedOverlayChanged)
 
-        # Custom listener for autoBin - this
-        # overwrites the one added by the
-        # PlotPanel.__init__ method. See the
-        # __autoBinChanged method.
-        self.addListener('autoBin',
-                         self._name,
-                         self.__autoBinChanged,
-                         overwrite=True)
+        self.addListener('showCurrent', self._name, self.draw)
+        self.addListener('histType',    self._name, self.draw)
+        self.addListener('autoBin',     self._name, self.__autoBinChanged)
+        self.addListener('dataSeries',  self._name, self.__dataSeriesChanged)
 
         self.__histCache = {}
         self.__current   = None
@@ -389,13 +388,23 @@ class HistogramPanel(plotpanel.PlotPanel):
     def destroy(self):
         """De-registers property listeners. """
         plotpanel.PlotPanel.destroy(self)
-
-        self.removeGlobalListener(self._name)
+        
+        self.removeListener('showCurrent', self._name)
+        self.removeListener('histType',    self._name)
+        self.removeListener('autoBin',     self._name)
+        self.removeListener('dataSeries',  self._name)
+        
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
         for hs in set(self.dataSeries[:] + self.__histCache.values()):
             hs.destroy()
+
+
+    def __dataSeriesChanged(self, *a):
+        self.setConstraint('selectedSeries',
+                           'maxval',
+                           len(self.dataSeries) - 1)
 
 
     def __overlaysChanged(self, *a):

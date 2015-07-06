@@ -127,22 +127,26 @@ class PlotPanel(viewpanel.ViewPanel):
             canvas.mpl_connect('button_release_event', self.__onMouseUp)
             canvas.mpl_connect('axes_leave_event',     self.__onMouseUp)
 
-        # Redraw whenever any property changes
-        self.addGlobalListener(self._name, self.draw)
-
-        # Custom listeners for these properties
-        
-        # TODO Should you use a different listener
-        # name for these properties? Things will
-        # break if subclasses overwrite them ..
+        # Redraw whenever any property changes, 
+        for propName in ['legend',
+                         'autoScale',
+                         'xLogScale',
+                         'yLogScale',
+                         'ticks',
+                         'grid',
+                         'smooth',
+                         'xlabel',
+                         'ylabel']:
+            self.addListener(propName, self._name, self.draw)
+            
+        # custom listeners for a couple of properties
+        self.__name = '{}_{}'.format(self._name, id(self))        
         self.addListener('dataSeries',
-                         self._name,
-                         self.__dataSeriesChanged,
-                         overwrite=True)
+                         self.__name,
+                         self.__dataSeriesChanged)
         self.addListener('limits',
-                         self._name,
-                         self.__limitsChanged,
-                         overwrite=True)
+                         self.__name,
+                         self.__limitsChanged)
 
         self.Bind(wx.EVT_SIZE, lambda *a: self.draw())
 
@@ -160,7 +164,18 @@ class PlotPanel(viewpanel.ViewPanel):
         
     def destroy(self):
         viewpanel.ViewPanel.destroy(self)
-        self.removeGlobalListener(self._name)
+        self.removeListener('dataSeries', self.__name)
+        self.removeListener('limits',     self.__name)
+        for propName in ['legend',
+                         'autoScale',
+                         'xLogScale',
+                         'yLogScale',
+                         'ticks',
+                         'grid',
+                         'smooth',
+                         'xlabel',
+                         'ylabel']:
+            self.removeListener(propName, self._name)
 
 
     def getFigure(self):
@@ -191,10 +206,10 @@ class PlotPanel(viewpanel.ViewPanel):
         xlims = list(self.__axis.get_xlim())
         ylims = list(self.__axis.get_ylim())
 
-        self.disableListener('limits', self._name)
+        self.disableListener('limits', self.__name)
         self.limits.x = xlims
         self.limits.y = ylims
-        self.enableListener( 'limits', self._name)
+        self.enableListener( 'limits', self.__name)
 
 
     def __limitsChanged(self, *a):
@@ -237,9 +252,9 @@ class PlotPanel(viewpanel.ViewPanel):
             ymin = axisylims[0]
             ymax = axisylims[1]
 
-        self.disableListener('limits', self._name)
+        self.disableListener('limits', self.__name)
         self.limits[:] = [xmin, xmax, ymin, ymax]
-        self.enableListener('limits', self._name)            
+        self.enableListener('limits', self.__name)            
  
         return (xmin, xmax), (ymin, ymax)
 

@@ -90,6 +90,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
  
         displayCtx .addListener('selectedOverlay', self._name, self.draw) 
         displayCtx .addListener('location',        self._name, self.draw)
+
+        self.addListener('demean',      self._name, self.draw)
+        self.addListener('usePixdim',   self._name, self.draw)
+        self.addListener('showCurrent', self._name, self.draw)
         
         self.Layout()
         self.draw()
@@ -97,6 +101,11 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
     def destroy(self):
         plotpanel.PlotPanel.destroy(self)
+        
+        self.removeListener('demean',      self._name)
+        self.removeListener('usePixdim',   self._name)
+        self.removeListener('showCurrent', self._name)
+        
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('location',        self._name)
