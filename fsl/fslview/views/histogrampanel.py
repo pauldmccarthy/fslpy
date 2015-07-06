@@ -437,7 +437,7 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         # Remove any dead overlays
         # from the histogram cache
-        for overlay in self.__histCache:
+        for overlay in list(self.__histCache.keys()):
             if overlay not in self._overlayList:
                 log.debug('Removing cached histogram series '
                           'for overlay {}'.format(overlay.name))
