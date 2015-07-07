@@ -1,4 +1,4 @@
-
+\
 TODO LIST -*- mode: org; -*-
 
 A mixture of things to do, things which might be nice to do, and things which
@@ -135,6 +135,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** A 'MELODICTimeSeries' thingo, just like the FEATTimeSeries - plot component time courses alongside a voxel's time course.
 ** Add 'load colour map' button to VolumeOpts settings panel. If you do this, you could probably remove the option from the file menu.
 ** Colour command line (e.g. renderpy background) should be floating point  in the range [0, 1]
 ** GLModel - annotate view with model name
