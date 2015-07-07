@@ -38,9 +38,16 @@ class TimeSeries(plotpanel.DataSeries):
         self.coords  = map(int, coords)
         self.data    = overlay.data[coords[0], coords[1], coords[2], :]
 
+        
     def update(self, coords):
-        self.coords = map(int, coords)
+        
+        coords = map(int, coords)
+        if coords == self.coords:
+            return False
+        
+        self.coords = coords
         self.data   = self.overlay.data[coords[0], coords[1], coords[2], :]
+        return True
 
         
     def getData(self):
@@ -63,18 +70,158 @@ class FEATTimeSeries(TimeSeries):
     """
 
     plotFullModelFit = props.Boolean(default=False)
-    # plotResiduals          =            props.Boolean(default=False)
-    # plotParameterEstimates = props.List(props.Boolean(default=False))
-    # plotCopes              = props.List(props.Boolean(default=False))
-
-    # Reduced against what? It has to
-    # be w.r.t. a specific PE/COPE. 
-    # plotReducedData = props.Boolean(default=False)
+    plotPEFits       = props.List(props.Boolean(default=False))
+    plotCOPEFits     = props.List(props.Boolean(default=False))
 
 
     def __init__(self, *args, **kwargs):
         TimeSeries.__init__(self, *args, **kwargs)
         self.name = '{}_{}'.format(type(self).__name__, id(self))
+
+        numEVs   = self.overlay.numEVs()
+        numCOPEs = self.overlay.numContrasts()
+
+        for i in range(numEVs):
+            self.plotPEFits.append(False)
+
+        for i in range(numCOPEs):
+            self.plotCOPEFits.append(False) 
+
+        self.__fullModelTs =  None
+        self.__peTs        = [None] * numEVs
+        self.__copeTs      = [None] * numCOPEs
+        
+        self.addListener('plotFullModelFit',
+                         self.name,
+                         self.__plotFullModelFitChanged)
+        
+        for i, plotPEFit in enumerate(
+                self.plotPEFits.getPropertyValueList()):
+
+            def onChange(ctx, value, valid, name, pe=i):
+                self.__plotPEFitChanged(pe)
+
+            plotPEFit.addListener(self.name, onChange)
+
+        
+        for i, plotCOPEFit in enumerate(
+                self.plotCOPEFits.getPropertyValueList()):
+
+            def onChange(ctx, value, valid, name, cope=i):
+                self.__plotCOPEFitChanged(cope)
+
+            plotCOPEFit.addListener(self.name, onChange)
+ 
+            
+
+    def getModelTimeSeries(self):
+        modelts = []
+
+        if self.plotFullModelFit:
+            modelts.append(self.__fullModelTs)
+
+        for i in range(self.overlay.numEVs()):
+            if self.plotPEFits[i]:
+                modelts.append(self.__peTs[i])
+
+        for i in range(self.overlay.numContrasts()):
+            if self.plotCOPEFits[i]:
+                modelts.append(self.__copeTs[i]) 
+        
+        return modelts
+
+    
+    def __plotCOPEFitChanged(self, copenum):
+        if not self.plotCOPEFits[copenum]:
+            self.__copeTs[copenum] = None
+            return
+
+        con  = self.overlay.contrasts()[copenum]
+
+        copets = FEATModelFitTimeSeries(
+            con,
+            self.tsPanel,
+            self.overlay,
+            self.coords)
+        
+        copets.colour    = (0, 1, 0)
+        copets.alpha     = self.alpha
+        copets.label     = self.label
+        copets.lineWidth = self.lineWidth
+        copets.lineStyle = self.lineStyle
+
+        self.__copeTs[copenum] = copets 
+
+
+    def __plotPEFitChanged(self, evnum):
+        if not self.plotPEFits[evnum]:
+            self.__peTs[evnum] = None
+            return
+
+        con     = [0] * self.overlay.numEVs()
+        con[evnum] = 1
+
+        pets = FEATModelFitTimeSeries(
+            con,
+            self.tsPanel,
+            self.overlay,
+            self.coords)
+        
+        pets.colour    = (1, 0, 0)
+        pets.alpha     = self.alpha
+        pets.label     = self.label
+        pets.lineWidth = self.lineWidth
+        pets.lineStyle = self.lineStyle
+
+        self.__peTs[evnum] = pets
+
+
+    def __plotFullModelFitChanged(self, *a):
+        if not self.plotFullModelFit:
+            self.__fullModelTs = None
+            return
+
+        self.__fullModelTs = FEATModelFitTimeSeries(
+            [1] * self.overlay.numEVs(),
+            self.tsPanel,
+            self.overlay,
+            self.coords)
+        self.__fullModelTs.colour    = (0, 0, 1)
+        self.__fullModelTs.alpha     = self.alpha
+        self.__fullModelTs.label     = self.label
+        self.__fullModelTs.lineWidth = self.lineWidth
+        self.__fullModelTs.lineStyle = self.lineStyle
+
+        
+    def update(self, coords):
+        if not TimeSeries.update(self, coords):
+            return False
+            
+        if self.__fullModelTs is not None:
+            self.__fullModelTs.update(coords)
+
+        return True
+
+
+class FEATModelFitTimeSeries(TimeSeries):
+    
+    def __init__(self, contrast, *args, **kwargs):
+        TimeSeries.__init__(self, *args, **kwargs)
+        self.contrast = contrast
+        self.updateModelFit()
+
+        
+    def update(self, coords):
+        if not TimeSeries.update(self, coords):
+            return
+        self.updateModelFit()
+        
+
+    def updateModelFit(self):
+        x, y, z = self.coords
+
+        self.data = self.overlay.fit(self.contrast, (x, y, z))
+ 
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
@@ -154,6 +301,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         prevTs      = self.__currentTs
         prevOverlay = self.__currentOverlay
 
+        if prevTs is not None:
+            prevTs.removeGlobalListener(self._name)
+
         self.__currentTs      = None
         self.__currentOverlay = None
 
@@ -201,6 +351,8 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             self.__currentTs      = ts
             self.__currentOverlay = overlay
 
+        self.__currentTs.addGlobalListener(self._name, self.draw)
+
         
     def getCurrent(self):
         return self.__currentTs
@@ -209,16 +361,16 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     def draw(self, *a):
 
         self.__calcCurrent()
-        current = self.getCurrent()
+        current = self.__currentTs
 
         if self.showCurrent and \
            current is not None:
 
-            # Turn current into a list
-            # if it is not already one
-            try:    len(current)
-            except: current = [current]
+            extras = [current]
 
-            self.drawDataSeries(current)
+            if isinstance(current, FEATTimeSeries):
+                extras += current.getModelTimeSeries()
+
+            self.drawDataSeries(extras)
         else:
             self.drawDataSeries()

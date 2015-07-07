@@ -153,8 +153,27 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             displayName=strings.labels[self, 'currentFEATSettings'].format(
                 display.name))
 
-        widg = props.makeWidget(self.__widgets, ts, 'plotFullModelFit')
+        full    = props.makeWidget(     self.__widgets, ts, 'plotFullModelFit')
+        pes     = props.makeListWidgets(self.__widgets, ts, 'plotPEFits')
+        copes   = props.makeListWidgets(self.__widgets, ts, 'plotCOPEFits')
         self.__widgets.AddWidget(
-            widg,
+            full,
             displayName=strings.properties[ts, 'plotFullModelFit'],
             groupName='currentFEATSettings')
+
+        for i, pe in enumerate(pes):
+            peName = 'PE {}'.format(i + 1)
+            self.__widgets.AddWidget(
+                pe,
+                displayName=strings.properties[ts, 'plotPEFits'].format(
+                    peName),
+                groupName='currentFEATSettings') 
+
+
+        copeNames = overlay.contrastNames()
+        for i, (cope, name) in enumerate(zip(copes, copeNames)):
+            self.__widgets.AddWidget(
+                cope,
+                displayName=strings.properties[ts, 'plotCOPEFits'].format(
+                    i, name),
+                groupName='currentFEATSettings') 
