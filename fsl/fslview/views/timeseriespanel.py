@@ -19,6 +19,7 @@ import numpy as np
 import                               props
 
 import                               plotpanel
+import fsl.data.featimage         as fslfeatimage
 import fsl.data.image             as fslimage
 import fsl.fslview.displaycontext as fsldisplay
 import fsl.fslview.controls       as fslcontrols
@@ -49,6 +50,21 @@ class TimeSeries(plotpanel.DataSeries):
             ydata = ydata - ydata.mean()
             
         return xdata, ydata
+
+ 
+class FEATTimeSeries(TimeSeries):
+    """A :Class:`TimeSeries` class for use with :class:`FEATImage` instances,
+    containing some extra FEAT specific options.
+    """
+
+    plotFullModelFit = props.Boolean(default=False)
+    # plotResiduals          =            props.Boolean(default=False)
+    # plotParameterEstimates = props.List(props.Boolean(default=False))
+    # plotCopes              = props.List(props.Boolean(default=False))
+
+    # Reduced against what? It has to
+    # be w.r.t. a specific PE/COPE. 
+    # plotReducedData = props.Boolean(default=False)
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
@@ -148,9 +164,14 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[0] >= overlay.shape[0] or \
            vox[1] >= overlay.shape[1] or \
            vox[2] >= overlay.shape[2]:
-            return 
+            return
 
-        ts = TimeSeries(self, overlay, vox)
+
+        if isinstance(overlay, fslfeatimage.FEATImage):
+            ts = FEATTimeSeries(self, overlay, vox)
+        else:
+            ts = TimeSeries(self, overlay, vox)
+        
         ts.colour    = [0, 0, 0]
         ts.alpha     = 1
         ts.lineWidth = 2
