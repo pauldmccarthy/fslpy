@@ -86,3 +86,75 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             ylims,
             strings.labels[tsPanel, 'ylim'],
             groupName='plotSettings')
+
+        displayCtx .addListener('selectedOverlay',
+                                self._name,
+                                self.__selectedOverlayChanged)
+        overlayList.addListener('overlays',
+                                self._name,
+                                self.__selectedOverlayChanged)
+
+        # This attribute keeps track of the currently
+        # selected overlay, but only if said overlay
+        # is a FEATImage.
+        self.__selectedOverlay = None
+        self.__selectedOverlayChanged()
+
+
+    def destroy(self):
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+
+        if self.__selectedOverlay is not None:
+            display = self._displayCtx.getDisplay(self.__selectedOverlay)
+            display.removeListener('name', self._name)
+
+
+    def __selectedOverlayNameChanged(self, *a):
+        display = self._displayCtx.getDisplay(self.__selectedOverlay)
+        self.__widgets.RenameGroup(
+            'currentFEATSettings',
+            strings.labels[self, 'currentFEATSettings'].format(
+                display.name))
+
+    
+    def __selectedOverlayChanged(self, *a):
+
+        # We're assuminbg that the TimeSeriesPanel has
+        # already updated its current TimeSeries for
+        # the newly selected overlay.
+        
+        import fsl.fslview.views.timeseriespanel as tsp
+
+        if self.__selectedOverlay is not None:
+            display = self._displayCtx.getDisplay(self.__selectedOverlay)
+            display.removeListener('name', self._name)
+            self.__selectedOverlay = None
+
+        if self.__widgets.HasGroup('currentFEATSettings'):
+            self.__widgets.RemoveGroup('currentFEATSettings')
+
+        ts = self.__tsPanel.getCurrent()
+
+        if ts is None or not isinstance(ts, tsp.FEATTimeSeries):
+            return
+
+        overlay = ts.overlay
+        display = self._displayCtx.getDisplay(overlay)
+
+        self.__selectedOverlay = overlay
+
+        display.addListener('name',
+                            self._name,
+                            self.__selectedOverlayNameChanged)
+
+        self.__widgets.AddGroup(
+            'currentFEATSettings',
+            displayName=strings.labels[self, 'currentFEATSettings'].format(
+                display.name))
+
+        widg = props.makeWidget(self.__widgets, ts, 'plotFullModelFit')
+        self.__widgets.AddWidget(
+            widg,
+            displayName=strings.properties[ts, 'plotFullModelFit'],
+            groupName='currentFEATSettings')

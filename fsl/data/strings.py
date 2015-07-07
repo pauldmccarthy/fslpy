@@ -206,12 +206,14 @@ labels = TypeDict({
 
     'PlotPanel.plotSettings'    : 'General plot settings',
     'PlotPanel.currentSettings' : 'Settings for currently '
-                                              'selected plot ({})',
+                                  'selected plot ({})',
     'PlotPanel.xlim'            : 'X limits',
     'PlotPanel.ylim'            : 'Y limits',
     'PlotPanel.labels'          : 'Labels',
     'PlotPanel.xlabel'          : 'X',
     'PlotPanel.ylabel'          : 'Y',
+
+    'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for {}',
     
 })
 
@@ -272,6 +274,8 @@ properties = TypeDict({
     'HistogramSeries.volume'          : 'Volume',
     'HistogramSeries.dataRange'       : 'Data range',
     'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
+
+    'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

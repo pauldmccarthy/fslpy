@@ -138,6 +138,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         ts.lineStyle = '-'
         ts.colour    = fslcm.randomColour()
         ts.label     = self.__makeLabel(ts)
+
         self.__tsPanel.dataSeries.append(ts)
 
         

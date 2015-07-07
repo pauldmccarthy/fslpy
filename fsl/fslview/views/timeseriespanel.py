@@ -38,6 +38,10 @@ class TimeSeries(plotpanel.DataSeries):
         self.coords  = map(int, coords)
         self.data    = overlay.data[coords[0], coords[1], coords[2], :]
 
+    def update(self, coords):
+        self.coords = map(int, coords)
+        self.data   = self.overlay.data[coords[0], coords[1], coords[2], :]
+
         
     def getData(self):
         ydata = np.array( self.data,  dtype=np.float32)
@@ -50,6 +54,7 @@ class TimeSeries(plotpanel.DataSeries):
             ydata = ydata - ydata.mean()
             
         return xdata, ydata
+    
 
  
 class FEATTimeSeries(TimeSeries):
@@ -65,6 +70,11 @@ class FEATTimeSeries(TimeSeries):
     # Reduced against what? It has to
     # be w.r.t. a specific PE/COPE. 
     # plotReducedData = props.Boolean(default=False)
+
+
+    def __init__(self, *args, **kwargs):
+        TimeSeries.__init__(self, *args, **kwargs)
+        self.name = '{}_{}'.format(type(self).__name__, id(self))
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
@@ -110,7 +120,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.addListener('demean',      self._name, self.draw)
         self.addListener('usePixdim',   self._name, self.draw)
         self.addListener('showCurrent', self._name, self.draw)
-        
+
+        self.__currentOverlay = None
+        self.__currentTs      = None
         self.Layout()
         self.draw()
 
@@ -136,11 +148,14 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.enableListener('dataSeries', self._name)
         self.draw()
             
-
         
     def __calcCurrent(self):
 
-        self.__current = None
+        prevTs      = self.__currentTs
+        prevOverlay = self.__currentOverlay
+
+        self.__currentTs      = None
+        self.__currentOverlay = None
 
         if len(self._overlayList) == 0:
             return 
@@ -166,30 +181,44 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
            vox[2] >= overlay.shape[2]:
             return
 
+        if overlay is prevOverlay:
+            self.__currentOverlay = prevOverlay
+            self.__currentTs      = prevTs
+            prevTs.update(vox)
 
-        if isinstance(overlay, fslfeatimage.FEATImage):
-            ts = FEATTimeSeries(self, overlay, vox)
         else:
-            ts = TimeSeries(self, overlay, vox)
+            if isinstance(overlay, fslfeatimage.FEATImage):
+                ts = FEATTimeSeries(self, overlay, vox)
+            else:
+                ts = TimeSeries(self, overlay, vox)
         
-        ts.colour    = [0, 0, 0]
-        ts.alpha     = 1
-        ts.lineWidth = 2
-        ts.lineStyle = ':'
-        ts.label     = None
+            ts.colour    = [0, 0, 0]
+            ts.alpha     = 1
+            ts.lineWidth = 2
+            ts.lineStyle = ':'
+            ts.label     = None
 
-        self.__current = ts
+            self.__currentTs      = ts
+            self.__currentOverlay = overlay
 
         
     def getCurrent(self):
-        return self.__current
+        return self.__currentTs
 
 
     def draw(self, *a):
 
         self.__calcCurrent()
         current = self.getCurrent()
-        
+
         if self.showCurrent and \
-           current is not None: self.drawDataSeries([current])
-        else:                   self.drawDataSeries()
+           current is not None:
+
+            # Turn current into a list
+            # if it is not already one
+            try:    len(current)
+            except: current = [current]
+
+            self.drawDataSeries(current)
+        else:
+            self.drawDataSeries()
