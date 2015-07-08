@@ -30,11 +30,6 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         tsProps   = ['demean',
                      'usePixdim',
                      'showCurrent']
-        curProps  = ['currentColour',
-                     'currentAlpha',
-                     'currentLineWidth',
-                     'currentLineStyle']
-                     
         plotProps = ['xLogScale',
                      'yLogScale',
                      'smooth',
@@ -47,22 +42,6 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             self.__widgets.AddWidget(
                 props.makeWidget(self.__widgets, tsPanel, prop),
                 displayName=strings.properties[tsPanel, prop])
-
-        self.__widgets.AddGroup('currentSettings',
-                                strings.labels[self, 'currentSettings'])
-
-        # TODO Hide these when tsPanel.showCurrent is false
-        for prop in curProps:
-            if prop == 'currentAlpha':
-                kwargs = {'showLimits' : False, 'spin' : False}
-            else:
-                kwargs = {}
- 
-            self.__widgets.AddWidget(
-                props.makeWidget(self.__widgets, tsPanel, prop, **kwargs),
-                displayName=strings.properties[tsPanel, prop],
-                groupName='currentSettings') 
-            
 
         self.__widgets.AddGroup(
             'plotSettings',
@@ -115,6 +94,12 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
                                 self._name,
                                 self.__selectedOverlayChanged)
 
+        tsPanel.addListener('showCurrent',
+                            self._name,
+                            self.__showCurrentChanged)
+
+        self.__showCurrentChanged()
+
         # This attribute keeps track of the currently
         # selected overlay, but only if said overlay
         # is a FEATImage.
@@ -130,6 +115,44 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             display = self._displayCtx.getDisplay(self.__selectedOverlay)
             display.removeListener('name', self._name)
 
+
+    def __showCurrentChanged(self, *a):
+        widgets     = self.__widgets
+        tsPanel     = self.__tsPanel
+        showCurrent = tsPanel.showCurrent
+        areShown    = widgets.HasGroup('currentSettings')
+
+        if (not showCurrent) and areShown:
+            widgets.RemoveGroup('currentSettings')
+
+        elif showCurrent and (not areShown):
+
+            self.__widgets.AddGroup('currentSettings',
+                                    strings.labels[self, 'currentSettings'])
+
+            colour    = props.makeWidget(widgets, tsPanel, 'currentColour')
+            alpha     = props.makeWidget(widgets, tsPanel, 'currentAlpha',
+                                         showLimits=False, spin=False)
+            lineWidth = props.makeWidget(widgets, tsPanel, 'currentLineWidth')
+            lineStyle = props.makeWidget(widgets, tsPanel, 'currentLineStyle')
+
+            self.__widgets.AddWidget(
+                colour,
+                displayName=strings.properties[tsPanel, 'currentColour'],
+                groupName='currentSettings')
+            self.__widgets.AddWidget(
+                alpha,
+                displayName=strings.properties[tsPanel, 'currentAlpha'],
+                groupName='currentSettings')
+            self.__widgets.AddWidget(
+                lineWidth,
+                displayName=strings.properties[tsPanel, 'currentLineWidth'],
+                groupName='currentSettings') 
+            self.__widgets.AddWidget(
+                lineStyle,
+                displayName=strings.properties[tsPanel, 'currentLineStyle'],
+                groupName='currentSettings')
+            
 
     def __selectedOverlayNameChanged(self, *a):
         display = self._displayCtx.getDisplay(self.__selectedOverlay)

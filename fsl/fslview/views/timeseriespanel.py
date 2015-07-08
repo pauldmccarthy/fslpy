@@ -29,6 +29,7 @@ import fsl.utils.transform        as transform
 
 log = logging.getLogger(__name__)
 
+
 class TimeSeries(plotpanel.DataSeries):
 
     
@@ -198,7 +199,7 @@ class FEATTimeSeries(TimeSeries):
             self.overlay,
             self.coords)
         
-        pets.colour    = (1, 0, 0)
+        pets.colour    = (0.7, 0, 0)
         pets.alpha     = self.alpha
         pets.label     = self.label
         pets.lineWidth = self.lineWidth
@@ -322,7 +323,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.addListener('usePixdim',   self._name, self.draw)
         self.addListener('showCurrent', self._name, self.draw)
 
-
         csc = self.__currentSettingsChanged
         self.addListener('currentColour',    self._name, csc)
         self.addListener('currentAlpha',     self._name, csc)
@@ -344,7 +344,12 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             tss.extend(self.__currentTs.getModelTimeSeries())
 
             for ts in tss:
-                ts.colour    = self.currentColour
+
+                # Don't change the colour for associated
+                # time courses (e.g. model fits)
+                if ts is self.__currentTs:
+                    ts.colour = self.currentColour
+                    
                 ts.alpha     = self.currentAlpha
                 ts.lineWidth = self.currentLineWidth
                 ts.lineStyle = self.currentLineStyle

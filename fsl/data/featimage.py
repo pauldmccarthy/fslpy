@@ -210,7 +210,7 @@ class FEATImage(fslimage.Image):
 
         if not fullmodel:
             contrast  = np.array(contrast)
-            contrast /= np.sqrt(contrast.sum() ** 2)
+            contrast /= np.sqrt((contrast ** 2).sum())
 
         x, y, z = xyz
         numEVs  = self.numEVs()
