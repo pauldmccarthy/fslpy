@@ -154,6 +154,7 @@ class FEATImage(fslimage.Image):
         self.__contrasts     = cons
         self.__settings      = settings
 
+        self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
         self.__copes         = [None] * self.numContrasts()
 
@@ -183,24 +184,37 @@ class FEATImage(fslimage.Image):
         return [list(c) for c in self.__contrasts]
 
 
-    def __getPEFile(self, prefix, ev):
-        prefix = op.join(self.__featDir, 'stats', '{}{}'.format(
-            prefix, ev + 1))
+    def __getStatsFile(self, prefix, ev=None):
+
+        if ev is not None: prefix = '{}{}'.format(prefix, ev + 1)
+
+        prefix = op.join(self.__featDir, 'stats', prefix)
+        
         return glob.glob('{}.*'.format(prefix))[0]
 
 
     def getPE(self, ev):
 
         if self.__pes[ev] is None:
-            pefile = self.__getPEFile('pe', ev)
+            pefile = self.__getStatsFile('pe', ev)
             self.__pes[ev] = nib.load(pefile).get_data()
 
         return self.__pes[ev]
 
+
+    def getResiduals(self):
+        
+        if self.__residuals is None:
+            resfile          = self.__getStatsFile('res4d')
+            self.__residuals = nib.load(resfile).get_data()
+        
+        return self.__residuals
+
     
     def getCOPE(self, num):
+        
         if self.__copes[num] is None:
-            copefile = self.__getPEFile('cope', num)
+            copefile = self.__getStatsFile('cope', num)
             self.__copes[num] = nib.load(copefile).get_data()
 
         return self.__copes[num] 
@@ -228,6 +242,15 @@ class FEATImage(fslimage.Image):
             modelfit += X[:, i] * pe * contrast[i]
 
         return modelfit + data.mean()
+
+
+    def reducedData(self, xyz, contrast, fullmodel=False):
+
+        x, y, z   = xyz
+        residuals = self.getResiduals()[x, y, z, :]
+        modelfit  = self.fit(contrast, xyz, fullmodel)
+
+        return residuals + modelfit
 
     
     # def getThresholdedZStats(self):

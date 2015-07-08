@@ -198,12 +198,25 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
                 display.name))
 
         full    = props.makeWidget(     self.__widgets, ts, 'plotFullModelFit')
+        res     = props.makeWidget(     self.__widgets, ts, 'plotResiduals')
         pes     = props.makeListWidgets(self.__widgets, ts, 'plotPEFits')
         copes   = props.makeListWidgets(self.__widgets, ts, 'plotCOPEFits')
+        reduce  = props.makeWidget(     self.__widgets, ts, 'reduceAgainst')
+        
         self.__widgets.AddWidget(
             full,
             displayName=strings.properties[ts, 'plotFullModelFit'],
             groupName='currentFEATSettings')
+        
+        self.__widgets.AddWidget(
+            res,
+            displayName=strings.properties[ts, 'plotResiduals'],
+            groupName='currentFEATSettings')
+        
+        self.__widgets.AddWidget(
+            reduce,
+            displayName=strings.properties[ts, 'reduceAgainst'],
+            groupName='currentFEATSettings') 
 
         for i, pe in enumerate(pes):
             self.__widgets.AddWidget(

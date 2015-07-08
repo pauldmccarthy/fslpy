@@ -290,6 +290,8 @@ properties = TypeDict({
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
     'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit',
     'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
+    'FEATTimeSeries.plotResiduals'    : 'Show residuals',
+    'FEATTimeSeries.reduceAgainst'    : 'Reduce data against',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
