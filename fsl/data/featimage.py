@@ -206,14 +206,18 @@ class FEATImage(fslimage.Image):
         return self.__copes[num] 
         
 
-    def fit(self, contrast, xyz):
+    def fit(self, contrast, xyz, fullmodel=False):
+
+        if not fullmodel:
+            contrast  = np.array(contrast)
+            contrast /= np.sqrt(contrast.sum() ** 2)
 
         x, y, z = xyz
         numEVs  = self.numEVs()
 
         if len(contrast) != numEVs:
             raise ValueError('Contrast is wrong length')
-
+        
         X        = self.__design
         data     = self.data[x, y, z, :]
         modelfit = np.zeros(len(data))
@@ -221,7 +225,7 @@ class FEATImage(fslimage.Image):
         for i in range(numEVs):
 
             pe        = self.getPE(i)[x, y, z]
-            modelfit += np.dot(X[:, i], pe) * contrast[i]
+            modelfit += X[:, i] * pe * contrast[i]
 
         return modelfit + data.mean()
 

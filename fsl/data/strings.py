@@ -213,11 +213,13 @@ labels = TypeDict({
     'PlotPanel.xlabel'          : 'X',
     'PlotPanel.ylabel'          : 'Y',
 
+    'TimeSeriesControlPanel.currentSettings' : 'Settings for current '
+                                               'voxel time course',
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
 
     'FEATModelFitTimeSeries.full' : 'Full model fit',
-    'FEATModelFitTimeSeries.cope' : 'COPE{} fit ({})',
+    'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
     
 })
@@ -266,6 +268,11 @@ properties = TypeDict({
     'TimeSeriesPanel.demean'           : 'Demean',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
     'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
+    'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
+    'TimeSeriesPanel.currentAlpha'     : 'Transparency for current '
+                                         'time course',
+    'TimeSeriesPanel.currentLineWidth' : 'Line width for current time course',
+    'TimeSeriesPanel.currentLineStyle' : 'Line style for current time course',
     'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     

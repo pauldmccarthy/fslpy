@@ -12,6 +12,7 @@ of overlay objects stored in an :class:`.OverlayList`.
 
 """
 
+import copy
 import logging
 
 import numpy as np
@@ -77,6 +78,9 @@ class FEATTimeSeries(TimeSeries):
     plotFullModelFit = props.Boolean(default=False)
     plotPEFits       = props.List(props.Boolean(default=False))
     plotCOPEFits     = props.List(props.Boolean(default=False))
+
+    # TODO 'None', or any PE/COPE
+    reduceDataAgainst = props.Choice()
 
 
     def __init__(self, *args, **kwargs):
@@ -226,8 +230,8 @@ class FEATTimeSeries(TimeSeries):
         if not TimeSeries.update(self, coords):
             return False
             
-        if self.__fullModelTs is not None:
-            self.__fullModelTs.update(coords)
+        for modelTs in self.getModelTimeSeries():
+            modelTs.update(coords)
 
         return True
 
@@ -254,10 +258,11 @@ class FEATModelFitTimeSeries(TimeSeries):
         
 
     def updateModelFit(self):
-        x, y, z = self.coords
 
-        self.data = self.overlay.fit(self.contrast, (x, y, z))
- 
+        fitType   = self.fitType
+        contrast  = self.contrast
+        xyz       = self.coords
+        self.data = self.overlay.fit(contrast, xyz, fitType == 'full')
 
 
 class TimeSeriesPanel(plotpanel.PlotPanel):
@@ -269,12 +274,25 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     """
 
     
-    demean      = props.Boolean(default=True)
-    usePixdim   = props.Boolean(default=False)
-    showCurrent = props.Boolean(default=True)
+    demean        = props.Boolean(default=True)
+    usePixdim     = props.Boolean(default=False)
+    showCurrent   = props.Boolean(default=True)
+
+    # TODO
+    percentChange = props.Boolean(default=False)
+
+    currentColour    = copy.copy(TimeSeries.colour)
+    currentAlpha     = copy.copy(TimeSeries.alpha)
+    currentLineWidth = copy.copy(TimeSeries.lineWidth)
+    currentLineStyle = copy.copy(TimeSeries.lineStyle)
 
 
     def __init__(self, parent, overlayList, displayCtx):
+
+        self.currentColour    = (0, 0, 0)
+        self.currentAlpha     = 1
+        self.currentLineWidth = 1
+        self.currentLineStyle = ':'
 
         actionz = {
             'toggleTimeSeriesList'    : lambda *a: self.togglePanel(
@@ -304,10 +322,32 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.addListener('usePixdim',   self._name, self.draw)
         self.addListener('showCurrent', self._name, self.draw)
 
+
+        csc = self.__currentSettingsChanged
+        self.addListener('currentColour',    self._name, csc)
+        self.addListener('currentAlpha',     self._name, csc)
+        self.addListener('currentLineWidth', self._name, csc)
+        self.addListener('currentLineStyle', self._name, csc)
+
         self.__currentOverlay = None
         self.__currentTs      = None
         self.Layout()
         self.draw()
+
+        
+    def __currentSettingsChanged(self, *a):
+        if self.__currentTs is None:
+            return
+
+        tss = [self.__currentTs]
+        if isinstance(self.__currentTs, FEATTimeSeries):
+            tss.extend(self.__currentTs.getModelTimeSeries())
+
+            for ts in tss:
+                ts.colour    = self.currentColour
+                ts.alpha     = self.currentAlpha
+                ts.lineWidth = self.currentLineWidth
+                ts.lineStyle = self.currentLineStyle
 
 
     def destroy(self):
@@ -378,11 +418,16 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             else:
                 ts = TimeSeries(self, overlay, vox)
         
-            ts.colour    = [0, 0, 0]
-            ts.alpha     = 1
-            ts.lineWidth = 2
-            ts.lineStyle = ':'
+            ts.colour    = self.currentColour
+            ts.alpha     = self.currentAlpha
+            ts.lineWidth = self.currentLineWidth
+            ts.lineStyle = self.currentLineStyle
             ts.label     = None
+
+            ts.bindProps('colour'   , self, 'currentColour')
+            ts.bindProps('alpha'    , self, 'currentAlpha')
+            ts.bindProps('lineWidth', self, 'currentLineWidth')
+            ts.bindProps('lineStyle', self, 'currentLineStyle')
 
             self.__currentTs      = ts
             self.__currentOverlay = overlay

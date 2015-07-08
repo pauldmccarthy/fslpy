@@ -30,6 +30,11 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         tsProps   = ['demean',
                      'usePixdim',
                      'showCurrent']
+        curProps  = ['currentColour',
+                     'currentAlpha',
+                     'currentLineWidth',
+                     'currentLineStyle']
+                     
         plotProps = ['xLogScale',
                      'yLogScale',
                      'smooth',
@@ -42,6 +47,22 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             self.__widgets.AddWidget(
                 props.makeWidget(self.__widgets, tsPanel, prop),
                 displayName=strings.properties[tsPanel, prop])
+
+        self.__widgets.AddGroup('currentSettings',
+                                strings.labels[self, 'currentSettings'])
+
+        # TODO Hide these when tsPanel.showCurrent is false
+        for prop in curProps:
+            if prop == 'currentAlpha':
+                kwargs = {'showLimits' : False, 'spin' : False}
+            else:
+                kwargs = {}
+ 
+            self.__widgets.AddWidget(
+                props.makeWidget(self.__widgets, tsPanel, prop, **kwargs),
+                displayName=strings.properties[tsPanel, prop],
+                groupName='currentSettings') 
+            
 
         self.__widgets.AddGroup(
             'plotSettings',
