@@ -5,6 +5,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import          copy
+
 import          wx
 import numpy as np
 
@@ -12,6 +14,7 @@ import                           props
 import pwidgets.elistbox      as elistbox
 import fsl.fslview.panel      as fslpanel
 import fsl.utils.transform    as transform
+import fsl.data.strings       as strings
 import fsl.fslview.colourmaps as fslcm
 
 
@@ -102,7 +105,25 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         return '{} [{} {} {}]'.format(ts.overlay.name,
                                       ts.coords[0],
                                       ts.coords[1],
-                                      ts.coords[2])    
+                                      ts.coords[2])
+
+
+    def __makeFEATModelFitLabel(self, parentTs, modelTs):
+
+        label = '{} ({})'.format(
+            parentTs.label,
+            strings.labels[modelTs, modelTs.fitType])
+
+        if modelTs.fitType == 'full':
+            return label
+        
+        elif modelTs.fitType == 'cope':
+            return label.format(
+                modelTs.idx + 1,
+                modelTs.overlay.contrastNames()[modelTs.idx])
+        
+        elif modelTs.fitType == 'pe':
+            return label.format(modelTs.idx + 1) 
 
 
     def __timeSeriesChanged(self, *a):
@@ -128,11 +149,15 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
     
     def __onListAdd(self, ev):
         
+        import fsl.fslview.views.timeseriespanel as tsp
+        
         ts = self.__tsPanel.getCurrent()
 
         if ts is None:
             return
-        
+
+        ts = copy.copy(ts)
+
         ts.alpha     = 1
         ts.lineWidth = 2
         ts.lineStyle = '-'
@@ -140,6 +165,17 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         ts.label     = self.__makeLabel(ts)
 
         self.__tsPanel.dataSeries.append(ts)
+
+        if isinstance(ts, tsp.FEATTimeSeries):
+            modelTs = ts.getModelTimeSeries()
+
+            for mts in modelTs:
+                mts.alpha     = 1
+                mts.lineWidth = 2
+                mts.lineStyle = '-'
+                mts.label     = self.__makeFEATModelFitLabel(ts, mts)
+
+            self.__tsPanel.dataSeries.extend(modelTs)
 
         
     def __onListEdit(self, ev):

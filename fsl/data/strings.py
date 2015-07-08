@@ -215,6 +215,10 @@ labels = TypeDict({
 
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
+
+    'FEATModelFitTimeSeries.full' : 'Full model fit',
+    'FEATModelFitTimeSeries.cope' : 'COPE{} fit ({})',
+    'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
     
 })
 
@@ -277,8 +281,8 @@ properties = TypeDict({
     'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
 
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
-    'FEATTimeSeries.plotPEFits'       : 'Plot {} fit',
-    'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE {} ({}) fit',
+    'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit',
+    'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',

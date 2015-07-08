@@ -40,6 +40,10 @@ class TimeSeries(plotpanel.DataSeries):
 
         
     def update(self, coords):
+        """This method is only intended for use on the 'current' time series,
+        not for time series instances which have been added to the
+        TimeSeries.dataSeries list
+        """
         
         coords = map(int, coords)
         if coords == self.coords:
@@ -69,6 +73,7 @@ class FEATTimeSeries(TimeSeries):
     containing some extra FEAT specific options.
     """
 
+    
     plotFullModelFit = props.Boolean(default=False)
     plotPEFits       = props.List(props.Boolean(default=False))
     plotCOPEFits     = props.List(props.Boolean(default=False))
@@ -103,7 +108,6 @@ class FEATTimeSeries(TimeSeries):
 
             plotPEFit.addListener(self.name, onChange)
 
-        
         for i, plotCOPEFit in enumerate(
                 self.plotCOPEFits.getPropertyValueList()):
 
@@ -111,8 +115,27 @@ class FEATTimeSeries(TimeSeries):
                 self.__plotCOPEFitChanged(cope)
 
             plotCOPEFit.addListener(self.name, onChange)
+
+
+    def __copy__(self):
+        copy = type(self)(self.tsPanel, self.overlay, self.coords)
+
+        copy.colour           = self.colour
+        copy.alpha            = self.alpha 
+        copy.label            = self.label 
+        copy.lineWidth        = self.lineWidth
+        copy.lineStyle        = self.lineStyle
+
+        # When these properties are changed 
+        # on the copy instance, it will create 
+        # its own FEATModelFitTimeSeries 
+        # instances accordingly
+        copy.plotFullModelFit = self.plotFullModelFit
+        copy.plotPEFits[  :]  = self.plotPEFits[  :]
+        copy.plotCOPEFits[:]  = self.plotCOPEFits[:]
+
+        return copy
  
-            
 
     def getModelTimeSeries(self):
         modelts = []
@@ -140,10 +163,12 @@ class FEATTimeSeries(TimeSeries):
 
         copets = FEATModelFitTimeSeries(
             con,
+            'cope',
+            copenum,
             self.tsPanel,
             self.overlay,
             self.coords)
-        
+
         copets.colour    = (0, 1, 0)
         copets.alpha     = self.alpha
         copets.label     = self.label
@@ -158,11 +183,13 @@ class FEATTimeSeries(TimeSeries):
             self.__peTs[evnum] = None
             return
 
-        con     = [0] * self.overlay.numEVs()
+        con        = [0] * self.overlay.numEVs()
         con[evnum] = 1
 
         pets = FEATModelFitTimeSeries(
             con,
+            'pe',
+            evnum, 
             self.tsPanel,
             self.overlay,
             self.coords)
@@ -183,6 +210,8 @@ class FEATTimeSeries(TimeSeries):
 
         self.__fullModelTs = FEATModelFitTimeSeries(
             [1] * self.overlay.numEVs(),
+            'full',
+            -1, 
             self.tsPanel,
             self.overlay,
             self.coords)
@@ -205,8 +234,15 @@ class FEATTimeSeries(TimeSeries):
 
 class FEATModelFitTimeSeries(TimeSeries):
     
-    def __init__(self, contrast, *args, **kwargs):
+
+    def __init__(self, contrast, fitType, idx, *args, **kwargs):
+        
+        if fitType not in ('full', 'cope', 'pe'):
+            raise ValueError('Unknown model fit type {}'.format(fitType))
+        
         TimeSeries.__init__(self, *args, **kwargs)
+        self.fitType  = fitType
+        self.idx      = idx
         self.contrast = contrast
         self.updateModelFit()
 

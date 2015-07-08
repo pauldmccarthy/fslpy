@@ -138,7 +138,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
 
         self.__widgets.AddGroup(
             'currentSettings',
-            strings.labels[self, 'currentSettings'].format(
+            strings.labels[self.__hsPanel, 'currentSettings'].format(
                 self.__currentHs.label))
 
         wlist = self.__widgets

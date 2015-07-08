@@ -162,18 +162,15 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             groupName='currentFEATSettings')
 
         for i, pe in enumerate(pes):
-            peName = 'PE {}'.format(i + 1)
             self.__widgets.AddWidget(
                 pe,
-                displayName=strings.properties[ts, 'plotPEFits'].format(
-                    peName),
+                displayName=strings.properties[ts, 'plotPEFits'].format(i + 1),
                 groupName='currentFEATSettings') 
-
 
         copeNames = overlay.contrastNames()
         for i, (cope, name) in enumerate(zip(copes, copeNames)):
             self.__widgets.AddWidget(
                 cope,
                 displayName=strings.properties[ts, 'plotCOPEFits'].format(
-                    i, name),
+                    i + 1, name),
                 groupName='currentFEATSettings') 
