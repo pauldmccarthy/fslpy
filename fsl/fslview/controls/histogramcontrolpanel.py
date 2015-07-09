@@ -38,10 +38,14 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
                      'grid',
                      'autoScale']
 
+        self.__widgets.AddGroup(
+            'histSettings', strings.labels[self, 'histSettings'])
+
         for prop in histProps:
             self.__widgets.AddWidget(
                 props.makeWidget(self.__widgets, hsPanel, prop),
-                displayName=strings.properties[hsPanel, prop])
+                displayName=strings.properties[hsPanel, prop],
+                groupName='histSettings')
 
         self.__widgets.AddGroup(
             'plotSettings',

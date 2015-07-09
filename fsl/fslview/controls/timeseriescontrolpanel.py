@@ -38,10 +38,15 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
                      'grid',
                      'autoScale']
 
+        self.__widgets.AddGroup(
+            'tsSettings',
+            strings.labels[self, 'tsSettings'])
+
         for prop in tsProps:
             self.__widgets.AddWidget(
                 props.makeWidget(self.__widgets, tsPanel, prop),
-                displayName=strings.properties[tsPanel, prop])
+                displayName=strings.properties[tsPanel, prop],
+                groupName='tsSettings')
 
         self.__widgets.AddGroup(
             'plotSettings',

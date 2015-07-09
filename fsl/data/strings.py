@@ -213,8 +213,11 @@ labels = TypeDict({
     'PlotPanel.xlabel'          : 'X',
     'PlotPanel.ylabel'          : 'Y',
 
-    'TimeSeriesControlPanel.currentSettings' : 'Settings for current '
-                                               'voxel time course',
+    'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
+
+    'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
+    'TimeSeriesControlPanel.currentSettings'    : 'Settings for current '
+                                                  'voxel time course',
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
 
