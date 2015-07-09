@@ -218,10 +218,16 @@ labels = TypeDict({
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
 
+    'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
+
     'FEATModelFitTimeSeries.full' : 'Full model fit',
     'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
-    
+
+    'FEATReducedTimeSeries.cope' : 'Reduced against COPE{}: {}',
+    'FEATReducedTimeSeries.pe'   : 'Reduced against PE{}',
+
+    'FEATResidualTimeSeries'     : 'Residuals',
 })
 
 
@@ -265,7 +271,7 @@ properties = TypeDict({
     'PlotPanel.xlabel'    : 'X label',
     'PlotPanel.ylabel'    : 'Y label',
     
-    'TimeSeriesPanel.demean'           : 'Demean',
+    'TimeSeriesPanel.plotMode'         : 'Plotting mode',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
     'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
     'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
@@ -290,8 +296,9 @@ properties = TypeDict({
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
     'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit',
     'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
-    'FEATTimeSeries.plotResiduals'    : 'Show residuals',
-    'FEATTimeSeries.reduceAgainst'    : 'Reduce data against',
+    'FEATTimeSeries.plotResiduals'    : 'Plot residuals',
+    'FEATTimeSeries.plotReduced'      : 'Plot data reduced against',
+    'FEATTimeSeries.plotData'         : 'Plot data',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
@@ -420,7 +427,14 @@ choices = TypeDict({
     'Display.overlayType.label'      : 'Label image',
     'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
     'Display.overlayType.linevector' : '3-direction vector image (Line)',
-    'Display.overlayType.model'      : '3D model' 
+    'Display.overlayType.model'      : '3D model',
+
+    'HistogramPanel.histType.probability' : 'Probability',
+    'HistogramPanel.histType.count'       : 'Count',
+    
+    'TimeSeriesPanel.plotMode.normal'        : 'Normal',
+    'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
+    'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
 })
 
 

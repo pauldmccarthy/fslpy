@@ -102,13 +102,21 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
 
     def __makeLabel(self, ts):
+
         return '{} [{} {} {}]'.format(ts.overlay.name,
                                       ts.coords[0],
                                       ts.coords[1],
                                       ts.coords[2])
 
 
-    def __makeFEATModelFitLabel(self, parentTs, modelTs):
+    def __makeFEATModelTSLabel(self, parentTs, modelTs):
+
+        import fsl.fslview.views.timeseriespanel as tsp
+
+        if isinstance(modelTs, tsp.FEATResidualTimeSeries):
+            return '{} ({})'.format(
+                parentTs.label,
+                strings.labels[modelTs])
 
         label = '{} ({})'.format(
             parentTs.label,
@@ -156,7 +164,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         if ts is None:
             return
 
-        ts = copy.copy(ts)
+        ts           = copy.copy(ts)
 
         ts.alpha     = 1
         ts.lineWidth = 2
@@ -167,13 +175,16 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         self.__tsPanel.dataSeries.append(ts)
 
         if isinstance(ts, tsp.FEATTimeSeries):
+            
             modelTs = ts.getModelTimeSeries()
+            modelTs.remove(ts)
 
             for mts in modelTs:
+
                 mts.alpha     = 1
                 mts.lineWidth = 2
                 mts.lineStyle = '-'
-                mts.label     = self.__makeFEATModelFitLabel(ts, mts)
+                mts.label     = self.__makeFEATModelTSLabel(ts, mts)
 
             self.__tsPanel.dataSeries.extend(modelTs)
 

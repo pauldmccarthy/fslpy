@@ -27,7 +27,7 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         self.SetSizer(self.__sizer)
         self.__sizer.Add(self.__widgets, flag=wx.EXPAND, proportion=1)
 
-        tsProps   = ['demean',
+        tsProps   = ['plotMode',
                      'usePixdim',
                      'showCurrent']
         plotProps = ['xLogScale',
@@ -201,8 +201,13 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         res     = props.makeWidget(     self.__widgets, ts, 'plotResiduals')
         pes     = props.makeListWidgets(self.__widgets, ts, 'plotPEFits')
         copes   = props.makeListWidgets(self.__widgets, ts, 'plotCOPEFits')
-        reduce  = props.makeWidget(     self.__widgets, ts, 'reduceAgainst')
-        
+        reduced = props.makeWidget(     self.__widgets, ts, 'plotReduced')
+        data    = props.makeWidget(     self.__widgets, ts, 'plotData') 
+
+        self.__widgets.AddWidget(
+            data,
+            displayName=strings.properties[ts, 'plotData'],
+            groupName='currentFEATSettings') 
         self.__widgets.AddWidget(
             full,
             displayName=strings.properties[ts, 'plotFullModelFit'],
@@ -214,9 +219,9 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             groupName='currentFEATSettings')
         
         self.__widgets.AddWidget(
-            reduce,
-            displayName=strings.properties[ts, 'reduceAgainst'],
-            groupName='currentFEATSettings') 
+            reduced,
+            displayName=strings.properties[ts, 'plotReduced'],
+            groupName='currentFEATSettings')
 
         for i, pe in enumerate(pes):
             self.__widgets.AddWidget(

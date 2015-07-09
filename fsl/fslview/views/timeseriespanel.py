@@ -22,6 +22,7 @@ import                               props
 import                               plotpanel
 import fsl.data.featimage         as fslfeatimage
 import fsl.data.image             as fslimage
+import fsl.data.strings           as strings
 import fsl.fslview.displaycontext as fsldisplay
 import fsl.fslview.controls       as fslcontrols
 import fsl.utils.transform        as transform
@@ -70,8 +71,12 @@ class TimeSeries(plotpanel.DataSeries):
         if self.tsPanel.usePixdim:
             xdata *= self.overlay.pixdim[3]
         
-        if self.tsPanel.demean:
+        if self.tsPanel.plotMode == 'demean':
             ydata = ydata - ydata.mean()
+            
+        elif self.tsPanel.plotMode == 'percentChange':
+            mean  = ydata.mean()
+            ydata =  100 * (ydata / mean) - 100
             
         return xdata, ydata
     
@@ -82,13 +87,14 @@ class FEATTimeSeries(TimeSeries):
     containing some extra FEAT specific options.
     """
 
-    
+
+    plotData         = props.Boolean(default=True)
     plotFullModelFit = props.Boolean(default=False)
     plotResiduals    = props.Boolean(default=False)
     plotPEFits       = props.List(props.Boolean(default=False))
     plotCOPEFits     = props.List(props.Boolean(default=False))
-    reduceAgainst    = props.Choice()
-
+    plotReduced      = props.Choice()
+    
 
     def __init__(self, *args, **kwargs):
         TimeSeries.__init__(self, *args, **kwargs)
@@ -105,7 +111,7 @@ class FEATTimeSeries(TimeSeries):
             name = 'COPE{} ({})'.format(i + 1, copeNames[i])
             reduceOpts.append(name)
 
-        self.getProp('reduceAgainst').setChoices(reduceOpts, instance=self)
+        self.getProp('plotReduced').setChoices(reduceOpts, instance=self)
 
         for i in range(numEVs):
             self.plotPEFits.append(False)
@@ -114,6 +120,7 @@ class FEATTimeSeries(TimeSeries):
             self.plotCOPEFits.append(False) 
 
         self.__fullModelTs =  None
+        self.__reducedTs   =  None
         self.__resTs       =  None
         self.__peTs        = [None] * numEVs
         self.__copeTs      = [None] * numCOPEs
@@ -121,10 +128,12 @@ class FEATTimeSeries(TimeSeries):
         self.addListener('plotFullModelFit',
                          self.name,
                          self.__plotFullModelFitChanged)
-
         self.addListener('plotResiduals',
                          self.name,
                          self.__plotResidualsChanged)
+        self.addListener('plotReduced',
+                         self.name,
+                         self.__plotReducedChanged)
         
         for i, plotPEFit in enumerate(
                 self.plotPEFits.getPropertyValueList()):
@@ -142,30 +151,9 @@ class FEATTimeSeries(TimeSeries):
 
             plotCOPEFit.addListener(self.name, onChange)
 
-            
-    def getData(self):
-        
-        reduce = self.reduceAgainst
-
-        if reduce == 'none':
-            data = None
-
-        else:
-            idx    = int(reduce.split()[0][-1]) - 1
-            numEVs = self.overlay.numEVs()
-
-            if reduce.startswith('PE'):
-                contrast      = [0] * numEVs
-                contrast[idx] = 1
-            else:
-                contrast      = self.overlay.contrasts()[idx]
- 
-            data = self.overlay.reducedData(self.coords, contrast, False)
-
-        return TimeSeries.getData(self, ydata=data)
-
 
     def __copy__(self):
+        
         copy = type(self)(self.tsPanel, self.overlay, self.coords)
 
         copy.colour           = self.colour
@@ -181,31 +169,77 @@ class FEATTimeSeries(TimeSeries):
         copy.plotFullModelFit = self.plotFullModelFit
         copy.plotPEFits[  :]  = self.plotPEFits[  :]
         copy.plotCOPEFits[:]  = self.plotCOPEFits[:]
+        copy.plotReduced      = self.plotReduced
+        copy.plotResiduals    = self.plotResiduals
 
         return copy
  
 
     def getModelTimeSeries(self):
+        
         modelts = []
 
-        if self.plotFullModelFit:
-            modelts.append(self.__fullModelTs)
-
-        if self.plotResiduals:
-            modelts.append(self.__resTs)
-
+        if self.plotData:              modelts.append(self)
+        if self.plotFullModelFit:      modelts.append(self.__fullModelTs)
+        if self.plotResiduals:         modelts.append(self.__resTs)
+        if self.plotReduced != 'none': modelts.append(self.__reducedTs)
+        
         for i in range(self.overlay.numEVs()):
             if self.plotPEFits[i]:
                 modelts.append(self.__peTs[i])
 
         for i in range(self.overlay.numContrasts()):
             if self.plotCOPEFits[i]:
-                modelts.append(self.__copeTs[i]) 
-        
+                modelts.append(self.__copeTs[i])
+
         return modelts
 
 
+    def __getContrast(self, fitType, idx):
+
+        if fitType == 'full':
+            return [1] * self.overlay.numEVs()
+        elif fitType == 'pe':
+            con      = [0] * self.overlay.numEVs()
+            con[idx] = 1
+            return con
+        elif fitType == 'cope':
+            return self.overlay.getContrasts()[idx]
+
+
+    def __plotReducedChanged(self, *a):
+            
+        reduced = self.plotReduced
+
+        if reduced == 'none' and self.__reducedTs is not None:
+            self.__reducedTs = None
+            return
+
+        reduced = reduced.split()[0]
+
+        # fitType is either 'cope' or 'pe'
+        fitType = reduced[:-1].lower()
+        idx     = int(reduced[-1]) - 1
+
+        rts = FEATReducedTimeSeries(
+            self.__getContrast(fitType, idx),
+            fitType,
+            idx,
+            self.tsPanel,
+            self.overlay,
+            self.coords)
+
+        rts.colour    = (0, 0.6, 0.6)
+        rts.alpha     = self.alpha
+        rts.label     = self.label
+        rts.lineWidth = self.lineWidth
+        rts.lineStyle = self.lineStyle 
+
+        self.__reducedTs = rts
+
+
     def __plotResidualsChanged(self, *a):
+        
         if not self.plotResiduals:
             self.__resTs = None
             return
@@ -225,14 +259,13 @@ class FEATTimeSeries(TimeSeries):
             
     
     def __plotCOPEFitChanged(self, copenum):
+        
         if not self.plotCOPEFits[copenum]:
             self.__copeTs[copenum] = None
             return
 
-        con  = self.overlay.contrasts()[copenum]
-
         copets = FEATModelFitTimeSeries(
-            con,
+            self.__getContrast('cope', copenum),
             'cope',
             copenum,
             self.tsPanel,
@@ -249,21 +282,19 @@ class FEATTimeSeries(TimeSeries):
 
 
     def __plotPEFitChanged(self, evnum):
+        
         if not self.plotPEFits[evnum]:
             self.__peTs[evnum] = None
             return
 
-        con        = [0] * self.overlay.numEVs()
-        con[evnum] = 1
-
         pets = FEATModelFitTimeSeries(
-            con,
+            self.__getContrast('pe', evnum),
             'pe',
             evnum, 
             self.tsPanel,
             self.overlay,
             self.coords)
-        
+
         pets.colour    = (0.7, 0, 0)
         pets.alpha     = self.alpha
         pets.label     = self.label
@@ -274,33 +305,54 @@ class FEATTimeSeries(TimeSeries):
 
 
     def __plotFullModelFitChanged(self, *a):
+        
         if not self.plotFullModelFit:
             self.__fullModelTs = None
             return
 
-        self.__fullModelTs = FEATModelFitTimeSeries(
-            [1] * self.overlay.numEVs(),
+        fts = FEATModelFitTimeSeries(
+            self.__getContrast('full', -1),
             'full',
             -1, 
             self.tsPanel,
             self.overlay,
             self.coords)
-        self.__fullModelTs.colour    = (0, 0, 1)
-        self.__fullModelTs.alpha     = self.alpha
-        self.__fullModelTs.label     = self.label
-        self.__fullModelTs.lineWidth = self.lineWidth
-        self.__fullModelTs.lineStyle = self.lineStyle
+
+        fts.colour    = (0, 0, 1)
+        fts.alpha     = self.alpha
+        fts.label     = self.label
+        fts.lineWidth = self.lineWidth
+        fts.lineStyle = self.lineStyle
+
+        self.__fullModelTs = fts
 
         
     def update(self, coords):
+        
         if not TimeSeries.update(self, coords):
             return False
             
         for modelTs in self.getModelTimeSeries():
+            if modelTs is self:
+                continue
             modelTs.update(coords)
 
         return True
 
+
+class FEATReducedTimeSeries(TimeSeries):
+    def __init__(self, contrast, fitType, idx, *args, **kwargs):
+        TimeSeries.__init__(self, *args, **kwargs)
+
+        self.contrast = contrast
+        self.fitType  = fitType
+        self.idx      = idx
+
+    def getData(self):
+        
+        data = self.overlay.reducedData(self.coords, self.contrast, False)
+        return TimeSeries.getData(self, ydata=data)
+    
 
 class FEATResidualTimeSeries(TimeSeries):
     def getData(self):
@@ -311,7 +363,6 @@ class FEATResidualTimeSeries(TimeSeries):
             
 
 class FEATModelFitTimeSeries(TimeSeries):
-    
 
     def __init__(self, contrast, fitType, idx, *args, **kwargs):
         
@@ -348,12 +399,13 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     """
 
     
-    demean        = props.Boolean(default=True)
     usePixdim     = props.Boolean(default=False)
     showCurrent   = props.Boolean(default=True)
-
-    # TODO
-    percentChange = props.Boolean(default=False)
+    plotMode      = props.Choice(
+        ('normal', 'demean', 'percentChange'),
+        labels=[strings.choices['TimeSeriesPanel.plotMode.normal'],
+                strings.choices['TimeSeriesPanel.plotMode.demean'],
+                strings.choices['TimeSeriesPanel.plotMode.percentChange']])
 
     currentColour    = copy.copy(TimeSeries.colour)
     currentAlpha     = copy.copy(TimeSeries.alpha)
@@ -392,7 +444,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         displayCtx .addListener('selectedOverlay', self._name, self.draw) 
         displayCtx .addListener('location',        self._name, self.draw)
 
-        self.addListener('demean',      self._name, self.draw)
+        self.addListener('plotMode',    self._name, self.draw)
         self.addListener('usePixdim',   self._name, self.draw)
         self.addListener('showCurrent', self._name, self.draw)
 
@@ -413,10 +465,14 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             return
 
         tss = [self.__currentTs]
+        
         if isinstance(self.__currentTs, FEATTimeSeries):
-            tss.extend(self.__currentTs.getModelTimeSeries())
+            tss = self.__currentTs.getModelTimeSeries()
 
             for ts in tss:
+
+                if ts is self.__currentTs:
+                    continue
 
                 # Don't change the colour for associated
                 # time courses (e.g. model fits)
@@ -431,7 +487,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     def destroy(self):
         plotpanel.PlotPanel.destroy(self)
         
-        self.removeListener('demean',      self._name)
+        self.removeListener('plotMode',    self._name)
         self.removeListener('usePixdim',   self._name)
         self.removeListener('showCurrent', self._name)
         
@@ -524,12 +580,12 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         if self.showCurrent and \
            current is not None:
-
-            extras = [current]
-
+            
             if isinstance(current, FEATTimeSeries):
-                extras += current.getModelTimeSeries()
-
+                extras = current.getModelTimeSeries()
+            else:
+                extras = [current]
+                
             self.drawDataSeries(extras)
         else:
             self.drawDataSeries()

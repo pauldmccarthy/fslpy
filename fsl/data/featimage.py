@@ -221,6 +221,13 @@ class FEATImage(fslimage.Image):
         
 
     def fit(self, contrast, xyz, fullmodel=False):
+        """
+
+        Passing in a contrast of all 1s, and ``fullmodel=True`` will
+        get you the full model fit. Pass in ``fullmodel=False`` for
+        all other contrasts, otherwise the model fit values will not
+        be scaled correctly.
+        """
 
         if not fullmodel:
             contrast  = np.array(contrast)
@@ -245,24 +252,14 @@ class FEATImage(fslimage.Image):
 
 
     def reducedData(self, xyz, contrast, fullmodel=False):
+        """
+
+        Passing in a contrast of all 1s, and ``fullmodel=True`` will
+        get you the model fit residuals.
+        """
 
         x, y, z   = xyz
         residuals = self.getResiduals()[x, y, z, :]
         modelfit  = self.fit(contrast, xyz, fullmodel)
 
         return residuals + modelfit
-
-    
-    # def getThresholdedZStats(self):
-    #     pass
-
-    
-    # def getSomethingForClusters(self):
-    #     pass
-
-
-    # # Return a copy of this image, transformed
-    # # to the specified spaced (e.g. MNI152,
-    # # structural, functional, etc)
-    # def getInSpace(self, space):
-    #     pass
