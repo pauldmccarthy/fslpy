@@ -78,9 +78,7 @@ messages = TypeDict({
 
     'NewLutDialog.newLut' : 'Enter a name for the new LUT',
 
-
-    'ClusterPanel.noFSLDIR' : 'The FSLDIR environment variable is not set - '
-                              'cluster results are not available.',
+    'ClusterPanel.notFEAT'  : 'Choose a FEAT overlay', 
     
 })
 
@@ -126,6 +124,7 @@ titles = TypeDict({
     'TimeSeriesControlPanel' : 'Time series control',
     'HistogramListPanel'     : 'Histogram list',
     'HistogramControlPanel'  : 'Histogram control',
+    'ClusterPanel'           : 'Cluster browser',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -147,6 +146,7 @@ actions = TypeDict({
     'CanvasPanel.toggleLocationPanel'     : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
     'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
+    'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',

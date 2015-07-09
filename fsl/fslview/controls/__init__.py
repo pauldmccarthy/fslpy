@@ -17,6 +17,7 @@ from timeserieslistpanel    import TimeSeriesListPanel
 from timeseriescontrolpanel import TimeSeriesControlPanel
 from histogramlistpanel     import HistogramListPanel
 from histogramcontrolpanel  import HistogramControlPanel
+from clusterpanel           import ClusterPanel
 
 from orthotoolbar          import OrthoToolBar
 from orthoprofiletoolbar   import OrthoProfileToolBar
