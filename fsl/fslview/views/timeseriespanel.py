@@ -343,13 +343,14 @@ class FEATReducedTimeSeries(TimeSeries):
         data = self.overlay.reducedData(self.coords, self.contrast, False)
         return TimeSeries.getData(self, ydata=data)
 
+    
 class FEATEVTimeSeries(TimeSeries):
-    def __init__(self, tsPanel, overlay, coords, ev):
+    def __init__(self, tsPanel, overlay, coords, idx):
         TimeSeries.__init__(self, tsPanel, overlay, coords)
-        self.ev = ev
+        self.idx = idx
         
     def getData(self):
-        data = self.overlay.getDesign()[:, self.ev]
+        data = self.overlay.getDesign()[:, self.idx]
         return TimeSeries.getData(self, ydata=data)
     
 

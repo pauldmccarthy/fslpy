@@ -117,10 +117,12 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
             return '{} ({})'.format(
                 parentTs.label,
                 strings.labels[modelTs])
+        
         elif isinstance(modelTs, tsp.FEATEVTimeSeries):
-            return '{} ({})'.format(
-                parentTs.label,
-                'EV')
+            return '{} EV{} ({})'.format(
+                modelTs.overlay.name, 
+                modelTs.idx + 1,
+                modelTs.overlay.evNames()[modelTs.idx])
 
         label = '{} ({})'.format(
             parentTs.label,

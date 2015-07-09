@@ -109,7 +109,10 @@ def loadDesignFsf(designfsf):
 
             tkns = line.split(None, 2)
 
-            settings[tkns[1].strip()] = tkns[2]
+            key = tkns[1].strip()
+            val = tkns[2].strip().strip("'").strip('"')
+
+            settings[key] = val
     
     return settings
 
@@ -154,6 +157,7 @@ class FEATImage(fslimage.Image):
         self.__contrastNames = names
         self.__contrasts     = cons
         self.__settings      = settings
+        self.__evNames       = self.__getEVNames()
 
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
@@ -162,6 +166,49 @@ class FEATImage(fslimage.Image):
         if 'name' not in kwargs:
             self.name = '{}.feat: {}'.format(
                 self.__analysisName, self.name)
+
+            
+    def __getEVNames(self):
+
+        numEVs = self.numEVs()
+        
+        titleKeys = filter(
+            lambda s: s.startswith('fmri(evtitle'),
+            self.__settings.keys())
+
+        derivKeys = filter(
+            lambda s: s.startswith('fmri(deriv_yn'),
+            self.__settings.keys())
+
+        evnames = []
+
+        for titleKey, derivKey in zip(titleKeys, derivKeys):
+
+            # Figure out the ev number from
+            # the design.fsf key - skip over
+            # 'fmri(evtitle' (an offset of 12)
+            evnum = int(titleKey[12:-1])
+
+            # Sanity check - the evnum
+            # for the deriv_yn key matches
+            # that for the evtitle key
+            if evnum != int(derivKey[13:-1]):
+                raise RuntimeError('design.fsf seem to be corrupt')
+
+            title = self.__settings[titleKey]
+            deriv = self.__settings[derivKey]
+
+            if deriv == '0':
+                evnames.append(title)
+            else:
+                evnames.append(title)
+                evnames.append('{} - {}'.format(title, 'temporal derivative'))
+
+        if len(evnames) != numEVs:
+            raise RuntimeError('The number of EVs in design.fsf does not '
+                               'match the number of EVs in design.mat')
+
+        return evnames
 
 
     def getAnalysisName(self):
@@ -178,6 +225,10 @@ class FEATImage(fslimage.Image):
     
     def numEVs(self):
         return self.__design.shape[1]
+
+
+    def evNames(self):
+        return list(self.__evNames)
 
     
     def numContrasts(self):

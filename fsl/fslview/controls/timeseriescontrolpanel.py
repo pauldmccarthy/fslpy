@@ -231,19 +231,19 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
 
         for i, ev in enumerate(evs):
 
-            evName = 'EV{}'.format(i + 1)
+            evName = ts.overlay.evNames()[i]
             self.__widgets.AddWidget(
                 ev,
-                displayName=strings.properties[ts, 'plotEVs'].format(i + 1,
-                                                                     evName),
+                displayName=strings.properties[ts, 'plotEVs'].format(
+                    i + 1, evName),
                 groupName='currentFEATSettings')
             
         for i, pe in enumerate(pes):
-            evName = 'EV{}'.format(i + 1)
+            evName = ts.overlay.evNames()[i]
             self.__widgets.AddWidget(
                 pe,
-                displayName=strings.properties[ts, 'plotPEFits'].format(i + 1,
-                                                                        evName),
+                displayName=strings.properties[ts, 'plotPEFits'].format(
+                    i + 1, evName),
                 groupName='currentFEATSettings') 
 
         copeNames = overlay.contrastNames()

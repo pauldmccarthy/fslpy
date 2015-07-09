@@ -439,7 +439,7 @@ choices = TypeDict({
     'HistogramPanel.histType.probability' : 'Probability',
     'HistogramPanel.histType.count'       : 'Count',
     
-    'TimeSeriesPanel.plotMode.normal'        : 'Normal',
+    'TimeSeriesPanel.plotMode.normal'        : 'Normal - no scaling/offsets',
     'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
     'TimeSeriesPanel.plotMode.normalise'     : 'Normalised',
     'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
