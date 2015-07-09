@@ -204,7 +204,28 @@ class FEATTimeSeries(TimeSeries):
             con[idx] = 1
             return con
         elif fitType == 'cope':
-            return self.overlay.getContrasts()[idx]
+            return self.overlay.contrasts()[idx]
+
+        
+    def __createModelTs(self, tsType, *args, **kwargs):
+
+        ts = tsType(self.tsPanel, self.overlay, self.coords, *args, **kwargs)
+
+        ts.alpha     = self.alpha
+        ts.label     = self.label
+        ts.lineWidth = self.lineWidth
+        ts.lineStyle = self.lineStyle
+
+        if isinstance(ts, FEATReducedTimeSeries):
+            ts.colour = (0, 0.6, 0.6)
+        elif isinstance(ts, FEATResidualTimeSeries):
+            ts.colour = (0.8, 0.4, 0)
+        elif isinstance(ts, FEATModelFitTimeSeries):
+            if   ts.fitType == 'full': ts.colour = (0,   0, 1)
+            elif ts.fitType == 'cope': ts.colour = (0,   1, 0)
+            elif ts.fitType == 'pe':   ts.colour = (0.7, 0, 0)
+
+        return ts
 
 
     def __plotReducedChanged(self, *a):
@@ -221,21 +242,11 @@ class FEATTimeSeries(TimeSeries):
         fitType = reduced[:-1].lower()
         idx     = int(reduced[-1]) - 1
 
-        rts = FEATReducedTimeSeries(
+        self.__reducedTs = self.__createModelTs(
+            FEATReducedTimeSeries,
             self.__getContrast(fitType, idx),
             fitType,
-            idx,
-            self.tsPanel,
-            self.overlay,
-            self.coords)
-
-        rts.colour    = (0, 0.6, 0.6)
-        rts.alpha     = self.alpha
-        rts.label     = self.label
-        rts.lineWidth = self.lineWidth
-        rts.lineStyle = self.lineStyle 
-
-        self.__reducedTs = rts
+            idx) 
 
 
     def __plotResidualsChanged(self, *a):
@@ -244,18 +255,7 @@ class FEATTimeSeries(TimeSeries):
             self.__resTs = None
             return
 
-        rts = FEATResidualTimeSeries(
-            self.tsPanel,
-            self.overlay,
-            self.coords)
-
-        rts.colour    = (0.8, 0.4, 0)
-        rts.alpha     = self.alpha
-        rts.label     = self.label
-        rts.lineWidth = self.lineWidth
-        rts.lineStyle = self.lineStyle
-
-        self.__resTs = rts
+        self.__resTs = self.__createModelTs(FEATResidualTimeSeries)
             
     
     def __plotCOPEFitChanged(self, copenum):
@@ -264,21 +264,11 @@ class FEATTimeSeries(TimeSeries):
             self.__copeTs[copenum] = None
             return
 
-        copets = FEATModelFitTimeSeries(
+        self.__copeTs[copenum] = self.__createModelTs(
+            FEATModelFitTimeSeries,
             self.__getContrast('cope', copenum),
             'cope',
-            copenum,
-            self.tsPanel,
-            self.overlay,
-            self.coords)
-
-        copets.colour    = (0, 1, 0)
-        copets.alpha     = self.alpha
-        copets.label     = self.label
-        copets.lineWidth = self.lineWidth
-        copets.lineStyle = self.lineStyle
-
-        self.__copeTs[copenum] = copets 
+            copenum)
 
 
     def __plotPEFitChanged(self, evnum):
@@ -287,21 +277,11 @@ class FEATTimeSeries(TimeSeries):
             self.__peTs[evnum] = None
             return
 
-        pets = FEATModelFitTimeSeries(
+        self.__peTs[evnum] = self.__createModelTs(
+            FEATModelFitTimeSeries,
             self.__getContrast('pe', evnum),
             'pe',
-            evnum, 
-            self.tsPanel,
-            self.overlay,
-            self.coords)
-
-        pets.colour    = (0.7, 0, 0)
-        pets.alpha     = self.alpha
-        pets.label     = self.label
-        pets.lineWidth = self.lineWidth
-        pets.lineStyle = self.lineStyle
-
-        self.__peTs[evnum] = pets
+            evnum)
 
 
     def __plotFullModelFitChanged(self, *a):
@@ -310,21 +290,11 @@ class FEATTimeSeries(TimeSeries):
             self.__fullModelTs = None
             return
 
-        fts = FEATModelFitTimeSeries(
+        self.__fullModelTs = self.__createModelTs(
+            FEATModelFitTimeSeries,
             self.__getContrast('full', -1),
             'full',
-            -1, 
-            self.tsPanel,
-            self.overlay,
-            self.coords)
-
-        fts.colour    = (0, 0, 1)
-        fts.alpha     = self.alpha
-        fts.label     = self.label
-        fts.lineWidth = self.lineWidth
-        fts.lineStyle = self.lineStyle
-
-        self.__fullModelTs = fts
+            -1)
 
         
     def update(self, coords):
@@ -341,8 +311,8 @@ class FEATTimeSeries(TimeSeries):
 
 
 class FEATReducedTimeSeries(TimeSeries):
-    def __init__(self, contrast, fitType, idx, *args, **kwargs):
-        TimeSeries.__init__(self, *args, **kwargs)
+    def __init__(self, tsPanel, overlay, coords, contrast, fitType, idx):
+        TimeSeries.__init__(self, tsPanel, overlay, coords)
 
         self.contrast = contrast
         self.fitType  = fitType
@@ -364,12 +334,12 @@ class FEATResidualTimeSeries(TimeSeries):
 
 class FEATModelFitTimeSeries(TimeSeries):
 
-    def __init__(self, contrast, fitType, idx, *args, **kwargs):
+    def __init__(self, tsPanel, overlay, coords, contrast, fitType, idx):
         
         if fitType not in ('full', 'cope', 'pe'):
             raise ValueError('Unknown model fit type {}'.format(fitType))
         
-        TimeSeries.__init__(self, *args, **kwargs)
+        TimeSeries.__init__(self, tsPanel, overlay, coords)
         self.fitType  = fitType
         self.idx      = idx
         self.contrast = contrast
