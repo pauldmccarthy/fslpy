@@ -229,6 +229,8 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             displayName=strings.properties[ts, 'plotReduced'],
             groupName='currentFEATSettings')
 
+        self.__widgets.AddSpace(groupName='currentFEATSettings')
+
         for i, ev in enumerate(evs):
 
             evName = ts.overlay.evNames()[i]
@@ -237,6 +239,8 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
                 displayName=strings.properties[ts, 'plotEVs'].format(
                     i + 1, evName),
                 groupName='currentFEATSettings')
+
+        self.__widgets.AddSpace(groupName='currentFEATSettings')
             
         for i, pe in enumerate(pes):
             evName = ts.overlay.evNames()[i]
@@ -244,7 +248,9 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
                 pe,
                 displayName=strings.properties[ts, 'plotPEFits'].format(
                     i + 1, evName),
-                groupName='currentFEATSettings') 
+                groupName='currentFEATSettings')
+
+        self.__widgets.AddSpace(groupName='currentFEATSettings')
 
         copeNames = overlay.contrastNames()
         for i, (cope, name) in enumerate(zip(copes, copeNames)):
