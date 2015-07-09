@@ -1,4 +1,3 @@
-\
 TODO LIST -*- mode: org; -*-
 
 A mixture of things to do, things which might be nice to do, and things which
@@ -11,7 +10,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** DONE VTK support
 ** DONE Improve time series
 ** DONE Improve histogram
-** Feat mode 
+** DONE Feat mode 
 This could be an option on the time series panel - if a .feat directory 
 is detected, display a check box allowing the user to turn on/off 
 models/residuals/whatever.
