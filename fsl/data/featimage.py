@@ -148,6 +148,7 @@ class FEATImage(fslimage.Image):
         design      = loadDesignMat(op.join(featDir, 'design.mat'))
         names, cons = loadDesignCon(op.join(featDir, 'design.con'))
 
+        self.__analysisName  = op.splitext(op.basename(featDir))[0]
         self.__featDir       = featDir
         self.__design        = design
         self.__contrastNames = names
@@ -158,6 +159,13 @@ class FEATImage(fslimage.Image):
         self.__pes           = [None] * self.numEVs()
         self.__copes         = [None] * self.numContrasts()
 
+        if 'name' not in kwargs:
+            self.name = '{}.feat: {}'.format(
+                self.__analysisName, self.name)
+
+
+    def getAnalysisName(self):
+        return self.__analysisName
         
 
     def getDesign(self):
