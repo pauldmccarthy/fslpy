@@ -23,7 +23,6 @@ import orthopanel
 import lightboxpanel
 import timeseriespanel
 import histogrampanel
-import spacepanel
 
 FSLViewPanel    = fslpanel       .FSLViewPanel
 CanvasPanel     = canvaspanel    .CanvasPanel
@@ -31,8 +30,6 @@ OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
 TimeSeriesPanel = timeseriespanel.TimeSeriesPanel
 HistogramPanel  = histogrampanel .HistogramPanel
-SpacePanel      = spacepanel     .SpacePanel
-
 
 
 def listViewPanels():

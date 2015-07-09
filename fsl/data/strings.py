@@ -95,7 +95,6 @@ titles = TypeDict({
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
     'HistogramPanel'  : 'Histogram',
-    'SpacePanel'      : 'Space inspector',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
