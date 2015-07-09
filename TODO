@@ -134,6 +134,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** A 'FeatModel' control widget, allowing user to look at design matrix, stats, whatever ..
 ** A 'MELODICTimeSeries' thingo, just like the FEATTimeSeries - plot component time courses alongside a voxel's time course.
 ** Add 'load colour map' button to VolumeOpts settings panel. If you do this, you could probably remove the option from the file menu.
 ** Colour command line (e.g. renderpy background) should be floating point  in the range [0, 1]
