@@ -73,6 +73,11 @@ class TimeSeries(plotpanel.DataSeries):
         
         if self.tsPanel.plotMode == 'demean':
             ydata = ydata - ydata.mean()
+
+        elif self.tsPanel.plotMode == 'normalise':
+            ymin  = ydata.min()
+            ymax  = ydata.max()
+            ydata = 2 * (ydata - ymin) / (ymax - ymin) - 1
             
         elif self.tsPanel.plotMode == 'percentChange':
             mean  = ydata.mean()
@@ -91,6 +96,7 @@ class FEATTimeSeries(TimeSeries):
     plotData         = props.Boolean(default=True)
     plotFullModelFit = props.Boolean(default=False)
     plotResiduals    = props.Boolean(default=False)
+    plotEVs          = props.List(props.Boolean(default=False))
     plotPEFits       = props.List(props.Boolean(default=False))
     plotCOPEFits     = props.List(props.Boolean(default=False))
     plotReduced      = props.Choice()
@@ -115,6 +121,7 @@ class FEATTimeSeries(TimeSeries):
 
         for i in range(numEVs):
             self.plotPEFits.append(False)
+            self.plotEVs   .append(False)
 
         for i in range(numCOPEs):
             self.plotCOPEFits.append(False) 
@@ -122,6 +129,7 @@ class FEATTimeSeries(TimeSeries):
         self.__fullModelTs =  None
         self.__reducedTs   =  None
         self.__resTs       =  None
+        self.__evTs        = [None] * numEVs
         self.__peTs        = [None] * numEVs
         self.__copeTs      = [None] * numCOPEs
         
@@ -134,22 +142,21 @@ class FEATTimeSeries(TimeSeries):
         self.addListener('plotReduced',
                          self.name,
                          self.__plotReducedChanged)
-        
-        for i, plotPEFit in enumerate(
-                self.plotPEFits.getPropertyValueList()):
 
+        for i, pv in enumerate(self.plotEVs.getPropertyValueList()):
+            def onChange(ctx, value, valid, name, pe=i):
+                self.__plotEVChanged(pe)
+            pv.addListener(self.name, onChange) 
+        
+        for i, pv in enumerate(self.plotPEFits.getPropertyValueList()):
             def onChange(ctx, value, valid, name, pe=i):
                 self.__plotPEFitChanged(pe)
+            pv.addListener(self.name, onChange)
 
-            plotPEFit.addListener(self.name, onChange)
-
-        for i, plotCOPEFit in enumerate(
-                self.plotCOPEFits.getPropertyValueList()):
-
+        for i, pv in enumerate(self.plotCOPEFits.getPropertyValueList()):
             def onChange(ctx, value, valid, name, cope=i):
                 self.__plotCOPEFitChanged(cope)
-
-            plotCOPEFit.addListener(self.name, onChange)
+            pv.addListener(self.name, onChange)
 
 
     def __copy__(self):
@@ -167,6 +174,7 @@ class FEATTimeSeries(TimeSeries):
         # its own FEATModelFitTimeSeries 
         # instances accordingly
         copy.plotFullModelFit = self.plotFullModelFit
+        copy.plotEVs[     :]  = self.plotEVs[     :]
         copy.plotPEFits[  :]  = self.plotPEFits[  :]
         copy.plotCOPEFits[:]  = self.plotCOPEFits[:]
         copy.plotReduced      = self.plotReduced
@@ -187,6 +195,10 @@ class FEATTimeSeries(TimeSeries):
         for i in range(self.overlay.numEVs()):
             if self.plotPEFits[i]:
                 modelts.append(self.__peTs[i])
+
+        for i in range(self.overlay.numEVs()):
+            if self.plotEVs[i]:
+                modelts.append(self.__evTs[i]) 
 
         for i in range(self.overlay.numContrasts()):
             if self.plotCOPEFits[i]:
@@ -216,10 +228,9 @@ class FEATTimeSeries(TimeSeries):
         ts.lineWidth = self.lineWidth
         ts.lineStyle = self.lineStyle
 
-        if isinstance(ts, FEATReducedTimeSeries):
-            ts.colour = (0, 0.6, 0.6)
-        elif isinstance(ts, FEATResidualTimeSeries):
-            ts.colour = (0.8, 0.4, 0)
+        if   isinstance(ts, FEATReducedTimeSeries):  ts.colour = (0, 0.6, 0.6)
+        elif isinstance(ts, FEATResidualTimeSeries): ts.colour = (0.8, 0.4, 0)
+        elif isinstance(ts, FEATEVTimeSeries):       ts.colour = (0, 0.7, 0.35)
         elif isinstance(ts, FEATModelFitTimeSeries):
             if   ts.fitType == 'full': ts.colour = (0,   0, 1)
             elif ts.fitType == 'cope': ts.colour = (0,   1, 0)
@@ -256,6 +267,15 @@ class FEATTimeSeries(TimeSeries):
             return
 
         self.__resTs = self.__createModelTs(FEATResidualTimeSeries)
+
+
+    def __plotEVChanged(self, evnum):
+
+        if not self.plotEVs[evnum]:
+            self.__evTs[evnum] = None
+            return
+
+        self.__evTs[evnum] = self.__createModelTs(FEATEVTimeSeries, evnum)
             
     
     def __plotCOPEFitChanged(self, copenum):
@@ -322,6 +342,15 @@ class FEATReducedTimeSeries(TimeSeries):
         
         data = self.overlay.reducedData(self.coords, self.contrast, False)
         return TimeSeries.getData(self, ydata=data)
+
+class FEATEVTimeSeries(TimeSeries):
+    def __init__(self, tsPanel, overlay, coords, ev):
+        TimeSeries.__init__(self, tsPanel, overlay, coords)
+        self.ev = ev
+        
+    def getData(self):
+        data = self.overlay.getDesign()[:, self.ev]
+        return TimeSeries.getData(self, ydata=data)
     
 
 class FEATResidualTimeSeries(TimeSeries):
@@ -372,9 +401,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     usePixdim     = props.Boolean(default=False)
     showCurrent   = props.Boolean(default=True)
     plotMode      = props.Choice(
-        ('normal', 'demean', 'percentChange'),
+        ('normal', 'demean', 'normalise', 'percentChange'),
         labels=[strings.choices['TimeSeriesPanel.plotMode.normal'],
                 strings.choices['TimeSeriesPanel.plotMode.demean'],
+                strings.choices['TimeSeriesPanel.plotMode.normalise'],
                 strings.choices['TimeSeriesPanel.plotMode.percentChange']])
 
     currentColour    = copy.copy(TimeSeries.colour)

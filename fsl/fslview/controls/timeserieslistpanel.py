@@ -117,6 +117,10 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
             return '{} ({})'.format(
                 parentTs.label,
                 strings.labels[modelTs])
+        elif isinstance(modelTs, tsp.FEATEVTimeSeries):
+            return '{} ({})'.format(
+                parentTs.label,
+                'EV')
 
         label = '{} ({})'.format(
             parentTs.label,
@@ -153,7 +157,6 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         
         self.__currentLabel.SetLabel(self.__makeLabel(ts))
 
- 
     
     def __onListAdd(self, ev):
         

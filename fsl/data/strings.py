@@ -76,7 +76,11 @@ messages = TypeDict({
     'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
                                      'label with value {}',
 
-    'NewLutDialog.newLut' : 'Enter a name for the new LUT', 
+    'NewLutDialog.newLut' : 'Enter a name for the new LUT',
+
+
+    'ClusterPanel.noFSLDIR' : 'The FSLDIR environment variable is not set - '
+                              'cluster results are not available.',
     
 })
 
@@ -296,7 +300,8 @@ properties = TypeDict({
     'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
 
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
-    'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit',
+    'FEATTimeSeries.plotEVs'          : 'Plot EV{} ({})',
+    'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit ({})',
     'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
     'FEATTimeSeries.plotResiduals'    : 'Plot residuals',
     'FEATTimeSeries.plotReduced'      : 'Plot data reduced against',
@@ -436,6 +441,7 @@ choices = TypeDict({
     
     'TimeSeriesPanel.plotMode.normal'        : 'Normal',
     'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
+    'TimeSeriesPanel.plotMode.normalise'     : 'Normalised',
     'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
 })
 

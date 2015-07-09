@@ -204,6 +204,7 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
 
         full    = props.makeWidget(     self.__widgets, ts, 'plotFullModelFit')
         res     = props.makeWidget(     self.__widgets, ts, 'plotResiduals')
+        evs     = props.makeListWidgets(self.__widgets, ts, 'plotEVs')
         pes     = props.makeListWidgets(self.__widgets, ts, 'plotPEFits')
         copes   = props.makeListWidgets(self.__widgets, ts, 'plotCOPEFits')
         reduced = props.makeWidget(     self.__widgets, ts, 'plotReduced')
@@ -228,10 +229,21 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
             displayName=strings.properties[ts, 'plotReduced'],
             groupName='currentFEATSettings')
 
+        for i, ev in enumerate(evs):
+
+            evName = 'EV{}'.format(i + 1)
+            self.__widgets.AddWidget(
+                ev,
+                displayName=strings.properties[ts, 'plotEVs'].format(i + 1,
+                                                                     evName),
+                groupName='currentFEATSettings')
+            
         for i, pe in enumerate(pes):
+            evName = 'EV{}'.format(i + 1)
             self.__widgets.AddWidget(
                 pe,
-                displayName=strings.properties[ts, 'plotPEFits'].format(i + 1),
+                displayName=strings.properties[ts, 'plotPEFits'].format(i + 1,
+                                                                        evName),
                 groupName='currentFEATSettings') 
 
         copeNames = overlay.contrastNames()
