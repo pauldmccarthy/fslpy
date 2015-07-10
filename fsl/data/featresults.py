@@ -10,9 +10,13 @@ contents of a FEAT analysis directory.
 """
 
 
+import            logging
 import            glob
 import os.path as op
 import numpy   as np
+
+
+log = logging.getLogger(__name__)
 
 
 def isFEATDir(path):
@@ -57,6 +61,8 @@ def loadDesign(featdir):
     matrix    = None 
     designmat = op.join(featdir, 'design.mat')
 
+    log.debug('Loading FEAT design matrix from {}'.format(designmat))
+
     with open(designmat, 'rt') as f:
 
         while True:
@@ -85,6 +91,8 @@ def loadContrasts(featdir):
     numContrasts = 0
     names        = {}
     designcon    = op.join(featdir, 'design.con')
+
+    log.debug('Loading FEAT contrasts from {}'.format(designcon))
     
     with open(designcon, 'rt') as f:
 
@@ -135,6 +143,8 @@ def loadSettings(featdir):
     settings  = {}
     designfsf = op.join(featdir, 'design.fsf')
 
+    log.debug('Loading FEAT settings from {}'.format(designfsf))
+
     with open(designfsf, 'rt') as f:
 
         for line in f.readlines():
@@ -150,33 +160,10 @@ def loadSettings(featdir):
 
             if key.startswith('fmri(') and key.endswith(')'):
                 key = key[5:-1]
-            
+
             settings[key] = val
     
     return settings
-
-
-def getThresholdType(settings):
-    """Returns the type of statistical thresholding used in the FEAT
-    analysis described in the given settings dict (see the
-    :func:`loadSettings` function).
-
-    Returns a number describing the thresholding approach:
-
-        -1 : Statistical analysis has not been performed
-         0 : No thresholding has been performed
-         1 : Uncorrected P-value thresholding
-         2 : Voxel-corrected thresholding
-         3 : Cluster-corrected thresholding
-    """
-
-    poststats = int(settings['poststats_yn'])
-    threstype = int(settings['thresh'])
-
-    if poststats != 1:
-        return -1
-
-    return threstype
 
 
 def loadClusterResults(featdir, settings, contrast):
@@ -184,19 +171,12 @@ def loadClusterResults(featdir, settings, contrast):
     will load and return the cluster results for the specified contrast
     (which is assumed to be 0-indexed).
 
-    If thresholding has not been performed, or cluster threhsolding was not
-    used, ``None`` is returned.
+    If there are no cluster results for the given contrast,
+    ``None`` is returned.
+
+    An error will be raised if the cluster file cannot be parsed.
     """
 
-    # poststats_yn != 1 means that
-    # stats has not been performed
-    # 
-    # thres=3 corresponds to
-    # cluster thresholding 
-    if int(settings['poststats_yn']) != 1 or \
-       int(settings['thresh'])       != 3:
-        return None
-    
     # This dict provides a mapping between 
     # Cluster object (see below) attribute
     # names, and the corresponding column
@@ -212,9 +192,10 @@ def loadClusterResults(featdir, settings, contrast):
         'Z-MAX X (vox)'    : ('zmaxx',    int), 
         'Z-MAX Y (vox)'    : ('zmaxy',    int), 
         'Z-MAX Z (vox)'    : ('zmaxz',    int), 
-        'Z-COG X (vox)'    : ('zcogx',    int), 
-        'Z-COG Y (vox)'    : ('zcogy',    int), 
-        'Z-COG Z (vox)'    : ('zcogz',    int), 
+        'Z-COG X (vox)'    : ('zcogx',    float), 
+        'Z-COG Y (vox)'    : ('zcogy',    float), 
+        'Z-COG Z (vox)'    : ('zcogz',    float),
+        'COPE-MAX'         : ('copemax',  float),
         'COPE-MAX X (vox)' : ('copemaxx', int), 
         'COPE-MAX Y (vox)' : ('copemaxy', int), 
         'COPE-MAX Z (vox)' : ('copemaxz', int), 
@@ -226,7 +207,7 @@ def loadClusterResults(featdir, settings, contrast):
     # information about one cluster.
     class Cluster(object):
         def __init__(self, **kwargs):
-            for name, val in kwargs:
+            for name, val in kwargs.items():
                 
                 attrName, atype = colmap[name]
                 if val is not None:
@@ -235,6 +216,12 @@ def loadClusterResults(featdir, settings, contrast):
                 setattr(self, attrName, val)
 
     clusterFile = op.join(featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
+
+    if not op.exists(clusterFile):
+        return None
+
+    log.debug('Loading cluster results for contrast {} from {}'.format(
+        contrast, clusterFile))
 
     # An error will be raised if the
     # cluster file does not exist (e.g.
@@ -259,6 +246,10 @@ def loadClusterResults(featdir, settings, contrast):
         # each line should be tab-separated
         colNames     =  colNames.split('\t')
         clusterLines = [cl      .split('\t') for cl in clusterLines]
+
+        # No clusters
+        if len(clusterLines) == 0:
+            return None
 
         # Turn each cluster line into a
         # Cluster instance. An error will
@@ -309,6 +300,9 @@ def getCOPEFile(featdir, contrast):
 def getEVNames(settings):
     """Returns the names of every EV in the FEAT analysis which has the given
     ``settings`` (see the :func:`loadSettings` function).
+
+    An error of some sort will be raised if the EV names cannot be determined
+    from the FEAT settings.
     """
 
     numEVs = int(settings['evs_real'])

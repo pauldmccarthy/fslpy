@@ -107,6 +107,9 @@ class DisplayContext(props.SyncableHasProperties):
         if overlay is None:
             raise ValueError('No overlay specified')
 
+        if overlay not in self.__overlayList:
+            raise ValueError('Overlay is not in list')
+
         if isinstance(overlay, int):
             overlay = self.__overlayList[overlay]
 
@@ -141,7 +144,10 @@ class DisplayContext(props.SyncableHasProperties):
         """
 
         if overlay is None:
-            raise ValueError('No overlay specified') 
+            raise ValueError('No overlay specified')
+
+        if overlay not in self.__overlayList:
+            raise ValueError('Overlay is not in list') 
 
         try:
             return self.getDisplay(overlay, overlayType).getDisplayOpts()
