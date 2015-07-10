@@ -10,146 +10,34 @@ analysis.
 """
 
 import os.path as op
-import            glob
 
 import numpy   as np
 
 import nibabel as nib
 
 import image   as fslimage
-
-
-def loadDesignMat(designmat):
-    """Loads a FEAT ``design.mat`` file. Returns a ``numpy`` array
-    containing the design matrix data, where the first dimension
-    corresponds to the data points, and the second to the EVs.
-    """
-
-    matrix = None
-    with open(designmat, 'rt') as f:
-
-        while True:
-            line = f.readline()
-            if line.strip() == '/Matrix':
-                break
-
-        matrix = np.loadtxt(f)
-
-    if matrix is None or matrix.size == 0:
-        raise RuntimeError('{} does not appear to be a '
-                           'valid design.mat file'.format(designmat))
-
-    return matrix
-
-
-def loadDesignCon(designcon):
-    """Loads a FEAT ``design.con`` file. Returns a tuple containing:
-    
-      - A dictionary of ``{contrastnum : name}`` mappings
-    
-      - A list of contrast vectors (each of which is a list itself).
-    """
-
-    matrix       = None
-    numContrasts = 0
-    names        = {}
-    with open(designcon, 'rt') as f:
-
-        while True:
-            line = f.readline().strip()
-
-            if line.startswith('/ContrastName'):
-                tkns       = line.split(None, 1)
-                num        = [c for c in tkns[0] if c.isdigit()]
-                num        = int(''.join(num))
-                name       = tkns[1].strip()
-                names[num] = name
-
-            elif line.startswith('/NumContrasts'):
-                numContrasts = int(line.split()[1])
-
-            elif line == '/Matrix':
-                break
-
-        matrix = np.loadtxt(f)
-
-    if matrix       is None             or \
-       numContrasts != matrix.shape[0]:
-        raise RuntimeError('{} does not appear to be a '
-                           'valid design.con file'.format(designcon))
-
-    # Fill in any missing contrast names
-    if len(names) != numContrasts:
-        for i in range(numContrasts):
-            if i + 1 not in names:
-                names[i + 1] = str(i + 1)
-
-    names     = [names[c + 1] for c in range(numContrasts)]
-    contrasts = []
-
-    for row in matrix:
-        contrasts.append(list(row))
-
-    return names, contrasts
-
-
-def loadDesignFsf(designfsf):
-    """
-    """
-
-    settings = {}
-
-    with open(designfsf, 'rt') as f:
-
-        for line in f.readlines():
-            line = line.strip()
-
-            if not line.startswith('set '):
-                continue
-
-            tkns = line.split(None, 2)
-
-            key = tkns[1].strip()
-            val = tkns[2].strip().strip("'").strip('"')
-
-            settings[key] = val
-    
-    return settings
-
-
-def isFEATData(path):
-    
-    keys = ['.feat{}filtered_func_data' .format(op.sep),
-            '.gfeat{}filtered_func_data'.format(op.sep)]
-
-    isfeatdir = any([k in path for k in keys])
-
-    dirname   = op.dirname(path)
-    hasdesfsf = op.exists(op.join(dirname, 'design.fsf'))
-    hasdesmat = op.exists(op.join(dirname, 'design.mat'))
-    hasdescon = op.exists(op.join(dirname, 'design.con'))
-
-    isfeat    = (isfeatdir and
-                 hasdesmat and
-                 hasdescon and
-                 hasdesfsf)
-    
-    return isfeat
+import            featresults
 
 
 class FEATImage(fslimage.Image):
 
-    def __init__(self, image, **kwargs):
-        fslimage.Image.__init__(self, image, **kwargs)
-
-        if not isFEATData(self.dataSource):
+    def __init__(self, path, **kwargs):
+        """
+        The specified ``path`` may be a FEAT analysis directory, or the model
+        data input file (e.g. ``analysis.feat/filtered_func_data.nii.gz``).
+        """
+        
+        if not featresults.isFEATDir(path):
             raise ValueError('{} does not appear to be data from a '
-                             'FEAT analysis'.format(self.dataSource))
+                             'FEAT analysis'.format(path))
 
-        featDir     = op.dirname(self.dataSource)
-        settings    = loadDesignFsf(op.join(featDir, 'design.fsf'))
-        design      = loadDesignMat(op.join(featDir, 'design.mat'))
-        names, cons = loadDesignCon(op.join(featDir, 'design.con'))
+        featDir     = op.dirname(path)
+        settings    = featresults.loadSettings( featDir)
+        design      = featresults.loadDesign(   featDir)
+        names, cons = featresults.loadContrasts(featDir)
+        datafile    = featresults.getDataFile(  featDir)
+        
+        fslimage.Image.__init__(self, datafile, **kwargs)
 
         self.__analysisName  = op.splitext(op.basename(featDir))[0]
         self.__featDir       = featDir
@@ -157,58 +45,14 @@ class FEATImage(fslimage.Image):
         self.__contrastNames = names
         self.__contrasts     = cons
         self.__settings      = settings
-        self.__evNames       = self.__getEVNames()
+        self.__evNames       = featresults.getEVNames(settings)
 
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
         self.__copes         = [None] * self.numContrasts()
 
         if 'name' not in kwargs:
-            self.name = '{}.feat: {}'.format(
-                self.__analysisName, self.name)
-
-            
-    def __getEVNames(self):
-
-        numEVs = self.numEVs()
-        
-        titleKeys = filter(
-            lambda s: s.startswith('fmri(evtitle'),
-            self.__settings.keys())
-
-        derivKeys = filter(
-            lambda s: s.startswith('fmri(deriv_yn'),
-            self.__settings.keys())
-
-        evnames = []
-
-        for titleKey, derivKey in zip(titleKeys, derivKeys):
-
-            # Figure out the ev number from
-            # the design.fsf key - skip over
-            # 'fmri(evtitle' (an offset of 12)
-            evnum = int(titleKey[12:-1])
-
-            # Sanity check - the evnum
-            # for the deriv_yn key matches
-            # that for the evtitle key
-            if evnum != int(derivKey[13:-1]):
-                raise RuntimeError('design.fsf seem to be corrupt')
-
-            title = self.__settings[titleKey]
-            deriv = self.__settings[derivKey]
-
-            if deriv == '0':
-                evnames.append(title)
-            else:
-                evnames.append(title)
-                evnames.append('{} - {}'.format(title, 'temporal derivative'))
-
-        if len(evnames) != numEVs:
-            raise RuntimeError('The number of EVs in design.fsf does not '
-                               'match the number of EVs in design.mat')
-
-        return evnames
+            self.name = '{}: {}'.format(self.__analysisName, self.name)
 
 
     def getAnalysisName(self):
@@ -243,19 +87,14 @@ class FEATImage(fslimage.Image):
         return [list(c) for c in self.__contrasts]
 
 
-    def __getStatsFile(self, prefix, ev=None):
-
-        if ev is not None: prefix = '{}{}'.format(prefix, ev + 1)
-
-        prefix = op.join(self.__featDir, 'stats', prefix)
-        
-        return glob.glob('{}.*'.format(prefix))[0]
+    def clusterResults(self, contrast):
+        pass
 
 
     def getPE(self, ev):
 
         if self.__pes[ev] is None:
-            pefile = self.__getStatsFile('pe', ev)
+            pefile = featresults.getPEFile(self.__featDir, ev)
             self.__pes[ev] = nib.load(pefile).get_data()
 
         return self.__pes[ev]
@@ -264,19 +103,19 @@ class FEATImage(fslimage.Image):
     def getResiduals(self):
         
         if self.__residuals is None:
-            resfile          = self.__getStatsFile('res4d')
+            resfile = featresults.getResidualFile(self.__featDir)
             self.__residuals = nib.load(resfile).get_data()
         
         return self.__residuals
 
     
-    def getCOPE(self, num):
+    def getCOPE(self, con):
         
-        if self.__copes[num] is None:
-            copefile = self.__getStatsFile('cope', num)
-            self.__copes[num] = nib.load(copefile).get_data()
+        if self.__copes[con] is None:
+            copefile = featresults.getPEFile(self.__featDir, con)
+            self.__copes[con] = nib.load(copefile).get_data()
 
-        return self.__copes[num] 
+        return self.__copes[con] 
         
 
     def fit(self, contrast, xyz, fullmodel=False):

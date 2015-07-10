@@ -17,10 +17,11 @@ import os.path as op
 
 import props
 
-import fsl.data.image     as fslimage
-import fsl.data.featimage as fslfeatimage
-import fsl.data.strings   as strings
-import fsl.data.model     as fslmodel
+import fsl.data.image       as fslimage
+import fsl.data.featresults as featresults
+import fsl.data.featimage   as fslfeatimage
+import fsl.data.strings     as strings
+import fsl.data.model       as fslmodel
 
 
 log = logging.getLogger(__name__)
@@ -140,8 +141,8 @@ class OverlayList(props.HasProperties):
 
 
 def guessDataSourceType(filename):
-    """A convenience function which, given the name of a file, figures out a
-    suitable data source type.
+    """A convenience function which, given the name of a file or directory,
+    figures out a suitable data source type.
 
     Returns a tuple containing two values - a type which should be able to
     load the filename, and the filename, possibly adjusted. If the file type
@@ -150,14 +151,22 @@ def guessDataSourceType(filename):
 
     if filename.endswith('.vtk'):
         return fslmodel.Model, filename
-    
+
     else:
-        filename = fslimage.addExt(filename, False)
-        if any([filename.endswith(e) for e in fslimage.ALLOWED_EXTENSIONS]):
-            if fslfeatimage.isFEATData(filename):
+
+        if op.isdir(filename):
+            if featresults.isFEATDir(filename):
                 return fslfeatimage.FEATImage, filename
-            else:
-                return fslimage.Image,         filename
+        else:
+        
+            filename = fslimage.addExt(filename, False)
+            if any([filename.endswith(e)
+                    for e in fslimage.ALLOWED_EXTENSIONS]):
+
+                if featresults.isFEATDir(filename):
+                    return fslfeatimage.FEATImage, filename
+                else:
+                    return fslimage.Image, filename
 
     return None, filename
 
