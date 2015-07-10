@@ -88,7 +88,16 @@ class FEATImage(fslimage.Image):
 
 
     def clusterResults(self, contrast):
-        pass
+
+        # If thresholdType is not 3, stats
+        # has not been run, or cluster
+        # thresholding has not been performed
+        if featresults.getThresholdType(self.__settings) != 3:
+            return None
+
+        return featresults.loadClusterResults(self.__featDir,
+                                              self.__settings,
+                                              contrast)
 
 
     def getPE(self, ev):

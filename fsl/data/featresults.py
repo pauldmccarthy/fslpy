@@ -156,6 +156,119 @@ def loadSettings(featdir):
     return settings
 
 
+def getThresholdType(settings):
+    """Returns the type of statistical thresholding used in the FEAT
+    analysis described in the given settings dict (see the
+    :func:`loadSettings` function).
+
+    Returns a number describing the thresholding approach:
+
+        -1 : Statistical analysis has not been performed
+         0 : No thresholding has been performed
+         1 : Uncorrected P-value thresholding
+         2 : Voxel-corrected thresholding
+         3 : Cluster-corrected thresholding
+    """
+
+    poststats = int(settings['poststats_yn'])
+    threstype = int(settings['thresh'])
+
+    if poststats != 1:
+        return -1
+
+    return threstype
+
+
+def loadClusterResults(featdir, settings, contrast):
+    """If cluster thresholding was used in the FEAT analysis, this function
+    will load and return the cluster results for the specified contrast
+    (which is assumed to be 0-indexed).
+
+    If thresholding has not been performed, or cluster threhsolding was not
+    used, ``None`` is returned.
+    """
+
+    # poststats_yn != 1 means that
+    # stats has not been performed
+    # 
+    # thres=3 corresponds to
+    # cluster thresholding 
+    if int(settings['poststats_yn']) != 1 or \
+       int(settings['thresh'])       != 3:
+        return None
+    
+    # This dict provides a mapping between 
+    # Cluster object (see below) attribute
+    # names, and the corresponding column
+    # name in the cluster.txt file. And the
+    # value type is thrown in as well, for
+    # good measure.
+    colmap = {
+        'Cluster Index'    : ('index',    int),  
+        'Voxels'           : ('nvoxels',  int), 
+        'P'                : ('p',        float), 
+        '-log10(P)'        : ('logp',     float), 
+        'Z-MAX'            : ('zmax',     float), 
+        'Z-MAX X (vox)'    : ('zmaxx',    int), 
+        'Z-MAX Y (vox)'    : ('zmaxy',    int), 
+        'Z-MAX Z (vox)'    : ('zmaxz',    int), 
+        'Z-COG X (vox)'    : ('zcogx',    int), 
+        'Z-COG Y (vox)'    : ('zcogy',    int), 
+        'Z-COG Z (vox)'    : ('zcogz',    int), 
+        'COPE-MAX X (vox)' : ('copemaxx', int), 
+        'COPE-MAX Y (vox)' : ('copemaxy', int), 
+        'COPE-MAX Z (vox)' : ('copemaxz', int), 
+        'COPE-MEAN'        : ('copemean', float)}
+
+    # The cluster.txt file is converted
+    # into a list of Cluster objects,
+    # each of which encapsulates
+    # information about one cluster.
+    class Cluster(object):
+        def __init__(self, **kwargs):
+            for name, val in kwargs:
+                
+                attrName, atype = colmap[name]
+                if val is not None:
+                    val = atype(val)
+                    
+                setattr(self, attrName, val)
+
+    clusterFile = op.join(featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
+
+    # An error will be raised if the
+    # cluster file does not exist (e.g.
+    # if the specified contrast index
+    # is invalid)
+    with open(clusterFile, 'rt') as f:
+
+        # Get every line in the file,
+        # removing leading/trailing
+        # whitespace, and discarding
+        # empty lines
+        lines = f.readlines()
+        lines = [l.strip() for l in lines]
+        lines = filter(lambda l: l != '', lines)
+
+        # the first line should contain column
+        # names, and each other line should
+        # contain the data for one cluster
+        colNames     = lines[0]
+        clusterLines = lines[1:]
+
+        # each line should be tab-separated
+        colNames     =  colNames.split('\t')
+        clusterLines = [cl      .split('\t') for cl in clusterLines]
+
+        # Turn each cluster line into a
+        # Cluster instance. An error will
+        # be raised if the columm names
+        # are unrecognised (i.e. not in
+        # the colmap above), or if the
+        # file is poorly formed.
+        return [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
+
+
 def getDataFile(featdir):
     """Returns the name of the file in the FEAT results which contains
     the model input data (typically called ``filtered_func_data.nii.gz``).
