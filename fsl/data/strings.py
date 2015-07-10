@@ -78,7 +78,12 @@ messages = TypeDict({
 
     'NewLutDialog.newLut' : 'Enter a name for the new LUT',
 
-    'ClusterPanel.notFEAT'  : 'Choose a FEAT overlay', 
+    'ClusterPanel.noOverlays'  : 'Add a FEAT overlay',
+    'ClusterPanel.notFEAT'     : 'Choose a FEAT overlay',
+    'ClusterPanel.noClusters'  : 'No cluster results exist '
+                                 'in this FEAT analysis',
+    'ClusterPanel.badData'     : 'Cluster data could not be parsed - '
+                                 'check your cluster_*.txt files.', 
     
 })
 
@@ -234,6 +239,20 @@ labels = TypeDict({
     'FEATReducedTimeSeries.pe'   : 'Reduced against PE{}',
 
     'FEATResidualTimeSeries'     : 'Residuals',
+
+    'ClusterPanel.clustName'     : 'Z statistics for COPE {} ({})',
+    
+    'ClusterPanel.index'         : 'Cluster index',
+    'ClusterPanel.nvoxels'       : 'Size (voxels)',
+    'ClusterPanel.p'             : 'P',
+    'ClusterPanel.logp'          : '-log10(P)',
+    'ClusterPanel.zmax'          : 'Z Max',
+    'ClusterPanel.zmaxcoords'    : 'Z Max location',
+    'ClusterPanel.zcogcoords'    : 'Z Max COG location',
+    'ClusterPanel.copemax'       : 'COPE Max',
+    'ClusterPanel.copemaxcoords' : 'COPE Max location',
+    'ClusterPanel.copemean'      : 'COPE mean', 
+    
 })
 
 
