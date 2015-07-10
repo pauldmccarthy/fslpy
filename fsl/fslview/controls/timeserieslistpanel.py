@@ -103,7 +103,9 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
     def __makeLabel(self, ts):
 
-        return '{} [{} {} {}]'.format(ts.overlay.name,
+        display = self._displayCtx.getDisplay(ts.overlay)
+
+        return '{} [{} {} {}]'.format(display.name,
                                       ts.coords[0],
                                       ts.coords[1],
                                       ts.coords[2])
@@ -113,6 +115,9 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
 
         import fsl.fslview.views.timeseriespanel as tsp
 
+        overlay = modelTs.overlay
+        display = self._displayCtx.getDisplay(overlay)
+
         if isinstance(modelTs, tsp.FEATResidualTimeSeries):
             return '{} ({})'.format(
                 parentTs.label,
@@ -120,9 +125,9 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         
         elif isinstance(modelTs, tsp.FEATEVTimeSeries):
             return '{} EV{} ({})'.format(
-                modelTs.overlay.name, 
+                display.name, 
                 modelTs.idx + 1,
-                modelTs.overlay.evNames()[modelTs.idx])
+                overlay.evNames()[modelTs.idx])
 
         label = '{} ({})'.format(
             parentTs.label,
@@ -134,7 +139,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         elif modelTs.fitType == 'cope':
             return label.format(
                 modelTs.idx + 1,
-                modelTs.overlay.contrastNames()[modelTs.idx])
+                overlay.contrastNames()[modelTs.idx])
         
         elif modelTs.fitType == 'pe':
             return label.format(modelTs.idx + 1) 
