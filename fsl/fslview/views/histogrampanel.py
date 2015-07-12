@@ -130,15 +130,16 @@ class HistogramSeries(plotpanel.DataSeries):
         finData = data[np.isfinite(data)]
         dmin    = finData.min()
         dmax    = finData.max()
+        dist    = (dmax - dmin) / 10000.0
         
         nzData = finData[finData != 0]
         nzmin  = nzData.min()
         nzmax  = nzData.max()
 
         self.dataRange.xmin = dmin
-        self.dataRange.xmax = dmax
+        self.dataRange.xmax = dmax  + dist
         self.dataRange.xlo  = nzmin
-        self.dataRange.xhi  = nzmax
+        self.dataRange.xhi  = nzmax + dist
 
         self.nbins = autoBin(nzData, self.dataRange.x)
 
@@ -185,9 +186,9 @@ class HistogramSeries(plotpanel.DataSeries):
         nzData  = self.nonZeroData
         
         self.clippedFiniteData  = finData[(finData >= self.dataRange.xlo) &
-                                          (finData <= self.dataRange.xhi)]
+                                          (finData <  self.dataRange.xhi)]
         self.clippedNonZeroData = nzData[ (nzData  >= self.dataRange.xlo) &
-                                          (nzData  <= self.dataRange.xhi)]
+                                          (nzData  <  self.dataRange.xhi)]
 
         if callHistPropsChanged:
             self.histPropsChanged()
@@ -307,6 +308,10 @@ class HistogramSeries(plotpanel.DataSeries):
 
 
     def getData(self):
+
+        if len(self.xdata) == 0 or \
+           len(self.ydata) == 0:
+            return self.xdata, self.ydata
 
         # If smoothing is not enabled, we'll
         # munge the histogram data a bit so
