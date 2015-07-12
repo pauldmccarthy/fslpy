@@ -26,10 +26,11 @@ def isFEATDir(path):
 
     if op.isfile(path):
 
-        dirname, filename = op.splitext(path)
+        dirname, filename = op.split(path)
 
-        if not filename.startswith('filtered_func_data'):
-            return False
+        if filename.startswith('filtered_func_data'):
+            return True
+        return False
 
     dirname = path
     keys    = ['.feat',

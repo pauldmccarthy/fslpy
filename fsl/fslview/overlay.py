@@ -285,7 +285,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default'):
                 strings.messages['overlay.loadOverlays.unknownType'])
             continue
 
-        log.debug('Loading overlay {} (guessed data type: {}'.format(
+        log.debug('Loading overlay {} (guessed data type: {})'.format(
             path, dtype.__name__))
         try:                   overlays.append(dtype(path))
         except Exception as e: errorFunc(path, e)
