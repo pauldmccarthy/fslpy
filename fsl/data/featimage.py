@@ -89,6 +89,10 @@ class FEATImage(fslimage.Image):
         return [list(c) for c in self.__contrasts]
 
 
+    def thresholds(self):
+        return featresults.getThresholds(self.__settings)
+
+
     def clusterResults(self, contrast):
 
         return featresults.loadClusterResults(self.__featDir,

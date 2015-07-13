@@ -179,6 +179,13 @@ def loadSettings(featdir):
     return settings
 
 
+def getThresholds(settings):
+    return {
+        'p' : settings.get('prob_thresh', None),
+        'z' : settings.get('z_thresh',    None)
+    }
+
+
 def loadClusterResults(featdir, settings, contrast):
     """If cluster thresholding was used in the FEAT analysis, this function
     will load and return the cluster results for the specified contrast

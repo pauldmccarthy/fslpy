@@ -106,6 +106,13 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         log.debug('Adding Z-statistic {} to overlay list'.format(zstats.name))
         self._overlayList.append(zstats)
 
+        opts   = self._overlayList.getOpts(zstats)
+        zthres = overlay.thresholds()['z']
+        
+        if zthres is not None:
+            # Set clipping range
+            pass
+
     
     def __addClusterMaskClick(self, ev):
         overlay  = self.__selectedOverlay
@@ -118,8 +125,9 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             if ol.dataSource == mask.dataSource:
                 return
 
-        log.debug('Adding Cluster mask {} to overlay list'.format(mask.name))
+        log.debug('Adding cluster mask {} to overlay list'.format(mask.name))
         self._overlayList.append(mask)
+        self._displayCtx.getDisplay(mask).overlayType = 'label'
 
 
     def __selectedOverlayChanged(self, *a):
