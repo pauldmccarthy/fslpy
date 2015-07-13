@@ -251,7 +251,10 @@ labels = TypeDict({
     'ClusterPanel.zcogcoords'    : 'Z Max COG location',
     'ClusterPanel.copemax'       : 'COPE Max',
     'ClusterPanel.copemaxcoords' : 'COPE Max location',
-    'ClusterPanel.copemean'      : 'COPE mean', 
+    'ClusterPanel.copemean'      : 'COPE mean',
+    
+    'ClusterPanel.addZStats'      : 'Add Z statistics',
+    'ClusterPanel.addClusterMask' : 'Add cluster mask',
     
 })
 

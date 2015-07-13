@@ -7,9 +7,11 @@
 
 import                        logging
 import                        wx
-import wx.grid             as wxgrid
+
+import pwidgets.widgetgrid as widgetgrid
 
 import fsl.fslview.panel   as fslpanel
+import fsl.utils.transform as transform
 import fsl.data.strings    as strings
 import fsl.data.featimage  as featimage
 
@@ -27,21 +29,31 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             style=(wx.ALIGN_CENTRE_HORIZONTAL |
                    wx.ALIGN_CENTRE_VERTICAL))
 
-        self.__overlayName = wx    .StaticText(self)
-        self.__statSelect  = wx    .ComboBox(  self, style=wx.CB_READONLY)
-        self.__clusterList = wxgrid.Grid(      self)
+        self.__overlayName    = wx    .StaticText(    self)
+        self.__addZStats      = wx.Button(            self)
+        self.__addClusterMask = wx.Button(            self)
+        self.__statSelect     = wx    .ComboBox(      self,
+                                                      style=wx.CB_READONLY)
+        self.__clusterList    = widgetgrid.WidgetGrid(self)
+
+        self.__addZStats     .SetLabel(strings.labels[self, 'addZStats'])
+        self.__addClusterMask.SetLabel(strings.labels[self, 'addClusterMask'])
         
-        self.__clusterList.CreateGrid(0, 10)
-        self.__clusterList.HideRowLabels()
+        self.__clusterList.ShowRowLabels(False)
+        self.__clusterList.ShowColLabels(True)
         
         self.__sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.__sizer)
 
         self.__topSizer  = wx.BoxSizer(wx.HORIZONTAL)
         self.__mainSizer = wx.BoxSizer(wx.VERTICAL)
+
+        args = {'flag' : wx.EXPAND, 'proportion' : 1}
  
-        self.__topSizer.Add(self.__overlayName, flag=wx.EXPAND, proportion=1)
-        self.__topSizer.Add(self.__statSelect,  flag=wx.EXPAND, proportion=1)
+        self.__topSizer.Add(self.__overlayName,    **args)
+        self.__topSizer.Add(self.__statSelect,     **args)
+        self.__topSizer.Add(self.__addZStats,      **args)
+        self.__topSizer.Add(self.__addClusterMask, **args)
 
         self.__mainSizer.Add(self.__topSizer,    flag=wx.EXPAND)
         self.__mainSizer.Add(self.__clusterList, flag=wx.EXPAND, proportion=1)
@@ -174,43 +186,54 @@ class ClusterPanel(fslpanel.FSLViewPanel):
                 'copemaxcoords' : 8,
                 'copemean'      : 9}
 
-        grid = self.__clusterList
+        grid    = self.__clusterList
+        overlay = self.__selectedOverlay
+        opts    = self._displayCtx.getOpts(overlay)
 
-        nrows = grid.GetNumberRows()
-
-        if nrows > 0:
-            grid.DeleteRows(0, nrows)
-        grid.InsertRows(0, len(clusters))
+        grid.ClearGrid()
+        grid.SetGridSize(len(clusters), 10)
 
         for col, i in cols.items():
-            grid.SetColLabelValue(i, strings.labels[self, col])
+            grid.SetColLabel(i, strings.labels[self, col])
+
+        def makeCoordButton(coords):
+
+            label = wx.StaticText(grid, label='[{} {} {}]'.format(*coords))
+            btn   = wx.Button(grid, label=u'\u2192', style=wx.BU_EXACTFIT)
+            
+            sizer = wx.BoxSizer(wx.HORIZONTAL)
+            sizer.Add(label, flag=wx.EXPAND, proportion=1)
+            sizer.Add(btn)
+
+            def onClick(ev):
+                xfm  = opts.getTransform('voxel', 'display')
+                dloc = transform.transform([coords], xfm)[0]
+                self._displayCtx.location = dloc
+
+            btn.Bind(wx.EVT_BUTTON, onClick)
+
+            return sizer
 
         for i, clust in enumerate(clusters):
-            f = lambda v: '{}'.format(v)
-            grid.SetCellValue(i, cols['index'],   f(clust.index))
-            grid.SetCellValue(i, cols['nvoxels'], f(clust.nvoxels))
-            grid.SetCellValue(i, cols['p'],       f(clust.p))
-            grid.SetCellValue(i, cols['logp'],    f(clust.logp))
-            grid.SetCellValue(i, cols['zmax'],    f(clust.zmax))
-            
-            grid.SetCellValue(i, cols['zmaxcoords'],
-                              '[{} {} {}]'.format(clust.zmaxx,
-                                                  clust.zmaxy,
-                                                  clust.zmaxz))
-            
-            grid.SetCellValue(i, cols['zcogcoords'],
-                              '[{} {} {}]'.format(clust.zcogx,
-                                                  clust.zcogy,
-                                                  clust.zcogz))
-            
-            grid.SetCellValue(i, cols['copemax'], f(clust.copemax))
-            
-            grid.SetCellValue(i, cols['copemaxcoords'],
-                              '[{} {} {}]'.format(clust.copemaxx,
-                                                  clust.copemaxy,
-                                                  clust.copemaxz))
-            
-            grid.SetCellValue(i, cols['copemean'], f(clust.copemean))
 
-        grid.AutoSize()
-        grid.Refresh()
+            zmaxbtn    = makeCoordButton((clust.zmaxx,
+                                          clust.zmaxy,
+                                          clust.zmaxz))
+            zcogbtn    = makeCoordButton((clust.zcogx,
+                                          clust.zcogy,
+                                          clust.zcogz))
+            copemaxbtn = makeCoordButton((clust.copemaxx,
+                                          clust.copemaxy,
+                                          clust.copemaxz))
+
+            fmt = lambda v: '{}'.format(v)
+            grid.SetText(  i, cols['index'],         fmt(clust.index))
+            grid.SetText(  i, cols['nvoxels'],       fmt(clust.nvoxels))
+            grid.SetText(  i, cols['p'],             fmt(clust.p))
+            grid.SetText(  i, cols['logp'],          fmt(clust.logp))
+            grid.SetText(  i, cols['zmax'],          fmt(clust.zmax))
+            grid.SetWidget(i, cols['zmaxcoords'],    zmaxbtn)
+            grid.SetWidget(i, cols['zcogcoords'],    zcogbtn)
+            grid.SetText(  i, cols['copemax'],       fmt(clust.copemax))
+            grid.SetWidget(i, cols['copemaxcoords'], copemaxbtn)
+            grid.SetText(  i, cols['copemean'],      fmt(clust.copemean))
