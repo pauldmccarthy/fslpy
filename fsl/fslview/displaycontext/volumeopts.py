@@ -221,7 +221,15 @@ class VolumeOpts(ImageOpts):
     clippingRange = props.Bounds(
         ndims=1,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
-                strings.choices['VolumeOpts.displayRange.max']]) 
+                strings.choices['VolumeOpts.displayRange.max']])
+    """Values outside of this range are not shown."""
+
+    
+    invertClipping = props.Boolean(default=False)
+    """If ``True``, the behaviour of ``clippingRange`` is inverted, i.e.
+    values inside the clipping range are clipped, instead of those outside
+    the clipping range.
+    """
 
     
     cmap = props.ColourMap(default=fslcm.getColourMaps()[0],

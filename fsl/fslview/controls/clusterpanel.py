@@ -106,12 +106,18 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         log.debug('Adding Z-statistic {} to overlay list'.format(zstats.name))
         self._overlayList.append(zstats)
 
-        opts   = self._overlayList.getOpts(zstats)
-        zthres = overlay.thresholds()['z']
+        opts   = self._displayCtx.getOpts(zstats)
+        zthres = float(overlay.thresholds()['z'])
         
         if zthres is not None:
+
+            absmax = max(map(abs, (opts.dataMin, opts.dataMax)))
+            
             # Set clipping range
-            pass
+            opts.cmap            = 'Render3'
+            opts.invertClipping  = True 
+            opts.displayRange.x  = -absmax, absmax
+            opts.clippingRange.x = -zthres, zthres
 
     
     def __addClusterMaskClick(self, ev):

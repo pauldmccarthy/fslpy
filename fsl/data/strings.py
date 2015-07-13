@@ -349,11 +349,12 @@ properties = TypeDict({
     'ImageOpts.transform'  : 'Image transform',
     'ImageOpts.volume'     : 'Volume',
     
-    'VolumeOpts.displayRange'  : 'Display range',
-    'VolumeOpts.clippingRange' : 'Clipping range',
-    'VolumeOpts.cmap'          : 'Colour map',
-    'VolumeOpts.invert'        : 'Invert colour map',
-    'VolumeOpts.interpolation' : 'Interpolation',
+    'VolumeOpts.displayRange'   : 'Display range',
+    'VolumeOpts.clippingRange'  : 'Clipping range',
+    'VolumeOpts.cmap'           : 'Colour map',
+    'VolumeOpts.invert'         : 'Invert colour map',
+    'VolumeOpts.invertClipping' : 'Invert clipping range',
+    'VolumeOpts.interpolation'  : 'Interpolation',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',

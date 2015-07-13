@@ -198,6 +198,7 @@ VolumeOptsLayout = props.VGroup(
      widget(VolumeOpts, 'interpolation'),
      widget(VolumeOpts, 'cmap'),
      widget(VolumeOpts, 'invert'),
+     widget(VolumeOpts, 'invertClipping'),
      widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
      widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)))
 

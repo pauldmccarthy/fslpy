@@ -47,6 +47,12 @@ uniform float clipLow;
 uniform float clipHigh;
 
 /*
+ * Invert clipping behaviour - clip voxels
+ * that are inside the clipLow/High bounds.
+ */
+uniform bool invertClip;
+
+/*
  * Image voxel coordinates.
  */
 varying vec3 fragVoxCoord;
@@ -85,8 +91,9 @@ void main(void) {
     /*
      * Clip out of range voxel values
      */
-    if (voxValue < clipLow || voxValue > clipHigh) {
       
+    if ((!invertClip && (voxValue <  clipLow || voxValue >  clipHigh)) ||
+        (invertClip  && (voxValue >= clipLow && voxValue <= clipHigh))) {
       gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
       return;
     }

@@ -81,7 +81,9 @@ def compileShaders(self):
     self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
                                                       'clipLow')
     self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
-                                                      'clipHigh') 
+                                                      'clipHigh')
+    self.invertClipPos      = gl.glGetUniformLocation(self.shaders,
+                                                      'invertClip')
 
 
 def init(self):
@@ -130,8 +132,9 @@ def updateShaderState(self):
         self.imageTexture.invVoxValXform[0, 0] + \
         self.imageTexture.invVoxValXform[3, 0] 
 
-    gl.glUniform1f(self.clipLowPos,  clipLow)
-    gl.glUniform1f(self.clipHighPos, clipHigh)
+    gl.glUniform1f(self.clipLowPos,    clipLow)
+    gl.glUniform1f(self.clipHighPos,   clipHigh)
+    gl.glUniform1f(self.invertClipPos, opts.invertClipping)
 
     # Bind transformation matrices to transform
     # display coordinates to voxel coordinates,
