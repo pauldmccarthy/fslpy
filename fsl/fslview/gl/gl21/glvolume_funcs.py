@@ -125,21 +125,18 @@ def updateShaderState(self):
     # range, but the shader needs them to be in image
     # texture value range (0.0 - 1.0). So let's scale 
     # them.
-    clipLow = opts.clippingRange[0]            * \
-        self.imageTexture.invVoxValXform[0, 0] + \
-        self.imageTexture.invVoxValXform[3, 0]
-    clipHigh = opts.clippingRange[1]           * \
-        self.imageTexture.invVoxValXform[0, 0] + \
-        self.imageTexture.invVoxValXform[3, 0] 
+    xform    = self.imageTexture.invVoxValXform
+    clipLow  = opts.clippingRange[0] * xform[0, 0] + xform[3, 0]
+    clipHigh = opts.clippingRange[1] * xform[0, 0] + xform[3, 0]
 
     gl.glUniform1f(self.clipLowPos,    clipLow)
     gl.glUniform1f(self.clipHighPos,   clipHigh)
     gl.glUniform1f(self.invertClipPos, opts.invertClipping)
-
-    # Bind transformation matrices to transform
-    # display coordinates to voxel coordinates,
-    # and to scale voxel values to colour map
-    # texture coordinates
+    
+    # Bind transformation matrix to transform
+    # from image texture values to voxel values,
+    # and and to scale said voxel values to
+    # colour map texture coordinates
     vvx = transform.concat(self.imageTexture.voxValXform,
                            self.colourTexture.getCoordinateTransform())
     vvx = np.array(vvx, dtype=np.float32).ravel('C')

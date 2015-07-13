@@ -227,7 +227,7 @@ class ImageTexture(texture.Texture):
         # for signed types.
 
         # Texture data type
-        if   self.__normalise:   texDtype = gl.GL_UNSIGNED_BYTE
+        if   self.__normalise:   texDtype = gl.GL_UNSIGNED_SHORT
         elif dtype == np.uint8:  texDtype = gl.GL_UNSIGNED_BYTE
         elif dtype == np.int8:   texDtype = gl.GL_UNSIGNED_BYTE
         elif dtype == np.uint16: texDtype = gl.GL_UNSIGNED_SHORT
@@ -246,28 +246,28 @@ class ImageTexture(texture.Texture):
         # Internal texture format
         if self.nvals == 1:
 
-            if   self.__normalise:   intFmt = gl.GL_LUMINANCE8
+            if   self.__normalise:   intFmt = gl.GL_LUMINANCE16
             elif dtype == np.uint8:  intFmt = gl.GL_LUMINANCE8
             elif dtype == np.int8:   intFmt = gl.GL_LUMINANCE8
             elif dtype == np.uint16: intFmt = gl.GL_LUMINANCE16
             elif dtype == np.int16:  intFmt = gl.GL_LUMINANCE16
 
         elif self.nvals == 2:
-            if   self.__normalise:   intFmt = gl.GL_LUMINANCE8_ALPHA8
+            if   self.__normalise:   intFmt = gl.GL_LUMINANCE16_ALPHA16
             elif dtype == np.uint8:  intFmt = gl.GL_LUMINANCE8_ALPHA8
             elif dtype == np.int8:   intFmt = gl.GL_LUMINANCE8_ALPHA8
             elif dtype == np.uint16: intFmt = gl.GL_LUMINANCE16_ALPHA16
             elif dtype == np.int16:  intFmt = gl.GL_LUMINANCE16_ALPHA16
 
         elif self.nvals == 3:
-            if   self.__normalise:   intFmt = gl.GL_RGB8
+            if   self.__normalise:   intFmt = gl.GL_RGB16
             elif dtype == np.uint8:  intFmt = gl.GL_RGB8
             elif dtype == np.int8:   intFmt = gl.GL_RGB8
             elif dtype == np.uint16: intFmt = gl.GL_RGB16
             elif dtype == np.int16:  intFmt = gl.GL_RGB16
             
         elif self.nvals == 4:
-            if   self.__normalise:   intFmt = gl.GL_RGBA8
+            if   self.__normalise:   intFmt = gl.GL_RGBA16
             elif dtype == np.uint8:  intFmt = gl.GL_RGBA8
             elif dtype == np.int8:   intFmt = gl.GL_RGBA8
             elif dtype == np.uint16: intFmt = gl.GL_RGBA16
@@ -385,8 +385,8 @@ class ImageTexture(texture.Texture):
             dmax = float(data.max())
             if dmax != dmin:
                 data = (data - dmin) / (dmax - dmin)
-            data = np.round(data * 255)
-            data = np.array(data, dtype=np.uint8)
+            data = np.round(data * 65535)
+            data = np.array(data, dtype=np.uint16)
             
         elif dtype == np.uint8:  pass
         elif dtype == np.int8:   data = np.array(data + 128,   dtype=np.uint8)
