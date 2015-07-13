@@ -240,7 +240,7 @@ labels = TypeDict({
 
     'FEATResidualTimeSeries'     : 'Residuals',
 
-    'ClusterPanel.clustName'     : 'Z statistics for COPE {} ({})',
+    'ClusterPanel.clustName'     : 'Z statistics for COPE{} ({})',
     
     'ClusterPanel.index'         : 'Cluster index',
     'ClusterPanel.nvoxels'       : 'Size (voxels)',

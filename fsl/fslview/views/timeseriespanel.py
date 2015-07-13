@@ -357,9 +357,9 @@ class FEATEVTimeSeries(TimeSeries):
 class FEATResidualTimeSeries(TimeSeries):
     def getData(self):
         x, y, z = self.coords
-        data    = self.overlay.getResiduals()[x, y, z, :]
+        data    = self.overlay.getResiduals().data[x, y, z, :]
         
-        return TimeSeries.getData(self, ydata=data)
+        return TimeSeries.getData(self, ydata=np.array(data))
             
 
 class FEATModelFitTimeSeries(TimeSeries):

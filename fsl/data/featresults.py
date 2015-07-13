@@ -24,32 +24,44 @@ def isFEATDir(path):
     looks like the input data for a FEAT analysis, ``False`` otherwise.
     """
 
-    if op.isfile(path):
 
-        dirname, filename = op.split(path)
+    dirname, filename = op.split(path)
 
-        if filename.startswith('filtered_func_data'):
-            return True
+    featDir   = getFEATDir(dirname)
+    isfeatdir = featDir is not None
+
+    try:
+        hasdesfsf = op.exists(op.join(featDir, 'design.fsf'))
+        hasdesmat = op.exists(op.join(featDir, 'design.mat'))
+        hasdescon = op.exists(op.join(featDir, 'design.con'))
+        
+        isfeat    = (isfeatdir and
+                     hasdesmat and
+                     hasdescon and
+                     hasdesfsf)
+
+        return isfeat
+    
+    except:
         return False
 
-    dirname = path
-    keys    = ['.feat',
-               '.gfeat',
-               '.feat{}' .format(op.sep),
-               '.gfeat{}'.format(op.sep)]
 
-    isfeatdir = any([path.endswith(k) for k in keys])
+def getFEATDir(path):
 
-    hasdesfsf = op.exists(op.join(dirname, 'design.fsf'))
-    hasdesmat = op.exists(op.join(dirname, 'design.mat'))
-    hasdescon = op.exists(op.join(dirname, 'design.con'))
+    sufs     = ['.feat', '.gfeat']
+    idxs     = [(path.rfind(s), s) for s in sufs]
+    idx, suf = max(idxs, key=lambda (i, s): i)
 
-    isfeat    = (isfeatdir and
-                 hasdesmat and
-                 hasdescon and
-                 hasdesfsf)
-    
-    return isfeat
+    if idx == -1:
+        return None
+
+    idx  += len(suf)
+    path  = path[:idx]
+
+    if path.endswith(suf) or path.endswith('{}{}'.format(suf, op.sep)):
+        return path
+                                           
+    return None
 
 
 def loadDesign(featdir):
@@ -296,6 +308,22 @@ def getCOPEFile(featdir, contrast):
     """
     copefile = op.join(featdir, 'stats', 'cope{}.*'.format(contrast + 1))
     return glob.glob(copefile)[0]
+
+
+def getZStatFile(featdir, contrast):
+    """Returns the path of the Z-statistic file for the specified
+    ``contrast``, which is assumed to be 0-indexed. 
+    """
+    zfile = op.join(featdir, 'stats', 'zstat{}.*'.format(contrast + 1))
+    return glob.glob(zfile)[0]
+
+
+def getClusterMaskFile(featdir, contrast):
+    """Returns the path of the cluster mask file for the specified
+    ``contrast``, which is assumed to be 0-indexed. 
+    """
+    mfile = op.join(featdir, 'cluster_mask_zstat{}.*'.format(contrast + 1))
+    return glob.glob(mfile)[0]
 
 
 def getEVNames(settings):

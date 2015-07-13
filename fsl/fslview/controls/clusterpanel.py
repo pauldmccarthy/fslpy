@@ -56,12 +56,12 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         self.__topSizer.Add(self.__addClusterMask, **args)
 
         self.__mainSizer.Add(self.__topSizer,    flag=wx.EXPAND)
-        self.__mainSizer.Add(self.__clusterList, flag=wx.EXPAND, proportion=1)
+        self.__mainSizer.Add(self.__clusterList, **args)
 
         # Only one of the disabledText or
         # mainSizer are shown at any one time
-        self.__sizer.Add(self.__disabledText, flag=wx.EXPAND, proportion=1)
-        self.__sizer.Add(self.__mainSizer,    flag=wx.EXPAND, proportion=1)
+        self.__sizer.Add(self.__disabledText, **args)
+        self.__sizer.Add(self.__mainSizer,    **args)
 
         overlayList.addListener('overlays',
                                 self._name,
@@ -70,7 +70,9 @@ class ClusterPanel(fslpanel.FSLViewPanel):
                                 self._name,
                                 self.__selectedOverlayChanged)
 
-        self.__statSelect.Bind(wx.EVT_COMBOBOX, self.__statSelected)
+        self.__statSelect    .Bind(wx.EVT_COMBOBOX, self.__statSelected)
+        self.__addZStats     .Bind(wx.EVT_BUTTON,   self.__addZStatsClick)
+        self.__addClusterMask.Bind(wx.EVT_BUTTON,   self.__addClusterMaskClick)
 
         self.__selectedOverlay = None
         self.__selectedOverlayChanged()
@@ -80,39 +82,59 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self ._name)
 
-        if self.__selctedOverlay is not None:
-            try:
-                display = self._displayCtx.getDisplay(self.__selectedOverlay)
-                display.removeListener('name', self._name)
-            except:
-                pass
-
-            
+        
     def __disable(self, message):
 
         self.__disabledText.SetLabel(message)
         self.__sizer.Show(self.__disabledText, True)
         self.__sizer.Show(self.__mainSizer,    False)
-        self.Layout() 
-        
+        self.Layout()
+
+
+    def __addZStatsClick(self, ev):
+
+        overlay  = self.__selectedOverlay
+        contrast = self.__statSelect.GetSelection()
+        zstats   = overlay.getZStats(contrast)
+
+        for ol in self._overlayList:
+            
+            # Already in overlay list
+            if ol.dataSource == zstats.dataSource:
+                return
+
+        log.debug('Adding Z-statistic {} to overlay list'.format(zstats.name))
+        self._overlayList.append(zstats)
+
+    
+    def __addClusterMaskClick(self, ev):
+        overlay  = self.__selectedOverlay
+        contrast = self.__statSelect.GetSelection()
+        mask     = overlay.getClusterMask(contrast)
+
+        for ol in self._overlayList:
+            
+            # Already in overlay list
+            if ol.dataSource == mask.dataSource:
+                return
+
+        log.debug('Adding Cluster mask {} to overlay list'.format(mask.name))
+        self._overlayList.append(mask)
+
 
     def __selectedOverlayChanged(self, *a):
 
         self.__statSelect .Clear()
         self.__clusterList.ClearGrid()
 
+        self.__selectedOverlay = None
+
         # No overlays are loaded
         if len(self._overlayList) == 0:
             self.__disable(strings.messages[self, 'noOverlays'])
             return
 
-        if self.__selectedOverlay is not None:
-            display = self._displayCtx.getDisplay(self.__selectedOverlay)
-            display.removeListener('name', self._name)
-            self.__selectedOverlay = None
-
         overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplay(overlay)
 
         # Not a FEAT image, can't 
         # do anything with that
@@ -125,8 +147,8 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         self.__sizer.Show(self.__disabledText, False)
         self.__sizer.Show(self.__mainSizer,    True)
 
-        numCons  =  overlay.numContrasts()
-        conNames =  overlay.contrastNames()
+        numCons  = overlay.numContrasts()
+        conNames = overlay.contrastNames()
 
         try:
             # clusts is a list of (contrast, clusterList) tuples 
@@ -148,21 +170,14 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
         for contrast, clusterList in clusts:
             name = conNames[contrast]
-            name = strings.labels[self, 'clustName'].format(contrast, name)
+            name = strings.labels[self, 'clustName'].format(contrast + 1, name)
 
             self.__statSelect.Append(name, clusterList)
             
-        self.__overlayName.SetLabel(display.name)
+        self.__overlayName.SetLabel(overlay.getAnalysisName())
         self.__statSelect.SetSelection(0)
         self.__displayClusterData(clusts[0][1])
 
-        # Update displayed name if
-        # overlay name is changed
-        def nameChanged(*a):
-            self.__overlayName.setLabel(display.name)
-
-        display.addListener('name', self._name, nameChanged)
-        
         self.Layout()
         return
 

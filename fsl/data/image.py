@@ -121,11 +121,15 @@ class Image(props.HasProperties):
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                self.name     = removeExt(op.basename(self.dataSource))
+                filepref      = removeExt(op.basename(self.dataSource))
                 self.tempFile = nibImage.get_filename()
             else:
-                self.name     = removeExt(op.basename(self.dataSource))
+                filepref      = removeExt(op.basename(self.dataSource))
 
+            if name is None:
+                name = filepref
+            
+            self.name  = name
             self.saved = True
                 
         # Or a numpy array - we wrap it in a nibabel image,

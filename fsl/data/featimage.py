@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`FeatImage` class, a subclass of
+"""This module provides the :class:`FEATImage` class, a subclass of
 :class:`.Image` designed for the ``filtered_func_data`` file of a FEAT
 analysis.
 """
@@ -12,8 +12,6 @@ analysis.
 import os.path as op
 
 import numpy   as np
-
-import nibabel as nib
 
 import image   as fslimage
 import            featresults
@@ -31,13 +29,15 @@ class FEATImage(fslimage.Image):
             raise ValueError('{} does not appear to be data from a '
                              'FEAT analysis'.format(path))
 
-        featDir     = op.dirname(path)
+        if op.isdir(path):
+            path = op.join(path, 'filtered_func_data')
+
+        featDir     = featresults.getFEATDir(path)
         settings    = featresults.loadSettings( featDir)
         design      = featresults.loadDesign(   featDir)
         names, cons = featresults.loadContrasts(featDir)
-        datafile    = featresults.getDataFile(  featDir)
         
-        fslimage.Image.__init__(self, datafile, **kwargs)
+        fslimage.Image.__init__(self, path, **kwargs)
 
         self.__analysisName  = op.splitext(op.basename(featDir))[0]
         self.__featDir       = featDir
@@ -50,6 +50,8 @@ class FEATImage(fslimage.Image):
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
         self.__copes         = [None] * self.numContrasts()
+        self.__zstats        = [None] * self.numContrasts()
+        self.__clustMasks    = [None] * self.numContrasts()
 
         if 'name' not in kwargs:
             self.name = '{}: {}'.format(self.__analysisName, self.name)
@@ -98,7 +100,12 @@ class FEATImage(fslimage.Image):
 
         if self.__pes[ev] is None:
             pefile = featresults.getPEFile(self.__featDir, ev)
-            self.__pes[ev] = nib.load(pefile).get_data()
+            self.__pes[ev] = FEATImage(
+                pefile,
+                name='{}: PE{} ({})'.format(
+                    self.__analysisName,
+                    ev + 1,
+                    self.evNames()[ev]))
 
         return self.__pes[ev]
 
@@ -107,7 +114,9 @@ class FEATImage(fslimage.Image):
         
         if self.__residuals is None:
             resfile = featresults.getResidualFile(self.__featDir)
-            self.__residuals = nib.load(resfile).get_data()
+            self.__residuals = FEATImage(
+                resfile,
+                name='{}: residuals'.format(self.__analysisName))
         
         return self.__residuals
 
@@ -116,10 +125,45 @@ class FEATImage(fslimage.Image):
         
         if self.__copes[con] is None:
             copefile = featresults.getPEFile(self.__featDir, con)
-            self.__copes[con] = nib.load(copefile).get_data()
+            self.__copes[con] = FEATImage(
+                copefile,
+                name='{}: COPE{} ({})'.format(
+                    self.__analysisName,
+                    con + 1,
+                    self.contrastNames()[con]))
 
-        return self.__copes[con] 
+        return self.__copes[con]
+
+
+    def getZStats(self, con):
         
+        if self.__zstats[con] is None:
+            zfile = featresults.getZStatFile(self.__featDir, con)
+
+            self.__zstats[con] = FEATImage(
+                zfile,
+                name='{}: zstat{} ({})'.format(
+                    self.__analysisName,
+                    con + 1,
+                    self.contrastNames()[con]))
+
+        return self.__zstats[con] 
+
+
+    def getClusterMask(self, con):
+        
+        if self.__clustMasks[con] is None:
+            mfile = featresults.getClusterMaskFile(self.__featDir, con)
+
+            self.__clustMasks[con] = FEATImage(
+                mfile,
+                name='{}: cluster mask for zstat{} ({})'.format(
+                    self.__analysisName,
+                    con + 1,
+                    self.contrastNames()[con]))
+
+        return self.__clustMasks[con] 
+            
 
     def fit(self, contrast, xyz, fullmodel=False):
         """
@@ -146,7 +190,7 @@ class FEATImage(fslimage.Image):
 
         for i in range(numEVs):
 
-            pe        = self.getPE(i)[x, y, z]
+            pe        = self.getPE(i).data[x, y, z]
             modelfit += X[:, i] * pe * contrast[i]
 
         return modelfit + data.mean()
@@ -160,7 +204,7 @@ class FEATImage(fslimage.Image):
         """
 
         x, y, z   = xyz
-        residuals = self.getResiduals()[x, y, z, :]
+        residuals = self.getResiduals().data[x, y, z, :]
         modelfit  = self.fit(contrast, xyz, fullmodel)
 
         return residuals + modelfit
