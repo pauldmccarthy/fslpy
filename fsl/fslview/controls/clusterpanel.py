@@ -108,12 +108,13 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
         opts   = self._displayCtx.getOpts(zstats)
         zthres = float(overlay.thresholds()['z'])
-        
+
+        # Set some display parameters if
+        # we have a z value threshold
         if zthres is not None:
 
             absmax = max(map(abs, (opts.dataMin, opts.dataMax)))
             
-            # Set clipping range
             opts.cmap            = 'Render3'
             opts.invertClipping  = True 
             opts.displayRange.x  = -absmax, absmax
