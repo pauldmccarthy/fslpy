@@ -24,15 +24,16 @@ class FEATImage(fslimage.Image):
         The specified ``path`` may be a FEAT analysis directory, or the model
         data input file (e.g. ``analysis.feat/filtered_func_data.nii.gz``).
         """
+
+        featDir = featresults.getFEATDir(path)
         
-        if not featresults.isFEATDir(path):
+        if featDir is None:
             raise ValueError('{} does not appear to be data from a '
                              'FEAT analysis'.format(path))
 
         if op.isdir(path):
-            path = op.join(path, 'filtered_func_data')
+            path = op.join(featDir, 'filtered_func_data')
 
-        featDir     = featresults.getFEATDir(path)
         settings    = featresults.loadSettings( featDir)
         design      = featresults.loadDesign(   featDir)
         names, cons = featresults.loadContrasts(featDir)
