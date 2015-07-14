@@ -58,6 +58,10 @@ class FEATImage(fslimage.Image):
             self.name = '{}: {}'.format(self.__analysisName, self.name)
 
 
+    def getFEATDir(self):
+        return self.__featDir
+
+
     def getAnalysisName(self):
         return self.__analysisName
         

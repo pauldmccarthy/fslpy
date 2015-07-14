@@ -49,7 +49,14 @@ class DisplayOpts(props.SyncableHasProperties):
 
         
     def destroy(self):
-        pass
+        """If overridden, this method should be called by the subclass
+        implementation.
+        """
+
+        self.overlay     = None
+        self.display     = None
+        self.overlayList = None
+        self.displayCtx  = None
 
 
     def getReferenceImage(self):
@@ -193,6 +200,23 @@ class Display(props.SyncableHasProperties):
         self.__displayOpts = None
         self.__overlayTypeChanged()
 
+
+
+    def destroy(self):
+        """This method should be called when this ``Display`` instance
+        is no longer needed.
+        """
+        
+        if self.__displayOpts is not None:
+            self.__displayOpts.destroy()
+
+        self.removeListener('overlayType', 'Display_{}'.format(id(self)))
+
+        self.detachFromParent()
+        
+        self.__displayOpts = None
+        self.__overlay     = None
+        
         
     def getDisplayOpts(self):
         """

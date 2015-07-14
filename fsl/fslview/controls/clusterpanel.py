@@ -65,7 +65,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
         overlayList.addListener('overlays',
                                 self._name,
-                                self.__selectedOverlayChanged)
+                                self.__overlayListChanged)
         displayCtx .addListener('selectedOverlay',
                                 self._name,
                                 self.__selectedOverlayChanged)
@@ -137,25 +137,59 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         self._displayCtx.getDisplay(mask).overlayType = 'label'
 
 
+    def __overlayListChanged(self, *a):
+        self.__selectedOverlayChanged()
+        self.__enableOverlayButtons()
+
+
+    def __enableOverlayButtons(self):
+        
+        if self.__selectedOverlay is None:
+            return
+
+        overlay  = self.__selectedOverlay
+        contrast = self.__statSelect.GetSelection()
+
+        zstat     = overlay.getZStats(     contrast)
+        clustMask = overlay.getClusterMask(contrast)
+
+        dss = [ovl.dataSource for ovl in self._overlayList]
+
+        self.__addZStats     .Enable(zstat    .dataSource not in dss)
+        self.__addClusterMask.Enable(clustMask.dataSource not in dss)
+        
+    
     def __selectedOverlayChanged(self, *a):
 
-        self.__statSelect .Clear()
-        self.__clusterList.ClearGrid()
-
+        prevOverlay            = self.__selectedOverlay
         self.__selectedOverlay = None
-
+        
         # No overlays are loaded
         if len(self._overlayList) == 0:
             self.__disable(strings.messages[self, 'noOverlays'])
             return
 
         overlay = self._displayCtx.getSelectedOverlay()
-
+        
         # Not a FEAT image, can't 
         # do anything with that
         if not isinstance(overlay, featimage.FEATImage):
             self.__disable(strings.messages[self, 'notFEAT'])
             return
+
+        # Selected overlay is either the
+        # same one (maybe the overlay list,
+        # rather than the selected overlay,
+        # changed) or the newly selected
+        # overlay is from the same FEAT
+        # analysis. No need to do anything.
+        if prevOverlay is not None and (prevOverlay is overlay or 
+           prevOverlay.getFEATDir() == overlay.getFEATDir()):
+            self.__selectedOverlay = overlay
+            return
+            
+        self.__statSelect .Clear()
+        self.__clusterList.ClearGrid()
 
         self.__selectedOverlay = overlay
 
@@ -190,6 +224,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             self.__statSelect.Append(name, clusterList)
             
         self.__overlayName.SetLabel(overlay.getAnalysisName())
+
         self.__statSelect.SetSelection(0)
         self.__displayClusterData(clusts[0][1])
 
@@ -201,6 +236,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         idx  = self.__statSelect.GetSelection()
         data = self.__statSelect.GetClientData(idx)
         self.__displayClusterData(data)
+        self.__enableOverlayButtons()
 
         
     def __displayClusterData(self, clusters):

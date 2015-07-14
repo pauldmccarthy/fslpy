@@ -208,8 +208,25 @@ class DisplayContext(props.SyncableHasProperties):
         constraints on the :attr:`selectedOverlay` property.
         """
 
+        # Discard all Display instances
+        # which refer to overlays that
+        # are no longer in the list
+        for overlay in list(self.__displays.keys()):
+            if overlay not in self.__overlayList:
+                
+                display = self.__displays.pop(overlay)
+                opts    = display.getDisplayOpts()
+
+                display.removeListener('overlayType', self.__name)
+                opts.removeGlobalListener(self.__name)
+                
+                # The display instance will destroy the
+                # opts instance, so we don't do it here
+                display.destroy()
+ 
         # Ensure that a Display object
-        # exists for every overlay
+        # exists for every overlay in
+        # the list
         for overlay in self.__overlayList:
 
             # The getDisplay method

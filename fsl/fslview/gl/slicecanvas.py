@@ -505,6 +505,60 @@ class SliceCanvas(props.HasProperties):
         # display axes. Easiest way to do this
         # is to destroy and re-create them
         self._renderModeChange()
+
+
+    def __overlayTypeChanged(self, value, valid, display, name):
+        """Called when the :attr:`.Display.overlayType` setting for any
+        overlay changes. Makes sure that an appropriate :class:`.GLObject`
+        has been created for the overlay (see the :meth:`__genGLObject`
+        method).
+        """
+
+        log.debug('GLObject representation for {} '
+                  'changed to {}'.format(display.name,
+                                         display.overlayType))
+
+        self.__genGLObject(display.getOverlay(), display)
+        self._refresh()
+
+
+    def __genGLObject(self, overlay, display, updateRenderTextures=True):
+        """Creates a :class:`.GLObject` instance for the given ``overlay``,
+        destroying any existing instance.
+
+        If ``updateRenderTextures`` is ``True`` (the default), and the
+        :attr:`.renderMode` is ``offscreen`` or ``prerender``, any
+        render texture associated with the overlay is destroyed.
+        """
+        
+        if not self._setGLContext():
+            return
+
+        # Tell the previous GLObject (if
+        # any) to clean up after itself
+        globj = self._glObjects.get(overlay, None)
+        if globj is not None:
+            globj.destroy()
+
+            if updateRenderTextures:
+                if self.renderMode == 'offscreen':
+                    tex = self._offscreenTextures.pop(overlay, None)
+                    if tex is not None:
+                        tex.destroy()
+
+                elif self.renderMode == 'prerender':
+                    tex, name = self._prerenderTextures.pop(
+                        overlay, (None, None))
+                    if tex is not None:
+                        glresources.delete(name)
+
+        globj = globject.createGLObject(overlay, display)
+
+        if globj is not None:
+            globj.setAxes(self.xax, self.yax)
+            globj.addUpdateListener(self.name, self._refresh)
+
+        self._glObjects[overlay] = globj
  
             
     def _overlayListChanged(self, *a):
@@ -537,64 +591,15 @@ class SliceCanvas(props.HasProperties):
 
             display = self.displayCtx.getDisplay(overlay)
 
-            # Called when the GL object representation
-            # of the overlay needs to be re-created
-            # 
-            # TODO make this an instance method, 
-            #      instead of an inner method
-            def genGLObject(value=None,
-                            valid=None,
-                            ctx=None,
-                            name=None,
-                            disp=display,
-                            ovl=overlay,
-                            updateRenderTextures=True):
-
-                log.debug('GLObject representation for {} '
-                          'changed to {}'.format(disp.name,
-                                                 disp.overlayType))
-
-                if not self._setGLContext():
-                    return
-
-                # Tell the previous GLObject (if
-                # any) to clean up after itself
-                globj = self._glObjects.get(ovl, None)
-                if globj is not None:
-                    globj.destroy()
-                    
-                    if updateRenderTextures:
-                        if self.renderMode == 'offscreen':
-                            tex = self._offscreenTextures.pop(ovl, None)
-                            if tex is not None:
-                                tex.destroy()
-                                
-                        elif self.renderMode == 'prerender':
-                            tex, name = self._prerenderTextures.pop(
-                                ovl, (None, None))
-                            if tex is not None:
-                                glresources.delete(name)
-
-                globj = globject.createGLObject(ovl, disp)
-
-                if globj is not None:
-                    globj.setAxes(self.xax, self.yax)
-
-                self._glObjects[ovl] = globj
-
-                if updateRenderTextures:
-                    self._updateRenderTextures()
-
-                globj.addUpdateListener(self.name, self._refresh)
-                
-                self._refresh()
-                
-            genGLObject(updateRenderTextures=False)
+            self.__genGLObject(overlay, display, updateRenderTextures=False)
 
             # Bind Display.softwareMode to SliceCanvas.softwareMode
             display.bindProps('softwareMode', self)
 
-            display.addListener('overlayType',   self.name, genGLObject)
+            display.addListener('overlayType',
+                                self.name,
+                                self.__overlayTypeChanged)
+            
             display.addListener('enabled',       self.name, self._refresh)
             display.addListener('softwareMode',  self.name, self._refresh)
 

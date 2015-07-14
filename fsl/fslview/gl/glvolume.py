@@ -111,6 +111,8 @@ class GLVolume(globject.GLImageObject):
         
         self.removeDisplayListeners()
         fslgl.glvolume_funcs.destroy(self)
+        
+        globject.GLImageObject.destroy(self)
 
         
     def testUnsynced(self):
@@ -121,6 +123,8 @@ class GLVolume(globject.GLImageObject):
         :class:`GLVolume` instance needs to create its own image texture;
         returns ``False`` otherwise.
         """
+        if self.displayOpts.getParent() is None:
+            return True
         return (not self.displayOpts.isSyncedToParent('volume')     or
                 not self.displayOpts.isSyncedToParent('resolution') or
                 not self.displayOpts.isSyncedToParent('interpolation'))
@@ -225,9 +229,11 @@ class GLVolume(globject.GLImageObject):
         opts   .addListener(          'volume',         lName, imageUpdate)
         opts   .addListener(          'resolution',     lName, imageUpdate)
         opts   .addListener(          'interpolation',  lName, imageUpdate)
-        opts   .addSyncChangeListener('volume',         lName, imageRefresh)
-        opts   .addSyncChangeListener('resolution',     lName, imageRefresh)
-        opts   .addSyncChangeListener('interpolation',  lName, imageRefresh)
+
+        if opts.getParent() is not None:
+            opts   .addSyncChangeListener('volume',        lName, imageRefresh)
+            opts   .addSyncChangeListener('resolution',    lName, imageRefresh)
+            opts   .addSyncChangeListener('interpolation', lName, imageRefresh)
 
 
     def removeDisplayListeners(self):
@@ -250,9 +256,10 @@ class GLVolume(globject.GLImageObject):
         opts   .removeListener(          'volume',         lName)
         opts   .removeListener(          'resolution',     lName)
         opts   .removeListener(          'interpolation',  lName)
-        opts   .removeSyncChangeListener('volume',         lName)
-        opts   .removeSyncChangeListener('resolution',     lName)
-        opts   .removeSyncChangeListener('interpolation',  lName)
+        if opts.getParent() is not None:
+            opts   .removeSyncChangeListener('volume',        lName)
+            opts   .removeSyncChangeListener('resolution',    lName)
+            opts   .removeSyncChangeListener('interpolation', lName)
 
         
     def preDraw(self):

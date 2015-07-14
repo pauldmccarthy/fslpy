@@ -88,7 +88,7 @@ class ImageOpts(fsldisplay.DisplayOpts):
 
 
     def destroy(self):
-        pass
+        fsldisplay.DisplayOpts.destroy(self)
 
 
     def getDisplayBounds(self):
@@ -327,11 +327,10 @@ class VolumeOpts(ImageOpts):
                            display.getSyncPropertyName('brightness'))
             self.bindProps(self   .getSyncPropertyName('displayRange'), 
                            display,
-                           display.getSyncPropertyName('contrast')) 
+                           display.getSyncPropertyName('contrast'))
+
 
     def destroy(self):
-
-        ImageOpts.destroy(self)
 
         if self.getParent() is not None:
             display = self.display
@@ -343,7 +342,9 @@ class VolumeOpts(ImageOpts):
                              display.getSyncPropertyName('brightness'))
             self.unbindProps(self   .getSyncPropertyName('displayRange'), 
                              display,
-                             display.getSyncPropertyName('contrast')) 
+                             display.getSyncPropertyName('contrast'))
+
+        ImageOpts.destroy(self)
 
 
     def __toggleListeners(self, enable=True):

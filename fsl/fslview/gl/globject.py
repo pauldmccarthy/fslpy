@@ -226,6 +226,16 @@ class GLImageObject(GLObject):
         self.displayOpts = display.getDisplayOpts()
 
 
+    def destroy(self):
+        """If this method is overridden, it should be called by the subclass
+        implementation. It clears references to the :class:`.Image`,
+        :class:`.Display`, and :class:`.DisplayOpts` instances.
+        """
+        self.image       = None
+        self.display     = None
+        self.displayOpts = None
+
+
     def getDisplayBounds(self):
         return self.displayOpts.getDisplayBounds()
 
