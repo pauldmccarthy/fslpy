@@ -146,17 +146,17 @@ class FEATTimeSeries(TimeSeries):
         for i, pv in enumerate(self.plotEVs.getPropertyValueList()):
             def onChange(ctx, value, valid, name, pe=i):
                 self.__plotEVChanged(pe)
-            pv.addListener(self.name, onChange) 
+            pv.addListener(self.name, onChange, weak=False) 
         
         for i, pv in enumerate(self.plotPEFits.getPropertyValueList()):
             def onChange(ctx, value, valid, name, pe=i):
                 self.__plotPEFitChanged(pe)
-            pv.addListener(self.name, onChange)
+            pv.addListener(self.name, onChange, weak=False)
 
         for i, pv in enumerate(self.plotCOPEFits.getPropertyValueList()):
             def onChange(ctx, value, valid, name, cope=i):
                 self.__plotCOPEFitChanged(cope)
-            pv.addListener(self.name, onChange)
+            pv.addListener(self.name, onChange, weak=False)
 
 
     def __copy__(self):

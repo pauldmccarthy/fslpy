@@ -73,17 +73,20 @@ class GLMask(glvolume.GLVolume):
             fslgl.glvolume_funcs.updateShaderState(self) 
             self.onUpdate()
 
-        display.addListener(          'softwareMode',  name, shaderUpdate)
-        display.addListener(          'alpha',         name, colourUpdate)
-        display.addListener(          'brightness',    name, colourUpdate)
-        display.addListener(          'contrast',      name, colourUpdate)
-        opts   .addListener(          'colour',        name, colourUpdate)
-        opts   .addListener(          'threshold',     name, colourUpdate)
-        opts   .addListener(          'invert',        name, colourUpdate)
-        opts   .addListener(          'volume',        name, imageUpdate)
-        opts   .addListener(          'resolution',    name, imageUpdate)
-        opts   .addSyncChangeListener('volume',        name, imageRefresh)
-        opts   .addSyncChangeListener('resolution',    name, imageRefresh)
+        display.addListener('softwareMode',  name, shaderUpdate, weak=False)
+        display.addListener('alpha',         name, colourUpdate, weak=False)
+        display.addListener('brightness',    name, colourUpdate, weak=False)
+        display.addListener('contrast',      name, colourUpdate, weak=False)
+        opts   .addListener('colour',        name, colourUpdate, weak=False)
+        opts   .addListener('threshold',     name, colourUpdate, weak=False)
+        opts   .addListener('invert',        name, colourUpdate, weak=False)
+        opts   .addListener('volume',        name, imageUpdate,  weak=False)
+        opts   .addListener('resolution',    name, imageUpdate,  weak=False)
+        
+        opts.addSyncChangeListener(
+            'volume',     name, imageRefresh, weak=False)
+        opts.addSyncChangeListener(
+            'resolution', name, imageRefresh, weak=False)
 
 
     def removeDisplayListeners(self):

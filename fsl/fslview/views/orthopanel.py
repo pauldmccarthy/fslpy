@@ -120,10 +120,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._zcanvas.bindProps('resolutionLimit', sceneOpts) 
 
         # And a global zoom which controls all canvases at once
-        def onZoom(*a):
-            sceneOpts.xzoom = sceneOpts.zoom
-            sceneOpts.yzoom = sceneOpts.zoom
-            sceneOpts.zzoom = sceneOpts.zoom
 
         minZoom = sceneOpts.getConstraint('xzoom', 'minval')
         maxZoom = sceneOpts.getConstraint('xzoom', 'maxval')
@@ -131,7 +127,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         sceneOpts.setConstraint('zoom', 'minval', minZoom)
         sceneOpts.setConstraint('zoom', 'maxval', maxZoom)
 
-        sceneOpts.addListener('zoom', self._name, onZoom)
+        sceneOpts.addListener('zoom', self._name, self.__onZoom)
 
         # Callbacks for overlay list/selected overlay changes
         self._overlayList.addListener('overlays',
@@ -156,13 +152,16 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # Callbacks for toggling x/y/z canvas display
         sceneOpts.addListener('showXCanvas',
                               self._name,
-                              lambda *a: self._toggleCanvas('x'))
+                              lambda *a: self._toggleCanvas('x'),
+                              weak=False)
         sceneOpts.addListener('showYCanvas',
                               self._name,
-                              lambda *a: self._toggleCanvas('y'))
+                              lambda *a: self._toggleCanvas('y'),
+                              weak=False)
         sceneOpts.addListener('showZCanvas',
                               self._name,
-                              lambda *a: self._toggleCanvas('z'))
+                              lambda *a: self._toggleCanvas('z'),
+                              weak=False)
 
         # Call the _resize method to refresh
         # the slice canvases when the canvas
@@ -198,6 +197,19 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         for ovl in self._overlayList:
             opts = self._displayCtx.getOpts(ovl)
             opts.removeGlobalListener(self._name)
+
+            
+    def __onZoom(self, *a):
+        """Called when the :attr:`.SceneOpts.zoom` property changes.
+        Propagates the change to the :attr:`.OrthoOpts.xzoom`, ``yzoom``,
+        and ``zzoom`` properties.
+        """
+        opts       = self.getSceneOptions()
+        opts.xzoom = opts.zoom
+        opts.yzoom = opts.zoom
+        opts.zzoom = opts.zoom
+
+            
 
 
     def getXCanvas(self):

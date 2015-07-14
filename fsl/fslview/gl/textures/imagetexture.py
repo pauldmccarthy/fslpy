@@ -86,7 +86,8 @@ class ImageTexture(texture.Texture):
         self.__name = '{}_{}'.format(type(self).__name__, id(self))
         self.image.addListener('data',
                                self.__name,
-                               lambda *a: self.__imageDataChanged())
+                               lambda *a: self.__imageDataChanged(),
+                               weak=False)
 
         self.__imageDataChanged(False)
         self.set(interp=interp,

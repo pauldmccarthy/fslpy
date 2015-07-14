@@ -46,6 +46,7 @@ class GLModel(globject.GLObject):
         
     def addListeners(self):
 
+        name    = self.name
         display = self.display
         opts    = self.opts
 
@@ -56,16 +57,16 @@ class GLModel(globject.GLObject):
             fslgl.glmodel_funcs.updateShaders(self)
             self.onUpdate()
         
-        opts   .addListener('refImage',     self.name, self._updateVertices)
-        opts   .addListener('coordSpace',   self.name, self._updateVertices)
-        opts   .addListener('transform',    self.name, self._updateVertices)
-        opts   .addListener('colour',       self.name, refresh)
-        opts   .addListener('outline',      self.name, refresh)
-        opts   .addListener('outlineWidth', self.name, shaderUpdate)
-        opts   .addListener('showName',     self.name, refresh)
-        display.addListener('brightness',   self.name, refresh)
-        display.addListener('contrast',     self.name, refresh)
-        display.addListener('alpha',        self.name, refresh)
+        opts   .addListener('refImage',     name, self._updateVertices)
+        opts   .addListener('coordSpace',   name, self._updateVertices)
+        opts   .addListener('transform',    name, self._updateVertices)
+        opts   .addListener('colour',       name, refresh,      weak=False)
+        opts   .addListener('outline',      name, refresh,      weak=False)
+        opts   .addListener('showName',     name, refresh,      weak=False)
+        display.addListener('brightness',   name, refresh,      weak=False)
+        display.addListener('contrast',     name, refresh,      weak=False)
+        display.addListener('alpha',        name, refresh,      weak=False)
+        opts   .addListener('outlineWidth', name, shaderUpdate, weak=False)
 
         
     def removeListeners(self):

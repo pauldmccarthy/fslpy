@@ -227,7 +227,7 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = round(y)
         opts.zCoordinate = round(z)
 
-    displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
+    displayCtx.addListener('location', 'BETHeadCentre', updateOpts, weak=False)
 
     # Set the initial location on the orthopanel.
     voxCoords           = [opts.xCoordinate,

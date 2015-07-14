@@ -200,7 +200,8 @@ class GLLineVector(glvector.GLVector):
         def update(*a):
             self.onUpdate()
 
-        self.displayOpts.addListener('lineWidth', self.name, update)
+        self.displayOpts.addListener(
+            'lineWidth', self.name, update, weak=False)
 
         
     def destroy(self):

@@ -289,14 +289,8 @@ class SliceCanvas(props.HasProperties):
         self.addListener('showCursor',    self.name, self._refresh)
         self.addListener('invertX',       self.name, self._refresh)
         self.addListener('invertY',       self.name, self._refresh)
-        self.addListener('zoom',
-                         self.name,
-                         lambda *a: self._updateDisplayBounds())
-
-        self.addListener('renderMode',
-                         self.name,
-                         self._renderModeChange)
-
+        self.addListener('zoom',          self.name, self._zoomChanged)
+        self.addListener('renderMode',    self.name, self._renderModeChange)
         self.addListener('resolutionLimit',
                          self.name,
                          self._resolutionLimitChange) 
@@ -600,8 +594,8 @@ class SliceCanvas(props.HasProperties):
                                 self.name,
                                 self.__overlayTypeChanged)
             
-            display.addListener('enabled',       self.name, self._refresh)
-            display.addListener('softwareMode',  self.name, self._refresh)
+            display.addListener('enabled',      self.name, self._refresh)
+            display.addListener('softwareMode', self.name, self._refresh)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()
@@ -625,6 +619,13 @@ class SliceCanvas(props.HasProperties):
         self.pos.setMin(2, ovlBounds.getLo(self.zax))
         self.pos.setMax(2, ovlBounds.getHi(self.zax))
 
+        self._updateDisplayBounds()
+
+
+    def _zoomChanged(self, *a):
+        """Called when the :attr:`.zoom` property changes. Updates the
+        display bounds.
+        """
         self._updateDisplayBounds()
         
 

@@ -198,14 +198,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.addListener('zrange',         self.name, self._slicePropsChanged)
         self.addListener('showGridLines',  self.name, self._refresh)
         self.addListener('highlightSlice', self.name, self._refresh)
-
-        # Called when the top row changes -
-        # adjusts display range and refreshes
-        def rowChange(*a):
-            self._updateDisplayBounds()
-            self._refresh()
-
-        self.addListener('topRow', self.name, rowChange)
+        self.addListener('topRow',         self.name, self._topRowChanged)
 
         # Add a listener to the position so when it
         # changes we can adjust the display range (via
@@ -218,6 +211,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         self.addListener('pos',
                          '{}_zPosChanged'.format(self.name),
                          self._zPosChanged)
+
+        
+    def _topRowChanged(self, *a):
+        """Called when the :attr:`topRow` property changes.  Adjusts display
+        range and refreshes the canvas.
+        """
+        self._updateDisplayBounds()
+        self._refresh()
 
 
     def _slicePropsChanged(self, *a):

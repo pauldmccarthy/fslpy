@@ -42,8 +42,8 @@ def init(self):
         updateVertices(self)
         self.onUpdate()
 
-    opts.addListener('resolution', self.name, vertexUpdate)
-    opts.addListener('directed',   self.name, vertexUpdate)
+    opts.addListener('resolution', self.name, vertexUpdate, weak=False)
+    opts.addListener('directed',   self.name, vertexUpdate, weak=False)
 
 
 def destroy(self):

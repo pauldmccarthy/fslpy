@@ -64,13 +64,13 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         
         displayCtx .addListener('selectedOverlay',
                                  self._name,
-                                 self._selectedOverlayChanged)
+                                 self.__selectedOverlayChanged)
         overlayList.addListener('overlays',
                                  self._name,
-                                 self._selectedOverlayChanged)
+                                 self.__selectedOverlayChanged)
 
-        self._lastOverlay = None
-        self._selectedOverlayChanged()
+        self.__lastOverlay = None
+        self.__selectedOverlayChanged()
 
         self.propSizer.Layout()
         self.Layout()
@@ -92,13 +92,13 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             display.removeListener('overlayType', self._name)
 
 
-    def _selectedOverlayChanged(self, *a):
+    def __selectedOverlayChanged(self, *a):
 
         overlay     = self._displayCtx.getSelectedOverlay()
-        lastOverlay = self._lastOverlay
+        lastOverlay = self.__lastOverlay
 
         if overlay is None:
-            self._lastOverlay = None
+            self.__lastOverlay = None
             self.dispPanel.DestroyChildren()
             self.optsPanel.DestroyChildren()
             self.Layout()
@@ -120,17 +120,20 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             
         display.addListener('overlayType',
                             self._name,
-                            lambda *a: self._updateProps(self.optsPanel, True))
+                            self.__overlayTypeChanged)
 
         if isinstance(opts, fsldisplay.VolumeOpts):
-            opts.addListener('transform', self._name, self._transformChanged)
+            opts.addListener('transform', self._name, self.__transformChanged)
         
-        self._lastOverlay = overlay
-        self._updateProps(self.dispPanel, False)
-        self._updateProps(self.optsPanel, True)
+        self.__lastOverlay = overlay
+        self.__updateProps(self.dispPanel, False)
+        self.__updateProps(self.optsPanel, True)
+
+    def __overlayTypeChanged(self, *a):
+        self.__updateProps(self.optsPanel, True)
 
         
-    def _transformChanged(self, *a):
+    def __transformChanged(self, *a):
         """Called when the transform setting of the currently selected overlay
         changes.
 
@@ -156,7 +159,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             else:                   opts.interpolation = 'linear'
 
         
-    def _updateProps(self, parent, opts):
+    def __updateProps(self, parent, opts):
 
         import fsl.fslview.layouts as layouts
 

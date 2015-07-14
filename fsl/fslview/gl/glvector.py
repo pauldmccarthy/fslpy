@@ -152,22 +152,25 @@ class GLVector(globject.GLImageObject):
             self.updateShaderState()
             self.onUpdate()
 
-        display.addListener(          'softwareMode',  name, shaderCompile)
-        display.addListener(          'alpha',         name, cmapUpdate)
-        display.addListener(          'brightness',    name, cmapUpdate)
-        display.addListener(          'contrast',      name, cmapUpdate) 
-        opts   .addListener(          'xColour',       name, cmapUpdate)
-        opts   .addListener(          'yColour',       name, cmapUpdate)
-        opts   .addListener(          'zColour',       name, cmapUpdate)
-        opts   .addListener(          'suppressX',     name, cmapUpdate)
-        opts   .addListener(          'suppressY',     name, cmapUpdate)
-        opts   .addListener(          'suppressZ',     name, cmapUpdate)
-        opts   .addListener(          'modulate',      name, modUpdate)
-        opts   .addListener(          'modThreshold',  name, shaderUpdate)
-        opts   .addListener(          'volume',        name, imageUpdate)
-        opts   .addListener(          'resolution',    name, imageUpdate)
-        opts   .addSyncChangeListener('volume',        name, imageRefresh)
-        opts   .addSyncChangeListener('resolution',    name, imageRefresh) 
+        display.addListener('softwareMode',  name, shaderCompile, weak=False)
+        display.addListener('alpha',         name, cmapUpdate,    weak=False)
+        display.addListener('brightness',    name, cmapUpdate,    weak=False)
+        display.addListener('contrast',      name, cmapUpdate,    weak=False)
+        opts   .addListener('xColour',       name, cmapUpdate,    weak=False)
+        opts   .addListener('yColour',       name, cmapUpdate,    weak=False)
+        opts   .addListener('zColour',       name, cmapUpdate,    weak=False)
+        opts   .addListener('suppressX',     name, cmapUpdate,    weak=False)
+        opts   .addListener('suppressY',     name, cmapUpdate,    weak=False)
+        opts   .addListener('suppressZ',     name, cmapUpdate,    weak=False)
+        opts   .addListener('modulate',      name, modUpdate,     weak=False)
+        opts   .addListener('modThreshold',  name, shaderUpdate,  weak=False)
+        opts   .addListener('volume',        name, imageUpdate,   weak=False)
+        opts   .addListener('resolution',    name, imageUpdate,   weak=False)
+        
+        opts.addSyncChangeListener(
+            'volume',     name, imageRefresh, weak=False)
+        opts.addSyncChangeListener(
+            'resolution', name, imageRefresh, weak=False)
 
 
     def removeListeners(self):

@@ -219,21 +219,23 @@ class GLVolume(globject.GLImageObject):
             fslgl.glvolume_funcs.updateShaderState(self)
             self.onUpdate()
 
-        display.addListener(          'softwareMode',   lName, shaderCompile)
-        display.addListener(          'alpha',          lName, colourUpdate)
-        opts   .addListener(          'displayRange',   lName, colourUpdate)
-        opts   .addListener(          'clippingRange',  lName, shaderUpdate)
-        opts   .addListener(          'invertClipping', lName, shaderUpdate)
-        opts   .addListener(          'cmap',           lName, colourUpdate)
-        opts   .addListener(          'invert',         lName, colourUpdate)
-        opts   .addListener(          'volume',         lName, imageUpdate)
-        opts   .addListener(          'resolution',     lName, imageUpdate)
-        opts   .addListener(          'interpolation',  lName, imageUpdate)
+        display.addListener('softwareMode',   lName, shaderCompile, weak=False)
+        display.addListener('alpha',          lName, colourUpdate,  weak=False)
+        opts   .addListener('displayRange',   lName, colourUpdate,  weak=False)
+        opts   .addListener('clippingRange',  lName, shaderUpdate,  weak=False)
+        opts   .addListener('invertClipping', lName, shaderUpdate,  weak=False)
+        opts   .addListener('cmap',           lName, colourUpdate,  weak=False)
+        opts   .addListener('invert',         lName, colourUpdate,  weak=False)
+        opts   .addListener('volume',         lName, imageUpdate,   weak=False)
+        opts   .addListener('resolution',     lName, imageUpdate,   weak=False)
+        opts   .addListener('interpolation',  lName, imageUpdate,   weak=False)
 
-        if opts.getParent() is not None:
-            opts   .addSyncChangeListener('volume',        lName, imageRefresh)
-            opts   .addSyncChangeListener('resolution',    lName, imageRefresh)
-            opts   .addSyncChangeListener('interpolation', lName, imageRefresh)
+        opts.addSyncChangeListener(
+            'volume',        lName, imageRefresh, weak=False)
+        opts.addSyncChangeListener(
+            'resolution',    lName, imageRefresh, weak=False)
+        opts.addSyncChangeListener(
+            'interpolation', lName, imageRefresh, weak=False)
 
 
     def removeDisplayListeners(self):
@@ -256,10 +258,9 @@ class GLVolume(globject.GLImageObject):
         opts   .removeListener(          'volume',         lName)
         opts   .removeListener(          'resolution',     lName)
         opts   .removeListener(          'interpolation',  lName)
-        if opts.getParent() is not None:
-            opts   .removeSyncChangeListener('volume',        lName)
-            opts   .removeSyncChangeListener('resolution',    lName)
-            opts   .removeSyncChangeListener('interpolation', lName)
+        opts   .removeSyncChangeListener('volume',         lName)
+        opts   .removeSyncChangeListener('resolution',     lName)
+        opts   .removeSyncChangeListener('interpolation',  lName)
 
         
     def preDraw(self):

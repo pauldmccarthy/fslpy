@@ -90,18 +90,21 @@ class GLLabel(globject.GLImageObject):
         #      need to call gllabel_funcs.compileShaders
         #      when display.softwareMode changes
 
-        display .addListener(          'alpha',        name, lutUpdate)
-        display .addListener(          'brightness',   name, lutUpdate)
-        display .addListener(          'contrast',     name, lutUpdate)
-        display .addListener(          'softwareMode', name, shaderCompile)
-        opts    .addListener(          'outline',      name, shaderUpdate)
-        opts    .addListener(          'outlineWidth', name, shaderUpdate)
-        opts    .addListener(          'lut',          name, lutChanged)
-        opts    .addListener(          'volume',       name, imageUpdate)
-        opts    .addListener(          'resolution',   name, imageUpdate)
-        opts    .addSyncChangeListener('volume',       name, imageRefresh)
-        opts    .addSyncChangeListener('resolution',   name, imageRefresh)
-        opts.lut.addListener(          'labels',       name, lutUpdate)
+        display .addListener('alpha',        name, lutUpdate,     weak=False)
+        display .addListener('brightness',   name, lutUpdate,     weak=False)
+        display .addListener('contrast',     name, lutUpdate,     weak=False)
+        display .addListener('softwareMode', name, shaderCompile, weak=False)
+        opts    .addListener('outline',      name, shaderUpdate,  weak=False)
+        opts    .addListener('outlineWidth', name, shaderUpdate,  weak=False)
+        opts    .addListener('lut',          name, lutChanged,    weak=False)
+        opts    .addListener('volume',       name, imageUpdate,   weak=False)
+        opts    .addListener('resolution',   name, imageUpdate,   weak=False)
+        opts.lut.addListener('labels',       name, lutUpdate,     weak=False)
+        
+        opts.addSyncChangeListener(
+            'volume',     name, imageRefresh, weak=False)
+        opts.addSyncChangeListener(
+            'resolution', name, imageRefresh, weak=False)
 
 
     def removeListeners(self):

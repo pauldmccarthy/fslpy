@@ -43,9 +43,9 @@ def init(self):
 
     name = '{}_vertices'.format(self.name)
 
-    opts.addListener('transform',  name, vertexUpdate)
-    opts.addListener('resolution', name, vertexUpdate)
-    opts.addListener('directed',   name, vertexUpdate)
+    opts.addListener('transform',  name, vertexUpdate, weak=False)
+    opts.addListener('resolution', name, vertexUpdate, weak=False)
+    opts.addListener('directed',   name, vertexUpdate, weak=False)
 
     compileShaders(   self)
     updateShaderState(self)

@@ -126,6 +126,16 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         self.__updateCurrentProperties()
 
 
+    def __hsLabelChanged(self, *a):
+        if self.__currentHs is None:
+            return
+        
+        self.__widgets.RenameGroup(
+            'currentSettings',
+            strings.labels[self, 'currentSettings'].format(
+                self.__currentHs.label)) 
+
+
     def __updateCurrentProperties(self):
 
         expanded  = False
@@ -148,13 +158,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         wlist = self.__widgets
         hs    = self.__currentHs
 
-        def updateGroupName(*a):
-            self.__widgets.RenameGroup(
-                'currentSettings',
-                strings.labels[self, 'currentSettings'].format(
-                    self.__currentHs.label))
-
-        hs.addListener('label', self._name, updateGroupName)
+        hs.addListener('label', self._name, self.__hsLabelChanged)
 
         self.__nbins = props.makeWidget(wlist, hs, 'nbins', showLimits=False)
         
