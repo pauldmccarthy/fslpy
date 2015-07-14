@@ -36,15 +36,23 @@ class MaskOpts(volumeopts.ImageOpts):
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
-        # This is a hack. Mask images are rendered
-        # using GLMask, which inherits from GLVolume.
-        # The latter assumes that 'clippingRange'
-        # and 'interpolation' attributes are present
-        # on Opts instances (see the VolumeOpts class).
+        #################
+        # This is a hack.
+        #################
+
+        # Mask images are rendered using GLMask, which
+        # inherits from GLVolume. The latter assumes
+        # that 'clippingRange', 'interpolation', and
+        # 'invertClipping' attributes are present on
+        # Opts instances (see the VolumeOpts class).
         # So we're adding dummy attributes to make the
         # GLVolume rendering code happy.
-        self.clippingRange = (self.dataMin - 1, self.dataMax + 1)
-        self.interpolation = 'none'
+        #
+        # TODO Write independent GLMask rendering routines
+        # instead of using the GLVolume implementations
+        self.clippingRange  = (self.dataMin - 1, self.dataMax + 1)
+        self.interpolation  = 'none'
+        self.invertClipping = False
 
         self.threshold.xmin = self.dataMin - dMinDistance
         self.threshold.xmax = self.dataMax + dMinDistance

@@ -478,8 +478,15 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     def __updateCurrent(self):
 
-        overlay        = self._displayCtx.getSelectedOverlay()
+        # Make sure that the previous HistogramSeries
+        # cleans up after itself, unless it has been
+        # cached
+        if self.__current is not None and \
+           self.__current not in self.__histCache.values():
+            self.__current.destroy()
+            
         self.__current = None
+        overlay        = self._displayCtx.getSelectedOverlay()
 
         if len(self._overlayList) == 0 or \
            not isinstance(overlay, fslimage.Image):
