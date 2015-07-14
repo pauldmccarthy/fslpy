@@ -42,6 +42,10 @@ class GLModel(globject.GLObject):
         self._renderTexture.destroy()
         fslgl.glmodel_funcs.destroy(self)
         self.removeListeners()
+        
+        self.overlay = None
+        self.display = None
+        self.opts    = None
 
         
     def addListeners(self):

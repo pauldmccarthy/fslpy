@@ -62,11 +62,13 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
 
     def destroy(self):
-        fsldisplay.DisplayOpts.destroy(self)
         self.overlayList.removeListener('overlays', self.name)
 
         for overlay in self.overlayList:
             overlay.removeListener('name', self.name)
+
+        fsldisplay.DisplayOpts.destroy(self)
+
 
 
     def getReferenceImage(self):

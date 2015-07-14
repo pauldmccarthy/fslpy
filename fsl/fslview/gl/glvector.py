@@ -115,6 +115,8 @@ class GLVector(globject.GLImageObject):
 
         self.removeListeners()
 
+        globject.GLImageObject.destroy(self)
+
 
     def addListeners(self):
 

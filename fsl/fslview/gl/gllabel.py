@@ -39,6 +39,7 @@ class GLLabel(globject.GLImageObject):
 
         self.removeListeners()
         fslgl.gllabel_funcs.destroy(self)
+        globject.GLImageObject.destroy(self)
 
 
     def addListeners(self):

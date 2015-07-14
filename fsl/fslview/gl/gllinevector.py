@@ -205,10 +205,10 @@ class GLLineVector(glvector.GLVector):
 
         
     def destroy(self):
-        glvector.GLVector.destroy(self)
-        fslgl.gllinevector_funcs.destroy(self)
         
         self.displayOpts.removeListener('lineWidth', self.name)
+        fslgl.gllinevector_funcs.destroy(self)
+        glvector.GLVector.destroy(self)
 
 
     def getDataResolution(self, xax, yax):
