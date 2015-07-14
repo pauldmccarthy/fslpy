@@ -6,6 +6,7 @@
 #
 
 import copy
+import logging
 
 import props
 
@@ -13,6 +14,9 @@ import fsl.fslview.gl.slicecanvas     as slicecanvas
 import fsl.fslview.gl.colourbarcanvas as colourbarcanvas
 
 import fsl.data.strings as strings
+
+
+log = logging.getLogger(__name__)
 
 
 class SceneOpts(props.HasProperties):
@@ -127,3 +131,11 @@ class SceneOpts(props.HasProperties):
             self.renderMode      = 'prerender'
             self.softwareMode    = True
             self.resolutionLimit = 1
+
+        log.debug('Performance settings changed: '
+                  'renderMode={}, '
+                  'softwareMode={}, '
+                  'resolutionLimit={}'.format(
+                      self.renderMode,
+                      self.softwareMode,
+                      self.resolutionLimit))

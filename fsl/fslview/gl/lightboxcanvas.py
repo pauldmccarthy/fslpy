@@ -759,6 +759,7 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
 
         if self.renderMode == 'offscreen':
             rt.unbindAsRenderTarget()
+            rt.restoreViewport()
             self._setViewport()
             rt.drawOnBounds(
                 0,

@@ -952,6 +952,7 @@ class SliceCanvas(props.HasProperties):
                 globj.postDraw()
 
                 rt.unbindAsRenderTarget()
+                rt.restoreViewport()
 
             # Pre-rendering - a pre-generated 2D
             # texture of the current z position
