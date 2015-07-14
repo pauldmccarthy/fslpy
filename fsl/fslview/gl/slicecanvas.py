@@ -594,8 +594,7 @@ class SliceCanvas(props.HasProperties):
                                 self.name,
                                 self.__overlayTypeChanged)
             
-            display.addListener('enabled',      self.name, self._refresh)
-            display.addListener('softwareMode', self.name, self._refresh)
+            display.addListener('enabled', self.name, self._refresh)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()

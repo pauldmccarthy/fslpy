@@ -49,6 +49,11 @@ class GLMask(glvolume.GLVolume):
         display = self.display
         opts    = self.displayOpts
         name    = self.name
+
+        def shaderCompile(*a):
+            fslgl.glvolume_funcs.compileShaders(   self)
+            fslgl.glvolume_funcs.updateShaderState(self)
+            self.onUpdate() 
         
         def shaderUpdate(*a):
             fslgl.glvolume_funcs.updateShaderState(self)
@@ -73,15 +78,15 @@ class GLMask(glvolume.GLVolume):
             fslgl.glvolume_funcs.updateShaderState(self) 
             self.onUpdate()
 
-        display.addListener('softwareMode',  name, shaderUpdate, weak=False)
-        display.addListener('alpha',         name, colourUpdate, weak=False)
-        display.addListener('brightness',    name, colourUpdate, weak=False)
-        display.addListener('contrast',      name, colourUpdate, weak=False)
-        opts   .addListener('colour',        name, colourUpdate, weak=False)
-        opts   .addListener('threshold',     name, colourUpdate, weak=False)
-        opts   .addListener('invert',        name, colourUpdate, weak=False)
-        opts   .addListener('volume',        name, imageUpdate,  weak=False)
-        opts   .addListener('resolution',    name, imageUpdate,  weak=False)
+        display.addListener('softwareMode',  name, shaderCompile, weak=False)
+        display.addListener('alpha',         name, colourUpdate,  weak=False)
+        display.addListener('brightness',    name, colourUpdate,  weak=False)
+        display.addListener('contrast',      name, colourUpdate,  weak=False)
+        opts   .addListener('colour',        name, colourUpdate,  weak=False)
+        opts   .addListener('threshold',     name, colourUpdate,  weak=False)
+        opts   .addListener('invert',        name, colourUpdate,  weak=False)
+        opts   .addListener('volume',        name, imageUpdate,   weak=False)
+        opts   .addListener('resolution',    name, imageUpdate,   weak=False)
         
         opts.addSyncChangeListener(
             'volume',     name, imageRefresh, weak=False)
