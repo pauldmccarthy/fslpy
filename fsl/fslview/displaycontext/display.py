@@ -47,6 +47,12 @@ class DisplayOpts(props.SyncableHasProperties):
         self.overlayType = display.overlayType
         self.name        = '{}_{}'.format(type(self).__name__, id(self))
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
         
     def destroy(self):
         """If overridden, this method should be called by the subclass
@@ -200,7 +206,12 @@ class Display(props.SyncableHasProperties):
         self.__displayOpts = None
         self.__overlayTypeChanged()
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
 
     def destroy(self):
         """This method should be called when this ``Display`` instance

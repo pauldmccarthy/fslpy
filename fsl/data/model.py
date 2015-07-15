@@ -5,8 +5,14 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
 import os.path as op
 import numpy   as np
+
+
+log = logging.getLogger(__name__)
+
 
 ALLOWED_EXTENSIONS     = ['.vtk']
 EXTENSION_DESCRIPTIONS = ['VTK polygon model file']
@@ -78,6 +84,12 @@ class Model(object):
         self.vertices = np.array(data, dtype=np.float32)
         self.indices  = indices
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
 
     def __repr__(self):
         return '{}({}, {})'.format(type(self).__name__,

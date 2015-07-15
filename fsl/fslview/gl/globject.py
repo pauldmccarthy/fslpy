@@ -12,11 +12,15 @@ mappings between overlay objects and their corresponding OpenGL
 representation.
 """
 
+import logging
 
 import numpy as np
 
 import routines            as glroutines
 import fsl.utils.transform as transform
+
+
+log = logging.getLogger(__name__)
 
 
 def createGLObject(overlay, display):
@@ -73,7 +77,7 @@ class GLObject(object):
         self.zax  = 2
         
         self.__updateListeners = {}
-        
+
         
     def addUpdateListener(self, name, listener):
         """Adds a listener function which will be called whenever this
@@ -225,6 +229,12 @@ class GLImageObject(GLObject):
         self.display     = display
         self.displayOpts = display.getDisplayOpts()
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
 
     def destroy(self):
         """If this method is overridden, it should be called by the subclass

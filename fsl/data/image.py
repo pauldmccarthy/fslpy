@@ -168,6 +168,12 @@ class Image(props.HasProperties):
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
         
     def loadData(self):
         """Loads the image data from the file. This method only needs to
