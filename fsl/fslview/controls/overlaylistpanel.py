@@ -203,7 +203,7 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         if name is None:
             name = ''
             
-        self._listBox.SetString(idx, name) 
+        self._listBox.SetItemLabel(idx, name) 
 
         
     def _overlayListChanged(self, *a):
