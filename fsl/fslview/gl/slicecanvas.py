@@ -524,7 +524,7 @@ class SliceCanvas(props.HasProperties):
         :attr:`.renderMode` is ``offscreen`` or ``prerender``, any
         render texture associated with the overlay is destroyed.
         """
-        
+
         # Tell the previous GLObject (if
         # any) to clean up after itself
         globj = self._glObjects.pop(overlay, None)
@@ -543,6 +543,14 @@ class SliceCanvas(props.HasProperties):
                     if tex is not None:
                         glresources.delete(name)
 
+        # We need a GL context to create a new GL
+        # object. If we can't get it now, the
+        # _glObjects value for this overlay will
+        # stay as None, and the _draw method will
+        # manually call this method again later.
+        if not self._setGLContext():
+            return None
+
         globj = globject.createGLObject(overlay, display)
 
         if globj is not None:
@@ -550,6 +558,8 @@ class SliceCanvas(props.HasProperties):
             globj.addUpdateListener(self.name, self._refresh)
 
         self._glObjects[overlay] = globj
+
+        return globj
  
             
     def _overlayListChanged(self, *a):
@@ -904,9 +914,12 @@ class SliceCanvas(props.HasProperties):
             display = self.displayCtx.getDisplay(overlay)
             opts    = display.getDisplayOpts()
             globj   = self._glObjects.get(overlay, None)
-            
-            if (globj is None) or (not display.enabled):
+
+            if not display.enabled:
                 continue
+            
+            if globj is None:
+                globj = self.__genGLObject(overlay, display)
 
             # On-screen rendering - the globject is
             # rendered directly to the screen canvas
