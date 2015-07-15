@@ -147,10 +147,10 @@ class GLVector(globject.GLImageObject):
             self.refreshImageTexture()
             self.updateShaderState()
             self.onUpdate()
-
+            
         def imageUpdate(*a):
-            self.imageTexture.set(volume=opts.volume,
-                                  resolution=opts.resolution)
+
+            self.imageTexture.set(resolution=opts.resolution)
             self.updateShaderState()
             self.onUpdate()
 
@@ -166,11 +166,8 @@ class GLVector(globject.GLImageObject):
         opts   .addListener('suppressZ',     name, cmapUpdate,    weak=False)
         opts   .addListener('modulate',      name, modUpdate,     weak=False)
         opts   .addListener('modThreshold',  name, shaderUpdate,  weak=False)
-        opts   .addListener('volume',        name, imageUpdate,   weak=False)
         opts   .addListener('resolution',    name, imageUpdate,   weak=False)
         
-        opts.addSyncChangeListener(
-            'volume',     name, imageRefresh, weak=False)
         opts.addSyncChangeListener(
             'resolution', name, imageRefresh, weak=False)
 
@@ -264,7 +261,7 @@ class GLVector(globject.GLImageObject):
             norm       = False
             
         else:
-            modOpts = self.displayCtx.getOpts(modImage)
+            modOpts = self.displayOpts.displayCtx.getOpts(modImage)
             norm    = True
 
         texName = '{}_{}_{}_modulate'.format(

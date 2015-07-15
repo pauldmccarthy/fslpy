@@ -9,6 +9,9 @@ vector images in RGB mode.
 """
 
 import numpy                   as np
+import OpenGL.GL               as gl
+
+
 import fsl.fslview.gl          as fslgl
 import fsl.fslview.gl.glvector as glvector
 
@@ -24,6 +27,27 @@ class GLRGBVector(glvector.GLVector):
 
         glvector.GLVector.__init__(self, image, display, self.__prefilter)
         fslgl.glrgbvector_funcs.init(self)
+
+        self.displayOpts.addListener('interpolation',
+                                     self.name,
+                                     self.__interpChanged)
+
+
+    def destroy(self):
+        self.displayOpts.removeListener('interpolation', self.name)
+        glvector.GLVector.destroy(self)
+
+        
+    def __interpChanged(self, *a):
+
+        opts = self.displayOpts
+
+        if opts.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                            interp = gl.GL_LINEAR
+
+        self.imageTexture.set(interp=interp)
+        self.updateShaderState()
+        self.onUpdate()
 
 
     def compileShaders(self):
