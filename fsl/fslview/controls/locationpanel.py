@@ -209,7 +209,9 @@ class LocationPanel(fslpanel.FSLViewPanel):
             return
 
         # Register a listener on the DisplayOpts 
-        # instance of the currently selected overlay
+        # instance of the currently selected overlay,
+        # so we can update the location if the
+        # overlay transforms/reference image change
         overlay = self._displayCtx.getSelectedOverlay()
         for ovl in self._overlayList:
             display = self._displayCtx.getDisplay(ovl)

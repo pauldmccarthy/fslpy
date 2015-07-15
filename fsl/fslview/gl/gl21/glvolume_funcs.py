@@ -186,10 +186,12 @@ def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
     gl.glVertexAttribPointer(
         texPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(24))
 
-    # The fast shader does not use voxel coordinates
-    # so, on some GL drivers, attempting to bind it
-    # will cause an error
-    if not self.display.softwareMode:
+    # The sw shader does not use voxel coordinates
+    # so attempting to binding would raise an error.
+    # So we only attempt to bind if softwareMode is
+    # false, and there is a shader uniform position
+    # for the voxel coordinates available.
+    if not self.display.softwareMode and voxPos != -1:
         gl.glVertexAttribPointer(
             voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
         gl.glEnableVertexAttribArray(self.voxCoordPos)
@@ -245,7 +247,9 @@ def postDraw(self):
     gl.glDisableVertexAttribArray(self.vertexPos)
     gl.glDisableVertexAttribArray(self.texCoordPos)
 
-    if not self.display.softwareMode:
+    # See comments in _prepareVertexAttributes
+    # about softwareMode/voxel coordinates
+    if not self.display.softwareMode and self.voxCoordPos != -1:
         gl.glDisableVertexAttribArray(self.voxCoordPos)
     
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
