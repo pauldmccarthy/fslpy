@@ -48,6 +48,10 @@ class DataSeries(props.HasProperties):
         self.overlay = overlay
 
 
+    def __copy__(self):
+        return type(self)(self.overlay)
+
+
     def getData(self):
         raise NotImplementedError('The getData method must be '
                                   'implemented by subclasses')

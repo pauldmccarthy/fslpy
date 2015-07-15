@@ -87,6 +87,14 @@ class DisplayContext(props.SyncableHasProperties):
                                 self.__name,
                                 self.__overlayListChanged)
 
+
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
+
         
     def getDisplay(self, overlay, overlayType=None):
         """Returns the display property object (e.g. a :class:`.Display`

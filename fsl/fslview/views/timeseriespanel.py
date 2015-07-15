@@ -41,6 +41,11 @@ class TimeSeries(plotpanel.DataSeries):
         self.coords  = map(int, coords)
         self.data    = overlay.data[coords[0], coords[1], coords[2], :]
 
+
+    def __copy__(self):
+
+        return type(self)(self.tsPanel, self.overlay, self.coords)
+
         
     def update(self, coords):
         """This method is only intended for use on the 'current' time series,

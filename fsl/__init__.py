@@ -263,8 +263,9 @@ def parseArgs(argv, allTools):
         if namespace.memory:
             class MemFilter(object):
                 def filter(self, record):
-                    if record.levelno == logging.MEMORY: return 1
-                    else:                                return 0
+                    if   record.name in namespace.noisy:   return 1
+                    elif record.levelno == logging.MEMORY: return 1
+                    else:                                  return 0
 
             log.setLevel(logging.MEMORY)
             log.handlers[0].addFilter(MemFilter())
