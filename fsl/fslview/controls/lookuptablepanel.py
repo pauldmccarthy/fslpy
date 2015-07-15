@@ -199,7 +199,8 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         if self.__selectedOverlay == newOverlay:
             return
 
-        if self.__selectedOverlay is not None:
+        if self.__selectedOverlay is not None and \
+           self.__selectedOverlay in self._overlayList:
             
             display = self._displayCtx.getDisplay(self.__selectedOverlay)
             
