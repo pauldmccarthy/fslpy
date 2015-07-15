@@ -105,11 +105,11 @@ if log.getEffectiveLevel() == logging.DEBUG:
             
     # Patch the CallQueue instance with 
     # our push/pop implementations
-    theQ._causes   = Queue.Queue()
-    theQ._realPush = theQ._push
-    theQ._realPop  = theQ._pop
-    theQ._push     = tracePush
-    theQ._pop      = tracePop
+    theQ._causes          = Queue.Queue()
+    theQ._realPush        = theQ._CallQueue__push
+    theQ._realPop         = theQ._CallQueue__pop
+    theQ._CallQueue__push = tracePush
+    theQ._CallQueue__pop  = tracePop
 
 
 def trace(desc):
