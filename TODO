@@ -11,10 +11,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** DONE Improve time series
 ** DONE Improve histogram
 ** DONE Feat mode 
-This could be an option on the time series panel - if a .feat directory 
-is detected, display a check box allowing the user to turn on/off 
-models/residuals/whatever.
-** Cluster browser
+** DONE Cluster browser
 ** Overlay groups
 ** Movie mode
 ** Iconify/clean up interface
