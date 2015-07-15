@@ -525,12 +525,9 @@ class SliceCanvas(props.HasProperties):
         render texture associated with the overlay is destroyed.
         """
         
-        if not self._setGLContext():
-            return
-
         # Tell the previous GLObject (if
         # any) to clean up after itself
-        globj = self._glObjects.get(overlay, None)
+        globj = self._glObjects.pop(overlay, None)
         if globj is not None:
             globj.destroy()
 

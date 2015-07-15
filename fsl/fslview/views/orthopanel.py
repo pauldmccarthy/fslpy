@@ -189,6 +189,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx .removeListener('location',        self._name)
         self._displayCtx .removeListener('bounds',          self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
         self._overlayList.removeListener('overlays',        self._name)
 
         # The _overlayListChanged method adds
@@ -612,11 +613,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         flag = wx.ALIGN_CENTRE_HORIZONTAL | wx.ALIGN_CENTRE_VERTICAL
         
         for w in widgets:
-
-            if w in [self._xcanvas, self._ycanvas, self._zcanvas]:
-                self._canvasSizer.Add(w, flag=flag)
-            else:
-                self._canvasSizer.Add(w, flag=flag)
+            self._canvasSizer.Add(w, flag=flag)
                                           
         self.getCanvasPanel().SetSizer(self._canvasSizer)
 
