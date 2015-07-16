@@ -167,7 +167,6 @@ class PlotPanel(viewpanel.ViewPanel):
 
         
     def destroy(self):
-        viewpanel.ViewPanel.destroy(self)
         self.removeListener('dataSeries', self.__name)
         self.removeListener('limits',     self.__name)
         for propName in ['legend',
@@ -180,6 +179,7 @@ class PlotPanel(viewpanel.ViewPanel):
                          'xlabel',
                          'ylabel']:
             self.removeListener(propName, self._name)
+        viewpanel.ViewPanel.destroy(self)
 
 
     def getFigure(self):

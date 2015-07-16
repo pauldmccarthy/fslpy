@@ -406,7 +406,6 @@ class HistogramPanel(plotpanel.PlotPanel):
 
     def destroy(self):
         """De-registers property listeners. """
-        plotpanel.PlotPanel.destroy(self)
         
         self.removeListener('showCurrent', self._name)
         self.removeListener('histType',    self._name)
@@ -418,6 +417,8 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         for hs in set(self.dataSeries[:] + self.__histCache.values()):
             hs.destroy()
+
+        plotpanel.PlotPanel.destroy(self)
 
 
     def __dataSeriesChanged(self, *a):

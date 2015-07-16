@@ -73,7 +73,6 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         context, and individual overlays.
         """
 
-        fslpanel.FSLViewPanel.destroy(self)
         
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
@@ -89,6 +88,9 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
                 opts   .removeListener('cmap',         self._name)
                 opts   .removeListener('displayRange', self._name)
 
+        self._cbPanel        .destroy(self)
+        fslpanel.FSLViewPanel.destroy(self)
+ 
             
     def _layout(self, *a):
         """

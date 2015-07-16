@@ -491,7 +491,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
 
     def destroy(self):
-        plotpanel.PlotPanel.destroy(self)
         
         self.removeListener('plotMode',    self._name)
         self.removeListener('usePixdim',   self._name)
@@ -500,6 +499,8 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('location',        self._name)
+
+        plotpanel.PlotPanel.destroy(self)
 
 
     def __overlaysChanged(self, *a):
