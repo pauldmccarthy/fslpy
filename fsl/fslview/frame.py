@@ -182,20 +182,28 @@ class FSLViewFrame(wx.Frame):
             return
 
         self.__viewPanels             .remove(panel)
+        self.__viewPanelMenus         .pop(   panel, None)
         title = self.__viewPanelTitles.pop(   panel)
 
         log.debug('Destroying view panel {} ({})'.format(
             title, type(panel).__name__))
 
-        # Calling fslpanel.FSLViewPanel.destroy()
-        # - I think that the AUINotebook does the
-        # wx.Window.Destroy side of things ...
-        panel.destroy()
+        # Unbind view panel menu
+        # items, and remove the menu
+        for actionName, actionObj in panel.getActions().items():
+            actionObj.unbindAllWidgets()
 
         menuBar = self.GetMenuBar()
         menuIdx = menuBar.FindMenu(title)
         if menuIdx != wx.NOT_FOUND:
             menuBar.Remove(menuIdx)
+
+        # Calling fslpanel.FSLViewPanel.destroy()
+        # - I think that the AUINotebook does the
+        # wx.Window.Destroy side of things, which
+        # will eventually result in panel.__del__
+        # ...
+        panel.destroy()
 
         
     def __onClose(self, ev):

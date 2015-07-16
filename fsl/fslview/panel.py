@@ -4,19 +4,16 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides two classes - the :class:`FSLViewPanel`, and the
-:class:`FSLViewToolBar`.
+"""This module provides an important class - the :class:`FSLViewPanel`.
 
 A :class:`FSLViewPanel` object is a :class:`wx.Panel` which provides some sort
 of view of a collection of overlay objects, contained within an
-:class:`.OverlayList`. Similarly, a :class:`FSLViewToolBar` is a
-:class:`wx.lib.agw.aui.AuiToolBar` which provides some sort of control over
-the view.
+:class:`.OverlayList`. 
 
-Instances of these classes are also :class:`.ActionProvider` instances - any
-actions which are specified during construction may be exposed to the
-user. Furthermore, any display configuration options which should be made
-available available to the user should be added as :class:`.PropertyBase`
+``FSLViewPanel`` instances are also :class:`.ActionProvider` instances - any
+actions which are specified during construction may (or may not ) be exposed
+to the user. Furthermore, any display configuration options which should be
+made available available to the user should be added as :class:`.PropertyBase`
 attributes of the :class:`FSLViewPanel` subclass.
 
 See the following for examples of :class:`FSLViewPanel` subclasses:
@@ -55,6 +52,13 @@ class _FSLViewPanel(actions.ActionProvider):
         contains display related properties about the :attr:`_overlayList`.
     
       - :attr:`_name`: A unique name for this :class:`ViewPanel`.
+
+
+    TODO Important notes about:
+
+      - :meth:`destroy`
+
+      - :meth:`__del__`
     """ 
 
     
@@ -107,21 +111,26 @@ class _FSLViewPanel(actions.ActionProvider):
         called. So this method *must* be called by managing code when a panel
         is deleted.
 
-        Overriding subclass implementations should also call this base class
-        method, otherwise warnings will probably be output to the log (see 
-        :meth:`__del__`)
+        Overriding subclass implementations must call this base class
+        method, otherwise memory leaks will probably occur, and warnings will
+        probably be output to the log (see :meth:`__del__`).
         """
         self.__destroyed = True
 
     
     def __del__(self):
+        """Sub-classes which implement ``__del__`` must call this
+        implementation, otherwise memory leaks will occur.
+        """
+        actions.ActionProvider.__del__(self)
+
+        self._overlayList = None
+        self._displayCtx  = None
 
         if not self.__destroyed:
             log.warning('The {}.destroy() method has not been called '
                         '- unless the application is shutting down, '
                         'this is probably a bug!'.format(type(self).__name__))
-
-        actions.ActionProvider.__del__(self)
 
 
 class FSLViewPanel(_FSLViewPanel, wx.Panel):

@@ -127,7 +127,16 @@ class Action(props.HasProperties):
             
         parent.Bind(evType, wrappedAction, widget)
         widget.Enable(self.enabled)
-        self._boundWidgets.append(widget)
+        self._boundWidgets.append((parent, evType, widget))
+
+
+    def unbindAllWidgets(self):
+        """Unbinds all widgets which have been bound via :meth:`bindToWidget`.
+        """
+        for parent, evType, widget in self._boundWidgets:
+            parent.Unbind(evType, source=widget)
+            
+        self._boundWidgets = []
 
 
     def _enabledChanged(self, *args):
@@ -137,7 +146,7 @@ class Action(props.HasProperties):
         if self.enabled: self.doAction = self.__enabledDoAction
         else:            self.doAction = self.__disabledDoAction
 
-        for widget in self._boundWidgets:
+        for _, _, widget in self._boundWidgets:
             widget.Enable(self.enabled)
 
 
@@ -193,6 +202,15 @@ class ActionProvider(props.HasProperties):
             act = Action(overlayList, displayCtx, action=func)
             self.__actions[name] = act
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+
+    def __del__(self):
+        """
+        """
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        self.__actions = None
+                  
             
     def addActionToggleListener(self, name, listenerName, func):
         """Add a listener function which will be called when the named action

@@ -186,6 +186,19 @@ class Profile(actions.ActionProvider):
             for (mode, handler), (altMode, altHandler) in altHandlers.items():
                 self.addAltHandler(mode, handler, altMode, altHandler)
 
+                
+    def destroy(self):
+        """Calls the :meth:`deregister` method, and clears references to
+        the display context,  view panel, and overlay list. This method
+        is called by the :class:`ProfileManager` when  this ``Profile``
+        instance is no longer needed.  
+        """
+        self.deregister()
+        
+        self._viewPanel   = None
+        self._overlayList = None
+        self._displayCtx  = None
+
 
     def getEventTargets(self):
         """Must be overridden by subclasses, to return a sequence of
@@ -569,6 +582,23 @@ class ProfileManager(object):
             viewPanel.profile = profilez[0]
 
 
+    def destroy(self):
+        """This method should be called by the owning :class:`.ViewPanel` when
+        it is about to be destroyed (or when it no longer needs a
+        ``ProfileManager``).
+
+        This method destros the current profile (if any), and clears some
+        important object references to avoid memory leaks.
+        """
+        if self._currentProfile is not None:
+            self._currentProfile.destroy()
+            
+        self._currentProfile    = None
+        self._viewPanel         = None
+        self._overlayList       = None
+        self._overlaydisplayCtx = None
+
+
     def getCurrentProfile(self):
         """Returns the :class:`Profile` instance currently in use."""
         return self._currentProfile
@@ -592,7 +622,7 @@ class ProfileManager(object):
             log.debug('Deregistering {} profile from {}'.format(
                 self._currentProfile.__class__.__name__,
                 self._viewCls.__name__))
-            self._currentProfile.deregister()
+            self._currentProfile.destroy()
                
         self._currentProfile = profileCls(self._viewPanel,
                                           self._overlayList,

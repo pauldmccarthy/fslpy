@@ -136,17 +136,31 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         
     def destroy(self):
+        """
+        """
+
         fslpanel.FSLViewPanel.destroy(self)
         
         # Make sure that any control panels are correctly destroyed
         for panelType, panel in self.__panels.items():
             panel.destroy()
-            
+
+        # Remove listeners from the overlay
+        # list and display context
         lName = 'ViewPanel_{}'.format(self._name)
 
         self             .removeListener('profile',         lName)
         self._overlayList.removeListener('overlays',        lName)
-        self._displayCtx .removeListener('selectedOverlay', lName) 
+        self._displayCtx .removeListener('selectedOverlay', lName)
+
+        # Disable the  ProfileManager
+        self.__profileManager.destroy()
+
+        # Un-initialise the AUI manager
+        self.__auiMgr.UnInit()
+
+        self.__profileManager = None
+        self.__auiMgr         = None
 
 
     def setCentrePanel(self, panel):
