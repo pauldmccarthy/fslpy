@@ -138,6 +138,8 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
 
+        self._lbCanvas.destroy()
+
         canvaspanel.CanvasPanel.destroy(self)
 
         

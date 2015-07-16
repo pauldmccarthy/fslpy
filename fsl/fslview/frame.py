@@ -202,7 +202,8 @@ class FSLViewFrame(wx.Frame):
             menuBar.Remove(menuIdx)
 
         # Calling fslpanel.FSLViewPanel.destroy()
-        # - I think that the AUINotebook does the
+        # and DisplayContext.destroy() - the
+        # AUINotebook should do the
         # wx.Window.Destroy side of things ...
         panel.destroy()
         dctx .destroy()

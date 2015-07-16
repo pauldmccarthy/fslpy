@@ -184,7 +184,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         this OrthoPanel. So when this panel is destroyed, all those
         registered listeners are removed.
         """
-        canvaspanel.CanvasPanel.destroy(self)
 
         self._displayCtx .removeListener('location',        self._name)
         self._displayCtx .removeListener('bounds',          self._name)
@@ -192,12 +191,18 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx .removeListener('overlayOrder',    self._name)
         self._overlayList.removeListener('overlays',        self._name)
 
+        self._xcanvas.destroy()
+        self._ycanvas.destroy()
+        self._zcanvas.destroy()
+
         # The _overlayListChanged method adds
         # listeners to individual overlays,
         # so we have to remove them too
         for ovl in self._overlayList:
             opts = self._displayCtx.getOpts(ovl)
             opts.removeGlobalListener(self._name)
+
+        canvaspanel.CanvasPanel.destroy(self)
 
             
     def __onZoom(self, *a):

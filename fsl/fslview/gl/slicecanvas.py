@@ -308,6 +308,47 @@ class SliceCanvas(props.HasProperties):
                                      self._overlayBoundsChanged)
 
 
+    def destroy(self):
+        """This method must be called when this ``SliceCanvas`` is no longer
+        being used.
+
+        It removes listeners from all :class:`.OverlayList`,
+        :class:`.DisplayContext`, and :class:`.Display` instances, and
+        destroys OpenGL representations of all overlays.
+        """
+        self.removeListener('zax',           self.name)
+        self.removeListener('pos',           self.name)
+        self.removeListener('displayBounds', self.name)
+        self.removeListener('showCursor',    self.name)
+        self.removeListener('invertX',       self.name)
+        self.removeListener('invertY',       self.name)
+        self.removeListener('zoom',          self.name)
+        self.removeListener('renderMode',    self.name)
+
+        self.overlayList.removeListener('overlays',     self.name)
+        self.displayCtx .removeListener('bounds',       self.name)
+        self.displayCtx .removeListener('overlayOrder', self.name)
+
+        for overlay in self.overlayList:
+            disp  = self.displayCtx.getDisplay(overlay)
+            globj = self._glObjects[overlay]
+
+            disp.removeListener('overlayType',  self.name)
+            disp.removeListener('enabled',      self.name)
+            disp.unbindProps(   'softwareMode', self)
+
+            globj.destroy()
+
+            rt, rtName = self._prerenderTextures.get(overlay, (None, None))
+            ot         = self._offscreenTextures.get(overlay, None)
+
+            if rt is not None: glresources.delete(rtName)
+            if ot is not None: ot         .destroy()
+
+        self.overlayList = None
+        self.displayCxt  = None
+            
+
     def _initGL(self):
         """Call the _overlayListChanged method - it will generate
         any necessary GL data for each of the overlays
@@ -516,7 +557,7 @@ class SliceCanvas(props.HasProperties):
         self._refresh()
 
 
-    def __genGLObject(self, overlay, display, updateRenderTextures=True):
+    def __genGLObject(self, overlay, updateRenderTextures=True):
         """Creates a :class:`.GLObject` instance for the given ``overlay``,
         destroying any existing instance.
 
@@ -524,6 +565,8 @@ class SliceCanvas(props.HasProperties):
         :attr:`.renderMode` is ``offscreen`` or ``prerender``, any
         render texture associated with the overlay is destroyed.
         """
+
+        display = self.displayCtx.getDisplay(overlay)
 
         # Tell the previous GLObject (if
         # any) to clean up after itself
@@ -559,6 +602,19 @@ class SliceCanvas(props.HasProperties):
 
         self._glObjects[overlay] = globj
 
+        if not display.isBound('softwareMode', self):
+            display.bindProps('softwareMode', self)
+
+        display.addListener('overlayType',
+                            self.name,
+                            self.__overlayTypeChanged,
+                            overwrite=True)
+
+        display.addListener('enabled',
+                            self.name,
+                            self._refresh,
+                            overwrite=True)
+
         return globj
  
             
@@ -590,18 +646,7 @@ class SliceCanvas(props.HasProperties):
             if overlay in self._glObjects:
                 continue
 
-            display = self.displayCtx.getDisplay(overlay)
-
-            self.__genGLObject(overlay, display, updateRenderTextures=False)
-
-            # Bind Display.softwareMode to SliceCanvas.softwareMode
-            display.bindProps('softwareMode', self)
-
-            display.addListener('overlayType',
-                                self.name,
-                                self.__overlayTypeChanged)
-            
-            display.addListener('enabled', self.name, self._refresh)
+            self.__genGLObject(overlay, updateRenderTextures=False)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()
@@ -919,7 +964,7 @@ class SliceCanvas(props.HasProperties):
                 continue
             
             if globj is None:
-                globj = self.__genGLObject(overlay, display)
+                globj = self.__genGLObject(overlay)
 
             # On-screen rendering - the globject is
             # rendered directly to the screen canvas

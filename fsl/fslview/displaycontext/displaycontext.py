@@ -97,6 +97,8 @@ class DisplayContext(props.SyncableHasProperties):
         
     def destroy(self):
 
+        self.__overlayList.removeListener('overlays', self.__name)
+
         for overlay, display in self.__displays.items():
             display.destroy()
 

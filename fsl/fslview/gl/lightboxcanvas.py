@@ -212,6 +212,22 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
                          '{}_zPosChanged'.format(self.name),
                          self._zPosChanged)
 
+    def destroy(self):
+
+        self.removeListener('pos', '{}_zPosChanged'.format(self.name))
+        self.removeListener('sliceSpacing',                self.name)
+        self.removeListener('ncols',          self.name)
+        self.removeListener('nrows',          self.name)
+        self.removeListener('zrange',         self.name)
+        self.removeListener('showGridLines',  self.name)
+        self.removeListener('highlightSlice', self.name)
+        self.removeListener('topRow',         self.name)
+        
+        if self._offscreenRenderTexture is not None:
+            self._offscreenRenderTexture.destroy()
+        
+        slicecanvas.SliceCanvas.destroy(self)
+
         
     def _topRowChanged(self, *a):
         """Called when the :attr:`topRow` property changes.  Adjusts display
