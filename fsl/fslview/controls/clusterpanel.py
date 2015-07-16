@@ -81,6 +81,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self ._name)
+        fslpanel.FSLViewPanel.destroy(self)
 
         
     def __disable(self, message):

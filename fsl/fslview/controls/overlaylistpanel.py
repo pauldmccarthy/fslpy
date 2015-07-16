@@ -170,8 +170,6 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         """Deregisters property listeners."""
         
-        fslpanel.FSLViewPanel.destroy(self)
-
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._displayCtx .removeListener('overlayOrder',    self._name)
@@ -181,6 +179,8 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         for overlay in self._overlayList:
             display = self._displayCtx.getDisplay(overlay)
             display.removeListener('name', self._name)
+            
+        fslpanel.FSLViewPanel.destroy(self)
 
         
     def _selectedOverlayChanged(self, *a):

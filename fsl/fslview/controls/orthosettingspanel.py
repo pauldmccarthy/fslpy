@@ -63,7 +63,3 @@ class OrthoSettingsPanel(fslpanel.FSLViewPanel):
         size = self.panelSizer.GetMinSize()
 
         self.SetMinSize((size[0], size[1] / 3.0))
-
-
-    def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)

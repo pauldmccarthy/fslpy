@@ -36,8 +36,8 @@ class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
 
     def destroy(self):
-        fsltoolbar.FSLViewToolBar.destroy(self)
         self.orthoPanel.removeListener('profile', self._name)
+        fsltoolbar.FSLViewToolBar.destroy(self)
 
 
     def _profileChanged(self, *a):

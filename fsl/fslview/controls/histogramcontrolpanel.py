@@ -112,7 +112,9 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         if self.__currentHs is not None:
             self.__currentHs.removeListener('label', self._name)
 
+        fslpanel.FSLViewPanel.destroy(self)
 
+        
     def __selectedSeriesChanged(self, *a):
 
         panel = self.__hsPanel 

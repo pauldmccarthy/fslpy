@@ -168,8 +168,6 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         
     def destroy(self):
 
-        fslpanel.FSLViewPanel.destroy(self)
-
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
@@ -190,6 +188,8 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         if lut is not None:
             lut.removeListener('labels', self._name)
             lut.removeListener('saved',  self._name)
+
+        fslpanel.FSLViewPanel.destroy(self)
     
 
     def __selectedOverlayChanged(self, *a):

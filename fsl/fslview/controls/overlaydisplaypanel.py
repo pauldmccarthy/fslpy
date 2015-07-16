@@ -81,7 +81,6 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
 
         
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
 
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
@@ -90,6 +89,8 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         for ovl in self._overlayList:
             display = self._displayCtx.getDisplay(ovl)
             display.removeListener('overlayType', self._name)
+
+        fslpanel.FSLViewPanel.destroy(self)
 
 
     def __selectedOverlayChanged(self, *a):

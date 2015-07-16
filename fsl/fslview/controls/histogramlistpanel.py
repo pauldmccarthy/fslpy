@@ -45,8 +45,8 @@ class HistogramListPanel(fslpanel.FSLViewPanel):
 
         
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
         self.__hsPanel.removeListener('dataSeries', self._name)
+        fslpanel.FSLViewPanel.destroy(self)
 
 
     def getListBox(self):

@@ -35,12 +35,8 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
                       'more'        : self}
 
         self.GenerateTools(toolSpecs, targets)
+
         
-
-    def destroy(self):
-        fsltoolbar.FSLViewToolBar.destroy(self)
-
-
     def showMoreSettings(self, *a):
         self.orthoPanel.togglePanel(
             orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 

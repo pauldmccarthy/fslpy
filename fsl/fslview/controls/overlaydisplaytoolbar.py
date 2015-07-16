@@ -44,7 +44,6 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
     def destroy(self):
         """Deregisters property listeners. """
-        fsltoolbar.FSLViewToolBar.destroy(self)
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
@@ -54,6 +53,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             display = self._displayCtx.getDisplay(ovl)
             display.removeListener('overlayType', self._name)
             display.removeListener('enabled',     self._name)
+        fsltoolbar.FSLViewToolBar.destroy(self)
 
 
     def showMoreSettings(self, *a):

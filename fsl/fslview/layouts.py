@@ -20,7 +20,6 @@ from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 from fsl.fslview.views                     import CanvasPanel
 from fsl.fslview.views                     import OrthoPanel
 from fsl.fslview.views                     import LightBoxPanel
-from fsl.fslview.views                     import HistogramPanel
 
 from fsl.fslview.controls                  import OrthoToolBar
 from fsl.fslview.controls                  import LightBoxToolBar
@@ -268,19 +267,6 @@ LabelOptsLayout = props.VGroup((
     widget(LabelOpts, 'volume',     showLimits=False)))
 
 
-##########################
-# Histogram toolbar/panels
-##########################
-
-
-HistogramToolBarLayout = [
-    actions.ActionButton(HistogramPanel, 'screenshot'),
-    props.Widget('dataRange', showLimits=False),
-    props.Widget('nbins',
-                 enabledWhen=lambda p: not p.autoHist,
-                 spin=False, showLimits=False),
-    props.Widget('autoHist')]
-
 
 layouts = td.TypeDict({
 
@@ -310,8 +296,6 @@ layouts = td.TypeDict({
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
     ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,
-    
-    'HistogramToolBar' : HistogramToolBarLayout,
 })
 
 

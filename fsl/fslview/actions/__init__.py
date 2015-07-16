@@ -133,8 +133,17 @@ class Action(props.HasProperties):
     def unbindAllWidgets(self):
         """Unbinds all widgets which have been bound via :meth:`bindToWidget`.
         """
+
+        import wx
+        
         for parent, evType, widget in self._boundWidgets:
-            parent.Unbind(evType, source=widget)
+
+            # Only attempt to unbind if the parent
+            # and widget have not been destroyed
+            try:
+                parent.Unbind(evType, source=widget)
+            except wx.PyDeadObjectError:
+                pass
             
         self._boundWidgets = []
 

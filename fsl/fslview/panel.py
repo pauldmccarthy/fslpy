@@ -139,8 +139,3 @@ class FSLViewPanel(_FSLViewPanel, wx.Panel):
     def __init__(self, parent, overlayList, displayCtx, actionz=None):
         wx.Panel.__init__(self, parent)
         _FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
-
-        
-    def __del__(self):
-        wx.Panel     .__del__(self)
-        _FSLViewPanel.__del__(self)

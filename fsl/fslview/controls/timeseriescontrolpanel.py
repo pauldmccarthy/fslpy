@@ -119,6 +119,8 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
         if self.__selectedOverlay is not None:
             display = self._displayCtx.getDisplay(self.__selectedOverlay)
             display.removeListener('name', self._name)
+            
+        fslpanel.FSLViewPanel.destroy(self)
 
 
     def __showCurrentChanged(self, *a):

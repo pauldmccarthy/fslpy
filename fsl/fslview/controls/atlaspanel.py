@@ -67,9 +67,9 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         """Must be called on destruction. Performs some necessary clean up
         when this AtlasPanel is no longer needed.
         """
-        fslpanel.FSLViewPanel.destroy(self)
         self.__infoPanel     .destroy()
         self.__overlayPanel  .destroy()
+        fslpanel.FSLViewPanel.destroy(self)
 
 
     def loadAtlas(self, atlasID, summary):

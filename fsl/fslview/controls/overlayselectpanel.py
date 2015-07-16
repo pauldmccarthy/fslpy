@@ -84,7 +84,6 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
 
 
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
@@ -94,6 +93,8 @@ class OverlaySelectPanel(fslpanel.FSLViewPanel):
         for overlay in self._overlayList:
             display = self._displayCtx.getDisplay(overlay)
             display.removeListener('name', self._name)
+            
+        fslpanel.FSLViewPanel.destroy(self)
  
         
     def _onPrevButton(self, ev):

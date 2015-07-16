@@ -163,6 +163,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
         self.__auiMgr._frame  = None
         self.__profileManager = None
         self.__auiMgr         = None
+        self.__panels         = None
 
         fslpanel.FSLViewPanel.destroy(self)
         

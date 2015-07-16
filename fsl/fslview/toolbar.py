@@ -356,8 +356,3 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
         if postevent:
             wx.PostEvent(self, ToolBarEvent())
-
-        
-    def __del__(self):
-        wx.Panel              .__del__(self)
-        fslpanel._FSLViewPanel.__del__(self)        
