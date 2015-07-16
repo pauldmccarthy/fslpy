@@ -65,7 +65,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
         self.overlayList.removeListener('overlays', self.name)
 
         for overlay in self.overlayList:
-            overlay.removeListener('name', self.name)
+            display = self.displayCtx.getDisplay(overlay)
+            display.removeListener('name', self.name)
 
         fsldisplay.DisplayOpts.destroy(self)
 

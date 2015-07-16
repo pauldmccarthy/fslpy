@@ -88,7 +88,8 @@ logHandler  = logging.StreamHandler()
 logHandler.setFormatter(logFormatter)
 
 
-log = logging.getLogger('fsl')
+# We want the root logger
+log = logging.getLogger()
 
 
 log.addHandler(logHandler)
@@ -273,6 +274,8 @@ def parseArgs(argv, allTools):
             log.setLevel(logging.MEMORY)
             log.handlers[0].addFilter(MemFilter())
             log.memory('Added filter for MEMORY messages')
+            logging.getLogger('props')   .setLevel(logging.WARNING)
+            logging.getLogger('pwidgets').setLevel(logging.WARNING)            
         
     if namespace.verbose == 1:
         log.setLevel(logging.DEBUG)

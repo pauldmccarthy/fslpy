@@ -138,6 +138,9 @@ def context(args):
     # linked to this master one.
     overlayList = fsloverlay.OverlayList()
     displayCtx  = displaycontext.DisplayContext(overlayList)
+
+    log.debug('Created overlay list and master DisplayContext ({})'.format(
+        id(displayCtx)))
     
     # Load the images - the splash screen status will 
     # be updated with the currently loading overlay name

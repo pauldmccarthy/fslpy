@@ -136,7 +136,12 @@ class FSLViewFrame(wx.Frame):
         panel = panelCls(
             self.__centrePane,
             self.__overlayList,
-            childDC) 
+            childDC)
+
+        log.debug('Created new {} ({}) with DisplayContext {}'.format(
+            panelCls.__name__,
+            id(panel),
+            id(childDC)))
 
         self.__viewPanelCount = self.__viewPanelCount + 1
 
@@ -188,8 +193,12 @@ class FSLViewFrame(wx.Frame):
         title = self.__viewPanelTitles.pop(   panel)
         dctx  = self.__viewPanelDCs   .pop(   panel)
 
-        log.debug('Destroying view panel {} ({})'.format(
-            title, type(panel).__name__))
+        log.debug('Destroying {} (title {}, id {}) and '
+                  'associated DisplayContext ({})'.format(
+                      type(panel).__name__,
+                      title,
+                      id(panel),
+                      id(dctx)))
 
         # Unbind view panel menu
         # items, and remove the menu
