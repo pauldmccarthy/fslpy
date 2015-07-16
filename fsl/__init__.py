@@ -223,6 +223,9 @@ def parseArgs(argv, allTools):
 
     namespace = parser.parse_args(fslArgv)
 
+    if namespace.noisy is None:
+        namespace.noisy = []
+
     # if the specified tool is 'help', it should be followed by
     # one more argument, the name of the tool to print help for
     if namespace.tool == 'help':
@@ -288,9 +291,8 @@ def parseArgs(argv, allTools):
         logging.getLogger('props')   .setLevel(logging.DEBUG)
         logging.getLogger('pwidgets').setLevel(logging.DEBUG)
 
-    if namespace.noisy is not None:
-        for mod in namespace.noisy:
-            logging.getLogger(mod).setLevel(logging.DEBUG)
+    for mod in namespace.noisy:
+        logging.getLogger(mod).setLevel(logging.DEBUG)
 
     # The trace module monkey-patches some
     # things if its logging level has been
