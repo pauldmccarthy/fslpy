@@ -21,8 +21,9 @@ class LightBoxViewProfile(profiles.Profile):
                                   displayCtx,
                                   modes=['view', 'zoom'])
 
-        self._canvas = canvasPanel.getCanvas()
+        self._canvas = viewPanel.getCanvas()
 
+        
     def getEventTargets(self):
         return [self._canvas]
 

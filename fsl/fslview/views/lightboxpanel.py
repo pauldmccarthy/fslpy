@@ -133,11 +133,12 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
 
     def destroy(self):
         """Removes property listeners"""
-        canvaspanel.CanvasPanel.destroy(self)
 
         self._displayCtx .removeListener('location',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
+
+        canvaspanel.CanvasPanel.destroy(self)
 
         
     def _selectedOverlayChanged(self, *a):

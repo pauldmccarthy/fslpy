@@ -245,11 +245,11 @@ class CanvasPanel(viewpanel.ViewPanel):
         cleanly.
         """
 
-        viewpanel.ViewPanel.destroy(self)
-
         if self.__colourBar is not None:
             self.__colourBar.destroy()
-
+            
+        viewpanel.ViewPanel.destroy(self)
+            
     
     def screenshot(self, *a):
         _takeScreenShot(self._overlayList, self._displayCtx, self)

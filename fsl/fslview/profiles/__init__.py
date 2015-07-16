@@ -193,8 +193,6 @@ class Profile(actions.ActionProvider):
         is called by the :class:`ProfileManager` when  this ``Profile``
         instance is no longer needed.  
         """
-        self.deregister()
-        
         self._viewPanel   = None
         self._overlayList = None
         self._displayCtx  = None
@@ -591,6 +589,7 @@ class ProfileManager(object):
         important object references to avoid memory leaks.
         """
         if self._currentProfile is not None:
+            self._currentProfile.deregister()
             self._currentProfile.destroy()
             
         self._currentProfile    = None
@@ -622,6 +621,7 @@ class ProfileManager(object):
             log.debug('Deregistering {} profile from {}'.format(
                 self._currentProfile.__class__.__name__,
                 self._viewCls.__name__))
+            self._currentProfile.deregister()
             self._currentProfile.destroy()
                
         self._currentProfile = profileCls(self._viewPanel,

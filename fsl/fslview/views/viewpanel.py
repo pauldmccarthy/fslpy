@@ -138,8 +138,6 @@ class ViewPanel(fslpanel.FSLViewPanel):
     def destroy(self):
         """
         """
-
-        fslpanel.FSLViewPanel.destroy(self)
         
         # Make sure that any control panels are correctly destroyed
         for panelType, panel in self.__panels.items():
@@ -159,8 +157,15 @@ class ViewPanel(fslpanel.FSLViewPanel):
         # Un-initialise the AUI manager
         self.__auiMgr.UnInit()
 
+        # The AUI manager does not clear its
+        # reference to this panel, so let's
+        # do it here.
+        self.__auiMgr._frame  = None
         self.__profileManager = None
         self.__auiMgr         = None
+
+        fslpanel.FSLViewPanel.destroy(self)
+        
 
 
     def setCentrePanel(self, panel):

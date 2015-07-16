@@ -98,6 +98,7 @@ class FSLViewFrame(wx.Frame):
         # Keeping track of all
         # open view panels
         self.__viewPanels      = []
+        self.__viewPanelDCs    = {}
         self.__viewPanelTitles = {}
         self.__viewPanelMenus  = {}
         self.__viewPanelCount  = 0
@@ -141,6 +142,7 @@ class FSLViewFrame(wx.Frame):
 
         self.__viewPanels.append(panel)
         self.__viewPanelTitles[panel] = title
+        self.__viewPanelDCs[   panel] = childDC
         
         self.__centrePane.AddPage(panel, title, True)
         self.__centrePane.Split(
@@ -184,6 +186,7 @@ class FSLViewFrame(wx.Frame):
         self.__viewPanels             .remove(panel)
         self.__viewPanelMenus         .pop(   panel, None)
         title = self.__viewPanelTitles.pop(   panel)
+        dctx  = self.__viewPanelDCs   .pop(   panel)
 
         log.debug('Destroying view panel {} ({})'.format(
             title, type(panel).__name__))
@@ -200,10 +203,9 @@ class FSLViewFrame(wx.Frame):
 
         # Calling fslpanel.FSLViewPanel.destroy()
         # - I think that the AUINotebook does the
-        # wx.Window.Destroy side of things, which
-        # will eventually result in panel.__del__
-        # ...
+        # wx.Window.Destroy side of things ...
         panel.destroy()
+        dctx .destroy()
 
         
     def __onClose(self, ev):

@@ -113,20 +113,18 @@ class _FSLViewPanel(actions.ActionProvider):
 
         Overriding subclass implementations must call this base class
         method, otherwise memory leaks will probably occur, and warnings will
-        probably be output to the log (see :meth:`__del__`).
+        probably be output to the log (see :meth:`__del__`). This
+        implememtation should be called after the subclass has performed its
+        own clean-up, as this method expliciltly clears the ``_overlayList``
+        and ``_displayCtx`` references.
         """
-        self.__destroyed = True
+        actions.ActionProvider.destroy(self)
+        self._displayCtx  = None
+        self._overlayList = None
+        self.__destroyed  = True
 
     
     def __del__(self):
-        """Sub-classes which implement ``__del__`` must call this
-        implementation, otherwise memory leaks will occur.
-        """
-        actions.ActionProvider.__del__(self)
-
-        self._overlayList = None
-        self._displayCtx  = None
-
         if not self.__destroyed:
             log.warning('The {}.destroy() method has not been called '
                         '- unless the application is shutting down, '

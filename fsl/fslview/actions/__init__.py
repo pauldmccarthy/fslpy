@@ -202,15 +202,17 @@ class ActionProvider(props.HasProperties):
             act = Action(overlayList, displayCtx, action=func)
             self.__actions[name] = act
 
-        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
-
-
-    def __del__(self):
+            
+    def destroy(self):
+        """This method should be called when this ``ActionProvider`` is
+        about to be destroyed. It ensures that all ``Action`` instances
+        are cleared.
         """
-        """
-        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        for _, act in self.__actions.items():
+            act.unbindAllWidgets()
+            
         self.__actions = None
-                  
+
             
     def addActionToggleListener(self, name, listenerName, func):
         """Add a listener function which will be called when the named action

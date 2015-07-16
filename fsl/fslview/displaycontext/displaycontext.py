@@ -93,7 +93,14 @@ class DisplayContext(props.SyncableHasProperties):
         
     def __del__(self):
         log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
         
+    def destroy(self):
+
+        for overlay, display in self.__displays.items():
+            display.destroy()
+
+        self.__displays = None
 
         
     def getDisplay(self, overlay, overlayType=None):
