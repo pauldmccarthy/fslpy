@@ -5,19 +5,19 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """The :mod:`profiles` module contains logic for mouse/keyboard interaction
-with :class:`.CanvasPanel` panels.
+with :class:`.ViewPanel` panels.
 
 This logic is encapsulated in two classes:
 
  - The :class:`Profile` class is intended to be subclassed. A :class:`Profile`
    instance contains the mouse/keyboard event handlers for a particular type
-   of ``CanvasPanel`` to allow the user to interact with the canvas in a
+   of ``ViewPanel`` to allow the user to interact with the view in a
    particular way. For example, the :class:`.OrthoViewProfile` class allows
    the user to navigate through the display space in an :class:`.OrthoPanel`
    canvas, wherease the :class:`.OrthoEditProfile` class contains interaction
    logic for selecting and editing image voxels in an ``OrthoPanel``.
 
- - The :class:`ProfileManager` class is used by ``CanvasPanel`` instances to
+ - The :class:`ProfileManager` class is used by ``ViewPanel`` instances to
    create and change the ``Profile`` instance currently in use.
 """
 
@@ -34,7 +34,7 @@ import fsl.fslview.actions as actions
 
 class Profile(actions.ActionProvider):
     """A :class:`Profile` class implements keyboard/mouse interaction behaviour
-    for a :class:`.CanvasPanel` instance.
+    for a :class:`.ViewPanel` instance.
 
     
     Subclasses should specify at least one 'mode' of operation, which defines
@@ -103,14 +103,14 @@ class Profile(actions.ActionProvider):
     
 
     def __init__(self,
-                 canvasPanel,
+                 viewPanel,
                  overlayList,
                  displayCtx,
                  modes=None,
                  actionz=None):
         """Create a :class:`Profile` instance.
 
-        :arg canvasPanel: The :class:`.CanvasPanel` instance for which this
+        :arg viewPanel:   The :class:`.ViewPanel` instance for which this
                           :class:`Profile` instance defines mouse/keyboard
                           interaction behaviour.
 
@@ -132,12 +132,12 @@ class Profile(actions.ActionProvider):
             for name, func in actionz.items():
                 def wrap(f=func):
                     f()
-                    canvasPanel.Refresh()
+                    viewPanel.Refresh()
                 actionz[name] = wrap
 
         actions.ActionProvider.__init__(self, overlayList, displayCtx, actionz)
         
-        self._canvasPanel = canvasPanel
+        self._viewPanel   = viewPanel
         self._overlayList = overlayList
         self._displayCtx  = displayCtx
         self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -265,7 +265,7 @@ class Profile(actions.ActionProvider):
             t.Bind(wx.EVT_MOTION,     None)
             t.Bind(wx.EVT_MOUSEWHEEL, None)
             t.Bind(wx.EVT_CHAR,       None)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
     
     def __getTempMode(self, ev):
@@ -392,7 +392,7 @@ class Profile(actions.ActionProvider):
             wheel, canvas.name))
 
         handler(ev, canvas, wheel, mouseLoc, canvasLoc)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
         
     def __onMouseDown(self, ev):
@@ -419,7 +419,7 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc        
@@ -446,7 +446,7 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
         self.__mouseDownPos  = None
         self.__canvasDownPos = None
 
@@ -474,7 +474,7 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc        
@@ -499,7 +499,7 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc
@@ -521,24 +521,24 @@ class Profile(actions.ActionProvider):
         log.debug('Keyboard event ({}) on canvas {}'.format(key, canvas.name))
 
         handler(ev, canvas, key)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
 
 class ProfileManager(object):
     """Manages creation/registration/de-regsistration of :class:`Profile`
-    instances for a :class:`.CanvasPanel` instance.
+    instances for a :class:`.ViewPanel` instance.
 
     A :class:`ProfileManager` instance is created and used by every
-    :class:`.CanvasPanel` instance. The :mod:`.profilemap` defines the
+    :class:`.ViewPanel` instance. The :mod:`.profilemap` defines the
     :class:`Profile` types which should be used for specific
-    :class:`.CanvasPanel` types.
+    :class:`.ViewPanel` types.
     """
 
 
-    def __init__(self, canvasPanel, overlayList, displayCtx):
+    def __init__(self, viewPanel, overlayList, displayCtx):
         """Create a :class:`ProfileManager`.
 
-        :arg canvasPanel: The :class:`.CanvasPanel` instance which this
+        :arg viewPanel:   The :class:`.ViewPanel` instance which this
                           :class:`ProfileManager` is to manage.
         
         :arg overlayList: The :class:`.OverlayList` instance containing the
@@ -550,23 +550,23 @@ class ProfileManager(object):
         """
         import profilemap
         
-        self._canvasPanel    = canvasPanel
-        self._canvasCls      = canvasPanel.__class__
+        self._viewPanel      = viewPanel
+        self._viewCls        = viewPanel.__class__
         self._overlayList    = overlayList
         self._displayCtx     = displayCtx
         self._currentProfile = None
 
-        profileProp = canvasPanel.getProp('profile')
-        profilez    = profilemap.profiles.get(canvasPanel.__class__, [])
+        profileProp = viewPanel.getProp('profile')
+        profilez    = profilemap.profiles.get(viewPanel.__class__, [])
 
         for profile in profilez:
             profileProp.addChoice(
                 profile,
-                strings.profiles[canvasPanel, profile],
-                canvasPanel)
+                strings.profiles[viewPanel, profile],
+                viewPanel)
 
         if len(profilez) > 0:
-            canvasPanel.profile = profilez[0]
+            viewPanel.profile = profilez[0]
 
 
     def getCurrentProfile(self):
@@ -581,7 +581,7 @@ class ProfileManager(object):
 
         import profilemap
 
-        profileCls = profilemap.profileHandlers[self._canvasCls, profile]
+        profileCls = profilemap.profileHandlers[self._viewCls, profile]
 
         # the current profile is the requested profile
         if (self._currentProfile is not None) and \
@@ -591,15 +591,15 @@ class ProfileManager(object):
         if self._currentProfile is not None:
             log.debug('Deregistering {} profile from {}'.format(
                 self._currentProfile.__class__.__name__,
-                self._canvasCls.__name__))
+                self._viewCls.__name__))
             self._currentProfile.deregister()
                
-        self._currentProfile = profileCls(self._canvasPanel,
+        self._currentProfile = profileCls(self._viewPanel,
                                           self._overlayList,
                                           self._displayCtx)
         
         log.debug('Registering {} profile with {}'.format(
             self._currentProfile.__class__.__name__,
-            self._canvasCls.__name__))
+            self._viewCls.__name__))
         
         self._currentProfile.register()
