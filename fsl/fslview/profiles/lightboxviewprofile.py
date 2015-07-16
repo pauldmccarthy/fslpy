@@ -14,9 +14,9 @@ import fsl.fslview.profiles as profiles
 
 
 class LightBoxViewProfile(profiles.Profile):
-    def __init__(self, canvasPanel, overlayList, displayCtx):
+    def __init__(self, viewPanel, overlayList, displayCtx):
         profiles.Profile.__init__(self,
-                                  canvasPanel,
+                                  viewPanel,
                                   overlayList,
                                   displayCtx,
                                   modes=['view', 'zoom'])
@@ -41,7 +41,7 @@ class LightBoxViewProfile(profiles.Profile):
         if   wheel > 0: wheel = -1
         elif wheel < 0: wheel =  1
 
-        self._canvasPanel.getCanvas().topRow += wheel
+        self._viewPanel.getCanvas().topRow += wheel
 
         
     def _viewModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
@@ -69,4 +69,4 @@ class LightBoxViewProfile(profiles.Profile):
 
         if   wheel > 0: wheel =  50
         elif wheel < 0: wheel = -50
-        self._canvasPanel.getSceneOptions().zoom += wheel 
+        self._viewPanel.getSceneOptions().zoom += wheel 

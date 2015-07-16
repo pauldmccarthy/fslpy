@@ -72,12 +72,12 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._selAnnotation.texture.refresh() 
  
 
-    def __init__(self, canvasPanel, overlayList, displayCtx):
+    def __init__(self, viewPanel, overlayList, displayCtx):
 
         self._editor         = editor.Editor(overlayList, displayCtx) 
-        self._xcanvas        = canvasPanel.getXCanvas()
-        self._ycanvas        = canvasPanel.getYCanvas()
-        self._zcanvas        = canvasPanel.getZCanvas() 
+        self._xcanvas        = viewPanel.getXCanvas()
+        self._ycanvas        = viewPanel.getYCanvas()
+        self._zcanvas        = viewPanel.getZCanvas() 
         self._selAnnotation  = None
         self._selecting      = False
         self._lastDist       = None
@@ -93,7 +93,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         orthoviewprofile.OrthoViewProfile.__init__(
             self,
-            canvasPanel,
+            viewPanel,
             overlayList,
             displayCtx,
             ['sel', 'desel', 'selint'],
@@ -194,7 +194,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         xannot.obj(self._selAnnotation,  hold=True)
         yannot.obj(self._selAnnotation,  hold=True)
         zannot.obj(self._selAnnotation,  hold=True)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
 
     def _selectionChanged(self, *a):

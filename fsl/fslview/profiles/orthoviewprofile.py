@@ -38,13 +38,13 @@ class OrthoViewProfile(profiles.Profile):
 
 
     def __init__(self,
-                 canvasPanel,
+                 viewPanel,
                  overlayList,
                  displayCtx,
                  extraModes=None,
                  extraActions=None):
         """Creates an :class:`OrthoViewProfile`, which can be registered
-        with the given ``canvasPanel`` which is assumed to be an
+        with the given ``viewPanel`` which is assumed to be an
         :class:`.OrthoPanel` instance.
         """
 
@@ -61,15 +61,15 @@ class OrthoViewProfile(profiles.Profile):
         actionz = dict(actionz.items() + extraActions.items())
 
         profiles.Profile.__init__(self,
-                                  canvasPanel,
+                                  viewPanel,
                                   overlayList,
                                   displayCtx,
                                   modes,
                                   actionz)
 
-        self._xcanvas = canvasPanel.getXCanvas()
-        self._ycanvas = canvasPanel.getYCanvas()
-        self._zcanvas = canvasPanel.getZCanvas()
+        self._xcanvas = viewPanel.getXCanvas()
+        self._ycanvas = viewPanel.getYCanvas()
+        self._zcanvas = viewPanel.getZCanvas()
 
         # This attribute will occasionally store a
         # reference to a gl.annotations.Rectangle -
@@ -85,7 +85,7 @@ class OrthoViewProfile(profiles.Profile):
 
     def resetZoom(self, *a):
 
-        opts = self._canvasPanel.getSceneOptions()
+        opts = self._viewPanel.getSceneOptions()
 
         opts.zoom  = 100
         opts.xzoom = 100
