@@ -613,10 +613,20 @@ def getLookupTables():
     """Returns a list containing all available lookup tables."""
     return [_luts[lutName].mapObj for lutName in _luts.keys()]
 
+
+def getLookupTable(lutName):
+    """Returns the :class:`LutTable` instance of the specified name."""
+    return _luts[lutName].mapObj
+
         
 def getColourMaps():
     """Returns a list containing the names of all available colour maps."""
     return  _cmaps.keys()
+
+
+def getColourMap(cmapName):
+    """Returns the colour map instance of the specified name."""
+    return _cmaps[cmapName].mapObj
 
 
 def isColourMapRegistered(cmapName):

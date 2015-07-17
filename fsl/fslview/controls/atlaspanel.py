@@ -10,13 +10,14 @@ import logging
 import numpy as np
 import          wx
 
-import pwidgets.notebook   as notebook
+import pwidgets.notebook      as notebook
 
-import fsl.data.image      as fslimage
-import fsl.data.atlases    as atlases
-import fsl.data.strings    as strings
-import fsl.utils.transform as transform
-import fsl.fslview.panel   as fslpanel
+import fsl.data.image         as fslimage
+import fsl.data.atlases       as atlases
+import fsl.data.strings       as strings
+import fsl.utils.transform    as transform
+import fsl.fslview.panel      as fslpanel
+import fsl.fslview.colourmaps as fslcm
 
 
 log = logging.getLogger(__name__)
@@ -160,8 +161,9 @@ class AtlasPanel(fslpanel.FSLViewPanel):
 
         # label image
         if labelIdx is None:
-            imageType = 'volume'
-            data      = atlas.data
+            overlayType = 'label'
+            data        = atlas.data
+
         else:
 
             # regional label image
@@ -171,21 +173,19 @@ class AtlasPanel(fslpanel.FSLViewPanel):
                 elif atlasDesc.atlasType == 'label':
                     labelVal = labelIdx
 
-                imageType = 'mask' 
-                data      = np.zeros(atlas.shape, dtype=np.uint16)
+                overlayType = 'mask' 
+                data        = np.zeros(atlas.shape, dtype=np.uint16)
                 data[atlas.data == labelIdx] = labelVal
                 
             # regional probability image
             else:
-                imageType = 'volume' 
-                data      = atlas.data[:, :, :, labelIdx]
+                overlayType = 'volume' 
+                data        = atlas.data[:, :, :, labelIdx]
 
         overlay = fslimage.Image(
             data,
             header=atlas.nibImage.get_header(),
             name=overlayName)
-            
-        overlay.imageType = imageType
 
         self._overlayList.append(overlay)
 
@@ -194,21 +194,26 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         log.debug('Added overlay {}'.format(overlayName))
 
-        opts = self._displayCtx.getOpts(overlay)
+        display             = self._displayCtx.getDisplay(overlay)
+        display.overlayType = overlayType
+        opts                = display.getDisplayOpts()
 
-        if labelIdx is not None:
-            if summary: opts.colour = np.random.random(3)
-            else:       opts.cmap   = 'hot'
-        else:
+        if   overlayType == 'mask':   opts.colour = np.random.random(3)
+        elif overlayType == 'volume': opts.cmap   = 'hot'
+        elif overlayType == 'label':
+            
             # The Harvard-Oxford atlases have special colour maps
+            #
+            # TODO The colourmaps module will (hopefully) soon
+            #      allow me to set an lut by key value, instead
+            #      of having to look up the LUT object by its
+            #      display name
             if   atlasID == 'HarvardOxford-Cortical':
-                cmap = 'MGH Cortical'
+                opts.lut = fslcm.getLookupTable('MGH Cortical')
             elif atlasID == 'HarvardOxford-Subcortical':
-                cmap = 'MGH Sub-cortical'
+                opts.lut = fslcm.getLookupTable('MGH Sub-cortical')
             else:
-                cmap = 'Random'
-                
-            opts.cmap = cmap
+                opts.lut = fslcm.getLookupTable('Random')
 
 
     def locateRegion(self, atlasID, labelIdx):

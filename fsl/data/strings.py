@@ -43,6 +43,8 @@ messages = TypeDict({
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
                                                'installing the colour map',
 
+    'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
+
     'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
                                      'images oriented to MNI152 space',
 

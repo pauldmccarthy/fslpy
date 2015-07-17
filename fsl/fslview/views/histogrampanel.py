@@ -516,8 +516,8 @@ class HistogramPanel(plotpanel.PlotPanel):
         # happening.
         if baseHs is None:
             hs = messagedlg.ProcessingDialog(
-                loadHs,
-                strings.messages[self, 'calcHist'].format(overlay.name)).Run()
+                strings.messages[self, 'calcHist'].format(overlay.name),
+                loadHs).Run()
 
             # Put the initial HS instance for this
             # overlay in the cache so we don't have

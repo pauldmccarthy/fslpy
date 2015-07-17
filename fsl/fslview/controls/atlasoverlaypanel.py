@@ -13,8 +13,10 @@ import wx
 
 import pwidgets.elistbox as elistbox
 
-import fsl.data.atlases  as atlases
-import fsl.fslview.panel as fslpanel
+import fsl.data.atlases      as atlases
+import fsl.data.strings      as strings
+import fsl.utils.messagedlg  as msgdlg
+import fsl.fslview.panel     as fslpanel
 
 
 log = logging.getLogger(__name__)
@@ -59,8 +61,6 @@ class OverlayListWidget(wx.Panel):
         self.atlasPanel.locateRegion(self.atlasID, self.labelIdx)
 
         
-# TODO control to locate region (in addition 
-# to control displaying the region)
 
 class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
@@ -186,23 +186,31 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                        elistbox.ELB_NO_REMOVE |
                        elistbox.ELB_NO_MOVE))
 
-            log.debug('Creating region list for {} ({})'.format(
-                atlasDesc.atlasID, id(regionList)))
-            
-            self.__regionLists[atlasIdx] = regionList
 
-            for i, label in enumerate(atlasDesc.labels):
-                regionList.Append(label.name)
-                widget = OverlayListWidget(regionList,
-                                           atlasDesc.atlasID,
-                                           self.__atlasPanel,
-                                           label.index)
-                regionList.SetItemWidget(i, widget)
-                                           
-            filterStr = self.__regionFilter.GetValue().lower()
-            regionList.ApplyFilter(filterStr, ignoreCase=True)
+            def buildRegionList():
 
-            self.__updateAtlasState(atlasIdx)
+                log.debug('Creating region list for {} ({})'.format(
+                    atlasDesc.atlasID, id(regionList)))
+
+                self.__regionLists[atlasIdx] = regionList
+
+                for i, label in enumerate(atlasDesc.labels):
+                    regionList.Append(label.name)
+                    widget = OverlayListWidget(regionList,
+                                               atlasDesc.atlasID,
+                                               self.__atlasPanel,
+                                               label.index)
+                    regionList.SetItemWidget(i, widget)
+
+                filterStr = self.__regionFilter.GetValue().lower()
+                regionList.ApplyFilter(filterStr, ignoreCase=True)
+
+                self.__updateAtlasState(atlasIdx)
+
+            msgdlg.ProcessingDialog(
+                strings.messages[self, 'loadRegions'].format(atlasDesc.name),
+                buildRegionList).Run()
+            buildRegionList()
             
         log.debug('Showing region list for {} ({})'.format(
             atlasDesc.atlasID, id(regionList)))
