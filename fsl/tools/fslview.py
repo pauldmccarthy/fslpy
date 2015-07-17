@@ -139,6 +139,18 @@ def context(args):
     overlayList = fsloverlay.OverlayList()
     displayCtx  = displaycontext.DisplayContext(overlayList)
 
+
+    # While the DisplayContext may refer to 
+    # multiple overlay groups, we are currently
+    # using just one, allowing the user to specify
+    # a set of overlays for which their display
+    # properties are 'locked'.
+    lockGroup   = displaycontext.OverlayGroup(displayCtx,
+                                              overlayList,
+                                              0,
+                                              'LockGroup')
+    displayCtx.overlayGroups.append(lockGroup)
+
     log.debug('Created overlay list and master DisplayContext ({})'.format(
         id(displayCtx)))
     

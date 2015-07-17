@@ -11,6 +11,7 @@ import display
 
 from displaycontext import DisplayContext
 from display        import Display
+from group          import OverlayGroup
 from sceneopts      import SceneOpts
 from orthoopts      import OrthoOpts
 from lightboxopts   import LightBoxOpts

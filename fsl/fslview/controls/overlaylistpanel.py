@@ -29,47 +29,73 @@ class ListItemWidget(wx.Panel):
     _enabledFG  = '#000000'
     _disabledFG = '#CCCCCC'
 
-    def __init__(self, parent, overlay, display, listBox):
+    def __init__(self, parent, overlay, display, displayCtx, listBox):
         wx.Panel.__init__(self, parent)
 
-        self.overlay = overlay
-        self.display = display
-        self.listBox = listBox
-        self.name    = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.overlay    = overlay
+        self.display    = display
+        self.displayCtx = displayCtx
+        self.listBox    = listBox
+        self.name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        self.saveButton = wx.Button(self, label='S', style=wx.BU_EXACTFIT)
-        self.visibility = props.makeWidget(self, display, 'enabled')
+        self.saveButton = wx.Button(       self,
+                                           label='S',
+                                           style=wx.BU_EXACTFIT)
+        self.lockButton = wx.ToggleButton( self,
+                                           label='L',
+                                           style=wx.BU_EXACTFIT)
+        self.visibility = props.makeWidget(self,
+                                           display,
+                                           'enabled')
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.SetSizer(self.sizer)
 
         self.sizer.Add(self.saveButton, flag=wx.EXPAND, proportion=1)
+        self.sizer.Add(self.lockButton, flag=wx.EXPAND, proportion=1)
         self.sizer.Add(self.visibility, flag=wx.EXPAND, proportion=1)
 
-        self.display.addListener('enabled', self.name, self._vizChanged)
+        # There is currently only one overlay
+        # group in the application. In the
+        # future there may be multiple groups.
+        group = displayCtx.overlayGroups[0]
 
+        display.addListener('enabled',  self.name, self.__vizChanged)
+        group  .addListener('overlays', self.name, self.__overlayGroupChanged)
+        
         if isinstance(overlay, fslimage.Image):
-            self.overlay.addListener('saved',
-                                     self.name,
-                                     self._saveStateChanged)
+            overlay.addListener('saved', self.name, self.__saveStateChanged)
         else:
             log.warn('No save button support for non-volumetric overlays')
             self.saveButton.Enable(False)
 
-        self.saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton)
+        self.saveButton.Bind(wx.EVT_BUTTON,         self.__onSaveButton)
+        self.lockButton.Bind(wx.EVT_TOGGLEBUTTON,   self.__onLockButton)
+        self           .Bind(wx.EVT_WINDOW_DESTROY, self.__onDestroy)
 
-        self.Bind(wx.EVT_WINDOW_DESTROY, self._onDestroy)
+        self.__vizChanged()
+        self.__saveStateChanged()
 
-        self._vizChanged()
-        self._saveStateChanged()
+
+    def __overlayGroupChanged(self, *a):
+
+        group = self.displayCtx.overlayGroups[0]
+        self.lockButton.SetValue(self.overlay in group.overlays)
 
         
-    def _onSaveButton(self, ev):
+    def __onSaveButton(self, ev):
         self.overlay.save()
 
+
+    def __onLockButton(self, ev):
+        group = self.displayCtx.overlayGroups[0]
         
-    def _onDestroy(self, ev):
+        if self.lockButton.GetValue(): group.addOverlay(   self.overlay)
+        else:                          group.removeOverlay(self.overlay)
+
+        
+    def __onDestroy(self, ev):
         ev.Skip()
         if ev.GetEventObject() is not self:
             return
@@ -80,7 +106,7 @@ class ListItemWidget(wx.Panel):
             self.overlay.removeListener('saved', self.name)
 
         
-    def _saveStateChanged(self, *a):
+    def __saveStateChanged(self, *a):
 
         if not isinstance(self.overlay, fslimage.Image):
             return
@@ -95,7 +121,7 @@ class ListItemWidget(wx.Panel):
             self.listBox.SetItemBackgroundColour(idx, '#ffaaaa', '#aa4444') 
 
             
-    def _vizChanged(self, *a):
+    def __vizChanged(self, *a):
 
         idx = self.listBox.IndexOf(self.overlay)
 
@@ -226,7 +252,11 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
             
             self._listBox.Append(name, overlay, tooltip)
 
-            widget = ListItemWidget(self, overlay, display, self._listBox)
+            widget = ListItemWidget(self,
+                                    overlay,
+                                    display,
+                                    self._displayCtx,
+                                    self._listBox)
 
             self._listBox.SetItemWidget(i, widget)
 

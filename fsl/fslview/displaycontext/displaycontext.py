@@ -66,6 +66,12 @@ class DisplayContext(props.SyncableHasProperties):
     """
 
 
+    overlayGroups = props.List()
+    """A list of :class:`.OverlayGroup` instances, each of which defines
+    a group of overlays which share display properties.
+    """
+
+
     def __init__(self, overlayList, parent=None):
         """Create a :class:`DisplayContext` object.
 
@@ -75,7 +81,9 @@ class DisplayContext(props.SyncableHasProperties):
         as the parent of this instance.
         """
 
-        props.SyncableHasProperties.__init__(self, parent)
+        props.SyncableHasProperties.__init__(self,
+                                             parent,
+                                             nounbind=['overlayGroups'])
         
         self.__overlayList = overlayList
         self.__name         = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -94,7 +102,6 @@ class DisplayContext(props.SyncableHasProperties):
         overlayList.addListener('overlays',
                                 self.__name,
                                 self.__overlayListChanged)
-
 
         log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 

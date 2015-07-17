@@ -43,7 +43,7 @@ class OverlayList(props.HasProperties):
 
       - ``name`` ...
     
-      - ``dataSoruce`` ..
+      - ``dataSource`` ..
 
 
     Furthermore, all overlay types must be able to be created with a single
