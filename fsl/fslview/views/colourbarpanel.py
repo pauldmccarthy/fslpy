@@ -16,6 +16,7 @@ import wx
 
 import fsl.data.image                         as fslimage
 import fsl.fslview.panel                      as fslpanel
+import fsl.fslview.displaycontext             as fsldc
 import fsl.fslview.displaycontext.volumeopts  as volumeopts
 import fsl.fslview.gl.wxglcolourbarcanvas     as cbarcanvas
 
@@ -80,15 +81,19 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         overlay = self._selectedOverlay
 
         if overlay is not None:
-            display = self._displayCtx.getDisplay(overlay)
-            opts    = display.getDisplayOpts()
+            try:
+                display = self._displayCtx.getDisplay(overlay)
+                opts    = display.getDisplayOpts()
 
-            if isinstance(opts, volumeopts.VolumeOpts):
-                display.removeListener('name',         self._name)
-                opts   .removeListener('cmap',         self._name)
-                opts   .removeListener('displayRange', self._name)
+                if isinstance(opts, volumeopts.VolumeOpts):
+                    display.removeListener('name',         self._name)
+                    opts   .removeListener('cmap',         self._name)
+                    opts   .removeListener('displayRange', self._name)
+                    
+            except fsldc.InvalidOverlayError:
+                pass
 
-        self._cbPanel        .destroy(self)
+        self._cbPanel        .destroy()
         fslpanel.FSLViewPanel.destroy(self)
  
             
@@ -111,13 +116,22 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """
 
         overlay = self._selectedOverlay
+        
         if overlay is not None:
-            display = self._displayCtx.getDisplay(overlay)
-            opts    = display.getDisplayOpts()
+            try:
+                display = self._displayCtx.getDisplay(overlay)
+                opts    = display.getDisplayOpts()
 
-            opts   .removeListener('displayRange', self._name)
-            opts   .removeListener('cmap',         self._name)
-            display.removeListener('name',         self._name)
+                opts   .removeListener('displayRange', self._name)
+                opts   .removeListener('cmap',         self._name)
+                display.removeListener('name',         self._name)
+
+            # The previously selected overlay
+            # has been removed from the list,
+            # so its Display/Opts instances
+            # have been thrown away
+            except fsldc.InvalidOverlayError:
+                pass
             
         self._selectedOverlay = None
             

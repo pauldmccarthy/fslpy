@@ -188,12 +188,16 @@ class ImageOpts(fsldisplay.DisplayOpts):
         if propName != 'transform':
             return oldLoc
 
+        lastVal = self.getLastValue('transform')
+        if lastVal is None:
+            lastVal = self.transform
+
         # Calculate the image world location using the
         # old display<-> world transform, then transform
         # it back to the new world->display transform. 
         worldLoc = transform.transform(
             [oldLoc],
-            self.getTransform(self.getLastValue('transform'), 'world'))[0]
+            self.getTransform(lastVal, 'world'))[0]
         
         newLoc  = transform.transform(
             [worldLoc],

@@ -24,6 +24,9 @@ from modelopts      import ModelOpts
 from labelopts      import LabelOpts
 
 
+from displaycontext import InvalidOverlayError
+
+
 ALL_OVERLAY_TYPES = list(set(
     reduce(lambda a, b: a + b,
            display.OVERLAY_TYPES.values())))

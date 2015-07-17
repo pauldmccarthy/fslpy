@@ -16,6 +16,14 @@ import display as fsldisplay
 log = logging.getLogger(__name__)
 
 
+class InvalidOverlayError(Exception):
+    """An error raised by the :meth:`DisplayContext.getDisplay`
+    and :meth:`DisplayContext.getOpts` methods to indicate that
+    the specified overlay is not in the :class:`.OverlayList`.
+    """
+    pass
+
+
 class DisplayContext(props.SyncableHasProperties):
     """Contains a number of properties defining how an :class:`.OverlayList`
     is to be displayed.
@@ -125,7 +133,8 @@ class DisplayContext(props.SyncableHasProperties):
             raise ValueError('No overlay specified')
 
         if overlay not in self.__overlayList:
-            raise ValueError('Overlay is not in list')
+            raise InvalidOverlayError('Overlay {} is not in '
+                                      'list'.format(overlay.name))
 
         if isinstance(overlay, int):
             overlay = self.__overlayList[overlay]
@@ -154,8 +163,7 @@ class DisplayContext(props.SyncableHasProperties):
 
     def getOpts(self, overlay, overlayType=None):
         """Returns the :class:`.DisplayOpts` instance associated with the
-        specified overlay, or ``None`` if the overlay is not in the overlay
-        list.
+        specified overlay.
 
         See :meth:`.Display.getDisplayOpts` and :meth:`getDisplay`. 
         """
@@ -164,12 +172,10 @@ class DisplayContext(props.SyncableHasProperties):
             raise ValueError('No overlay specified')
 
         if overlay not in self.__overlayList:
-            raise ValueError('Overlay is not in list') 
+            raise InvalidOverlayError('Overlay {} is not in '
+                                      'list'.format(overlay.name)) 
 
-        try:
-            return self.getDisplay(overlay, overlayType).getDisplayOpts()
-        except KeyError:
-            return None
+        return self.getDisplay(overlay, overlayType).getDisplayOpts()
 
 
     def getReferenceImage(self, overlay):
@@ -185,6 +191,9 @@ class DisplayContext(props.SyncableHasProperties):
 
         
     def selectOverlay(self, overlay):
+        """Selects the specified ``overlay``. Raises an ``IndexError`` if
+        the overlay is not in the list.
+        """
         self.selectedOverlay = self.__overlayList.index(overlay)
 
     
@@ -200,6 +209,8 @@ class DisplayContext(props.SyncableHasProperties):
         """Returns the order in which the given overlay (or an index into
         the :class:`.OverlayList` list) should be displayed
         (see the :attr:`overlayOrder property).
+
+        Raises an ``IndexError`` if the overlay is not in the list.
         """
         if not isinstance(overlay, int):
             overlay = self.__overlayList.index(overlay)
