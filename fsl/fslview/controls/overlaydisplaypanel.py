@@ -258,8 +258,6 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         self.__widgets.ClearGroup(groupName)
 
         widgets = _DISPLAY_PROPS[target]
-        if isinstance(target, displayctx.RGBVectorOpts):
-            print 'bah'
         labels  = [strings.properties[target, w.key] for w in widgets]
         widgets = [props.buildGUI(self.__widgets,
                                   target,

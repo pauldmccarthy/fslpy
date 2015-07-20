@@ -186,10 +186,11 @@ class ViewPanel(fslpanel.FSLViewPanel):
             
         else:
             
+            paneInfo = aui.AuiPaneInfo()
             window   = panelType(
                 self, self._overlayList, self._displayCtx, *args, **kwargs)
 
-            paneInfo = aui.AuiPaneInfo()
+            window.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
             if isinstance(window, fsltoolbar.FSLViewToolBar):
                 paneInfo.ToolbarPane()

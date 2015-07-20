@@ -131,11 +131,11 @@ class _FSLViewPanel(actions.ActionProvider):
                         'this is probably a bug!'.format(type(self).__name__))
 
 
-class FSLViewPanel(_FSLViewPanel, wx.Panel):
+class FSLViewPanel(_FSLViewPanel, wx.PyPanel):
     """
     """
 
     
     def __init__(self, parent, overlayList, displayCtx, actionz=None):
-        wx.Panel.__init__(self, parent)
+        wx.PyPanel.__init__(self, parent)
         _FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
