@@ -253,7 +253,7 @@ class GLVector(globject.GLImageObject):
 
         modImage = self.displayOpts.modulate
 
-        if modImage == 'none':
+        if modImage is None or modImage == 'none':
             textureData = np.zeros((5, 5, 5), dtype=np.uint8)
             textureData[:] = 255
             modImage   = fslimage.Image(textureData)

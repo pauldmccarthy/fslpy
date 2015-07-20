@@ -181,90 +181,82 @@ LabelOptsToolBarLayout = [
     actions.ActionButton(OverlayDisplayToolBar, 'more')]
 
 
-DisplayLayout = props.VGroup(
-    (widget(Display, 'name'),
-     widget(Display, 'overlayType'),
-     widget(Display, 'enabled'),
-     widget(Display, 'alpha',         showLimits=False, editLimits=False),
-     widget(Display, 'brightness',    showLimits=False, editLimits=False),
-     widget(Display, 'contrast',      showLimits=False, editLimits=False)))
+DisplayLayout = [
+    widget(Display, 'name'),
+    widget(Display, 'overlayType'),
+    widget(Display, 'enabled'),
+    widget(Display, 'alpha',         showLimits=False, editLimits=False),
+    widget(Display, 'brightness',    showLimits=False, editLimits=False),
+    widget(Display, 'contrast',      showLimits=False, editLimits=False)]
 
 
-VolumeOptsLayout = props.VGroup(
-    (widget(VolumeOpts, 'resolution',    showLimits=False),
-     widget(VolumeOpts, 'transform'),
-     widget(VolumeOpts, 'volume',        showLimits=False),
-     widget(VolumeOpts, 'interpolation'),
-     widget(VolumeOpts, 'cmap'),
-     widget(VolumeOpts, 'invert'),
-     widget(VolumeOpts, 'invertClipping'),
-     widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
-     widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)))
+VolumeOptsLayout = [
+    widget(VolumeOpts, 'resolution',    showLimits=False),
+    widget(VolumeOpts, 'transform'),
+    widget(VolumeOpts, 'volume',        showLimits=False),
+    widget(VolumeOpts, 'interpolation'),
+    widget(VolumeOpts, 'cmap'),
+    widget(VolumeOpts, 'invert'),
+    widget(VolumeOpts, 'invertClipping'),
+    widget(VolumeOpts, 'displayRange',  showLimits=False, slider=True),
+    widget(VolumeOpts, 'clippingRange', showLimits=False, slider=True)]
 
 
-MaskOptsLayout = props.VGroup(
-    (widget(MaskOpts, 'resolution',    showLimits=False),
-     widget(MaskOpts, 'transform'),
-     widget(MaskOpts, 'volume',        showLimits=False),
-     widget(MaskOpts, 'colour'),
-     widget(MaskOpts, 'invert'),
-     widget(MaskOpts, 'threshold', showLimits=False)))
+MaskOptsLayout = [
+    widget(MaskOpts, 'resolution', showLimits=False),
+    widget(MaskOpts, 'transform'),
+    widget(MaskOpts, 'volume',     showLimits=False),
+    widget(MaskOpts, 'colour'),
+    widget(MaskOpts, 'invert'),
+    widget(MaskOpts, 'threshold',  showLimits=False)]
 
 
-RGBVectorOptsLayout = props.VGroup((
+RGBVectorOptsLayout = [
     widget(RGBVectorOpts, 'resolution',    showLimits=False),
     widget(RGBVectorOpts, 'transform'),
     widget(RGBVectorOpts, 'interpolation'),
-    props.HGroup((
-        widget(RGBVectorOpts, 'xColour'),
-        widget(RGBVectorOpts, 'yColour'),
-        widget(RGBVectorOpts, 'zColour')),
-        vertLabels=True),
-    props.HGroup((
-        widget(RGBVectorOpts, 'suppressX'),
-        widget(RGBVectorOpts, 'suppressY'),
-        widget(RGBVectorOpts, 'suppressZ')),
-        vertLabels=True),
+    widget(RGBVectorOpts, 'xColour'),
+    widget(RGBVectorOpts, 'yColour'),
+    widget(RGBVectorOpts, 'zColour'),
+    widget(RGBVectorOpts, 'suppressX'),
+    widget(RGBVectorOpts, 'suppressY'),
+    widget(RGBVectorOpts, 'suppressZ'),
     widget(RGBVectorOpts, 'modulate'),
-    widget(RGBVectorOpts, 'modThreshold', showLimits=False, spin=False)))
+    widget(RGBVectorOpts, 'modThreshold', showLimits=False, spin=False)]
 
-LineVectorOptsLayout = props.VGroup((
+LineVectorOptsLayout = [
     widget(LineVectorOpts, 'resolution',    showLimits=False),
     widget(LineVectorOpts, 'transform'),
-    props.HGroup((
-        widget(LineVectorOpts, 'xColour'),
-        widget(LineVectorOpts, 'yColour'),
-        widget(LineVectorOpts, 'zColour')),
-        vertLabels=True),
-    props.HGroup((
-        widget(LineVectorOpts, 'suppressX'),
-        widget(LineVectorOpts, 'suppressY'),
-        widget(LineVectorOpts, 'suppressZ')),
-        vertLabels=True),
+    widget(LineVectorOpts, 'xColour'),
+    widget(LineVectorOpts, 'yColour'),
+    widget(LineVectorOpts, 'zColour'),
+    widget(LineVectorOpts, 'suppressX'),
+    widget(LineVectorOpts, 'suppressY'),
+    widget(LineVectorOpts, 'suppressZ'),
     widget(LineVectorOpts, 'directed'),
     widget(LineVectorOpts, 'lineWidth', showLimits=False),
     widget(LineVectorOpts, 'modulate'),
-    widget(LineVectorOpts, 'modThreshold', showLimits=False, spin=False)))
+    widget(LineVectorOpts, 'modThreshold', showLimits=False, spin=False)]
 
 
-ModelOptsLayout = props.VGroup((
+ModelOptsLayout = [
     widget(ModelOpts, 'colour'),
     widget(ModelOpts, 'outline'),
     widget(ModelOpts, 'outlineWidth', showLimits=False),
     widget(ModelOpts, 'refImage'),
     # widget(ModelOpts, 'showName'),
     widget(ModelOpts, 'coordSpace',
-           visibleWhen=lambda o: o.refImage != 'none')))
+           visibleWhen=lambda o: o.refImage != 'none')]
 
 
-LabelOptsLayout = props.VGroup((
+LabelOptsLayout = [
     widget(LabelOpts, 'lut'),
     widget(LabelOpts, 'outline'),
     widget(LabelOpts, 'outlineWidth', showLimits=False),
     # widget(LabelOpts, 'showNames'),
     widget(LabelOpts, 'resolution', showLimits=False),
     widget(LabelOpts, 'transform'),
-    widget(LabelOpts, 'volume',     showLimits=False)))
+    widget(LabelOpts, 'volume',     showLimits=False)]
 
 
 

@@ -257,6 +257,15 @@ labels = TypeDict({
     
     'ClusterPanel.addZStats'      : 'Add Z statistics',
     'ClusterPanel.addClusterMask' : 'Add cluster mask',
+
+
+    'OverlayDisplayPanel.Display'        : 'General display settings',
+    'OverlayDisplayPanel.VolumeOpts'     : 'Volume settings',
+    'OverlayDisplayPanel.MaskOpts'       : 'Mask settings',
+    'OverlayDisplayPanel.LabelOpts'      : 'Label settings',
+    'OverlayDisplayPanel.RGBVectorOpts'  : 'RGB vector settings',
+    'OverlayDisplayPanel.LineVectorOpts' : 'Line vector settings',
+    'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
     
 })
 
@@ -377,11 +386,12 @@ properties = TypeDict({
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
 
-    'ModelOpts.colour'     : 'Colour',
-    'ModelOpts.outline'    : 'Show outline only',
-    'ModelOpts.refImage'   : 'Reference image',
-    'ModelOpts.coordSpace' : 'Model coordinate space',
-    'ModelOpts.showName'   : 'Show model name',
+    'ModelOpts.colour'       : 'Colour',
+    'ModelOpts.outline'      : 'Show outline only',
+    'ModelOpts.outlineWidth' : 'Outline width',
+    'ModelOpts.refImage'     : 'Reference image',
+    'ModelOpts.coordSpace'   : 'Model coordinate space',
+    'ModelOpts.showName'     : 'Show model name',
 
     'LabelOpts.lut'          : 'Look-up table',
     'LabelOpts.outline'      : 'Show outline only',

@@ -74,6 +74,7 @@ class ListItemWidget(wx.Panel):
         self.lockButton.Bind(wx.EVT_TOGGLEBUTTON,   self.__onLockButton)
         self           .Bind(wx.EVT_WINDOW_DESTROY, self.__onDestroy)
 
+        self.__overlayGroupChanged()
         self.__vizChanged()
         self.__saveStateChanged()
 

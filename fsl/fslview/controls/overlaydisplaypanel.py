@@ -14,12 +14,91 @@ import logging
 import wx
 import props
 
+import pwidgets.widgetlist        as widgetlist
+
+import fsl.utils.typedict         as td
+import fsl.data.strings           as strings
 import fsl.fslview.panel          as fslpanel
-import fsl.fslview.displaycontext as fsldisplay
-import overlayselectpanel         as overlayselect
+import fsl.fslview.displaycontext as displayctx
+
 
 
 log = logging.getLogger(__name__)
+
+
+_DISPLAY_PROPS = td.TypeDict({
+    'Display' : [
+        props.Widget('name'),
+        props.Widget('overlayType'),
+        props.Widget('enabled'),
+        props.Widget('alpha',      showLimits=False),
+        props.Widget('brightness', showLimits=False),
+        props.Widget('contrast',   showLimits=False)],
+
+    'VolumeOpts' : [
+        props.Widget('resolution',    showLimits=False),
+        props.Widget('transform'),
+        props.Widget('volume',        showLimits=False),
+        props.Widget('interpolation'),
+        props.Widget('cmap'),
+        props.Widget('invert'),
+        props.Widget('invertClipping'),
+        props.Widget('displayRange',  showLimits=False, slider=True),
+        props.Widget('clippingRange', showLimits=False, slider=True)],
+
+    'MaskOpts' : [
+        props.Widget('resolution', showLimits=False),
+        props.Widget('transform'),
+        props.Widget('volume',     showLimits=False),
+        props.Widget('colour'),
+        props.Widget('invert'),
+        props.Widget('threshold',  showLimits=False)],
+
+    'RGBVectorOpts' : [
+        props.Widget('resolution',    showLimits=False),
+        props.Widget('transform'),
+        props.Widget('interpolation'),
+        props.Widget('xColour'),
+        props.Widget('yColour'),
+        props.Widget('zColour'),
+        props.Widget('suppressX'),
+        props.Widget('suppressY'),
+        props.Widget('suppressZ'),
+        props.Widget('modulate'),
+        props.Widget('modThreshold', showLimits=False, spin=False)],
+
+    'LineVectorOpts' : [
+        props.Widget('resolution',    showLimits=False),
+        props.Widget('transform'),
+        props.Widget('xColour'),
+        props.Widget('yColour'),
+        props.Widget('zColour'),
+        props.Widget('suppressX'),
+        props.Widget('suppressY'),
+        props.Widget('suppressZ'),
+        props.Widget('directed'),
+        props.Widget('lineWidth', showLimits=False),
+        props.Widget('modulate'),
+        props.Widget('modThreshold', showLimits=False, spin=False)],
+
+    'ModelOpts' : [
+        props.Widget('colour'),
+        props.Widget('outline'),
+        props.Widget('outlineWidth', showLimits=False),
+        props.Widget('refImage'),
+        # props.Widget('showName'),
+        props.Widget('coordSpace',
+                     enabledWhen=lambda o: o.refImage != 'none')],
+
+    'LabelOpts' : [
+        props.Widget('lut'),
+        props.Widget('outline'),
+        props.Widget('outlineWidth', showLimits=False),
+        # props.Widget('showNames'),
+        props.Widget('resolution',   showLimits=False),
+        props.Widget('transform'),
+        props.Widget('volume',       showLimits=False)]
+})
 
     
 class OverlayDisplayPanel(fslpanel.FSLViewPanel):
@@ -28,40 +107,17 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         """
         """
 
-        # TODO Ability to link properties across images
-
         fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        self.overlaySelect = overlayselect.OverlaySelectPanel(
-            self, overlayList, displayCtx)
+        self.__overlayName = wx.StaticText(self, style=wx.ALIGN_CENTRE)
+        self.__widgets     = widgetlist.WidgetList(self)
+        self.__sizer       = wx.BoxSizer(wx.VERTICAL)
 
-        self.propPanel = wx.ScrolledWindow(self)
-        self.propPanel.SetScrollRate(0, 5)
-        self.dispPanel = wx.Panel(self.propPanel)
-        self.optsPanel = wx.Panel(self.propPanel)
+        self.SetSizer(self.__sizer)
 
-        self.divider = wx.StaticLine(
-            self.propPanel, size=(-1, -1), style=wx.LI_HORIZONTAL)
+        self.__sizer.Add(self.__overlayName, flag=wx.EXPAND)
+        self.__sizer.Add(self.__widgets,     flag=wx.EXPAND, proportion=1)
 
-        self.sizer     = wx.BoxSizer(wx.VERTICAL)
-        self.propSizer = wx.BoxSizer(wx.VERTICAL)
-        self.dispSizer = wx.BoxSizer(wx.VERTICAL)
-        self.optsSizer = wx.BoxSizer(wx.VERTICAL)
-        
-        self          .SetSizer(self.sizer)
-        self.propPanel.SetSizer(self.propSizer)
-        self.dispPanel.SetSizer(self.dispSizer)
-        self.optsPanel.SetSizer(self.optsSizer)
-
-        self.sizer.Add(self.overlaySelect, flag=wx.EXPAND)
-        self.sizer.Add(self.propPanel,     flag=wx.EXPAND, proportion=1)
-
-        flags = wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL
-        
-        self.propSizer.Add(self.dispPanel, border=20, flag=flags)
-        self.propSizer.Add(self.divider,              flag=flags)
-        self.propSizer.Add(self.optsPanel, border=20, flag=flags) 
-        
         displayCtx .addListener('selectedOverlay',
                                  self._name,
                                  self.__selectedOverlayChanged)
@@ -69,71 +125,108 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
                                  self._name,
                                  self.__selectedOverlayChanged)
 
-        self.__lastOverlay = None
+        self.__currentOverlay = None
         self.__selectedOverlayChanged()
 
-        self.propSizer.Layout()
         self.Layout()
-        
-        pSize = self.propSizer.GetMinSize().Get()
-        size  = self.sizer    .GetMinSize().Get()
-        self.SetMinSize((max(pSize[0], size[0]), max(pSize[1], size[1]) + 20))
+        self.SetMinSize((100, 50))
 
         
     def destroy(self):
 
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
-        self.overlaySelect.destroy()
 
-        for ovl in self._overlayList:
-            display = self._displayCtx.getDisplay(ovl)
+        if self.__currentOverlay is not None and \
+           self.__currentOverlay in self._overlayList:
+            
+            display = self._displayCtx.getDisplay(self.__currentOverlay)
+            opts    = display.getDisplayOpts()
+            
             display.removeListener('overlayType', self._name)
+            display.removeListener('name',        self._name)
 
+            if isinstance(opts, displayctx.VolumeOpts):
+                opts.removeListener('transform', self._name)
+
+        self.__currentOverlay = None
         fslpanel.FSLViewPanel.destroy(self)
 
 
     def __selectedOverlayChanged(self, *a):
 
         overlay     = self._displayCtx.getSelectedOverlay()
-        lastOverlay = self.__lastOverlay
+        lastOverlay = self.__currentOverlay
 
         if overlay is None:
-            self.__lastOverlay = None
-            self.dispPanel.DestroyChildren()
-            self.optsPanel.DestroyChildren()
+            self.__currentOverlay = None
+            self.__overlayName.SetLabel('')
+            self.__widgets.Clear()
             self.Layout()
             return
 
         if overlay is lastOverlay:
             return
 
-        if lastOverlay is not None:
+        self.__currentOverlay = overlay
+
+        if lastOverlay is not None and \
+           lastOverlay in self._overlayList:
+            
             lastDisplay = self._displayCtx.getDisplay(lastOverlay)
             lastOpts    = lastDisplay.getDisplayOpts()
+            
             lastDisplay.removeListener('overlayType', self._name)
+            lastDisplay.removeListener('name',        self._name)
 
-            if isinstance(lastOpts, fsldisplay.VolumeOpts):
+            if isinstance(lastOpts, displayctx.VolumeOpts):
                 lastOpts.removeListener('transform', self._name)
+
+        if lastOverlay is not None:
+            displayExpanded = self.__widgets.IsExpanded('display')
+            optsExpanded    = self.__widgets.IsExpanded('opts')
+        else:
+            displayExpanded = True
+            optsExpanded    = True
 
         display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
             
-        display.addListener('overlayType',
-                            self._name,
-                            self.__overlayTypeChanged)
+        display.addListener('overlayType', self._name, self.__ovlTypeChanged)
+        display.addListener('name',        self._name, self.__ovlNameChanged) 
 
-        if isinstance(opts, fsldisplay.VolumeOpts):
+        if isinstance(opts, displayctx.VolumeOpts):
             opts.addListener('transform', self._name, self.__transformChanged)
         
-        self.__lastOverlay = overlay
-        self.__updateProps(self.dispPanel, False)
-        self.__updateProps(self.optsPanel, True)
+        self.__widgets.Clear()
+        self.__widgets.AddGroup('display', strings.labels[self, display])
+        self.__widgets.AddGroup('opts',    strings.labels[self, opts]) 
 
-    def __overlayTypeChanged(self, *a):
-        self.__updateProps(self.optsPanel, True)
+        self.__overlayName.SetLabel(display.name)
+        self.__updateWidgets(display, 'display')
+        self.__updateWidgets(opts,    'opts')
+
+
+        self.__widgets.Expand('display', displayExpanded)
+        self.__widgets.Expand('opts',    optsExpanded)
+        
+        self.Layout()
 
         
+    def __ovlNameChanged(self, *a):
+        
+        display = self._displayCtx.getDisplay(self.__currentOverlay)
+        self.__overlayName.SetLabel(display.name)
+        self.Layout()
+        
+
+    def __ovlTypeChanged(self, *a):
+
+        opts = self._displayCtx.getOpts(self.__currentOverlay)
+        self.__updateWidgets(opts, 'opts')
+        self.Layout()
+        
+
     def __transformChanged(self, *a):
         """Called when the transform setting of the currently selected overlay
         changes.
@@ -147,7 +240,7 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         display = self._displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
-        if not isinstance(opts, fsldisplay.VolumeOpts):
+        if not isinstance(opts, displayctx.VolumeOpts):
             return
 
         choices = opts.getProp('interpolation').getChoices(display)
@@ -160,21 +253,24 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             else:                   opts.interpolation = 'linear'
 
         
-    def __updateProps(self, parent, opts):
+    def __updateWidgets(self, target, groupName):
 
-        import fsl.fslview.layouts as layouts
+        self.__widgets.ClearGroup(groupName)
 
-        overlay = self._displayCtx.getSelectedOverlay()
-        display = self._displayCtx.getDisplay(overlay)
+        widgets = _DISPLAY_PROPS[target]
+        if isinstance(target, displayctx.RGBVectorOpts):
+            print 'bah'
+        labels  = [strings.properties[target, w.key] for w in widgets]
+        widgets = [props.buildGUI(self.__widgets,
+                                  target,
+                                  w,
+                                  showUnlink=False)
+                   for w in widgets]
 
-        if opts: optObj = display.getDisplayOpts()
-        else:    optObj = display
+        for label, widget in zip(labels, widgets):
+            self.__widgets.AddWidget(
+                widget,
+                label,
+                groupName=groupName)
 
-        parent.DestroyChildren()
-        
-        panel = props.buildGUI(
-            parent, optObj, view=layouts.layouts[self, optObj])
-
-        parent.GetSizer().Add(panel, flag=wx.EXPAND, proportion=1)
-        panel .Layout()
-        parent.Layout()
+        self.Layout()
