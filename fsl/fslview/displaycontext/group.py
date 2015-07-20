@@ -59,6 +59,7 @@ class OverlayGroup(props.HasProperties):
 
         self.__displayCtx  = displayCtx
         self.__overlayList = overlayList
+        self.__hasBeenSet  = {}
         self.__name        = '{}_{}'.format(type(self).__name__, id(self))
 
         # Copy all of the properties listed
@@ -80,6 +81,8 @@ class OverlayGroup(props.HasProperties):
             for propName in propNames:
                 prop = copy.copy(getattr(cls, propName))
                 self.addProperty('{}_{}'.format(clsName, propName), prop)
+                
+                self.__hasBeenSet[clsName, propName] = False
 
 
     def __copy__(self):
@@ -92,6 +95,9 @@ class OverlayGroup(props.HasProperties):
 
         display = self.__displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
+
+        log.debug('Adding overlay {} to group {}'.format(
+            overlay.name, self.__name))
 
         self.__bindDisplayOpts(display)
         self.__bindDisplayOpts(opts)
@@ -108,10 +114,17 @@ class OverlayGroup(props.HasProperties):
         display = self.__displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
-        self.__bindDisplayOpts(display, True)
-        self.__bindDisplayOpts(opts,    True)
+        log.debug('Removing overlay {} from group {}'.format(
+            overlay.name, self.__name)) 
+
+        self.__bindDisplayOpts(display, unbind=True)
+        self.__bindDisplayOpts(opts,    unbind=True)
 
         display.removeListener('overlayType', self.__name)
+
+        if len(self.overlays) == 0:
+            for key in self.__hasBeenSet.keys():
+                self.__hasBeenSet[key] = False
 
 
     def __bindDisplayOpts(self, target, unbind=False):
@@ -129,15 +142,28 @@ class OverlayGroup(props.HasProperties):
         bindProps = OverlayGroup._groupBindings.get(target,
                                                     allhits=True,
                                                     bykey=True)
-        
+
         for clsName, propNames in bindProps.items():
             for propName in propNames:
 
+                groupName = '{}_{}'.format(clsName, propName)
+
+                # If the group property has not yet
+                # taken on a value, initialise it
+                # to the property value being bound.
+                # 
+                # We do this to avoid clobbering
+                # property values with un-initialised
+                # group property values.
+                #
+                if not self.__hasBeenSet[clsName, propName]:
+                    setattr(self, groupName, getattr(target, propName))
+
                 if slave is self:
                     otherName = propName
-                    propName  = '{}_{}'.format(clsName, propName)
+                    propName  = groupName
                 else:
-                    otherName = '{}_{}'.format(clsName, propName)
+                    otherName = groupName
 
                 slave.bindProps(propName,
                                 master,
