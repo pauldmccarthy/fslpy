@@ -145,10 +145,7 @@ def context(args):
     # using just one, allowing the user to specify
     # a set of overlays for which their display
     # properties are 'locked'.
-    lockGroup   = displaycontext.OverlayGroup(displayCtx,
-                                              overlayList,
-                                              0,
-                                              'LockGroup')
+    lockGroup   = displaycontext.OverlayGroup(displayCtx, overlayList)
     displayCtx.overlayGroups.append(lockGroup)
 
     log.debug('Created overlay list and master DisplayContext ({})'.format(

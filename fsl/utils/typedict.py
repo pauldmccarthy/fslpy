@@ -51,7 +51,7 @@ class TypeDict(object):
         return key
 
         
-    def get(self, key, default=None, allhits=False):
+    def get(self, key, default=None, allhits=False, bykey=False):
         """Retrieve the value associated with the given key. If
         no value is present, return the specified ``default`` value,
         which itself defaults to ``None``.
@@ -60,13 +60,19 @@ class TypeDict(object):
         ``allhits`` argument evaluates to ``True``, the entire class
         hierarchy is searched, and all values present for the class,
         and any base class, are returned as a sequence.
+
+        If ``allhits`` is ``True`` and the ``bykey`` parameter is also
+        set to ``True``, a dictionary is returned rather than a sequence,
+        where the dictionary contents are the subset of this dictionary,
+        containing the keys which equated to the given key, and their
+        corresponding values.
         """
 
-        try:             return self.__getitem__(key, allhits)
+        try:             return self.__getitem__(key, allhits, bykey)
         except KeyError: return default
 
         
-    def __getitem__(self, key, allhits=False):
+    def __getitem__(self, key, allhits=False, bykey=False):
         
         origKey = key
         key     = self.__tokenifyKey(key)
@@ -95,8 +101,9 @@ class TypeDict(object):
                 newKey.append(elem)
                 bases .append(None)
 
-        key = newKey
+        key  = newKey
 
+        keys = []
         hits = []
             
         while True:
@@ -117,7 +124,9 @@ class TypeDict(object):
 
                 # Otherwise, accumulate the value, and keep
                 # searching
-                else:           hits.append(val)
+                else:
+                    keys.append(lKey)
+                    hits.append(val)
 
             # No more base classes to search for - there
             # really is no value associated with this key
@@ -135,16 +144,30 @@ class TypeDict(object):
                 for elemBase in elemBases:
 
                     newKey    = list(key)
-                    newKey[i] = elemBase
+                    newKey[i] = elemBase.__name__
 
-                    try:             val = self.__getitem__(tuple(newKey))
+                    if len(newKey) == 1: newKey = newKey[0]
+                    else:                newKey = tuple(newKey)
+
+                    try:             val = self.__getitem__(newKey)
                     except KeyError: continue
 
                     if not allhits: return val
-                    else:           hits.append(val)
+                    else:
+                        keys.append(newKey)
+                        hits.append(val)
 
             # No value for any base classes either
             if len(hits) == 0:
                 raise KeyError(origKey)
+
+            # if bykey is true, return a dict
+            # containing the values and their
+            # corresponding keys
+            if bykey:
+                return dict(zip(keys, hits))
+
+            # otherwise just return the
+            # list of matched values
             else:
                 return hits

@@ -10,63 +10,80 @@ import copy
 
 import props
 
-import display as fsldisplay
-import            volumeopts
+import fsl.utils.typedict as td
 
 
 log = logging.getLogger(__name__)
 
 
-
 class OverlayGroup(props.HasProperties):
 
     
-    name     = props.String()
-
-    
     overlays = props.List()
+    """Do not add/remove overlays directly to this list - use the
+    :meth:`addOverlay` and :meth:`removeOverlay` methods.
+    """
 
     
-    # Properties which are linked across all overlays
-    enabled    = copy.copy(fsldisplay.Display.enabled)
-    alpha      = copy.copy(fsldisplay.Display.alpha)
-    brightness = copy.copy(fsldisplay.Display.brightness)
-    contrast   = copy.copy(fsldisplay.Display.contrast)
-
-
-    # Properties which are linked across Image overlays
-    volume = copy.copy(volumeopts.ImageOpts.transform)
+    _groupBindings = td.TypeDict({
+        'Display'        : ['enabled',
+                            'alpha',
+                            'brightness',
+                            'contrast'],
+        'ImageOpts'      : ['volume',
+                            'transform'],
+        'VolumeOpts'     : ['interpolation'],
+        'LabelOpts'      : ['outline',
+                            'outlineWidth'],
+        'ModelOpts'      : ['outline',
+                            'outlineWidth',
+                            'refImage',
+                            'coordSpace',
+                            'transform'],
+        'VectorOpts'     : ['suppressX',
+                            'suppressY',
+                            'suppressZ',
+                            'modulate',
+                            'modThreshold'],
+        'LineVectorOpts' : ['lineWidth',
+                            'directed'],
+        'RGBVectorOpts'  : ['interpolation'],
+    })
+    """This dictionary defines the properties which are bound across Display
+    instances, and instances of the DisplayOpts sub-classes, for overlays in
+    the same group.
+    """
 
     
-    # Properties which are linked across Volume overlays
-    displayRange   = copy.copy(volumeopts.VolumeOpts.displayRange)
-    clippingRange  = copy.copy(volumeopts.VolumeOpts.clippingRange)
-    invertClipping = copy.copy(volumeopts.VolumeOpts.invertClipping)
-    interpolation  = copy.copy(volumeopts.VolumeOpts.interpolation)
-
-    
-    # TODO Vector
-    # TODO Model
-    # TODO Label
-
-    
-    def __init__(self, displayCtx, overlayList, number, name=None):
+    def __init__(self, displayCtx, overlayList):
 
         self.__displayCtx  = displayCtx
         self.__overlayList = overlayList
-        self.__number      = number
+        self.__name        = '{}_{}'.format(type(self).__name__, id(self))
 
-        if name is not None:
-            self.name = name
+        # Copy all of the properties listed
+        # in the _groupBindings dict
+        from . import       \
+            Display,        \
+            ImageOpts,      \
+            VolumeOpts,     \
+            MaskOpts,       \
+            VectorOpts,     \
+            RGBVectorOpts,  \
+            LineVectorOpts, \
+            ModelOpts,      \
+            LabelOpts
+
+        for clsName, propNames in OverlayGroup._groupBindings.items():
+            cls = locals()[clsName]
+
+            for propName in propNames:
+                prop = copy.copy(getattr(cls, propName))
+                self.addProperty('{}_{}'.format(clsName, propName), prop)
 
 
     def __copy__(self):
-        return OverlayGroup(
-            self,
-            self.__displayCtx,
-            self.__overlayList,
-            self.__number,
-            self.name)
+        return OverlayGroup(self, self.__displayCtx, self.__overlayList)
 
             
     def addOverlay(self, overlay):
@@ -76,20 +93,14 @@ class OverlayGroup(props.HasProperties):
         display = self.__displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
-        # This is the first overlay to be added - the group
-        # should inherit its property values
-        if len(self.overlays) == 1: master, slave = display, self
+        self.__bindDisplayOpts(display)
+        self.__bindDisplayOpts(opts)
 
-        # Other overlays are already in the group - the
-        # new overlay should inherit the group properties
-        else:                       master, slave = self, display
+        display.addListener('overlayType',
+                            self.__name,
+                            self.__overlayTypeChanged)
 
-        slave.bindProps('enabled',    master)
-        slave.bindProps('alpha',      master)
-        slave.bindProps('brightness', master)
-        slave.bindProps('contrast',   master)
-
-
+            
     def removeOverlay(self, overlay):
 
         self.overlays.remove(overlay)
@@ -97,11 +108,44 @@ class OverlayGroup(props.HasProperties):
         display = self.__displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
 
-        self.unbindProps('enabled',    display)
-        self.unbindProps('alpha',      display)
-        self.unbindProps('brightness', display)
-        self.unbindProps('contrast',   display)
+        self.__bindDisplayOpts(display, True)
+        self.__bindDisplayOpts(opts,    True)
+
+        display.removeListener('overlayType', self.__name)
 
 
-    def __overlayTypeChanged(self, *a):
-        pass
+    def __bindDisplayOpts(self, target, unbind=False):
+        
+        # This is the first overlay to be added - the
+        # group should inherit its property values
+        if len(self.overlays) == 1:
+            master, slave = target, self
+                        
+        # Other overlays are already in the group - the
+        # new overlay should inherit the group properties
+        else:
+            master, slave = self, target
+
+        bindProps = OverlayGroup._groupBindings.get(target,
+                                                    allhits=True,
+                                                    bykey=True)
+        
+        for clsName, propNames in bindProps.items():
+            for propName in propNames:
+
+                if slave is self:
+                    otherName = propName
+                    propName  = '{}_{}'.format(clsName, propName)
+                else:
+                    otherName = '{}_{}'.format(clsName, propName)
+
+                slave.bindProps(propName,
+                                master,
+                                otherName,
+                                bindatt=False,
+                                unbind=unbind) 
+
+
+    def __overlayTypeChanged(self, value, valid, display, name):
+        opts = display.getDisplayOpts()
+        self.__bindDisplayOpts(opts)
