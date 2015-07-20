@@ -125,8 +125,9 @@ class TypeDict(object):
                 # Otherwise, accumulate the value, and keep
                 # searching
                 else:
-                    keys.append(lKey)
                     hits.append(val)
+                    if bykey:
+                        keys.append(lKey)
 
             # No more base classes to search for - there
             # really is no value associated with this key
@@ -144,18 +145,25 @@ class TypeDict(object):
                 for elemBase in elemBases:
 
                     newKey    = list(key)
-                    newKey[i] = elemBase.__name__
+                    newKey[i] = elemBase
 
                     if len(newKey) == 1: newKey = newKey[0]
                     else:                newKey = tuple(newKey)
 
-                    try:             val = self.__getitem__(newKey)
-                    except KeyError: continue
+                    try:
+                        newVal = self.__getitem__(newKey, allhits, bykey)
+                    except KeyError:
+                        continue
 
-                    if not allhits: return val
+                    if not allhits:
+                        return newVal
                     else:
-                        keys.append(newKey)
-                        hits.append(val)
+                        if bykey:
+                            newKeys, newVals = zip(*newVal.items())
+                            keys.extend(newKeys)
+                            hits.extend(newVals)
+                        else:
+                            hits.extend(newVal)
 
             # No value for any base classes either
             if len(hits) == 0:
