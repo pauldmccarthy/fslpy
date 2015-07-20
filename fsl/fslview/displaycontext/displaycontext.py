@@ -290,21 +290,56 @@ class DisplayContext(props.SyncableHasProperties):
 
         # Ensure that the overlayOrder
         # property is valid ...
+        #
+        # NOTE: The following logic assumes that operations
+        #       which modify the overlay list will only do
+        #       one of the following:
+        #
+        #        - Adding one or more overlays to the list
+        #        - Removing one or more overlays from the list
         # 
+        # More complex overlay list modifications
+        # will cause this code to break.
+
+        oldList  = self.__overlayList.getLastValue('overlays')[:]
+        oldOrder = self.overlayOrder[:]
+        
         # If overlays have been added to
         # the overlay list, add indices
         # for them to the overlayOrder list
         if len(self.overlayOrder) < len(self.__overlayList):
-            self.overlayOrder.extend(range(len(self.overlayOrder),
-                                           len(self.__overlayList)))
 
-        # Otherwise, if overlays have been removed
-        # from the overlay list, remove the corresponding
-        # indices from the overlayOrder list
+            newOrder      = []
+            newOverlayIdx = len(oldList)
+
+            # The order of existing overlays is preserved,
+            # and all new overlays added to the end of the
+            # overlay order. 
+            for overlay in self.__overlayList:
+
+                if overlay in oldList:
+                    newOrder.append(oldOrder[oldList.index(overlay)])
+                else:
+                    newOrder.append(newOverlayIdx)
+                    newOverlayIdx += 1
+
+            self.overlayOrder[:] = newOrder
+
+        # Otherwise, if overlays have been 
+        # removed from the overlay list ...
         elif len(self.overlayOrder) > len(self.__overlayList):
-            for idx in range(len(self.__overlayList),
-                             len(self.overlayOrder)):
-                self.overlayOrder.remove(idx)
+
+            # Remove the corresponding indices
+            # from the overlayOrder list
+            for overlay, orderIdx in zip(oldList, self.overlayOrder):
+                if overlay not in self.__overlayList:
+                    oldOrder.remove(orderIdx)
+
+            # Re-generate new indices,
+            # preserving the order of
+            # the remaining overlays
+            newOrder = [sorted(oldOrder).index(idx) for idx in oldOrder]
+            self.overlayOrder[:] = newOrder
 
         # Ensure that the bounds property is accurate
         self.__updateBounds()
