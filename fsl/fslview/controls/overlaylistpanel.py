@@ -100,7 +100,10 @@ class ListItemWidget(wx.Panel):
         if ev.GetEventObject() is not self:
             return
 
+        group = self.displayCtx.overlayGroups[0]
+
         self.display.removeListener('enabled', self.name)
+        group       .removeListener('overlays', self.name)
 
         if isinstance(self.overlay, fslimage.Image):
             self.overlay.removeListener('saved', self.name)

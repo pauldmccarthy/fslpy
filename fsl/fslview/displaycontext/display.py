@@ -165,8 +165,19 @@ class Display(props.SyncableHasProperties):
         # Populate the possible choices
         # for the overlayType property
         overlayTypeProp = self.getProp('overlayType')
-        possibleTypes   = OVERLAY_TYPES[overlay]
+        possibleTypes   = list(OVERLAY_TYPES[overlay])
 
+        # Special cases:
+        #
+        # If the overlay is an image which
+        # does not have a fourth dimension
+        # of length three, it can't be
+        # a vector
+        if isinstance(overlay, fslimage.Image) and \
+           (len(overlay.shape) != 4 or overlay.shape[-1] != 3):
+            possibleTypes.remove('rgbvector')
+            possibleTypes.remove('linevector')
+            
         for pt in possibleTypes:
             log.debug('Enabling overlay type {} for {}'.format(pt, overlay))
             label = strings.choices[self, 'overlayType', pt]
