@@ -7,7 +7,6 @@
 
 
 import fsl.fslview.toolbar as fsltoolbar
-import                        lightboxsettingspanel
 
 
 class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
@@ -50,7 +49,8 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
 
         
     def showMoreSettings(self, *a):
+        import canvassettingspanel
         self.lightBoxPanel.togglePanel(
-            lightboxsettingspanel.LightBoxSettingsPanel,
+            canvassettingspanel.CanvasSettingsPanel,
             True,
             self.lightBoxPanel) 

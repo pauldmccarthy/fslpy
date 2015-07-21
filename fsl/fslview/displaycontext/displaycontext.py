@@ -72,6 +72,16 @@ class DisplayContext(props.SyncableHasProperties):
     """
 
 
+    syncOverlayDisplay = props.Boolean(default=True)
+    """If this ``DisplayContext`` instance has a parent (see
+    :mod:`props.syncable`), and this is ``True``, the properties of the
+    :class:`.Display` and :class:`.DisplayOpts`  for every overlay managed
+     by this ``DisplayContext`` instance will be synchronised to those of
+    the parent instance. Otherwise, the display properties for every overlay
+    will be unsynchronised from the parent.
+    """
+
+
     def __init__(self, overlayList, parent=None):
         """Create a :class:`DisplayContext` object.
 
@@ -81,9 +91,11 @@ class DisplayContext(props.SyncableHasProperties):
         as the parent of this instance.
         """
 
-        props.SyncableHasProperties.__init__(self,
-                                             parent,
-                                             nounbind=['overlayGroups'])
+        props.SyncableHasProperties.__init__(
+            self,
+            parent,
+            nounbind=['overlayGroups'],
+            nobind=[  'syncOverlayDisplay'])
         
         self.__overlayList = overlayList
         self.__name         = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -102,6 +114,10 @@ class DisplayContext(props.SyncableHasProperties):
         overlayList.addListener('overlays',
                                 self.__name,
                                 self.__overlayListChanged)
+
+        self.addListener('syncOverlayDisplay',
+                         self.__name,
+                         self.__syncOverlayDisplayChanged)
 
         log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
@@ -164,6 +180,11 @@ class DisplayContext(props.SyncableHasProperties):
                                          parent=dParent,
                                          overlayType=overlayType)
             self.__displays[overlay] = display
+
+            if (self.getParent() is not None) and \
+               (not self.syncOverlayDisplay):
+                display                 .unsyncAllFromParent()
+                display.getDisplayOpts().unsyncAllFromParent()
         
         return display
 
@@ -453,6 +474,30 @@ class DisplayContext(props.SyncableHasProperties):
             self.location.xyz = newDispLoc
 
 
+    def __syncOverlayDisplayChanged(self, *a):
+        """Called when the :attr:`syncOverlayDisplay` property
+        changes.
+
+        Synchronises or unsychronises the :class:`.Display` and
+        :class:`.DisplayOpts` instances for every overlay to/from their
+        parent instances.
+        """
+
+        if self.getParent() is None:
+            return
+
+        for display in self.__displays.values():
+            
+            opts = display.getDisplayOpts()
+
+            if self.syncOverlayDisplay:
+                display.syncAllToParent()
+                opts   .syncAllToParent()
+            else:
+                display.unsyncAllFromParent()
+                opts   .unsyncAllFromParent()
+
+                
     def __updateBounds(self, *a):
         """Called when the overlay list changes, or when any overlay display
         transform is changed. Updates the :attr:`bounds` property.

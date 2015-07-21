@@ -118,12 +118,11 @@ titles = TypeDict({
     'AtlasPanel'             : 'Atlases',
     'LocationPanel'          : 'Location',
     'OverlayDisplayToolBar'  : 'Display toolbar',
+    'CanvasSettingsPanel'    : 'View settings',
     'OverlayDisplayPanel'    : 'Display settings',
     'OrthoToolBar'           : 'Ortho view toolbar',
     'OrthoProfileToolBar'    : 'Ortho view mode toolbar',
-    'OrthoSettingsPanel'     : 'Ortho view settings',
     'LightBoxToolBar'        : 'Lightbox view toolbar',
-    'LightBoxSettingsPanel'  : 'Lightbox view settings',
     'LookupTablePanel'       : 'Lookup tables',
     'LutLabelDialog'         : 'New LUT label',
     'NewLutDialog'           : 'New LUT',
@@ -268,6 +267,10 @@ labels = TypeDict({
     'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
     
     'OverlayDisplayPanel.loadCmap'       : 'Load colour map',
+
+    'CanvasSettingsPanel.scene'    : 'Scene settings',
+    'CanvasSettingsPanel.ortho'    : 'Ortho view settings',
+    'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
     
 })
 
@@ -276,9 +279,10 @@ properties = TypeDict({
     
     'Profile.mode' : 'Profile',
 
-    'CanvasPanel.syncLocation'     : 'Sync location',
-    'CanvasPanel.syncOverlayOrder' : 'Sync overlay order',
-    'CanvasPanel.profile'          : 'Mode',
+    'CanvasPanel.syncLocation'       : 'Sync location',
+    'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
+    'CanvasPanel.syncOverlayDisplay' : 'Sync overlay display settings',
+    'CanvasPanel.profile'            : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.showColourBar'      : 'Show colour bar',

@@ -164,8 +164,9 @@ class CanvasPanel(viewpanel.ViewPanel):
     """
     """
 
-    syncLocation     = props.Boolean(default=True)
-    syncOverlayOrder = props.Boolean(default=True)
+    syncLocation       = props.Boolean(default=True)
+    syncOverlayOrder   = props.Boolean(default=True)
+    syncOverlayDisplay = props.Boolean(default=True)
 
     def __init__(self,
                  parent,
@@ -209,6 +210,7 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.bindProps('syncOverlayOrder',
                            displayCtx,
                            displayCtx.getSyncPropertyName('overlayOrder'))
+            self.bindProps('syncOverlayDisplay', displayCtx) 
             
         # If the displayCtx instance does not
         # have a parent, this means that it is
