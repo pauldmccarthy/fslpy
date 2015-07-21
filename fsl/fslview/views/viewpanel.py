@@ -190,9 +190,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
             window   = panelType(
                 self, self._overlayList, self._displayCtx, *args, **kwargs)
 
-            window.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-
             if isinstance(window, fsltoolbar.FSLViewToolBar):
+
+                # ToolbarPane sets the panel layer to 10
                 paneInfo.ToolbarPane()
 
                 # We are going to put any new toolbars on 
@@ -218,8 +218,6 @@ class ViewPanel(fslpanel.FSLViewPanel):
                         if info.IsDocked() and \
                            info.dock_direction == aui.AUI_DOCK_TOP:
                             info.Layer(info.dock_layer + 1)
-
-                paneInfo.Layer(0)
 
                 # When the toolbar contents change,
                 # update the layout, so that the
