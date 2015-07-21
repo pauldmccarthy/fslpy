@@ -484,6 +484,10 @@ def subsample(data, resolution, pixdim=None, volume=None):
     xstart = np.floor(xstep / 2)
     ystart = np.floor(ystep / 2)
     zstart = np.floor(zstep / 2)
+
+    if xstart >= data.shape[0]: xstart = data.shape[0] - 1
+    if ystart >= data.shape[1]: ystart = data.shape[1] - 1
+    if zstart >= data.shape[2]: zstart = data.shape[2] - 1
         
     if len(data.shape) > 3: sample = data[xstart::xstep,
                                           ystart::ystep,
