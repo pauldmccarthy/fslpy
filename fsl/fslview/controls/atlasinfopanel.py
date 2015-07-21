@@ -63,6 +63,10 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
                    elistbox.ELB_NO_REMOVE |
                    elistbox.ELB_NO_MOVE))
 
+        # Force the HTML info panel to
+        # use the default font size
+        self.__infoPanel.SetStandardFonts(self.GetFont().GetPointSize())
+
         self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__sizer.Add(self.__contentPanel, flag=wx.EXPAND, proportion=1)
         self.SetSizer(self.__sizer)

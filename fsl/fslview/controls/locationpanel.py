@@ -87,6 +87,12 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self.column2 = wx.Panel(self)
         self.info    = wxhtml.HtmlWindow(self)
 
+        # HTMLWindow does not use
+        # the parent font by default,
+        # so we force it to at least
+        # have the parent font size
+        self.info.SetStandardFonts(self.GetFont().GetPointSize())
+
         self.worldLabel  = wx.StaticText(
             self.column1, label=strings.labels[self, 'worldLocation'])
         self.volumeLabel = wx.StaticText(

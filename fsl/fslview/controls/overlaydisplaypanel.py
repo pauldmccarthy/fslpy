@@ -39,7 +39,9 @@ _DISPLAY_PROPS = td.TypeDict({
     'VolumeOpts' : [
         props.Widget('resolution',    showLimits=False),
         props.Widget('transform'),
-        props.Widget('volume',        showLimits=False),
+        props.Widget('volume',
+                     showLimits=False,
+                     enabledWhen=lambda o: o.overlay.is4DImage()),
         props.Widget('interpolation'),
         props.Widget('cmap'),
         props.Widget('invert'),
@@ -50,13 +52,15 @@ _DISPLAY_PROPS = td.TypeDict({
     'MaskOpts' : [
         props.Widget('resolution', showLimits=False),
         props.Widget('transform'),
-        props.Widget('volume',     showLimits=False),
+        props.Widget('volume',
+                     showLimits=False,
+                     enabledWhen=lambda o: o.overlay.is4DImage()),
         props.Widget('colour'),
         props.Widget('invert'),
         props.Widget('threshold',  showLimits=False)],
 
     'RGBVectorOpts' : [
-        props.Widget('resolution',    showLimits=False),
+        props.Widget('resolution', showLimits=False),
         props.Widget('transform'),
         props.Widget('interpolation'),
         props.Widget('xColour'),
@@ -98,7 +102,9 @@ _DISPLAY_PROPS = td.TypeDict({
         # props.Widget('showNames'),
         props.Widget('resolution',   showLimits=False),
         props.Widget('transform'),
-        props.Widget('volume',       showLimits=False)]
+        props.Widget('volume',
+                     showLimits=False,
+                     enabledWhen=lambda o: o.overlay.is4DImage())]
 })
 
     
