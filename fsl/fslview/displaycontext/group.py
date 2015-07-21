@@ -27,9 +27,7 @@ class OverlayGroup(props.HasProperties):
     
     _groupBindings = td.TypeDict({
         'Display'        : ['enabled',
-                            'alpha',
-                            'brightness',
-                            'contrast'],
+                            'alpha'],
         'ImageOpts'      : ['volume',
                             'transform'],
         'VolumeOpts'     : ['interpolation'],
