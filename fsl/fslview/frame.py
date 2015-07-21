@@ -84,6 +84,13 @@ class FSLViewFrame(wx.Frame):
         """
         
         wx.Frame.__init__(self, parent, title='FSLView')
+
+        # Default application font - this is
+        # inherited by all child controls.
+        font = self.GetFont()
+        font.SetPointSize(10)
+        font.SetWeight(wx.FONTWEIGHT_LIGHT)
+        self.SetFont(font)
         
         self.__overlayList = overlayList
         self.__displayCtx  = displayCtx

@@ -254,8 +254,8 @@ labels = TypeDict({
     'ClusterPanel.copemaxcoords' : 'COPE Max location',
     'ClusterPanel.copemean'      : 'COPE mean',
     
-    'ClusterPanel.addZStats'      : 'Add Z statistics',
-    'ClusterPanel.addClusterMask' : 'Add cluster mask',
+    'ClusterPanel.addZStats'    : 'Add Z statistics',
+    'ClusterPanel.addClustMask' : 'Add cluster mask',
 
 
     'OverlayDisplayPanel.Display'        : 'General display settings',

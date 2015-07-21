@@ -29,15 +29,14 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             style=(wx.ALIGN_CENTRE_HORIZONTAL |
                    wx.ALIGN_CENTRE_VERTICAL))
 
-        self.__overlayName    = wx    .StaticText(    self)
-        self.__addZStats      = wx.Button(            self)
-        self.__addClusterMask = wx.Button(            self)
-        self.__statSelect     = wx    .ComboBox(      self,
-                                                      style=wx.CB_READONLY)
-        self.__clusterList    = widgetgrid.WidgetGrid(self)
+        self.__overlayName  = wx.StaticText(self)
+        self.__addZStats    = wx.Button(    self)
+        self.__addClustMask = wx.Button(    self)
+        self.__statSelect   = wx.ComboBox(  self, style=wx.CB_READONLY)
+        self.__clusterList  = widgetgrid.WidgetGrid(self)
 
-        self.__addZStats     .SetLabel(strings.labels[self, 'addZStats'])
-        self.__addClusterMask.SetLabel(strings.labels[self, 'addClusterMask'])
+        self.__addZStats   .SetLabel(strings.labels[self, 'addZStats'])
+        self.__addClustMask.SetLabel(strings.labels[self, 'addClustMask'])
         
         self.__clusterList.ShowRowLabels(False)
         self.__clusterList.ShowColLabels(True)
@@ -50,13 +49,13 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
         args = {'flag' : wx.EXPAND, 'proportion' : 1}
  
-        self.__topSizer.Add(self.__overlayName,    **args)
-        self.__topSizer.Add(self.__statSelect,     **args)
-        self.__topSizer.Add(self.__addZStats,      **args)
-        self.__topSizer.Add(self.__addClusterMask, **args)
+        self.__topSizer.Add(self.__statSelect,   flag=wx.EXPAND, proportion=1)
+        self.__topSizer.Add(self.__addZStats,    flag=wx.EXPAND, proportion=1)
+        self.__topSizer.Add(self.__addClustMask, flag=wx.EXPAND, proportion=1)
 
+        self.__mainSizer.Add(self.__overlayName, flag=wx.EXPAND)
         self.__mainSizer.Add(self.__topSizer,    flag=wx.EXPAND)
-        self.__mainSizer.Add(self.__clusterList, **args)
+        self.__mainSizer.Add(self.__clusterList, flag=wx.EXPAND, proportion=1)
 
         # Only one of the disabledText or
         # mainSizer are shown at any one time
@@ -70,12 +69,36 @@ class ClusterPanel(fslpanel.FSLViewPanel):
                                 self._name,
                                 self.__selectedOverlayChanged)
 
-        self.__statSelect    .Bind(wx.EVT_COMBOBOX, self.__statSelected)
-        self.__addZStats     .Bind(wx.EVT_BUTTON,   self.__addZStatsClick)
-        self.__addClusterMask.Bind(wx.EVT_BUTTON,   self.__addClusterMaskClick)
+        self.__statSelect  .Bind(wx.EVT_COMBOBOX, self.__statSelected)
+        self.__addZStats   .Bind(wx.EVT_BUTTON,   self.__addZStatsClick)
+        self.__addClustMask.Bind(wx.EVT_BUTTON,   self.__addClustMaskClick)
+
+        self.SetMinSize(self.__calcMinSize())
 
         self.__selectedOverlay = None
         self.__selectedOverlayChanged()
+
+
+    def __calcMinSize(self):
+        """Figures out the minimum size that this ``ClusterPanel`` should
+        have.
+
+        When the ``ClusterPanel`` is created, the COPE combo box is not
+        populated, so has no minimum size. Here, we figure out a good minimum
+        size for it. We can then calculate a good minimum size for the entire
+        panel.
+        """
+
+        dc = wx.ClientDC(self.__statSelect)
+
+        dummyName = strings.labels[self, 'clustName'].format(1, 'WW')
+
+        w, h = dc.GetTextExtent(dummyName)
+
+        self.__statSelect .SetMinSize((w, h))
+        self.__sizer.Layout()
+        
+        return self.__sizer.GetMinSize()
 
 
     def destroy(self):
@@ -122,7 +145,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             opts.clippingRange.x = -zthres, zthres
 
     
-    def __addClusterMaskClick(self, ev):
+    def __addClustMaskClick(self, ev):
         overlay  = self.__selectedOverlay
         contrast = self.__statSelect.GetSelection()
         mask     = overlay.getClusterMask(contrast)
@@ -156,8 +179,8 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
         dss = [ovl.dataSource for ovl in self._overlayList]
 
-        self.__addZStats     .Enable(zstat    .dataSource not in dss)
-        self.__addClusterMask.Enable(clustMask.dataSource not in dss)
+        self.__addZStats   .Enable(zstat    .dataSource not in dss)
+        self.__addClustMask.Enable(clustMask.dataSource not in dss)
         
     
     def __selectedOverlayChanged(self, *a):

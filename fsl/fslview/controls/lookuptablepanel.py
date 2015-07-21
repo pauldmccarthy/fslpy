@@ -134,12 +134,6 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         self.__loadLutButton.SetLabel(strings.labels[  self, 'loadLut'])
         self.__saveLutButton.SetLabel(strings.labels[  self, 'saveLut'])
 
-        # Make the label name a bit smaller
-        font = self.__overlayNameLabel.GetFont()
-        font.SetPointSize(font.GetPointSize() - 2)
-        font.SetWeight(wx.FONTWEIGHT_LIGHT)
-        self.__overlayNameLabel.SetFont(font)
-
         # Listen for listbox events
         self.__labelList.Bind(elistbox.EVT_ELB_ADD_EVENT,
                               self.__onLabelAdd)

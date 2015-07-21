@@ -8,7 +8,6 @@
 from atlaspanel             import AtlasPanel
 from overlaydisplaypanel    import OverlayDisplayPanel
 from overlaylistpanel       import OverlayListPanel
-from overlayselectpanel     import OverlaySelectPanel
 from locationpanel          import LocationPanel
 from lookuptablepanel       import LookupTablePanel
 from timeserieslistpanel    import TimeSeriesListPanel

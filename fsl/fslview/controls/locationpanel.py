@@ -48,18 +48,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
     
     worldLocation = props.Point(ndims=3, real=True,  labels=('X', 'Y', 'Z'))
 
-
-    def _adjustFont(self, label, by, weight):
-        """
-        Adjusts the font of the given wx.StaticText widget (or any other
-        widget which has a font) by the specified amount. Also sets the
-        font weight to the given weight.
-        """
-        font = label.GetFont()
-        font.SetPointSize(font.GetPointSize() + by)
-        font.SetWeight(weight)
-        label.SetFont(font)
-
         
     def __init__(self, parent, overlayList, displayCtx):
         """
@@ -152,10 +140,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self.sizer.Add(self.column2, flag=wx.EXPAND)
         self.sizer.Add((5, -1))
         self.sizer.Add(self.info,    flag=wx.EXPAND, proportion=1)
-
-        self._adjustFont(self.voxelLabel,  -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.worldLabel,  -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.volumeLabel, -2, wx.FONTWEIGHT_LIGHT)
 
         self.column1.SetSizer(self.column1Sizer)
         self.column2.SetSizer(self.column2Sizer)
