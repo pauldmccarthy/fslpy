@@ -40,13 +40,11 @@ def listGlobalActions():
     import openstandard
     import copyoverlay
     import saveoverlay
-    import loadcolourmap
     
-    return [openfile     .OpenFileAction,
-            openstandard .OpenStandardAction,
-            copyoverlay  .CopyOverlayAction,
-            saveoverlay  .SaveOverlayAction,
-            loadcolourmap.LoadColourMapAction]
+    return [openfile    .OpenFileAction,
+            openstandard.OpenStandardAction,
+            copyoverlay .CopyOverlayAction,
+            saveoverlay .SaveOverlayAction]
 
 
 class ActionButton(props.Button):

@@ -267,6 +267,8 @@ labels = TypeDict({
     'OverlayDisplayPanel.LineVectorOpts' : 'Line vector settings',
     'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
     
+    'OverlayDisplayPanel.loadCmap'       : 'Load colour map',
+    
 })
 
 

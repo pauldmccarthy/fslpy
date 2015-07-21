@@ -14,12 +14,13 @@ import logging
 import wx
 import props
 
-import pwidgets.widgetlist        as widgetlist
+import pwidgets.widgetlist               as widgetlist
 
-import fsl.utils.typedict         as td
-import fsl.data.strings           as strings
-import fsl.fslview.panel          as fslpanel
-import fsl.fslview.displaycontext as displayctx
+import fsl.utils.typedict                as td
+import fsl.data.strings                  as strings
+import fsl.fslview.panel                 as fslpanel
+import fsl.fslview.actions.loadcolourmap as loadcmap
+import fsl.fslview.displaycontext        as displayctx
 
 
 
@@ -227,6 +228,39 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
         self.Layout()
         
 
+    def __updateWidgets(self, target, groupName):
+
+        self.__widgets.ClearGroup(groupName)
+
+        dispProps = _DISPLAY_PROPS[target]
+        labels    = [strings.properties[target, p.key] for p in dispProps]
+
+        widgets = []
+
+        for p in dispProps:
+
+            widget = props.buildGUI(self.__widgets,
+                                    target,
+                                    p,
+                                    showUnlink=False)            
+
+            # Add a 'load colour map' button next 
+            # to the VolumeOpts.cmap control
+            if isinstance(target, displayctx.VolumeOpts) and \
+               p.key == 'cmap':
+                widget = self.__buildColourMapWidget(widget)
+                
+            widgets.append(widget)
+
+        for label, widget in zip(labels, widgets):
+            self.__widgets.AddWidget(
+                widget,
+                label,
+                groupName=groupName)
+
+        self.Layout()
+
+
     def __transformChanged(self, *a):
         """Called when the transform setting of the currently selected overlay
         changes.
@@ -252,23 +286,20 @@ class OverlayDisplayPanel(fslpanel.FSLViewPanel):
             if 'spline' in choices: opts.interpolation = 'spline'
             else:                   opts.interpolation = 'linear'
 
+
+    def __buildColourMapWidget(self, cmapWidget):
+
+        action = loadcmap.LoadColourMapAction(self._overlayList,
+                                              self._displayCtx)
+
+        button = wx.Button(self.__widgets)
+        button.SetLabel(strings.labels[self, 'loadCmap'])
+
+        action.bindToWidget(self, wx.EVT_BUTTON, button)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        sizer.Add(cmapWidget, flag=wx.EXPAND, proportion=1)
+        sizer.Add(button,     flag=wx.EXPAND)
         
-    def __updateWidgets(self, target, groupName):
-
-        self.__widgets.ClearGroup(groupName)
-
-        widgets = _DISPLAY_PROPS[target]
-        labels  = [strings.properties[target, w.key] for w in widgets]
-        widgets = [props.buildGUI(self.__widgets,
-                                  target,
-                                  w,
-                                  showUnlink=False)
-                   for w in widgets]
-
-        for label, widget in zip(labels, widgets):
-            self.__widgets.AddWidget(
-                widget,
-                label,
-                groupName=groupName)
-
-        self.Layout()
+        return sizer

@@ -57,7 +57,7 @@ class LoadColourMapAction(actions.Action):
             cmapName = dlg.GetValue()
 
             # a colour map with the specified name already exists
-            if fslcmap.isRegistered(cmapName):
+            if fslcmap.isColourMapRegistered(cmapName):
                 cmapNameMsg = strings.messages[_stringID + 'alreadyinstalled']
                 continue
 
@@ -79,7 +79,7 @@ class LoadColourMapAction(actions.Action):
         # the colour map for future use
         dlg = wx.MessageDialog(
             app.GetTopWindow(),
-            message=strings.messages['actions.loadcolourmap.installcmap'],
+            message=strings.messages[_stringID + 'installcmap'],
             style=wx.YES_NO)
 
         if dlg.ShowModal() != wx.ID_YES:
