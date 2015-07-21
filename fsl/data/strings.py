@@ -282,6 +282,8 @@ properties = TypeDict({
     'CanvasPanel.syncLocation'       : 'Sync location',
     'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
     'CanvasPanel.syncOverlayDisplay' : 'Sync overlay display settings',
+    'CanvasPanel.movieMode'          : 'Movie mode',
+    'CanvasPanel.movieRate'          : 'Movie update rate',
     'CanvasPanel.profile'            : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',

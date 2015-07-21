@@ -167,6 +167,12 @@ class CanvasPanel(viewpanel.ViewPanel):
     syncLocation       = props.Boolean(default=True)
     syncOverlayOrder   = props.Boolean(default=True)
     syncOverlayDisplay = props.Boolean(default=True)
+    movieMode          = props.Boolean(default=False)
+    movieRate          = props.Int(minval=100,
+                                   maxval=2000,
+                                   default=250,
+                                   clamped=True)
+    
 
     def __init__(self,
                  parent,
@@ -224,6 +230,17 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         self.setCentrePanel(self.__canvasContainer)
 
+        # Stores a reference to a wx.Timer
+        # when movie mode is enabled
+        self.__movieTimer    = None
+
+        self.addListener('movieMode',
+                         self._name,
+                         self.__movieModeChanged)
+        self.addListener('movieRate',
+                         self._name,
+                         self.__movieRateChanged)
+
         # Canvas/colour bar layout is managed in
         # the _layout/_toggleColourBar methods
         self.__canvasSizer   = None
@@ -238,10 +255,6 @@ class CanvasPanel(viewpanel.ViewPanel):
         self.__layout()
 
 
-    def getSceneOptions(self):
-        return self.__opts
-
-
     def destroy(self):
         """Makes sure that any remaining control panels are destroyed
         cleanly.
@@ -251,7 +264,11 @@ class CanvasPanel(viewpanel.ViewPanel):
             self.__colourBar.destroy()
             
         viewpanel.ViewPanel.destroy(self)
-            
+
+        
+    def getSceneOptions(self):
+        return self.__opts
+        
     
     def screenshot(self, *a):
         _takeScreenShot(self._overlayList, self._displayCtx, self)
@@ -313,3 +330,48 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         # Force the canvas panel to resize itself
         self.PostSizeEvent()
+
+
+    def __movieModeChanged(self, *a):
+
+        if self.__movieTimer is not None:
+            self.__movieTimer.Stop()
+            self.__movieTimer = None
+
+        if not self.movieMode:
+            return
+        
+        self.__movieTimer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__movieUpdate)
+        self.__movieTimer.Start(self.movieRate)
+        
+
+    def __movieRateChanged(self, *a):
+        if not self.movieMode:
+            return
+
+        self.__movieModeChanged()
+
+        
+    def __movieUpdate(self, ev):
+
+        overlay = self._displayCtx.getSelectedOverlay()
+
+        if overlay is None:
+            return
+
+        if not isinstance(overlay, fslimage.Image):
+            return
+
+        if not overlay.is4DImage():
+            return
+
+        opts = self._displayCtx.getOpts(overlay)
+
+        if not isinstance(opts, displayctx.VolumeOpts):
+            return
+
+        limit = overlay.shape[3]
+
+        if opts.volume == limit - 1: opts.volume  = 0
+        else:                        opts.volume += 1

@@ -21,7 +21,9 @@ _CANVASPANEL_PROPS = [
         visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
     props.Widget('syncOverlayOrder'),
     props.Widget('syncLocation'),
-    props.Widget('syncOverlayDisplay')
+    props.Widget('syncOverlayDisplay'),
+    props.Widget('movieMode'),
+    props.Widget('movieRate', spin=False, showLimits=False),
 ]
 
 _SCENEOPTS_PROPS = [
