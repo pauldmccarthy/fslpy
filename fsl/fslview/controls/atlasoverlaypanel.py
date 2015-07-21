@@ -139,28 +139,31 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
     def __onRegionFilter(self, ev):
         
-        filterStr = self.__regionFilter.GetValue().lower()
+        filterStr = self.__regionFilter.GetValue().lower().strip()
 
         for i, listBox in enumerate(self.__regionLists):
 
-            if listBox is None:
-                continue
-            
-            listBox.ApplyFilter(filterStr, ignoreCase=True)
             self.__updateAtlasState(i)
+
+            if listBox is not None:
+                listBox.ApplyFilter(filterStr, ignoreCase=True)
 
 
     def __updateAtlasState(self, atlasIdx):
 
-        listBox = self.__regionLists[atlasIdx]
-        
-        if listBox is None:
+        filterStr = self.__regionFilter.GetValue().lower().strip()
+        atlasDesc = self.__atlasList.GetItemData(atlasIdx)
+
+        if filterStr == '':
+            nhits = 0
+        else:
+            nhits = len(filter(
+                lambda l: filterStr in l.name.lower(),
+                atlasDesc.labels))
+
+        if nhits == 0:
             weight = wx.FONTWEIGHT_LIGHT
-            colour = '#a0a0a0'
-        
-        elif listBox.VisibleItemCount() == 0:
-            weight = wx.FONTWEIGHT_LIGHT
-            colour = '#303030'
+            colour = '#404040'
         else:
             weight = wx.FONTWEIGHT_BOLD
             colour = '#000000'
@@ -202,7 +205,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                                                label.index)
                     regionList.SetItemWidget(i, widget)
 
-                filterStr = self.__regionFilter.GetValue().lower()
+                filterStr = self.__regionFilter.GetValue().lower().strip()
                 regionList.ApplyFilter(filterStr, ignoreCase=True)
 
                 self.__updateAtlasState(atlasIdx)
@@ -210,7 +213,6 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
             msgdlg.ProcessingDialog(
                 strings.messages[self, 'loadRegions'].format(atlasDesc.name),
                 buildRegionList).Run()
-            buildRegionList()
             
         log.debug('Showing region list for {} ({})'.format(
             atlasDesc.atlasID, id(regionList)))
