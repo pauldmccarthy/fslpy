@@ -26,6 +26,7 @@ import props
 
 import fsl.utils.transform as transform
 import fsl.data.image      as fslimage
+import fsl.data.constants  as constants
 import fsl.data.strings    as strings
 import fsl.fslview.panel   as fslpanel
 
@@ -159,8 +160,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self.column1.SetSizer(self.column1Sizer)
         self.column2.SetSizer(self.column2Sizer)
         self        .SetSizer(self.sizer)
-
-        self.Layout()
         
         self._overlayList.addListener('overlays',
                                       self._name,
@@ -183,7 +182,55 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self._selectedOverlayChanged()
 
+        self.worldLabel.SetMinSize(self.__calcWorldLabelMinSize())
+        self.info      .SetMinSize((150, 100))
+        self.Layout()
         self.SetMinSize(self.sizer.GetMinSize())
+
+
+    def __calcWorldLabelMinSize(self):
+        """Calculates the minimum size that the world label (the label which
+        shows the coordinate space of the currently selected overlay) needs.
+        
+        The world label displays different things depending on the currently
+        selected overlay. But we want it to be a fixed size. So this method
+        calculates the size of all possible values that the world label will
+        display, and returns the maximum size. This is then used as the
+        minimum size for the world label.
+        """
+
+        dc = wx.ClientDC(self.worldLabel)
+
+        width, height = 0, 0
+
+        labelPref = strings.labels[self, 'worldLocation']
+        labelSufs = [
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_UNKNOWN],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_SCANNER_ANAT],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_ALIGNED_ANAT],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_TALAIRACH],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_MNI_152],
+            strings.labels[self, 'worldLocation', 'unknown']
+        ]
+
+        for labelSuf in labelSufs:
+
+            w, h = dc.GetTextExtent(labelPref + labelSuf)
+
+            if w > width:  width  = w
+            if h > height: height = h
+
+        return width + 5, height + 5
 
 
     def destroy(self):

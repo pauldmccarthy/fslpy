@@ -6,6 +6,7 @@
 #
 
 import os
+import copy
 import logging
 
 import wx
@@ -17,7 +18,7 @@ import props
 import pwidgets.elistbox          as elistbox
 
 import fsl.fslview.panel          as fslpanel
-import fsl.fslview.displaycontext as fsldisplay
+import fsl.fslview.displaycontext as displayctx
 import fsl.fslview.colourmaps     as fslcmaps
 import fsl.data.strings           as strings
 
@@ -163,7 +164,46 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
                                 self._name,
                                 self.__selectedOverlayChanged)
 
+        self.__disabledLabel.Show(False)
+        self.__controlRowSizer.SetMinSize(self.__calcControlRowMinSize())
+        self.Layout()
+        self.SetMinSize(self.__sizer.GetMinSize())
+
         self.__selectedOverlayChanged()
+
+
+    def __calcControlRowMinSize(self):
+        """This method calculates and returns a minimum width and height
+        for the control row.
+
+        When the LookupTable is first created, there is no LUT widget - it is
+        created when an appropriate overlay is selected (see
+        :meth:`__overlayTypeChanged`). Here, we create a dummy LUT widget, and
+        use its best size, along with the control row button sizes, to
+        calculate the minimum size needed to lay out the control row.
+        """
+
+        class DummyLut(props.HasProperties):
+            lut = copy.copy(displayctx.LabelOpts.lut)
+
+        dl             = DummyLut()
+        dummyLutWidget = props.makeWidget(self, dl, 'lut')
+        width, height  = dummyLutWidget.GetBestSize().Get()
+        
+        for btn in [self.__newLutButton,
+                    self.__copyLutButton,
+                    self.__saveLutButton,
+                    self.__loadLutButton]:
+            
+            w, h   =  btn.GetBestSize().Get()
+            width += w
+
+            if h > height:
+                height = h
+        
+        dummyLutWidget.Destroy()
+
+        return width, height
 
         
     def destroy(self):
@@ -252,7 +292,7 @@ class LookupTablePanel(fslpanel.FSLViewPanel):
         if overlay is not None:
             opts = self._displayCtx.getOpts(overlay)
 
-            if isinstance(opts, fsldisplay.LabelOpts):
+            if isinstance(opts, displayctx.LabelOpts):
                 enabled = True
 
         self.__overlayNameLabel.Show(    enabled)
