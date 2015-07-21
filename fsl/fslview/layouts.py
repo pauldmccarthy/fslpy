@@ -22,14 +22,6 @@ from fsl.fslview.views                     import LightBoxPanel
 
 from fsl.fslview.controls                  import OrthoToolBar
 from fsl.fslview.controls                  import LightBoxToolBar
-from fsl.fslview.controls                  import OverlayDisplayToolBar
-
-from fsl.fslview.displaycontext            import Display
-from fsl.fslview.displaycontext            import VolumeOpts
-from fsl.fslview.displaycontext            import MaskOpts
-from fsl.fslview.displaycontext            import VectorOpts
-from fsl.fslview.displaycontext            import ModelOpts
-from fsl.fslview.displaycontext            import LabelOpts
 
 from fsl.fslview.displaycontext            import OrthoOpts
 from fsl.fslview.displaycontext            import LightBoxOpts
@@ -102,56 +94,7 @@ LightBoxToolBarLayout = [
     actions.ActionButton(LightBoxToolBar, 'more')]
 
 
-
-##########################################
-# Overlay display property panels/toolbars
-##########################################
-
-
-DisplayToolBarLayout = [
-    widget(Display, 'name'),
-    widget(Display, 'overlayType'),
-    widget(Display, 'alpha',      spin=False, showLimits=False),
-    widget(Display, 'brightness', spin=False, showLimits=False),
-    widget(Display, 'contrast',   spin=False, showLimits=False)]
-
-
-VolumeOptsToolBarLayout = [
-    widget(VolumeOpts, 'cmap'),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')]
-
-
-MaskOptsToolBarLayout = [
-    widget(MaskOpts, 'colour'),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')]
-
-
-VectorOptsToolBarLayout = [
-    widget(VectorOpts, 'modulate'),
-    widget(VectorOpts, 'modThreshold', showLimits=False, spin=False),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')]
-
-ModelOptsToolBarLayout = [
-    widget(ModelOpts, 'colour'),
-    widget(ModelOpts, 'outline'),
-    widget(ModelOpts, 'outlineWidth', showLimits=False, spin=False),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')]
-
-LabelOptsToolBarLayout = [
-    widget(LabelOpts, 'lut'),
-    widget(LabelOpts, 'outline'),
-    widget(LabelOpts, 'outlineWidth', showLimits=False, spin=False),
-    actions.ActionButton(OverlayDisplayToolBar, 'more')]
-
-
 layouts = td.TypeDict({
-
-    ('OverlayDisplayToolBar', 'Display')        : DisplayToolBarLayout,
-    ('OverlayDisplayToolBar', 'VolumeOpts')     : VolumeOptsToolBarLayout,
-    ('OverlayDisplayToolBar', 'MaskOpts')       : MaskOptsToolBarLayout,
-    ('OverlayDisplayToolBar', 'VectorOpts')     : VectorOptsToolBarLayout,
-    ('OverlayDisplayToolBar', 'ModelOpts')      : ModelOptsToolBarLayout,
-    ('OverlayDisplayToolBar', 'LabelOpts')      : LabelOptsToolBarLayout,
 
     'OrthoToolBar'    : OrthoToolBarLayout,
     'LightBoxToolBar' : LightBoxToolBarLayout,

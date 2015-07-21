@@ -10,11 +10,48 @@ selected overlay.
 """
 
 import logging
+
+import wx
+
+import props
+
+import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.actions as actions
+import fsl.utils.typedict  as td
+import overlaydisplaypanel as overlaydisplay
+
+
 log = logging.getLogger(__name__)
 
 
-import fsl.fslview.toolbar as fsltoolbar
-import overlaydisplaypanel as overlaydisplay
+_TOOLBAR_PROPS = td.TypeDict({
+    'Display' : [
+        props.Widget('name'),
+        props.Widget('overlayType'),
+        props.Widget('alpha',      spin=False, showLimits=False),
+        props.Widget('brightness', spin=False, showLimits=False),
+        props.Widget('contrast',   spin=False, showLimits=False)],
+
+    'VolumeOpts' : [
+        props.Widget('cmap')],
+
+    'MaskOpts' : [
+        props.Widget('colour')],
+
+    'VectorOpts' : [
+        props.Widget('modulate'),
+        props.Widget('modThreshold', showLimits=False, spin=False)],
+
+    'LabelOpts' : [
+        props.Widget('lut'),
+        props.Widget('outline'),
+        props.Widget('outlineWidth', showLimits=False, spin=False)],
+
+    'ModelOpts' : [
+        props.Widget('colour'),
+        props.Widget('outline'),
+        props.Widget('outlineWidth', showLimits=False, spin=False)]
+})
 
 
 class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
@@ -26,20 +63,19 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         fsltoolbar.FSLViewToolBar.__init__(
             self, parent, overlayList, displayCtx, actionz)
 
-        self._viewPanel      = viewPanel
-        self._overlayTools   = {}
-        self._currentOverlay = None
+        self.__viewPanel      = viewPanel
+        self.__currentOverlay = None
 
         self._displayCtx.addListener(
             'selectedOverlay',
             self._name,
-            self._selectedOverlayChanged)
+            self.__selectedOverlayChanged)
         self._overlayList.addListener(
             'overlays',
             self._name,
-            self._overlayListChanged) 
+            self.__selectedOverlayChanged) 
 
-        self._selectedOverlayChanged()
+        self.__selectedOverlayChanged()
 
 
     def destroy(self):
@@ -48,165 +84,109 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
 
-        for ovl in self._overlayList:
-            
-            display = self._displayCtx.getDisplay(ovl)
+        if self.__currentOverlay is not None and \
+           self.__currentOverlay in self._overlayList:
+
+            display = self._displayCtx.getDisplay(self.__currentOverlay)
             display.removeListener('overlayType', self._name)
             display.removeListener('enabled',     self._name)
+
+        self.__currentOverlay = None
+        self.__viewPanel      = None
+            
         fsltoolbar.FSLViewToolBar.destroy(self)
 
 
     def showMoreSettings(self, *a):
-        self._viewPanel.togglePanel(overlaydisplay.OverlayDisplayPanel, True)
+        self.__viewPanel.togglePanel(overlaydisplay.OverlayDisplayPanel, True)
 
-
-    def _overlayListChanged(self, *a):
-
-        for ovl in self._overlayTools.keys():
-            if ovl not in self._overlayList:
-
-                dispTools, optsTools = self._overlayTools.pop(ovl)
-
-                log.debug('Destroying all tools for {}'.format(ovl))
-
-                if ovl is self._currentOverlay:
-                    self.ClearTools()
-
-                for tool, _ in dispTools: tool.Destroy()
-                for tool, _ in optsTools: tool.Destroy()
-
-        self._selectedOverlayChanged()
-    
-
-    def _overlayTypeChanged(self, value, valid, display, name, refresh=True):
-
-        overlay = display.getOverlay()
-
-        dispTools, oldOptsTools = self._overlayTools[overlay]
-
-        newOptsTools = self._makeOptsWidgets(overlay, self)
-
-        self._overlayTools[overlay] = (dispTools, newOptsTools)
-
-        if refresh and (overlay is self._displayCtx.getSelectedOverlay()):
-            self._refreshTools(overlay)
-
-        log.debug('Destroying opts tools for {}'.format(overlay))
-
-        for tool, _ in oldOptsTools:
-            tool.Destroy()
-
-            
-    def _toggleEnabled(self, value, valid, ovl, name):
         
-        if ovl is not self._displayCtx.getSelectedOverlay():
-            return
-        
-        display = self._displayCtx.getDisplay(ovl)
-
+    def __overlayEnableChanged(self, *a):
+        display = self._displayCtx.getDisplay(self.__currentOverlay)
         self.Enable(display.enabled)
-            
 
-    def _selectedOverlayChanged(self, *a):
+
+    def __selectedOverlayChanged(self, *a):
         """Called when the :attr:`.DisplayContext.selectedOverlay`
         index changes. Ensures that the correct display panel is visible.
         """
 
+        if self.__currentOverlay is not None and \
+           self.__currentOverlay in self._overlayList:
+            display = self._displayCtx.getDisplay(self.__currentOverlay)
+            display.removeListener('overlayType', self._name)
+            display.removeListener('enabled',     self._name)
+
         overlay = self._displayCtx.getSelectedOverlay()
 
+        self.__currentOverlay = overlay
+
         if overlay is None:
-            self.ClearTools()
+            self.ClearTools(destroy=True)
             return
 
         display = self._displayCtx.getDisplay(overlay)
 
-        # Call _toggleEnabled when
-        # the overlay is enabled/disabled
+        display.addListener('enabled',
+                            self._name,
+                            self.__overlayEnableChanged)
+        display.addListener('overlayType',
+                            self._name,
+                            self.__selectedOverlayChanged)
+
+        self.__showTools(overlay)
         self.Enable(display.enabled)
-        for ovl in self._overlayList:
-            
-            d = self._displayCtx.getDisplay(ovl)
-            
-            if ovl == overlay:
-                d.addListener('enabled',
-                              self._name,
-                              self._toggleEnabled,
-                              overwrite=True)
-            else:
-                d.removeListener('enabled', self._name)
-
-        # Build/refresh the toolbar widgets for this overlay
-        tools = self._overlayTools.get(overlay, None)
- 
-        if tools is None:
-            displayTools = self._makeDisplayWidgets(overlay, self)
-            optsTools    = self._makeOptsWidgets(   overlay, self)
-            
-            self._overlayTools[overlay] = (displayTools, optsTools)
-
-            display.addListener(
-                'overlayType',
-                self._name,
-                self._overlayTypeChanged,
-                overwrite=True)
-
-        self._refreshTools(overlay)
 
 
-    def _refreshTools(self, overlay):
+    def __showTools(self, overlay):
 
-        self._currentOverlay = overlay
+        oldTools = self.GetTools()
+
+        # See long comment at bottom
+        def destroyOldTools():
+            for t in oldTools:
+                t.Destroy()
+
+        for t in oldTools:
+            t.Show(False)
+
+        self.ClearTools(destroy=False, postevent=False)
 
         log.debug('Showing tools for {}'.format(overlay))
 
-        tools = self.GetTools()
-        for widget in tools:
-            widget.Show(False)
-                
-        self.ClearTools(postevent=False)
-
-        if overlay is None:
-            self.Layout()
-
-        dispTools, optsTools = self._overlayTools[overlay]
-
-        dispTools, dispLabels = zip(*dispTools)
-        optsTools, optsLabels = zip(*optsTools)
+        display   = self._displayCtx.getDisplay(overlay)
+        opts      = display.getDisplayOpts()
         
+        dispSpecs = _TOOLBAR_PROPS[display]
+        optsSpecs = _TOOLBAR_PROPS[opts]
+
+        dispTools, dispLabels = zip(*self.GenerateTools(
+            dispSpecs, display, add=False))
+        optsTools, optsLabels = zip(*self.GenerateTools(
+            optsSpecs, opts,    add=False))
+
         tools  = list(dispTools)  + list(optsTools)
         labels = list(dispLabels) + list(optsLabels)
 
-        for tool in tools:
-            tool.Show(True) 
+        # Button which opens the OverlayDisplayPanel
+        more = props.buildGUI(
+            self,
+            self,
+            view=actions.ActionButton(type(self), 'more'))
+
+        tools .append(more)
+        labels.append(None)
 
         self.SetTools(tools, labels)
-
         
-    def _makeDisplayWidgets(self, overlay, parent):
-        """Creates and returns panel containing widgets allowing
-        the user to edit the display properties of the given
-        overlay object. 
-        """
-
-        import fsl.fslview.layouts as layouts
-
-        display   = self._displayCtx.getDisplay(overlay)
-        toolSpecs = layouts.layouts[self, display]
-
-        log.debug('Creating display tools for {}'.format(overlay))
-        
-        return self.GenerateTools(toolSpecs, display, add=False)
-
-    
-    def _makeOptsWidgets(self, overlay, parent):
-
-        import fsl.fslview.layouts as layouts
-
-        opts      = self._displayCtx.getOpts(overlay)
-        toolSpecs = layouts.layouts[self, opts]
-        targets   = { s.key : self if s.key == 'more' else opts
-                      for s in toolSpecs}
-        
-        log.debug('Creating options tools for {}'.format(overlay))
-
-        return self.GenerateTools(toolSpecs, targets, add=False) 
+        # This method may have been called via an
+        # event handler an existing tool in the
+        # toolbar - in this situation, destroying
+        # that tool will result in nasty crashes,
+        # as the wx widget that generated the event
+        # will be destroyed while said event is
+        # being processed. So we destroy the old
+        # tools asynchronously, well after the event
+        # which triggered this method call will have
+        # returned.
+        wx.CallLater(1000, destroyOldTools)

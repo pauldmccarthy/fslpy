@@ -70,6 +70,13 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
                 type(self.label).__name__,
                 self.labelText)
 
+        def Enable(self, *args, **kwargs):
+            wx.Panel.Enable(self, *args, **kwargs)
+            self.tool.Enable(*args, **kwargs)
+            
+            if self.label is not None:
+                self.label.Enable(*args, **kwargs)
+
             
     def __init__(self, parent, overlayList, displayCtx, actionz=None):
         wx.PyPanel.__init__(self, parent)
@@ -185,6 +192,12 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         sizer.Insert(0,                     self.__leftButton)
 
         self.Layout()
+
+
+    def Enable(self, *args, **kwargs):
+        wx.PyPanel.Enable(self, *args, **kwargs)
+        for t in self.__tools:
+            t.Enable(*args, **kwargs)
 
 
     def GenerateTools(self, toolSpecs, targets, add=True):
