@@ -320,17 +320,22 @@ def fslDirWarning(frame, toolName, fslEnvActive):
 
     if fslEnvActive: return
 
-    msg = 'The FSLDIR environment variable is not set - '\
-          '{} may not behave correctly.'.format(toolName)
+    warnmsg = 'The FSLDIR environment variable is not set - '\
+              '{} may not behave correctly.'.format(toolName)
 
     if frame is not None:
         import wx
-        wx.MessageDialog(
-            frame,
-            message=msg,
-            style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+        from fsl.utils.fsldirdlg import FSLDirDialog
+
+        dlg = FSLDirDialog(frame, toolName)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            fsldir = dlg.GetFSLDir()
+            log.debug('Setting $FSLDIR to {} (specified '
+                      'by user)'.format(fsldir))
+            os.environ['FSLDIR'] = fsldir
     else:
-        log.warn(msg)
+        log.warn(warnmsg)
         
 
 def buildGUI(args, fslTool, toolCtx, fslEnvActive):

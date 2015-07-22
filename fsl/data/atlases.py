@@ -61,13 +61,18 @@ import fsl.utils.transform   as transform
 
 log = logging.getLogger(__name__)
 
+ATLAS_DIR = None
 
-if os.environ.get('FSLDIR', None) is None:
-    log.warn('$FSLDIR is not set - atlases are not available')
+def _setAtlasDir():
+    global ATLAS_DIR
 
-    ATLAS_DIR = None
-else:
-    ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')
+    if ATLAS_DIR is not None:
+        return
+    
+    if os.environ.get('FSLDIR', None) is None:
+        log.warn('$FSLDIR is not set - atlases are not available')
+    else:
+        ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')
 
 
 ATLAS_DESCRIPTIONS = collections.OrderedDict()
@@ -83,6 +88,8 @@ def listAtlases(refresh=False):
                   loaded descriptions are returned (see 
                   :attr:`ATLAS_DESCRIPTIONS`).
     """
+
+    _setAtlasDir()
 
     if ATLAS_DIR is None:
         return []
@@ -112,6 +119,8 @@ def getAtlasDescription(atlasID):
     atlas with the given ``atlasID``.
     """
 
+    _setAtlasDir()
+
     if ATLAS_DIR is None:
         return None
     
@@ -129,6 +138,8 @@ def loadAtlas(atlasID, loadSummary=False):
                       loaded. Otherwise, if the atlas is probabilistic,
                       a 4D :class:`ProbabilisticAtlas` image is loaded.
     """
+
+    _setAtlasDir()
 
     if ATLAS_DIR is None:
         return None

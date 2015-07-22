@@ -10,6 +10,12 @@ import fsl.data.constants as constants
 
 messages = TypeDict({
 
+    'FSLDirDialog.FSLDirNotSet'    : 'The $FSLDIR environment variable '
+                                     'is not set - \n{} may not behave '
+                                     'correctly.',
+    'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
+                                     'FSL is installed',
+
     'fslview.loading'              : 'Loading {}',
     'FSLViewSplash.default'        : 'Loading ...',
 
@@ -92,6 +98,9 @@ messages = TypeDict({
 
 
 titles = TypeDict({
+
+    'FSLDirDialog'           : '$FSLDIR is not set',
+    
     'image.saveImage.dialog' : 'Save image file',
 
     'ProcessingDialog.error' : 'Error',
@@ -182,6 +191,10 @@ actions = TypeDict({
 })
 
 labels = TypeDict({
+
+    'FSLDirDialog.locate' : 'Locate $FSLDIR',
+    'FSLDirDialog.skip'   : 'Skip',
+    
     'LocationPanel.worldLocation'         : 'Coordinates: ',
     'LocationPanel.worldLocation.unknown' : 'Unknown',
     'LocationPanel.voxelLocation'         : 'Voxel location',
