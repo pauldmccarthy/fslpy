@@ -13,7 +13,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** DONE Feat mode 
 ** DONE Cluster browser
 ** DONE Overlay groups
-** Movie mode
+** DONE Movie mode
 ** Iconify/clean up interface
 *** Icons for buttons
 *** Fix toolbar refresh behaviour
@@ -25,14 +25,28 @@ which displays a list of control widgets, each with a name, in a scrollable
 panel. You could use the wx.CollabisblePane to group properties/widgets 
 sensibly.
 ** Rename to FSLEyes
-** A better way of managing colour maps/luts
-** (related to above) Command line for models and labels
-* Things to do once the feature list is complete
+** Application icon (for OSX)
 ** Startup time
-** Complete code documentation, commenting and clean-up
-** Text annotations for models and labels
 ** Bug fixes
+** Fix command line for models and labels
+** Complete code documentation, commenting and clean-up
 ** Move TODO list to Gitlab
+** Other
+*** Image header information
+*** Remove Colour map name from toolbar
+*** Add display range (spinctrls) to toolbar
+*** Make double click on overlay list toggle visibility, rather than edit name
+*** Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
+*** Refresh when numeric control value changes, not when focus lost
+*** Combo box mouse selection
+*** FSLDIR management - prompt user at startup? Configurable menu option?
+*** Open file dialog should use last directory
+*** OSX Installer 
+*** Start up menu visibility thing
+
+* Things to do once the feature list is complete
+** A better way of managing colour maps/luts
+** Text annotations for models and labels
 ** A pre-processor for GL14 shader programs
 ** Unify/remove duplication across gl*_funcs modules
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, and all the GL texture function calls
