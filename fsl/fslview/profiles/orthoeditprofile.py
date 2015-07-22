@@ -125,6 +125,18 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._undoStateChanged()
 
 
+    def destroy(self):
+
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._editor     .removeListener('canUndo',         self._name)
+        self._editor     .removeListener('canRedo',         self._name)
+
+        self._editor = None
+
+        orthoviewprofile.OrthoViewProfile.destroy(self)
+
+
     def _undoStateChanged(self, *a):
         self.enable('undo', self._editor.canUndo)
         self.enable('redo', self._editor.canRedo)
