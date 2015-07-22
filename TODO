@@ -28,22 +28,27 @@ sensibly.
 ** Application icon (for OSX)
 ** Startup time
 ** Bug fixes
+*** DIsplay range for 4D images
+*** Bricon <-> display range linking
 ** Fix command line for models and labels
 ** Complete code documentation, commenting and clean-up
 ** Move TODO list to Gitlab
 ** Other
+*** Menu option to generate command line for current view
 *** Image header information
 *** Remove Colour map name from toolbar
-*** Add display range (spinctrls) to toolbar
+I think I need to write my own combobox implementation (subclass
+OwnerDrawnComboBox) in order to achieve this. This would also allow me to
+properly disable the colour map combo box.
 *** Make double click on overlay list toggle visibility, rather than edit name
 *** Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
 *** Refresh when numeric control value changes, not when focus lost
 *** Combo box mouse selection
-*** FSLDIR management - prompt user at startup? Configurable menu option?
-*** Open file dialog should use last directory
 *** OSX Installer 
-*** Start up menu visibility thing
-
+*** Start up menu visibility thing (PyInstaller bug)
+*** DONE Add display range (spinctrls) to toolbar
+*** DONE FSLDIR management - prompt user at startup? Configurable menu option?
+*** DONE Open file dialog should use last directory
 * Things to do once the feature list is complete
 ** A better way of managing colour maps/luts
 ** Text annotations for models and labels
@@ -148,7 +153,6 @@ perhaps into a standalone module...
 * Little things
 ** A 'FeatModel' control widget, allowing user to look at design matrix, stats, whatever ..
 ** A 'MELODICTimeSeries' thingo, just like the FEATTimeSeries - plot component time courses alongside a voxel's time course.
-** Add 'load colour map' button to VolumeOpts settings panel. If you do this, you could probably remove the option from the file menu.
 ** Colour command line (e.g. renderpy background) should be floating point  in the range [0, 1]
 ** GLModel - annotate view with model name
 ** LineVector - Threshold on vector length
@@ -158,7 +162,6 @@ perhaps into a standalone module...
 A gl/buffers.py module which checks for buffer capability. If buffer-capable,
 vertex data is copied to a buffer, and the buffer name/ID returned. Otherwise,
 the vertex data is returned unmodified.
-** Absolute clipping (e.g. clip [-3, 3])
 ** Make zoom more flexible
 ** Make ortho aspect ratio/zoom thing better
 ** RunWindow should print to stdout
@@ -207,6 +210,8 @@ Need to be able to specify the order that actions appear in the menu - perhaps
 just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE Absolute clipping (e.g. clip [-3, 3])
+** DONE Add 'load colour map' button to VolumeOpts settings panel. If you do this, you could probably remove the option from the file menu.
 ** DONE 'Label' image type, which allows user to change colour for each label.
 Ability to draw region outlines instead of full label overlays
 ** DONE ColourBarPanel should only do stuff if it is being displayed
@@ -298,7 +303,6 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** Editor features
 *** Select all above/below a specified intensity
 *** Honour clipping range (i.e. don't select clipped voxels)
-** Link display properties across images
 ** Custom colour select widget - the OSX one is rubbish
 ** Transfer editor selection on selected image changes
 ** Option in ortho panel/lightbox (or CanvasPanel superclass) to set display to radiological/neurological/first angle/third angle orthographic/etc.
@@ -310,6 +314,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
 ** Panel/profile mode which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE Link display properties across images
 ** DONE Edge detection algorithm
 For drawing outline images (both model and volumetric). A Sobel filter looks
 perfect, but I think I would need to be able to run it within fragment
