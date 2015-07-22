@@ -33,7 +33,9 @@ _TOOLBAR_PROPS = td.TypeDict({
         props.Widget('contrast',   spin=False, showLimits=False)],
 
     'VolumeOpts' : [
-        props.Widget('cmap')],
+        props.Widget('cmap'),
+        props.Widget('displayRange', showLimits=False)],
+    
 
     'MaskOpts' : [
         props.Widget('colour')],
@@ -172,7 +174,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         more = props.buildGUI(
             self,
             self,
-            view=actions.ActionButton(type(self), 'more'))
+            view=actions.ActionButton(self, 'more'))
 
         tools .append(more)
         labels.append(None)

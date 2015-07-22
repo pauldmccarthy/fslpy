@@ -6,15 +6,16 @@
 #
 
 
+import props
+
 import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.actions as actions
 
 
 class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
     
     def __init__(self, parent, overlayList, displayCtx, ortho):
-
-        import fsl.fslview.layouts as layouts
 
         actionz = {'more' : self.showMoreSettings}
         
@@ -24,7 +25,15 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
         orthoOpts = ortho.getSceneOptions()
 
-        toolSpecs = layouts.layouts[self]
+        toolSpecs = [
+            actions.ActionButton(ortho, 'screenshot'),
+            props  .Widget(      'zoom', spin=False, showLimits=False),
+            props  .Widget(      'layout'),
+            props  .Widget(      'showXCanvas'),
+            props  .Widget(      'showYCanvas'),
+            props  .Widget(      'showZCanvas'),
+            actions.ActionButton(self, 'more')]
+        
         targets    = {'screenshot'  : ortho,
                       'zoom'        : orthoOpts,
                       'layout'      : orthoOpts,
@@ -39,4 +48,4 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
     def showMoreSettings(self, *a):
         import canvassettingspanel
         self.orthoPanel.togglePanel(
-            canvassettingspanel.CanvasSettingsPanel, True, self.orthoPanel) 
+            canvassettingspanel.CanvasSettingsPanel, True, self.orthoPanel)

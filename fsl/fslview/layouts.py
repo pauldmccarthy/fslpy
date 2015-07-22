@@ -17,15 +17,6 @@ import fsl.fslview.actions as actions
 from fsl.fslview.profiles.orthoviewprofile import OrthoViewProfile
 from fsl.fslview.profiles.orthoeditprofile import OrthoEditProfile
 
-from fsl.fslview.views                     import OrthoPanel
-from fsl.fslview.views                     import LightBoxPanel
-
-from fsl.fslview.controls                  import OrthoToolBar
-from fsl.fslview.controls                  import LightBoxToolBar
-
-from fsl.fslview.displaycontext            import OrthoOpts
-from fsl.fslview.displaycontext            import LightBoxOpts
-
 
 def widget(labelCls, name, *args, **kwargs):
 
@@ -37,15 +28,6 @@ def widget(labelCls, name, *args, **kwargs):
 # OrthoPanel related panels and toolbars
 ########################################
 
-
-OrthoToolBarLayout = [
-    actions.ActionButton(OrthoPanel,   'screenshot'),
-    widget(              OrthoOpts,    'zoom', spin=False, showLimits=False),
-    widget(              OrthoOpts,    'layout'),
-    widget(              OrthoOpts,    'showXCanvas'),
-    widget(              OrthoOpts,    'showYCanvas'),
-    widget(              OrthoOpts,    'showZCanvas'),
-    actions.ActionButton(OrthoToolBar, 'more')]
 
 
 OrthoProfileToolBarViewLayout = [
@@ -80,24 +62,7 @@ OrthoProfileToolBarEditLayout = [
                  enabledWhen=lambda p: p.mode == 'selint')]
 
 
-#######################################
-# LightBoxPanel control panels/toolbars
-#######################################
-
-LightBoxToolBarLayout = [
-    actions.ActionButton(LightBoxPanel, 'screenshot'),
-    widget(              LightBoxOpts, 'zax'),
-    
-    widget(LightBoxOpts, 'sliceSpacing', spin=False, showLimits=False),
-    widget(LightBoxOpts, 'zrange',       spin=False, showLimits=False),
-    widget(LightBoxOpts, 'zoom',         spin=False, showLimits=False),
-    actions.ActionButton(LightBoxToolBar, 'more')]
-
-
 layouts = td.TypeDict({
-
-    'OrthoToolBar'    : OrthoToolBarLayout,
-    'LightBoxToolBar' : LightBoxToolBarLayout,
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
     ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,

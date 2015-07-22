@@ -216,7 +216,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             tool = props.buildGUI(
                 self, targets[toolSpec.key], toolSpec, showUnlink=False)
 
-            if isinstance(toolSpec, actions.ActionButton):
+            if isinstance(toolSpec, props.Button):
                 label = None
             else:
                 
