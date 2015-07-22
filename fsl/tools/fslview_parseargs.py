@@ -918,9 +918,10 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     """
 
     paths    = [o.overlay for o in args.overlays]
-    overlays = fsloverlay.loadOverlays(paths, **kwargs)
 
-    overlayList.extend(overlays)
+    if len(paths) > 0:
+        overlays = fsloverlay.loadOverlays(paths, **kwargs)
+        overlayList.extend(overlays)
 
     # per-overlay display arguments
     for i, overlay in enumerate(overlayList):

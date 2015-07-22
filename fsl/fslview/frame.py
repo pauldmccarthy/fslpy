@@ -53,7 +53,8 @@ import logging
 import wx
 import wx.aui as aui
 
-import fsl.data.strings as strings
+import fsl.data.strings     as strings
+import fsl.fslview.settings as fslsettings
 
 import views
 import actions
@@ -234,16 +235,11 @@ class FSLViewFrame(wx.Frame):
 
         ev.Skip()
 
-        config = wx.Config('FSLView')
-
         size     = self.GetSize().Get()
         position = self.GetScreenPosition().Get()
 
-        log.debug('Saving size:     {}'.format(str(size)))
-        log.debug('Saving position: {}'.format(str(position)))
-
-        config.Write('size',     str(size))
-        config.Write('position', str(position))
+        fslsettings.write('framesize',     str(size))
+        fslsettings.write('frameposition', str(position))
 
         # It's nice to explicitly clean
         # up our FSLViewPanels, otherwise
@@ -304,11 +300,11 @@ class FSLViewFrame(wx.Frame):
 
         from operator import itemgetter as iget
 
-        config   = wx.Config('FSLView')
-
         # Restore the saved frame size/position
-        size     = self.__parseSavedSize( config.Read('size'))
-        position = self.__parseSavedPoint(config.Read('position'))        
+        size     = self.__parseSavedSize(
+            fslsettings.read('framesize'))
+        position = self.__parseSavedPoint(
+            fslsettings.read('frameposition'))        
 
         if (size is not None) and (position is not None):
 

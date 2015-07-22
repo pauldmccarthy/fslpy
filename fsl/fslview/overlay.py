@@ -22,6 +22,7 @@ import fsl.data.featresults as featresults
 import fsl.data.featimage   as fslfeatimage
 import fsl.data.strings     as strings
 import fsl.data.model       as fslmodel
+import fsl.fslview.settings as fslsettings
 
 
 log = logging.getLogger(__name__)
@@ -193,7 +194,7 @@ def makeWildcard():
     return '|'.join(wcParts)
 
 
-def loadOverlays(paths, loadFunc='default', errorFunc='default'):
+def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     """Loads all of the overlays specified in the sequence of files
     contained in ``paths``.
 
@@ -210,6 +211,10 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default'):
                       default function pops up a :class:`wx.MessageBox` with
                       an error message. Pass in ``None`` to disable this
                       default behaviour.
+
+    :param saveDir:   If ``True`` (the default), the directory of the last
+                      overlay in the list of ``paths`` is saved, and used
+                      later on as the default load directory.
 
     :Returns a list of overlay objects
     """
@@ -292,6 +297,9 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default'):
 
     if defaultLoad:
         loadDlg.Close()
+
+    if saveDir and len(paths) > 0:
+        fslsettings.write('loadOverlayLastDir', op.dirname(paths[-1]))
             
     return overlays
 
@@ -320,15 +328,14 @@ def interactiveLoadOverlays(fromDir=None, **kwargs):
     if app is None:
         raise RuntimeError('A wx.App has not been created')
 
-    lastDir = getattr(interactiveLoadOverlays, 'lastDir', None)
-
-    if lastDir is None:
-        lastDir = os.getcwd()
-
-    saveLastDir = False
+    saveFromDir = False
     if fromDir is None:
-        fromDir = lastDir
-        saveLastDir = True
+        
+        saveFromDir = True
+        fromDir     = fslsettings.read('loadOverlayLastDir')
+        
+        if fromDir is None:
+            fromDir = os.getcwd()
 
     dlg = wx.FileDialog(app.GetTopWindow(),
                         message=strings.titles['overlay.addOverlays.dialog'],
@@ -340,10 +347,7 @@ def interactiveLoadOverlays(fromDir=None, **kwargs):
         return []
 
     paths  = dlg.GetPaths()
-    images = loadOverlays(paths, **kwargs)
-
-    if saveLastDir:
-        interactiveLoadOverlays.lastDir = op.dirname(paths[-1])
+    images = loadOverlays(paths, saveDir=saveFromDir, **kwargs)
 
     return images
     
