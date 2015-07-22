@@ -215,16 +215,34 @@ def loadClusterResults(featdir, settings, contrast):
         'Z-COG X (vox)'    : ('zcogx',    float), 
         'Z-COG Y (vox)'    : ('zcogy',    float), 
         'Z-COG Z (vox)'    : ('zcogz',    float),
+        'Z-MAX X (mm)'     : ('zmaxx',    int), 
+        'Z-MAX Y (mm)'     : ('zmaxy',    int), 
+        'Z-MAX Z (mm)'     : ('zmaxz',    int), 
+        'Z-COG X (mm)'     : ('zcogx',    float), 
+        'Z-COG Y (mm)'     : ('zcogy',    float), 
+        'Z-COG Z (mm)'     : ('zcogz',    float), 
         'COPE-MAX'         : ('copemax',  float),
         'COPE-MAX X (vox)' : ('copemaxx', int), 
         'COPE-MAX Y (vox)' : ('copemaxy', int), 
-        'COPE-MAX Z (vox)' : ('copemaxz', int), 
+        'COPE-MAX Z (vox)' : ('copemaxz', int),
+        'COPE-MAX X (mm)'  : ('copemaxx', int), 
+        'COPE-MAX Y (mm)'  : ('copemaxy', int), 
+        'COPE-MAX Z (mm)'  : ('copemaxz', int), 
         'COPE-MEAN'        : ('copemean', float)}
 
     # The cluster.txt file is converted
     # into a list of Cluster objects,
     # each of which encapsulates
     # information about one cluster.
+    #
+    # TODO The coordinates (e.g. 'ZMAX X (mm)')
+    # for standard space results (in e.g.
+    # 'cluster_zstatX_std.txt') are in MNI152
+    # space coordinates, and need to be
+    # transformed into voxel coordinates. Or a
+    # flag needs to be set on the Cluster object
+    # so users know that the coordinates are in
+    # standard space.
     class Cluster(object):
         def __init__(self, **kwargs):
             for name, val in kwargs.items():
@@ -235,10 +253,24 @@ def loadClusterResults(featdir, settings, contrast):
                     
                 setattr(self, attrName, val)
 
-    clusterFile = op.join(featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
+    # Cluster files are named like
+    # 'cluster_zstatX.txt', where
+    # X is the COPE number
+    clusterFile = op.join(
+        featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
 
     if not op.exists(clusterFile):
-        return None
+
+        # If the analysis was performed in standard
+        # space (e.g. a higher level group analysis),
+        # the cluster file will instead be called
+        # cluster_zstatX_std.txt', so we'd better
+        # check for that too.
+        clusterFile = op.join(
+            featdir, 'cluster_zstat{}_std.txt'.format(contrast + 1))
+
+        if not op.exists(clusterFile):
+            return None
 
     log.debug('Loading cluster results for contrast {} from {}'.format(
         contrast, clusterFile))
