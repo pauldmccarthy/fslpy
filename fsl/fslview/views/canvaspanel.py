@@ -169,7 +169,7 @@ class CanvasPanel(viewpanel.ViewPanel):
     syncOverlayDisplay = props.Boolean(default=True)
     movieMode          = props.Boolean(default=False)
     movieRate          = props.Int(minval=100,
-                                   maxval=2000,
+                                   maxval=1000,
                                    default=250,
                                    clamped=True)
     

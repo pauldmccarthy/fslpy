@@ -10,10 +10,13 @@ contents of a FEAT analysis directory.
 """
 
 
-import            logging
-import            glob
-import os.path as op
-import numpy   as np
+import                        logging
+import                        glob
+import os.path             as op
+import numpy               as np
+
+import fsl.data.image      as fslimage
+import fsl.utils.transform as transform
 
 
 log = logging.getLogger(__name__)
@@ -197,12 +200,59 @@ def loadClusterResults(featdir, settings, contrast):
     An error will be raised if the cluster file cannot be parsed.
     """
 
+    # Cluster files are named like
+    # 'cluster_zstatX.txt', where
+    # X is the COPE number. And
+    # the ZMax/COG etc coordinates
+    # are usually in voxel coordinates
+    coordXform  = np.eye(4)
+    clusterFile = op.join(
+        featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
+
+
+    if not op.exists(clusterFile):
+
+        # If the analysis was performed in standard
+        # space (e.g. a higher level group analysis),
+        # the cluster file will instead be called
+        # 'cluster_zstatX_std.txt', so we'd better
+        # check for that too.
+        clusterFile = op.join(
+            featdir, 'cluster_zstat{}_std.txt'.format(contrast + 1))
+
+        # In higher levle analysis run in some standard
+        # space, the cluster coordinates are in standard
+        # space. We transform them to voxel coordinates.
+        # later on.
+        coordXform = fslimage.Image(
+            getDataFile(featdir),
+            loadData=False).worldToVoxMat.T
+
+        if not op.exists(clusterFile):
+            return None
+
+    log.debug('Loading cluster results for contrast {} from {}'.format(
+        contrast, clusterFile))
+
+    # The cluster.txt file is converted
+    # into a list of Cluster objects,
+    # each of which encapsulates
+    # information about one cluster.
+    class Cluster(object):
+        def __init__(self, **kwargs):
+            for name, val in kwargs.items():
+                
+                attrName, atype = colmap[name]
+                if val is not None:
+                    val = atype(val)
+                    
+                setattr(self, attrName, val)
+
     # This dict provides a mapping between 
-    # Cluster object (see below) attribute
-    # names, and the corresponding column
-    # name in the cluster.txt file. And the
-    # value type is thrown in as well, for
-    # good measure.
+    # Cluster object attribute names, and
+    # the corresponding column name in the
+    # cluster.txt file. And the value type
+    # is thrown in as well, for good measure.
     colmap = {
         'Cluster Index'    : ('index',    int),  
         'Voxels'           : ('nvoxels',  int), 
@@ -229,51 +279,6 @@ def loadClusterResults(featdir, settings, contrast):
         'COPE-MAX Y (mm)'  : ('copemaxy', int), 
         'COPE-MAX Z (mm)'  : ('copemaxz', int), 
         'COPE-MEAN'        : ('copemean', float)}
-
-    # The cluster.txt file is converted
-    # into a list of Cluster objects,
-    # each of which encapsulates
-    # information about one cluster.
-    #
-    # TODO The coordinates (e.g. 'ZMAX X (mm)')
-    # for standard space results (in e.g.
-    # 'cluster_zstatX_std.txt') are in MNI152
-    # space coordinates, and need to be
-    # transformed into voxel coordinates. Or a
-    # flag needs to be set on the Cluster object
-    # so users know that the coordinates are in
-    # standard space.
-    class Cluster(object):
-        def __init__(self, **kwargs):
-            for name, val in kwargs.items():
-                
-                attrName, atype = colmap[name]
-                if val is not None:
-                    val = atype(val)
-                    
-                setattr(self, attrName, val)
-
-    # Cluster files are named like
-    # 'cluster_zstatX.txt', where
-    # X is the COPE number
-    clusterFile = op.join(
-        featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
-
-    if not op.exists(clusterFile):
-
-        # If the analysis was performed in standard
-        # space (e.g. a higher level group analysis),
-        # the cluster file will instead be called
-        # cluster_zstatX_std.txt', so we'd better
-        # check for that too.
-        clusterFile = op.join(
-            featdir, 'cluster_zstat{}_std.txt'.format(contrast + 1))
-
-        if not op.exists(clusterFile):
-            return None
-
-    log.debug('Loading cluster results for contrast {} from {}'.format(
-        contrast, clusterFile))
 
     # An error will be raised if the
     # cluster file does not exist (e.g.
@@ -309,7 +314,23 @@ def loadClusterResults(featdir, settings, contrast):
         # are unrecognised (i.e. not in
         # the colmap above), or if the
         # file is poorly formed.
-        return [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
+        clusters = [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
+
+        # Make sure all coordinates are in voxels -
+        # for first level analyses, the coordXform
+        # will be an identity transform (the coords
+        # are already in voxels). But for higher
+        # level, the coords are in mm, and need to
+        # be transformed to voxels.
+        for c in clusters:
+            c.zmaxx,    c.zmaxy,    c.zmaxz    = transform.transform(
+                [[c.zmaxx,    c.zmaxy,    c.zmaxz]],    coordXform)[0]
+            c.zcogx,    c.zcogy,    c.zcogz    = transform.transform(
+                [[c.zcogx,    c.zcogy,    c.zcogz]],    coordXform)[0]
+            c.copemaxx, c.copemaxy, c.copemaxz = transform.transform(
+                [[c.copemaxx, c.copemaxy, c.copemaxz]], coordXform)[0]
+
+        return clusters
 
 
 def getDataFile(featdir):
