@@ -22,6 +22,7 @@ import fsl.data.featresults as featresults
 import fsl.data.featimage   as fslfeatimage
 import fsl.data.strings     as strings
 import fsl.data.model       as fslmodel
+import fsl.utils.dialog     as fsldlg
 import fsl.fslview.settings as fslsettings
 
 
@@ -226,27 +227,13 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     # to show the currently loading image
     if defaultLoad:
         import wx
-        loadDlg       = wx.Frame(wx.GetApp().GetTopWindow(), style=0)
-        loadDlgStatus = wx.StaticText(loadDlg, style=wx.ST_ELLIPSIZE_MIDDLE)
-        
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(loadDlgStatus,
-                  border=25,
-                  proportion=1,
-                  flag=wx.EXPAND | wx.ALL | wx.ALIGN_CENTRE)
-        loadDlg.SetSizer(sizer)
-        
-        loadDlg.SetSize((400, 100))
-        loadDlg.Layout()
+        loadDlg = fsldlg.SimpleMessageDialog(wx.GetApp().GetTopWindow())
 
     # The default load function updates
     # the dialog window created above
     def defaultLoadFunc(s):
         msg = strings.messages['overlay.loadOverlays.loading'].format(s)
-        loadDlgStatus.SetLabel(msg)
-        loadDlg.Layout()
-        loadDlg.Refresh()
-        loadDlg.Update()
+        loadDlg.SetMessage(msg)
 
     # The default error function
     # shows an error dialog
@@ -274,8 +261,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     # function, show the dialog
     if defaultLoad:
         loadDlg.CentreOnParent()
-        loadDlg.Show(True)
-        loadDlg.Update()
+        loadDlg.Show()
 
     # Load the images
     for path in paths:

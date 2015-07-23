@@ -69,6 +69,11 @@ messages = TypeDict({
                                           'calling render directly with '
                                           'this command: \n{}',
 
+    'CanvasPanel.showCommandLineArgs.title'   : 'Scene parameters',
+    'CanvasPanel.showCommandLineArgs.message' : 'Use these parameters on the '
+                                                'command line to recreate '
+                                                'the current scene',
+
     'PlotPanel.screenshot'              : 'Save screenshot',
 
     'PlotPanel.screenshot.error'       : 'An error occurred while saving the '
@@ -155,6 +160,7 @@ actions = TypeDict({
     'LoadColourMapAction' : 'Load custom colour map',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
+    'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',
     'CanvasPanel.toggleColourBar'         : 'Colour bar',
     'CanvasPanel.toggleOverlayList'       : 'Overlay list',
     'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',

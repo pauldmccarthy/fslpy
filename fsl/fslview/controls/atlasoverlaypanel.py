@@ -211,6 +211,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                 self.__updateAtlasState(atlasIdx)
 
             msgdlg.ProcessingDialog(
+                self,
                 strings.messages[self, 'loadRegions'].format(atlasDesc.name),
                 buildRegionList).Run()
             

@@ -15,7 +15,7 @@ import props
 
 import fsl.data.image         as fslimage
 import fsl.data.strings       as strings
-import fsl.utils.messagedlg   as messagedlg
+import fsl.utils.dialog       as fsldlg
 import fsl.fslview.controls   as fslcontrols
 import                           plotpanel
 
@@ -515,7 +515,8 @@ class HistogramPanel(plotpanel.PlotPanel):
         # calculations. Show a message while this is
         # happening.
         if baseHs is None:
-            hs = messagedlg.ProcessingDialog(
+            hs = fsldlg.ProcessingDialog(
+                self,
                 strings.messages[self, 'calcHist'].format(overlay.name),
                 loadHs).Run()
 

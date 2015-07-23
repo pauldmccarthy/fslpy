@@ -19,6 +19,7 @@ import props
 
 import fsl
 import fsl.tools.fslview_parseargs as fslview_parseargs
+import fsl.utils.dialog            as fsldlg
 import fsl.data.image              as fslimage
 import fsl.data.strings            as strings
 import fsl.fslview.overlay         as fsloverlay
@@ -30,134 +31,6 @@ import                                viewpanel
 
 log = logging.getLogger(__name__)
 
-
-def _takeScreenShot(overlayList, displayCtx, canvas):
-
-    overlays = displayCtx.getOrderedOverlays()
-    ovlCopy  = list(overlays)
-
-    # Check to make sure that all overlays are saved
-    # on disk, and ask the user what they want to
-    # do about the ones that aren't.
-    for overlay in overlays:
-
-        # Skip disabled overlays
-        display = displayCtx.getDisplay(overlay)
-        
-        if not display.enabled:
-            ovlCopy.remove(overlay)
-            continue
-
-        # If the image is not saved, popup a dialog
-        # telling the user they must save the image
-        # before the screenshot can proceed
-        if isinstance(overlay, fslimage.Image) and not overlay.saved:
-            title = strings.titles[  'CanvasPanel.screenshot.notSaved']
-            msg   = strings.messages['CanvasPanel.screenshot.notSaved']
-            msg   = msg.format(overlay.name)
-
-            dlg = wx.MessageDialog(canvas,
-                                   message=msg,
-                                   caption=title,
-                                   style=(wx.CENTRE |
-                                          wx.YES_NO |
-                                          wx.CANCEL |
-                                          wx.ICON_QUESTION))
-            dlg.SetYesNoCancelLabels(
-                strings.labels['CanvasPanel.screenshot.notSaved.save'],
-                strings.labels['CanvasPanel.screenshot.notSaved.skip'],
-                strings.labels['CanvasPanel.screenshot.notSaved.cancel'])
-
-            result = dlg.ShowModal()
-
-            # The user chose to save the image
-            if result == wx.ID_YES:
-                fsloverlay.saveOverlay(overlay)
-
-            # The user chose to skip the image
-            elif result == wx.ID_NO:
-                ovlCopy.remove(overlay)
-                continue
-
-            # the user clicked cancel, or closed the dialog
-            else:
-                return
-
-    overlays = ovlCopy
-
-    # Ask the user where they want 
-    # the screenshot to be saved
-    dlg = wx.FileDialog(canvas,
-                        message=strings.messages['CanvasPanel.screenshot'],
-                        style=wx.FD_SAVE)
-
-    if dlg.ShowModal() != wx.ID_OK:
-        return
-
-    filename = dlg.GetPath()
-
-    # Make the dialog go away before
-    # the screenshot gets taken
-    dlg.Destroy()
-    wx.Yield()
-
-    # Screnshot size and scene options
-    sceneOpts     = canvas.getSceneOptions()
-    width, height = canvas.getCanvasPanel().GetClientSize().Get()
-
-    # Generate command line arguments for
-    # a callout to render.py - start with
-    # the render.py specific options
-    argv  = []
-    argv += ['--outfile', filename]
-    argv += ['--size', '{}'.format(width), '{}'.format(height)]
-    argv += ['--background', '0', '0', '0', '255']
-
-    # Add scene options
-    argv += fslview_parseargs.generateSceneArgs(
-        overlayList, displayCtx, sceneOpts)
-
-    # Add ortho specific options, if it's 
-    # an orthopanel we're dealing with
-    if isinstance(sceneOpts, displayctx.OrthoOpts):
-
-        xcanvas = canvas.getXCanvas()
-        ycanvas = canvas.getYCanvas()
-        zcanvas = canvas.getZCanvas()
-        
-        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
-                                                           'xcentre'][1])]
-        argv += ['{}'.format(c) for c in xcanvas.pos.xy]
-        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
-                                                           'ycentre'][1])]
-        argv += ['{}'.format(c) for c in ycanvas.pos.xy]
-        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
-                                                           'zcentre'][1])]
-        argv += ['{}'.format(c) for c in zcanvas.pos.xy]
-
-    # Add display options for each overlay
-    for overlay in overlays:
-
-        display = displayCtx.getDisplay(overlay)
-        fname   = overlay.dataSource
-        ovlArgv = fslview_parseargs.generateOverlayArgs(overlay, displayCtx)
-        argv   += [fname] + ovlArgv
-
-    log.debug('Generating screenshot with call '
-              'to render: {}'.format(' '.join(argv)))
-
-    # Run render.py to generate the screenshot
-    msg     = strings.messages['CanvasPanel.screenshot.pleaseWait']
-    busyDlg = wx.BusyInfo(msg, canvas)
-    result  = fsl.runTool('render', argv)
-    
-    busyDlg.Destroy()
-
-    if result != 0:
-        title = strings.titles[  'CanvasPanel.screenshot.error']
-        msg   = strings.messages['CanvasPanel.screenshot.error']
-        msg   = msg.format(' '.join(['render'] + argv))
-        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
 
 
 class CanvasPanel(viewpanel.ViewPanel):
@@ -186,6 +59,7 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         actionz = dict({
             'screenshot'              : self.screenshot,
+            'showCommandLineArgs'     : self.showCommandLineArgs,
             'toggleOverlayList'         : lambda *a: self.togglePanel(
                 fslcontrols.OverlayListPanel),
             'toggleAtlasPanel'        : lambda *a: self.togglePanel(
@@ -265,14 +139,18 @@ class CanvasPanel(viewpanel.ViewPanel):
             
         viewpanel.ViewPanel.destroy(self)
 
-        
-    def getSceneOptions(self):
-        return self.__opts
-        
     
     def screenshot(self, *a):
-        _takeScreenShot(self._overlayList, self._displayCtx, self)
+        _screenshot(self._overlayList, self._displayCtx, self)
 
+
+    def showCommandLineArgs(self, *a):
+        _showCommandLineArgs(self._overlayList, self._displayCtx, self)
+
+
+    def getSceneOptions(self):
+        return self.__opts
+                
         
     def getCanvasPanel(self):
         return self.__canvasPanel
@@ -375,3 +253,159 @@ class CanvasPanel(viewpanel.ViewPanel):
 
         if opts.volume == limit - 1: opts.volume  = 0
         else:                        opts.volume += 1
+
+
+
+def _genCommandLineArgs(overlayList, displayCtx, canvas):
+
+    argv = []
+
+    # Add scene options
+    sceneOpts = canvas.getSceneOptions()
+    argv += fslview_parseargs.generateSceneArgs(
+        overlayList, displayCtx, sceneOpts)
+
+    # Add ortho specific options, if it's 
+    # an orthopanel we're dealing with
+    if isinstance(sceneOpts, displayctx.OrthoOpts):
+
+        xcanvas = canvas.getXCanvas()
+        ycanvas = canvas.getYCanvas()
+        zcanvas = canvas.getZCanvas()
+        
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'xcentre'][1])]
+        argv += ['{}'.format(c) for c in xcanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'ycentre'][1])]
+        argv += ['{}'.format(c) for c in ycanvas.pos.xy]
+        argv += ['--{}'.format(fslview_parseargs.ARGUMENTS[sceneOpts,
+                                                           'zcentre'][1])]
+        argv += ['{}'.format(c) for c in zcanvas.pos.xy]
+
+    # Add display options for each overlay
+    for overlay in overlayList:
+
+        fname   = overlay.dataSource
+        ovlArgv = fslview_parseargs.generateOverlayArgs(overlay, displayCtx)
+        argv   += [fname] + ovlArgv
+
+    return argv
+
+
+def _showCommandLineArgs(overlayList, displayCtx, canvas):
+
+    args = _genCommandLineArgs(overlayList, displayCtx, canvas)
+    dlg  = fsldlg.TextEditDialog(
+        canvas,
+        title=strings.messages[  canvas, 'showCommandLineArgs', 'title'],
+        message=strings.messages[canvas, 'showCommandLineArgs', 'message'],
+        text=' '.join(args),
+        icon=wx.ICON_INFORMATION,
+        style=(fsldlg.TED_OK        |
+               fsldlg.TED_READONLY  |
+               fsldlg.TED_MULTILINE |
+               fsldlg.TED_COPY))
+
+    dlg.CentreOnParent()
+
+    dlg.ShowModal()
+
+
+def _screenshot(overlayList, displayCtx, canvas):
+
+    overlays = displayCtx.getOrderedOverlays()
+    ovlCopy  = list(overlays)
+
+    # Check to make sure that all overlays are saved
+    # on disk, and ask the user what they want to
+    # do about the ones that aren't.
+    for overlay in overlays:
+
+        # Skip disabled overlays
+        display = displayCtx.getDisplay(overlay)
+        
+        if not display.enabled:
+            ovlCopy.remove(overlay)
+            continue
+
+        # If the image is not saved, popup a dialog
+        # telling the user they must save the image
+        # before the screenshot can proceed
+        if isinstance(overlay, fslimage.Image) and not overlay.saved:
+            title = strings.titles[  'CanvasPanel.screenshot.notSaved']
+            msg   = strings.messages['CanvasPanel.screenshot.notSaved']
+            msg   = msg.format(overlay.name)
+
+            dlg = wx.MessageDialog(canvas,
+                                   message=msg,
+                                   caption=title,
+                                   style=(wx.CENTRE |
+                                          wx.YES_NO |
+                                          wx.CANCEL |
+                                          wx.ICON_QUESTION))
+            dlg.SetYesNoCancelLabels(
+                strings.labels['CanvasPanel.screenshot.notSaved.save'],
+                strings.labels['CanvasPanel.screenshot.notSaved.skip'],
+                strings.labels['CanvasPanel.screenshot.notSaved.cancel'])
+
+            result = dlg.ShowModal()
+
+            # The user chose to save the image
+            if result == wx.ID_YES:
+                fsloverlay.saveOverlay(overlay)
+
+            # The user chose to skip the image
+            elif result == wx.ID_NO:
+                ovlCopy.remove(overlay)
+                continue
+
+            # the user clicked cancel, or closed the dialog
+            else:
+                return
+
+    overlays = ovlCopy
+
+    # Ask the user where they want 
+    # the screenshot to be saved
+    dlg = wx.FileDialog(canvas,
+                        message=strings.messages['CanvasPanel.screenshot'],
+                        style=wx.FD_SAVE)
+
+    if dlg.ShowModal() != wx.ID_OK:
+        return
+
+    filename = dlg.GetPath()
+
+    # Make the dialog go away before
+    # the screenshot gets taken
+    dlg.Destroy()
+    wx.Yield()
+
+    width, height = canvas.getCanvasPanel().GetClientSize().Get()
+
+    # generate command line arguments for
+    # a callout to render.py - start with
+    # the render.py specific options
+    argv  = []
+    argv += ['--outfile', filename]
+    argv += ['--size', '{}'.format(width), '{}'.format(height)]
+    argv += ['--background', '0', '0', '0', '255']
+
+    argv += _genCommandLineArgs(overlayList, displayCtx, canvas)
+
+    log.debug('Generating screenshot with call '
+              'to render: {}'.format(' '.join(argv)))
+
+    # Run render.py to generate the screenshot
+    msg     = strings.messages['CanvasPanel.screenshot.pleaseWait']
+    busyDlg = wx.BusyInfo(msg, canvas)
+    result  = fsl.runTool('render', argv)
+    
+    busyDlg.Destroy()
+
+    if result != 0:
+        title = strings.titles[  'CanvasPanel.screenshot.error']
+        msg   = strings.messages['CanvasPanel.screenshot.error']
+        msg   = msg.format(' '.join(['render'] + argv))
+        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
