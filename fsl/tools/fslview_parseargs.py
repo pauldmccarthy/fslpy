@@ -81,17 +81,17 @@ OPTIONS = td.TypeDict({
                        'voxelLoc',
                        'worldLoc',
                        'selectedOverlay'],
+
+    # From here on, all of the keys are
+    # the names of HasProperties classes,
+    # and all of the values are the 
+    # names of properties on them.
     
     'SceneOpts'     : ['showCursor',
                        'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide',
                        'performance'],
-
-    # From here on, all of the keys are
-    # the names of HasProperties classes,
-    # and all of the values are the 
-    # names of properties on them.
     'OrthoOpts'     : ['xzoom',
                        'yzoom',
                        'zzoom',
@@ -118,11 +118,12 @@ OPTIONS = td.TypeDict({
     'ImageOpts'      : ['transform',
                         'resolution',
                         'volume'],
-    'VolumeOpts'     : ['displayRange',
-                        'interpolation',
+    'VolumeOpts'     : ['cmap',
+                        'displayRange',
                         'clippingRange',
                         'invert',
-                        'cmap'],
+                        'invertClipping',
+                        'interpolation'],
     'MaskOpts'       : ['colour',
                         'invert',
                         'threshold'],
@@ -884,14 +885,15 @@ def generateSceneArgs(overlayList, displayCtx, sceneOpts):
         args += ['--{}'.format(ARGUMENTS['Main.selectedOverlay'][1])]
         args += ['{}'.format(displayCtx.selectedOverlay)]
 
-    args += _generateArgs(sceneOpts, OPTIONS['SceneOpts'])
-    args += _generateArgs(sceneOpts, OPTIONS[ sceneOpts])
+    props = OPTIONS.get(sceneOpts, allhits=True)
+    args += _generateArgs(sceneOpts, concat(props))
 
     return args
 
 
 def generateOverlayArgs(overlay, displayCtx):
-    """
+    """Generates command line arguments which describe the display
+    of the current overlay.
     """
     display = displayCtx.getDisplay(overlay)
     opts    = display   .getDisplayOpts()

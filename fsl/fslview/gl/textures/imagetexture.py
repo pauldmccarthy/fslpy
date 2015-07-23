@@ -382,8 +382,8 @@ class ImageTexture(texture.Texture):
             data = prefilter(data)
         
         if normalise:
-            dmin = float(data.min())
-            dmax = float(data.max())
+            dmin = float(self.__dataMin)
+            dmax = float(self.__dataMax)
             if dmax != dmin:
                 data = (data - dmin) / (dmax - dmin)
             data = np.round(data * 65535)

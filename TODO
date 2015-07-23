@@ -27,15 +27,16 @@ sensibly.
 ** Rename to FSLEyes
 ** Application icon (for OSX)
 ** Startup time
-** Bug fixes
-*** DIsplay range for 4D images
-*** Bricon <-> display range linking
 ** Fix command line for models and labels
 ** Complete code documentation, commenting and clean-up
 ** Move TODO list to Gitlab
 ** Other
-*** Menu option to generate command line for current view
-*** Image header information
+*** Check/fix Display range for 4D images
+*** CanvasPanel menu option to generate command line for current view
+*** Control panel for image header information
+*** Profile actions/settings in canvas settings panel
+*** 'Reset display range' option on overlay display toolbar/settings panel
+*** SliceCanvas - do not re-centre on current location when zoomed in, and displayed slice changes
 *** Remove Colour map name from toolbar
 I think I need to write my own combobox implementation (subclass
 OwnerDrawnComboBox) in order to achieve this. This would also allow me to
@@ -46,6 +47,7 @@ properly disable the colour map combo box.
 *** Combo box mouse selection
 *** OSX Installer 
 *** Start up menu visibility thing (PyInstaller bug)
+*** DONE Check/fix Bricon <-> display range linking
 *** DONE Add display range (spinctrls) to toolbar
 *** DONE FSLDIR management - prompt user at startup? Configurable menu option?
 *** DONE Open file dialog should use last directory
