@@ -430,7 +430,7 @@ class VolumeOpts(ImageOpts):
         self.__toggleListeners(False)
 
         # update bricon
-        self.display.brightness = 100 - brightness * 100
-        self.display.contrast   = 100 - contrast   * 100
+        self.display.brightness = brightness * 100
+        self.display.contrast   = contrast   * 100
 
         self.__toggleListeners(True)

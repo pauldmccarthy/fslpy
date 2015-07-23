@@ -712,6 +712,35 @@ def installLookupTable(lutName):
 ###############
 
 
+def _briconToScaleOffset(brightness, contrast, drange):
+    """Used by the :func:`briconToDisplayRange` and the :func:`applyBricon`
+    functions.
+
+    Calculates a scale and offset which can be used to transform a display
+    range of the given size so that the given brightness/contrast settings
+    are applied.
+    """
+    
+    # The brightness is applied as a linear offset,
+    # with 0.5 equivalent to an offset of 0.0.                
+    offset = (brightness * 2 - 1) * drange
+
+    # If the contrast lies between 0.0 and 0.5, it is
+    # applied to the colour as a linear scaling factor.
+    if contrast <= 0.5:
+        scale = contrast * 2
+
+    # If the contrast lies between 0.5 and 1, it
+    # is applied as an exponential scaling factor,
+    # so lower values (closer to 0.5) have less of
+    # an effect than higher values (closer to 1.0).
+    else:
+        scale = 20 * contrast ** 4 - 0.25
+
+    return scale, offset
+    
+
+
 def briconToDisplayRange(dataRange, brightness, contrast):
     """Converts the given brightness/contrast values to a display range,
     given the data range.
@@ -733,20 +762,8 @@ def briconToDisplayRange(dataRange, brightness, contrast):
     drange     = dmax - dmin
     dmid       = dmin + 0.5 * drange
 
-    # The brightness is applied as a linear offset,
-    # with 0.5 equivalent to an offset of 0.0.                
-    offset = (brightness * 2 - 1) * drange
+    scale, offset = _briconToScaleOffset(brightness, contrast, drange)
 
-    # If the contrast lies between 0.0 and 0.5, it is
-    # applied to the colour as a linear scaling factor.
-    scale = contrast * 2
-
-    # If the contrast lies between 0.5 and 1, it
-    # is applied as an exponential scaling factor,
-    # so lower values (closer to 0.5) have less of
-    # an effect than higher values (closer to 1.0).
-    if contrast > 0.5:
-        scale += np.exp((contrast - 0.5) * 6) - 1
 
     # Calculate the new display range, keeping it
     # centered in the middle of the data range
@@ -773,7 +790,7 @@ def displayRangeToBricon(dataRange, displayRange):
     dmid       = dmin + 0.5 * drange
 
     # These are inversions of the equations in
-    # the briconToDisplayRange function above,
+    # the briconToScaleOffset function above,
     # which calculate the display ranges from
     # the bricon offset/scale
     offset = dlo + 0.5 * (dhi - dlo) - dmid
@@ -782,7 +799,7 @@ def displayRangeToBricon(dataRange, displayRange):
     brightness = 0.5 * (offset / drange + 1)
 
     if scale <= 1: contrast = scale / 2.0
-    else:          contrast = np.log(scale + 1) / 6.0 + 0.5
+    else:          contrast = ((scale + 0.25)  / 20.0) ** 0.25
 
     brightness = 1.0 - brightness
     contrast   = 1.0 - contrast
@@ -805,26 +822,13 @@ def applyBricon(rgb, brightness, contrast):
 
     :arg brightness: A brightness level in the range ``[0, 1]``.
 
-    :arg contrast:   A brightness level in the range ``[0, 1]``.
+    :arg contrast:   A contrast level in the range ``[0, 1]``.
     """
     rgb       = np.array(rgb)
     oneColour = len(rgb.shape) == 1
     rgb       = rgb.reshape(-1, rgb.shape[-1])
 
-    # The brightness is applied as a linear offset,
-    # with 0.5 equivalent to an offset of 0.0.
-    offset = (brightness * 2 - 1)
-
-    # If the contrast lies between 0.0 and 0.5, it is
-    # applied to the colour as a linear scaling factor.
-    scale = contrast * 2
-
-    # If the contrast lies between 0.5 and 0.1, it
-    # is applied as an exponential scaling factor,
-    # so lower values (closer to 0.5) have less of
-    # an effect than higher values (closer to 1.0).
-    if (contrast > 0.5):
-        scale += np.exp((contrast - 0.5) * 6) - 1
+    scale, offset = _briconToScaleOffset(brightness, contrast, 1)
 
     # The contrast factor scales the existing colour
     # range, but keeps the new range centred at 0.5.

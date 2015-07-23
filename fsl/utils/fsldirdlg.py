@@ -62,11 +62,11 @@ class FSLDirDialog(wx.Dialog):
                                flag=wx.ALL | wx.CENTRE,
                                border=10,
                                proportion=1)
-        
-        self.__buttonSizer.Add((40, -1))
+        self.__buttonSizer.Add((20, -1))
 
         self.__sizer.Add(self.__labelSizer,  flag=wx.EXPAND, proportion=1)
         self.__sizer.Add(self.__buttonSizer, flag=wx.EXPAND)
+        self.__sizer.Add((-1, 20))
 
         self.SetSizer(self.__sizer)
         self.Fit()

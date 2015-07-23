@@ -55,12 +55,13 @@ class ActionButton(props.Button):
 
         self.name = actionName
 
-        props.Button.__init__(self,
-                              actionName,
-                              text=strings.actions[classType, actionName],
-                              callback=self.__onButton,
-                              setup=self.__setup,
-                              **kwargs)
+        props.Button.__init__(
+            self,
+            actionName,
+            text=strings.actions.get((classType, actionName), actionName),
+            callback=self.__onButton,
+            setup=self.__setup,
+            **kwargs)
 
 
     def __setup(self, instance, parent, widget, *a):
