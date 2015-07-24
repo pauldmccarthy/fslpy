@@ -54,6 +54,7 @@ properly disable the colour map combo box.
 *** DONE FSLDIR management - prompt user at startup? Configurable menu option?
 *** DONE Open file dialog should use last directory
 * Things to do once the feature list is complete
+** Combine SliceCanvas offscreen+prerender modes 
 ** A better way of managing colour maps/luts
 ** Text annotations for models and labels
 ** A pre-processor for GL14 shader programs
