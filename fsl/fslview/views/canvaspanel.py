@@ -392,17 +392,15 @@ def _screenshot(overlayList, displayCtx, canvas):
     argv += ['--size', '{}'.format(width), '{}'.format(height)]
     argv += ['--background', '0', '0', '0', '255']
 
-    argv += _genCommandLineArgs(overlayList, displayCtx, canvas)
+    argv += _genCommandLineArgs(overlays, displayCtx, canvas)
 
     log.debug('Generating screenshot with call '
               'to render: {}'.format(' '.join(argv)))
 
     # Run render.py to generate the screenshot
-    msg     = strings.messages['CanvasPanel.screenshot.pleaseWait']
-    busyDlg = wx.BusyInfo(msg, canvas)
-    result  = fsl.runTool('render', argv)
-    
-    busyDlg.Destroy()
+    msg    = strings.messages['CanvasPanel.screenshot.pleaseWait']
+    dlg    = fsldlg.ProcessingDialog(canvas, msg, fsl.runTool, 'render', argv)
+    result = dlg.Run()
 
     if result != 0:
         title = strings.titles[  'CanvasPanel.screenshot.error']

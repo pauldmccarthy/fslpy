@@ -87,11 +87,12 @@ class GLMask(glvolume.GLVolume):
         opts   .addListener('invert',        name, colourUpdate,  weak=False)
         opts   .addListener('volume',        name, imageUpdate,   weak=False)
         opts   .addListener('resolution',    name, imageUpdate,   weak=False)
-        
-        opts.addSyncChangeListener(
-            'volume',     name, imageRefresh, weak=False)
-        opts.addSyncChangeListener(
-            'resolution', name, imageRefresh, weak=False)
+
+        if opts.getParent() is not None:
+            opts.addSyncChangeListener(
+                'volume',     name, imageRefresh, weak=False)
+            opts.addSyncChangeListener(
+                'resolution', name, imageRefresh, weak=False)
 
 
     def removeDisplayListeners(self):
@@ -113,14 +114,17 @@ class GLMask(glvolume.GLVolume):
         opts   .removeListener(          'invert',        name)
         opts   .removeListener(          'volume',        name)
         opts   .removeListener(          'resolution',    name)
-        opts   .removeSyncChangeListener('volume',        name)
-        opts   .removeSyncChangeListener('resolution',    name)
+
+        if opts.getParent() is not None:
+            opts.removeSyncChangeListener('volume',     name)
+            opts.removeSyncChangeListener('resolution', name)
 
 
     def testUnsynced(self):
         """Overrides :meth:`.GLVolume.testUnsynced`.
         """
-        return (not self.displayOpts.isSyncedToParent('volume') or
+        return (self.displayOpts.getParent() is None            or
+                not self.displayOpts.isSyncedToParent('volume') or
                 not self.displayOpts.isSyncedToParent('resolution'))
 
         

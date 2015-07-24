@@ -101,11 +101,12 @@ class GLLabel(globject.GLImageObject):
         opts    .addListener('volume',       name, imageUpdate,   weak=False)
         opts    .addListener('resolution',   name, imageUpdate,   weak=False)
         opts.lut.addListener('labels',       name, lutUpdate,     weak=False)
-        
-        opts.addSyncChangeListener(
-            'volume',     name, imageRefresh, weak=False)
-        opts.addSyncChangeListener(
-            'resolution', name, imageRefresh, weak=False)
+
+        if opts.getParent() is not None:
+            opts.addSyncChangeListener(
+                'volume',     name, imageRefresh, weak=False)
+            opts.addSyncChangeListener(
+                'resolution', name, imageRefresh, weak=False)
 
 
     def removeListeners(self):
@@ -122,9 +123,11 @@ class GLLabel(globject.GLImageObject):
         opts    .removeListener(          'lut',          name)
         opts    .removeListener(          'volume',       name)
         opts    .removeListener(          'resolution',   name)
-        opts    .removeSyncChangeListener('volume',       name)
-        opts    .removeSyncChangeListener('resolution',   name)
-        opts.lut.removeListener(          'labels',       name) 
+        opts.lut.removeListener(          'labels',       name)
+
+        if opts.getParent() is not None:
+            opts.removeSyncChangeListener('volume',     name)
+            opts.removeSyncChangeListener('resolution', name)
 
 
         
@@ -140,7 +143,8 @@ class GLLabel(globject.GLImageObject):
         opts     = self.displayOpts
         texName  = '{}_{}' .format(type(self).__name__, id(self.image))
 
-        unsynced = (not opts.isSyncedToParent('volume') or
+        unsynced = (opts.getParent() is None            or
+                    not opts.isSyncedToParent('volume') or
                     not opts.isSyncedToParent('resolution'))
 
         if unsynced:

@@ -553,7 +553,7 @@ class SliceCanvas(props.HasProperties):
                   'changed to {}'.format(display.name,
                                          display.overlayType))
 
-        self.__genGLObject(display.getOverlay(), display)
+        self.__genGLObject(display.getOverlay())
         self._refresh()
 
 
@@ -601,6 +601,9 @@ class SliceCanvas(props.HasProperties):
             globj.addUpdateListener(self.name, self._refresh)
 
         self._glObjects[overlay] = globj
+
+        if updateRenderTextures:
+            self._updateRenderTextures() 
 
         if not display.isBound('softwareMode', self):
             display.bindProps('softwareMode', self)
@@ -990,6 +993,8 @@ class SliceCanvas(props.HasProperties):
                 # Assume that all is well - the texture
                 # just has not yet been created
                 if rt is None:
+                    log.debug('Render texture missing for overlay {}'.format(
+                        overlay))
                     continue
                 
                 log.debug('Drawing {} slice for overlay {} '

@@ -167,9 +167,10 @@ class GLVector(globject.GLImageObject):
         opts   .addListener('modulate',      name, modUpdate,     weak=False)
         opts   .addListener('modThreshold',  name, shaderUpdate,  weak=False)
         opts   .addListener('resolution',    name, imageUpdate,   weak=False)
-        
-        opts.addSyncChangeListener(
-            'resolution', name, imageRefresh, weak=False)
+
+        if opts.getParent() is not None:
+            opts.addSyncChangeListener(
+                'resolution', name, imageRefresh, weak=False)
 
 
     def removeListeners(self):
@@ -192,8 +193,9 @@ class GLVector(globject.GLImageObject):
         opts   .removeListener(          'modThreshold', name)
         opts   .removeListener(          'volume',       name)
         opts   .removeListener(          'resolution',   name)
-        opts   .removeSyncChangeListener('volume',       name)
-        opts   .removeSyncChangeListener('resolution',   name)
+
+        if opts.getParent() is not None:
+            opts.removeSyncChangeListener('resolution', name)
 
 
     def refreshImageTexture(self):
@@ -212,7 +214,8 @@ class GLVector(globject.GLImageObject):
         else:
             realPrefilter = lambda d: prefilter(d.transpose((3, 0, 1, 2)))
 
-        unsynced = (not opts.isSyncedToParent('resolution') or
+        unsynced = (opts.getParent() is None                or 
+                    not opts.isSyncedToParent('resolution') or
                     not opts.isSyncedToParent('volume'))
 
         if unsynced:
@@ -268,7 +271,8 @@ class GLVector(globject.GLImageObject):
             type(self).__name__, id(self.image), id(modImage))
 
         if modOpts is not None:
-            unsynced = (not modOpts.isSyncedToParent('resolution') or
+            unsynced = (modOpts.getParent() is None                or
+                        not modOpts.isSyncedToParent('resolution') or
                         not modOpts.isSyncedToParent('volume'))
 
             # TODO If unsynced, this GLVector needs to 

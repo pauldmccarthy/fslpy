@@ -22,7 +22,6 @@ import fsl.data.featresults as featresults
 import fsl.data.featimage   as fslfeatimage
 import fsl.data.strings     as strings
 import fsl.data.model       as fslmodel
-import fsl.utils.dialog     as fsldlg
 import fsl.fslview.settings as fslsettings
 
 
@@ -227,6 +226,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     # to show the currently loading image
     if defaultLoad:
         import wx
+        import fsl.utils.dialog as fsldlg
         loadDlg = fsldlg.SimpleMessageDialog(wx.GetApp().GetTopWindow())
 
     # The default load function updates

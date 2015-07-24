@@ -30,7 +30,7 @@ def init(self):
     self.lineVertices    = None
 
     self._vertexResourceName = '{}_{}_vertices'.format(
-        type(self).__name__, id(self.image)) 
+        type(self).__name__, id(self.image))
 
     compileShaders(   self)
     updateShaderState(self)
@@ -42,16 +42,22 @@ def init(self):
         updateVertices(self)
         self.onUpdate()
 
-    opts.addListener('resolution', self.name, vertexUpdate, weak=False)
-    opts.addListener('directed',   self.name, vertexUpdate, weak=False)
+    name = '{}_vertices'.format(self.name)
+
+    opts.addListener('transform',  name, vertexUpdate, weak=False)
+    opts.addListener('resolution', name, vertexUpdate, weak=False)
+    opts.addListener('directed',   name, vertexUpdate, weak=False)
 
 
 def destroy(self):
     arbvp.glDeleteProgramsARB(1, gltypes.GLuint(self.vertexProgram))
     arbfp.glDeleteProgramsARB(1, gltypes.GLuint(self.fragmentProgram))
 
-    self.displayOpts.removeListener('resolution', self.name)
-    self.displayOpts.removeListener('directed',   self.name)
+    name = '{}_vertices'.format(self.name)
+
+    self.displayOpts.removeListener('transform',  name)
+    self.displayOpts.removeListener('resolution', name)
+    self.displayOpts.removeListener('directed',   name)
 
     glresources.delete(self._vertexResourceName)
 

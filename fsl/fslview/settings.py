@@ -11,7 +11,8 @@ log = logging.getLogger(__name__)
 
 def read(name, default=None):
 
-    import wx
+    try:    import wx
+    except: return None
 
     config = wx.Config('fslview')
     
@@ -23,7 +24,8 @@ def read(name, default=None):
 
 def write(name, value):
 
-    import wx
+    try:    import wx
+    except: return None    
 
     value  = str(value)
     config = wx.Config('fslview')
