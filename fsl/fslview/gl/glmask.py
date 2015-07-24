@@ -146,18 +146,18 @@ class GLMask(glvolume.GLVolume):
         dmin    = opts.threshold[0]
         dmax    = opts.threshold[1]
         
-        colour[3] = 1.0
+        colour = colour[:3]
         colour = colourmaps.applyBricon(colour,
                                         display.brightness / 100.0,
                                         display.contrast   / 100.0)
 
         if opts.invert:
-            cmap   = np.tile([0.0, 0.0, 0.0, 0.0], (4, 1))
-            border = np.array(opts.colour, dtype=np.float32)
+            cmap   = np.tile([0.0, 0.0, 0.0, 0.0],  (4, 1))
+            border = np.array(colour, dtype=np.float32)
         else:
-            cmap   = np.tile([opts.colour],        (4, 1))
+            cmap   = np.tile([colour],              (4, 1))
             border = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
-            
+
         self.colourTexture.set(cmap=cmap,
                                border=border,
                                displayRange=(dmin, dmax),

@@ -424,7 +424,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.currentColour    = (0, 0, 0)
         self.currentAlpha     = 1
         self.currentLineWidth = 1
-        self.currentLineStyle = ':'
+        self.currentLineStyle = '-'
 
         actionz = {
             'toggleTimeSeriesList'    : lambda *a: self.togglePanel(
