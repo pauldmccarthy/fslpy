@@ -14,9 +14,12 @@ def read(name, default=None):
     try:    import wx
     except: return None
 
-    config = wx.Config('fslview')
+    config = wx.Config('fsleyes')
     
     value = config.Read(name)
+
+    log.debug('Read {}: {}'.format(
+        name, '(no value)' if value == '' else value))
 
     if value == '': return default
     else:           return value
@@ -28,8 +31,8 @@ def write(name, value):
     except: return None    
 
     value  = str(value)
-    config = wx.Config('fslview')
+    config = wx.Config('fsleyes')
 
-    log.debug('Saving {}: {}'.format(name, value))
+    log.debug('Writing {}: {}'.format(name, value))
 
     config.Write(name, value)

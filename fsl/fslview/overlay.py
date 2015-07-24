@@ -22,7 +22,7 @@ import fsl.data.featresults as featresults
 import fsl.data.featimage   as fslfeatimage
 import fsl.data.strings     as strings
 import fsl.data.model       as fslmodel
-import fsl.fslview.settings as fslsettings
+import fsl.utils.settings   as fslsettings
 
 
 log = logging.getLogger(__name__)
