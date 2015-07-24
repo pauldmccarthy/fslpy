@@ -29,7 +29,7 @@ class SimpleMessageDialog(wx.Dialog):
                          proportion=1,
                          flag=wx.CENTRE | wx.ALL)
 
-        self.SetBackgroundColour((250, 250, 225))
+        self.SetBackgroundColour((225, 225, 200))
         
         self.SetSizer(self.__sizer)
         self.SetMessage(message)

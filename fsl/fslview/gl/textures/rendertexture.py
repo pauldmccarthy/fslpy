@@ -187,6 +187,8 @@ class RenderTexture(texture.Texture2D):
             
         if glfbo.glCheckFramebufferStatusEXT(glfbo.GL_FRAMEBUFFER_EXT) != \
            glfbo.GL_FRAMEBUFFER_COMPLETE_EXT:
+            self.unbindAsRenderTarget()
+            self.unbindTexture()            
             raise RuntimeError('An error has occurred while '
                                'configuring the frame buffer')
 
@@ -248,8 +250,8 @@ class GLObjectRenderTexture(RenderTexture):
 
         if width > maxRes or height > maxRes:
             oldWidth, oldHeight = width, height
-            ratio = min(width, height) / max(width, height)
-            
+            ratio = min(width, height) / float(max(width, height))
+
             if width > height:
                 width  = maxRes
                 height = width * ratio

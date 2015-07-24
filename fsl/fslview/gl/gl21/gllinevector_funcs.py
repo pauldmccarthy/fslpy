@@ -23,11 +23,15 @@ log = logging.getLogger(__name__)
 
 def init(self):
     
-    self.shaders        = None
-    self.vertexBuffer   = gl.glGenBuffers(1)
-    self.texCoordBuffer = gl.glGenBuffers(1)
-    self.vertexIDBuffer = gl.glGenBuffers(1)
-    self.lineVertices   = None
+    self.shaders            = None
+    self.vertexBuffer       = gl.glGenBuffers(1)
+    self.texCoordBuffer     = gl.glGenBuffers(1)
+    self.vertexIDBuffer     = gl.glGenBuffers(1)
+    self.lineVertices       = None
+
+    # False -> hardware shaders are in use
+    # True  -> software shaders are in use
+    self.swShadersInUse = False
 
     self._vertexResourceName = '{}_{}_vertices'.format(
         type(self).__name__, id(self.image))
@@ -39,7 +43,6 @@ def init(self):
         updateVertices(self)
         self.updateShaderState()
         self.onUpdate()
-
 
     name = '{}_vertices'.format(self.name)
 
@@ -77,6 +80,8 @@ def compileShaders(self):
                                               sw=self.display.softwareMode)
     
     self.shaders = shaders.compileShaders(vertShaderSrc, fragShaderSrc)
+
+    self.swShadersInUse     = self.display.softwareMode
 
     self.vertexPos          = gl.glGetAttribLocation( self.shaders,
                                                       'vertex')
@@ -211,6 +216,11 @@ def draw(self, zpos, xform=None):
 
 def softwareDraw(self, zpos, xform=None):
 
+    # Software shaders have not yet been compiled - 
+    # we can't draw until they're updated
+    if not self.swShadersInUse:
+        return
+
     opts                = self.displayOpts
     vertices, texCoords = self.lineVertices.getVertices(self, zpos)
 
@@ -253,6 +263,9 @@ def softwareDraw(self, zpos, xform=None):
 
 
 def hardwareDraw(self, zpos, xform=None):
+
+    if self.swShadersInUse:
+        return
 
     image      = self.image
     opts       = self.displayOpts

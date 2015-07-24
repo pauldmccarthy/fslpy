@@ -515,13 +515,15 @@ def _configOverlayParser(ovlParser):
     configure the display of a single overlay.
     """
 
-    Display    = fsldisplay.Display
-    ImageOpts  = fsldisplay.ImageOpts
-    VolumeOpts = fsldisplay.VolumeOpts
-    VectorOpts = fsldisplay.VectorOpts
-    MaskOpts   = fsldisplay.MaskOpts
-    ModelOpts  = fsldisplay.ModelOpts
-    LabelOpts  = fsldisplay.LabelOpts
+    Display        = fsldisplay.Display
+    ImageOpts      = fsldisplay.ImageOpts
+    VolumeOpts     = fsldisplay.VolumeOpts
+    VectorOpts     = fsldisplay.VectorOpts
+    RGBVectorOpts  = fsldisplay.RGBVectorOpts
+    LineVectorOpts = fsldisplay.LineVectorOpts
+    MaskOpts       = fsldisplay.MaskOpts
+    ModelOpts      = fsldisplay.ModelOpts
+    LabelOpts      = fsldisplay.LabelOpts
     
     dispDesc = 'Each display option will be applied to the '\
                'overlay which is listed before that option.'
@@ -531,17 +533,21 @@ def _configOverlayParser(ovlParser):
     imgParser   = ovlParser.add_argument_group(GROUPNAMES[ImageOpts])
     volParser   = ovlParser.add_argument_group(GROUPNAMES[VolumeOpts])
     vecParser   = ovlParser.add_argument_group(GROUPNAMES[VectorOpts])
+    lvParser    = ovlParser.add_argument_group(GROUPNAMES[LineVectorOpts])
+    rvParser    = ovlParser.add_argument_group(GROUPNAMES[RGBVectorOpts])
     maskParser  = ovlParser.add_argument_group(GROUPNAMES[MaskOpts])
     modelParser = ovlParser.add_argument_group(GROUPNAMES[ModelOpts])
     labelParser = ovlParser.add_argument_group(GROUPNAMES[LabelOpts])
 
-    targets = [(Display,    dispParser),
-               (ImageOpts,  imgParser),
-               (VolumeOpts, volParser),
-               (VectorOpts, vecParser),
-               (MaskOpts,   maskParser),
-               (ModelOpts,  modelParser),
-               (LabelOpts,  labelParser)]
+    targets = [(Display,        dispParser),
+               (ImageOpts,      imgParser),
+               (VolumeOpts,     volParser),
+               (VectorOpts,     vecParser),
+               (LineVectorOpts, lvParser),
+               (RGBVectorOpts,  rvParser),
+               (MaskOpts,       maskParser),
+               (ModelOpts,      modelParser),
+               (LabelOpts,      labelParser)]
 
     for target, parser in targets:
 

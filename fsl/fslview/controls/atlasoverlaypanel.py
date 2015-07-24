@@ -13,10 +13,10 @@ import wx
 
 import pwidgets.elistbox as elistbox
 
-import fsl.data.atlases      as atlases
-import fsl.data.strings      as strings
-import fsl.utils.messagedlg  as msgdlg
-import fsl.fslview.panel     as fslpanel
+import fsl.data.atlases  as atlases
+import fsl.data.strings  as strings
+import fsl.utils.dialog  as dialog
+import fsl.fslview.panel as fslpanel
 
 
 log = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
 
                 self.__updateAtlasState(atlasIdx)
 
-            msgdlg.ProcessingDialog(
+            dialog.ProcessingDialog(
                 self,
                 strings.messages[self, 'loadRegions'].format(atlasDesc.name),
                 buildRegionList).Run()

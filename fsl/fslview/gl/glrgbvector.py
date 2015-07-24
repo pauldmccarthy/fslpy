@@ -37,15 +37,23 @@ class GLRGBVector(glvector.GLVector):
         self.displayOpts.removeListener('interpolation', self.name)
         glvector.GLVector.destroy(self)
 
-        
-    def __interpChanged(self, *a):
 
+    def refreshImageTexture(self):
+        glvector.GLVector.refreshImageTexture(self)
+        self.__setInterp()
+
+        
+    def __setInterp(self):
         opts = self.displayOpts
 
         if opts.interpolation == 'none': interp = gl.GL_NEAREST
-        else:                            interp = gl.GL_LINEAR
-
+        else:                            interp = gl.GL_LINEAR 
+        
         self.imageTexture.set(interp=interp)
+
+        
+    def __interpChanged(self, *a):
+        self.__setInterp()
         self.updateShaderState()
         self.onUpdate()
 
