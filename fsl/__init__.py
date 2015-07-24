@@ -59,12 +59,18 @@ import argparse
 import subprocess
 
 
-log = logging.getLogger(__name__)
-
-
 # make matplotlib quiet
 warnings.filterwarnings('ignore', module='matplotlib')
 warnings.filterwarnings('ignore', module='mpl_toolkits')
+
+# My own custom logging level for tracing memory related events
+logging.MEMORY = 15
+def logmemory(self, message, *args, **kwargs):
+    if self.isEnabledFor(logging.MEMORY):
+        self._log(logging.MEMORY, message, args, **kwargs)
+        
+logging.Logger.memory = logmemory
+logging.addLevelName(logging.MEMORY, 'MEMORY')
 
 
 # There's a bug in OpenGL.GL.shaders (which has been fixed in
@@ -72,13 +78,21 @@ warnings.filterwarnings('ignore', module='mpl_toolkits')
 # thus screws up our own logging. We overcome this by configuring
 # the root logger before OpenGL.GL.shaders is imported (which
 # occurs when fsl.fslview.gl.slicecanvas.SliceCanvas is imported).
-logging.basicConfig(
-    format='%(levelname)8.8s '
-           '%(filename)20.20s '
-           '%(lineno)4d: '
-           '%(funcName)-15.15s - '
-           '%(message)s') 
-log = logging.getLogger('fsl')
+
+logFormatter = logging.Formatter('%(levelname)8.8s '
+                                 '%(filename)20.20s '
+                                 '%(lineno)4d: '
+                                 '%(funcName)-15.15s - '
+                                 '%(message)s')
+logHandler  = logging.StreamHandler()
+logHandler.setFormatter(logFormatter)
+
+
+# We want the root logger
+log = logging.getLogger()
+
+
+log.addHandler(logHandler)
 
 
 import fsl.tools as tools
@@ -176,6 +190,10 @@ def parseArgs(argv, allTools):
     parser.add_argument(
         '-n', '--noisy', metavar='MODULE', action='append',
         help='Make the specified module noisy')
+
+    parser.add_argument(
+        '-m', '--memory', action='store_true',
+        help='Output memory events (implied if -v is set)')
     
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
@@ -205,6 +223,9 @@ def parseArgs(argv, allTools):
     toolArgv  = argv[ firstPos + 1:]
 
     namespace = parser.parse_args(fslArgv)
+
+    if namespace.noisy is None:
+        namespace.noisy = []
 
     # if the specified tool is 'help', it should be followed by
     # one more argument, the name of the tool to print help for
@@ -242,12 +263,26 @@ def parseArgs(argv, allTools):
 
     # Configure any logging verbosity 
     # settings specified by the user
+    if namespace.verbose is None:
+        if namespace.memory:
+            class MemFilter(object):
+                def filter(self, record):
+                    if   record.name in namespace.noisy:   return 1
+                    elif record.levelno == logging.MEMORY: return 1
+                    else:                                  return 0
+
+            log.setLevel(logging.MEMORY)
+            log.handlers[0].addFilter(MemFilter())
+            log.memory('Added filter for MEMORY messages')
+            logging.getLogger('props')   .setLevel(logging.WARNING)
+            logging.getLogger('pwidgets').setLevel(logging.WARNING)            
+        
     if namespace.verbose == 1:
         log.setLevel(logging.DEBUG)
 
         # make some noisy things quiet
-        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.WARNING)
-        logging.getLogger('fsl.fslview.views').setLevel(logging.WARNING)
+        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.MEMORY)
+        logging.getLogger('fsl.fslview.views').setLevel(logging.MEMORY)
         logging.getLogger('props')            .setLevel(logging.WARNING)
         logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
     elif namespace.verbose == 2:
@@ -259,9 +294,14 @@ def parseArgs(argv, allTools):
         logging.getLogger('props')   .setLevel(logging.DEBUG)
         logging.getLogger('pwidgets').setLevel(logging.DEBUG)
 
-    if namespace.noisy is not None:
-        for mod in namespace.noisy:
-            logging.getLogger(mod).setLevel(logging.DEBUG)
+    for mod in namespace.noisy:
+        logging.getLogger(mod).setLevel(logging.DEBUG)
+
+    # The trace module monkey-patches some
+    # things if its logging level has been
+    # set to DEBUG, so we import it now so
+    # it can set itself up.
+    import fsl.utils.trace 
 
     # otherwise, give the remaining arguments to the tool parser
     fslTool = allTools[namespace.tool]
@@ -280,17 +320,22 @@ def fslDirWarning(frame, toolName, fslEnvActive):
 
     if fslEnvActive: return
 
-    msg = 'The FSLDIR environment variable is not set - '\
-          '{} may not behave correctly.'.format(toolName)
+    warnmsg = 'The FSLDIR environment variable is not set - '\
+              '{} may not behave correctly.'.format(toolName)
 
     if frame is not None:
         import wx
-        wx.MessageDialog(
-            frame,
-            message=msg,
-            style=wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+        from fsl.utils.fsldirdlg import FSLDirDialog
+
+        dlg = FSLDirDialog(frame, toolName)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            fsldir = dlg.GetFSLDir()
+            log.debug('Setting $FSLDIR to {} (specified '
+                      'by user)'.format(fsldir))
+            os.environ['FSLDIR'] = fsldir
     else:
-        log.warn(msg)
+        log.warn(warnmsg)
         
 
 def buildGUI(args, fslTool, toolCtx, fslEnvActive):

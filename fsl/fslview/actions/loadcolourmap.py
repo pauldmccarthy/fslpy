@@ -8,14 +8,10 @@
 import logging
 import os.path as op
 
-import fsl.data.strings                      as strings
-import fsl.fslview.actions                   as actions
-import fsl.fslview.colourmaps                as fslcmap
-import fsl.fslview.displaycontext.volumeopts as volumeopts
+import fsl.data.strings       as strings
+import fsl.fslview.actions    as actions
+import fsl.fslview.colourmaps as fslcmap
 
-
-# TODO You will need to patch ColourMap instances
-# for any new display option types
 
 
 log = logging.getLogger(__name__)
@@ -61,7 +57,7 @@ class LoadColourMapAction(actions.Action):
             cmapName = dlg.GetValue()
 
             # a colour map with the specified name already exists
-            if fslcmap.isRegistered(cmapName):
+            if fslcmap.isColourMapRegistered(cmapName):
                 cmapNameMsg = strings.messages[_stringID + 'alreadyinstalled']
                 continue
 
@@ -74,30 +70,16 @@ class LoadColourMapAction(actions.Action):
             break
 
         # register the selected colour map file
-        fslcmap.registerColourMap(cmapFile, cmapName)
-
-        # update the VolumeOpts colour map property ...
-        #
-        # for future images
-        volumeopts.VolumeOpts.cmap.setConstraint(
-            None,
-            'cmapNames',
-            fslcmap.getColourMaps())
-
-        # and for any existing VolumeOpts instances
-        for image in self._imageList:
-            display = self._displayCtx.getDisplayProperties(image)
-            opts    = display.getDisplayOpts()
-            if isinstance(opts, volumeopts.VolumeOpts):
-                opts.setConstraint('cmap',
-                                   'cmapNames',
-                                   fslcmap.getColourMaps())
+        fslcmap.registerColourMap(cmapFile,
+                                  self._overlayList,
+                                  self._displayCtx,
+                                  cmapName)
 
         # ask the user if they want to install
         # the colour map for future use
         dlg = wx.MessageDialog(
             app.GetTopWindow(),
-            message=strings.messages['actions.loadcolourmap.installcmap'],
+            message=strings.messages[_stringID + 'installcmap'],
             style=wx.YES_NO)
 
         if dlg.ShowModal() != wx.ID_YES:

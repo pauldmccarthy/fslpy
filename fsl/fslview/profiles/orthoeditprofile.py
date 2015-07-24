@@ -13,6 +13,7 @@ import numpy                        as np
 
 import                                 props
 import fsl.utils.transform          as transform
+import fsl.data.image               as fslimage
 import fsl.fslview.editor.editor    as editor
 import fsl.fslview.gl.annotations   as annotations
 
@@ -71,16 +72,16 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._selAnnotation.texture.refresh() 
  
 
-    def __init__(self, canvasPanel, imageList, displayCtx):
+    def __init__(self, viewPanel, overlayList, displayCtx):
 
-        self._editor         = editor.Editor(imageList, displayCtx) 
-        self._xcanvas        = canvasPanel.getXCanvas()
-        self._ycanvas        = canvasPanel.getYCanvas()
-        self._zcanvas        = canvasPanel.getZCanvas() 
+        self._editor         = editor.Editor(overlayList, displayCtx) 
+        self._xcanvas        = viewPanel.getXCanvas()
+        self._ycanvas        = viewPanel.getYCanvas()
+        self._zcanvas        = viewPanel.getZCanvas() 
         self._selAnnotation  = None
         self._selecting      = False
         self._lastDist       = None
-        self._currentImage   = None
+        self._currentOverlay = None
         
         actions = {
             'undo'                    : self.undo,
@@ -92,18 +93,18 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         orthoviewprofile.OrthoViewProfile.__init__(
             self,
-            canvasPanel,
-            imageList,
+            viewPanel,
+            overlayList,
             displayCtx,
             ['sel', 'desel', 'selint'],
             actions)
 
-        displayCtx.addListener('selectedImage',
-                               self._name,
-                               self._selectedImageChanged)
-        imageList.addListener( 'images',
-                               self._name,
-                               self._selectedImageChanged)
+        displayCtx .addListener('selectedOverlay',
+                                self._name,
+                                self._selectedOverlayChanged)
+        overlayList.addListener('overlays',
+                                self._name,
+                                self._selectedOverlayChanged)
 
         self._editor.addListener('canUndo',
                                  self._name,
@@ -119,9 +120,21 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                          self._name,
                          self._selectionColoursChanged) 
 
-        self._selectedImageChanged()
+        self._selectedOverlayChanged()
         self._selectionChanged()
         self._undoStateChanged()
+
+
+    def destroy(self):
+
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._overlayList.removeListener('overlays',        self._name)
+        self._editor     .removeListener('canUndo',         self._name)
+        self._editor     .removeListener('canRedo',         self._name)
+
+        self._editor = None
+
+        orthoviewprofile.OrthoViewProfile.destroy(self)
 
 
     def _undoStateChanged(self, *a):
@@ -134,17 +147,17 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             self._selAnnotation.colour = self.selectionOverlayColour
 
 
-    def _selectedImageChanged(self, *a):
+    def _selectedOverlayChanged(self, *a):
 
-        image     = self._displayCtx.getSelectedImage()
+        overlay   = self._displayCtx.getSelectedOverlay()
         selection = self._editor.getSelection() 
         xannot    = self._xcanvas.getAnnotations()
         yannot    = self._ycanvas.getAnnotations()
         zannot    = self._zcanvas.getAnnotations()        
 
-        # If the selected image hasn't changed,
+        # If the selected overlay hasn't changed,
         # we don't need to do anything
-        if image == self._currentImage:
+        if overlay == self._currentOverlay:
             return
 
         # If there's already an existing
@@ -157,22 +170,24 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             self._selAnnotation.destroy()
             self._selAnnotation = None
 
-        self._currentImage = image
+        self._currentOverlay = overlay
 
-        # If there is no selected image  (the image
+        # If there is no selected overlay (the overlay
         # list is empty), don't do anything.
-        if image is None:
+        if overlay is None:
             return
 
-        display = self._displayCtx.getDisplayProperties(image)
+        display = self._displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
 
         # Edit mode is only supported on images with
         # the 'volume' type, in 'id' or 'pixdim'
         # transformation for the time being
-        if image.imageType != 'volume' or \
-           display.transform not in ('id', 'pixdim'):
+        if not isinstance(overlay, fslimage.Image) or \
+           display.overlayType != 'volume'         or \
+           opts.transform not in ('id', 'pixdim'):
             
-            self._currentImage = None
+            self._currentOverlay = None
             log.warn('Editing is only possible on volume '
                      'images, in ID or pixdim space.')
             return
@@ -184,14 +199,14 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         self._selAnnotation = annotations.VoxelSelection( 
             selection,
-            display.getTransform('display', 'voxel'),
-            display.getTransform('voxel',   'display'),
+            opts.getTransform('display', 'voxel'),
+            opts.getTransform('voxel',   'display'),
             colour=self.selectionOverlayColour)
         
         xannot.obj(self._selAnnotation,  hold=True)
         yannot.obj(self._selAnnotation,  hold=True)
         zannot.obj(self._selAnnotation,  hold=True)
-        self._canvasPanel.Refresh()
+        self._viewPanel.Refresh()
 
 
     def _selectionChanged(self, *a):
@@ -216,13 +231,13 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         
     def _getVoxelLocation(self, canvasPos):
-        """Returns the voxel location, for the currently selected image,
+        """Returns the voxel location, for the currently selected overlay,
         which corresponds to the specified canvas position.
         """
-        display = self._displayCtx.getDisplayProperties(self._currentImage)
+        opts = self._displayCtx.getOpts(self._currentOverlay)
 
         voxel = transform.transform(
-            [canvasPos], display.getTransform('display', 'voxel'))[0]
+            [canvasPos], opts.getTransform('display', 'voxel'))[0]
 
         # Using floor(voxel+0.5) because, when at the
         # midpoint, I want to round up. np.round rounds
@@ -239,8 +254,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         were to click.
         """
 
-        display = self._displayCtx.getDisplayProperties(self._currentImage)
-        shape   = self._currentImage.shape
+        opts  = self._displayCtx.getOpts(self._currentOverlay)
+        shape = self._currentOverlay.shape
         
         if self.selectionIs3D: axes = (0, 1, 2)
         else:                  axes = (canvas.xax, canvas.yax)
@@ -257,8 +272,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         for canvas in [self._xcanvas, self._ycanvas, self._zcanvas]:
             canvas.getAnnotations().grid(
                 block,
-                display.getTransform('display', 'voxel'),
-                display.getTransform('voxel',   'display'),
+                opts.getTransform('display', 'voxel'),
+                opts.getTransform('voxel',   'display'),
                 offsets=offset,
                 colour=colour)
 
@@ -362,9 +377,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         if not self._selecting:
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        opts    = display.getDisplayOpts()
+        overlay = self._displayCtx.getSelectedOverlay()
+        opts    = self._displayCtx.getOpts(overlay)
 
         step = opts.displayRange.xlen / 50.0
 
@@ -378,13 +392,15 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
             
     def _selintSelect(self, voxel):
-        image = self._displayCtx.getSelectedImage()
+        
+        overlay = self._displayCtx.getSelectedOverlay()
+        
         if self.searchRadius == 0:
             searchRadius = None
         else:
-            searchRadius = (self.searchRadius / image.pixdim[0],
-                            self.searchRadius / image.pixdim[1],
-                            self.searchRadius / image.pixdim[2])
+            searchRadius = (self.searchRadius / overlay.pixdim[0],
+                            self.searchRadius / overlay.pixdim[1],
+                            self.searchRadius / overlay.pixdim[2])
 
         # If the last selection covered a bigger radius
         # than this selection, clear the whole selection 

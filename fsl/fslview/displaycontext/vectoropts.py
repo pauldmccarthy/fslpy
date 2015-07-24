@@ -4,17 +4,20 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module defines the :class:`VectorOpts` class, which contains
-display options for rendering :class:`~fsl.fslview.gl.glvector.GLVector`
-instances.
+"""This module defines the :class:`VectorOpts` class, which contains display
+options for rendering :class:`.GLVector` instances.
 """
+
+import copy
 
 import props
 
+import fsl.data.image   as fslimage
 import fsl.data.strings as strings
-import display          as fsldisplay
+import                     volumeopts
 
-class VectorOpts(fsldisplay.DisplayOpts):
+
+class VectorOpts(volumeopts.ImageOpts):
 
 
     xColour = props.Colour(default=(1.0, 0.0, 0.0))
@@ -52,80 +55,80 @@ class VectorOpts(fsldisplay.DisplayOpts):
     """Hide voxels for which the modulation value is below this threshold."""
 
     
-    def __init__(self,
-                 image,
-                 display,
-                 imageList,
-                 displayCtx,
-                 parent=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, *args, **kwargs):
         """Create a ``VectorOpts`` instance for the given image.
 
-        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
-        documentation for more details.
+        See the :class:`.ImageOpts` documentation for more details.
         """
-        fsldisplay.DisplayOpts.__init__(self,
-                                        image,
-                                        display,
-                                        imageList,
-                                        displayCtx,
-                                        parent,
-                                        *args,
-                                        **kwargs)
+        
+        volumeopts.ImageOpts.__init__(self, *args, **kwargs)
 
-        imageList.addListener('images', self.name, self.imageListChanged)
-        self.imageListChanged()
+        self.overlayList.addListener('overlays',
+                                     self.name,
+                                     self.__overlayListChanged)
+        
+        self.__overlayListChanged()
 
 
-    def imageListChanged(self, *a):
-        """Called when the image list changes. Updates the ``modulate``
-        property so that it contains a list of images which could be used
+    def destroy(self):
+        self.overlayList.removeListener('overlays', self.name)
+
+        for overlay in self.overlayList:
+            overlay.removeListener('name', self.name)
+
+        volumeopts.ImageOpts.destroy(self)
+
+        
+    def __overlayListChanged(self, *a):
+        """Called when the overlay list changes. Updates the ``modulate``
+        property so that it contains a list of overlays which could be used
         to modulate the vector image.
         """
         
-        modProp = self.getProp('modulate')
-        modVal  = self.modulate
-        images  = self.displayCtx.getOrderedImages()
+        modProp  = self.getProp('modulate')
+        modVal   = self.modulate
+        overlays = self.displayCtx.getOrderedOverlays()
 
         # the image for this VectorOpts
         # instance has been removed
-        if self.image not in images:
-            self.imageList.removeListener('images', self.name)
+        if self.overlay not in overlays:
+            self.overlayList.removeListener('overlays', self.name)
             return
 
         modOptions = ['none']
         modLabels  = [strings.choices['VectorOpts.modulate.none']]
 
-        for image in images:
+        for overlay in overlays:
             
             # It doesn't make sense to
             # modulate the image by itself
-            if image is self.image:
+            if overlay is self.overlay:
+                continue
+
+            # The modulate image must
+            # be an image. Duh.
+            if not isinstance(overlay, fslimage.Image):
                 continue
 
             # an image can only be used to modulate
             # the vector image if it shares the same
             # dimensions as said vector image
-            if image.shape != self.image.shape[:3]:
+            if overlay.shape != self.overlay.shape[:3]:
                 continue
 
-            modOptions.append(image)
-            modLabels .append(image.name)
+            modOptions.append(overlay)
+            modLabels .append(overlay.name)
                 
-            image.addListener('name',
-                              self.name,
-                              self.imageListChanged,
-                              overwrite=True)
+            overlay.addListener('name',
+                                self.name,
+                                self.__overlayListChanged,
+                                overwrite=True)
             
         modProp.setChoices(modOptions, modLabels, self)
 
-        if modVal in images: self.modulate = modVal
-        else:                self.modulate = 'none'
+        if modVal in overlays: self.modulate = modVal
+        else:                  self.modulate = 'none'
 
-
-# TODO RGBVector/LineVector subclasses for any type
-# specific options (e.g. line width for linevector)
 
 class LineVectorOpts(VectorOpts):
 
@@ -143,3 +146,9 @@ class LineVectorOpts(VectorOpts):
         kwargs['nounbind'] = ['directed']
 
         VectorOpts.__init__(self, *args, **kwargs)
+
+
+
+class RGBVectorOpts(VectorOpts):
+
+    interpolation = copy.copy(volumeopts.VolumeOpts.interpolation)

@@ -10,18 +10,30 @@ import fsl.data.constants as constants
 
 messages = TypeDict({
 
-    'fslview.loading'              : 'Loading {} ...',
+    'FSLDirDialog.FSLDirNotSet'    : 'The $FSLDIR environment variable '
+                                     'is not set - \n{} may not behave '
+                                     'correctly.',
+    'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
+                                     'FSL is installed',
+
+    'fslview.loading'              : 'Loading {}',
     'FSLViewSplash.default'        : 'Loading ...',
 
-    'imageio.saveImage.error'      : 'An error occurred saving the file. '
-                                     'Details: {}',
-    'imageio.loadImage.decompress' : '{} is a large file ({} MB) - '
-                                     'decompressing to {}, to allow memory '
-                                     'mapping...',
-
-    'imageio.loadImages.loading' : 'Loading {} ...',
-    'imageio.loadImages.error'   : 'An error occurred loading the image {}\n\n'
+    'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
+    
+    'image.loadImage.decompress' : '{} is a large file ({} MB) - '
+                                   'decompressing to {}, to allow memory '
+                                   'mapping...',
+
+    'ProcessingDialog.error' : 'An error has occurred: {}'
+                               '\n\nDetails: {}',
+
+    'overlay.loadOverlays.loading'     : 'Loading {} ...',
+    'overlay.loadOverlays.error'       : 'An error occurred loading the image '
+                                         '{}\n\nDetails: {}',
+
+    'overlay.loadOverlays.unknownType' : 'Unknown data type',
 
     'actions.loadcolourmap.loadcmap'    : 'Open colour map file',
     'actions.loadcolourmap.namecmap'    : 'Enter a name for the colour map - '
@@ -37,14 +49,18 @@ messages = TypeDict({
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
                                                'installing the colour map',
 
+    'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
+
     'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
-                                     'images registered to MNI152 space',
+                                     'images oriented to MNI152 space',
+
+    'AtlasInfoPanel.noReference' : 'No reference image available',
 
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
 
     'CanvasPanel.screenshot'            : 'Save screenshot',
-    'CanvasPanel.screenshot.notSaved'   : 'Image {} needs saving before a '
+    'CanvasPanel.screenshot.notSaved'   : 'Overlay {} needs saving before a '
                                           'screenshot can be taken.',
     'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
                                           'please wait ...',
@@ -52,72 +68,121 @@ messages = TypeDict({
                                           'saving the screenshot. Try '
                                           'calling render directly with '
                                           'this command: \n{}',
+
+    'CanvasPanel.showCommandLineArgs.title'   : 'Scene parameters',
+    'CanvasPanel.showCommandLineArgs.message' : 'Use these parameters on the '
+                                                'command line to recreate '
+                                                'the current scene',
+
+    'PlotPanel.screenshot'              : 'Save screenshot',
+
+    'PlotPanel.screenshot.error'       : 'An error occurred while saving the '
+                                         'screenshot.\n\n'
+                                         'Details: {}',
+
+    'HistogramPanel.calcHist'           : 'Calculating histogram for {} ...',
+
+
+    'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
+                                       'uses a lookup table',
+
+    'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
+                                     'label with value {}',
+
+    'NewLutDialog.newLut' : 'Enter a name for the new LUT',
+
+    'ClusterPanel.noOverlays'  : 'Add a FEAT overlay',
+    'ClusterPanel.notFEAT'     : 'Choose a FEAT overlay',
+    'ClusterPanel.noClusters'  : 'No cluster results exist '
+                                 'in this FEAT analysis',
+    'ClusterPanel.badData'     : 'Cluster data could not be parsed - '
+                                 'check your cluster_*.txt files.', 
+    
 })
 
 
 
 titles = TypeDict({
-    'imageio.saveImage.dialog' : 'Save image file',
-    'imageio.addImages.dialog' : 'Open image files',
+
+    'FSLDirDialog'           : '$FSLDIR is not set',
     
-    'imageio.loadImages.error'  : 'Error loading image',
+    'image.saveImage.dialog' : 'Save image file',
+
+    'ProcessingDialog.error' : 'Error',
+    
+    'overlay.addOverlays.dialog' : 'Open overlay files',
+    
+    'overlay.loadOverlays.error'  : 'Error loading overlay',
 
     'OrthoPanel'      : 'Ortho View',
     'LightBoxPanel'   : 'Lightbox View',
     'TimeSeriesPanel' : 'Time series',
     'HistogramPanel'  : 'Histogram',
-    'SpacePanel'      : 'Space inspector',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
-    'CanvasPanel.screenshot.notSaved' : 'Save image before continuing',
+    'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
     'CanvasPanel.screenshot.error'    : 'Error saving screenshot',
+
+    'PlotPanel.screenshot.error'      : 'Error saving screenshot',
 
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'ImageListPanel'        : 'Image list',
-    'AtlasPanel'            : 'Atlases',
-    'LocationPanel'         : 'Location',
-    'ImageDisplayToolBar'   : 'Display toolbar',
-    'ImageDisplayPanel'     : 'Display settings',
-    'OrthoToolBar'          : 'Ortho view toolbar',
-    'OrthoProfileToolBar'   : 'Ortho view mode toolbar',
-    'OrthoSettingsPanel'    : 'Ortho view settings',
-    'LightBoxToolBar'       : 'Lightbox view toolbar',
-    'LightBoxSettingsPanel' : 'Lightbox view settings',
-    'HistogramToolBar'      : 'Histogram settings', 
+    'OverlayListPanel'       : 'Overlay list',
+    'AtlasPanel'             : 'Atlases',
+    'LocationPanel'          : 'Location',
+    'OverlayDisplayToolBar'  : 'Display toolbar',
+    'CanvasSettingsPanel'    : 'View settings',
+    'OverlayDisplayPanel'    : 'Display settings',
+    'OrthoToolBar'           : 'Ortho view toolbar',
+    'OrthoProfileToolBar'    : 'Ortho view mode toolbar',
+    'LightBoxToolBar'        : 'Lightbox view toolbar',
+    'LookupTablePanel'       : 'Lookup tables',
+    'LutLabelDialog'         : 'New LUT label',
+    'NewLutDialog'           : 'New LUT',
+    'TimeSeriesListPanel'    : 'Time series list',
+    'TimeSeriesControlPanel' : 'Time series control',
+    'HistogramListPanel'     : 'Histogram list',
+    'HistogramControlPanel'  : 'Histogram control',
+    'ClusterPanel'           : 'Cluster browser',
+
+    'LookupTablePanel.loadLut'     : 'Select a lookup table file',
+    'LookupTablePanel.labelExists' : 'Label already exists',
 })
 
 
 actions = TypeDict({
 
-    'OpenFileAction'      : 'Add image file',
+    'OpenFileAction'      : 'Add overlay file',
     'OpenStandardAction'  : 'Add standard',
-    'CopyImageAction'     : 'Copy image',
-    'SaveImageAction'     : 'Save image',
+    'CopyOverlayAction'   : 'Copy overlay',
+    'SaveOverlayAction'   : 'Save overlay',
     'LoadColourMapAction' : 'Load custom colour map',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
+    'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',
     'CanvasPanel.toggleColourBar'         : 'Colour bar',
-    'CanvasPanel.toggleImageList'         : 'Image list',
-    'CanvasPanel.toggleDisplayProperties' : 'Image display properties',
+    'CanvasPanel.toggleOverlayList'       : 'Overlay list',
+    'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',
     'CanvasPanel.toggleLocationPanel'     : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
+    'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
+    'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
-    'ImageDisplayToolBar.more'    : 'More settings',
+    'OverlayDisplayToolBar.more'  : 'More settings',
     
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
-
-    'PlotPanel.screenshot' : 'Take screenshot',
-
-    'HistogramPanel.toggleToolbar' : 'Histogram controls',
-
+    'PlotPanel.screenshot'                    : 'Take screenshot',
+    'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
+    'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
+    'HistogramPanel.toggleHistogramList'      : 'Histogram list',
+    'HistogramPanel.toggleHistogramControl'   : 'Histogram control', 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',
@@ -132,17 +197,100 @@ actions = TypeDict({
 })
 
 labels = TypeDict({
-    'LocationPanel.worldLocation' : 'World location (mm)',
-    'LocationPanel.voxelLocation' : 'Voxel location',
-    'LocationPanel.volume'        : 'Volume',
-    'LocationPanel.space'         : 'Space',
-    'LocationPanel.intensity'     : 'Intensity',
-    'LocationPanel.outOfBounds'   : 'Out of bounds',
 
-    'CanvasPanel.screenshot.notSaved.save'   : 'Save image now',
-    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip image (will not appear '
+    'FSLDirDialog.locate' : 'Locate $FSLDIR',
+    'FSLDirDialog.skip'   : 'Skip',
+    
+    'LocationPanel.worldLocation'         : 'Coordinates: ',
+    'LocationPanel.worldLocation.unknown' : 'Unknown',
+    'LocationPanel.voxelLocation'         : 'Voxel location',
+    'LocationPanel.volume'                : 'Volume',
+    'LocationPanel.noData'                : 'No data',
+    'LocationPanel.outOfBounds'           : 'Out of bounds',
+    'LocationPanel.notAvailable'          : 'N/A',
+
+    'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
+    'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
                                                'in screenshot)',
     'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
+
+
+    'LookupTablePanel.addLabel' : 'Add label',
+    'LookupTablePanel.newLut'   : 'New',
+    'LookupTablePanel.copyLut'  : 'Copy',
+    'LookupTablePanel.saveLut'  : 'Save',
+    'LookupTablePanel.loadLut'  : 'Load',
+
+    'LutLabelDialog.value'    : 'Value',
+    'LutLabelDialog.name'     : 'Name',
+    'LutLabelDialog.colour'   : 'Colour',
+    'LutLabelDialog.ok'       : 'Ok',
+    'LutLabelDialog.cancel'   : 'Cancel',
+    'LutLabelDialog.newLabel' : 'New label',
+
+    'NewLutDialog.ok'     : 'Ok',
+    'NewLutDialog.cancel' : 'Cancel',
+    'NewLutDialog.newLut' : 'New LUT',
+
+    'PlotPanel.plotSettings'    : 'General plot settings',
+    'PlotPanel.currentSettings' : 'Settings for currently '
+                                  'selected plot ({})',
+    'PlotPanel.xlim'            : 'X limits',
+    'PlotPanel.ylim'            : 'Y limits',
+    'PlotPanel.labels'          : 'Labels',
+    'PlotPanel.xlabel'          : 'X',
+    'PlotPanel.ylabel'          : 'Y',
+
+    'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
+
+    'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
+    'TimeSeriesControlPanel.currentSettings'    : 'Settings for current '
+                                                  'voxel time course',
+    'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
+                                                   'selected overlay ({})',
+
+    'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
+
+    'FEATModelFitTimeSeries.full' : 'Full model fit',
+    'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
+    'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
+
+    'FEATReducedTimeSeries.cope' : 'Reduced against COPE{}: {}',
+    'FEATReducedTimeSeries.pe'   : 'Reduced against PE{}',
+
+    'FEATResidualTimeSeries'     : 'Residuals',
+
+    'ClusterPanel.clustName'     : 'Z statistics for COPE{} ({})',
+    
+    'ClusterPanel.index'         : 'Cluster index',
+    'ClusterPanel.nvoxels'       : 'Size (voxels)',
+    'ClusterPanel.p'             : 'P',
+    'ClusterPanel.logp'          : '-log10(P)',
+    'ClusterPanel.zmax'          : 'Z Max',
+    'ClusterPanel.zmaxcoords'    : 'Z Max location',
+    'ClusterPanel.zcogcoords'    : 'Z Max COG location',
+    'ClusterPanel.copemax'       : 'COPE Max',
+    'ClusterPanel.copemaxcoords' : 'COPE Max location',
+    'ClusterPanel.copemean'      : 'COPE mean',
+    
+    'ClusterPanel.addZStats'    : 'Add Z statistics',
+    'ClusterPanel.addClustMask' : 'Add cluster mask',
+
+
+    'OverlayDisplayPanel.Display'        : 'General display settings',
+    'OverlayDisplayPanel.VolumeOpts'     : 'Volume settings',
+    'OverlayDisplayPanel.MaskOpts'       : 'Mask settings',
+    'OverlayDisplayPanel.LabelOpts'      : 'Label settings',
+    'OverlayDisplayPanel.RGBVectorOpts'  : 'RGB vector settings',
+    'OverlayDisplayPanel.LineVectorOpts' : 'Line vector settings',
+    'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
+    
+    'OverlayDisplayPanel.loadCmap'       : 'Load colour map',
+
+    'CanvasSettingsPanel.scene'    : 'Scene settings',
+    'CanvasSettingsPanel.ortho'    : 'Ortho view settings',
+    'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
+    
 })
 
 
@@ -151,8 +299,10 @@ properties = TypeDict({
     'Profile.mode' : 'Profile',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
-    'CanvasPanel.syncImageOrder'     : 'Sync overlay order',
-    'CanvasPanel.syncVolume'         : 'Sync volume',
+    'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
+    'CanvasPanel.syncOverlayDisplay' : 'Sync overlay display settings',
+    'CanvasPanel.movieMode'          : 'Movie mode',
+    'CanvasPanel.movieRate'          : 'Movie update rate',
     'CanvasPanel.profile'            : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',
@@ -177,10 +327,45 @@ properties = TypeDict({
     'OrthoOpts.yzoom'       : 'Y zoom',
     'OrthoOpts.zzoom'       : 'Z zoom',
 
-    'HistogramPanel.dataRange'  : 'Data range',
-    'HistogramPanel.autoHist'   : 'Automatic histogram binning', 
-    'HistogramPanel.nbins'      : 'Number of bins', 
+    'PlotPanel.legend'    : 'Show legend',
+    'PlotPanel.ticks'     : 'Show ticks',
+    'PlotPanel.grid'      : 'Show grid',
+    'PlotPanel.smooth'    : 'Smooth',
+    'PlotPanel.autoScale' : 'Auto-scale',
+    'PlotPanel.xLogScale' : 'Log scale (x axis)',
+    'PlotPanel.yLogScale' : 'Log scale (y axis)',
+    'PlotPanel.xlabel'    : 'X label',
+    'PlotPanel.ylabel'    : 'Y label',
+    
+    'TimeSeriesPanel.plotMode'         : 'Plotting mode',
+    'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
+    'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
+    'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
+    'TimeSeriesPanel.currentAlpha'     : 'Transparency for current '
+                                         'time course',
+    'TimeSeriesPanel.currentLineWidth' : 'Line width for current time course',
+    'TimeSeriesPanel.currentLineStyle' : 'Line style for current time course',
+    'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
+    'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
+    
+    'HistogramPanel.histType'    : 'Histogram type',
+    'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
+    'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+    
+    'HistogramSeries.nbins'           : 'Number of bins',
+    'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
+    'HistogramSeries.includeOutliers' : 'Include values out of data range',
+    'HistogramSeries.volume'          : 'Volume',
+    'HistogramSeries.dataRange'       : 'Data range',
+    'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
 
+    'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
+    'FEATTimeSeries.plotEVs'          : 'Plot EV{} ({})',
+    'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit ({})',
+    'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
+    'FEATTimeSeries.plotResiduals'    : 'Plot residuals',
+    'FEATTimeSeries.plotReduced'      : 'Plot data reduced against',
+    'FEATTimeSeries.plotData'         : 'Plot data',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
     'OrthoEditProfile.selectionIs3D'          : '3D selection',
@@ -191,22 +376,23 @@ properties = TypeDict({
     'OrthoEditProfile.selectionOverlayColour' : 'Selection overlay',
     'OrthoEditProfile.selectionCursorColour'  : 'Selection cursor',
     
-
-    'Display.name'              : 'Image name',
+    'Display.name'              : 'Overlay name',
+    'Display.overlayType'       : 'Overlay data type',
     'Display.enabled'           : 'Enabled',
     'Display.alpha'             : 'Opacity',
     'Display.brightness'        : 'Brightness',
     'Display.contrast'          : 'Contrast',
-    'Display.interpolation'     : 'Interpolation',
-    'Display.resolution'        : 'Resolution',
-    'Display.volume'            : 'Volume',
-    'Display.transform'         : 'Image transform',
-    'Display.imageType'         : 'Image data type',
+
+    'ImageOpts.resolution' : 'Resolution',
+    'ImageOpts.transform'  : 'Image transform',
+    'ImageOpts.volume'     : 'Volume',
     
-    'VolumeOpts.displayRange'  : 'Display range',
-    'VolumeOpts.clippingRange' : 'Clipping range',
-    'VolumeOpts.cmap'          : 'Colour map',
-    'VolumeOpts.invert'        : 'Invert colour map',
+    'VolumeOpts.displayRange'   : 'Display range',
+    'VolumeOpts.clippingRange'  : 'Clipping range',
+    'VolumeOpts.cmap'           : 'Colour map',
+    'VolumeOpts.invert'         : 'Invert colour map',
+    'VolumeOpts.invertClipping' : 'Invert clipping range',
+    'VolumeOpts.interpolation'  : 'Interpolation',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
@@ -222,8 +408,22 @@ properties = TypeDict({
     'VectorOpts.modulate'      : 'Modulate by',
     'VectorOpts.modThreshold'  : 'Modulation threshold',
 
+    'RGBVectorOpts.interpolation' : 'Interpolation',
+
     'LineVectorOpts.directed'  : 'Interpret vectors as directed',
     'LineVectorOpts.lineWidth' : 'Line width',
+
+    'ModelOpts.colour'       : 'Colour',
+    'ModelOpts.outline'      : 'Show outline only',
+    'ModelOpts.outlineWidth' : 'Outline width',
+    'ModelOpts.refImage'     : 'Reference image',
+    'ModelOpts.coordSpace'   : 'Model coordinate space',
+    'ModelOpts.showName'     : 'Show model name',
+
+    'LabelOpts.lut'          : 'Look-up table',
+    'LabelOpts.outline'      : 'Show outline only',
+    'LabelOpts.outlineWidth' : 'Outline width',
+    'LabelOpts.showNames'    : 'Show label names',
 })
 
 
@@ -249,7 +449,6 @@ modes = TypeDict({
     ('LightBoxViewProfile', 'zoom')   : 'Zoom',
 
 })
-
 
 
 choices = TypeDict({
@@ -281,14 +480,31 @@ choices = TypeDict({
     'VectorOpts.displayType.rgb'  : 'RGB',
 
     'VectorOpts.modulate.none'    : 'No modulation',
-    
-    'Display.transform.affine' : 'Use qform/sform transformation matrix',
-    'Display.transform.pixdim' : 'Use pixdims only',
-    'Display.transform.id'     : 'Do not use qform/sform or pixdims',
 
-    'Display.interpolation.none'   : 'No interpolation', 
-    'Display.interpolation.linear' : 'Linear interpolation', 
-    'Display.interpolation.spline' : 'Spline interpolation', 
+    'ImageOpts.transform.affine' : 'Use qform/sform transformation matrix',
+    'ImageOpts.transform.pixdim' : 'Use pixdims only',
+    'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
+
+    'ModelOpts.refImage.none' : 'None',
+
+    'VolumeOpts.interpolation.none'   : 'No interpolation', 
+    'VolumeOpts.interpolation.linear' : 'Linear interpolation', 
+    'VolumeOpts.interpolation.spline' : 'Spline interpolation',
+
+    'Display.overlayType.volume'     : '3D/4D volume',
+    'Display.overlayType.mask'       : '3D/4D mask image',
+    'Display.overlayType.label'      : 'Label image',
+    'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
+    'Display.overlayType.linevector' : '3-direction vector image (Line)',
+    'Display.overlayType.model'      : '3D model',
+
+    'HistogramPanel.histType.probability' : 'Probability',
+    'HistogramPanel.histType.count'       : 'Count',
+    
+    'TimeSeriesPanel.plotMode.normal'        : 'Normal - no scaling/offsets',
+    'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
+    'TimeSeriesPanel.plotMode.normalise'     : 'Normalised',
+    'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
 })
 
 

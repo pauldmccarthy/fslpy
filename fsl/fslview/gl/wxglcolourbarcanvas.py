@@ -6,8 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :class:`WXGLColourBarCanvas`, for displaying a
-:class:`~fsl.fslview.gl.colourbarcanvas.ColourBarCanvas` on a
-:class:`wx.glcanvas.GLCanvas`.
+:class:`.ColourBarCanvas` on a :class:`wx.glcanvas.GLCanvas`.
 """
 
 import logging
@@ -24,8 +23,8 @@ import fsl.fslview.gl.colourbarcanvas as cbarcanvas
 class WXGLColourBarCanvas(cbarcanvas.ColourBarCanvas,
                           fslgl.WXGLCanvasTarget,
                           wxgl.GLCanvas):
-    """A :class:`~fsl.fslview.gl.colourbarcanvas.ColourBarCanvas` which is also
-    a :class:`wx.glcanvas.GLCanvas`, for on screen rendering of colour bars.
+    """A :class:`.ColourBarCanvas` which is also a
+    :class:`wx.glcanvas.GLCanvas`, for on screen rendering of colour bars.
     """
     def __init__(self, parent):
         

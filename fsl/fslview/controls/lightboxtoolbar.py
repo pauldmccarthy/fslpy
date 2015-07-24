@@ -5,44 +5,31 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
 
-import fsl.fslview.toolbar                        as fsltoolbar
-import fsl.fslview.controls.lightboxsettingspanel as lightboxsettingspanel
+import props
 
-
-log = logging.getLogger(__name__)
+import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.actions as actions
 
 
 class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
 
-    def __init__(self, parent, imageList, displayCtx, lb):
-
-        import fsl.fslview.layouts as layouts
+    def __init__(self, parent, overlayList, displayCtx, lb):
 
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
         self.lightBoxPanel = lb
 
         sceneOpts = lb.getSceneOptions()
-
-        toolSpecs = layouts.layouts[self]
-
-        # TODO this is dodgy - there needs to be a
-        # way to have this automatically set up.
-        #
-        # 1. Add the ability to associate arbitrary
-        #    data with a toolspec (modify props.ViewItem
-        #    to allow a value to be set)
-        #
-        # 2. Update layouts.widget and actions.ActionButton
-        #    to set that value to the target class
-        #
-        # 3. Here, loop through the toolspecs, check
-        #    the target class, and set the instance
-        #    appropriately
+        toolSpecs = [
+            actions.ActionButton(lb, 'screenshot'),
+            props  .Widget(      'zax'),
+            props  .Widget(      'sliceSpacing', spin=False, showLimits=False),
+            props  .Widget(      'zrange',       spin=False, showLimits=False),
+            props  .Widget(      'zoom',         spin=False, showLimits=False),
+            actions.ActionButton(self, 'more')]
         targets   = {'screenshot'   : lb,
                      'zax'          : sceneOpts,
                      'sliceSpacing' : sceneOpts,
@@ -52,12 +39,10 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
 
         self.GenerateTools(toolSpecs, targets)
 
-
-    def destroy(self):
-        fsltoolbar.FSLViewToolBar.destroy(self)
-
+        
     def showMoreSettings(self, *a):
+        import canvassettingspanel
         self.lightBoxPanel.togglePanel(
-            lightboxsettingspanel.LightBoxSettingsPanel,
+            canvassettingspanel.CanvasSettingsPanel,
             True,
             self.lightBoxPanel) 

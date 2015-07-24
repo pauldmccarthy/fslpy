@@ -19,8 +19,11 @@ log = logging.getLogger(__name__)
 
 class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
-    def __init__(self, parent, imageList, displayCtx, ortho):
-        fsltoolbar.FSLViewToolBar.__init__(self, parent, imageList, displayCtx)
+    def __init__(self, parent, overlayList, displayCtx, ortho):
+        fsltoolbar.FSLViewToolBar.__init__(self,
+                                           parent,
+                                           overlayList,
+                                           displayCtx)
 
         self.orthoPanel = ortho
 
@@ -33,8 +36,8 @@ class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
 
     def destroy(self):
-        fsltoolbar.FSLViewToolBar.destroy(self)
         self.orthoPanel.removeListener('profile', self._name)
+        fsltoolbar.FSLViewToolBar.destroy(self)
 
 
     def _profileChanged(self, *a):

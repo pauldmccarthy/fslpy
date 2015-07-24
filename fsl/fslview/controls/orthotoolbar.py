@@ -5,31 +5,35 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
 
-import fsl.fslview.toolbar                     as fsltoolbar
-import fsl.fslview.controls.orthosettingspanel as orthosettingspanel
+import props
 
-
-log = logging.getLogger(__name__)
+import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.actions as actions
 
 
 class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
     
-    def __init__(self, parent, imageList, displayCtx, ortho):
-
-        import fsl.fslview.layouts as layouts
+    def __init__(self, parent, overlayList, displayCtx, ortho):
 
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
         self.orthoPanel = ortho
 
         orthoOpts = ortho.getSceneOptions()
 
-        toolSpecs = layouts.layouts[self]
+        toolSpecs = [
+            actions.ActionButton(ortho, 'screenshot'),
+            props  .Widget(      'zoom', spin=False, showLimits=False),
+            props  .Widget(      'layout'),
+            props  .Widget(      'showXCanvas'),
+            props  .Widget(      'showYCanvas'),
+            props  .Widget(      'showZCanvas'),
+            actions.ActionButton(self, 'more')]
+        
         targets    = {'screenshot'  : ortho,
                       'zoom'        : orthoOpts,
                       'layout'      : orthoOpts,
@@ -39,12 +43,9 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
                       'more'        : self}
 
         self.GenerateTools(toolSpecs, targets)
+
         
-
-    def destroy(self):
-        fsltoolbar.FSLViewToolBar.destroy(self)
-
-
     def showMoreSettings(self, *a):
+        import canvassettingspanel
         self.orthoPanel.togglePanel(
-            orthosettingspanel.OrthoSettingsPanel, True, self.orthoPanel) 
+            canvassettingspanel.CanvasSettingsPanel, True, self.orthoPanel)

@@ -5,12 +5,17 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import logging
+
 import itertools           as it
 
 import OpenGL.GL           as gl
 import numpy               as np
 
 import fsl.utils.transform as transform
+
+
+log = logging.getLogger(__name__)
 
 
 def show2D(xax, yax, width, height, lo, hi):
@@ -26,6 +31,10 @@ def show2D(xax, yax, width, height, lo, hi):
     gl.glLoadIdentity()
 
     zdist = max(abs(zmin), abs(zmax))
+
+    log.debug('Configuring orthographic viewport: '
+              'X: [{} - {}] Y: [{} - {}] Z: [{} - {}]'.format(
+                  xmin, xmax, ymin, ymax, -zdist, zdist))
 
     gl.glOrtho(xmin, xmax, ymin, ymax, -zdist, zdist)
     gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -475,6 +484,10 @@ def subsample(data, resolution, pixdim=None, volume=None):
     xstart = np.floor(xstep / 2)
     ystart = np.floor(ystep / 2)
     zstart = np.floor(zstep / 2)
+
+    if xstart >= data.shape[0]: xstart = data.shape[0] - 1
+    if ystart >= data.shape[1]: ystart = data.shape[1] - 1
+    if zstart >= data.shape[2]: zstart = data.shape[2] - 1
         
     if len(data.shape) > 3: sample = data[xstart::xstep,
                                           ystart::ystep,
@@ -540,3 +553,32 @@ def broadcast(vertices, indices, zposes, xforms, zax):
         allVertCoords[vStart:vEnd, :] = transform.transform(vertices, xform)
         
     return allVertCoords, allTexCoords, allIndices
+
+
+def planeEquation(xyz1, xyz2, xyz3):
+    """Calculates the equation of a plane which contains each
+    of the given points.
+
+    Returns a tuple containing four values, the coefficients of the
+    equation:
+
+        a * x + b * y + c * z = d
+
+    for any point (x, y, z) that lies on the plane.
+
+    See http://paulbourke.net/geometry/pointlineplane/
+    """
+    x1, y1, z1 = xyz1
+    x2, y2, z2 = xyz2
+    x3, y3, z3 = xyz3
+
+    eq = np.zeros(4, dtype=np.float64)
+
+    eq[0] = (y1 * (z2 - z3)) + (y2 * (z3 - z1)) + (y3 * (z1 - z2))
+    eq[1] = (z1 * (x2 - x3)) + (z2 * (x3 - x1)) + (z3 * (x1 - x2))
+    eq[2] = (x1 * (y2 - y3)) + (x2 * (y3 - y1)) + (x3 * (y1 - y2))
+    eq[3] = -((x1 * ((y2 * z3) - (y3 * z2))) +
+              (x2 * ((y3 * z1) - (y1 * z3))) +
+              (x3 * ((y1 * z2) - (y2 * z1))))
+
+    return eq

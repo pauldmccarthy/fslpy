@@ -6,24 +6,27 @@
 #
 """This module provides the :class:`LocationPanel` class, a panel which
 displays controls allowing the user to change the currently displayed location
-in both real world and voxel coordinates, both in the space of the currently
-selected image.
+in both world and local coordinates, both in the space of the currently
+selected overlay.
 
 These changes are propagated to the current display coordinate system
 location, managed by the display context (and external changes to the display
-context location are propagated back to the voxel/world location properties
+context location are propagated back to the local/world location properties
 managed by a :class:`LocationPanel`).
 """
 
 import logging
 
 import wx
+import wx.html as wxhtml
 
 import numpy as np
 
 import props
 
 import fsl.utils.transform as transform
+import fsl.data.image      as fslimage
+import fsl.data.constants  as constants
 import fsl.data.strings    as strings
 import fsl.fslview.panel   as fslpanel
 
@@ -33,358 +36,525 @@ log = logging.getLogger(__name__)
 
 class LocationPanel(fslpanel.FSLViewPanel):
     """
-    A wx.Panel which contains widgets for changing the currently displayed
-    location in both world coordinates, and voxel coordinates (in terms of the
-    currently selected image). Also contains a label which contains the name
-    of the currently selected image and the value, in that image, at the
-    currently selected voxel.
+    A wx.Panel which displays information about the current location,
+    for each overlay in the overlay list.
     """
 
     
     voxelLocation = props.Point(ndims=3, real=False, labels=('X', 'Y', 'Z'))
-
+    """If the currently selected overlay is a :class:`.Image`, this property
+    tracks the current display location in voxel coordinates.
+    """
     
     worldLocation = props.Point(ndims=3, real=True,  labels=('X', 'Y', 'Z'))
 
-
-    def _adjustFont(self, label, by, weight):
-        """
-        Adjusts the font of the given wx.StaticText widget (or any other
-        widget which has a font) by the specified amount. Also sets the
-        font weight to the given weight.
-        """
-        font = label.GetFont()
-        font.SetPointSize(font.GetPointSize() + by)
-        font.SetWeight(weight)
-        label.SetFont(font)
-
         
-    def __init__(self, parent, imageList, displayCtx):
+    def __init__(self, parent, overlayList, displayCtx):
         """
         Creates and lays out the LocationPanel, and sets up a few property
         event listeners.
         """
 
-        fslpanel.FSLViewPanel.__init__(self, parent, imageList, displayCtx)
+        fslpanel.FSLViewPanel.__init__(self, parent, overlayList, displayCtx)
 
-        voxX, voxY, voxZ = props.makeListWidgets(
-            self,
-            self,
-            'voxelLocation',
-            slider=False,
-            spin=True,
-            showLimits=False)
+        # The world and voxel locations dispalyed by the LocationPanel
+        # are only really relevant to volumetric (i.e. NIFTI) overlay
+        # types. However, other overlay types (e.g. Model instances)
+        # may have an associated 'reference' image, from which details
+        # of the coordinate system may be obtained.
+        #
+        # When the current overlay is either an Image instance, or has
+        # an associated reference image, these attributes are used to
+        # store references to the image, and to the matrices that allow
+        # transformations between the different coordinate systems.
+        self._refImage          = None
+        self._voxToDisplayMat   = None
+        self._displayToVoxMat   = None
+        self._worldToDisplayMat = None
+        self._displayToWorldMat = None
+        self._voxToWorldMat     = None
+        self._worldToVoxMat     = None
+
+        # When the currently selected overlay is 4D,
+        # this attribute will refer to the
+        # corresponding DisplayOpts instance, which
+        # has a volume property that controls the
+        # volume - see e.g. the ImageOpts class. This
+        # attribute is set in _selectedOverlayChanged.
+        self.volumeTarget = None
+
+        self.column1 = wx.Panel(self)
+        self.column2 = wx.Panel(self)
+        self.info    = wxhtml.HtmlWindow(self)
+
+        # HTMLWindow does not use
+        # the parent font by default,
+        # so we force it to at least
+        # have the parent font size
+        self.info.SetStandardFonts(self.GetFont().GetPointSize())
+
+        self.worldLabel  = wx.StaticText(
+            self.column1, label=strings.labels[self, 'worldLocation'])
+        self.volumeLabel = wx.StaticText(
+            self.column1, label=strings.labels[self, 'volume']) 
+        self.voxelLabel  = wx.StaticText(
+            self.column2, label=strings.labels[self, 'voxelLocation'])
+
         worldX, worldY, worldZ = props.makeListWidgets(
-            self,
+            self.column1,
             self,
             'worldLocation',
             slider=False,
             spin=True,
+            showLimits=False)
+
+        voxelX, voxelY, voxelZ = props.makeListWidgets(
+            self.column2,
+            self,
+            'voxelLocation',
+            slider=False,
+            spin=True,
             showLimits=False) 
 
-        self.voxX      = voxX
-        self.voxY      = voxY
-        self.voxZ      = voxZ
-        self.worldX    = worldX
-        self.worldY    = worldY
-        self.worldZ    = worldZ
-        self.volume    = props.makeWidget(self,
-                                          displayCtx,
-                                          'volume',
-                                          slider=False,
-                                          spin=True,
-                                          showLimits=False)
+        self.worldX = worldX
+        self.worldY = worldY
+        self.worldZ = worldZ
+        self.voxelX = voxelX
+        self.voxelY = voxelY
+        self.voxelZ = voxelZ
+        self.volume = wx.SpinCtrl(self.column2)
+        self.volume.SetValue(0)
+
+        self.column1Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.column2Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer        = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.column1Sizer.Add(self.worldLabel,  flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldX,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldY,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.worldZ,      flag=wx.EXPAND)
+        self.column1Sizer.Add(self.volumeLabel, flag=wx.ALIGN_RIGHT)
+
+        self.column2Sizer.Add(self.voxelLabel, flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelX,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelY,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.voxelZ,     flag=wx.EXPAND)
+        self.column2Sizer.Add(self.volume,     flag=wx.EXPAND)
         
-        self.intensity = wx.TextCtrl(self, style=wx.TE_READONLY)
-        self.space     = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self.sizer.Add(self.column1, flag=wx.EXPAND)
+        self.sizer.Add((5, -1))
+        self.sizer.Add(self.column2, flag=wx.EXPAND)
+        self.sizer.Add((5, -1))
+        self.sizer.Add(self.info,    flag=wx.EXPAND, proportion=1)
 
-        self.voxLabel   = wx.StaticText(
-            self, label=strings.labels[self, 'voxelLocation'])
-        self.worldLabel = wx.StaticText(
-            self, label=strings.labels[self, 'worldLocation'])
-        self.volumeLabel = wx.StaticText(
-            self, label=strings.labels[self, 'volume'])
-        self.spaceLabel = wx.StaticText(
-            self, label=strings.labels[self, 'space']) 
-        self.intensityLabel = wx.StaticText(
-            self, label=strings.labels[self, 'intensity']) 
-
-        self.sizer = wx.FlexGridSizer(4, 4)
-        self.SetSizer(self.sizer)
-
-        self.sizer.Add(self.voxLabel,       flag=wx.EXPAND)
-        self.sizer.Add(self.worldLabel,     flag=wx.EXPAND)
-        self.sizer.Add((0, 0))
-        self.sizer.Add((0, 0))
-        self.sizer.Add(self.voxX,           flag=wx.EXPAND)
-        self.sizer.Add(self.worldX,         flag=wx.EXPAND)
-        self.sizer.Add(self.volumeLabel,    flag=wx.EXPAND)
-        self.sizer.Add(self.volume,         flag=wx.EXPAND)
+        self.column1.SetSizer(self.column1Sizer)
+        self.column2.SetSizer(self.column2Sizer)
+        self        .SetSizer(self.sizer)
         
-        self.sizer.Add(self.voxY,           flag=wx.EXPAND)
-        self.sizer.Add(self.worldY,         flag=wx.EXPAND)
-        self.sizer.Add(self.intensityLabel, flag=wx.EXPAND) 
-        self.sizer.Add(self.intensity,      flag=wx.EXPAND) 
-        self.sizer.Add(self.voxZ,           flag=wx.EXPAND)
-        self.sizer.Add(self.worldZ,         flag=wx.EXPAND)
-        self.sizer.Add(self.spaceLabel,     flag=wx.EXPAND)
-        self.sizer.Add(self.space,          flag=wx.EXPAND)
+        self._overlayList.addListener('overlays',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._displayCtx .addListener('overlayOrder',
+                                      self._name,
+                                      self._selectedOverlayChanged) 
+        self._displayCtx .addListener('selectedOverlay',
+                                      self._name,
+                                      self._selectedOverlayChanged)
+        self._displayCtx .addListener('location',
+                                      self._name,
+                                      self._displayLocationChanged)
+        self.addListener(             'voxelLocation',
+                                      self._name,
+                                      self._voxelLocationChanged)
+        self.addListener(             'worldLocation',
+                                      self._name,
+                                      self._worldLocationChanged)
 
-        self._adjustFont(self.voxLabel,       -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.worldLabel,     -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.volumeLabel,    -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.spaceLabel,     -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.intensityLabel, -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.intensity,      -2, wx.FONTWEIGHT_LIGHT)
-        self._adjustFont(self.space,          -2, wx.FONTWEIGHT_LIGHT)
+        self._selectedOverlayChanged()
 
+        self.worldLabel.SetMinSize(self.__calcWorldLabelMinSize())
+        self.info      .SetMinSize((150, 100))
         self.Layout()
-        
-        self._imageList.addListener( 'images',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._displayCtx.addListener('imageOrder',
-                                     self._name,
-                                     self._selectedImageChanged) 
-        self._displayCtx.addListener('selectedImage',
-                                     self._name,
-                                     self._selectedImageChanged)
-        self._displayCtx.addListener('volume',
-                                     self._name,
-                                     self._volumeChanged) 
-        self._displayCtx.addListener('location',
-                                     self._name,
-                                     self._displayLocationChanged)
-        self.addListener(            'voxelLocation',
-                                     self._name,
-                                     self._voxelLocationChanged)
-        self.addListener(            'worldLocation',
-                                     self._name,
-                                     self._worldLocationChanged)
-
-        self._selectedImageChanged()
-        self._volumeChanged()
-
         self.SetMinSize(self.sizer.GetMinSize())
+
+
+    def __calcWorldLabelMinSize(self):
+        """Calculates the minimum size that the world label (the label which
+        shows the coordinate space of the currently selected overlay) needs.
+        
+        The world label displays different things depending on the currently
+        selected overlay. But we want it to be a fixed size. So this method
+        calculates the size of all possible values that the world label will
+        display, and returns the maximum size. This is then used as the
+        minimum size for the world label.
+        """
+
+        dc = wx.ClientDC(self.worldLabel)
+
+        width, height = 0, 0
+
+        labelPref = strings.labels[self, 'worldLocation']
+        labelSufs = [
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_UNKNOWN],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_SCANNER_ANAT],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_ALIGNED_ANAT],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_TALAIRACH],
+            strings.anatomy[fslimage.Image,
+                            'space',
+                            constants.NIFTI_XFORM_MNI_152],
+            strings.labels[self, 'worldLocation', 'unknown']
+        ]
+
+        for labelSuf in labelSufs:
+
+            w, h = dc.GetTextExtent(labelPref + labelSuf)
+
+            if w > width:  width  = w
+            if h > height: height = h
+
+        return width + 5, height + 5
 
 
     def destroy(self):
         """Deregisters property listeners."""
+
+        self._overlayList.removeListener('overlays',        self._name)
+        self._displayCtx .removeListener('selectedOverlay', self._name)
+        self._displayCtx .removeListener('overlayOrder',    self._name)
+        self._displayCtx .removeListener('location',        self._name)
+
         fslpanel.FSLViewPanel.destroy(self)
 
-        self._imageList.removeListener( 'images',        self._name)
-        self._displayCtx.removeListener('selectedImage', self._name)
-        self._displayCtx.removeListener('imageOrder',    self._name)
-        self._displayCtx.removeListener('volume',        self._name)
-        self._displayCtx.removeListener('location',      self._name)
-
-
-    def _updateVoxelValue(self, voxVal=None):
-        """
-        Retrieves the value of the voxel at the current location in the
-        currently selected image, and displays it on the value label.
-        If the voxVal argument is provided, it is displayed. Otherwise
-        the value at the current voxel location is displayed.
+        
+    def _selectedOverlayChanged(self, *a):
+        """Called when the selected overlay is changed. Updates the voxel label
+        (which contains the overlay name), and sets the voxel location limits.
         """
 
-        if len(self._imageList) == 0:
-            voxVal = ''
+        self._updateReferenceImage()
+        self._updateWidgets()
 
-        if voxVal is not None:
-            self.intensity.SetValue('{}'.format(voxVal))
+        if len(self._overlayList) == 0:
+            self._updateLocationInfo()
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-
-        dloc   = self._displayCtx.location.xyz
-        vloc   = transform.transform(
-            [dloc], display.getTransform('display', 'voxel'))[0]
-        vloc   = np.round(vloc)
-        volume = self._displayCtx.volume
-
-        # Test to see if the voxel
-        # location/volume is out of bounds
-        inBounds = True
-        for i in range(3):
-            if vloc[i] < 0 or vloc[i] >= image.shape[i]:
-                inBounds = False
-
-        if image.is4DImage():
-            if volume >= image.shape[3]:
-                inBounds = False
-
-        # If the value is out of the voxel bounds,
-        # display some appropriate text
-        if not inBounds:
-            voxVal = strings.labels[self, 'outOfBounds']
-            
-        else:
-            
-            log.debug('Looking up voxel value in {} ({}, {} -> {})'.format(
-                image, vloc, volume, image.shape))
-            
-            # 3D image
-            if len(image.shape) == 3:
-                voxVal = image.data[vloc[0], vloc[1], vloc[2]]
-
-            # No support for images of more
-            # than 4 dimensions at the moment
+        # Register a listener on the DisplayOpts 
+        # instance of the currently selected overlay,
+        # so we can update the location if the
+        # overlay transforms/reference image change
+        overlay = self._displayCtx.getSelectedOverlay()
+        for ovl in self._overlayList:
+            display = self._displayCtx.getDisplay(ovl)
+            opts    = display.getDisplayOpts()
+            if ovl is overlay:
+                opts   .addGlobalListener(self._name,
+                                          self._overlayOptsChanged,
+                                          overwrite=True)
+                display.addGlobalListener(self._name,
+                                          self._overlayOptsChanged,
+                                          overwrite=True) 
             else:
-                voxVal = image.data[vloc[0], vloc[1], vloc[2], volume]
+                opts   .removeGlobalListener(self._name)
+                display.removeGlobalListener(self._name)
 
-            if   np.isnan(voxVal): voxVal = 'NaN'
-            elif np.isinf(voxVal): voxVal = 'Inf'
+        # Refresh the world/voxel location properties
+        self._displayLocationChanged()
 
-        self.intensity.SetValue('{}'.format(voxVal))
 
+    def _overlayOptsChanged(self, *a):
+
+        self._updateReferenceImage()
+        self._updateWidgets()
+        self._displayLocationChanged()
         
-    def _volumeChanged(self, *a):
-        """Called when the
-        :attr:`fsl.fslview.displaycontext.DisplayContext.volume`
-        property changes. Updates the voxel value label.
+
+    def _updateReferenceImage(self):
+        """Called by the :meth:`_selectedOverlayChanged` method. Looks at the
+        currently selected overlay, and figures out if there is a reference
+        image that can be used to transform between display, world, and voxel
+        coordinate systems.
         """
-        self._updateVoxelValue()
+
+        refImage = None
         
+        # Look at the currently selected overlay, and
+        # see if there is an associated NIFTI image
+        # that can be used as a reference image
+        if len(self._overlayList) > 0:
 
-    def _displayLocationChanged(self, *a):
+            overlay  = self._displayCtx.getSelectedOverlay()
+            refImage = self._displayCtx.getReferenceImage(overlay)
 
-        if len(self._imageList) == 0: return
+            log.debug('Reference image for overlay {}: {}'.format(
+                overlay, refImage))
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
+        self._refImage = refImage
 
-        dloc = self._displayCtx.location.xyz
-        vloc = transform.transform(
-            [dloc], display.getTransform('display', 'voxel'))[0]
-        wloc = transform.transform(
-            [dloc], display.getTransform('display', 'world'))[0]
+        if refImage is not None:
+            opts = self._displayCtx.getOpts(refImage)
+            self._voxToDisplayMat   = opts.getTransform('voxel',   'display')
+            self._displayToVoxMat   = opts.getTransform('display', 'voxel')
+            self._worldToDisplayMat = opts.getTransform('world',   'display')
+            self._displayToWorldMat = opts.getTransform('display', 'world')
+            self._voxToWorldMat     = opts.getTransform('voxel',   'world')
+            self._worldToVoxMat     = opts.getTransform('world',   'voxel')
+        else:
+            self._voxToDisplayMat   = None
+            self._displayToVoxMat   = None
+            self._worldToDisplayMat = None
+            self._displayToWorldMat = None
+            self._voxToWorldMat     = None
+            self._worldToVoxMat     = None
 
-        log.debug('Updating location ({} -> vox {}, world {})'.format(
-            dloc, vloc, wloc))
+
+    def _updateWidgets(self):
+
+        refImage = self._refImage
+
+        haveRef = refImage is not None
+
+        self.voxelX     .Enable(haveRef)
+        self.voxelY     .Enable(haveRef)
+        self.voxelZ     .Enable(haveRef)
+        self.voxelLabel .Enable(haveRef)
+
+        ######################
+        # World location label
+        ######################
+
+        label = strings.labels[self, 'worldLocation']
         
-        self            .disableListener('voxelLocation', self._name)
-        self            .disableListener('worldLocation', self._name)
-        self._displayCtx.disableListener('location',      self._name)
+        if haveRef: label += strings.anatomy[refImage,
+                                             'space',
+                                             refImage.getXFormCode()]
+        else:       label += strings.labels[ self,
+                                             'worldLocation',
+                                             'unknown']
+
+        self.worldLabel.SetLabel(label)
+
+        ####################################
+        # Voxel/world location widget limits
+        ####################################
+
+        # Figure out the limits for the
+        # voxel/world location widgets
+        if self._refImage is not None:
+            shape    = self._refImage.shape[:3]
+            vlo      = [0, 0, 0]
+            vhi      = np.array(shape) - 1
+            wlo, whi = transform.axisBounds(shape, self._voxToWorldMat)
+        else:
+            vlo     = [0, 0, 0]
+            vhi     = [0, 0, 0]
+            wbounds = self._displayCtx.bounds[:]
+            wlo     = wbounds[0::2]
+            whi     = wbounds[1::2]
+
+        # Update the voxel and world location limits,
+        # but don't trigger a listener callback, as
+        # this would change the display location.
+        self.disableNotification('worldLocation')
+        self.disableNotification('voxelLocation')
+
+        log.debug('Setting voxelLocation limits: {} - {}'.format(vlo, vhi))
+        log.debug('Setting worldLocation limits: {} - {}'.format(wlo, whi))
+
+        for i in range(3):
+            self.voxelLocation.setLimits(i, vlo[i], vhi[i])
+            self.worldLocation.setLimits(i, wlo[i], whi[i])
+            
+        self.enableNotification('worldLocation')
+        self.enableNotification('voxelLocation')
+
+        ###############
+        # Volume widget
+        ###############
+
+        # Unbind any listeners between the previous
+        # reference image and the volume widget
+        if self.volumeTarget is not None:
+            props.unbindWidget(self.volume,
+                               self.volumeTarget,
+                               'volume',
+                               (wx.EVT_SPIN, wx.EVT_SPINCTRL))
+            
+            self.volume.Unbind(wx.EVT_MOUSEWHEEL)
+            self.volumeTarget = None
+            self.volume.SetValue(0)
+
+        # Enable/disable the volume widget if the
+        # overlay is a 4D image, and bind/unbind
+        # the widget to the volume property of
+        # the associated ImageOpts instance
+        if haveRef and refImage.is4DImage():
+            opts = self._displayCtx.getOpts(refImage)
+            self.volumeTarget = opts
+
+            def onMouse(ev):
+                if not self.volume.IsEnabled():
+                    return
+
+                wheelDir = ev.GetWheelRotation()
+
+                if   wheelDir < 0: opts.volume -= 1
+                elif wheelDir > 0: opts.volume += 1
+
+            props.bindWidget(
+                self.volume, opts, 'volume', (wx.EVT_SPIN, wx.EVT_SPINCTRL))
+
+            self.volume.Bind(wx.EVT_MOUSEWHEEL, onMouse)
+
+            self.volume     .Enable()
+            self.volumeLabel.Enable()
+        else:
+            self.volume     .Disable()
+            self.volumeLabel.Disable() 
+
+            
+    def _prePropagate(self):
+
+        self            .disableNotification('voxelLocation')
+        self            .disableNotification('worldLocation')
+        self._displayCtx.disableListener(    'location', self._name)
 
         self.Freeze()
+
         
-        self.voxelLocation.xyz       = np.round(vloc)
-        self.worldLocation.xyz       = wloc
+    def _propagate(self, source, target, xform):
 
-        self            .enableListener('voxelLocation', self._name)
-        self            .enableListener('worldLocation', self._name)
-        self._displayCtx.enableListener('location',      self._name)
+        if   source == 'display': coords = self._displayCtx.location.xyz
+        elif source == 'voxel':   coords = self.voxelLocation.xyz
+        elif source == 'world':   coords = self.worldLocation.xyz
 
-        self._updateVoxelValue()
+        if xform is not None: xformed = transform.transform([coords], xform)[0]
+        else:                 xformed = np.array(coords)
+
+        log.debug('Updating location ({} {} -> {} {})'.format(
+            source, coords, target, xformed))
+
+        if target == 'display':
+            self._displayCtx.location.xyz = xformed
+
+        # Voxel coordinates are transformed to [x - 0.5, x + 0.5],
+        # so we floor(x + 0.5) to get the corresponding integer
+        # coordinates
+        elif target == 'voxel':
+            self.voxelLocation.xyz = np.floor(xformed + 0.5)
+            
+        elif target == 'world':
+            self.worldLocation.xyz = xformed
+        
+    
+    def _postPropagate(self):
+        self            .enableNotification('voxelLocation')
+        self            .enableNotification('worldLocation')
+        self._displayCtx.enableListener(    'location', self._name)
 
         self.Thaw()
         self.Refresh()
         self.Update()
 
-
-    def _voxelLocationChanged(self, *a):
+    
+    def _displayLocationChanged(self, *a):
+        """Called when the :attr:`.DisplayContext.location` changes.
+        Propagates the change on to the :attr:`voxelLocation`
+        and :attr:`worldLocation` properties.
         """
-        Called when the current voxel location is changed. Propagates the
-        change on to the display context world location.
-        """
 
-        if len(self._imageList) == 0: return
+        if len(self._overlayList) == 0: return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-        
-        vloc = self.voxelLocation.xyz
-        dloc = transform.transform(
-            [vloc], display.getTransform('voxel', 'display'))[0]
-        wloc = transform.transform(
-            [vloc], display.getTransform('voxel', 'world'))[  0]
+        self._prePropagate()
+        self._propagate('display', 'voxel', self._displayToVoxMat)
+        self._propagate('display', 'world', self._displayToWorldMat)
+        self._postPropagate()
+        self._updateLocationInfo()
 
-        self            .disableListener('voxelLocation', self._name)
-        self            .disableListener('worldLocation', self._name)
-        self._displayCtx.disableListener('location',      self._name) 
-        
-        self._displayCtx.location.xyz = dloc
-        self.worldLocation       .xyz = wloc
-
-        self            .enableListener('voxelLocation', self._name)
-        self            .enableListener('worldLocation', self._name)
-        self._displayCtx.enableListener('location',      self._name) 
-
-        self._updateVoxelValue()
-        
 
     def _worldLocationChanged(self, *a):
-        """
-        Called when the current location in the image list world changes.
-        Propagates the change on to the voxel location in the currently
-        selected image.
-        """
-
-        if len(self._imageList) == 0: return
-
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
         
-        wloc = self.worldLocation.xyz
-        dloc = transform.transform(
-            [wloc], display.getTransform('world', 'display'))[0]
-        vloc = transform.transform(
-            [wloc], display.getTransform('world', 'voxel'))[  0]
+        if len(self._overlayList) == 0: return
 
-        self            .disableListener('voxelLocation', self._name)
-        self            .disableListener('worldLocation', self._name)
-        self._displayCtx.disableListener('location',      self._name)
-        
-        self._displayCtx.location.xyz = dloc
-        self.voxelLocation       .xyz = np.round(vloc)
-
-        self            .enableListener('voxelLocation', self._name)
-        self            .enableListener('worldLocation', self._name)
-        self._displayCtx.enableListener('location',      self._name)
-        
-        self._updateVoxelValue()
+        self._prePropagate()
+        self._propagate('world', 'voxel',   self._worldToVoxMat)
+        self._propagate('world', 'display', self._worldToDisplayMat)
+        self._postPropagate()
+        self._updateLocationInfo()
 
         
-    def _selectedImageChanged(self, *a):
-        """
-        Called when the selected image is changed. Updates the voxel label
-        (which contains the image name), and sets the voxel location limits.
-        """
+    def _voxelLocationChanged(self, *a):
+        
+        if len(self._overlayList) == 0: return
 
-        if len(self._imageList) == 0:
-            self._updateVoxelValue(   '')
-            self.space.SetValue('')
+        self._prePropagate()
+        self._propagate('voxel', 'world',   self._voxToWorldMat)
+        self._propagate('voxel', 'display', self._voxToDisplayMat)
+        self._postPropagate()
+        self._updateLocationInfo()
+
+
+    def _updateLocationInfo(self):
+
+        if len(self._overlayList) == 0:
+            self.info.SetPage('')
             return
 
-        image   = self._displayCtx.getSelectedImage()
-        display = self._displayCtx.getDisplayProperties(image)
-
-        # Update the label which
-        # displays the image space 
-        spaceLabel = strings.anatomy['Image', 'space', image.getXFormCode()]
-        self.space.SetValue(spaceLabel)
-
-        # Update the voxel and world location limits,
-        # but don't trigger a listener callback, as
-        # this would change the display location.
-        self.disableListener('worldLocation', self._name)
-        self.disableListener('voxelLocation', self._name)
-
-        self._displayCtx.disableListener('location', self._name)
+        overlays = self._displayCtx.getOrderedOverlays()
+        selOvl   = self._displayCtx.getSelectedOverlay()
         
-        for i in range(3):
-            vlo, vhi = 0, image.shape[i] - 1
-            wlo, whi = transform.axisBounds(
-                image.shape, display.getTransform('voxel', 'world'), i)
+        overlays.remove(selOvl)
+        overlays.insert(0, selOvl)
 
-            self.voxelLocation.setLimits(i, vlo, vhi)
-            self.worldLocation.setLimits(i, wlo, whi)
+        lines = []
+        for overlay in overlays:
 
-        self._displayCtx.enableListener('location', self._name) 
+            display = self._displayCtx.getDisplay(overlay)
+            
+            if not display.enabled:
+                continue
 
-        self.enableListener('worldLocation', self._name)
-        self.enableListener('voxelLocation', self._name)
+            title = '<b>{}</b>'.format(overlay.name)
+            info  = None
 
-        # Refresh the world/voxel location properties
-        self._displayLocationChanged()
+            if not isinstance(overlay, fslimage.Image):
+                info = '{}'.format(strings.labels[self, 'noData'])
+            else:
+                opts = self._displayCtx.getOpts(overlay)
+                vloc = transform.transform(
+                    [self._displayCtx.location.xyz],
+                    opts.getTransform('display', 'voxel'))[0]
+
+                # The above transformation gives us
+                # values between [x - 0.5, x + 0.5] for
+                # voxel x, so we need to floor(x + 0.5)
+                # to get the actual voxel coordinates
+                vloc = tuple(map(int, np.floor(vloc + 0.5)))
+
+                if overlay.is4DImage():
+                    vloc = vloc + (opts.volume,)
+
+                inBounds = True
+                for i in range(3):
+                    if vloc[i] < 0 or vloc[i] >= overlay.shape[i]:
+                        inBounds = False
+
+                if inBounds:
+                    vval = overlay.data[vloc]
+                    info = '[{}]: {}'.format(' '.join(map(str, vloc)), vval)
+                else:
+                    info = strings.labels[self, 'outOfBounds']
+
+            lines.append(title)
+            if info is not None:
+                lines.append(info)
+                
+        self.info.SetPage('<br>'.join(lines))
+        self.info.Refresh()

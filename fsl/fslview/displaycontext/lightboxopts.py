@@ -11,6 +11,7 @@ import sceneopts
 
 import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
 
+
 class LightBoxOpts(sceneopts.SceneOpts):
     nrows          = copy.copy(lightboxcanvas.LightBoxCanvas.nrows)
     ncols          = copy.copy(lightboxcanvas.LightBoxCanvas.ncols)

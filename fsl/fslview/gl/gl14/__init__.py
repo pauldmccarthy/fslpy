@@ -8,3 +8,5 @@
 import glvolume_funcs
 import glrgbvector_funcs
 import gllinevector_funcs
+import glmodel_funcs
+import gllabel_funcs

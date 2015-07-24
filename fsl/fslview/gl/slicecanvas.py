@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 #
 # slicecanvas.py - Provides the SliceCanvas class, which contains the
-# functionality to display a single slice from a collection of 3D images.
+# functionality to display a single slice from a collection of 3D overlays.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """Provides the :class:`SliceCanvas` class, which contains the functionality
-to display a single slice from a collection of 3D images.
+to display a single slice from a collection of 3D overlays.
 
 The :class:`SliceCanvas` class is not intended to be instantiated - use one
 of the subclasses:
 
-  - :class:`~fsl.fslview.gl.osmesaslicecanvas.OSMesaSliceCanvas` for static
-    off-screen rendering of a scene.
+  - :class:`.OSMesaSliceCanvas` for static off-screen rendering of a scene.
     
-  - :class:`~fsl.fslview.gl.wxglslicecanvas.WXGLSliceCanvas` for interactive
-    rendering on a :class:`wx.glcanvas.GLCanvas` canvas.
+  - :class:`.WXGLSliceCanvas` for interactive rendering on a
+    :class:`wx.glcanvas.GLCanvas` canvas.
 
-See also the :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas`.
+See also the :class:`.LightBoxCanvas` class.
 """
 
 import logging
@@ -38,7 +37,7 @@ import fsl.fslview.gl.annotations as annotations
 
 class SliceCanvas(props.HasProperties):
     """Represens a canvas which may be used to display a single 2D slice from a
-    collection of 3D images (see :class:`fsl.data.image.ImageList`).
+    collection of 3D overlays.
     """
 
     
@@ -58,16 +57,16 @@ class SliceCanvas(props.HasProperties):
                             maxval=1000.0,
                             default=100.0,
                             clamped=True)
-    """The image bounds are divided by this zoom
-    factor to produce the display bounds.
+    """The :attr:`.DisplayContext.bounds` are divided by this zoom
+    factor to produce the canvas display bounds.
     """
 
     
     displayBounds = props.Bounds(ndims=2)
     """The display bound x/y values specify the horizontal/vertical display
     range of the canvas, in display coordinates. This may be a larger area
-    than the size of the displayed images, as it is adjusted to preserve the
-    aspect ratio.
+    than the size of the displayed overlays, as it is adjusted to preserve
+    the aspect ratio.
     """
 
     
@@ -78,7 +77,9 @@ class SliceCanvas(props.HasProperties):
  
 
     zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
-    """The image axis to be used as the screen 'depth' axis."""
+    """The display coordinate system axis to be used as the screen 'depth'
+    axis.
+    """
 
     
     invertX = props.Boolean(default=False)
@@ -105,7 +106,7 @@ class SliceCanvas(props.HasProperties):
 
     
     resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
-    """The minimum resolution at which image types should be drawn."""
+    """The minimum resolution at which overlays should be drawn."""
 
 
     def calcPixelDims(self):
@@ -157,10 +158,10 @@ class SliceCanvas(props.HasProperties):
         display coordinates).
         """
 
-        if len(self.imageList) == 0: return
+        if len(self.overlayList) == 0: return
         
         dispBounds = self.displayBounds
-        imgBounds  = self.displayCtx.bounds
+        ovlBounds  = self.displayCtx.bounds
 
         xmin, xmax, ymin, ymax = self.displayBounds[:]
 
@@ -169,28 +170,28 @@ class SliceCanvas(props.HasProperties):
         ymin = ymin + yoff
         ymax = ymax + yoff
 
-        if dispBounds.xlen > imgBounds.getLen(self.xax):
+        if dispBounds.xlen > ovlBounds.getLen(self.xax):
             xmin = dispBounds.xlo
             xmax = dispBounds.xhi
             
-        elif xmin < imgBounds.getLo(self.xax):
-            xmin = imgBounds.getLo(self.xax)
+        elif xmin < ovlBounds.getLo(self.xax):
+            xmin = ovlBounds.getLo(self.xax)
             xmax = xmin + self.displayBounds.getLen(0)
             
-        elif xmax > imgBounds.getHi(self.xax):
-            xmax = imgBounds.getHi(self.xax)
+        elif xmax > ovlBounds.getHi(self.xax):
+            xmax = ovlBounds.getHi(self.xax)
             xmin = xmax - self.displayBounds.getLen(0)
             
-        if dispBounds.ylen > imgBounds.getLen(self.yax):
+        if dispBounds.ylen > ovlBounds.getLen(self.yax):
             ymin = dispBounds.ylo
             ymax = dispBounds.yhi
             
-        elif ymin < imgBounds.getLo(self.yax):
-            ymin = imgBounds.getLo(self.yax)
+        elif ymin < ovlBounds.getLo(self.yax):
+            ymin = ovlBounds.getLo(self.yax)
             ymax = ymin + self.displayBounds.getLen(1)
 
-        elif ymax > imgBounds.getHi(self.yax):
-            ymax = imgBounds.getHi(self.yax)
+        elif ymax > ovlBounds.getHi(self.yax):
+            ymax = ovlBounds.getHi(self.yax)
             ymin = ymax - self.displayBounds.getLen(1)
 
         self.displayBounds[:] = [xmin, xmax, ymin, ymax]
@@ -239,43 +240,34 @@ class SliceCanvas(props.HasProperties):
         return self._annotations
 
         
-    def __init__(self, imageList, displayCtx, zax=0):
+    def __init__(self, overlayList, displayCtx, zax=0):
         """Creates a canvas object. 
 
-        .. note:: It is assumed that each :class:`~fsl.data.image.Image`
-        contained in the ``imageList`` has an attribute called ``display``,
-        which refers to an :class:`~fsl.fslview.displaycontext.ImageDisplay`
-        instance defining how that image is to be displayed.
+        :arg overlayList: An :class:`.OverlayList` object containing a
+                          collection of overlays to be displayed.
         
-        :arg imageList:   An :class:`~fsl.data.image.ImageList` object.
+        :arg displayCtx:  A :class:`.DisplayContext` object which describes
+                          how the overlays should be displayed.
         
-        :arg displayCtx:  A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                          object.
-        
-        :arg zax:        Image axis perpendicular to the plane to be displayed
-                         (the 'depth' axis), default 0.
+        :arg zax:        Display coordinate system axis perpendicular to the
+                         plane to be displayed (the 'depth' axis), default 0.
         """
-
-        if not isinstance(imageList, fslimage.ImageList):
-            raise TypeError(
-                'imageList must be a fsl.data.image.ImageList instance')
 
         props.HasProperties.__init__(self)
 
-        self.imageList      = imageList
-        self.displayCtx     = displayCtx
-        self.name           = '{}_{}'.format(self.__class__.__name__, id(self))
-
+        self.overlayList = overlayList
+        self.displayCtx  = displayCtx
+        self.name        = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # A GLObject instance is created for
-        # every image in the image list, and
-        # stored in this dictionary
+        # every overlay in the overlay list,
+        # and stored in this dictionary
         self._glObjects = {}
 
         # If render mode is offscren or prerender, these
         # dictionaries will contain a RenderTexture or
-        # RenderTextureStack instance for each image in
-        # the image list
+        # RenderTextureStack instance for each overlay in
+        # the overlay list
         self._offscreenTextures = {}
         self._prerenderTextures = {}
 
@@ -297,80 +289,117 @@ class SliceCanvas(props.HasProperties):
         self.addListener('showCursor',    self.name, self._refresh)
         self.addListener('invertX',       self.name, self._refresh)
         self.addListener('invertY',       self.name, self._refresh)
-        self.addListener('zoom',
-                         self.name,
-                         lambda *a: self._updateDisplayBounds())
-
-        self.addListener('renderMode',
-                         self.name,
-                         self._renderModeChange)
-
+        self.addListener('zoom',          self.name, self._zoomChanged)
+        self.addListener('renderMode',    self.name, self._renderModeChange)
         self.addListener('resolutionLimit',
                          self.name,
                          self._resolutionLimitChange) 
         
-        # When the image list changes, refresh the
+        # When the overlay list changes, refresh the
         # display, and update the display bounds
-        self.imageList.addListener( 'images',
-                                    self.name,
-                                    self._imageListChanged)
-        self.displayCtx.addListener('imageOrder',
-                                    self.name,
-                                    self._imageListChanged) 
-        self.displayCtx.addListener('bounds',
-                                    self.name,
-                                    self._imageBoundsChanged)
+        self.overlayList.addListener('overlays',
+                                     self.name,
+                                     self._overlayListChanged)
+        self.displayCtx .addListener('overlayOrder',
+                                     self.name,
+                                     self._refresh) 
+        self.displayCtx .addListener('bounds',
+                                     self.name,
+                                     self._overlayBoundsChanged)
 
+
+    def destroy(self):
+        """This method must be called when this ``SliceCanvas`` is no longer
+        being used.
+
+        It removes listeners from all :class:`.OverlayList`,
+        :class:`.DisplayContext`, and :class:`.Display` instances, and
+        destroys OpenGL representations of all overlays.
+        """
+        self.removeListener('zax',           self.name)
+        self.removeListener('pos',           self.name)
+        self.removeListener('displayBounds', self.name)
+        self.removeListener('showCursor',    self.name)
+        self.removeListener('invertX',       self.name)
+        self.removeListener('invertY',       self.name)
+        self.removeListener('zoom',          self.name)
+        self.removeListener('renderMode',    self.name)
+
+        self.overlayList.removeListener('overlays',     self.name)
+        self.displayCtx .removeListener('bounds',       self.name)
+        self.displayCtx .removeListener('overlayOrder', self.name)
+
+        for overlay in self.overlayList:
+            disp  = self.displayCtx.getDisplay(overlay)
+            globj = self._glObjects[overlay]
+
+            disp.removeListener('overlayType',  self.name)
+            disp.removeListener('enabled',      self.name)
+            disp.unbindProps(   'softwareMode', self)
+
+            globj.destroy()
+
+            rt, rtName = self._prerenderTextures.get(overlay, (None, None))
+            ot         = self._offscreenTextures.get(overlay, None)
+
+            if rt is not None: glresources.delete(rtName)
+            if ot is not None: ot         .destroy()
+
+        self.overlayList = None
+        self.displayCxt  = None
+            
 
     def _initGL(self):
-        """Call the _imageListChanged method - it  will generate
-        any necessary GL data for each of the images
+        """Call the _overlayListChanged method - it will generate
+        any necessary GL data for each of the overlays
         """
-        self._imageListChanged()
+        self._overlayListChanged()
 
         
     def _updateRenderTextures(self):
-        """Called when the :attr:`renderMode` changes, when the image
-        list changes, or when the  GLObject representation of an image
+        """Called when the :attr:`renderMode` changes, when the overlay
+        list changes, or when the  GLObject representation of an overlay
         changes.
 
         If the :attr:`renderMode` property is ``onscreen``, this method does
         nothing.
 
         Otherwise, creates/destroys :class:`.RenderTexture` or
-        :class:`.RenderTextureStack` instances for newly added/removed images.
+        :class:`.RenderTextureStack` instances for newly added/removed
+        overlays.
         """
 
         if self.renderMode == 'onscreen':
             return
 
-        # If any images have been removed from the image
+        # If any overlays have been removed from the overlay
         # list, destroy the associated render texture stack
         if self.renderMode == 'offscreen':
-            for image, texture in self._offscreenTextures.items():
-                if image not in self.imageList:
-                    self._offscreenTextures.pop(image)
+            for ovl, texture in self._offscreenTextures.items():
+                if ovl not in self.overlayList:
+                    self._offscreenTextures.pop(ovl)
                     texture.destroy()
             
         elif self.renderMode == 'prerender':
-            for image, (texture, name) in self._prerenderTextures.items():
-                if image not in self.imageList:
-                    self._prerenderTextures.pop(image)
+            for ovl, (texture, name) in self._prerenderTextures.items():
+                if ovl not in self.overlayList:
+                    self._prerenderTextures.pop(ovl)
                     glresources.delete(name)
 
-        # If any images have been added to the list,
+        # If any overlays have been added to the list,
         # create a new render textures for them
-        for image in self.imageList:
+        for overlay in self.overlayList:
 
             if self.renderMode == 'offscreen':
-                if image in self._offscreenTextures:
+                if overlay in self._offscreenTextures:
                     continue
                 
             elif self.renderMode == 'prerender':
-                if image in self._prerenderTextures:
+                if overlay in self._prerenderTextures:
                     continue 
 
-            globj = self._glObjects.get(image, None)
+            globj   = self._glObjects.get(overlay, None)
+            display = self.displayCtx.getDisplay(overlay)
 
             if globj is None:
                 continue
@@ -382,14 +411,14 @@ class SliceCanvas(props.HasProperties):
             # by a RenderTexture object.
             if self.renderMode == 'offscreen':
                 
-                name = '{}_{}_{}'.format(image.name, self.xax, self.yax)
+                name = '{}_{}_{}'.format(display.name, self.xax, self.yax)
                 rt   = textures.GLObjectRenderTexture(
                     name,
                     globj,
                     self.xax,
                     self.yax)
 
-                self._offscreenTextures[image] = rt
+                self._offscreenTextures[overlay] = rt
                 
             # For prerender mode, slices of the
             # GLObjects are pre-rendered on a
@@ -398,7 +427,7 @@ class SliceCanvas(props.HasProperties):
             # object.
             elif self.renderMode == 'prerender':
                 name = '{}_{}_zax{}'.format(
-                    id(image),
+                    id(overlay),
                     textures.RenderTextureStack.__name__,
                     self.zax)
 
@@ -410,7 +439,7 @@ class SliceCanvas(props.HasProperties):
                     rt.setAxes(self.xax, self.yax)
                     glresources.set(name, rt)
 
-                self._prerenderTextures[image] = rt, name
+                self._prerenderTextures[overlay] = rt, name
 
         self._refresh()
 
@@ -421,12 +450,12 @@ class SliceCanvas(props.HasProperties):
         log.debug('Render mode changed: {}'.format(self.renderMode))
 
         # destroy any existing render textures
-        for image, texture in self._offscreenTextures.items():
-            self._offscreenTextures.pop(image)
+        for ovl, texture in self._offscreenTextures.items():
+            self._offscreenTextures.pop(ovl)
             texture.destroy()
             
-        for image, (texture, name) in self._prerenderTextures.items():
-            self._prerenderTextures.pop(image)
+        for ovl, (texture, name) in self._prerenderTextures.items():
+            self._prerenderTextures.pop(ovl)
             glresources.delete(name)
 
         # Onscreen rendering - each GLObject
@@ -445,33 +474,38 @@ class SliceCanvas(props.HasProperties):
     def _resolutionLimitChange(self, *a):
         """Called when the :attr:`resolutionLimit` property changes.
 
-        Updates the minimum resolution of all images in the image list.
+        Updates the minimum resolution of all overlays in the overlay list.
         """
 
-        for image in self.imageList:
-            
-            display = self.displayCtx.getDisplayProperties(image)
-            minres  = min(image.pixdim[:3])
+        for ovl in self.overlayList:
+
+            # No support for non-volumetric overlay 
+            # types yet (or maybe ever?)
+            if not isinstance(ovl, fslimage.Image):
+                continue
+
+            opts   = self.displayCtx.getOpts(ovl)
+            minres = min(ovl.pixdim[:3])
 
             if self.resolutionLimit > minres:
                 minres = self.resolutionLimit
 
-            if display.resolution < minres:
-                display.resolution = minres
+            if opts.resolution < minres:
+                opts.resolution = minres
 
 
     def _zAxisChanged(self, *a):
         """Called when the :attr:`zax` property is changed. Calculates
         the corresponding X and Y axes, and saves them as attributes of
-        this object. Also regenerates the GL index buffers for every
-        image in the image list, as they are dependent upon how the
-        image is being displayed.
+        this object. Also notifies the GLObjects for every overlay in
+        the overlay list.
         """
 
         log.debug('{}'.format(self.zax))
 
         # Store the canvas position, in the
-        # axis order of the image space
+        # axis order of the display coordinate
+        # system
         pos                  = [None] * 3
         pos[self.xax]        = self.pos.x
         pos[self.yax]        = self.pos.y
@@ -486,12 +520,12 @@ class SliceCanvas(props.HasProperties):
 
         self._annotations.setAxes(self.xax, self.yax)
 
-        for image, globj in self._glObjects.items():
+        for ovl, globj in self._glObjects.items():
 
             if globj is not None:
                 globj.setAxes(self.xax, self.yax)
 
-        self._imageBoundsChanged()
+        self._overlayBoundsChanged()
 
         # Reset the canvas position as, because the
         # z axis has been changed, the old coordinates
@@ -506,108 +540,123 @@ class SliceCanvas(props.HasProperties):
         # display axes. Easiest way to do this
         # is to destroy and re-create them
         self._renderModeChange()
- 
-            
-    def _imageListChanged(self, *a):
-        """This method is called every time an image is added or removed
-        to/from the image list. For newly added images, it creates the
-        appropriate :mod:`~fsl.fslview.gl.globject` type, which
-        initialises the OpenGL data necessary to render the image, and then
-        triggers a refresh.
+
+
+    def __overlayTypeChanged(self, value, valid, display, name):
+        """Called when the :attr:`.Display.overlayType` setting for any
+        overlay changes. Makes sure that an appropriate :class:`.GLObject`
+        has been created for the overlay (see the :meth:`__genGLObject`
+        method).
         """
 
-        # Destroy any GL objects for images 
+        log.debug('GLObject representation for {} '
+                  'changed to {}'.format(display.name,
+                                         display.overlayType))
+
+        self.__genGLObject(display.getOverlay())
+        self._refresh()
+
+
+    def __genGLObject(self, overlay, updateRenderTextures=True):
+        """Creates a :class:`.GLObject` instance for the given ``overlay``,
+        destroying any existing instance.
+
+        If ``updateRenderTextures`` is ``True`` (the default), and the
+        :attr:`.renderMode` is ``offscreen`` or ``prerender``, any
+        render texture associated with the overlay is destroyed.
+        """
+
+        display = self.displayCtx.getDisplay(overlay)
+
+        # Tell the previous GLObject (if
+        # any) to clean up after itself
+        globj = self._glObjects.pop(overlay, None)
+        if globj is not None:
+            globj.destroy()
+
+            if updateRenderTextures:
+                if self.renderMode == 'offscreen':
+                    tex = self._offscreenTextures.pop(overlay, None)
+                    if tex is not None:
+                        tex.destroy()
+
+                elif self.renderMode == 'prerender':
+                    tex, name = self._prerenderTextures.pop(
+                        overlay, (None, None))
+                    if tex is not None:
+                        glresources.delete(name)
+
+        # We need a GL context to create a new GL
+        # object. If we can't get it now, the
+        # _glObjects value for this overlay will
+        # stay as None, and the _draw method will
+        # manually call this method again later.
+        if not self._setGLContext():
+            return None
+
+        globj = globject.createGLObject(overlay, display)
+
+        if globj is not None:
+            globj.setAxes(self.xax, self.yax)
+            globj.addUpdateListener(self.name, self._refresh)
+
+        self._glObjects[overlay] = globj
+
+        if updateRenderTextures:
+            self._updateRenderTextures() 
+
+        if not display.isBound('softwareMode', self):
+            display.bindProps('softwareMode', self)
+
+        display.addListener('overlayType',
+                            self.name,
+                            self.__overlayTypeChanged,
+                            overwrite=True)
+
+        display.addListener('enabled',
+                            self.name,
+                            self._refresh,
+                            overwrite=True)
+
+        return globj
+ 
+            
+    def _overlayListChanged(self, *a):
+        """This method is called every time an overlay is added or removed
+        to/from the overlay list.
+
+        For newly added overlays, it creates the appropriate :mod:`.GLObject`
+        type, which initialises the OpenGL data necessary to render the
+        overlay, and then triggers a refresh.
+        """
+
+        # Destroy any GL objects for overlays
         # which are no longer in the list
-        for image, globj in self._glObjects.items():
-            if image not in self.imageList:
-                self._glObjects.pop(image)
+        for ovl, globj in self._glObjects.items():
+            if ovl not in self.overlayList:
+                self._glObjects.pop(ovl)
                 if globj is not None:
                     globj.destroy()
 
-        # Create a GL object for any new images,
+        # Create a GL object for any new overlays,
         # and attach a listener to their display
         # properties so we know when to refresh
         # the canvas.
-        for image in self.imageList:
+        for overlay in self.overlayList:
 
-            # A GLObject already exists for this image
-            if image in self._glObjects:
+            # A GLObject already exists
+            # for this overlay
+            if overlay in self._glObjects:
                 continue
 
-            display = self.displayCtx.getDisplayProperties(image)
-
-            # Called when the GL object representation
-            # of the image needs to be re-created
-            def genGLObject(value=None,
-                            valid=None,
-                            ctx=None,
-                            name=None,
-                            disp=display,
-                            img=image,
-                            updateRenderTextures=True):
-
-                log.debug('GLObject representation for {} '
-                          'changed to {}'.format(disp.name,
-                                                 disp.imageType))
-
-                if not self._setGLContext():
-                    return
-
-                # Tell the previous GLObject (if
-                # any) to clean up after itself
-                globj = self._glObjects.get(img, None)
-                if globj is not None:
-                    globj.destroy()
-                    
-                    if updateRenderTextures:
-                        if self.renderMode == 'offscreen':
-                            tex = self._offscreenTextures.pop(img, None)
-                            if tex is not None:
-                                tex.destroy()
-                                
-                        elif self.renderMode == 'prerender':
-                            tex, name = self._prerenderTextures.pop(
-                                img, (None, None))
-                            if tex is not None:
-                                glresources.delete(name)
-
-                globj = globject.createGLObject(img, disp)
-
-                if globj is not None:
-                    globj.setAxes(self.xax, self.yax)
-
-                self._glObjects[img] = globj
-
-                if updateRenderTextures:
-                    self._updateRenderTextures()
-
-                opts = disp.getDisplayOpts()
-                opts.addGlobalListener(self.name, self._refresh)
-                self._refresh()
-                
-            genGLObject(updateRenderTextures=False)
-
-            # Bind Display.softwareMode to SliceCanvas.softwareMode
-            display.bindProps('softwareMode', self)
-                
-            image  .addListener('data',          self.name, self._refresh)
-            display.addListener('imageType',     self.name, genGLObject)
-            display.addListener('enabled',       self.name, self._refresh)
-            display.addListener('transform',     self.name, self._refresh)
-            display.addListener('softwareMode',  self.name, self._refresh)
-            display.addListener('interpolation', self.name, self._refresh)
-            display.addListener('alpha',         self.name, self._refresh)
-            display.addListener('brightness',    self.name, self._refresh)
-            display.addListener('contrast',      self.name, self._refresh)
-            display.addListener('resolution',    self.name, self._refresh)
-            display.addListener('volume',        self.name, self._refresh)
+            self.__genGLObject(overlay, updateRenderTextures=False)
 
         self._updateRenderTextures()
         self._resolutionLimitChange()
         self._refresh()
 
 
-    def _imageBoundsChanged(self, *a):
+    def _overlayBoundsChanged(self, *a):
         """Called when the display bounds are changed.
 
         Updates the constraints on the :attr:`pos` property so it is
@@ -615,15 +664,22 @@ class SliceCanvas(props.HasProperties):
         :meth:`_updateDisplayBounds` method.
         """
 
-        imgBounds = self.displayCtx.bounds
+        ovlBounds = self.displayCtx.bounds
 
-        self.pos.setMin(0, imgBounds.getLo(self.xax))
-        self.pos.setMax(0, imgBounds.getHi(self.xax))
-        self.pos.setMin(1, imgBounds.getLo(self.yax))
-        self.pos.setMax(1, imgBounds.getHi(self.yax))
-        self.pos.setMin(2, imgBounds.getLo(self.zax))
-        self.pos.setMax(2, imgBounds.getHi(self.zax))
+        self.pos.setMin(0, ovlBounds.getLo(self.xax))
+        self.pos.setMax(0, ovlBounds.getHi(self.xax))
+        self.pos.setMin(1, ovlBounds.getLo(self.yax))
+        self.pos.setMax(1, ovlBounds.getHi(self.yax))
+        self.pos.setMin(2, ovlBounds.getLo(self.zax))
+        self.pos.setMax(2, ovlBounds.getHi(self.zax))
 
+        self._updateDisplayBounds()
+
+
+    def _zoomChanged(self, *a):
+        """Called when the :attr:`.zoom` property changes. Updates the
+        display bounds.
+        """
         self._updateDisplayBounds()
         
 
@@ -682,12 +738,12 @@ class SliceCanvas(props.HasProperties):
 
         
     def _updateDisplayBounds(self, xmin=None, xmax=None, ymin=None, ymax=None):
-        """Called on canvas resizes, image bound changes, and zoom changes.
+        """Called on canvas resizes, overlay bound changes, and zoom changes.
         
         Calculates the bounding box, in world coordinates, to be displayed on
         the canvas. Stores this bounding box in the displayBounds property. If
-        any of the parameters are not provided, the image list
-        :attr:`fsl.data.image.ImageList.bounds` are used.
+        any of the parameters are not provided, the
+        :attr:`.DisplayContext.bounds` are used.
 
         :arg xmin: Minimum x (horizontal) value to be in the display bounds.
         :arg xmax: Maximum x value to be in the display bounds.
@@ -758,8 +814,8 @@ class SliceCanvas(props.HasProperties):
         """Sets up the GL canvas size, viewport, and projection.
 
         If any of the min/max parameters are not provided, they are
-        taken from the :attr:`displayBounds` (x/y), and the image
-        list :attr:`~fsl.data.image.ImageList.bounds` (z).
+        taken from the :attr:`displayBounds` (x/y), and the 
+        :attr:`DisplayContext.bounds` (z).
 
         :arg xmin: Minimum x (horizontal) location
         :arg xmax: Maximum x location
@@ -794,10 +850,10 @@ class SliceCanvas(props.HasProperties):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)        
         
-        if (len(self.imageList) == 0) or \
-           (width  == 0)              or \
-           (height == 0)              or \
-           (xmin   == xmax)           or \
+        if (len(self.overlayList) == 0) or \
+           (width  == 0)                or \
+           (height == 0)                or \
+           (xmin   == xmax)             or \
            (ymin   == ymax):
             return
 
@@ -855,19 +911,22 @@ class SliceCanvas(props.HasProperties):
 
 
     def _drawOffscreenTextures(self):
-        """Draws all of the off-screen :class:`.ImageRenderTexture` instances to the
-        canvas.
+        """Draws all of the off-screen :class:`.GLObjectRenderTexture` instances to
+        the canvas.
 
-        This method is called by :meth:`_draw` if :attr:`twoStageRender` is
-        enabled.
+        This method is called by :meth:`_draw` if :attr:`renderMode` is
+        set to ``offscreen``.
         """
-        log.debug('Combining off-screen image textures, and rendering '
+        
+        log.debug('Combining off-screen render textures, and rendering '
                   'to canvas (size {})'.format(self._getSize()))
 
-        for image in self.displayCtx.getOrderedImages():
-            rt      = self._offscreenTextures.get(image, None)
-            display = self.displayCtx.getDisplayProperties(image)
-            lo, hi  = display.getDisplayBounds()
+        for overlay in self.displayCtx.getOrderedOverlays():
+            
+            rt      = self._offscreenTextures.get(overlay, None)
+            display = self.displayCtx.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
+            lo, hi  = opts.getDisplayBounds()
 
             if rt is None or not display.enabled:
                 continue
@@ -875,9 +934,9 @@ class SliceCanvas(props.HasProperties):
             xmin, xmax = lo[self.xax], hi[self.xax]
             ymin, ymax = lo[self.yax], hi[self.yax]
 
-            log.debug('Drawing image {} texture to {:0.3f}-{:0.3f}, '
+            log.debug('Drawing overlay {} texture to {:0.3f}-{:0.3f}, '
                       '{:0.3f}-{:0.3f}'.format(
-                          image, xmin, xmax, ymin, ymax))
+                          overlay, xmin, xmax, ymin, ymax))
 
             rt.drawOnBounds(
                 self.pos.z, xmin, xmax, ymin, ymax, self.xax, self.yax) 
@@ -898,43 +957,49 @@ class SliceCanvas(props.HasProperties):
         if self.renderMode is not 'offscreen':
             self._setViewport()
 
-        for image in self.displayCtx.getOrderedImages():
+        for overlay in self.displayCtx.getOrderedOverlays():
 
-            display = self.displayCtx.getDisplayProperties(image)
-            globj   = self._glObjects.get(image, None)
-            
-            if (globj is None) or (not display.enabled):
+            display = self.displayCtx.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
+            globj   = self._glObjects.get(overlay, None)
+
+            if not display.enabled:
                 continue
+            
+            if globj is None:
+                globj = self.__genGLObject(overlay)
 
             # On-screen rendering - the globject is
             # rendered directly to the screen canvas
             if self.renderMode == 'onscreen':
-                log.debug('Drawing {} slice for image {} '
+                log.debug('Drawing {} slice for overlay {} '
                           'directly to canvas'.format(
-                              self.zax, image.name))
+                              self.zax, display.name))
 
                 globj.preDraw()
                 globj.draw(self.pos.z)
                 globj.postDraw() 
 
-            # Off-screen rendering - each image is
+            # Off-screen rendering - each overlay is
             # rendered to an off-screen texture -
             # these textures are combined below.
             # Set up the texture as the rendering
             # target, and draw to it
             elif self.renderMode == 'offscreen':
                 
-                rt     = self._offscreenTextures.get(image, None)
-                lo, hi = display.getDisplayBounds()
+                rt     = self._offscreenTextures.get(overlay, None)
+                lo, hi = opts.getDisplayBounds()
 
                 # Assume that all is well - the texture
                 # just has not yet been created
                 if rt is None:
+                    log.debug('Render texture missing for overlay {}'.format(
+                        overlay))
                     continue
                 
-                log.debug('Drawing {} slice for image {} '
+                log.debug('Drawing {} slice for overlay {} '
                           'to off-screen texture'.format(
-                              self.zax, image.name))
+                              self.zax, overlay.name))
 
                 rt.bindAsRenderTarget()
                 rt.setRenderViewport(self.xax, self.yax, lo, hi)
@@ -945,19 +1010,22 @@ class SliceCanvas(props.HasProperties):
                 globj.draw(self.pos.z)
                 globj.postDraw()
 
+                rt.unbindAsRenderTarget()
+                rt.restoreViewport()
+
             # Pre-rendering - a pre-generated 2D
             # texture of the current z position
             # is rendered to the screen canvas
             elif self.renderMode == 'prerender':
                 
-                rt, name = self._prerenderTextures.get(image, (None, None))
+                rt, name = self._prerenderTextures.get(overlay, (None, None))
 
                 if rt is None:
                     continue
 
-                log.debug('Drawing {} slice for image {} '
+                log.debug('Drawing {} slice for overlay {} '
                           'from pre-rendered texture'.format(
-                              self.zax, image.name)) 
+                              self.zax, display.name)) 
 
                 rt.draw(self.pos.z)
 
@@ -966,7 +1034,6 @@ class SliceCanvas(props.HasProperties):
         # those off-screen textures are all rendered on
         # to the screen canvas.
         if self.renderMode == 'offscreen':
-            textures.GLObjectRenderTexture.unbindAsRenderTarget()
             self._setViewport()
             self._drawOffscreenTextures() 
 

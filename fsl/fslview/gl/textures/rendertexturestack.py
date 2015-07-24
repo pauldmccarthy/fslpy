@@ -7,7 +7,6 @@
 
 import logging
 
-import              wx
 import numpy     as np
 import OpenGL.GL as gl
 
@@ -46,6 +45,7 @@ class RenderTextureStack(object):
             '{}_{}'.format(type(self).__name__, id(self)),
             self.__refreshAllTextures)
 
+        import wx
         wx.GetApp().Bind(wx.EVT_IDLE, self.__textureUpdateLoop)
 
             
@@ -151,6 +151,8 @@ class RenderTextureStack(object):
 
         
     def __destroyTextures(self):
+
+        import wx
         texes = self.__textures
         self.__textures = []
         for tex in texes:

@@ -9,7 +9,7 @@ which specify a scene to be displayed in FSLView.  This logic is shared
 between fslview.py and render.py.
 
 The functions in this module make use of the command line generation
-featuresd of the :mod:`props` package.
+features of the :mod:`props` package.
 
 There are a lot of command line arguments made available to the user,
 broadly split into the following groups:
@@ -18,8 +18,8 @@ broadly split into the following groups:
    display type (orthographic or lightbox), the displayed location,
    and whether to show a colour bar.
 
- - *Display* arguments control the display for a single image file,
-   such as interpolation, colour map, etc.
+ - *Display* arguments control the display for a single overlay file (e.g.
+   an image), such as interpolation, colour map, etc.
 
 The main entry points of this module are:
 
@@ -34,9 +34,9 @@ The main entry points of this module are:
     :class:`~fsl.fslview.displaycontext.DisplayContext` instances according to
     the arguments contained in a given :class:`~argparse.Namespace` object.
 
-  - :func:`handleImageArgs`:
+  - :func:`handleOverlayArgs`:
 
-    Loads and configures the display of any image files specified by a given
+    Loads and configures the display of any overlay files specified by a given
     :class:`~argparse.Namespace` object.
 """
 
@@ -48,30 +48,29 @@ import logging
 import props
 
 import fsl.utils.typedict  as td
-import fsl.data.imageio    as iio
 import fsl.data.image      as fslimage
+import fsl.data.model      as fslmodel
+import fsl.fslview.overlay as fsloverlay
 import fsl.utils.transform as transform
-
 
 # The colour maps module needs to be imported
 # before the displaycontext.opts modules are
 # imported, as some of their class definitions
 # rely on the colourmaps being initialised
 import fsl.fslview.colourmaps as colourmaps
-colourmaps.initColourMaps()
+colourmaps.init()
 
-
-import fsl.fslview.displaycontext.display      as fsldisplay
-import fsl.fslview.displaycontext.volumeopts   as volumeopts
-import fsl.fslview.displaycontext.vectoropts   as vectoropts
-import fsl.fslview.displaycontext.maskopts     as maskopts
-
-import fsl.fslview.displaycontext.sceneopts    as sceneopts
-import fsl.fslview.displaycontext.orthoopts    as orthoopts
-import fsl.fslview.displaycontext.lightboxopts as lightboxopts
+import fsl.fslview.displaycontext as fsldisplay
 
 
 log = logging.getLogger(__name__)
+
+
+def concat(lists):
+    """Concatenates a list of lists. Used a few times, and writing
+    concat(lists) is nicer-looking than writing lambda blah blah each time.
+    """
+    return reduce(lambda a, b: a + b, lists)
 
 
 # Names of all of the property which are 
@@ -81,18 +80,18 @@ OPTIONS = td.TypeDict({
     'Main'          : ['scene',
                        'voxelLoc',
                        'worldLoc',
-                       'selectedImage'],
+                       'selectedOverlay'],
+
+    # From here on, all of the keys are
+    # the names of HasProperties classes,
+    # and all of the values are the 
+    # names of properties on them.
     
     'SceneOpts'     : ['showCursor',
                        'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide',
                        'performance'],
-
-    # From here on, all of the keys are
-    # the names of HasProperties classes,
-    # and all of the values are the 
-    # names of properties on them.
     'OrthoOpts'     : ['xzoom',
                        'yzoom',
                        'zzoom',
@@ -110,46 +109,59 @@ OPTIONS = td.TypeDict({
                        'zax'],
 
     # The order in which properties are listed
-    # here is the order in which they are applied
-    # - so make sure transform is listed before
-    # interpolation!
-    'Display'       : ['name',
-                       'transform',
-                       'imageType',
-                       'interpolation',
-                       'resolution',
-                       'volume',
-                       'alpha',
-                       'brightness',
-                       'contrast'],
-    'VolumeOpts'    : ['displayRange',
-                       'clippingRange',
-                       'invert',
-                       'cmap'],
-    'MaskOpts'      : ['colour',
-                       'invert',
-                       'threshold'],
-    'VectorOpts'    : ['xColour',
-                       'yColour',
-                       'zColour',
-                       'suppressX',
-                       'suppressY',
-                       'suppressZ',
-                       'modulate',
-                       'modThreshold'],
+    # here is the order in which they are applied.
+    'Display'        : ['name',
+                        'overlayType',
+                        'alpha',
+                        'brightness',
+                        'contrast'],
+    'ImageOpts'      : ['transform',
+                        'resolution',
+                        'volume'],
+    'VolumeOpts'     : ['cmap',
+                        'displayRange',
+                        'clippingRange',
+                        'invert',
+                        'invertClipping',
+                        'interpolation'],
+    'MaskOpts'       : ['colour',
+                        'invert',
+                        'threshold'],
+    'VectorOpts'     : ['xColour',
+                        'yColour',
+                        'zColour',
+                        'suppressX',
+                        'suppressY',
+                        'suppressZ',
+                        'modulate',
+                        'modThreshold'],
+    'LineVectorOpts' : ['lineWidth',
+                        'directed'],
+    'RGBVectorOpts'  : ['interpolation'],
+    'ModelOpts'      : ['colour',
+                        'outline',
+                        'outlineWidth',
+                        'refImage'],
+    'LabelOpts'      : ['lut',
+                        'outline',
+                        'outlineWidth'],
 })
 
 # Headings for each of the option groups
 GROUPNAMES = td.TypeDict({
-    'SceneOpts'    : 'Scene options',
-    'OrthoOpts'    : 'Ortho display options',
-    'LightBoxOpts' : 'LightBox display options',
+    'SceneOpts'      : 'Scene options',
+    'OrthoOpts'      : 'Ortho display options',
+    'LightBoxOpts'   : 'LightBox display options',
     
-    'Display'      : 'Image display options',
-    'VolumeOpts'   : 'Volume options',
-    'VectorOpts'   : 'Vector options',
-    'MaskOpts'     : 'Mask options',
-
+    'Display'        : 'Overlay display options',
+    'ImageOpts'      : 'Options for NIFTI images',
+    'VolumeOpts'     : 'Volume options',
+    'MaskOpts'       : 'Mask options',
+    'VectorOpts'     : 'Vector options',
+    'LineVectorOpts' : 'Line vector options',
+    'RGBVectorOpts'  : 'RGB vector options',
+    'ModelOpts'      : 'Model options',
+    'LabelOpts'      : 'Label options',
 })
 
 # Short/long arguments for all of those options
@@ -162,10 +174,10 @@ GROUPNAMES = td.TypeDict({
 # Display options and the *Opts options.
 ARGUMENTS = td.TypeDict({
 
-    'Main.scene'         : ('s',  'scene'),
-    'Main.voxelLoc'      : ('v',  'voxelloc'),
-    'Main.worldLoc'      : ('w',  'worldloc'),
-    'Main.selectedImage' : ('i',  'selectedImage'),
+    'Main.scene'           : ('s',  'scene'),
+    'Main.voxelLoc'        : ('v',  'voxelloc'),
+    'Main.worldLoc'        : ('w',  'worldloc'),
+    'Main.selectedOverlay' : ('o',  'selectedOverlay'),
     
     'SceneOpts.showColourBar'      : ('cb',  'showColourBar'),
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
@@ -195,21 +207,23 @@ ARGUMENTS = td.TypeDict({
     'LightBoxOpts.zax'            : ('zx', 'zaxis'),
 
     'Display.name'          : ('n',  'name'),
-    'Display.interpolation' : ('in', 'interp'),
-    'Display.resolution'    : ('r',  'resolution'),
-    'Display.transform'     : ('tf', 'transform'),
-    'Display.imageType'     : ('it', 'imageType'),
-    'Display.volume'        : ('vl', 'volume'),
+    'Display.overlayType'   : ('ot', 'overlayType'),
     'Display.alpha'         : ('a',  'alpha'),
     'Display.brightness'    : ('b',  'brightness'),
     'Display.contrast'      : ('c',  'contrast'),
 
-    'VolumeOpts.displayRange'  : ('dr', 'displayRange'),
-    'VolumeOpts.clippingRange' : ('cr', 'clippingRange'),
-    'VolumeOpts.cmap'          : ('cm', 'cmap'),
-    'VolumeOpts.invert'        : ('ci', 'cmapInvert'),
+    'ImageOpts.resolution'    : ('r',  'resolution'),
+    'ImageOpts.transform'     : ('tf', 'transform'),
+    'ImageOpts.volume'        : ('vl', 'volume'),
 
-    'MaskOpts.colour'    : ('co', 'colour'),
+    'VolumeOpts.displayRange'   : ('dr', 'displayRange'),
+    'VolumeOpts.interpolation'  : ('in', 'interp'),
+    'VolumeOpts.invertClipping' : ('ic', 'invertClipping'),
+    'VolumeOpts.clippingRange'  : ('cr', 'clippingRange'),
+    'VolumeOpts.cmap'           : ('cm', 'cmap'),
+    'VolumeOpts.invert'         : ('ci', 'cmapInvert'),
+
+    'MaskOpts.colour'    : ('co', 'maskColour'),
     'MaskOpts.invert'    : ('mi', 'maskInvert'),
     'MaskOpts.threshold' : ('t',  'threshold'),
 
@@ -222,6 +236,18 @@ ARGUMENTS = td.TypeDict({
     'VectorOpts.modulate'    : ('m',  'modulate'),
     'VectorOpts.modThreshold': ('mt', 'modThreshold'),
 
+    'LineVectorOpts.lineWidth'    : ('lvw', 'lineWidth'),
+    'LineVectorOpts.directed'     : ('lvi', 'directed'),
+    'RGBVectorOpts.interpolation' : ('rvi', 'rvInterpolation'),
+
+    'ModelOpts.colour'       : ('mc',  'modelColour'),
+    'ModelOpts.outline'      : ('mo',  'modelOutline'),
+    'ModelOpts.outlineWidth' : ('mw',  'modelOutlineWidth'),
+    'ModelOpts.refImage'     : ('mr',  'modelRefImage'),
+
+    'LabelOpts.lut'          : ('ll',  'lut'),
+    'LabelOpts.outline'      : ('lo',  'labelOutline'),
+    'LabelOpts.outlineWidth' : ('lw',  'labelOutlineWidth'),
 })
 
 # Help text for all of the options
@@ -229,11 +255,13 @@ HELP = td.TypeDict({
 
     'Main.scene'         : 'Scene to show. If not provided, the '
                            'previous scene layout is restored.',
-    'Main.voxelLoc'      : 'Location to show (voxel coordinates of '
-                           'first image)',
-    'Main.worldLoc'      : 'Location to show (world coordinates, '
-                           'takes precedence over --voxelloc)',
-    'Main.selectedImage' : 'Selected image (default: last)',
+
+    # TODO how about other overlay types?
+    'Main.voxelLoc'        : 'Location to show (voxel coordinates of '
+                             'first overlay)',
+    'Main.worldLoc'        : 'Location to show (world coordinates, '
+                             'takes precedence over --voxelloc)',
+    'Main.selectedOverlay' : 'Selected overlay (default: last)',
 
     'SceneOpts.showCursor'         : 'Do not display the green cursor '
                                      'highlighting the current location',
@@ -264,20 +292,22 @@ HELP = td.TypeDict({
     'LightBoxOpts.highlightSlice' : 'Highlight current slice',
     'LightBoxOpts.zax'            : 'Z axis',
 
-    'Display.name'          : 'Image name',
-    'Display.interpolation' : 'Interpolation',
-    'Display.resolution'    : 'Resolution',
-    'Display.transform'     : 'Transformation',
-    'Display.imageType'     : 'Image type',
-    'Display.volume'        : 'Volume',
+    'Display.name'          : 'Overlay name',
+    'Display.overlayType'   : 'Overlay type',
     'Display.alpha'         : 'Opacity',
     'Display.brightness'    : 'Brightness',
     'Display.contrast'      : 'Contrast',
 
-    'VolumeOpts.displayRange'  : 'Display range',
-    'VolumeOpts.clippingRange' : 'Clipping range',
-    'VolumeOpts.cmap'          : 'Colour map',
-    'VolumeOpts.invert'        : 'Invert colour map',
+    'ImageOpts.resolution' : 'Resolution',
+    'ImageOpts.transform'  : 'Transformation',
+    'ImageOpts.volume'     : 'Volume',
+
+    'VolumeOpts.displayRange'   : 'Display range',
+    'VolumeOpts.clippingRange'  : 'Clipping range',
+    'VolumeOpts.invertClipping' : 'Invert clipping',
+    'VolumeOpts.cmap'           : 'Colour map',
+    'VolumeOpts.interpolation'  : 'Interpolation',
+    'VolumeOpts.invert'         : 'Invert colour map',
 
     'MaskOpts.colour'    : 'Colour',
     'MaskOpts.invert'    : 'Invert',
@@ -293,7 +323,32 @@ HELP = td.TypeDict({
     'VectorOpts.modThreshold' : 'Hide voxels where modulation '
                                 'value is below this threshold '
                                 '(expressed as a percentage)',
+
+    'LineVectorOpts.lineWidth'    : 'Line width',
+    'LineVectorOpts.directed'     : 'Interpret vectors as directed',
+    'RGBVectorOpts.interpolation' : 'Interpolation',
+
+    'ModelOpts.colour'       : 'Model colour',
+    'ModelOpts.outline'      : 'Show model outline',
+    'ModelOpts.outlineWidth' : 'Model outline width',
+    'ModelOpts.refImage'     : 'Reference image for model',
+    
+    'LabelOpts.lut'          : 'Label image LUT',
+    'LabelOpts.outline'      : 'Show label outlines',
+    'LabelOpts.outlineWidth' : 'Label outline width', 
 })
+
+
+# Extra settings for some properties, passed through 
+# to the props.cli.addParserArguments function.
+EXTRA = td.TypeDict({
+    'Display.overlayType' : {'choices' : fsldisplay.ALL_OVERLAY_TYPES,
+                             'default' : fsldisplay.ALL_OVERLAY_TYPES[0]},
+
+    'LabelOpts.lut'       : {
+        'choices' : [l.name for l in colourmaps.getLookupTables()]
+    }
+}) 
 
 # Transform functions for properties where the
 # value passed in on the command line needs to
@@ -304,9 +359,14 @@ HELP = td.TypeDict({
 # complicated property transformations (i.e.
 # non-reversible ones), you'll need to have
 # an inverse transforms dictionary
-def _modTrans(i):
+def _imageTrans(i):
     if i == 'none': return None
-    else:           return i.imageFile
+    else:           return i.dataSource
+
+def _lutTrans(i):
+    if isinstance(i, basestring): return colourmaps.getLookupTable(i)
+    else:                         return i.name
+    
     
 TRANSFORMS = td.TypeDict({
     'SceneOpts.showCursor'  : lambda b: not b,
@@ -315,11 +375,14 @@ TRANSFORMS = td.TypeDict({
     'OrthoOpts.showZCanvas' : lambda b: not b,
     'OrthoOpts.showLabels'  : lambda b: not b,
 
-    # The modulate property is handled specially
+    'LabelOpts.lut'         : _lutTrans,
+
+    # These properties are handled specially
     # when reading in command line arguments -
-    # this transform function is only used when
-    # generating arguments
-    'VectorOpts.modulate'   : _modTrans,
+    # the transform function specified here
+    # is only used when generating arguments
+    'VectorOpts.modulate'   : _imageTrans,
+    'ModelOpts.refImage'    : _imageTrans,
 })
 
 
@@ -360,9 +423,9 @@ def _configMainParser(mainParser):
                              type=float,
                              nargs=3,
                              help=mainHelp['worldLoc'])
-    sceneParser.add_argument(*mainArgs['selectedImage'],
+    sceneParser.add_argument(*mainArgs['selectedOverlay'],
                              type=int,
-                             help=mainHelp['selectedImage'])
+                             help=mainHelp['selectedOverlay'])
 
     # Separate parser groups for ortho/lightbox, and for colour bar options
     sceneParser =  mainParser.add_argument_group(GROUPNAMES['SceneOpts']) 
@@ -381,29 +444,35 @@ def _configParser(target, parser, propNames=None):
     shortArgs = {}
     longArgs  = {}
     helpTexts = {}
+    extra     = {}
 
     for propName in propNames:
 
-        shortArg, longArg = ARGUMENTS[target, propName]
-        helpText          = HELP[     target, propName]
+        shortArg, longArg = ARGUMENTS[ target, propName]
+        helpText          = HELP[      target, propName]
+        propExtra         = EXTRA.get((target, propName), None)
 
         shortArgs[propName] = shortArg
         longArgs[ propName] = longArg
         helpTexts[propName] = helpText
+
+        if propExtra is not None:
+            extra[propName] = propExtra
 
     props.addParserArguments(target,
                              parser,
                              cliProps=propNames,
                              shortArgs=shortArgs,
                              longArgs=longArgs,
-                             propHelp=helpTexts)
+                             propHelp=helpTexts,
+                             extra=extra)
 
 
 def _configSceneParser(sceneParser):
     """Adds options to the given argument parser which allow
     the user to specify colour bar properties.
     """
-    _configParser(sceneopts.SceneOpts, sceneParser)
+    _configParser(fsldisplay.SceneOpts, sceneParser)
    
 
 def _configOrthoParser(orthoParser):
@@ -411,7 +480,7 @@ def _configOrthoParser(orthoParser):
     configure an orthographic display.
     """
 
-    OrthoOpts = orthoopts.OrthoOpts
+    OrthoOpts = fsldisplay.OrthoOpts
     _configParser(OrthoOpts, orthoParser)
                              
     # Extra configuration options that are
@@ -438,49 +507,73 @@ def _configLightBoxParser(lbParser):
     """Adds options to the given parser allowing the user to
     configure a lightbox display.
     """    
-    _configParser(lightboxopts.LightBoxOpts, lbParser)
+    _configParser(fsldisplay.LightBoxOpts, lbParser)
 
 
-def _configImageParser(imgParser):
-    """Adds options to the given image allowing the user to
-    configure the display of a single image.
+def _configOverlayParser(ovlParser):
+    """Adds options to the given parser allowing the user to
+    configure the display of a single overlay.
     """
 
-    Display    = fsldisplay.Display
-    VolumeOpts = volumeopts.VolumeOpts
-    VectorOpts = vectoropts.VectorOpts
-    MaskOpts   = maskopts  .MaskOpts
+    Display        = fsldisplay.Display
+    ImageOpts      = fsldisplay.ImageOpts
+    VolumeOpts     = fsldisplay.VolumeOpts
+    VectorOpts     = fsldisplay.VectorOpts
+    RGBVectorOpts  = fsldisplay.RGBVectorOpts
+    LineVectorOpts = fsldisplay.LineVectorOpts
+    MaskOpts       = fsldisplay.MaskOpts
+    ModelOpts      = fsldisplay.ModelOpts
+    LabelOpts      = fsldisplay.LabelOpts
     
     dispDesc = 'Each display option will be applied to the '\
-               'image which is listed before that option.'
+               'overlay which is listed before that option.'
 
-    dispParser = imgParser.add_argument_group(GROUPNAMES[Display],
-                                              dispDesc)
-    volParser  = imgParser.add_argument_group(GROUPNAMES[VolumeOpts])
-    vecParser  = imgParser.add_argument_group(GROUPNAMES[VectorOpts])
-    maskParser = imgParser.add_argument_group(GROUPNAMES[MaskOpts])
+    dispParser  = ovlParser.add_argument_group(GROUPNAMES[Display],
+                                               dispDesc)
+    imgParser   = ovlParser.add_argument_group(GROUPNAMES[ImageOpts])
+    volParser   = ovlParser.add_argument_group(GROUPNAMES[VolumeOpts])
+    vecParser   = ovlParser.add_argument_group(GROUPNAMES[VectorOpts])
+    lvParser    = ovlParser.add_argument_group(GROUPNAMES[LineVectorOpts])
+    rvParser    = ovlParser.add_argument_group(GROUPNAMES[RGBVectorOpts])
+    maskParser  = ovlParser.add_argument_group(GROUPNAMES[MaskOpts])
+    modelParser = ovlParser.add_argument_group(GROUPNAMES[ModelOpts])
+    labelParser = ovlParser.add_argument_group(GROUPNAMES[LabelOpts])
 
-    for target, parser in zip(
-            [Display,    VolumeOpts, VectorOpts, MaskOpts],
-            [dispParser, volParser,  vecParser,  maskParser]):
+    targets = [(Display,        dispParser),
+               (ImageOpts,      imgParser),
+               (VolumeOpts,     volParser),
+               (VectorOpts,     vecParser),
+               (LineVectorOpts, lvParser),
+               (RGBVectorOpts,  rvParser),
+               (MaskOpts,       maskParser),
+               (ModelOpts,      modelParser),
+               (LabelOpts,      labelParser)]
 
-        propNames = list(OPTIONS[target])
+    for target, parser in targets:
 
-        # The VectorOpts.modulate option needs
-        # special treatment - see below
-        addModulate = False
+        propNames      = list(OPTIONS[target])
+        specialOptions = []
+        
+        # The VectorOpts.modulate
+        # option needs special treatment
         if target == VectorOpts and 'modulate' in propNames:
-            addModulate = True
+            specialOptions.append('modulate')
             propNames.remove('modulate')
+
+        # The same goes for the
+        # ModelOpts.refImage option
+        if target == ModelOpts and 'refImage' in propNames:
+            specialOptions.append('refImage')
+            propNames.remove('refImage') 
 
         _configParser(target, parser, propNames)
 
-        # We need to process the modulate option
+        # We need to process the special options
         # manually, rather than using the props.cli
-        # module - see the handleImageArgs function.
-        if addModulate:
-            shortArg, longArg = ARGUMENTS[target, 'modulate']
-            helpText          = HELP[     target, 'modulate']
+        # module - see the handleOverlayArgs function.
+        for opt in specialOptions:
+            shortArg, longArg = ARGUMENTS[target, opt]
+            helpText          = HELP[     target, opt]
 
             shortArg =  '-{}'.format(shortArg)
             longArg  = '--{}'.format(longArg)
@@ -495,12 +588,12 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     """Parses the given command line arguments, returning an
     :class:`argparse.Namespace` object containing all the arguments.
 
-    The display options for individual images are parsed separately. The
-    :class:`~argparse.Namespace` objects for each image are returned in a
-    list, stored as an attribute, called ``images``, of the returned
-    top-level ``Namespace`` instance. Each of the image ``Namespace``
-    instances also has an attribute, called ``image``, which contains the
-    full path of the image file that was speciied.
+    The display options for individual overlays are parsed separately. The
+    :class:`~argparse.Namespace` objects for each overlay are returned in a
+    list, stored as an attribute, called ``overlays``, of the returned
+    top-level ``Namespace`` instance. Each of the overlay ``Namespace``
+    instances also has an attribute, called ``overlay``, which contains the
+    full path of the overlay file that was speciied.
 
       - mainParser:   A :class:`argparse.ArgumentParser` which should be
                       used as the top level parser.
@@ -522,8 +615,8 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
     # I hate argparse. By default, it does not support
     # the command line interface that I want to provide,
     # as demonstrated in this usage string. 
-    usageStr   = '{} {} [imagefile [displayOpts]] '\
-                 '[imagefile [displayOpts]] ...'.format(
+    usageStr   = '{} {} [overlayfile [displayOpts]] '\
+                 '[overlayfile [displayOpts]] ...'.format(
                      name,
                      toolOptsDesc)
 
@@ -535,19 +628,19 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
 
     _configMainParser(mainParser)
 
-    # And the imgParser parses image display options
-    # for a single image - below we're going to
+    # And the ovlParser parses overlay display options
+    # for a single overlay - below we're going to
     # manually step through the list of arguments,
-    # and pass each block of arguments to the imgParser
+    # and pass each block of arguments to the ovlParser
     # one at a time
-    imgParser = argparse.ArgumentParser(add_help=False)
+    ovlParser = argparse.ArgumentParser(add_help=False)
 
     # Because I'm splitting the argument parsing across two
     # parsers, I'm using a custom print_help function 
     def printHelp(shortHelp=False):
 
         # Print help for the main parser first,
-        # and then separately for the image parser
+        # and then separately for the overlay parser
         if shortHelp: mainParser.print_usage()
         else:         mainParser.print_help()
 
@@ -555,112 +648,107 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
         # can't we customise the help text? 
         dispGroup = GROUPNAMES[fsldisplay.Display]
         if shortHelp:
-            imgHelp    = imgParser.format_usage()
-            imgHelp    = imgHelp.split('\n')
+            ovlHelp    = ovlParser.format_usage()
+            ovlHelp    = ovlHelp.split('\n')
 
             # Argparse usage text starts with 'usage [toolname]:',
             # and then proceeds to give short help for all the
             # possible arguments. Here, we're removing this
             # 'usage [toolname]:' section, and replacing it with
-            # spaces. We're also adding the image display argument
+            # spaces. We're also adding the overlay display argument
             # group title to the beginning of the usage text
-            start      = ' '.join(imgHelp[0].split()[:2])
-            imgHelp[0] = imgHelp[0].replace(start, ' ' * len(start))
+            start      = ' '.join(ovlHelp[0].split()[:2])
+            ovlHelp[0] = ovlHelp[0].replace(start, ' ' * len(start))
             
-            imgHelp.insert(0, dispGroup)
+            ovlHelp.insert(0, dispGroup)
 
-            imgHelp = '\n'.join(imgHelp)
+            ovlHelp = '\n'.join(ovlHelp)
         else:
 
             # Here we're skipping over the first section of
-            # the image parser help text,  everything before
-            # where the help text contains the image display
+            # the overlay parser help text,  everything before
+            # where the help text contains the overlay display
             # options (which were identifying by searching
             # through the text for the argument group title)
-            imgHelp = imgParser.format_help()
-            imgHelp = imgHelp[imgHelp.index(dispGroup):]
+            ovlHelp = ovlParser.format_help()
+            ovlHelp = ovlHelp[ovlHelp.index(dispGroup):]
             
         print 
-        print imgHelp
+        print ovlHelp
 
-    # And I want to handle image argument errors,
-    # rather than having the image parser force
+    # And I want to handle overlay argument errors,
+    # rather than having the overlay parser force
     # the program to exit
-    def imageArgError(message):
+    def ovlArgError(message):
         raise RuntimeError(message)
     
-    imgParser.error = imageArgError
+    ovlParser.error = ovlArgError
 
-    _configImageParser(imgParser)
+    _configOverlayParser(ovlParser)
 
-    # Figure out where the image files
+    # Figure out where the overlay files
     # are in the argument list, accounting
-    # for any options which accept image
-    # files as arguments.
+    # for any options which accept file
+    # names as arguments.
     # 
     # Make a list of all the options which
     # accept filenames, and which we need
     # to account for when we're searching
-    # for image files, flattening the
+    # for overaly files, flattening the
     # short/long arguments into a 1D list.
     fileOpts = []
 
     # The VectorOpts.modulate option allows
     # the user to specify another image file
     # by which the vector image colours are
-    # to be modulated
-    fileOpts.append(ARGUMENTS[vectoropts.VectorOpts, 'modulate'])
+    # to be modulated. The same goes for the
+    # ModelOpts.refImage option
+    fileOpts.append(ARGUMENTS[fsldisplay.VectorOpts, 'modulate'])
+    fileOpts.append(ARGUMENTS[fsldisplay.ModelOpts,  'refImage']) 
 
     # There is a possibility that the user
-    # may specify an image name which is the
-    # same as the image file - so we make
+    # may specify an overlay name which is the
+    # same as the overlay file - so we make
     # sure that such situations don't result
-    # in an image file match.
+    # in an overlay file match.
     fileOpts.append(ARGUMENTS[fsldisplay.Display, 'name'])
 
     fileOpts = reduce(lambda a, b: list(a) + list(b), fileOpts, [])
 
-    imageIdxs = []
+    ovlIdxs = []
     for i in range(len(argv)):
-        try:
-            # imageio.addExt will raise an error if
-            # the argument is not a valid image file
-            argv[i] = iio.addExt(op.expanduser(argv[i]), mustExist=True)
 
-            # Check that this image file was not a
-            # parameter to a file option
-            if i > 0 and argv[i - 1].strip('-') in fileOpts:
-                continue
+        # See if the current argument looks like a data source
+        dtype, fname = fsloverlay.guessDataSourceType(argv[i])
 
-            # Otherwise, it's an image
-            # file that needs to be loaded
-            imageIdxs.append(i)
-        except:
+        # If the file name refers to a file that
+        # does not exist, assume it is an argument
+        if not op.exists(fname):
             continue
+
+        # Check that this overlay file was 
+        # not a parameter to a file option
+        if i > 0 and argv[i - 1].strip('-') in fileOpts:
+            continue
+
+        # Unrecognised overlay type -
+        # I don't know what to do
+        if dtype is None:
+            raise RuntimeError('Unrecognised overlay type: {}'.format(fname))
+
+        # Otherwise, it's an overlay
+        # file that needs to be loaded
+        ovlIdxs.append(i)
         
-    imageIdxs.append(len(argv))
+    ovlIdxs.append(len(argv))
 
     # Separate the program arguments 
-    # from the image display arguments
-    progArgv = argv[:imageIdxs[0]]
-    imgArgv  = argv[ imageIdxs[0]:]
+    # from the overlay display arguments
+    progArgv = argv[:ovlIdxs[0]]
+    ovlArgv  = argv[ ovlIdxs[0]:]
 
     # Parse the application options with the mainParser
     namespace = mainParser.parse_args(progArgv)
-
-    # If the user asked for help, print some help and exit
-    def print_help():
-        mainParser.print_help()
-
-        # Did I mention that I hate argparse?  Why
-        # can't we customise the help text? Here
-        # we're skipping over the top section of
-        # the image parser help text
-        imgHelp   = imgParser.format_help()
-        dispGroup = GROUPNAMES[fsldisplay.Display]
-        print 
-        print imgHelp[imgHelp.index(dispGroup):]
-        sys.exit(0)
 
     if namespace.help:
         printHelp()
@@ -668,16 +756,16 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
  
     # Then parse each block of
     # display options one by one.
-    namespace.images = []
-    for i in range(len(imageIdxs) - 1):
+    namespace.overlays = []
+    for i in range(len(ovlIdxs) - 1):
 
-        imgArgv = argv[imageIdxs[i]:imageIdxs[i + 1]]
-        imgFile = imgArgv[0]
-        imgArgv = imgArgv[1:]
+        ovlArgv = argv[ovlIdxs[i]:ovlIdxs[i + 1]]
+        ovlFile = ovlArgv[0]
+        ovlArgv = ovlArgv[1:]
 
         try:
-            imgNamespace       = imgParser.parse_args(imgArgv)
-            imgNamespace.image = imgFile
+            ovlNamespace         = ovlParser.parse_args(ovlArgv)
+            ovlNamespace.overlay = ovlFile
             
         except Exception as e:
             printHelp(shortHelp=True)
@@ -685,9 +773,9 @@ def parseArgs(mainParser, argv, name, desc, toolOptsDesc='[options]'):
             sys.exit(1)
 
         # We just add a list of argparse.Namespace
-        # objects, one for each image, to the
+        # objects, one for each overlay, to the
         # parent Namespace object.
-        namespace.images.append(imgNamespace)
+        namespace.overlays.append(ovlNamespace)
 
     return namespace
 
@@ -696,7 +784,7 @@ def _applyArgs(args, target, propNames=None):
     """Applies the given command line arguments to the given target object."""
 
     if propNames is None:
-        propNames = OPTIONS[target]
+        propNames = concat(OPTIONS.get(target, allhits=True))
         
     longArgs  = {name : ARGUMENTS[target, name][1] for name in propNames}
     xforms    = {}
@@ -705,6 +793,10 @@ def _applyArgs(args, target, propNames=None):
         xform = TRANSFORMS.get((target, name), None)
         if xform is not None:
             xforms[name] = xform
+
+    log.debug('Applying arguments to {}: {}'.format(
+        type(target).__name__,
+        propNames))
 
     props.applyArguments(target,
                          args,
@@ -720,7 +812,7 @@ def _generateArgs(source, propNames=None):
     """
 
     if propNames is None:
-        propNames = OPTIONS[source]
+        propNames = concat(OPTIONS.get(source, allhits=True))
         
     longArgs  = {name : ARGUMENTS[source, name][1] for name in propNames}
     xforms    = {}
@@ -736,37 +828,36 @@ def _generateArgs(source, propNames=None):
                                    longArgs=longArgs)
 
 
-def applySceneArgs(args, imageList, displayCtx, sceneOpts):
+def applySceneArgs(args, overlayList, displayCtx, sceneOpts):
     """Configures the scene displayed by the given
     :class:`~fsl.fslview.displaycontext.DisplayContext` instance according
     to the arguments that were passed in on the command line.
 
-    :arg args:       :class:`argparse.Namespace` object containing the parsed
-                     command line arguments.
+    :arg args:        :class:`argparse.Namespace` object containing the parsed
+                      command line arguments.
 
-    :arg imageList:  A :class:`~fsl.data.image.ImageList` instance.
+    :arg overlayList: A :class:`.OverlayList` instance.
 
-    :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                     instance.
+    :arg displayCtx:  A :class:`.DisplayContext` instance.
 
     :arg sceneOpts: 
     """
     
     # First apply all command line options
     # related to the display context 
-    if args.selectedImage is not None:
-        if args.selectedImage < len(imageList):
-            displayCtx.selectedImage = args.selectedImage
+    if args.selectedOverlay is not None:
+        if args.selectedOverlay < len(overlayList):
+            displayCtx.selectedOverlay = args.selectedOverlay
     else:
-        if len(imageList) > 0:
-            displayCtx.selectedImage = len(imageList) - 1
+        if len(overlayList) > 0:
+            displayCtx.selectedOverlay = len(overlayList) - 1
 
     # voxel/world location
-    if len(imageList) > 0:
+    if len(overlayList) > 0:
         if args.worldloc:
             loc = args.worldloc
         elif args.voxelloc:
-            display = displayCtx.getDisplayProperties(imageList[0])
+            display = displayCtx.getDisplay(overlayList[0])
             xform   = display.getTransform('voxel', 'display')
             loc     = transform.transform([args.voxelloc], xform)[0]
           
@@ -777,89 +868,88 @@ def applySceneArgs(args, imageList, displayCtx, sceneOpts):
 
         displayCtx.location.xyz = loc
 
-    # It is assuemd that the given sceneOpts 
-    # object is a subclass of SceneOpts
-    sceneProps  = OPTIONS['SceneOpts'] + OPTIONS[sceneOpts]
-    _applyArgs(args, sceneOpts, sceneProps)
+    _applyArgs(args, sceneOpts)
 
 
-def generateSceneArgs(imageList, displayCtx, sceneOpts):
+def generateSceneArgs(overlayList, displayCtx, sceneOpts):
     """Generates command line arguments which describe the current state of
     the provided ``displayCtx`` and ``sceneOpts`` instances.
     """
 
     args = []
 
-
     args += ['--{}'.format(ARGUMENTS['Main.scene'][1])]
-    if   isinstance(sceneOpts, orthoopts   .OrthoOpts):    args += ['ortho']
-    elif isinstance(sceneOpts, lightboxopts.LightBoxOpts): args += ['lightbox']
+    if   isinstance(sceneOpts, fsldisplay.OrthoOpts):    args += ['ortho']
+    elif isinstance(sceneOpts, fsldisplay.LightBoxOpts): args += ['lightbox']
     else: raise ValueError('Unrecognised SceneOpts '
                            'type: {}'.format(type(sceneOpts).__name__))
 
     # main options
-    if len(imageList) > 0:
+    if len(overlayList) > 0:
         args += ['--{}'.format(ARGUMENTS['Main.worldLoc'][1])]
         args += ['{}'.format(c) for c in displayCtx.location.xyz]
 
-    if displayCtx.selectedImage is not None:
-        args += ['--{}'.format(ARGUMENTS['Main.selectedImage'][1])]
-        args += ['{}'.format(displayCtx.selectedImage)]
+    if displayCtx.selectedOverlay is not None:
+        args += ['--{}'.format(ARGUMENTS['Main.selectedOverlay'][1])]
+        args += ['{}'.format(displayCtx.selectedOverlay)]
 
-    args += _generateArgs(sceneOpts, OPTIONS['SceneOpts'])
-    args += _generateArgs(sceneOpts, OPTIONS[ sceneOpts])
+    props = OPTIONS.get(sceneOpts, allhits=True)
+    args += _generateArgs(sceneOpts, concat(props))
 
     return args
 
 
-def generateImageArgs(image, displayCtx):
+def generateOverlayArgs(overlay, displayCtx):
+    """Generates command line arguments which describe the display
+    of the current overlay.
     """
-    """
-    display = displayCtx.getDisplayProperties(image)
+    display = displayCtx.getDisplay(overlay)
     opts    = display   .getDisplayOpts()
     args    = _generateArgs(display) + _generateArgs(opts)
 
     return args
 
 
-def applyImageArgs(args, imageList, displayCtx, **kwargs):
-    """Loads and configures any images which were specified on the
+def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
+    """Loads and configures any overlays which were specified on the
     command line.
 
-    :arg args:       A :class:`~argparse.Namespace` instance, as returned
-                     by the :func:`parseArgs` function.
+    :arg args:        A :class:`~argparse.Namespace` instance, as returned
+                      by the :func:`parseArgs` function.
     
-    :arg imageList:  An :class:`~fsl.data.image.ImageList` instance, to
-                     which the images should be added.
+    :arg overlayList: An :class:`.OverlayList` instance, to which the
+                      overlays should be added.
     
-    :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                     instance, which manages the scene and image display.
+    :arg displayCtx:  A :class:`.DisplayContext` instance, which manages the
+                      scene and overlay display.
     
-    :arg kwargs:     Passed through to the
-                     :func:`fsl.data.imageio.loadImages` function.
+    :arg kwargs:      Passed through to the :func:`.Overlay.loadOverlays`
+                      function.
     """
 
-    paths  = [i.image for i in args.images]
-    images = iio.loadImages(paths, **kwargs)
+    paths    = [o.overlay for o in args.overlays]
+
+    if len(paths) > 0:
+        overlays = fsloverlay.loadOverlays(paths, **kwargs)
+        overlayList.extend(overlays)
+
+    # per-overlay display arguments
+    for i, overlay in enumerate(overlayList):
+
+        display = displayCtx.getDisplay(overlay)
         
-    imageList.extend(images)
-
-    # per-image display arguments
-    for i, image in enumerate(imageList):
-
-        display = displayCtx.getDisplayProperties(imageList[i])
-        _applyArgs(args.images[i], display)
+        _applyArgs(args.overlays[i], display)
 
         # Retrieve the DisplayOpts instance
         # after applying arguments to the
-        # Display instance - if the image type
-        # is set on the command line, the
+        # Display instance - if the overlay
+        # type is set on the command line, the
         # DisplayOpts instance will be replaced
         opts = display.getDisplayOpts()
 
         # VectorOpts.modulate is a Choice property,
         # where the valid choices are defined by
-        # the current contents of the image list.
+        # the current contents of the overlay list.
         # So when the user specifies a modulation
         # image, we need to do an explicit check
         # to see if the specified image is vaid
@@ -870,29 +960,57 @@ def applyImageArgs(args, imageList, displayCtx, **kwargs):
         # If it can, I add it to the image list - the
         # applyArguments function will apply the
         # value. If the modulate file is not valid,
-        # I print a warning, and clear the modulate
-        # option.
-        if isinstance(opts, vectoropts.VectorOpts) and \
-           args.images[i].modulate is not None:
+        # an error is raised.
+        if isinstance(opts, fsldisplay.VectorOpts) and \
+           args.overlays[i].modulate is not None:
 
-            try:
-                modImage = fslimage.Image(args.images[i].modulate)
-                
-                if modImage.shape != image.shape[ :3]:
-                    raise RuntimeError(
-                        'Image {} cannot be used to modulate {} - '
-                        'dimensions don\'t match'.format(modImage, image))
+            modImage = _findOrLoad(overlayList,
+                                   args.overlays[i].modulate,
+                                   fslimage.Image)
 
-                imageList.insert(0, modImage)
-                opts.modulate = modImage
-                args.images[i].modulate = None
+            if modImage.shape != overlay.shape[ :3]:
+                raise RuntimeError(
+                    'Image {} cannot be used to modulate {} - '
+                    'dimensions don\'t match'.format(modImage, overlay))
 
-                log.debug('Set {} to be modulated by {}'.format(
-                    image, modImage))
-                
-            except Exception as e:
-                log.warn(e) 
+            opts.modulate             = modImage
+            args.overlays[i].modulate = None
 
-        # After handling the special cases above, we can
-        # apply the CLI options to the Opts instance
-        _applyArgs(args.images[i], opts)
+            log.debug('Set {} to be modulated by {}'.format(
+                overlay, modImage))
+
+        # A similar process is followed for 
+        # the ModelOpts.refImage property
+        if isinstance(overlay, fslmodel.Model)        and \
+           isinstance(opts,    fsldisplay.ModelOpts)  and \
+           args.overlays[i].modelRefImage is not None:
+
+            refImage = _findOrLoad(overlayList,
+                                   args.overlays[i].modelRefImage,
+                                   fslimage.Image)
+
+            opts.refImage                  = refImage
+            args.overlays[i].modelRefImage = None
+            
+            log.debug('Set {} reference image to {}'.format(
+                overlay, refImage)) 
+
+        # After handling the special cases
+        # above, we can apply the CLI
+        # options to the Opts instance
+        _applyArgs(args.overlays[i], opts)
+
+        
+def _findOrLoad(overlayList, overlayFile, overlayType):
+    """Searches for the given ``overlayFile`` in the ``overlayList``. If not
+    present, it is created using the given ``overlayType`` constructor, and
+    inserted into the ``overlayList``.
+    """
+
+    overlay = overlayList.find(overlayFile)
+
+    if overlay is None:
+        overlay = overlayType(overlayFile)
+        overlayList.insert(0, overlay)
+
+    return overlay

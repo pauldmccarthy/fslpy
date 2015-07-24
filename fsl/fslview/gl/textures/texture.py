@@ -10,6 +10,8 @@ import logging
 import numpy     as np
 import OpenGL.GL as gl
 
+import fsl.utils.transform as transform
+
 
 log = logging.getLogger(__name__)
 
@@ -166,7 +168,6 @@ class Texture2D(Texture):
         data = self.__data
 
         if data is not None:
-            print data.shape, data.dtype
             data = data.ravel('F')
 
         log.debug('Configuring {} ({}) with size {}x{}'.format(
@@ -209,10 +210,13 @@ class Texture2D(Texture):
         self.unbindTexture()
 
         
-    def draw(self, vertices):
+    def draw(self, vertices, xform=None):
         
         if vertices.shape != (6, 3):
             raise ValueError('Six vertices must be provided')
+
+        if xform is not None:
+            vertices = transform.transform(vertices, xform)
 
         vertices  = np.array(vertices, dtype=np.float32)
         texCoords = np.zeros((6, 2),   dtype=np.float32)
@@ -250,7 +254,7 @@ class Texture2D(Texture):
         gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY) 
  
         
-    def drawOnBounds(self, zpos, xmin, xmax, ymin, ymax, xax, yax):
+    def drawOnBounds(self, zpos, xmin, xmax, ymin, ymax, xax, yax, xform=None):
 
         zax              = 3 - xax - yax
         vertices         = np.zeros((6, 3), dtype=np.float32)
@@ -263,4 +267,4 @@ class Texture2D(Texture):
         vertices[ 4, [xax, yax]] = [xmin, ymax]
         vertices[ 5, [xax, yax]] = [xmax, ymax]
 
-        self.draw(vertices)
+        self.draw(vertices, xform)

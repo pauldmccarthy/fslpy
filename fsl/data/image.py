@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 # 
-# image.py - Classes for representing 3D/4D images and collections of said
-# images.
+# image.py - Provides the :class:`Image` class, for representing 3D/4D NIFTI
+#            images.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Classes for representing 3D/4D images and collections of said images.
-
-See the :mod:`fsl.data.imageio` module for image loading/saving 
-functionality.
-
+"""Provides the :class:`Image` class, for representing 3D/4D NIFTI images.
 """
 
-import logging
-import collections
-import os.path as op
+import               logging
+import               tempfile
+import               os 
+import os.path    as op
+import subprocess as sp
 
 import numpy   as np
 import nibabel as nib
@@ -22,21 +20,16 @@ import nibabel as nib
 import props
 
 import fsl.utils.transform as transform
-import fsl.data.imageio    as iio
+import fsl.data.strings    as strings
 import fsl.data.constants  as constants
 
 
 log = logging.getLogger(__name__)
 
 
-
 class Image(props.HasProperties):
     """Class which represents a 3D/4D image. Internally, the image is
     loaded/stored using :mod:`nibabel`.
-
-    Arbitrary data may be associated with an :class:`Image` object, via the
-    :meth:`getAttribute` and :meth:`setAttribute` methods (which are just
-    front end wrappers around an internal ``dict`` object).
 
     In addition to the class-level properties defined below, the following
     attributes are present on an :class:`Image` object:
@@ -57,22 +50,12 @@ class Image(props.HasProperties):
                           for transforming real world coordinates into voxel
                           coordinates.
 
-    :ivar imageFile:      The name of the file that the image was loaded from.
+    :ivar dataSource:     The name of the file that the image was loaded from.
 
     :ivar tempFile:       The name of the temporary file which was created (in
                           the event that the image was large and was gzipped -
                           see :func:`_loadImageFile`).
     """
-
-
-    imageType = props.Choice(
-        collections.OrderedDict([
-            ('volume',     '3D/4D volume'),
-            ('mask',       '3D/4D mask image'),
-            ('rgbvector',  '3-direction vector image (RGB)'),
-            ('linevector', '3-direction vector image (Line)')]),
-        default='volume')
-    """This property defines the type of image data."""
 
 
     name = props.String()
@@ -120,9 +103,9 @@ class Image(props.HasProperties):
                        via the :meth:`loadData` method.
         """
 
-        self.nibImage  = None
-        self.imageFile = None
-        self.tempFile  = None
+        self.nibImage   = None
+        self.dataSource = None
+        self.tempFile   = None
 
         if header is not None:
             header = header.copy()
@@ -130,19 +113,23 @@ class Image(props.HasProperties):
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
-            nibImage, filename = iio.loadImage(iio.addExt(image))
+            nibImage, filename = loadImage(addExt(image))
             self.nibImage      = nibImage
-            self.imageFile     = image
+            self.dataSource    = op.abspath(image)
 
             # if the returned file name is not the same as
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                self.name     = iio.removeExt(op.basename(self.imageFile))
+                filepref      = removeExt(op.basename(self.dataSource))
                 self.tempFile = nibImage.get_filename()
             else:
-                self.name     = iio.removeExt(op.basename(self.imageFile))
+                filepref      = removeExt(op.basename(self.dataSource))
 
+            if name is None:
+                name = filepref
+            
+            self.name  = name
             self.saved = True
                 
         # Or a numpy array - we wrap it in a nibabel image,
@@ -181,22 +168,12 @@ class Image(props.HasProperties):
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
 
-        # This dictionary may be used to store
-        # arbitrary data associated with this image.
-        self._attributes = {}
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
-        # update the available image type(s)
-        imageTypeProp = self.getProp('imageType')
-
-        # the vector type is only
-        # applicable to X*Y*Z*3 images
-        if len(self.shape) != 4 or self.shape[3] != 3:
-            
-            log.debug('Disabling vector type for {} ({})'.format(
-                self, self.shape))
-            imageTypeProp.disableChoice('vector', self)
         
-
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        
         
     def loadData(self):
         """Loads the image data from the file. This method only needs to
@@ -270,9 +247,9 @@ class Image(props.HasProperties):
         """Convenience method to save any changes made to the :attr:`data` of 
         this :class:`Image` instance.
 
-        See the :func:`fsl.data.imageio.save` function.
+        See the :func:`saveImage` function.
         """
-        return iio.saveImage(self)
+        return saveImage(self)
     
 
     def __hash__(self):
@@ -286,7 +263,7 @@ class Image(props.HasProperties):
         """Return a string representation of this :class:`Image`."""
         return '{}({}, {})'.format(self.__class__.__name__,
                                    self.name,
-                                   self.imageFile)
+                                   self.dataSource)
 
         
     def __repr__(self):
@@ -370,98 +347,305 @@ class Image(props.HasProperties):
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
         return code
 
+
+# TODO The wx.FileDialog does not    
+# seem to handle wildcards with      
+# multiple suffixes (e.g. '.nii.gz'),
+# so i'm just providing '*.gz'for now
+ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.gz']
+"""The file extensions which we understand. This list is used as the default
+if if the ``allowedExts`` parameter is not passed to any of the functions in
+this module.
+"""
+
+EXTENSION_DESCRIPTIONS = ['Compressed NIFTI1 images',
+                          'NIFTI1 images',
+                          'ANALYZE75 images',
+                          'NIFTI1/ANALYZE75 headers',
+                          'Compressed NIFTI1/ANALYZE75 images',
+                          'Compressed images']
+"""Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
+
+
+DEFAULT_EXTENSION  = '.nii.gz'
+"""The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
+
+
+def isSupported(filename, allowedExts=None):
+    """
+    Returns ``True`` if the given file has a supported extension, ``False``
+    otherwise.
+
+    :arg filename:    The file name to test.
     
-    def getAttribute(self, name):
-        """Retrieve the attribute with the given name.
-
-        :raise KeyError: if there is no attribute with the given name.
-        """
-        return self._attributes[name]
-
-    
-    def delAttribute(self, name):
-        """Delete and return the value of the attribute with the given name.
-
-        :raise KeyError: if there is no attribute with the given name.
-        """
-        return self._attributes.pop(name)
-
-        
-    def setAttribute(self, name, value):
-        """Set an attribute with the given name and the given value."""
-        self._attributes[name] = value
-        
-        log.debug('Attribute set on {}: {} = {}'.format(
-            self.name, name, str(value)))
-
-
-class ImageList(props.HasProperties):
-    """Class representing a collection of images to be displayed together.
-
-    Contains a :class:`props.properties_types.List` property containing
-    :class:`Image` objects.
-
-    An :class:`ImageList` object has a few wrapper methods around the
-    :attr:`images` property, allowing the :class:`ImageList` to be used
-    as if it were a list itself.
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.
     """
 
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    return any(map(lambda ext: filename.endswith(ext), allowedExts))
+
+
+def removeExt(filename, allowedExts=None):
+    """
+    Removes the extension from the given file name. Returns the filename
+    unmodified if it does not have a supported extension.
+
+    :arg filename:    The file name to strip.
     
-    def _validateImage(self, atts, images):
-        """Returns ``True`` if all objects in the given ``images`` list are
-        :class:`Image` objects, ``False`` otherwise.
-        """
-        return all(map(lambda img: isinstance(img, Image), images))
+    :arg allowedExts: A list of strings containing the allowed file
+                      extensions.    
+    """
+
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    # figure out the extension of the given file
+    extMatches = map(lambda ext: filename.endswith(ext), allowedExts)
+
+    # the file does not have a supported extension
+    if not any(extMatches):
+        return filename
+
+    # figure out the length of the matched extension
+    extIdx = extMatches.index(True)
+    extLen = len(allowedExts[extIdx])
+
+    # and trim it from the file name
+    return filename[:-extLen]
 
 
-    images = props.List(validateFunc=_validateImage, allowInvalid=False)
-    """A list of :class:`Image` objects. to be displayed"""
+def addExt(
+        prefix,
+        mustExist=True,
+        allowedExts=None,
+        defaultExt=None):
+    """Adds a file extension to the given file ``prefix``.
 
-    
-    def __init__(self, images=None):
-        """Create an ImageList object from the given sequence of
-        :class:`Image` objects."""
+    If ``mustExist`` is False, and the file does not already have a 
+    supported extension, the default extension is appended and the new
+    file name returned. If the prefix already has a supported extension,
+    it is returned unchanged.
+
+    If ``mustExist`` is ``True`` (the default), the function checks to see 
+    if any files exist that have the given prefix, and a supported file 
+    extension.  A :exc:`ValueError` is raised if:
+
+       - No files exist with the given prefix and a supported extension.
+       - More than one file exists with the given prefix, and a supported
+         extension.
+
+    Otherwise the full file name is returned.
+
+    :arg prefix:      The file name refix to modify.
+    :arg mustExist:   Whether the file must exist or not.
+    :arg allowedExts: List of allowed file extensions.
+    :arg defaultExt:  Default file extension to use.
+    """
+
+    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+    if defaultExt  is None: defaultExt  = DEFAULT_EXTENSION
+
+    if not mustExist:
+
+        # the provided file name already
+        # ends with a supported extension 
+        if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+            return prefix
+
+        return prefix + defaultExt
+
+    # If the provided prefix already ends with a
+    # supported extension , check to see that it exists
+    if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+        extended = [prefix]
         
-        if images is None: images = []
-        self.images.extend(images)
+    # Otherwise, make a bunch of file names, one per
+    # supported extension, and test to see if exactly
+    # one of them exists.
+    else:
+        extended = map(lambda ext: prefix + ext, allowedExts)
+
+    exists = map(op.isfile, extended)
+
+    # Could not find any supported file
+    # with the specified prefix
+    if not any(exists):
+        raise ValueError(
+            'Could not find a supported file with prefix {}'.format(prefix))
+
+    # Ambiguity! More than one supported
+    # file with the specified prefix
+    if len(filter(bool, exists)) > 1:
+        raise ValueError('More than one file with prefix {}'.format(prefix))
+
+    # Return the full file name of the
+    # supported file that was found
+    extIdx = exists.index(True)
+    return extended[extIdx]
 
 
-    def addImages(self, fromDir=None, addToEnd=True):
-        """Convenience method for interactively adding images to this
-        :class:`ImageList`.
+def loadImage(filename):
+    """Given the name of an image file, loads it using nibabel.
 
-        See the :func:`fsl.data.imageio.addImages` function.
-        """
-        return iio.addImages(self, fromDir, addToEnd)
+    If the file is large, and is gzipped, it is decompressed to a temporary
+    location, so that it can be memory-mapped.  A tuple is returned,
+    consisting of the nibabel image object, and the name of the file that it
+    was loaded from (either the passed-in file name, or the name of the
+    temporary decompressed file).
+    """
+
+    # If we have a GUI, we can display a dialog
+    # message. Otherwise we print a log message
+    haveGui = False
+    try:
+        import wx
+        if wx.GetApp() is not None: 
+            haveGui = True
+    except:
+        pass
+
+    realFilename = filename
+    mbytes = op.getsize(filename) / 1048576.0
+
+    # The mbytes limit is arbitrary
+    if filename.endswith('.nii.gz') and mbytes > 512:
+
+        unzipped, filename = tempfile.mkstemp(suffix='.nii')
+
+        unzipped = os.fdopen(unzipped)
+
+        msg = strings.messages['image.loadImage.decompress']
+        msg = msg.format(realFilename, mbytes, filename)
+
+        if not haveGui:
+            log.info(msg)
+        else:
+            busyDlg = wx.BusyInfo(msg, wx.GetTopLevelWindows()[0])
+
+        gzip = ['gzip', '-d', '-c', realFilename]
+        log.debug('Running {} > {}'.format(' '.join(gzip), filename))
+
+        # If the gzip call fails, revert to loading from the gzipped file
+        try:
+            sp.call(gzip, stdout=unzipped)
+            unzipped.close()
+
+        except OSError as e:
+            log.warn('gzip call failed ({}) - cannot memory '
+                     'map file: {}'.format(e, realFilename),
+                     exc_info=True)
+            unzipped.close()
+            os.remove(filename)
+            filename = realFilename
+
+        if haveGui:
+            busyDlg.Destroy()
+
+    log.debug('Loading image from {}'.format(filename))
+    
+    return nib.load(filename), filename
 
 
-    def find(self, name):
-        """Returns the first image with the given name, or ``None`` if
-        there is no image with said name.
-        """
-        for image in self.images:
-            if image.name == name:
-                return image
-        return None
+def saveImage(image, fromDir=None):
+    """Convenience function for interactively saving changes to an image.
+
+    If the :mod:`wx` package is available, a dialog is popped up, prompting
+    the user to select a destination. Or, if the image has been loaded 
+    from a file, the user is prompted to confirm that they want to overwrite  
+    the image.
+
+
+    :param image:         The :class:`.Image` instance to be saved.
+
+    :param str fromDir:   Directory in which the file dialog should start.
+                          If ``None``, the most recently visited directory
+                          (via this method) is used, or the directory from
+                          the given image, or the current working directory.
+
+    :raise ImportError:  if :mod:`wx` is not present.
+    :raise RuntimeError: if a :class:`wx.App` has not been created.
+    """
+
+    if image.saved:
+        return
+    
+    import wx
+
+    app = wx.GetApp()
+
+    if app is None:
+        raise RuntimeError('A wx.App has not been created') 
+
+    lastDir = getattr(saveImage, 'lastDir', None)
+
+    if lastDir is None:
+        if image.dataSource is None: lastDir = os.getcwd()
+        else:                        lastDir = op.dirname(image.dataSource)
+
+    # TODO make image.name safe (spaces to 
+    # underscores, filter non-alphanumeric)
+    if image.dataSource is None: filename = image.name
+    else:                        filename = op.basename(image.dataSource)
+
+    filename = removeExt(filename)
+
+    saveLastDir = False
+    if fromDir is None:
+        fromDir = lastDir
+        saveLastDir = True
+
+    dlg = wx.FileDialog(app.GetTopWindow(),
+                        message=strings.titles['image.saveImage.dialog'],
+                        defaultDir=fromDir,
+                        defaultFile=filename, 
+                        style=wx.FD_SAVE)
+
+    if dlg.ShowModal() != wx.ID_OK: return False
+
+    if saveLastDir: saveImage.lastDir = lastDir
+
+    path     = dlg.GetPath()
+    nibImage = image.nibImage
+
+    if not isSupported(path):
+        path = addExt(path, False)
+
+    # this is an image which has been
+    # loaded from a file, and ungzipped
+    # to a temporary location
+    try:
+        if image.tempFile is not None:
+
+            # if selected path is same as original path,
+            # save to both temp file and to path
+
+            # else, if selected path is different from
+            # original path, save to temp file and to
+            # new path, and update the path
+
+            # actually, the two behaviours just described
+            # are identical
+            log.warn('Saving large images is not yet functional')
+            pass
+
+        # this is just a normal image
+        # which has been loaded from
+        # a file, or an in-memory image
+        else:
+
+            log.debug('Saving image ({}) to {}'.format(image, path))
+
+            nib.save(nibImage, path)
+            image.dataSource = path
             
+    except Exception as e:
 
-    # Wrappers around the images list property, allowing this
-    # ImageList object to be used as if it is actually a list.
-    def __len__(     self):               return self.images.__len__()
-    def __getitem__( self, key):          return self.images.__getitem__(key)
-    def __iter__(    self):               return self.images.__iter__()
-    def __contains__(self, item):         return self.images.__contains__(item)
-    def __setitem__( self, key, val):     return self.images.__setitem__(key,
-                                                                         val)
-    def __delitem__( self, key):          return self.images.__delitem__(key)
-    def index(       self, item):         return self.images.index(item)
-    def count(       self, item):         return self.images.count(item)
-    def append(      self, item):         return self.images.append(item)
-    def extend(      self, iterable):     return self.images.extend(iterable)
-    def pop(         self, index=-1):     return self.images.pop(index)
-    def move(        self, from_, to):    return self.images.move(from_, to)
-    def remove(      self, item):         return self.images.remove(item)
-    def insert(      self, index, item):  return self.images.insert(index,
-                                                                    item)
-    def insertAll(   self, index, items): return self.images.insertAll(index,
-                                                                       items) 
+        msg = strings.messages['image.saveImage.error'].format(e.msg)
+        log.warn(msg)
+        wx.MessageDialog(app.GetTopWindow(),
+                         message=msg,
+                         style=wx.OK | wx.ICON_ERROR).ShowModal()
+        return
+
+    image.saved = True

@@ -19,6 +19,7 @@ import props
 import fsl.fslview.panel    as fslpanel
 import fsl.fslview.toolbar  as fsltoolbar
 import fsl.fslview.profiles as profiles
+import fsl.data.image       as fslimage
 import fsl.data.strings     as strings
 
 
@@ -81,13 +82,13 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
     profile = props.Choice()
     
-    def __init__(self, parent, imageList, displayCtx, actionz=None):
+    def __init__(self, parent, overlayList, displayCtx, actionz=None):
 
         fslpanel.FSLViewPanel.__init__(
-            self, parent, imageList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, actionz)
 
         self.__profileManager = profiles.ProfileManager(
-            self, imageList, displayCtx)
+            self, overlayList, displayCtx)
 
         self.__panels = {}
 
@@ -102,14 +103,14 @@ class ViewPanel(fslpanel.FSLViewPanel):
         
         self.addListener('profile', lName, self.__profileChanged)
         
-        imageList .addListener('images',
-                               lName,
-                               self.__selectedImageChanged)
-        displayCtx.addListener('selectedImage',
-                               lName,
-                               self.__selectedImageChanged)
+        overlayList.addListener('overlays',
+                                lName,
+                                self.__selectedOverlayChanged)
+        displayCtx .addListener('selectedOverlay',
+                                lName,
+                                self.__selectedOverlayChanged)
 
-        self.__selectedImageChanged()
+        self.__selectedOverlayChanged()
 
         # A very shitty necessity. When panes are floated,
         # the AuiManager sets the size of the floating frame
@@ -135,17 +136,37 @@ class ViewPanel(fslpanel.FSLViewPanel):
 
         
     def destroy(self):
-        fslpanel.FSLViewPanel.destroy(self)
+        """
+        """
         
         # Make sure that any control panels are correctly destroyed
         for panelType, panel in self.__panels.items():
             panel.destroy()
-            
+
+        # Remove listeners from the overlay
+        # list and display context
         lName = 'ViewPanel_{}'.format(self._name)
 
-        self            .removeListener('profile',       lName)
-        self._imageList .removeListener('images',        lName)
-        self._displayCtx.removeListener('selectedImage', lName) 
+        self             .removeListener('profile',         lName)
+        self._overlayList.removeListener('overlays',        lName)
+        self._displayCtx .removeListener('selectedOverlay', lName)
+
+        # Disable the  ProfileManager
+        self.__profileManager.destroy()
+
+        # Un-initialise the AUI manager
+        self.__auiMgr.UnInit()
+
+        # The AUI manager does not clear its
+        # reference to this panel, so let's
+        # do it here.
+        self.__auiMgr._frame  = None
+        self.__profileManager = None
+        self.__auiMgr         = None
+        self.__panels         = None
+
+        fslpanel.FSLViewPanel.destroy(self)
+        
 
 
     def setCentrePanel(self, panel):
@@ -165,12 +186,13 @@ class ViewPanel(fslpanel.FSLViewPanel):
             
         else:
             
-            window   = panelType(
-                self, self._imageList, self._displayCtx, *args, **kwargs)
-
             paneInfo = aui.AuiPaneInfo()
+            window   = panelType(
+                self, self._overlayList, self._displayCtx, *args, **kwargs)
 
             if isinstance(window, fsltoolbar.FSLViewToolBar):
+
+                # ToolbarPane sets the panel layer to 10
                 paneInfo.ToolbarPane()
 
                 # We are going to put any new toolbars on 
@@ -196,8 +218,6 @@ class ViewPanel(fslpanel.FSLViewPanel):
                         if info.IsDocked() and \
                            info.dock_direction == aui.AUI_DOCK_TOP:
                             info.Layer(info.dock_layer + 1)
-
-                paneInfo.Layer(0)
 
                 # When the toolbar contents change,
                 # update the layout, so that the
@@ -236,24 +256,33 @@ class ViewPanel(fslpanel.FSLViewPanel):
             self.__auiMgr.AddPane(window, paneInfo)
             self.__panels[panelType] = window
             self.__auiMgrUpdate()
+
+
+    def getPanel(self, panelType):
+        """If an instance of ``panelType`` exists, it is returned.
+        Otherwise ``None`` is returned.
+        """
+        if panelType in self.__panels: return self.__panels[panelType]
+        else:                          return None
  
 
-    def __selectedImageChanged(self, *a):
-        """Called when the image list or selected image changed.
+    def __selectedOverlayChanged(self, *a):
+        """Called when the overlay list or selected overlay changed.
 
         This method is slightly hard-coded and hacky. For the time being, edit
         profiles are only going to be supported for ``volume`` image
         types, which are being displayed in ``id`` or ``pixdim`` space..
-        This method checks the type of the selected image, and disables
+        This method checks the type of the selected overlay, and disables
         the ``edit`` profile option (if it is an option), so the user can
         only choose an ``edit`` profile on ``volume`` image types.
         """
-        image = self._displayCtx.getSelectedImage()
+        overlay = self._displayCtx.getSelectedOverlay()
 
-        if image is None:
+        if overlay is None:
             return
 
-        display     = self._displayCtx.getDisplayProperties(image)
+        display     = self._displayCtx.getDisplay(overlay)
+        opts        = display.getDisplayOpts()
         profileProp = self.getProp('profile')
 
         # edit profile is not an option -
@@ -261,8 +290,9 @@ class ViewPanel(fslpanel.FSLViewPanel):
         if 'edit' not in profileProp.getChoices(self):
             return
 
-        if image.imageType != 'volume' or \
-           display.transform not in ('id', 'pixdim'):
+        if not isinstance(overlay, fslimage.Image) or \
+           display.overlayType != 'volume'         or \
+           opts.transform not in ('id', 'pixdim'):
             
             # change profile if needed,
             if self.profile == 'edit':

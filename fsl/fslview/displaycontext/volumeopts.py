@@ -5,8 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines the :class:`VolumeOpts` class, which contains
-display options for rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
-instances.
+display options for rendering :class:`.GLVolume` instances.
 """
 
 import logging
@@ -16,6 +15,7 @@ import numpy as np
 import props
 
 import fsl.data.strings       as strings
+import fsl.utils.transform    as transform
 import fsl.fslview.colourmaps as fslcm
 
 import display as fsldisplay
@@ -24,23 +24,194 @@ import display as fsldisplay
 log = logging.getLogger(__name__)
 
 
-# TODO Define a super/mixin class which
-# has a displayRange and colour map. This
-# will allow other bits of code which
-# need display range/cmap options to
-# test for their presence without having
-# to explicitly test against the VolumeOpts
-# class (and other future *Opts classes
-# which have a display range/cmap).
+class ImageOpts(fsldisplay.DisplayOpts):
+    """A class which describes how an :class:`.Image` should be displayed. 
+    """
+
+    
+    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
+    """If the data is 4D , the current volume to display."""    
+
+    
+    resolution = props.Real(maxval=10, default=1, clamped=True)
+    """Data resolution in world space. The minimum value is set in __init__.""" 
 
 
-class VolumeOpts(fsldisplay.DisplayOpts):
-    """A class which describes how an :class:`~fsl.data.image.Image` should
-    be displayed.
+    transform = props.Choice(
+        ('affine', 'pixdim', 'id'),
+        labels=[strings.choices['ImageOpts.transform.affine'],
+                strings.choices['ImageOpts.transform.pixdim'],
+                strings.choices['ImageOpts.transform.id']],
+        default='pixdim')
+    """This property defines how the overlay should be transformd into the display
+    coordinate system.
+    
+      - ``affine``: Use the affine transformation matrix stored in the image
+        (the ``qform``/``sform`` fields in NIFTI1 headers).
+                    
+      - ``pixdim``: Scale voxel sizes by the ``pixdim`` fields in the image
+        header.
+    
+      - ``id``: Perform no scaling or transformation - voxels will be
+        interpreted as :math:`1mm^3` isotropic, with the origin at voxel
+        (0,0,0).
+    """
+
+ 
+    def __init__(self, *args, **kwargs):
+
+        # The transform property cannot be unsynced
+        # across different displays, as it affects
+        # the display context bounds, wich also
+        # cannot be unsynced
+        nounbind = kwargs.get('nounbind', [])
+        nounbind.append('transform')
+
+        kwargs['nounbind'] = nounbind
+
+        fsldisplay.DisplayOpts.__init__(self, *args, **kwargs)
+
+        overlay = self.overlay
+
+        # The display<->* transformation matrices
+        # are created in the _setupTransforms method
+        self.__xforms = {}
+        self.__setupTransforms()
+
+        # is this a 4D volume?
+        if self.overlay.is4DImage():
+            self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
+
+        # limit resolution to the image dimensions
+        self.resolution = min(overlay.pixdim[:3])
+        self.setConstraint('resolution', 'minval', self.resolution)
+
+
+    def destroy(self):
+        fsldisplay.DisplayOpts.destroy(self)
+
+
+    def getDisplayBounds(self):
+        """Calculates and returns the min/max values of a 3D bounding box,
+        in the display coordinate system, which is big enough to contain
+        the image.
+
+        The coordinate system in which the bounding box is defined is
+        determined by the current value of the :attr:`transform` property.
+
+        A tuple containing two values is returned, with the first value
+        a sequence of three low bounds, and the second value a sequence
+        of three high bounds.
+        """
+
+        return transform.axisBounds(
+            self.overlay.shape[:3], self.getTransform('voxel', 'display'))
+
+                            
+    def __setupTransforms(self):
+        """Calculates transformation matrices between all of the possible
+        spaces in which the overlay may be displayed.
+
+        These matrices are accessible via the :meth:`getTransform` method.
+        """
+
+        image          = self.overlay
+
+        voxToIdMat     = np.eye(4)
+        voxToPixdimMat = np.diag(list(image.pixdim[:3]) + [1.0])
+        voxToAffineMat = image.voxToWorldMat.T
+        
+        idToVoxMat        = transform.invert(voxToIdMat)
+        idToPixdimMat     = transform.concat(idToVoxMat, voxToPixdimMat)
+        idToAffineMat     = transform.concat(idToVoxMat, voxToAffineMat)
+
+        pixdimToVoxMat    = transform.invert(voxToPixdimMat)
+        pixdimToIdMat     = transform.concat(pixdimToVoxMat, voxToIdMat)
+        pixdimToAffineMat = transform.concat(pixdimToVoxMat, voxToAffineMat)
+
+        affineToVoxMat    = image.worldToVoxMat.T
+        affineToIdMat     = transform.concat(affineToVoxMat, voxToIdMat)
+        affineToPixdimMat = transform.concat(affineToVoxMat, voxToPixdimMat)
+        
+        self.__xforms['id',  'id']     = np.eye(4)
+        self.__xforms['id',  'pixdim'] = idToPixdimMat 
+        self.__xforms['id',  'affine'] = idToAffineMat
+
+        self.__xforms['pixdim', 'pixdim'] = np.eye(4)
+        self.__xforms['pixdim', 'id']     = pixdimToIdMat
+        self.__xforms['pixdim', 'affine'] = pixdimToAffineMat
+ 
+        self.__xforms['affine', 'affine'] = np.eye(4)
+        self.__xforms['affine', 'id']     = affineToIdMat
+        self.__xforms['affine', 'pixdim'] = affineToPixdimMat 
+
+
+    def getTransform(self, from_, to, xform=None):
+        """Return a matrix which may be used to transform coordinates
+        from ``from_`` to ``to``. Valid values for ``from_`` and ``to``
+        are:
+          - ``id``:      Voxel coordinates
+        
+          - ``pixdim``:  Voxel coordinates, scaled by voxel dimensions
+        
+          - ``affine``:  World coordinates, as defined by the NIFTI1
+                         ``qform``/``sform``. See
+                         :attr:`~fsl.data.image.Image.voxToWorldMat`.
+        
+          - ``voxel``:   Equivalent to ``id``.
+        
+          - ``display``: Equivalent to the current value of :attr:`transform`.
+        
+          - ``world``;   Equivalent to ``affine``.
+
+        If the ``xform`` parameter is provided, and one of ``from_`` or ``to``
+        is ``display``, the value of ``xform`` is used instead of the current
+        value of :attr:`transform`.
+        """
+
+        if xform is None:
+            xform = self.transform
+
+        if   from_ == 'display': from_ = xform
+        elif from_ == 'world':   from_ = 'affine'
+        elif from_ == 'voxel':   from_ = 'id'
+        
+        if   to    == 'display': to    = xform
+        elif to    == 'world':   to    = 'affine'
+        elif to    == 'voxel':   to    = 'id'
+
+        return self.__xforms[from_, to]
+
+
+    def transformDisplayLocation(self, propName, oldLoc):
+
+        if propName != 'transform':
+            return oldLoc
+
+        lastVal = self.getLastValue('transform')
+        if lastVal is None:
+            lastVal = self.transform
+
+        # Calculate the image world location using the
+        # old display<-> world transform, then transform
+        # it back to the new world->display transform. 
+        worldLoc = transform.transform(
+            [oldLoc],
+            self.getTransform(lastVal, 'world'))[0]
+        
+        newLoc  = transform.transform(
+            [worldLoc],
+            self.getTransform('world', 'display'))[0]
+        
+        return newLoc
+
+
+class VolumeOpts(ImageOpts):
+    """A class which describes how an :class:`.Image` should be displayed.
 
     This class doesn't have much functionality - it is up to things which
-    actually display an :class:`~fsl.data.image.Image` to adhere to the
-    properties stored in the associated :class:`ImageDisplay` object.
+    actually display an :class:`.Image` to adhere to the properties stored in
+    the associated :class:`.Display` and :class:`VolumeOpts` object.
     """
 
     
@@ -54,49 +225,45 @@ class VolumeOpts(fsldisplay.DisplayOpts):
     clippingRange = props.Bounds(
         ndims=1,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
-                strings.choices['VolumeOpts.displayRange.max']]) 
+                strings.choices['VolumeOpts.displayRange.max']])
+    """Values outside of this range are not shown."""
 
     
-    cmap = props.ColourMap(default=fslcm.getDefault(),
+    invertClipping = props.Boolean(default=False)
+    """If ``True``, the behaviour of ``clippingRange`` is inverted, i.e.
+    values inside the clipping range are clipped, instead of those outside
+    the clipping range.
+    """
+
+    
+    cmap = props.ColourMap(default=fslcm.getColourMaps()[0],
                            cmapNames=fslcm.getColourMaps())
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
+
+    
+    interpolation = props.Choice(
+        ('none', 'linear', 'spline'),
+        labels=[strings.choices['VolumeOpts.interpolation.none'],
+                strings.choices['VolumeOpts.interpolation.linear'],
+                strings.choices['VolumeOpts.interpolation.spline']])
+    """How the value shown at a real world location is derived from the
+    corresponding data value(s). 'No interpolation' is equivalent to nearest
+    neighbour interpolation.
+    """
 
 
     invert = props.Boolean(default=False)
     """Invert the colour map."""
 
-    
-    _tooltips = {
-        'name'          : 'The name of this image',
-        'enabled'       : 'Enable/disable this image',
-        'alpha'         : 'Opacity, between 0.0 (transparent) '
-                          'and 100.0 (opaque)',
-        'displayRange'  : 'Minimum/maximum display values',
-        'clipLow'       : 'Do not show image values which are '
-                          'lower than the display range',
-        'clipHigh'      : 'Do not show image values which are '
-                          'higher than the display range', 
-        'interpolation' : 'Interpolate between voxel values at '
-                          'each displayed real world location',
-        'resolution'    : 'Data resolution in voxels',
-        'volume'        : 'Volume number (for 4D images)',
-        'transform'     : 'The transformation matrix which specifies the '
-                          'conversion from voxel coordinates to a real '
-                          'world location',
-        'imageType'     : 'the type of data contained in the image',
-        'cmap'          : 'Colour map'}
 
-    
-    _propHelp = _tooltips
-
-
-
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
-        """Create an :class:`ImageDisplay` for the specified image.
-
-        See the :class:`~fsl.fslview.displaycontext.display.DisplayOpts`
-        documentation for more details. 
-        """
+    def __init__(self,
+                 overlay,
+                 display,
+                 overlayList,
+                 displayCtx,
+                 parent=None,
+                 **kwargs):
+        """Create a :class:`VolumeOpts` instance for the specified image."""
 
         # Attributes controlling image display. Only
         # determine the real min/max for small images -
@@ -104,13 +271,13 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         # it may be! So we calculate the min/max of a
         # sample (either a slice or an image, depending
         # on whether the image is 3D or 4D)
-        if np.prod(image.shape) > 2 ** 30:
-            sample = image.data[..., image.shape[-1] / 2]
+        if np.prod(overlay.shape) > 2 ** 30:
+            sample = overlay.data[..., overlay.shape[-1] / 2]
             self.dataMin = float(sample.min())
             self.dataMax = float(sample.max())
         else:
-            self.dataMin = float(image.data.min())
-            self.dataMax = float(image.data.max())
+            self.dataMin = float(overlay.data.min())
+            self.dataMax = float(overlay.data.max())
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
@@ -134,23 +301,24 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
-        fsldisplay.DisplayOpts.__init__(self,
-                                        image,
-                                        display,
-                                        imageList,
-                                        displayCtx,
-                                        parent)
+        ImageOpts.__init__(self,
+                           overlay,
+                           display,
+                           overlayList,
+                           displayCtx,
+                           parent,
+                           **kwargs)
 
         # The displayRange property of every child VolumeOpts
         # instance is linked to the corresponding 
         # Display.brightness/contrast properties, so changes
         # in one are reflected in the other.
         if parent is not None:
-            display.addListener('brightness', self.name, self.briconChanged)
-            display.addListener('contrast',   self.name, self.briconChanged)
+            display.addListener('brightness', self.name, self.__briconChanged)
+            display.addListener('contrast',   self.name, self.__briconChanged)
             self   .addListener('displayRange',
                                 self.name,
-                                self.displayRangeChanged)
+                                self.__displayRangeChanged)
 
             # Because displayRange and bri/con are intrinsically
             # linked, it makes no sense to let the user sync/unsync
@@ -163,7 +331,8 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                            display.getSyncPropertyName('brightness'))
             self.bindProps(self   .getSyncPropertyName('displayRange'), 
                            display,
-                           display.getSyncPropertyName('contrast')) 
+                           display.getSyncPropertyName('contrast'))
+
 
     def destroy(self):
 
@@ -177,7 +346,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                              display.getSyncPropertyName('brightness'))
             self.unbindProps(self   .getSyncPropertyName('displayRange'), 
                              display,
-                             display.getSyncPropertyName('contrast')) 
+                             display.getSyncPropertyName('contrast'))
+
+        ImageOpts.destroy(self)
 
 
     def __toggleListeners(self, enable=True):
@@ -185,9 +356,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         are registered on the :attr:`displayRange` and
         :attr:`.Display.brightness`/:attr:`.Display.contrast`/ properties.
         
-        Because these properties are linked via the :meth:`displayRangeChanged`
-        and :meth:`briconChanged` methods, we need to be careful about avoiding
-        recursive callbacks.
+        Because these properties are linked via the
+        :meth:`__displayRangeChanged` and :meth:`__briconChanged` methods,
+        we need to be careful about avoiding recursive callbacks.
 
         Furthermore, because the properties of both :class:`VolumeOpts` and
         :class:`.Display` instances are possibly synchronised to a parent
@@ -224,9 +395,9 @@ class VolumeOpts(fsldisplay.DisplayOpts):
                 peer        .disableListener('displayRange', peer.name) 
                 
 
-    def briconChanged(self, *a):
+    def __briconChanged(self, *a):
         """Called when the ``brightness``/``contrast`` properties of the
-        :class:`~fsl.fslview.displaycontext.display.Display` instance change.
+        :class:`.Display` instance change.
         
         Updates the :attr:`displayRange` property accordingly.
 
@@ -243,7 +414,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.__toggleListeners(True)
 
         
-    def displayRangeChanged(self, *a):
+    def __displayRangeChanged(self, *a):
         """Called when the `attr`:displayRange: property changes.
 
         Updates the :attr:`.Display.brightness` and :attr:`.Display.contrast`
@@ -259,7 +430,7 @@ class VolumeOpts(fsldisplay.DisplayOpts):
         self.__toggleListeners(False)
 
         # update bricon
-        self.display.brightness = 100 - brightness * 100
-        self.display.contrast   = 100 - contrast   * 100
+        self.display.brightness = brightness * 100
+        self.display.contrast   = contrast   * 100
 
         self.__toggleListeners(True)

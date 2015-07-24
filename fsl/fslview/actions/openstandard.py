@@ -14,8 +14,8 @@ log = logging.getLogger(__name__)
 import fsl.fslview.actions as actions
 
 class OpenStandardAction(actions.Action):
-    def __init__(self, imageList, displayCtx):
-        actions.Action.__init__(self, imageList, displayCtx)
+    def __init__(self, overlayList, displayCtx):
+        actions.Action.__init__(self, overlayList, displayCtx)
         
         # disable the 'add standard' menu
         # item if $FSLDIR is not set
@@ -29,5 +29,5 @@ class OpenStandardAction(actions.Action):
         
         
     def doAction(self):
-        if self._imageList.addImages(self._stddir, addToEnd=False):
-            self._displayCtx.selectedImage = self._displayCtx.imageOrder[0]
+        if self._overlayList.addOverlays(self._stddir, addToEnd=False):
+            self._displayCtx.selectedOverlay = self._displayCtx.overlayOrder[0]

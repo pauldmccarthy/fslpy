@@ -228,7 +228,8 @@ class Options(props.HasProperties):
         
         Options.analysisType.addListener(self,
                                          'updateAnalysisStage',
-                                         updateAnalysisStage)
+                                         updateAnalysisStage,
+                                         weak=False)
         
 labels = {
     # misc

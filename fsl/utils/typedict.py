@@ -6,6 +6,8 @@
 #
 
 import logging
+
+
 log = logging.getLogger(__name__)
 
 
@@ -33,7 +35,9 @@ class TypeDict(object):
 
     def __str__( self): return self.__dict.__str__()
     def __repr__(self): return self.__dict.__repr__()
-
+    def keys(    self): return self.__dict.keys()
+    def values(  self): return self.__dict.values()
+    def items(   self): return self.__dict.items()
 
     def __setitem__(self, key, value):
         self.__dict[self.__tokenifyKey(key)] = value
@@ -47,12 +51,28 @@ class TypeDict(object):
         return key
 
         
-    def get(self, key, default):
-        try:             return self.__getitem__(key)
+    def get(self, key, default=None, allhits=False, bykey=False):
+        """Retrieve the value associated with the given key. If
+        no value is present, return the specified ``default`` value,
+        which itself defaults to ``None``.
+
+        If the specified key contains a class or instance, and the
+        ``allhits`` argument evaluates to ``True``, the entire class
+        hierarchy is searched, and all values present for the class,
+        and any base class, are returned as a sequence.
+
+        If ``allhits`` is ``True`` and the ``bykey`` parameter is also
+        set to ``True``, a dictionary is returned rather than a sequence,
+        where the dictionary contents are the subset of this dictionary,
+        containing the keys which equated to the given key, and their
+        corresponding values.
+        """
+
+        try:             return self.__getitem__(key, allhits, bykey)
         except KeyError: return default
 
         
-    def __getitem__(self, key):
+    def __getitem__(self, key, allhits=False, bykey=False):
         
         origKey = key
         key     = self.__tokenifyKey(key)
@@ -81,7 +101,10 @@ class TypeDict(object):
                 newKey.append(elem)
                 bases .append(None)
 
-        key = newKey
+        key  = newKey
+
+        keys = []
+        hits = []
             
         while True:
 
@@ -92,9 +115,19 @@ class TypeDict(object):
             else:             lKey = tuple(key)
 
             val = self.__dict.get(lKey, None)
-            
+
+            # We've found a value for the key
             if val is not None:
-                return val
+
+                # If allhits is false, just return the value
+                if not allhits: return val
+
+                # Otherwise, accumulate the value, and keep
+                # searching
+                else:
+                    hits.append(val)
+                    if bykey:
+                        keys.append(lKey)
 
             # No more base classes to search for - there
             # really is no value associated with this key
@@ -114,10 +147,35 @@ class TypeDict(object):
                     newKey    = list(key)
                     newKey[i] = elemBase
 
+                    if len(newKey) == 1: newKey = newKey[0]
+                    else:                newKey = tuple(newKey)
+
                     try:
-                        return self.__getitem__(tuple(newKey))
+                        newVal = self.__getitem__(newKey, allhits, bykey)
                     except KeyError:
                         continue
 
+                    if not allhits:
+                        return newVal
+                    else:
+                        if bykey:
+                            newKeys, newVals = zip(*newVal.items())
+                            keys.extend(newKeys)
+                            hits.extend(newVals)
+                        else:
+                            hits.extend(newVal)
+
             # No value for any base classes either
-            raise KeyError(origKey)
+            if len(hits) == 0:
+                raise KeyError(origKey)
+
+            # if bykey is true, return a dict
+            # containing the values and their
+            # corresponding keys
+            if bykey:
+                return dict(zip(keys, hits))
+
+            # otherwise just return the
+            # list of matched values
+            else:
+                return hits

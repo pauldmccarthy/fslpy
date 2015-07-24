@@ -12,13 +12,12 @@ performed, enabled and disabled, and may be bound to a GUI menu item or
 button.
 
 Some 'global' actions are provided in this package, for example the
-:class:`~fsl.fslview.actions.openfile.OpenFileAction`, and the
-:class:`~fsl.fslview.actions.openstandard.OpenStandardAction`.
+:class:`.OpenFileAction`, and the :class:`.OpenStandardAction`.
 
-The :class:`ActionProvider` class represents some entity which can perform
-one or more actions.  As the :class:`~fsl.fslview.panel.FSLViewPanel` class
-derives from :class:`ActionProvider` pretty much everything in FSLView is
-an :class:`ActionProvider`.
+The :class:`ActionProvider` class represents some entity which can perform one
+or more actions.  As the :class:`.FSLViewPanel` class derives from
+:class:`ActionProvider` pretty much everything in FSLView is an
+:class:`ActionProvider`.
 """
 
 
@@ -34,20 +33,18 @@ log = logging.getLogger(__name__)
 
 def listGlobalActions():
     """Convenience function which returns a list containing all
-    :class:`~fsl.fslview.action.Action` classes in the :mod:`actions` package.
+    :class:`.Action` classes in the :mod:`actions` package.
     """
 
     import openfile
     import openstandard
-    import copyimage
-    import saveimage
-    import loadcolourmap
+    import copyoverlay
+    import saveoverlay
     
-    return [openfile     .OpenFileAction,
-            openstandard .OpenStandardAction,
-            copyimage    .CopyImageAction,
-            saveimage    .SaveImageAction,
-            loadcolourmap.LoadColourMapAction]
+    return [openfile    .OpenFileAction,
+            openstandard.OpenStandardAction,
+            copyoverlay .CopyOverlayAction,
+            saveoverlay .SaveOverlayAction]
 
 
 class ActionButton(props.Button):
@@ -58,12 +55,13 @@ class ActionButton(props.Button):
 
         self.name = actionName
 
-        props.Button.__init__(self,
-                              actionName,
-                              text=strings.actions[classType, actionName],
-                              callback=self.__onButton,
-                              setup=self.__setup,
-                              **kwargs)
+        props.Button.__init__(
+            self,
+            actionName,
+            text=strings.actions.get((classType, actionName), actionName),
+            callback=self.__onButton,
+            setup=self.__setup,
+            **kwargs)
 
 
     def __setup(self, instance, parent, widget, *a):
@@ -97,15 +95,15 @@ class Action(props.HasProperties):
     """
 
     
-    def __init__(self, imageList, displayCtx, action=None):
+    def __init__(self, overlayList, displayCtx, action=None):
         """
-        :arg imageList:  A :class:`~fsl.data.image.ImageList` instance
-                         containing the list of images being displayed.
+        :arg overlayList: An :class:`.OverlayList` instance
+                          containing the list of overlays being displayed.
 
-        :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                         instance defining how the images are to be displayed.
+        :arg displayCtx:  A :class:`.DisplayContext` instance defining how
+                          the overlays are to be displayed.
         """
-        self._imageList    = imageList
+        self._overlayList  = overlayList
         self._displayCtx   = displayCtx
         self._boundWidgets = []
         self._name         = '{}_{}'.format(self.__class__.__name__, id(self))
@@ -128,7 +126,25 @@ class Action(props.HasProperties):
             
         parent.Bind(evType, wrappedAction, widget)
         widget.Enable(self.enabled)
-        self._boundWidgets.append(widget)
+        self._boundWidgets.append((parent, evType, widget))
+
+
+    def unbindAllWidgets(self):
+        """Unbinds all widgets which have been bound via :meth:`bindToWidget`.
+        """
+
+        import wx
+        
+        for parent, evType, widget in self._boundWidgets:
+
+            # Only attempt to unbind if the parent
+            # and widget have not been destroyed
+            try:
+                parent.Unbind(evType, source=widget)
+            except wx.PyDeadObjectError:
+                pass
+            
+        self._boundWidgets = []
 
 
     def _enabledChanged(self, *args):
@@ -138,7 +154,7 @@ class Action(props.HasProperties):
         if self.enabled: self.doAction = self.__enabledDoAction
         else:            self.doAction = self.__disabledDoAction
 
-        for widget in self._boundWidgets:
+        for _, _, widget in self._boundWidgets:
             widget.Enable(self.enabled)
 
 
@@ -171,18 +187,18 @@ class ActionProvider(props.HasProperties):
     will ultimately be exposed to the user.
     """
 
-    def __init__(self, imageList, displayCtx, actions=None):
+    def __init__(self, overlayList, displayCtx, actions=None):
         """Create an :class:`ActionProvider` instance.
 
-        :arg imageList:  A :class:`~fsl.data.image.ImageList` instance
-                         containing the list of images being displayed.
+        :arg overlayList: An :class:`.OverlayList` instance containing the
+                          list of overlays being displayed.
 
-        :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                         instance defining how the images are to be displayed. 
+        :arg displayCtx:  A :class:`.DisplayContext` instance defining how
+                          the overlays are to be displayed. 
 
-        :arg actions:    A dictionary containing ``{name -> function}``
-                         mappings, where each function is an action that
-                         should be made available to the user.
+        :arg actions:     A dictionary containing ``{name -> function}``
+                          mappings, where each function is an action that
+                          should be made available to the user.
         """
 
         if actions is None:
@@ -191,8 +207,19 @@ class ActionProvider(props.HasProperties):
         self.__actions = {}
 
         for name, func in actions.items():
-            act = Action(imageList, displayCtx, action=func)
+            act = Action(overlayList, displayCtx, action=func)
             self.__actions[name] = act
+
+            
+    def destroy(self):
+        """This method should be called when this ``ActionProvider`` is
+        about to be destroyed. It ensures that all ``Action`` instances
+        are cleared.
+        """
+        for _, act in self.__actions.items():
+            act.unbindAllWidgets()
+            
+        self.__actions = None
 
             
     def addActionToggleListener(self, name, listenerName, func):

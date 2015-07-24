@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module defines a mouse/keyboard interaction 'view' profile for the
-:class:`~fsl.fslview.views.orthopanel.OrthoPanel'` class.
+:class:`.OrthoPanel'` class.
 
 There are three view 'modes' available in this profile:
 
@@ -25,26 +25,27 @@ switch into one mode from another; these temporary modes are defined in the
 """
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import wx
 
 import fsl.fslview.profiles as profiles
 
 
+log = logging.getLogger(__name__)
+
+
 class OrthoViewProfile(profiles.Profile):
 
 
     def __init__(self,
-                 canvasPanel,
-                 imageList,
+                 viewPanel,
+                 overlayList,
                  displayCtx,
                  extraModes=None,
                  extraActions=None):
         """Creates an :class:`OrthoViewProfile`, which can be registered
-        with the given ``canvasPanel`` which is assumed to be a
-        :class:`~fsl.fslview.views.orthopanel.OrthoPanel` instance.
+        with the given ``viewPanel`` which is assumed to be an
+        :class:`.OrthoPanel` instance.
         """
 
         if extraModes   is None: extraModes   = []
@@ -60,15 +61,15 @@ class OrthoViewProfile(profiles.Profile):
         actionz = dict(actionz.items() + extraActions.items())
 
         profiles.Profile.__init__(self,
-                                  canvasPanel,
-                                  imageList,
+                                  viewPanel,
+                                  overlayList,
                                   displayCtx,
                                   modes,
                                   actionz)
 
-        self._xcanvas = canvasPanel.getXCanvas()
-        self._ycanvas = canvasPanel.getYCanvas()
-        self._zcanvas = canvasPanel.getZCanvas()
+        self._xcanvas = viewPanel.getXCanvas()
+        self._ycanvas = viewPanel.getYCanvas()
+        self._zcanvas = viewPanel.getZCanvas()
 
         # This attribute will occasionally store a
         # reference to a gl.annotations.Rectangle -
@@ -84,7 +85,7 @@ class OrthoViewProfile(profiles.Profile):
 
     def resetZoom(self, *a):
 
-        opts = self._canvasPanel.getSceneOptions()
+        opts = self._viewPanel.getSceneOptions()
 
         opts.zoom  = 100
         opts.xzoom = 100
@@ -107,11 +108,37 @@ class OrthoViewProfile(profiles.Profile):
     # Navigate mode handlers
     ########################
 
+    def __getNavOffsets(self):
+        
+        overlay = self._displayCtx.getReferenceImage(
+            self._displayCtx.getSelectedOverlay())
+
+        # The currently selected overlay is non-volumetric,
+        # and does not have a reference image
+        if overlay is None:
+            offsets = [1, 1, 1]
+
+        # We have a voluemtric reference image to play with
+        else:
+
+            opts = self._displayCtx.getOpts(overlay)
+
+            # If we're displaying voxel space,
+            # we want a keypress to move one
+            # voxel in the appropriate direction
+            if   opts.transform == 'id':     offsets = [1, 1, 1]
+            elif opts.transform == 'pixdim': offsets = overlay.pixdim
+
+            # Otherwise we'll just move an arbitrary 
+            # amount in the image world space - 1mm
+            else:                            offsets = [1, 1, 1]
+
+        return offsets
+
 
     def _navModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
         """Left mouse drags in location mode update the
-        :attr:`~fsl.fslview.displaycontext.DisplayContext.location` to follow
-        the mouse location.
+        :attr:`.DisplayContext.location` to follow the mouse location.
         """
 
         if canvasPos is None:
@@ -122,29 +149,18 @@ class OrthoViewProfile(profiles.Profile):
         
     def _navModeChar(self, ev, canvas, key):
         """Left mouse drags in location mode update the
-        :attr:`~fsl.fslview.displaycontext.DisplayContext.location`.
+        :attr:`.DisplayContext.location`.
 
         Arrow keys map to the horizontal/vertical axes, and -/+ keys map
         to the depth axis of the canvas which was the target of the event.
-        """ 
+        """
 
-        image = self._displayCtx.getSelectedImage()
 
-        if image is None:
+        if len(self._overlayList) == 0:
             return
-        
-        display = self._displayCtx.getDisplayProperties(image)
+
         pos     = self._displayCtx.location.xyz
-
-        # If we're displaying voxel space,
-        # we want a keypress to move one
-        # voxel in the appropriate direction
-        if   display.transform == 'id':     offsets = [1, 1, 1]
-        elif display.transform == 'pixdim': offsets = image.pixdim
-
-        # Otherwise we'll just move an arbitrary 
-        # amount in the image world space - 2mm
-        else:                               offsets = [2, 2, 2]
+        offsets = self.__getNavOffsets()
 
         try:    ch = chr(key)
         except: ch = None
@@ -157,6 +173,20 @@ class OrthoViewProfile(profiles.Profile):
         elif ch  in ('+', '='):   pos[canvas.zax] += offsets[canvas.zax]
 
         self._displayCtx.location.xyz = pos
+
+
+    def _navModeMouseWheel(self, ev, canvas, wheel, mousePos, canvasPos):
+
+        if len(self._overlayList) == 0:
+            return
+
+        pos     = self._displayCtx.location.xyz
+        offsets = self.__getNavOffsets()
+
+        if   wheel > 0: pos[canvas.zax] -= offsets[canvas.zax]
+        elif wheel < 0: pos[canvas.zax] += offsets[canvas.zax]
+
+        self._displayCtx.location.xyz = pos        
 
         
     ####################

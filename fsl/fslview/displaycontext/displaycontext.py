@@ -10,32 +10,37 @@ import logging
 
 import props
 
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
-
 import display as fsldisplay
 
 
 log = logging.getLogger(__name__)
 
 
+class InvalidOverlayError(Exception):
+    """An error raised by the :meth:`DisplayContext.getDisplay`
+    and :meth:`DisplayContext.getOpts` methods to indicate that
+    the specified overlay is not in the :class:`.OverlayList`.
+    """
+    pass
+
+
 class DisplayContext(props.SyncableHasProperties):
-    """Contains a number of properties defining how an
-    :class:`~fsl.dat.aimage.ImageList` is to be displayed.
+    """Contains a number of properties defining how an :class:`.OverlayList`
+    is to be displayed.
     """
 
     
-    selectedImage = props.Int(minval=0, default=0, clamped=True)
-    """Index of the currently 'selected' image.
+    selectedOverlay = props.Int(minval=0, default=0, clamped=True)
+    """Index of the currently 'selected' overlay.
 
     Note that this index is in relation to the
-    :class:`~fsl.data.image.ImageList`, rather than to the :attr:`imageOrder`
+    :class:`.OverlayList`, rather than to the :attr:`overlayOrder`
     list.
 
-    If you're interested in the currently selected image, you must also listen
-    for changes to the :attr:`fsl.data.image.ImageList.images` list as, if the
-    list changes, the :attr:`selectedImage` index may not change, but the
-    image to which it points may be different.
+    If you're interested in the currently selected overlay, you must also
+    listen for changes to the :attr:`.OverlayList.images` list as, if the list
+    changes, the :attr:`selectedOverlay` index may not change, but the overlay
+    to which it points may be different.
     """
 
 
@@ -47,258 +52,375 @@ class DisplayContext(props.SyncableHasProperties):
     
     bounds = props.Bounds(ndims=3)
     """This property contains the min/max values of a bounding box (in display
-    coordinates) which is big enough to contain all of the images in the
-    :attr:`images` list. This property shouid be read-only, but I don't have a
-    way to enforce it (yet).
+    coordinates) which is big enough to contain all of the overlays in the
+    :attr:`overlays` list. This property shouid be read-only, but I don't have
+    a way to enforce it (yet).
     """
 
 
-    volume = props.Int(minval=0, maxval=0, default=0, clamped=True)
-    """The volume property contains the currently selected volume
-    across the 4D images in the :class:`~fsl.data.image/ImageList`.
-    This property may not be relevant to all images in the image list
-    (i.e. it is meaningless for 3D images).
+    overlayOrder = props.List(props.Int())
+    """A list of indices into the :attr:`.OverlayList.overlays`
+    list, defining the order in which the overlays are to be displayed.
+
+    See the :meth:`getOrderedOverlays` method.
     """
 
 
-    imageOrder = props.List(props.Int())
-    """A list of indices into the :attr:`~fsl.data.image.ImageList.images`
-    list, defining the order in which the images are to be displayed.
-
-    See the :meth:`getOrderedImages` method.
+    overlayGroups = props.List()
+    """A list of :class:`.OverlayGroup` instances, each of which defines
+    a group of overlays which share display properties.
     """
 
 
-    def __init__(self, imageList, parent=None):
+    syncOverlayDisplay = props.Boolean(default=True)
+    """If this ``DisplayContext`` instance has a parent (see
+    :mod:`props.syncable`), and this is ``True``, the properties of the
+    :class:`.Display` and :class:`.DisplayOpts`  for every overlay managed
+     by this ``DisplayContext`` instance will be synchronised to those of
+    the parent instance. Otherwise, the display properties for every overlay
+    will be unsynchronised from the parent.
+    """
+
+
+    def __init__(self, overlayList, parent=None):
         """Create a :class:`DisplayContext` object.
 
-        :arg imageList: A :class:`~fsl.data.image.ImageList` instance.
+        :arg overlayList: A :class:`.OverlayList` instance.
 
         :arg parent: Another :class`DisplayContext` instance to be used
         as the parent of this instance.
         """
 
-        props.SyncableHasProperties.__init__(self, parent, nounbind=('volume'))
+        props.SyncableHasProperties.__init__(
+            self,
+            parent,
+            nounbind=['overlayGroups'],
+            nobind=[  'syncOverlayDisplay'])
         
-        self._imageList = imageList
-        self._name = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.__overlayList = overlayList
+        self.__name         = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        # Keep track of the image list length
-        # so we can do some things in the
-        # _imageListChanged method
-        self._prevImageListLen = 0
+        # Keep track of the overlay list
+        # length so we can do some things in the
+        # _overlayListChanged method
+        self.__prevOverlayListLen = 0
 
-        # Ensure that an ImageDisplay object exists for
-        # every image, and that the display bounds
-        # property is initialised
+        # Ensure that a Display object exists
+        # for every overlay, and that the display
+        # bounds property is initialised
+        self.__displays = {}
+        self.__overlayListChanged()
 
-        self._imageDisplays = {}
-        self._imageListChanged()
+        overlayList.addListener('overlays',
+                                self.__name,
+                                self.__overlayListChanged)
 
-        imageList.addListener('images',
-                              self._name,
-                              self._imageListChanged)
-        self.addListener(     'bounds',
-                              self._name,
-                              self._boundsChanged)
-        self.addListener(     'volume',
-                              self._name,
-                              self._volumeChanged)
+        self.addListener('syncOverlayDisplay',
+                         self.__name,
+                         self.__syncOverlayDisplayChanged)
+
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
         
-    def getDisplayProperties(self, image):
-        """Returns the display property object (e.g. an :class:`ImageDisplay`
-        object) for the specified image (or image index).
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
 
-        If an :class:`ImageDisplay` object does not exist for the given image,
+        
+    def destroy(self):
+
+        self.__overlayList.removeListener('overlays', self.__name)
+
+        for overlay, display in self.__displays.items():
+            display.destroy()
+
+        self.__displays = None
+
+        
+    def getDisplay(self, overlay, overlayType=None):
+        """Returns the display property object (e.g. a :class:`.Display`
+        object) for the specified overlay (or overlay index).
+
+        If a :class:`Display` object does not exist for the given overlay,
         one is created.
+
+        :arg overlay:     The overlay to retrieve a ``Display``
+                          instance for.
+
+        :arg overlayType: If a ``Display`` instance for the specified
+                          ``overlay`` does not exist, one is created - the
+                          specified ``overlayType`` is passed to the
+                          :meth:`.Display.__init__` method.
         """
 
-        if not isinstance(image, (int, fslimage.Image)):
-            raise ValueError('image must be an integer or an Image object')
+        if overlay is None:
+            raise ValueError('No overlay specified')
 
-        if isinstance(image, int):
-            image = self._imageList[image]
+        if overlay not in self.__overlayList:
+            raise InvalidOverlayError('Overlay {} is not in '
+                                      'list'.format(overlay.name))
+
+        if isinstance(overlay, int):
+            overlay = self.__overlayList[overlay]
 
         try:
-            display = self._imageDisplays[image]
+            display = self.__displays[overlay]
                 
         except KeyError:
                 
             if self.getParent() is None:
                 dParent = None
             else:
-                dParent = self.getParent().getDisplayProperties(image)
+                dParent = self.getParent().getDisplay(overlay, overlayType)
+                if overlayType is None:
+                    overlayType = dParent.overlayType
+                
+            display = fsldisplay.Display(overlay,
+                                         self.__overlayList,
+                                         self,
+                                         parent=dParent,
+                                         overlayType=overlayType)
+            self.__displays[overlay] = display
 
-            display = fsldisplay.Display(image, self._imageList, self, dParent)
-            self._imageDisplays[image] = display
+            if (self.getParent() is not None) and \
+               (not self.syncOverlayDisplay):
+                display                 .unsyncAllFromParent()
+                display.getDisplayOpts().unsyncAllFromParent()
         
         return display
 
-    
-    def selectImage(self, image):
-        self.selectedImage = self._imageList.index(image)
 
-    
-    def getSelectedImage(self):
-        """Returns the currently selected :class:`~fsl.data.image.Image`
-        object, or ``None`` if there are no images.
+    def getOpts(self, overlay, overlayType=None):
+        """Returns the :class:`.DisplayOpts` instance associated with the
+        specified overlay.
+
+        See :meth:`.Display.getDisplayOpts` and :meth:`getDisplay`. 
         """
-        if len(self._imageList) == 0: return None
-        return self._imageList[self.selectedImage]
 
-    
-    def getImageOrder(self, image):
-        """Returns the order in which the given image (or an index into
-        the :class:`~fsl.data.image.ImageList` list) should be displayed
-        (see the :attr:`imageOrder property).
+        if overlay is None:
+            raise ValueError('No overlay specified')
+
+        if overlay not in self.__overlayList:
+            raise InvalidOverlayError('Overlay {} is not in '
+                                      'list'.format(overlay.name)) 
+
+        return self.getDisplay(overlay, overlayType).getDisplayOpts()
+
+
+    def getReferenceImage(self, overlay):
+        """Convenience method which returns the reference image associated
+        with the given overlay, or ``None`` if there is no reference image.
+
+        See the :class:`.DisplayOpts.getReferenceImage` method.
         """
-        if isinstance(image, fslimage.Image):
-            image = self._imageList.index(image)
-        return self.imageOrder.index(image)
+        if overlay is None:
+            return None
+        
+        return self.getOpts(overlay).getReferenceImage()
+
+        
+    def selectOverlay(self, overlay):
+        """Selects the specified ``overlay``. Raises an ``IndexError`` if
+        the overlay is not in the list.
+        """
+        self.selectedOverlay = self.__overlayList.index(overlay)
 
     
-    def getOrderedImages(self):
-        """Returns a list of :class:`~fsl.data.image.Image` objects from
-        the :class:`~fsl.data.image.ImageList` list, sorted into the order
+    def getSelectedOverlay(self):
+        """Returns the currently selected overlay object,
+        or ``None`` if there are no overlays.
+        """
+        if len(self.__overlayList) == 0: return None
+        return self.__overlayList[self.selectedOverlay]
+
+    
+    def getOverlayOrder(self, overlay):
+        """Returns the order in which the given overlay (or an index into
+        the :class:`.OverlayList` list) should be displayed
+        (see the :attr:`overlayOrder property).
+
+        Raises an ``IndexError`` if the overlay is not in the list.
+        """
+        if not isinstance(overlay, int):
+            overlay = self.__overlayList.index(overlay)
+            
+        return self.overlayOrder.index(overlay)
+
+    
+    def getOrderedOverlays(self):
+        """Returns a list of overlay objects from
+        the :class:`.OverlayList` list, sorted into the order
         that they are to be displayed.
         """
-        return [self._imageList[idx] for idx in self.imageOrder]
+        return [self.__overlayList[idx] for idx in self.overlayOrder]
 
 
-    def _imageListChanged(self, *a):
-        """Called when the :attr:`fsl.data.image.ImageList.images` property
+    def __overlayListChanged(self, *a):
+        """Called when the :attr:`.OverlayList.overlays` property
         changes.
 
-        Ensures that an :class:`ImageDisplay` object exists for every image,
-        and updates the constraints on the :attr:`selectedImage` and
-        :attr:`volume` properties.
+        Ensures that a :class:`.Display` and :class:`.DisplayOpts` object
+        exists for every image, updates the :attr:`bounds` property, makes
+        sure that the :attr:`overlayOrder` property is consistent, and updates
+        constraints on the :attr:`selectedOverlay` property.
         """
 
-        nimages = len(self._imageList)
+        # Discard all Display instances
+        # which refer to overlays that
+        # are no longer in the list
+        for overlay in list(self.__displays.keys()):
+            if overlay not in self.__overlayList:
+                
+                display = self.__displays.pop(overlay)
+                opts    = display.getDisplayOpts()
 
-        # Ensure that an ImageDisplay
-        # object exists for every image
-        for image in self._imageList:
+                display.removeListener('overlayType', self.__name)
+                opts.removeGlobalListener(self.__name)
+                
+                # The display instance will destroy the
+                # opts instance, so we don't do it here
+                display.destroy()
+ 
+        # Ensure that a Display object
+        # exists for every overlay in
+        # the list
+        for overlay in self.__overlayList:
 
-            # The getDisplayProperties method
-            # will create an ImageDisplay object
+            # The getDisplay method
+            # will create a Display object
             # if one does not already exist
-            display = self.getDisplayProperties(image)
+            display = self.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
 
-            # Register a listener with the transform property
-            # of every image display so that when they change,
-            # we can update the display bounds, and preserve
-            # the current display location so that it is in
-            # terms of the world location of the currently
-            # selected image
-            # 
-            # This may be called multiple times on each image,
-            # but it doesn't matter, as any listener which has
-            # previously been registered with an image will
-            # just be replaced by the new one here.
-            display.addListener(
-                'transform',
-                self.__class__.__name__,
-                self._transformChanged,
-                overwrite=True)
+            # Register a listener on the overlay type,
+            # because when it changes, the DisplayOpts
+            # instance will change, and we will need to
+            # re-register the next listener
+            display.addListener('overlayType',
+                                self.__name,
+                                self.__overlayListChanged,
+                                overwrite=True)
 
+            # Register a listener on the DisplayOpts
+            # object for every overlay - if any
+            # DisplayOpts properties change, the
+            # overlay display bounds may have changed,
+            # so we need to know when this happens.
+            opts.addGlobalListener(self.__name,
+                                   self.__displayOptsChanged,
+                                   overwrite=True)
 
-        # Ensure that the imageOrder
+        # Ensure that the overlayOrder
         # property is valid ...
+        #
+        # NOTE: The following logic assumes that operations
+        #       which modify the overlay list will only do
+        #       one of the following:
+        #
+        #        - Adding one or more overlays to the list
+        #        - Removing one or more overlays from the list
         # 
-        # If images have been added to
-        # the image list, add indices
-        # for them to the imageOrder list
-        if len(self.imageOrder) < len(self._imageList):
-            self.imageOrder.extend(range(len(self.imageOrder),
-                                         len(self._imageList)))
+        # More complex overlay list modifications
+        # will cause this code to break.
 
-        # Otherwise, if images have been removed
-        # from the image list, remove the corresponding
-        # indices from the imageOrder list
-        elif len(self.imageOrder) > len(self._imageList):
-            for idx in range(len(self._imageList),
-                             len(self.imageOrder)):
-                self.imageOrder.remove(idx)
+        oldList  = self.__overlayList.getLastValue('overlays')[:]
+        oldOrder = self.overlayOrder[:]
+        
+        # If overlays have been added to
+        # the overlay list, add indices
+        # for them to the overlayOrder list
+        if len(self.overlayOrder) < len(self.__overlayList):
+
+            newOrder      = []
+            newOverlayIdx = len(oldList)
+
+            # The order of existing overlays is preserved,
+            # and all new overlays added to the end of the
+            # overlay order. 
+            for overlay in self.__overlayList:
+
+                if overlay in oldList:
+                    newOrder.append(oldOrder[oldList.index(overlay)])
+                else:
+                    newOrder.append(newOverlayIdx)
+                    newOverlayIdx += 1
+
+            self.overlayOrder[:] = newOrder
+
+        # Otherwise, if overlays have been 
+        # removed from the overlay list ...
+        elif len(self.overlayOrder) > len(self.__overlayList):
+
+            # Remove the corresponding indices
+            # from the overlayOrder list
+            for overlay, orderIdx in zip(oldList, self.overlayOrder):
+                if overlay not in self.__overlayList:
+                    oldOrder.remove(orderIdx)
+
+            # Re-generate new indices,
+            # preserving the order of
+            # the remaining overlays
+            newOrder = [sorted(oldOrder).index(idx) for idx in oldOrder]
+            self.overlayOrder[:] = newOrder
 
         # Ensure that the bounds property is accurate
-        self._updateBounds()
+        self.__updateBounds()
 
-        # If the image list was empty,
+        # If the overlay list was empty,
         # and is now non-empty, centre
         # the currently selected location
-        if (self._prevImageListLen == 0) and (len(self._imageList) > 0):
+        if (self.__prevOverlayListLen == 0) and (len(self.__overlayList) > 0):
             
             # initialise the location to be
-            # the centre of the image world
+            # the centre of the world
             b = self.bounds
             self.location.xyz = [
                 b.xlo + b.xlen / 2.0,
                 b.ylo + b.ylen / 2.0,
                 b.zlo + b.zlen / 2.0]
             
-        self._prevImageListLen = len(self._imageList)
+        self.__prevOverlayListLen = len(self.__overlayList)
  
-        # Limit the selectedImage property
+        # Limit the selectedOverlay property
         # so it cannot take a value greater
-        # than len(imageList)-1
-        if nimages > 0:
-            self.setConstraint('selectedImage', 'maxval', nimages - 1)
+        # than len(overlayList)-1
+        nOverlays = len(self.__overlayList)
+        if nOverlays > 0:
+            self.setConstraint('selectedOverlay', 'maxval', nOverlays - 1)
         else:
-            self.setConstraint('selectedImage', 'maxval', 0)
+            self.setConstraint('selectedOverlay', 'maxval', 0)
 
-        # Limit the volume property so it
-        # cannot take a value greater than
-        # the longest 4D volume in the
-        # image list
-        maxvols = 0
-
-        for image in self._imageList:
-
-            if not image.is4DImage(): continue
-
-            if image.shape[3] > maxvols:
-                maxvols = image.shape[3]
-
-        if maxvols > 0:
-            self.setConstraint('volume', 'maxval', maxvols - 1)
-        else:
-            self.setConstraint('volume', 'maxval', 0)
-
-
-    def _transformChanged(self, xform, valid, display, propName):
-        """Called when the
-        :attr:`~fsl.fslview.displaycontext.ImageDisplay.transform property
-        changes on any image in the :attr:`images` list. Sets the 
-        :attr:`location` property, so that the selected image world location
-        is preserved, in the new display coordinate system.
+            
+    def __displayOptsChanged(self, value, valid, opts, name):
+        """Called when the :class:`.DisplayOpts` properties of any overlay
+        change. If the bounds o the Updates the :attr:`bounds` property and,
+        if the currently selected 
         """
 
         # This check is ugly, and is required due to
         # an ugly circular relationship which exists
-        # between parent/child DCs and the transform/
+        # between parent/child DCs and the *Opts/
         # location properties:
         # 
-        # 1. When the transform property of a child DC
-        #    Display object changes (this should always 
-        #    be due to user input), that change is 
-        #    propagated to the parent DC Display object.
+        # 1. When a property of a child DC DisplayOpts
+        #    object changes (e.g. ImageOpts.transform)
+        #    this should always be due to user input),
+        #    that change is propagated to the parent DC
+        #    DisplayOpts object.
         #
-        # 2. This results in the DC._transformChanged
+        # 2. This results in the DC._displayOptsChanged
         #    method (this method) being called on the
         #    parent DC.
         #
         # 3. Said method correctly updates the DC.location
         #    property, so that the world location of the
-        #    selected image is preserved.
+        #    selected overlay is preserved.
         #
         # 4. This location update is propagated back to
         #    the child DC.location property, which is
         #    updated to have the new correct location
         #    value.
         #
-        # 5. Then, the child DC._transformChanged method
+        # 5. Then, the child DC._displayOpteChanged method
         #    is called, which goes and updates the child
         #    DC.location property to contain a bogus
         #    value.
@@ -312,34 +434,76 @@ class DisplayContext(props.SyncableHasProperties):
             if self.getParent().location == self.location:
                 return
 
-        if display.image != self.getSelectedImage():
-            self._updateBounds()
+        overlay = opts.display.getOverlay()
+
+        # Save a copy of the location before
+        # updating the bounds, as the change
+        # to the bounds may result in the
+        # location being modified
+        oldDispLoc = self.location.xyz
+
+        # Update the display context bounds
+        # to take into account any changes 
+        # to individual overlay bounds
+        self.__updateBounds()
+ 
+        # The main purpose of this method is to preserve
+        # the current display location in terms of the
+        # currently selected overlay, when the overlay
+        # bounds have changed. We don't care about changes
+        # to the options for other overlays.
+        if (overlay != self.getSelectedOverlay()):
             return
 
-        # Calculate the image world location using
-        # the old display<-> world transform, then
-        # transform it back to the new world->display
-        # transform
-        
-        imgWorldLoc = transform.transform(
-            [self.location.xyz],
-            display.getTransform(display.getLastTransform(), 'world'))[0]
-        newDispLoc  = transform.transform(
-            [imgWorldLoc],
-            display.getTransform('world', 'display'))[0]
+        # Now we want to update the display location
+        # so that it is preserved with respect to the
+        # currently selected overlay.
+        newDispLoc = opts.transformDisplayLocation(name, oldDispLoc)
 
-        # Update the display coordinate 
-        # system bounds, and the location
-        self._updateBounds()
-        self.location.xyz = newDispLoc
+        # Ignore the new display location
+        # if it is not in the display bounds
+        if self.bounds.inBounds(newDispLoc):
+            log.debug('Preserving display location in '
+                      'terms of overlay {} ({}.{}): {} -> {}'.format(
+                          overlay,
+                          type(opts).__name__,
+                          name,
+                          oldDispLoc,
+                          newDispLoc))
+
+            self.location.xyz = newDispLoc
 
 
-    def _updateBounds(self, *a):
-        """Called when the image list changes, or when any image display
+    def __syncOverlayDisplayChanged(self, *a):
+        """Called when the :attr:`syncOverlayDisplay` property
+        changes.
+
+        Synchronises or unsychronises the :class:`.Display` and
+        :class:`.DisplayOpts` instances for every overlay to/from their
+        parent instances.
+        """
+
+        if self.getParent() is None:
+            return
+
+        for display in self.__displays.values():
+            
+            opts = display.getDisplayOpts()
+
+            if self.syncOverlayDisplay:
+                display.syncAllToParent()
+                opts   .syncAllToParent()
+            else:
+                display.unsyncAllFromParent()
+                opts   .unsyncAllFromParent()
+
+                
+    def __updateBounds(self, *a):
+        """Called when the overlay list changes, or when any overlay display
         transform is changed. Updates the :attr:`bounds` property.
         """
 
-        if len(self._imageList) == 0:
+        if len(self.__overlayList) == 0:
             minBounds = [0.0, 0.0, 0.0]
             maxBounds = [0.0, 0.0, 0.0]
             
@@ -347,10 +511,11 @@ class DisplayContext(props.SyncableHasProperties):
             minBounds = 3 * [ sys.float_info.max]
             maxBounds = 3 * [-sys.float_info.max]
 
-        for img in self._imageList.images:
+        for ovl in self.__overlayList:
 
-            display = self._imageDisplays[img]
-            lo, hi  = display.getDisplayBounds()
+            display = self.__displays[ovl]
+            opts    = display.getDisplayOpts()
+            lo, hi  = opts   .getDisplayBounds()
 
             for ax in range(3):
 
@@ -360,32 +525,9 @@ class DisplayContext(props.SyncableHasProperties):
         self.bounds[:] = [minBounds[0], maxBounds[0],
                           minBounds[1], maxBounds[1],
                           minBounds[2], maxBounds[2]]
- 
-    
-    def _volumeChanged(self, *a):
-        """Called when the :attr:`volume` property changes.
-
-        Propagates the change on to the :attr:`ImageDisplay.volume` property
-        for each image in the :class:`~fsl.data.image.ImageList`.
-        """
-
-        for image in self._imageList:
-
-            display = self._imageDisplays[image]
-            
-            # The volume property for each image should
-            # be clamped to the possible value for that
-            # image, so we don't need to check if the
-            # current volume value is valid for each image
-            display.volume = self.volume
-
-            
-    def _boundsChanged(self, *a):
-        """Called when the :attr:`bounds` property changes.
-
-        Updates the constraints on the :attr:`location` property.
-        """
-
+        
+        # Update the constraints on the :attr:`location` 
+        # property to be aligned with the new bounds
         self.location.setLimits(0, self.bounds.xlo, self.bounds.xhi)
         self.location.setLimits(1, self.bounds.ylo, self.bounds.yhi)
         self.location.setLimits(2, self.bounds.zlo, self.bounds.zhi)

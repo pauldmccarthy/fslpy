@@ -26,7 +26,7 @@ class FSLViewSplash(wx.Frame):
         splashimg  = splashbmp.ConvertToImage()
     
         splashPanel    = imagepanel.ImagePanel(self, splashimg)
-        self.statusBar = wx.StaticText(self)
+        self.statusBar = wx.StaticText(self, style=wx.ELLIPSIZE_MIDDLE)
         self.statusBar.SetLabel(strings.messages[self, 'default'])
 
         self.statusBar.SetBackgroundColour('white')

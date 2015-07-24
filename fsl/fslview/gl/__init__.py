@@ -9,10 +9,9 @@
 
 This package contains the OpenGL rendering code used by FSLView. It contains a
 number of modules which contain logic that is independent of the available
-OpenGL version (e.g. the :class:`~fsl.fslview.gl.slicecanvas.SliceCanvas`
-class), and also contains a number of sub-packages (currently two) which
-contain OpenGL-version-dependent modules that are used by the version
-independent ones.
+OpenGL version (e.g. the :class:`.SliceCanvas` class), and also contains a
+number of sub-packages (currently two) which contain OpenGL-version-dependent
+modules that are used by the version independent ones.
 
 The available OpenGL API version can only be determined once an OpenGL context
 has been created, and a display is available for rendering. Therefore, the
@@ -20,9 +19,8 @@ package-level :func:`bootstrap` function is called by the version-independent
 module classes as needed, to dynamically determine which version-dependent
 modules should be loaded.  Users of this package should not need to worry
 about any of this - just instantiate the GUI classes provided by the
-version-independent modules (e.g. the
-:class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` class) as you would any
-other :mod:`wx` widget.
+version-independent modules (e.g. the :class:`.LightBoxCanvas` class) as you
+would any other :mod:`wx` widget.
 
 Two methods of OpenGL usage are supported:
 
@@ -41,12 +39,20 @@ Two super classes are provided for each of these cases:
 After the :func:`boostrap` function has been called, the following
 package-level attributes will be available:
 
- - ``GL_VERSION``:     A string containing the target OpenGL version, in the
-                       format ``major.minor``, e.g. ``2.1``.
+ - ``GL_VERSION``:         A string containing the target OpenGL version, in 
+                           the format ``major.minor``, e.g. ``2.1``.
 
- - ``glvolume_funcs``: The version-specific module containing functions for
-                       rendering :class:`~fsl.fslview.gl.glvolume.GLVolume`
-                       instances.
+ - ``glvolume_funcs``:     The version-specific module containing functions for
+                           rendering :class:`.GLVolume` instances.
+
+ - ``glrgbvector_funcs``:  The version-specific module containing functions for
+                           rendering :class:`.GLRGBVector` instances.
+
+ - ``gllinevector_funcs``: The version-specific module containing functions for
+                           rendering :class:`.GLLineVector` instances.
+
+ - ``glmodel_funcs``:      The version-specific module containing functions for
+                           rendering :class:`.GLModel` instances. 
 """
 
 import logging 
@@ -88,7 +94,7 @@ OpenGL.ERROR_LOGGING  = True
 if os.environ.get('PYOPENGL_PLATFORM', None) == 'osmesa':
     OpenGL.STORE_POINTERS = False
 
-    
+
 def bootstrap(glVersion=None):
     """Imports modules appropriate to the specified OpenGL version.
 
@@ -170,8 +176,9 @@ def bootstrap(glVersion=None):
 
         # Spline interpolation is not currently
         # available in the GL14 implementation
-        import fsl.fslview.displaycontext.display as di
-        di.Display.interpolation.removeChoice('spline')
+        import fsl.fslview.displaycontext as dc
+        dc.VolumeOpts   .interpolation.removeChoice('spline')
+        dc.RGBVectorOpts.interpolation.removeChoice('spline')
         
 
     renderer = gl.glGetString(gl.GL_RENDERER)
@@ -190,21 +197,27 @@ def bootstrap(glVersion=None):
         log.debug('Software-based rendering detected - '
                   'lowering default performance settings.')
 
-        import fsl.fslview.displaycontext.display   as di
-        import fsl.fslview.displaycontext.sceneopts as so
+        import fsl.fslview.displaycontext as dc
 
-        so.SceneOpts.performance.setConstraint(None, 'default', 2)
+        dc.SceneOpts.performance.setConstraint(None, 'default', 2)
 
         # And disable some fancy options - spline
         # may have been disabled above, so absorb
         # the ValueError if it occurs
-        try: di.Display.interpolation.removeChoice('spline')
+
+        # TODO Remove this code duplication
+        try:
+            dc.VolumeOpts   .interpolation.removeChoice('spline')
+            dc.RGBVectorOpts.interpolation.removeChoice('spline')
+            
         except ValueError: pass
 
     thismod.GL_VERSION         = verstr
     thismod.glvolume_funcs     = glpkg.glvolume_funcs
     thismod.glrgbvector_funcs  = glpkg.glrgbvector_funcs
     thismod.gllinevector_funcs = glpkg.gllinevector_funcs
+    thismod.glmodel_funcs      = glpkg.glmodel_funcs
+    thismod.gllabel_funcs      = glpkg.gllabel_funcs
     thismod._bootstrapped      = True
 
 
@@ -251,7 +264,24 @@ def getWXGLContext(parent=None):
     # context has been created. Destroying
     # the canvas is the responsibility of the
     # calling code.
-    canvas = wxgl.GLCanvas(parent)
+
+    # There's something wrong with wxPython's
+    # GLCanvas (on OSX at least) - the pixel
+    # format attributes have to be set on the
+    # *first* GLCanvas that is created -
+    # setting them on subsequent canvases will
+    # have no effect. But if you set them on
+    # the first canvas, all canvases that are
+    # subsequently created will inherit the
+    # same properties.
+    attribs = [wxgl.WX_GL_RGBA,
+               wxgl.WX_GL_DOUBLEBUFFER,
+               wxgl.WX_GL_STENCIL_SIZE, 4,
+               wxgl.WX_GL_DEPTH_SIZE,   8,
+               0,
+               0] 
+
+    canvas = wxgl.GLCanvas(parent, attribList=attribs)
     canvas.SetSize((0, 0))
 
     # The canvas must be visible before we are

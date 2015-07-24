@@ -4,38 +4,32 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides two classes - the :class:`FSLViewPanel`, and the
-:class:`FSLViewToolBar`.
+"""This module provides an important class - the :class:`FSLViewPanel`.
 
-A :class:`FSLViewPanel` object is a :class:`wx.Panel` which provides some
-sort of view of a collection of :class:`~fsl.data.image.Image` objects,
-contained within an :class:`~fsl.data.image.ImageList`. Similarly, a
-:class:`FSLViewToolBar` is a :class:`wx.lib.agw.aui.AuiToolBar` which
-provides some sort of control over the view.
+A :class:`FSLViewPanel` object is a :class:`wx.Panel` which provides some sort
+of view of a collection of overlay objects, contained within an
+:class:`.OverlayList`. 
 
-Instances of these classes are also
-:class:`~fsl.fslview.actions.ActionProvider` instances - any actions which
-are specified during construction may be exposed to the user. Furthermore,
-any display configuration options which should be made available available
-to the user should be added as :class:`~props.PropertyBase` attributes of
-the :class:`FSLViewPanel` subclass.
+``FSLViewPanel`` instances are also :class:`.ActionProvider` instances - any
+actions which are specified during construction may (or may not ) be exposed
+to the user. Furthermore, any display configuration options which should be
+made available available to the user should be added as :class:`.PropertyBase`
+attributes of the :class:`FSLViewPanel` subclass.
 
 See the following for examples of :class:`FSLViewPanel` subclasses:
 
-  - :class:`~fsl.fslview.views.OrthoPanel`
-  - :class:`~fsl.fslview.views.LightBoxPanel`
-  - :class:`~fsl.fslview.views.TimeSeriesPanel`
-  - :class:`~fsl.fslview.controls.ImageListPanel`
-  - :class:`~fsl.fslview.controls.ImageDisplayPanel`
-  - :class:`~fsl.fslview.controls.LocationPanel`
+  - :class:`.OrthoPanel`
+  - :class:`.LightBoxPanel`
+  - :class:`.TimeSeriesPanel`
+  - :class:`.OverlayListPanel`
+  - :class:`.OverlayDisplayPanel`
+  - :class:`.LocationPanel`
 """
 
 
 import logging
 
 import wx
-
-import fsl.data.image as fslimage
 
 import actions
 import displaycontext
@@ -50,49 +44,49 @@ class _FSLViewPanel(actions.ActionProvider):
     A :class:`ViewPanel` has the following attributes, intended to be
     used by subclasses:
     
-      - :attr:`_imageList`: A reference to the
-        :class:`~fsl.data.image.ImageList` instance which contains the images
-        to be displayed.
+      - :attr:`_overlayList`: A reference to the :class:`.OverlayList`
+        instance which contains the images to be displayed.
     
       - :attr:`_displayCtx`: A reference to the
         :class:`~fsl.fslview.displaycontext.DisplayContext` instance, which
-        contains display related properties about the :attr:`_imageList`.
+        contains display related properties about the :attr:`_overlayList`.
     
       - :attr:`_name`: A unique name for this :class:`ViewPanel`.
+
+
+    TODO Important notes about:
+
+      - :meth:`destroy`
+
+      - :meth:`__del__`
     """ 
 
     
     def __init__(self,
-                 imageList,
+                 overlayList,
                  displayCtx,
                  actionz=None):
         """Create a :class:`ViewPanel`.
 
-        :arg imageList:  A :class:`~fsl.data.image.ImageList` instance.
+        :arg overlayList: A :class:`.OverlayList` instance.
         
-        :arg displayCtx: A :class:`~fsl.fslview.displaycontext.DisplayContext`
-                         instance.
+        :arg displayCtx:  A :class:`.DisplayContext` instance.
 
-        :arg actionz:    A dictionary containing ``{name -> function}``
-                         actions (see
-                         :class:`~fsl.fslview.actions.ActionProvider`).
+        :arg actionz:     A dictionary containing ``{name -> function}``
+                          actions (see :class:`.ActionProvider`).
         """
         
-        actions.ActionProvider.__init__(self, imageList, displayCtx, actionz)
-
-        if not isinstance(imageList, fslimage.ImageList):
-            raise TypeError(
-                'imageList must be a fsl.data.image.ImageList instance')
+        actions.ActionProvider.__init__(self, overlayList, displayCtx, actionz)
 
         if not isinstance(displayCtx, displaycontext.DisplayContext):
             raise TypeError(
                 'displayCtx must be a '
-                'fsl.fslview.displaycontext.DisplayContext instance') 
+                '{} instance'.format( displaycontext.DisplayContext.__name__))
 
-        self._imageList  = imageList
-        self._displayCtx = displayCtx
-        self._name       = '{}_{}'.format(self.__class__.__name__, id(self))
-        self.__destroyed = False
+        self._overlayList = overlayList
+        self._displayCtx  = displayCtx
+        self._name        = '{}_{}'.format(self.__class__.__name__, id(self))
+        self.__destroyed  = False
 
         
     def destroy(self):
@@ -117,33 +111,31 @@ class _FSLViewPanel(actions.ActionProvider):
         called. So this method *must* be called by managing code when a panel
         is deleted.
 
-        Overriding subclass implementations should also call this base class
-        method, otherwise warnings will probably be output to the log (see 
-        :meth:`__del__`)
+        Overriding subclass implementations must call this base class
+        method, otherwise memory leaks will probably occur, and warnings will
+        probably be output to the log (see :meth:`__del__`). This
+        implememtation should be called after the subclass has performed its
+        own clean-up, as this method expliciltly clears the ``_overlayList``
+        and ``_displayCtx`` references.
         """
-        self.__destroyed = True
+        actions.ActionProvider.destroy(self)
+        self._displayCtx  = None
+        self._overlayList = None
+        self.__destroyed  = True
 
     
     def __del__(self):
-
         if not self.__destroyed:
             log.warning('The {}.destroy() method has not been called '
                         '- unless the application is shutting down, '
                         'this is probably a bug!'.format(type(self).__name__))
 
-        actions.ActionProvider.__del__(self)
 
-
-class FSLViewPanel(_FSLViewPanel, wx.Panel):
+class FSLViewPanel(_FSLViewPanel, wx.PyPanel):
     """
     """
 
     
-    def __init__(self, parent, imageList, displayCtx, actionz=None):
-        wx.Panel.__init__(self, parent)
-        _FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
-
-        
-    def __del__(self):
-        wx.Panel     .__del__(self)
-        _FSLViewPanel.__del__(self)
+    def __init__(self, parent, overlayList, displayCtx, actionz=None):
+        wx.PyPanel.__init__(self, parent)
+        _FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)

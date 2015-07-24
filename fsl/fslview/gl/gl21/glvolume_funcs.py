@@ -81,7 +81,9 @@ def compileShaders(self):
     self.clipLowPos         = gl.glGetUniformLocation(self.shaders,
                                                       'clipLow')
     self.clipHighPos        = gl.glGetUniformLocation(self.shaders,
-                                                      'clipHigh') 
+                                                      'clipHigh')
+    self.invertClipPos      = gl.glGetUniformLocation(self.shaders,
+                                                      'invertClip')
 
 
 def init(self):
@@ -108,15 +110,14 @@ def updateShaderState(self):
     current display properties.
     """
 
-    display = self.display
-    opts    = self.displayOpts
+    opts = self.displayOpts
 
     gl.glUseProgram(self.shaders)
     
     # bind the current interpolation setting,
     # image shape, and image->screen axis
     # mappings
-    gl.glUniform1f( self.useSplinePos,     display.interpolation == 'spline')
+    gl.glUniform1f( self.useSplinePos,     opts.interpolation == 'spline')
     gl.glUniform3fv(self.imageShapePos, 1, np.array(self.image.shape,
                                                      dtype=np.float32))
 
@@ -124,20 +125,18 @@ def updateShaderState(self):
     # range, but the shader needs them to be in image
     # texture value range (0.0 - 1.0). So let's scale 
     # them.
-    clipLow = opts.clippingRange[0]           * \
-        self.imageTexture.invVoxValXform[0, 0] + \
-        self.imageTexture.invVoxValXform[3, 0]
-    clipHigh = opts.clippingRange[1]          * \
-        self.imageTexture.invVoxValXform[0, 0] + \
-        self.imageTexture.invVoxValXform[3, 0] 
+    xform    = self.imageTexture.invVoxValXform
+    clipLow  = opts.clippingRange[0] * xform[0, 0] + xform[3, 0]
+    clipHigh = opts.clippingRange[1] * xform[0, 0] + xform[3, 0]
 
-    gl.glUniform1f(self.clipLowPos,  clipLow)
-    gl.glUniform1f(self.clipHighPos, clipHigh)
-
-    # Bind transformation matrices to transform
-    # display coordinates to voxel coordinates,
-    # and to scale voxel values to colour map
-    # texture coordinates
+    gl.glUniform1f(self.clipLowPos,    clipLow)
+    gl.glUniform1f(self.clipHighPos,   clipHigh)
+    gl.glUniform1f(self.invertClipPos, opts.invertClipping)
+    
+    # Bind transformation matrix to transform
+    # from image texture values to voxel values,
+    # and and to scale said voxel values to
+    # colour map texture coordinates
     vvx = transform.concat(self.imageTexture.voxValXform,
                            self.colourTexture.getCoordinateTransform())
     vvx = np.array(vvx, dtype=np.float32).ravel('C')
@@ -187,10 +186,12 @@ def _prepareVertexAttributes(self, vertices, voxCoords, texCoords):
     gl.glVertexAttribPointer(
         texPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(24))
 
-    # The fast shader does not use voxel coordinates
-    # so, on some GL drivers, attempting to bind it
-    # will cause an error
-    if not self.display.softwareMode:
+    # The sw shader does not use voxel coordinates
+    # so attempting to binding would raise an error.
+    # So we only attempt to bind if softwareMode is
+    # false, and there is a shader uniform position
+    # for the voxel coordinates available.
+    if not self.display.softwareMode and voxPos != -1:
         gl.glVertexAttribPointer(
             voxPos, 3, gl.GL_FLOAT, gl.GL_FALSE, 36, ctypes.c_void_p(12))
         gl.glEnableVertexAttribArray(self.voxCoordPos)
@@ -246,7 +247,9 @@ def postDraw(self):
     gl.glDisableVertexAttribArray(self.vertexPos)
     gl.glDisableVertexAttribArray(self.texCoordPos)
 
-    if not self.display.softwareMode:
+    # See comments in _prepareVertexAttributes
+    # about softwareMode/voxel coordinates
+    if not self.display.softwareMode and self.voxCoordPos != -1:
         gl.glDisableVertexAttribArray(self.voxCoordPos)
     
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)

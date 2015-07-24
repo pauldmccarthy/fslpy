@@ -70,10 +70,17 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
                 type(self.label).__name__,
                 self.labelText)
 
+        def Enable(self, *args, **kwargs):
+            wx.Panel.Enable(self, *args, **kwargs)
+            self.tool.Enable(*args, **kwargs)
             
-    def __init__(self, parent, imageList, displayCtx, actionz=None):
+            if self.label is not None:
+                self.label.Enable(*args, **kwargs)
+
+            
+    def __init__(self, parent, overlayList, displayCtx, actionz=None):
         wx.PyPanel.__init__(self, parent)
-        fslpanel._FSLViewPanel.__init__(self, imageList, displayCtx, actionz)
+        fslpanel._FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
 
         self.__tools      = []
         self.__index      = 0
@@ -187,6 +194,12 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         self.Layout()
 
 
+    def Enable(self, *args, **kwargs):
+        wx.PyPanel.Enable(self, *args, **kwargs)
+        for t in self.__tools:
+            t.Enable(*args, **kwargs)
+
+
     def GenerateTools(self, toolSpecs, targets, add=True):
         """
         Targets may be a single object, or a dict of [toolSpec : target]
@@ -203,7 +216,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             tool = props.buildGUI(
                 self, targets[toolSpec.key], toolSpec, showUnlink=False)
 
-            if isinstance(toolSpec, actions.ActionButton):
+            if isinstance(toolSpec, props.Button):
                 label = None
             else:
                 
@@ -356,8 +369,3 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
         if postevent:
             wx.PostEvent(self, ToolBarEvent())
-
-        
-    def __del__(self):
-        wx.Panel              .__del__(self)
-        fslpanel._FSLViewPanel.__del__(self)        

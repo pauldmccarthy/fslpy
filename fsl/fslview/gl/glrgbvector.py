@@ -9,10 +9,11 @@ vector images in RGB mode.
 """
 
 import numpy                   as np
+import OpenGL.GL               as gl
+
+
 import fsl.fslview.gl          as fslgl
-import fsl.fslview.gl.routines as glroutines
 import fsl.fslview.gl.glvector as glvector
-import fsl.utils.transform     as transform
 
 
 class GLRGBVector(glvector.GLVector):
@@ -27,20 +28,34 @@ class GLRGBVector(glvector.GLVector):
         glvector.GLVector.__init__(self, image, display, self.__prefilter)
         fslgl.glrgbvector_funcs.init(self)
 
+        self.displayOpts.addListener('interpolation',
+                                     self.name,
+                                     self.__interpChanged)
 
-    def generateVertices(self, zpos, xform):
-        vertices, voxCoords, texCoords = glroutines.slice2D(
-            self.image.shape[:3],
-            self.xax,
-            self.yax,
-            zpos, 
-            self.display.getTransform('voxel',   'display'),
-            self.display.getTransform('display', 'voxel'))
 
-        if xform is not None: 
-            vertices = transform.transform(vertices, xform)
+    def destroy(self):
+        self.displayOpts.removeListener('interpolation', self.name)
+        glvector.GLVector.destroy(self)
 
-        return vertices, voxCoords, texCoords 
+
+    def refreshImageTexture(self):
+        glvector.GLVector.refreshImageTexture(self)
+        self.__setInterp()
+
+        
+    def __setInterp(self):
+        opts = self.displayOpts
+
+        if opts.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                            interp = gl.GL_LINEAR 
+        
+        self.imageTexture.set(interp=interp)
+
+        
+    def __interpChanged(self, *a):
+        self.__setInterp()
+        self.updateShaderState()
+        self.onUpdate()
 
 
     def compileShaders(self):

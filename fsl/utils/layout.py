@@ -240,7 +240,9 @@ def buildOrthoLayout(canvasBmps,
     bitmaps, and colour bar bitmap.
     """
 
-    if labelBmps is None: labelBmps = [None] * len(canvasBmps)
+    if labelBmps is None:
+        labelBmps  = [None] * len(canvasBmps)
+        showLabels = False
 
     canvasBoxes = map(lambda cbmp, lbmps: buildCanvasBox(cbmp,
                                                          lbmps,

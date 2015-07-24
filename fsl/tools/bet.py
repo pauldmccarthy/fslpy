@@ -9,8 +9,12 @@ from collections import OrderedDict
 
 import props
 
+# The colour maps module must be initialised
+# before the displaycontext module can be loaded
+import fsl.fslview.colourmaps       as colourmaps
+colourmaps.init()
+
 import fsl.data.image               as fslimage
-import fsl.data.imageio             as iio
 import fsl.utils.transform          as transform
 import fsl.fslview.displaycontext   as displaycontext
 import fsl.fslview.gl               as fslgl
@@ -35,12 +39,12 @@ class Options(props.HasProperties):
 
     inputImage           = props.FilePath(
         exists=True,
-        suffixes=iio.ALLOWED_EXTENSIONS,
+        suffixes=fslimage.ALLOWED_EXTENSIONS,
         required=True)
     outputImage          = props.FilePath(required=True)
     t2Image              = props.FilePath(
         exists=True,
-        suffixes=iio.ALLOWED_EXTENSIONS,
+        suffixes=fslimage.ALLOWED_EXTENSIONS,
         required=lambda i: i.runChoice == '-A2')
 
     runChoice            = props.Choice(runChoices)
@@ -67,7 +71,7 @@ class Options(props.HasProperties):
         """
 
         if not valid: return
-        value = iio.removeExt(value)
+        value = fslimage.removeExt(value)
         self.outputImage = value + '_brain'
 
         
@@ -195,7 +199,7 @@ def selectHeadCentre(opts, button):
     image      = fslimage.Image(opts.inputImage)
     imageList  = fslimage.ImageList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
-    display    = displayCtx.getDisplayProperties(image)
+    display    = displayCtx.getDisplay(image)
     parent     = button.GetTopLevelParent()
     frame      = orthopanel.OrthoDialog(parent,
                                         imageList,
@@ -223,7 +227,7 @@ def selectHeadCentre(opts, button):
         opts.yCoordinate = round(y)
         opts.zCoordinate = round(z)
 
-    displayCtx.addListener('location', 'BETHeadCentre', updateOpts)
+    displayCtx.addListener('location', 'BETHeadCentre', updateOpts, weak=False)
 
     # Set the initial location on the orthopanel.
     voxCoords           = [opts.xCoordinate,
@@ -303,7 +307,7 @@ def runBet(parent, opts):
         imageList = fslimage.ImageList([inImage, outImage])
 
         displayCtx = displaycontext.DisplayContext(imageList)
-        outDisplay = displayCtx.getDisplayProperties(outImage)
+        outDisplay = displayCtx.getDisplay(outImage)
         outOpts    = outDisplay.getDisplayOpts()
 
         outOpts.cmap              = 'Red'

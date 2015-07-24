@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# render.py - Generate screenshots of images using OpenGL.
+# render.py - Generate screenshots of overlays using OpenGL.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -33,9 +33,9 @@ import fsl
 import fsl.utils.layout                        as fsllayout
 import fsl.utils.colourbarbitmap               as cbarbitmap
 import fsl.utils.textbitmap                    as textbitmap
-import fsl.data.image                          as fslimage
 import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
+import fsl.fslview.overlay                     as fsloverlay
 import fsl.fslview.displaycontext              as displaycontext
 import fsl.fslview.displaycontext.orthoopts    as orthoopts
 import fsl.fslview.displaycontext.lightboxopts as lightboxopts
@@ -52,7 +52,7 @@ CBAR_SIZE   = 75
 LABEL_SIZE  = 20
 
 
-def buildLabelBitmaps(imageList,
+def buildLabelBitmaps(overlayList,
                       displayCtx,
                       canvasAxes, 
                       canvasBmps,
@@ -70,24 +70,34 @@ def buildLabelBitmaps(imageList,
     # changed to red
     fgColour = 'white'
 
-    image   = displayCtx.getSelectedImage()
-    display = displayCtx.getDisplayProperties(image)
+    overlay = displayCtx.getReferenceImage(displayCtx.getSelectedOverlay())
 
-    # The image is being displayed as it is stored on
-    # disk - the image.getOrientation method calculates
-    # and returns labels for each voxelwise axis.
-    if display.transform in ('pixdim', 'id'):
-        xorient = image.getVoxelOrientation(0)
-        yorient = image.getVoxelOrientation(1)
-        zorient = image.getVoxelOrientation(2)
-
-    # The image is being displayed in 'real world' space -
-    # the definition of this space may be present in the
-    # image meta data
+    # There's no reference image for the selected overlay,
+    # so we cannot calculate orientation labels
+    if overlay is None:
+        xorient = constants.ORIENT_UNKNOWN
+        yorient = constants.ORIENT_UNKNOWN
+        zorient = constants.ORIENT_UNKNOWN
     else:
-        xorient = image.getWorldOrientation(0)
-        yorient = image.getWorldOrientation(1)
-        zorient = image.getWorldOrientation(2)
+
+        display = displayCtx.getDisplay(overlay)
+        opts    = display.getDisplayOpts()
+
+        # The overlay is being displayed as it is stored on
+        # disk - the image.getOrientation method calculates
+        # and returns labels for each voxelwise axis.
+        if opts.transform in ('pixdim', 'id'):
+            xorient = overlay.getVoxelOrientation(0)
+            yorient = overlay.getVoxelOrientation(1)
+            zorient = overlay.getVoxelOrientation(2)
+
+        # The overlay is being displayed in 'real world' space -
+        # the definition of this space may be present in the
+        # overlay meta data
+        else:
+            xorient = overlay.getWorldOrientation(0)
+            yorient = overlay.getWorldOrientation(1)
+            zorient = overlay.getWorldOrientation(2)
 
     if constants.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
         fgColour = 'red'
@@ -136,18 +146,26 @@ def buildLabelBitmaps(imageList,
     return labelBmps
 
 
-def buildColourBarBitmap(imageList,
+def buildColourBarBitmap(overlayList,
                          displayCtx,
                          width,
                          height,
                          cbarLocation,
                          cbarLabelSide,
                          bgColour):
-    """Creates and returns a bitmap containing a colour bar.
+    """If the currently selected overlay has a display range,
+    creates and returns a bitmap containing a colour bar. Returns
+    ``None`` otherwise.
     """
-    
-    display = displayCtx.getDisplayProperties(displayCtx.selectedImage)
+
+    overlay = displayCtx.getSelectedOverlay()
+    display = displayCtx.getDisplay(overlay)
     opts    = display.getDisplayOpts()
+
+    # TODO Support other overlay types which
+    # have a display range (when they exist).
+    if not isinstance(opts, displaycontext.VolumeOpts):
+        return None
     
     if   cbarLocation in ('top', 'bottom'): orient = 'horizontal'
     elif cbarLocation in ('left', 'right'): orient = 'vertical'
@@ -169,6 +187,11 @@ def buildColourBarBitmap(imageList,
         orient,
         labelSide,
         bgColour=map(lambda c: c / 255.0, bgColour))
+
+    # The colourBarBitmap function returns a w*h*4
+    # array, but the fsl.utils.layout.Bitmap (see
+    # the next function) assumes a h*w*4 array
+    cbarBmp = cbarBmp.transpose((1, 0, 2))
     
     return cbarBmp
 
@@ -217,7 +240,7 @@ def adjustSizeForColourBar(width, height, showColourBar, colourBarLocation):
 
 
 def calculateOrthoCanvasSizes(
-        imageList,
+        overlayList,
         displayCtx,
         width,
         height,
@@ -298,12 +321,12 @@ def run(args, context):
     fslgl.getOSMesaContext()
     fslgl.bootstrap((1, 4))
 
-    imageList, displayCtx = context
+    overlayList, displayCtx = context
 
     if   args.scene == 'ortho':    sceneOpts = orthoopts   .OrthoOpts()
     elif args.scene == 'lightbox': sceneOpts = lightboxopts.LightBoxOpts()
 
-    fslview_parseargs.applySceneArgs(args, imageList, displayCtx, sceneOpts)
+    fslview_parseargs.applySceneArgs(args, overlayList, displayCtx, sceneOpts)
 
     # Calculate canvas and colour bar sizes
     # so that the entire scene will fit in
@@ -320,7 +343,7 @@ def run(args, context):
     # Lightbox view -> only one canvas
     if args.scene == 'lightbox':
         c = lightboxcanvas.OSMesaLightBoxCanvas(
-            imageList,
+            overlayList,
             displayCtx,
             zax=sceneOpts.zax,
             width=width,
@@ -361,7 +384,7 @@ def run(args, context):
             centres    = [centres[   1], centres[   0], centres[   2]]
             zooms      = [zooms[     1], zooms[     0], zooms[     2]]
         
-        sizes = calculateOrthoCanvasSizes(imageList,
+        sizes = calculateOrthoCanvasSizes(overlayList,
                                           displayCtx,
                                           width,
                                           height,
@@ -380,7 +403,7 @@ def run(args, context):
                 centre = (displayCtx.location[xax], displayCtx.location[yax])
 
             c = slicecanvas.OSMesaSliceCanvas(
-                imageList,
+                overlayList,
                 displayCtx,
                 zax=zax,
                 width=int(width),
@@ -410,7 +433,7 @@ def run(args, context):
     if args.scene == 'lightbox' or not sceneOpts.showLabels:
         labelBmps = None
     else:
-        labelBmps = buildLabelBitmaps(imageList,
+        labelBmps = buildLabelBitmaps(overlayList,
                                       displayCtx,
                                       canvasAxes,
                                       canvases,
@@ -429,17 +452,18 @@ def run(args, context):
 
     # Render a colour bar if required
     if sceneOpts.showColourBar:
-        cbarBmp = buildColourBarBitmap(imageList,
+        cbarBmp = buildColourBarBitmap(overlayList,
                                        displayCtx,
                                        cbarWidth,
                                        cbarHeight,
                                        sceneOpts.colourBarLocation,
                                        sceneOpts.colourBarLabelSide,
                                        args.background)
-        layout  = buildColourBarLayout(layout,
-                                       cbarBmp,
-                                       sceneOpts.colourBarLocation,
-                                       sceneOpts.colourBarLabelSide)
+        if cbarBmp is not None:
+            layout  = buildColourBarLayout(layout,
+                                           cbarBmp,
+                                           sceneOpts.colourBarLocation,
+                                           sceneOpts.colourBarLabelSide)
 
  
     if args.outfile is not None:
@@ -489,28 +513,30 @@ def parseArgs(argv):
 def context(args):
 
     # Create an image list and display context 
-    imageList  = fslimage.ImageList()
-    displayCtx = displaycontext.DisplayContext(imageList)
+    overlayList  = fsloverlay.OverlayList()
+    displayCtx = displaycontext.DisplayContext(overlayList)
 
-    # The handleImageArgs function uses the
-    # fsl.data.imageio.loadImages  function,
+    # TODO rewrite for non-volumetric
+    # 
+    # The handleOverlayArgs function uses the
+    # fsl.fslview.overlay.loadOverlays function,
     # which will call these functions as it
-    # goes through the list of images to be
+    # goes through the list of overlay to be
     # loaded.
-    def load(image):
-        log.info('Loading image {} ...'.format(image))
-    def error(image, error):
-        log.info('Error loading image {}: '.format(image, error))
+    def load(ovl):
+        log.info('Loading overlay {} ...'.format(ovl))
+    def error(ovl, error):
+        log.info('Error loading overlay {}: '.format(ovl, error))
 
-    # Load the images specified on the command
+    # Load the overlays specified on the command
     # line, and configure their display properties
-    fslview_parseargs.applyImageArgs(
-        args, imageList, displayCtx, loadFunc=load, errorFunc=error)
+    fslview_parseargs.applyOverlayArgs(
+        args, overlayList, displayCtx, loadFunc=load, errorFunc=error)
 
-    if len(imageList) == 0:
-        raise RuntimeError('At least one image must be specified')
+    if len(overlayList) == 0:
+        raise RuntimeError('At least one overlay must be specified')
 
-    return imageList, displayCtx
+    return overlayList, displayCtx
  
 
 FSL_TOOLNAME  = 'Render'

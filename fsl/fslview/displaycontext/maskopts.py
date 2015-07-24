@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# maskdisplay.py -
+# maskopts.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -8,42 +8,51 @@
 
 import numpy as np
 
-
 import props
 
 import fsl.data.strings as strings
-import display          as fsldisplay
+import                     volumeopts
 
-class MaskOpts(fsldisplay.DisplayOpts):
+
+class MaskOpts(volumeopts.ImageOpts):
 
     colour     = props.Colour()
     invert     = props.Boolean(default=False)
     threshold  = props.Bounds(
         ndims=1,
         labels=[strings.choices['VolumeOpts.displayRange.min'],
-                strings.choices['VolumeOpts.displayRange.max']]) 
+                strings.choices['VolumeOpts.displayRange.max']])
 
-    def __init__(self, image, display, imageList, displayCtx, parent=None):
+    def __init__(self, overlay, *args, **kwargs):
 
-        if np.prod(image.shape) > 2 ** 30:
-            sample = image.data[..., image.shape[-1] / 2]
+        if np.prod(overlay.shape) > 2 ** 30:
+            sample = overlay.data[..., overlay.shape[-1] / 2]
             self.dataMin = float(sample.min())
             self.dataMax = float(sample.max())
         else:
-            self.dataMin = float(image.data.min())
-            self.dataMax = float(image.data.max())
+            self.dataMin = float(overlay.data.min())
+            self.dataMax = float(overlay.data.max())
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
 
-        # This is a hack. Mask images are rendered
-        # using GLMask, which inherits from GLVolume.
-        # The latter assumes that a 'clippingRange'
-        # attribute is present on Opts instances
-        # (see GLVolume.clippingRange). So we're
-        # adding a dummy attribute to make the
+        #################
+        # This is a hack.
+        #################
+
+        # Mask images are rendered using GLMask, which
+        # inherits from GLVolume. The latter assumes
+        # that 'clippingRange', 'interpolation', and
+        # 'invertClipping' attributes are present on
+        # Opts instances (see the VolumeOpts class).
+        # So we're adding dummy attributes to make the
         # GLVolume rendering code happy.
-        self.clippingRange = (self.dataMin - 1, self.dataMax + 1)
+        #
+        # TODO Write independent GLMask rendering routines
+        # instead of using the GLVolume implementations
+        self.clippingRange  = (self.dataMin - 1, self.dataMax + 1)
+        self.interpolation  = 'none'
+        self.invertClipping = False
 
         self.threshold.xmin = self.dataMin - dMinDistance
         self.threshold.xmax = self.dataMax + dMinDistance
@@ -51,9 +60,4 @@ class MaskOpts(fsldisplay.DisplayOpts):
         self.threshold.xhi  = self.dataMax + dMinDistance 
         self.setConstraint('threshold', 'minDistance', dMinDistance)
 
-        fsldisplay.DisplayOpts.__init__(self,
-                                        image,
-                                        display,
-                                        imageList,
-                                        displayCtx,
-                                        parent)
+        volumeopts.ImageOpts.__init__(self, overlay, *args, **kwargs)

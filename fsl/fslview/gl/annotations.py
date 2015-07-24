@@ -7,9 +7,8 @@
 """This module provides the :class:`Annotations` class, which implements
 functionality to draw 2D OpenGL annotations on a canvas
 
-The :class:`Annotations` class is used by the
-:class:`~fsl.fslview.gl.slicecanvas.SliceCanvas` class, and users of that
-class, to annotate the canvas.
+The :class:`Annotations` class is used by the :class:`.SliceCanvas` class, and
+users of that class, to annotate the canvas.
 """
 
 import logging
@@ -98,6 +97,7 @@ class Annotations(object):
         hold = kwargs.pop('hold', False)
         return self.obj(VoxelGrid(*args, **kwargs), hold)
 
+    
     def selection(self, *args, **kwargs):
         """Queues a mask for drawing - see the :class:`VoxelMask`
         class.
@@ -119,9 +119,9 @@ class Annotations(object):
 
 
     def dequeue(self, obj, hold=False):
-        """Removes the given :class:`AnnotationObject` from the queue, but
-        does not call its :meth:`~fsl.fslview.gl.globject.GLObject.destroy`
-        method - this is the responsibility of the caller.
+        """Removes the given :class:`AnnotationObject` from the queue, but does
+        not call its :meth:`.GLObject.destroy` method - this is the
+        responsibility of the caller.
         """
 
         if hold:
@@ -134,8 +134,8 @@ class Annotations(object):
 
     def clear(self):
         """Clears both the normal queue and the persistent (a.k.a. ``hold``)
-        queue, and calls the :meth:`~fsl.fslview.gl.globject.GLObject.destroy`
-        method of all objects in the queue.
+        queue, and calls the :meth:`.GLObject.destroy` method of all objects
+        in the queue.
         """
 
         for obj in self._q:     obj.destroy()

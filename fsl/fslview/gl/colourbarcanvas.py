@@ -67,12 +67,13 @@ class ColourBarCanvas(props.HasProperties):
         self._tex  = None
         self._name = '{}_{}'.format(self.__class__.__name__, id(self)) 
 
-        def _update(*a):
-            self._genColourBarTexture()
-            self._refresh()
-
         for prop in ('cmap', 'vrange', 'label', 'orientation', 'labelSide'):
-            self.addListener(prop, self._name, _update)
+            self.addListener(prop, self._name, self.__updateTexture)
+
+            
+    def __updateTexture(self, *a):
+        self._genColourBarTexture()
+        self._refresh()
         
 
     def _initGL(self):
@@ -83,6 +84,14 @@ class ColourBarCanvas(props.HasProperties):
         Generates the colour bar texture.
         """
         self._genColourBarTexture()
+
+
+    def destroy(self):
+        """Should be called when this ``ColourBarCanvas`` is no longer needed.
+        Destroys the :class:`.Texture2D` instance used to render the colour
+        bar.
+        """
+        self._tex.destroy()
 
 
     def _genColourBarTexture(self):
