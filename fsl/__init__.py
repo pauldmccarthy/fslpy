@@ -95,7 +95,8 @@ log = logging.getLogger()
 log.addHandler(logHandler)
 
 
-import fsl.tools as tools
+import fsl.tools          as tools
+import fsl.utils.settings as fslsettings
 
 
 def loadAllFSLTools():
@@ -323,7 +324,16 @@ def fslDirWarning(frame, toolName, fslEnvActive):
     warnmsg = 'The FSLDIR environment variable is not set - '\
               '{} may not behave correctly.'.format(toolName)
 
-    if frame is not None:
+
+    # Check fslpy settings before
+    # prompting the user
+    fsldir = fslsettings.read('fsldir')
+
+    if fsldir is not None:
+        os.environ['FSLDIR'] = fsldir
+        return
+
+    if frame is not None and fsldir is None:
         import wx
         from fsl.utils.fsldirdlg import FSLDirDialog
 
@@ -333,7 +343,9 @@ def fslDirWarning(frame, toolName, fslEnvActive):
             fsldir = dlg.GetFSLDir()
             log.debug('Setting $FSLDIR to {} (specified '
                       'by user)'.format(fsldir))
+            
             os.environ['FSLDIR'] = fsldir
+            fslsettings.write('fsldir', fsldir)
     else:
         log.warn(warnmsg)
         
@@ -397,6 +409,7 @@ def main(args=None):
     and displays a GUI (if the tool has one), or executes the tool.
     """
 
+    # Search the environment for FSLDIR 
     fsldir       = os.environ.get('FSLDIR', None)
     fslEnvActive = fsldir is not None
 

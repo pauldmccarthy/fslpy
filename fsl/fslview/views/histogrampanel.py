@@ -536,8 +536,8 @@ class HistogramPanel(plotpanel.PlotPanel):
 
         hs.colour      = [0, 0, 0]
         hs.alpha       = 1
-        hs.lineWidth   = 2
-        hs.lineStyle   = ':'
+        hs.lineWidth   = 1
+        hs.lineStyle   = '-'
         hs.label       = None
 
         self.__current = hs

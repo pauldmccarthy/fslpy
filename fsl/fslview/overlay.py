@@ -22,7 +22,7 @@ import fsl.data.featresults as featresults
 import fsl.data.featimage   as fslfeatimage
 import fsl.data.strings     as strings
 import fsl.data.model       as fslmodel
-import fsl.fslview.settings as fslsettings
+import fsl.utils.settings   as fslsettings
 
 
 log = logging.getLogger(__name__)
@@ -283,6 +283,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
 
     if defaultLoad:
         loadDlg.Close()
+        loadDlg.Destroy()
 
     if saveDir and len(paths) > 0:
         fslsettings.write('loadOverlayLastDir', op.dirname(paths[-1]))
@@ -333,6 +334,10 @@ def interactiveLoadOverlays(fromDir=None, **kwargs):
         return []
 
     paths  = dlg.GetPaths()
+
+    dlg.Destroy()
+    del dlg
+    
     images = loadOverlays(paths, saveDir=saveFromDir, **kwargs)
 
     return images

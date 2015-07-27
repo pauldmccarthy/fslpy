@@ -271,16 +271,22 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
     def _overlayOptsChanged(self, *a):
 
-        self._updateReferenceImage()
+        if not self._updateReferenceImage():
+            return
+        
         self._updateWidgets()
         self._displayLocationChanged()
         
 
     def _updateReferenceImage(self):
-        """Called by the :meth:`_selectedOverlayChanged` method. Looks at the
-        currently selected overlay, and figures out if there is a reference
-        image that can be used to transform between display, world, and voxel
-        coordinate systems.
+        """Called by the :meth:`_selectedOverlayChanged` and
+        :meth:`_overlayOptsChanged` methods. Looks at the currently selected
+        overlay, and figures out if there is a reference image that can be
+        used to transform between display, world, and voxel coordinate
+        systems.
+
+        Returns ``True`` if the reference image has changed from its
+        previous value, ``False`` otherwise.
         """
 
         refImage = None
@@ -292,6 +298,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
             overlay  = self._displayCtx.getSelectedOverlay()
             refImage = self._displayCtx.getReferenceImage(overlay)
+
+            # Reference image has not changed
+            if refImage == self._refImage:
+                return False
 
             log.debug('Reference image for overlay {}: {}'.format(
                 overlay, refImage))
@@ -313,6 +323,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
             self._displayToWorldMat = None
             self._voxToWorldMat     = None
             self._worldToVoxMat     = None
+
+        return True
 
 
     def _updateWidgets(self):

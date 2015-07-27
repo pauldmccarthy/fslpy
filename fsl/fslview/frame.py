@@ -53,8 +53,8 @@ import logging
 import wx
 import wx.aui as aui
 
-import fsl.data.strings     as strings
-import fsl.fslview.settings as fslsettings
+import fsl.data.strings   as strings
+import fsl.utils.settings as fslsettings
 
 import views
 import actions

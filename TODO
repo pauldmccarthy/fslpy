@@ -31,7 +31,16 @@ sensibly.
 ** Complete code documentation, commenting and clean-up
 ** Move TODO list to Gitlab
 ** Other
-*** Software/GL14/Offscreen rendering issues
+*** Location persistence on transform change is still wonky.
+*** Overlay list order persistence is wonky again.
+*** Display settings sync off by default for new view panels?
+*** If canvas panel display sync is off, and an overlay's type is changed, the new overlay type properties are synced again.
+*** Disable low-performance options  (e.g. label outline, volume invert clipping)
+*** Dead voxels in Models are not transparent in screenshots
+*** Spin controls under linux only allow integers
+*** MessageDialog not being sized correctly under X11
+*** HistogramPanel message dialgo is not centred under X11?
+*** WidgetList/Grid scrolling under Linux/GTK - you need to bind mouse wheel on all children.
 *** Control panel for image header information
 *** Profile actions/settings in canvas settings panel
 *** 'Reset display range' option on overlay display toolbar/settings panel
@@ -42,11 +51,19 @@ OwnerDrawnComboBox) in order to achieve this. This would also allow me to
 properly disable the colour map combo box.
 *** Make double click on overlay list toggle visibility, rather than edit name
 *** Unavailable options (e.g. spline interp) shown but disabled?
+Not possible unless I roll my own combo box implementation (maybe combine
+with Colour map name item above ...)
 *** Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
 *** Refresh when numeric control value changes, not when focus lost
+Not possible unless I roll my own spinctrl widget
 *** Combo box mouse selection
 *** OSX Installer 
 *** Start up menu visibility thing (PyInstaller bug)
+*** CAN'T REPDRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/panel
+*** DONE $FSLDIR not persisted - fslview/settings should be utils/settings, and should be used by fsl/__init__ to save a default FSLDIR
+*** DONE Inverted mask overlay - clipped values are black, not transparent
+*** DONE Bricon on mask overlays.
+*** DONE Time series/histogram default to solid line
 *** DONE CanvasPanel menu option to generate command line for current view
 *** DONE Check/fix Display range for 4D images
 *** DONE Check/fix Bricon <-> display range linking
