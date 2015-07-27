@@ -312,6 +312,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** A python shell which exposes overlays, display context, display, and opts instances
 ** PlotPanel - Mouse click interaction: when clicking on a plot, the current overlay/volume should be selected
 ** HistogramListPanel 
 *** When a histogram is added for a 4D image, prompt user to choose one of
