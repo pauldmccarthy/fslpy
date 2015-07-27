@@ -59,6 +59,7 @@ class SimpleMessageDialog(wx.Dialog):
         self.Fit()
         self.Refresh()
         self.Update()
+        wx.Yield()
 
 
 class TimeoutDialog(SimpleMessageDialog):
@@ -128,7 +129,7 @@ class ProcessingDialog(SimpleMessageDialog):
         self.SetFocus()
         self.Update()
 
-        result  = self.task(*self.args, **self.kwargs)
+        result = self.task(*self.args, **self.kwargs)
         
         self.Close()
         self.Destroy()

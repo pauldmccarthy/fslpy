@@ -283,6 +283,7 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
 
     if defaultLoad:
         loadDlg.Close()
+        loadDlg.Destroy()
 
     if saveDir and len(paths) > 0:
         fslsettings.write('loadOverlayLastDir', op.dirname(paths[-1]))
@@ -333,6 +334,10 @@ def interactiveLoadOverlays(fromDir=None, **kwargs):
         return []
 
     paths  = dlg.GetPaths()
+
+    dlg.Destroy()
+    del dlg
+    
     images = loadOverlays(paths, saveDir=saveFromDir, **kwargs)
 
     return images
