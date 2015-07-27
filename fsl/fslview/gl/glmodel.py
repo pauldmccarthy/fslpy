@@ -229,8 +229,9 @@ class GLModel(globject.GLObject):
         # the cross-section mask will not be created
         # correctly.
         direction = [gl.GL_INCR, gl.GL_DECR]
-        if np.any(hi < lo): faceOrder = [gl.GL_FRONT, gl.GL_BACK]
-        else:               faceOrder = [gl.GL_BACK,  gl.GL_FRONT]
+
+        if np.any(np.array(hi) < 0.0): faceOrder = [gl.GL_FRONT, gl.GL_BACK]
+        else:                          faceOrder = [gl.GL_BACK,  gl.GL_FRONT]
         
         for face, direction in zip(faceOrder, direction):
             

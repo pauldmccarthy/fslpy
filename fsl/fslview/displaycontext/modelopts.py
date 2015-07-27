@@ -95,10 +95,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
     
     def getCoordSpaceTransform(self):
 
-        if self.refImage == 'none':
-            return None
-
-        if self.coordSpace == self.transform:
+        if self.refImage == 'none' or \
+           self.coordSpace == self.transform:
             return None
 
         opts = self.displayCtx.getOpts(self.refImage)
@@ -147,7 +145,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
 
             if self.refImage != 'none':
                 refOpts = self.displayCtx.getOpts(self.refImage)
-                newLoc  = refOpts.transformDisplayLocation(propName, oldLoc)
+                newLoc  = refOpts.transformDisplayLocation(oldLoc)
 
         return newLoc
 
@@ -167,7 +165,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
         self.__lastPropChanged = 'refImage'
 
         if self.__oldRefImage != 'none' and \
-           self.__oldRefImage in self._overlayList:
+           self.__oldRefImage in self.overlayList:
             
             opts = self.displayCtx.getOpts(self.__oldRefImage)
             self.unbindProps('transform', opts)
@@ -192,7 +190,9 @@ class ModelOpts(fsldisplay.DisplayOpts):
         xform  = self.getCoordSpaceTransform()
 
         if xform is not None:
-            lohi   = transform.transform([lo, hi], xform)
+
+            lohi = transform.transform([lo, hi], xform)
+            lohi.sort(axis=0)
             lo, hi = lohi[0, :], lohi[1, :]
 
         self.bounds = [lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]]

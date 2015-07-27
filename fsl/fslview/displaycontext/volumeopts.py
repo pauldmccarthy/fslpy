@@ -184,6 +184,9 @@ class ImageOpts(fsldisplay.DisplayOpts):
     def transformDisplayLocation(self, oldLoc):
 
         lastVal = self.getLastValue('transform')
+
+        if lastVal is None:
+            lastVal = self.transform
         
         # Calculate the image world location using the
         # old display<-> world transform, then transform

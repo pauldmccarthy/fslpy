@@ -54,7 +54,6 @@ def loadVTKPolydataFile(infile):
 
         indexOffset        += polygonLengths[i]
 
-
     return vertices, polygonLengths, indices
     
 
@@ -84,6 +83,9 @@ class Model(object):
         self.vertices = np.array(data, dtype=np.float32)
         self.indices  = indices
 
+        self.__loBounds = self.vertices.min(axis=0)
+        self.__hiBounds = self.vertices.max(axis=0)
+
         log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
         
@@ -101,5 +103,4 @@ class Model(object):
 
 
     def getBounds(self):
-        return (self.vertices.min(axis=0),
-                self.vertices.max(axis=0))
+        return (self.__loBounds, self.__hiBounds)
