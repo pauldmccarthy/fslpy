@@ -56,7 +56,18 @@ class ModelOpts(fsldisplay.DisplayOpts):
                                      self.name,
                                      self.__overlayListChanged)
 
-        self.addListener('refImage', self.name, self.__refImageChanged)
+        # This attribute tracks the name of the
+        # space-related property (refImage,
+        # coordSpace, or transform) which most
+        # recently changed. It is updated by
+        # the corresponding listener callbacks,
+        # and used by the transformDisplayLocation
+        # method.
+        self.__lastPropChanged = None
+        
+        self.addListener('refImage',   self.name, self.__refImageChanged)
+        self.addListener('transform',  self.name, self.__transformChanged)
+        self.addListener('coordSpace', self.name, self.__coordSpaceChanged)
         
         self.__overlayListChanged() 
 
@@ -71,7 +82,6 @@ class ModelOpts(fsldisplay.DisplayOpts):
         fsldisplay.DisplayOpts.destroy(self)
 
 
-
     def getReferenceImage(self):
         """Overrides :meth:`.DisplayOpts.getReferenceIamge`.
 
@@ -81,19 +91,6 @@ class ModelOpts(fsldisplay.DisplayOpts):
         if self.refImage == 'none':
             return None
         return self.refImage
-            
-
-    def getDisplayBounds(self):
-
-        lo, hi = self.overlay.getBounds()
-        xform  = self.getCoordSpaceTransform()
-
-        if xform is None:
-            return lo, hi
-
-        lohi = transform.transform([lo, hi], xform)
-
-        return lohi[0, :], lohi[1, :]
 
     
     def getCoordSpaceTransform(self):
@@ -109,9 +106,10 @@ class ModelOpts(fsldisplay.DisplayOpts):
         return opts.getTransform(self.coordSpace, self.transform)
 
 
-    def transformDisplayLocation(self, propName, oldLoc):
+    def transformDisplayLocation(self, oldLoc):
 
-        newLoc = oldLoc
+        newLoc   = oldLoc
+        propName = self.__lastPropChanged
         
         if propName == 'refImage':
 
@@ -154,9 +152,23 @@ class ModelOpts(fsldisplay.DisplayOpts):
         return newLoc
 
 
+    def __transformChanged(self, *a):
+        self.__lastPropChanged = 'transform'
+        self.__updateBounds()
+
+
+    def __coordSpaceChanged(self, *a):
+        self.__lastPropChanged = 'coordSpace'
+        self.__updateBounds()
+
+
     def __refImageChanged(self, *a):
 
-        if self.__oldRefImage != 'none':
+        self.__lastPropChanged = 'refImage'
+
+        if self.__oldRefImage != 'none' and \
+           self.__oldRefImage in self._overlayList:
+            
             opts = self.displayCtx.getOpts(self.__oldRefImage)
             self.unbindProps('transform', opts)
 
@@ -165,6 +177,25 @@ class ModelOpts(fsldisplay.DisplayOpts):
         if self.refImage != 'none':
             opts = self.displayCtx.getOpts(self.refImage)
             self.bindProps('transform', opts)
+
+        self.__updateBounds()
+
+
+    def __updateBounds(self):
+        """Called whenever any of the :attr:`refImage`, :attr:`coordSpace`, 
+        or :attr:`transform` properties change.
+
+        Updates the :attr:`.DisplayOpts.bounds` property accordingly.
+        """
+
+        lo, hi = self.overlay.getBounds()
+        xform  = self.getCoordSpaceTransform()
+
+        if xform is not None:
+            lohi   = transform.transform([lo, hi], xform)
+            lo, hi = lohi[0, :], lohi[1, :]
+
+        self.bounds = [lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]]
             
     
     def __overlayListChanged(self, *a):

@@ -101,7 +101,8 @@ class GLModel(globject.GLObject):
 
         
     def getDisplayBounds(self):
-        return self.opts.getDisplayBounds()
+        return (self.opts.bounds.getLo(),
+                self.opts.bounds.getHi()) 
 
     
     def getDataResolution(self, xax, yax):
