@@ -139,9 +139,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._overlayListChanged)
-        self._displayCtx .addListener('overlayOrder',
-                                      self._name,
-                                      self._overlayListChanged) 
 
         # Callback for the display context location - when it
         # changes, update the displayed canvas locations
@@ -188,7 +185,6 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         self._displayCtx .removeListener('location',        self._name)
         self._displayCtx .removeListener('bounds',          self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('overlayOrder',    self._name)
         self._overlayList.removeListener('overlays',        self._name)
 
         self._xcanvas.destroy()

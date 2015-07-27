@@ -184,8 +184,13 @@ class GLModel(globject.GLObject):
 
         xmin = lo[xax]
         ymin = lo[yax]
+        zmin = lo[zax]
         xmax = hi[xax]
         ymax = hi[yax]
+        zmax = hi[zax]
+
+        if zpos < zmin or zpos > zmax:
+            return
 
         clipPlaneVerts                = np.zeros((4, 3), dtype=np.float32)
         clipPlaneVerts[0, [xax, yax]] = [xmin, ymin]

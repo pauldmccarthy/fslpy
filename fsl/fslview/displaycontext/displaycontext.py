@@ -240,6 +240,8 @@ class DisplayContext(props.SyncableHasProperties):
 
         Raises an ``IndexError`` if the overlay is not in the list.
         """
+        self.__syncOverlayOrder()
+        
         if not isinstance(overlay, int):
             overlay = self.__overlayList.index(overlay)
             
@@ -251,6 +253,7 @@ class DisplayContext(props.SyncableHasProperties):
         the :class:`.OverlayList` list, sorted into the order
         that they are to be displayed.
         """
+        self.__syncOverlayOrder()
         return [self.__overlayList[idx] for idx in self.overlayOrder]
 
 
@@ -311,7 +314,44 @@ class DisplayContext(props.SyncableHasProperties):
                              overwrite=True)
 
         # Ensure that the overlayOrder
-        # property is valid ...
+        # property is valid
+        self.__syncOverlayOrder()
+
+        # Ensure that the bounds property is accurate
+        self.__updateBounds()
+
+        # If the overlay list was empty,
+        # and is now non-empty, centre
+        # the currently selected location
+        if (self.__prevOverlayListLen == 0) and (len(self.__overlayList) > 0):
+            
+            # initialise the location to be
+            # the centre of the world
+            b = self.bounds
+            self.location.xyz = [
+                b.xlo + b.xlen / 2.0,
+                b.ylo + b.ylen / 2.0,
+                b.zlo + b.zlen / 2.0]
+            
+        self.__prevOverlayListLen = len(self.__overlayList)
+ 
+        # Limit the selectedOverlay property
+        # so it cannot take a value greater
+        # than len(overlayList)-1
+        nOverlays = len(self.__overlayList)
+        if nOverlays > 0:
+            self.setConstraint('selectedOverlay', 'maxval', nOverlays - 1)
+        else:
+            self.setConstraint('selectedOverlay', 'maxval', 0)
+
+
+    def __syncOverlayOrder(self):
+        """Ensures that the :attr:`overlayOrder` property is up to date
+        with respect to the :class:`.OverlayList`.
+        """
+
+        if len(self.overlayOrder) == len(self.__overlayList):
+            return
         #
         # NOTE: The following logic assumes that operations
         #       which modify the overlay list will only do
@@ -362,33 +402,6 @@ class DisplayContext(props.SyncableHasProperties):
             # the remaining overlays
             newOrder = [sorted(oldOrder).index(idx) for idx in oldOrder]
             self.overlayOrder[:] = newOrder
-
-        # Ensure that the bounds property is accurate
-        self.__updateBounds()
-
-        # If the overlay list was empty,
-        # and is now non-empty, centre
-        # the currently selected location
-        if (self.__prevOverlayListLen == 0) and (len(self.__overlayList) > 0):
-            
-            # initialise the location to be
-            # the centre of the world
-            b = self.bounds
-            self.location.xyz = [
-                b.xlo + b.xlen / 2.0,
-                b.ylo + b.ylen / 2.0,
-                b.zlo + b.zlen / 2.0]
-            
-        self.__prevOverlayListLen = len(self.__overlayList)
- 
-        # Limit the selectedOverlay property
-        # so it cannot take a value greater
-        # than len(overlayList)-1
-        nOverlays = len(self.__overlayList)
-        if nOverlays > 0:
-            self.setConstraint('selectedOverlay', 'maxval', nOverlays - 1)
-        else:
-            self.setConstraint('selectedOverlay', 'maxval', 0)
 
             
     def __overlayBoundsChanged(self, value, valid, opts, name):

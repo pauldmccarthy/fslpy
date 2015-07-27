@@ -154,9 +154,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self._overlayList.addListener('overlays',
                                       self._name,
                                       self._selectedOverlayChanged)
-        self._displayCtx .addListener('overlayOrder',
-                                      self._name,
-                                      self._selectedOverlayChanged) 
         self._displayCtx .addListener('selectedOverlay',
                                       self._name,
                                       self._selectedOverlayChanged)
@@ -228,7 +225,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self._overlayList.removeListener('overlays',        self._name)
         self._displayCtx .removeListener('selectedOverlay', self._name)
-        self._displayCtx .removeListener('overlayOrder',    self._name)
         self._displayCtx .removeListener('location',        self._name)
 
         fslpanel.FSLViewPanel.destroy(self)

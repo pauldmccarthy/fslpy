@@ -114,7 +114,10 @@ class ModelOpts(fsldisplay.DisplayOpts):
             refImage    = self.refImage
             oldRefImage = self.getLastValue('refImage')
 
-            if oldRefImage == 'none':
+            if refImage == 'none' and oldRefImage == 'none':
+                pass
+
+            elif oldRefImage == 'none':
                 refOpts = self.displayCtx.getOpts(refImage)
                 newLoc  = transform.transform(
                     [oldLoc],
