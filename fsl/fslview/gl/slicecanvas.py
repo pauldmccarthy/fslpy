@@ -926,7 +926,8 @@ class SliceCanvas(props.HasProperties):
             rt      = self._offscreenTextures.get(overlay, None)
             display = self.displayCtx.getDisplay(overlay)
             opts    = display.getDisplayOpts()
-            lo, hi  = opts.getDisplayBounds()
+            lo      = opts.bounds.getLo()
+            hi      = opts.bounds.getHi()
 
             if rt is None or not display.enabled:
                 continue
@@ -987,8 +988,9 @@ class SliceCanvas(props.HasProperties):
             # target, and draw to it
             elif self.renderMode == 'offscreen':
                 
-                rt     = self._offscreenTextures.get(overlay, None)
-                lo, hi = opts.getDisplayBounds()
+                rt = self._offscreenTextures.get(overlay, None)
+                lo = opts.bounds.getLo()
+                hi = opts.bounds.getHi()
 
                 # Assume that all is well - the texture
                 # just has not yet been created

@@ -254,26 +254,22 @@ class LocationPanel(fslpanel.FSLViewPanel):
         for ovl in self._overlayList:
             display = self._displayCtx.getDisplay(ovl)
             opts    = display.getDisplayOpts()
+            
             if ovl is overlay:
-                opts   .addGlobalListener(self._name,
-                                          self._overlayOptsChanged,
-                                          overwrite=True)
-                display.addGlobalListener(self._name,
-                                          self._overlayOptsChanged,
-                                          overwrite=True) 
+                opts.addListener('bounds',
+                                 self._name,
+                                 self._overlayBoundsChanged,
+                                 overwrite=True)
             else:
-                opts   .removeGlobalListener(self._name)
-                display.removeGlobalListener(self._name)
+                opts.removeListener('bounds', self._name)
 
         # Refresh the world/voxel location properties
         self._displayLocationChanged()
 
 
-    def _overlayOptsChanged(self, *a):
+    def _overlayBoundsChanged(self, *a):
 
-        if not self._updateReferenceImage():
-            return
-        
+        self._updateReferenceImage()
         self._updateWidgets()
         self._displayLocationChanged()
         
@@ -299,10 +295,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
             overlay  = self._displayCtx.getSelectedOverlay()
             refImage = self._displayCtx.getReferenceImage(overlay)
 
-            # Reference image has not changed
-            if refImage == self._refImage:
-                return False
-
             log.debug('Reference image for overlay {}: {}'.format(
                 overlay, refImage))
 
@@ -323,8 +315,6 @@ class LocationPanel(fslpanel.FSLViewPanel):
             self._displayToWorldMat = None
             self._voxToWorldMat     = None
             self._worldToVoxMat     = None
-
-        return True
 
 
     def _updateWidgets(self):

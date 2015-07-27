@@ -191,8 +191,9 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         if overlay is None:
             return
         
-        opts               = self._displayCtx.getOpts(overlay)
-        loBounds, hiBounds = opts.getDisplayBounds()
+        opts     = self._displayCtx.getOpts(overlay)
+        loBounds = opts.bounds.getLo()
+        hiBounds = opts.bounds.getHi()
 
         if opts.transform == 'id':
             sceneOpts.sliceSpacing = 1

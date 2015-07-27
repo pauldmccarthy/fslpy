@@ -28,6 +28,18 @@ log = logging.getLogger(__name__)
 
 class DisplayOpts(props.SyncableHasProperties):
 
+
+    bounds = props.Bounds(ndims=3)
+    """Specifies a bounding box (in display coordinates) which is big enough
+    to contain the overlay described by this ``DisplayOpts`` instance. The
+    values in this ``bounds`` property  must be maintained by subclass
+    implementations.
+
+    Whenever the spatial representation of this overlay changes, but the
+    bounds do not change, subclass implementations should force notification
+    on this property (via the :meth:`.HasProperties.notify` method). 
+    """
+
     def __init__(
             self,
             overlay,
@@ -81,19 +93,22 @@ class DisplayOpts(props.SyncableHasProperties):
         if isinstance(self.overlay, fslimage.Image):
             return self.overlay
         return None
-    
-    
-    def getDisplayBounds(self):
-        """
-        """
-        raise NotImplementedError(
-            'The getDisplayBounds method must be implemented by subclasses')
 
+    
+    def transformDisplayLocation(self, coords):
+        """This method may be called after the overlay :attr:`bounds` have
+        changed.
 
-    def transformDisplayLocation(self, propName, oldLoc):
+        If the bounds were changed as a result of a change to the spatial
+        representation of the overlay (e.g. the :attr:`.ImageOpts.transform`
+        property for :class:`.Image` overlays), this method should return
+        a copy of the given coordinates which has been transformed into the
+        new space.
+
+        If the bounds were changed for some other reason, this method can
+        just return the ``coords`` unchanged.
         """
-        """
-        return oldLoc
+        return coords
 
 
 class Display(props.SyncableHasProperties):

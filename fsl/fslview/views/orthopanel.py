@@ -200,7 +200,7 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         # so we have to remove them too
         for ovl in self._overlayList:
             opts = self._displayCtx.getOpts(ovl)
-            opts.removeGlobalListener(self._name)
+            opts.removeListener('bounds', self._name)
 
         canvaspanel.CanvasPanel.destroy(self)
 
@@ -286,14 +286,15 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
             opts = self._displayCtx.getOpts(ovl)
 
-            # Update anatomy labels when any 
-            # overlay display properties change
+            # Update anatomy labels when 
+            # overlay bounds change
             if i == self._displayCtx.selectedOverlay:
-                opts.addGlobalListener(self._name,
-                                       self._refreshLabels,
-                                       overwrite=True)
+                opts.addListener('bounds',
+                                 self._name,
+                                 self._refreshLabels,
+                                 overwrite=True)
             else:
-                opts.removeGlobalListener(self._name)
+                opts.removeListener('bounds', self._name)
                 
         # anatomical orientation may have changed with an image change
         self._refreshLabels()

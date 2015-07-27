@@ -274,7 +274,7 @@ class DisplayContext(props.SyncableHasProperties):
                 opts    = display.getDisplayOpts()
 
                 display.removeListener('overlayType', self.__name)
-                opts.removeGlobalListener(self.__name)
+                opts   .removeListener('bounds',      self.__name)
                 
                 # The display instance will destroy the
                 # opts instance, so we don't do it here
@@ -305,9 +305,10 @@ class DisplayContext(props.SyncableHasProperties):
             # DisplayOpts properties change, the
             # overlay display bounds may have changed,
             # so we need to know when this happens.
-            opts.addGlobalListener(self.__name,
-                                   self.__displayOptsChanged,
-                                   overwrite=True)
+            opts.addListener('bounds',
+                             self.__name,
+                             self.__overlayBoundsChanged,
+                             overwrite=True)
 
         # Ensure that the overlayOrder
         # property is valid ...
@@ -390,10 +391,11 @@ class DisplayContext(props.SyncableHasProperties):
             self.setConstraint('selectedOverlay', 'maxval', 0)
 
             
-    def __displayOptsChanged(self, value, valid, opts, name):
-        """Called when the :class:`.DisplayOpts` properties of any overlay
-        change. If the bounds o the Updates the :attr:`bounds` property and,
-        if the currently selected 
+    def __overlayBoundsChanged(self, value, valid, opts, name):
+        """Called when the :attr:`.DisplayOpts.bounds` property of any
+        overlay changes. Updates the :attr:`bounds` property and preserves
+        the display :attr:`location` in terms of hte currently selected
+        overlay.
         """
 
         # This check is ugly, and is required due to
@@ -431,8 +433,7 @@ class DisplayContext(props.SyncableHasProperties):
         # same value, we assume that they don't need to be
         # updated again, and escape from ths system.
         if self.getParent() is not None and self.isSyncedToParent('location'):
-            if self.getParent().location == self.location:
-                return
+            return
 
         overlay = opts.display.getOverlay()
 
@@ -445,7 +446,9 @@ class DisplayContext(props.SyncableHasProperties):
         # Update the display context bounds
         # to take into account any changes 
         # to individual overlay bounds
+        self.disableNotification('location')
         self.__updateBounds()
+        self.enableNotification('location')
  
         # The main purpose of this method is to preserve
         # the current display location in terms of the
@@ -453,12 +456,13 @@ class DisplayContext(props.SyncableHasProperties):
         # bounds have changed. We don't care about changes
         # to the options for other overlays.
         if (overlay != self.getSelectedOverlay()):
+            self.notify('location')
             return
 
         # Now we want to update the display location
         # so that it is preserved with respect to the
         # currently selected overlay.
-        newDispLoc = opts.transformDisplayLocation(name, oldDispLoc)
+        newDispLoc = opts.transformDisplayLocation(oldDispLoc)
 
         # Ignore the new display location
         # if it is not in the display bounds
@@ -472,6 +476,8 @@ class DisplayContext(props.SyncableHasProperties):
                           newDispLoc))
 
             self.location.xyz = newDispLoc
+        else:
+            self.notify('location')
 
 
     def __syncOverlayDisplayChanged(self, *a):
@@ -515,7 +521,8 @@ class DisplayContext(props.SyncableHasProperties):
 
             display = self.__displays[ovl]
             opts    = display.getDisplayOpts()
-            lo, hi  = opts   .getDisplayBounds()
+            lo      = opts.bounds.getLo()
+            hi      = opts.bounds.getHi()
 
             for ax in range(3):
 

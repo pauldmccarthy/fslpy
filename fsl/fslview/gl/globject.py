@@ -247,7 +247,8 @@ class GLImageObject(GLObject):
 
 
     def getDisplayBounds(self):
-        return self.displayOpts.getDisplayBounds()
+        return (self.displayOpts.bounds.getLo(),
+                self.displayOpts.bounds.getHi())
 
 
     def getDataResolution(self, xax, yax):
@@ -265,7 +266,7 @@ class GLImageObject(GLObject):
             return np.array(res.round(), dtype=np.uint32)
         
         else:
-            lo, hi = opts.getDisplayBounds()
+            lo, hi = self.getDisplayBounds()
             minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3
 

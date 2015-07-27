@@ -162,11 +162,12 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
             opts = self._displayCtx.getOpts(ovl)
 
             if ovl == selOverlay:
-                opts.addGlobalListener(   self._name,
-                                          self.__locationChanged,
-                                          overwrite=True)
+                opts.addListener('bounds',
+                                 self._name,
+                                 self.__locationChanged,
+                                 overwrite=True)
             else:
-                opts.removeGlobalListener(self._name)
+                opts.removeListener('bounds', self._name)
 
         self.__locationChanged()
 

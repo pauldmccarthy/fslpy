@@ -73,11 +73,14 @@ class ImageOpts(fsldisplay.DisplayOpts):
 
         overlay = self.overlay
 
+        self.addListener('transform', self.name, self.__transformChanged)
+
         # The display<->* transformation matrices
         # are created in the _setupTransforms method
         self.__xforms = {}
         self.__setupTransforms()
-
+        self.__transformChanged()
+ 
         # is this a 4D volume?
         if self.overlay.is4DImage():
             self.setConstraint('volume', 'maxval', overlay.shape[3] - 1)
@@ -90,22 +93,17 @@ class ImageOpts(fsldisplay.DisplayOpts):
     def destroy(self):
         fsldisplay.DisplayOpts.destroy(self)
 
-
-    def getDisplayBounds(self):
-        """Calculates and returns the min/max values of a 3D bounding box,
-        in the display coordinate system, which is big enough to contain
-        the image.
-
-        The coordinate system in which the bounding box is defined is
-        determined by the current value of the :attr:`transform` property.
-
-        A tuple containing two values is returned, with the first value
-        a sequence of three low bounds, and the second value a sequence
-        of three high bounds.
+        
+    def __transformChanged(self, *a):
+        """Calculates the min/max values of a 3D bounding box, in the display
+        coordinate system, which is big enough to contain the image. Sets the
+        :attr:`.DisplayOpts.bounds` property accordingly.
         """
 
-        return transform.axisBounds(
+        lo, hi = transform.axisBounds(
             self.overlay.shape[:3], self.getTransform('voxel', 'display'))
+        
+        self.bounds[:] = [lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]]
 
                             
     def __setupTransforms(self):
@@ -183,15 +181,10 @@ class ImageOpts(fsldisplay.DisplayOpts):
         return self.__xforms[from_, to]
 
 
-    def transformDisplayLocation(self, propName, oldLoc):
-
-        if propName != 'transform':
-            return oldLoc
+    def transformDisplayLocation(self, oldLoc):
 
         lastVal = self.getLastValue('transform')
-        if lastVal is None:
-            lastVal = self.transform
-
+        
         # Calculate the image world location using the
         # old display<-> world transform, then transform
         # it back to the new world->display transform. 
