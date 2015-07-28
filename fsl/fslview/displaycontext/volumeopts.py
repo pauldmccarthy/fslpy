@@ -257,7 +257,6 @@ class VolumeOpts(ImageOpts):
                  display,
                  overlayList,
                  displayCtx,
-                 parent=None,
                  **kwargs):
         """Create a :class:`VolumeOpts` instance for the specified image."""
 
@@ -297,19 +296,20 @@ class VolumeOpts(ImageOpts):
         
         self.setConstraint('displayRange', 'minDistance', dMinDistance)
 
+        actionz = {'resetDisplayRange' : self.resetDisplayRange}
         ImageOpts.__init__(self,
                            overlay,
                            display,
                            overlayList,
                            displayCtx,
-                           parent,
+                           actions=actionz,
                            **kwargs)
 
         # The displayRange property of every child VolumeOpts
         # instance is linked to the corresponding 
         # Display.brightness/contrast properties, so changes
         # in one are reflected in the other.
-        if parent is not None:
+        if kwargs.get('parent', None) is not None:
             display.addListener('brightness', self.name, self.__briconChanged)
             display.addListener('contrast',   self.name, self.__briconChanged)
             self   .addListener('displayRange',
@@ -328,6 +328,11 @@ class VolumeOpts(ImageOpts):
             self.bindProps(self   .getSyncPropertyName('displayRange'), 
                            display,
                            display.getSyncPropertyName('contrast'))
+
+
+    def resetDisplayRange(self):
+        """Resets the display range to the data range."""
+        self.displayRange.x = [self.dataMin, self.dataMax]
 
 
     def destroy(self):

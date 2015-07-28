@@ -179,7 +179,7 @@ class Action(props.HasProperties):
                                   'the doAction method') 
 
 
-class ActionProvider(props.HasProperties):
+class ActionProvider(props.SyncableHasProperties):
     """An :class:`ActionProvider` is some entity which can perform actions.
 
     Said entity is also a :class:`~props.HasProperties` instance, so can
@@ -187,7 +187,7 @@ class ActionProvider(props.HasProperties):
     will ultimately be exposed to the user.
     """
 
-    def __init__(self, overlayList, displayCtx, actions=None):
+    def __init__(self, overlayList, displayCtx, **kwargs):
         """Create an :class:`ActionProvider` instance.
 
         :arg overlayList: An :class:`.OverlayList` instance containing the
@@ -199,7 +199,13 @@ class ActionProvider(props.HasProperties):
         :arg actions:     A dictionary containing ``{name -> function}``
                           mappings, where each function is an action that
                           should be made available to the user.
+
+        :arg kwargs:      Passed to :meth:`.SyncableHasProperties.__init__`.
         """
+
+        actions = kwargs.pop('actions', None)
+
+        props.SyncableHasProperties.__init__(self, **kwargs)
 
         if actions is None:
             actions = {}

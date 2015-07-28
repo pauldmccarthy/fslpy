@@ -18,15 +18,16 @@ import logging
 
 import props
 
-import fsl.data.image     as fslimage
-import fsl.data.strings   as strings
-import fsl.utils.typedict as td
+import fsl.utils.typedict  as td
+import fsl.data.image      as fslimage
+import fsl.data.strings    as strings
+import fsl.fslview.actions as actions
 
 
 log = logging.getLogger(__name__)
 
 
-class DisplayOpts(props.SyncableHasProperties):
+class DisplayOpts(actions.ActionProvider):
 
 
     bounds = props.Bounds(ndims=3)
@@ -46,11 +47,13 @@ class DisplayOpts(props.SyncableHasProperties):
             display,
             overlayList,
             displayCtx,
-            parent=None,
-            *args,
             **kwargs):
-        
-        props.SyncableHasProperties.__init__(self, parent, *args, **kwargs)
+
+        actions.ActionProvider.__init__(
+            self,
+            overlayList,
+            displayCtx,
+            **kwargs)
         
         self.overlay     = overlay
         self.display     = display
@@ -207,7 +210,7 @@ class Display(props.SyncableHasProperties):
         # and our values need to be updated
         props.SyncableHasProperties.__init__(
             self,
-            parent,
+            parent=parent,
             
             # These properties cannot be unbound, as
             # they affect the OpenGL representation
@@ -288,7 +291,7 @@ class Display(props.SyncableHasProperties):
                        self,
                        self.__overlayList,
                        self.__displayCtx,
-                       oParent)
+                       parent=oParent)
 
     
     def __overlayTypeChanged(self, *a):

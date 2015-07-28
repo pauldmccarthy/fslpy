@@ -93,7 +93,7 @@ class DisplayContext(props.SyncableHasProperties):
 
         props.SyncableHasProperties.__init__(
             self,
-            parent,
+            parent=parent,
             nounbind=['overlayGroups'],
             nobind=[  'syncOverlayDisplay'])
         

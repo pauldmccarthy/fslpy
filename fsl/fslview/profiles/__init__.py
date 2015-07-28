@@ -135,7 +135,8 @@ class Profile(actions.ActionProvider):
                     viewPanel.Refresh()
                 actionz[name] = wrap
 
-        actions.ActionProvider.__init__(self, overlayList, displayCtx, actionz)
+        actions.ActionProvider.__init__(
+            self, overlayList, displayCtx, actions=actionz)
         
         self._viewPanel   = viewPanel
         self._overlayList = overlayList

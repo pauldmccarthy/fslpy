@@ -24,6 +24,7 @@ import overlaydisplaypanel as overlaydisplay
 log = logging.getLogger(__name__)
 
 
+
 _TOOLBAR_PROPS = td.TypeDict({
     'Display' : [
         props.Widget('name'),
@@ -34,7 +35,8 @@ _TOOLBAR_PROPS = td.TypeDict({
 
     'VolumeOpts' : [
         props.Widget('cmap'),
-        props.Widget('displayRange', showLimits=False)],
+        props.Widget('displayRange', showLimits=False),
+        actions.ActionButton('VolumeOpts', 'resetDisplayRange')],
     
 
     'MaskOpts' : [
@@ -46,8 +48,14 @@ _TOOLBAR_PROPS = td.TypeDict({
 
     'LabelOpts' : [
         props.Widget('lut'),
-        props.Widget('outline'),
-        props.Widget('outlineWidth', showLimits=False, spin=False)],
+        props.Widget('outline',
+                     enabledWhen=lambda i, sw: not sw,
+                     dependencies=[(lambda o: o.display, 'softwareMode')]),
+        props.Widget('outlineWidth',
+                     enabledWhen=lambda i, sw: not sw,
+                     dependencies=[(lambda o: o.display, 'softwareMode')],
+                     showLimits=False,
+                     spin=False)],
 
     'ModelOpts' : [
         props.Widget('colour'),

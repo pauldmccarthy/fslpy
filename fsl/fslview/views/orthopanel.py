@@ -637,16 +637,11 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         coordinates).
         """
 
-        opts             = self.getSceneOptions()
         xpos, ypos, zpos = self._displayCtx.location.xyz
 
         self._xcanvas.pos.xyz = [ypos, zpos, xpos]
         self._ycanvas.pos.xyz = [xpos, zpos, ypos]
         self._zcanvas.pos.xyz = [xpos, ypos, zpos]
-
-        if opts.xzoom != 100.0: self._xcanvas.panDisplayToShow(ypos, zpos)
-        if opts.yzoom != 100.0: self._ycanvas.panDisplayToShow(xpos, zpos)
-        if opts.zzoom != 100.0: self._zcanvas.panDisplayToShow(xpos, ypos)
 
 
 class OrthoFrame(wx.Frame):

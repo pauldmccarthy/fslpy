@@ -76,7 +76,8 @@ class _FSLViewPanel(actions.ActionProvider):
                           actions (see :class:`.ActionProvider`).
         """
         
-        actions.ActionProvider.__init__(self, overlayList, displayCtx, actionz)
+        actions.ActionProvider.__init__(
+            self, overlayList, displayCtx, actions=actionz)
 
         if not isinstance(displayCtx, displaycontext.DisplayContext):
             raise TypeError(
