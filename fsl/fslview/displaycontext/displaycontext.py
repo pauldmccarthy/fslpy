@@ -392,9 +392,9 @@ class DisplayContext(props.SyncableHasProperties):
 
             # Remove the corresponding indices
             # from the overlayOrder list
-            for overlay, orderIdx in zip(oldList, self.overlayOrder):
+            for i, overlay in enumerate(oldList):
                 if overlay not in self.__overlayList:
-                    oldOrder.remove(orderIdx)
+                    oldOrder.remove(i)
 
             # Re-generate new indices,
             # preserving the order of
