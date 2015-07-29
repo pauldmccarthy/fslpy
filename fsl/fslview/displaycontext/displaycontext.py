@@ -79,6 +79,10 @@ class DisplayContext(props.SyncableHasProperties):
      by this ``DisplayContext`` instance will be synchronised to those of
     the parent instance. Otherwise, the display properties for every overlay
     will be unsynchronised from the parent.
+
+    This property is accessed by the :class:`.Display` class, in its
+    :meth:`.Display.__init__` method, and when it creates new
+    :class:`.DisplayOpts` instances, to set initial sync states.
     """
 
 
@@ -180,11 +184,6 @@ class DisplayContext(props.SyncableHasProperties):
                                          parent=dParent,
                                          overlayType=overlayType)
             self.__displays[overlay] = display
-
-            if (self.getParent() is not None) and \
-               (not self.syncOverlayDisplay):
-                display                 .unsyncAllFromParent()
-                display.getDisplayOpts().unsyncAllFromParent()
         
         return display
 

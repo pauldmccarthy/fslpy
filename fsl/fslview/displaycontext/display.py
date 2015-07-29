@@ -209,12 +209,16 @@ class Display(props.SyncableHasProperties):
         # has different property values to our own,
         # and our values need to be updated
         props.SyncableHasProperties.__init__(
-            self,
-            parent=parent,
-            
+            self, parent=parent,
+
             # These properties cannot be unbound, as
-            # they affect the OpenGL representation
-            nounbind=['softwareMode', 'overlayType'])
+            # they affect the OpenGL representation 
+            nounbind=['softwareMode', 'overlayType'],
+
+            # Initial sync state between this
+            # Display and the parent Display
+            # (if this Display has a parent)
+            state=displayCtx.syncOverlayDisplay)
 
         # Set up listeners after caling Syncable.__init__,
         # so the callbacks don't get called during
@@ -291,7 +295,8 @@ class Display(props.SyncableHasProperties):
                        self,
                        self.__overlayList,
                        self.__displayCtx,
-                       parent=oParent)
+                       parent=oParent,
+                       state=self.__displayCtx.syncOverlayDisplay)
 
     
     def __overlayTypeChanged(self, *a):
