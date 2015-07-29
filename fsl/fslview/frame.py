@@ -89,7 +89,9 @@ class FSLViewFrame(wx.Frame):
         # Default application font - this is
         # inherited by all child controls.
         font = self.GetFont()
-        font.SetPointSize(10)
+
+        if wx.Platform == '__WXGTK__': font.SetPointSize(8)
+        else:                          font.SetPointSize(10)
         font.SetWeight(wx.FONTWEIGHT_LIGHT)
         self.SetFont(font)
         
