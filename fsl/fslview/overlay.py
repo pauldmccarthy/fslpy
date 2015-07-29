@@ -260,7 +260,6 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     # If using the default load 
     # function, show the dialog
     if defaultLoad:
-        loadDlg.CentreOnParent()
         loadDlg.Show()
 
     # Load the images

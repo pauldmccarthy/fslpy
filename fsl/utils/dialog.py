@@ -10,12 +10,22 @@ import wx
 import fsl.data.strings as strings
 
 
+SMD_KEEP_CENTERED = 1
+
 class SimpleMessageDialog(wx.Dialog):
 
     
-    def __init__(self, parent=None, message=''):
+    def __init__(self, parent=None, message='', style=None):
+        """
+        Style defaults to SMD_KEEP_CENTERED.
+        """
+
+        if style is None:
+            style = SMD_KEEP_CENTERED
 
         wx.Dialog.__init__(self, parent, style=wx.STAY_ON_TOP)
+
+        self.__style = style
         
         self.__message = wx.StaticText(
             self,
@@ -59,15 +69,19 @@ class SimpleMessageDialog(wx.Dialog):
         self.Fit()
         self.Refresh()
         self.Update()
+
+        if self.__style & SMD_KEEP_CENTERED:
+            self.CentreOnParent()
+        
         wx.Yield()
 
 
 class TimeoutDialog(SimpleMessageDialog):
 
 
-    def __init__(self, parent, message, timeout=1000):
+    def __init__(self, parent, message, timeout=1000, **kwargs):
 
-        SimpleMessageDialog.__init__(self, parent, message)
+        SimpleMessageDialog.__init__(self, parent, message, **kwargs)
         self.__timeout = timeout
 
 
@@ -116,8 +130,10 @@ class ProcessingDialog(SimpleMessageDialog):
         self.task   = task
         self.args   = args
         self.kwargs = kwargs
-        
-        SimpleMessageDialog.__init__(self, parent, message)
+
+        style = kwargs.pop('style', None)
+
+        SimpleMessageDialog.__init__(self, parent, message, style=style)
 
 
     def Run(self):

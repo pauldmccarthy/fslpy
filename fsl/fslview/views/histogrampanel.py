@@ -516,7 +516,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         # happening.
         if baseHs is None:
             hs = fsldlg.ProcessingDialog(
-                self,
+                None,
                 strings.messages[self, 'calcHist'].format(overlay.name),
                 loadHs).Run()
 
