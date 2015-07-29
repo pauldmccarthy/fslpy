@@ -157,17 +157,16 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         # is populated in the _overlayListChanged method
         self._listBox = elistbox.EditableListBox(
             self,
-            style=(elistbox.ELB_REVERSE    | 
-                   elistbox.ELB_TOOLTIP    | 
-                   elistbox.ELB_EDITABLE))
+            style=(elistbox.ELB_REVERSE | 
+                   elistbox.ELB_TOOLTIP))
 
         # listeners for when the user does
         # something with the list box
-        self._listBox.Bind(elistbox.EVT_ELB_SELECT_EVENT, self._lbSelect)
-        self._listBox.Bind(elistbox.EVT_ELB_MOVE_EVENT,   self._lbMove)
-        self._listBox.Bind(elistbox.EVT_ELB_REMOVE_EVENT, self._lbRemove)
-        self._listBox.Bind(elistbox.EVT_ELB_ADD_EVENT,    self._lbAdd)
-        self._listBox.Bind(elistbox.EVT_ELB_EDIT_EVENT,   self._lbEdit)
+        self._listBox.Bind(elistbox.EVT_ELB_SELECT_EVENT,   self._lbSelect)
+        self._listBox.Bind(elistbox.EVT_ELB_MOVE_EVENT,     self._lbMove)
+        self._listBox.Bind(elistbox.EVT_ELB_REMOVE_EVENT,   self._lbRemove)
+        self._listBox.Bind(elistbox.EVT_ELB_ADD_EVENT,      self._lbAdd)
+        self._listBox.Bind(elistbox.EVT_ELB_DBLCLICK_EVENT, self._lbDblClick)
 
         self._sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self._sizer)
@@ -312,11 +311,11 @@ class OverlayListPanel(fslpanel.FSLViewPanel):
         self._overlayList.pop(self._displayCtx.overlayOrder[ev.idx])
 
 
-    def _lbEdit(self, ev):
-        """Called when an item label is edited on the overlay list box.
-        Sets the corresponding overlay name to the new label.
+    def _lbDblClick(self, ev):
+        """Called when an item label is double clickedon the overlay list
+        box. Toggles the enabled state of the overlay.
         """
-        idx          = self._displayCtx.overlayOrder[ev.idx]
-        overlay      = self._overlayList[idx]
-        display      = self._displayCtx.getDisplay(overlay)
-        display.name = ev.label
+        idx             = self._displayCtx.overlayOrder[ev.idx]
+        overlay         = self._overlayList[idx]
+        display         = self._displayCtx.getDisplay(overlay)
+        display.enabled = not display.enabled
