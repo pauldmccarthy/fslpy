@@ -106,7 +106,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
             'worldLocation',
             slider=False,
             spin=True,
-            showLimits=False)
+            showLimits=False,
+            mousewheel=True)
 
         voxelX, voxelY, voxelZ = props.makeListWidgets(
             self.column2,
@@ -114,7 +115,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
             'voxelLocation',
             slider=False,
             spin=True,
-            showLimits=False) 
+            showLimits=False,
+            mousewheel=True) 
 
         self.worldX = worldX
         self.worldY = worldY
