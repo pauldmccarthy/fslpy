@@ -225,9 +225,8 @@ def loadOverlays(paths, loadFunc='default', errorFunc='default', saveDir=True):
     # being used, create a dialog window
     # to show the currently loading image
     if defaultLoad:
-        import wx
         import fsl.utils.dialog as fsldlg
-        loadDlg = fsldlg.SimpleMessageDialog(wx.GetApp().GetTopWindow())
+        loadDlg = fsldlg.SimpleMessageDialog()
 
     # The default load function updates
     # the dialog window created above

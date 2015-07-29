@@ -204,6 +204,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
                                                self.__atlasPanel,
                                                label.index)
                     regionList.SetItemWidget(i, widget)
+                    wx.Yield()
 
                 filterStr = self.__regionFilter.GetValue().lower().strip()
                 regionList.ApplyFilter(filterStr, ignoreCase=True)
@@ -213,7 +214,7 @@ class AtlasOverlayPanel(fslpanel.FSLViewPanel):
             dialog.ProcessingDialog(
                 None,
                 strings.messages[self, 'loadRegions'].format(atlasDesc.name),
-                buildRegionList).Run()
+                buildRegionList).Run(mainThread=True)
             
         log.debug('Showing region list for {} ({})'.format(
             atlasDesc.atlasID, id(regionList)))
