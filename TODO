@@ -31,35 +31,40 @@ sensibly.
 ** Complete code documentation, commenting and clean-up
 ** Move TODO list to Gitlab
 ** Other
-*** Location persistence on transform change is still wonky.
-*** Overlay list order persistence is wonky again.
+*** Force a good layout/size for new view panels
 *** Display settings sync off by default for new view panels?
-*** If canvas panel display sync is off, and an overlay's type is changed, the new overlay type properties are synced again.
-*** Disable low-performance options  (e.g. label outline, volume invert clipping)
 *** Dead voxels in Models are not transparent in screenshots
-*** Spin controls under linux only allow integers
-*** MessageDialog not being sized correctly under X11
-*** HistogramPanel message dialgo is not centred under X11?
-*** WidgetList/Grid scrolling under Linux/GTK - you need to bind mouse wheel on all children.
 *** Control panel for image header information
 *** Profile actions/settings in canvas settings panel
-*** 'Reset display range' option on overlay display toolbar/settings panel
-*** SliceCanvas - do not re-centre on current location when zoomed in, and displayed slice changes
 *** Remove Colour map name from toolbar
 I think I need to write my own combobox implementation (subclass
 OwnerDrawnComboBox) in order to achieve this. This would also allow me to
 properly disable the colour map combo box.
-*** Make double click on overlay list toggle visibility, rather than edit name
 *** Unavailable options (e.g. spline interp) shown but disabled?
 Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
-*** Refresh when numeric control value changes, not when focus lost
-Not possible unless I roll my own spinctrl widget
-*** Combo box mouse selection
+*** Persist shared properties when overlay type changes - e.g. Volume -> Mask, the resolution/transform properties should be copied across.
+*** 'Fastest' performance - subsampling not working?
 *** OSX Installer 
 *** Start up menu visibility thing (PyInstaller bug)
-*** CAN'T REPDRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/panel
+*** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE Linux/GTK - click on slider widgets does not change value
+*** DONE WidgetList/Grid scrolling under Linux/GTK - you need to bind mouse wheel on all children.
+*** DONE Make double click on overlay list toggle visibility, rather than edit name
+*** DONE Refresh when numeric control value changes, not when focus lost
+All spinctrls now refresh on focus-lose, or when enter is hit.
+*** DONE Overlay list order persistence is wonky again
+*** DONE If canvas panel display sync is off, and an overlay's type is changed, the new overlay type properties are synced again.
+*** DONE Loading overlay dialog not centered
+*** DONE HistogramPanel message dialgo is not centred under X11?
+*** DONE Combo box mouse selection
+*** DONE Spin controls under linux only allow integers
+*** DONE 'Reset display range' option on overlay display toolbar/settings panel
+*** DONE SliceCanvas - do not re-centre on current location when zoomed in, and displayed slice changes
+*** DONE MessageDialog not being sized correctly under X11
+*** DONE Disable low-performance options  (e.g. label outline, volume invert clipping)
+*** DONE Location persistence on transform change is still wonky.
 *** DONE $FSLDIR not persisted - fslview/settings should be utils/settings, and should be used by fsl/__init__ to save a default FSLDIR
 *** DONE Inverted mask overlay - clipped values are black, not transparent
 *** DONE Bricon on mask overlays.
@@ -92,12 +97,12 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** Link/unlink Volume brightness/contrast is a bit funky
-** Toolbar labels don't refresh properly on selected overlay change
-** Clipping range not working for some volumes in ~/analysis_prac_2015/rest/ICA/Group/groupmelodic_fix.ica/melodic_IC.nii.gz 
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
-** Lightbox scrollbar under linux not visible?
+** DONE Lightbox scrollbar under linux not visible?
+** DONE Link/unlink Volume brightness/contrast is a bit funky
+** DONE Toolbar labels don't refresh properly on selected overlay change
+** DONE Clipping range not working for some volumes in ~/analysis_prac_2015/rest/ICA/Group/groupmelodic_fix.ica/melodic_IC.nii.gz 
 ** WONTFIX OSMesa render doesn't work with circle voxels
 Circle voxels were just an experiment anyway. Removed from code
 ** WONTFIX World location is clamped to voxel centre when voxel location changes. Not sure if this really needs to be fixed.
