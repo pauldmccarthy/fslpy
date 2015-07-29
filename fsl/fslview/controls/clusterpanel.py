@@ -32,7 +32,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
         self.__overlayName  = wx.StaticText(self)
         self.__addZStats    = wx.Button(    self)
         self.__addClustMask = wx.Button(    self)
-        self.__statSelect   = wx.ComboBox(  self, style=wx.CB_READONLY)
+        self.__statSelect   = wx.Choice(    self)
         self.__clusterList  = widgetgrid.WidgetGrid(self)
 
         self.__addZStats   .SetLabel(strings.labels[self, 'addZStats'])
@@ -69,9 +69,9 @@ class ClusterPanel(fslpanel.FSLViewPanel):
                                 self._name,
                                 self.__selectedOverlayChanged)
 
-        self.__statSelect  .Bind(wx.EVT_COMBOBOX, self.__statSelected)
-        self.__addZStats   .Bind(wx.EVT_BUTTON,   self.__addZStatsClick)
-        self.__addClustMask.Bind(wx.EVT_BUTTON,   self.__addClustMaskClick)
+        self.__statSelect  .Bind(wx.EVT_CHOICE, self.__statSelected)
+        self.__addZStats   .Bind(wx.EVT_BUTTON, self.__addZStatsClick)
+        self.__addClustMask.Bind(wx.EVT_BUTTON, self.__addClustMaskClick)
 
         self.SetMinSize(self.__calcMinSize())
 
