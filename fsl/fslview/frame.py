@@ -115,7 +115,7 @@ class FSLViewFrame(wx.Frame):
         self.__viewPanels     = collections.OrderedDict()
         self.__viewPanelDCs   = {}
         self.__viewPanelMenus = {}
-        self.__viewPanelCount = 0
+        self.__viewPanelIDs   = {}
 
         self.__makeMenuBar()
         self.__restoreState(restore)
@@ -125,8 +125,7 @@ class FSLViewFrame(wx.Frame):
 
         
     def getViewPanels(self):
-        """Returns a list of all view panels that currently exist.
-        """
+        """Returns a list of all view panels that currently exist. """
         return self.__viewPanels.values()
 
 
@@ -137,9 +136,12 @@ class FSLViewFrame(wx.Frame):
 
         self.Freeze()
 
-        title = '{} {}'.format(
-            strings.titles[panelCls],
-            self.__viewPanelCount + 1)
+        if len(self.__viewPanelIDs) == 0:
+            panelId = 1
+        else:
+            panelId = max(self.__viewPanelIDs.values()) + 1
+            
+        title   = '{} {}'.format(strings.titles[panelCls], panelId)
 
         childDC = displaycontext.DisplayContext(
             self.__overlayList,
@@ -150,7 +152,7 @@ class FSLViewFrame(wx.Frame):
         # the master DC, but by default the
         # overlay display settings for subsequent
         # view panels are unsynced.
-        if self.__viewPanelCount > 0:
+        if panelId > 1:
             childDC.syncOverlayDisplay = False
         
         panel = panelCls(
@@ -168,7 +170,8 @@ class FSLViewFrame(wx.Frame):
                     .Caption(title)
                     .Dockable()
                     .CloseButton()
-                    .Resizable())
+                    .Resizable()
+                    .DestroyOnClose())
 
         # When there is only one view panel
         # displayed, the AuiManager seems to
@@ -177,10 +180,8 @@ class FSLViewFrame(wx.Frame):
         # panel is drawn over the top of it.
         # So if we only have one panel, we
         # hide the caption bar
-        if self.__viewPanelCount == 0:
-            paneInfo = (paneInfo
-                        .Centre()
-                        .CaptionVisible(False))
+        if panelId == 1:
+            paneInfo.Centre().CaptionVisible(False)
             
         # But then re-show it when another
         # panel is added. The __viewPanels
@@ -190,24 +191,27 @@ class FSLViewFrame(wx.Frame):
         else:
             self.__viewPanels.keys()[0].CaptionVisible(True)
 
-        if self.__viewPanelCount > 0:
+        # If this is not the first view panel,
+        # give it a sensible initial size.
+        if panelId > 1:
             width, height = self.GetClientSize().Get()
-            
-            if isinstance(panel, views.PlotPanel):
-                paneInfo = (paneInfo
-                            .Bottom()
-                            .BestSize(-1, height / 3))
-            else:
-                paneInfo = (paneInfo
-                            .Right()
-                            .BestSize(width / 3, -1)) 
 
-        self.__viewPanelCount         = self.__viewPanelCount + 1
+            # PlotPanels are initially
+            # placed along the bottom
+            if isinstance(panel, views.PlotPanel):
+                paneInfo.Bottom().BestSize(-1, height / 3)
+
+            # Other panels (e.g. CanvasPanels)
+            # are placed on the right
+            else:
+                paneInfo.Right().BestSize(width / 3, -1)
+
         self.__viewPanels[  paneInfo] = panel
         self.__viewPanelDCs[panel]    = childDC
+        self.__viewPanelIDs[panel]    = panelId
         
         self.__auiManager.AddPane(panel, paneInfo)
-        self.__addViewPanelMenu(panel, title)
+        self.__addViewPanelMenu(  panel, title)
 
         self.__auiManager.Update()
 
@@ -221,11 +225,10 @@ class FSLViewFrame(wx.Frame):
         if len(actionz) == 0:
             return
 
-        menuBar = self.GetMenuBar()
-        menu    = wx.Menu(title)
-        menuBar.Append(menu, title)
+        menu    = wx.Menu()
+        submenu = self.__settingsMenu.AppendSubMenu(menu, title)
 
-        self.__viewPanelMenus[panel] = menu
+        self.__viewPanelMenus[panel] = submenu
 
         for actionName, actionObj in actionz.items():
             
@@ -244,10 +247,10 @@ class FSLViewFrame(wx.Frame):
 
         if panel is None:
             return
-        
-        menu  = self.__viewPanelMenus.pop(panel)
-        dctx  = self.__viewPanelDCs  .pop(panel)
-        title = menu.GetTitle()
+
+        self       .__viewPanelIDs  .pop(panel)
+        dctx = self.__viewPanelDCs  .pop(panel)
+        menu = self.__viewPanelMenus.pop(panel, None)
 
         log.debug('Destroying {} ({}) and '
                   'associated DisplayContext ({})'.format(
@@ -260,18 +263,21 @@ class FSLViewFrame(wx.Frame):
         for actionName, actionObj in panel.getActions().items():
             actionObj.unbindAllWidgets()
 
-        menuBar = self.GetMenuBar()
-        menuIdx = menuBar.FindMenu(title)
-        
-        if menuIdx != wx.NOT_FOUND:
-            menuBar.Remove(menuIdx)
+        if menu is not None:
+            self.__settingsMenu.Remove(menu.GetId())
 
         # Calling fslpanel.FSLViewPanel.destroy()
         # and DisplayContext.destroy() - the
-        # AUINotebook should do the
+        # AUIManager should do the
         # wx.Window.Destroy side of things ...
         panel.destroy()
         dctx .destroy()
+
+        # If there is only one panel
+        # left, move it to the centre
+        if len(self.__viewPanels) == 1:
+            paneInfo = self.__viewPanels.keys()[0]
+            paneInfo.Centre().CaptionVisible(False)
 
         
     def __onClose(self, ev):
@@ -459,14 +465,17 @@ class FSLViewFrame(wx.Frame):
         menuBar = wx.MenuBar()
         self.SetMenuBar(menuBar)
 
-        fileMenu = wx.Menu()
-        menuBar.Append(fileMenu, 'File')
+        fileMenu     = wx.Menu()
+        viewMenu     = wx.Menu()
+        settingsMenu = wx.Menu() 
+ 
+        menuBar.Append(fileMenu,     'File')
+        menuBar.Append(viewMenu,     'View')
+        menuBar.Append(settingsMenu, 'Settings') 
 
-        viewMenu = wx.Menu()
-        menuBar.Append(viewMenu, 'View')
-
-        self.__fileMenu = fileMenu
-        self.__viewMenu = viewMenu
+        self.__fileMenu     = fileMenu
+        self.__viewMenu     = viewMenu
+        self.__settingsMenu = settingsMenu
 
         viewPanels = views   .listViewPanels()
         actionz    = actions .listGlobalActions()
