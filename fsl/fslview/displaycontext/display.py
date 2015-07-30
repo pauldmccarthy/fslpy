@@ -220,6 +220,24 @@ class Display(props.SyncableHasProperties):
             # (if this Display has a parent)
             state=displayCtx.syncOverlayDisplay)
 
+        # When the overlay type changes, the property
+        # values of the DisplayOpts instance for the
+        # old overlay type are stored in this dict.
+        # If the overlay is later changed back to the
+        # old type, its previous values are restored.
+        #
+        # The structure of the dictionary is:
+        #
+        #   { type(DIsplayOpts), propName : propValue }
+        #
+        # This also applies to the case where the
+        # overlay type is changed from one type to
+        # a related type (e.g. from VolumeOpts to
+        # LabelOpts) - the values of all common
+        # properties are copied to the new
+        # DisplayOpts instance.
+        self.__oldOptValues = td.TypeDict()
+
         # Set up listeners after caling Syncable.__init__,
         # so the callbacks don't get called during
         # synchronisation
@@ -298,6 +316,75 @@ class Display(props.SyncableHasProperties):
                        parent=oParent,
                        state=self.__displayCtx.syncOverlayDisplay)
 
+
+    def __findOptBaseType(self, optType):
+        """Finds the top level base class for the given :class:`DisplayOpts`
+        subclass.
+
+        This method is used by the :meth:`__saveOldDisplayOpts` method, and
+        is an annoying necessity caused by the way that the :class:`.TypeDict`
+        class works. A ``TypeDict`` does not allow types to be used as keys -
+        they must be strings containing the type names.
+
+        Furthermore, in order for the property values of a common
+        ``DisplayOpts`` base type to be shared across sub types (e.g. copying
+        the :attr:`.ImageOpts.transform` property between :class:`.VolumeOpts`
+        and :class:`.LabelOpts` instances), we need to store the name of the
+        common base type in the dictionary.
+
+        So this method just recursively finds and returns the highest base
+        type of the given ``optType`` which is a sub-type of ``DisplayOpts``.
+        """
+
+        bases = optType.__bases__
+
+        if DisplayOpts in bases:
+            return optType
+
+        for base in bases:
+            
+            base = self.__findOptBaseType(base)
+            if base is not None:
+                return base
+
+        return None
+
+    
+    def __saveOldDisplayOpts(self):
+        """Saves the value of every property on the current
+        :class:`DisplayOpts` instance, so they can be restored
+        later if needed.
+        """
+
+        opts = self.__displayOpts
+
+        if opts is None:
+            return
+
+        for propName in opts.getAllProperties()[0]:
+            base = self.__findOptBaseType(type(opts))
+            base = base.__name__
+            self.__oldOptValues[base, propName] = getattr(opts, propName)
+
+    
+    def __restoreOldDisplayOpts(self):
+        """Restores any cached values for all of the properties  on the
+        current ``DisplayOpts`` instance.
+        """
+        opts = self.__displayOpts
+
+        if opts is None:
+            return
+
+        for propName in opts.getAllProperties()[0]:
+            
+            try:
+                value = self.__oldOptValues[opts, propName]
+                setattr(opts, propName, value)
+                
+            except KeyError:
+                pass
+                
     
     def __overlayTypeChanged(self, *a):
         """
@@ -305,7 +392,9 @@ class Display(props.SyncableHasProperties):
 
         # make sure that the display
         # options instance is up to date
+        self.__saveOldDisplayOpts()
         self.getDisplayOpts()
+        self.__restoreOldDisplayOpts()
 
 
 import volumeopts

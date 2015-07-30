@@ -141,6 +141,9 @@ class GLVolume(globject.GLImageObject):
         if self.imageTexture is not None:
             glresources.delete(self.imageTexture.getTextureName())
 
+        if opts.interpolation == 'none': interp = gl.GL_NEAREST
+        else:                            interp = gl.GL_LINEAR
+
         # The image texture may be used elsewhere,
         # so we'll use the resource management
         # module rather than creating one directly
@@ -148,7 +151,8 @@ class GLVolume(globject.GLImageObject):
             texName, 
             textures.ImageTexture,
             texName,
-            self.image) 
+            self.image,
+            interp=interp) 
 
     
     def refreshColourTexture(self):

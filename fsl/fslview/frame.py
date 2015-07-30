@@ -138,10 +138,18 @@ class FSLViewFrame(wx.Frame):
         title = '{} {}'.format(
             strings.titles[panelCls],
             self.__viewPanelCount + 1)
-        
+
         childDC = displaycontext.DisplayContext(
             self.__overlayList,
-            self.__displayCtx)
+            parent=self.__displayCtx)
+        
+        # Create a child DisplayContext. The DC
+        # for the first view panel is synced to
+        # the master DC, but by default the
+        # overlay display settings for subsequent
+        # view panels are unsynced.
+        if self.__viewPanelCount > 0:
+            childDC.syncOverlayDisplay = False
         
         panel = panelCls(
             self.__centrePane,
