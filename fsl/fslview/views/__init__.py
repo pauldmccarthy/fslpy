@@ -18,6 +18,8 @@ dynamic lookup of all :class:`~fsl.fslview.views.viewpanel.ViewPanel` types.
 
 import fsl.fslview.panel as fslpanel
 
+import viewpanel
+import plotpanel
 import canvaspanel
 import orthopanel
 import lightboxpanel
@@ -25,6 +27,8 @@ import timeseriespanel
 import histogrampanel
 
 FSLViewPanel    = fslpanel       .FSLViewPanel
+ViewPanel       = viewpanel      .ViewPanel
+PlotPanel       = plotpanel      .PlotPanel
 CanvasPanel     = canvaspanel    .CanvasPanel
 OrthoPanel      = orthopanel     .OrthoPanel
 LightBoxPanel   = lightboxpanel  .LightBoxPanel
@@ -48,7 +52,7 @@ def listViewPanels():
         if val == FSLViewPanel:       continue
             
         if issubclass(val, FSLViewPanel) and \
-           val != CanvasPanel :
+           val not in (CanvasPanel, ViewPanel, PlotPanel):
             viewPanels.append(val)
             
     return viewPanels

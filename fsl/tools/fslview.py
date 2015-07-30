@@ -45,7 +45,7 @@ def interface(parent, args, ctx):
 
     # The viewPanel is assumed to be a CanvasPanel 
     # (i.e. either OrthoPanel or LightBoxPanel)
-    viewPanel = frame.getViewPanels()[0][0]
+    viewPanel = frame.getViewPanels()[0]
     viewOpts  = viewPanel.getSceneOptions()
 
     fslview_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)

@@ -49,9 +49,10 @@ performed or modified by the user.
 
 
 import logging
+import collections
 
 import wx
-import wx.aui as aui
+import wx.lib.agw.aui     as aui
 
 import fsl.data.strings   as strings
 import fsl.utils.settings as fslsettings
@@ -97,43 +98,44 @@ class FSLViewFrame(wx.Frame):
         
         self.__overlayList = overlayList
         self.__displayCtx  = displayCtx
-
-        self.__centrePane = aui.AuiNotebook(
+        self.__auiManager  = aui.AuiManager(
             self,
-            style=aui.AUI_NB_TOP | 
-            aui.AUI_NB_TAB_SPLIT | 
-            aui.AUI_NB_TAB_MOVE |
-            aui.AUI_NB_CLOSE_ON_ALL_TABS)
+            agwFlags=(aui.AUI_MGR_RECTANGLE_HINT |
+                      aui.AUI_MGR_NO_VENETIAN_BLINDS_FADE |
+                      aui.AUI_MGR_LIVE_RESIZE))
 
-        # Keeping track of all
-        # open view panels
-        self.__viewPanels      = []
-        self.__viewPanelDCs    = {}
-        self.__viewPanelTitles = {}
-        self.__viewPanelMenus  = {}
-        self.__viewPanelCount  = 0
+        # Keeping track of all open view panels
+        # 
+        # The __viewPanels dict contains
+        # {AuiPaneInfo : ViewPanel} mappings
+        #
+        # The other dicts contain
+        # {ViewPanel : something} mappings
+        # 
+        self.__viewPanels     = collections.OrderedDict()
+        self.__viewPanelDCs   = {}
+        self.__viewPanelMenus = {}
+        self.__viewPanelCount = 0
 
         self.__makeMenuBar()
         self.__restoreState(restore)
 
-        self.__centrePane.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE,
-                               self.__onViewPanelClose)
-
-        self.Bind(wx.EVT_CLOSE, self.__onClose)
+        self.__auiManager.Bind(aui.EVT_AUI_PANE_CLOSE, self.__onViewPanelClose)
+        self             .Bind(wx.EVT_CLOSE,           self.__onClose)
 
         
     def getViewPanels(self):
-        """Returns a list of all view panels that currently exist, and a list
-        of their titles.
+        """Returns a list of all view panels that currently exist.
         """
-        return (self.__viewPanels,
-                [self.__viewPanelTitles[vp] for vp in self.__viewPanels])
+        return self.__viewPanels.values()
 
 
     def addViewPanel(self, panelCls):
         """Adds a view panel to the centre of the frame, and a menu item
         allowing the user to configure the view.
         """
+
+        self.Freeze()
 
         title = '{} {}'.format(
             strings.titles[panelCls],
@@ -152,7 +154,7 @@ class FSLViewFrame(wx.Frame):
             childDC.syncOverlayDisplay = False
         
         panel = panelCls(
-            self.__centrePane,
+            self,
             self.__overlayList,
             childDC)
 
@@ -161,18 +163,55 @@ class FSLViewFrame(wx.Frame):
             id(panel),
             id(childDC)))
 
-        self.__viewPanelCount = self.__viewPanelCount + 1
+        paneInfo = (aui.AuiPaneInfo()
+                    .Name(title)
+                    .Caption(title)
+                    .Dockable()
+                    .CloseButton()
+                    .Resizable())
 
-        self.__viewPanels.append(panel)
-        self.__viewPanelTitles[panel] = title
-        self.__viewPanelDCs[   panel] = childDC
+        # When there is only one view panel
+        # displayed, the AuiManager seems to
+        # have trouble drawing the caption
+        # bar - it is drawn, but then the
+        # panel is drawn over the top of it.
+        # So if we only have one panel, we
+        # hide the caption bar
+        if self.__viewPanelCount == 0:
+            paneInfo = (paneInfo
+                        .Centre()
+                        .CaptionVisible(False))
+            
+        # But then re-show it when another
+        # panel is added. The __viewPanels
+        # dict is an OrderedDict, so the
+        # first key is the AuiPaneInfo of
+        # the first panel that was added.
+        else:
+            self.__viewPanels.keys()[0].CaptionVisible(True)
+
+        if self.__viewPanelCount > 0:
+            width, height = self.GetClientSize().Get()
+            
+            if isinstance(panel, views.PlotPanel):
+                paneInfo = (paneInfo
+                            .Bottom()
+                            .BestSize(-1, height / 3))
+            else:
+                paneInfo = (paneInfo
+                            .Right()
+                            .BestSize(width / 3, -1)) 
+
+        self.__viewPanelCount         = self.__viewPanelCount + 1
+        self.__viewPanels[  paneInfo] = panel
+        self.__viewPanelDCs[panel]    = childDC
         
-        self.__centrePane.AddPage(panel, title, True)
-        self.__centrePane.Split(
-            self.__centrePane.GetPageIndex(panel),
-            wx.RIGHT)
-
+        self.__auiManager.AddPane(panel, paneInfo)
         self.__addViewPanelMenu(panel, title)
+
+        self.__auiManager.Update()
+
+        self.Thaw()
 
 
     def __addViewPanelMenu(self, panel, title):
@@ -183,7 +222,7 @@ class FSLViewFrame(wx.Frame):
             return
 
         menuBar = self.GetMenuBar()
-        menu    = wx.Menu()
+        menu    = wx.Menu(title)
         menuBar.Append(menu, title)
 
         self.__viewPanelMenus[panel] = menu
@@ -199,22 +238,20 @@ class FSLViewFrame(wx.Frame):
     def __onViewPanelClose(self, ev):
 
         ev.Skip()
-        
-        pageIdx = ev.GetSelection()
-        panel   = self.__centrePane.GetPage(pageIdx)
 
-        if panel not in self.__viewPanels:
+        paneInfo = ev.GetPane()
+        panel    = self .__viewPanels.pop(paneInfo, None)
+
+        if panel is None:
             return
+        
+        menu  = self.__viewPanelMenus.pop(panel)
+        dctx  = self.__viewPanelDCs  .pop(panel)
+        title = menu.GetTitle()
 
-        self.__viewPanels             .remove(panel)
-        self.__viewPanelMenus         .pop(   panel, None)
-        title = self.__viewPanelTitles.pop(   panel)
-        dctx  = self.__viewPanelDCs   .pop(   panel)
-
-        log.debug('Destroying {} (title {}, id {}) and '
+        log.debug('Destroying {} ({}) and '
                   'associated DisplayContext ({})'.format(
                       type(panel).__name__,
-                      title,
                       id(panel),
                       id(dctx)))
 
@@ -225,6 +262,7 @@ class FSLViewFrame(wx.Frame):
 
         menuBar = self.GetMenuBar()
         menuIdx = menuBar.FindMenu(title)
+        
         if menuIdx != wx.NOT_FOUND:
             menuBar.Remove(menuIdx)
 
@@ -254,7 +292,7 @@ class FSLViewFrame(wx.Frame):
         # It's nice to explicitly clean
         # up our FSLViewPanels, otherwise
         # they'll probably complain
-        for panel in self.__viewPanels:
+        for panel in self.__viewPanels.values():
             panel.destroy()
 
         
@@ -399,7 +437,7 @@ class FSLViewFrame(wx.Frame):
 
             self.addViewPanel(views.OrthoPanel)
 
-            viewPanel = self.getViewPanels()[0][0]
+            viewPanel = self.getViewPanels()[0]
 
             # Set up a default for ortho views
             # layout (this will hopefully eventually
