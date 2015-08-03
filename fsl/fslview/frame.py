@@ -198,14 +198,29 @@ class FSLViewFrame(wx.Frame):
                 wx.ID_ANY,
                 strings.actions[panel, actionName])
             actionObj.bindToWidget(self, wx.EVT_MENU, menuItem)
+
+        # Add a 'Close' action to
+        # the menu for every panel 
+        def closeViewPanel(ev):
+            paneInfo = self.__auiManager.GetPane(panel)
+            self.__onViewPanelClose(    paneInfo=paneInfo)
+            self.__auiManager.ClosePane(paneInfo)
+            self.__auiManager.Update()
+
+        closeItem = menu.Append(
+            wx.ID_ANY,
+            strings.actions[self, 'closeViewPanel'])
+        self.Bind(wx.EVT_MENU, closeViewPanel, closeItem)
+            
     
 
-    def __onViewPanelClose(self, ev):
+    def __onViewPanelClose(self, ev=None, paneInfo=None):
 
-        ev.Skip()
+        if ev is not None:
+            ev.Skip()
+            paneInfo = ev.GetPane()
 
-        paneInfo = ev.GetPane()
-        panel    = self .__viewPanels.pop(paneInfo, None)
+        panel = self .__viewPanels.pop(paneInfo, None)        
 
         if panel is None:
             return

@@ -159,6 +159,8 @@ actions = TypeDict({
     'SaveOverlayAction'   : 'Save overlay',
     'LoadColourMapAction' : 'Load custom colour map',
 
+    'FSLViewFrame.closeViewPanel' : 'Close',
+
     'CanvasPanel.screenshot'              : 'Take screenshot',
     'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',
     'CanvasPanel.toggleColourBar'         : 'Colour bar',
