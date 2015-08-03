@@ -91,7 +91,13 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
             strings.labels[hsPanel, 'ylim'],
             groupName='plotSettings')
 
+        # We store a ref to the currently selected
+        # HistogramSeries instance, and to the
+        # HistogramSeries.nbins widget, so we can
+        # enable/disable it
         self.__currentHs = None
+        self.__nbins     = None
+        
         hsPanel.addListener('selectedSeries',
                             self._name,
                             self.__selectedSeriesChanged)
@@ -146,6 +152,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         if self.__widgets.HasGroup('currentSettings'):
             expanded = self.__widgets.IsExpanded('currentSettings')
             self.__widgets.RemoveGroup('currentSettings')
+            self.__nbins = None
 
         if self.__currentHs is None:
             return
@@ -200,4 +207,7 @@ class HistogramControlPanel(fslpanel.FSLViewPanel):
         
 
     def __autoBinChanged(self, *a):
+
+        if self.__currentHs is None or self.__nbins is None:
+            return
         self.__nbins.Enable(not self.__hsPanel.autoBin)

@@ -4,47 +4,9 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A 3D image viewer.
-
-This module provides the :class:`FSLViewFrame` which is the top level frame
+"""This module provides the :class:`FSLViewFrame` which is the top level frame
 for the FSLView application, providing functionality to view 3D/4D images,
 and other types of data.
-
-The application logic is spread across several sub-packages:
-
- - :mod:`actions`        - Global actions (e.g. load file), and abstract base
-                           classes for other actions, and entities which 
-                           provide actions.
-
- - :mod:`controls`       - GUI panels which provide an interface to control 
-                           the display of a single view.
-
- - :mod:`displaycontext` - Classes which define options controlling the
-                           display.
-
- - :mod:`editor`         - Image editing functionality.
-
- - :mod:`gl`             - OpenGL visualisation logic.
-
- - :mod:`profiles`       - Mouse/keyboard interaction profiles.
-
- - :mod:`views`          - GUI panels which display image data.
-
- - :mod:`widgets`        - General purpose custom :mod:`wx` widgets.
-
-
-A :class:`FSLViewFrame` is a container for one or more 'views' - all of the
-possible views are contained within the :mod:`.views` sub-package, and the
-views which may be opened by the user are defined by the
-:func:`.views.listViewPanels` function. View panels may contain one or more
-'control' panels (all defined in the :mod:`.controls` sub-package), which
-provide an interface allowing the user to control the view.
-
-
-All view (and control) panels are derived from the :class:`.FSLViewPanel`
-which, in turn, is derived from the :class:`.ActionProvider` class.
-As such, view panels may expose both actions, and properties, which can be
-performed or modified by the user.
 """
 
 
@@ -273,9 +235,13 @@ class FSLViewFrame(wx.Frame):
         panel.destroy()
         dctx .destroy()
 
-        # If there is only one panel
-        # left, move it to the centre
-        if len(self.__viewPanels) == 1:
+        # If the removed panel was the centre
+        # pane, or if there is only one panel
+        # left, move another panel to the centre
+        numPanels = len(self.__viewPanels)
+        wasCentre = paneInfo.dock_direction_get() == aui.AUI_DOCK_CENTRE
+        
+        if numPanels == 1 or (numPanels > 0 and wasCentre):
             paneInfo = self.__viewPanels.keys()[0]
             paneInfo.Centre().CaptionVisible(False)
 
@@ -317,8 +283,8 @@ class FSLViewFrame(wx.Frame):
             
     def __parseSavedLayout(self, layout):
         """Parses the given string, which is assumed to contain an encoded
-        :class:`wx.aui.AuiManager` perspective (see
-        :meth:`~wx.aui.AuiManager.SavePerspective`).
+        :class:`.AuiManager` perspective (see
+        :meth:`.AuiManager.SavePerspective`).
 
         Returns a list of class names, specifying the control panels
         (e.g. :class:`~fsl.fslview.controls.imagelistpanel.ImageListPanel`)
@@ -344,7 +310,7 @@ class FSLViewFrame(wx.Frame):
         except:
             return []
 
-        
+    
     def __restoreState(self, restore=True):
         """Called on :meth:`__init__`. If any frame size/layout properties
         have previously been saved, they are applied to this frame.

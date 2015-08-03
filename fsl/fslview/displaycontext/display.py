@@ -73,6 +73,7 @@ class DisplayOpts(actions.ActionProvider):
         """If overridden, this method should be called by the subclass
         implementation.
         """
+        actions.ActionProvider.destroy(self)
 
         self.overlay     = None
         self.display     = None
