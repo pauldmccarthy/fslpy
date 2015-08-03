@@ -145,6 +145,7 @@ titles = TypeDict({
     'HistogramListPanel'     : 'Histogram list',
     'HistogramControlPanel'  : 'Histogram control',
     'ClusterPanel'           : 'Cluster browser',
+    'OverlayInfoPanel'       : 'Overlay information',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -170,6 +171,7 @@ actions = TypeDict({
     'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
     'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
     'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
+    'CanvasPanel.toggleOverlayInfo'       : 'Overlay information',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
@@ -292,7 +294,10 @@ labels = TypeDict({
     'CanvasSettingsPanel.scene'    : 'Scene settings',
     'CanvasSettingsPanel.ortho'    : 'Ortho view settings',
     'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
-    
+
+    'OverlayInfoPanel.Image.dimensions'   : 'Dimensions',
+    'OverlayInfoPanel.Image.transform'    : 'Transform/space',
+    'OverlayInfoPanel.Image.orient'       : 'Orientation',
 })
 
 
@@ -547,4 +552,67 @@ anatomy = TypeDict({
                                                                  'anatomical',
     ('Image', 'space',     constants.NIFTI_XFORM_TALAIRACH)    : 'Talairach', 
     ('Image', 'space',     constants.NIFTI_XFORM_MNI_152)      : 'MNI152',
+})
+
+
+nifti = TypeDict({
+
+    'dimensions' : 'Number of dimensions',
+    'dataSource' : 'Data source',
+    
+    'datatype'    : 'Data type',
+    'vox_units'   : 'XYZ units',
+    'time_units'  : 'Time units',
+    'descrip'     : 'Description',
+    'qform_code'  : 'QForm code',
+    'sform_code'  : 'SForm code',
+
+    'voxOrient.0'   : 'X voxel orientation',
+    'voxOrient.1'   : 'Y voxel orientation',
+    'voxOrient.2'   : 'Z voxel orientation',
+    'sformOrient.0' : 'X sform orientation',
+    'sformOrient.1' : 'Y sform orientation',
+    'sformOrient.2' : 'Z sform orientation',
+    'qformOrient.0' : 'X qform orientation',
+    'qformOrient.1' : 'Y qform orientation',
+    'qformOrient.2' : 'Z qform orientation', 
+
+    'qform' : 'QForm matrix',
+    'sform' : 'SForm matrix',
+
+    'dim1' : 'dim1',
+    'dim2' : 'dim2',
+    'dim3' : 'dim3',
+    'dim4' : 'dim4',
+    'dim5' : 'dim5',
+    'dim6' : 'dim6',
+    'dim7' : 'dim7',
+
+    'pixdim1' : 'pixdim1',
+    'pixdim2' : 'pixdim2',
+    'pixdim3' : 'pixdim3',
+    'pixdim4' : 'pixdim4',
+    'pixdim5' : 'pixdim5',
+    'pixdim6' : 'pixdim6',
+    'pixdim7' : 'pixdim7', 
+
+    ('datatype', 0)    : 'UNKNOWN',
+    ('datatype', 1)    : 'BINARY',
+    ('datatype', 2)    : 'UINT8',
+    ('datatype', 4)    : 'INT16',
+    ('datatype', 8)    : 'INT32',
+    ('datatype', 16)   : 'FLOAT32',
+    ('datatype', 32)   : 'COMPLEX64',
+    ('datatype', 64)   : 'DOUBLE64',
+    ('datatype', 128)  : 'RGB',
+    ('datatype', 255)  : 'ALL',
+    ('datatype', 256)  : 'INT8',
+    ('datatype', 512)  : 'UINT16',
+    ('datatype', 768)  : 'UINT32',
+    ('datatype', 1024) : 'INT64',
+    ('datatype', 1280) : 'UINT64',
+    ('datatype', 1536) : 'FLOAT128',
+    ('datatype', 1792) : 'COMPLEX128',
+    ('datatype', 2048) : 'COMPLEX256',
+    ('datatype', 2304) : 'RGBA32',
 })

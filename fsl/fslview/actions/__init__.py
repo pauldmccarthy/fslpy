@@ -22,6 +22,7 @@ or more actions.  As the :class:`.FSLViewPanel` class derives from
 
 
 import logging
+import collections
 
 import props
 
@@ -210,7 +211,7 @@ class ActionProvider(props.SyncableHasProperties):
         if actions is None:
             actions = {}
 
-        self.__actions = {}
+        self.__actions = collections.OrderedDict()
 
         for name, func in actions.items():
             act = Action(overlayList, displayCtx, action=func)
@@ -246,7 +247,7 @@ class ActionProvider(props.SyncableHasProperties):
         """Return a dictionary containing ``{name -> Action}`` mappings for
         all defined actions.
         """
-        return dict(self.__actions)
+        return collections.OrderedDict(self.__actions)
 
 
     def isEnabled(self, name):

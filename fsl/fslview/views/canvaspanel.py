@@ -12,6 +12,7 @@ class for all panels which display image data (e.g. the
 """
 
 import logging
+import collections
 
 import wx
 
@@ -57,22 +58,24 @@ class CanvasPanel(viewpanel.ViewPanel):
         if extraActions is None:
             extraActions = {}
 
-        actionz = dict({
-            'screenshot'              : self.screenshot,
-            'showCommandLineArgs'     : self.showCommandLineArgs,
-            'toggleOverlayList'         : lambda *a: self.togglePanel(
-                fslcontrols.OverlayListPanel),
-            'toggleAtlasPanel'        : lambda *a: self.togglePanel(
-                fslcontrols.AtlasPanel),
-            'toggleDisplayProperties' : lambda *a: self.togglePanel(
-                fslcontrols.OverlayDisplayToolBar, False, self),
-            'toggleLocationPanel'     : lambda *a: self.togglePanel(
-                fslcontrols.LocationPanel),
-            'toggleClusterPanel'     : lambda *a: self.togglePanel(
-                fslcontrols.ClusterPanel), 
-            'toggleLookupTablePanel'  : lambda *a: self.togglePanel(
-                fslcontrols.LookupTablePanel), 
-        }.items() + extraActions.items())
+        actionz = [
+            ('screenshot',              self.screenshot),
+            ('showCommandLineArgs',     self.showCommandLineArgs),
+            ('toggleOverlayList',       lambda *a: self.togglePanel(
+                fslcontrols.OverlayListPanel)),
+            ('toggleOverlayInfo',       lambda *a: self.togglePanel(
+                fslcontrols.OverlayInfoPanel)), 
+            ('toggleAtlasPanel',        lambda *a: self.togglePanel(
+                fslcontrols.AtlasPanel)),
+            ('toggleDisplayProperties', lambda *a: self.togglePanel(
+                fslcontrols.OverlayDisplayToolBar, False, self)),
+            ('toggleLocationPanel',     lambda *a: self.togglePanel(
+                fslcontrols.LocationPanel)),
+            ('toggleClusterPanel',      lambda *a: self.togglePanel(
+                fslcontrols.ClusterPanel)), 
+            ('toggleLookupTablePanel',  lambda *a: self.togglePanel(
+                fslcontrols.LookupTablePanel))]
+        actionz = collections.OrderedDict(actionz + extraActions.items())
         
         viewpanel.ViewPanel.__init__(
             self, parent, overlayList, displayCtx, actionz)

@@ -277,23 +277,29 @@ class Image(props.HasProperties):
         return len(self.shape) > 3 and self.shape[3] > 1
 
 
-    def getXFormCode(self):
+    def getXFormCode(self, code=None):
         """This method returns the code contained in the NIFTI1 header,
         indicating the space to which the (transformed) image is oriented.
+
+        The ``code`` parameter may be either ``sform`` (the default) or
+        ``qform`` in which case the corresponding matrix is used. 
         """
-        sform_code = self.nibImage.get_header()['sform_code']
+
+        if   code is None:     code = 'sform_code'
+        elif code == 'sform' : code = 'sform_code'
+        elif code == 'qform' : code = 'qform_code'
+        else: raise ValueError('code must be None, sform, or qform')
+
+        code = self.nibImage.get_header()[code]
 
         # Invalid values
-        if   sform_code > 4: code = constants.NIFTI_XFORM_UNKNOWN
-        elif sform_code < 0: code = constants.NIFTI_XFORM_UNKNOWN
-
-        # All is well
-        else:                code = sform_code
-
+        if   code > 4: code = constants.NIFTI_XFORM_UNKNOWN
+        elif code < 0: code = constants.NIFTI_XFORM_UNKNOWN
+        
         return int(code)
 
 
-    def getWorldOrientation(self, axis):
+    def getWorldOrientation(self, axis, code=None):
         """Returns a code representing the orientation of the specified axis
         in world space.
 
@@ -316,17 +322,17 @@ class Image(props.HasProperties):
         to superior).
         """
 
-        if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
-            return -1
+        if self.getXFormCode(code) == constants.NIFTI_XFORM_UNKNOWN:
+            return constants.ORIENT_UNKNOWN
 
         if   axis == 0: return constants.ORIENT_L2R
         elif axis == 1: return constants.ORIENT_P2A
         elif axis == 2: return constants.ORIENT_I2S
 
-        else: return -1
+        else: return constants.ORIENT_UNKNOWN
 
 
-    def getVoxelOrientation(self, axis):
+    def getVoxelOrientation(self, axis, code=None):
         """Returns a code representing the (estimated) orientation of the
         specified voxelwise axis.
 
@@ -334,17 +340,23 @@ class Image(props.HasProperties):
         of the return value.
         """
         
-        if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
-            return -1 
+        if self.getXFormCode(code) == constants.NIFTI_XFORM_UNKNOWN:
+            return constants.ORIENT_UNKNOWN
+
+        if   code is None:    xform = self.nibImage.get_affine()
+        elif code == 'sform': xform = self.nibImage.get_sform()
+        elif code == 'qform': xform = self.nibImage.get_qform()
+        else: raise ValueError('code must be None, qform, or sform')
         
         # the aff2axcodes returns one code for each 
         # axis in the image array (i.e. in voxel space),
         # which denotes the real world direction
         code = nib.orientations.aff2axcodes(
-            self.nibImage.get_affine(),
+            xform,
             ((constants.ORIENT_R2L, constants.ORIENT_L2R),
              (constants.ORIENT_A2P, constants.ORIENT_P2A),
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
+        
         return code
 
 
@@ -354,8 +366,8 @@ class Image(props.HasProperties):
 # so i'm just providing '*.gz'for now
 ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.gz']
 """The file extensions which we understand. This list is used as the default
-if if the ``allowedExts`` parameter is not passed to any of the functions in
-this module.
+if if the ``allowedExts`` parameter is not passed to any of the functions
+below.
 """
 
 EXTENSION_DESCRIPTIONS = ['Compressed NIFTI1 images',
