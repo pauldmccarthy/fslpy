@@ -257,7 +257,7 @@ class Editor(props.HasProperties):
         
     def _revertChange(self, change):
 
-        overlay = change.ovelay
+        overlay = change.overlay
         opts    = self._displayCtx.getOpts(overlay)
         
         self._displayCtx.selectOverlay(overlay)

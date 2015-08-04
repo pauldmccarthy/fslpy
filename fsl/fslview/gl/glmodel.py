@@ -207,6 +207,8 @@ class GLModel(globject.GLObject):
         self._renderTexture.bindAsRenderTarget()
         self._renderTexture.setRenderViewport(xax, yax, lo, hi)
 
+        gl.glClearColor(0, 0, 0, 0)
+
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
         gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
@@ -249,8 +251,9 @@ class GLModel(globject.GLObject):
                               gl.GL_UNSIGNED_INT,
                               indices)
 
-        # third pass - render the intersection of the 
-        # front and back faces from the stencil buffer
+        # third pass - render the intersection
+        # of the front and back faces from the
+        # stencil buffer to the render texture
         gl.glColorMask(gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE, gl.GL_TRUE)
 
         gl.glDisable(gl.GL_CLIP_PLANE0)

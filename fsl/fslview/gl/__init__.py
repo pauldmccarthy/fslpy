@@ -314,7 +314,8 @@ def getOSMesaContext():
         # We follow the same process as for the
         # wx.glcanvas.GLContext, described above 
         dummy = glarrays.GLubyteArray.zeros((640, 480, 43))
-        thismod._osmesaGLContext = osmesa.OSMesaCreateContext(gl.GL_RGBA, None)
+        thismod._osmesaGLContext = osmesa.OSMesaCreateContextExt(
+            gl.GL_RGBA, 8, 4, 0, None)
         osmesa.OSMesaMakeCurrent(thismod._osmesaGLContext,
                                  dummy,
                                  gl.GL_UNSIGNED_BYTE,
