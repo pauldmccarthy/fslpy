@@ -178,9 +178,15 @@ class ViewPanel(fslpanel.FSLViewPanel):
         self.__auiMgrUpdate()
 
 
-    def togglePanel(self, panelType, floatPane=False, *args, **kwargs):
-
-        import fsl.fslview.layouts as layouts
+    def togglePanel(self,
+                    panelType,
+                    floatPane=False,
+                    location=wx.BOTTOM,
+                    *args,
+                    **kwargs):
+        
+        if location not in (wx.TOP, wx.BOTTOM, wx.LEFT, wx.RIGHT):
+            raise ValueError('Invalid value for location')
 
         window = self.__panels.get(panelType, None)
 
@@ -227,18 +233,21 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 # toolbar's new size is accommodated
                 window.Bind(fsltoolbar.EVT_TOOLBAR_EVENT, self.__auiMgrUpdate)
 
-            paneInfo.LeftDockable( False) \
-                    .RightDockable(False) \
-                    .Caption(strings.titles[window])                
+            paneInfo.Caption(strings.titles[window])                
 
             # Dock the pane at the position specified
-            # in fsl.fslview.layouts.locations, or
-            # at the top of the panel if there is no
-            # location specified 
+            # by the location parameter
             if floatPane is False:
 
-                paneInfo.Direction(
-                    layouts.locations.get(window, aui.AUI_DOCK_TOP))
+                if isinstance(window, fsltoolbar.FSLViewToolBar):
+                    location = aui.AUI_DOCK_TOP
+                else:
+                    if   location == wx.TOP:    location = aui.AUI_DOCK_TOP
+                    elif location == wx.BOTTOM: location = aui.AUI_DOCK_BOTTOM
+                    elif location == wx.LEFT:   location = aui.AUI_DOCK_LEFT
+                    elif location == wx.RIGHT:  location = aui.AUI_DOCK_RIGHT
+
+                paneInfo.Direction(location)
 
             # Or, for floating panes, centre the
             # floating pane on this ViewPanel 

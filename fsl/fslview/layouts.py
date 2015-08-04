@@ -5,8 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import wx.lib.agw.aui as aui
-
 import props
 
 import fsl.utils.typedict  as td
@@ -66,12 +64,4 @@ layouts = td.TypeDict({
 
     ('OrthoProfileToolBar', 'view') : OrthoProfileToolBarViewLayout,
     ('OrthoProfileToolBar', 'edit') : OrthoProfileToolBarEditLayout,
-})
-
-
-locations = td.TypeDict({
-    'LocationPanel'       : aui.AUI_DOCK_BOTTOM,
-    'OverlayListPanel'    : aui.AUI_DOCK_BOTTOM,
-    'AtlasPanel'          : aui.AUI_DOCK_BOTTOM,
-    'ImageDisplayToolBar' : aui.AUI_DOCK_TOP,
 })

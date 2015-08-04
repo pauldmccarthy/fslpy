@@ -436,8 +436,10 @@ class FSLViewFrame(wx.Frame):
 
             viewPanel.togglePanel(olp.OverlayListPanel)
             viewPanel.togglePanel(lop.LocationPanel)
-            viewPanel.togglePanel(odt.OverlayDisplayToolBar, False, viewPanel)
-            viewPanel.togglePanel(ot .OrthoToolBar,          False, viewPanel) 
+            viewPanel.togglePanel(odt.OverlayDisplayToolBar,
+                                  viewPanel=viewPanel)
+            viewPanel.togglePanel(ot .OrthoToolBar,
+                                  ortho=viewPanel) 
 
             
     def __makeMenuBar(self):

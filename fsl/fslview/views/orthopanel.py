@@ -45,9 +45,9 @@ class OrthoPanel(canvaspanel.CanvasPanel):
 
         actionz = {
             'toggleOrthoToolBar' : lambda *a: self.togglePanel(
-                orthotoolbar.OrthoToolBar, False, self),
+                orthotoolbar.OrthoToolBar, ortho=self),
             'toggleProfileToolBar' : lambda *a: self.togglePanel(
-                orthoprofiletoolbar.OrthoProfileToolBar, False, self), 
+                orthoprofiletoolbar.OrthoProfileToolBar, ortho=self), 
         }
 
         canvaspanel.CanvasPanel.__init__(self,

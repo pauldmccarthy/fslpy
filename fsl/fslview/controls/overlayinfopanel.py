@@ -63,7 +63,7 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         self.__currentDisplay = None
         self.__selectedOverlayChanged()
 
-        self.SetMinSize((200, 200))
+        self.SetMinSize((300, 200))
         self.Layout()
 
         

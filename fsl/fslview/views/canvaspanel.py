@@ -66,19 +66,26 @@ class CanvasPanel(viewpanel.ViewPanel):
             ('screenshot',              self.screenshot),
             ('showCommandLineArgs',     self.showCommandLineArgs),
             ('toggleOverlayList',       lambda *a: self.togglePanel(
-                fslcontrols.OverlayListPanel)),
+                fslcontrols.OverlayListPanel,
+                location=wx.BOTTOM)),
             ('toggleOverlayInfo',       lambda *a: self.togglePanel(
-                fslcontrols.OverlayInfoPanel)), 
+                fslcontrols.OverlayInfoPanel,
+                location=wx.RIGHT)), 
             ('toggleAtlasPanel',        lambda *a: self.togglePanel(
-                fslcontrols.AtlasPanel)),
+                fslcontrols.AtlasPanel,
+                location=wx.BOTTOM)),
             ('toggleDisplayProperties', lambda *a: self.togglePanel(
-                fslcontrols.OverlayDisplayToolBar, False, self)),
+                fslcontrols.OverlayDisplayToolBar,
+                viewPanel=self)),
             ('toggleLocationPanel',     lambda *a: self.togglePanel(
-                fslcontrols.LocationPanel)),
+                fslcontrols.LocationPanel,
+                location=wx.BOTTOM)),
             ('toggleClusterPanel',      lambda *a: self.togglePanel(
-                fslcontrols.ClusterPanel)), 
+                fslcontrols.ClusterPanel,
+                location=wx.TOP)), 
             ('toggleLookupTablePanel',  lambda *a: self.togglePanel(
-                fslcontrols.LookupTablePanel))]
+                fslcontrols.LookupTablePanel,
+                location=wx.TOP))]
         actionz = collections.OrderedDict(actionz + extraActions.items())
         
         viewpanel.ViewPanel.__init__(
