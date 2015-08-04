@@ -212,7 +212,12 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         opts.zzoom = opts.zoom
 
             
-
+    def getGLCanvases(self):
+        """Returns all of the :class:`.SliceCanvas` instances contained
+        within this ``OrthoPanel``.
+        """
+        return [self._xcanvas, self._ycanvas, self._zcanvas]
+    
 
     def getXCanvas(self):
         """Returns a reference to the

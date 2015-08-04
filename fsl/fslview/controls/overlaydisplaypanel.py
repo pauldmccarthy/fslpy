@@ -95,7 +95,7 @@ _DISPLAY_PROPS = td.TypeDict({
         props.Widget('refImage'),
         # props.Widget('showName'),
         props.Widget('coordSpace',
-                     enabledWhen=lambda o: o.refImage != 'none',
+                     enabledWhen=lambda o, ri: ri != 'none',
                      dependencies=['refImage'])],
 
     'LabelOpts' : [

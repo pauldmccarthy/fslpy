@@ -11,19 +11,23 @@ class for all panels which display image data (e.g. the
 
 """
 
+import os
+import os.path as op
 import logging
 import collections
 
 import wx
 
+import numpy            as np
+import matplotlib.image as mplimg
+
 import props
 
-import fsl
 import fsl.tools.fslview_parseargs as fslview_parseargs
 import fsl.utils.dialog            as fsldlg
+import fsl.utils.settings          as fslsettings
 import fsl.data.image              as fslimage
 import fsl.data.strings            as strings
-import fsl.fslview.overlay         as fsloverlay
 import fsl.fslview.displaycontext  as displayctx
 import fsl.fslview.controls        as fslcontrols
 import                                colourbarpanel
@@ -156,7 +160,39 @@ class CanvasPanel(viewpanel.ViewPanel):
                 
         
     def getCanvasPanel(self):
+        """Returns the ``wx.Panel`` which is the parent of all
+        :class:`.SliceCanvas` instances displayed in this ``CanvasPanel``.
+        """
         return self.__canvasPanel
+
+
+    def getCanvasContainer(self):
+        """Returns the ``wx.Panel`` which is the parent of the canvas
+        panel (see :meth:`getCanvasPanel`), and of the :class:`.ColourBarPanel`
+        if one is being displayed.
+        """
+        return self.__canvasContainer
+
+
+    def getGLCanvases(self):
+        """This must be implemented by subclasses, and must return a list
+        containing all :class:`.SliceCanvas` instances which are being
+        displayed.
+        """
+        raise NotImplementedError(
+            'getGLCanvases has not been implemented '
+            'by {}'.format(type(self).__name__))
+
+
+    def getColourBarCanvas(self):
+        """If a colour bar is being displayed, this method returns
+        the :class:`.ColourBarCanvas` instance which renders the colour bar.
+        
+        Otherwise, ``None`` is returned.
+        """
+        if self.__colourBar is not None:
+            return self.__colourBar.getCanvas()
+        return None
 
 
     def __layout(self, *a):
@@ -315,65 +351,34 @@ def _showCommandLineArgs(overlayList, displayCtx, canvas):
     dlg.ShowModal()
 
 
-def _screenshot(overlayList, displayCtx, canvas):
+def _screenshot(overlayList, displayCtx, canvasPanel):
 
-    overlays = displayCtx.getOrderedOverlays()
-    ovlCopy  = list(overlays)
+    def relativePosition(child, ancestor):
+        """Calculates the position of the given ``child``, relative
+        to its ``ancestor``. We use this to locate all GL canvases
+        relative to the canvas panel container, as they are not
+        necessarily direct children of the container.
+        """
 
-    # Check to make sure that all overlays are saved
-    # on disk, and ask the user what they want to
-    # do about the ones that aren't.
-    for overlay in overlays:
+        if child.GetParent() is ancestor:
+            return child.GetPosition().Get()
 
-        # Skip disabled overlays
-        display = displayCtx.getDisplay(overlay)
-        
-        if not display.enabled:
-            ovlCopy.remove(overlay)
-            continue
+        xpos, ypos = child.GetPosition().Get()
+        xoff, yoff = relativePosition(child.GetParent(), ancestor)
 
-        # If the image is not saved, popup a dialog
-        # telling the user they must save the image
-        # before the screenshot can proceed
-        if isinstance(overlay, fslimage.Image) and not overlay.saved:
-            title = strings.titles[  'CanvasPanel.screenshot.notSaved']
-            msg   = strings.messages['CanvasPanel.screenshot.notSaved']
-            msg   = msg.format(overlay.name)
-
-            dlg = wx.MessageDialog(canvas,
-                                   message=msg,
-                                   caption=title,
-                                   style=(wx.CENTRE |
-                                          wx.YES_NO |
-                                          wx.CANCEL |
-                                          wx.ICON_QUESTION))
-            dlg.SetYesNoCancelLabels(
-                strings.labels['CanvasPanel.screenshot.notSaved.save'],
-                strings.labels['CanvasPanel.screenshot.notSaved.skip'],
-                strings.labels['CanvasPanel.screenshot.notSaved.cancel'])
-
-            result = dlg.ShowModal()
-
-            # The user chose to save the image
-            if result == wx.ID_YES:
-                fsloverlay.saveOverlay(overlay)
-
-            # The user chose to skip the image
-            elif result == wx.ID_NO:
-                ovlCopy.remove(overlay)
-                continue
-
-            # the user clicked cancel, or closed the dialog
-            else:
-                return
-
-    overlays = ovlCopy
-
+        return xpos + xoff, ypos + yoff
+    
     # Ask the user where they want 
     # the screenshot to be saved
-    dlg = wx.FileDialog(canvas,
-                        message=strings.messages['CanvasPanel.screenshot'],
-                        style=wx.FD_SAVE)
+
+    fromDir = fslsettings.read('canvasPanelScreenshotLastDir',
+                               default=os.getcwd())
+    
+    dlg = wx.FileDialog(
+        canvasPanel,
+        message=strings.messages['CanvasPanel.screenshot'],
+        defaultDir=fromDir,
+        style=wx.FD_SAVE)
 
     if dlg.ShowModal() != wx.ID_OK:
         return
@@ -382,31 +387,81 @@ def _screenshot(overlayList, displayCtx, canvas):
 
     # Make the dialog go away before
     # the screenshot gets taken
+    dlg.Close()
     dlg.Destroy()
     wx.Yield()
 
-    width, height = canvas.getCanvasPanel().GetClientSize().Get()
+    # The typical way to get a screen grab of a wx
+    # Window is to use a wx.WindowDC, and a wx.MemoryDC,
+    # and to 'blit' a region from the window DC into
+    # the memory DC.
+    #
+    # This is precisely what we're doing here, but
+    # the process is complicated by the fact that,
+    # under OSX, the contents of wx.glcanvas.GLCanvas
+    # instances are not captured by WindowDCs.
+    #
+    # So I'm grabbing a screenshot of the canvas
+    # panel in the standard wxWidgets way, and then
+    # manually patching in bitmaps of each GLCanvas
+    # that is displayed in the canvas panel.
 
-    # generate command line arguments for
-    # a callout to render.py - start with
-    # the render.py specific options
-    argv  = []
-    argv += ['--outfile', filename]
-    argv += ['--size', '{}'.format(width), '{}'.format(height)]
-    argv += ['--background', '0', '0', '0', '255']
+    # Get all the wx GLCanvas instances
+    # which are displayed in the panel,
+    # including the colour bar canvas
+    glCanvases = canvasPanel.getGLCanvases()
+    glCanvases.append(canvasPanel.getColourBarCanvas())
 
-    argv += _genCommandLineArgs(overlays, displayCtx, canvas)
+    # The canvas panel container is the
+    # direct parent of the colour bar
+    # canvas, and an ancestor of the
+    # other GL canvases
+    parent        = canvasPanel.getCanvasContainer()
+    width, height = parent.GetClientSize().Get()
+    windowDC      = wx.WindowDC(parent)
+    memoryDC      = wx.MemoryDC()
+    bmp           = wx.EmptyBitmap(width, height)
 
-    log.debug('Generating screenshot with call '
-              'to render: {}'.format(' '.join(argv)))
+    # Copy the contents of the canvas container
+    # to the bitmap
+    memoryDC.SelectObject(bmp)
+    memoryDC.Blit(
+        0,
+        0,
+        width,
+        height,
+        windowDC,
+        0,
+        0)
+    memoryDC.SelectObject(wx.NullBitmap)
 
-    # Run render.py to generate the screenshot
-    msg    = strings.messages['CanvasPanel.screenshot.pleaseWait']
-    dlg    = fsldlg.ProcessingDialog(canvas, msg, fsl.runTool, 'render', argv)
-    result = dlg.Run()
+    # Make a H*W*4 bitmap array 
+    data = np.zeros((height, width, 4), dtype=np.uint8)
+    rgb  = bmp.ConvertToImage().GetData()
+    rgb  = np.fromstring(rgb, dtype=np.uint8)
 
-    if result != 0:
-        title = strings.titles[  'CanvasPanel.screenshot.error']
-        msg   = strings.messages['CanvasPanel.screenshot.error']
-        msg   = msg.format(' '.join(['render'] + argv))
-        wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
+    data[:, :, :3] = rgb.reshape(height, width, 3)
+
+    # Patch in bitmaps for every GL canvas
+    for glCanvas in glCanvases:
+
+        # If the colour bar is not displayed,
+        # the colour bar canvas will be None
+        if glCanvas is None:
+            continue
+        
+        pos    = relativePosition(glCanvas, parent)
+        size   = glCanvas.GetSize().Get()
+
+        xstart = pos[0]
+        ystart = pos[1]
+        xend   = xstart + size[0]
+        yend   = ystart + size[1]
+
+        data[ystart:yend, xstart:xend] = glCanvas.getBitmap()
+
+    data[:, :,  3] = 255
+
+    mplimg.imsave(filename, data)
+
+    fslsettings.write('canvasPanelScreenshotLastDir', op.dirname(filename))

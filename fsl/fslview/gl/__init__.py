@@ -509,3 +509,31 @@ class WXGLCanvasTarget(object):
         buffers. 
         """
         self.SwapBuffers()
+
+        
+    def getBitmap(self):
+        """Return a (width*height*4) shaped numpy array containing the
+        rendered scene as an RGBA bitmap. 
+        """
+        import OpenGL.GL        as gl
+        import numpy            as np
+
+        self._setGLContext()
+
+        width, height = self._getSize()
+
+        # Make sure we're reading
+        # from the front buffer
+        gl.glReadBuffer(gl.GL_FRONT_LEFT)
+        
+        bmp = gl.glReadPixels(
+            0, 0,
+            width, height,
+            gl.GL_RGBA,
+            gl.GL_UNSIGNED_BYTE)
+        
+        bmp = np.fromstring(bmp, dtype=np.uint8)
+        bmp = bmp.reshape((height, width, 4))
+        bmp = np.flipud(bmp)
+
+        return bmp        

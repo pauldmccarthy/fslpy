@@ -69,6 +69,13 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         self._selectedOverlayChanged()
 
 
+    def getCanvas(self):
+        """Returns the :class:`.ColourBarCanvas` which displays the rendered
+        colour bar.
+        """
+        return self._cbPanel
+
+
     def destroy(self):
         """Removes all registered listeners from the overlay list, display
         context, and individual overlays.

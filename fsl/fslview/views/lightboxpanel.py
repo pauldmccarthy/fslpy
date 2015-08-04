@@ -206,6 +206,13 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
         self._onResize()
 
 
+    def getGLCanvases(self):
+        """Returns a list of length 1, containing the :class:`.SliceCanvas`
+        contained within this ``LightBoxPanel``.
+        """
+        return [self._lbCanvas]
+        
+
     def getCanvas(self):
         """Returns a reference to the
         :class:`~fsl.fslview.gl.lightboxcanvas.LightBoxCanvas` instance
