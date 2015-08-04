@@ -6,49 +6,45 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Required feature list before next internal release
-** DONE Label support
-** DONE VTK support
-** DONE Improve time series
-** DONE Improve histogram
-** DONE Feat mode 
-** DONE Cluster browser
-** DONE Overlay groups
-** DONE Movie mode
-** Iconify/clean up interface
-*** Icons for buttons
-*** Fix toolbar refresh behaviour
-*** Fix location panel size.
-*** Sensible layout when new views are opened
-*** Global font settings
-*** A 'WidgetList'/'PropertyList' panel
-which displays a list of control widgets, each with a name, in a scrollable
-panel. You could use the wx.CollabisblePane to group properties/widgets 
-sensibly.
-** Rename to FSLEyes
-** Application icon (for OSX)
-** Startup time
 ** Fix command line for models and labels
+** Iconify/clean up interface
+** Tooltips
+** Rename to FSLEyes
+** Startup time
 ** Complete code documentation, commenting and clean-up
+** Testing
+** Application icon (for OSX)
+** OSX Installer 
+** Start up menu visibility thing (PyInstaller bug)
 ** Move TODO list to Gitlab
-** Other
-*** Force a good layout/size for new view panels
-*** Display settings sync off by default for new view panels?
-*** Dead voxels in Models are not transparent in screenshots
-*** Control panel for image header information
-*** Profile actions/settings in canvas settings panel
-*** Remove Colour map name from toolbar
+** DONE Other
+*** WONTFIX Remove Colour map name from toolbar
 I think I need to write my own combobox implementation (subclass
 OwnerDrawnComboBox) in order to achieve this. This would also allow me to
 properly disable the colour map combo box.
-*** Unavailable options (e.g. spline interp) shown but disabled?
+*** WONTFIX Unavailable options (e.g. spline interp) shown but disabled?
 Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
-*** Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
-*** Persist shared properties when overlay type changes - e.g. Volume -> Mask, the resolution/transform properties should be copied across.
-*** 'Fastest' performance - subsampling not working?
-*** OSX Installer 
-*** Start up menu visibility thing (PyInstaller bug)
+*** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE Label support
+*** DONE VTK support
+*** DONE Improve time series
+*** DONE Improve histogram
+*** DONE Feat mode 
+*** DONE Cluster browser
+*** DONE Overlay groups
+*** DONE Movie mode
+*** DONE FSLView screenshot - use a screengrab instead of call to render, as it will be much faster
+*** DONE Dead voxels in Models are not transparent in screenshots
+*** DONE Control panel for image header information
+*** DONE ViewPanel close action
+*** DONE Force a good layout/size for new view panels
+*** DONE Display settings sync off by default for new view panels?
+*** DONE Persist properties when overlay type changes? E.g. Change to a different type, then change back again - restore previous settings.
+*** DONE Persist shared properties when overlay type changes - e.g. Volume -> Mask, the resolution/transform properties should be copied across.
+In the Display class, a dictionary of { (DisplayOptstype, propName) : lastValue } mappings, which 
+is applied to newly created DisplayOpts instances
 *** DONE Linux/GTK - click on slider widgets does not change value
 *** DONE WidgetList/Grid scrolling under Linux/GTK - you need to bind mouse wheel on all children.
 *** DONE Make double click on overlay list toggle visibility, rather than edit name
@@ -76,6 +72,9 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 *** DONE FSLDIR management - prompt user at startup? Configurable menu option?
 *** DONE Open file dialog should use last directory
 * Things to do once the feature list is complete
+** Profile actions/settings in canvas settings panel
+
+** Action categories, so they can be grouped in menus
 ** Combine SliceCanvas offscreen+prerender modes 
 ** A better way of managing colour maps/luts
 ** Text annotations for models and labels
@@ -97,6 +96,7 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** VolumeOpts.__toggleListeners - peer.display can be None? 
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
 ** LocationPanel in lightbox view - voxel value lookup is wrong?
 ** DONE Lightbox scrollbar under linux not visible?
