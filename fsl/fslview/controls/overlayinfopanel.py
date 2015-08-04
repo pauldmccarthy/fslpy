@@ -147,7 +147,7 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         info.addSection(xformSect)
         info.addSection(orientSect)
 
-        info.addInfo(strings.nifti['dataSource'], overlay.dataSource)
+        info.addInfo(strings.labels[self, 'dataSource'], overlay.dataSource)
         info.addInfo(strings.nifti['datatype'],
                      strings.nifti['datatype', int(hdr['datatype'])])
         info.addInfo(strings.nifti['descrip'], hdr['descrip'])
@@ -243,7 +243,17 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
 
     
     def __getModelInfo(self, overlay, display):
-        info = OverlayInfo(display.name)
+        info = OverlayInfo('{} - {}'.format(
+            display.name,
+            strings.labels[self, overlay]))
+
+        info.addInfo(strings.labels[self, 'dataSource'], overlay.dataSource)
+        info.addInfo(
+            strings.labels[self, overlay, 'numVertices'],
+            overlay.vertices.shape[0])
+        info.addInfo(
+            strings.labels[self, overlay, 'numIndices'],
+            overlay.indices.shape[0]) 
 
         return info
 

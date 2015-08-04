@@ -302,6 +302,10 @@ labels = TypeDict({
     'OverlayInfoPanel.Image'              : 'NIFTI1 image',
     'OverlayInfoPanel.FEATImage'          : 'NIFTI1 image (FEAT analysis)',
     'OverlayInfoPanel.FEATImage.featInfo' : 'FEAT information',
+    'OverlayInfoPanel.Model'              : 'VTK model',
+    'OverlayInfoPanel.Model.numVertices'  : 'Number of vertices',
+    'OverlayInfoPanel.Model.numIndices'   : 'Number of indices',
+    'OverlayInfoPanel.dataSource'         : 'Data source',
 })
 
 
@@ -562,7 +566,6 @@ anatomy = TypeDict({
 nifti = TypeDict({
 
     'dimensions' : 'Number of dimensions',
-    'dataSource' : 'Data source',
     
     'datatype'    : 'Data type',
     'vox_units'   : 'XYZ units',
