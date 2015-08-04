@@ -47,6 +47,8 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         self.__info  = wxhtml.HtmlWindow(self)
         self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.__sizer.Add(self.__info, flag=wx.EXPAND, proportion=1)
+
+        self.__info.SetStandardFonts(self.GetFont().GetPointSize())
         
         self.SetSizer(self.__sizer)
 
@@ -60,8 +62,11 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         self.__currentOverlay = None
         self.__currentDisplay = None
         self.__selectedOverlayChanged()
+
+        self.SetMinSize((200, 200))
         self.Layout()
 
+        
     def destroy(self):
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
@@ -105,11 +110,13 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
 
     def __updateInformation(self):
 
-        overlay  = self.__currentOverlay
-        display  = self.__currentDisplay
-        infoFunc = '_{}__get{}Info'.format(type(self)   .__name__,
-                                           type(overlay).__name__)
-        infoFunc = getattr(self, infoFunc, None)
+        overlay   = self.__currentOverlay
+        display   = self.__currentDisplay
+        infoFunc  = '_{}__get{}Info'.format(type(self)   .__name__,
+                                            type(overlay).__name__)
+        infoFunc  = getattr(self, infoFunc, None)
+
+        scrollPos = self.__info.GetViewStart()
         
         if infoFunc is None:
             self.__info.SetPage('')
@@ -119,21 +126,14 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
 
         self.__info.SetPage(self.__formatOverlayInfo(info))
 
-
-    def __formatOverlayInfo(self, info):
-        lines  = [info.title]
-        lines += map(str, info.info)
-
-        for sec in info.sections.keys():
-            lines += [sec]
-            lines += map(str, info.sections[sec])
-        
-        return '<br>'.join(lines)
+        self.__info.Refresh()
+        self.__info.Scroll(scrollPos)
 
 
     def __getImageInfo(self, overlay, display):
         
-        info = OverlayInfo(display.name)
+        info = OverlayInfo('{} - {}'.format(
+            display.name, strings.labels[self, overlay]))
         img  = overlay.nibImage
         hdr  = img.get_header()
 
@@ -151,9 +151,9 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         info.addInfo(strings.nifti['datatype'],
                      strings.nifti['datatype', int(hdr['datatype'])])
         info.addInfo(strings.nifti['descrip'], hdr['descrip'])
-
-        info.addInfo(strings.nifti['vox_units'],  voxUnits,  section=dimSect)
-        info.addInfo(strings.nifti['time_units'], timeUnits, section=dimSect)
+        info.addInfo(strings.nifti['intent_code'],
+                     strings.nifti['intent_code', int(hdr['intent_code'])])
+        info.addInfo(strings.nifti['intent_name'], hdr['intent_name'])
         
         info.addInfo(strings.nifti['dimensions'],
                      '{}D'.format(len(overlay.shape)),
@@ -187,10 +187,10 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         #      HTML, or maybe get the formatOverlayInfo
         #      method to support different types)
         info.addInfo(strings.nifti['qform'],
-                     str(img.get_qform()),
+                     self.__formatArray(img.get_qform()),
                      section=xformSect)
         info.addInfo(strings.nifti['sform'],
-                     str(img.get_sform()),
+                     self.__formatArray(img.get_sform()),
                      section=xformSect) 
 
         for i in range(3):
@@ -224,10 +224,77 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
 
 
     def __getFEATImageInfo(self, overlay, display):
-        return self.__getImageInfo(overlay)
+        info = self.__getImageInfo(overlay, display)
+
+        featInfo = collections.OrderedDict([
+            ('analysisName', overlay.getAnalysisName()),
+            ('numPoints',    overlay.numPoints()),
+            ('numEVs',       overlay.numEVs()),
+            ('numContrasts', overlay.numContrasts()),
+        ])
+
+        secName = strings.labels[self, overlay, 'featInfo']
+        info.addSection(secName)
+
+        for k, v in featInfo.items():
+            info.addInfo(strings.feat[k], v, section=secName)
+
+        return info
 
     
     def __getModelInfo(self, overlay, display):
         info = OverlayInfo(display.name)
 
         return info
+
+
+    def __formatArray(self, array):
+
+        lines = []
+
+        lines.append('<table border="0">')
+
+        for rowi in range(array.shape[0]):
+
+            lines.append('<tr>')
+
+            for coli in range(array.shape[1]):
+                lines.append('<td>{}</td>'.format(array[rowi, coli]))
+            lines.append('</tr>')
+            
+        return ''.join(lines)
+
+
+    def __formatOverlayInfo(self, info):
+        lines = []
+
+        lines.append('<h3>{}</h3>'.format(info.title))
+
+        sections = []
+        sections.append((None, info.info))
+        
+        for secName, secInf in info.sections.items():
+            sections.append((secName, secInf))
+
+        for i, (secName, secInf) in enumerate(sections):
+
+            if secName is not None:
+                lines.append('<h4>{}</h4>'.format(secName))
+
+            lines.append('<table border="0">')
+
+            for i, (infName, infData) in enumerate(secInf):
+
+                if i % 2: bgColour = '#ffffff'
+                else:     bgColour = '#ffeeee'
+
+                lines.append('<tr bgcolor="{}">'
+                             '<td><b>{}</b></td>'
+                             '<td>{}</td></tr>'.format(
+                                 bgColour,
+                                 infName,
+                                 infData))
+
+            lines.append('</table>')
+
+        return '\n'.join(lines)
