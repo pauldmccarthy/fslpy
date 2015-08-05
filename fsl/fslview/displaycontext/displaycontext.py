@@ -351,6 +351,7 @@ class DisplayContext(props.SyncableHasProperties):
 
         if len(self.overlayOrder) == len(self.__overlayList):
             return
+
         #
         # NOTE: The following logic assumes that operations
         #       which modify the overlay list will only do
@@ -364,12 +365,17 @@ class DisplayContext(props.SyncableHasProperties):
 
         oldList  = self.__overlayList.getLastValue('overlays')[:]
         oldOrder = self.overlayOrder[:]
+
+        # If the overlay order was just the
+        # list order, preserve that ordering
+        if self.overlayOrder[:] == range(len(oldList)):
+            self.overlayOrder[:] = range(len(self.__overlayList))
         
         # If overlays have been added to
         # the overlay list, add indices
         # for them to the overlayOrder list
-        if len(self.overlayOrder) < len(self.__overlayList):
-
+        elif len(self.overlayOrder) < len(self.__overlayList):
+            
             newOrder      = []
             newOverlayIdx = len(oldList)
 

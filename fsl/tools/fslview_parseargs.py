@@ -966,7 +966,8 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
             modImage = _findOrLoad(overlayList,
                                    args.overlays[i].modulate,
-                                   fslimage.Image)
+                                   fslimage.Image,
+                                   overlay)
 
             if modImage.shape != overlay.shape[ :3]:
                 raise RuntimeError(
@@ -987,7 +988,8 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
 
             refImage = _findOrLoad(overlayList,
                                    args.overlays[i].modelRefImage,
-                                   fslimage.Image)
+                                   fslimage.Image,
+                                   overlay)
 
             opts.refImage                  = refImage
             args.overlays[i].modelRefImage = None
@@ -1001,16 +1003,22 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
         _applyArgs(args.overlays[i], opts)
 
         
-def _findOrLoad(overlayList, overlayFile, overlayType):
+def _findOrLoad(overlayList, overlayFile, overlayType, relatedTo=None):
     """Searches for the given ``overlayFile`` in the ``overlayList``. If not
     present, it is created using the given ``overlayType`` constructor, and
-    inserted into the ``overlayList``.
+    inserted into the ``overlayList``. The new overlay is inserted into the
+    ``overlayList`` before the ``relatedTo`` overlay if provided, otherwise
+    appended to the end of the list.
     """
 
     overlay = overlayList.find(overlayFile)
 
     if overlay is None:
         overlay = overlayType(overlayFile)
-        overlayList.insert(0, overlay)
+
+        if relatedTo is not None:
+            overlayList.insert(overlayList.index(relatedTo), overlay)
+        else:
+            overlayList.append(overlay)
 
     return overlay
