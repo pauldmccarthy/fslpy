@@ -234,7 +234,7 @@ class ModelOpts(fsldisplay.DisplayOpts):
                                 self.__overlayListChanged,
                                 overwrite=True)
             
-        imgProp.setChoices(imgOptions, imgLabels, self)
+        imgProp.setChoices(imgOptions, labels=imgLabels, instance=self)
 
         if imgVal in overlays: self.refImage = imgVal
         else:                  self.refImage = 'none'

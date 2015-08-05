@@ -124,7 +124,7 @@ class VectorOpts(volumeopts.ImageOpts):
                                 self.__overlayListChanged,
                                 overwrite=True)
             
-        modProp.setChoices(modOptions, modLabels, self)
+        modProp.setChoices(modOptions, labels=modLabels, instance=self)
 
         if modVal in overlays: self.modulate = modVal
         else:                  self.modulate = 'none'

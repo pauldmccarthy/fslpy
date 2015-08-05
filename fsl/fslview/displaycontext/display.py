@@ -200,7 +200,7 @@ class Display(props.SyncableHasProperties):
         for pt in possibleTypes:
             log.debug('Enabling overlay type {} for {}'.format(pt, overlay))
             label = strings.choices[self, 'overlayType', pt]
-            overlayTypeProp.addChoice(pt, label, self)
+            overlayTypeProp.addChoice(pt, label=label, instance=self)
 
         if overlayType is not None:
             self.overlayType = overlayType

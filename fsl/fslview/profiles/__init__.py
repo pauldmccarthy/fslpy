@@ -166,7 +166,9 @@ class Profile(actions.ActionProvider):
         modeProp = self.getProp('mode')
         
         for mode in modes:
-            modeProp.addChoice(mode, strings.modes[self, mode], self)
+            modeProp.addChoice(mode,
+                               label=strings.modes[self, mode],
+                               instance=self)
 
         if len(modes) > 0:
             self.mode = modes[0]
@@ -574,8 +576,8 @@ class ProfileManager(object):
         for profile in profilez:
             profileProp.addChoice(
                 profile,
-                strings.profiles[viewPanel, profile],
-                viewPanel)
+                label=strings.profiles[viewPanel, profile],
+                instance=viewPanel)
 
         if len(profilez) > 0:
             viewPanel.profile = profilez[0]

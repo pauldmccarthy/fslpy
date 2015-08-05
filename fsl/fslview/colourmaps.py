@@ -601,10 +601,10 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
             continue
 
         lutChoice = opts.getProp('lut')
-        lutChoice.addChoice(lut, lut.name, opts)
+        lutChoice.addChoice(lut, label=lut.name, instance=opts)
 
     # and for any future label overlays
-    fsldisplay.LabelOpts.lut.addChoice(lut, lut.name)
+    fsldisplay.LabelOpts.lut.addChoice(lut, label=lut.name)
     
     return lut
 
