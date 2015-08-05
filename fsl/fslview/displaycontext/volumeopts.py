@@ -232,8 +232,7 @@ class VolumeOpts(ImageOpts):
     """
 
     
-    cmap = props.ColourMap(default=fslcm.getColourMaps()[0],
-                           cmapNames=fslcm.getColourMaps())
+    cmap = props.ColourMap()
     """The colour map, a :class:`matplotlib.colors.Colourmap` instance."""
 
     

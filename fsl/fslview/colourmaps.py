@@ -159,24 +159,30 @@ class _Map(object):
     colour map/lookup table. This class is only used internally.
     """
 
-    def __init__(self, name, mapObj, mapFile, installed):
+    def __init__(self, key, name, mapObj, mapFile, installed):
         """
-        :arg name:       The name of the colour map/lookup table.
+        :arg key:         The identifier name of the colour map/lookup table,
+                          which must be passed to the :func:`getColourMap` and
+                          :func:`getLookupTable` functions to look up this
+                          map object.
 
-        :arg mapObj:     The colourmap/lut object, either a
-                        :class:`matplotlib.col.lors..Colormap`, or a
-                        :class:`LookupTable` instance.
+        :arg name:        The display name of the colour map/lookup table.
 
-        :arg mapFile:    The file from which this map was loaded,
-                         or ``None`` if this cmap/lookup table only
-                         exists in memory, or is a built in :mod:`matplotlib`
-                         colourmap.
+        :arg mapObj:      The colourmap/lut object, either a
+                          :class:`matplotlib.col.lors..Colormap`, or a
+                          :class:`LookupTable` instance.
 
-        :arg installed:  ``True`` if this is a built in :mod:`matplotlib`
-                         colourmap or is installed in the
-                         ``fsl/fslview/colourmaps/`` or ``fsl/fslview/luts/``
-                         directory, ``False`` otherwise.
+        :arg mapFile:     The file from which this map was loaded,
+                          or ``None`` if this cmap/lookup table only
+                          exists in memory, or is a built in :mod:`matplotlib`
+                          colourmap.
+
+        :arg installed:   ``True`` if this is a built in :mod:`matplotlib`
+                          colourmap or is installed in the
+                          ``fsl/fslview/colourmaps/`` or ``fsl/fslview/luts/``
+                          directory, ``False`` otherwise.
         """
+        self.key       = key
         self.name      = name
         self.mapObj    = mapObj
         self.mapFile   = mapFile
@@ -185,7 +191,7 @@ class _Map(object):
         
     def __str__(self):
         if self.mapFile is not None: return self.mapFile
-        else:                        return self.name
+        else:                        return self.key
 
         
     def __repr__(self):
@@ -473,17 +479,24 @@ def init():
             mapFile = op.join(rdir, '{}.{}'.format(key, suffix))
 
             try:
-                if   suffix == 'cmap': registerColourMap(  mapFile, name=name)
-                elif suffix == 'lut':  registerLookupTable(mapFile, name=name)
+                kwargs = {'key' : key, 'name' : name}
                 
-                register[name].installed = True
+                if   suffix == 'cmap': registerColourMap(  mapFile, **kwargs)
+                elif suffix == 'lut':  registerLookupTable(mapFile, **kwargs)
+                
+                register[key].installed = True
 
             except Exception as e:
                 log.warn('Error processing custom {} '
-                         'file {}: {}'.format(suffix, mapFile, str(e)))
+                         'file {}: {}'.format(suffix, mapFile, str(e)),
+                         exc_info=True)
 
 
-def registerColourMap(cmapFile, overlayList=None, displayCtx=None, name=None):
+def registerColourMap(cmapFile,
+                      overlayList=None,
+                      displayCtx=None,
+                      key=None,
+                      name=None):
     """Loads RGB data from the given file, and registers
     it as a :mod:`matplotlib` :class:`~matplotlib.colors.ListedColormap`
     instance.
@@ -497,14 +510,15 @@ def registerColourMap(cmapFile, overlayList=None, displayCtx=None, name=None):
                       the overlays in ``overlayList`` are being displayed.
                       Must be provided if ``overlayList`` is provided.
 
-    :arg name:        Name to give the colour map. If ``None``, defaults
+    :arg key:         Name to give the colour map. If ``None``, defaults
                       to the file name prefix.
-    """
-    if name is None:
-        name = op.basename(cmapFile).split('.')[0]
 
-    if overlayList is None:
-        overlayList = []
+    :arg name:        Display name for the colour map. If ``None``, defaults
+                      to the ``name``. 
+    """
+    if key         is None: key         = op.basename(cmapFile).split('.')[0]
+    if name        is None: name        = key
+    if overlayList is None: overlayList = []
 
     data = np.loadtxt(cmapFile)
     cmap = colors.ListedColormap(data, name)
@@ -512,35 +526,37 @@ def registerColourMap(cmapFile, overlayList=None, displayCtx=None, name=None):
     log.debug('Loading and registering custom '
               'colour map: {}'.format(cmapFile))
 
-    mplcm.register_cmap(name, cmap)
+    mplcm.register_cmap(key, cmap)
 
-    _cmaps[name] = _Map(name, cmap, None, False)
+    _cmaps[key] = _Map(key, name, cmap, None, False)
 
     # TODO Any new Opts types which have a colour
     #      map will need to be patched here
 
     log.debug('Patching VolumeOpts instances and class '
-              'to support new colour map {}'.format(name))
+              'to support new colour map {}'.format(key))
 
     import fsl.fslview.displaycontext as fsldisplay
     
     # update the VolumeOpts colour map property
     # for any existing VolumeOpts instances
+    cmapProp = fsldisplay.VolumeOpts.getProp('cmap')
+    
     for overlay in overlayList:
         opts = displayCtx.getOpts(overlay)
+        
         if isinstance(opts, fsldisplay.VolumeOpts):
-            opts.setConstraint('cmap',
-                               'cmapNames',
-                               getColourMaps()) 
+            cmapProp.addColourMap(key, opts)
 
     # and for all future volume overlays
-    fsldisplay.VolumeOpts.cmap.setConstraint(
-        None,
-        'cmapNames',
-        getColourMaps())
+    cmapProp.addColourMap(key)
                 
 
-def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
+def registerLookupTable(lut,
+                        overlayList=None,
+                        displayCtx=None,
+                        key=None,
+                        name=None):
     """Registers the given ``LookupTable`` instance (if ``lut`` is a string,
     it is assumed to be the name of a ``.lut`` file, which is loaded).
 
@@ -554,8 +570,11 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
                       the overlays in ``overlayList`` are being displayed.
                       Must be provided if ``overlayList`` is provided. 
     
-    :arg name:        Name to give the lookup table. If ``None``, defaults
-                      to the file name prefix.    
+    :arg key:         Name to give the lookup table. If ``None``, defaults
+                      to the file name prefix.
+    
+    :arg name:        Display name for the lookup table. If ``None``, defaults
+                      to the ``name``. 
     """
 
     if isinstance(lut, basestring): lutFile = lut
@@ -568,27 +587,27 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
     # or a LookupTable instance
     if lutFile is not None:
 
-        if name is None:
-            name = op.basename(lutFile).split('.')[0]
+        if key  is None: key  = op.basename(lutFile).split('.')[0]
+        if name is None: name = key
 
         log.debug('Loading and registering custom '
                   'lookup table: {}'.format(lutFile)) 
         
         lut = LookupTable(name, lutFile)
     else:
-        if name is None:
-            name = lut.name
-        else:
-            lut.name = name
+        if key  is None: key  = lut.name
+        if name is None: name = key
+
+        lut.name = name
 
     # Even though the lut may have been loaded from
     # a file, it has not necessarily been installed
     lut.saved = False
             
-    _luts[name] = _Map(name, lut, None, False)
+    _luts[key] = _Map(key, name, lut, None, False)
 
     log.debug('Patching LabelOpts classes to support '
-              'new LookupTable {}'.format(name))
+              'new LookupTable {}'.format(key))
 
     import fsl.fslview.displaycontext as fsldisplay
 
@@ -601,10 +620,16 @@ def registerLookupTable(lut, overlayList=None, displayCtx=None, name=None):
             continue
 
         lutChoice = opts.getProp('lut')
-        lutChoice.addChoice(lut, label=lut.name, instance=opts)
+        lutChoice.addChoice(lut,
+                            label=lut.name,
+                            alternate=[key, name],
+                            instance=opts)
 
     # and for any future label overlays
-    fsldisplay.LabelOpts.lut.addChoice(lut, label=lut.name)
+    fsldisplay.LabelOpts.lut.addChoice(
+        lut,
+        label=lut.name,
+        alternate=[key, name])
     
     return lut
 
