@@ -398,77 +398,87 @@ def _screenshot(overlayList, displayCtx, canvasPanel):
     dlg.Destroy()
     wx.Yield()
 
-    # The typical way to get a screen grab of a wx
-    # Window is to use a wx.WindowDC, and a wx.MemoryDC,
-    # and to 'blit' a region from the window DC into
-    # the memory DC.
-    #
-    # This is precisely what we're doing here, but
-    # the process is complicated by the fact that,
-    # under OSX, the contents of wx.glcanvas.GLCanvas
-    # instances are not captured by WindowDCs.
-    #
-    # So I'm grabbing a screenshot of the canvas
-    # panel in the standard wxWidgets way, and then
-    # manually patching in bitmaps of each GLCanvas
-    # that is displayed in the canvas panel.
 
-    # Get all the wx GLCanvas instances
-    # which are displayed in the panel,
-    # including the colour bar canvas
-    glCanvases = canvasPanel.getGLCanvases()
-    glCanvases.append(canvasPanel.getColourBarCanvas())
+    def doScreenshot():
 
-    # The canvas panel container is the
-    # direct parent of the colour bar
-    # canvas, and an ancestor of the
-    # other GL canvases
-    parent        = canvasPanel.getCanvasContainer()
-    width, height = parent.GetClientSize().Get()
-    windowDC      = wx.WindowDC(parent)
-    memoryDC      = wx.MemoryDC()
-    bmp           = wx.EmptyBitmap(width, height)
+        # The typical way to get a screen grab of a wx
+        # Window is to use a wx.WindowDC, and a wx.MemoryDC,
+        # and to 'blit' a region from the window DC into
+        # the memory DC.
+        #
+        # This is precisely what we're doing here, but
+        # the process is complicated by the fact that,
+        # under OSX, the contents of wx.glcanvas.GLCanvas
+        # instances are not captured by WindowDCs.
+        #
+        # So I'm grabbing a screenshot of the canvas
+        # panel in the standard wxWidgets way, and then
+        # manually patching in bitmaps of each GLCanvas
+        # that is displayed in the canvas panel.
 
-    # Copy the contents of the canvas container
-    # to the bitmap
-    memoryDC.SelectObject(bmp)
-    memoryDC.Blit(
-        0,
-        0,
-        width,
-        height,
-        windowDC,
-        0,
-        0)
-    memoryDC.SelectObject(wx.NullBitmap)
+        # Get all the wx GLCanvas instances
+        # which are displayed in the panel,
+        # including the colour bar canvas
+        glCanvases = canvasPanel.getGLCanvases()
+        glCanvases.append(canvasPanel.getColourBarCanvas())
 
-    # Make a H*W*4 bitmap array 
-    data = np.zeros((height, width, 4), dtype=np.uint8)
-    rgb  = bmp.ConvertToImage().GetData()
-    rgb  = np.fromstring(rgb, dtype=np.uint8)
+        # The canvas panel container is the
+        # direct parent of the colour bar
+        # canvas, and an ancestor of the
+        # other GL canvases
+        parent        = canvasPanel.getCanvasContainer()
+        width, height = parent.GetClientSize().Get()
+        windowDC      = wx.WindowDC(parent)
+        memoryDC      = wx.MemoryDC()
+        bmp           = wx.EmptyBitmap(width, height)
 
-    data[:, :, :3] = rgb.reshape(height, width, 3)
+        wx.Yield()
 
-    # Patch in bitmaps for every GL canvas
-    for glCanvas in glCanvases:
+        # Copy the contents of the canvas container
+        # to the bitmap
+        memoryDC.SelectObject(bmp)
+        memoryDC.Blit(
+            0,
+            0,
+            width,
+            height,
+            windowDC,
+            0,
+            0)
+        memoryDC.SelectObject(wx.NullBitmap)
 
-        # If the colour bar is not displayed,
-        # the colour bar canvas will be None
-        if glCanvas is None:
-            continue
-        
-        pos    = relativePosition(glCanvas, parent)
-        size   = glCanvas.GetSize().Get()
+        # Make a H*W*4 bitmap array 
+        data = np.zeros((height, width, 4), dtype=np.uint8)
+        rgb  = bmp.ConvertToImage().GetData()
+        rgb  = np.fromstring(rgb, dtype=np.uint8)
 
-        xstart = pos[0]
-        ystart = pos[1]
-        xend   = xstart + size[0]
-        yend   = ystart + size[1]
+        data[:, :, :3] = rgb.reshape(height, width, 3)
 
-        data[ystart:yend, xstart:xend] = glCanvas.getBitmap()
+        # Patch in bitmaps for every GL canvas
+        for glCanvas in glCanvases:
 
-    data[:, :,  3] = 255
+            # If the colour bar is not displayed,
+            # the colour bar canvas will be None
+            if glCanvas is None:
+                continue
 
-    mplimg.imsave(filename, data)
+            pos    = relativePosition(glCanvas, parent)
+            size   = glCanvas.GetSize().Get()
+
+            xstart = pos[0]
+            ystart = pos[1]
+            xend   = xstart + size[0]
+            yend   = ystart + size[1]
+
+            data[ystart:yend, xstart:xend] = glCanvas.getBitmap()
+
+        data[:, :,  3] = 255
+
+        mplimg.imsave(filename, data)
+
+    fsldlg.ProcessingDialog(
+        canvasPanel.GetTopLevelParent(),
+        strings.messages['CanvasPanel.screenshot.pleaseWait'],
+        doScreenshot).Run(mainThread=True)
 
     fslsettings.write('canvasPanelScreenshotLastDir', op.dirname(filename))

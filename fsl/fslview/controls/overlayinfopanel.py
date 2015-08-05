@@ -10,8 +10,9 @@ import collections
 import wx
 import wx.html as wxhtml
 
-import fsl.data.strings  as strings
-import fsl.fslview.panel as fslpanel
+import fsl.data.strings   as strings
+import fsl.data.constants as constants
+import fsl.fslview.panel  as fslpanel
 
 
 class OverlayInfo(object):
@@ -138,6 +139,8 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         hdr  = img.get_header()
 
         voxUnits, timeUnits = hdr.get_xyzt_units()
+        qformCode           = int(hdr['qform_code'])
+        sformCode           = int(hdr['sform_code'])
         
         dimSect    = strings.labels[self, overlay, 'dimensions']
         xformSect  = strings.labels[self, overlay, 'transform']
@@ -177,21 +180,21 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
                 section=dimSect)
 
         info.addInfo(strings.nifti['qform_code'],
-                     strings.anatomy['Image', 'space', int(hdr['qform_code'])],
+                     strings.anatomy['Image', 'space', qformCode],
                      section=xformSect)
         info.addInfo(strings.nifti['sform_code'],
-                     strings.anatomy['Image', 'space', int(hdr['sform_code'])],
+                     strings.anatomy['Image', 'space', sformCode],
                      section=xformSect)
 
-        # TODO matrix formatting (you'll need to use
-        #      HTML, or maybe get the formatOverlayInfo
-        #      method to support different types)
-        info.addInfo(strings.nifti['qform'],
-                     self.__formatArray(img.get_qform()),
-                     section=xformSect)
-        info.addInfo(strings.nifti['sform'],
-                     self.__formatArray(img.get_sform()),
-                     section=xformSect) 
+        if qformCode != constants.NIFTI_XFORM_UNKNOWN:
+            info.addInfo(strings.nifti['qform'],
+                         self.__formatArray(img.get_qform()),
+                         section=xformSect)
+            
+        if sformCode != constants.NIFTI_XFORM_UNKNOWN:
+            info.addInfo(strings.nifti['sform'],
+                         self.__formatArray(img.get_sform()),
+                         section=xformSect) 
 
         for i in range(3):
             orient = overlay.getVoxelOrientation(i)

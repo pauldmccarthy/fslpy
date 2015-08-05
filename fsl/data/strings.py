@@ -672,7 +672,7 @@ nifti = TypeDict({
 
 feat = TypeDict({
     'analysisName' : 'Analysis name',
-    'numPoints'    : 'Number of time points',
+    'numPoints'    : 'Number of volumes',
     'numEVs'       : 'Number of EVs',
     'numContrasts' : 'Number of contrasts',
 })
