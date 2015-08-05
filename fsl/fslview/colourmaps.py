@@ -154,6 +154,28 @@ _cmaps   = None
 _luts    = None
 
 
+def _caseInsensitiveLookup(d, k, default=None):
+    """Performs a case-insensitive lookup on the dictionary ``d``,
+    with the key ``k``.
+    """
+
+    v = d.get(k, None)
+
+    if v is not None:
+        return v
+
+    keys  = d.keys()
+    lKeys = map(str.lower, keys)
+
+    try:
+        idx = lKeys.index(k.lower())
+    except:
+        if default is not None: return default
+        else:                   raise  KeyError(k)
+
+    return d[keys[idx]]
+
+
 class _Map(object):
     """A little class for storing details on each installed/available
     colour map/lookup table. This class is only used internally.
@@ -275,8 +297,9 @@ class LookupTable(props.HasProperties):
     saved = props.Boolean(default=False)
 
     
-    def __init__(self, name, lutFile=None):
-        
+    def __init__(self, key, name, lutFile=None):
+
+        self.key  = key
         self.name = name
 
         if lutFile is not None:
@@ -593,11 +616,12 @@ def registerLookupTable(lut,
         log.debug('Loading and registering custom '
                   'lookup table: {}'.format(lutFile)) 
         
-        lut = LookupTable(name, lutFile)
+        lut = LookupTable(key, name, lutFile)
     else:
         if key  is None: key  = lut.name
         if name is None: name = key
 
+        lut.key  = key
         lut.name = name
 
     # Even though the lut may have been loaded from
@@ -622,14 +646,14 @@ def registerLookupTable(lut,
         lutChoice = opts.getProp('lut')
         lutChoice.addChoice(lut,
                             label=lut.name,
-                            alternate=[key, name],
+                            alternate=[key],
                             instance=opts)
 
     # and for any future label overlays
     fsldisplay.LabelOpts.lut.addChoice(
         lut,
         label=lut.name,
-        alternate=[key, name])
+        alternate=[key])
     
     return lut
 
@@ -641,7 +665,7 @@ def getLookupTables():
 
 def getLookupTable(lutName):
     """Returns the :class:`LutTable` instance of the specified name."""
-    return _luts[lutName].mapObj
+    return _caseInsensitiveLookup(_luts, lutName).mapObj
 
         
 def getColourMaps():
@@ -651,7 +675,7 @@ def getColourMaps():
 
 def getColourMap(cmapName):
     """Returns the colour map instance of the specified name."""
-    return _cmaps[cmapName].mapObj
+    return _caseInsensitiveLookup(_cmaps, cmapName).mapObj
 
 
 def isColourMapRegistered(cmapName):

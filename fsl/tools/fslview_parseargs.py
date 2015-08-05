@@ -346,7 +346,16 @@ EXTRA = td.TypeDict({
                              'default' : fsldisplay.ALL_OVERLAY_TYPES[0]},
 
     'LabelOpts.lut'       : {
-        'choices' : [l.name for l in colourmaps.getLookupTables()]
+        # The LabelOpts.lut choice property has
+        # LookupTable instances as values, which
+        # obviously cannot be passed in on the
+        # command line. But the lut property will
+        # also accept the lut key as an alternate
+        # value, so we accept these on the command
+        # line instead. See the colourmaps and
+        # labelopts modules for more detail.
+        'choices'       : [],
+        'useAlts'       : True
     }
 }) 
 
@@ -362,10 +371,6 @@ EXTRA = td.TypeDict({
 def _imageTrans(i):
     if i == 'none': return None
     else:           return i.dataSource
-
-def _lutTrans(i):
-    if isinstance(i, basestring): return colourmaps.getLookupTable(i)
-    else:                         return i.name
     
     
 TRANSFORMS = td.TypeDict({
@@ -374,8 +379,6 @@ TRANSFORMS = td.TypeDict({
     'OrthoOpts.showYCanvas' : lambda b: not b,
     'OrthoOpts.showZCanvas' : lambda b: not b,
     'OrthoOpts.showLabels'  : lambda b: not b,
-
-    'LabelOpts.lut'         : _lutTrans,
 
     # These properties are handled specially
     # when reading in command line arguments -
