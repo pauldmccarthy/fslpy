@@ -558,6 +558,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         else:
             if isinstance(overlay, fslfeatimage.FEATImage):
                 ts = FEATTimeSeries(self, overlay, vox)
+                ts.plotFullModelFit = True
             else:
                 ts = TimeSeries(self, overlay, vox)
         

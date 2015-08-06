@@ -85,6 +85,14 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
 
         overlay = self._displayCtx.getSelectedOverlay()
 
+        # Overlay list is empty
+        if overlay is None:
+            self.__info.SetPage('')
+            self.__info.Refresh()
+            return
+
+        # Info for this overlay
+        # is already being shown
         if overlay == self.__currentOverlay:
             return
         
@@ -118,9 +126,12 @@ class OverlayInfoPanel(fslpanel.FSLViewPanel):
         infoFunc  = getattr(self, infoFunc, None)
 
         scrollPos = self.__info.GetViewStart()
-        
+
+        # Overlay is none, or the overlay 
+        # type is not supported
         if infoFunc is None:
             self.__info.SetPage('')
+            self.__info.Refresh()
             return
 
         info = infoFunc(overlay, display)
