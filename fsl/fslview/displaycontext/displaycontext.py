@@ -100,21 +100,39 @@ class DisplayContext(props.SyncableHasProperties):
             parent=parent,
             nounbind=['overlayGroups'],
             nobind=[  'syncOverlayDisplay'])
-        
+
         self.__overlayList = overlayList
         self.__name         = '{}_{}'.format(self.__class__.__name__, id(self))
 
         # Keep track of the overlay list
         # length so we can do some things in the
-        # _overlayListChanged method
-        self.__prevOverlayListLen = 0
+        # _overlayListChanged method. This if/else
+        # is a bit hacky ....
+        #
+        # If the __overlayListChanged method detects
+        # (via the prevOverlayListLen attribute)
+        # that overlays have been added to an empty
+        # list, it will reset the DisplayContext.location
+        # to the centre of the new overlay list world.
+        #
+        # But, if this is a new child DisplayContext
+        # instance, the above behaviour will result in
+        # the child centering its location, which gets
+        # propagated back to the parent, clobbering the
+        # parent's location. So here, if this is a child
+        # DC, we set this attribute to the length of the
+        # list, so the overlayListChanged method won't
+        # reset the location.
+        if parent is None: self.__prevOverlayListLen = 0
+        else:              self.__prevOverlayListLen = len(overlayList)
+            
 
         # Ensure that a Display object exists
         # for every overlay, and that the display
         # bounds property is initialised
         self.__displays = {}
         self.__overlayListChanged()
-
+        
         overlayList.addListener('overlays',
                                 self.__name,
                                 self.__overlayListChanged)

@@ -128,13 +128,6 @@ class Profile(actions.ActionProvider):
                           see the :class:`.ActionProvider` class.
         """
 
-        if actionz is not None:
-            for name, func in actionz.items():
-                def wrap(f=func):
-                    f()
-                    viewPanel.Refresh()
-                actionz[name] = wrap
-
         actions.ActionProvider.__init__(
             self, overlayList, displayCtx, actions=actionz)
         
@@ -279,7 +272,6 @@ class Profile(actions.ActionProvider):
             t.Bind(wx.EVT_MOTION,     None)
             t.Bind(wx.EVT_MOUSEWHEEL, None)
             t.Bind(wx.EVT_CHAR,       None)
-        self._viewPanel.Refresh()
 
     
     def __getTempMode(self, ev):
@@ -406,7 +398,6 @@ class Profile(actions.ActionProvider):
             wheel, canvas.name))
 
         handler(ev, canvas, wheel, mouseLoc, canvasLoc)
-        self._viewPanel.Refresh()
 
         
     def __onMouseDown(self, ev):
@@ -433,7 +424,6 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc        
@@ -460,7 +450,6 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._viewPanel.Refresh()
         self.__mouseDownPos  = None
         self.__canvasDownPos = None
 
@@ -488,7 +477,6 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc        
@@ -513,7 +501,6 @@ class Profile(actions.ActionProvider):
             mouseLoc, canvasLoc, canvas.name))
 
         handler(ev, canvas, mouseLoc, canvasLoc)
-        self._viewPanel.Refresh()
 
         self.__lastMousePos  = mouseLoc
         self.__lastCanvasPos = canvasLoc
@@ -535,7 +522,6 @@ class Profile(actions.ActionProvider):
         log.debug('Keyboard event ({}) on canvas {}'.format(key, canvas.name))
 
         handler(ev, canvas, key)
-        self._viewPanel.Refresh()
 
 
 class ProfileManager(object):
