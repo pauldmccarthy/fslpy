@@ -101,7 +101,7 @@ class FEATTimeSeries(TimeSeries):
 
 
     plotData         = props.Boolean(default=True)
-    plotFullModelFit = props.Boolean(default=False)
+    plotFullModelFit = props.Boolean(default=True)
     plotResiduals    = props.Boolean(default=False)
     plotEVs          = props.List(props.Boolean(default=False))
     plotPEFits       = props.List(props.Boolean(default=False))
@@ -150,20 +150,13 @@ class FEATTimeSeries(TimeSeries):
                          self.name,
                          self.__plotReducedChanged)
 
-        for i, pv in enumerate(self.plotEVs.getPropertyValueList()):
-            def onChange(ctx, value, valid, name, pe=i):
-                self.__plotEVChanged(pe)
-            pv.addListener(self.name, onChange, weak=False) 
-        
-        for i, pv in enumerate(self.plotPEFits.getPropertyValueList()):
-            def onChange(ctx, value, valid, name, pe=i):
-                self.__plotPEFitChanged(pe)
-            pv.addListener(self.name, onChange, weak=False)
+        self.addListener('plotEVs',      self.name, self.__plotEVChanged)
+        self.addListener('plotPEFits',   self.name, self.__plotPEFitChanged)
+        self.addListener('plotCOPEFits', self.name, self.__plotCOPEFitChanged)
 
-        for i, pv in enumerate(self.plotCOPEFits.getPropertyValueList()):
-            def onChange(ctx, value, valid, name, cope=i):
-                self.__plotCOPEFitChanged(cope)
-            pv.addListener(self.name, onChange, weak=False)
+        # plotFullModelFit defaults to True, so
+        # force the model fit ts creation here
+        self.__plotFullModelFitChanged()
 
 
     def __copy__(self):
@@ -276,39 +269,46 @@ class FEATTimeSeries(TimeSeries):
         self.__resTs = self.__createModelTs(FEATResidualTimeSeries)
 
 
-    def __plotEVChanged(self, evnum):
+    def __plotEVChanged(self, *a):
 
-        if not self.plotEVs[evnum]:
-            self.__evTs[evnum] = None
-            return
+        for evnum, plotEV in enumerate(self.plotEVs):
 
-        self.__evTs[evnum] = self.__createModelTs(FEATEVTimeSeries, evnum)
+            if not self.plotEVs[evnum]:
+                self.__evTs[evnum] = None
+                
+            elif self.__evTs[evnum] is None:
+                self.__evTs[evnum] = self.__createModelTs(
+                    FEATEVTimeSeries, evnum)
             
     
-    def __plotCOPEFitChanged(self, copenum):
-        
-        if not self.plotCOPEFits[copenum]:
-            self.__copeTs[copenum] = None
-            return
+    def __plotCOPEFitChanged(self, *a):
 
-        self.__copeTs[copenum] = self.__createModelTs(
-            FEATModelFitTimeSeries,
-            self.__getContrast('cope', copenum),
-            'cope',
-            copenum)
+        for copenum, plotCOPE in enumerate(self.plotCOPEFits):
+
+            if not self.plotCOPEFits[copenum]:
+                self.__copeTs[copenum] = None
+            
+            elif self.__copeTs[copenum] is None:
+                self.__copeTs[copenum] = self.__createModelTs(
+                    FEATModelFitTimeSeries,
+                    self.__getContrast('cope', copenum),
+                    'cope',
+                    copenum)
 
 
     def __plotPEFitChanged(self, evnum):
-        
-        if not self.plotPEFits[evnum]:
-            self.__peTs[evnum] = None
-            return
 
-        self.__peTs[evnum] = self.__createModelTs(
-            FEATModelFitTimeSeries,
-            self.__getContrast('pe', evnum),
-            'pe',
-            evnum)
+        for evnum, plotPE in enumerate(self.plotPEFits):
+
+            if not self.plotPEFits[evnum]:
+                self.__peTs[evnum] = None
+
+            elif self.__peTs[evnum] is None:
+                self.__peTs[evnum] = self.__createModelTs(
+                    FEATModelFitTimeSeries,
+                    self.__getContrast('pe', evnum),
+                    'pe',
+                    evnum)
 
 
     def __plotFullModelFitChanged(self, *a):
@@ -318,10 +318,7 @@ class FEATTimeSeries(TimeSeries):
             return
 
         self.__fullModelTs = self.__createModelTs(
-            FEATModelFitTimeSeries,
-            self.__getContrast('full', -1),
-            'full',
-            -1)
+            FEATModelFitTimeSeries, self.__getContrast('full', -1), 'full', -1)
 
         
     def update(self, coords):
@@ -513,7 +510,16 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                 self.dataSeries.remove(ds)
         self.enableListener('dataSeries', self._name)
         self.draw()
-            
+
+
+    def __bindCurrentProps(self, ts, bind=True):
+        ts.bindProps('colour'   , self, 'currentColour',    unbind=not bind)
+        ts.bindProps('alpha'    , self, 'currentAlpha',     unbind=not bind)
+        ts.bindProps('lineWidth', self, 'currentLineWidth', unbind=not bind)
+        ts.bindProps('lineStyle', self, 'currentLineStyle', unbind=not bind)
+
+        if bind: self.__currentTs.addGlobalListener(   self._name, self.draw)
+        else:    self.__currentTs.removeGlobalListener(self._name)
         
     def __calcCurrent(self):
 
@@ -521,7 +527,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         prevOverlay = self.__currentOverlay
 
         if prevTs is not None:
-            prevTs.removeGlobalListener(self._name)
+            self.__bindCurrentProps(prevTs, False)
 
         self.__currentTs      = None
         self.__currentOverlay = None
@@ -558,7 +564,6 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         else:
             if isinstance(overlay, fslfeatimage.FEATImage):
                 ts = FEATTimeSeries(self, overlay, vox)
-                ts.plotFullModelFit = True
             else:
                 ts = TimeSeries(self, overlay, vox)
         
@@ -568,15 +573,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             ts.lineStyle = self.currentLineStyle
             ts.label     = None
 
-            ts.bindProps('colour'   , self, 'currentColour')
-            ts.bindProps('alpha'    , self, 'currentAlpha')
-            ts.bindProps('lineWidth', self, 'currentLineWidth')
-            ts.bindProps('lineStyle', self, 'currentLineStyle')
-
             self.__currentTs      = ts
             self.__currentOverlay = overlay
 
-        self.__currentTs.addGlobalListener(self._name, self.draw)
+        self.__bindCurrentProps(self.__currentTs)
 
         
     def getCurrent(self):
