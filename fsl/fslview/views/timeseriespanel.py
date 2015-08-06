@@ -403,9 +403,10 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
     """
 
     
-    usePixdim     = props.Boolean(default=False)
-    showCurrent   = props.Boolean(default=True)
-    plotMode      = props.Choice(
+    usePixdim      = props.Boolean(default=False)
+    showCurrent    = props.Boolean(default=True)
+    showAllCurrent = props.Boolean(default=False)
+    plotMode       = props.Choice(
         ('normal', 'demean', 'normalise', 'percentChange'),
         labels=[strings.choices['TimeSeriesPanel.plotMode.normal'],
                 strings.choices['TimeSeriesPanel.plotMode.demean'],
@@ -454,6 +455,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.addListener('showCurrent', self._name, self.draw)
 
         csc = self.__currentSettingsChanged
+        self.addListener('showAllCurrent',   self._name, csc)
         self.addListener('currentColour',    self._name, csc)
         self.addListener('currentAlpha',     self._name, csc)
         self.addListener('currentLineWidth', self._name, csc)
@@ -520,6 +522,47 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         if bind: self.__currentTs.addGlobalListener(   self._name, self.draw)
         else:    self.__currentTs.removeGlobalListener(self._name)
+
+
+    def __getTimeSeriesLocation(self, overlay):
+
+        x, y, z = self._displayCtx.location.xyz
+        opts    = self._displayCtx.getOpts(overlay)
+
+        if not isinstance(overlay, fslimage.Image)        or \
+           not isinstance(opts,    fsldisplay.VolumeOpts) or \
+           not overlay.is4DImage():
+            return None
+        
+        xform = opts.getTransform('display', 'voxel')
+        vox   = transform.transform([[x, y, z]], xform)[0]
+        vox   = np.floor(vox + 0.5)
+
+        if vox[0] < 0                 or \
+           vox[1] < 0                 or \
+           vox[2] < 0                 or \
+           vox[0] >= overlay.shape[0] or \
+           vox[1] >= overlay.shape[1] or \
+           vox[2] >= overlay.shape[2]:
+            return None
+
+        return vox
+
+    def __genTimeSeries(self, overlay, vox):
+
+        if isinstance(overlay, fslfeatimage.FEATImage):
+            ts = FEATTimeSeries(self, overlay, vox)
+        else:
+            ts = TimeSeries(self, overlay, vox)
+
+        ts.colour    = self.currentColour
+        ts.alpha     = self.currentAlpha
+        ts.lineWidth = self.currentLineWidth
+        ts.lineStyle = self.currentLineStyle
+        ts.label     = None            
+                
+        return ts
+            
         
     def __calcCurrent(self):
 
@@ -533,27 +576,12 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.__currentOverlay = None
 
         if len(self._overlayList) == 0:
-            return 
+            return
 
-        x, y, z = self._displayCtx.location.xyz
         overlay = self._displayCtx.getSelectedOverlay()
-        opts    = self._displayCtx.getOpts(overlay)
+        vox     = self.__getTimeSeriesLocation(overlay)
 
-        if not isinstance(overlay, fslimage.Image)        or \
-           not isinstance(opts,    fsldisplay.VolumeOpts) or \
-           not overlay.is4DImage():
-            return 
-        
-        xform = opts.getTransform('display', 'voxel')
-        vox   = transform.transform([[x, y, z]], xform)[0]
-        vox   = np.floor(vox + 0.5)
-
-        if vox[0] < 0                 or \
-           vox[1] < 0                 or \
-           vox[2] < 0                 or \
-           vox[0] >= overlay.shape[0] or \
-           vox[1] >= overlay.shape[1] or \
-           vox[2] >= overlay.shape[2]:
+        if vox is None:
             return
 
         if overlay is prevOverlay:
@@ -562,17 +590,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
             prevTs.update(vox)
 
         else:
-            if isinstance(overlay, fslfeatimage.FEATImage):
-                ts = FEATTimeSeries(self, overlay, vox)
-            else:
-                ts = TimeSeries(self, overlay, vox)
-        
-            ts.colour    = self.currentColour
-            ts.alpha     = self.currentAlpha
-            ts.lineWidth = self.currentLineWidth
-            ts.lineStyle = self.currentLineStyle
-            ts.label     = None
-
+            ts                    = self.__genTimeSeries(overlay, vox)
             self.__currentTs      = ts
             self.__currentOverlay = overlay
 
@@ -588,13 +606,40 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         self.__calcCurrent()
         current = self.__currentTs
 
-        if self.showCurrent and \
-           current is not None:
-            
-            if isinstance(current, FEATTimeSeries):
-                extras = current.getModelTimeSeries()
-            else:
-                extras = [current]
+        if self.showCurrent:
+
+            extras      = []
+            currOverlay = None
+
+            if current is not None:
+                if isinstance(current, FEATTimeSeries):
+                    extras = current.getModelTimeSeries()
+                else:
+                    extras = [current]
+
+                currOverlay = current.overlay
+
+            if self.showAllCurrent:
+                overlays = [o for o in self._overlayList
+                            if o is not currOverlay]
+
+                locs   = map(self.__getTimeSeriesLocation, overlays)
+                locovl = filter(lambda (l, o): l is not None,
+                                zip(locs, overlays))
+                
+                if len(locovl) > 0:
+                    locs, overlays = zip(*locovl)
+
+                    tss = map(self.__genTimeSeries, overlays, locs)
+
+                    extras.extend([ts for ts in tss if ts is not None])
+                    
+                    for ts in tss:
+                        ts.alpha     = 0.5
+                        ts.lineWidth = 0.5
+
+                        if isinstance(ts, FEATTimeSeries):
+                            extras.extend(ts.getModelTimeSeries())
                 
             self.drawDataSeries(extras)
         else:

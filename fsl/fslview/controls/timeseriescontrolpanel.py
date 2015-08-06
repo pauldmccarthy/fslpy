@@ -29,7 +29,8 @@ class TimeSeriesControlPanel(fslpanel.FSLViewPanel):
 
         tsProps   = ['plotMode',
                      'usePixdim',
-                     'showCurrent']
+                     'showCurrent',
+                     'showAllCurrent']
         plotProps = ['xLogScale',
                      'yLogScale',
                      'smooth',

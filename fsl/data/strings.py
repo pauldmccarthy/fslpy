@@ -355,6 +355,7 @@ properties = TypeDict({
     'TimeSeriesPanel.plotMode'         : 'Plotting mode',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
     'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
+    'TimeSeriesPanel.showAllCurrent'   : 'Plot time series for all overlays',
     'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
     'TimeSeriesPanel.currentAlpha'     : 'Transparency for current '
                                          'time course',
