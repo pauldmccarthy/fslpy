@@ -91,13 +91,13 @@ messages = TypeDict({
 
     'NewLutDialog.newLut' : 'Enter a name for the new LUT',
 
-    'ClusterPanel.noOverlays'  : 'Add a FEAT overlay',
-    'ClusterPanel.notFEAT'     : 'Choose a FEAT overlay',
-    'ClusterPanel.noClusters'  : 'No cluster results exist '
-                                 'in this FEAT analysis',
-    'ClusterPanel.badData'     : 'Cluster data could not be parsed - '
-                                 'check your cluster_*.txt files.', 
-    
+    'ClusterPanel.noOverlays'     : 'Add a FEAT overlay',
+    'ClusterPanel.notFEAT'        : 'Choose a FEAT overlay',
+    'ClusterPanel.noClusters'     : 'No cluster results exist '
+                                    'in this FEAT analysis',
+    'ClusterPanel.badData'        : 'Cluster data could not be parsed - '
+                                    'check your cluster_*.txt files.',
+    'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
 })
 
 

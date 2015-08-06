@@ -12,6 +12,7 @@ import pwidgets.widgetgrid as widgetgrid
 
 import fsl.fslview.panel   as fslpanel
 import fsl.utils.transform as transform
+import fsl.utils.dialog    as fsldlg
 import fsl.data.strings    as strings
 import fsl.data.featimage  as featimage
 
@@ -304,7 +305,14 @@ class ClusterPanel(fslpanel.FSLViewPanel):
 
             return sizer
 
+        dlg = fsldlg.SimpleMessageDialog()
+
+        dlg.Show()
+
         for i, clust in enumerate(clusters):
+
+            dlg.SetMessage(
+                strings.messages[self, 'loadingCluster'].format(clust.index))
 
             zmaxbtn    = makeCoordButton((clust.zmaxx,
                                           clust.zmaxy,
@@ -327,3 +335,6 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             grid.SetText(  i, cols['copemax'],       fmt(clust.copemax))
             grid.SetWidget(i, cols['copemaxcoords'], copemaxbtn)
             grid.SetText(  i, cols['copemean'],      fmt(clust.copemean))
+
+        dlg.Close()
+        dlg.Destroy()
