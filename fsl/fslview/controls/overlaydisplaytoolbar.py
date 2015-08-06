@@ -108,7 +108,8 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
 
     def showMoreSettings(self, *a):
-        self.__viewPanel.togglePanel(overlaydisplay.OverlayDisplayPanel, True)
+        self.__viewPanel.togglePanel(overlaydisplay.OverlayDisplayPanel,
+                                     floatPane=True)
 
         
     def __overlayEnableChanged(self, *a):

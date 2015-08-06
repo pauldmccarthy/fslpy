@@ -178,12 +178,22 @@ class ViewPanel(fslpanel.FSLViewPanel):
         self.__auiMgrUpdate()
 
 
-    def togglePanel(self,
-                    panelType,
-                    floatPane=False,
-                    location=wx.BOTTOM,
-                    *args,
-                    **kwargs):
+    def togglePanel(self, panelType, *args, **kwargs):
+        """
+        :arg floatPane: defaults to ``False``
+        
+        :arg location:  defaults to ``wx.BOTTOM``
+
+        :arg args:      All positional arguments are passed to the
+                        ``panelType.__init__`` method.
+        
+        :arg kwargs:    After ``floatPane`` and `location`` have been
+                        removed, all other keyword arguments are passed
+                        to the ``panelType.__init__`` method.
+        """
+
+        location  = kwargs.pop('location',  wx.BOTTOM)
+        floatPane = kwargs.pop('floatPane', False)
         
         if location not in (wx.TOP, wx.BOTTOM, wx.LEFT, wx.RIGHT):
             raise ValueError('Invalid value for location')

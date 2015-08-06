@@ -44,5 +44,5 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
         import canvassettingspanel
         self.lightBoxPanel.togglePanel(
             canvassettingspanel.CanvasSettingsPanel,
-            True,
-            self.lightBoxPanel) 
+            self.lightBoxPanel,
+            floatPane=True) 

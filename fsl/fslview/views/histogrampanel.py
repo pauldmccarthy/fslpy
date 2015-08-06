@@ -8,6 +8,7 @@
 
 import logging
 
+import wx
 
 import numpy as np
 
@@ -392,7 +393,7 @@ class HistogramPanel(plotpanel.PlotPanel):
 
 
     def toggleHistogramList(self, *a):
-        self.togglePanel(fslcontrols.HistogramListPanel, False, self)
+        self.togglePanel(fslcontrols.HistogramListPanel, self, location=wx.TOP)
 
         panel = self.getPanel(fslcontrols.HistogramListPanel)
 

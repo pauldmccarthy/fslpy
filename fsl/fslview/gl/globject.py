@@ -266,7 +266,7 @@ class GLImageObject(GLObject):
             return np.array(res.round(), dtype=np.uint32)
         
         else:
-            lo, hi = self.getDisplayBounds()
+            lo, hi = map(np.array, self.getDisplayBounds())
             minres = int(round(((hi - lo) / res).min()))
             return [minres] * 3
 

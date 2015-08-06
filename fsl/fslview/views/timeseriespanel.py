@@ -15,6 +15,8 @@ of overlay objects stored in an :class:`.OverlayList`.
 import copy
 import logging
 
+import wx
+
 import numpy as np
 
 import                               props
@@ -428,9 +430,9 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         actionz = {
             'toggleTimeSeriesList'    : lambda *a: self.togglePanel(
-                fslcontrols.TimeSeriesListPanel,    False, self),
+                fslcontrols.TimeSeriesListPanel,    self, location=wx.TOP),
             'toggleTimeSeriesControl' : lambda *a: self.togglePanel(
-                fslcontrols.TimeSeriesControlPanel, False, self) 
+                fslcontrols.TimeSeriesControlPanel, self, location=wx.TOP) 
         }
 
         plotpanel.PlotPanel.__init__(

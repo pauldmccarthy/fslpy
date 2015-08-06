@@ -47,5 +47,6 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
         
     def showMoreSettings(self, *a):
         import canvassettingspanel
-        self.orthoPanel.togglePanel(
-            canvassettingspanel.CanvasSettingsPanel, True, self.orthoPanel)
+        self.orthoPanel.togglePanel(canvassettingspanel.CanvasSettingsPanel,
+                                    self.orthoPanel,
+                                    floatPane=True)
