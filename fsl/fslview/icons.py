@@ -10,10 +10,7 @@ import glob
 import wx
 
 
-# _bitmapPath = '/Users/paulmc/Projects/fslpy/fsl/fslview/icons/'
 _bitmapPath = op.join(op.dirname(__file__), 'icons')
-
-print _bitmapPath
 
 
 def findImageFile(iconId, size):

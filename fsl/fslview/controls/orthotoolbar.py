@@ -28,7 +28,7 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
         icns = {
             'screenshot'  : icons.findImageFile('camera',      32)[0],
-            'showXCanvas' : icons.findImageFile('showxcanvas', 32)[0],
+            'showXCanvas' : icons.findImageFile('sagittalSlice', 32)[0],
             'showYCanvas' : icons.findImageFile('showycanvas', 32)[0],
             'showZCanvas' : icons.findImageFile('showzcanvas', 32)[0],
             'more'        : icons.findImageFile('gear',        32)[0],
