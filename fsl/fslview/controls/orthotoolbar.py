@@ -26,19 +26,32 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
         orthoOpts = ortho.getSceneOptions()
 
+        icns = {
+            'screenshot'  : icons.findImageFile('camera',      32)[0],
+            'showXCanvas' : icons.findImageFile('showxcanvas', 32)[0],
+            'showYCanvas' : icons.findImageFile('showycanvas', 32)[0],
+            'showZCanvas' : icons.findImageFile('showzcanvas', 32)[0],
+            'more'        : icons.findImageFile('gear',        32)[0],
+
+            'layout' : {
+                'horizontal' : icons.findImageFile('horizontalLayout', 32)[0],
+                'vertical'   : icons.findImageFile('verticalLayout',   32)[0],
+                'grid'       : icons.findImageFile('gridLayout',       32)[0],
+            }
+        }
+
         toolSpecs = [
-            actions.ActionButton(ortho, 'screenshot'),
+
+            actions.ActionButton(self, 'more', icon=icns['more']),
+            actions.ActionButton(ortho, 'screenshot', icon=icns['screenshot']),
+            props  .Widget('showXCanvas', icon=icns['showXCanvas']),
+            props  .Widget('showYCanvas', icon=icns['showYCanvas']),
+            props  .Widget('showZCanvas', icon=icns['showZCanvas']),
+            props  .Widget('layout', icons=icns['layout']), 
             props  .Widget('zoom', spin=False, showLimits=False),
-            props  .Widget('layout'),
-            props  .Widget('showXCanvas',
-                           icon=icons.findImageFile('showxcanvas', 32)[0]),
-            props  .Widget('showYCanvas',
-                           icon=icons.findImageFile('showycanvas', 32)[0]),
-            props  .Widget('showZCanvas',
-                           icon=icons.findImageFile('showzcanvas', 32)[0]),
-            actions.ActionButton(self,
-                                 'more',
-                                 icon=icons.findImageFile('gear', 32)[0])]
+
+ 
+        ]
         
         targets    = {'screenshot'  : ortho,
                       'zoom'        : orthoOpts,
