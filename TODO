@@ -6,11 +6,11 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Required feature list before next internal release
-** Ability to display time series for all overlays in TimeSeriesPanel
-** Open new view panel (time series) resets location?
-** Iconify/clean up interface
+** Change Background colour on CanvasPanel
+** Screenshot doesn't work when labels not shown
 ** Tooltips
 ** Rename to FSLEyes
+** Iconify/clean up interface
 ** Startup time
 ** Complete code documentation, commenting and clean-up
 ** Testing
@@ -28,6 +28,9 @@ Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE OrthoPanel performance - mouse click listener called too many times?
+*** DONE Open new view panel (time series) resets location?
+*** DONE Ability to display time series for all overlays in TimeSeriesPanel
 *** DONE Fix command line for models and labels
 *** DONE Label support
 *** DONE VTK support
@@ -83,6 +86,7 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 ** Unify/remove duplication across gl*_funcs modules
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, and all the GL texture function calls
 * Things to do in props package
+** Choice property - remove labels, they should be set on ViewItems instead.
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
 ** Remove PropertyOwner metaclass?
