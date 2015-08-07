@@ -9,6 +9,7 @@
 import props
 
 import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.icons   as icons
 import fsl.fslview.actions as actions
 
 
@@ -27,12 +28,17 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
         toolSpecs = [
             actions.ActionButton(ortho, 'screenshot'),
-            props  .Widget(      'zoom', spin=False, showLimits=False),
-            props  .Widget(      'layout'),
-            props  .Widget(      'showXCanvas'),
-            props  .Widget(      'showYCanvas'),
-            props  .Widget(      'showZCanvas'),
-            actions.ActionButton(self, 'more')]
+            props  .Widget('zoom', spin=False, showLimits=False),
+            props  .Widget('layout'),
+            props  .Widget('showXCanvas',
+                           icon=icons.findImageFile('showxcanvas', 32)[0]),
+            props  .Widget('showYCanvas',
+                           icon=icons.findImageFile('showycanvas', 32)[0]),
+            props  .Widget('showZCanvas',
+                           icon=icons.findImageFile('showzcanvas', 32)[0]),
+            actions.ActionButton(self,
+                                 'more',
+                                 icon=icons.findImageFile('gear', 32)[0])]
         
         targets    = {'screenshot'  : ortho,
                       'zoom'        : orthoOpts,

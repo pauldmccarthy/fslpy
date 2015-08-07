@@ -18,6 +18,7 @@ import props
 import pwidgets.elistbox as elistbox
 
 import fsl.fslview.panel as fslpanel
+import fsl.fslview.icons as icons
 import fsl.data.image    as fslimage
 
 
@@ -38,15 +39,21 @@ class ListItemWidget(wx.Panel):
         self.listBox    = listBox
         self.name       = '{}_{}'.format(self.__class__.__name__, id(self))
 
-        self.saveButton = wx.Button(       self,
-                                           label='S',
-                                           style=wx.BU_EXACTFIT)
-        self.lockButton = wx.ToggleButton( self,
-                                           label='L',
-                                           style=wx.BU_EXACTFIT)
-        self.visibility = props.makeWidget(self,
-                                           display,
-                                           'enabled')
+        # BU_NOTEXT causes a segmentation fault under OSX
+        if wx.Platform == '__WXMAC__': btnStyle = wx.BU_EXACTFIT
+        else:                          btnStyle = wx.BU_EXACTFIT | wx.BU_NOTEXT
+
+        self.saveButton = wx.Button(      self, style=btnStyle)
+        self.lockButton = wx.ToggleButton(self, style=btnStyle)
+
+        self.saveButton.SetBitmap(icons.loadBitmap('floppydisk', 20))
+        self.lockButton.SetBitmap(icons.loadBitmap('chainlink', 20))
+        
+        self.visibility = props.makeWidget(
+            self,
+            display,
+            'enabled',
+            icon=icons.findImageFile('eye', 20)[0])
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
