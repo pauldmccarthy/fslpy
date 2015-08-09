@@ -27,11 +27,11 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
         orthoOpts = ortho.getSceneOptions()
 
         icns = {
-            'screenshot'  : icons.findImageFile('camera',      32)[0],
+            'screenshot'  : icons.findImageFile('camera',        32)[0],
             'showXCanvas' : icons.findImageFile('sagittalSlice', 32)[0],
-            'showYCanvas' : icons.findImageFile('showycanvas', 32)[0],
-            'showZCanvas' : icons.findImageFile('showzcanvas', 32)[0],
-            'more'        : icons.findImageFile('gear',        32)[0],
+            'showYCanvas' : icons.findImageFile('coronalSlice',  32)[0],
+            'showZCanvas' : icons.findImageFile('axialSlice',    32)[0],
+            'more'        : icons.findImageFile('gear',          32)[0],
 
             'layout' : {
                 'horizontal' : icons.findImageFile('horizontalLayout', 32)[0],
