@@ -16,6 +16,7 @@ import wx
 import props
 
 import fsl.fslview.toolbar as fsltoolbar
+import fsl.fslview.icons   as icons
 import fsl.fslview.actions as actions
 import fsl.utils.typedict  as td
 import overlaydisplaypanel as overlaydisplay
@@ -36,7 +37,9 @@ _TOOLBAR_PROPS = td.TypeDict({
     'VolumeOpts' : [
         props.Widget('cmap'),
         props.Widget('displayRange', showLimits=False),
-        actions.ActionButton('VolumeOpts', 'resetDisplayRange')],
+        actions.ActionButton('VolumeOpts',
+                             'resetDisplayRange',
+                             icon=icons.findImageFile('resetRange'))],
     
 
     'MaskOpts' : [
@@ -183,7 +186,9 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         more = props.buildGUI(
             self,
             self,
-            view=actions.ActionButton(self, 'more'))
+            view=actions.ActionButton(self,
+                                      'more',
+                                      icon=icons.findImageFile('gear32')))
 
         tools .append(more)
         labels.append(None)

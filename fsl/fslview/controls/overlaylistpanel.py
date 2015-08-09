@@ -46,14 +46,14 @@ class ListItemWidget(wx.Panel):
         self.saveButton = wx.Button(      self, style=btnStyle)
         self.lockButton = wx.ToggleButton(self, style=btnStyle)
 
-        self.saveButton.SetBitmap(icons.loadBitmap('floppydisk', 20))
-        self.lockButton.SetBitmap(icons.loadBitmap('chainlink', 20))
+        self.saveButton.SetBitmap(icons.loadBitmap('floppydisk'))
+        self.lockButton.SetBitmap(icons.loadBitmap('chainlink'))
         
         self.visibility = props.makeWidget(
             self,
             display,
             'enabled',
-            icon=icons.findImageFile('eye', 20)[0])
+            icon=icons.findImageFile('eye'))
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 

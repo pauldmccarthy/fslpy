@@ -16,6 +16,7 @@ import props
 
 import fsl.fslview.panel   as fslpanel
 import fsl.fslview.actions as actions
+import fsl.fslview.icons   as icons
 import fsl.data.strings    as strings
 
 log = logging.getLogger(__name__)
@@ -56,9 +57,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             
             if label is not None:
                 label.Reparent(self)
-                self.sizer.Add(label, flag=wx.ALIGN_CENTRE)
+                self.sizer.Add(label, flag=wx.ALIGN_CENTRE, proportion=1)
                 
-            self.sizer.Add(self.tool, flag=wx.EXPAND | wx.ALIGN_CENTRE)
+            self.sizer.Add(self.tool, flag=wx.EXPAND, proportion=1)
             self.Layout()
             self.SetMinSize(self.sizer.GetMinSize())
             
@@ -86,8 +87,17 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         self.__index      = 0
         self.__numVisible = None
 
-        self.__leftButton  = wx.Button(self, label='<', style=wx.BU_EXACTFIT)
-        self.__rightButton = wx.Button(self, label='>', style=wx.BU_EXACTFIT) 
+        # BU_NOTEXT causes segfault under OSX
+        if wx.Platform == '__WXMAC__': style = wx.BU_EXACTFIT 
+        else:                          style = wx.BU_EXACTFIT | wx.BU_NOTEXT
+            
+        lBmp = icons.loadBitmap('thinLeftArrow')
+        rBmp = icons.loadBitmap('thinRightArrow')
+        self.__leftButton  = wx.Button(self, style=style)
+        self.__rightButton = wx.Button(self, style=style)
+
+        self.__leftButton.SetBitmap(lBmp)
+        self.__rightButton.SetBitmap(rBmp)
 
         self.__sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.__sizer) 
@@ -158,7 +168,7 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
             for tool in tools:
                 tool.Show(True)
-                sizer.Add(tool, flag=wx.EXPAND | wx.ALIGN_CENTRE)
+                sizer.Add(tool, flag=wx.EXPAND)
 
         else:
             reqdWidths = reqdWidths[self.__index:]
@@ -183,13 +193,13 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
             for i in range(len(tools)):
                 if i >= self.__index and i < lastIdx:
                     tools[i].Show(True)
-                    sizer.Add(tools[i], flag=wx.EXPAND | wx.ALIGN_CENTRE)
+                    sizer.Add(tools[i], flag=wx.EXPAND)
                 else:
                     tools[i].Show(False)
 
         sizer.Insert(self.__numVisible, (0, 0), flag=wx.EXPAND, proportion=1)
-        sizer.Insert(self.__numVisible + 1, self.__rightButton)
-        sizer.Insert(0,                     self.__leftButton)
+        sizer.Insert(self.__numVisible + 1, self.__rightButton, flag=wx.EXPAND)
+        sizer.Insert(0,                     self.__leftButton,  flag=wx.EXPAND)
 
         self.Layout()
 

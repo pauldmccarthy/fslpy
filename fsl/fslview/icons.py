@@ -5,7 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 import os.path as op
-import glob
 
 import wx
 
@@ -13,21 +12,8 @@ import wx
 _bitmapPath = op.join(op.dirname(__file__), 'icons')
 
 
-def findImageFile(iconId, size):
-
-    path      = op.join(_bitmapPath, '{}_*png'.format(iconId))
-    files     = glob.glob(path)
-    fileNames = map(op.basename, files)
-    filePrefs = [op.splitext(f)[0] for f in fileNames]
-    sizes     = map(int, [fp.split('_')[1] for fp in filePrefs])
-
-    if len(sizes) == 0:
-        raise ValueError('Invalid icon ID: {}'.format(iconId))
-
-    sizeDiffs = map(abs, [s - size for s in sizes])
-    idx       = sizeDiffs.index(min(sizeDiffs))
-
-    return files[idx], sizes[idx]
+def findImageFile(iconId):
+    return op.join(_bitmapPath, '{}.png'.format(iconId))
 
 
 def _resizeImage(image, size):
@@ -45,14 +31,10 @@ def _resizeImage(image, size):
     return image
 
 
-def loadImage(iconId, size=None):
+def loadBitmap(iconId):
 
-    filename, fSize = findImageFile(iconId, size)
-    img             = wx.Image(filename)
+    filename = findImageFile(iconId)
+    bmp = wx.EmptyBitmap(1, 1)
+    bmp.LoadFile(filename, wx.BITMAP_TYPE_PNG)
 
-    if fSize != size: return _resizeImage(img, size)
-    else:             return img
-
-
-def loadBitmap(iconId, size=None):
-    return wx.BitmapFromImage(loadImage(iconId, size))
+    return bmp
