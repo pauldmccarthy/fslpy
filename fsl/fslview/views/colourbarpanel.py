@@ -184,7 +184,8 @@ class ColourBarPanel(fslpanel.FSLViewPanel):
         """
 
         if self._selectedOverlay is not None:
-            label = self._selectedOverlay.name
+            display = self._displayCtx.getDisplay(self._selectedOverlay)
+            label   = display.name
         else:
             label = ''
             

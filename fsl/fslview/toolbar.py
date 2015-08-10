@@ -12,12 +12,9 @@ import wx.lib.newevent as wxevent
 
 import numpy as np
 
-import props
-
 import fsl.fslview.panel   as fslpanel
-import fsl.fslview.actions as actions
 import fsl.fslview.icons   as icons
-import fsl.data.strings    as strings
+
 
 log = logging.getLogger(__name__)
 
@@ -40,45 +37,6 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
     """
 
 
-    class Tool(wx.Panel):
-
-        
-        def __init__(self, parent, tool, label, labelText):
-            wx.Panel.__init__(self, parent)
-            
-            self.tool      = tool
-            self.label     = label
-            self.labelText = labelText
-
-            tool.Reparent(self)
-
-            self.sizer = wx.BoxSizer(wx.VERTICAL)
-            self.SetSizer(self.sizer)
-            
-            if label is not None:
-                label.Reparent(self)
-                self.sizer.Add(label, flag=wx.ALIGN_CENTRE, proportion=1)
-                
-            self.sizer.Add(self.tool, flag=wx.EXPAND, proportion=1)
-            self.Layout()
-            self.SetMinSize(self.sizer.GetMinSize())
-            
-
-        def __str__(self):
-            return '{}: {} ({}, {})'.format(
-                type(self)      .__name__,
-                type(self.tool) .__name__,
-                type(self.label).__name__,
-                self.labelText)
-
-        def Enable(self, *args, **kwargs):
-            wx.Panel.Enable(self, *args, **kwargs)
-            self.tool.Enable(*args, **kwargs)
-            
-            if self.label is not None:
-                self.label.Enable(*args, **kwargs)
-
-            
     def __init__(self, parent, overlayList, displayCtx, actionz=None):
         wx.PyPanel.__init__(self, parent)
         fslpanel._FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
@@ -204,46 +162,35 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         self.Layout()
 
 
+
+    def MakeLabelledTool(self, tool, labelText, labelSide=wx.TOP):
+
+        if   labelSide in (wx.TOP,  wx.BOTTOM): orient = wx.VERTICAL
+        elif labelSide in (wx.LEFT, wx.RIGHT):  orient = wx.HORIZONTAL
+        
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(orient)
+
+        panel.SetSizer(sizer)
+        tool.Reparent(panel)
+
+        label = wx.StaticText(panel)
+        label.SetLabel(labelText)
+
+        if labelSide in (wx.TOP, wx.LEFT):
+            sizer.Add(label, flag=wx.ALIGN_CENTRE)
+            sizer.Add(tool,  flag=wx.EXPAND)
+        else:
+            sizer.Add(tool,  flag=wx.EXPAND)
+            sizer.Add(label, flag=wx.ALIGN_CENTRE) 
+
+        return panel
+
+
     def Enable(self, *args, **kwargs):
         wx.PyPanel.Enable(self, *args, **kwargs)
         for t in self.__tools:
             t.Enable(*args, **kwargs)
-
-
-    def GenerateTools(self, toolSpecs, targets, add=True):
-        """
-        Targets may be a single object, or a dict of [toolSpec : target]
-        mappings.
-        """
-        
-        tools  = []
-        labels = []
-
-        if not isinstance(targets, dict):
-            targets = {s.key : targets for s in toolSpecs}
-
-        for toolSpec in toolSpecs:
-            tool = props.buildGUI(
-                self, targets[toolSpec.key], toolSpec, showUnlink=False)
-
-            # Assume that buttons  are self-describing
-            if isinstance(tool, wx.AnyButton):
-                label = None
-            else:
-                label = None
-                # label = strings.properties.get(
-                #     (targets[toolSpec.key], toolSpec.key), toolSpec.key)
-
-            tools .append(tool)
-            labels.append(label)
-
-            if add:
-                self.InsertTool(tool, label, postevent=False)
-
-        if add:
-            wx.PostEvent(self, ToolBarEvent())
-
-        return zip(tools, labels)
 
             
     def GetTools(self):
@@ -252,63 +199,39 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         return self.__tools[:]
 
 
-    def AddTool(self, tool, labelText=None):
-        self.InsertTool(tool, labelText)
+    def AddTool(self, tool):
+        self.InsertTool(tool)
 
         
-    def InsertTools(self, tools, labels=None, index=None):
+    def InsertTools(self, tools, index=None):
 
-        if labels is None:
-            labels = [None] * len(tools)
-
-        for i, (tool, label) in enumerate(zip(tools, labels), index):
-            self.InsertTool(tool, label, i, postevent=False)
+        for i, tool in enumerate(tools, index):
+            self.InsertTool(tool, i, postevent=False)
 
         wx.PostEvent(self, ToolBarEvent())
 
 
-    def SetTools(self, tools, labels=None, destroy=False):
-
-        if labels is None:
-            labels = [None] * len(tools)
+    def SetTools(self, tools, destroy=False):
 
         self.ClearTools(destroy, postevent=False)
 
-        for tool, label in zip(tools, labels):
-            self.InsertTool(tool, label, postevent=False)
+        for tool in tools:
+            self.InsertTool(tool, postevent=False)
 
         wx.PostEvent(self, ToolBarEvent())
         
 
-    def InsertTool(self, tool, labelText=None, index=None, postevent=True):
+    def InsertTool(self, tool, index=None, postevent=True):
 
         if index is None:
             index = len(self.__tools)
 
-        if labelText is None:
-            label = None
-            
-        else:
-            label = wx.StaticText(self,
-                                  label=labelText,
-                                  style=wx.ALIGN_CENTRE)
-            label.SetFont(label.GetFont().Smaller().Smaller())
-
-            # Mouse wheel on the label will scroll
-            # through the toolbar items. We don't
-            # bind on the tool widget, because it
-            # might already be intercepting mouse
-            # wheel events
-            label.Bind(wx.EVT_MOUSEWHEEL, self.__onMouseWheel)
-
         log.debug('{}: adding tool at index {}: {}'.format(
-            type(self).__name__, index, labelText))
+            type(self).__name__, index, type(tool).__name__))
 
-        toolPanel = FSLViewToolBar.Tool(self, tool, label, labelText)
-        
-        toolPanel.Bind(wx.EVT_MOUSEWHEEL, self.__onMouseWheel)
+        tool.Bind(wx.EVT_MOUSEWHEEL, self.__onMouseWheel)
 
-        self.__tools.insert(index, toolPanel)
+        self.__tools.insert(index, tool)
 
         self.InvalidateBestSize()
         self.__drawToolBar()

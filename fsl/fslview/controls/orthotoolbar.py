@@ -11,6 +11,7 @@ import props
 import fsl.fslview.toolbar as fsltoolbar
 import fsl.fslview.icons   as icons
 import fsl.fslview.actions as actions
+import fsl.data.strings    as strings
 
 
 class OrthoToolBar(fsltoolbar.FSLViewToolBar):
@@ -61,7 +62,19 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
                       'showZCanvas' : orthoOpts,
                       'more'        : self}
 
-        self.GenerateTools(toolSpecs, targets)
+        tools = []
+        
+        for spec in toolSpecs:
+            widget = props.buildGUI(self, targets[spec.key], spec)
+
+            if spec.key == 'zoom':
+                widget = self.MakeLabelledTool(
+                    widget,
+                    strings.properties[targets[spec.key], 'zoom'])
+            
+            tools.append(widget)
+
+        self.SetTools(tools)
 
         
     def showMoreSettings(self, *a):

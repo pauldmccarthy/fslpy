@@ -19,6 +19,7 @@ import fsl.fslview.toolbar as fsltoolbar
 import fsl.fslview.icons   as icons
 import fsl.fslview.actions as actions
 import fsl.utils.typedict  as td
+import fsl.data.strings    as strings
 import overlaydisplaypanel as overlaydisplay
 
 
@@ -27,43 +28,65 @@ log = logging.getLogger(__name__)
 
 
 _TOOLBAR_PROPS = td.TypeDict({
-    'Display' : [
-        props.Widget('name'),
-        props.Widget('overlayType'),
-        props.Widget('alpha',      spin=False, showLimits=False),
-        props.Widget('brightness', spin=False, showLimits=False),
-        props.Widget('contrast',   spin=False, showLimits=False)],
 
-    'VolumeOpts' : [
-        props.Widget('cmap'),
-        props.Widget('displayRange', showLimits=False),
-        actions.ActionButton('VolumeOpts',
-                             'resetDisplayRange',
-                             icon=icons.findImageFile('resetRange'))],
+    'Display' : {
+        'name'         : props.Widget('name'),
+        'overlayType'  : props.Widget('overlayType'),
+        'alpha'        : props.Widget('alpha',
+                                      spin=False,
+                                      showLimits=False),
+        'brightness'   : props.Widget('brightness',
+                                      spin=False,
+                                      showLimits=False),
+        'contrast'     : props.Widget('contrast',
+                                      spin=False,
+                                      showLimits=False)},
+
+    'VolumeOpts' : {
+        'displayRange' : props.Widget('displayRange',
+                                      slider=False,
+                                      showLimits=False),
+        'resetDisplayRange' : actions.ActionButton(
+            'VolumeOpts',
+            'resetDisplayRange',
+            icon=icons.findImageFile('verticalReset')), 
+        'cmap' : props.Widget('cmap')},
+
     
+    'MaskOpts' : {
+        'threshold' : props.Widget('threshold', showLimits=False, spin=False),
+        'colour'    : props.Widget('colour')},
 
-    'MaskOpts' : [
-        props.Widget('colour')],
+    
+    'VectorOpts' : {
+        'modulate'     : props.Widget('modulate'),
+        'modThreshold' : props.Widget('modThreshold',
+                                      showLimits=False,
+                                      spin=False)},
 
-    'VectorOpts' : [
-        props.Widget('modulate'),
-        props.Widget('modThreshold', showLimits=False, spin=False)],
+    'LabelOpts' : {
+        'lut'     : props.Widget('lut'),
+        'outline' : props.Widget(
+            'outline',
+            icon=[icons.findImageFile('outline'),
+                  icons.findImageFile('filled')],
+            style=wx.VERTICAL,
+            enabledWhen=lambda i, sw: not sw,
+            dependencies=[(lambda o: o.display, 'softwareMode')]),
+        
+        'outlineWidth' : props.Widget(
+            'outlineWidth',
+            enabledWhen=lambda i, sw: not sw,
+            dependencies=[(lambda o: o.display, 'softwareMode')],
+            showLimits=False,
+            spin=False)},
 
-    'LabelOpts' : [
-        props.Widget('lut'),
-        props.Widget('outline',
-                     enabledWhen=lambda i, sw: not sw,
-                     dependencies=[(lambda o: o.display, 'softwareMode')]),
-        props.Widget('outlineWidth',
-                     enabledWhen=lambda i, sw: not sw,
-                     dependencies=[(lambda o: o.display, 'softwareMode')],
-                     showLimits=False,
-                     spin=False)],
-
-    'ModelOpts' : [
-        props.Widget('colour'),
-        props.Widget('outline'),
-        props.Widget('outlineWidth', showLimits=False, spin=False)]
+    'ModelOpts' : {
+        'colour'       : props.Widget('colour'),
+        'outline'      : props.Widget('outline'),
+        'outlineWidth' : props.Widget('outlineWidth',
+                                      showLimits=False,
+                                      spin=False)}
 })
 
 
@@ -152,6 +175,129 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         self.Enable(display.enabled)
 
 
+    def __makeDisplayTools(self, display):
+        """
+        """
+        
+        dispSpecs = _TOOLBAR_PROPS[display]
+
+        # Display settings
+        nameSpec  = dispSpecs['name']
+        typeSpec  = dispSpecs['overlayType']
+        alphaSpec = dispSpecs['alpha']
+        briSpec   = dispSpecs['brightness']
+        conSpec   = dispSpecs['contrast']
+
+        # Name/overlay type and brightness/contrast
+        # are respectively placed together
+        nameTypePanel = wx.Panel(self)
+        briconPanel   = wx.Panel(self)
+        nameTypeSizer = wx.BoxSizer(wx.VERTICAL)
+        briconSizer   = wx.FlexGridSizer(2, 2)
+        
+        briconSizer.AddGrowableCol(1)
+
+        nameTypePanel.SetSizer(nameTypeSizer)
+        briconPanel  .SetSizer(briconSizer)
+
+        nameWidget  = props.buildGUI(nameTypePanel, display, nameSpec)
+        typeWidget  = props.buildGUI(nameTypePanel, display, typeSpec)
+        briWidget   = props.buildGUI(briconPanel,   display, briSpec)
+        conWidget   = props.buildGUI(briconPanel,   display, conSpec)
+        alphaWidget = props.buildGUI(self,          display, alphaSpec)
+
+        briLabel    = wx.StaticText(briconPanel)
+        conLabel    = wx.StaticText(briconPanel)
+
+        briLabel.SetLabel(strings.properties[display, 'brightness'])
+        conLabel.SetLabel(strings.properties[display, 'contrast'])
+
+        # name/type panel
+        nameTypeSizer.Add(nameWidget, flag=wx.EXPAND)
+        nameTypeSizer.Add(typeWidget, flag=wx.EXPAND)
+
+        # opacity is given a label
+        alphaPanel = self.MakeLabelledTool(
+            alphaWidget, strings.properties[display, 'alpha'])
+
+        # bricon panel
+        briconSizer.Add(briLabel)
+        briconSizer.Add(briWidget)
+        briconSizer.Add(conLabel)
+        briconSizer.Add(conWidget)
+
+        return [nameTypePanel, alphaPanel, briconPanel]
+
+
+    def __makeVolumeOptsTools(self, opts):
+        """
+        """
+        rangeSpec = _TOOLBAR_PROPS[opts]['displayRange']
+        resetSpec = _TOOLBAR_PROPS[opts]['resetDisplayRange']
+        cmapSpec  = _TOOLBAR_PROPS[opts]['cmap']
+
+        rangeWidget = props.buildGUI(self, opts, rangeSpec)
+        resetWidget = props.buildGUI(self, opts, resetSpec)
+        cmapWidget  = props.buildGUI(self, opts, cmapSpec)
+
+        cmapWidget = self.MakeLabelledTool(
+            cmapWidget,
+            strings.properties[opts, 'cmap'])
+
+        return [rangeWidget, resetWidget, cmapWidget]
+
+
+    def __makeMaskOptsTools(self, opts):
+        """
+        """
+        thresSpec  = _TOOLBAR_PROPS[opts]['threshold']
+        colourSpec = _TOOLBAR_PROPS[opts]['colour']
+
+        thresWidget  = props.buildGUI(self, opts, thresSpec)
+        colourWidget = props.buildGUI(self, opts, colourSpec)
+
+        colourWidget = self.MakeLabelledTool(
+            colourWidget,
+            strings.properties[opts, 'colour'])
+
+        return [thresWidget, colourWidget]
+
+
+    def __makeLabelOptsTools(self, opts):
+        """
+        """
+
+        lutSpec     = _TOOLBAR_PROPS[opts]['lut']
+        outlineSpec = _TOOLBAR_PROPS[opts]['outline']
+        widthSpec   = _TOOLBAR_PROPS[opts]['outlineWidth']
+
+        # lut/outline width widgets
+        # are on a single panel
+        lutWidthPanel = wx.Panel(self)
+        lutWidthSizer = wx.FlexGridSizer(2, 2)
+        lutWidthPanel.SetSizer(lutWidthSizer)
+        
+        lutWidget     = props.buildGUI(lutWidthPanel, opts, lutSpec)
+        widthWidget   = props.buildGUI(lutWidthPanel, opts, widthSpec)
+        outlineWidget = props.buildGUI(self,          opts, outlineSpec)
+
+        # lutWidget = self.MakeLabelledTool(
+        #     lutWidget, strings.properties[opts, 'lut'])
+
+        lutLabel   = wx.StaticText(lutWidthPanel)
+        widthLabel = wx.StaticText(lutWidthPanel)
+
+        lutLabel  .SetLabel(strings.properties[opts, 'lut'])
+        widthLabel.SetLabel(strings.properties[opts, 'outlineWidth'])
+
+        lutWidthSizer.Add(lutLabel)
+        lutWidthSizer.Add(lutWidget,   flag=wx.EXPAND)
+        lutWidthSizer.Add(widthLabel)
+        lutWidthSizer.Add(widthWidget, flag=wx.EXPAND)
+
+        return [lutWidthPanel, outlineWidget]
+
+
     def __showTools(self, overlay):
 
         oldTools = self.GetTools()
@@ -170,30 +316,27 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
 
         display   = self._displayCtx.getDisplay(overlay)
         opts      = display.getDisplayOpts()
-        
-        dispSpecs = _TOOLBAR_PROPS[display]
-        optsSpecs = _TOOLBAR_PROPS[opts]
 
-        dispTools, dispLabels = zip(*self.GenerateTools(
-            dispSpecs, display, add=False))
-        optsTools, optsLabels = zip(*self.GenerateTools(
-            optsSpecs, opts,    add=False))
+        # Display tools
+        tools     = self.__makeDisplayTools(display)
 
-        tools  = list(dispTools)  + list(optsTools)
-        labels = list(dispLabels) + list(optsLabels)
+        # DisplayOpts tools
+        makeFunc = getattr(self, '_{}__make{}Tools'.format(
+            type(self).__name__, type(opts).__name__), None)
+
+        if makeFunc is not None:
+            tools.extend(makeFunc(opts))
 
         # Button which opens the OverlayDisplayPanel
         more = props.buildGUI(
             self,
             self,
-            view=actions.ActionButton(self,
-                                      'more',
-                                      icon=icons.findImageFile('gear32')))
+            view=actions.ActionButton(
+                self, 'more', icon=icons.findImageFile('gear32')))
 
-        tools .append(more)
-        labels.append(None)
+        tools.insert(0, more)
 
-        self.SetTools(tools, labels)
+        self.SetTools(tools)
         
         # This method may have been called via an
         # event handler an existing tool in the

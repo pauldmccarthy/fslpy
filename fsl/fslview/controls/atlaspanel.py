@@ -209,11 +209,11 @@ class AtlasPanel(fslpanel.FSLViewPanel):
             #      of having to look up the LUT object by its
             #      display name
             if   atlasID == 'HarvardOxford-Cortical':
-                opts.lut = fslcm.getLookupTable('MGH Cortical')
+                opts.lut = fslcm.getLookupTable('harvard-oxford-cortical')
             elif atlasID == 'HarvardOxford-Subcortical':
-                opts.lut = fslcm.getLookupTable('MGH Sub-cortical')
+                opts.lut = fslcm.getLookupTable('harvard-oxford-subcortical')
             else:
-                opts.lut = fslcm.getLookupTable('Random')
+                opts.lut = fslcm.getLookupTable('random')
 
 
     def locateRegion(self, atlasID, labelIdx):

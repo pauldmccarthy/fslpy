@@ -59,9 +59,11 @@ import argparse
 import subprocess
 
 
-# make matplotlib quiet
+# make numpy/matplotlib quiet
 warnings.filterwarnings('ignore', module='matplotlib')
 warnings.filterwarnings('ignore', module='mpl_toolkits')
+warnings.filterwarnings('ignore', module='numpy')
+
 
 # My own custom logging level for tracing memory related events
 logging.MEMORY = 15
