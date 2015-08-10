@@ -1,3 +1,4 @@
+
 TODO LIST -*- mode: org; -*-
 
 A mixture of things to do, things which might be nice to do, and things which
@@ -6,11 +7,11 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Required feature list before next internal release
-** Change Background colour on CanvasPanel
+** Iconify/clean up interface
+** Make toolbar sizing sensible
 ** Screenshot doesn't work when labels not shown
 ** Tooltips
 ** Rename to FSLEyes
-** Iconify/clean up interface
 ** Startup time
 ** Complete code documentation, commenting and clean-up
 ** Testing
@@ -28,6 +29,7 @@ Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE Change Background colour on CanvasPanel
 *** DONE OrthoPanel performance - mouse click listener called too many times?
 *** DONE Open new view panel (time series) resets location?
 *** DONE Ability to display time series for all overlays in TimeSeriesPanel
@@ -85,6 +87,8 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 ** A pre-processor for GL14 shader programs
 ** Unify/remove duplication across gl*_funcs modules
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, and all the GL texture function calls
+** Port to wxPython/Phoenix
+*** Support for retina displays
 * Things to do in props package
 ** Choice property - remove labels, they should be set on ViewItems instead.
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
