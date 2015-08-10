@@ -26,6 +26,7 @@ import fsl.data.featimage         as fslfeatimage
 import fsl.data.image             as fslimage
 import fsl.data.strings           as strings
 import fsl.fslview.displaycontext as fsldisplay
+import fsl.fslview.colourmaps     as fslcmaps
 import fsl.fslview.controls       as fslcontrols
 import fsl.utils.transform        as transform
 
@@ -463,6 +464,7 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
 
         self.__currentOverlay = None
         self.__currentTs      = None
+        self.__overlayColours = {}
         self.Layout()
         self.draw()
 
@@ -620,9 +622,12 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                 currOverlay = current.overlay
 
             if self.showAllCurrent:
+                
                 overlays = [o for o in self._overlayList
                             if o is not currOverlay]
 
+                # Remove overlays for which the
+                # current location is out of bounds
                 locs   = map(self.__getTimeSeriesLocation, overlays)
                 locovl = filter(lambda (l, o): l is not None,
                                 zip(locs, overlays))
@@ -635,9 +640,18 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
                     extras.extend([ts for ts in tss if ts is not None])
                     
                     for ts in tss:
-                        ts.alpha     = 0.5
+                        ts.alpha     = 1
                         ts.lineWidth = 0.5
 
+                        # Use a random colour for each overlay,
+                        # but use the same random colour each time
+                        colour = self.__overlayColours.get(
+                            ts.overlay,
+                            fslcmaps.randomBrightColour())
+                        
+                        ts.colour = colour
+                        self.__overlayColours[ts.overlay] = colour
+                        
                         if isinstance(ts, FEATTimeSeries):
                             extras.extend(ts.getModelTimeSeries())
                 

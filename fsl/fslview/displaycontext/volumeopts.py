@@ -267,11 +267,15 @@ class VolumeOpts(ImageOpts):
         # on whether the image is 3D or 4D)
         if np.prod(overlay.shape) > 2 ** 30:
             sample = overlay.data[..., overlay.shape[-1] / 2]
-            self.dataMin = float(sample.min())
-            self.dataMax = float(sample.max())
+            self.dataMin = float(np.nanmin(sample))
+            self.dataMax = float(np.nanmax(sample))
         else:
-            self.dataMin = float(overlay.data.min())
-            self.dataMax = float(overlay.data.max())
+            self.dataMin = float(np.nanmin(overlay.data))
+            self.dataMax = float(np.nanmax(overlay.data))
+
+        if np.any(np.isnan((self.dataMin, self.dataMax))):
+            self.dataMin = 0
+            self.dataMax = 0
 
         dRangeLen    = abs(self.dataMax - self.dataMin)
         dMinDistance = dRangeLen / 10000.0
