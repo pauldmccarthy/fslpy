@@ -321,6 +321,7 @@ properties = TypeDict({
     'CanvasPanel.profile'            : 'Mode',
 
     'SceneOpts.showCursor'         : 'Show location cursor',
+    'SceneOpts.bgColour'           : 'Background colour',
     'SceneOpts.showColourBar'      : 'Show colour bar',
     'SceneOpts.performance'        : 'Rendering performance',
     'SceneOpts.zoom'               : 'Zoom',

@@ -134,6 +134,7 @@ and generating/manipulating colours.:
 import logging
 import glob
 import bisect
+import colorsys
 import os.path as op
 
 from collections import OrderedDict
@@ -906,3 +907,30 @@ def randomBrightColour():
     np.random.shuffle(colour)
 
     return colour
+
+
+def complementaryColour(rgb):
+    """Generate a colour which can be used as a complement/opposite
+    to the given colour.
+    """
+
+    h, l, s = colorsys.rgb_to_hls(*rgb)
+
+    # My ad-hoc complementary colour calculation:
+    # create a new colour with the opposite hue
+    # and opposite lightness, but the same saturation.
+    nh = 1.0 - h
+    nl = 1.0 - l
+    ns = s
+
+    # If the two colours have similar lightness
+    # (according to some arbitrary threshold),
+    # force the new one to have a different
+    # lightness
+    if abs(nl - l) < 0.3:
+        if l > 0.5: nl = 0.0
+        else:       nl = 1.0
+
+    nr, ng, nb = colorsys.hls_to_rgb(nh, nl, ns)
+
+    return nr, ng, nb

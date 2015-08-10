@@ -44,6 +44,9 @@ class SceneOpts(props.HasProperties):
     
     colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
 
+
+    bgColour = copy.copy(slicecanvas.SliceCanvas.bgColour)
+
     
     performance = props.Choice(
         (1, 2, 3, 4, 5),

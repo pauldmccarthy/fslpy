@@ -21,6 +21,7 @@ import fsl.data.strings                         as strings
 import fsl.data.constants                       as constants
 import fsl.utils.layout                         as fsllayout
 import fsl.fslview.gl                           as fslgl
+import fsl.fslview.colourmaps                   as colourmaps
 import fsl.fslview.gl.wxglslicecanvas           as slicecanvas
 import fsl.fslview.controls.orthotoolbar        as orthotoolbar
 import fsl.fslview.controls.orthoprofiletoolbar as orthoprofiletoolbar
@@ -84,23 +85,20 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side] = wx.StaticText(canvasPanel)
             self._zLabels[side] = wx.StaticText(canvasPanel)
 
-        canvasPanel.SetBackgroundColour('black')
-
-        for side in ('left', 'right', 'top', 'bottom'):
-            self._xLabels[side].SetBackgroundColour('black')
-            self._yLabels[side].SetBackgroundColour('black')
-            self._zLabels[side].SetBackgroundColour('black')
-            self._xLabels[side].SetForegroundColour('white')
-            self._yLabels[side].SetForegroundColour('white')
-            self._zLabels[side].SetForegroundColour('white') 
-
         self._xcanvas.bindProps('showCursor', sceneOpts)
         self._ycanvas.bindProps('showCursor', sceneOpts)
         self._zcanvas.bindProps('showCursor', sceneOpts)
 
+        self._xcanvas.bindProps('bgColour', sceneOpts)
+        self._ycanvas.bindProps('bgColour', sceneOpts)
+        self._zcanvas.bindProps('bgColour', sceneOpts)
+
         # Callbacks for ortho panel layout options
         sceneOpts.addListener('layout',     self._name, self._refreshLayout)
         sceneOpts.addListener('showLabels', self._name, self._refreshLabels)
+        sceneOpts.addListener('bgColour'  , self._name, self.__bgColourChanged)
+
+        self.__bgColourChanged()
 
         # Individual zoom control for each canvas
         self._xcanvas.bindProps('zoom', sceneOpts, 'xzoom')
@@ -199,6 +197,30 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             opts.removeListener('bounds', self._name)
 
         canvaspanel.CanvasPanel.destroy(self)
+
+
+    def __bgColourChanged(self, *a):
+        
+        bg = self.getSceneOptions().bgColour[:3]
+        fg = colourmaps.complementaryColour(bg[:3])
+
+        bg = [int(c * 255) for c in bg]
+        fg = [int(c * 255) for c in fg]
+
+        self.getCanvasPanel().SetBackgroundColour(bg)
+        self.getCanvasPanel().SetForegroundColour(fg)
+
+        self._xcanvas.SetBackgroundColour(bg)
+        self._ycanvas.SetBackgroundColour(bg)
+        self._zcanvas.SetBackgroundColour(bg)
+
+        for side in ('left', 'right', 'top', 'bottom'):
+            self._xLabels[side].SetBackgroundColour(bg)
+            self._yLabels[side].SetBackgroundColour(bg)
+            self._zLabels[side].SetBackgroundColour(bg)
+            self._xLabels[side].SetForegroundColour(fg)
+            self._yLabels[side].SetForegroundColour(fg)
+            self._zLabels[side].SetForegroundColour(fg) 
 
             
     def __onZoom(self, *a):

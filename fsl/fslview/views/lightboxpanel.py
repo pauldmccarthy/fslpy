@@ -59,6 +59,7 @@ class LightBoxPanel(canvaspanel.CanvasPanel):
             displayCtx)
 
         self._lbCanvas.bindProps('zax',             sceneOpts)
+        self._lbCanvas.bindProps('bgColour',        sceneOpts)
         self._lbCanvas.bindProps('showCursor',      sceneOpts)
         self._lbCanvas.bindProps('showGridLines',   sceneOpts)
         self._lbCanvas.bindProps('highlightSlice',  sceneOpts)

@@ -91,6 +91,10 @@ class SliceCanvas(props.HasProperties):
     """If True, the display is inverted along the Y (vertical screen) axis.
     """
 
+
+    bgColour = props.Colour(default=(0, 0, 0))
+    """Canvas background colour."""
+
     
     renderMode = props.Choice(('onscreen', 'offscreen', 'prerender'))
     """How the GLObjects are rendered to the canvas - onscreen is the
@@ -286,9 +290,10 @@ class SliceCanvas(props.HasProperties):
         self.addListener('zax',           self.name, self._zAxisChanged)
         self.addListener('pos',           self.name, self._draw)
         self.addListener('displayBounds', self.name, self._draw)
-        self.addListener('showCursor',    self.name, self._refresh)
-        self.addListener('invertX',       self.name, self._refresh)
-        self.addListener('invertY',       self.name, self._refresh)
+        self.addListener('bgColour',      self.name, self._draw)
+        self.addListener('showCursor',    self.name, self._draw)
+        self.addListener('invertX',       self.name, self._draw)
+        self.addListener('invertY',       self.name, self._draw)
         self.addListener('zoom',          self.name, self._zoomChanged)
         self.addListener('renderMode',    self.name, self._renderModeChange)
         self.addListener('resolutionLimit',
@@ -949,6 +954,8 @@ class SliceCanvas(props.HasProperties):
         width, height = self._getSize()
         if width == 0 or height == 0:
             return
+
+        gl.glClearColor(*self.bgColour)
 
         if not self._setGLContext():
             return

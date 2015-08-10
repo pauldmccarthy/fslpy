@@ -707,6 +707,8 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
         if not self._setGLContext():
             return
 
+        gl.glClearColor(*self.bgColour)
+
         if self.renderMode == 'offscreen':
             
             log.debug('Rendering to off-screen texture')

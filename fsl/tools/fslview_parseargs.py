@@ -88,6 +88,7 @@ OPTIONS = td.TypeDict({
     # names of properties on them.
     
     'SceneOpts'     : ['showCursor',
+                       'bgColour',
                        'showColourBar',
                        'colourBarLocation',
                        'colourBarLabelSide',
@@ -180,6 +181,7 @@ ARGUMENTS = td.TypeDict({
     'Main.selectedOverlay' : ('o',  'selectedOverlay'),
     
     'SceneOpts.showColourBar'      : ('cb',  'showColourBar'),
+    'SceneOpts.bgColour'           : ('bg',  'bgColour'),
     'SceneOpts.colourBarLocation'  : ('cbl', 'colourBarLocation'),
     'SceneOpts.colourBarLabelSide' : ('cbs', 'colourBarLabelSide'),
     'SceneOpts.showCursor'         : ('hc',  'hideCursor'),
@@ -265,6 +267,7 @@ HELP = td.TypeDict({
 
     'SceneOpts.showCursor'         : 'Do not display the green cursor '
                                      'highlighting the current location',
+    'SceneOpts.bgColour'           : 'Canvas background colour',
     'SceneOpts.showColourBar'      : 'Show colour bar',
     'SceneOpts.colourBarLocation'  : 'Colour bar location',
     'SceneOpts.colourBarLabelSide' : 'Colour bar label orientation',
