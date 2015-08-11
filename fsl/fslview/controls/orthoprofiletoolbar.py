@@ -59,7 +59,7 @@ _TOOLBAR_SPECS  = {
         'profile',
         icons={
             'view' : _ICONS['view'],
-            'edit' : _ICONS['view']}),
+            'edit' : _ICONS['edit']}),
 
     'view' : {},
 
@@ -88,11 +88,11 @@ _TOOLBAR_SPECS  = {
         props.Widget('fillValue', label=_LABELS['fillValue']),
 
         props.Widget('selint', icon=_ICONS['selint']),
-        props.Widget('radius', icon=_ICONS['radius']),
+        # props.Widget('radius', icon=_ICONS['radius']),
         
         props.Widget('localFill',
-                     enabledWhen=lambda p: p.mode == 'selint',
-                     icon=_ICONS['']),
+                     enabledWhen=lambda p: p.mode == 'selint'),
+                     # icon=_ICONS['']),
         
         props.Widget('intensityThres',
                      enabledWhen=lambda p: p.mode == 'selint',
