@@ -483,6 +483,9 @@ choices = TypeDict({
 
     'HistogramPanel.dataRange.min' : 'Min.',
     'HistogramPanel.dataRange.max' : 'Max.',
+
+    'LightBoxOpts.zrange.min' : 'Min.',
+    'LightBoxOpts.zrange.max' : 'Max.',    
     
     'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
     'ColourBarCanvas.orientation.vertical'   : 'Vertical',

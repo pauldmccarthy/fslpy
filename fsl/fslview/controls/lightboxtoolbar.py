@@ -6,10 +6,14 @@
 #
 
 
+import wx
+
 import props
 
 import fsl.fslview.toolbar as fsltoolbar
 import fsl.fslview.actions as actions
+import fsl.fslview.icons   as icons
+import fsl.data.strings    as strings
 
 
 class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
@@ -22,22 +26,78 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
             self, parent, overlayList, displayCtx, actionz)
         self.lightBoxPanel = lb
 
-        sceneOpts = lb.getSceneOptions()
-        toolSpecs = [
-            actions.ActionButton(lb, 'screenshot'),
-            props  .Widget(      'zax'),
-            props  .Widget(      'sliceSpacing', spin=False, showLimits=False),
-            props  .Widget(      'zrange',       spin=False, showLimits=False),
-            props  .Widget(      'zoom',         spin=False, showLimits=False),
-            actions.ActionButton(self, 'more')]
-        targets   = {'screenshot'   : lb,
-                     'zax'          : sceneOpts,
-                     'sliceSpacing' : sceneOpts,
-                     'zrange'       : sceneOpts,
-                     'zoom'         : sceneOpts,
-                     'more'         : self}
+        icns = {
+            'screenshot'  : icons.findImageFile('camera'),
+            'more'        : icons.findImageFile('gear'),
 
-        self.GenerateTools(toolSpecs, targets)
+            'zax' : {
+                0 : icons.findImageFile('sagittalSlice'),
+                1 : icons.findImageFile('coronalSlice'),
+                2 : icons.findImageFile('axialSlice'),
+            }
+        }
+
+        sceneOpts = lb.getSceneOptions()
+        
+        specs = {
+            
+            'more'         : actions.ActionButton(
+                self,
+                'more',
+                icon=icns['more']),
+            
+            'screenshot'   : actions.ActionButton(
+                lb,
+                'screenshot',
+                icon=icns['screenshot']),
+            
+            'zax'          : props.Widget(
+                'zax',
+                icons=icns['zax']),
+            
+            'sliceSpacing' : props.Widget(
+                'sliceSpacing',
+                spin=False,
+                showLimits=False),
+            
+            'zrange'       : props.Widget(
+                'zrange',
+                spin=False,
+                showLimits=False,
+                labels=[strings.choices[sceneOpts, 'zrange', 'min'],
+                        strings.choices[sceneOpts, 'zrange', 'max']]),
+            
+            'zoom'         : props.Widget(
+                'zoom',
+                spin=False,
+                showLimits=False),
+        }
+
+        # Slice spacing and zoom go on a single panel
+        panel = wx.Panel(self)
+        sizer = wx.FlexGridSizer(2, 2)
+        panel.SetSizer(sizer)
+
+        more         = props.buildGUI(self,  self,      specs['more'])
+        screenshot   = props.buildGUI(self,  lb,        specs['screenshot'])
+        zax          = props.buildGUI(self,  sceneOpts, specs['zax'])
+        zrange       = props.buildGUI(self,  sceneOpts, specs['zrange'])
+        zoom         = props.buildGUI(panel, sceneOpts, specs['zoom'])
+        spacing      = props.buildGUI(panel, sceneOpts, specs['sliceSpacing'])
+        zoomLabel    = wx.StaticText(panel)
+        spacingLabel = wx.StaticText(panel)
+
+        zoomLabel   .SetLabel(strings.properties[sceneOpts, 'zoom'])
+        spacingLabel.SetLabel(strings.properties[sceneOpts, 'sliceSpacing'])
+
+        sizer.Add(zoomLabel)
+        sizer.Add(zoom,    flag=wx.EXPAND)
+        sizer.Add(spacingLabel)
+        sizer.Add(spacing, flag=wx.EXPAND)
+
+        tools = [more, screenshot, zax, zrange, panel]
+        
+        self.SetTools(tools) 
 
         
     def showMoreSettings(self, *a):
