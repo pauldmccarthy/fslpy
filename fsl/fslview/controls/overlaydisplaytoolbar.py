@@ -55,14 +55,7 @@ _TOOLBAR_PROPS = td.TypeDict({
     
     'MaskOpts' : {
         'threshold' : props.Widget('threshold', showLimits=False, spin=False),
-        'colour'    : props.Widget('colour')},
-
-    
-    'VectorOpts' : {
-        'modulate'     : props.Widget('modulate'),
-        'modThreshold' : props.Widget('modThreshold',
-                                      showLimits=False,
-                                      spin=False)},
+        'colour'    : props.Widget('colour', size=(32, 32))},
 
     'LabelOpts' : {
         'lut'     : props.Widget('lut'),
@@ -70,7 +63,7 @@ _TOOLBAR_PROPS = td.TypeDict({
             'outline',
             icon=[icons.findImageFile('outline'),
                   icons.findImageFile('filled')],
-            style=wx.VERTICAL,
+            toggle=True,
             enabledWhen=lambda i, sw: not sw,
             dependencies=[(lambda o: o.display, 'softwareMode')]),
         
@@ -81,12 +74,32 @@ _TOOLBAR_PROPS = td.TypeDict({
             showLimits=False,
             spin=False)},
 
-    'ModelOpts' : {
-        'colour'       : props.Widget('colour'),
-        'outline'      : props.Widget('outline'),
-        'outlineWidth' : props.Widget('outlineWidth',
+    'RGBVectorOpts' : {
+        'modulate'     : props.Widget('modulate'),
+        'modThreshold' : props.Widget('modThreshold',
                                       showLimits=False,
-                                      spin=False)}
+                                      spin=False)},
+
+    'LineVectorOpts' : {
+        'modulate'     : props.Widget('modulate'),
+        'modThreshold' : props.Widget('modThreshold',
+                                      showLimits=False,
+                                      spin=False), 
+        'lineWidth' : props.Widget('lineWidth', showLimits=False, spin=False),
+    },
+
+    'ModelOpts' : {
+        'colour'       : props.Widget('colour', size=(32, 32)),
+        'outline'      : props.Widget(
+            'outline',
+            icon=[icons.findImageFile('outline'),
+                  icons.findImageFile('filled')],
+            toggle=True),
+        'outlineWidth' : props.Widget(
+            'outlineWidth',
+            showLimits=False,
+            spin=False,
+            enabledWhen=lambda i: i.outline)}
 })
 
 
@@ -256,10 +269,6 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         thresWidget  = props.buildGUI(self, opts, thresSpec)
         colourWidget = props.buildGUI(self, opts, colourSpec)
 
-        colourWidget = self.MakeLabelledTool(
-            colourWidget,
-            strings.properties[opts, 'colour'])
-
         return [thresWidget, colourWidget]
 
 
@@ -296,6 +305,58 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         lutWidthSizer.Add(widthWidget, flag=wx.EXPAND)
 
         return [lutWidthPanel, outlineWidget]
+
+
+    def __makeVectorOptsTools(self, opts):
+        
+        modSpec   = _TOOLBAR_PROPS[opts]['modulate']
+        thresSpec = _TOOLBAR_PROPS[opts]['modThreshold']
+
+        panel = wx.Panel(self)
+        sizer = wx.FlexGridSizer(2, 2)
+        panel.SetSizer(sizer)
+
+        modWidget   = props.buildGUI(panel, opts, modSpec)
+        thresWidget = props.buildGUI(panel, opts, thresSpec)
+        modLabel    = wx.StaticText(panel)
+        thresLabel  = wx.StaticText(panel)
+
+        modLabel  .SetLabel(strings.properties[opts, 'modulate'])
+        thresLabel.SetLabel(strings.properties[opts, 'modThreshold'])
+
+        sizer.Add(modLabel)
+        sizer.Add(modWidget,   flag=wx.EXPAND)
+        sizer.Add(thresLabel)
+        sizer.Add(thresWidget, flag=wx.EXPAND)
+
+        return [panel]
+
+    def __makeRGBVectorOptsTools(self, opts):
+        return self.__makeVectorOptsTools(opts)
+
+    
+    def __makeLineVectorOptsTools(self, opts):
+        widthSpec = _TOOLBAR_PROPS[opts]['lineWidth']
+
+        widget = props.buildGUI(self, opts, widthSpec)
+        widget = self.MakeLabelledTool(widget,
+                                       strings.properties[opts, 'lineWidth'])
+
+        return self.__makeVectorOptsTools(opts) + [widget]
+
+
+    def __makeModelOptsTools(self, opts):
+        colourSpec  = _TOOLBAR_PROPS[opts]['colour']
+        outlineSpec = _TOOLBAR_PROPS[opts]['outline']
+        widthSpec   = _TOOLBAR_PROPS[opts]['outlineWidth']
+
+        colourWidget  = props.buildGUI(self, opts, colourSpec)
+        outlineWidget = props.buildGUI(self, opts, outlineSpec)
+        widthWidget   = props.buildGUI(self, opts, widthSpec)
+
+        widthWidget  = self.MakeLabelledTool(
+            widthWidget, strings.properties[opts, 'outlineWidth'])
+        return [colourWidget, outlineWidget, widthWidget]
 
 
     def __showTools(self, overlay):
