@@ -46,14 +46,14 @@ class ListItemWidget(wx.Panel):
         self.saveButton = wx.Button(      self, style=btnStyle)
         self.lockButton = wx.ToggleButton(self, style=btnStyle)
 
-        self.saveButton.SetBitmap(icons.loadBitmap('floppydisk'))
-        self.lockButton.SetBitmap(icons.loadBitmap('chainlink'))
+        self.saveButton.SetBitmap(icons.loadBitmap('floppydisk16'))
+        self.lockButton.SetBitmap(icons.loadBitmap('chainlink16'))
         
         self.visibility = props.makeWidget(
             self,
             display,
             'enabled',
-            icon=icons.findImageFile('eye'))
+            icon=icons.findImageFile('eye16'))
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -74,7 +74,6 @@ class ListItemWidget(wx.Panel):
         if isinstance(overlay, fslimage.Image):
             overlay.addListener('saved', self.name, self.__saveStateChanged)
         else:
-            log.warn('No save button support for non-volumetric overlays')
             self.saveButton.Enable(False)
 
         self.saveButton.Bind(wx.EVT_BUTTON,         self.__onSaveButton)

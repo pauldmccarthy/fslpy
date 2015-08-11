@@ -22,45 +22,53 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, overlayList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, 24, actionz)
         self.orthoPanel = ortho
 
         orthoOpts = ortho.getSceneOptions()
+        profile   = ortho.getCurrentProfile()
 
         icns = {
-            'screenshot'  : icons.findImageFile('camera'),
-            'showXCanvas' : icons.findImageFile('sagittalSlice'),
-            'showYCanvas' : icons.findImageFile('coronalSlice'),
-            'showZCanvas' : icons.findImageFile('axialSlice'),
-            'more'        : icons.findImageFile('gear'),
+            'screenshot'  : icons.findImageFile('camera24'),
+            'showXCanvas' : icons.findImageFile('sagittalSlice24'),
+            'showYCanvas' : icons.findImageFile('coronalSlice24'),
+            'showZCanvas' : icons.findImageFile('axialSlice24'),
+            'more'        : icons.findImageFile('gear24'),
+
+            'resetZoom'    : icons.findImageFile('resetZoom24'),
+            'centreCursor' : icons.findImageFile('centre24'),
 
             'layout' : {
-                'horizontal' : icons.findImageFile('horizontalLayout'),
-                'vertical'   : icons.findImageFile('verticalLayout'),
-                'grid'       : icons.findImageFile('gridLayout'),
+                'horizontal' : icons.findImageFile('horizontalLayout24'),
+                'vertical'   : icons.findImageFile('verticalLayout24'),
+                'grid'       : icons.findImageFile('gridLayout24'),
             }
         }
 
         toolSpecs = [
 
-            actions.ActionButton(self, 'more', icon=icns['more']),
-            actions.ActionButton(ortho, 'screenshot', icon=icns['screenshot']),
+            actions.ActionButton('more',       icon=icns['more']),
+            actions.ActionButton('screenshot', icon=icns['screenshot']),
             props  .Widget('showXCanvas', icon=icns['showXCanvas']),
             props  .Widget('showYCanvas', icon=icns['showYCanvas']),
             props  .Widget('showZCanvas', icon=icns['showZCanvas']),
-            props  .Widget('layout', icons=icns['layout']), 
+            props  .Widget('layout', icons=icns['layout']),
+            
+            actions.ActionButton('resetZoom', icon=icns['resetZoom']),
+            actions.ActionButton('centreCursor', icon=icns['centreCursor']),
+            
             props  .Widget('zoom', spin=False, showLimits=False),
-
- 
         ]
         
-        targets    = {'screenshot'  : ortho,
-                      'zoom'        : orthoOpts,
-                      'layout'      : orthoOpts,
-                      'showXCanvas' : orthoOpts,
-                      'showYCanvas' : orthoOpts,
-                      'showZCanvas' : orthoOpts,
-                      'more'        : self}
+        targets    = {'screenshot'   : ortho,
+                      'zoom'         : orthoOpts,
+                      'layout'       : orthoOpts,
+                      'showXCanvas'  : orthoOpts,
+                      'showYCanvas'  : orthoOpts,
+                      'showZCanvas'  : orthoOpts,
+                      'resetZoom'    : profile,
+                      'centreCursor' : profile,
+                      'more'         : self}
 
         tools = []
         

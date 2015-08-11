@@ -229,7 +229,13 @@ class GLImageObject(GLObject):
         self.display     = display
         self.displayOpts = display.getDisplayOpts()
 
+        self.image.addListener('data', self.name, self.__imageDataChanged)
+
         log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __imageDataChanged(self, *a):
+        self.onUpdate()
 
         
     def __del__(self):

@@ -74,7 +74,8 @@ class VectorOpts(volumeopts.ImageOpts):
         self.overlayList.removeListener('overlays', self.name)
 
         for overlay in self.overlayList:
-            overlay.removeListener('name', self.name)
+            display = self.displayCtx.getDisplay(overlay)
+            display.removeListener('name', self.name)
 
         volumeopts.ImageOpts.destroy(self)
 

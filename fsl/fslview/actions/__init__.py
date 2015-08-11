@@ -52,14 +52,19 @@ class ActionButton(props.Button):
     """Extends the :class:`props.Button` class to encapsulate an
     :class:`~fsl.fslview.actions.Action` instance.
     """
-    def __init__(self, classType, actionName, **kwargs):
+    def __init__(self, actionName, classType=None, **kwargs):
 
         self.name = actionName
+
+        if classType is not None:
+            text = strings.actions.get((classType, actionName), actionName)
+        else:
+            text = actionName
 
         props.Button.__init__(
             self,
             actionName,
-            text=strings.actions.get((classType, actionName), actionName),
+            text=text,
             callback=self.__onButton,
             setup=self.__setup,
             **kwargs)

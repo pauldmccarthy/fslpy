@@ -23,17 +23,17 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, overlayList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, 24, actionz)
         self.lightBoxPanel = lb
 
         icns = {
-            'screenshot'  : icons.findImageFile('camera'),
-            'more'        : icons.findImageFile('gear'),
+            'screenshot'  : icons.findImageFile('camera24'),
+            'more'        : icons.findImageFile('gear24'),
 
             'zax' : {
-                0 : icons.findImageFile('sagittalSlice'),
-                1 : icons.findImageFile('coronalSlice'),
-                2 : icons.findImageFile('axialSlice'),
+                0 : icons.findImageFile('sagittalSlice24'),
+                1 : icons.findImageFile('coronalSlice24'),
+                2 : icons.findImageFile('axialSlice24'),
             }
         }
 
@@ -41,15 +41,10 @@ class LightBoxToolBar(fsltoolbar.FSLViewToolBar):
         
         specs = {
             
-            'more'         : actions.ActionButton(
-                self,
-                'more',
-                icon=icns['more']),
-            
-            'screenshot'   : actions.ActionButton(
-                lb,
-                'screenshot',
-                icon=icns['screenshot']),
+            'more'       : actions.ActionButton('more',
+                                                icon=icns['more']),
+            'screenshot' : actions.ActionButton('screenshot',
+                                                icon=icns['screenshot']),
             
             'zax'          : props.Widget(
                 'zax',

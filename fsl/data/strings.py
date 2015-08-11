@@ -135,7 +135,7 @@ titles = TypeDict({
     'CanvasSettingsPanel'    : 'View settings',
     'OverlayDisplayPanel'    : 'Display settings',
     'OrthoToolBar'           : 'Ortho view toolbar',
-    'OrthoProfileToolBar'    : 'Ortho view mode toolbar',
+    'OrthoProfileToolBar'    : 'Ortho view edit toolbar',
     'LightBoxToolBar'        : 'Lightbox view toolbar',
     'LookupTablePanel'       : 'Lookup tables',
     'LutLabelDialog'         : 'New LUT label',
@@ -174,7 +174,7 @@ actions = TypeDict({
     'CanvasPanel.toggleOverlayInfo'       : 'Overlay information',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
-    'OrthoPanel.toggleProfileToolBar'   : 'Mode controls',
+    'OrthoPanel.toggleProfileToolBar'   : 'Edit toolbar',
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',

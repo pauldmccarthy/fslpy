@@ -360,7 +360,7 @@ class HistogramPanel(plotpanel.PlotPanel):
         actionz = {
             'toggleHistogramList'    : self.toggleHistogramList,
             'toggleHistogramControl' : lambda *a: self.togglePanel(
-                fslcontrols.HistogramControlPanel, False, self) 
+                fslcontrols.HistogramControlPanel, self, location=wx.TOP) 
         }
 
         plotpanel.PlotPanel.__init__(

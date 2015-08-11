@@ -47,9 +47,8 @@ _TOOLBAR_PROPS = td.TypeDict({
                                       slider=False,
                                       showLimits=False),
         'resetDisplayRange' : actions.ActionButton(
-            'VolumeOpts',
             'resetDisplayRange',
-            icon=icons.findImageFile('verticalReset')), 
+            icon=icons.findImageFile('verticalReset32')), 
         'cmap' : props.Widget('cmap')},
 
     
@@ -61,8 +60,8 @@ _TOOLBAR_PROPS = td.TypeDict({
         'lut'     : props.Widget('lut'),
         'outline' : props.Widget(
             'outline',
-            icon=[icons.findImageFile('outline'),
-                  icons.findImageFile('filled')],
+            icon=[icons.findImageFile('outline32'),
+                  icons.findImageFile('filled32')],
             toggle=True,
             enabledWhen=lambda i, sw: not sw,
             dependencies=[(lambda o: o.display, 'softwareMode')]),
@@ -92,8 +91,8 @@ _TOOLBAR_PROPS = td.TypeDict({
         'colour'       : props.Widget('colour', size=(32, 32)),
         'outline'      : props.Widget(
             'outline',
-            icon=[icons.findImageFile('outline'),
-                  icons.findImageFile('filled')],
+            icon=[icons.findImageFile('outline32'),
+                  icons.findImageFile('filled32')],
             toggle=True),
         'outlineWidth' : props.Widget(
             'outlineWidth',
@@ -110,7 +109,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, overlayList, displayCtx, actionz)
+            self, parent, overlayList, displayCtx, 32, actionz)
 
         self.__viewPanel      = viewPanel
         self.__currentOverlay = None
@@ -393,7 +392,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             self,
             self,
             view=actions.ActionButton(
-                self, 'more', icon=icons.findImageFile('gear32')))
+                'more', icon=icons.findImageFile('gear32')))
 
         tools.insert(0, more)
 

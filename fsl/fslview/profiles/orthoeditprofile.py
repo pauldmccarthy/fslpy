@@ -37,6 +37,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     
     def clearSelection(self, *a):
         self._editor.getSelection().clearSelection()
+        self._viewPanel.Refresh()
 
 
     def fillSelection(self, *a):
@@ -61,6 +62,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
         self._selectionChanged()
         self._selAnnotation.texture.refresh()
+        self._viewPanel.Refresh()
 
 
     def redo(self, *a):
@@ -69,7 +71,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._editor.redo()
         self._editor.getSelection().enableNotification('selection')
         self._selectionChanged()
-        self._selAnnotation.texture.refresh() 
+        self._selAnnotation.texture.refresh()
+        self._viewPanel.Refresh()
  
 
     def __init__(self, viewPanel, overlayList, displayCtx):
@@ -98,6 +101,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             displayCtx,
             ['sel', 'desel', 'selint'],
             actions)
+
+        self.mode = 'sel'
 
         displayCtx .addListener('selectedOverlay',
                                 self._name,
@@ -276,7 +281,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
                 opts.getTransform('voxel',   'display'),
                 offsets=offset,
                 colour=colour)
-
+        self._viewPanel.Refresh()
+            
 
     def _applySelection(self, canvas, voxel, add=True):
 
@@ -291,6 +297,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
         if add: selection.addToSelection(     block, offset)
         else:   selection.removeFromSelection(block, offset)
+        self._viewPanel.Refresh()
 
             
     def _selModeMouseWheel(self, ev, canvas, wheelDir, mousePos, canvasPos):
@@ -415,6 +422,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
             local=self.localFill)
 
         self._lastDist = searchRadius
+
+        self._viewPanel.Refresh()
 
         
     def _selintModeLeftMouseUp(self, ev, canvas, mousePos, canvasPos):

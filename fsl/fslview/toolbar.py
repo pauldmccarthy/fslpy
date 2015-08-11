@@ -37,7 +37,12 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
     """
 
 
-    def __init__(self, parent, overlayList, displayCtx, actionz=None):
+    def __init__(self,
+                 parent,
+                 overlayList,
+                 displayCtx,
+                 height=32,
+                 actionz=None):
         wx.PyPanel.__init__(self, parent)
         fslpanel._FSLViewPanel.__init__(self, overlayList, displayCtx, actionz)
 
@@ -49,8 +54,8 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         if wx.Platform == '__WXMAC__': style = wx.BU_EXACTFIT 
         else:                          style = wx.BU_EXACTFIT | wx.BU_NOTEXT
             
-        lBmp = icons.loadBitmap('thinLeftArrow')
-        rBmp = icons.loadBitmap('thinRightArrow')
+        lBmp = icons.loadBitmap('thinLeftArrow{}' .format(height))
+        rBmp = icons.loadBitmap('thinRightArrow{}'.format(height))
         self.__leftButton  = wx.Button(self, style=style)
         self.__rightButton = wx.Button(self, style=style)
 
