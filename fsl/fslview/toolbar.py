@@ -184,9 +184,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
 
         if labelSide in (wx.TOP, wx.LEFT):
             sizer.Add(label, flag=wx.ALIGN_CENTRE)
-            sizer.Add(tool,  flag=wx.EXPAND)
+            sizer.Add(tool,  flag=wx.ALIGN_CENTRE)
         else:
-            sizer.Add(tool,  flag=wx.EXPAND)
+            sizer.Add(tool,  flag=wx.ALIGN_CENTRE)
             sizer.Add(label, flag=wx.ALIGN_CENTRE) 
 
         return panel

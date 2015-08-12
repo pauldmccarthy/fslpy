@@ -16,9 +16,6 @@ import fsl.fslview.panel   as fslpanel
 
 
 _CANVASPANEL_PROPS = [
-    props.Widget(
-        'profile',
-        visibleWhen=lambda i: len(i.getProp('profile').getChoices(i)) > 1), 
     props.Widget('syncOverlayOrder'),
     props.Widget('syncLocation'),
     props.Widget('syncOverlayDisplay'),

@@ -49,7 +49,8 @@ _ICONS = {
     'fillSelection'           : icons.findImageFile('fill24'),
     'createMaskFromSelection' : icons.findImageFile('createMask24'),
     'createROIFromSelection'  : icons.findImageFile('createROI24'),
-
+    'limitToRadius'           : icons.findImageFile('radius24'),
+    'localFill'               : icons.findImageFile('localsearch24'),
     'selint'                  : icons.findImageFile('selectByIntensity24'),
 }
 
@@ -76,6 +77,15 @@ _TOOLBAR_SPECS  = {
                              icon=_ICONS['createMaskFromSelection']),
         actions.ActionButton('createROIFromSelection',
                              icon=_ICONS['createROIFromSelection']),
+
+        props.Widget('selint', icon=_ICONS['selint']),
+        props.Widget('limitToRadius',
+                     icon=_ICONS['limitToRadius'],
+                     enabledWhen=lambda p: p.mode == 'selint'),
+        
+        props.Widget('localFill',
+                     icon=_ICONS['localFill'],
+                     enabledWhen=lambda p: p.mode == 'selint'),
         
         props.Widget('selectionCursorColour',
                      label=_LABELS['selectionCursorColour']),
@@ -87,20 +97,14 @@ _TOOLBAR_SPECS  = {
         
         props.Widget('fillValue', label=_LABELS['fillValue']),
 
-        props.Widget('selint', icon=_ICONS['selint']),
-        # props.Widget('radius', icon=_ICONS['radius']),
-        
-        props.Widget('localFill',
-                     enabledWhen=lambda p: p.mode == 'selint'),
-                     # icon=_ICONS['']),
-        
         props.Widget('intensityThres',
-                     enabledWhen=lambda p: p.mode == 'selint',
-                     label=_LABELS['intensityThres']),
+                     label=_LABELS['intensityThres'],
+                     enabledWhen=lambda p: p.mode == 'selint'),
 
         props.Widget('searchRadius',
-                     enabledWhen=lambda p: p.mode == 'selint',
-                     label=_LABELS['searchRadius'])
+                     label=_LABELS['searchRadius'],
+                     enabledWhen=lambda p: p.mode == 'selint' and 
+                                           p.limitToRadius)
     ]
 }
 

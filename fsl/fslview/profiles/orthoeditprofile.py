@@ -32,6 +32,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
     selectionCursorColour  = props.Colour(default=(1, 1, 0, 0.7))
     selectionOverlayColour = props.Colour(default=(1, 0, 1, 0.7))
 
+    limitToRadius  = props.Boolean(default=False)
     searchRadius   = props.Real(minval=0.0, default=0.0)
 
     
@@ -367,14 +368,18 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
     def _selintModeLeftMouseDrag(self, ev, canvas, mousePos, canvasPos):
 
-        mouseDownPos, canvasDownPos = self.getMouseDownLocation()
-        voxel                       = self._getVoxelLocation(canvasDownPos)
+        if not self.limitToRadius:
+            voxel = self._getVoxelLocation(canvasPos)
+            
+        else:
+            mouseDownPos, canvasDownPos = self.getMouseDownLocation()
+            voxel                       = self._getVoxelLocation(canvasDownPos)
 
-        cx,  cy,  cz  = canvasPos
-        cdx, cdy, cdz = canvasDownPos
+            cx,  cy,  cz  = canvasPos
+            cdx, cdy, cdz = canvasDownPos
 
-        dist = np.sqrt((cx - cdx) ** 2 + (cy - cdy) ** 2 + (cz - cdz) ** 2)
-        self.searchRadius = dist
+            dist = np.sqrt((cx - cdx) ** 2 + (cy - cdy) ** 2 + (cz - cdz) ** 2)
+            self.searchRadius = dist
 
         self._selintSelect(voxel)
 
@@ -402,7 +407,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         
         overlay = self._displayCtx.getSelectedOverlay()
         
-        if self.searchRadius == 0:
+        if not self.limitToRadius or self.searchRadius == 0:
             searchRadius = None
         else:
             searchRadius = (self.searchRadius / overlay.pixdim[0],
