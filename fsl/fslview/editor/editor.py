@@ -147,6 +147,8 @@ class Editor(props.HasProperties):
 
         selectBlock = selectBlock == 0
         newVals[selectBlock] = oldVals[selectBlock]
+
+        oldVals = np.array(oldVals)
         
         change = ValueChange(overlay, opts.volume, offset, oldVals, newVals)
         self._applyChange(change)
@@ -266,6 +268,9 @@ class Editor(props.HasProperties):
         else:                   volume = None 
 
         if isinstance(change, ValueChange):
+            log.debug('Reverting image data change - offset '
+                      '{}, volume {}, size {}'.format(
+                          change.offset, change.volume, change.oldVals.shape))
             change.overlay.applyChange(change.offset, change.oldVals, volume)
             
         elif isinstance(change, SelectionChange):

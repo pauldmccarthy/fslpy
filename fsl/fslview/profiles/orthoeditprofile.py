@@ -42,8 +42,10 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
 
 
     def fillSelection(self, *a):
+        self._editor.startChangeGroup()
         self._editor.fillSelection(self.fillValue)
         self._editor.getSelection().clearSelection()
+        self._editor.endChangeGroup()
 
 
     def undo(self, *a):
