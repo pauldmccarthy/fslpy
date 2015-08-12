@@ -17,6 +17,7 @@ from histogramcontrolpanel  import HistogramControlPanel
 from clusterpanel           import ClusterPanel
 from canvassettingspanel    import CanvasSettingsPanel
 from overlayinfopanel       import OverlayInfoPanel
+from shellpanel             import ShellPanel
 
 from orthotoolbar           import OrthoToolBar
 from orthoprofiletoolbar    import OrthoProfileToolBar

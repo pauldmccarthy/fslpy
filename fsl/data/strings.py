@@ -146,6 +146,7 @@ titles = TypeDict({
     'HistogramControlPanel'  : 'Histogram control',
     'ClusterPanel'           : 'Cluster browser',
     'OverlayInfoPanel'       : 'Overlay information',
+    'ShellPanel'             : 'Python shell',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -172,6 +173,7 @@ actions = TypeDict({
     'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
     'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
     'CanvasPanel.toggleOverlayInfo'       : 'Overlay information',
+    'CanvasPanel.toggleShell'             : 'Python shell',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleProfileToolBar'   : 'Edit toolbar',
