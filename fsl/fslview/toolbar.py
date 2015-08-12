@@ -50,6 +50,9 @@ class FSLViewToolBar(fslpanel._FSLViewPanel, wx.PyPanel):
         self.__index      = 0
         self.__numVisible = None
 
+        font = self.GetFont()
+        self.SetFont(font.Smaller())
+
         # BU_NOTEXT causes segfault under OSX
         if wx.Platform == '__WXMAC__': style = wx.BU_EXACTFIT 
         else:                          style = wx.BU_EXACTFIT | wx.BU_NOTEXT

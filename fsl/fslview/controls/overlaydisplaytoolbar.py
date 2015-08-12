@@ -48,20 +48,20 @@ _TOOLBAR_PROPS = td.TypeDict({
                                       showLimits=False),
         'resetDisplayRange' : actions.ActionButton(
             'resetDisplayRange',
-            icon=icons.findImageFile('verticalReset32')), 
+            icon=icons.findImageFile('verticalReset24')), 
         'cmap' : props.Widget('cmap')},
 
     
     'MaskOpts' : {
         'threshold' : props.Widget('threshold', showLimits=False, spin=False),
-        'colour'    : props.Widget('colour', size=(32, 32))},
+        'colour'    : props.Widget('colour', size=(24, 24))},
 
     'LabelOpts' : {
         'lut'     : props.Widget('lut'),
         'outline' : props.Widget(
             'outline',
-            icon=[icons.findImageFile('outline32'),
-                  icons.findImageFile('filled32')],
+            icon=[icons.findImageFile('outline24'),
+                  icons.findImageFile('filled24')],
             toggle=True,
             enabledWhen=lambda i, sw: not sw,
             dependencies=[(lambda o: o.display, 'softwareMode')]),
@@ -88,11 +88,11 @@ _TOOLBAR_PROPS = td.TypeDict({
     },
 
     'ModelOpts' : {
-        'colour'       : props.Widget('colour', size=(32, 32)),
+        'colour'       : props.Widget('colour', size=(24, 24)),
         'outline'      : props.Widget(
             'outline',
-            icon=[icons.findImageFile('outline32'),
-                  icons.findImageFile('filled32')],
+            icon=[icons.findImageFile('outline24'),
+                  icons.findImageFile('filled24')],
             toggle=True),
         'outlineWidth' : props.Widget(
             'outlineWidth',
@@ -109,7 +109,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
         actionz = {'more' : self.showMoreSettings}
         
         fsltoolbar.FSLViewToolBar.__init__(
-            self, parent, overlayList, displayCtx, 32, actionz)
+            self, parent, overlayList, displayCtx, 24, actionz)
 
         self.__viewPanel      = viewPanel
         self.__currentOverlay = None
@@ -392,7 +392,7 @@ class OverlayDisplayToolBar(fsltoolbar.FSLViewToolBar):
             self,
             self,
             view=actions.ActionButton(
-                'more', icon=icons.findImageFile('gear32')))
+                'more', icon=icons.findImageFile('gear24')))
 
         tools.insert(0, more)
 
