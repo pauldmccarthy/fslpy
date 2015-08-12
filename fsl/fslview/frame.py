@@ -433,12 +433,15 @@ class FSLViewFrame(wx.Frame):
             import fsl.fslview.controls.locationpanel         as lop
             import fsl.fslview.controls.overlaydisplaytoolbar as odt
             import fsl.fslview.controls.orthotoolbar          as ot
+            import fsl.fslview.controls.orthoprofiletoolbar   as opt
 
             viewPanel.togglePanel(olp.OverlayListPanel)
             viewPanel.togglePanel(lop.LocationPanel)
             viewPanel.togglePanel(odt.OverlayDisplayToolBar,
                                   viewPanel=viewPanel)
             viewPanel.togglePanel(ot .OrthoToolBar,
+                                  ortho=viewPanel)
+            viewPanel.togglePanel(opt.OrthoProfileToolBar,
                                   ortho=viewPanel) 
 
             

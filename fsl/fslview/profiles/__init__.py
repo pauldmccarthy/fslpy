@@ -64,6 +64,8 @@ class Profile(actions.ActionProvider):
       - ``MiddleMouseDrag``
       - ``MiddleMouseUp``
       - ``MouseWheel``
+      - ``MouseEnter``
+      - ``MouseLeave`` 
       - ``Char``
 
     
@@ -244,15 +246,17 @@ class Profile(actions.ActionProvider):
         but must make sure to call this implementation.
         """
         for t in self.getEventTargets():
-            t.Bind(wx.EVT_LEFT_DOWN,   self.__onMouseDown)
-            t.Bind(wx.EVT_MIDDLE_DOWN, self.__onMouseDown)
-            t.Bind(wx.EVT_RIGHT_DOWN,  self.__onMouseDown)
-            t.Bind(wx.EVT_LEFT_UP,     self.__onMouseUp)
-            t.Bind(wx.EVT_MIDDLE_UP,   self.__onMouseUp)
-            t.Bind(wx.EVT_RIGHT_UP,    self.__onMouseUp)
-            t.Bind(wx.EVT_MOTION,      self.__onMouseMove)
-            t.Bind(wx.EVT_MOUSEWHEEL,  self.__onMouseWheel)
-            t.Bind(wx.EVT_CHAR,        self.__onChar)
+            t.Bind(wx.EVT_LEFT_DOWN,    self.__onMouseDown)
+            t.Bind(wx.EVT_MIDDLE_DOWN,  self.__onMouseDown)
+            t.Bind(wx.EVT_RIGHT_DOWN,   self.__onMouseDown)
+            t.Bind(wx.EVT_LEFT_UP,      self.__onMouseUp)
+            t.Bind(wx.EVT_MIDDLE_UP,    self.__onMouseUp)
+            t.Bind(wx.EVT_RIGHT_UP,     self.__onMouseUp)
+            t.Bind(wx.EVT_MOTION,       self.__onMouseMove)
+            t.Bind(wx.EVT_MOUSEWHEEL,   self.__onMouseWheel)
+            t.Bind(wx.EVT_ENTER_WINDOW, self.__onMouseEnter)
+            t.Bind(wx.EVT_LEAVE_WINDOW, self.__onMouseLeave)
+            t.Bind(wx.EVT_CHAR,         self.__onChar)
 
     
     def deregister(self):
@@ -263,15 +267,17 @@ class Profile(actions.ActionProvider):
         but must make sure to call this implementation.        
         """
         for t in self.getEventTargets():
-            t.Bind(wx.EVT_LEFT_DOWN,  None)
-            t.Bind(wx.EVT_MIDDLE_UP,  None)
-            t.Bind(wx.EVT_RIGHT_DOWN, None)
-            t.Bind(wx.EVT_LEFT_UP,    None)
-            t.Bind(wx.EVT_MIDDLE_UP,  None)
-            t.Bind(wx.EVT_RIGHT_UP,   None)
-            t.Bind(wx.EVT_MOTION,     None)
-            t.Bind(wx.EVT_MOUSEWHEEL, None)
-            t.Bind(wx.EVT_CHAR,       None)
+            t.Bind(wx.EVT_LEFT_DOWN,    None)
+            t.Bind(wx.EVT_MIDDLE_UP,    None)
+            t.Bind(wx.EVT_RIGHT_DOWN,   None)
+            t.Bind(wx.EVT_LEFT_UP,      None)
+            t.Bind(wx.EVT_MIDDLE_UP,    None)
+            t.Bind(wx.EVT_RIGHT_UP,     None)
+            t.Bind(wx.EVT_MOTION,       None)
+            t.Bind(wx.EVT_MOUSEWHEEL,   None)
+            t.Bind(wx.EVT_ENTER_WINDOW, None)
+            t.Bind(wx.EVT_LEAVE_WINDOW, None)
+            t.Bind(wx.EVT_CHAR,         None)
 
     
     def __getTempMode(self, ev):
@@ -398,6 +404,42 @@ class Profile(actions.ActionProvider):
             wheel, canvas.name))
 
         handler(ev, canvas, wheel, mouseLoc, canvasLoc)
+
+
+    def __onMouseEnter(self, ev):
+        """Called when the mouse enters a canvas target.
+
+        Delegates to a mode specific handler if one is present.
+        """
+
+        handler = self.__getHandler(ev, 'MouseEnter')
+        if handler is None:
+            return
+
+        canvas              = ev.GetEventObject()
+        mouseLoc, canvasLoc = self.__getMouseLocation(ev)
+
+        log.debug('Mouse enter event on canvas {}'.format(canvas.name))
+
+        handler(ev, canvas, mouseLoc, canvasLoc)
+
+        
+    def __onMouseLeave(self, ev):
+        """Called when the mouse leaves a canvas target.
+
+        Delegates to a mode specific handler if one is present.
+        """ 
+
+        handler = self.__getHandler(ev, 'MouseLeave')
+        if handler is None:
+            return
+
+        canvas              = ev.GetEventObject()
+        mouseLoc, canvasLoc = self.__getMouseLocation(ev)
+
+        log.debug('Mouse leave event on canvas {}'.format(canvas.name))
+
+        handler(ev, canvas, mouseLoc, canvasLoc)        
 
         
     def __onMouseDown(self, ev):

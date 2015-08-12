@@ -26,6 +26,7 @@ _CANVASPANEL_PROPS = [
 _SCENEOPTS_PROPS = [
     props.Widget('showCursor'),
     props.Widget('bgColour'),
+    props.Widget('cursorColour'),
     props.Widget('performance', spin=False, showLimits=False),
     props.Widget('showColourBar'),
     props.Widget('colourBarLabelSide', enabledWhen=lambda o: o.showColourBar),

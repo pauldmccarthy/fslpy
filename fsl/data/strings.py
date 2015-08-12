@@ -322,6 +322,7 @@ properties = TypeDict({
 
     'SceneOpts.showCursor'         : 'Show location cursor',
     'SceneOpts.bgColour'           : 'Background colour',
+    'SceneOpts.cursorColour'       : 'Location cursor colour',
     'SceneOpts.showColourBar'      : 'Show colour bar',
     'SceneOpts.performance'        : 'Rendering performance',
     'SceneOpts.zoom'               : 'Zoom',

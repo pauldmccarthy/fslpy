@@ -92,6 +92,10 @@ class SliceCanvas(props.HasProperties):
     """
 
 
+    cursorColour = props.Colour(default=(0, 1, 0))
+    """Canvas cursor colour."""
+
+
     bgColour = props.Colour(default=(0, 0, 0))
     """Canvas background colour."""
 
@@ -291,6 +295,7 @@ class SliceCanvas(props.HasProperties):
         self.addListener('pos',           self.name, self._draw)
         self.addListener('displayBounds', self.name, self._draw)
         self.addListener('bgColour',      self.name, self._draw)
+        self.addListener('cursorColour',  self.name, self._draw)
         self.addListener('showCursor',    self.name, self._draw)
         self.addListener('invertX',       self.name, self._draw)
         self.addListener('invertY',       self.name, self._draw)
@@ -909,10 +914,15 @@ class SliceCanvas(props.HasProperties):
         xverts[:, 0] = x
         xverts[:, 1] = [ymin, ymax]
         yverts[:, 0] = [xmin, xmax]
-        yverts[:, 1] = y 
+        yverts[:, 1] = y
+
+        kwargs = {
+            'colour' : self.cursorColour,
+            'width'  : 1
+        }
         
-        self._annotations.line(xverts[0], xverts[1], colour=(0, 1, 0), width=1)
-        self._annotations.line(yverts[0], yverts[1], colour=(0, 1, 0), width=1)
+        self._annotations.line(xverts[0], xverts[1], **kwargs)
+        self._annotations.line(yverts[0], yverts[1], **kwargs)
 
 
     def _drawOffscreenTextures(self):

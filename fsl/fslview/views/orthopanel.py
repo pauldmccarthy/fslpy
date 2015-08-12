@@ -85,13 +85,17 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side] = wx.StaticText(canvasPanel)
             self._zLabels[side] = wx.StaticText(canvasPanel)
 
-        self._xcanvas.bindProps('showCursor', sceneOpts)
-        self._ycanvas.bindProps('showCursor', sceneOpts)
-        self._zcanvas.bindProps('showCursor', sceneOpts)
+        self._xcanvas.bindProps('showCursor',   sceneOpts)
+        self._ycanvas.bindProps('showCursor',   sceneOpts)
+        self._zcanvas.bindProps('showCursor',   sceneOpts)
 
-        self._xcanvas.bindProps('bgColour', sceneOpts)
-        self._ycanvas.bindProps('bgColour', sceneOpts)
-        self._zcanvas.bindProps('bgColour', sceneOpts)
+        self._xcanvas.bindProps('bgColour',     sceneOpts)
+        self._ycanvas.bindProps('bgColour',     sceneOpts)
+        self._zcanvas.bindProps('bgColour',     sceneOpts)
+
+        self._xcanvas.bindProps('cursorColour', sceneOpts)
+        self._ycanvas.bindProps('cursorColour', sceneOpts)
+        self._zcanvas.bindProps('cursorColour', sceneOpts)
 
         # Callbacks for ortho panel layout options
         sceneOpts.addListener('layout',     self._name, self._refreshLayout)

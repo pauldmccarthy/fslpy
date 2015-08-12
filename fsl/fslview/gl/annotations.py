@@ -283,6 +283,9 @@ class Rect(AnnotationObject):
         
     def draw(self, zpos):
 
+        if self.w == 0 or self.h == 0:
+            return
+
         xax = self.xax
         yax = self.yax
         zax = self.zax
