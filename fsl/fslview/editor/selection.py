@@ -35,6 +35,12 @@ class Selection(props.HasProperties):
         self._lastChangeNewBlock   = None
         self.selection             = np.zeros(image.shape[:3], dtype=np.uint8)
 
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
     
     def getSelectionSize(self):
         return self.selection.sum()

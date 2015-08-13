@@ -70,10 +70,25 @@ class Editor(props.HasProperties):
 
         self._selectedOverlayChanged()
 
-        
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+
     def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
+        
+    def destroy(self):
         self._displayCtx .removeListener('selectedOverlay', self._name)
         self._overlayList.removeListener('overlays',        self._name)
+        
+        if self._selection is not None:
+            self._selection.removeListener('selection', self._name)
+
+        self._overlayList    = None
+        self._displayCtx     = None
+        self._selection      = None
+        self._currentOverlay = None
+        self._doneList       = None
 
 
     def _selectedOverlayChanged(self, *a):

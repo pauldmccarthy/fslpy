@@ -145,6 +145,8 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         self._editor     .removeListener('canUndo',         self._name)
         self._editor     .removeListener('canRedo',         self._name)
 
+        self._editor.destroy()
+
         self._editor = None
 
         orthoviewprofile.OrthoViewProfile.destroy(self)
