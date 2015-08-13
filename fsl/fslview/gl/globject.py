@@ -247,6 +247,7 @@ class GLImageObject(GLObject):
         implementation. It clears references to the :class:`.Image`,
         :class:`.Display`, and :class:`.DisplayOpts` instances.
         """
+        self.image.removeListener('data', self.name)
         self.image       = None
         self.display     = None
         self.displayOpts = None
