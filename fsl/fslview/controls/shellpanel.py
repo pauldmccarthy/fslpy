@@ -21,6 +21,7 @@ class ShellPanel(fslpanel.FSLViewPanel):
             'displayCtx'  : displayCtx,
             'overlayList' : overlayList,
             'sceneOpts'   : sceneOpts,
+            'viewPanel'   : parent,
         }
 
         shell = wxshell.Shell(
