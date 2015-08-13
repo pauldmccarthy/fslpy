@@ -25,12 +25,28 @@ class ShellPanel(fslpanel.FSLViewPanel):
 
         shell = wxshell.Shell(
             self,
-            introText='\nFSLEyes python shell\n'
+            introText='   FSLEyes python shell\n\n'
                       'Available variables are:\n'
                       '  - overlayList\n' 
                       '  - displayCtx\n'
                       '  - sceneOpts\n\n',
-            locals=lcls)
+            locals=lcls,
+            showInterpIntro=False)
+
+        # TODO set up environment so that users can
+        #
+        #   - load/add overlays to list
+        #
+        #   - Load overlays from a URL
+        #
+        #   - make plots - already possible with pylab, but make
+        #     sure it works properly (i.e. doesn't clobber the shell)
+        #
+        #   - run scripts (add a 'load/run' button)
+        #
+        #   - open/close view panels, and manipulate existing view panels
+        #   
+        shell.push('from pylab import *\n')
 
         font = shell.GetFont()
 

@@ -16,11 +16,12 @@ import wx.lib.agw.aui as aui
 
 import props
 
-import fsl.fslview.panel    as fslpanel
-import fsl.fslview.toolbar  as fsltoolbar
-import fsl.fslview.profiles as profiles
-import fsl.data.image       as fslimage
-import fsl.data.strings     as strings
+import fsl.fslview.panel          as fslpanel
+import fsl.fslview.toolbar        as fsltoolbar
+import fsl.fslview.profiles       as profiles
+import fsl.fslview.displaycontext as fsldisplay
+import fsl.data.image             as fslimage
+import fsl.data.strings           as strings
 
 
 log = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ class ViewPanel(fslpanel.FSLViewPanel):
                                 lName,
                                 self.__selectedOverlayChanged)
 
+        self.__selectedOverlay = None
         self.__selectedOverlayChanged()
 
         # A very shitty necessity. When panes are floated,
@@ -298,13 +300,55 @@ class ViewPanel(fslpanel.FSLViewPanel):
         the ``edit`` profile option (if it is an option), so the user can
         only choose an ``edit`` profile on ``volume`` image types.
         """
+
+        lName   = 'ViewPanel_{}'.format(self._name)
         overlay = self._displayCtx.getSelectedOverlay()
+
+        if self.__selectedOverlay not in (None, overlay):
+            try: 
+                d = self._displayCtx.getDisplay(self.__selectedOverlay)
+                o = d.getDisplayOpts()
+
+                d.removeListener('overlayType', lName)
+                o.removeListener('transform',   lName)
+                
+            # The overlay has been removed
+            except fsldisplay.InvalidOverlayError:
+                pass
+            
+        self.__selectedOverlay = overlay
 
         if overlay is None:
             return
 
+        # If the overlay is of a compatible type,
+        # register for overlay type changes and
+        # transfomr changes, as these will affect
+        # the profile property
+        if isinstance(overlay, fslimage.Image):
+            display = self._displayCtx.getDisplay(overlay)
+            opts    = display.getDisplayOpts()
+
+            # If the overlay type changes, the  DIsplayOpts
+            # instance will change, so we need to re-register
+            # on its transform property
+            display.addListener('overlayType',
+                                lName,
+                                self.__selectedOverlayChanged,
+                                overwrite=True)
+            opts   .addListener('transform',
+                                lName,
+                                self.__configureProfile,
+                                overwrite=True)
+
+        self.__configureProfile()
+
+        
+    def __configureProfile(self, *a):
+        
+        overlay     = self.__selectedOverlay
         display     = self._displayCtx.getDisplay(overlay)
-        opts        = display.getDisplayOpts()
+        opts        = display.getDisplayOpts() 
         profileProp = self.getProp('profile')
 
         # edit profile is not an option -
@@ -321,12 +365,19 @@ class ViewPanel(fslpanel.FSLViewPanel):
                 self.profile = 'view'
 
             # and disable edit profile
+            log.debug('{}: disabling edit profile for '
+                      'selected overlay {}'.format(
+                          type(self).__name__, overlay))
             profileProp.disableChoice('edit', self)
             
         # Otherwise make sure edit
         # is enabled for volume images
         else:
+            log.debug('{}: Enabling edit profile for '
+                      'selected overlay {}'.format(
+                          type(self).__name__, overlay))
             profileProp.enableChoice('edit', self)
+        
 
 
     def initProfile(self):

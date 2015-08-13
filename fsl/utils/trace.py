@@ -95,10 +95,14 @@ if log.getEffectiveLevel() == logging.DEBUG:
         # Store the cause of the listener
         # push on the causes queue
         else:
-            cause = (triggerFrame[1],
+            
+            cause = [triggerFrame[1],
                      triggerFrame[2],
-                     triggerFrame[3],
-                     triggerFrame[4][triggerFrame[5]])
+                     triggerFrame[3]]
+            if triggerFrame[4] is not None:
+                cause.append(triggerFrame[4][triggerFrame[5]])
+            else:
+                cause.append('<input>')
             theQ._causes.put_nowait(cause)
         
         return True

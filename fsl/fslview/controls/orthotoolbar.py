@@ -23,8 +23,23 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
         
         fsltoolbar.FSLViewToolBar.__init__(
             self, parent, overlayList, displayCtx, 24, actionz)
+        
         self.orthoPanel = ortho
 
+        # The toolbar has buttons bound to some actions
+        # on the Profile  instance - when the profile
+        # changes (between 'view' and 'edit'), the
+        # Profile instance changes too, so we need
+        # to re-create these action buttons. I'm being
+        # lazy and just re-generating the entire toolbar.
+        ortho.addListener('profile', self._name, self.__makeTools)
+
+        self.__makeTools()
+
+
+    def __makeTools(self, *a):
+        
+        ortho     = self.orthoPanel
         orthoOpts = ortho.getSceneOptions()
         profile   = ortho.getCurrentProfile()
 
@@ -47,17 +62,16 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
 
         toolSpecs = [
 
-            actions.ActionButton('more',       icon=icns['more']),
-            actions.ActionButton('screenshot', icon=icns['screenshot']),
-            props  .Widget('showXCanvas', icon=icns['showXCanvas']),
-            props  .Widget('showYCanvas', icon=icns['showYCanvas']),
-            props  .Widget('showZCanvas', icon=icns['showZCanvas']),
-            props  .Widget('layout', icons=icns['layout']),
-            
-            actions.ActionButton('resetZoom', icon=icns['resetZoom']),
+            actions.ActionButton('more',         icon=icns['more']),
+            actions.ActionButton('screenshot',   icon=icns['screenshot']),
+            props  .Widget(      'showXCanvas',  icon=icns['showXCanvas']),
+            props  .Widget(      'showYCanvas',  icon=icns['showYCanvas']),
+            props  .Widget(      'showZCanvas',  icon=icns['showZCanvas']),
+            props  .Widget(      'layout',       icons=icns['layout']),
+            actions.ActionButton('resetZoom',    icon=icns['resetZoom']),
             actions.ActionButton('centreCursor', icon=icns['centreCursor']),
             
-            props  .Widget('zoom', spin=False, showLimits=False),
+            props.Widget('zoom', spin=False, showLimits=False),
         ]
         
         targets    = {'screenshot'   : ortho,
@@ -82,9 +96,9 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
             
             tools.append(widget)
 
-        self.SetTools(tools)
+        self.SetTools(tools)        
 
-        
+    
     def showMoreSettings(self, *a):
         import canvassettingspanel
         self.orthoPanel.togglePanel(canvassettingspanel.CanvasSettingsPanel,
