@@ -50,10 +50,11 @@ def scaleOffsetXform(scales, offsets):
     return xform
 
 
-def axisBounds(shape, xform, axes=None):
+def axisBounds(shape, xform, axes=None, origin='centre'):
     """Returns the (lo, hi) bounds of the specified axis/axes.
-
-    This function assumes that voxel indices correspond to the voxel
+    
+    If the ``origin`` parameter is set to  ``centre`` (the default),
+    this function assumes that voxel indices correspond to the voxel
     centre. For example, the voxel at ``(4, 5, 6)`` covers the space:
     
       ``[3.5 - 4.5, 4.5 - 5.5, 5.5 - 6.5]``
@@ -65,7 +66,24 @@ def axisBounds(shape, xform, axes=None):
     to the corner at
 
     ``(shape[0] - 0.5, shape[1] - 0.5, shape[1] - 0.5)``
+
+    If the ``origin`` parameter is set to ``corner``, this function
+    assumes that voxel indices correspond to the voxel corner. In this
+    case, a voxel  at ``(4, 5, 6)`` covers the space:
+    
+      ``[4 - 5, 5 - 6, 6 - 7]``
+    
+    So the bounds of the specified shape extends from the corner at
+
+    ``(0, 0, 0)``
+
+    to the corner at
+
+    ``(shape[0], shape[1]5, shape[1])``.
     """
+
+    if origin not in ('centre', 'corner'):
+        raise ValueError('Invalid origin value: {}'.format(origin))
 
     scalar = False
 
@@ -80,18 +98,26 @@ def axisBounds(shape, xform, axes=None):
 
     points = np.zeros((8, 3), dtype=np.float32)
 
-    x -= 0.5
-    y -= 0.5
-    z -= 0.5
+    if origin == 'centre':
+        x0 = -0.5
+        y0 = -0.5
+        z0 = -0.5
+        x -=  0.5
+        y -=  0.5
+        z -=  0.5
+    else:
+        x0 = 0
+        y0 = 0
+        z0 = 0
 
-    points[0, :] = [-0.5, -0.5, -0.5]
-    points[1, :] = [-0.5, -0.5,  z]
-    points[2, :] = [-0.5,  y,   -0.5]
-    points[3, :] = [-0.5,  y,    z]
-    points[4, :] = [x,    -0.5, -0.5]
-    points[5, :] = [x,    -0.5,  z]
-    points[6, :] = [x,     y,   -0.5]
-    points[7, :] = [x,     y,    z]
+    points[0, :] = [x0, y0, z0]
+    points[1, :] = [x0, y0,  z]
+    points[2, :] = [x0,  y, z0]
+    points[3, :] = [x0,  y,  z]
+    points[4, :] = [x,  y0, z0]
+    points[5, :] = [x,  y0,  z]
+    points[6, :] = [x,   y, z0]
+    points[7, :] = [x,   y,  z]
 
     tx = transform(points, xform)
 

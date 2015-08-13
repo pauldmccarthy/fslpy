@@ -428,30 +428,64 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self.Freeze()
 
+
+    def _getOffsets(self, source, target, displaySpace):
+
+        # If the world location was changed, the
+        # affine->vox transformation returns voxel
+        # coordinates in the space [x - 0.5, x + 0.5].
+        # We add 0.5 to these coordinates so that the
+        # _propagate method can just floor the result
+        # to get the integer voxel coordinates. 
+        if   (source, target) == ('world', 'voxel'):
+            return (0, 0, 0), (0.5, 0.5, 0.5)
+
+        # If the reference image is being displayed in
+        # affine space, we have the same situation as
+        # above.
+        elif (source, target) == ('display', 'voxel'):
+            if displaySpace == 'affine':
+                return (0, 0, 0), (0.5, 0.5, 0.5)
+
+        # If the voxel location was changed, we want
+        # the display to be moved to the centre of the
+        # voxel
+        elif (source, target) == ('voxel', 'display'):
+            
+            if displaySpace in ('id', 'pixdim'):
+                return (0.5, 0.5, 0.5), (0, 0, 0)
+
+        return (0, 0, 0), (0, 0, 0)
+
         
     def _propagate(self, source, target, xform):
 
+        displaySpace = None
+        if self._refImage is not None:
+            opts = self._displayCtx.getOpts(self._refImage)
+            displaySpace = opts.transform
+
+        pre, post = self._getOffsets(source, target, displaySpace)
+            
         if   source == 'display': coords = self._displayCtx.location.xyz
         elif source == 'voxel':   coords = self.voxelLocation.xyz
         elif source == 'world':   coords = self.worldLocation.xyz
 
+        coords = [coords[0] + pre[0],
+                  coords[1] + pre[1],
+                  coords[2] + pre[2]]
+                
         if xform is not None: xformed = transform.transform([coords], xform)[0]
         else:                 xformed = np.array(coords)
+
+        xformed += post
 
         log.debug('Updating location ({} {} -> {} {})'.format(
             source, coords, target, xformed))
 
-        if target == 'display':
-            self._displayCtx.location.xyz = xformed
-
-        # Voxel coordinates are transformed to [x - 0.5, x + 0.5],
-        # so we floor(x + 0.5) to get the corresponding integer
-        # coordinates
-        elif target == 'voxel':
-            self.voxelLocation.xyz = np.floor(xformed + 0.5)
-            
-        elif target == 'world':
-            self.worldLocation.xyz = xformed
+        if   target == 'display': self._displayCtx.location.xyz = xformed
+        elif target == 'voxel':   self.voxelLocation.xyz = np.floor(xformed)
+        elif target == 'world':   self.worldLocation.xyz = xformed
         
     
     def _postPropagate(self):
@@ -532,11 +566,15 @@ class LocationPanel(fslpanel.FSLViewPanel):
                     [self._displayCtx.location.xyz],
                     opts.getTransform('display', 'voxel'))[0]
 
-                # The above transformation gives us
+                # When displaying in world/affine space,
+                # the above transformation gives us
                 # values between [x - 0.5, x + 0.5] for
                 # voxel x, so we need to floor(x + 0.5)
                 # to get the actual voxel coordinates
-                vloc = tuple(map(int, np.floor(vloc + 0.5)))
+                if opts.transform == 'affine': vloc = np.floor(vloc + 0.5)
+                else:                          vloc = np.floor(vloc)
+
+                vloc = tuple(map(int, vloc))
 
                 if overlay.is4DImage():
                     vloc = vloc + (opts.volume,)

@@ -347,7 +347,8 @@ def slice2D(dataShape,
             zpos,
             voxToDisplayMat,
             displayToVoxMat,
-            geometry='triangles'):
+            geometry='triangles',
+            origin='centre'):
     """Generates and returns vertices which denote a slice through an
     array of the given ``dataShape``, parallel to the plane defined by the
     given ``xax`` and ``yax`` and at the given z position, in the space
@@ -373,6 +374,13 @@ def slice2D(dataShape,
         |   |
         0---1
 
+    If ``origin`` is set to ``centre`` (the default), it is assumed that
+    a voxel at location ``(x, y, z)`` is located in the space
+    ``(x - 0.5 : x + 0.5, y - 0.5 : y + 0.5, z - 0.5 : z + 0.5). Otherwise,
+    if ``origin`` is set to ``corner``, a voxel at location ``(x, y, z)``
+    is assumed to be located in the space
+    ``(x : x + 1, y : y + 1, z : z + 1)``.
+
     :arg dataShape:       Number of elements along each dimension in the
                           image data.
     
@@ -389,6 +397,11 @@ def slice2D(dataShape,
                           system.
 
     :arg displayToVoxMat: Inverse of the ``voxToDisplayMat``.
+
+    :arg geometry:        ``square`` or ``triangle``.
+
+    :arg origin:          ``centre`` or ``corner``. See the
+                          :func:`.transform.axisBounds` function.
     
     Returns a tuple containing:
     
@@ -401,12 +414,11 @@ def slice2D(dataShape,
 
       - A ``N*3`` ``numpy.float32`` array containing the texture coordinates
         that correspond to the voxel coordinates.
-
     """
 
     zax        = 3 - xax - yax
-    xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax)
-    ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax)
+    xmin, xmax = transform.axisBounds(dataShape, voxToDisplayMat, xax, origin)
+    ymin, ymax = transform.axisBounds(dataShape, voxToDisplayMat, yax, origin)
 
     if geometry == 'triangles':
 
@@ -437,7 +449,9 @@ def slice2D(dataShape,
     # default centered at 0 (i.e. the space of a voxel
     # lies in the range [-0.5, 0.5]), but we want voxel
     # coordinates to map to the effective range [0, 1]
-    voxCoords = voxCoords + 0.5
+    if origin == 'centre':
+        voxCoords = voxCoords + 0.5
+        
     texCoords = voxCoords / dataShape
 
     return vertices, voxCoords, texCoords

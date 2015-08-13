@@ -303,10 +303,7 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         voxel = transform.transform(
             [canvasPos], opts.getTransform('display', 'voxel'))[0]
 
-        # Using floor(voxel+0.5) because, when at the
-        # midpoint, I want to round up. np.round rounds
-        # to the nearest even number, which is not ideal
-        voxel = np.array(np.floor(voxel + 0.5), dtype=np.int32)
+        voxel = np.int32(np.floor(voxel))
 
         return voxel
 
@@ -337,12 +334,13 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         if blockSize is None:
             blockSize = self.selectionSize
 
-        lo = [(v - 0.5) - int(np.floor((blockSize - 1) / 2.0)) for v in voxel]
-        hi = [(v + 0.5) + int(np.ceil(( blockSize - 1) / 2.0)) for v in voxel]
+        # TODO Double check this, as it seems to be wrong
+        lo = [(v)     - int(np.floor((blockSize - 1) / 2.0)) for v in voxel]
+        hi = [(v + 1) + int(np.ceil(( blockSize - 1) / 2.0)) for v in voxel]
 
         if not self.selectionIs3D:
-            lo[canvas.zax] = voxel[canvas.zax] - 0.5
-            hi[canvas.zax] = voxel[canvas.zax] + 0.5
+            lo[canvas.zax] = voxel[canvas.zax]
+            hi[canvas.zax] = voxel[canvas.zax] + 1
 
         corners       = np.zeros((8, 3))
         corners[0, :] = lo[0], lo[1], lo[2]

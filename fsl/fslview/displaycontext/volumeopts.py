@@ -34,7 +34,8 @@ class ImageOpts(fsldisplay.DisplayOpts):
 
     
     resolution = props.Real(maxval=10, default=1, clamped=True)
-    """Data resolution in world space. The minimum value is set in __init__.""" 
+    """Data resolution in world space. The minimum value is set in __init__.
+    """ 
 
 
     transform = props.Choice(
@@ -43,8 +44,12 @@ class ImageOpts(fsldisplay.DisplayOpts):
                 strings.choices['ImageOpts.transform.pixdim'],
                 strings.choices['ImageOpts.transform.id']],
         default='pixdim')
-    """This property defines how the overlay should be transformd into the display
-    coordinate system.
+    """This property defines how the overlay should be transformd into the
+    display coordinate system.
+
+    note:: Write a note here about voxels in ``affine`` mapping to space
+           ``[x - 0.5, x + 0.5]``, whereas the other two mapping to
+           ``[x, x + 1]``.
     
       - ``affine``: Use the affine transformation matrix stored in the image
         (the ``qform``/``sform`` fields in NIFTI1 headers).
@@ -100,8 +105,13 @@ class ImageOpts(fsldisplay.DisplayOpts):
         :attr:`.DisplayOpts.bounds` property accordingly.
         """
 
+        if self.transform == 'affine': origin = 'centre'
+        else:                          origin = 'corner'
+
         lo, hi = transform.axisBounds(
-            self.overlay.shape[:3], self.getTransform('voxel', 'display'))
+            self.overlay.shape[:3],
+            self.getTransform('voxel', 'display'),
+            origin=origin)
         
         self.bounds[:] = [lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]]
 
