@@ -135,6 +135,12 @@ class Action(props.HasProperties):
         self._boundWidgets.append((parent, evType, widget))
 
 
+    def destroy(self):
+        self.unbindAllWidgets()
+        self.__enabledDoAction  = None
+        self.__disabledDoAction = None
+
+
     def unbindAllWidgets(self):
         """Unbinds all widgets which have been bound via :meth:`bindToWidget`.
         """
@@ -228,8 +234,8 @@ class ActionProvider(props.SyncableHasProperties):
         about to be destroyed. It ensures that all ``Action`` instances
         are cleared.
         """
-        for _, act in self.__actions.items():
-            act.unbindAllWidgets()
+        for n, act in self.__actions.items():
+            act.destroy()
             
         self.__actions = None
 

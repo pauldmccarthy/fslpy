@@ -96,7 +96,7 @@ class OrthoToolBar(fsltoolbar.FSLViewToolBar):
             
             tools.append(widget)
 
-        self.SetTools(tools)        
+        self.SetTools(tools, destroy=True) 
 
     
     def showMoreSettings(self, *a):

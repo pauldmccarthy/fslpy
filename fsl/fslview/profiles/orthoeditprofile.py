@@ -6,8 +6,6 @@
 #
 
 import logging
-log = logging.getLogger(__name__)
-
 
 import numpy                        as np
 
@@ -18,6 +16,9 @@ import fsl.fslview.editor.editor    as editor
 import fsl.fslview.gl.annotations   as annotations
 
 import orthoviewprofile
+
+
+log = logging.getLogger(__name__)
 
 
 class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):

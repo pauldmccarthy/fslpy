@@ -127,7 +127,14 @@ class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
         self .addListener('selint',  self._name, self.__selintChanged)
         ortho.addListener('profile', self._name, self.__profileChanged)
-        
+
+        self.__profileTool = props.buildGUI(
+            self,
+            ortho,
+            _TOOLBAR_SPECS['profile'])
+
+        self.AddTool(self.__profileTool)
+
         self.__profileChanged()
 
 
@@ -151,17 +158,10 @@ class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
 
     def __profileChanged(self, *a):
 
-        oldTools = self.GetTools()
-
-        # See comment at bottom
-        def destroyOldTools():
-            for t in oldTools:
-                t.Destroy()
-
-        for t in oldTools:
-            t.Show(False)
-
-        self.ClearTools(destroy=False, postevent=False)
+        # We don't want to remove the profile tool
+        # created in __init__, so we skip the first
+        # tool
+        self.ClearTools(startIdx=1, destroy=True, postevent=False)
                 
         ortho      = self.orthoPanel
         profile    = ortho.profile
@@ -187,13 +187,4 @@ class OrthoProfileToolBar(fsltoolbar.FSLViewToolBar):
                 
             tools.append(widget)
 
-        profileTool = props.buildGUI(self, ortho, _TOOLBAR_SPECS['profile'])
-
-        tools.insert(0, profileTool)
-
-        self.SetTools(tools)
-        
-        # Destroy old tools asynchronously, as
-        # this method may have been called due
-        # to an action on one of said old tools.
-        wx.CallLater(1000, destroyOldTools) 
+        self.InsertTools(tools, 1)

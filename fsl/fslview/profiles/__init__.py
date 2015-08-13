@@ -183,6 +183,12 @@ class Profile(actions.ActionProvider):
 
             for (mode, handler), (altMode, altHandler) in altHandlers.items():
                 self.addAltHandler(mode, handler, altMode, altHandler)
+                
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
 
                 
     def destroy(self):
@@ -191,6 +197,7 @@ class Profile(actions.ActionProvider):
         is called by the :class:`ProfileManager` when  this ``Profile``
         instance is no longer needed.  
         """
+        actions.ActionProvider.destroy(self)
         self._viewPanel   = None
         self._overlayList = None
         self._displayCtx  = None
@@ -267,17 +274,17 @@ class Profile(actions.ActionProvider):
         but must make sure to call this implementation.        
         """
         for t in self.getEventTargets():
-            t.Bind(wx.EVT_LEFT_DOWN,    None)
-            t.Bind(wx.EVT_MIDDLE_UP,    None)
-            t.Bind(wx.EVT_RIGHT_DOWN,   None)
-            t.Bind(wx.EVT_LEFT_UP,      None)
-            t.Bind(wx.EVT_MIDDLE_UP,    None)
-            t.Bind(wx.EVT_RIGHT_UP,     None)
-            t.Bind(wx.EVT_MOTION,       None)
-            t.Bind(wx.EVT_MOUSEWHEEL,   None)
-            t.Bind(wx.EVT_ENTER_WINDOW, None)
-            t.Bind(wx.EVT_LEAVE_WINDOW, None)
-            t.Bind(wx.EVT_CHAR,         None)
+            t.Unbind(wx.EVT_LEFT_DOWN)
+            t.Unbind(wx.EVT_MIDDLE_DOWN)
+            t.Unbind(wx.EVT_RIGHT_DOWN)
+            t.Unbind(wx.EVT_LEFT_UP) 
+            t.Unbind(wx.EVT_MIDDLE_UP)
+            t.Unbind(wx.EVT_RIGHT_UP) 
+            t.Unbind(wx.EVT_MOTION)
+            t.Unbind(wx.EVT_MOUSEWHEEL)
+            t.Unbind(wx.EVT_ENTER_WINDOW)
+            t.Unbind(wx.EVT_LEAVE_WINDOW)
+            t.Unbind(wx.EVT_CHAR)
 
     
     def __getTempMode(self, ev):
@@ -654,6 +661,7 @@ class ProfileManager(object):
                 self._viewCls.__name__))
             self._currentProfile.deregister()
             self._currentProfile.destroy()
+            self._currentProfile = None
                
         self._currentProfile = profileCls(self._viewPanel,
                                           self._overlayList,
