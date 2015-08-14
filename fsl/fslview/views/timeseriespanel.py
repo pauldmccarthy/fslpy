@@ -538,7 +538,18 @@ class TimeSeriesPanel(plotpanel.PlotPanel):
         
         xform = opts.getTransform('display', 'voxel')
         vox   = transform.transform([[x, y, z]], xform)[0]
-        vox   = np.floor(vox + 0.5)
+
+        # If the image is displayed in affine
+        # space, the voxel coordinate maps to
+        # the centre of the voxel, so we need
+        # to do floor(v + 0.5) to get the
+        # integer coordinates.
+        if opts.transform == 'affine': vox  = np.floor(vox + 0.5)
+
+        # If the image is displayed in id/pixdim,
+        # the voxel coordinates map to the voxel
+        # corner, so we can just take the floor.
+        else:                          vox  = np.floor(vox)
 
         if vox[0] < 0                 or \
            vox[1] < 0                 or \

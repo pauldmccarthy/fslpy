@@ -153,6 +153,8 @@ class OrthoViewProfile(profiles.Profile):
 
         Arrow keys map to the horizontal/vertical axes, and -/+ keys map
         to the depth axis of the canvas which was the target of the event.
+
+        Page up/page down changes the currently selected overlay.
         """
 
 
@@ -171,6 +173,18 @@ class OrthoViewProfile(profiles.Profile):
         elif key == wx.WXK_DOWN:  pos[canvas.yax] -= offsets[canvas.yax]
         elif ch  in ('-', '_'):   pos[canvas.zax] -= offsets[canvas.zax]
         elif ch  in ('+', '='):   pos[canvas.zax] += offsets[canvas.zax]
+
+        elif key in (wx.WXK_PAGEUP, wx.WXK_PAGEDOWN):
+            overlay = self._displayCtx.getSelectedOverlay()
+            idx     = self._displayCtx.getOverlayOrder(overlay)
+
+            if   key == wx.WXK_PAGEUP:   idx += 1
+            elif key == wx.WXK_PAGEDOWN: idx -= 1
+
+            idx    %= len(self._overlayList)
+            idx     = self._displayCtx.overlayOrder[idx]
+
+            self._displayCtx.selectedOverlay = idx 
 
         self._displayCtx.location.xyz = pos
 

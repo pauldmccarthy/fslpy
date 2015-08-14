@@ -429,33 +429,83 @@ class LocationPanel(fslpanel.FSLViewPanel):
         self.Freeze()
 
 
-    def _getOffsets(self, source, target, displaySpace):
+    def _getOffsets(self, overlay, source, target, displaySpace):
+        """When an image is displayed in id/pixdim space, voxel coordinates
+        map to the voxel corner; i.e.  a voxel at ``(0, 1, 2)`` occupies the
+        space ``(0 - 1, 1 - 2, 2 - 3)``.
+        
+        In contrast, when an image is displayed in affine space, voxel
+        coordinates map to the voxel centre, so our voxel from above will
+        occupy the space ``(-0.5 - 0.5, 0.5 - 1.5, 1.5 - 2.5)``. This is
+        dictated by the NIFTI specification.
+        
+        This function returns some offsets to ensure that the coordinate
+        transformation from the source space to the target space is valid,
+        given the above requirements.
 
-        # If the world location was changed, the
-        # affine->vox transformation returns voxel
-        # coordinates in the space [x - 0.5, x + 0.5].
-        # We add 0.5 to these coordinates so that the
-        # _propagate method can just floor the result
-        # to get the integer voxel coordinates. 
-        if   (source, target) == ('world', 'voxel'):
-            return (0, 0, 0), (0.5, 0.5, 0.5)
+        A tuple containing two sets of offsets (each of which is a tuple of
+        three values). The first set is to be applied to the source coordinates
+        before transformation, and the second set to the target coordinates
+        after the transformation.
+        """
 
-        # If the reference image is being displayed in
-        # affine space, we have the same situation as
-        # above.
-        elif (source, target) == ('display', 'voxel'):
-            if displaySpace == 'affine':
-                return (0, 0, 0), (0.5, 0.5, 0.5)
-
-        # If the voxel location was changed, we want
-        # the display to be moved to the centre of the
-        # voxel
-        elif (source, target) == ('voxel', 'display'):
+        pixdim  = np.array(overlay.pixdim[:3])
+        offsets = {
             
-            if displaySpace in ('id', 'pixdim'):
-                return (0.5, 0.5, 0.5), (0, 0, 0)
+            # world to voxel transformation 
+            # (regardless of the display space):
+            # 
+            # add 0.5 to the resulting voxel
+            # coords, so the _propagate method
+            # can just floor them to get the
+            # integer voxel coordinates
+            ('world', 'voxel', displaySpace) : ((0, 0, 0), (0.5, 0.5, 0.5)),
 
-        return (0, 0, 0), (0, 0, 0)
+            # World to display transformation:
+            # 
+            # if displaying in id/pixdim space,
+            # we add half a voxel so that the
+            # resulting coords are centered
+            # within a voxel, instead of being
+            # in the voxel corner
+            ('world', 'display', 'id')       : ((0, 0, 0), (0.5, 0.5, 0.5)),
+            ('world', 'display', 'pixdim')   : ((0, 0, 0), pixdim / 2.0),
+
+            # Display to voxel space:
+            
+            # If we're displaying in affine space,
+            # we have the same situation as the
+            # world -> voxel transform above
+            ('display', 'voxel', 'affine')   : ((0, 0, 0), (0.5, 0.5, 0.5)),
+
+            # Display to world space:
+            # 
+            # If we're displaying in id/pixdim
+            # space, voxel coordinates map to
+            # the voxel corner, so we need to
+            # subtract half the voxel width to
+            # the coordinates before transforming
+            # to world space.
+            ('display', 'world', 'id')       : ((-0.5, -0.5, -0.5), (0, 0, 0)),
+            ('display', 'world', 'pixdim')   : (-pixdim / 2.0,      (0, 0, 0)),
+
+            # Voxel to display space:
+            # 
+            # If the voxel location was changed,
+            # we want the display to be moved to
+            # the centre of the voxel If displaying
+            # in affine space, voxel coordinates
+            # map to the voxel centre, so we don't
+            # need to offset. But if in id/pixdim,
+            # we need to add 0.5 to the voxel coords,
+            # as otherwise the transformation will
+            # put us in the voxel corner.
+            ('voxel',   'display', 'id')     : ((0.5, 0.5, 0.5), (0, 0, 0)),
+            ('voxel',   'display', 'pixdim') : ((0.5, 0.5, 0.5), (0, 0, 0)),
+        }
+
+        return offsets.get((source, target, displaySpace),
+                           ((0, 0, 0), (0, 0, 0)))
 
         
     def _propagate(self, source, target, xform):
@@ -465,18 +515,22 @@ class LocationPanel(fslpanel.FSLViewPanel):
             opts = self._displayCtx.getOpts(self._refImage)
             displaySpace = opts.transform
 
-        pre, post = self._getOffsets(source, target, displaySpace)
+            pre, post = self._getOffsets(self._refImage,
+                                         source,
+                                         target,
+                                         displaySpace)
+        else:
+            pre  = [0, 0, 0]
+            post = [0, 0, 0]
             
         if   source == 'display': coords = self._displayCtx.location.xyz
         elif source == 'voxel':   coords = self.voxelLocation.xyz
         elif source == 'world':   coords = self.worldLocation.xyz
 
-        coords = [coords[0] + pre[0],
-                  coords[1] + pre[1],
-                  coords[2] + pre[2]]
+        c = [coords[0] + pre[0], coords[1] + pre[1], coords[2] + pre[2]]
                 
-        if xform is not None: xformed = transform.transform([coords], xform)[0]
-        else:                 xformed = np.array(coords)
+        if xform is not None: xformed = transform.transform([c], xform)[0]
+        else:                 xformed = np.array(c)
 
         xformed += post
 
