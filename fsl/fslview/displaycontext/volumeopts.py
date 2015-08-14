@@ -191,6 +191,107 @@ class ImageOpts(fsldisplay.DisplayOpts):
         return self.__xforms[from_, to]
 
 
+    def getTransformOffsets(self, from_, to_):
+        """When an image is displayed in id/pixdim space, voxel coordinates
+        map to the voxel corner; i.e.  a voxel at ``(0, 1, 2)`` occupies the
+        space ``(0 - 1, 1 - 2, 2 - 3)``.
+        
+        In contrast, when an image is displayed in affine space, voxel
+        coordinates map to the voxel centre, so our voxel from above will
+        occupy the space ``(-0.5 - 0.5, 0.5 - 1.5, 1.5 - 2.5)``. This is
+        dictated by the NIFTI specification.
+        
+        This function returns some offsets to ensure that the coordinate
+        transformation from the source space to the target space is valid,
+        given the above requirements.
+
+        A tuple containing two sets of offsets (each of which is a tuple of
+        three values). The first set is to be applied to the source coordinates
+        before transformation, and the second set to the target coordinates
+        after the transformation.
+
+        See also the :meth:`transformCoords` method, which will perform the
+        transformation correctly for you, without you having to worry about
+        these offsets.
+        """ 
+        displaySpace = self.transform
+        pixdim       = np.array(self.overlay.pixdim[:3])
+        offsets      = {
+            
+            # world to voxel transformation 
+            # (regardless of the display space):
+            # 
+            # add 0.5 to the resulting voxel
+            # coords, so the _propagate method
+            # can just floor them to get the
+            # integer voxel coordinates
+            ('world', 'voxel', displaySpace) : ((0, 0, 0), (0.5, 0.5, 0.5)),
+
+            # World to display transformation:
+            # 
+            # if displaying in id/pixdim space,
+            # we add half a voxel so that the
+            # resulting coords are centered
+            # within a voxel, instead of being
+            # in the voxel corner
+            ('world', 'display', 'id')       : ((0, 0, 0), (0.5, 0.5, 0.5)),
+            ('world', 'display', 'pixdim')   : ((0, 0, 0), pixdim / 2.0),
+
+            # Display to voxel space:
+            
+            # If we're displaying in affine space,
+            # we have the same situation as the
+            # world -> voxel transform above
+            ('display', 'voxel', 'affine')   : ((0, 0, 0), (0.5, 0.5, 0.5)),
+
+            # Display to world space:
+            # 
+            # If we're displaying in id/pixdim
+            # space, voxel coordinates map to
+            # the voxel corner, so we need to
+            # subtract half the voxel width to
+            # the coordinates before transforming
+            # to world space.
+            ('display', 'world', 'id')       : ((-0.5, -0.5, -0.5), (0, 0, 0)),
+            ('display', 'world', 'pixdim')   : (-pixdim / 2.0,      (0, 0, 0)),
+
+            # Voxel to display space:
+            # 
+            # If the voxel location was changed,
+            # we want the display to be moved to
+            # the centre of the voxel If displaying
+            # in affine space, voxel coordinates
+            # map to the voxel centre, so we don't
+            # need to offset. But if in id/pixdim,
+            # we need to add 0.5 to the voxel coords,
+            # as otherwise the transformation will
+            # put us in the voxel corner.
+            ('voxel',   'display', 'id')     : ((0.5, 0.5, 0.5), (0, 0, 0)),
+            ('voxel',   'display', 'pixdim') : ((0.5, 0.5, 0.5), (0, 0, 0)),
+        }
+
+        return offsets.get((from_, to_, displaySpace), ((0, 0, 0), (0, 0, 0)))
+
+
+    def transformCoords(self, coords, from_, to_):
+        """Transforms the given coordinates from ``from_`` to ``to_``, including
+        correcting for display space offsets (see :meth:`getTransformOffsets`).
+
+        The ``from_`` and ``to_`` parameters must both be one of:
+           - ``display``
+           - ``voxel``
+           - ``world``
+        """
+
+        xform     = self.getTransform(       from_, to_)
+        pre, post = self.getTransformOffsets(from_, to_)
+        
+        coords    = np.array(coords) + pre
+        coords    = transform.transform(coords, xform)
+
+        return coords + post
+
+
     def transformDisplayLocation(self, oldLoc):
 
         lastVal = self.getLastValue('transform')

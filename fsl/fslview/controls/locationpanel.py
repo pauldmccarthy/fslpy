@@ -64,17 +64,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # of the coordinate system may be obtained.
         #
         # When the current overlay is either an Image instance, or has
-        # an associated reference image, these attributes are used to
-        # store references to the image, and to the matrices that allow
-        # transformations between the different coordinate systems.
-        self._refImage          = None
-        self._voxToDisplayMat   = None
-        self._displayToVoxMat   = None
-        self._worldToDisplayMat = None
-        self._displayToWorldMat = None
-        self._voxToWorldMat     = None
-        self._worldToVoxMat     = None
-
+        # an associated reference image, this attributes is used to
+        # store a reference to the image.
+        self._refImage = None
+        
         # When the currently selected overlay is 4D,
         # this attribute will refer to the
         # corresponding DisplayOpts instance, which
@@ -297,23 +290,7 @@ class LocationPanel(fslpanel.FSLViewPanel):
                 overlay, refImage))
 
         self._refImage = refImage
-
-        if refImage is not None:
-            opts = self._displayCtx.getOpts(refImage)
-            self._voxToDisplayMat   = opts.getTransform('voxel',   'display')
-            self._displayToVoxMat   = opts.getTransform('display', 'voxel')
-            self._worldToDisplayMat = opts.getTransform('world',   'display')
-            self._displayToWorldMat = opts.getTransform('display', 'world')
-            self._voxToWorldMat     = opts.getTransform('voxel',   'world')
-            self._worldToVoxMat     = opts.getTransform('world',   'voxel')
-        else:
-            self._voxToDisplayMat   = None
-            self._displayToVoxMat   = None
-            self._worldToDisplayMat = None
-            self._displayToWorldMat = None
-            self._voxToWorldMat     = None
-            self._worldToVoxMat     = None
-
+        
 
     def _updateWidgets(self):
 
@@ -348,10 +325,12 @@ class LocationPanel(fslpanel.FSLViewPanel):
         # Figure out the limits for the
         # voxel/world location widgets
         if self._refImage is not None:
+            opts     = self._displayCtx.getOpts(self._refImage)
+            v2w      = opts.getTransform('voxel', 'world')
             shape    = self._refImage.shape[:3]
             vlo      = [0, 0, 0]
             vhi      = np.array(shape) - 1
-            wlo, whi = transform.axisBounds(shape, self._voxToWorldMat)
+            wlo, whi = transform.axisBounds(shape, v2w)
         else:
             vlo     = [0, 0, 0]
             vhi     = [0, 0, 0]
@@ -428,111 +407,18 @@ class LocationPanel(fslpanel.FSLViewPanel):
 
         self.Freeze()
 
-
-    def _getOffsets(self, overlay, source, target, displaySpace):
-        """When an image is displayed in id/pixdim space, voxel coordinates
-        map to the voxel corner; i.e.  a voxel at ``(0, 1, 2)`` occupies the
-        space ``(0 - 1, 1 - 2, 2 - 3)``.
         
-        In contrast, when an image is displayed in affine space, voxel
-        coordinates map to the voxel centre, so our voxel from above will
-        occupy the space ``(-0.5 - 0.5, 0.5 - 1.5, 1.5 - 2.5)``. This is
-        dictated by the NIFTI specification.
-        
-        This function returns some offsets to ensure that the coordinate
-        transformation from the source space to the target space is valid,
-        given the above requirements.
+    def _propagate(self, source, target):
 
-        A tuple containing two sets of offsets (each of which is a tuple of
-        three values). The first set is to be applied to the source coordinates
-        before transformation, and the second set to the target coordinates
-        after the transformation.
-        """
-
-        pixdim  = np.array(overlay.pixdim[:3])
-        offsets = {
-            
-            # world to voxel transformation 
-            # (regardless of the display space):
-            # 
-            # add 0.5 to the resulting voxel
-            # coords, so the _propagate method
-            # can just floor them to get the
-            # integer voxel coordinates
-            ('world', 'voxel', displaySpace) : ((0, 0, 0), (0.5, 0.5, 0.5)),
-
-            # World to display transformation:
-            # 
-            # if displaying in id/pixdim space,
-            # we add half a voxel so that the
-            # resulting coords are centered
-            # within a voxel, instead of being
-            # in the voxel corner
-            ('world', 'display', 'id')       : ((0, 0, 0), (0.5, 0.5, 0.5)),
-            ('world', 'display', 'pixdim')   : ((0, 0, 0), pixdim / 2.0),
-
-            # Display to voxel space:
-            
-            # If we're displaying in affine space,
-            # we have the same situation as the
-            # world -> voxel transform above
-            ('display', 'voxel', 'affine')   : ((0, 0, 0), (0.5, 0.5, 0.5)),
-
-            # Display to world space:
-            # 
-            # If we're displaying in id/pixdim
-            # space, voxel coordinates map to
-            # the voxel corner, so we need to
-            # subtract half the voxel width to
-            # the coordinates before transforming
-            # to world space.
-            ('display', 'world', 'id')       : ((-0.5, -0.5, -0.5), (0, 0, 0)),
-            ('display', 'world', 'pixdim')   : (-pixdim / 2.0,      (0, 0, 0)),
-
-            # Voxel to display space:
-            # 
-            # If the voxel location was changed,
-            # we want the display to be moved to
-            # the centre of the voxel If displaying
-            # in affine space, voxel coordinates
-            # map to the voxel centre, so we don't
-            # need to offset. But if in id/pixdim,
-            # we need to add 0.5 to the voxel coords,
-            # as otherwise the transformation will
-            # put us in the voxel corner.
-            ('voxel',   'display', 'id')     : ((0.5, 0.5, 0.5), (0, 0, 0)),
-            ('voxel',   'display', 'pixdim') : ((0.5, 0.5, 0.5), (0, 0, 0)),
-        }
-
-        return offsets.get((source, target, displaySpace),
-                           ((0, 0, 0), (0, 0, 0)))
-
-        
-    def _propagate(self, source, target, xform):
-
-        displaySpace = None
-        if self._refImage is not None:
-            opts = self._displayCtx.getOpts(self._refImage)
-            displaySpace = opts.transform
-
-            pre, post = self._getOffsets(self._refImage,
-                                         source,
-                                         target,
-                                         displaySpace)
-        else:
-            pre  = [0, 0, 0]
-            post = [0, 0, 0]
-            
         if   source == 'display': coords = self._displayCtx.location.xyz
         elif source == 'voxel':   coords = self.voxelLocation.xyz
         elif source == 'world':   coords = self.worldLocation.xyz
 
-        c = [coords[0] + pre[0], coords[1] + pre[1], coords[2] + pre[2]]
-                
-        if xform is not None: xformed = transform.transform([c], xform)[0]
-        else:                 xformed = np.array(c)
-
-        xformed += post
+        if self._refImage is not None:
+            opts    = self._displayCtx.getOpts(self._refImage)
+            xformed = opts.transformCoords([coords], source, target)[0]
+        else:
+            xformed = coords
 
         log.debug('Updating location ({} {} -> {} {})'.format(
             source, coords, target, xformed))
@@ -561,8 +447,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         self._prePropagate()
-        self._propagate('display', 'voxel', self._displayToVoxMat)
-        self._propagate('display', 'world', self._displayToWorldMat)
+        self._propagate('display', 'voxel')
+        self._propagate('display', 'world')
         self._postPropagate()
         self._updateLocationInfo()
 
@@ -572,8 +458,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         self._prePropagate()
-        self._propagate('world', 'voxel',   self._worldToVoxMat)
-        self._propagate('world', 'display', self._worldToDisplayMat)
+        self._propagate('world', 'voxel')
+        self._propagate('world', 'display')
         self._postPropagate()
         self._updateLocationInfo()
 
@@ -583,8 +469,8 @@ class LocationPanel(fslpanel.FSLViewPanel):
         if len(self._overlayList) == 0: return
 
         self._prePropagate()
-        self._propagate('voxel', 'world',   self._voxToWorldMat)
-        self._propagate('voxel', 'display', self._voxToDisplayMat)
+        self._propagate('voxel', 'world')
+        self._propagate('voxel', 'display')
         self._postPropagate()
         self._updateLocationInfo()
 
@@ -616,19 +502,10 @@ class LocationPanel(fslpanel.FSLViewPanel):
                 info = '{}'.format(strings.labels[self, 'noData'])
             else:
                 opts = self._displayCtx.getOpts(overlay)
-                vloc = transform.transform(
-                    [self._displayCtx.location.xyz],
-                    opts.getTransform('display', 'voxel'))[0]
+                vloc = opts.transformCoords(
+                    [self._displayCtx.location.xyz], 'display', 'voxel')[0]
 
-                # When displaying in world/affine space,
-                # the above transformation gives us
-                # values between [x - 0.5, x + 0.5] for
-                # voxel x, so we need to floor(x + 0.5)
-                # to get the actual voxel coordinates
-                if opts.transform == 'affine': vloc = np.floor(vloc + 0.5)
-                else:                          vloc = np.floor(vloc)
-
-                vloc = tuple(map(int, vloc))
+                vloc = tuple(map(int, np.floor(vloc)))
 
                 if overlay.is4DImage():
                     vloc = vloc + (opts.volume,)
