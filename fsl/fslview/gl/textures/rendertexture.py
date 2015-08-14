@@ -248,6 +248,10 @@ class GLObjectRenderTexture(RenderTexture):
         width  = resolution[self.__xax]
         height = resolution[self.__yax]
 
+        if any((width <= 0, height <= 0)):
+            raise ValueError('Invalid GLObject resolution: {}'.format(
+                (width, height)))
+
         if width > maxRes or height > maxRes:
             oldWidth, oldHeight = width, height
             ratio = min(width, height) / float(max(width, height))

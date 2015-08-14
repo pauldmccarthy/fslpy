@@ -108,6 +108,9 @@ class Texture2D(Texture):
         previously set via the :meth:`setData` method.
         """
 
+        if any((width <= 0, height <= 0)):
+            raise ValueError('Invalid size: {}'.format((width, height)))
+
         self.__setSize(width, height)
         self.__data = None
         
@@ -145,8 +148,12 @@ class Texture2D(Texture):
         
     def refresh(self):
 
-        if self.__width is None or self.__height is None:
-            return
+        if any((self.__width  is None,
+                self.__height is None,
+                self.__width  <= 0,
+                self.__height <= 0)):
+            raise ValueError('Invalid size: {}'.format((self.__width,
+                                                        self.__height)))
 
         self.bindTexture()
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT,   1)

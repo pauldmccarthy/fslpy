@@ -69,7 +69,8 @@ class ModelOpts(fsldisplay.DisplayOpts):
         self.addListener('transform',  self.name, self.__transformChanged)
         self.addListener('coordSpace', self.name, self.__coordSpaceChanged)
         
-        self.__overlayListChanged() 
+        self.__overlayListChanged()
+        self.__updateBounds()
 
 
     def destroy(self):
