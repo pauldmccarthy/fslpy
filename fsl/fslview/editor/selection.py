@@ -11,8 +11,9 @@
 import logging
 import collections
 
-import numpy                      as np
-import scipy.ndimage.measurements as ndimeas
+import numpy                       as np
+import scipy.ndimage.measurements  as ndimeas
+import scipy.ndimage.interpolation as ndiint
 
 import props
 
@@ -26,14 +27,23 @@ class Selection(props.HasProperties):
     selection = props.Object()
 
     
-    def __init__(self, image, display):
+    def __init__(self, image, display, selection=None):
         self._image                = image
         self._display              = display
         self._opts                 = display.getDisplayOpts()
         self._lastChangeOffset     = None
         self._lastChangeOldBlock   = None
         self._lastChangeNewBlock   = None
-        self.selection             = np.zeros(image.shape[:3], dtype=np.uint8)
+
+        if selection is None:
+            selection = np.zeros(image.shape[:3], dtype=np.uint8)
+        elif selection.shape != image.shape[:3] or \
+             selection.dtype != np.uint8:
+            raise ValueError('Incompatible selection array: {} ({})'.format(
+                selection.shape,
+                selection.dtype))
+
+        self.selection = selection
 
         log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
 
@@ -60,6 +70,59 @@ class Selection(props.HasProperties):
         selection = self.selection[xlo:xhi, ylo:yhi, zlo:zhi]
 
         return selection, (xlo, ylo, zlo)
+
+    
+    def transferSelection(self, destImg, destDisplay):
+
+        srcImg   = self._image
+        srcOpts  = self._opts
+        destOpts = destDisplay.getDisplayOpts()
+
+        if srcOpts.transform not in ('id', 'pixdim'):
+            raise RuntimeError('Unsupported transform for {}: {}'.format(
+                srcImg, srcOpts.transform))
+        if destOpts.transform not in ('id', 'pixdim'):
+            raise RuntimeError('Unsupported transform for {}: {}'.format(
+                destImg, destOpts.transform))
+
+        srcShape  = srcImg .shape[:3]
+        destShape = destImg.shape[:3]
+        
+        if   srcOpts .transform == 'id':     srcDims  = (1.0, 1.0, 1.0)
+        elif srcOpts .transform == 'pixdim': srcDims  = srcImg.pixdim[:3]
+        if   destOpts.transform == 'id':     destDims = (1.0, 1.0, 1.0)
+        elif destOpts.transform == 'pixdim': destDims = destImg.pixdim[:3]
+
+        srcXferShape  = np.zeros(3, dtype=np.float32)
+        destXferShape = np.zeros(3, dtype=np.float32)
+
+        # Figure out the shape, of the area
+        # to be copied, in source image voxels,
+        # and in destination image voxels
+        for i in range(3):
+
+            srcSize   = float(srcShape[ i] * srcDims[ i])
+            destSize  = float(destShape[i] * destDims[i])
+            xferSize  = min(srcSize, destSize)
+
+            srcXferShape[ i] = int(round(xferSize / srcDims[ i]))
+            destXferShape[i] = int(round(xferSize / destDims[i]))
+
+        xferred = np.zeros(destShape, dtype=np.uint8)
+
+        srcx,  srcy,  srcz  = map(int, srcXferShape)
+        destx, desty, destz = map(int, destXferShape)
+
+        zoomFactor = destXferShape / srcXferShape
+        zoomed = ndiint.zoom(
+            self.selection[:srcx, :srcy, :srcz],
+            zoomFactor,
+            order=0)
+
+        if zoomed.shape == (destx, desty, destz):
+            xferred[:destx, :desty, :destz] = zoomed
+
+        return xferred
 
 
     def _updateSelectionBlock(self, block, offset):
@@ -211,15 +274,14 @@ class Selection(props.HasProperties):
                       local=False):
 
         if   len(self._image.shape) == 3:
-            data = self._image
+            data = self._image.data
         elif len(self._image.shape) == 4:
-            data = self._image[:, :, :, self._opts.volume]
+            data = self._image.data[:, :, :, self._opts.volume]
         else:
             raise RuntimeError('Only 3D and 4D images are currently supported')
 
         seedLoc = np.array(seedLoc)
         value   = data[seedLoc[0], seedLoc[1], seedLoc[2]]
-        
 
         # Search radius may be either None, a scalar value,
         # or a sequence of three values (one for each axis).

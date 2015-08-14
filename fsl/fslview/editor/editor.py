@@ -109,9 +109,17 @@ class Editor(props.HasProperties):
             self._currentOverlay = None
             self._selection      = None
             return
-        
+
+        if self._selection is not None:
+            oldSel = self._selection.transferSelection(
+                overlay, display)
+        else:
+            oldSel = None
+                        
         self._currentOverlay = overlay
-        self._selection      = selection.Selection(overlay.data, display)
+        self._selection      = selection.Selection(overlay,
+                                                   display,
+                                                   oldSel)
 
         self._selection.addListener('selection',
                                     self._name,
