@@ -170,7 +170,13 @@ class ProcessingDialog(SimpleMessageDialog):
         disable = wx.WindowDisabler(self)
 
         if mainThread:
-            result = self.task(*self.args, **self.kwargs)
+            try:
+                result = self.task(*self.args, **self.kwargs)
+            except:
+                self.Close()
+                self.Destroy()
+                del disable
+                raise
         else:
             returnVal = [None]
 

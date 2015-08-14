@@ -471,15 +471,29 @@ def _screenshot(overlayList, displayCtx, canvasPanel):
             if glCanvas is None:
                 continue
 
-            pos    = relativePosition(glCanvas, parent)
-            size   = glCanvas.GetSize().Get()
+            pos   = relativePosition(glCanvas, parent)
+            size  = glCanvas.GetClientSize().Get()
 
             xstart = pos[0]
             ystart = pos[1]
             xend   = xstart + size[0]
             yend   = ystart + size[1]
 
-            data[ystart:yend, xstart:xend] = glCanvas.getBitmap()
+            bmp = glCanvas.getBitmap()
+
+            # There seems to ber a size/position miscalculation
+            # somewhere, such that if the last canvas is on the
+            # hard edge of the parent, the canvas size spills
+            # over the parent size byt a couple of pixels.. If
+            # this occurs, I truncate the canvas bitmap accordingly.
+            if xend > width or yend > height:
+                xend = width
+                yend = height
+                w    = xend - xstart
+                h    = yend - ystart
+                bmp  = bmp[:h, :w, :]
+            
+            data[ystart:yend, xstart:xend] = bmp
 
         data[:, :,  3] = 255
 
