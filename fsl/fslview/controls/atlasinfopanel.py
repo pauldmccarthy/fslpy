@@ -16,7 +16,6 @@ import fsl.fslview.panel   as fslpanel
 import fsl.data.atlases    as atlases
 import fsl.data.strings    as strings
 import fsl.data.constants  as constants
-import fsl.utils.transform as transform
 
 
 log = logging.getLogger(__name__)
@@ -196,8 +195,7 @@ class AtlasInfoPanel(fslpanel.FSLViewPanel):
 
         opts = self._displayCtx.getOpts(overlay)
         loc  = self._displayCtx.location
-        loc  = transform.transform(
-            [loc], opts.getTransform('display', 'world'))[0]
+        loc  = opts.transformCoords([loc], 'display', 'world')[0]
 
         lines         = []
         titleTemplate = '<b>{}</b> (<a href="summary {} {}">Show/Hide</a>)'

@@ -131,7 +131,7 @@ class GLLineVertices(object):
             if opts.transform == 'pixdim':
                 zpos = zpos / image.pixdim[zax]
 
-            zpos = round(zpos)
+            zpos = np.floor(zpos)
 
             # Return no vertices if the requested z
             # position is out of the image bounds

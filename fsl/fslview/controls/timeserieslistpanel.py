@@ -209,8 +209,7 @@ class TimeSeriesListPanel(fslpanel.FSLViewPanel):
         coords  = ev.data.coords
         opts    = self._displayCtx.getOpts(overlay)
         vox     = np.array(coords)
-        xform   = opts.getTransform('voxel', 'display')
-        disp    = transform.transform([vox], xform)[0]
+        disp    = opts.transformCoords([vox], 'voxel', 'display')[0]
 
         self._displayCtx.selectedOverlay = self._overlayList.index(overlay)
         self._displayCtx.location        = disp

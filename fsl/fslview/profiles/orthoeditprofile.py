@@ -10,7 +10,6 @@ import logging
 import numpy                        as np
 
 import                                 props
-import fsl.utils.transform          as transform
 import fsl.data.image               as fslimage
 import fsl.fslview.editor.editor    as editor
 import fsl.fslview.gl.annotations   as annotations
@@ -298,14 +297,11 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         """Returns the voxel location, for the currently selected overlay,
         which corresponds to the specified canvas position.
         """
-        opts = self._displayCtx.getOpts(self._currentOverlay)
+        
+        opts  = self._displayCtx.getOpts(self._currentOverlay)
+        voxel = opts.transformCoords([canvasPos], 'display', 'voxel')[0]
 
-        voxel = transform.transform(
-            [canvasPos], opts.getTransform('display', 'voxel'))[0]
-
-        voxel = np.int32(np.floor(voxel))
-
-        return voxel
+        return np.int32(np.floor(voxel))
 
 
     def _makeSelectionAnnotation(
@@ -352,8 +348,12 @@ class OrthoEditProfile(orthoviewprofile.OrthoViewProfile):
         corners[6, :] = hi[0], hi[1], lo[2]
         corners[7, :] = hi[0], hi[1], hi[2]
 
-        corners = transform.transform(
-            corners, opts.getTransform('voxel', 'display'))
+        # We want the selection to follow voxel
+        # edges, but the transformCoords method
+        # will map voxel coordinates to the
+        # displayed voxel centre. So we offset
+        # by -0.5 to get the corners
+        corners = opts.transformCoords(corners - 0.5, 'voxel', 'display')
 
         cmin = corners.min(axis=0)
         cmax = corners.max(axis=0)

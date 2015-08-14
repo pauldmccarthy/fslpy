@@ -297,8 +297,7 @@ class ClusterPanel(fslpanel.FSLViewPanel):
             sizer.Add(btn)
 
             def onClick(ev):
-                xfm  = opts.getTransform('voxel', 'display')
-                dloc = transform.transform([coords], xfm)[0]
+                dloc = opts.transformCoords([coords], 'voxel', 'display')[0]
                 self._displayCtx.location = dloc
 
             btn.Bind(wx.EVT_BUTTON, onClick)

@@ -15,7 +15,6 @@ import pwidgets.notebook      as notebook
 import fsl.data.image         as fslimage
 import fsl.data.atlases       as atlases
 import fsl.data.strings       as strings
-import fsl.utils.transform    as transform
 import fsl.fslview.panel      as fslpanel
 import fsl.fslview.colourmaps as fslcm
 
@@ -228,7 +227,6 @@ class AtlasPanel(fslpanel.FSLViewPanel):
         
         opts     = self._displayCtx.getOpts(overlay)
         worldLoc = (label.x, label.y, label.z)
-        dispLoc  = transform.transform(
-            [worldLoc], opts.getTransform('world', 'display'))[0]
+        dispLoc  = opts.transformCoords([worldLoc], 'world', 'display')[0]
 
         self._displayCtx.location.xyz = dispLoc

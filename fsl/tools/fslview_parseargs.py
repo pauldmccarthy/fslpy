@@ -864,18 +864,18 @@ def applySceneArgs(args, overlayList, displayCtx, sceneOpts):
     # voxel/world location
     if len(overlayList) > 0:
         if args.worldloc:
-            loc = args.worldloc
+            wloc = args.worldloc
         elif args.voxelloc:
-            display = displayCtx.getDisplay(overlayList[0])
-            xform   = display.getTransform('voxel', 'display')
-            loc     = transform.transform([args.voxelloc], xform)[0]
+            opts = displayCtx.getOpts(overlayList[0])
+            vloc = args.voxelloc
+            wloc = opts.transformCoords([vloc], 'voxel', 'display')[0]
           
         else:
-            loc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
-                   displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
-                   displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
+            wloc = [displayCtx.bounds.xlo + 0.5 * displayCtx.bounds.xlen,
+                    displayCtx.bounds.ylo + 0.5 * displayCtx.bounds.ylen,
+                    displayCtx.bounds.zlo + 0.5 * displayCtx.bounds.zlen]
 
-        displayCtx.location.xyz = loc
+        displayCtx.location.xyz = wloc
 
     _applyArgs(args, sceneOpts)
 
