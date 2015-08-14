@@ -125,5 +125,6 @@ def colourBarBitmap(cmap,
 
     if orientation == 'vertical':
         bitmap = np.flipud(bitmap.transpose([1, 0, 2]))
+        bitmap = np.rot90(bitmap, 2)
 
     return bitmap
