@@ -85,12 +85,17 @@ class CanvasPanel(viewpanel.ViewPanel):
                 location=wx.TOP)), 
             ('toggleLookupTablePanel',  lambda *a: self.togglePanel(
                 fslcontrols.LookupTablePanel,
-                location=wx.TOP)),
-            ('toggleShell',             lambda *a: self.togglePanel(
+                location=wx.TOP))]
+
+        actionz += extraActions.items()
+
+        actionz += [
+            ('toggleShell', lambda *a: self.togglePanel(
                 fslcontrols.ShellPanel,
                 self.getSceneOptions(),
                 location=wx.BOTTOM))]
-        actionz = collections.OrderedDict(actionz + extraActions.items())
+        
+        actionz = collections.OrderedDict(actionz)
         
         viewpanel.ViewPanel.__init__(
             self, parent, overlayList, displayCtx, actionz)

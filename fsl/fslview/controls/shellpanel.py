@@ -58,6 +58,8 @@ class ShellPanel(fslpanel.FSLViewPanel):
 
         sizer.Add(shell, flag=wx.EXPAND, proportion=1)
 
+        self.SetMinSize((300, 200))
+
 
     def destroy(self):
         fslpanel.FSLViewPanel.destroy(self)
