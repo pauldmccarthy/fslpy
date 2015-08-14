@@ -208,8 +208,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
         bg = self.getSceneOptions().bgColour[:3]
         fg = colourmaps.complementaryColour(bg[:3])
 
-        bg = [int(c * 255) for c in bg]
-        fg = [int(c * 255) for c in fg]
+        bg = [int(round(c * 255)) for c in bg] + [255]
+        fg = [int(round(c * 255)) for c in fg] + [255]
 
         self.getCanvasPanel().SetBackgroundColour(bg)
         self.getCanvasPanel().SetForegroundColour(fg)
@@ -226,6 +226,8 @@ class OrthoPanel(canvaspanel.CanvasPanel):
             self._yLabels[side].SetForegroundColour(fg)
             self._zLabels[side].SetForegroundColour(fg) 
 
+        self.Refresh()
+        
             
     def __onZoom(self, *a):
         """Called when the :attr:`.SceneOpts.zoom` property changes.
