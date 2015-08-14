@@ -422,6 +422,10 @@ class ViewPanel(fslpanel.FSLViewPanel):
         # We also explicitly tell the AuiManager what the
         # current minimum and best sizes are for every panel
         for panel in self.__panels.values():
+
+            if isinstance(panel, fsltoolbar.FSLViewToolBar):
+                continue
+            
             paneInfo = self.__auiMgr.GetPane(panel)
             parent   = panel.GetParent()
             minSize  = panel.GetMinSize().Get()
