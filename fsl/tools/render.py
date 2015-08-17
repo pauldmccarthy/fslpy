@@ -9,7 +9,7 @@ capability for scenes which can otherwise be displayed via fslview.
 
 See:
   - :mod:`fsl.tools.fslview`
-  - :mod:`fsl.tools.fslview_parseargs`
+  - :mod:`fsl.fslview.fslview_parseargs`
 """
 
 #
@@ -27,7 +27,6 @@ import argparse
 import matplotlib.image as mplimg
 
 import props
-import fslview_parseargs
 
 import fsl
 import fsl.utils.layout                        as fsllayout
@@ -36,6 +35,7 @@ import fsl.utils.textbitmap                    as textbitmap
 import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
 import fsl.fslview.overlay                     as fsloverlay
+import fsl.fslview.fslview_parseargs           as fslview_parseargs
 import fsl.fslview.displaycontext              as displaycontext
 import fsl.fslview.displaycontext.orthoopts    as orthoopts
 import fsl.fslview.displaycontext.lightboxopts as lightboxopts

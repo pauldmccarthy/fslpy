@@ -13,10 +13,9 @@ import time
 import logging
 import argparse
 
-import fslview_parseargs
-
-import fsl.fslview.displaycontext as displaycontext
-import fsl.fslview.overlay        as fsloverlay
+import fsl.fslview.fslview_parseargs as fslview_parseargs
+import fsl.fslview.displaycontext    as displaycontext
+import fsl.fslview.overlay           as fsloverlay
 
 
 log = logging.getLogger(__name__)

@@ -50,12 +50,16 @@ also provide the following module level attributes:
                        ``FSL_CONTEXT`` function.
 """
 
+
 import logging
 import warnings
 
 import os
+import os.path as op
 import sys
+import glob
 import argparse
+import importlib
 import subprocess
 
 
@@ -101,33 +105,31 @@ import fsl.tools          as tools
 import fsl.utils.settings as fslsettings
 
 
-def loadAllFSLTools():
-    """Looks in the :mod:`fsl.tools` package, loads a description for
-    every FSL tool present, and returns all descriptions in a
-    ``{toolName->toolObj}`` dictionary. See the :func:`loadFSLTool`
-    function.
+def getFSLToolNames():
+    """Returns the name of every tool in the :mod:`fsl.tools` package.
     """
 
-    allTools = {}
+    toolFiles = glob.glob(op.join(op.dirname(tools.__file__), '*py'))
+    allTools  = []
+    
+    for toolFile in toolFiles:
 
-    for moduleName in dir(tools):
-        
-        module = getattr(tools, moduleName)
+        toolName = op.splitext(op.basename(toolFile))[0]
 
-        try:              fsltool = loadFSLTool(moduleName, module)
-        except TypeError: continue
-
-        allTools[moduleName] = fsltool
+        if toolName != '__init__':
+            allTools.append(toolName)
 
     return allTools
 
 
-def loadFSLTool(moduleName, module):
+def loadFSLTool(moduleName):
     """Inspects the given module to see if it looks like a valid
     FSL tool. If it is not, a TypeError is raised. If it is,
     a container object is created and returned, containing
     all of the elements of the tool.
     """
+
+    module = importlib.import_module('fsl.tools.{}'.format(moduleName))
 
     # Each FSL tool module may specify several things
     toolName  = getattr(module, 'FSL_TOOLNAME',  None)
@@ -178,7 +180,7 @@ def parseArgs(argv, allTools):
     """
 
     epilog = 'Type fslpy help <tool> for program-specific help. ' \
-             'Available programs:\n  {}'.format('\n  '.join(allTools.keys()))
+             'Available programs:\n  {}'.format('\n  '.join(allTools))
 
     parser = argparse.ArgumentParser(
         prog='fslpy',
@@ -241,11 +243,11 @@ def parseArgs(argv, allTools):
 
         # unknown tool name supplied
         if toolArgv[0] not in allTools:
-            print '\nUnknown FSL tool: {}\n'.format(namespace.tool) 
+            print '\nUnknown FSL tool: {}\n'.format(toolArgv[0])
             parser.print_help()
             sys.exit(1)
 
-        fslTool = allTools[toolArgv[0]]
+        fslTool = loadFSLTool(toolArgv[0])
 
         # no tool specific argument parser
         if fslTool.parseArgs is None:
@@ -403,7 +405,8 @@ def runTool(toolName, args, **kwargs):
 
     return subprocess.call(args, **kwargs)
 
-    
+
+
 def main(args=None):
     """Entry point.
 
@@ -418,7 +421,7 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    allTools                = loadAllFSLTools()
+    allTools                = getFSLToolNames()
     fslTool, args, toolArgs = parseArgs(args, allTools)
 
     if fslTool.interface is not None:
