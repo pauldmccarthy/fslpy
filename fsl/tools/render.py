@@ -24,8 +24,6 @@ import logging
 
 import argparse
 
-import matplotlib.image as mplimg
-
 import props
 
 import fsl
@@ -348,7 +346,7 @@ def run(args, context):
             zax=sceneOpts.zax,
             width=width,
             height=height,
-            bgColour=args.background)
+            bgColour=args.bgColour)
 
         props.applyArguments(c, args)
         canvases.append(c)
@@ -408,7 +406,7 @@ def run(args, context):
                 zax=zax,
                 width=int(width),
                 height=int(height),
-                bgColour=args.background)
+                bgColour=args.bgColour)
             
             if zoom is not None: c.zoom = zoom
             c.centreDisplayAt(*centre)
@@ -437,8 +435,8 @@ def run(args, context):
                                       displayCtx,
                                       canvasAxes,
                                       canvases,
-                                      args.background[:3],
-                                      args.background[ 3])
+                                      args.bgColour[:3],
+                                      args.bgColour[ 3])
 
     # layout
     if args.scene == 'lightbox':
@@ -458,7 +456,7 @@ def run(args, context):
                                        cbarHeight,
                                        sceneOpts.colourBarLocation,
                                        sceneOpts.colourBarLabelSide,
-                                       args.background)
+                                       args.bgColour)
         if cbarBmp is not None:
             layout  = buildColourBarLayout(layout,
                                            cbarBmp,
@@ -467,7 +465,9 @@ def run(args, context):
 
  
     if args.outfile is not None:
-        bitmap = fsllayout.layoutToBitmap(layout, args.background)
+        
+        import matplotlib.image as mplimg
+        bitmap = fsllayout.layoutToBitmap(layout, args.bgColour)
         mplimg.imsave(args.outfile, bitmap)
 
     
@@ -487,10 +487,6 @@ def parseArgs(argv):
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
-    mainParser.add_argument('-bg', '--background', type=float, nargs=4,
-                            metavar=('R', 'G', 'B', 'A'),
-                            help='Background colour (between 0.0 and 1.0)', 
-                            default=(0, 0, 0, 1.0)) 
     
     namespace = fslview_parseargs.parseArgs(mainParser,
                                             argv,

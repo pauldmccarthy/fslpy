@@ -139,9 +139,7 @@ import os.path as op
 
 from collections import OrderedDict
 
-import numpy             as np
-import matplotlib.colors as colors
-import matplotlib.cm     as mplcm
+import numpy as np
 
 import props
 
@@ -540,6 +538,10 @@ def registerColourMap(cmapFile,
     :arg name:        Display name for the colour map. If ``None``, defaults
                       to the ``name``. 
     """
+
+    import matplotlib.cm     as mplcm
+    import matplotlib.colors as colors
+    
     if key         is None: key         = op.basename(cmapFile).split('.')[0]
     if name        is None: name        = key
     if overlayList is None: overlayList = []

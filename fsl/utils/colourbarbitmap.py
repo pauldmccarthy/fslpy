@@ -10,15 +10,6 @@
 and returned as an rgba bitmap.
 """
 
-import logging
-log = logging.getLogger(__name__)
-
-
-import numpy                           as np
-import matplotlib.backends.backend_agg as mplagg
-import matplotlib.figure               as mplfig
-import matplotlib.cm                   as cm
-
 
 def colourBarBitmap(cmap,
                     vmin,
@@ -38,6 +29,13 @@ def colourBarBitmap(cmap,
     The bitmap is returned as a W*H*4 numpy array, with the top-left
     pixel located at index ``[0, 0, :]``.
     """
+
+    # These imports are expensive, so we're
+    # importing at the function level.
+    import numpy                           as np
+    import matplotlib.backends.backend_agg as mplagg
+    import matplotlib.figure               as mplfig
+    import matplotlib.cm                   as cm
 
     if orientation not in ['vertical', 'horizontal']:
         raise ValueError('orientation must be vertical or horizontal')

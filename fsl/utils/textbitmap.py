@@ -9,13 +9,6 @@
 some text using :mod:`matplotlib`, and returns it as an RGBA bitmap.
 """
 
-import logging
-log = logging.getLogger(__name__)
-
-import numpy                           as np
-import matplotlib.backends.backend_agg as mplagg
-import matplotlib.figure               as mplfig
-
 
 def textBitmap(text,
                width,
@@ -24,6 +17,11 @@ def textBitmap(text,
                fgColour,
                bgColour,
                alpha=1.0):
+
+    # Imports are expensive
+    import numpy                           as np
+    import matplotlib.backends.backend_agg as mplagg
+    import matplotlib.figure               as mplfig
 
     dpi    = 96.0
     fig    = mplfig.Figure(figsize=(width / dpi, height / dpi),
