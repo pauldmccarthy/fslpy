@@ -98,12 +98,7 @@ def parseArgs(argv):
 def context(args):
 
     import wx
-    import props
-    import fsl.fslview.gl     as fslgl
-    import fsl.data.strings   as strings
     import fsl.fslview.splash as fslsplash
-
-    props.initGUI()
 
     # Create a splash screen, and use it
     # to initialise the OpenGL context
@@ -120,6 +115,12 @@ def context(args):
     frame.Update()
     wx.Yield()
     time.sleep(0.5)
+
+    import props
+    import fsl.fslview.gl   as fslgl
+    import fsl.data.strings as strings
+
+    props.initGUI()
     
     # force the creation of a wx.glcanvas.GLContext object,
     # and initialise OpenGL version-specific module loads.
