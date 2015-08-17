@@ -10,14 +10,14 @@ axis from a collection of 3D overlays.
 """
 
 import sys
+import copy
 import logging
 
 import numpy     as np
 import OpenGL.GL as gl
 
-import props
-
 import fsl.fslview.gl.slicecanvas as slicecanvas
+import fsl.fslview.gl.canvasopts  as canvasopts
 import fsl.fslview.gl.resources   as glresources
 import fsl.fslview.gl.textures    as textures
 
@@ -34,49 +34,14 @@ class LightBoxCanvas(slicecanvas.SliceCanvas):
     """
 
     
-    sliceSpacing = props.Real(clamped=True,
-                              minval=0.1,
-                              maxval=30.0,
-                              default=1.0)
-    """This property controls the spacing
-    between slices (in display coordinates).
-    """
+    sliceSpacing   = copy.copy(canvasopts.LightBoxCanvasOpts.sliceSpacing)
+    ncols          = copy.copy(canvasopts.LightBoxCanvasOpts.ncols)
+    nrows          = copy.copy(canvasopts.LightBoxCanvasOpts.nrows)
+    topRow         = copy.copy(canvasopts.LightBoxCanvasOpts.topRow)
+    zrange         = copy.copy(canvasopts.LightBoxCanvasOpts.zrange)
+    showGridLines  = copy.copy(canvasopts.LightBoxCanvasOpts.showGridLines)
+    highlightSlice = copy.copy(canvasopts.LightBoxCanvasOpts.highlightSlice)
 
-    
-    ncols = props.Int(clamped=True, minval=1, maxval=100, default=5)
-    """This property controls the number of 
-    slices to be displayed on a single row.
-    """
-
-    
-    nrows = props.Int(clamped=True, minval=1, maxval=100, default=4)
-    """This property controls the number of 
-    rows to be displayed on the canvas.
-    """ 
-
-    
-    topRow = props.Int(clamped=True, minval=0, maxval=20, default=0)
-    """This property controls the (0-indexed) row
-    to be displayed at the top of the canvas, thus
-    providing the ability to scroll through the
-    slices.
-    """
-
-    
-    zrange = props.Bounds(ndims=1)
-    """This property controls the range, in display
-    coordinates, of the slices to be displayed.
-    """
-
-
-    showGridLines = props.Boolean(default=False)
-    """If True, grid lines are drawn between the displayed slices. """
-
-
-    highlightSlice = props.Boolean(default=False)
-    """If True, a box will be drawn around the slice containing the current
-    location.
-    """
     
     
     def worldToCanvas(self, xpos, ypos, zpos):

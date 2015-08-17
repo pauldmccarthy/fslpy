@@ -98,9 +98,12 @@ def parseArgs(argv):
 def context(args):
 
     import wx
+    import props
     import fsl.fslview.gl     as fslgl
     import fsl.data.strings   as strings
     import fsl.fslview.splash as fslsplash
+
+    props.initGUI()
 
     # Create a splash screen, and use it
     # to initialise the OpenGL context

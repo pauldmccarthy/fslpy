@@ -10,10 +10,9 @@ import logging
 
 import props
 
-import fsl.fslview.gl.slicecanvas     as slicecanvas
-import fsl.fslview.gl.colourbarcanvas as colourbarcanvas
-
 import fsl.data.strings as strings
+
+import fsl.fslview.gl.canvasopts as canvasopts
 
 
 log = logging.getLogger(__name__)
@@ -24,11 +23,13 @@ class SceneOpts(props.HasProperties):
     :class:`.CanvasPanel` views.
     """
 
-    
-    showCursor = props.Boolean(default=True)
-
-    
-    zoom = props.Percentage(minval=10, maxval=1000, default=100, clamped=True)
+    showCursor      = copy.copy(canvasopts.SliceCanvasOpts.showCursor)
+    zoom            = copy.copy(canvasopts.SliceCanvasOpts.zoom)
+    bgColour        = copy.copy(canvasopts.SliceCanvasOpts.bgColour)
+    cursorColour    = copy.copy(canvasopts.SliceCanvasOpts.cursorColour)
+    resolutionLimit = copy.copy(canvasopts.SliceCanvasOpts.resolutionLimit)
+    renderMode      = copy.copy(canvasopts.SliceCanvasOpts.renderMode)
+    softwareMode    = copy.copy(canvasopts.SliceCanvasOpts.softwareMode)
 
     
     showColourBar = props.Boolean(default=False)
@@ -42,13 +43,10 @@ class SceneOpts(props.HasProperties):
                 strings.choices['SceneOpts.colourBarLocation.right']])
 
     
-    colourBarLabelSide = copy.copy(colourbarcanvas.ColourBarCanvas.labelSide)
-
-
-    bgColour     = copy.copy(slicecanvas.SliceCanvas.bgColour)
-
-    
-    cursorColour = copy.copy(slicecanvas.SliceCanvas.cursorColour)
+    colourBarLabelSide = props.Choice(
+        ('top-left', 'bottom-right'),
+        labels=[strings.choices['ColourBarCanvas.labelSide.top-left'],
+                strings.choices['ColourBarCanvas.labelSide.bottom-right']])
 
     
     performance = props.Choice(
@@ -67,33 +65,6 @@ class SceneOpts(props.HasProperties):
     cost of reduced features, and poorer rendering quality.
 
     See the :meth:`__onPerformanceChange` method.
-    """
-
-
-    resolutionLimit = copy.copy(slicecanvas.SliceCanvas.resolutionLimit)
-    """The highest resolution at which any image should be displayed.
-
-    See :attr:`.SliceCanvas.resolutionLimit` and :attr:`.Display.resolution`.
-    """
-    
-
-    renderMode = copy.copy(slicecanvas.SliceCanvas.renderMode)
-    """Controls the rendering mode, useful for low-performance graphics cards/
-    software rendering.
-
-    See :attr:`.SliceCanvas.renderMode`.
-    """
-
-    
-    softwareMode = copy.copy(slicecanvas.SliceCanvas.softwareMode)
-    """If ``True``, all images should be displayed in a mode optimised for
-    software based rendering.
-
-    The definition of 'software mode' is intentionally left unspecified, but
-    will generally mean using GL vertex/fragment shaders which are optimised
-    for speed, possibly at the cost of omitting some features.
-
-    See :attr:`.SliceCanvas.softwareMode` and :attr:`.Display.softwareMode`.
     """
 
 

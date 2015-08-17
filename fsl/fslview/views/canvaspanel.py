@@ -23,15 +23,15 @@ import matplotlib.image as mplimg
 
 import props
 
-import fsl.tools.fslview_parseargs as fslview_parseargs
-import fsl.utils.dialog            as fsldlg
-import fsl.utils.settings          as fslsettings
-import fsl.data.image              as fslimage
-import fsl.data.strings            as strings
-import fsl.fslview.displaycontext  as displayctx
-import fsl.fslview.controls        as fslcontrols
-import                                colourbarpanel
-import                                viewpanel
+import fsl.fslview.fslview_parseargs as fslview_parseargs
+import fsl.utils.dialog              as fsldlg
+import fsl.utils.settings            as fslsettings
+import fsl.data.image                as fslimage
+import fsl.data.strings              as strings
+import fsl.fslview.displaycontext    as displayctx
+import fsl.fslview.controls          as fslcontrols
+import                                  colourbarpanel
+import                                  viewpanel
 
 
 log = logging.getLogger(__name__)

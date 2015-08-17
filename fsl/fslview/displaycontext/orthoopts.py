@@ -10,8 +10,7 @@ import copy
 
 import props
 
-import fsl.fslview.gl.slicecanvas as slicecanvas
-import                               sceneopts
+import sceneopts
 
 
 class OrthoOpts(sceneopts.SceneOpts):
@@ -41,15 +40,15 @@ class OrthoOpts(sceneopts.SceneOpts):
     """How should we lay out each of the three canvases?"""
 
 
-    xzoom = copy.copy(slicecanvas.SliceCanvas.zoom)
+    xzoom = copy.copy(sceneopts.SceneOpts.zoom)
     """Controls zoom on the X canvas."""
 
     
-    yzoom = copy.copy(slicecanvas.SliceCanvas.zoom)
+    yzoom = copy.copy(sceneopts.SceneOpts.zoom)
     """Controls zoom on the Y canvas."""
 
     
-    zzoom = copy.copy(slicecanvas.SliceCanvas.zoom)
+    zzoom = copy.copy(sceneopts.SceneOpts.zoom)
     """Controls zoom on the Z canvas.
 
     Note that the :class:`OrthoOpts` class also inherits a ``zoom`` property

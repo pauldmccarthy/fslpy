@@ -9,15 +9,16 @@ import copy
 
 import sceneopts
 
-import fsl.fslview.gl.lightboxcanvas as lightboxcanvas
+import fsl.fslview.gl.canvasopts as canvasopts
 
 
 class LightBoxOpts(sceneopts.SceneOpts):
-    nrows          = copy.copy(lightboxcanvas.LightBoxCanvas.nrows)
-    ncols          = copy.copy(lightboxcanvas.LightBoxCanvas.ncols)
-    topRow         = copy.copy(lightboxcanvas.LightBoxCanvas.topRow)
-    sliceSpacing   = copy.copy(lightboxcanvas.LightBoxCanvas.sliceSpacing)
-    zrange         = copy.copy(lightboxcanvas.LightBoxCanvas.zrange)
-    zax            = copy.copy(lightboxcanvas.LightBoxCanvas.zax)
-    showGridLines  = copy.copy(lightboxcanvas.LightBoxCanvas.showGridLines)
-    highlightSlice = copy.copy(lightboxcanvas.LightBoxCanvas.highlightSlice)     
+
+    sliceSpacing   = copy.copy(canvasopts.LightBoxCanvasOpts.sliceSpacing)
+    zax            = copy.copy(canvasopts.LightBoxCanvasOpts.zax)
+    ncols          = copy.copy(canvasopts.LightBoxCanvasOpts.ncols)
+    nrows          = copy.copy(canvasopts.LightBoxCanvasOpts.nrows)
+    topRow         = copy.copy(canvasopts.LightBoxCanvasOpts.topRow)
+    zrange         = copy.copy(canvasopts.LightBoxCanvasOpts.zrange)
+    showGridLines  = copy.copy(canvasopts.LightBoxCanvasOpts.showGridLines)
+    highlightSlice = copy.copy(canvasopts.LightBoxCanvasOpts.highlightSlice)

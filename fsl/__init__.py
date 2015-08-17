@@ -306,10 +306,9 @@ def parseArgs(argv, allTools):
     # things if its logging level has been
     # set to DEBUG, so we import it now so
     # it can set itself up.
-    import fsl.utils.trace 
+    import fsl.utils.trace
 
-    # otherwise, give the remaining arguments to the tool parser
-    fslTool = allTools[namespace.tool]
+    fslTool = loadFSLTool(namespace.tool)
 
     if fslTool.parseArgs is not None: toolArgs = fslTool.parseArgs(toolArgv)
     else:                             toolArgs = None
@@ -404,7 +403,6 @@ def runTool(toolName, args, **kwargs):
     log.debug('Executing {}'.format(' '.join(args)))
 
     return subprocess.call(args, **kwargs)
-
 
 
 def main(args=None):

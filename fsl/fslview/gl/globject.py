@@ -23,6 +23,30 @@ import fsl.utils.transform as transform
 log = logging.getLogger(__name__)
 
 
+def getGLObjectType(overlayType):
+    """This function returns an appropriate :class:`GLObject` type for the
+    given :attr:`.Display.overlayType`.
+    """
+
+    import glvolume
+    import glmask
+    import glrgbvector
+    import gllinevector
+    import glmodel
+    import gllabel
+
+    typeMap = {
+        'volume'     : glvolume    .GLVolume,
+        'mask'       : glmask      .GLMask,
+        'rgbvector'  : glrgbvector .GLRGBVector,
+        'linevector' : gllinevector.GLLineVector,
+        'model'      : glmodel     .GLModel,
+        'label'      : gllabel     .GLLabel
+    }
+
+    return typeMap.get(overlayType, None)
+
+
 def createGLObject(overlay, display):
     """Create :class:`GLObject` instance for the given overlay, as specified
     by the :attr:`.Display.overlayType` property.
@@ -32,7 +56,7 @@ def createGLObject(overlay, display):
     :arg display: A :class:`.Display` instance describing how the overlay
                   should be displayed.
     """
-    ctr = GLOBJECT_OVERLAY_TYPE_MAP.get(display.overlayType, None)
+    ctr = getGLObjectType(display.overlayType)
 
     if ctr is not None: return ctr(overlay, display)
     else:               return None
@@ -312,25 +336,3 @@ class GLImageObject(GLObject):
             vertices = transform.transform(vertices, xform)
 
         return vertices, voxCoords, texCoords 
-
-
-import glvolume
-import glmask
-import glrgbvector
-import gllinevector
-import glmodel
-import gllabel
-
-
-GLOBJECT_OVERLAY_TYPE_MAP = {
-    'volume'     : glvolume    .GLVolume,
-    'mask'       : glmask      .GLMask,
-    'rgbvector'  : glrgbvector .GLRGBVector,
-    'linevector' : gllinevector.GLLineVector,
-    'model'      : glmodel     .GLModel,
-    'label'      : gllabel     .GLLabel
-}
-"""This dictionary provides a mapping between all available overlay types (see
-the :attr:`.Display.overlayType` property), and the :class:`GLObject` subclass
-used to represent them.
-"""

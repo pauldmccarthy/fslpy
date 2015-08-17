@@ -19,15 +19,16 @@ of the subclasses:
 See also the :class:`.LightBoxCanvas` class.
 """
 
+import copy
 import logging
-log = logging.getLogger(__name__)
 
-import numpy                  as np 
-import OpenGL.GL              as gl
+import numpy     as np 
+import OpenGL.GL as gl
 
 import props
 
 import fsl.data.image             as fslimage
+import fsl.fslview.gl.canvasopts  as canvasopts
 import fsl.fslview.gl.routines    as glroutines
 import fsl.fslview.gl.resources   as glresources
 import fsl.fslview.gl.globject    as globject
@@ -35,87 +36,27 @@ import fsl.fslview.gl.textures    as textures
 import fsl.fslview.gl.annotations as annotations
 
 
+log = logging.getLogger(__name__)
+
+
 class SliceCanvas(props.HasProperties):
     """Represens a canvas which may be used to display a single 2D slice from a
     collection of 3D overlays.
     """
 
+    pos             = copy.copy(canvasopts.SliceCanvasOpts.pos)
+    zoom            = copy.copy(canvasopts.SliceCanvasOpts.zoom)
+    displayBounds   = copy.copy(canvasopts.SliceCanvasOpts.displayBounds)
+    showCursor      = copy.copy(canvasopts.SliceCanvasOpts.showCursor)
+    zax             = copy.copy(canvasopts.SliceCanvasOpts.zax)
+    invertX         = copy.copy(canvasopts.SliceCanvasOpts.invertX)
+    invertY         = copy.copy(canvasopts.SliceCanvasOpts.invertY)
+    cursorColour    = copy.copy(canvasopts.SliceCanvasOpts.cursorColour)
+    bgColour        = copy.copy(canvasopts.SliceCanvasOpts.bgColour)
+    renderMode      = copy.copy(canvasopts.SliceCanvasOpts.renderMode)
+    softwareMode    = copy.copy(canvasopts.SliceCanvasOpts.softwareMode)
+    resolutionLimit = copy.copy(canvasopts.SliceCanvasOpts.resolutionLimit)
     
-    pos = props.Point(ndims=3)
-    """The currently displayed position. The ``pos.x`` and ``pos.y`` positions
-    denote the position of a 'cursor', which is highlighted with green
-    crosshairs. The ``pos.z`` position specifies the currently displayed
-    slice. While the values of this point are in the display coordinate
-    system, the dimension ordering may not be the same as the display
-    coordinate dimension ordering. For this position, the x and y dimensions
-    correspond to horizontal and vertical on the screen, and the z dimension
-    to 'depth'.
-    """
-
-    
-    zoom = props.Percentage(minval=100.0,
-                            maxval=1000.0,
-                            default=100.0,
-                            clamped=True)
-    """The :attr:`.DisplayContext.bounds` are divided by this zoom
-    factor to produce the canvas display bounds.
-    """
-
-    
-    displayBounds = props.Bounds(ndims=2)
-    """The display bound x/y values specify the horizontal/vertical display
-    range of the canvas, in display coordinates. This may be a larger area
-    than the size of the displayed overlays, as it is adjusted to preserve
-    the aspect ratio.
-    """
-
-    
-    showCursor = props.Boolean(default=True)
-    """If ``False``, the green crosshairs which show
-    the current cursor location will not be drawn.
-    """
- 
-
-    zax = props.Choice((0, 1, 2), ('X axis', 'Y axis', 'Z axis'))
-    """The display coordinate system axis to be used as the screen 'depth'
-    axis.
-    """
-
-    
-    invertX = props.Boolean(default=False)
-    """If True, the display is inverted along the X (horizontal screen) axis.
-    """
-
-    
-    invertY = props.Boolean(default=False)
-    """If True, the display is inverted along the Y (vertical screen) axis.
-    """
-
-
-    cursorColour = props.Colour(default=(0, 1, 0))
-    """Canvas cursor colour."""
-
-
-    bgColour = props.Colour(default=(0, 0, 0))
-    """Canvas background colour."""
-
-    
-    renderMode = props.Choice(('onscreen', 'offscreen', 'prerender'))
-    """How the GLObjects are rendered to the canvas - onscreen is the
-    default, but the other options will give better performance on
-    slower platforms.
-    """
-    
-    
-    softwareMode = props.Boolean(default=False)
-    """If ``True``, the :attr:`.Display.softwareMode` property for every
-    displayed image is set to ``True``.
-    """
-
-    
-    resolutionLimit = props.Real(default=0, minval=0, maxval=5, clamped=True)
-    """The minimum resolution at which overlays should be drawn."""
-
 
     def calcPixelDims(self):
         """Calculate and return the approximate size (width, height) of one
