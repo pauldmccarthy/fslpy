@@ -7,17 +7,14 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Required feature list before next internal release
-** Iconify/clean up interface
-** Make toolbar sizing sensible
-** Screenshot doesn't work when labels not shown
 ** Tooltips
-** Rename to FSLEyes
-** Startup time
 ** Complete code documentation, commenting and clean-up
 ** Testing
 ** Application icon (for OSX)
 ** OSX Installer 
+** Remove logging calls for performance
 ** Start up menu visibility thing (PyInstaller bug)
+Using development version of pyinstaller
 ** Move TODO list to Gitlab
 ** DONE Other
 *** WONTFIX Remove Colour map name from toolbar
@@ -29,6 +26,19 @@ Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE Rename to FSLEyes
+*** DONE Startup time
+Startup time is comparable to FSLView, and faster in most cases. 
+*** DONE Vertical Colour bar is inverted
+*** DONE Canvas background colour not refreshing correctly
+*** DONE Screenshot doesn't work when labels not shown
+*** DONE Occasional (non-fatal) error when loading VTK models
+*** DONE Make toolbar sizing sensible
+*** DONE Editor bugfixes/performance 
+*** DONE Ortho view<->edit profile changes screw up OrthoProfileToolbar. Also needs to handle non-volume overlays, and non-pixdim/ID volumes. Maybe all edit tools should be visible by default,  but all disabled when in view mode.
+*** DONE OrthoToolbar needs to re-bind profile action buttons when profile changes
+*** DONE Iconify/clean up interface
+*** DONE Toolbar widgets are capturing mouse wheel events under linux
 *** DONE Change Background colour on CanvasPanel
 *** DONE OrthoPanel performance - mouse click listener called too many times?
 *** DONE Open new view panel (time series) resets location?
@@ -86,10 +96,11 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 ** Text annotations for models and labels
 ** A pre-processor for GL14 shader programs
 ** Unify/remove duplication across gl*_funcs modules
-** Unify/remove duplication across texture classes - the set(**kwargs) method, and all the GL texture function calls
+** Unify/remove duplication across texture classes - the set(**kwargs) method, all the GL texture function calls, and duplicated 3D texture functionality
 ** Port to wxPython/Phoenix
 *** Support for retina displays
 * Things to do in props package
+** Bounds property - remove labels, they should be set on ViewItems instead.
 ** Choice property - remove labels, they should be set on ViewItems instead.
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -189,6 +200,7 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Different cursor types in edit profile (circle/sphere, in addition to rectangle/cube)
 ** Ability to import/export time series data
 ** A 'FeatModel' control widget, allowing user to look at design matrix, stats, whatever ..
 ** A 'MELODICTimeSeries' thingo, just like the FEATTimeSeries - plot component time courses alongside a voxel's time course.
