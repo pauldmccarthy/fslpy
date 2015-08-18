@@ -48,10 +48,7 @@ import logging
 import props
 
 import fsl.utils.typedict  as td
-import fsl.data.image      as fslimage
-import fsl.data.model      as fslmodel
 import fsl.fslview.overlay as fsloverlay
-import fsl.utils.transform as transform
 
 # The colour maps module needs to be imported
 # before the displaycontext.opts modules are
@@ -935,6 +932,9 @@ def applyOverlayArgs(args, overlayList, displayCtx, **kwargs):
     :arg kwargs:      Passed through to the :func:`.Overlay.loadOverlays`
                       function.
     """
+
+    import fsl.data.image as fslimage
+    import fsl.data.model as fslmodel
 
     paths    = [o.overlay for o in args.overlays]
 

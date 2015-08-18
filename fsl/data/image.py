@@ -14,9 +14,6 @@ import               os
 import os.path    as op
 import subprocess as sp
 
-import numpy   as np
-import nibabel as nib
-
 import props
 
 import fsl.utils.transform as transform
@@ -110,6 +107,9 @@ class Image(props.HasProperties):
         if header is not None:
             header = header.copy()
 
+        import numpy   as np
+        import nibabel as nib
+
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
@@ -136,6 +136,7 @@ class Image(props.HasProperties):
         # with an identity transformation (each voxel maps
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
+
 
             if xform is None:
                 if header is None: xform = np.identity(4)
@@ -351,6 +352,7 @@ class Image(props.HasProperties):
         # the aff2axcodes returns one code for each 
         # axis in the image array (i.e. in voxel space),
         # which denotes the real world direction
+        import nibabel as nib
         code = nib.orientations.aff2axcodes(
             xform,
             ((constants.ORIENT_R2L, constants.ORIENT_L2R),
@@ -555,7 +557,8 @@ def loadImage(filename):
             busyDlg.Destroy()
 
     log.debug('Loading image from {}'.format(filename))
-    
+
+    import nibabel as nib
     return nib.load(filename), filename
 
 
@@ -648,6 +651,7 @@ def saveImage(image, fromDir=None):
 
             log.debug('Saving image ({}) to {}'.format(image, path))
 
+            import nibabel as nib
             nib.save(nibImage, path)
             image.dataSource = path
             
