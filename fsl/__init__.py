@@ -52,12 +52,11 @@ also provide the following module level attributes:
 
 
 import logging
+import pkgutil
 import warnings
 
 import os
-import os.path as op
 import sys
-import glob
 import argparse
 import importlib
 import subprocess
@@ -109,15 +108,7 @@ def getFSLToolNames():
     """Returns the name of every tool in the :mod:`fsl.tools` package.
     """
 
-    toolFiles = glob.glob(op.join(op.dirname(tools.__file__), '*py'))
-    allTools  = []
-    
-    for toolFile in toolFiles:
-
-        toolName = op.splitext(op.basename(toolFile))[0]
-
-        if toolName != '__init__':
-            allTools.append(toolName)
+    allTools  = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
 
     return allTools
 
