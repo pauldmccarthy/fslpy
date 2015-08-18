@@ -9,7 +9,6 @@ details. The command line interface is defined (and parsed) by the
 :mod:`fslview_parseargs` module.
 """
 
-import time
 import logging
 import argparse
 
@@ -121,7 +120,6 @@ def context(args):
     frame.Show()
     frame.Update()
     wx.Yield()
-    time.sleep(0.5)
 
     import props
     import fsl.fslview.gl   as fslgl
