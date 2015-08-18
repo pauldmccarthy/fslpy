@@ -5,11 +5,11 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module implements an application which provides off-screen rendering
-capability for scenes which can otherwise be displayed via fslview.
+capability for scenes which can otherwise be displayed via fsleyes.
 
 See:
-  - :mod:`fsl.tools.fslview`
-  - :mod:`fsl.fslview.fslview_parseargs`
+  - :mod:`fsl.tools.fsleyes`
+  - :mod:`fsl.fsleyes.fsleyes_parseargs`
 """
 
 #
@@ -32,11 +32,11 @@ import fsl.utils.colourbarbitmap               as cbarbitmap
 import fsl.utils.textbitmap                    as textbitmap
 import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
-import fsl.fslview.overlay                     as fsloverlay
-import fsl.fslview.fslview_parseargs           as fslview_parseargs
-import fsl.fslview.displaycontext              as displaycontext
-import fsl.fslview.displaycontext.orthoopts    as orthoopts
-import fsl.fslview.displaycontext.lightboxopts as lightboxopts
+import fsl.fsleyes.overlay                     as fsloverlay
+import fsl.fsleyes.fsleyes_parseargs           as fsleyes_parseargs
+import fsl.fsleyes.displaycontext              as displaycontext
+import fsl.fsleyes.displaycontext.orthoopts    as orthoopts
+import fsl.fsleyes.displaycontext.lightboxopts as lightboxopts
 
 
 log = logging.getLogger(__name__)
@@ -310,9 +310,9 @@ def run(args, context):
         fsl.runTool('render', argv, env=env)
         sys.exit(0)
 
-    import fsl.fslview.gl                      as fslgl
-    import fsl.fslview.gl.osmesaslicecanvas    as slicecanvas
-    import fsl.fslview.gl.osmesalightboxcanvas as lightboxcanvas
+    import fsl.fsleyes.gl                      as fslgl
+    import fsl.fsleyes.gl.osmesaslicecanvas    as slicecanvas
+    import fsl.fsleyes.gl.osmesalightboxcanvas as lightboxcanvas
 
     # Make sure than an OpenGL context 
     # exists, and initalise OpenGL modules
@@ -324,7 +324,7 @@ def run(args, context):
     if   args.scene == 'ortho':    sceneOpts = orthoopts   .OrthoOpts()
     elif args.scene == 'lightbox': sceneOpts = lightboxopts.LightBoxOpts()
 
-    fslview_parseargs.applySceneArgs(args, overlayList, displayCtx, sceneOpts)
+    fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, sceneOpts)
 
     # Calculate canvas and colour bar sizes
     # so that the entire scene will fit in
@@ -475,8 +475,7 @@ def parseArgs(argv):
     """Creates an argument parser which accepts options for off-screen
     rendering.
     
-    Uses the :mod:`fsl.tools.fslview_parseargs` module to peform the actual
-    parsing.
+    Uses the :mod:`.fsleyes_parseargs` module to peform the actual parsing.
     """
 
     mainParser = argparse.ArgumentParser(add_help=False)
@@ -488,7 +487,7 @@ def parseArgs(argv):
                             help='Size in pixels (width, height)',
                             default=(800, 600))
     
-    namespace = fslview_parseargs.parseArgs(mainParser,
+    namespace = fsleyes_parseargs.parseArgs(mainParser,
                                             argv,
                                             'render',
                                             'Scene renderer',
@@ -515,7 +514,7 @@ def context(args):
     # TODO rewrite for non-volumetric
     # 
     # The handleOverlayArgs function uses the
-    # fsl.fslview.overlay.loadOverlays function,
+    # fsl.fsleyes.overlay.loadOverlays function,
     # which will call these functions as it
     # goes through the list of overlay to be
     # loaded.
@@ -526,7 +525,7 @@ def context(args):
 
     # Load the overlays specified on the command
     # line, and configure their display properties
-    fslview_parseargs.applyOverlayArgs(
+    fsleyes_parseargs.applyOverlayArgs(
         args, overlayList, displayCtx, loadFunc=load, errorFunc=error)
 
     if len(overlayList) == 0:

@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """The :mod:`fsl` package contains front ends to various FSL tools,
-including 'FSLView2', the Python based image viewer.
+including 'FSLEyes', the Python based image viewer.
 
 This file contains the function :func:`main`, the application entry
 point. When invoked with the name of a tool, the :mod:`fsl.tools` package
@@ -83,7 +83,7 @@ logging.addLevelName(logging.MEMORY, 'MEMORY')
 # the latest version) - it calls logging.basicConfig(), and
 # thus screws up our own logging. We overcome this by configuring
 # the root logger before OpenGL.GL.shaders is imported (which
-# occurs when fsl.fslview.gl.slicecanvas.SliceCanvas is imported).
+# occurs when fsl.fsleyes.gl.slicecanvas.SliceCanvas is imported).
 
 logFormatter = logging.Formatter('%(levelname)8.8s '
                                  '%(filename)20.20s '
@@ -286,8 +286,8 @@ def parseArgs(argv, allTools):
         log.setLevel(logging.DEBUG)
 
         # make some noisy things quiet
-        logging.getLogger('fsl.fslview.gl')   .setLevel(logging.MEMORY)
-        logging.getLogger('fsl.fslview.views').setLevel(logging.MEMORY)
+        logging.getLogger('fsl.fsleyes.gl')   .setLevel(logging.MEMORY)
+        logging.getLogger('fsl.fsleyes.views').setLevel(logging.MEMORY)
         logging.getLogger('props')            .setLevel(logging.WARNING)
         logging.getLogger('pwidgets')         .setLevel(logging.WARNING)
     elif namespace.verbose == 2:

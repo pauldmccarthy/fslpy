@@ -16,8 +16,8 @@ messages = TypeDict({
     'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
                                      'FSL is installed',
 
-    'fslview.loading'              : 'Loading {}',
-    'FSLViewSplash.default'        : 'Loading ...',
+    'fsleyes.loading'              : 'Loading {}',
+    'FSLEyesSplash.default'        : 'Loading ...',
 
     'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
@@ -161,7 +161,7 @@ actions = TypeDict({
     'SaveOverlayAction'   : 'Save overlay',
     'LoadColourMapAction' : 'Load custom colour map',
 
-    'FSLViewFrame.closeViewPanel' : 'Close',
+    'FSLEyesFrame.closeViewPanel' : 'Close',
 
     'CanvasPanel.screenshot'              : 'Take screenshot',
     'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',

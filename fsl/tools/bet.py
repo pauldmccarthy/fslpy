@@ -11,13 +11,13 @@ import props
 
 # The colour maps module must be initialised
 # before the displaycontext module can be loaded
-import fsl.fslview.colourmaps       as colourmaps
+import fsl.fsleyes.colourmaps       as colourmaps
 colourmaps.init()
 
 import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform
-import fsl.fslview.displaycontext   as displaycontext
-import fsl.fslview.gl               as fslgl
+import fsl.fsleyes.displaycontext   as displaycontext
+import fsl.fsleyes.gl               as fslgl
 
 runChoices = OrderedDict((
 
@@ -190,7 +190,7 @@ def selectHeadCentre(opts, button):
     select the head centre location.
     """
     import                                 wx
-    import fsl.fslview.views.orthopanel as orthopanel
+    import fsl.fsleyes.views.orthopanel as orthopanel
 
     # make sure that GL is initialised
     fslgl.getWXGLContext(button.GetTopLevelParent())
@@ -292,7 +292,7 @@ def interface(parent, args, opts):
 def runBet(parent, opts):
 
     import fsl.utils.runwindow          as runwindow
-    import fsl.fslview.views.orthopanel as orthopanel 
+    import fsl.fsleyes.views.orthopanel as orthopanel 
 
     def onFinish(window, exitCode):
 
