@@ -16,10 +16,10 @@ import logging
 import numpy     as np
 import OpenGL.GL as gl
 
-import fsl.fslview.gl.slicecanvas as slicecanvas
-import fsl.fslview.gl.canvasopts  as canvasopts
-import fsl.fslview.gl.resources   as glresources
-import fsl.fslview.gl.textures    as textures
+import fsl.fslview.displaycontext.canvasopts as canvasopts
+import fsl.fslview.gl.slicecanvas            as slicecanvas
+import fsl.fslview.gl.resources              as glresources
+import fsl.fslview.gl.textures               as textures
 
 
 log = logging.getLogger(__name__)

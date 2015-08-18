@@ -9,7 +9,7 @@ import copy
 
 import sceneopts
 
-import fsl.fslview.gl.canvasopts as canvasopts
+import canvasopts
 
 
 class LightBoxOpts(sceneopts.SceneOpts):

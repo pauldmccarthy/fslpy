@@ -27,13 +27,13 @@ import OpenGL.GL as gl
 
 import props
 
-import fsl.data.image             as fslimage
-import fsl.fslview.gl.canvasopts  as canvasopts
-import fsl.fslview.gl.routines    as glroutines
-import fsl.fslview.gl.resources   as glresources
-import fsl.fslview.gl.globject    as globject
-import fsl.fslview.gl.textures    as textures
-import fsl.fslview.gl.annotations as annotations
+import fsl.data.image                         as fslimage
+import fsl.fslview.displaycontext.canvasopts  as canvasopts
+import fsl.fslview.gl.routines                as glroutines
+import fsl.fslview.gl.resources               as glresources
+import fsl.fslview.gl.globject                as globject
+import fsl.fslview.gl.textures                as textures
+import fsl.fslview.gl.annotations             as annotations
 
 
 log = logging.getLogger(__name__)

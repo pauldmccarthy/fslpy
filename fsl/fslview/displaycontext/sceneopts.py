@@ -12,7 +12,7 @@ import props
 
 import fsl.data.strings as strings
 
-import fsl.fslview.gl.canvasopts as canvasopts
+import canvasopts
 
 
 log = logging.getLogger(__name__)

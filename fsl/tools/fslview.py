@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
     
 def interface(parent, args, ctx):
 
+    import                      wx
     import fsl.fslview.frame as fslviewframe
     import fsl.fslview.views as views
 
@@ -69,7 +70,13 @@ def interface(parent, args, ctx):
     frame.Refresh()
     frame.Update()
 
-    splashFrame.Close()
+    # Closing the splash screen immediately
+    # can cause a crash under linux/GTK, so
+    # we'll do it a bit later.
+    def closeSplash():
+        splashFrame.Close()
+
+    wx.CallLater(500, closeSplash)
     
     return frame
 
