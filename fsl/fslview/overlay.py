@@ -17,12 +17,8 @@ import os.path as op
 
 import props
 
-import fsl.data.image       as fslimage
-import fsl.data.featresults as featresults
-import fsl.data.featimage   as fslfeatimage
-import fsl.data.strings     as strings
-import fsl.data.model       as fslmodel
-import fsl.utils.settings   as fslsettings
+import fsl.data.strings   as strings
+import fsl.utils.settings as fslsettings
 
 
 log = logging.getLogger(__name__)
@@ -150,6 +146,11 @@ def guessDataSourceType(filename):
     is unrecognised, the first tuple value will be ``None``.
     """
 
+    import fsl.data.image       as fslimage
+    import fsl.data.model       as fslmodel
+    import fsl.data.featimage   as fslfeatimage
+    import fsl.data.featresults as featresults
+
     if filename.endswith('.vtk'):
         return fslmodel.Model, filename
 
@@ -179,6 +180,9 @@ def makeWildcard():
     :arg allowedExts: A list of strings containing the allowed file
                       extensions.
     """
+
+    import fsl.data.image as fslimage
+    import fsl.data.model as fslmodel
     
     allowedExts  = fslimage.ALLOWED_EXTENSIONS     + \
                    fslmodel.ALLOWED_EXTENSIONS
@@ -356,6 +360,8 @@ def saveOverlay(overlay, fromDir=None):
     :raise ImportError:  if :mod:`wx` is not present.
     :raise RuntimeError: if a :class:`wx.App` has not been created.
     """
+
+    import fsl.data.image as fslimage
 
     if not isinstance(overlay, fslimage.Image):
         raise ValueError('Only Image overlays are supported')
