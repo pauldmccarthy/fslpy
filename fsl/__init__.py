@@ -313,7 +313,7 @@ def parseArgs(argv, allTools):
     return fslTool, namespace, toolArgs
 
 
-def fslDirWarning(frame, toolName, fslEnvActive):
+def fslDirWarning(toolName, fslEnvActive):
     """If ``fslEnvActive`` is False, displays a warning that the ``FSLDIR``
     environment variable is not set. The warning is displayed either on
     stdout, or via a GUI dialog (if ``frame`` is not ``None``).
@@ -324,7 +324,6 @@ def fslDirWarning(frame, toolName, fslEnvActive):
     warnmsg = 'The FSLDIR environment variable is not set - '\
               '{} may not behave correctly.'.format(toolName)
 
-
     # Check fslpy settings before
     # prompting the user
     fsldir = fslsettings.read('fsldir')
@@ -333,19 +332,23 @@ def fslDirWarning(frame, toolName, fslEnvActive):
         os.environ['FSLDIR'] = fsldir
         return
 
-    if frame is not None and fsldir is None:
+    if fsldir is None:
         import wx
         from fsl.utils.fsldirdlg import FSLDirDialog
 
-        dlg = FSLDirDialog(frame, toolName)
+        def warn():
+            dlg = FSLDirDialog(None, toolName)
 
-        if dlg.ShowModal() == wx.ID_OK:
-            fsldir = dlg.GetFSLDir()
-            log.debug('Setting $FSLDIR to {} (specified '
-                      'by user)'.format(fsldir))
-            
-            os.environ['FSLDIR'] = fsldir
-            fslsettings.write('fsldir', fsldir)
+            if dlg.ShowModal() == wx.ID_OK:
+                fsldir = dlg.GetFSLDir()
+                log.debug('Setting $FSLDIR to {} (specified '
+                          'by user)'.format(fsldir))
+
+                os.environ['FSLDIR'] = fsldir
+                fslsettings.write('fsldir', fsldir)
+
+        wx.CallLater(500, warn)
+
     else:
         log.warn(warnmsg)
         
@@ -441,11 +444,11 @@ def main(args=None):
         # Context creation may assume that a wx.App has been created
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
         else:                           ctx = None
-        
+
+        fslDirWarning(fslTool.toolName, fslEnvActive)
+
         frame = buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
         frame.Show()
-
-        wx.CallLater(1, fslDirWarning, frame, fslTool.toolName, fslEnvActive)
 
         if args.wxinspect:
             import wx.lib.inspection
