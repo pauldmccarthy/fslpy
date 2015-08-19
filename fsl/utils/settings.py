@@ -14,6 +14,9 @@ def read(name, default=None):
     try:    import wx
     except: return None
 
+    if wx.GetApp() is None:
+        return None
+
     config = wx.Config('fsleyes')
     
     value = config.Read(name)
@@ -28,7 +31,10 @@ def read(name, default=None):
 def write(name, value):
 
     try:    import wx
-    except: return None    
+    except: return
+
+    if wx.GetApp() is None:
+        return 
 
     value  = str(value)
     config = wx.Config('fsleyes')
