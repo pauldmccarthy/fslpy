@@ -136,7 +136,7 @@ def buildLabelBitmaps(overlayList,
                 height=height,
                 fontSize=12,
                 fgColour=fgColour,
-                bgColour=map(lambda c: c / 255.0, bgColour),
+                bgColour=bgColour,
                 alpha=alpha)
 
         labelBmps.append(allLabels)
@@ -184,7 +184,7 @@ def buildColourBarBitmap(overlayList,
         display.name,
         orient,
         labelSide,
-        bgColour=map(lambda c: c / 255.0, bgColour))
+        bgColour=bgColour)
 
     # The colourBarBitmap function returns a w*h*4
     # array, but the fsl.utils.layout.Bitmap (see
@@ -345,8 +345,7 @@ def run(args, context):
             displayCtx,
             zax=sceneOpts.zax,
             width=width,
-            height=height,
-            bgColour=args.bgColour)
+            height=height)
 
         props.applyArguments(c, args)
         canvases.append(c)
@@ -405,8 +404,7 @@ def run(args, context):
                 displayCtx,
                 zax=zax,
                 width=int(width),
-                height=int(height),
-                bgColour=args.bgColour)
+                height=int(height))
             
             if zoom is not None: c.zoom = zoom
             c.centreDisplayAt(*centre)
@@ -416,7 +414,8 @@ def run(args, context):
     # properties that are common to both ortho and
     # lightbox canvases) and render them one by one
     for i, c in enumerate(canvases):
-        
+
+        c.bgColour   = sceneOpts.bgColour
         c.showCursor = sceneOpts.showCursor
         if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
         elif c.zax == 1: c.pos.xyz = displayCtx.location.xzy
@@ -435,8 +434,8 @@ def run(args, context):
                                       displayCtx,
                                       canvasAxes,
                                       canvases,
-                                      args.bgColour[:3],
-                                      args.bgColour[ 3])
+                                      sceneOpts.bgColour[:3],
+                                      sceneOpts.bgColour[ 3])
 
     # layout
     if args.scene == 'lightbox':
@@ -456,7 +455,7 @@ def run(args, context):
                                        cbarHeight,
                                        sceneOpts.colourBarLocation,
                                        sceneOpts.colourBarLabelSide,
-                                       args.bgColour)
+                                       sceneOpts.bgColour)
         if cbarBmp is not None:
             layout  = buildColourBarLayout(layout,
                                            cbarBmp,
@@ -467,7 +466,8 @@ def run(args, context):
     if args.outfile is not None:
         
         import matplotlib.image as mplimg
-        bitmap = fsllayout.layoutToBitmap(layout, args.bgColour)
+        bitmap = fsllayout.layoutToBitmap(
+            layout, [c * 255 for c in sceneOpts.bgColour])
         mplimg.imsave(args.outfile, bitmap)
 
     
@@ -511,8 +511,6 @@ def context(args):
     overlayList  = fsloverlay.OverlayList()
     displayCtx = displaycontext.DisplayContext(overlayList)
 
-    # TODO rewrite for non-volumetric
-    # 
     # The handleOverlayArgs function uses the
     # fsl.fsleyes.overlay.loadOverlays function,
     # which will call these functions as it
