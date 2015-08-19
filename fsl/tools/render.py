@@ -12,12 +12,9 @@ See:
   - :mod:`fsl.fsleyes.fsleyes_parseargs`
 """
 
-#
-# TODO Separate out lightbox/ortho canvas layout and option configuration.
-# 
-
 
 import os
+import os.path as op
 import sys
 
 import logging
@@ -309,6 +306,14 @@ def run(args, context):
 
         fsl.runTool('render', argv, env=env)
         sys.exit(0)
+
+    # Make sure that FSL_OSMESA_PATH is definitely on the
+    # library path before OpenGL is imported (which occurs
+    # in fskl.fsleyes.gl) - pyinstaller clears the
+    # DYLD_LIBRARY_PATH env var before running a compiled
+    # script, so our above restart is useless.
+    os.environ[_LD_LIBRARY_PATH] = os.environ.get(_LD_LIBRARY_PATH, '') + \
+                                   op.pathsep + env['FSL_OSMESA_PATH']
 
     import fsl.fsleyes.gl                      as fslgl
     import fsl.fsleyes.gl.osmesaslicecanvas    as slicecanvas
