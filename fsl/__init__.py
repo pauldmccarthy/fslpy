@@ -394,11 +394,26 @@ def runTool(toolName, args, **kwargs):
     in a separate process. Returns the process exit code.
     """
 
+
     args = [toolName] + args
-    args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
+    
+    # If we are running from a compiled fsleyes
+    # executable, we need to prepend command line
+    # arguments with 'cmd' - see the wrapper script
+    # created by:
+    #
+    # https://git.fmrib.ox.ac.uk/paulmc/fslpy_build/\
+    #     blob/master/build_osx_app.sh
+    if getattr(sys, 'frozen', False):
+        args = [sys.executable, 'cmd'] + args
+
+    # Otherwise we are running
+    # through a python interpreter
+    else:
+        args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
 
     log.debug('Executing {}'.format(' '.join(args)))
-
+    
     return subprocess.call(args, **kwargs)
 
 
