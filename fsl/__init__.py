@@ -196,6 +196,12 @@ def parseArgs(argv, allTools):
         help='Run wx inspection tool')
     parser.add_argument('tool', help='FSL program to run')
 
+    # No arguments at all? 
+    # I'm not a mind-reader
+    if len(argv) == 0:
+        parser.print_help()
+        sys.exit(1) 
+
     # find the index of the first positional
     # argument, i.e. the tool name
     i = -1
