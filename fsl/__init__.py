@@ -321,6 +321,14 @@ def fslDirWarning(toolName, fslEnvActive):
 
     if fslEnvActive: return
 
+    haveGui = False
+    try:
+        import wx
+        if wx.GetApp() is not None:
+            haveGui = True
+    except:
+        pass
+
     warnmsg = 'The FSLDIR environment variable is not set - '\
               '{} may not behave correctly.'.format(toolName)
 
@@ -332,7 +340,7 @@ def fslDirWarning(toolName, fslEnvActive):
         os.environ['FSLDIR'] = fsldir
         return
 
-    if fsldir is None:
+    if haveGui:
         import wx
         from fsl.utils.fsldirdlg import FSLDirDialog
 
@@ -461,5 +469,5 @@ def main(args=None):
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
         else:                           ctx = None
         
-        fslDirWarning( None, fslTool.toolName, fslEnvActive)
+        fslDirWarning(fslTool.toolName, fslEnvActive)
         fslTool.execute(toolArgs, ctx)

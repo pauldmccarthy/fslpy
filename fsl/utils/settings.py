@@ -17,7 +17,7 @@ def read(name, default=None):
     if wx.GetApp() is None:
         return None
 
-    config = wx.Config('fsleyes')
+    config = wx.Config('uk.ac.ox.fmrib.fslpy')
     
     value = config.Read(name)
 
@@ -37,7 +37,7 @@ def write(name, value):
         return 
 
     value  = str(value)
-    config = wx.Config('fsleyes')
+    config = wx.Config('uk.ac.ox.fmrib.fslpy')
 
     log.debug('Writing {}: {}'.format(name, value))
 
