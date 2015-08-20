@@ -10,12 +10,10 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 ** Tooltips
 ** Complete code documentation, commenting and clean-up
 ** Testing
-** Application icon (for OSX)
-** OSX Installer 
-** Remove logging calls for performance
-** Start up menu visibility thing (PyInstaller bug)
-Using development version of pyinstaller
 ** Move TODO list to Gitlab
+** About dialog
+Credit for all libraries
+Credit for icons
 ** DONE Other
 *** WONTFIX Remove Colour map name from toolbar
 I think I need to write my own combobox implementation (subclass
@@ -26,6 +24,9 @@ Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE 3d histogram overlay data range broken?
+Display properties on all ViewPanels were unsycned by defeault - changed to only canvaspanels
+*** DONE Give random lut have enough colours for talairach
 *** DONE Rename to FSLEyes
 *** DONE Startup time
 Startup time is comparable to FSLView, and faster in most cases. 
@@ -89,6 +90,9 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 *** DONE FSLDIR management - prompt user at startup? Configurable menu option?
 *** DONE Open file dialog should use last directory
 * Things to do once the feature list is complete
+** Make voxel-space labels more accurate (copy routine from FSLView instead of using nibabel?)
+** LookupTable should show a modal message while generating label widgets (talairach takes ages)
+** Use wx.StandardPaths for resources (shaders, icons, etc) instead of relative to python modules
 ** Profile actions/settings in canvas settings panel
 ** Action categories, so they can be grouped in menus
 ** Combine SliceCanvas offscreen+prerender modes - apply both simultaneously
