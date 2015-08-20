@@ -14,7 +14,10 @@ def read(name, default=None):
     try:    import wx
     except: return None
 
-    config = wx.Config('fsleyes')
+    if wx.GetApp() is None:
+        return None
+
+    config = wx.Config('uk.ac.ox.fmrib.fslpy')
     
     value = config.Read(name)
 
@@ -28,10 +31,13 @@ def read(name, default=None):
 def write(name, value):
 
     try:    import wx
-    except: return None    
+    except: return
+
+    if wx.GetApp() is None:
+        return 
 
     value  = str(value)
-    config = wx.Config('fsleyes')
+    config = wx.Config('uk.ac.ox.fmrib.fslpy')
 
     log.debug('Writing {}: {}'.format(name, value))
 

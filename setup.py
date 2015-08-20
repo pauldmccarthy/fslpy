@@ -44,12 +44,13 @@ setup(
 
     package_data={
         'fsl' : [
-            'fslview/splash.png',
-            'fslview/gl/gl14/*prog',
-            'fslview/gl/gl21/*glsl',
-            'fslview/colourmaps/*cmap',
-            'fslview/colourmaps/README',
-            'fslview/colourmaps/order.txt',
+            'fsleyes/splash.png',
+            'fsleyes/gl/gl14/*prog',
+            'fsleyes/gl/gl21/*glsl',
+            'fsleyes/colourmaps/*cmap',
+            'fsleyes/colourmaps/README',
+            'fsleyes/colourmaps/order.txt',
+            'fsleyes/luts/order.txt',
         ]
     },
 

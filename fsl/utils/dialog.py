@@ -7,15 +7,35 @@
 
 import wx
 
+import threading
+
 import fsl.data.strings as strings
+
+
+SMD_KEEP_CENTERED = 1
 
 
 class SimpleMessageDialog(wx.Dialog):
 
     
-    def __init__(self, parent=None, message=''):
+    def __init__(self, parent=None, message='', style=None):
+        """
+        Style defaults to SMD_KEEP_CENTERED.
+        """
 
-        wx.Dialog.__init__(self, parent, style=wx.STAY_ON_TOP)
+        
+        if style is None:
+            style = SMD_KEEP_CENTERED
+
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+
+        wx.Dialog.__init__(self,
+                           parent,
+                           style=wx.STAY_ON_TOP | wx.FULL_REPAINT_ON_RESIZE)
+
+        
+        self.__style = style
         
         self.__message = wx.StaticText(
             self,
@@ -29,45 +49,53 @@ class SimpleMessageDialog(wx.Dialog):
                          proportion=1,
                          flag=wx.CENTRE | wx.ALL)
 
+        self.SetTransparent(240)
         self.SetBackgroundColour((225, 225, 200))
         
         self.SetSizer(self.__sizer)
+
         self.SetMessage(message)
 
         
     def SetMessage(self, msg):
 
         msg = str(msg)
-        
+
         self.__message.SetLabel(msg)
 
         # Figure out the dialog size
         # required to fit the message
         dc = wx.ClientDC(self.__message)
         
-        defWidth, defHeight = 25, 25
-        msgWidth, msgHeight = dc.GetTextExtent(msg)
+        width, height = dc.GetTextExtent(msg)
 
-        if msgWidth  > defWidth:  width  = msgWidth  + 25
-        else:                     width  = defWidth
-        
-        if msgHeight > defHeight: height = msgHeight + 25
-        else:                     height = defHeight
+        # +50 to account for sizer borders (see __init__),
+        # plus a bit more for good measure. In particular,
+        # under GTK, the message seems to be vertically
+        # truncated if we don't add some extra padding
+        width  += 60
+        height += 70
 
-        self.__message.SetMinSize((width, height))
+        self.SetMinClientSize((width, height))
+        self.SetClientSize((   width, height))
 
-        self.Fit()
+        self.Layout()
+
+        if self.__style & SMD_KEEP_CENTERED:
+            self.CentreOnParent()
+
         self.Refresh()
         self.Update()
         wx.Yield()
+            
 
 
 class TimeoutDialog(SimpleMessageDialog):
 
 
-    def __init__(self, parent, message, timeout=1000):
+    def __init__(self, parent, message, timeout=1000, **kwargs):
 
-        SimpleMessageDialog.__init__(self, parent, message)
+        SimpleMessageDialog.__init__(self, parent, message, **kwargs)
         self.__timeout = timeout
 
 
@@ -93,7 +121,7 @@ class ProcessingDialog(SimpleMessageDialog):
         
         :arg message:
         
-        :arg task:
+        :arg task: 
 
         :arg passFuncs:
 
@@ -113,24 +141,57 @@ class ProcessingDialog(SimpleMessageDialog):
             kwargs['errortFunc']  = kwargs.get('errorFunc',
                                                self.__defaultErrorFunc)
 
-        self.task   = task
-        self.args   = args
-        self.kwargs = kwargs
-        
-        SimpleMessageDialog.__init__(self, parent, message)
+        self.task    = task
+        self.args    = args
+        self.kwargs  = kwargs
+        self.message = message
+
+        style = kwargs.pop('style', None)
+
+        SimpleMessageDialog.__init__(self, parent, style=style)
 
 
-    def Run(self):
+    def Run(self, mainThread=False):
+        """
 
-        disable = wx.WindowDisabler()
+        If mainThread=True, the task should call wx.Yield periodically
+        (under GTK, there is a chance that the ProcessingDialog will not
+        get drawn before the task begins).
+        """
 
-        self.CentreOnParent()
+        self.SetMessage(self.message)
         self.Show()
         self.SetFocus()
-        self.Update()
 
-        result = self.task(*self.args, **self.kwargs)
-        
+        self.Refresh()
+        self.Update()
+        wx.Yield()
+
+        disable = wx.WindowDisabler(self)
+
+        if mainThread:
+            try:
+                result = self.task(*self.args, **self.kwargs)
+            except:
+                self.Close()
+                self.Destroy()
+                del disable
+                raise
+        else:
+            returnVal = [None]
+
+            def wrappedTask():
+                returnVal[0] = self.task(*self.args, **self.kwargs)
+
+            thread = threading.Thread(target=wrappedTask)
+            thread.start()
+
+            while thread.isAlive():
+                thread.join(0.2)
+                wx.Yield()
+
+            result = returnVal[0]
+
         self.Close()
         self.Destroy()
 
@@ -265,8 +326,7 @@ class TextEditDialog(wx.Dialog):
         if cb.Open():
             cb.SetData(wx.TextDataObject(text))
             cb.Close()
-            td = TimeoutDialog(self, 'Copied!')
-            td.CentreOnParent()
+            td = TimeoutDialog(self, 'Copied!', 1000)
             td.Show()
 
             

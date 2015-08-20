@@ -5,11 +5,6 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import logging
-
-
-log = logging.getLogger(__name__)
-
 
 class TypeDict(object):
     """A custom dictionary which allows classes or class instances to be used

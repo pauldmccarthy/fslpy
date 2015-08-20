@@ -27,8 +27,8 @@ system. The canvas sizes are calculated so that their aspect ratio, relative
 to the respective horizontal/vertical display axes, are maintained, and that
 the canvases are sized proportionally with respect to each other. These
 functions are used both by :mod:`~fsl.tools.render`, and also by the
-:class:`~fsl.fslview.views.orthopanel.OrthoPanel`, for calculating canvas
-sizes when they are displayed in :mod:`~fsl.tools.fslview`.
+:class:`.OrthoPanel`, for calculating canvas sizes when they are displayed in
+:mod:`.fsleyes`.
 
 The following size calculation functions are available:
 
