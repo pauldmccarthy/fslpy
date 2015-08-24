@@ -209,7 +209,6 @@ perhaps into a standalone module...
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
 ** Histogram/TimeSeries toolbars, which are shown by default
-** When overlay is added, it should be selected.
 ** Allow a gap in cursor crosshairs
 ** Ortho label bg colour update a bit dodgy
 ** Ortho screenshot with labels is still dodgy
@@ -272,6 +271,7 @@ just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Make display range limit-edit-widget less crappy.
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE When overlay is added, it should be selected.
 ** DONE Movie mode button on ortho/lightbox toolbars
 ** DONE Time Series - option to 'hold' voxel time course
 You could have a list panel which lists the image and voxel coordinates of the
