@@ -45,9 +45,11 @@ setup(
     package_data={
         'fsl' : [
             'fsleyes/splash.png',
+            'fsleyes/icons/*.png',
             'fsleyes/gl/gl14/*prog',
             'fsleyes/gl/gl21/*glsl',
             'fsleyes/colourmaps/*cmap',
+            'fsleyes/luts/*lut',
             'fsleyes/colourmaps/README',
             'fsleyes/colourmaps/order.txt',
             'fsleyes/luts/order.txt',
