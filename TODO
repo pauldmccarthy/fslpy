@@ -7,13 +7,14 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 
 * Required feature list before next internal release
-** Tooltips
 ** Complete code documentation, commenting and clean-up
-** Testing
 ** Move TODO list to Gitlab
+** Startup time on X11/SSH
 ** About dialog
 Credit for all libraries
 Credit for icons
+** DONE-ISH Testing
+** DONE Tooltips
 ** DONE Other
 *** WONTFIX Remove Colour map name from toolbar
 I think I need to write my own combobox implementation (subclass
@@ -24,6 +25,7 @@ Not possible unless I roll my own combo box implementation (maybe combine
 with Colour map name item above ...)
 *** CAN'T REPRODUCE 'Fastest' performance - subsampling not working?
 *** CAN'T REPRODUCE LUT-related exception when removing Label overlays from list - orphaned widgets on display toolbar/pane
+*** DONE Unlink opacity when volume overlays linked
 *** DONE 3d histogram overlay data range broken?
 Display properties on all ViewPanels were unsycned by defeault - changed to only canvaspanels
 *** DONE Give random lut have enough colours for talairach
@@ -91,18 +93,16 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 *** DONE Open file dialog should use last directory
 * Things to do once the feature list is complete
 ** Make voxel-space labels more accurate (copy routine from FSLView instead of using nibabel?)
-** LookupTable should show a modal message while generating label widgets (talairach takes ages)
 ** Use wx.StandardPaths for resources (shaders, icons, etc) instead of relative to python modules
-** Profile actions/settings in canvas settings panel
 ** Action categories, so they can be grouped in menus
 ** Combine SliceCanvas offscreen+prerender modes - apply both simultaneously
 ** A better way of managing colour maps/luts
+** LookupTable should show a modal message while generating label widgets (talairach takes ages)
 ** Text annotations for models and labels
 ** A pre-processor for GL14 shader programs
 ** Unify/remove duplication across gl*_funcs modules
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, all the GL texture function calls, and duplicated 3D texture functionality
 ** Port to wxPython/Phoenix
-*** Support for retina displays
 * Things to do in props package
 ** Bounds property - remove labels, they should be set on ViewItems instead.
 ** Choice property - remove labels, they should be set on ViewItems instead.
@@ -118,9 +118,13 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 *** Floating panels get moved about when opening/closing another panel - this is a lib.agw.aui issue; I've coded a workaround.
 *** Floating panels are resized to specified floating size, but the title bar is not taken into account. Coded a workaround
 ** Make range widget limit buttons expand properly. Ugh. Works fine under linux. This looks like an OSX Mavericks bug.
+Text buttons have a fixed size under OSX. Bitmap buttons are resized.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
-** FSLVIEW parse args does not support quoted arguments? Need to tokenise
+** Ortho labels not always refreshing properly
+** Images with NaN values - Volume doesn't show, Mask throws error
+** SSH/X11: When 'open overlay' (or any other modal) dialog is open, and user switches to another application, then back, the open overlay dialog is hidden?
+** FSLeyes parse args does not support quoted arguments? Need to tokenise
 It's caused by my wrapper script - bash parses the arguments before they are passed to python
 ** VolumeOpts.__toggleListeners - peer.display can be None? 
 ** LightBox - grid lines are drawn below canvas area where slices are drawn
@@ -204,6 +208,14 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Histogram/TimeSeries toolbars, which are shown by default
+** When overlay is added, it should be selected.
+** Allow a gap in cursor crosshairs
+** Ortho label bg colour update a bit dodgy
+** Ortho screenshot with labels is still dodgy
+** Lightbox screenshot has space for scrollbar
+** Splash screen status bar does not ellipsize long lines
+** Render.py does not set ortho label foreground to the complement of the background.
 ** Different cursor types in edit profile (circle/sphere, in addition to rectangle/cube)
 ** Ability to import/export time series data
 ** A 'FeatModel' control widget, allowing user to look at design matrix, stats, whatever ..
@@ -260,6 +272,7 @@ just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Make display range limit-edit-widget less crappy.
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE Movie mode button on ortho/lightbox toolbars
 ** DONE Time Series - option to 'hold' voxel time course
 You could have a list panel which lists the image and voxel coordinates of the
 time courses that are currently plotted. Allow voxels to be held, and images
@@ -432,12 +445,11 @@ No longer necessary, as I'm using ARB_vertex/fragment_program extensions in GL14
 * Big/ambiguous things
 ** Test suite for props package
 ** Code audit - enforce consistent standards for public/private class members
-** image editing (e.g. selecting, erasing, filling, mask creation)
 ** Surface display. Who does surface stuff?
 ** 3D. People do use 3D mode in the original FSLView, so we should have the capability.
-** Other data - Diffusion. Talk to Saad and Manu.
-** IN PROGRESS time series plotting option
-** IN PROGRESS Standard for code documentation - Sphinx.
+** Standard for code documentation - Sphinx.
+** DONE image editing (e.g. selecting, erasing, filling, mask creation)
+** DONE time series plotting option
 ** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** DONE have multiple views open - look at wxAUI.
 * Other ideas
