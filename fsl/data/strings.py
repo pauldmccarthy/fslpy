@@ -447,54 +447,34 @@ properties = TypeDict({
 })
 
 
-profiles = TypeDict({
-    'CanvasPanel.view' : 'View',
-    'OrthoPanel.edit'  : 'Edit',
-})
-
-modes = TypeDict({
-    ('OrthoViewProfile', 'nav')    : 'Navigate',
-    ('OrthoViewProfile', 'pan')    : 'Pan',
-    ('OrthoViewProfile', 'zoom')   : 'Zoom',
-
-    ('OrthoEditProfile', 'nav')    : 'Navigate',
-    ('OrthoEditProfile', 'pan')    : 'Pan',
-    ('OrthoEditProfile', 'zoom')   : 'Zoom',
-    ('OrthoEditProfile', 'sel')    : 'Select',
-    ('OrthoEditProfile', 'desel')  : 'Deselect',
-    ('OrthoEditProfile', 'selint') : 'Select by intensity',
-
-
-    ('LightBoxViewProfile', 'view')   : 'View',
-    ('LightBoxViewProfile', 'zoom')   : 'Zoom',
-
-})
-
-
 choices = TypeDict({
 
-    'SceneOpts.colourBarLocation.top'    : 'Top',
-    'SceneOpts.colourBarLocation.bottom' : 'Bottom',
-    'SceneOpts.colourBarLocation.left'   : 'Left',
-    'SceneOpts.colourBarLocation.right'  : 'Right',
+    'SceneOpts.colourBarLocation'  : {'top'          : 'Top',
+                                      'bottom'       : 'Bottom',
+                                      'left'         : 'Left',
+                                      'right'        : 'Right'},
+    'SceneOpts.colourBarLabelSide' : {'top-left'     : 'Top / Left',
+                                      'bottom-right' : 'Bottom / Right'},
 
-    'SceneOpts.performance.1' : 'Fastest',
-    'SceneOpts.performance.2' : 'Faster',
-    'SceneOpts.performance.3' : 'Good looking',
-    'SceneOpts.performance.4' : 'Better looking',
-    'SceneOpts.performance.5' : 'Best looking',
+    'SceneOpts.performance' : {1 : 'Fastest',
+                               2 : 'Faster',
+                               3 : 'Good looking',
+                               4 : 'Better looking',
+                               5 : 'Best looking'},
+
+    'CanvasOpts.zax' : {0 : 'X axis',
+                        1 : 'Y axis',
+                        2 : 'Z axis'},
+
+    'OrthoOpts.layout' : {'horizontal' : 'Horizontal',
+                          'vertical'   : 'Vertical',
+                          'grid'       : 'Grid'},
 
     'HistogramPanel.dataRange.min' : 'Min.',
     'HistogramPanel.dataRange.max' : 'Max.',
 
     'LightBoxOpts.zrange.min' : 'Min.',
     'LightBoxOpts.zrange.max' : 'Max.',    
-    
-    'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
-    'ColourBarCanvas.orientation.vertical'   : 'Vertical',
-    
-    'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
-    'ColourBarCanvas.labelSide.bottom-right' : 'Bottom / Right', 
 
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
@@ -504,30 +484,37 @@ choices = TypeDict({
 
     'VectorOpts.modulate.none'    : 'No modulation',
 
-    'ImageOpts.transform.affine' : 'Use qform/sform transformation matrix',
-    'ImageOpts.transform.pixdim' : 'Use pixdims only',
-    'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
+    'ModelOpts.refImage.none'     : 'No reference image',
 
-    'ModelOpts.refImage.none' : 'None',
+    'ImageOpts.transform' : {'affine' : 'Use qform/sform transformation '
+                                        'matrix',
+                             'pixdim' : 'Use pixdims only',
+                             'id'     : 'Do not use qform/sform or pixdims'},
 
-    'VolumeOpts.interpolation.none'   : 'No interpolation', 
-    'VolumeOpts.interpolation.linear' : 'Linear interpolation', 
-    'VolumeOpts.interpolation.spline' : 'Spline interpolation',
+    'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
+                                  'linear' : 'Linear interpolation', 
+                                  'spline' : 'Spline interpolation'},
 
-    'Display.overlayType.volume'     : '3D/4D volume',
-    'Display.overlayType.mask'       : '3D/4D mask image',
-    'Display.overlayType.label'      : 'Label image',
-    'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
-    'Display.overlayType.linevector' : '3-direction vector image (Line)',
-    'Display.overlayType.model'      : '3D model',
+    'Display.overlayType' : {'volume'     : '3D/4D volume',
+                             'mask'       : '3D/4D mask image',
+                             'label'      : 'Label image',
+                             'rgbvector'  : '3-direction vector image (RGB)',
+                             'linevector' : '3-direction vector image (Line)',
+                             'model'      : '3D model'},
 
-    'HistogramPanel.histType.probability' : 'Probability',
-    'HistogramPanel.histType.count'       : 'Count',
+    'HistogramPanel.histType' : {'probability' : 'Probability',
+                                 'count'       : 'Count'},
+
+    'DataSeries.lineStyle' : {'-'  : 'Solid line',
+                              '--' : 'Dashed line',
+                              '-.' : 'Dash-dot line',
+                              ':'  : 'Dotted line'},
     
-    'TimeSeriesPanel.plotMode.normal'        : 'Normal - no scaling/offsets',
-    'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
-    'TimeSeriesPanel.plotMode.normalise'     : 'Normalised',
-    'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
+    'TimeSeriesPanel.plotMode' : {'normal'        : 'Normal - no '
+                                                    'scaling/offsets',
+                                  'demean'        : 'Demeaned',
+                                  'normalise'     : 'Normalised',
+                                  'percentChange' : 'Percent changed'},
 })
 
 
