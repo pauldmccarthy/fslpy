@@ -8,6 +8,7 @@ https://internal.fmrib.ox.ac.uk/i-wiki/Analysis/Todos/FSLView regularly, too.
 
 * Required feature list before next internal release
 ** Complete code documentation, commenting and clean-up
+Props is done.
 ** Move TODO list to Gitlab
 ** Startup time on X11/SSH
 ** About dialog
@@ -104,12 +105,12 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, all the GL texture function calls, and duplicated 3D texture functionality
 ** Port to wxPython/Phoenix
 * Things to do in props package
-** Bounds property - remove labels, they should be set on ViewItems instead.
-** Choice property - remove labels, they should be set on ViewItems instead.
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
 ** Remove PropertyOwner metaclass?
 I think that all the work performed by the PropertyOwner metaclass can be done in HasProps.__new__, and HasProps.addProperty.
+** DONE Bounds property - remove labels, they should be set on ViewItems instead.
+** DONE Choice property - remove labels, they should be set on ViewItems instead.
 ** DONE Add a setting on HasProperties instances to allow validation of all properties to be disabled for instances which don't need it (see comments at properties.py:264).
 Also, redo the way that global HasProps validation works - it is currently performed by the PropertyBase instance, which is hacky, I think.
 ** DONE Have callqueue check to see if a listener (and its args) is already enqueued, drop if it is.
@@ -122,6 +123,11 @@ Text buttons have a fixed size under OSX. Bitmap buttons are resized.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
 ** Ortho labels not always refreshing properly
+** Ortho label bg colour update a bit dodgy
+** Ortho screenshot with labels is still dodgy
+** Lightbox screenshot has space for scrollbar
+** Splash screen status bar does not ellipsize long lines
+** Render.py does not set ortho label foreground to the complement of the background.
 ** Images with NaN values - Volume doesn't show, Mask throws error
 ** SSH/X11: When 'open overlay' (or any other modal) dialog is open, and user switches to another application, then back, the open overlay dialog is hidden?
 ** FSLeyes parse args does not support quoted arguments? Need to tokenise
@@ -208,13 +214,9 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Opacity is ignored from WX colour dialog.
 ** Histogram/TimeSeries toolbars, which are shown by default
 ** Allow a gap in cursor crosshairs
-** Ortho label bg colour update a bit dodgy
-** Ortho screenshot with labels is still dodgy
-** Lightbox screenshot has space for scrollbar
-** Splash screen status bar does not ellipsize long lines
-** Render.py does not set ortho label foreground to the complement of the background.
 ** Different cursor types in edit profile (circle/sphere, in addition to rectangle/cube)
 ** Ability to import/export time series data
 ** A 'FeatModel' control widget, allowing user to look at design matrix, stats, whatever ..
@@ -235,7 +237,6 @@ the vertex data is returned unmodified.
 ** A proper GLMask class - deriving from GLVolume is inefficient
 ** A top-level class, from which all things inherit, which has a destroy method that must be called when the object is destroy4ed
 ** Editor - apply fill/mask/ROI to all volumes of a 4D image
-** Option to centre display range for volume images
 ** Spline interpolation in GL14
 ** 'Annotation' image type that allows the user to highlight regions in different colours. Is this the same as the 'label' image above?
 ** Support ANALYZE75
@@ -271,6 +272,7 @@ just hard code in fsl/fslview/actions/__init__.py
 ** WONTFIX Make display range limit-edit-widget less crappy.
 ** WONTFIX Allow display resolution greater than image resolution?
 Now that I'm smoothing over voxels (when interpolation is on), I don't think this is necessary
+** DONE Option to centre display range for volume images
 ** DONE When overlay is added, it should be selected.
 ** DONE Movie mode button on ortho/lightbox toolbars
 ** DONE Time Series - option to 'hold' voxel time course
@@ -358,8 +360,8 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** GedSpace
 ** NIFTI2
-** A python shell which exposes overlays, display context, display, and opts instances
 ** PlotPanel - Mouse click interaction: when clicking on a plot, the current overlay/volume should be selected
 ** HistogramListPanel 
 *** When a histogram is added for a 4D image, prompt user to choose one of
@@ -384,6 +386,7 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 *** Option to show tensors as ellipsoids
 ** Display fnirt warp images
 ** Panel/profile mode which allows mouse control of brightness/contrast (e.g. a 2D canvas where the vertical axis corresponds to brightness, and the horizontal to contrast).
+** DONE A python shell which exposes overlays, display context, display, and opts instances
 ** DONE Link display properties across images
 ** DONE Edge detection algorithm
 For drawing outline images (both model and volumetric). A Sobel filter looks
@@ -453,9 +456,7 @@ No longer necessary, as I'm using ARB_vertex/fragment_program extensions in GL14
 ** DONE OpenGL 1.4 implementation - required for running over SSH/VNC.
 ** DONE have multiple views open - look at wxAUI.
 * Other ideas
-** IN PROGRESS (Saad).   Select regions by colour, for editing purposes
 ** (Eugene). Perhaps some useful viewing functionality would be a helper viewer to explore high-level (gfeat) analyses directories - simple browsing tools for quickly loading and unloading stats files, contrasts etc.  Then it might move to be able to link to lower level dirs.  Pretty much like a viewer version of the webpage reports.
-** (Mark).   That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
 ** (Mark).   The ability to have separate display ranges for different volumes in one 4D image (maybe only when automatically calculated?) which would be especially useful for diffusion series where the b=0 images are way brighter than the others when using the same display range.
 ** (Ludo).   Automatic cluster size thresholding (e.g. Z threshold/cluster size)
 ** (Paul).   Slice-wise (instead of image-wise) glimagedata implementation for very large images.
@@ -470,9 +471,11 @@ on the image display object.
 ** (Fidel).  Diffusion data - show acquisition direction for each volume (from bvec text file) when displaying raw diffusion data. Could have a little display (a separate ViewPanel) which has a 3D compass-like thing.
 ** (Ged).    Intensity contour lines (cool idea!).
 ** (Ged).    First/third angle orthographic projection. 
-** (Paul).   Image groups - may make life easier for grouping images which belong together for analysis purposes.
-** (Paul).   An integrated python shell with images available in-memory to manipulate.
-
+** IN PROGRESS (Paul).   Image groups - may make life easier for grouping images which belong together for analysis purposes.
+** IN PROGRESS (Paul).   An integrated python shell with images available in-memory to manipulate.
+** IN PROGRESS (Saad).   Select regions by colour, for editing purposes
+** DONE        (Mark).   That colourmaps for label images (e.g. HarvardOxford subcortical) uses the display range info rather than totally ignores it.  I'd like to be able to threshold away some structures using the display range, but at the moment that cannot be done.
+Individual regions can be toggled on/off
 * February/March 2015 internal release
 ** DONE Installation instructions on wiki
 *** Make sure they're up to date - test in a VM
