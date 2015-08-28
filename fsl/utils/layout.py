@@ -7,60 +7,53 @@
 #
 """Utility functions for calculating canvas sizes and laying them out.
 
-This module provides functions which implement a simple layout manager, for
-laying out canvases and associated orientation labels. It is used primarily by
-the :mod:`~fsl.tools.render` application, for off-screen rendering.
 
-The main entry points for the layout manager are:
+This module implements a simple layout manager, for laying out canvases and
+associated orientation labels. It is used primarily by the :mod:`.render`
+application, for off-screen rendering.
 
-  - :func:`buildOrthoLayout`: Creates a tree of objects representing a group
-                              of canvases laid out either horizontally,
-                              vertically, or in a grid.
+You can use the following classes to define a layout:
 
-  - :func:`layoutToBitmap`:   Converts a layout tree into a rgba bitmap, a
-                              ``numpy.uint8`` array of size
-                              ``(height, width, 4)``.
+.. autosummary::
+   :nosignatures:
 
-This module also provides a few functions, for calculating the display size,
-in pixels, of one or more canvases which are displaying a defined coordinate
-system. The canvas sizes are calculated so that their aspect ratio, relative
-to the respective horizontal/vertical display axes, are maintained, and that
-the canvases are sized proportionally with respect to each other. These
-functions are used both by :mod:`~fsl.tools.render`, and also by the
-:class:`.OrthoPanel`, for calculating canvas sizes when they are displayed in
-:mod:`.fsleyes`.
+   Bitmap
+   Space
+   HBox
+   VBox
 
-The following size calculation functions are available:
 
-  - :func:`calcGridSizes`:       Calculates canvas sizes for laying out in a
-                                 grid
-  - :func:`calcHorizontalSizes`: Calculates canvas sizes for laying out
-                                 horizontally.
-  - :func:`calcVerticalSizes`:   Calculates canvas sizes for laying out
-                                 vertically.
+And the following functions to generate layouts and bitmaps:
 
-Each of these functions require the following parameters:
+.. autosummary::
+   :nosignatures:
 
-  - ``canvasaxes``: A sequence of 2-tuples, one for each canvas, with each
-                    tuple specifying the indices of the coordinate system
-                    axes which map to the horizontal and vertical canvas
-                    axes.
- 
-  - ``bounds``:     A sequence of three floating point values, specifying the
-                    length of each axis in the coordinate system being
-                    displayed.
+   buildOrthoLayout
+   buildCanvasBox
+   padBitmap
+   layoutToBitmap
 
-  - ``width``:      The total available width in which all of the canvases are
-                    to be displayed.
 
-  - ``height``:     The total available height in which all of the canvases are
-                    to be displayed.
+A few functions are also provided for calculating the display size, in pixels,
+of one or more canvases which are displaying a defined coordinate system. The
+canvas sizes are calculated so that their aspect ratio, relative to the
+respective horizontal/vertical display axes, are maintained, and that the
+canvases are sized proportionally with respect to each other. These functions
+are used both by :mod:`.render`, and also by the :class:`.OrthoPanel` and
+:class:`.LightBoxPanel`, for calculating canvas sizes when they are displayed
+in :mod:`.fsleyes`. The following size calculation functions are available:
 
-A convenience function :func:`calcSizes` is also available which, in addition
-to the above parameters, accepts a string as its first parameter which must be
-equal to one of ``horizontal``, ``vertical``, or ``grid``. It will then call
-the appropriate layout-specific function.
+.. autosummary::
+   :nosignatures:
+
+   calcSizes
+   calcGridSizes
+   calcHorizontalSizes
+   calcVerticalSizes
+   calcPixWidth
+   calcPixHeight
 """
+
 
 import logging
 
@@ -70,41 +63,78 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
-#
-# The Space, Bitmap, HBox and VBox classes are used by a simple
-# layout manager for laying out slice canvases, labels, and colour
-# bars.
-#
-
 class Bitmap(object):
-    """A class which encapsulates a RGBA bitmap (a ``numpy.uint8`` array of
-    shape ``(height, width, 4)``)
+    """A class which encapsulates a RGBA bitmap, assumed to be a
+    ``numpy.uint8`` array of shape :math:`height \\times width \\times 4`).
+
+    .. warning:: Note the unusual array shape - height is the first axis,
+                 and width the second!
+
+    
+    A ``Bitmap`` instance has the following attributes:
+
+      - ``bitmap``: The bitmap data
+      - ``width``:  Bitmap width in pixels
+      - ``height``: Bitmap height in pixels
     """
 
     def __init__(self, bitmap):
+        """Create a ``Bitmap``.
+
+        :arg bitmap: :mod:`numpy` array containing the bitmap data.
+        """
         self.bitmap = bitmap
         self.width  = bitmap.shape[1]
         self.height = bitmap.shape[0]
 
         
 class Space(object):
-    """A class which represents empty space of a specific width/height. """
+    """A class which represents empty space of a specific width/height.
+
+    
+    A ``Space`` instance has the following attributes:
+
+      - ``width``:  Width in pixels.
+      - ``height``: Height in pixels.
+    """
 
     def __init__(self, width, height):
+        """Creat a ``Space``.
+
+        :arg width:  Width in pixels.
+
+        :arg height: Height in pixels.
+        """
         self.width  = width
         self.height = height
 
         
 class HBox(object):
-    """A class which contains items to be laid out horizontally. """
+    """A class which contains items to be laid out horizontally.
+
+    After creation, new items should be added via the :meth:`append` method.
+
+    A ``HBox`` instance has the following attributes:
+
+      - ``width``:  Total width in pixels.
+      - ``height``: Total height in pixels.
+      - ``items``:  List of items in this ``HBox``.
+    """
+
+    
     def __init__(self, items=None):
+        """Create a ``HBox``.
+
+        :arg items: List of items contained in this ``HBox``.
+        """
         self.width  = 0
         self.height = 0
-        self.items = []
+        self.items  = []
         if items is not None: map(self.append, items)
 
         
     def append(self, item):
+        """Append a new item to this ``HBox``. """
         self.items.append(item)
         self.width = self.width + item.width
         if item.height > self.height:
@@ -112,14 +142,30 @@ class HBox(object):
 
             
 class VBox(object):
-    """A class which contains items to be laid out vertically. """
+    """A class which contains items to be laid out vertically.
+
+    After creation, new items can be added via the :meth:`append` method.
+
+    A ``VBox`` instance has the following attributes:
+
+      - ``width``:  Total width in pixels.
+      - ``height``: Total height in pixels.
+      - ``items``:  List of items in this ``VBox``.    
+    """
+    
     def __init__(self, items=None):
+        """Create a ``VBox``.
+
+        :arg items: List of items contained in this ``VBox``.
+        """ 
         self.width  = 0
         self.height = 0
-        self.items = []
+        self.items  = []
         if items is not None: map(self.append, items)
 
+        
     def append(self, item):
+        """Append a new item to this ``VBox``. """
         self.items.append(item)
         self.height = self.height + item.height
         if item.width > self.width:
@@ -127,12 +173,25 @@ class VBox(object):
 
 
 def padBitmap(bitmap, width, height, vert, bgColour):
-    """Pads the given bitmap with zeros along the secondary axis,
-    so that it fits in the given ``width``/``height``.
+    """Pads the given bitmap with zeros along the secondary axis (specified
+    with the ``vert`` parameter), so that it fits in the given
+    ``width``/``height``.
 
-    If ``vert`` is ``True``, the bitmap is padded horizontally to
-    fit ``width``. Otherwise, the bitmap is padded vertically to
-    fit ``height``.
+    
+    :arg bitmap:   A ``numpy.array`` of size :math:`x \\times y \\times 4`
+                   containing a RGBA bitmap.
+    
+    :arg width:    Desired width in pixels.
+    
+    :arg height:   Desired height in pixels.
+    
+    :arg vert:     If ``vert`` is ``True``, the bitmap is padded 
+                   horizontally to fit ``width``. Otherwise, the 
+                   bitmap is padded vertically to fit ``height``.
+
+    :arg bgColour: Background colour to use for padding. Must be
+                   a ``(r, g, b, a)`` tuple with each channel in
+                   the range ``[0 - 255]``.
     """
     
     iheight = bitmap.shape[0]
@@ -163,30 +222,31 @@ def padBitmap(bitmap, width, height, vert, bgColour):
 def layoutToBitmap(layout, bgColour):
     """Recursively turns the given ``layout`` object into a bitmap.
 
-    The ``layout`` object is assumed to be one of the following:
-      - a :class:`Bitmap` object
-      - a :class:`Space` object
-      - a :class:`HBox` object
-      - a :class:`VBox` object
+    :arg layout:   A :class:`Bitmap`, :class:`Space`, :class:`HBox` or 
+                   :class:`VBox` instance.
 
-    The generated bitmap is returned as a ``numpy.uint8`` array of shape
-    ``(height, width, 4)``.
+    :arg bgColour: Background colour used to fill in empty space. Must be
+                   a ``(r, g, b, a)`` tuple with channel values in the range
+                   ``[0, 255]``. Defaults to transparent.
+
+    :returns:      a ``numpy.uint8`` array of size
+                   :math:`height \\times width \\times 4`.
     """
 
     if bgColour is None: bgColour = [0, 0, 0, 0]
     bgColour = np.array(bgColour, dtype=np.uint8)
 
+    # Space is easy 
     if isinstance(layout, Space):
         space = np.zeros((layout.height, layout.width, 4), dtype=np.uint8)
         space[:] = bgColour
         return space
-    
+
+    # Bitmap is easy
     elif isinstance(layout, Bitmap):
         return np.array(layout.bitmap, dtype=np.uint8)
 
-    # Otherwise it's assumed that the
-    # layout object is a HBox or VBox
-
+    # Boxes require a bit of work
     if   isinstance(layout, HBox): vert = False
     elif isinstance(layout, VBox): vert = True
 
@@ -206,12 +266,27 @@ def layoutToBitmap(layout, bgColour):
     else:    return np.hstack(itemBmps)
 
 
-def buildCanvasBox(canvasBmp,
-                   labelBmps,
-                   showLabels,
-                   labelSize):
+def buildCanvasBox(canvasBmp, labelBmps, showLabels, labelSize):
     """Builds a layout containing the given canvas bitmap, and orientation
     labels (if ``showLabels`` is ``True``).
+
+    
+    :arg canvasBmp:  A ``numpy.uint8`` array containing a bitmap.
+    
+    :arg labelBmps:  Only used if ``showLabels`` is ``True``. ``numpy.uint8``
+                     arrays containing label bitmaps. Must be a
+                     dictionary of ``{side : numpy.uint8}`` mappings,
+                     and must have keys ``top``, ``bottom``, ``left`` and
+                     ``right``.
+    
+    :arg showLabels: If ``True``, the orientation labels provided in
+                     ``labelBmps`` are added to the layout.
+    
+    :arg labelSize:  Label sizes - the ``left``/``right`` label widths,
+                     and ``top``/``bottom`` label heights are padded to this
+                     size using ``Space`` objects.
+
+    :returns:        A :class:`Bitmap`  or :class:`VBox` instance.
     """
 
     if not showLabels: return Bitmap(canvasBmp)
@@ -236,8 +311,19 @@ def buildOrthoLayout(canvasBmps,
                      layout,
                      showLabels,
                      labelSize):
-    """Builds a layout tree containinbg the given canvas bitmaps, label
-    bitmaps, and colour bar bitmap.
+    """Builds a layout containing the given canvas bitmaps, label bitmaps, and
+    colour bar bitmap.
+
+    
+    :arg canvasBmps: A list of ``numpy.uint8`` arrays containing the canvas
+                     bitmaps to be laid out.
+
+    :arg layout:     One of ``'horizontal'``, ``'vertical'``, or ``'grid'``.
+
+    See the :func:`buildCanvasBox` for details on the other parameters.
+
+    
+    :returns: A :class:`HBox` or :class:`VBox` describing the layout.
     """
 
     if labelBmps is None:
@@ -262,17 +348,32 @@ def buildOrthoLayout(canvasBmps,
     return canvasBox
 
 
-#
-# Size calculation functions 
-#
-
-
 def calcSizes(layout, canvasaxes, bounds, width, height):
     """Convenience function which, based upon whether the `layout` argument
-    is `horizontal`, `vertical`, or `grid`,  respectively calls one of:
+    is ``'horizontal'``, ``'vertical'``, or ``'grid'``,  respectively calls
+    one of:
+    
       - :func:`calcHorizontalSizes`
       - :func:`calcVerticalSizes`
       - :func:`calcGridSizes`
+
+    :arg layout:    String specifying the layout type.
+    
+    :arg canvsaxes: A list of tuples, one for each canvas to be laid out.
+                    Each tuple contains two values, ``(i, j)``, where ``i``
+                    is an index, into ``bounds``, specifying the canvas
+                    width, and ``j`` is an index into ``bounds``, specifying
+                    the canvas height, in the display coordinate system.
+    
+    :arg bounds:    A list of three values specifying the size of the display
+                    space.
+    
+    :arg width:     Maximum width in pixels.
+    
+    :arg height:    Maximum height in pixels.
+
+    :returns:       A list of ``(width, height)`` tuples, one for each canvas,
+                    each specifying the canvas width and height in pixels.
     """
     
     layout = layout.lower()
@@ -301,8 +402,11 @@ def calcGridSizes(canvasaxes, bounds, width, height):
 
        2
 
-    If less than three canvases are specified, they are passed to the
-    :func:`calcHorizontalLayout` function.
+
+    .. note:: If less than three canvases are specified, they are passed to
+              the :func:`calcHorizontalLayout` function.
+
+    See :func:`calcSizes` for details on the arguments.
     """
 
     if len(canvasaxes) < 3:
@@ -334,46 +438,36 @@ def calcGridSizes(canvasaxes, bounds, width, height):
     return sizes
 
 
-def calcPixWidth(wldWidth, wldHeight, pixHeight):
-    """Given the dimensions of a 'world' space to be displayed,
-    and the available height in pixels, calculates and returns
-    the required pixel width.
-    """
-    return _adjustPixelSize(wldWidth,
-                            wldHeight,
-                            pixHeight * (2 ** 32),
-                            pixHeight)[0]
-
-
-def calcPixHeight(wldWidth, wldHeight, pixWidth):
-    """Given the dimensions of a 'world' space to be displayed,
-    and the available width in pixels, calculates and returns
-    the required pixel height.
-    """ 
-    return _adjustPixelSize(wldWidth,
-                            wldHeight,
-                            pixWidth,
-                            pixWidth * (2 ** 32))[1]
-
-
 def calcVerticalSizes(canvasaxes, bounds, width, height):
-    """Calculates the size of up to three canvases so  they are laid out
+    """Calculates the size of up to three canvases so they are laid out
     vertically.
+
+    See :func:`calcSizes` for details on the arguments.
     """
     return _calcFlatSizes(canvasaxes, bounds, width, height, True)
 
 
 def calcHorizontalSizes(canvasaxes, bounds, width, height):
-    """Calculates the size of up to three canvases so  they are laid out
+    """Calculates the size of up to three canvases so they are laid out
     horizontally.
+
+    See :func:`calcSizes` for details on the arguments.
     """ 
     return _calcFlatSizes(canvasaxes, bounds, width, height, False)
 
         
 def _calcFlatSizes(canvasaxes, bounds, width, height, vert=True):
-    """Used by the :func:`calcVerticalSizes` and :func:`calcHorizontalSizes`
-    functions to lay the canvases out vertically (``vert=True``) or
-    horizontally (``vert=False``).
+    """Used by :func:`calcVerticalSizes` and :func:`calcHorizontalSizes`.
+    
+    Calculates the width and height, in pixels, of each canvas.
+
+    :arg vert: If ``True`` the sizes are calculated for a vertical layout;
+               otherwise they are calculated for a horizontal layout.
+
+    See :func:`calcSizes` for details on the other arguments.
+
+    :returns:  A list of ``(width, height)`` tuples, one for each canvas,
+               each specifying the canvas width and height in pixels. 
     """
 
     # Get the canvas dimensions in world space
@@ -402,8 +496,47 @@ def _calcFlatSizes(canvasaxes, bounds, width, height, vert=True):
     return sizes
 
 
+def calcPixWidth(wldWidth, wldHeight, pixHeight):
+    """Given the dimensions of a space to be displayed, and the available
+    height in pixels, calculates the required pixel width.
+
+    :arg wldWidth:   Width of the display coordinate system
+
+    :arg wldHeight:  Height of the display coordinate system
+
+    :arg pixHeight:  Available height in pixels.
+
+    :returns:        The required width in pixels.
+    """
+    return _adjustPixelSize(wldWidth,
+                            wldHeight,
+                            pixHeight * (2 ** 32),
+                            pixHeight)[0]
+
+
+def calcPixHeight(wldWidth, wldHeight, pixWidth):
+    """Given the dimensions of a space to be displayed, and the available
+    width in pixels, calculates the required pixel height.
+
+    :arg wldWidth:   Width of the display coordinate system
+
+    :arg wldHeight:  Height of the display coordinate system
+
+    :arg pixWidth:   Available width in pixels.
+
+    :returns:        The required height in pixels. 
+    """ 
+    return _adjustPixelSize(wldWidth,
+                            wldHeight,
+                            pixWidth,
+                            pixWidth * (2 ** 32))[1]
+
+
+
 def _adjustPixelSize(wldWidth, wldHeight, pixWidth, pixHeight):
-    """Potentially reduces the given pixel width/height such that the
+    """Used by :func:`calcPixelWidth` and :func:`calcPixelHeight`.
+
+    Potentially reduces the given pixel width/height such that the
     display space aspect ratio is maintained.
     """
 

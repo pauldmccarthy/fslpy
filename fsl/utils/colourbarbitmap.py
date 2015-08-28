@@ -7,7 +7,7 @@
 #
 """This module provides a single function, :func:`colourBarBitmap`, which uses
 :mod:`matplotlib` to plot a colour bar. The colour bar is rendered off-screen
-and returned as an rgba bitmap.
+and returned as an RGBA bitmap.
 """
 
 
@@ -23,11 +23,49 @@ def colourBarBitmap(cmap,
                     fontsize=10,
                     bgColour=None,
                     textColour='#ffffff'):
-    """Plots a colour bar using matplotlib, and returns a RGBA bitmap
-    of the specified width/height.
+    """Plots a colour bar using :mod:`matplotlib`.
 
-    The bitmap is returned as a W*H*4 numpy array, with the top-left
-    pixel located at index ``[0, 0, :]``.
+    
+    The rendered colour bar is returned as a RGBA bitmap within a
+    ``numpy.uint8`` array of size :math:`w \\times h \\times 4`, with the
+    top-left pixel located at index ``[0, 0, :]``.
+
+
+    A rendered colour bar will look something like this:
+
+    .. image:: images/colourbarbitmap.png
+       :scale: 50%
+       :align: center
+    
+    
+    :arg cmap:         Name of a registered :mod:`matplotlib` colour map.
+    
+    :arg vmin:         Data minimum.
+    
+    :arg vmax:         Data minimum.
+    
+    :arg width:        Colour bar width in pixels.
+    
+    :arg height:       Colour bar height in pixels.
+    
+    :arg label:        Text label to show next to the colour bar.
+    
+    :arg orientation:  Either ``vertical`` or `horizontal``.
+    
+    :arg labelside:    If ``orientation`` is ``vertical`` ``labelSide`` may
+                       be either ``left`` or ``right``. Otherwise, if
+                       ``orientation`` is ``horizontal``, ``labelSide`` may
+                       be ``top`` or ``bottom``.
+    
+    :arg alpha:        Colour bar transparency, in the range ``[0.0 - 1.0]``.
+    
+    :arg fontsize:     Label font size in points.
+    
+    :arg bgColour:     Background colour - can be any colour specification
+                       that is accepted by :mod:`matplotlib`.
+    
+    :arg textColour:   Label colour - can be any colour specification that
+                       is accepted by :mod:`matplotlib`.
     """
 
     # These imports are expensive, so we're

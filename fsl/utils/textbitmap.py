@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides a single function, :func:`textBitmap`, which renders
-some text using :mod:`matplotlib`, and returns it as an RGBA bitmap.
+some text off-screen using :mod:`matplotlib`, and returns it as an RGBA bitmap.
 """
 
 
@@ -17,6 +17,29 @@ def textBitmap(text,
                fgColour,
                bgColour,
                alpha=1.0):
+    """Draw some text using :mod:`matplotlib`.
+
+
+    The rendered text is returned as a RGBA bitmap within a ``numpy.uint8``
+    array of size :math:`w \\times h \\times 4`, with the top-left pixel
+    located at index ``[0, 0, :]``.
+
+    :arg text:     Text to render.
+    
+    :arg width:    Width in pixels.
+    
+    :arg height:   Height in pixels.
+    
+    :arg fontSize: Font size in points.
+    
+    :arg fgColour: Foreground (text) colour - can be any colour specification
+                   that is accepted by :mod:`matplotlib`.
+    
+    :arg bgColour: Background colour  - can be any colour specification that
+                   is accepted by :mod:`matplotlib`..
+    
+    :arg alpha:    Text transparency, in the range ``[0.0 - 1.0]``.
+    """
 
     # Imports are expensive
     import numpy                           as np
@@ -43,8 +66,8 @@ def textBitmap(text,
             verticalalignment='center',
             horizontalalignment='center',
             transform=ax.transAxes,
-            color=fgColour)
-
+            color=fgColour,
+            alpha=alpha)
 
     try:    fig.tight_layout()
     except: pass
