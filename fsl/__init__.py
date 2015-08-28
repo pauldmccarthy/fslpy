@@ -342,7 +342,7 @@ def fslDirWarning(toolName, fslEnvActive):
 
     if haveGui:
         import wx
-        from fsl.utils.fsldirdlg import FSLDirDialog
+        from fsl.utils.dialog import FSLDirDialog
 
         def warn():
             dlg = FSLDirDialog(None, toolName)
