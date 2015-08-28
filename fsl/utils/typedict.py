@@ -4,7 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-
+"""This module provides the :class:`TypeDict` class, a type-aware dictionary.
+"""
 
 class TypeDict(object):
     """A custom dictionary which allows classes or class instances to be used

@@ -5,7 +5,16 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides functions related to 3D image transformations and
-spaces.
+spaces. The following functions are provided:
+
+.. autosummary::
+   :nosignatures:
+
+   transform
+   scaleOffsetXform
+   invert
+   concat
+   axisBounds
 """
 
 import numpy        as np
@@ -14,7 +23,7 @@ import collections
 
 
 def invert(x):
-    """Inverts the given matrix. """
+    """Inverts the given matrix using ``numpy.linalg.inv``. """
     return linalg.inv(x)
 
 
@@ -26,6 +35,17 @@ def concat(x1, x2):
 def scaleOffsetXform(scales, offsets):
     """Creates and returns an affine transformation matrix which encodes
     the specified scale(s) and offset(s).
+
+    
+    :arg scales:  A tuple of up to three values specifying the scale factors
+                  for each dimension. If less than length 3, is padded with
+                  ``1.0``.
+
+    :arg offsets: A tuple of up to three values specifying the offsets for
+                  each dimension. If less than length 3, is padded with
+                  ``0.0``.
+
+    :returns:     A ``numpy.float32`` array of size :math:`4 \\times 4`.
     """
 
     if not isinstance(scales,  collections.Sequence): scales  = [scales]
@@ -34,8 +54,8 @@ def scaleOffsetXform(scales, offsets):
     lens = len(scales)
     leno = len(offsets)
 
-    if lens < 3: scales  = scales  + [1] * (3 - lens)
-    if leno < 3: offsets = offsets + [0] * (3 - leno)
+    if lens < 3: scales  = scales  + [1.0] * (3 - lens)
+    if leno < 3: offsets = offsets + [0.0] * (3 - leno)
 
     xform = np.eye(4, dtype=np.float32)
 
@@ -51,7 +71,8 @@ def scaleOffsetXform(scales, offsets):
 
 
 def axisBounds(shape, xform, axes=None, origin='centre'):
-    """Returns the (lo, hi) bounds of the specified axis/axes.
+    """Returns the ``(lo, hi)`` bounds of the specified axis/axes in the world
+    coordinate system defined by ``xform``.
     
     If the ``origin`` parameter is set to  ``centre`` (the default),
     this function assumes that voxel indices correspond to the voxel
@@ -61,11 +82,11 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
     
     So the bounds of the specified shape extends from the corner at
 
-    ``(-0.5, -0.5, -0.5)``
+      ``(-0.5, -0.5, -0.5)``
 
     to the corner at
 
-    ``(shape[0] - 0.5, shape[1] - 0.5, shape[1] - 0.5)``
+      ``(shape[0] - 0.5, shape[1] - 0.5, shape[1] - 0.5)``
 
     If the ``origin`` parameter is set to ``corner``, this function
     assumes that voxel indices correspond to the voxel corner. In this
@@ -75,12 +96,32 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
     
     So the bounds of the specified shape extends from the corner at
 
-    ``(0, 0, 0)``
+      ``(0, 0, 0)``
 
     to the corner at
 
-    ``(shape[0], shape[1]5, shape[1])``.
+      ``(shape[0], shape[1]5, shape[1])``.
+
+    
+    :arg shape:  The ``(x, y, z)`` shape of the data.
+
+    :arg xform:  Transformation matrix which transforms voxel coordinates
+                 to the world coordinate system.
+
+    :arg axes:   The world coordinate system axis bounds to calculate.
+
+    :arg origin: Either ``'centre'`` or ``'origin'``
+
+    :returns:    A list of tuples, one for each axis specified in the ``axes``
+                 argument. Each tuple contains the ``(lo, hi)`` bounds of the
+                 corresponding world coordinate system axis.
     """
+
+    origin = origin.lower()
+
+    # lousy US spelling
+    if origin == 'center':
+        origin = 'centre'
 
     if origin not in ('centre', 'corner'):
         raise ValueError('Invalid origin value: {}'.format(origin))
@@ -128,24 +169,34 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
     else:      return (lo,    hi)
 
 
-def axisLength(shape, xform, axis):
-    """Return the length, in real world units, of the specified axis.
-    """
-        
-    points          = np.zeros((2, 3), dtype=np.float32)
-    points[:]       = [-0.5, -0.5, -0.5]
-    points[1, axis] = shape[axis] - 0.5 
-
-    tx = transform(points, xform)
-
-    # euclidean distance between each boundary point
-    return sum((tx[0, :] - tx[1, :]) ** 2) ** 0.5 
-
         
 def transform(p, xform, axes=None):
     """Transforms the given set of points ``p`` according to the given affine
-    transformation ``x``. The transformed points are returned as a
-    :class:``numpy.float64`` array.
+    transformation ``xform``. 
+
+    
+    :arg p:     A sequence or array of points of shape :math:`N \\times  3`.
+
+    :arg xform: An affine transformation matrix with which to transform the
+                points in ``p``.
+
+    :arg axes:  If you are only interested in one or two axes, and the source
+                axes are orthogonal to the target axes (see the note below),
+                you may pass in a 1D, ``N*1``, or ``N*2`` array as ``p``, and
+                use this argument to specify which axis/axes that the data in
+                ``p`` correspond to.
+
+    :returns:   The points in ``p``, transformed by ``xform``, as a ``numpy``
+                array with the same data type as the input.
+
+
+    .. note:: The ``axes`` argument should only be used if the source
+              coordinate system (the points in ``p``) axes are orthogonal
+              to the target coordinate system (defined by the ``xform``).
+
+              In other words, you can only use the ``axes`` argument if
+              the ``xform`` matrix consists solely of translations and
+              scalings.
     """
 
     p = _fillPoints(p, axes)
@@ -160,8 +211,8 @@ def transform(p, xform, axes=None):
 
 def _fillPoints(p, axes):
     """Used by the :func:`transform` function. Turns the given array p into
-    a N*3 array of x,y,z coordinates. The array p may be a 1D array, or an
-    N*2 or N*3 array.
+    a ``N*3`` array of ``x,y,z`` coordinates. The array p may be a 1D array,
+    or an ``N*2`` or ``N*3`` array.
     """
 
     if not isinstance(p, collections.Iterable): p = [p]
