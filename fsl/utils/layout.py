@@ -41,7 +41,8 @@ respective horizontal/vertical display axes, are maintained, and that the
 canvases are sized proportionally with respect to each other. These functions
 are used both by :mod:`.render`, and also by the :class:`.OrthoPanel` and
 :class:`.LightBoxPanel`, for calculating canvas sizes when they are displayed
-in :mod:`.fsleyes`. The following size calculation functions are available:
+in :mod:`~.tools.fsleyes`. The following size calculation functions are
+available:
 
 .. autosummary::
    :nosignatures:
