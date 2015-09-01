@@ -6,44 +6,81 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides access to the atlas images which are contained in
-``$FSLDIR/data/atlases/``.
+``$FSLDIR/data/atlases/``. This directory contains XML files which describe
+all of the available atlases.  An XML atlas description file is assumed to
+have a structure that looks like the following:
 
-Instances of the :class:`Atlas` class is a
+.. code-block:: xml
 
-MNI152
+   <atlas>
+     <header>
+       <name></name>        # Atlas name
+       <type></type>        # 'Probabilistic' or 'Label'
+       <images>
+        <imagefile>
+        </imagefile>        # If type is Probabilistic, path
+                            # to 4D image file, one volume per
+                            # label, Otherwise, if type is
+                            # Label, path to 3D label file
+                            # (identical to the summaryimagefile
+                            # below)
+
+        <summaryimagefile>  # Path to 3D summary file, with each 
+        </summaryimagefile> # region having value (index + 1)
+
+       </images>
+       ...                  # More images - generally both
+                            # 1mm and 2mm  versions (in
+                            # MNI152 space) are available
+     </header>
+    <data>
+
+     # index - For probabilistic atlases, index of corresponding volume in
+     #         4D image file. For label images, the value of voxels which
+     #         are in the corresponding region.
+     # 
+     # x    |
+     # y    |- XYZ *voxel* coordinates into the first image of the <images>
+     #      |  list
+     # z    |
+     <label index="0" x="0" y="0" z="0">Name</label>
+     ...
+    </data>
+   </atlas>
 
 
-<atlas>
-  <header>
-    <name></name>        # Atlas name
-    <type></type>        # 'Probabilistic' or 'Label'
-    <images>
-     <imagefile>
-     </imagefile>        # If type is Probabilistic, path
-                         # to 4D image file, one volume per
-                         # label, Otherwise, if type is
-                         # Label, path to 3D label file
-                         # (identical to the summaryimagefile
-                         # below)
-                         
-     <summaryimagefile>  # Path to 3D summary file, with each 
-     </summaryimagefile> # region having value (index + 1)
+This module reads in all of these XML files, and builds a list of
+:class:`AtlasDescription` instances, each of which contains information about
+one atlas. Each atlas is assigned an identifier, which is simply the XML file
+name describing the atlas, sans-suffix.  For exmaple, the atlas described by:
 
-    </images>
-    ...                  # More images - generally both
-                         # 1mm and 2mm  versions (in
-                         # MNI152 space) are available
-  </header>
- <data>
-  # index - index of corresponding volume in 4D image file
-  # x    |
-  # y    |- XYZ *voxel* coordinates into the first image of the <images> list
-  # z    |
-  <label index="0" x="0" y="0" z="0">Name</label>
-  ...
- </data>
-</atlas>
+    ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
+
+is given the identifier
+
+    ``HarvardOxford-Cortical``
+
+
+The following functions provide access to the available
+:class:`AtlasDescription` instances:
+
+.. autosummary::
+   :nosignatures:
+
+   listAtlases
+   getAtlasDescription
+
+
+The :func:`loadAtlas` function allows you to load an atlas image, which will
+be one of the following  atlas-specific :class:`.Image` sub-classes:
+
+.. autosummary::
+   :nosignatures:
+
+   LabelAtlas
+   ProbabilisticAtlas
 """
+
 
 import                          os
 import xml.etree.ElementTree as et
@@ -61,30 +98,14 @@ import fsl.utils.transform   as transform
 
 log = logging.getLogger(__name__)
 
-ATLAS_DIR = None
 
-def _setAtlasDir():
-    global ATLAS_DIR
-
-    if ATLAS_DIR is not None:
-        return
-    
-    if os.environ.get('FSLDIR', None) is None:
-        log.warn('$FSLDIR is not set - atlases are not available')
-    else:
-        ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')
-
-
-ATLAS_DESCRIPTIONS = collections.OrderedDict()
-
-    
 def listAtlases(refresh=False):
     """Returns a dictionary containing :class:`AtlasDescription` objects for
     all available atlases.
 
     :arg refresh: If ``True``, or if the atlas desriptions have not
                   previously been loaded, atlas descriptions are
-                  loaded from the atlas files. Otherwise, prefviously
+                  loaded from the atlas files. Otherwise, previously
                   loaded descriptions are returned (see 
                   :attr:`ATLAS_DESCRIPTIONS`).
     """
@@ -109,7 +130,6 @@ def listAtlases(refresh=False):
     for i, desc in enumerate(atlasDescs):
         desc.index                       = i
         ATLAS_DESCRIPTIONS[desc.atlasID] = desc
-        
 
     return atlasDescs
 
@@ -161,12 +181,50 @@ def loadAtlas(atlasID, loadSummary=False):
 
 
 class AtlasDescription(object):
-    """Loads the data stored in an Atlas XML description, and makes said
-    information accessible via instance attributes.
+    """An ``AtlasDescription`` instance parses and stores the information
+    stored in the XML file that describes one atlas.
+
+    The following attributes are available on an ``AtlasDescription`` instance:
+
+    ================= ======================================================
+    ``atlasID``       The atlas ID, as described above.
+    ``name``          Name of the atlas.
+    ``atlasType``     Atlas type - either *probabilistic* or *label*.
+    ``images``        A list of images available for this atlas - usually
+                      :math:`1mm^3` and :math:`2mm^3` images are present.
+    ``summaryImages`` For probabilistic atlases, a list of *summary* images,
+                      which are just 3D labelled variants of the atlas.
+    ``labels``        A list of ``AtlasLabel`` objects, describing each
+                      region / label in the atlas.
+    ================= ======================================================
+
+    Each ``AtlasLabel`` instance in the ``labels`` list contains the
+    following attributes:
+
+    ========= ==============================================================
+    ``name``  Region name
+    ``index`` For probabilistic atlases, the volume index into the 4D atlas
+              image that corresponds to this region. For label atlases, the
+              value of voxels that are in this region. For summary images of
+              probabilistic atlases, add 1 to this value to get the
+              corresponding voxel values.
+    ``x``     X coordinate of the region in world space
+    ``y``     Y coordinate of the region in world space
+    ``z``     Z coordinate of the region in world space
+    ========= ==============================================================
+
+    .. note:: The ``x``, ``y`` and ``z`` label coordinates are pre-calculated
+              centre-of-gravity coordinates, as listed in the atlas xml file.
+              They are in the coordinate system defined by the atlas image
+              transformation matrix (typically MNI152 space).
     """
 
     
     def __init__(self, filename):
+        """Create an ``AtlasDescription`` instance.
+
+        :arg filename: Name of the XML file describing the atlas.
+        """
 
         log.debug('Loading atlas description from {}'.format(filename))
 
@@ -237,8 +295,21 @@ class AtlasDescription(object):
 
 
 class Atlas(fslimage.Image):
+    """This is the base class for the :class:`LabelAtlas` and
+    :class:`ProbabilisticAtlas` classes. It contains some initialisation
+    logic common to both.
+    """
+
     
     def __init__(self, atlasDesc, isLabel=False):
+        """Initialise an ``Atlas``.
+
+        :arg atlasDesc: The :class:`AtlasDescription` instance which describes
+                        the atlas.
+
+        :arg isLabel:   Pass in ``True`` for label atlases, ``False`` for
+                        probabilistic atlases.
+        """
 
         # Choose the atlas image
         # with the highest resolution 
@@ -262,17 +333,30 @@ class Atlas(fslimage.Image):
         # their sform_codes are correctly set
         self.nibImage.get_header().set_sform(
             None, code=constants.NIFTI_XFORM_MNI_152)
-                    
 
         self.desc = atlasDesc
 
         
 class LabelAtlas(Atlas):
+    """A 3D atlas which contains integer labels for each region.
+
+    The ``LabelAtlas`` class provides the :meth:`label` method, which
+    makes looking up the label at a location easy.
+    """
 
     def __init__(self, atlasDesc):
+        """Create a ``LabelAtlas`` instance.
+
+        :arg atlasDesc: The :class:`AtlasDescription` instance describing
+                        the atlas.
+        """
         Atlas.__init__(self, atlasDesc, isLabel=True)
 
+        
     def label(self, worldLoc):
+        """Looks up and returns the label of the region at the given world
+        location, or ``np.nan`` if the location is out of bounds.
+        """
 
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
 
@@ -294,12 +378,27 @@ class LabelAtlas(Atlas):
 
     
 class ProbabilisticAtlas(Atlas):
+    """A 4D atlas which contains one volume for each region.
+
+    The ``ProbabilisticAtlas`` provides the :meth`proportions` method,
+    which makes looking up region probabilities easy.
+    """
 
     def __init__(self, atlasDesc):
+        """Create a ``ProbabilisticAtlas`` instance.
+
+        :arg atlasDesc: The :class:`AtlasDescription` instance describing
+                        the atlas.
+        """ 
         Atlas.__init__(self, atlasDesc, isLabel=False)
 
         
     def proportions(self, worldLoc):
+        """:returns: a list of values, one per region, which represent
+                     the probability of each region for the given world
+                     location. Returns an empty list if the given
+                     location is out of bounds.
+        """
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
 
         if voxelLoc[0] <  0             or \
@@ -311,3 +410,34 @@ class ProbabilisticAtlas(Atlas):
             return []
         
         return self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
+
+
+
+ATLAS_DIR = None
+"""This attribute stores the absolute path to ``$FSLDIR/data/atlases/``. It is
+``None`` if ``$FSLDIR`` is not set. See :func:`_setAtlasDir`.
+"""
+
+
+ATLAS_DESCRIPTIONS = collections.OrderedDict()
+"""This dictionary contains an ``{atlasID : AtlasDescription}`` mapping for
+all atlases contained in ``$FSLDIR/data/atlases/``.
+"""
+
+
+def _setAtlasDir():
+    """Called by the :func:`listAtlases`, :func:`getAtlasDescription` and
+    :func:`loadAtlas` functions.
+
+    Sets the :data:`ATLAS_DIR` attribute if it has not already been set, and
+    if the ``$FSLDIR`` environment variable is set.
+    """
+    global ATLAS_DIR
+
+    if ATLAS_DIR is not None:
+        return
+    
+    if os.environ.get('FSLDIR', None) is None:
+        log.warn('$FSLDIR is not set - atlases are not available')
+    else:
+        ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')

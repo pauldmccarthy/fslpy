@@ -50,7 +50,7 @@ def colourBarBitmap(cmap,
     
     :arg label:        Text label to show next to the colour bar.
     
-    :arg orientation:  Either ``vertical`` or `horizontal``.
+    :arg orientation:  Either ``vertical`` or ``horizontal``.
     
     :arg labelside:    If ``orientation`` is ``vertical`` ``labelSide`` may
                        be either ``left`` or ``right``. Otherwise, if

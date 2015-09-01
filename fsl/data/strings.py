@@ -4,9 +4,30 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains a collection of strings used throughout ``fslpy`` for
+display purposes. Most of the strings are used by FSLeyes.
+
+
+The strings are stored in :class:`.TypeDict` dictionaries, roughly organised
+into the following categories:
+
+
+  - :data:`messages`:   Messages to be displayed to the user.
+  - :data:`titles`:     Titles of windows, panels, and dialogs.
+  - :data:`actions`:    Names of actions tied to menu options, buttons, etc.
+  - :data:`labels`:     Labels for miscellaneous things.
+  - :data:`properties`: Display names for ``props.HasProperties`` properties.
+  - :data:`choices`:    Display names for ``props.HasProperties`` choice
+                        properties.
+  - :data:`anatomy`:    Anatomical and orientation labels.
+  - :data:`nifti`:      Labels for NIFTI header fields.
+  - :data:`feat`:       FEAT specific names and labels.
+"""
+
 
 from fsl.utils.typedict import TypeDict
 import fsl.data.constants as constants
+
 
 messages = TypeDict({
 
@@ -99,7 +120,6 @@ messages = TypeDict({
                                     'check your cluster_*.txt files.',
     'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
 })
-
 
 
 titles = TypeDict({
@@ -201,6 +221,7 @@ actions = TypeDict({
     'OrthoEditProfile.createMaskFromSelection' : 'Mask',
     'OrthoEditProfile.createROIFromSelection'  : 'ROI',
 })
+
 
 labels = TypeDict({
 

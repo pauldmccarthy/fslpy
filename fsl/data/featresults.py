@@ -6,7 +6,34 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides a few utility functions for loading/querying the
-contents of a FEAT analysis directory.
+contents of a FEAT analysis directory. They are primarily for use by the
+:class:`.FEATImage` class, but are available for other uses if needed. The
+following functions are provided:
+
+.. autosummary::
+   :nosignatures:
+
+   isFEATDir
+   getFEATDir
+   loadDesign
+   loadContrasts
+   loadSettings
+   getEVNames
+   getThresholds
+   loadClusterResults
+
+
+The following functions return the names of various files of interest:
+
+.. autosummary::
+   :nosignatures:
+
+   getDataFile
+   getResidualFile
+   getPEFile
+   getCOPEFile
+   getZStatFile
+   getClusterMaskFile
 """
 
 
@@ -25,8 +52,9 @@ log = logging.getLogger(__name__)
 def isFEATDir(path):
     """Returns ``True`` if the given path looks like a FEAT directory, or
     looks like the input data for a FEAT analysis, ``False`` otherwise.
-    """
 
+    :arg path: A file / directory path.
+    """
 
     dirname, filename = op.split(path)
 
@@ -50,6 +78,15 @@ def isFEATDir(path):
 
 
 def getFEATDir(path):
+    """Given the path of any file/directory which is within a ``.feat`` or
+    ``.gfeat`` directory, strips all trailing components of the path name,
+    and returns the root FEAT directory.
+    
+    Returns ``None`` if the given path is not contained within a ``.feat``
+    or ``.gfeat`` directory.
+
+    :arg path: A file / directory path.
+    """
 
     sufs     = ['.feat', '.gfeat']
     idxs     = [(path.rfind(s), s) for s in sufs]
@@ -68,10 +105,12 @@ def getFEATDir(path):
 
 
 def loadDesign(featdir):
-    """Loads the design matrix from a FEAT folder.
+    """Loads the design matrix from a FEAT directory.
 
     Returns a ``numpy`` array containing the design matrix data, where the
     first dimension corresponds to the data points, and the second to the EVs.
+
+    :arg featdir: A FEAT directory.
     """
 
     matrix    = None 
@@ -96,11 +135,14 @@ def loadDesign(featdir):
 
 
 def loadContrasts(featdir):
-    """Loads the contrasts from a FEAT folder. Returns a tuple containing:
+    """Loads the contrasts from a FEAT directory. Returns a tuple containing:
     
-      - A dictionary of ``{contrastnum : name}`` mappings
+      - A dictionary of ``{contrastnum : name}`` mappings (the ``contrastnum``
+        values are 1-indexed).
     
       - A list of contrast vectors (each of which is a list itself).
+
+    :arg featdir: A FEAT directory.
     """
 
     matrix       = None
@@ -151,9 +193,12 @@ def loadContrasts(featdir):
 
 
 def loadSettings(featdir):
-    """Loads the analysis settings from a a FEAT folder.
+    """Loads the analysis settings from a FEAT directory.
 
-    Returns a dict containing the settings specified in the given file.
+    Returns a dict containing the settings specified in the ``design.fsf``
+    file within the directory
+
+    :arg featdir: A FEAT directory.
     """
 
     settings  = {}
@@ -183,6 +228,18 @@ def loadSettings(featdir):
 
 
 def getThresholds(settings):
+    """Given a FEAT settings dictionary, returns a dictionary of
+    ``{stat : threshold}`` mappings, containing the thresholds used
+    in the FEAT statistical analysis.
+
+    The following keys will be present. Threshold values will be ``None``
+    if the respective statistical thresholding was not carried out:
+    
+      - ``p``: P-value thresholding
+      - ``z``: Z-statistic thresholding
+
+    :arg settings: A FEAT settings dictionary (see :func:`loadSettings`).
+    """
     return {
         'p' : settings.get('prob_thresh', None),
         'z' : settings.get('z_thresh',    None)
@@ -191,13 +248,43 @@ def getThresholds(settings):
 
 def loadClusterResults(featdir, settings, contrast):
     """If cluster thresholding was used in the FEAT analysis, this function
-    will load and return the cluster results for the specified contrast
-    (which is assumed to be 0-indexed).
+    will load and return the cluster results for the specified (0-indexed)
+    contrast number.
 
-    If there are no cluster results for the given contrast,
-    ``None`` is returned.
+    If there are no cluster results for the given contrast, ``None`` is
+    returned.
 
     An error will be raised if the cluster file cannot be parsed.
+
+    :arg featdir:  A FEAT directory.
+    :arg settings: A FEAT settings dictionary.
+    :arg contrast: 0-indexed contrast number.
+
+    :returns:      A list of ``Cluster`` instances, each of which contains
+                   information about one cluster. A ``Cluster`` object has the
+                   following attributes:
+
+                     ============ =========================================
+                     ``index``    Cluster index.
+                     ``nvoxels``  Number of voxels in cluster.
+                     ``p``        Cluster p value.
+                     ``logp``     :math:`-log_{10}` of the cluster P value.
+                     ``zmax``     Maximum Z value in cluster.
+                     ``zmaxx``    X voxel coordinate of maximum Z value.
+                     ``zmaxy``    Y voxel coordinate of maximum Z value.
+                     ``zmaxz``    Z voxel coordinate of maximum Z value.
+                     ``zcogx``    X voxel coordinate of cluster centre of
+                                  gravity.
+                     ``zcogy``    Y voxel coordinate of cluster centre of
+                                  gravity.
+                     ``zcogz``    Z voxel coordinate of cluster centre of
+                                  gravity.
+                     ``copemax``  Maximum COPE value in cluster.
+                     ``copemaxx`` X voxel coordinate of maximum COPE value.
+                     ``copemaxy`` Y voxel coordinate of maximum COPE value.
+                     ``copemaxz`` Z voxel coordinate of maximum COPE value.
+                     ``copemean`` Mean COPE of all voxels in the cluster.
+                     ============ =========================================
     """
 
     # Cluster files are named like
@@ -208,7 +295,6 @@ def loadClusterResults(featdir, settings, contrast):
     coordXform  = np.eye(4)
     clusterFile = op.join(
         featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
-
 
     if not op.exists(clusterFile):
 
@@ -334,8 +420,10 @@ def loadClusterResults(featdir, settings, contrast):
 
 
 def getDataFile(featdir):
-    """Returns the name of the file in the FEAT results which contains
+    """Returns the name of the file in the FEAT directory which contains
     the model input data (typically called ``filtered_func_data.nii.gz``).
+
+    :arg featdir: A FEAT directory.
     """
     
     # Assuming here that there is only
@@ -346,6 +434,8 @@ def getDataFile(featdir):
 def getResidualFile(featdir):
     """Returns the name of the file in the FEAT results which contains
     the model fit residuals (typically called ``res4d.nii.gz``).
+
+    :arg featdir: A FEAT directory.
     """
     
     # Assuming here that there is only
@@ -354,33 +444,40 @@ def getResidualFile(featdir):
 
     
 def getPEFile(featdir, ev):
-    """Returns the path of the PE file for the specified ``ev``, which is
-    assumed to be 0-indexed. 
-    """
+    """Returns the path of the PE file for the specified EV.
 
+    :arg featdir: A FEAT directory.
+    :arg ev:      The EV number (0-indexed).
+    """
     pefile = op.join(featdir, 'stats', 'pe{}.*'.format(ev + 1))
     return glob.glob(pefile)[0]
 
 
 def getCOPEFile(featdir, contrast):
-    """Returns the path of the COPE file for the specified ``contrast``, which
-    is assumed to be 0-indexed. 
+    """Returns the path of the COPE file for the specified contrast.
+
+    :arg featdir:  A FEAT directory.
+    :arg contrast: The contrast number (0-indexed). 
     """
     copefile = op.join(featdir, 'stats', 'cope{}.*'.format(contrast + 1))
     return glob.glob(copefile)[0]
 
 
 def getZStatFile(featdir, contrast):
-    """Returns the path of the Z-statistic file for the specified
-    ``contrast``, which is assumed to be 0-indexed. 
+    """Returns the path of the Z-statistic file for the specified contrast.
+
+    :arg featdir:  A FEAT directory.
+    :arg contrast: The contrast number (0-indexed). 
     """
     zfile = op.join(featdir, 'stats', 'zstat{}.*'.format(contrast + 1))
     return glob.glob(zfile)[0]
 
 
 def getClusterMaskFile(featdir, contrast):
-    """Returns the path of the cluster mask file for the specified
-    ``contrast``, which is assumed to be 0-indexed. 
+    """Returns the path of the cluster mask file for the specified contrast.
+
+    :arg featdir:  A FEAT directory.
+    :arg contrast: The contrast number (0-indexed). 
     """
     mfile = op.join(featdir, 'cluster_mask_zstat{}.*'.format(contrast + 1))
     return glob.glob(mfile)[0]
@@ -392,6 +489,8 @@ def getEVNames(settings):
 
     An error of some sort will be raised if the EV names cannot be determined
     from the FEAT settings.
+
+    :arg settings: A FEAT settings dictionary (see :func:`loadSettings`). 
     """
 
     numEVs = int(settings['evs_real'])
