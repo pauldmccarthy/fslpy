@@ -6,6 +6,7 @@
    :hidden:
    :maxdepth: 1
 
+   fsl
    fsl.tools
    fsl.data
    fsl.utils
