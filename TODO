@@ -104,6 +104,7 @@ All spinctrls now refresh on focus-lose, or when enter is hit.
 ** Unify/remove duplication across gl*_funcs modules
 ** Unify/remove duplication across texture classes - the set(**kwargs) method, all the GL texture function calls, and duplicated 3D texture functionality
 ** Port to wxPython/Phoenix
+** Python 3 compatibilitiy audit 
 * Things to do in props package
 ** Refactor/rewrite constraints/attributes. Clean up HasProps class - remove related unnecessary methods.
 Is there anything stopping me from making the constraints, for each property, properties themselves?
@@ -122,6 +123,8 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 Text buttons have a fixed size under OSX. Bitmap buttons are resized.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** OverlayListPanel enabled/disabled state is dodgy (disabled overlay label sometimes not faded out).
+** Linux/GTK - spin button step is crazy big
 ** Ortho labels not always refreshing properly
 ** Ortho label bg colour update a bit dodgy
 ** Ortho screenshot with labels is still dodgy
@@ -214,6 +217,10 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** fsl.data.image.loadImage: Replace subprocess gzip callout with the std library gzip module.
+** Make Text/Spin control contents highlighted when they are focused
+** Tab traversal order
+** 'Reset cursor' could reset to world (0, 0, 0)? Or another button/option in locaton panel which does this?
 ** Opacity is ignored from WX colour dialog.
 ** Histogram/TimeSeries toolbars, which are shown by default
 ** Allow a gap in cursor crosshairs
