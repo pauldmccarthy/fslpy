@@ -394,10 +394,14 @@ class ProbabilisticAtlas(Atlas):
 
         
     def proportions(self, worldLoc):
-        """:returns: a list of values, one per region, which represent
-                     the probability of each region for the given world
-                     location. Returns an empty list if the given
-                     location is out of bounds.
+        """Looks up the region probabilities for the given location.
+
+        :arg worldLoc: Location in the world coordinate system.
+
+        :returns: a list of values, one per region, which represent
+                  the probability of each region for the specified
+                  location. Returns an empty list if the given
+                  location is out of bounds.
         """
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
 

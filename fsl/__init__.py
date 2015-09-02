@@ -222,7 +222,7 @@ def _parseArgs(argv, allTools):
     
       - The :class:`argparse.Namespace` instance containing parsed arguments.
     
-      - The return value of the ``FSLTool.parseArgs` function (see
+      - The return value of the ``FSLTool.parseArgs`` function (see
         :func:`_loadFSLTool`).
     """
 

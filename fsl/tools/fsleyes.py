@@ -224,9 +224,10 @@ def interface(parent, args, ctx):
     return frame
 
     
-#########################################
-# See the fsl.tools package documentation
-#########################################
+#############################################
+# See the fsl.tools package documentation for
+# details on these module-level attributes
+#############################################
 
 
 FSL_TOOLNAME  = 'FSLeyes'
