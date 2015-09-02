@@ -12,16 +12,18 @@ The strings are stored in :class:`.TypeDict` dictionaries, roughly organised
 into the following categories:
 
 
-  - :data:`messages`:   Messages to be displayed to the user.
-  - :data:`titles`:     Titles of windows, panels, and dialogs.
-  - :data:`actions`:    Names of actions tied to menu options, buttons, etc.
-  - :data:`labels`:     Labels for miscellaneous things.
-  - :data:`properties`: Display names for ``props.HasProperties`` properties.
-  - :data:`choices`:    Display names for ``props.HasProperties`` choice
-                        properties.
-  - :data:`anatomy`:    Anatomical and orientation labels.
-  - :data:`nifti`:      Labels for NIFTI header fields.
-  - :data:`feat`:       FEAT specific names and labels.
+ ================== =====================================================
+ :data:`messages`   Messages to be displayed to the user.
+ :data:`titles`     Titles of windows, panels, and dialogs.
+ :data:`actions`    Names of actions tied to menu options, buttons, etc.
+ :data:`labels`     Labels for miscellaneous things.
+ :data:`properties` Display names for ``props.HasProperties`` properties.
+ :data:`choices`    Display names for ``props.HasProperties`` choice
+                     properties.
+ :data:`anatomy`    Anatomical and orientation labels.
+ :data:`nifti`      Labels for NIFTI header fields.
+ :data:`feat`       FEAT specific names and labels.
+ ================== =====================================================
 """
 
 
