@@ -39,8 +39,11 @@ The conventional way to run ``fslpy`` is as follows::
           ``logging`` level for tracking memory usage. The log level is
           attached to the ``logging`` module as ``logging.MEMORY``, and
           an associated log function is attached as ``logging.memory``.
-"""
 
+
+.. note:: The ``fslpy`` version number (currently |version|) is set in a
+          single place - the :mod:`fsl.version` module.
+"""
 
 import logging
 import pkgutil
@@ -55,6 +58,14 @@ import subprocess
 
 import fsl.tools          as tools
 import fsl.utils.settings as fslsettings
+
+import fsl.version
+
+
+__version__ = fsl.version.__version__
+"""The current ``fslpy`` version number. This information is stored in the
+:mod:`fsl.version` module.
+"""
 
 
 def main(args=None):
