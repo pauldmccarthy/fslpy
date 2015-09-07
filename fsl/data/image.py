@@ -535,10 +535,11 @@ def loadImage(filename):
     """Given the name of an image file, loads it using nibabel.
 
     If the file is large, and is gzipped, it is decompressed to a temporary
-    location, so that it can be memory-mapped.  A tuple is returned,
-    consisting of the nibabel image object, and the name of the file that it
-    was loaded from (either the passed-in file name, or the name of the
-    temporary decompressed file).
+    location, so that it can be memory-mapped.
+
+    In any case, a tuple is returned, consisting of the nibabel image object,
+    and the name of the file that it was loaded from (either the passed-in
+    file name, or the name of the temporary decompressed file).
     """
 
     # If we have a GUI, we can display a dialog

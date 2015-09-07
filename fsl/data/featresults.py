@@ -170,7 +170,7 @@ def loadContrasts(featdir):
             elif line == '/Matrix':
                 break
 
-        matrix = np.loadtxt(f)
+        matrix = np.loadtxt(f, ndmin=2)
 
     if matrix       is None             or \
        numContrasts != matrix.shape[0]:

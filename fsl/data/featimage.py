@@ -55,7 +55,7 @@ class FEATImage(fslimage.Image):
         :arg path:   A FEAT analysis directory, or an image file contained
                      within such a directory.
 
-        :arg kwargs: Passed to the :meth:`.Image.__init__` constructor.
+        :arg kwargs: Passed to the :class:`.Image` constructor.
 
         .. note:: If a FEAT directory is passed in for the ``path``
                   argument, this ``FEATImage`` instance will encapsulate
