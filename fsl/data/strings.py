@@ -284,8 +284,8 @@ labels = TypeDict({
     'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
 
-    'FEATReducedTimeSeries.cope' : 'Reduced against COPE{}: {}',
-    'FEATReducedTimeSeries.pe'   : 'Reduced against PE{}',
+    'FEATPartialFitTimeSeries.cope' : 'Reduced against COPE{}: {}',
+    'FEATPartialFitTimeSeries.pe'   : 'Reduced against PE{}',
 
     'FEATResidualTimeSeries'     : 'Residuals',
 
@@ -407,7 +407,7 @@ properties = TypeDict({
     'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit ({})',
     'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
     'FEATTimeSeries.plotResiduals'    : 'Plot residuals',
-    'FEATTimeSeries.plotReduced'      : 'Plot data reduced against',
+    'FEATTimeSeries.plotPartial'      : 'Plot partial model fit against',
     'FEATTimeSeries.plotData'         : 'Plot data',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
