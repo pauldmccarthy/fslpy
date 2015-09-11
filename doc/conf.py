@@ -337,11 +337,13 @@ epub_exclude_files = ['search.html']
 # If false, no index is generated.
 #epub_use_index = True
 
-# ensure that class __init__ docstring is included.
-autoclass_content = 'both'
+# Show the class level docstring
+# (__init__ is documented via the
+# special-members flag)
+autoclass_content = 'class'
 
-# Document private members
-autodoc_default_flags = ['private-members']
+# Document private members and special members (e.g. __init__)
+autodoc_default_flags = ['private-members', 'special-members']
 
 # Documentation for python modules is in the same order
 # as the source code.
