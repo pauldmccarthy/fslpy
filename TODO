@@ -123,6 +123,9 @@ Also, redo the way that global HasProps validation works - it is currently perfo
 Text buttons have a fixed size under OSX. Bitmap buttons are resized.
 ** Wild cards in file dialog do not support multiple extensions (e.g. '.nii.gz')
 * Bugs to fix
+** Ortho screenshot when only a single canvas is shown is not working.
+** Overlay groups - when a linked overlay is unlinked, then re-linked, its volume (and other?) property does not update correctly.
+** FEAT features on partial FEAT runs (e.g. preproc only) is buggy - time series, etc.
 ** OverlayListPanel enabled/disabled state is dodgy (disabled overlay label sometimes not faded out).
 ** Linux/GTK - spin button step is crazy big
 ** Ortho labels not always refreshing properly
@@ -217,6 +220,10 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Slice-wise histogram, e.g. to allow identification of slice containing max-values.
+** Create/destroy Editor instances for a single image, instead of giving the Editor the overlayList/displayCtx.
+** SliceCanvas/LightBoxCanvas should create SliceCanvasOpts/LightBoxCanvasOpts objects and use them, instead of copying their properties.
+** Extract a single 3D image from a 4D volume
 ** fsl.data.image.loadImage: Replace subprocess gzip callout with the std library gzip module.
 ** Make Text/Spin control contents highlighted when they are focused
 ** Tab traversal order
@@ -367,6 +374,9 @@ that need it (e.g. SliceCanvas, LightBoxCanvas, etc)
 ** DONE Enable/disable ImageList<->Canvas position sync - 'link' property on slice canvas/orthopanel, or something.
 ** DONE SliceCanvas initial location set from image list
 * Medium things
+** Actions are ugly. 
+Maybe use decorators to denote actions? This would make it easier to
+distinguish between different action types
 ** GedSpace
 ** NIFTI2
 ** PlotPanel - Mouse click interaction: when clicking on a plot, the current overlay/volume should be selected
