@@ -167,9 +167,10 @@ def interface(parent, args, ctx):
     :returns: the :class:`.FSLEyesFrame` that was created.
     """
 
-    import                      wx
-    import fsl.fsleyes.frame as fsleyesframe
-    import fsl.fsleyes.views as views
+    import                                    wx
+    import fsl.fsleyes.frame               as fsleyesframe
+    import fsl.fsleyes.views.orthopanel    as op
+    import fsl.fsleyes.views.lightboxpanel as lbp
 
     overlayList, displayCtx, splashFrame = ctx
 
@@ -183,8 +184,8 @@ def interface(parent, args, ctx):
 
     # Otherwise, we add the scene
     # specified by the user
-    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
-    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
+    if   args.scene == 'ortho':    frame.addViewPanel(op .OrthoPanel)
+    elif args.scene == 'lightbox': frame.addViewPanel(lbp.LightBoxPanel)
 
     # The viewPanel is assumed to be a CanvasPanel 
     # (i.e. either OrthoPanel or LightBoxPanel)
