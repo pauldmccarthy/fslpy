@@ -220,6 +220,9 @@ perhaps into a standalone module...
 ** DONE Graceful handling of bad input filenames
 ** DONE Aspect ratio on slicecanvas zoom, and panning is broken.
 * Little things
+** Toolbars for TimeSeriesPanel/HistogramPanel
+** Ticks on menu items for control panels that are displayed
+** Toggle button contrast on Yosemite is poor
 ** Slice-wise histogram, e.g. to allow identification of slice containing max-values.
 ** Create/destroy Editor instances for a single image, instead of giving the Editor the overlayList/displayCtx.
 ** SliceCanvas/LightBoxCanvas should create SliceCanvasOpts/LightBoxCanvasOpts objects and use them, instead of copying their properties.
