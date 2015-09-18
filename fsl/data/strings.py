@@ -107,10 +107,6 @@ messages = TypeDict({
 
     'HistogramPanel.calcHist'           : 'Calculating histogram for {} ...',
 
-
-    'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
-                                       'uses a lookup table',
-
     'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
                                      'label with value {}',
 
