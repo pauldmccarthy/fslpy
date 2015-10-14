@@ -4,10 +4,12 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module implements a GUI front end to the FSL BET tool. """
 
-from collections import OrderedDict
+import numpy as np
 
 import props
+props.initGUI()
 
 # The colour maps module must be initialised
 # before the displaycontext module can be loaded
@@ -16,26 +18,33 @@ colourmaps.init()
 
 import fsl.data.image               as fslimage
 import fsl.utils.transform          as transform
+import fsl.fsleyes.overlay          as fsloverlay
 import fsl.fsleyes.displaycontext   as displaycontext
 import fsl.fsleyes.gl               as fslgl
 
-runChoices = OrderedDict((
+
+runChoices = [' ', '-R', '-S', '-B', '-Z', '-F', '-A', '-A2']
+
+
+runChoiceLabels = {
 
     # This is a bit silly, but we can't use an empty
     # string as a key here, due to the way that props
     # handles empty strings.
-    (' ',   'Run standard brain extraction using bet2'),
-    ('-R',  'Robust brain centre estimation (iterates bet2 several times)'),
-    ('-S',  'Eye & optic nerve cleanup (can be useful in SIENA)'),
-    ('-B',  'Bias field & neck cleanup (can be useful in SIENA)'),
-    ('-Z',  'Improve BET if FOV is very small in Z'),
-    ('-F',  'Apply to 4D FMRI data'),
-    ('-A',  'Run bet2 and then betsurf to get additional skull and scalp '
-            'surfaces'),
-    ('-A2', 'As above, when also feeding in non-brain extracted T2')))
+    ' '   : 'Run standard brain extraction using bet2',
+    '-R'  : 'Robust brain centre estimation (iterates bet2 several times)',
+    '-S'  : 'Eye & optic nerve cleanup (can be useful in SIENA)',
+    '-B'  : 'Bias field & neck cleanup (can be useful in SIENA)',
+    '-Z'  : 'Improve BET if FOV is very small in Z',
+    '-F'  : 'Apply to 4D FMRI data',
+    '-A'  : 'Run bet2 and then betsurf to get additional skull and scalp '
+            'surfaces',
+    '-A2' : 'As above, when also feeding in non-brain extracted T2'}
 
 
 class Options(props.HasProperties):
+    """The ``Options`` class contains all of the options  required to run BET.
+    """
 
     inputImage           = props.FilePath(
         exists=True,
@@ -65,8 +74,7 @@ class Options(props.HasProperties):
 
 
     def setOutputImage(self, value, valid, *a):
-        """
-        When a (valid) input image file name is selected, the output
+        """When a (valid) input image file name is selected, the output
         image is set to the same name, with a suffix of '_brain'.
         """
 
@@ -76,8 +84,7 @@ class Options(props.HasProperties):
 
         
     def clearT2Image(self, value, *a):
-        """
-        This is a bit of a hack. If the user provides an invalid value
+        """This is a bit of a hack. If the user provides an invalid value
         for the T2 image (when running bet with the -A2 flag), but then
         changes their run choice to something other than -A2 (meaning
         that the invalid T2 image won't actually be used, so the fact
@@ -90,17 +97,14 @@ class Options(props.HasProperties):
 
 
     def __init__(self):
-        """
-        Adds a few callback listeners for various bits of behaviour.
-        """
+        """Adds a few callback listeners for various bits of behaviour. """
 
         self.addListener('inputImage', 'setOutputImage', self.setOutputImage)
         self.addListener('runChoice',  'clearT2Image',   self.clearT2Image)
 
 
     def genBetCmd(self):
-        """
-        Generates a command line call to the bet shell script, from
+        """Generates a command line call to the bet shell script, from
         the current option values.
         """
 
@@ -185,8 +189,7 @@ optTooltips = {
 
 
 def selectHeadCentre(opts, button):
-    """
-    Pops up a little dialog window allowing the user to interactively
+    """Pops up a little dialog window allowing the user to interactively
     select the head centre location.
     """
     import                                 wx
@@ -197,17 +200,19 @@ def selectHeadCentre(opts, button):
     fslgl.bootstrap()
 
     image      = fslimage.Image(opts.inputImage)
-    imageList  = fslimage.ImageList([image])
+    imageList  = fsloverlay.OverlayList([image])
     displayCtx = displaycontext.DisplayContext(imageList)
-    display    = displayCtx.getDisplay(image)
+    display    = displayCtx.getDisplay(image, overlayType='volume')
+    volOpts    = display.getDisplayOpts()
     parent     = button.GetTopLevelParent()
     frame      = orthopanel.OrthoDialog(parent,
                                         imageList,
                                         displayCtx,
                                         opts.inputImage,
-                                        style=wx.RESIZE_BORDER)
-    v2dMat     = display.getTransform('voxel',   'display')
-    d2vMat     = display.getTransform('display', 'voxel')
+                                        style=(wx.DEFAULT_DIALOG_STYLE |
+                                               wx.RESIZE_BORDER))
+    v2dMat     = volOpts.getTransform('voxel',   'display')
+    d2vMat     = volOpts.getTransform('display', 'voxel')
 
     # Whenever the x/y/z coordinates change on
     # the ortho panel, update the option values.
@@ -233,6 +238,10 @@ def selectHeadCentre(opts, button):
     voxCoords           = [opts.xCoordinate,
                            opts.yCoordinate,
                            opts.zCoordinate]
+
+    if voxCoords == [0, 0, 0]:
+        voxCoords = np.array(image.shape[:3]) / 2
+    
     worldCoords         = transform.transform([voxCoords], v2dMat)[0]
     displayCtx.location = worldCoords
 
@@ -249,7 +258,7 @@ betView = props.NotebookGroup((
             'inputImage',
             'outputImage',
             'fractionalIntensity',
-            'runChoice',
+            props.Widget('runChoice', labels=runChoiceLabels),
             props.Widget('t2Image', visibleWhen=lambda i: i.runChoice == '-A2')
         )),
     props.VGroup(
@@ -276,6 +285,7 @@ betView = props.NotebookGroup((
 
 
 def interface(parent, args, opts):
+    """Generates the BET gui. """
     
     import wx
     
@@ -290,6 +300,7 @@ def interface(parent, args, opts):
 
 
 def runBet(parent, opts):
+    """Runs BET using the specified options. """
 
     import fsl.utils.runwindow          as runwindow
     import fsl.fsleyes.views.orthopanel as orthopanel 
@@ -304,8 +315,7 @@ def runBet(parent, opts):
 
         inImage   = fslimage.Image(opts.inputImage)
         outImage  = fslimage.Image(opts.outputImage)
-        imageList = fslimage.ImageList([inImage, outImage])
-
+        imageList = fsloverlay.OverlayList([inImage, outImage])
         displayCtx = displaycontext.DisplayContext(imageList)
         outDisplay = displayCtx.getDisplay(outImage)
         outOpts    = outDisplay.getDisplayOpts()

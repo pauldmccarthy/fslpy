@@ -1,81 +1,124 @@
 #!/usr/bin/env python
 #
-# feat.py - 
+# feat.py - FEAT front end.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module implements a non-functional front end to the FSL FEAT tool. """
 
-
-from collections import OrderedDict
 
 import props
+props.initGUI()
 
-analysisTypeOpts = OrderedDict((
-    ('firstLevel', 'First-level analysis'),
-    ('highLevel',  'Higher-level analysis')))
+analysisTypeOpts = ['firstLevel',
+                    'highLevel']
+analysisTypeOptLabels = {
+    'firstLevel' : 'First-level analysis',
+    'highLevel'  : 'Higher-level analysis'}
 
-analysisStageOpts = OrderedDict((
-    ('full',       'Full analysis'),
-    ('pre',        'Pre-stats'),
-    ('pre-stats',  'Pre-stats + Stats'),
-    ('stats',      'Stats'),
-    ('stats-post', 'Stats + Post-stats'),
-    ('post',       'Post-stats'),
-    ('reg',        'Registration only')))
+analysisStageOpts = ['full',
+                     'pre',
+                     'pre-stats',
+                     'stats', 
+                     'stats-post',
+                     'post',
+                     'reg']
+analysisStageOptLabels = {
+    'full'       : 'Full analysis',
+    'pre'        : 'Pre-stats',
+    'pre-stats'  : 'Pre-stats + Stats',
+    'stats'      : 'Stats',
+    'stats-post' : 'Stats + Post-stats',
+    'post'       : 'Post-stats',
+    'reg'        : 'Registration only'}
 
-highLevelInputTypes = OrderedDict((
-    ('featDirs',   'Inputs are lower-level FEAT directories'),
-    ('copeImages', 'Inputs are 3D cope images from FEAT directories')))
+highLevelInputTypes = ['featDirs',
+                       'copeImages']
+highLevelInputTypeLabels = {
+    'featDirs'   : 'Inputs are lower-level FEAT directories',
+    'copeImages' : 'Inputs are 3D cope images from FEAT directories'}
 
-sliceTimingOpts = OrderedDict((
-    ('none',       'None'),
-    ('regup',      'Regular up (0, 1, 2, ..., n-1)'),
-    ('regdown',    'Regular down (n-1, n-2, ..., 0'),
-    ('int',        'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)'),
-    ('orderFile',  'Use slice order file'),
-    ('timingFile', 'Use slice timings file')))
+sliceTimingOpts = ['none',
+                   'regup',
+                   'regdown',
+                   'int',
+                   'orderFile',
+                   'timingFile']
+sliceTimingOptLabels = {
+    'none'       : 'None',
+    'regup'      : 'Regular up (0, 1, 2, ..., n-1)',
+    'regdown'    : 'Regular down (n-1, n-2, ..., 0',
+    'int'        : 'Interleaved (0, 2, 4, ..., 1, 3, 5, ...)',
+    'orderFile'  : 'Use slice order file',
+    'timingFile' : 'Use slice timings file'}
 
-perfusionOpts = OrderedDict((
-    ('tag',     'First timepoint is tag'),
-    ('control', 'First timepoint is control')))
+perfusionOpts = ['tag',
+                 'control']
+perfusionOptLabels = {
+    'tag'     : 'First timepoint is tag',
+    'control' : 'First timepoint is control'}
 
-motionParameterOpts = OrderedDict((
-    ('none',     "Don't Add Motion Parameters"),
-    ('standard', "Standard Motion Parameters"),
-    ('extended', "Standard + Extended Motion Parameters")))
+motionParameterOpts = ['none',
+                       'standard',
+                       'extended']
+motionParameterOptLabels = {
+    'none'     : "Don't Add Motion Parameters",
+    'standard' : "Standard Motion Parameters",
+    'extended' : "Standard + Extended Motion Parameters"}
 
-effectModellingOpts = OrderedDict((
-    ('fixed',  'Fixed effects'),
-    ('ols',    'Mixed effects: Simple OLS'),
-    ('flame1', 'Mixed effects: FLAME 1'),
-    ('flame2', 'Mixed effects: FLAME 1+2')))
+effectModellingOpts = ['fixed',
+                       'ols',
+                       'flame1',
+                       'flame2']
+effectModellingOptLabels = {
+    'fixed'  : 'Fixed effects',
+    'ols'    : 'Mixed effects: Simple OLS',
+    'flame1' : 'Mixed effects: FLAME 1',
+    'flame2' : 'Mixed effects: FLAME 1+2'}
 
-zRenderingOpts = OrderedDict((
-    ('actual', 'Use actual Z min/max'),
-    ('preset', 'Use preset Z min/max')))
+zRenderingOpts = ['actual',
+                  'preset']
+zRenderingOptLabels = {
+    'actual' : 'Use actual Z min/max',
+    'preset' : 'Use preset Z min/max'}
 
-blobOpts = OrderedDict((
-    ('solid',       'Solid blobs'),
-    ('transparent', 'Transparent blobs')))
+blobOpts = ['solid',
+            'transparent']
+blobOptLabels = {
+    'solid'       : 'Solid blobs',
+    'transparent' : 'Transparent blobs'}
 
-regSearchOpts = OrderedDict((
-    ('none',   'No search'),
-    ('normal', 'Normal search'),
-    ('full',   'Full search')))
+regSearchOpts = ['none',
+                 'normal',
+                 'full']
+regSearchOptLabels = {
+    'none'   : 'No search',
+    'normal' : 'Normal search',
+    'full'   : 'Full search'}
 
-regDofOpts = OrderedDict((
-    ('3',  '3 DOF'),
-    ('6',  '6 DOF'),
-    ('7',  '7 DOF'),
-    ('9',  '9 DOF'),
-    ('12', '12 DOF')))
+regDofOpts = ['3',
+              '6',
+              '7',
+              '9',
+              '12']
+regDofOptLabels = {
+    '3'  : '3 DOF',
+    '6'  : '6 DOF',
+    '7'  : '7 DOF',
+    '9'  : '9 DOF',
+    '12' : '12 DOF'}
 
-regStructDofOpts = OrderedDict((
-    ('3',   '3 DOF'),
-    ('6',   '6 DOF'),
-    ('7',   '7 DOF'),
-    ('BBR', 'BBR'),
-    ('12',  '12 DOF')))
+regStructDofOpts = ['3',
+                    '6',
+                    '7',
+                    'BBR',
+                    '12']
+regStructDofOptLabels = {
+    '3'   : '3 DOF',
+    '6'   : '6 DOF',
+    '7'   : '7 DOF',
+    'BBR' : 'BBR',
+    '12'  : '12 DOF'}
                 
 
 class Options(props.HasProperties):
@@ -358,7 +401,7 @@ dataView = props.VGroup(
         props.VGroup(
             visibleWhen=lambda i: i.analysisType == 'highLevel',
             children=(
-                'inputDataType',
+                props.Widget('inputDataType', labels=highLevelInputTypeLabels),
                 props.Widget(
                     'higherLevelFeatInput',
                     visibleWhen=lambda i: i.inputDataType == 'featDirs'),
@@ -385,7 +428,7 @@ prestatsView = props.VGroup(
                 'b0_TE',
                 'b0_unwarpDir',
                 'b0_signalLossThreshold')),
-        'sliceTimingCorrection',
+        props.Widget('sliceTimingCorrection', labels=sliceTimingOptLabels),
         props.Widget(
             'sliceTimingFile',
             visibleWhen=lambda i: i.sliceTimingCorrection == 'timingFile'),
@@ -401,6 +444,7 @@ prestatsView = props.VGroup(
             children=(
                 'perfusionSubtraction',
                 props.Widget('perfusionOption',
+                             labels=perfusionOptLabels,
                              visibleWhen=lambda i: i.perfusionSubtraction))),
         'temporalHighpass',
         'melodic'))
@@ -410,7 +454,7 @@ statsView = props.VGroup(
     enabledWhen=lambda i: tabEnabled(i, 'Stats'),
     children=(
         'useFILMPrewhitening',
-        'addMotionParameters',
+        props.Widget('addMotionParameters', labels=motionParameterOptLabels),
         'voxelwiseConfoundList',
         'applyExternalScript',
         'addAdditionalConfounds',
@@ -442,14 +486,14 @@ postStatsView = props.VGroup(
             border=True,
             visibleWhen=lambda i: i.thresholding != 'None',
             children=(
-                'renderZMinMax',
+                props.Widget('renderZMinMax', labels=zRenderingOptLabels),
                 props.Widget(
                     'renderZMin',
                     visibleWhen=lambda i: i.renderZMinMax == 'preset'),
                 props.Widget(
                     'renderZMax',
                     visibleWhen=lambda i: i.renderZMinMax == 'preset'),
-                'blobTypes'))))
+                props.Widget('blobTypes', labels=blobOptLabels)))))
 
 regView = props.VGroup(
     label='Registration',
@@ -460,7 +504,9 @@ regView = props.VGroup(
             label='Functional -> Expanded functional',
             border=True,
             visibleWhen=lambda i: i.expandedFunctionalImage is not None,
-            children=('functionalSearch', 'functionalDof')),
+            children=(
+                props.Widget('functionalSearch', labels=regSearchOptLabels),
+                props.Widget('functionalDof', labels=regDofOptLabels))),
         'mainStructuralImage',
         props.HGroup(
             label='Functional -> Structural',
@@ -473,7 +519,9 @@ regView = props.VGroup(
             border=True,
             visibleWhen=lambda i: i.standardSpaceImage is not None,
             children=(
-                props.HGroup(('standardSearch', 'standardDof')),
+                props.HGroup((
+                    props.Widget('standardSearch', labels=regSearchOptLabels),
+                    props.Widget('standardDof', labels=regDofOptLabels))),
                 props.HGroup((
                     'nonLinearReg',
                     props.Widget(
@@ -482,8 +530,9 @@ regView = props.VGroup(
 
 
 featView = props.VGroup((
-    'analysisType',
+    props.Widget('analysisType', labels=analysisTypeOptLabels),
     props.Widget('analysisStages',
+                 labels=analysisStageOptLabels,
                  enabledWhen=lambda i: i.analysisType == 'firstLevel'),
     props.NotebookGroup((
         miscView,
