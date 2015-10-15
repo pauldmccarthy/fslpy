@@ -409,12 +409,18 @@ def loadClusterResults(featdir, settings, contrast):
         # level, the coords are in mm, and need to
         # be transformed to voxels.
         for c in clusters:
-            c.zmaxx,    c.zmaxy,    c.zmaxz    = transform.transform(
-                [[c.zmaxx,    c.zmaxy,    c.zmaxz]],    coordXform)[0]
-            c.zcogx,    c.zcogy,    c.zcogz    = transform.transform(
-                [[c.zcogx,    c.zcogy,    c.zcogz]],    coordXform)[0]
-            c.copemaxx, c.copemaxy, c.copemaxz = transform.transform(
-                [[c.copemaxx, c.copemaxy, c.copemaxz]], coordXform)[0]
+
+            zmax    = [c.zmaxx,    c.zmaxy,    c.zmaxz]
+            zcog    = [c.zcogx,    c.zcogy,    c.zcogz]
+            copemax = [c.copemaxx, c.copemaxy, c.copemaxz]
+
+            zmax    = transform.transform([zmax],    coordXform)[0].round()
+            zcog    = transform.transform([zcog],    coordXform)[0].round()
+            copemax = transform.transform([copemax], coordXform)[0].round()
+
+            c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
+            c.zcogx,   c.zcogy,    c.zcogz    = zcog
+            c.copemax, c.copemaxy, c.copemaxz = copemax
 
         return clusters
 

@@ -359,6 +359,7 @@ class LabelAtlas(Atlas):
         """
 
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        voxelLoc = voxelLoc.round()
 
         if voxelLoc[0] <  0             or \
            voxelLoc[1] <  0             or \
@@ -404,6 +405,7 @@ class ProbabilisticAtlas(Atlas):
                   location is out of bounds.
         """
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        voxelLoc = voxelLoc.round()
 
         if voxelLoc[0] <  0             or \
            voxelLoc[1] <  0             or \
