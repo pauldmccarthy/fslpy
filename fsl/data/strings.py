@@ -334,7 +334,9 @@ labels = TypeDict({
 
 properties = TypeDict({
     
-    'Profile.mode' : 'Profile',
+    'Profile.mode'                   : 'Profile',
+    
+    'DisplayContext.displaySpace'    : 'Display space',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
     'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
@@ -469,6 +471,9 @@ properties = TypeDict({
 
 
 choices = TypeDict({
+
+    'DisplayContext.displaySpace' : {'world'  : 'World coordinates',
+                                     'pixdim' : 'Scaled voxels'},
 
     'SceneOpts.colourBarLocation'  : {'top'          : 'Top',
                                       'bottom'       : 'Bottom',
