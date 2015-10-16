@@ -510,7 +510,9 @@ choices = TypeDict({
     'ImageOpts.transform' : {'affine' : 'Use qform/sform transformation '
                                         'matrix',
                              'pixdim' : 'Use pixdims only',
-                             'id'     : 'Do not use qform/sform or pixdims'},
+                             'id'     : 'Do not use qform/sform or pixdims',
+                             'custom' : 'Apply a custom transformation '
+                                        'matrix'},
 
     'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
                                   'linear' : 'Linear interpolation', 

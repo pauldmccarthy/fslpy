@@ -284,6 +284,7 @@ class AtlasDescription(object):
 
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
+        # into world coordinates
         xform  = fslimage.Image(self.images[0], loadData=False).voxToWorldMat
         coords = transform.transform(coords, xform.T)
 
