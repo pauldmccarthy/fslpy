@@ -76,10 +76,9 @@ messages = TypeDict({
 
     'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
 
-    'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
-                                     'images oriented to MNI152 space',
-
-    'AtlasInfoPanel.noReference' : 'No reference image available',
+    'AtlasInfoPanel.notMNISpace'   : 'The selected overlay does not appear to '
+                                     'be in MNI152 space - atlas '
+                                     'information might not be accurate!' ,
 
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
