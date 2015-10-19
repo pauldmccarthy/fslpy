@@ -161,8 +161,12 @@ def loadContrasts(featdir):
                 tkns       = line.split(None, 1)
                 num        = [c for c in tkns[0] if c.isdigit()]
                 num        = int(''.join(num))
-                name       = tkns[1].strip()
-                names[num] = name
+
+                # The /ContrastName field may not 
+                # actually have a name specified
+                if len(tkns) > 1:
+                    name       = tkns[1].strip()
+                    names[num] = name
 
             elif line.startswith('/NumContrasts'):
                 numContrasts = int(line.split()[1])
