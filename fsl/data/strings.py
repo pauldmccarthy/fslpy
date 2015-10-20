@@ -118,6 +118,10 @@ messages = TypeDict({
     'ClusterPanel.badData'        : 'Cluster data could not be parsed - '
                                     'check your cluster_*.txt files.',
     'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
+
+    'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
+                                            'space reference image - this '
+                                            'is necessary for editing.',
 })
 
 
