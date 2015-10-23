@@ -94,7 +94,7 @@ class SimpleMessageDialog(wx.Dialog):
         self.__sizer.Add(self.__message,
                          border=25,
                          proportion=1,
-                         flag=wx.CENTRE | wx.ALL)
+                         flag=wx.EXPAND | wx.CENTRE | wx.ALL)
 
         self.SetTransparent(240)
         self.SetBackgroundColour((225, 225, 200))
