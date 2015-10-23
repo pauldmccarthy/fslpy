@@ -297,15 +297,12 @@ class ProcessingDialog(SimpleMessageDialog):
         self.Update()
         wx.Yield()
 
-        disable = wx.WindowDisabler(self)
-
         if mainThread:
             try:
                 result = self.task(*self.args, **self.kwargs)
             except:
                 self.Close()
                 self.Destroy()
-                del disable
                 raise
         else:
             returnVal = [None]
@@ -324,8 +321,6 @@ class ProcessingDialog(SimpleMessageDialog):
 
         self.Close()
         self.Destroy()
-
-        del disable
         
         return result
 
