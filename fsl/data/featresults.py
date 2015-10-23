@@ -15,6 +15,7 @@ following functions are provided:
 
    isFEATDir
    getFEATDir
+   hasMelodicDir
    loadDesign
    loadContrasts
    loadSettings
@@ -30,6 +31,7 @@ The following functions return the names of various files of interest:
 
    getDataFile
    getResidualFile
+   getMelodicFile
    getPEFile
    getCOPEFile
    getZStatFile
@@ -102,6 +104,13 @@ def getFEATDir(path):
         return path
                                            
     return None
+
+
+def hasMelodicDir(featdir):
+    """Returns ``True`` if the data for the given FEAT directory has had
+    MELODIC run on it, ``False`` otherwise.
+    """
+    return op.exists(getMelodicFile(featdir))
 
 
 def loadDesign(featdir):
@@ -439,6 +448,13 @@ def getDataFile(featdir):
     # Assuming here that there is only
     # one file called filtered_func_data.*
     return glob.glob((op.join(featdir, 'filtered_func_data.*')))[0]
+
+
+def getMelodicFile(featdir):
+    """Returns the name of the file in the FEAT results which contains the
+    melodic components. This file can be loaded as a :class:`.MelodicImage`.
+    """
+    return op.join(featdir, 'filtered_func_data.ica', 'melodic_IC.nii.gz')
 
 
 def getResidualFile(featdir):
