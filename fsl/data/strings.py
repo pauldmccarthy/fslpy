@@ -274,8 +274,8 @@ labels = TypeDict({
     'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
 
     'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
-    'TimeSeriesControlPanel.currentSettings'    : 'Settings for current '
-                                                  'voxel time course',
+    'TimeSeriesControlPanel.currentSettings'    : 'Plot settings for '
+                                                  'selected overlay ({})',
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
 
@@ -384,19 +384,18 @@ properties = TypeDict({
     
     'TimeSeriesPanel.plotMode'         : 'Plotting mode',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
-    'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
-    'TimeSeriesPanel.showAllCurrent'   : 'Plot time series for all overlays',
-    'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
-    'TimeSeriesPanel.currentAlpha'     : 'Transparency for current '
-                                         'time course',
-    'TimeSeriesPanel.currentLineWidth' : 'Line width for current time course',
-    'TimeSeriesPanel.currentLineStyle' : 'Line style for current time course',
+    'TimeSeriesPanel.showMode'         : 'Time series to plot',
     'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     
     'HistogramPanel.histType'    : 'Histogram type',
     'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
     'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+
+    'DataSeries.colour'    : 'Colour',
+    'DataSeries.alpha'     : 'Line transparency',
+    'DataSeries.lineWidth' : 'Line width',
+    'DataSeries.lineStyle' : 'Line style',
     
     'HistogramSeries.nbins'           : 'Number of bins',
     'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
@@ -546,6 +545,12 @@ choices = TypeDict({
                                   'demean'        : 'Demeaned',
                                   'normalise'     : 'Normalised',
                                   'percentChange' : 'Percent changed'},
+    'TimeSeriesPanel.showMode' : {'current' : 'Show the time series for '
+                                              'the currently selected overlay',
+                                  'all'     : 'Show the time series '
+                                              'for all overlays',
+                                  'none'    : 'Only show the time series '
+                                              'in the time series list'}
 })
 
 
