@@ -31,6 +31,7 @@ class MelodicImage(fslimage.Image):
        tr
        getComponentTimeSeries
        numComponents
+       getTopLevelAnalysisDir
        getDataFile
     """
 
@@ -96,6 +97,15 @@ class MelodicImage(fslimage.Image):
     def numComponents(self):
         """Returns the number of components in this ``MelodicImage``. """
         return self.shape[3]
+
+
+    def getTopLevelAnalysisDir(self):
+        """Returns the top level analysis, if the melodic analysis for this
+        ``MelodicImage`` is contained within another analysis. Otherwise,
+        returnsa ``None``. See the
+        :func:`.melodicresults.getTopLevelAnalysisDir` function.
+        """
+        return melresults.getTopLevelAnalysisDir(self.__meldir)
 
 
     def getDataFile(self):

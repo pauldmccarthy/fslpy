@@ -142,6 +142,10 @@ def getMixFile(meldir):
     return op.join(meldir, 'melodic_mix')
 
 
+def getReportFile(meldir):
+    pass
+
+
 def getNumComponents(meldir):
     """Returns the number of components generated in the melodic analysis
     contained in the given directrory.

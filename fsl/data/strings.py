@@ -325,13 +325,17 @@ labels = TypeDict({
     'OverlayInfoPanel.Image.transform'    : 'Transform/space',
     'OverlayInfoPanel.Image.orient'       : 'Orientation',
     
-    'OverlayInfoPanel.Image'              : 'NIFTI1 image',
-    'OverlayInfoPanel.FEATImage'          : 'NIFTI1 image (FEAT analysis)',
-    'OverlayInfoPanel.FEATImage.featInfo' : 'FEAT information',
-    'OverlayInfoPanel.Model'              : 'VTK model',
-    'OverlayInfoPanel.Model.numVertices'  : 'Number of vertices',
-    'OverlayInfoPanel.Model.numIndices'   : 'Number of indices',
-    'OverlayInfoPanel.dataSource'         : 'Data source',
+    'OverlayInfoPanel.Image'                    : 'NIFTI1 image',
+    'OverlayInfoPanel.FEATImage'                : 'NIFTI1 image '
+                                                  '(FEAT analysis)',
+    'OverlayInfoPanel.FEATImage.featInfo'       : 'FEAT information',
+    'OverlayInfoPanel.MelodicImage'             : 'NIFTI1 image '
+                                                  '(MELODIC analysis)', 
+    'OverlayInfoPanel.MelodicImage.melodicInfo' : 'MELODIC information',
+    'OverlayInfoPanel.Model'                    : 'VTK model',
+    'OverlayInfoPanel.Model.numVertices'        : 'Number of vertices',
+    'OverlayInfoPanel.Model.numIndices'         : 'Number of indices',
+    'OverlayInfoPanel.dataSource'               : 'Data source',
 })
 
 
@@ -708,4 +712,14 @@ feat = TypeDict({
     'numPoints'    : 'Number of volumes',
     'numEVs'       : 'Number of EVs',
     'numContrasts' : 'Number of contrasts',
+    'report'       : 'Link to report',
+})
+
+
+melodic = TypeDict({
+    'dataFile'       : 'Data file',
+    'partOfAnalysis' : 'Part of analysis',
+    'numComponents'  : 'Number of ICs',
+    'tr'             : 'TR time',
+    'report'         : 'Link to report',
 })
