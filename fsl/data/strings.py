@@ -384,6 +384,8 @@ properties = TypeDict({
     
     'TimeSeriesPanel.plotMode'         : 'Plotting mode',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
+    'TimeSeriesPanel.plotMelodicICs'   : 'Plot component time courses for '
+                                         'Melodic images',
     'TimeSeriesPanel.showMode'         : 'Time series to plot',
     'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
