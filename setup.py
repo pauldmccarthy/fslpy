@@ -5,15 +5,29 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os.path as op
+
 from setuptools import setup
 from setuptools import find_packages
 
+
+# The directory in whihc this setup.py file is contained.
+basedir = op.dirname(__file__)
+
+
+# Figure out the current fslpy version, as defined in fsl/version.py. We
+# don't want to import the fsl package,  as this may cause build problems.
+# So we manually parse the contents of fsl/version.py to extract the
+# version number.
+version = {}
+with open(op.join(basedir, "fsl", "version.py")) as f:
+    exec(f.read(), version)
 
 setup(
 
     name='fslpy',
 
-    version='0.1',
+    version=version['__version__'],
 
     description='Front end to FSL tools',
 
@@ -45,9 +59,11 @@ setup(
     package_data={
         'fsl' : [
             'fsleyes/splash.png',
+            'fsleyes/icons/*.png',
             'fsleyes/gl/gl14/*prog',
             'fsleyes/gl/gl21/*glsl',
             'fsleyes/colourmaps/*cmap',
+            'fsleyes/luts/*lut',
             'fsleyes/colourmaps/README',
             'fsleyes/colourmaps/order.txt',
             'fsleyes/luts/order.txt',

@@ -1,9 +1,33 @@
 #!/usr/bin/env python
 #
-# trace.py -
+# trace.py - debugging functions
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides some useful logging/debugging functions.
+
+.. warning:: This module is not intended for general use - it is solely for
+             development/debugging purposes. Do not use it unless you know
+             know what you are doing.
+
+
+.. warning:: When this module is imported, it monkey patches the
+             :class:`props.callqueue.CallQueue` class in a devious and
+             dangerous manner to allow for more informative debug statements.
+             Therefore it's a bad idea to even import this module, unless
+             you really know what you are doing.
+
+
+.. warning:: Just don't import this module, ok?
+
+
+The functions provided by this module are as follows:
+
+.. autosummary::
+   trace
+   setcause
+   propchange
+"""
 
 import            logging
 import            inspect
@@ -117,6 +141,9 @@ if log.getEffectiveLevel() == logging.DEBUG:
 
 
 def trace(desc):
+    """Outputs a log message containing the given description and the current
+    stack trace. 
+    """
 
     if log.getEffectiveLevel() != logging.DEBUG:
         return
@@ -142,59 +169,16 @@ def trace(desc):
     return lines
 
 
-def setcause(desc):
-
-    if log.getEffectiveLevel() != logging.DEBUG:
-        return
-
-    stack      = inspect.stack()[1:]
-    causeFrame = None
-    ultCauseFrame = None
-
-    for i, frame in enumerate(stack):
-
-        if 'props/props' not in frame[1]:
-            causeFrame = frame
-            break
-
-    if causeFrame is not None:
-        for i, frame in reversed(list(enumerate(stack))):
-            if 'props/props' in frame[1]:
-                ultCauseFrame = stack[i + 1]
-                break
-
-    if causeFrame is None:
-        log.debug('{}: Unknown cause'.format(desc))
-    else:
-        causeFile = causeFrame[1]
-        causeLine = causeFrame[2]
-        causeFunc = causeFrame[3]
-        causeSrc  = causeFrame[4][causeFrame[5]]         
-
-        line = '{}: Caused by {} ({}:{}:{})'.format(
-            desc,
-            causeFunc,                      
-            op.basename(causeFile),
-            causeLine,
-            causeSrc.strip())
-
-        if ultCauseFrame is not None:
-            
-            causeFile = ultCauseFrame[1]
-            causeLine = ultCauseFrame[2]
-            causeFunc = ultCauseFrame[3]
-            causeSrc  = ultCauseFrame[4][ultCauseFrame[5]]
-            line = '{} (ultimately caused by {} ({}:{}:{})'.format(
-                line, 
-                causeFunc,                      
-                op.basename(causeFile),
-                causeLine,
-                causeSrc.strip()) 
-
-        log.debug(line)
-    
-
 def propchange(*args):
+    """Intended to be called from a :class:`props.PropertyValue` listener
+    function.
+
+    If this function is called due to a change, attempts to determine the line
+    of code which triggered the change. Prints some informative log messages.
+
+    :arg args: The arguments that were passed to the listener function.
+    """ 
+
 
     if log.getEffectiveLevel() != logging.DEBUG:
         return
@@ -249,3 +233,58 @@ def propchange(*args):
                       op.basename(triggerFile),
                       triggerLine,
                       triggerSrc.strip()))
+
+
+def setcause(desc):
+    """I can't quite remember the difference betwen this function and the
+    :func:`propchange` function. 
+    """
+
+    if log.getEffectiveLevel() != logging.DEBUG:
+        return
+
+    stack      = inspect.stack()[1:]
+    causeFrame = None
+    ultCauseFrame = None
+
+    for i, frame in enumerate(stack):
+
+        if 'props/props' not in frame[1]:
+            causeFrame = frame
+            break
+
+    if causeFrame is not None:
+        for i, frame in reversed(list(enumerate(stack))):
+            if 'props/props' in frame[1]:
+                ultCauseFrame = stack[i + 1]
+                break
+
+    if causeFrame is None:
+        log.debug('{}: Unknown cause'.format(desc))
+    else:
+        causeFile = causeFrame[1]
+        causeLine = causeFrame[2]
+        causeFunc = causeFrame[3]
+        causeSrc  = causeFrame[4][causeFrame[5]]         
+
+        line = '{}: Caused by {} ({}:{}:{})'.format(
+            desc,
+            causeFunc,                      
+            op.basename(causeFile),
+            causeLine,
+            causeSrc.strip())
+
+        if ultCauseFrame is not None:
+            
+            causeFile = ultCauseFrame[1]
+            causeLine = ultCauseFrame[2]
+            causeFunc = ultCauseFrame[3]
+            causeSrc  = ultCauseFrame[4][ultCauseFrame[5]]
+            line = '{} (ultimately caused by {} ({}:{}:{})'.format(
+                line, 
+                causeFunc,                      
+                op.basename(causeFile),
+                causeLine,
+                causeSrc.strip()) 
+
+        log.debug(line)

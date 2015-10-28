@@ -5,51 +5,45 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""The :mod:`fsl` package contains front ends to various FSL tools,
-including 'FSLEyes', the Python based image viewer.
+"""The :mod:`fsl` package contains front ends to various FSL tools, including
+*FSLeyes*, the Python based image viewer.  The following top-level functions
+are provided:
 
-This file contains the function :func:`main`, the application entry
-point. When invoked with the name of a tool, the :mod:`fsl.tools` package
-is searched for a module which has that name. All valid tool modules must
-also provide the following module level attributes:
+.. autosummary::
+   :nosignatures:
 
- - ``FSL_TOOLNAME``  - Mandatory. String providing the name of the tool.
+   main
+   runTool
 
- - ``FSL_HELPPAGE``  - Optional. A URL to a web page providing
-                       help/documentation.
 
- - ``FSL_PARSEARGS`` - Optional. A function which is given a list of
-                       command line arguments specific to the tool. The
-                       function should parse the arguments and return,
-                       for example, an :mod:`argparse` namespace object.
+The conventional way to run ``fslpy`` is as follows::
 
- - ``FSL_CONTEXT``   - Optional. A function which is passed the output of
-                       the ``FSL_PARSEARGS`` function. It should perform
-                       any necessary initialisation, and may optionally
-                       return a value which will be passed to the
-                       functions described below.
-              
- - ``FSL_INTERFACE`` - Mandatory for GUI applications. A function which
-                       accepts three parameters - a GUI parent object,
-                       the value returned by the ``FSL_PARSEARGS``
-                       function, and the value returned by the
-                       ``FSL_CONTEXT`` function. Creates a :mod:`wx` GUI,
-                       and returns the top level GUI object.
+    import fsl
 
- - ``FSL_EXECUTE``   - Mandatory for non-GUI applications. A function
-                       which accepts two parameters - the value returned
-                       by the ``FSL_PARSEARGS`` function, and the value
-                       returned by the ``FSL_CONTEXT`` function. Does
-                       whatever the tool is supposed to do.
+    # If no arguments are provided, the 
+    # main() function will use sys.argv
+    fsl.main()
 
- - ``FSL_ACTIONS``   - Optional. Only relevant to GUI applications. A
-                       list of (name, function) tuples, which will be
-                       added as GUI menu items for the user to execute. 
-                       An action function must accept two parameters - 
-                       a parent GUI object, and the value returned by the
-                       ``FSL_CONTEXT`` function.
+    # Or, you can pass in arguments
+    # programmatically
+    fsl.main(['fsleyes', 'MNI152_T1_1mm.nii.gz', '--cmap', 'hot'])
+
+    # You can ask for top level help
+    fsl.main(['help'])
+
+    # Or you can ask for help on a specific tool
+    fsl.main(['help', 'render'])
+
+
+.. note:: When the ``fsl`` package is imported, it configures a new
+          ``logging`` level for tracking memory usage. The log level is
+          attached to the ``logging`` module as ``logging.MEMORY``, and
+          an associated log function is attached as ``logging.memory``.
+
+
+.. note:: The ``fslpy`` version number (currently |version|) is set in a
+          single place - the :mod:`fsl.version` module.
 """
-
 
 import logging
 import pkgutil
@@ -62,62 +56,127 @@ import importlib
 import subprocess
 
 
-# make numpy/matplotlib quiet
-warnings.filterwarnings('ignore', module='matplotlib')
-warnings.filterwarnings('ignore', module='mpl_toolkits')
-warnings.filterwarnings('ignore', module='numpy')
-
-
-# My own custom logging level for tracing memory related events
-logging.MEMORY = 15
-def logmemory(self, message, *args, **kwargs):
-    if self.isEnabledFor(logging.MEMORY):
-        self._log(logging.MEMORY, message, args, **kwargs)
-        
-logging.Logger.memory = logmemory
-logging.addLevelName(logging.MEMORY, 'MEMORY')
-
-
-# There's a bug in OpenGL.GL.shaders (which has been fixed in
-# the latest version) - it calls logging.basicConfig(), and
-# thus screws up our own logging. We overcome this by configuring
-# the root logger before OpenGL.GL.shaders is imported (which
-# occurs when fsl.fsleyes.gl.slicecanvas.SliceCanvas is imported).
-
-logFormatter = logging.Formatter('%(levelname)8.8s '
-                                 '%(filename)20.20s '
-                                 '%(lineno)4d: '
-                                 '%(funcName)-15.15s - '
-                                 '%(message)s')
-logHandler  = logging.StreamHandler()
-logHandler.setFormatter(logFormatter)
-
-
-# We want the root logger
-log = logging.getLogger()
-
-
-log.addHandler(logHandler)
-
-
 import fsl.tools          as tools
 import fsl.utils.settings as fslsettings
 
+import fsl.version
 
-def getFSLToolNames():
-    """Returns the name of every tool in the :mod:`fsl.tools` package.
+
+__version__ = fsl.version.__version__
+"""The current ``fslpy`` version number. This information is stored in the
+:mod:`fsl.version` module.
+"""
+
+
+def main(args=None):
+    """``fslpy`` entry point.
+
+    Parses command line arguments, loads the appropriate tool module, builds
+    and displays a GUI (if the tool has one), and/or executes the tool.
+
+    :arg args: Command line arguments. If not provided, ``sys.argv`` is used.
     """
+
+    # Search the environment for FSLDIR 
+    fsldir       = os.environ.get('FSLDIR', None)
+    fslEnvActive = fsldir is not None
+
+    if args is None:
+        args = sys.argv[1:]
+
+    allTools                = _getFSLToolNames()
+    fslTool, args, toolArgs = _parseArgs(args, allTools)
+
+    if fslTool.interface is not None:
+        import wx
+        app   = wx.App()
+
+        # Context creation may assume that a wx.App has been created
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+
+        _fslDirWarning(fslTool.toolName, fslEnvActive)
+
+        frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
+        frame.Show()
+
+        if args.wxinspect:
+            import wx.lib.inspection
+            wx.lib.inspection.InspectionTool().Show()
+        
+        app.MainLoop()
+        
+    elif fslTool.execute is not None:
+        
+        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+        else:                           ctx = None
+        
+        _fslDirWarning(fslTool.toolName, fslEnvActive)
+        fslTool.execute(toolArgs, ctx)
+
+
+def runTool(toolName, args, **kwargs):
+    """Runs the tool with the specified name, with the specified arguments,
+    in a separate process. Returns the process exit code.
+
+    :arg toolName: Name of the FSL tool to run.
+
+    :arg args:     Arguments to pass to the FSL tool.
+
+    :arg kwargs:   Passed through to the ``subprocess.call`` function.
+    """
+
+    args = [toolName] + args
+    
+    # If we are running from a compiled fsleyes
+    # executable, we need to prepend command line
+    # arguments with 'cmd' - see the wrapper script
+    # created by:
+    #
+    # https://git.fmrib.ox.ac.uk/paulmc/fslpy_build/\
+    #     blob/master/build_osx_app.sh
+    if getattr(sys, 'frozen', False):
+        args = [sys.executable, 'cmd'] + args
+
+    # Otherwise we are running
+    # through a python interpreter
+    else:
+        args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
+
+    log.debug('Executing {}'.format(' '.join(args)))
+    
+    return subprocess.call(args, **kwargs)
+
+
+def _getFSLToolNames():
+    """Returns the name of every tool in the :mod:`fsl.tools` package. """
 
     allTools  = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
 
     return allTools
 
 
-def loadFSLTool(moduleName):
-    """Inspects the given module to see if it looks like a valid
-    FSL tool. If it is not, a TypeError is raised. If it is,
-    a container object is created and returned, containing
-    all of the elements of the tool.
+def _loadFSLTool(moduleName):
+    """Inspects the given module to see if it looks like a valid FSL tool.
+    If it is not, a :exc:`TypeError` is raised. If it is, a container
+    object, a ``FSLTool`` is created and returned, containing all of the
+    elements of the tool.
+
+    The returned ``FSLTool`` instance contains the following attributes:
+
+        ============== ========================================
+        ``module``     The tool module.
+        ``moduleName`` The tool module name.
+        ``toolName``   The tool name.
+        ``helpPage``   The tool help page URL.
+        ``parseArgs``  A function to parse tool arguments.
+        ``context``    A function to generate the tool context.
+        ``interface``  A function to create the tool interface.
+        ``execute``    A function to run the tool.
+        ``actions``    A list of tool actions.
+        ============== ========================================
+
+    See the :mod:`fsl.tools` documentation for more details.
     """
 
     module = importlib.import_module('fsl.tools.{}'.format(moduleName))
@@ -162,12 +221,20 @@ def loadFSLTool(moduleName):
     return fsltool
 
 
-def parseArgs(argv, allTools):
+def _parseArgs(argv, allTools):
     """Creates a command line :class:`argparse.ArgumentParser` which will
-    process general arguments for fsl.py (this script) and, arguments for
-    all FSL tools which have defined their own command line arguments.
-    Returns an object containing values for all of the arguments that were
-    passed in.
+    process general arguments for ``fslpy`` and arguments for all FSL tools
+    which have defined their own command line arguments.
+
+    Parses the command line arguments, configures logging verbosity,  and
+    returns a tuple containing the following:
+    
+      - The ``FSLTool`` instance (see :func:`_loadFSLTool`).
+    
+      - The :class:`argparse.Namespace` instance containing parsed arguments.
+    
+      - The return value of the ``FSLTool.parseArgs`` function (see
+        :func:`_loadFSLTool`).
     """
 
     epilog = 'Type fslpy help <tool> for program-specific help. ' \
@@ -244,7 +311,7 @@ def parseArgs(argv, allTools):
             parser.print_help()
             sys.exit(1)
 
-        fslTool = loadFSLTool(toolArgv[0])
+        fslTool = _loadFSLTool(toolArgv[0])
 
         # no tool specific argument parser
         if fslTool.parseArgs is None:
@@ -305,7 +372,7 @@ def parseArgs(argv, allTools):
     # it can set itself up.
     import fsl.utils.trace
 
-    fslTool = loadFSLTool(namespace.tool)
+    fslTool = _loadFSLTool(namespace.tool)
 
     if fslTool.parseArgs is not None: toolArgs = fslTool.parseArgs(toolArgv)
     else:                             toolArgs = None
@@ -313,10 +380,16 @@ def parseArgs(argv, allTools):
     return fslTool, namespace, toolArgs
 
 
-def fslDirWarning(toolName, fslEnvActive):
-    """If ``fslEnvActive`` is False, displays a warning that the ``FSLDIR``
+def _fslDirWarning(toolName, fslEnvActive):
+    """If ``fslEnvActive`` is False, displays a warning that the ``$FSLDIR``
     environment variable is not set. The warning is displayed either on
-    stdout, or via a GUI dialog (if ``frame`` is not ``None``).
+    stdout, or via a GUI dialog (if ``wx`` is available).
+
+    
+    :arg toolName:     Name of the tool that is being executed.
+
+    :arg fslEnvActive: Set to ``True`` if ``$FSLDIR`` is set, ``False``
+                       otherwise.
     """
 
     if fslEnvActive: return
@@ -342,7 +415,7 @@ def fslDirWarning(toolName, fslEnvActive):
 
     if haveGui:
         import wx
-        from fsl.utils.fsldirdlg import FSLDirDialog
+        from fsl.utils.dialog import FSLDirDialog
 
         def warn():
             dlg = FSLDirDialog(None, toolName)
@@ -361,8 +434,17 @@ def fslDirWarning(toolName, fslEnvActive):
         log.warn(warnmsg)
         
 
-def buildGUI(args, fslTool, toolCtx, fslEnvActive):
-    """Builds a :mod:`wx` GUI for the tool."""
+def _buildGUI(args, fslTool, toolCtx, fslEnvActive):
+    """Builds a :mod:`wx` GUI for the tool.
+
+    :arg fslTool:      The ``FSLTool`` instance (see :func:`_loadFSLTool`).
+
+    :arg toolCtx:      The tool context, as returned by the 
+                       ``FSLTool.context`` function.
+
+    :arg fslEnvActive: Set to ``True`` if ``$FSLDIR`` is set, ``False``
+                       otherwise. 
+    """
 
     import wx
     import fsl.utils.webpage as webpage
@@ -400,74 +482,48 @@ def buildGUI(args, fslTool, toolCtx, fslEnvActive):
     return frame
 
 
-def runTool(toolName, args, **kwargs):
-    """Runs the tool with the specified name, with the specified arguments,
-    in a separate process. Returns the process exit code.
-    """
+#################################
+# My own custom logging level for
+# tracing memory related events
+#################################
 
-
-    args = [toolName] + args
-    
-    # If we are running from a compiled fsleyes
-    # executable, we need to prepend command line
-    # arguments with 'cmd' - see the wrapper script
-    # created by:
-    #
-    # https://git.fmrib.ox.ac.uk/paulmc/fslpy_build/\
-    #     blob/master/build_osx_app.sh
-    if getattr(sys, 'frozen', False):
-        args = [sys.executable, 'cmd'] + args
-
-    # Otherwise we are running
-    # through a python interpreter
-    else:
-        args = [sys.executable, '-c', 'import fsl; fsl.main()'] + args
-
-    log.debug('Executing {}'.format(' '.join(args)))
-    
-    return subprocess.call(args, **kwargs)
-
-
-def main(args=None):
-    """Entry point.
-
-    Parses command line arguments, loads the appropriate tool module, builds
-    and displays a GUI (if the tool has one), or executes the tool.
-    """
-
-    # Search the environment for FSLDIR 
-    fsldir       = os.environ.get('FSLDIR', None)
-    fslEnvActive = fsldir is not None
-
-    if args is None:
-        args = sys.argv[1:]
-
-    allTools                = getFSLToolNames()
-    fslTool, args, toolArgs = parseArgs(args, allTools)
-
-    if fslTool.interface is not None:
-        import wx
-        app   = wx.App()
-
-        # Context creation may assume that a wx.App has been created
-        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-        else:                           ctx = None
-
-        fslDirWarning(fslTool.toolName, fslEnvActive)
-
-        frame = buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
-        frame.Show()
-
-        if args.wxinspect:
-            import wx.lib.inspection
-            wx.lib.inspection.InspectionTool().Show()
+logging.MEMORY = 15
+def _logmemory(self, message, *args, **kwargs):
+    """Log function for my custom ``logging.MEMORY`` logging level. """
+    if self.isEnabledFor(logging.MEMORY):
+        self._log(logging.MEMORY, message, args, **kwargs)
         
-        app.MainLoop()
-        
-    elif fslTool.execute is not None:
-        
-        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-        else:                           ctx = None
-        
-        fslDirWarning(fslTool.toolName, fslEnvActive)
-        fslTool.execute(toolArgs, ctx)
+logging.Logger.memory = _logmemory
+logging.addLevelName(logging.MEMORY, 'MEMORY')
+
+
+
+#########################
+# Fix some logging quirks
+#########################
+
+
+# make numpy/matplotlib quiet
+warnings.filterwarnings('ignore', module='matplotlib')
+warnings.filterwarnings('ignore', module='mpl_toolkits')
+warnings.filterwarnings('ignore', module='numpy')
+
+
+# There's a bug in OpenGL.GL.shaders (PyOpenGL 3.1.0. - it's been
+# fixed in the development version) - it calls logging.basicConfig(),
+# and thus screws up our own logging. We overcome this by configuring
+# the root logger before OpenGL.GL.shaders is imported (which
+# occurs when fsl.fsleyes.gl.slicecanvas.SliceCanvas is imported).
+
+logFormatter = logging.Formatter('%(levelname)8.8s '
+                                 '%(filename)20.20s '
+                                 '%(lineno)4d: '
+                                 '%(funcName)-15.15s - '
+                                 '%(message)s')
+logHandler  = logging.StreamHandler()
+logHandler.setFormatter(logFormatter)
+
+# We want the root logger
+log = logging.getLogger()
+
+log.addHandler(logHandler)

@@ -4,10 +4,20 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Run a process, display its output in a :class:`RunPanel`.
+"""This module provides classes and functions for running a non-interactive
+process, and displaying its output.
 
-This module has two entry points - the :func:`checkAndRun` function, and the
-:func:`run` function.
+
+This module provides the :class:`RunPanel` and :class:`ProcessManager`
+classes, and a couple of associated convenience functions.
+
+.. autosummary::
+   :nosignatures:
+
+   RunPanel
+   ProcessManager
+   run
+   checkAndRun
 """
 
 import os
@@ -25,20 +35,28 @@ log = logging.getLogger(__name__)
 
 
 class RunPanel(wx.Panel):
-    """A panel which displays a multiline text control, and a couple of buttons
-    along the bottom.
+    """A panel which displays a multiline text control, and a couple of
+    buttons along the bottom. ``RunPanel`` instances are created by the
+    :func:`run` function, and used/controlled by the :class:`ProcessManager`.
+
+
+    One of the buttons is intended to closes the window in which this panel
+    is contained. The second button is intended to terminate the running
+    process. Both buttons are unbound by default, so must be manually
+    configured by the creator.
+    
+
+    The text panel and buttons are available as the following attributes:
+
+      - ``text``:        The text panel.
+      - ``closeButton``: The `Close window` button.
+      - ``killButton``:  The `Terminate process` button.
     """
 
     def __init__(self, parent):
-        """Creates and lays out a text control, and two buttons.
+        """Create a ``RunPanel``.
 
-        One of the buttons is intended to closes the window in which this
-        panel is contained. The second button is intended to terminate the
-        running process. Both buttons are unbound by default, so must be
-        manually bound to callback functions.
-
-        :ivar closeButton: The `Close window` button.
-        :ivar killButton:  The `Terminate process` button.
+        :arg parent: The :mod:`wx` parent object.
         """
         wx.Panel.__init__(self, parent)
 
@@ -69,24 +87,30 @@ class RunPanel(wx.Panel):
 
 
 class ProcessManager(thread.Thread):
-    """A thread which manages the execution of a child process, and capture of its
-    output.
+    """A thread which manages the execution of a child process, and capture
+    of its output.
+
+    The process output is displayed in a :class:`RunPanel` which must be
+    passed to the ``ProcessManager`` on creation.
+
+    The :meth:`termProc` method can be used to terminate the child process
+    before it has completed.
     """
 
     def __init__(self, cmd, parent, runPanel, onFinish):
-        """Create a ProcessManager thread object. Does nothing special.
+        """Create a ``ProcessManager``.
         
         :arg cmd:      String or list of strings, the command to be
                        executed.
         
-        :arg parent:   GUI parent object.
+        :arg parent:   :mod:`wx` parent object.
         
-        :arg runPanel: :class:`RunPanel` object, for displaying the child 
-                       process output.
+        :arg runPanel: A :class:`RunPanel` instance , for displaying the
+                       child process output.
         
         :arg onFinish: Callback function to be called when the process
                        finishes. May be ``None``. Must accept two parameters,
-                       the GUI parent object, and the process return code.
+                       the GUI ``parent`` object, and the process return code.
         """
         thread.Thread.__init__(self, name=cmd[0])
         
@@ -107,10 +131,10 @@ class ProcessManager(thread.Thread):
  
         # Put the command string at the top of the text control
         self.outq.put(' '.join(self.cmd) + '\n\n')
-        wx.CallAfter(self.writeToPanel)
+        wx.CallAfter(self.__writeToPanel)
 
 
-    def writeToPanel(self):
+    def __writeToPanel(self):
         """Reads a string from the output queue, and appends it
         to the :class:`RunPanel`. This method is intended to be
         executed via :func:`wx.CallAfter`.
@@ -152,7 +176,7 @@ class ProcessManager(thread.Thread):
             
             log.debug('Process output: {}'.format(line.strip()))
             self.outq.put(line)
-            wx.CallAfter(self.writeToPanel)
+            wx.CallAfter(self.__writeToPanel)
 
         # When the above for loop ends, it means that the stdout
         # pipe has been broken. But it doesn't mean that the
@@ -165,12 +189,12 @@ class ProcessManager(thread.Thread):
         log.debug(    'Process finished with return code {}'.format(retcode))
         self.outq.put('Process finished with return code {}'.format(retcode))
 
-        wx.CallAfter(self.writeToPanel)
+        wx.CallAfter(self.__writeToPanel)
 
         # Disable the 'terminate' button on the run panel
         def updateKillButton():
 
-            # ignore errors - see writeToPanel
+            # ignore errors - see __writeToPanel
             try:    self.runPanel.killButton.Enable(False)
             except: pass
 
@@ -183,17 +207,14 @@ class ProcessManager(thread.Thread):
         
     def termProc(self):
         """Attempts to kill the running child process."""
-        try:
-            log.debug('Attempting to send SIGTERM to '
-                      'process group with pid {}'.format(self.proc.pid))
-            os.killpg(self.proc.pid, signal.SIGTERM)
+        
+        log.debug('Attempting to send SIGTERM to '
+                  'process group with pid {}'.format(self.proc.pid))
+        os.killpg(self.proc.pid, signal.SIGTERM)
 
-            # put a message on the runPanel
-            self.outq.put('\nSIGTERM sent to process\n\n')
-            wx.CallAfter(self.writeToPanel)
-            
-        except:
-            pass  # why am i ignoring errors here?
+        # put a message on the runPanel
+        self.outq.put('\nSIGTERM sent to process\n\n')
+        wx.CallAfter(self.__writeToPanel)
 
 
 def run(name, cmd, parent, onFinish=None, modal=True):
@@ -206,7 +227,8 @@ def run(name, cmd, parent, onFinish=None, modal=True):
     
     :arg parent:   :mod:`wx` parent object.
     
-    :arg modal:    If ``True``, the command frame will be modal.
+    :arg modal:    If ``True``, the frame which contains the ``RunPanel``
+                   will be modal.
 
     :arg onFinish: Function to be called when the process ends. Must
                    accept two parameters - a reference to the :mod:`wx`
@@ -214,7 +236,8 @@ def run(name, cmd, parent, onFinish=None, modal=True):
                    the exit code of the application.
     """
 
-    # Create the GUI - if modal, the easiest approach is to use a wx.Dialog
+    # Create the GUI - if modal, the easiest
+    # approach is to use a wx.Dialog
     if modal:
         frame = wx.Dialog(
             parent,
@@ -252,25 +275,19 @@ def checkAndRun(name,
     informing the user about the errors. Otherwise, the tool is
     executed, and its output shown in a dialog window. Parameters:
     
-    :arg name:      Name of the tool, used in the window title.
     
-    :arg opts:      A :class:`~props.properties.HasProperties` object to be
+    :arg opts:      A :class:`props.HasProperties` object to be
                     validated.
     
-    :arg parent:    :mod:`wx` object to be used as parent.
-    
-    :arg cmdFunc:   Function which takes a
-                    :class:`~props.properties.HasProperties` object, 
-                    and returns a command to be executed (as a list of
-                    strings), which will be passed to the :func:`run`
+    :arg cmdFunc:   Function which takes a :class:`props.HasProperties`
+                    object, and returns a command to be executed (as a 
+                    list of strings), which will be passed to the :func:`run`
                     function.
     
     :arg optLabels: Dictionary containing property ``{name : label}`` mappings.
                     Used in the error dialog, if any options are invalid.
-    
-    :arg modal:     If true, the command window will be modal.
 
-    :arg onFinish:  Function to be called when the process ends.
+    See :func:`run` for details on the other arguments.
     """
 
     errors = opts.validateAll()

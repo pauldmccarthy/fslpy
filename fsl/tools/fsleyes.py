@@ -4,10 +4,22 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""A 3D image viewer. See the :mod:`.frame` module for more details. The
-command line interface is defined (and parsed) by the :mod:`fsleyes_parseargs`
-module.
+"""*FSLeyes* - a 3D image viewer.
+
+.. image:: images/fsleyes.png
+   :scale: 50%
+   :align: center
+
+This module provides the front-end to *FSLeyes*, the FSL image viewer.  Nearly
+all of the ``fsleyes`` functionality is located in the :mod:`fsl.fsleyes`
+package. This module just parses command line arguments (via the
+:mod:`.fsleyes_parseargs` module) and does some GUI bootstrapping necessities.
+
+
+See the :mod:`~fsl.fsleyes` package documentation for more details on
+``fsleyes``.
 """
+
 
 import logging
 import argparse
@@ -19,72 +31,13 @@ import fsl.fsleyes.overlay           as fsloverlay
 
 log = logging.getLogger(__name__)
 
-    
-def interface(parent, args, ctx):
-
-    import                      wx
-    import fsl.fsleyes.frame as fsleyesframe
-    import fsl.fsleyes.views as views
-
-    overlayList, displayCtx, splashFrame = ctx
-
-    # If a scene has not been specified, the default
-    # behaviour is to restore the previous frame layout
-    if args.scene is None: restore = True
-    else:                  restore = False
-    
-    frame = fsleyesframe.FSLEyesFrame(
-        parent, overlayList, displayCtx, restore)
-
-    # Otherwise, we add the scene
-    # specified by the user
-    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
-    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
-
-
-    # The viewPanel is assumed to be a CanvasPanel 
-    # (i.e. either OrthoPanel or LightBoxPanel)
-    viewPanel = frame.getViewPanels()[0]
-    viewOpts  = viewPanel.getSceneOptions()
-
-    fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
-
-    if args.scene == 'ortho':
-
-        xcentre = args.xcentre
-        ycentre = args.ycentre
-        zcentre = args.zcentre
-
-        if xcentre is None: xcentre = displayCtx.location.yz
-        if ycentre is None: ycentre = displayCtx.location.xz
-        if zcentre is None: zcentre = displayCtx.location.xy
-
-        viewPanel._xcanvas.centreDisplayAt(*xcentre)
-        viewPanel._ycanvas.centreDisplayAt(*ycentre)
-        viewPanel._zcanvas.centreDisplayAt(*zcentre)
-
-    # Make sure the new frame is shown
-    # before destroying the splash screen
-    frame.Show(True)
-    frame.Refresh()
-    frame.Update()
-
-    # Closing the splash screen immediately
-    # can cause a crash under linux/GTK, so
-    # we'll do it a bit later.
-    def closeSplash():
-        splashFrame.Close()
-
-    wx.CallLater(500, closeSplash)
-    
-    return frame
-
 
 def parseArgs(argv):
-    """
-    Parses the given command line arguments. Parameters:
+    """Parses the given ``fsleyes`` command line arguments. See the
+    :mod:`.fsleyes_parseargs` module for details on the ``fsleyes`` command
+    line interface.
     
-      - argv:      command line arguments for fsleyes.
+    :arg argv: command line arguments for ``fsleyes``.
     """
 
     parser = argparse.ArgumentParser(add_help=False)
@@ -101,7 +54,30 @@ def parseArgs(argv):
                                        'fsleyes',
                                        'Image viewer')
 
+
 def context(args):
+    """Creates the ``fsleyes`` context.
+
+    This function does a few things:
+
+     1. Displays the ``fsleyes`` splash screen (see
+        :class:`.FSLEyesSplash`). The splash screen is destroyed later on by
+        the :func:`interface` function.
+
+     2. Initialises OpenGL (see the :mod:`fsl.fsleyes.gl` package).
+
+     3. Creates the :class:`.OverlayList` and the top level
+        :class:`.DisplayContext`.
+
+     4. Loads all of the overlays which were passed in on the command line.
+
+    :arg args: Parsed command line arguments (see :func:`parseArgs`).
+
+    :returns: a tuple containing:
+                - the :class:`.OverlayList`
+                - the master :class:`.DisplayContext`
+                - the :class:`.FSLEyesSplash` frame
+    """
 
     import wx
     import fsl.fsleyes.splash as fslsplash
@@ -147,7 +123,6 @@ def context(args):
     overlayList = fsloverlay.OverlayList()
     displayCtx  = displaycontext.DisplayContext(overlayList)
 
-
     # While the DisplayContext may refer to 
     # multiple overlay groups, we are currently
     # using just one, allowing the user to specify
@@ -167,7 +142,96 @@ def context(args):
     return overlayList, displayCtx, frame
 
 
-FSL_TOOLNAME  = 'FSLEyes'
+def interface(parent, args, ctx):
+    """Creates the ``fsleyes`` interface.
+
+    This function does the following:
+
+     1. Creates the :class:`.FSLEyesFrame` the top-level frame for ``fsleyes``.
+
+     2. Configures the frame according to the command line arguments (e.g. 
+        ortho or lightbox view).
+
+     3. Destroys the splash screen that was created by the :func:`context`
+        function.
+
+    :arg parent: :mod:`wx` parent object.
+
+    :arg args:   Parsed command line arguments, as returned by
+                 :func:`parseArgs`.
+
+    :arg ctx:    The :class:`.OverlayList`, :class:`.DisplayContext`, and
+                 :class:`.FSLEyesSplash`, as created and returned by
+                 :func:`context`.
+
+    :returns: the :class:`.FSLEyesFrame` that was created.
+    """
+
+    import                                    wx
+    import fsl.fsleyes.frame               as fsleyesframe
+    import fsl.fsleyes.views.orthopanel    as op
+    import fsl.fsleyes.views.lightboxpanel as lbp
+
+    overlayList, displayCtx, splashFrame = ctx
+
+    # If a scene has not been specified, the default
+    # behaviour is to restore the previous frame layout
+    if args.scene is None: restore = True
+    else:                  restore = False
+    
+    frame = fsleyesframe.FSLEyesFrame(
+        parent, overlayList, displayCtx, restore)
+
+    # Otherwise, we add the scene
+    # specified by the user
+    if   args.scene == 'ortho':    frame.addViewPanel(op .OrthoPanel)
+    elif args.scene == 'lightbox': frame.addViewPanel(lbp.LightBoxPanel)
+
+    # The viewPanel is assumed to be a CanvasPanel 
+    # (i.e. either OrthoPanel or LightBoxPanel)
+    viewPanel = frame.getViewPanels()[0]
+    viewOpts  = viewPanel.getSceneOptions()
+
+    fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
+
+    if args.scene == 'ortho':
+
+        xcentre = args.xcentre
+        ycentre = args.ycentre
+        zcentre = args.zcentre
+
+        if xcentre is None: xcentre = displayCtx.location.yz
+        if ycentre is None: ycentre = displayCtx.location.xz
+        if zcentre is None: zcentre = displayCtx.location.xy
+
+        viewPanel._xcanvas.centreDisplayAt(*xcentre)
+        viewPanel._ycanvas.centreDisplayAt(*ycentre)
+        viewPanel._zcanvas.centreDisplayAt(*zcentre)
+
+    # Make sure the new frame is shown
+    # before destroying the splash screen
+    frame.Show(True)
+    frame.Refresh()
+    frame.Update()
+
+    # Closing the splash screen immediately
+    # can cause a crash under linux/GTK, so
+    # we'll do it a bit later.
+    def closeSplash():
+        splashFrame.Close()
+
+    wx.CallLater(500, closeSplash)
+    
+    return frame
+
+    
+#############################################
+# See the fsl.tools package documentation for
+# details on these module-level attributes
+#############################################
+
+
+FSL_TOOLNAME  = 'FSLeyes'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs

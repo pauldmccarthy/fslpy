@@ -5,8 +5,31 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Provides the :class:`Image` class, for representing 3D/4D NIFTI images.
+"""This module provides the :class:`Image` class, for representing 3D/4D NIFTI1
+images. The ``nibabel`` package is used for file I/O.
+
+.. note:: Currently, only NIFTI1 images are supported.
+
+
+It is very easy to load a NIFTI image::
+
+    from fsl.data.image import Image
+    myimg = Image('MNI152_T1_2mm.nii.gz')
+
+
+A number of other functions are also provided for working with image files and
+file names:
+
+.. autosummary::
+   :nosignatures:
+
+   isSupported
+   removeExt
+   addExt
+   loadImage
+   saveImage
 """
+
 
 import               logging
 import               tempfile
@@ -28,30 +51,28 @@ class Image(props.HasProperties):
     """Class which represents a 3D/4D image. Internally, the image is
     loaded/stored using :mod:`nibabel`.
 
-    In addition to the class-level properties defined below, the following
-    attributes are present on an :class:`Image` object:
+    
+    In addition to the :attr:`name`, :attr:`data`, and :attr:`saved`
+    properties, the following attributes are present on an ``Image`` instance:
 
-    :ivar nibImage:       The :mod:`nibabel` image object.
 
-    :ivar shape:          A list/tuple containing the number of voxels
-                          along each image dimension.
-
-    :ivar pixdim:         A list/tuple containing the size of one voxel
-                          along each image dimension.
-
-    :ivar voxToWorldMat:  A 4*4 array specifying the affine transformation
-                          for transforming voxel coordinates into real world
-                          coordinates.
-
-    :ivar worldToVoxMat:  A 4*4 array specifying the affine transformation
-                          for transforming real world coordinates into voxel
-                          coordinates.
-
-    :ivar dataSource:     The name of the file that the image was loaded from.
-
-    :ivar tempFile:       The name of the temporary file which was created (in
-                          the event that the image was large and was gzipped -
-                          see :func:`_loadImageFile`).
+    ================= ====================================================
+    ``nibImage``      The :mod:`nibabel` image object.
+    ``dataSource``    The name of the file that the image was loaded from.
+    ``tempFile``      The name of the temporary file which was created (in
+                      the event that the image was large and was gzipped -
+                      see :func:`loadImage`).
+    ``shape``         A list/tuple containing the number of voxels along
+                      each image dimension.
+    ``pixdim``        A list/tuple containing the size of one voxel along
+                      each image dimension.
+    ``voxToWorldMat`` A 4*4 array specifying the affine transformation
+                      for transforming voxel coordinates into real world
+                      coordinates.
+    ``worldToVoxMat`` A 4*4 array specifying the affine transformation
+                      for transforming real world coordinates into voxel
+                      coordinates.
+    ================= ====================================================
     """
 
 
@@ -77,14 +98,15 @@ class Image(props.HasProperties):
                  name=None,
                  header=None,
                  loadData=True):
-        """Initialise an Image object with the given image data or file name.
+        """Create an ``Image`` object with the given image data or file name.
 
         :arg image:    A string containing the name of an image file to load, 
                        or a :mod:`numpy` array, or a :mod:`nibabel` image
                        object.
 
-        :arg xform:    A ``4*4`` affine transformation matrix which transforms
-                       voxel coordinates into real world coordinates.
+        :arg xform:    A :math:`4\\times 4` affine transformation matrix 
+                       which transforms voxel coordinates into real world
+                       coordinates.
 
         :arg name:     A name for the image.
 
@@ -100,9 +122,13 @@ class Image(props.HasProperties):
                        via the :meth:`loadData` method.
         """
 
-        self.nibImage   = None
-        self.dataSource = None
-        self.tempFile   = None
+        self.nibImage      = None
+        self.dataSource    = None
+        self.tempFile      = None
+        self.shape         = None
+        self.pixdim        = None
+        self.voxToWorldMat = None
+        self.worldToVoxMat = None
 
         if header is not None:
             header = header.copy()
@@ -173,8 +199,28 @@ class Image(props.HasProperties):
 
         
     def __del__(self):
+        """Prints a log message. """
         log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
+
+    def __hash__(self):
+        """Returns a number which uniquely idenfities this ``Image`` instance
+        (the result of ``id(self)``).
+        """
+        return id(self)
+
+
+    def __str__(self):
+        """Return a string representation of this ``Image`` instance."""
+        return '{}({}, {})'.format(self.__class__.__name__,
+                                   self.name,
+                                   self.dataSource)
+
         
+    def __repr__(self):
+        """See the :meth:`__str__` method."""
+        return self.__str__()
+
         
     def loadData(self):
         """Loads the image data from the file. This method only needs to
@@ -253,28 +299,8 @@ class Image(props.HasProperties):
         return saveImage(self)
     
 
-    def __hash__(self):
-        """Returns a number which uniquely idenfities this :class:`Image`
-        object (the result of ``id(self)``).
-        """
-        return id(self)
-
-
-    def __str__(self):
-        """Return a string representation of this :class:`Image`."""
-        return '{}({}, {})'.format(self.__class__.__name__,
-                                   self.name,
-                                   self.dataSource)
-
-        
-    def __repr__(self):
-        """See the :meth:`__str__` method."""
-        return self.__str__()
-
-
     def is4DImage(self):
-        """Returns ``True`` if this image is 4D, ``False`` otherwise.
-        """
+        """Returns ``True`` if this image is 4D, ``False`` otherwise. """
         return len(self.shape) > 3 and self.shape[3] > 1
 
 
@@ -283,7 +309,14 @@ class Image(props.HasProperties):
         indicating the space to which the (transformed) image is oriented.
 
         The ``code`` parameter may be either ``sform`` (the default) or
-        ``qform`` in which case the corresponding matrix is used. 
+        ``qform`` in which case the corresponding matrix is used.
+
+        :returns: one of the following codes:
+                    - :data:`~.constants.NIFTI_XFORM_UNKNOWN`
+                    - :data:`~.constants.NIFTI_XFORM_SCANNER_ANAT`
+                    - :data:`~.constants.NIFTI_XFORM_ALIGNED_ANAT`
+                    - :data:`~.constants.NIFTI_XFORM_TALAIRACH`
+                    - :data:`~.constants.NIFTI_XFORM_MNI_152`
         """
 
         if   code is None:     code = 'sform_code'
@@ -306,21 +339,22 @@ class Image(props.HasProperties):
 
         This method returns one of the following values, indicating the
         direction in which coordinates along the specified axis increase:
-          - :attr:`~fsl.data.constants.ORIENT_L2R`:     Left to right
-          - :attr:`~fsl.data.constants.ORIENT_R2L`:     Right to left
-          - :attr:`~fsl.data.constants.ORIENT_A2P`:     Anterior to posterior
-          - :attr:`~fsl.data.constants.ORIENT_P2A`:     Posterior to anterior
-          - :attr:`~fsl.data.constants.ORIENT_I2S`:     Inferior to superior
-          - :attr:`~fsl.data.constants.ORIENT_S2I`:     Superior to inferior
-          - :attr:`~fsl.data.constants.ORIENT_UNKNOWN`: Orientation is unknown
+        
+          - :attr:`~.constants.ORIENT_L2R`:     Left to right
+          - :attr:`~.constants.ORIENT_R2L`:     Right to left
+          - :attr:`~.constants.ORIENT_A2P`:     Anterior to posterior
+          - :attr:`~.constants.ORIENT_P2A`:     Posterior to anterior
+          - :attr:`~.constants.ORIENT_I2S`:     Inferior to superior
+          - :attr:`~.constants.ORIENT_S2I`:     Superior to inferior
+          - :attr:`~.constants.ORIENT_UNKNOWN`: Orientation is unknown
 
         The returned value is dictated by the XForm code contained in the
-        image file header (see the :meth:`getXFormCode` method). Basically,
-        if the XForm code is 'unknown', this method will return -1 for all
-        axes. Otherwise, it is assumed that the image is in RAS orientation
-        (i.e. the X axis increases from left to right, the Y axis increases
-        from  posterior to anterior, and the Z axis increases from inferior
-        to superior).
+        image file header (see the :meth:`getXFormCode` method). Basically, if
+        the XForm code is *unknown*, this method will return
+        ``ORIENT_UNKNOWN`` for all axes. Otherwise, it is assumed that the
+        image is in RAS orientation (i.e. the X axis increases from left to
+        right, the Y axis increases from posterior to anterior, and the Z axis
+        increases from inferior to superior).
         """
 
         if self.getXFormCode(code) == constants.NIFTI_XFORM_UNKNOWN:
@@ -335,7 +369,10 @@ class Image(props.HasProperties):
 
     def getVoxelOrientation(self, axis, code=None):
         """Returns a code representing the (estimated) orientation of the
-        specified voxelwise axis.
+        specified data axis.
+
+        :arg code: May be either ``qform`` or ``sform``, specifying which
+                   transformation to use.
 
         See the :meth:`getWorldOrientation` method for a description
         of the return value.
@@ -368,9 +405,10 @@ class Image(props.HasProperties):
 # so i'm just providing '*.gz'for now
 ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.gz']
 """The file extensions which we understand. This list is used as the default
-if if the ``allowedExts`` parameter is not passed to any of the functions
+if the ``allowedExts`` parameter is not passed to any of the functions
 below.
 """
+
 
 EXTENSION_DESCRIPTIONS = ['Compressed NIFTI1 images',
                           'NIFTI1 images',
@@ -386,8 +424,7 @@ DEFAULT_EXTENSION  = '.nii.gz'
 
 
 def isSupported(filename, allowedExts=None):
-    """
-    Returns ``True`` if the given file has a supported extension, ``False``
+    """Returns ``True`` if the given file has a supported extension, ``False``
     otherwise.
 
     :arg filename:    The file name to test.
@@ -402,8 +439,7 @@ def isSupported(filename, allowedExts=None):
 
 
 def removeExt(filename, allowedExts=None):
-    """
-    Removes the extension from the given file name. Returns the filename
+    """Removes the extension from the given file name. Returns the filename
     unmodified if it does not have a supported extension.
 
     :arg filename:    The file name to strip.
@@ -429,11 +465,7 @@ def removeExt(filename, allowedExts=None):
     return filename[:-extLen]
 
 
-def addExt(
-        prefix,
-        mustExist=True,
-        allowedExts=None,
-        defaultExt=None):
+def addExt(prefix, mustExist=True, allowedExts=None, defaultExt=None):
     """Adds a file extension to the given file ``prefix``.
 
     If ``mustExist`` is False, and the file does not already have a 
@@ -503,10 +535,11 @@ def loadImage(filename):
     """Given the name of an image file, loads it using nibabel.
 
     If the file is large, and is gzipped, it is decompressed to a temporary
-    location, so that it can be memory-mapped.  A tuple is returned,
-    consisting of the nibabel image object, and the name of the file that it
-    was loaded from (either the passed-in file name, or the name of the
-    temporary decompressed file).
+    location, so that it can be memory-mapped.
+
+    In any case, a tuple is returned, consisting of the nibabel image object,
+    and the name of the file that it was loaded from (either the passed-in
+    file name, or the name of the temporary decompressed file).
     """
 
     # If we have a GUI, we can display a dialog
@@ -571,9 +604,9 @@ def saveImage(image, fromDir=None):
     the image.
 
 
-    :param image:         The :class:`.Image` instance to be saved.
+    :arg image:           The :class:`.Image` instance to be saved.
 
-    :param str fromDir:   Directory in which the file dialog should start.
+    :arg fromDir:         Directory in which the file dialog should start.
                           If ``None``, the most recently visited directory
                           (via this method) is used, or the directory from
                           the given image, or the current working directory.

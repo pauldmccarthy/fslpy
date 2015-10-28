@@ -4,49 +4,76 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module implements a non-functional front end to the FSL flirt tool.
+"""
 
-from collections import OrderedDict
 
 import props
+props.initGUI()
 
-flirtModes = OrderedDict((
-    ('single',   'Input image -> Reference image'),
-    ('multiple', 'Low res image -> High res image -> Reference image')))
-
-
-modelDOFChoices = OrderedDict((
-    ('rigid3',    'Rigid Body (3 parameter model)'),
-    ('translate', 'Translation Only (3 parameter model)'),
-    ('rigid6',    'Rigid Body (6 parameter model)'),
-    ('rescale',   'Global Rescale (7 parameter model)'),
-    ('trad',      'Traditional (9 parameter model)'),
-    ('affine',    'Affine (12 parameter model)')))
-
-
-searchModes = OrderedDict((
-    ('nosearch',  'Already virtually aligned (no search)'),
-    ('orient',    'Not aligned, but same orientation'),
-    ('misorient', 'Incorrectly oriented')))
-
-
-costFunctions = OrderedDict((
-    ('correlation',     'Correlation Ratio'),
-    ('mutualinfo',      'Mutual Information'),
-    ('normmutualinfo',  'Normalised Mutual Information'),
-    ('normcorrelation', 'Normalised Correlation (intra-modal)'),
-    ('leastsquares',    'Least Squares (intra-modal)')))
-
-interpolationMethods = OrderedDict((
-    ('trilinear', 'Tri-Linear'),
-    ('nn',        'Nearest Neighbour'),
-    ('spline',    'Spline'),
-    ('sinc',      'Sinc')))
+flirtModes           = ['single',
+                        'multiple']
+modelDOFChoices      = ['rigid3',  
+                        'translate',
+                        'rigid6',  
+                        'rescale', 
+                        'trad',    
+                        'affine']
+searchModes          = ['nosearch',
+                        'orient',
+                        'misorient']
+costFunctions        = ['correlation',   
+                        'mutualinfo',    
+                        'normmutualinfo',
+                        'normcorrelation',
+                        'leastsquares']
+interpolationMethods = ['trilinear',
+                        'nn',
+                        'spline',
+                        'sinc']
+sincWindowOpts       = ['rect',
+                        'hanning',
+                        'blackman']
 
 
-sincWindowOpts = OrderedDict((
-    ('rect',     'Rectangular'),
-    ('hanning',  'Hanning'),
-    ('blackman', 'Blackman')))
+flirtModeLabels = {
+    'single'   : 'Input image -> Reference image',
+    'multiple' : 'Low res image -> High res image -> Reference image'}
+
+
+modelDOFChoiceLabels = {
+    'rigid3'    : 'Rigid Body (3 parameter model)',
+    'translate' : 'Translation Only (3 parameter model)',
+    'rigid6'    : 'Rigid Body (6 parameter model)',
+    'rescale'   : 'Global Rescale (7 parameter model)',
+    'trad'      : 'Traditional (9 parameter model)',
+    'affine'    : 'Affine (12 parameter model)'}
+
+
+searchModeLabels = {
+    'nosearch'  : 'Already virtually aligned (no search)',
+    'orient'    : 'Not aligned, but same orientation',
+    'misorient' : 'Incorrectly oriented'}
+
+
+costFunctionLabels = {
+    'correlation'     : 'Correlation Ratio',
+    'mutualinfo'      : 'Mutual Information',
+    'normmutualinfo'  : 'Normalised Mutual Information',
+    'normcorrelation' : 'Normalised Correlation (intra-modal)',
+    'leastsquares'    : 'Least Squares (intra-modal)'}
+
+interpolationMethodLabels = {
+    'trilinear' : 'Tri-Linear',
+    'nn'        : 'Nearest Neighbour',
+    'spline'    : 'Spline',
+    'sinc'      : 'Sinc'}
+
+
+sincWindowOptLabels = {
+    'rect'     : 'Rectangular',
+    'hanning'  : 'Hanning',
+    'blackman' : 'Blackman'}
 
 
 def inSingleMode(  opts): return opts.flirtMode == 'single'
@@ -101,7 +128,7 @@ tooltips = None
 searchOptions    = props.VGroup(
     label='Search',
     children=(
-        'searchMode',
+        props.Widget('searchMode', labels=searchModeLabels),
         props.HGroup(('searchAngleXMin', 'searchAngleXMax'),
                      visibleWhen=lambda i: i.searchMode != 'nosearch'),
         props.HGroup(('searchAngleYMin', 'searchAngleYMax'),
@@ -112,7 +139,7 @@ searchOptions    = props.VGroup(
 costFuncOptions  = props.VGroup(
     label='Cost Function',
     children=(
-        'costFunction',
+        props.Widget('costFunction', labels=costFunctionLabels),
         props.Widget(
             'costHistBins',
             visibleWhen=lambda i: i.costFunction in ['correlation',
@@ -122,8 +149,9 @@ costFuncOptions  = props.VGroup(
 interpOptions = props.VGroup(
     label='Interpolation',
     children=(
-        'interpolation',
-        props.VGroup(('sincWindow', 'sincWindowWidth'),
+        props.Widget('interpolation', labels=interpolationMethodLabels),
+        props.VGroup((props.Widget('sincWindow', labels=sincWindowOptLabels),
+                      'sincWindowWidth'),
                      visibleWhen=lambda i: i.interpolation == 'sinc')))
 
 weightVolOptions = props.VGroup(
@@ -133,14 +161,20 @@ weightVolOptions = props.VGroup(
         'weightingInput'))
 
 flirtView = props.VGroup((
-    'flirtMode',
+    props.Widget('flirtMode', labels=flirtModeLabels),
     'refImage',
-    props.Widget('inputImage',  visibleWhen=inSingleMode),
-    props.Widget('inToRefMode', visibleWhen=inSingleMode), 
+    props.Widget('inputImage', visibleWhen=inSingleMode),
+    props.Widget('inToRefMode',
+                 labels=modelDOFChoiceLabels,
+                 visibleWhen=inSingleMode), 
     props.Widget('hiResImage',  visibleWhen=inMultipleMode),
-    props.Widget('hiToRefMode', visibleWhen=inMultipleMode),
+    props.Widget('hiToRefMode',
+                 labels=modelDOFChoiceLabels,
+                 visibleWhen=inMultipleMode),
     props.Widget('loResImage',  visibleWhen=inMultipleMode),
-    props.Widget('loToHiMode',  visibleWhen=inMultipleMode), 
+    props.Widget('loToHiMode',
+                 labels=modelDOFChoiceLabels,
+                 visibleWhen=inMultipleMode), 
     'outputImage',
     'sndyImages',
     props.NotebookGroup(label='Advanced Options',

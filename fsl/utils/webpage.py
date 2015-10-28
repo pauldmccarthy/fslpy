@@ -4,12 +4,20 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""Convenience functions for opening a URL in a web browser."""
+"""This module provides convenience functions for opening a URL in a web
+browser.
+
+The following functions are provided:
+
+.. autosummary::
+   :nosignatures:
+
+   openPage
+   openFSLHelp
+"""
 
 import os
 import webbrowser
-
-import wx
 
 
 def openPage(url):
@@ -22,6 +30,8 @@ def openFSLHelp(toolName):
     If the ``$FSLDIR`` environment variable is not set, pops up a warning
     message instead.
     """
+
+    import wx
 
     fsldir = os.environ.get('FSLDIR', None)
     url    = 'file://{}/doc/redirects/{}.html'.format(fsldir, toolName)

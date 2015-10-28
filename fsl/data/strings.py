@@ -4,9 +4,32 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains a collection of strings used throughout ``fslpy`` for
+display purposes. Most of the strings are used by FSLeyes.
+
+
+The strings are stored in :class:`.TypeDict` dictionaries, roughly organised
+into the following categories:
+
+
+ ================== =====================================================
+ :data:`messages`   Messages to be displayed to the user.
+ :data:`titles`     Titles of windows, panels, and dialogs.
+ :data:`actions`    Names of actions tied to menu options, buttons, etc.
+ :data:`labels`     Labels for miscellaneous things.
+ :data:`properties` Display names for ``props.HasProperties`` properties.
+ :data:`choices`    Display names for ``props.HasProperties`` choice
+                     properties.
+ :data:`anatomy`    Anatomical and orientation labels.
+ :data:`nifti`      Labels for NIFTI header fields.
+ :data:`feat`       FEAT specific names and labels.
+ ================== =====================================================
+"""
+
 
 from fsl.utils.typedict import TypeDict
 import fsl.data.constants as constants
+
 
 messages = TypeDict({
 
@@ -49,12 +72,13 @@ messages = TypeDict({
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
                                                'installing the colour map',
 
+    'AtlasPanel.loadingAtlas' : 'Loading {} atlas ...',
+
     'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
 
-    'AtlasInfoPanel.notMNISpace'   : 'Atlas lookup can only be performed on '
-                                     'images oriented to MNI152 space',
-
-    'AtlasInfoPanel.noReference' : 'No reference image available',
+    'AtlasInfoPanel.notMNISpace'   : 'The selected overlay does not appear to '
+                                     'be in MNI152 space - atlas '
+                                     'information might not be accurate!' ,
 
     'AtlasInfoPanel.chooseAnAtlas' : 'Choose an atlas!',
     'AtlasInfoPanel.atlasDisabled' : 'Atlases are not available',
@@ -82,10 +106,6 @@ messages = TypeDict({
 
     'HistogramPanel.calcHist'           : 'Calculating histogram for {} ...',
 
-
-    'LookupTablePanel.notLutOverlay' : 'Choose an overlay which '
-                                       'uses a lookup table',
-
     'LookupTablePanel.labelExists' : 'The {} LUT already contains a '
                                      'label with value {}',
 
@@ -98,8 +118,11 @@ messages = TypeDict({
     'ClusterPanel.badData'        : 'Cluster data could not be parsed - '
                                     'check your cluster_*.txt files.',
     'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
-})
 
+    'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
+                                            'space reference image - this '
+                                            'is necessary for editing.',
+})
 
 
 titles = TypeDict({
@@ -135,7 +158,7 @@ titles = TypeDict({
     'CanvasSettingsPanel'    : 'View settings',
     'OverlayDisplayPanel'    : 'Display settings',
     'OrthoToolBar'           : 'Ortho view toolbar',
-    'OrthoProfileToolBar'    : 'Ortho view edit toolbar',
+    'OrthoEditToolBar'       : 'Ortho view edit toolbar',
     'LightBoxToolBar'        : 'Lightbox view toolbar',
     'LookupTablePanel'       : 'Lookup tables',
     'LutLabelDialog'         : 'New LUT label',
@@ -176,7 +199,7 @@ actions = TypeDict({
     'CanvasPanel.toggleShell'             : 'Python shell',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
-    'OrthoPanel.toggleProfileToolBar'   : 'Edit toolbar',
+    'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
 
     'OrthoToolBar.more'           : 'More settings',
     'LightBoxToolBar.more'        : 'More settings',
@@ -201,6 +224,7 @@ actions = TypeDict({
     'OrthoEditProfile.createMaskFromSelection' : 'Mask',
     'OrthoEditProfile.createROIFromSelection'  : 'ROI',
 })
+
 
 labels = TypeDict({
 
@@ -250,8 +274,8 @@ labels = TypeDict({
     'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
 
     'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
-    'TimeSeriesControlPanel.currentSettings'    : 'Settings for current '
-                                                  'voxel time course',
+    'TimeSeriesControlPanel.currentSettings'    : 'Plot settings for '
+                                                  'selected overlay ({})',
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
 
@@ -261,8 +285,8 @@ labels = TypeDict({
     'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
 
-    'FEATReducedTimeSeries.cope' : 'Reduced against COPE{}: {}',
-    'FEATReducedTimeSeries.pe'   : 'Reduced against PE{}',
+    'FEATPartialFitTimeSeries.cope' : 'Reduced against COPE{}: {}',
+    'FEATPartialFitTimeSeries.pe'   : 'Reduced against PE{}',
 
     'FEATResidualTimeSeries'     : 'Residuals',
 
@@ -313,7 +337,9 @@ labels = TypeDict({
 
 properties = TypeDict({
     
-    'Profile.mode' : 'Profile',
+    'Profile.mode'                   : 'Profile',
+    
+    'DisplayContext.displaySpace'    : 'Display space',
 
     'CanvasPanel.syncLocation'       : 'Sync location',
     'CanvasPanel.syncOverlayOrder'   : 'Sync overlay order',
@@ -358,19 +384,20 @@ properties = TypeDict({
     
     'TimeSeriesPanel.plotMode'         : 'Plotting mode',
     'TimeSeriesPanel.usePixdim'        : 'Use pixdims',
-    'TimeSeriesPanel.showCurrent'      : 'Plot time series for current voxel',
-    'TimeSeriesPanel.showAllCurrent'   : 'Plot time series for all overlays',
-    'TimeSeriesPanel.currentColour'    : 'Colour for current time course',
-    'TimeSeriesPanel.currentAlpha'     : 'Transparency for current '
-                                         'time course',
-    'TimeSeriesPanel.currentLineWidth' : 'Line width for current time course',
-    'TimeSeriesPanel.currentLineStyle' : 'Line style for current time course',
+    'TimeSeriesPanel.plotMelodicICs'   : 'Plot component time courses for '
+                                         'Melodic images',
+    'TimeSeriesPanel.showMode'         : 'Time series to plot',
     'TimeSeriesPanel.plotFullModelFit' : 'Plot full model fit',
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     
     'HistogramPanel.histType'    : 'Histogram type',
     'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
     'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+
+    'DataSeries.colour'    : 'Colour',
+    'DataSeries.alpha'     : 'Line transparency',
+    'DataSeries.lineWidth' : 'Line width',
+    'DataSeries.lineStyle' : 'Line style',
     
     'HistogramSeries.nbins'           : 'Number of bins',
     'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
@@ -384,7 +411,7 @@ properties = TypeDict({
     'FEATTimeSeries.plotPEFits'       : 'Plot PE{} fit ({})',
     'FEATTimeSeries.plotCOPEFits'     : 'Plot COPE{} fit ({})',
     'FEATTimeSeries.plotResiduals'    : 'Plot residuals',
-    'FEATTimeSeries.plotReduced'      : 'Plot data reduced against',
+    'FEATTimeSeries.plotPartial'      : 'Plot partial model fit against',
     'FEATTimeSeries.plotData'         : 'Plot data',
 
     'OrthoEditProfile.selectionSize'          : 'Selection size',
@@ -447,54 +474,37 @@ properties = TypeDict({
 })
 
 
-profiles = TypeDict({
-    'CanvasPanel.view' : 'View',
-    'OrthoPanel.edit'  : 'Edit',
-})
-
-modes = TypeDict({
-    ('OrthoViewProfile', 'nav')    : 'Navigate',
-    ('OrthoViewProfile', 'pan')    : 'Pan',
-    ('OrthoViewProfile', 'zoom')   : 'Zoom',
-
-    ('OrthoEditProfile', 'nav')    : 'Navigate',
-    ('OrthoEditProfile', 'pan')    : 'Pan',
-    ('OrthoEditProfile', 'zoom')   : 'Zoom',
-    ('OrthoEditProfile', 'sel')    : 'Select',
-    ('OrthoEditProfile', 'desel')  : 'Deselect',
-    ('OrthoEditProfile', 'selint') : 'Select by intensity',
-
-
-    ('LightBoxViewProfile', 'view')   : 'View',
-    ('LightBoxViewProfile', 'zoom')   : 'Zoom',
-
-})
-
-
 choices = TypeDict({
 
-    'SceneOpts.colourBarLocation.top'    : 'Top',
-    'SceneOpts.colourBarLocation.bottom' : 'Bottom',
-    'SceneOpts.colourBarLocation.left'   : 'Left',
-    'SceneOpts.colourBarLocation.right'  : 'Right',
+    'DisplayContext.displaySpace' : {'world'  : 'World coordinates',
+                                     'pixdim' : 'Scaled voxels'},
 
-    'SceneOpts.performance.1' : 'Fastest',
-    'SceneOpts.performance.2' : 'Faster',
-    'SceneOpts.performance.3' : 'Good looking',
-    'SceneOpts.performance.4' : 'Better looking',
-    'SceneOpts.performance.5' : 'Best looking',
+    'SceneOpts.colourBarLocation'  : {'top'          : 'Top',
+                                      'bottom'       : 'Bottom',
+                                      'left'         : 'Left',
+                                      'right'        : 'Right'},
+    'SceneOpts.colourBarLabelSide' : {'top-left'     : 'Top / Left',
+                                      'bottom-right' : 'Bottom / Right'},
+
+    'SceneOpts.performance' : {1 : 'Fastest',
+                               2 : 'Faster',
+                               3 : 'Good looking',
+                               4 : 'Better looking',
+                               5 : 'Best looking'},
+
+    'CanvasOpts.zax' : {0 : 'X axis',
+                        1 : 'Y axis',
+                        2 : 'Z axis'},
+
+    'OrthoOpts.layout' : {'horizontal' : 'Horizontal',
+                          'vertical'   : 'Vertical',
+                          'grid'       : 'Grid'},
 
     'HistogramPanel.dataRange.min' : 'Min.',
     'HistogramPanel.dataRange.max' : 'Max.',
 
     'LightBoxOpts.zrange.min' : 'Min.',
     'LightBoxOpts.zrange.max' : 'Max.',    
-    
-    'ColourBarCanvas.orientation.horizontal' : 'Horizontal',
-    'ColourBarCanvas.orientation.vertical'   : 'Vertical',
-    
-    'ColourBarCanvas.labelSide.top-left'     : 'Top / Left',
-    'ColourBarCanvas.labelSide.bottom-right' : 'Bottom / Right', 
 
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
@@ -504,30 +514,45 @@ choices = TypeDict({
 
     'VectorOpts.modulate.none'    : 'No modulation',
 
-    'ImageOpts.transform.affine' : 'Use qform/sform transformation matrix',
-    'ImageOpts.transform.pixdim' : 'Use pixdims only',
-    'ImageOpts.transform.id'     : 'Do not use qform/sform or pixdims',
+    'ModelOpts.refImage.none'     : 'No reference image',
 
-    'ModelOpts.refImage.none' : 'None',
+    'ImageOpts.transform' : {'affine' : 'Use qform/sform transformation '
+                                        'matrix',
+                             'pixdim' : 'Use pixdims only',
+                             'id'     : 'Do not use qform/sform or pixdims',
+                             'custom' : 'Apply a custom transformation '
+                                        'matrix'},
 
-    'VolumeOpts.interpolation.none'   : 'No interpolation', 
-    'VolumeOpts.interpolation.linear' : 'Linear interpolation', 
-    'VolumeOpts.interpolation.spline' : 'Spline interpolation',
+    'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
+                                  'linear' : 'Linear interpolation', 
+                                  'spline' : 'Spline interpolation'},
 
-    'Display.overlayType.volume'     : '3D/4D volume',
-    'Display.overlayType.mask'       : '3D/4D mask image',
-    'Display.overlayType.label'      : 'Label image',
-    'Display.overlayType.rgbvector'  : '3-direction vector image (RGB)',
-    'Display.overlayType.linevector' : '3-direction vector image (Line)',
-    'Display.overlayType.model'      : '3D model',
+    'Display.overlayType' : {'volume'     : '3D/4D volume',
+                             'mask'       : '3D/4D mask image',
+                             'label'      : 'Label image',
+                             'rgbvector'  : '3-direction vector image (RGB)',
+                             'linevector' : '3-direction vector image (Line)',
+                             'model'      : '3D model'},
 
-    'HistogramPanel.histType.probability' : 'Probability',
-    'HistogramPanel.histType.count'       : 'Count',
+    'HistogramPanel.histType' : {'probability' : 'Probability',
+                                 'count'       : 'Count'},
+
+    'DataSeries.lineStyle' : {'-'  : 'Solid line',
+                              '--' : 'Dashed line',
+                              '-.' : 'Dash-dot line',
+                              ':'  : 'Dotted line'},
     
-    'TimeSeriesPanel.plotMode.normal'        : 'Normal - no scaling/offsets',
-    'TimeSeriesPanel.plotMode.demean'        : 'Demeaned',
-    'TimeSeriesPanel.plotMode.normalise'     : 'Normalised',
-    'TimeSeriesPanel.plotMode.percentChange' : 'Percent changed',
+    'TimeSeriesPanel.plotMode' : {'normal'        : 'Normal - no '
+                                                    'scaling/offsets',
+                                  'demean'        : 'Demeaned',
+                                  'normalise'     : 'Normalised',
+                                  'percentChange' : 'Percent changed'},
+    'TimeSeriesPanel.showMode' : {'current' : 'Show the time series for '
+                                              'the currently selected overlay',
+                                  'all'     : 'Show the time series '
+                                              'for all overlays',
+                                  'none'    : 'Only show the time series '
+                                              'in the time series list'}
 })
 
 

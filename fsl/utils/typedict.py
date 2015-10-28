@@ -4,20 +4,137 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-
+"""This module provides the :class:`TypeDict` class, a type-aware dictionary.
+"""
 
 class TypeDict(object):
-    """A custom dictionary which allows classes or class instances to be used
-    as keys for value lookups, but internally transforms any class/instance
-    keys into strings. Tuple keys are supported. Value assignment with
-    class/instance keys is not supported.
+    """A type-aware dictionary.
+
+
+    The purpose of the ``TypeDict`` is to allow value lookup using either
+    classes or instances as keys. The ``TypeDict`` can be used in the same way
+    that you would use a regular ``dict``, but the ``get`` and ``__getitem__``
+    methods have some extra functionality.
+
+    
+    **Easy to understand example**
+
+    
+    Let's say we have a class with some properties::
+
+        import props
+        import fsl.utils.typedict as td
+
+        class Animal(props.HasProperties):
+            isMammal = props.Boolean()
+            numLegs  = props.Int()
+
+    
+    And we want to associate some tooltips with those properties::
+
+        tooltips = td.TypeDict({
+
+            'Animal.isMammal' : 'Set this to True for mammals, '
+                                'False for reptiles.',
+            'Animal.numLegs'  : 'The nuber of legs on this animal.' 
+        })
+
+    Because we used a ``TypeDict``, we can now look up those tooltips
+    in a number of ways::
+
+        a = Animal()
+
+        # Lookup by string (equivalent to a normal dict lookup)
+        tt = tooltips['Animal.isMammal']
+
+        # Lookup by class
+        tt = tooltips[Animal, 'isMammal']
+
+        # Lookup by instance
+        tt = tooltips[a, 'isMammal']
+
+
+    This functionality also works across class hierarchies::
+
+        class Cat(Animal):
+           numYoutubeHits = props.Int()
+
+        tooltips = td.TypeDict({
+
+            'Animal.isMammal'    : 'Set this to True for mammals, '
+                                   'False for reptiles.',
+            'Animal.numLegs'     : 'The nuber of legs on this animal.',
+            'Cat.numYoutubeHits' : 'Number of youtube videos this cat '
+                                   'has starred in.'
+        })
+
+        c = Cat()
+
+        isMammalTooltip    = tooltips[Cat,  'isMammal']
+        numLegsTooltip     = tooltips[c,    'numLegs']
+        youtubeHitsTooltip = tooltips[c,    'numYoutubeHits']
+
+        # Class-hierachy-aware TypeDict lookups only
+        # work when you pass in an instance/class as
+        # the key - the following will result in a
+        # KeyError:
+        t = tooltips['Cat.numLegs']
+
+
+    The :meth:`get` method has some extra functionality for working with 
+    class hierarchies::
+
+
+        tooltips = td.TypeDict({
+
+            'Animal.isMammal'    : 'Set this to True for mammals, '
+                                   'False for reptiles.',
+    
+            'Animal.numLegs'     : 'The nuber of legs on this animal.',
+
+            'Cat.numLegs'        : 'This will be equal to four for all cats, '
+                                    'but could be less for disabled cats, '
+                                    'or more for lucky cats.',
+    
+            'Cat.numYoutubeHits' : 'Number of youtube videos this cat '
+                                   'has starred in.'
+        })
+
+        print tooltips.get((c, 'numLegs'))
+        #  'This will be equal to four for all cats, but could '
+        #  'be less for disabled cats, or more for lucky cats.'
+
+        print tooltips.get((c, 'numLegs'), allhits=True)
+        # ['This will be equal to four for all cats, but could '
+        #  'be less for disabled cats, or more for lucky cats.',
+        #  'The nuber of legs on this animal.']
+
+        print tooltips.get((c, 'numLegs'), allhits=True, bykey=True)
+        # {('Animal', 'numLegs'): 'The nuber of legs on this animal.',
+        #  ('Cat',    'numLegs'): 'This will be equal to four for all cats, '
+        #                         'but could be less for disabled cats, or '
+        #                         'more for lucky cats.'}
+
+    
+    **Boring technical description**
+
+    
+    The ``TypeDict`` is a custom dictionary which allows classes or class
+    instances to be used as keys for value lookups, but internally transforms
+    any class/instance keys into strings. Tuple keys are supported. Value
+    assignment with class/instance keys is not supported.
 
     If a class/instance is passed in as a key, and there is no value
     associated with that class, a search is performed on all of the base
     classes of that class to see if any values are present for them.
     """
 
+    
     def __init__(self, initial=None):
+        """Create a ``TypeDict``.
+
+        :arg initial: Dictionary containing initial values.
+        """
         
         if initial is None:
             initial = {}
