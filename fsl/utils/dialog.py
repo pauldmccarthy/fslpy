@@ -132,12 +132,19 @@ class SimpleMessageDialog(wx.Dialog):
         self.SetClientSize((   width, height))
 
         self.Layout()
+        self.__message.Layout()
 
         if self.__style & SMD_KEEP_CENTERED:
             self.CentreOnParent()
 
+        # This ridiculousness seems to be
+        # necessary to force a repaint on
+        # all platforms (OSX, GTK, GTK/SSH)
+        wx.Yield()
         self.Refresh()
         self.Update()
+        self.__message.Refresh()
+        self.__message.Update() 
         wx.Yield()
             
 
