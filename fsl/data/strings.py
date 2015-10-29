@@ -325,13 +325,17 @@ labels = TypeDict({
     'OverlayInfoPanel.Image.transform'    : 'Transform/space',
     'OverlayInfoPanel.Image.orient'       : 'Orientation',
     
-    'OverlayInfoPanel.Image'              : 'NIFTI1 image',
-    'OverlayInfoPanel.FEATImage'          : 'NIFTI1 image (FEAT analysis)',
-    'OverlayInfoPanel.FEATImage.featInfo' : 'FEAT information',
-    'OverlayInfoPanel.Model'              : 'VTK model',
-    'OverlayInfoPanel.Model.numVertices'  : 'Number of vertices',
-    'OverlayInfoPanel.Model.numIndices'   : 'Number of indices',
-    'OverlayInfoPanel.dataSource'         : 'Data source',
+    'OverlayInfoPanel.Image'                    : 'NIFTI1 image',
+    'OverlayInfoPanel.FEATImage'                : 'NIFTI1 image '
+                                                  '(FEAT analysis)',
+    'OverlayInfoPanel.FEATImage.featInfo'       : 'FEAT information',
+    'OverlayInfoPanel.MelodicImage'             : 'NIFTI1 image '
+                                                  '(MELODIC analysis)', 
+    'OverlayInfoPanel.MelodicImage.melodicInfo' : 'MELODIC information',
+    'OverlayInfoPanel.Model'                    : 'VTK model',
+    'OverlayInfoPanel.Model.numVertices'        : 'Number of vertices',
+    'OverlayInfoPanel.Model.numIndices'         : 'Number of indices',
+    'OverlayInfoPanel.dataSource'               : 'Data source',
 })
 
 
@@ -612,12 +616,9 @@ nifti = TypeDict({
     'voxOrient.0'   : 'X voxel orientation',
     'voxOrient.1'   : 'Y voxel orientation',
     'voxOrient.2'   : 'Z voxel orientation',
-    'sformOrient.0' : 'X sform orientation',
-    'sformOrient.1' : 'Y sform orientation',
-    'sformOrient.2' : 'Z sform orientation',
-    'qformOrient.0' : 'X qform orientation',
-    'qformOrient.1' : 'Y qform orientation',
-    'qformOrient.2' : 'Z qform orientation', 
+    'worldOrient.0' : 'X world orientation',
+    'worldOrient.1' : 'Y world orientation',
+    'worldOrient.2' : 'Z world orientation',
 
     'qform' : 'QForm matrix',
     'sform' : 'SForm matrix',
@@ -708,4 +709,14 @@ feat = TypeDict({
     'numPoints'    : 'Number of volumes',
     'numEVs'       : 'Number of EVs',
     'numContrasts' : 'Number of contrasts',
+    'report'       : 'Link to report',
+})
+
+
+melodic = TypeDict({
+    'dataFile'       : 'Data file',
+    'partOfAnalysis' : 'Part of analysis',
+    'numComponents'  : 'Number of ICs',
+    'tr'             : 'TR time',
+    'report'         : 'Link to report',
 })

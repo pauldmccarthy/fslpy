@@ -134,7 +134,7 @@ def loadDesign(featdir):
             if line.strip() == '/Matrix':
                 break
 
-        matrix = np.loadtxt(f)
+        matrix = np.loadtxt(f, ndmin=2)
 
     if matrix is None or matrix.size == 0:
         raise RuntimeError('{} does not appear to be a '

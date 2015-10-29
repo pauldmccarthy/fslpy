@@ -77,22 +77,10 @@ def buildLabelBitmaps(overlayList,
 
         display = displayCtx.getDisplay(overlay)
         opts    = display.getDisplayOpts()
-
-        # The overlay is being displayed as it is stored on
-        # disk - the image.getOrientation method calculates
-        # and returns labels for each voxelwise axis.
-        if opts.transform in ('pixdim', 'id'):
-            xorient = overlay.getVoxelOrientation(0)
-            yorient = overlay.getVoxelOrientation(1)
-            zorient = overlay.getVoxelOrientation(2)
-
-        # The overlay is being displayed in 'real world' space -
-        # the definition of this space may be present in the
-        # overlay meta data
-        else:
-            xorient = overlay.getWorldOrientation(0)
-            yorient = overlay.getWorldOrientation(1)
-            zorient = overlay.getWorldOrientation(2)
+        xform   = opts.getTransform('world', 'display')
+        xorient = overlay.getOrientation(0, xform)
+        yorient = overlay.getOrientation(1, xform)
+        zorient = overlay.getOrientation(2, xform)
 
     if constants.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
         fgColour = 'red'

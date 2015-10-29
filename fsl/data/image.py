@@ -333,9 +333,14 @@ class Image(props.HasProperties):
         return int(code)
 
 
-    def getWorldOrientation(self, axis, code=None):
-        """Returns a code representing the orientation of the specified axis
-        in world space.
+    def getOrientation(self, axis, xform):
+        """Returns a code representing the orientation of the specified data
+        axis in the coordinate system defined by the given transformation
+        matrix.
+
+        :arg xform: A transformation matrix which is assumed to transform
+                    coordinates from the image world coordinate system to
+                    some other coordinate system.
 
         This method returns one of the following values, indicating the
         direction in which coordinates along the specified axis increase:
@@ -357,45 +362,16 @@ class Image(props.HasProperties):
         increases from inferior to superior).
         """
 
-        if self.getXFormCode(code) == constants.NIFTI_XFORM_UNKNOWN:
-            return constants.ORIENT_UNKNOWN
-
-        if   axis == 0: return constants.ORIENT_L2R
-        elif axis == 1: return constants.ORIENT_P2A
-        elif axis == 2: return constants.ORIENT_I2S
-
-        else: return constants.ORIENT_UNKNOWN
-
-
-    def getVoxelOrientation(self, axis, code=None):
-        """Returns a code representing the (estimated) orientation of the
-        specified data axis.
-
-        :arg code: May be either ``qform`` or ``sform``, specifying which
-                   transformation to use.
-
-        See the :meth:`getWorldOrientation` method for a description
-        of the return value.
-        """
+        if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
+            return constants.ORIENT_UNKNOWN 
         
-        if self.getXFormCode(code) == constants.NIFTI_XFORM_UNKNOWN:
-            return constants.ORIENT_UNKNOWN
-
-        if   code is None:    xform = self.nibImage.get_affine()
-        elif code == 'sform': xform = self.nibImage.get_sform()
-        elif code == 'qform': xform = self.nibImage.get_qform()
-        else: raise ValueError('code must be None, qform, or sform')
-        
-        # the aff2axcodes returns one code for each 
-        # axis in the image array (i.e. in voxel space),
-        # which denotes the real world direction
         import nibabel as nib
         code = nib.orientations.aff2axcodes(
             xform,
             ((constants.ORIENT_R2L, constants.ORIENT_L2R),
              (constants.ORIENT_A2P, constants.ORIENT_P2A),
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
-        
+
         return code
 
 
