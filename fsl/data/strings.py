@@ -137,10 +137,11 @@ titles = TypeDict({
     
     'overlay.loadOverlays.error'  : 'Error loading overlay',
 
-    'OrthoPanel'      : 'Ortho View',
-    'LightBoxPanel'   : 'Lightbox View',
-    'TimeSeriesPanel' : 'Time series',
-    'HistogramPanel'  : 'Histogram',
+    'OrthoPanel'         : 'Ortho View',
+    'LightBoxPanel'      : 'Lightbox View',
+    'TimeSeriesPanel'    : 'Time series',
+    'PowerSpectrumPanel' : 'Power spectra',
+    'HistogramPanel'     : 'Histogram',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
@@ -151,25 +152,26 @@ titles = TypeDict({
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'OverlayListPanel'       : 'Overlay list',
-    'AtlasPanel'             : 'Atlases',
-    'LocationPanel'          : 'Location',
-    'OverlayDisplayToolBar'  : 'Display toolbar',
-    'CanvasSettingsPanel'    : 'View settings',
-    'OverlayDisplayPanel'    : 'Display settings',
-    'OrthoToolBar'           : 'Ortho view toolbar',
-    'OrthoEditToolBar'       : 'Ortho view edit toolbar',
-    'LightBoxToolBar'        : 'Lightbox view toolbar',
-    'LookupTablePanel'       : 'Lookup tables',
-    'LutLabelDialog'         : 'New LUT label',
-    'NewLutDialog'           : 'New LUT',
-    'TimeSeriesListPanel'    : 'Time series list',
-    'TimeSeriesControlPanel' : 'Time series control',
-    'HistogramListPanel'     : 'Histogram list',
-    'HistogramControlPanel'  : 'Histogram control',
-    'ClusterPanel'           : 'Cluster browser',
-    'OverlayInfoPanel'       : 'Overlay information',
-    'ShellPanel'             : 'Python shell',
+    'OverlayListPanel'          : 'Overlay list',
+    'AtlasPanel'                : 'Atlases',
+    'LocationPanel'             : 'Location',
+    'OverlayDisplayToolBar'     : 'Display toolbar',
+    'CanvasSettingsPanel'       : 'View settings',
+    'OverlayDisplayPanel'       : 'Display settings',
+    'OrthoToolBar'              : 'Ortho view toolbar',
+    'OrthoEditToolBar'          : 'Ortho view edit toolbar',
+    'LightBoxToolBar'           : 'Lightbox view toolbar',
+    'LookupTablePanel'          : 'Lookup tables',
+    'LutLabelDialog'            : 'New LUT label',
+    'NewLutDialog'              : 'New LUT',
+    'TimeSeriesListPanel'       : 'Time series list',
+    'TimeSeriesControlPanel'    : 'Time series control',
+    'HistogramListPanel'        : 'Histogram list',
+    'HistogramControlPanel'     : 'Histogram control',
+    'PowerSpectrumControlPanel' : 'Power spectrum control',
+    'ClusterPanel'              : 'Cluster browser',
+    'OverlayInfoPanel'          : 'Overlay information',
+    'ShellPanel'                : 'Python shell',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
@@ -207,11 +209,13 @@ actions = TypeDict({
     
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
-    'PlotPanel.screenshot'                    : 'Take screenshot',
-    'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
-    'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
-    'HistogramPanel.toggleHistogramList'      : 'Histogram list',
-    'HistogramPanel.toggleHistogramControl'   : 'Histogram control', 
+    'PlotPanel.screenshot'                          : 'Take screenshot',
+    'TimeSeriesPanel.toggleTimeSeriesList'          : 'Time series list',
+    'TimeSeriesPanel.toggleTimeSeriesControl'       : 'Time series control', 
+    'HistogramPanel.toggleHistogramList'            : 'Histogram list',
+    'HistogramPanel.toggleHistogramControl'         : 'Histogram control',
+    'PowerSpectrumPanel.togglePowerSpectrumControl' : 'Power spectrum '
+                                                      'control', 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',
@@ -278,6 +282,8 @@ labels = TypeDict({
                                                   'selected overlay ({})',
     'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
                                                    'selected overlay ({})',
+
+    'PowerSpectrumControlPanel.psSettings' : 'Power spectrum plot settings',
 
     'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
 
@@ -397,6 +403,11 @@ properties = TypeDict({
     'HistogramPanel.histType'    : 'Histogram type',
     'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
     'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+
+    'PowerSpectrumPanel.showMode'        : 'Power spectra to plot',
+    'PowerSpectrumPanel.plotFrequencies' : 'Show frequencies along x axis ',
+    'PowerSpectrumPanel.plotMelodicICs'  : 'Plot component power spectra for '
+                                           'Melodic images',
 
     'DataSeries.colour'    : 'Colour',
     'DataSeries.alpha'     : 'Line transparency',
@@ -556,7 +567,14 @@ choices = TypeDict({
                                   'all'     : 'Show the time series '
                                               'for all overlays',
                                   'none'    : 'Only show the time series '
-                                              'in the time series list'}
+                                              'in the time series list'},
+    'PowerSpectrumPanel.showMode' : {'current' : 'Show the power spectrum for '
+                                                 'the currently selected '
+                                                 'overlay',
+                                     'all'     : 'Show the power spectra '
+                                                 'for all overlays',
+                                     'none'    : 'Only show the power spectra '
+                                                 'in the power spectra list'} 
 })
 
 

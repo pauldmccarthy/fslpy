@@ -26,10 +26,13 @@ class MelodicImage(fslimage.Image):
     The ``MelodicImage`` class provides a few MELODIC-specific attributes and
     methods:
 
+    
     .. autosummary::
+       :nosignatures:
 
        tr
        getComponentTimeSeries
+       getComponentPowerSpectrum
        numComponents
        getTopLevelAnalysisDir
        getDataFile
@@ -76,8 +79,9 @@ class MelodicImage(fslimage.Image):
                                 *args,
                                 **kwargs)
 
-        self.__meldir = dirname
-        self.__melmix = melresults.getComponentTimeSeries(dirname)
+        self.__meldir   = dirname
+        self.__melmix   = melresults.getComponentTimeSeries(  dirname)
+        self.__melFTmix = melresults.getComponentPowerSpectra(dirname)
 
         # Automatically set the
         # TR value if possible
@@ -92,6 +96,13 @@ class MelodicImage(fslimage.Image):
     def getComponentTimeSeries(self, component):
         """Returns the time course for the specified (0-indexed) component. """
         return self.__melmix[:, component]
+
+    
+    def getComponentPowerSpectrum(self, component):
+        """Returns the power spectrum for the time course of the specified
+        (0-indexed) component.
+        """
+        return self.__melFTmix[:, component] 
 
 
     def numComponents(self):

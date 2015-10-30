@@ -10,8 +10,9 @@ MELODIC analysis directory. These functions are primarily intended to be used
 by the :class:`.MELODICImage` class, but are available for other uses. The
 following functions are provided:
 
+
 .. autosummary::
-   nosignatures:
+   :nosignatures:
 
    isMelodicDir
    getMelodicDir
@@ -19,8 +20,10 @@ following functions are provided:
    getDataFile
    getICFile
    getMixFile
+   getFTMixFile
    getNumComponents
    getComponentTimeSeries
+   getComponentPowerSpectra
 """
 
 
@@ -74,9 +77,10 @@ def getMelodicDir(path):
     except ValueError:
         return None
 
-    # Must contain a file called melodic_mix
-    if not op.exists(op.join(path, 'melodic_mix')):
-        return None
+    # Must contain files called
+    # melodic_mix and melodic_FTmix
+    if not op.exists(op.join(path, 'melodic_mix')):   return None
+    if not op.exists(op.join(path, 'melodic_FTmix')): return None
                                            
     return path
 
@@ -142,6 +146,11 @@ def getMixFile(meldir):
     return op.join(meldir, 'melodic_mix')
 
 
+def getFTMixFile(meldir):
+    """Returns the path to the melodic FT mix file. """
+    return op.join(meldir, 'melodic_FTmix')
+
+
 def getReportFile(meldir):
     pass
 
@@ -162,3 +171,11 @@ def getComponentTimeSeries(meldir):
 
     mixfile = getMixFile(meldir)
     return np.loadtxt(mixfile)
+
+
+def getComponentPowerSpectra(meldir):
+    """Returns a ``numpy`` array containing the melodic FT mix for the
+    given directory.
+    """
+    ftmixfile = getFTMixFile(meldir)
+    return np.loadtxt(ftmixfile)
