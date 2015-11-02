@@ -285,10 +285,12 @@ labels = TypeDict({
                                                   'selected overlay ({})',
 
     'PowerSpectrumControlPanel.customPlotSettings' : 'Power spectrum plot '
-                                                     'settings', 
+                                                     'settings',
 
-    'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
-
+    'HistogramControlPanel.customPlotSettings' : 'Histogram plot settings',
+    'HistogramControlPanel.customDSSettings'   : 'Histogram settings for '
+                                                  'selected overlay ({})',
+ 
     
     'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
 
@@ -406,8 +408,7 @@ properties = TypeDict({
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     
     'HistogramPanel.histType'    : 'Histogram type',
-    'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
-    'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+    'HistogramPanel.showMode'    : 'Histogram series to plot',
 
     'PowerSpectrumPanel.showMode'        : 'Power spectra to plot',
     'PowerSpectrumPanel.plotFrequencies' : 'Show frequencies along x axis ',
@@ -420,6 +421,7 @@ properties = TypeDict({
     'DataSeries.lineStyle' : 'Line style',
     
     'HistogramSeries.nbins'           : 'Number of bins',
+    'HistogramSeries.autoBin'         : 'Automatic histogram binning',
     'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
     'HistogramSeries.includeOutliers' : 'Include values out of data range',
     'HistogramSeries.volume'          : 'Volume',
@@ -575,6 +577,13 @@ choices = TypeDict({
                                               'for all overlays',
                                   'none'    : 'Only show the time series '
                                               'in the time series list'},
+    'HistogramPanel.showMode'  : {'current' : 'Show the histogram for '
+                                              'the currently selected overlay',
+                                  'all'     : 'Show the histograms '
+                                              'for all overlays',
+                                  'none'    : 'Only show the histograms '
+                                              'in the time series list'},
+    
     'PowerSpectrumPanel.showMode' : {'current' : 'Show the power spectrum for '
                                                  'the currently selected '
                                                  'overlay',
