@@ -266,25 +266,30 @@ labels = TypeDict({
     'NewLutDialog.cancel' : 'Cancel',
     'NewLutDialog.newLut' : 'New LUT',
 
-    'PlotPanel.plotSettings'    : 'General plot settings',
-    'PlotPanel.currentSettings' : 'Settings for currently '
-                                  'selected plot ({})',
-    'PlotPanel.xlim'            : 'X limits',
-    'PlotPanel.ylim'            : 'Y limits',
-    'PlotPanel.labels'          : 'Labels',
-    'PlotPanel.xlabel'          : 'X',
-    'PlotPanel.ylabel'          : 'Y',
+
+    'PlotControlPanel.plotSettings'       : 'General plot settings',
+    'PlotControlPanel.customPlotSettings' : 'Custom plot settings',
+    'PlotControlPanel.currentDSSettings'  : 'Plot settings for '
+                                            'selected overlay ({})',
+    'PlotControlPanel.customDSSettings'   : 'Custom plot settings for '
+                                            'selected overlay ({})',
+    'PlotControlPanel.xlim'               : 'X limits',
+    'PlotControlPanel.ylim'               : 'Y limits',
+    'PlotControlPanel.labels'             : 'Labels',
+    'PlotControlPanel.xlabel'             : 'X',
+    'PlotControlPanel.ylabel'             : 'Y',
+ 
+
+    'TimeSeriesControlPanel.customPlotSettings' : 'Time series settings',
+    'TimeSeriesControlPanel.customDSSettings'   : 'FEAT settings for '
+                                                  'selected overlay ({})',
+
+    'PowerSpectrumControlPanel.customPlotSettings' : 'Power spectrum plot '
+                                                     'settings', 
 
     'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
 
-    'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
-    'TimeSeriesControlPanel.currentSettings'    : 'Plot settings for '
-                                                  'selected overlay ({})',
-    'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
-                                                   'selected overlay ({})',
-
-    'PowerSpectrumControlPanel.psSettings' : 'Power spectrum plot settings',
-
+    
     'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
 
     'FEATModelFitTimeSeries.full' : 'Full model fit',
@@ -420,6 +425,8 @@ properties = TypeDict({
     'HistogramSeries.volume'          : 'Volume',
     'HistogramSeries.dataRange'       : 'Data range',
     'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
+
+    'PowerSpectrumSeries.varNorm'     : 'Normalise to unit variance',
 
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
     'FEATTimeSeries.plotEVs'          : 'Plot EV{} ({})',
