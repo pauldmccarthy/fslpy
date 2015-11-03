@@ -292,9 +292,6 @@ labels = TypeDict({
     'HistogramControlPanel.customDSSettings'   : 'Histogram settings for '
                                                   'selected overlay ({})',
  
-    
-    'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
-
     'FEATModelFitTimeSeries.full' : 'Full model fit',
     'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
