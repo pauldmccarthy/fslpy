@@ -179,3 +179,82 @@ def getComponentPowerSpectra(meldir):
     """
     ftmixfile = getFTMixFile(meldir)
     return np.loadtxt(ftmixfile)
+
+
+
+class MelodicClassification(object):
+    """
+    """
+
+    def __init__(self, ncomps):
+        """Create a ``MelodicClassification`` instance.
+        """
+
+        self.__ncomps          = ncomps
+
+        self.__componentLabels = [[] for i in range(ncomps)]
+        self.__labelComponents = {}
+
+
+    def load(self, filename):
+        pass
+
+    
+    def save(self, filename):
+        pass 
+
+
+    def getLabels(self, component):
+        return list(self.__componentLabels[component])
+    
+
+    def addLabel(self, component, label):
+
+        cmpLabels = self.__componentLabels[component]
+        labelCmps = self.__labelComponents.get(label, [])
+        
+        if label in cmpLabels:
+            return 
+
+        cmpLabels[component].append(label)
+        labelCmps[label]    .append(component)
+
+        self.__componentLabels[component] = cmpLabels
+        self.__labelComponents[label]     = labelCmps
+ 
+
+    def removeLabel(self, component, label):
+
+        if label not in self.__componentLabels[component]:
+            return
+
+        self.__componentLabels[component].remove(label)
+        self.__labelComponents[label]    .remove(component)
+
+    
+    def clearLabels(self, component):
+        
+        labels = self.getLabels(component)
+
+        for l in labels:
+            self.removeLabel(component, l)
+
+    
+    def getComponents(self, label):
+        return list(self.__labelComponents.get(label, []))
+
+    
+    def addComponent(self, label, component):
+        self.addLabel(component, label)
+
+
+    def removeComponent(self, label, component):
+        self.removeLabel(component, label)
+
+    
+    def clearComponents(self, label):
+        
+        components = self.getComponents(label)
+
+        for c in components:
+            self.removeComponent(label, c) 

@@ -79,9 +79,11 @@ class MelodicImage(fslimage.Image):
                                 *args,
                                 **kwargs)
 
-        self.__meldir   = dirname
-        self.__melmix   = melresults.getComponentTimeSeries(  dirname)
-        self.__melFTmix = melresults.getComponentPowerSpectra(dirname)
+        self.__meldir     = dirname
+        self.__melmix     = melresults.getComponentTimeSeries(  dirname)
+        self.__melFTmix   = melresults.getComponentPowerSpectra(dirname)
+        self.__melICClass = melresults.MelodicClassification(
+            self.numComponents())
 
         # Automatically set the
         # TR value if possible
@@ -91,6 +93,8 @@ class MelodicImage(fslimage.Image):
             dataImage = fslimage.Image(dataFile, loadData=False)
             if dataImage.is4DImage():
                 self.tr = dataImage.pixdim[3]
+
+        # TODO load classifications if present
 
         
     def getComponentTimeSeries(self, component):
@@ -125,3 +129,7 @@ class MelodicImage(fslimage.Image):
         :func:`.melodicresults.getDataFile` function.
         """
         return melresults.getDataFile(self.__meldir)
+
+
+    def getICClassification(self):
+        return self.__melICClass

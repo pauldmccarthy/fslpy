@@ -122,6 +122,9 @@ messages = TypeDict({
     'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
                                             'space reference image - this '
                                             'is necessary for editing.',
+
+
+    'MelodicClassificationPanel.disabled' : 'Choose a melodic image.',
 })
 
 
@@ -173,6 +176,8 @@ titles = TypeDict({
     'OverlayInfoPanel'          : 'Overlay information',
     'ShellPanel'                : 'Python shell',
 
+    'MelodicClassificationPanel' : 'Melodic IC classification',
+
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
 })
@@ -188,17 +193,18 @@ actions = TypeDict({
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
-    'CanvasPanel.screenshot'              : 'Take screenshot',
-    'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',
-    'CanvasPanel.toggleColourBar'         : 'Colour bar',
-    'CanvasPanel.toggleOverlayList'       : 'Overlay list',
-    'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',
-    'CanvasPanel.toggleLocationPanel'     : 'Location panel',
-    'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
-    'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
-    'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
-    'CanvasPanel.toggleOverlayInfo'       : 'Overlay information',
-    'CanvasPanel.toggleShell'             : 'Python shell',
+    'CanvasPanel.screenshot'                : 'Take screenshot',
+    'CanvasPanel.showCommandLineArgs'       : 'Show command line for scene',
+    'CanvasPanel.toggleColourBar'           : 'Colour bar',
+    'CanvasPanel.toggleOverlayList'         : 'Overlay list',
+    'CanvasPanel.toggleDisplayProperties'   : 'Overlay display properties',
+    'CanvasPanel.toggleLocationPanel'       : 'Location panel',
+    'CanvasPanel.toggleAtlasPanel'          : 'Atlas panel',
+    'CanvasPanel.toggleLookupTablePanel'    : 'Lookup tables',
+    'CanvasPanel.toggleClusterPanel'        : 'Cluster browser',
+    'CanvasPanel.toggleOverlayInfo'         : 'Overlay information',
+    'CanvasPanel.toggleClassificationPanel' : 'Melodic IC classification',
+    'CanvasPanel.toggleShell'               : 'Python shell',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
