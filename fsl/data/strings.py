@@ -164,9 +164,9 @@ titles = TypeDict({
     'LookupTablePanel'          : 'Lookup tables',
     'LutLabelDialog'            : 'New LUT label',
     'NewLutDialog'              : 'New LUT',
-    'TimeSeriesListPanel'       : 'Time series list',
+
+    'PlotListPanel'             : 'Plot list',
     'TimeSeriesControlPanel'    : 'Time series control',
-    'HistogramListPanel'        : 'Histogram list',
     'HistogramControlPanel'     : 'Histogram control',
     'PowerSpectrumControlPanel' : 'Power spectrum control',
     'ClusterPanel'              : 'Cluster browser',
@@ -214,6 +214,7 @@ actions = TypeDict({
     'TimeSeriesPanel.toggleTimeSeriesControl'       : 'Time series control', 
     'HistogramPanel.toggleHistogramList'            : 'Histogram list',
     'HistogramPanel.toggleHistogramControl'         : 'Histogram control',
+    'PowerSpectrumPanel.togglePowerSpectrumList'    : 'Power spectrum list',
     'PowerSpectrumPanel.togglePowerSpectrumControl' : 'Power spectrum '
                                                       'control', 
 
