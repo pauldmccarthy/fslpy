@@ -353,6 +353,12 @@ labels = TypeDict({
     'OverlayInfoPanel.Model.numVertices'        : 'Number of vertices',
     'OverlayInfoPanel.Model.numIndices'         : 'Number of indices',
     'OverlayInfoPanel.dataSource'               : 'Data source',
+
+    'MelodicClassificationPanel.componentTab'   : 'Components',
+    'MelodicClassificationPanel.labelTab'       : 'Labels',
+
+    'ComponentGrid.componentColumn'             : 'IC #',
+    'ComponentGrid.labelColumn'                 : 'Labels',
 })
 
 

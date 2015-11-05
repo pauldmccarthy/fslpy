@@ -27,11 +27,18 @@ following functions are provided:
 """
 
 
+import logging
+
 import os.path as op
 import numpy   as np
 
+import props
+
 import fsl.data.image       as fslimage
 import fsl.data.featresults as featresults
+
+
+log = logging.getLogger(__name__)
 
 
 def isMelodicDir(path):
@@ -182,19 +189,41 @@ def getComponentPowerSpectra(meldir):
 
 
 
-class MelodicClassification(object):
-    """
+class MelodicClassification(props.HasProperties):
+    """The ``MelodicClassification`` class is a convenience class for managing
+    a collection of component classification labels.
+
+
+    .. autosummary::
+       :nosignatures:
+
+       addLabel
+       addComponent
+       removeLabel
+       removeComponent
+       clearLabels
+       clearComponents
+    
+
+    .. warning:: Do not modify the :attr:`labels` list directly - use the
+                 methods listed above. A ``MelodicClassification`` needs to
+                 manage some internal state whenever the component labels
+                 change, so directly modifying the ``labels`` list will corrupt
+                 this internal state.
     """
 
+    
+    labels = props.List()
+
+    
     def __init__(self, ncomps):
         """Create a ``MelodicClassification`` instance.
         """
 
-        self.__ncomps          = ncomps
-
-        self.__componentLabels = [[] for i in range(ncomps)]
-        self.__labelComponents = {}
-
+        self.__ncomps     = ncomps
+        self.__components = {}
+        self.labels       = [[] for i in range(ncomps)]
+        
 
     def load(self, filename):
         pass
@@ -205,43 +234,62 @@ class MelodicClassification(object):
 
 
     def getLabels(self, component):
-        return list(self.__componentLabels[component])
+        return list(self.labels[component])
     
 
     def addLabel(self, component, label):
 
-        cmpLabels = self.__componentLabels[component]
-        labelCmps = self.__labelComponents.get(label, [])
+        labels = list(self.labels[component])
+        comps  = self.__components.get(label, [])
         
-        if label in cmpLabels:
+        if label in labels:
             return 
 
-        cmpLabels[component].append(label)
-        labelCmps[label]    .append(component)
+        labels.append(label)
+        comps .append(component)
 
-        self.__componentLabels[component] = cmpLabels
-        self.__labelComponents[label]     = labelCmps
+        self.labels[      component] = labels
+        self.__components[label]     = comps
+
+        log.debug('Label added to component: {} <-> {}'.format(component,
+                                                               label))
  
 
     def removeLabel(self, component, label):
 
-        if label not in self.__componentLabels[component]:
+        labels = list(self.labels[component])
+        comps  = self.__components.get(label, []) 
+
+        if label not in labels:
             return
 
-        self.__componentLabels[component].remove(label)
-        self.__labelComponents[label]    .remove(component)
+        labels.remove(label)
+        comps .remove(component)
+        
+        self.labels[      component] = labels
+        self.__components[label]     = comps
+
+        log.debug('Label removed from component: {} <-> {}'.format(component,
+                                                                   label)) 
 
     
     def clearLabels(self, component):
         
         labels = self.getLabels(component)
 
+        self.disableNotification('labels')
+        
         for l in labels:
             self.removeLabel(component, l)
+            
+        self.enableNotification('labels')
+        self.notify('labels')
+
+        log.debug('Labels cleared from component: {}'.format(component))
 
     
     def getComponents(self, label):
-        return list(self.__labelComponents.get(label, []))
+        return list(self.__components.get(label, []))
 
     
     def addComponent(self, label, component):
@@ -256,5 +304,10 @@ class MelodicClassification(object):
         
         components = self.getComponents(label)
 
+        self.disableNotification('labels') 
+
         for c in components:
-            self.removeComponent(label, c) 
+            self.removeComponent(label, c)
+            
+        self.enableNotification('labels')
+        self.notify('labels')

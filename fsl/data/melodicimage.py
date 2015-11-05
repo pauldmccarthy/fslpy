@@ -36,6 +36,7 @@ class MelodicImage(fslimage.Image):
        numComponents
        getTopLevelAnalysisDir
        getDataFile
+       getICClassification
     """
 
 
@@ -95,6 +96,8 @@ class MelodicImage(fslimage.Image):
                 self.tr = dataImage.pixdim[3]
 
         # TODO load classifications if present
+        for i in range(self.numComponents()):
+            self.__melICClass.addLabel(i, 'Unknown')
 
         
     def getComponentTimeSeries(self, component):
@@ -132,4 +135,7 @@ class MelodicImage(fslimage.Image):
 
 
     def getICClassification(self):
+        """Return the :class:`.MelodicClassification` instance associated with
+        this ``MelodicImage``.
+        """
         return self.__melICClass
