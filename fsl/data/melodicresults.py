@@ -240,7 +240,7 @@ class MelodicClassification(props.HasProperties):
     def addLabel(self, component, label):
 
         labels = list(self.labels[component])
-        comps  = self.__components.get(label, [])
+        comps  = list(self.__components.get(label, []))
         
         if label in labels:
             return 
@@ -258,7 +258,7 @@ class MelodicClassification(props.HasProperties):
     def removeLabel(self, component, label):
 
         labels = list(self.labels[component])
-        comps  = self.__components.get(label, []) 
+        comps  = list(self.__components.get(label, []))
 
         if label not in labels:
             return
@@ -270,7 +270,7 @@ class MelodicClassification(props.HasProperties):
         self.__components[label]     = comps
 
         log.debug('Label removed from component: {} <-> {}'.format(component,
-                                                                   label)) 
+                                                                   label))
 
     
     def clearLabels(self, component):
