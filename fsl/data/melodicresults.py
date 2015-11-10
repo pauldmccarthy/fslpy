@@ -24,6 +24,10 @@ following functions are provided:
    getNumComponents
    getComponentTimeSeries
    getComponentPowerSpectra
+
+
+The :class:`MelodicClassification` class is also defined in this module. This
+class is used to manage component classifications of a :class:`.MelodicImage`.
 """
 
 
@@ -197,6 +201,10 @@ class MelodicClassification(props.HasProperties):
     .. autosummary::
        :nosignatures:
 
+       hasLabel
+       hasComponent
+       getLabels
+       getComponents
        addLabel
        addComponent
        removeLabel
@@ -214,6 +222,11 @@ class MelodicClassification(props.HasProperties):
 
     
     labels = props.List()
+    """A list of lists, one for each component, which contains the labels that
+    have been added to that component. Do not modify this list directly.
+    However, feel free to register a listener to be notified when this list
+    changes.
+    """
 
     
     def __init__(self, ncomps):
@@ -234,14 +247,19 @@ class MelodicClassification(props.HasProperties):
 
 
     def getLabels(self, component):
+        """Returns all labels of the specified component. """
         return list(self.labels[component])
 
 
     def hasLabel(self, component, label):
+        """Returns ``True`` if the specified component has the specified label,
+        ``False`` otherwise.
+        """
         return label in self.labels[component]
     
 
     def addLabel(self, component, label):
+        """Adds the given label to the given component. """
 
         labels = list(self.labels[component])
         comps  = list(self.__components.get(label, []))
@@ -252,14 +270,19 @@ class MelodicClassification(props.HasProperties):
         labels.append(label)
         comps .append(component)
 
+        # Change __components first, so
+        # any listeners on labels are
+        # not notified before our intenral
+        # state becomes consistent
+        self.__components[label]     = comps        
         self.labels[      component] = labels
-        self.__components[label]     = comps
 
         log.debug('Label added to component: {} <-> {}'.format(component,
                                                                label))
  
 
     def removeLabel(self, component, label):
+        """Removes the given label from the given component. """
 
         labels = list(self.labels[component])
         comps  = list(self.__components.get(label, []))
@@ -269,15 +292,16 @@ class MelodicClassification(props.HasProperties):
 
         labels.remove(label)
         comps .remove(component)
-        
+
+        self.__components[label]     = comps        
         self.labels[      component] = labels
-        self.__components[label]     = comps
 
         log.debug('Label removed from component: {} <-> {}'.format(component,
                                                                    label))
 
     
     def clearLabels(self, component):
+        """Removes all labels from the given component. """
         
         labels = self.getLabels(component)
 
@@ -293,22 +317,29 @@ class MelodicClassification(props.HasProperties):
 
     
     def getComponents(self, label):
+        """Returns a list of all components which have the given label. """
         return list(self.__components.get(label, []))
 
     
     def hasComponent(self, label, component):
+        """Returns ``True`` if the given compoennt has the given label,
+        ``False`` otherwise.
+        """
         return component in self.getComponents(label)
 
     
     def addComponent(self, label, component):
+        """Adds the given label to the given component. """
         self.addLabel(component, label)
 
 
     def removeComponent(self, label, component):
+        """Removes the given label from the given component. """
         self.removeLabel(component, label)
 
     
     def clearComponents(self, label):
+        """Removes the given label from all components. """
         
         components = self.getComponents(label)
 
