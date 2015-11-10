@@ -359,6 +359,8 @@ labels = TypeDict({
 
     'ComponentGrid.componentColumn'             : 'IC #',
     'ComponentGrid.labelColumn'                 : 'Labels',
+    'LabelGrid.componentColumn'                 : 'IC #',
+    'LabelGrid.labelColumn'                     : 'Label', 
 })
 
 

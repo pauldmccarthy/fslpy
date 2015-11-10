@@ -235,6 +235,10 @@ class MelodicClassification(props.HasProperties):
 
     def getLabels(self, component):
         return list(self.labels[component])
+
+
+    def hasLabel(self, component, label):
+        return label in self.labels[component]
     
 
     def addLabel(self, component, label):
@@ -290,6 +294,10 @@ class MelodicClassification(props.HasProperties):
     
     def getComponents(self, label):
         return list(self.__components.get(label, []))
+
+    
+    def hasComponent(self, label, component):
+        return component in self.getComponents(label)
 
     
     def addComponent(self, label, component):
