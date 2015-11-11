@@ -212,7 +212,9 @@ class MelodicClassification(props.HasProperties):
        clearComponents
 
 
-    .. note::    All component labels are converted to lower case.
+    .. note::    All component labels are internally stored as lower case;
+                 their cased version (whatever is initially used) is accssible
+                 via the :meth:`getDisplayLabel` method.
     
 
     .. warning:: Do not modify the :attr:`labels` list directly - use the
@@ -235,10 +237,16 @@ class MelodicClassification(props.HasProperties):
         """Create a ``MelodicClassification`` instance.
         """
 
-        self.__melimage   = melimage
-        self.__ncomps     = melimage.numComponents()
+        self.__melimage      = melimage
+        self.__ncomps        = melimage.numComponents()
+        self.__displayLabels = {}
 
         self.clear()
+
+
+    def getDisplayLabel(self, label):
+        """Returns the display name for the given label. """
+        return self.__displayLabels.get(label.lower(), label)
 
 
     def clear(self):
@@ -376,7 +384,13 @@ class MelodicClassification(props.HasProperties):
             
             noise  = not (self.hasLabel(comp, 'signal') or
                           self.hasLabel(comp, 'unknown'))
-            tokens = [str(comp + 1)] + self.getLabels(comp) + [str(noise)]
+
+            # Make sure there are no
+            # commas in any label names
+            labels = [self.getDisplayLabel(l) for l in self.getLabels(comp)]
+            labels = [l.replace(',', '_') for l in labels]
+            
+            tokens = [str(comp + 1)] + labels + [str(noise)]
 
             lines.append(', '.join(tokens))
 
@@ -406,15 +420,18 @@ class MelodicClassification(props.HasProperties):
     def addLabel(self, component, label):
         """Adds the given label to the given component. """
 
-        label  = label.lower()
-        labels = list(self.labels[component])
-        comps  = list(self.__components.get(label, []))
+        display = label
+        label   = label.lower()
+        labels  = list(self.labels[component])
+        comps   = list(self.__components.get(label, []))
         
         if label in labels:
             return 
 
         labels.append(label)
         comps .append(component)
+
+        self.__displayLabels[label] = display
 
         # Change __components first, so
         # any listeners on labels are
