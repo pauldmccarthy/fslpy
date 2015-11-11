@@ -34,6 +34,7 @@ class MelodicImage(fslimage.Image):
        getComponentTimeSeries
        getComponentPowerSpectrum
        numComponents
+       getMelodicDir
        getTopLevelAnalysisDir
        getDataFile
        getICClassification
@@ -83,8 +84,7 @@ class MelodicImage(fslimage.Image):
         self.__meldir     = dirname
         self.__melmix     = melresults.getComponentTimeSeries(  dirname)
         self.__melFTmix   = melresults.getComponentPowerSpectra(dirname)
-        self.__melICClass = melresults.MelodicClassification(
-            self.numComponents())
+        self.__melICClass = melresults.MelodicClassification(   self)
 
         # Automatically set the
         # TR value if possible
@@ -116,11 +116,18 @@ class MelodicImage(fslimage.Image):
         """Returns the number of components in this ``MelodicImage``. """
         return self.shape[3]
 
+    
+    def getMelodicDir(self):
+        """Returns the melodic output directory in which this image is
+        contained.
+        """
+        return self.__meldir
+    
 
     def getTopLevelAnalysisDir(self):
         """Returns the top level analysis, if the melodic analysis for this
         ``MelodicImage`` is contained within another analysis. Otherwise,
-        returnsa ``None``. See the
+        returns ``None``. See the
         :func:`.melodicresults.getTopLevelAnalysisDir` function.
         """
         return melresults.getTopLevelAnalysisDir(self.__meldir)

@@ -125,6 +125,11 @@ messages = TypeDict({
 
 
     'MelodicClassificationPanel.disabled' : 'Choose a melodic image.',
+
+    'MelodicClassificationPanel.loadError' : 'An error occurred while loading '
+                                             'the file {}.\n\nDetails: {}',
+    'MelodicClassificationPanel.saveError' : 'An error occurred while saving '
+                                             'the file {}.\n\nDetails: {}', 
 })
 
 
@@ -180,6 +185,11 @@ titles = TypeDict({
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
+
+    'MelodicClassificationPanel.loadDialog' : 'Load FIX/Melview file...',
+    'MelodicClassificationPanel.saveDialog' : 'Save FIX/Melview file...',
+    'MelodicClassificationPanel.loadError'  : 'Error loading FIX/Melview file',
+    'MelodicClassificationPanel.saveError'  : 'Error saving FIX/Melview file',
 })
 
 
@@ -356,6 +366,9 @@ labels = TypeDict({
 
     'MelodicClassificationPanel.componentTab'   : 'Components',
     'MelodicClassificationPanel.labelTab'       : 'Labels',
+    'MelodicClassificationPanel.loadButton'     : 'Load from file',
+    'MelodicClassificationPanel.saveButton'     : 'Save to file',
+    'MelodicClassificationPanel.clearButton'    : 'Clear all labels',
 
     'ComponentGrid.componentColumn'             : 'IC #',
     'ComponentGrid.labelColumn'                 : 'Labels',
