@@ -59,31 +59,18 @@ class MelodicImage(fslimage.Image):
         """
 
         if op.isdir(path):
-            dirname  = path
-            filename = 'melodic_IC'
+            path = op.join(path, 'melodic_IC')
 
-        else:
-            dirname  = op.dirname( path)
-            filename = op.basename(path)
-
-        dirname = dirname.rstrip(op.sep)
-
-        if not melresults.isMelodicDir(dirname):
+        if not melresults.isMelodicImage(path):
             raise ValueError('{} does not appear to be a '
-                             'MELODIC directory'.format(dirname)) 
-        
-        if not filename.startswith('melodic_IC'):
-            raise ValueError('{} does not appear to be a MELODIC '
-                             'component file'.format(filename))
+                             'MELODIC component file'.format(path)) 
             
-        fslimage.Image.__init__(self,
-                                op.join(dirname, filename),
-                                *args,
-                                **kwargs)
+        fslimage.Image.__init__(self, path, *args, **kwargs)
 
-        self.__meldir     = dirname
-        self.__melmix     = melresults.getComponentTimeSeries(  dirname)
-        self.__melFTmix   = melresults.getComponentPowerSpectra(dirname)
+        meldir            = op.dirname(path)
+        self.__meldir     = meldir
+        self.__melmix     = melresults.getComponentTimeSeries(  meldir)
+        self.__melFTmix   = melresults.getComponentPowerSpectra(meldir)
         self.__melICClass = melresults.MelodicClassification(   self)
 
         # Automatically set the

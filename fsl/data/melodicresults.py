@@ -14,8 +14,8 @@ following functions are provided:
 .. autosummary::
    :nosignatures:
 
+   isMelodicImage
    isMelodicDir
-   getMelodicDir
    getTopLevelAnalysisDir
    getDataFile
    getICFile
@@ -38,62 +38,54 @@ import numpy   as np
 
 import props
 
-import fsl.data.image       as fslimage
-import fsl.data.featresults as featresults
+import fsl.data.image as fslimage
 
 
 log = logging.getLogger(__name__)
 
 
-def isMelodicDir(path):
-    """Returns ``True`` if the given path looks like it is contained within
-    a MELODIC directory, ``False`` otherwise. 
+def isMelodicImage(path):
+    """Returns ``True`` if the given path looks like it is a melodic
+    component image file, ``False`` otherwise. 
     """
-
-    # Must be named *.ica or *.gica
-    return getMelodicDir(path) is not None
 
     
-def getMelodicDir(path):
-    """Returns the MELODIC directory in which the given path is contained,
-    or ``None`` if it is not contained within a MELODIC directory. A melodic
-    directory:
+    dirname  = op.dirname( path)
+    filename = op.basename(path)
 
-      - Must be named ``*.ica`` or ``*.gica``
-      - Must contain a file called ``melodic_IC.nii.gz``
+    return filename.startswith('melodic_IC') and isMelodicDir(dirname)
+ 
+
+def isMelodicDir(path):
+    """Returns ``True`` if the given path looks like it is contained within
+    a MELODIC directory, ``False`` otherwise. A melodic directory:
+
+      - Must be named ``*.ica``.
+      - Must contain a file called ``melodic_IC.nii.gz``.
       - Must contain a file called ``melodic_mix``.
+      - Must contain a file called ``melodic_FTmix``.
     """
 
-    # TODO This code is identical to featresults.getFEATDir.
-    # Can you generalise it and put it somewhere in fsl.utils?
+    path = op.abspath(path)
+    
+    if op.isdir(path): dirname = path
+    else:              dirname = op.dirname(path)
 
-    path     = op.abspath(path)
-
-    sufs     = ['.ica', '.gica']
-    idxs     = [(path.rfind(s), s) for s in sufs]
-    idx, suf = max(idxs, key=lambda (i, s): i)
-
-    if idx == -1:
-        return None
-
-    idx  += len(suf)
-    path  = path[:idx].rstrip(op.sep)
-
-    if not path.endswith(suf):
-        return None
+    if not dirname.endswith('.ica'):
+        return False
 
     # Must contain an image file called melodic_IC
     try:
-        fslimage.addExt(op.join(path, 'melodic_IC'), mustExist=True)
+        fslimage.addExt(op.join(dirname, 'melodic_IC'), mustExist=True)
     except ValueError:
-        return None
+        return False
 
     # Must contain files called
     # melodic_mix and melodic_FTmix
-    if not op.exists(op.join(path, 'melodic_mix')):   return None
-    if not op.exists(op.join(path, 'melodic_FTmix')): return None
-                                           
-    return path
+    if not op.exists(op.join(dirname, 'melodic_mix')):   return False
+    if not op.exists(op.join(dirname, 'melodic_FTmix')): return False
+ 
+    return True
 
 
 def getTopLevelAnalysisDir(path):
@@ -102,30 +94,24 @@ def getTopLevelAnalysisDir(path):
     directory is returned. Otherwise, ``None`` is returned.
     """
 
-    meldir = getMelodicDir(path)
-    sufs   =  ['.feat', '.gfeat', '.ica', '.gica']
-    
-    if meldir is None:
+    path = path.strip()
+
+    # We've reached the root of the file system
+    if path == op.sep or path == '':
         return None
 
-    if featresults.isFEATDir(meldir):
-        return featresults.getFEATDir(meldir)
+    path   = path.rstrip(op.sep)
+    parent = getTopLevelAnalysisDir(op.dirname(path))
 
-    parentDir = op.dirname(meldir)
-    parentDir = parentDir.rstrip(op.sep)
+    if parent is not None:
+        return parent
 
-    if not any([parentDir.endswith(s) for s in sufs]):
-        return None
+    sufs = ['.ica', '.gica', '.feat', '.gfeat']
 
-    # Must contain a file called filtered_func_data.nii.gz
-    dataFile = op.join(parentDir, 'filtered_func_data')
+    if any([path.endswith(suf) for suf in sufs]):
+        return path
 
-    try:
-        dataFile = fslimage.addExt(dataFile, mustExist=True)
-    except ValueError:
-        return None
-
-    return parentDir
+    return None
 
     
 def getDataFile(meldir):

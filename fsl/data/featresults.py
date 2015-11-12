@@ -13,8 +13,8 @@ following functions are provided:
 .. autosummary::
    :nosignatures:
 
+   isFEATImage
    isFEATDir
-   getFEATDir
    hasMelodicDir
    loadDesign
    loadContrasts
@@ -51,59 +51,48 @@ import fsl.utils.transform as transform
 log = logging.getLogger(__name__)
 
 
+def isFEATImage(path):
+    """Returns ``True`` if the given path looks like it is the input data to
+    a FEAT analysis, ``False`` otherwise.
+    """
+    dirname  = op.dirname( path)
+    filename = op.basename(path) 
+
+    return filename.startswith('filtered_func_data') and isFEATDir(dirname) 
+
+
 def isFEATDir(path):
     """Returns ``True`` if the given path looks like a FEAT directory, or
-    looks like the input data for a FEAT analysis, ``False`` otherwise.
+    looks like the input data for a FEAT analysis, ``False`` otherwise.  A
+    FEAT directory:
+
+     - Must be named ``*.feat``.
+     - Must contain a file called ``filtered_func_data.nii.gz``.
+     - Must contain a file called ``design.fsf``.
+     - Must contain a file called ``design.mat``.
+     - Must contain a file called ``design.con``.
 
     :arg path: A file / directory path.
     """
 
-    dirname, filename = op.split(path)
-
-    featDir   = getFEATDir(dirname)
-    isfeatdir = featDir is not None
-
-    try:
-        hasdesfsf = op.exists(op.join(featDir, 'design.fsf'))
-        hasdesmat = op.exists(op.join(featDir, 'design.mat'))
-        hasdescon = op.exists(op.join(featDir, 'design.con'))
-        
-        isfeat    = (isfeatdir and
-                     hasdesmat and
-                     hasdescon and
-                     hasdesfsf)
-
-        return isfeat
+    path = op.abspath(path)
     
-    except:
+    if op.isdir(path): dirname = path
+    else:              dirname = op.dirname(path)
+    
+    if not dirname.endswith('.feat'):
         return False
 
-
-def getFEATDir(path):
-    """Given the path of any file/directory which is within a ``.feat`` or
-    ``.gfeat`` directory, strips all trailing components of the path name,
-    and returns the root FEAT directory.
+    try:
+        fslimage.addExt(op.join(path, 'filtered_func_data'), mustExist=True)
+    except ValueError:
+        return False
     
-    Returns ``None`` if the given path is not contained within a ``.feat``
-    or ``.gfeat`` directory.
-
-    :arg path: A file / directory path.
-    """
-
-    sufs     = ['.feat', '.gfeat']
-    idxs     = [(path.rfind(s), s) for s in sufs]
-    idx, suf = max(idxs, key=lambda (i, s): i)
-
-    if idx == -1:
-        return None
-
-    idx  += len(suf)
-    path  = path[:idx]
-
-    if path.endswith(suf) or path.endswith('{}{}'.format(suf, op.sep)):
-        return path
-                                           
-    return None
+    if not op.exists(op.join(dirname, 'design.fsf')): return False
+    if not op.exists(op.join(dirname, 'design.mat')): return False
+    if not op.exists(op.join(dirname, 'design.con')): return False
+        
+    return True
 
 
 def hasMelodicDir(featdir):

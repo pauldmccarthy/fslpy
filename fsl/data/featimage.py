@@ -63,15 +63,14 @@ class FEATImage(fslimage.Image):
                   ``<directory>.feat/filtered_func_data.nii.gz``.
         """
 
-        featDir = featresults.getFEATDir(path)
-        
-        if featDir is None:
-            raise ValueError('{} does not appear to be data from a '
-                             'FEAT analysis'.format(path))
-
         if op.isdir(path):
-            path = op.join(featDir, 'filtered_func_data')
+            path = op.join(path, 'filtered_func_data')
 
+        if not featresults.isFEATImage(path):
+            raise ValueError('{} does not appear to be data '
+                             'from a FEAT analysis'.format(path))
+
+        featDir     = op.dirname(path)
         settings    = featresults.loadSettings( featDir)
         design      = featresults.loadDesign(   featDir)
         names, cons = featresults.loadContrasts(featDir)
@@ -176,7 +175,7 @@ class FEATImage(fslimage.Image):
 
         if self.__pes[ev] is None:
             pefile = featresults.getPEFile(self.__featDir, ev)
-            self.__pes[ev] = FEATImage(
+            self.__pes[ev] = fslimage.Image(
                 pefile,
                 name='{}: PE{} ({})'.format(
                     self.__analysisName,
@@ -191,7 +190,7 @@ class FEATImage(fslimage.Image):
         
         if self.__residuals is None:
             resfile = featresults.getResidualFile(self.__featDir)
-            self.__residuals = FEATImage(
+            self.__residuals = fslimage.Image(
                 resfile,
                 name='{}: residuals'.format(self.__analysisName))
         
@@ -203,7 +202,7 @@ class FEATImage(fslimage.Image):
         
         if self.__copes[con] is None:
             copefile = featresults.getPEFile(self.__featDir, con)
-            self.__copes[con] = FEATImage(
+            self.__copes[con] = fslimage.Image(
                 copefile,
                 name='{}: COPE{} ({})'.format(
                     self.__analysisName,
@@ -220,7 +219,7 @@ class FEATImage(fslimage.Image):
         if self.__zstats[con] is None:
             zfile = featresults.getZStatFile(self.__featDir, con)
 
-            self.__zstats[con] = FEATImage(
+            self.__zstats[con] = fslimage.Image(
                 zfile,
                 name='{}: zstat{} ({})'.format(
                     self.__analysisName,
@@ -237,7 +236,7 @@ class FEATImage(fslimage.Image):
         if self.__clustMasks[con] is None:
             mfile = featresults.getClusterMaskFile(self.__featDir, con)
 
-            self.__clustMasks[con] = FEATImage(
+            self.__clustMasks[con] = fslimage.Image(
                 mfile,
                 name='{}: cluster mask for zstat{} ({})'.format(
                     self.__analysisName,
