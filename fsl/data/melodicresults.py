@@ -60,7 +60,7 @@ def isMelodicDir(path):
     """Returns ``True`` if the given path looks like it is contained within
     a MELODIC directory, ``False`` otherwise. A melodic directory:
 
-      - Must be named ``*.ica``.
+      - Must be named ``*.ica`` or ``*.gica``.
       - Must contain a file called ``melodic_IC.nii.gz``.
       - Must contain a file called ``melodic_mix``.
       - Must contain a file called ``melodic_FTmix``.
@@ -71,7 +71,9 @@ def isMelodicDir(path):
     if op.isdir(path): dirname = path
     else:              dirname = op.dirname(path)
 
-    if not dirname.endswith('.ica'):
+    sufs = ['.ica', '.gica']
+
+    if not any([dirname.endswith(suf) for suf in sufs]):
         return False
 
     # Must contain an image file called melodic_IC
