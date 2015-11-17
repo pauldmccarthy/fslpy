@@ -219,9 +219,9 @@ actions = TypeDict({
     'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
 
-    'OrthoToolBar.more'           : 'More settings',
-    'LightBoxToolBar.more'        : 'More settings',
-    'OverlayDisplayToolBar.more'  : 'More settings',
+    'OrthoToolBar.showMoreSettings'          : 'More settings',
+    'LightBoxToolBar.showMoreSettings'       : 'More settings',
+    'OverlayDisplayToolBar.showMoreSettings' : 'More settings',
     
     'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
 
