@@ -207,7 +207,7 @@ actions = TypeDict({
     'CanvasPanel.showCommandLineArgs'       : 'Show command line for scene',
     'CanvasPanel.toggleColourBar'           : 'Colour bar',
     'CanvasPanel.toggleOverlayList'         : 'Overlay list',
-    'CanvasPanel.toggleDisplayProperties'   : 'Overlay display properties',
+    'CanvasPanel.toggleDisplayProperties'   : 'Overlay display toolbar',
     'CanvasPanel.toggleLocationPanel'       : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'          : 'Atlas panel',
     'CanvasPanel.toggleLookupTablePanel'    : 'Lookup tables',
@@ -216,14 +216,14 @@ actions = TypeDict({
     'CanvasPanel.toggleClassificationPanel' : 'Melodic IC classification',
     'CanvasPanel.toggleShell'               : 'Python shell',
     
-    'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
+    'OrthoPanel.toggleOrthoToolBar'     : 'Ortho toolbar',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
 
     'OrthoToolBar.showMoreSettings'          : 'More settings',
     'LightBoxToolBar.showMoreSettings'       : 'More settings',
     'OverlayDisplayToolBar.showMoreSettings' : 'More settings',
     
-    'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
+    'LightBoxPanel.toggleLightBoxToolBar' : 'Lightbox toolbar',
 
     'PlotPanel.screenshot'                          : 'Take screenshot',
     'TimeSeriesPanel.toggleTimeSeriesList'          : 'Time series list',
