@@ -195,11 +195,12 @@ titles = TypeDict({
 
 actions = TypeDict({
 
-    'OpenFileAction'      : 'Add overlay file',
-    'OpenStandardAction'  : 'Add standard',
-    'CopyOverlayAction'   : 'Copy overlay',
-    'SaveOverlayAction'   : 'Save overlay',
-    'LoadColourMapAction' : 'Load custom colour map',
+    'OpenFileAction'        : 'Add overlay file',
+    'OpenStandardAction'    : 'Add standard',
+    'CopyOverlayAction'     : 'Copy overlay',
+    'SaveOverlayAction'     : 'Save overlay',
+    'LoadColourMapAction'   : 'Load custom colour map',
+    'SavePerspectiveAction' : 'Save current perspective',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
@@ -779,3 +780,8 @@ melodic = TypeDict({
     'tr'             : 'TR time',
     'report'         : 'Link to report',
 })
+
+perspectives = {
+    'melview' : 'Melodic mode',
+    'feat'    : 'FEAT mode',
+}
