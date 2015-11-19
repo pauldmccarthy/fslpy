@@ -4,8 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides a simple API to :func:`read` and :func:`write`
-persistent application settings.
+"""This module provides a simple API to :func:`read`, :func:`write`, and
+:func:`delete` persistent application settings.
 
  .. note:: Currently the configuration management API provided by :mod:`wx`
            (http://docs.wxwidgets.org/trunk/overview_config.html) is used for
@@ -69,3 +69,18 @@ def write(name, value):
     log.debug('Writing {}: {}'.format(name, value))
 
     config.Write(name, value)
+
+
+def delete(name):
+    """Delete the setting with the given ``name``. """
+    try:    import wx
+    except: return
+
+    if wx.GetApp() is None:
+        return
+
+    config = wx.Config(_CONFIG_ID)
+
+    log.debug('Deleting {}'.format(name))
+
+    config.DeleteEntry(name)

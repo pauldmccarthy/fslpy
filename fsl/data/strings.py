@@ -55,6 +55,10 @@ messages = TypeDict({
     'perspectives.savePerspective'     : 'Enter a name for the perspective',
     'perspectives.applyingPerspective' : 'Applying {} perspective ...',
 
+    'ClearPerspectiveAction.confirmClear' : 'All saved perspectives will be '
+                                            'cleared! Are you sure you want '
+                                            'to continue?',
+
     'overlay.loadOverlays.loading'     : 'Loading {} ...',
     'overlay.loadOverlays.error'       : 'An error occurred loading the image '
                                          '{}\n\nDetails: {}',
@@ -193,17 +197,21 @@ titles = TypeDict({
     'MelodicClassificationPanel.saveDialog' : 'Save FIX/Melview file...',
     'MelodicClassificationPanel.loadError'  : 'Error loading FIX/Melview file',
     'MelodicClassificationPanel.saveError'  : 'Error saving FIX/Melview file',
+
+
+    'ClearPerspectiveAction.confirmClear'  : 'Clear all perspectives?',
 })
 
 
 actions = TypeDict({
 
-    'OpenFileAction'        : 'Add overlay file',
-    'OpenStandardAction'    : 'Add standard',
-    'CopyOverlayAction'     : 'Copy overlay',
-    'SaveOverlayAction'     : 'Save overlay',
-    'LoadColourMapAction'   : 'Load custom colour map',
-    'SavePerspectiveAction' : 'Save current perspective',
+    'OpenFileAction'         : 'Add overlay file',
+    'OpenStandardAction'     : 'Add standard',
+    'CopyOverlayAction'      : 'Copy overlay',
+    'SaveOverlayAction'      : 'Save overlay',
+    'LoadColourMapAction'    : 'Load custom colour map',
+    'SavePerspectiveAction'  : 'Save current perspective',
+    'ClearPerspectiveAction' : 'Clear all perspectives',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
@@ -785,6 +793,7 @@ melodic = TypeDict({
 })
 
 perspectives = {
-    'melview' : 'Melodic mode',
+    'default' : 'Default layout',
+    'melodic' : 'Melodic mode',
     'feat'    : 'FEAT mode',
 }
