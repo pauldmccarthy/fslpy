@@ -52,6 +52,9 @@ messages = TypeDict({
     'ProcessingDialog.error' : 'An error has occurred: {}'
                                '\n\nDetails: {}',
 
+    'perspectives.savePerspective'     : 'Enter a name for the perspective',
+    'perspectives.applyingPerspective' : 'Applying {} perspective ...',
+
     'overlay.loadOverlays.loading'     : 'Loading {} ...',
     'overlay.loadOverlays.error'       : 'An error occurred loading the image '
                                          '{}\n\nDetails: {}',
