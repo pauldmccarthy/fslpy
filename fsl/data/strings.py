@@ -52,8 +52,16 @@ messages = TypeDict({
     'ProcessingDialog.error' : 'An error has occurred: {}'
                                '\n\nDetails: {}',
 
-    'perspectives.savePerspective'     : 'Enter a name for the perspective',
     'perspectives.applyingPerspective' : 'Applying {} perspective ...',
+
+    'SavePerspectiveAction.enterName'        : 'Enter a name for the '
+                                               'perspective',
+    'SavePerspectiveAction.nameIsBuiltIn'    : '"{}" is a reserved '
+                                               'perspective name - '
+                                               'enter a different name.', 
+    'SavePerspectiveAction.confirmOverwrite' : 'A perspective with the name '
+                                               '"{}" already exists - do '
+                                               'you want to replace it?', 
 
     'ClearPerspectiveAction.confirmClear' : 'All saved perspectives will be '
                                             'cleared! Are you sure you want '
