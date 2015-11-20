@@ -506,6 +506,7 @@ properties = TypeDict({
     
     'VolumeOpts.displayRange'   : 'Display range',
     'VolumeOpts.clippingRange'  : 'Clipping range',
+    'VolumeOpts.centreRanges'   : 'Centre display/clipping ranges at 0',
     'VolumeOpts.cmap'           : 'Colour map',
     'VolumeOpts.invert'         : 'Invert colour map',
     'VolumeOpts.invertClipping' : 'Invert clipping range',
