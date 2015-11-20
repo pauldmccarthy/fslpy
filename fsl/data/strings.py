@@ -227,7 +227,9 @@ actions = TypeDict({
     'CanvasPanel.showCommandLineArgs'       : 'Show command line for scene',
     'CanvasPanel.toggleColourBar'           : 'Colour bar',
     'CanvasPanel.toggleOverlayList'         : 'Overlay list',
-    'CanvasPanel.toggleDisplayProperties'   : 'Overlay display toolbar',
+    'CanvasPanel.toggleDisplayToolBar'      : 'Overlay display toolbar',
+    'CanvasPanel.toggleDisplayPanel'        : 'Overlay display panel',
+    'CanvasPanel.toggleCanvasSettingsPanel' : 'View settings panel',
     'CanvasPanel.toggleLocationPanel'       : 'Location panel',
     'CanvasPanel.toggleAtlasPanel'          : 'Atlas panel',
     'CanvasPanel.toggleLookupTablePanel'    : 'Lookup tables',
@@ -239,10 +241,6 @@ actions = TypeDict({
     'OrthoPanel.toggleOrthoToolBar'     : 'Ortho toolbar',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
 
-    'OrthoToolBar.showMoreSettings'          : 'More settings',
-    'LightBoxToolBar.showMoreSettings'       : 'More settings',
-    'OverlayDisplayToolBar.showMoreSettings' : 'More settings',
-    
     'LightBoxPanel.toggleLightBoxToolBar' : 'Lightbox toolbar',
 
     'PlotPanel.screenshot'                          : 'Take screenshot',
