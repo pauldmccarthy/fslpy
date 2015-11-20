@@ -204,9 +204,9 @@ def interface(parent, args, ctx):
         if ycentre is None: ycentre = displayCtx.location.xz
         if zcentre is None: zcentre = displayCtx.location.xy
 
-        viewPanel._xcanvas.centreDisplayAt(*xcentre)
-        viewPanel._ycanvas.centreDisplayAt(*ycentre)
-        viewPanel._zcanvas.centreDisplayAt(*zcentre)
+        viewPanel.getXCanvas().centreDisplayAt(*xcentre)
+        viewPanel.getYCanvas().centreDisplayAt(*ycentre)
+        viewPanel.getZCanvas().centreDisplayAt(*zcentre)
 
     # Make sure the new frame is shown
     # before destroying the splash screen

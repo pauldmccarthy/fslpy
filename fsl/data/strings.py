@@ -42,6 +42,8 @@ messages = TypeDict({
     'fsleyes.loading'              : 'Loading {}',
     'FSLEyesSplash.default'        : 'Loading ...',
 
+    'FSLEyesFrame.restoringLayout' : 'Restoring layout from last session ...',
+
     'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
     
