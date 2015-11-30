@@ -42,11 +42,6 @@ def parseArgs(argv):
 
     parser = argparse.ArgumentParser(add_help=False)
 
-    # FSLEyes application options
-    parser.add_argument('-gl', '--glversion',
-                        metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
-                        help='Desired (major, minor) OpenGL version')
-
     # Options for configuring the scene are
     # managed by the fsleyes_parseargs module
     return fsleyes_parseargs.parseArgs(parser,
