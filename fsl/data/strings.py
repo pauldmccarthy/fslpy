@@ -134,7 +134,7 @@ messages = TypeDict({
                                     'in this FEAT analysis',
     'ClusterPanel.badData'        : 'Cluster data could not be parsed - '
                                     'check your cluster_*.txt files.',
-    'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
+    'ClusterPanel.loadingCluster' : 'Loading clusters for COPE{} ...',
 
     'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
                                             'space reference image - this '
