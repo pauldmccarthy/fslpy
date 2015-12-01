@@ -38,7 +38,8 @@ import numpy   as np
 
 import props
 
-import fsl.data.image as fslimage
+import fsl.data.image       as fslimage
+import fsl.data.featresults as featresults
 
 
 log = logging.getLogger(__name__)
@@ -90,30 +91,7 @@ def isMelodicDir(path):
     return True
 
 
-def getTopLevelAnalysisDir(path):
-    """If the given path is a MELODIC directory, and it is contained within
-    a FEAT directory, or another MELODIC directory, the path to the latter
-    directory is returned. Otherwise, ``None`` is returned.
-    """
-
-    path = path.strip()
-
-    # We've reached the root of the file system
-    if path == op.sep or path == '':
-        return None
-
-    path   = path.rstrip(op.sep)
-    parent = getTopLevelAnalysisDir(op.dirname(path))
-
-    if parent is not None:
-        return parent
-
-    sufs = ['.ica', '.gica', '.feat', '.gfeat']
-
-    if any([path.endswith(suf) for suf in sufs]):
-        return path
-
-    return None
+getTopLevelAnalysisDir = featresults.getTopLevelAnalysisDir
 
     
 def getDataFile(meldir):

@@ -16,6 +16,8 @@ following functions are provided:
    isFEATImage
    isFEATDir
    hasMelodicDir
+   getAnalysisDir
+   getTopLevelAnalysisDir
    loadDesign
    loadContrasts
    loadSettings
@@ -100,6 +102,55 @@ def hasMelodicDir(featdir):
     MELODIC run on it, ``False`` otherwise.
     """
     return op.exists(getMelodicFile(featdir))
+
+
+def getAnalysisDir(path):
+    """If the given path is contained within a FEAT directory, the path
+    to that FEAT directory is returned. Otherwise, ``None`` is returned.
+    """
+
+    # This is basically the opposite to
+    # the getTopLevelAnalysisDir function
+
+    path = path.strip()
+
+    if path == op.sep or path == '':
+        return None
+
+    path = path.rstrip(op.sep)
+
+    sufs = ['.feat', '.gfeat']
+
+    if any([path.endswith(suf) for suf in sufs]):
+        return path
+
+    return getAnalysisDir(op.dirname(path))
+
+
+def getTopLevelAnalysisDir(path):
+    """If the given path is contained within a FEAT directory, or a
+    MELODIC directory, the path to the latter directory is returned.
+    Otherwise, ``None`` is returned.
+    """
+
+    path = path.strip()
+
+    # We've reached the root of the file system
+    if path == op.sep or path == '':
+        return None
+
+    path   = path.rstrip(op.sep)
+    parent = getTopLevelAnalysisDir(op.dirname(path))
+
+    if parent is not None:
+        return parent
+
+    sufs = ['.ica', '.gica', '.feat', '.gfeat']
+
+    if any([path.endswith(suf) for suf in sufs]):
+        return path
+
+    return None
 
 
 def loadDesign(featdir):

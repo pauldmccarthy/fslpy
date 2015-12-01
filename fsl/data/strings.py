@@ -787,17 +787,20 @@ nifti = TypeDict({
 
 
 feat = TypeDict({
-    'analysisName' : 'Analysis name',
-    'numPoints'    : 'Number of volumes',
-    'numEVs'       : 'Number of EVs',
-    'numContrasts' : 'Number of contrasts',
-    'report'       : 'Link to report',
+    'analysisName'   : 'Analysis name',
+    'analysisDir'    : 'Analysis directory',
+    'partOfAnalysis' : 'Part of higher level analysis',
+    'numPoints'      : 'Number of volumes',
+    'numEVs'         : 'Number of EVs',
+    'numContrasts'   : 'Number of contrasts',
+    'report'         : 'Link to report',
 })
 
 
 melodic = TypeDict({
     'dataFile'       : 'Data file',
-    'partOfAnalysis' : 'Part of analysis',
+    'analysisDir'    : 'Analysis directory',
+    'partOfAnalysis' : 'Part of higher level analysis',
     'numComponents'  : 'Number of ICs',
     'tr'             : 'TR time',
     'report'         : 'Link to report',

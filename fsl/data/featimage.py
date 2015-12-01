@@ -105,6 +105,14 @@ class FEATImage(fslimage.Image):
         name, minus the ``.feat`` / ``.gfeat`` suffix.
         """
         return self.__analysisName
+
+
+    def getTopLevelAnalysisDir(self):
+        """Returns the path to the higher level analysis directory of
+        which this FEAT analysis is a part, or ``None`` if this analysis
+        is not part of another analysis.
+        """
+        return featresults.getTopLevelAnalysisDir(self.__featDir)
         
 
     def getDesign(self):
