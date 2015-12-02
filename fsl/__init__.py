@@ -45,6 +45,9 @@ The conventional way to run ``fslpy`` is as follows::
           single place - the :mod:`fsl.version` module.
 """
 
+
+from __future__ import print_function
+
 import logging
 import pkgutil
 import warnings
@@ -249,6 +252,10 @@ def _parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
+
+    parser.add_argument(
+        '-V', '--version', action='store_true',
+        help='Print the current fslpy version and exit') 
     
     parser.add_argument(
         '-n', '--noisy', metavar='MODULE', action='append',
@@ -261,13 +268,14 @@ def _parseArgs(argv, allTools):
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
-    parser.add_argument('tool', help='FSL program to run')
+    
+    parser.add_argument('tool', help='FSL program to run', nargs='?')
 
     # No arguments at all? 
     # I'm not a mind-reader
     if len(argv) == 0:
         parser.print_help()
-        sys.exit(1) 
+        sys.exit(1)
 
     # find the index of the first positional
     # argument, i.e. the tool name
@@ -275,6 +283,9 @@ def _parseArgs(argv, allTools):
     while True:
 
         i = i + 1
+
+        if i >= len(argv):
+            break
             
         if argv[i].startswith('-'):
             continue
@@ -293,6 +304,11 @@ def _parseArgs(argv, allTools):
 
     namespace = parser.parse_args(fslArgv)
 
+    # Version number
+    if namespace.version:
+        print('fslpy version: {}'.format(__version__))
+        sys.exit(0)
+
     if namespace.noisy is None:
         namespace.noisy = []
 
@@ -307,7 +323,7 @@ def _parseArgs(argv, allTools):
 
         # unknown tool name supplied
         if toolArgv[0] not in allTools:
-            print '\nUnknown FSL tool: {}\n'.format(toolArgv[0])
+            print('\nUnknown FSL tool: {}\n'.format(toolArgv[0]))
             parser.print_help()
             sys.exit(1)
 
@@ -315,7 +331,7 @@ def _parseArgs(argv, allTools):
 
         # no tool specific argument parser
         if fslTool.parseArgs is None:
-            print 'No help for {}'.format(toolArgv[0])
+            print('No help for {}'.format(toolArgv[0]))
             
         # Otherwise, get help from the tool. We assume that
         # all the argument parser for every  tool will interpret
@@ -326,7 +342,7 @@ def _parseArgs(argv, allTools):
 
     # Unknown tool name supplied
     elif namespace.tool not in allTools:
-        print '\nUnknown FSL tool: {}\n'.format(namespace.tool)
+        print('\nUnknown FSL tool: {}\n'.format(namespace.tool))
         parser.print_help()
         sys.exit(1)
 
