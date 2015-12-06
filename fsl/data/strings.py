@@ -141,12 +141,35 @@ messages = TypeDict({
                                             'is necessary for editing.',
 
 
-    'MelodicClassificationPanel.disabled' : 'Choose a melodic image.',
+    'MelodicClassificationPanel.disabled'    : 'Choose a melodic image.',
+    'MelodicClassificationPanel.loadError'   : 'An error occurred while '
+                                               'loading the file {}.'
+                                               '\n\nDetails: {}',
+    'MelodicClassificationPanel.noMelDir'    : 'The label file {} does not '
+                                               'specify a path to a Melodic '
+                                               'directory!',
+    'MelodicClassificationPanel.saveError'   : 'An error occurred while '
+                                               'saving the file {}.'
+                                               '\n\nDetails: {}', 
+    'MelodicClassificationPanel.wrongNComps' : 'The mumber of components in '
+                                               'the label file {} is greater '
+                                               'than the number of components '
+                                               'in the overlay {}!',
+    'MelodicClassificationPanel.diffMelDir'  : 'The label file {} does not '
+                                               'refer to the melodic '
+                                               'directory of the selected '
+                                               'overlay ({}). What do you '
+                                               'want to do?',
+    
+    'MelodicClassificationPanel.diffMelDir.labels'  : 'Load the overlay in '
+                                                      'the label file',
+    'MelodicClassificationPanel.diffMelDir.overlay' : 'Apply the labels to '
+                                                      'the current overlay'
 
-    'MelodicClassificationPanel.loadError' : 'An error occurred while loading '
-                                             'the file {}.\n\nDetails: {}',
-    'MelodicClassificationPanel.saveError' : 'An error occurred while saving '
-                                             'the file {}.\n\nDetails: {}', 
+
+    'An error occurred while '
+                                               'saving the file {}.'
+                                               '\n\nDetails: {}', 
 })
 
 
@@ -387,9 +410,9 @@ labels = TypeDict({
 
     'MelodicClassificationPanel.componentTab'   : 'Components',
     'MelodicClassificationPanel.labelTab'       : 'Labels',
-    'MelodicClassificationPanel.loadButton'     : 'Load from file',
-    'MelodicClassificationPanel.saveButton'     : 'Save to file',
-    'MelodicClassificationPanel.clearButton'    : 'Clear all labels',
+    'MelodicClassificationPanel.loadButton'     : 'Load labels',
+    'MelodicClassificationPanel.saveButton'     : 'Save labels',
+    'MelodicClassificationPanel.clearButton'    : 'Clear labels',
 
     'ComponentGrid.componentColumn'             : 'IC #',
     'ComponentGrid.labelColumn'                 : 'Labels',
