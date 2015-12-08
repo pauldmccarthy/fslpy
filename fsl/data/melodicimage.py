@@ -128,6 +128,13 @@ class MelodicImage(fslimage.Image):
         return melresults.getDataFile(self.__meldir)
 
 
+    def getMeanFile(self):
+        """Returns the file name of the mean data image associated with this
+        ``MelodicImage``. See the :func:`.melodicresults.getMeanFile` function.
+        """
+        return melresults.getMeanFile(self.__meldir) 
+
+
     def getICClassification(self):
         """Return the :class:`.MelodicClassification` instance associated with
         this ``MelodicImage``.
