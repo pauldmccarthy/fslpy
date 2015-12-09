@@ -385,6 +385,7 @@ labels = TypeDict({
     'OverlayDisplayPanel.RGBVectorOpts'  : 'RGB vector settings',
     'OverlayDisplayPanel.LineVectorOpts' : 'Line vector settings',
     'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
+    'OverlayDisplayPanel.TensorOpts'     : 'Diffusion tensor settings',
     
     'OverlayDisplayPanel.loadCmap'       : 'Load colour map',
 
@@ -628,7 +629,8 @@ choices = TypeDict({
                              'label'      : 'Label image',
                              'rgbvector'  : '3-direction vector image (RGB)',
                              'linevector' : '3-direction vector image (Line)',
-                             'model'      : '3D model'},
+                             'model'      : '3D model',
+                             'tensor'     : 'Diffusion tensor'},
 
     'HistogramPanel.histType' : {'probability' : 'Probability',
                                  'count'       : 'Count'},
