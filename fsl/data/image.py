@@ -37,6 +37,9 @@ import               os
 import os.path    as op
 import subprocess as sp
 
+import numpy      as np
+import nibabel    as nib
+
 import props
 
 import fsl.utils.transform as transform
@@ -47,58 +50,38 @@ import fsl.data.constants  as constants
 log = logging.getLogger(__name__)
 
 
-class Image(props.HasProperties):
-    """Class which represents a 3D/4D image. Internally, the image is
-    loaded/stored using :mod:`nibabel`.
+class Nifti1(object):
+    """The ``Nifti1`` class is intended to be used as a base class for
+    things which either are, or are associated with, a NIFTI1 image.
+
+
+    When a ``Nifti1`` instance is created, it adds the following attributes
+    to itself:
 
     
-    In addition to the :attr:`name`, :attr:`data`, and :attr:`saved`
-    properties, the following attributes are present on an ``Image`` instance:
-
-
     ================= ====================================================
     ``nibImage``      The :mod:`nibabel` image object.
-    ``dataSource``    The name of the file that the image was loaded from.
+    ``dataSource``    The name of the file that the image was loaded from. 
     ``tempFile``      The name of the temporary file which was created (in
                       the event that the image was large and was gzipped -
                       see :func:`loadImage`).
     ``shape``         A list/tuple containing the number of voxels along
-                      each image dimension.
-    ``pixdim``        A list/tuple containing the size of one voxel along
-                      each image dimension.
+                      each image dimension. 
     ``voxToWorldMat`` A 4*4 array specifying the affine transformation
                       for transforming voxel coordinates into real world
                       coordinates.
     ``worldToVoxMat`` A 4*4 array specifying the affine transformation
                       for transforming real world coordinates into voxel
                       coordinates.
-    ================= ====================================================
+    ================= ==================================================== 
     """
-
-
-    name = props.String()
-    """The name of this image."""
-
-
-    data = props.Object()
-    """The image data. This is a read-only :mod:`numpy` array - all changes
-       to the image data must be via the :meth:`applyChange` method.
-    """
-
-
-    saved = props.Boolean(default=False)
-    """A read-only property (not enforced) which is ``True`` if the image,
-    as stored in memory, is saved to disk, ``False`` otherwise.
-    """
-
 
     def __init__(self,
                  image,
                  xform=None,
-                 name=None,
                  header=None,
                  loadData=True):
-        """Create an ``Image`` object with the given image data or file name.
+        """Create a ``Nifti1`` object.
 
         :arg image:    A string containing the name of an image file to load, 
                        or a :mod:`numpy` array, or a :mod:`nibabel` image
@@ -107,8 +90,6 @@ class Image(props.HasProperties):
         :arg xform:    A :math:`4\\times 4` affine transformation matrix 
                        which transforms voxel coordinates into real world
                        coordinates.
-
-        :arg name:     A name for the image.
 
         :arg header:   If not ``None``, assumed to be a
                        :class:`nibabel.nifti1.Nifti1Header` to be used as the 
@@ -119,9 +100,9 @@ class Image(props.HasProperties):
                        not loaded - this is useful if you're only interested
                        in the header data, as the file will be loaded much
                        more quickly. The image data may subsequently be loaded
-                       via the :meth:`loadData` method.
+                       via the :meth:`loadData` method. 
         """
-
+        
         self.nibImage      = None
         self.dataSource    = None
         self.tempFile      = None
@@ -133,54 +114,35 @@ class Image(props.HasProperties):
         if header is not None:
             header = header.copy()
 
-        import numpy   as np
-        import nibabel as nib
-
         # The image parameter may be the name of an image file
         if isinstance(image, basestring):
             
             nibImage, filename = loadImage(addExt(image))
             self.nibImage      = nibImage
-            self.dataSource    = op.abspath(image)
+            self.dataSource    = op.abspath(image) 
 
             # if the returned file name is not the same as
             # the provided file name, that means that the
             # image was opened from a temporary file
             if filename != image:
-                filepref      = removeExt(op.basename(self.dataSource))
                 self.tempFile = nibImage.get_filename()
-            else:
-                filepref      = removeExt(op.basename(self.dataSource))
-
-            if name is None:
-                name = filepref
-            
-            self.name  = name
-            self.saved = True
                 
         # Or a numpy array - we wrap it in a nibabel image,
         # with an identity transformation (each voxel maps
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
 
-
             if xform is None:
                 if header is None: xform = np.identity(4)
                 else:              xform = header.get_best_affine()
-            if name  is None: name = 'Numpy array'
             
             self.nibImage  = nib.nifti1.Nifti1Image(image,
                                                     xform,
                                                     header=header)
-            self.name      = name
             
         # otherwise, we assume that it is a nibabel image
         else:
-            if name  is None:
-                name = 'Nibabel image'
-            
             self.nibImage = image
-            self.name     = name
 
         self.shape         = self.nibImage.get_shape()
         self.pixdim        = self.nibImage.get_header().get_zooms()
@@ -194,34 +156,8 @@ class Image(props.HasProperties):
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
-
-        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
-
-        
-    def __del__(self):
-        """Prints a log message. """
-        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
-
-
-    def __hash__(self):
-        """Returns a number which uniquely idenfities this ``Image`` instance
-        (the result of ``id(self)``).
-        """
-        return id(self)
-
-
-    def __str__(self):
-        """Return a string representation of this ``Image`` instance."""
-        return '{}({}, {})'.format(self.__class__.__name__,
-                                   self.name,
-                                   self.dataSource)
-
-        
-    def __repr__(self):
-        """See the :meth:`__str__` method."""
-        return self.__str__()
-
-        
+ 
+    
     def loadData(self):
         """Loads the image data from the file. This method only needs to
         be called if the ``loadData`` parameter passed to :meth:`__init__`
@@ -243,7 +179,7 @@ class Image(props.HasProperties):
 
         log.debug('Loaded image data ({}) - original '
                   'shape {}, squeezed shape {}'.format(
-                      self.name,
+                      self.dataSource,
                       shape,
                       data.shape))
 
@@ -252,58 +188,12 @@ class Image(props.HasProperties):
         self.pixdim = self.pixdim[:len(data.shape)]
         
         
-    def applyChange(self, offset, newVals, vol=None):
-        """Changes the image data according to the given new values.
-        Any listeners registered on the :attr:`data` property will be
-        notified of the change.
-
-        :arg offset:  A tuple of three values, containing the xyz
-                      offset of the image region to be changed.
-        
-        :arg newVals: A 3D numpy array containing the new image values.
-        
-        :arg vol:     If this is a 4D image, the volume index.
-        """
-        
-        if self.is4DImage() and vol is None:
-            raise ValueError('Volume must be specified for 4D images')
-        
-        data          = self.data
-        xlo, ylo, zlo = offset
-        xhi           = xlo + newVals.shape[0]
-        yhi           = ylo + newVals.shape[1]
-        zhi           = zlo + newVals.shape[2]
-
-        try:
-            data.flags.writeable = True
-            if self.is4DImage(): data[xlo:xhi, ylo:yhi, zlo:zhi, vol] = newVals
-            else:                data[xlo:xhi, ylo:yhi, zlo:zhi]      = newVals
-            data.flags.writeable = False
-            
-        except:
-            data.flags.writeable = False
-            raise
-
-        # Force a notification on the 'data' property
-        # by assigning its value back to itself
-        self.data  = data
-        self.saved = False
-
-
-    def save(self):
-        """Convenience method to save any changes made to the :attr:`data` of 
-        this :class:`Image` instance.
-
-        See the :func:`saveImage` function.
-        """
-        return saveImage(self)
-    
-
+    # TODO: Remove this method, and use the shape attribute directly
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise. """
-        return len(self.shape) > 3 and self.shape[3] > 1
+        return len(self.shape) > 3 and self.shape[3] > 1 
 
-
+    
     def getXFormCode(self, code=None):
         """This method returns the code contained in the NIFTI1 header,
         indicating the space to which the (transformed) image is oriented.
@@ -372,7 +262,143 @@ class Image(props.HasProperties):
              (constants.ORIENT_A2P, constants.ORIENT_P2A),
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
 
-        return code
+        return code 
+
+
+class Image(Nifti1, props.HasProperties):
+    """Class which represents a 3D/4D NIFTI1 image. Internally, the image
+    is loaded/stored using :mod:`nibabel`.
+
+    
+    In addition to the :attr:`data`, and :attr:`saved` properties, and
+    the attributes added by the :meth:`Nifti1.__init__` method, the
+    following attributes are present on an ``Image`` instance: 
+
+
+    ================= ====================================================
+    ``name``          the name of this ``Image`` - defaults to the image
+                      file name, sans-suffix.
+    ================= ====================================================
+    """
+
+
+    data = props.Object()
+    """The image data. This is a read-only :mod:`numpy` array - all changes
+       to the image data must be via the :meth:`applyChange` method.
+    """
+
+
+    saved = props.Boolean(default=False)
+    """A read-only property (not enforced) which is ``True`` if the image,
+    as stored in memory, is saved to disk, ``False`` otherwise.
+    """
+
+
+    def __init__(self, image, name=None, **kwargs):
+        """Create an ``Image`` object with the given image data or file name.
+
+        :arg image:    A string containing the name of an image file to load, 
+                       or a :mod:`numpy` array, or a :mod:`nibabel` image
+                       object.
+
+        :arg name:     A name for the image.
+
+        All other arguments are passed through to :meth:`Nifti1.__init__`.
+        """
+
+        Nifti1.__init__(self, image, **kwargs)
+
+        # Figure out the name of this image.
+        # It might have been explicitly passed in
+        if name is not None:
+            self.name = name
+            
+        # Or, if this image was loaded 
+        # from disk, use the file name
+        elif isinstance(image, basestring):
+            self.name  = removeExt(op.basename(self.dataSource))
+            self.saved = True
+            
+        # Or the image was created from a numpy array
+        elif isinstance(image, np.ndarray):
+            self.name = 'Numpy array'
+            
+        # Or image from a nibabel image
+        else:
+            self.name = 'Nibabel image'
+
+        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
+
+        
+    def __del__(self):
+        """Prints a log message. """
+        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+
+
+    def __hash__(self):
+        """Returns a number which uniquely idenfities this ``Image`` instance
+        (the result of ``id(self)``).
+        """
+        return id(self)
+
+
+    def __str__(self):
+        """Return a string representation of this ``Image`` instance."""
+        return '{}({}, {})'.format(self.__class__.__name__,
+                                   self.name,
+                                   self.dataSource)
+
+        
+    def __repr__(self):
+        """See the :meth:`__str__` method."""
+        return self.__str__()
+
+        
+    def applyChange(self, offset, newVals, vol=None):
+        """Changes the image data according to the given new values.
+        Any listeners registered on the :attr:`data` property will be
+        notified of the change.
+
+        :arg offset:  A tuple of three values, containing the xyz
+                      offset of the image region to be changed.
+        
+        :arg newVals: A 3D numpy array containing the new image values.
+        
+        :arg vol:     If this is a 4D image, the volume index.
+        """
+        
+        if self.is4DImage() and vol is None:
+            raise ValueError('Volume must be specified for 4D images')
+        
+        data          = self.data
+        xlo, ylo, zlo = offset
+        xhi           = xlo + newVals.shape[0]
+        yhi           = ylo + newVals.shape[1]
+        zhi           = zlo + newVals.shape[2]
+
+        try:
+            data.flags.writeable = True
+            if self.is4DImage(): data[xlo:xhi, ylo:yhi, zlo:zhi, vol] = newVals
+            else:                data[xlo:xhi, ylo:yhi, zlo:zhi]      = newVals
+            data.flags.writeable = False
+            
+        except:
+            data.flags.writeable = False
+            raise
+
+        # Force a notification on the 'data' property
+        # by assigning its value back to itself
+        self.data  = data
+        self.saved = False
+
+
+    def save(self):
+        """Convenience method to save any changes made to the :attr:`data` of 
+        this :class:`Image` instance.
+
+        See the :func:`saveImage` function.
+        """
+        return saveImage(self)
 
 
 # TODO The wx.FileDialog does not    
