@@ -68,34 +68,60 @@ class TensorImage(fslimage.Image):
 
     
     def __init__(self, path, *args, **kwargs):
+        """Create a ``TensorImage``.
+
+        :arg path: A path to a ``dtifit`` directory. Alternately, the ``path``
+                   may be a dictionary with keys
+                   ``{'v1', 'v2', 'v3', 'l1', 'l2', 'l3'}``, which specify
+                   paths to images containing the tensor eigenvectors and
+                   eigenvalues.
+
+        All other arguments are passed through to :meth:`.Image.__init__`.
         """
-        """
 
-        prefix = getTensorDataPrefix(path)
+        dtifitDir = isinstance(path, basestring)
 
-        if prefix is None:
-            raise ValueError('Invalid path: {}'.format(path))
+        if dtifitDir:
 
-        fslimage.Image.__init__(
-            self, op.join(path, '{}_V1'.format(prefix)), *args, **kwargs)
+            prefix = getTensorDataPrefix(path)
+
+            if prefix is None:
+                raise ValueError('Invalid path: {}'.format(path))
+
+            v1 = op.join(path, '{}_V1'.format(prefix))
+            v2 = op.join(path, '{}_V2'.format(prefix))
+            v3 = op.join(path, '{}_V3'.format(prefix))
+            l1 = op.join(path, '{}_L1'.format(prefix))
+            l2 = op.join(path, '{}_L2'.format(prefix))
+            l3 = op.join(path, '{}_L3'.format(prefix))
+
+            paths = {
+                'v1' : v1,
+                'v2' : v2,
+                'v3' : v3,
+                'l1' : l1,
+                'l2' : l2,
+                'l3' : l3
+            }
+        else:
+            paths = path
+
+        fslimage.Image.__init__(self, paths['v1'], *args, **kwargs)
+
+        self.__v1 = self
+        self.__v2 = fslimage.Image(paths['v2'])
+        self.__v3 = fslimage.Image(paths['v3'])
+        self.__l1 = fslimage.Image(paths['l1'])
+        self.__l2 = fslimage.Image(paths['l2'])
+        self.__l3 = fslimage.Image(paths['l3'])
+
+        v1dir = op.abspath(op.dirname(paths['v1']))
+
+        self.dataSource = v1dir
+        self.name       = '{}[tensor]'.format(op.basename(v1dir))
+
         
-        self.__v2 = fslimage.Image(op.join(path, '{}_V2'.format(prefix)))
-        self.__v3 = fslimage.Image(op.join(path, '{}_V3'.format(prefix)))
-        self.__l1 = fslimage.Image(op.join(path, '{}_L1'.format(prefix)))
-        self.__l2 = fslimage.Image(op.join(path, '{}_L2'.format(prefix)))
-        self.__l3 = fslimage.Image(op.join(path, '{}_L3'.format(prefix)))
-        self.__md = fslimage.Image(op.join(path, '{}_MD'.format(prefix)))
-        self.__fa = fslimage.Image(op.join(path, '{}_FA'.format(prefix)))
-
-        # TODO check that all of the images have the
-        # same properties (resolution, xform, pixdim)
-        
-        self.dataSource = op.abspath(path)
-        self.name       = '{}{}{}'.format(op.basename(path), op.sep, prefix)
-
-    def FA(self): return self.__fa
-    def MD(self): return self.__md
-    def V1(self): return self
+    def V1(self): return self.__v1
     def V2(self): return self.__v2
     def V3(self): return self.__v3
     def L1(self): return self.__l1
