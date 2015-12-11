@@ -527,9 +527,9 @@ properties = TypeDict({
     'Display.brightness'        : 'Brightness',
     'Display.contrast'          : 'Contrast',
 
-    'ImageOpts.resolution' : 'Resolution',
-    'ImageOpts.transform'  : 'Image transform',
-    'ImageOpts.volume'     : 'Volume',
+    'Nifti1Opts.resolution' : 'Resolution',
+    'Nifti1Opts.transform'  : 'Image transform',
+    'Nifti1Opts.volume'     : 'Volume',
     
     'VolumeOpts.displayRange'    : 'Display range',
     'VolumeOpts.clippingRange'   : 'Clipping range',
@@ -616,12 +616,12 @@ choices = TypeDict({
 
     'ModelOpts.refImage.none'     : 'No reference image',
 
-    'ImageOpts.transform' : {'affine' : 'Use qform/sform transformation '
-                                        'matrix',
-                             'pixdim' : 'Use pixdims only',
-                             'id'     : 'Do not use qform/sform or pixdims',
-                             'custom' : 'Apply a custom transformation '
-                                        'matrix'},
+    'Nifti1Opts.transform' : {'affine' : 'Use qform/sform transformation '
+                                         'matrix',
+                              'pixdim' : 'Use pixdims only',
+                              'id'     : 'Do not use qform/sform or pixdims',
+                              'custom' : 'Apply a custom transformation '
+                                         'matrix'},
 
     'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
                                   'linear' : 'Linear interpolation', 
