@@ -99,7 +99,7 @@ class TensorImage(fslimage.Nifti1):
         else:
             paths = path
 
-        fslimage.Nifti1.__init__(self, paths['v1'], loadData=False)
+        fslimage.Nifti1.__init__(self, paths['l1'], loadData=False)
 
         self.__v1 = fslimage.Image(paths['v1'])
         self.__v2 = fslimage.Image(paths['v2'])
@@ -108,10 +108,10 @@ class TensorImage(fslimage.Nifti1):
         self.__l2 = fslimage.Image(paths['l2'])
         self.__l3 = fslimage.Image(paths['l3'])
 
-        v1dir = op.abspath(op.dirname(paths['v1']))
+        l1dir = op.abspath(op.dirname(paths['l1']))
 
-        self.dataSource = v1dir
-        self.name       = '{}[tensor]'.format(op.basename(v1dir))
+        self.dataSource = l1dir
+        self.name       = '{}[tensor]'.format(op.basename(l1dir))
 
         
     def V1(self): return self.__v1
