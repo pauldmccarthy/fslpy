@@ -572,6 +572,9 @@ properties = TypeDict({
     'LabelOpts.outline'      : 'Show outline only',
     'LabelOpts.outlineWidth' : 'Outline width',
     'LabelOpts.showNames'    : 'Show label names',
+
+    'TensorOpts.lighting'          : 'Lighting effects',
+    'TensorOpts.tensorResolution'  : 'Ellipsoid quality',
 })
 
 
@@ -615,6 +618,9 @@ choices = TypeDict({
     'VectorOpts.modulate.none'    : 'No modulation',
 
     'ModelOpts.refImage.none'     : 'No reference image',
+
+    'TensorOpts.tensorResolution.min' : 'Low',
+    'TensorOpts.tensorResolution.max' : 'High',
 
     'Nifti1Opts.transform' : {'affine' : 'Use qform/sform transformation '
                                          'matrix',
