@@ -553,8 +553,9 @@ properties = TypeDict({
     'VectorOpts.suppressX'     : 'Suppress X value',
     'VectorOpts.suppressY'     : 'Suppress Y value',
     'VectorOpts.suppressZ'     : 'Suppress Z value',
-    'VectorOpts.modulate'      : 'Modulate by',
-    'VectorOpts.modThreshold'  : 'Modulation threshold',
+    'VectorOpts.modulateImage' : 'Modulate by',
+    'VectorOpts.clipImage'     : 'Clip by',
+    'VectorOpts.clipThreshold' : 'Clipping threshold',
 
     'RGBVectorOpts.interpolation' : 'Interpolation',
 
@@ -615,7 +616,8 @@ choices = TypeDict({
     'VectorOpts.displayType.line' : 'Lines',
     'VectorOpts.displayType.rgb'  : 'RGB',
 
-    'VectorOpts.modulate.none'    : 'No modulation',
+    'VectorOpts.modulateImage.none' : 'No modulation',
+    'VectorOpts.clipImage.none'     : 'No clipping',
 
     'ModelOpts.refImage.none'     : 'No reference image',
 
