@@ -576,6 +576,7 @@ properties = TypeDict({
 
     'TensorOpts.lighting'          : 'Lighting effects',
     'TensorOpts.tensorResolution'  : 'Ellipsoid quality',
+    'TensorOpts.tensorScale'       : 'Tensor size',
 })
 
 
