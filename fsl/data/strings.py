@@ -555,7 +555,7 @@ properties = TypeDict({
     'VectorOpts.suppressZ'     : 'Suppress Z value',
     'VectorOpts.modulateImage' : 'Modulate by',
     'VectorOpts.clipImage'     : 'Clip by',
-    'VectorOpts.clipThreshold' : 'Clipping threshold',
+    'VectorOpts.clippingRange' : 'Clipping range',
 
     'RGBVectorOpts.interpolation' : 'Interpolation',
 
@@ -619,6 +619,9 @@ choices = TypeDict({
 
     'VectorOpts.modulateImage.none' : 'No modulation',
     'VectorOpts.clipImage.none'     : 'No clipping',
+    
+    'VectorOpts.clippingRange.min' : 'Min.',
+    'VectorOpts.clippingRange.max' : 'Max.', 
 
     'ModelOpts.refImage.none'     : 'No reference image',
 
