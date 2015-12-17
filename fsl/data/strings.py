@@ -553,6 +553,8 @@ properties = TypeDict({
     'VectorOpts.suppressX'     : 'Suppress X value',
     'VectorOpts.suppressY'     : 'Suppress Y value',
     'VectorOpts.suppressZ'     : 'Suppress Z value',
+    'VectorOpts.colourImage'   : 'Colour by',
+    'VectorOpts.cmap'          : 'Colour map',
     'VectorOpts.modulateImage' : 'Modulate by',
     'VectorOpts.clipImage'     : 'Clip by',
     'VectorOpts.clippingRange' : 'Clipping range',
