@@ -533,6 +533,7 @@ properties = TypeDict({
     
     'VolumeOpts.displayRange'    : 'Display range',
     'VolumeOpts.clippingRange'   : 'Clipping range',
+    'VolumeOpts.clipImage'       : 'Clip by',
     'VolumeOpts.linkLowRanges'   : 'Link low display/clipping ranges',
     'VolumeOpts.linkHighRanges'  : 'Link high display/clipping ranges',
     'VolumeOpts.cmap'            : 'Colour map',
