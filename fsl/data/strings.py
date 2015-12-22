@@ -238,7 +238,8 @@ titles = TypeDict({
 
 actions = TypeDict({
 
-    'OpenFileAction'         : 'Add overlay file',
+    'OpenFileAction'         : 'Add overlay from file',
+    'OpenDirAction'          : 'Add overlay from directory',
     'OpenStandardAction'     : 'Add standard',
     'CopyOverlayAction'      : 'Copy overlay',
     'SaveOverlayAction'      : 'Save overlay',
