@@ -394,6 +394,8 @@ labels = TypeDict({
     'CanvasSettingsPanel.ortho'    : 'Ortho view settings',
     'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
 
+    'OverlayInfoPanel.general'             : 'General information',
+
     'OverlayInfoPanel.Nifti1.dimensions'   : 'Dimensions',
     'OverlayInfoPanel.Nifti1.transform'    : 'Transform/space',
     'OverlayInfoPanel.Nifti1.orient'       : 'Orientation',
