@@ -395,10 +395,18 @@ labels = TypeDict({
     'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
 
     'OverlayInfoPanel.general'             : 'General information',
+    'OverlayInfoPanel.overlayType'         : 'Displayed as',
+    'OverlayInfoPanel.displaySpace'        : 'Display space',
 
     'OverlayInfoPanel.Nifti1.dimensions'   : 'Dimensions',
     'OverlayInfoPanel.Nifti1.transform'    : 'Transform/space',
     'OverlayInfoPanel.Nifti1.orient'       : 'Orientation',
+
+    'OverlayInfoPanel.Nifti1.displaySpace.id'     : 'Raw voxels',
+    'OverlayInfoPanel.Nifti1.displaySpace.pixdim' : 'Scaled voxels',
+    'OverlayInfoPanel.Nifti1.displaySpace.affine' : 'World coordinates',
+    'OverlayInfoPanel.Nifti1.displaySpace.world'  : 'World coordinates',
+    'OverlayInfoPanel.Nifti1.displaySpace.custom' : 'Scaled voxels ({})',
     
     'OverlayInfoPanel.Image'                    : 'NIFTI1 image',
     'OverlayInfoPanel.FEATImage'                : 'NIFTI1 image '
