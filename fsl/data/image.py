@@ -551,26 +551,28 @@ def loadImage(filename):
         import wx
         if wx.GetApp() is not None: 
             haveGui = True
+            import fsl.utils.dialog as fsldlg
     except:
         pass
 
     realFilename = filename
-    mbytes = op.getsize(filename) / 1048576.0
+    mbytes       = op.getsize(filename) / 1048576.0
 
     # The mbytes limit is arbitrary
-    if filename.endswith('.nii.gz') and mbytes > 512:
+    if filename.endswith('.gz') and mbytes > 512:
 
         unzipped, filename = tempfile.mkstemp(suffix='.nii')
 
         unzipped = os.fdopen(unzipped)
 
         msg = strings.messages['image.loadImage.decompress']
-        msg = msg.format(realFilename, mbytes, filename)
+        msg = msg.format(op.basename(realFilename), mbytes, filename)
 
         if not haveGui:
             log.info(msg)
         else:
-            busyDlg = wx.BusyInfo(msg, wx.GetTopLevelWindows()[0])
+            busyDlg = fsldlg.SimpleMessageDialog(message=msg)
+            busyDlg.Show()
 
         gzip = ['gzip', '-d', '-c', realFilename]
         log.debug('Running {} > {}'.format(' '.join(gzip), filename))
@@ -594,7 +596,19 @@ def loadImage(filename):
     log.debug('Loading image from {}'.format(filename))
 
     import nibabel as nib
-    return nib.load(filename), filename
+
+    if haveGui and (mbytes > 512):
+        msg     = strings.messages['image.loadImage.largeFile']
+        msg     = msg.format(op.basename(filename),  mbytes)
+        busyDlg = fsldlg.SimpleMessageDialog(message=msg)
+        busyDlg.Show()
+    
+    image = nib.load(filename)
+
+    if haveGui and (mbytes > 512):
+        busyDlg.Destroy()
+
+    return image, filename
 
 
 def saveImage(image, fromDir=None):

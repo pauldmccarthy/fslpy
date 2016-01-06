@@ -47,9 +47,11 @@ messages = TypeDict({
     'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
     
-    'image.loadImage.decompress' : '{} is a large file ({} MB) - '
+    'image.loadImage.decompress' : '{} is a large file ({:0.0f} MB) - '
                                    'decompressing to {}, to allow memory '
                                    'mapping...',
+    'image.loadImage.largeFile'  : '{} is a large file ({:0.0f}) MB) - '
+                                   'loading it may take some time...',
 
     'ProcessingDialog.error' : 'An error has occurred: {}'
                                '\n\nDetails: {}',
