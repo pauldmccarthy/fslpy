@@ -418,11 +418,19 @@ labels = TypeDict({
     'OverlayInfoPanel.Model'                    : 'VTK model',
     'OverlayInfoPanel.Model.numVertices'        : 'Number of vertices',
     'OverlayInfoPanel.Model.numIndices'         : 'Number of indices',
+    'OverlayInfoPanel.Model.displaySpace'       : 'Display space',
+    'OverlayInfoPanel.Model.refImage'           : 'Reference image',
+    'OverlayInfoPanel.Model.coordSpace'         : 'Vertices defined in',
+    'OverlayInfoPanel.Model.coordSpace.id'      : 'Voxels ({})',
+    'OverlayInfoPanel.Model.coordSpace.pixdim'  : 'Scaled voxels ({})',
+    'OverlayInfoPanel.Model.coordSpace.affine'  : 'World coordinates ({})',
+    'OverlayInfoPanel.Model.coordSpace.display' : 'Display coordinate system',
     'OverlayInfoPanel.dataSource'               : 'Data source',
 
     'OverlayInfoPanel.TensorImage'              : 'NIFTI1 diffusion '
                                                   'tensor images',
-
+    'OverlayInfoPanel.TensorImage.tensorInfo'   : 'Tensor image paths ',
+    
     'MelodicClassificationPanel.componentTab'   : 'Components',
     'MelodicClassificationPanel.labelTab'       : 'Labels',
     'MelodicClassificationPanel.loadButton'     : 'Load labels',
@@ -642,12 +650,10 @@ choices = TypeDict({
     'TensorOpts.tensorResolution.min' : 'Low',
     'TensorOpts.tensorResolution.max' : 'High',
 
-    'Nifti1Opts.transform' : {'affine' : 'Use qform/sform transformation '
-                                         'matrix',
-                              'pixdim' : 'Use pixdims only',
-                              'id'     : 'Do not use qform/sform or pixdims',
-                              'custom' : 'Apply a custom transformation '
-                                         'matrix'},
+    'Nifti1Opts.transform' : {'affine' : 'World coordinates',
+                              'pixdim' : 'Scaled voxels',
+                              'id'     : 'Voxels',
+                              'custom' : 'Custom transformation'},
 
     'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
                                   'linear' : 'Linear interpolation', 
@@ -865,4 +871,13 @@ perspectives = {
     'default' : 'Default layout',
     'melodic' : 'Melodic mode',
     'feat'    : 'FEAT mode',
+}
+
+tensor = {
+    'v1' : 'First eigenvector image',
+    'v2' : 'Second eigenvector image',
+    'v3' : 'Third eigenvector image',
+    'l1' : 'First eigenvalue image',
+    'l2' : 'Second eigenvalue image',
+    'l3' : 'Third eigenvalue image',
 }
