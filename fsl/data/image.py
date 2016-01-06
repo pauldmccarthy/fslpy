@@ -73,7 +73,7 @@ class Nifti1(object):
     ``worldToVoxMat`` A 4*4 array specifying the affine transformation
                       for transforming real world coordinates into voxel
                       coordinates.
-    ================= ==================================================== 
+    ================= ====================================================
     """
 
     def __init__(self,
@@ -183,9 +183,9 @@ class Nifti1(object):
                       shape,
                       data.shape))
 
-        self.data   = data
-        self.shape  = self.shape[ :len(data.shape)]
-        self.pixdim = self.pixdim[:len(data.shape)]
+        self.data    = data
+        self.shape   = self.shape[ :len(data.shape)]
+        self.pixdim  = self.pixdim[:len(data.shape)]
         
         
     # TODO: Remove this method, and use the shape attribute directly
@@ -278,7 +278,18 @@ class Image(Nifti1, props.HasProperties):
     ================= ====================================================
     ``name``          the name of this ``Image`` - defaults to the image
                       file name, sans-suffix.
-    ================= ====================================================
+    
+    ``dataMin``       Minimum value in the image data. This is only
+                      calculated if the ``loadData`` parameter to
+                      :meth:`__init__` is ``True``, or when the
+                      :meth:`loadData` method is called. If this is not 
+                      the case, ``dataMin`` will be ``None``. The
+                      ``dataMin`` value is updated on every call to
+                      :meth:`applyChange`.
+    
+    ``dataMax``       Maximum value in the image data. This is calculated
+                      alongside ``dataMin``.
+    ================= ==================================================== 
     """
 
 
@@ -291,6 +302,13 @@ class Image(Nifti1, props.HasProperties):
     saved = props.Boolean(default=False)
     """A read-only property (not enforced) which is ``True`` if the image,
     as stored in memory, is saved to disk, ``False`` otherwise.
+    """
+
+
+    dataRange = props.Bounds(ndims=1, default=(np.inf, -np.inf))
+    """A read-only property (not enforced) which contains the image
+    data range. This property is updated every time the image data
+    is changed (via :meth:`applyChange`).
     """
 
 
@@ -353,6 +371,22 @@ class Image(Nifti1, props.HasProperties):
         """See the :meth:`__str__` method."""
         return self.__str__()
 
+
+    def loadData(self):
+        """Overrides :meth:`Nifti1.loadData`. Calls that method, and
+        calculates initial values for :attr:`dataRange`.
+        """
+        Nifti1.loadData(self)
+
+        dataMin = np.nanmin(self.data)
+        dataMax = np.nanmax(self.data)
+
+        if np.any(np.isnan((dataMin, dataMax))):
+            dataMin = 0
+            dataMax = 0 
+
+        self.dataRange.x = [dataMin, dataMax]
+
         
     def applyChange(self, offset, newVals, vol=None):
         """Changes the image data according to the given new values.
@@ -376,16 +410,32 @@ class Image(Nifti1, props.HasProperties):
         yhi           = ylo + newVals.shape[1]
         zhi           = zlo + newVals.shape[2]
 
+        log.debug('Image {} data change - offset: {}, shape: {}, '
+                  'volume: {}'.format(self.name, offset, newVals.shape, vol))
+
         try:
             data.flags.writeable = True
+            
+            if self.is4DImage(): oldVals = data[xlo:xhi, ylo:yhi, zlo:zhi, vol]
+            else:                oldVals = data[xlo:xhi, ylo:yhi, zlo:zhi]
+            
             if self.is4DImage(): data[xlo:xhi, ylo:yhi, zlo:zhi, vol] = newVals
             else:                data[xlo:xhi, ylo:yhi, zlo:zhi]      = newVals
+            
             data.flags.writeable = False
             
         except:
             data.flags.writeable = False
             raise
 
+        newMin, newMax = self.__calculateDataRange(oldVals, newVals)
+        
+        log.debug('Image {} new data range: {} - {}'.format(
+            self.name, newMin, newMax)) 
+
+        # Make sure the dataRange is up to date
+        self.dataRange.x = [newMin, newMax]
+        
         # Force a notification on the 'data' property
         # by assigning its value back to itself
         self.data  = data
@@ -400,6 +450,49 @@ class Image(Nifti1, props.HasProperties):
         """
         return saveImage(self)
 
+
+    def __calculateDataRange(self, oldVals, newVals):
+        """Called by :meth:`applyChange`. Re-calculates the image data range,
+        and returns a tuple containing the ``(min, max)`` values.
+        """
+
+        data = self.data
+
+        # The old image wide data range.
+        oldMin    = self.dataRange.xlo
+        oldMax    = self.dataRange.xhi
+
+        # The data range of the changed sub-array.
+        newValMin = np.nanmin(newVals)
+        newValMax = np.nanmax(newVals)
+
+        # Has the entire image been updated?
+        wholeImage = tuple(newVals.shape) == tuple(data.shape[:3])
+
+        # If the minimum of the new values
+        # is less than the old image minimum, 
+        # then it becomes the new minimum.
+        if   (newValMin <= oldMin) or wholeImage: newMin = newValMin
+
+        # Or, if the old minimum is being
+        # replaced by the new values, we
+        # need to re-calculate the minimum
+        elif np.nanmin(oldVals) == oldMin:        newMin = np.nanmin(data)
+
+        # Otherwise, the image minimum
+        # has not changed.
+        else:                                     newMin = oldMin
+
+        # The same logic applies to the maximum
+        if   (newValMax >= oldMax) or wholeImage: newMax = newValMax
+        elif np.nanmax(oldVals) == oldMax:        newMax = np.nanmax(data)
+        else:                                     newMax = oldMax
+
+        if np.isnan(newMin): newMin = 0
+        if np.isnan(newMax): newMax = 0
+
+        return newMin, newMax
+    
 
 # TODO The wx.FileDialog does not    
 # seem to handle wildcards with      
