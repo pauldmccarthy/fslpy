@@ -75,7 +75,6 @@ def context(args):
                 - the :class:`.FSLEyesSplash` frame
     """
 
-    import wx
     import fsl.fsleyes.splash as fslsplash
 
     # Create a splash screen, and use it
@@ -90,8 +89,8 @@ def context(args):
 
     frame.CentreOnScreen()
     frame.Show()
+    frame.Refresh()
     frame.Update()
-    wx.YieldIfNeeded()
 
     import props
     import fsl.fsleyes.gl as fslgl
@@ -172,6 +171,8 @@ def interface(parent, args, ctx):
     # behaviour is to restore the previous frame layout
     if args.scene is None: restore = True
     else:                  restore = False
+
+    status.update('Creating FSLeyes interface ...')
     
     frame = fsleyesframe.FSLEyesFrame(
         parent, overlayList, displayCtx, restore)
@@ -184,12 +185,12 @@ def interface(parent, args, ctx):
 
     # Closing the splash screen immediately
     # can cause a crash under linux/GTK, so
-    # we'll do it a bit later.
-    def closeSplash():
-        splashFrame.Close()
-
-    wx.CallLater(1, closeSplash)
-    wx.YieldIfNeeded()
+    # we'll hide it now, and destroy it later.
+    splashFrame.Hide()
+    splashFrame.Refresh()
+    splashFrame.Update()
+ 
+    wx.CallLater(250, splashFrame.Close)
 
     # Otherwise, we add the scene
     # specified by the user
