@@ -39,7 +39,6 @@ messages = TypeDict({
     'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
                                      'FSL is installed',
 
-    'fsleyes.loading'              : 'Loading {}',
     'FSLEyesSplash.default'        : 'Loading ...',
 
     'FSLEyesFrame.restoringLayout' : 'Restoring layout from last session ...',

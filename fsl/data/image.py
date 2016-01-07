@@ -43,6 +43,7 @@ import nibabel    as nib
 import props
 
 import fsl.utils.transform as transform
+import fsl.utils.status    as status
 import fsl.data.strings    as strings
 import fsl.data.constants  as constants
 
@@ -323,7 +324,7 @@ class Image(Nifti1, props.HasProperties):
 
         All other arguments are passed through to :meth:`Nifti1.__init__`.
         """
-
+                    
         Nifti1.__init__(self, image, **kwargs)
 
         # Figure out the name of this image.
@@ -376,14 +377,23 @@ class Image(Nifti1, props.HasProperties):
         """Overrides :meth:`Nifti1.loadData`. Calls that method, and
         calculates initial values for :attr:`dataRange`.
         """
+
         Nifti1.loadData(self)
+
+        status.update('Calculating minimum/maximum '
+                      'for {}...'.format(self.dataSource))
 
         dataMin = np.nanmin(self.data)
         dataMax = np.nanmax(self.data)
 
+        log.debug('Calculated data range for {}: [{} - {}]'.format(
+            self.dataSource, dataMin, dataMax))
+
         if np.any(np.isnan((dataMin, dataMax))):
             dataMin = 0
-            dataMax = 0 
+            dataMax = 0
+
+        status.clear()
 
         self.dataRange.x = [dataMin, dataMax]
 
@@ -458,6 +468,9 @@ class Image(Nifti1, props.HasProperties):
 
         data = self.data
 
+        status.update('Calculating minimum/maximum '
+                      'for {}...'.format(self.dataSource))
+
         # The old image wide data range.
         oldMin    = self.dataRange.xlo
         oldMax    = self.dataRange.xhi
@@ -490,6 +503,8 @@ class Image(Nifti1, props.HasProperties):
 
         if np.isnan(newMin): newMin = 0
         if np.isnan(newMax): newMax = 0
+
+        status.clear()
 
         return newMin, newMax
     
@@ -637,17 +652,6 @@ def loadImage(filename):
     file name, or the name of the temporary decompressed file).
     """
 
-    # If we have a GUI, we can display a dialog
-    # message. Otherwise we print a log message
-    haveGui = False
-    try:
-        import wx
-        if wx.GetApp() is not None: 
-            haveGui = True
-            import fsl.utils.dialog as fsldlg
-    except:
-        pass
-
     realFilename = filename
     mbytes       = op.getsize(filename) / 1048576.0
 
@@ -661,11 +665,7 @@ def loadImage(filename):
         msg = strings.messages['image.loadImage.decompress']
         msg = msg.format(op.basename(realFilename), mbytes, filename)
 
-        if not haveGui:
-            log.info(msg)
-        else:
-            busyDlg = fsldlg.SimpleMessageDialog(message=msg)
-            busyDlg.Show()
+        status.update(msg)
 
         gzip = ['gzip', '-d', '-c', realFilename]
         log.debug('Running {} > {}'.format(' '.join(gzip), filename))
@@ -683,23 +683,18 @@ def loadImage(filename):
             os.remove(filename)
             filename = realFilename
 
-        if haveGui:
-            busyDlg.Destroy()
-
     log.debug('Loading image from {}'.format(filename))
 
     import nibabel as nib
 
-    if haveGui and (mbytes > 512):
+    if mbytes > 512:
         msg     = strings.messages['image.loadImage.largeFile']
         msg     = msg.format(op.basename(filename),  mbytes)
-        busyDlg = fsldlg.SimpleMessageDialog(message=msg)
-        busyDlg.Show()
+        status.update(msg)
     
     image = nib.load(filename)
 
-    if haveGui and (mbytes > 512):
-        busyDlg.Destroy()
+    status.clear()
 
     return image, filename
 

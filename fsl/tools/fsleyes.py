@@ -27,6 +27,7 @@ import argparse
 import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
 import fsl.fsleyes.displaycontext    as displaycontext
 import fsl.fsleyes.overlay           as fsloverlay
+import fsl.utils.status              as status
 
 
 log = logging.getLogger(__name__)
@@ -90,11 +91,10 @@ def context(args):
     frame.CentreOnScreen()
     frame.Show()
     frame.Update()
-    wx.Yield()
+    wx.YieldIfNeeded()
 
     import props
-    import fsl.fsleyes.gl   as fslgl
-    import fsl.data.strings as strings
+    import fsl.fsleyes.gl as fslgl
 
     props.initGUI()
     
@@ -103,9 +103,9 @@ def context(args):
     fslgl.getWXGLContext(frame)
     fslgl.bootstrap(args.glversion)
 
-    def status(overlay):
-        frame.SetStatus(strings.messages['fsleyes.loading'].format(overlay))
-        wx.Yield()
+    # Redirect status updates
+    # to the splash frame
+    status.setTarget(frame.SetStatus)
 
     # Create the overlay list (only one of these
     # ever exists) and the master DisplayContext.
@@ -131,8 +131,7 @@ def context(args):
     
     # Load the images - the splash screen status will 
     # be updated with the currently loading overlay name
-    fsleyes_parseargs.applyOverlayArgs(
-        args, overlayList, displayCtx, loadFunc=status)  
+    fsleyes_parseargs.applyOverlayArgs(args, overlayList, displayCtx)  
 
     return overlayList, displayCtx, frame
 
@@ -177,6 +176,21 @@ def interface(parent, args, ctx):
     frame = fsleyesframe.FSLEyesFrame(
         parent, overlayList, displayCtx, restore)
 
+    # Make sure the new frame is shown
+    # before destroying the splash screen
+    frame.Show(True)
+    frame.Refresh()
+    frame.Update()
+
+    # Closing the splash screen immediately
+    # can cause a crash under linux/GTK, so
+    # we'll do it a bit later.
+    def closeSplash():
+        splashFrame.Close()
+
+    wx.CallLater(1, closeSplash)
+    wx.YieldIfNeeded()
+
     # Otherwise, we add the scene
     # specified by the user
     if   args.scene == 'ortho':    frame.addViewPanel(op .OrthoPanel)
@@ -202,21 +216,6 @@ def interface(parent, args, ctx):
         viewPanel.getXCanvas().centreDisplayAt(*xcentre)
         viewPanel.getYCanvas().centreDisplayAt(*ycentre)
         viewPanel.getZCanvas().centreDisplayAt(*zcentre)
-
-    # Make sure the new frame is shown
-    # before destroying the splash screen
-    frame.Show(True)
-    frame.Refresh()
-    frame.Update()
-
-    # Closing the splash screen immediately
-    # can cause a crash under linux/GTK, so
-    # we'll do it a bit later.
-    def closeSplash():
-        splashFrame.Close()
-
-    wx.CallLater(500, closeSplash)
-    
     return frame
 
     
