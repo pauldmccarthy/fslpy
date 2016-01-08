@@ -23,8 +23,9 @@ passed to this target.
 """
 
 
-import logging
-
+import            logging
+import            inspect
+import os.path as op
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,14 @@ def update(message):
 
     global statusUpdateTarget
 
-    log.debug(message)
+    if log.getEffectiveLevel() == logging.DEBUG:
+        
+        frame   = inspect.stack()[1]
+        module  = frame[1]
+        linenum = frame[2]
+        module  = op.basename(module)
+
+        log.debug('[{}:{}] {}'.format(module, linenum, message))
 
     if statusUpdateTarget is None:
         return

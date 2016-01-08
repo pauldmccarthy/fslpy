@@ -172,7 +172,7 @@ def interface(parent, args, ctx):
     if args.scene is None: restore = True
     else:                  restore = False
 
-    status.update('Creating FSLeyes interface ...')
+    status.update('Creating FSLeyes interface...')
     
     frame = fsleyesframe.FSLEyesFrame(
         parent, overlayList, displayCtx, restore)
@@ -201,6 +201,8 @@ def interface(parent, args, ctx):
     # (i.e. either OrthoPanel or LightBoxPanel)
     viewPanel = frame.getViewPanels()[0]
     viewOpts  = viewPanel.getSceneOptions()
+
+    status.update('Setting up scene...')
 
     fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
 

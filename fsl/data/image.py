@@ -393,8 +393,6 @@ class Image(Nifti1, props.HasProperties):
             dataMin = 0
             dataMax = 0
 
-        status.clear()
-
         self.dataRange.x = [dataMin, dataMax]
 
         
@@ -503,8 +501,6 @@ class Image(Nifti1, props.HasProperties):
 
         if np.isnan(newMin): newMin = 0
         if np.isnan(newMax): newMax = 0
-
-        status.clear()
 
         return newMin, newMax
     
@@ -693,8 +689,6 @@ def loadImage(filename):
         status.update(msg)
     
     image = nib.load(filename)
-
-    status.clear()
 
     return image, filename
 
