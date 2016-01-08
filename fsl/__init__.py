@@ -54,8 +54,10 @@ import warnings
 
 import os
 import sys
+import time
 import argparse
 import importlib
+import threading
 import subprocess
 
 
@@ -90,25 +92,58 @@ def main(args=None):
     allTools                = _getFSLToolNames()
     fslTool, args, toolArgs = _parseArgs(args, allTools)
 
+    # Is this a GUI tool?
     if fslTool.interface is not None:
+
         import wx
-        app   = wx.App()
 
-        # Context creation may assume that a wx.App has been created
-        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-        else:                           ctx = None
+        # The main interface is created on the
+        # wx.MainLoop, because it is difficult
+        # to force immediate GUI refreshes when
+        # not running on the main loop - this
+        # is important for, e.g. FSLEyes, which
+        # displays status updates to the user
+        # while it is loading overlays and
+        # setting up the interface.
+        # 
+        # To make this work, this buildGUI
+        # function is called on a separate thread
+        # (so it is executed after wx.MainLoop
+        # has been called), but it schedules its
+        # work to be done on the wx.MainLoop.
+        def buildGUI():
+            def realBuild():
 
-        _fslDirWarning(fslTool.toolName, fslEnvActive)
+                if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+                else:                           ctx = None
 
-        frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
-        frame.Show()
+                _fslDirWarning(fslTool.toolName, fslEnvActive)
 
-        if args.wxinspect:
-            import wx.lib.inspection
-            wx.lib.inspection.InspectionTool().Show()
-        
+                frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
+                frame.Show()
+
+                # See comment below
+                dummyFrame.Destroy()
+
+                if args.wxinspect:
+                    import wx.lib.inspection
+                    wx.lib.inspection.InspectionTool().Show()
+
+            time.sleep(0.1)
+            wx.CallAfter(realBuild)
+
+        # Create the wx.App object, and create a dummy
+        # frame. If we don't create a dummy frame, the
+        # wx.MainLoop call will just return immediately.
+        # The buildGUI function above will kill the dummy
+        # frame when it has created the real interface.
+        app        = wx.App()
+        dummyFrame = wx.Frame(None)
+
+        threading.Thread(target=buildGUI).start()
         app.MainLoop()
-        
+
+    # Or is this a CLI tool?
     elif fslTool.execute is not None:
         
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
