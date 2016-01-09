@@ -20,4 +20,7 @@ things.
     ~fsl.utils.runwindow
     ~fsl.utils.webpage
     ~fsl.utils.trace
+    ~fsl.utils.memoize
+    ~fsl.utils.async
+    ~fsl.utils.notifier
 """
