@@ -382,17 +382,20 @@ class Image(Nifti1, props.HasProperties):
         Nifti1.loadData(self)
 
         status.update('Calculating minimum/maximum '
-                      'for {}...'.format(self.dataSource))
+                      'for {}...'.format(self.dataSource), None)
 
         dataMin = np.nanmin(self.data)
         dataMax = np.nanmax(self.data)
 
         log.debug('Calculated data range for {}: [{} - {}]'.format(
             self.dataSource, dataMin, dataMax))
-
+        
         if np.any(np.isnan((dataMin, dataMax))):
             dataMin = 0
             dataMax = 0
+
+        status.update('{} range: [{} - {}]'.format(
+            self.dataSource, dataMin, dataMax))
 
         self.dataRange.x = [dataMin, dataMax]
 
@@ -468,7 +471,7 @@ class Image(Nifti1, props.HasProperties):
         data = self.data
 
         status.update('Calculating minimum/maximum '
-                      'for {}...'.format(self.dataSource))
+                      'for {}...'.format(self.dataSource), None)
 
         # The old image wide data range.
         oldMin    = self.dataRange.xlo
@@ -502,6 +505,9 @@ class Image(Nifti1, props.HasProperties):
 
         if np.isnan(newMin): newMin = 0
         if np.isnan(newMax): newMax = 0
+
+        status.update('{} range: [{} - {}]'.format(
+            self.dataSource, newMin, newMax))        
 
         return newMin, newMax
     
@@ -662,7 +668,7 @@ def loadImage(filename):
         msg = strings.messages['image.loadImage.decompress']
         msg = msg.format(op.basename(realFilename), mbytes, filename)
 
-        status.update(msg)
+        status.update(msg, None)
 
         gzip = ['gzip', '-d', '-c', realFilename]
         log.debug('Running {} > {}'.format(' '.join(gzip), filename))

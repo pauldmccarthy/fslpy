@@ -59,6 +59,10 @@ def update(message, timeout=1.0):
     :arg timeout: Timeout (in seconds) after which the status will be
                   cleared (via the :class:`ClearThread`). Pass in ``None``
                   to disable this behaviour.
+
+
+    .. note:: The ``timeout`` method only makes sense to use if the status
+              target is a GUI widget of some sort.
     """
 
     global _clearThread
@@ -79,12 +83,17 @@ def update(message, timeout=1.0):
     _statusUpdateTarget(message)
 
     if timeout is not None:
+        log.debug('timeout is not None - starting clear thread')
         
         if _clearThread is None:
             _clearThread = ClearThread()
             _clearThread.start()
 
         _clearThread.clear(timeout)
+    else:
+        if _clearThread is not None:
+            _clearThread.veto()
+            log.debug('No timeout - vetoing clear thread')
 
 
 def clearStatus():
@@ -104,10 +113,8 @@ class ClearThread(threading.Thread):
 
     The ``ClearThread`` waits until the :meth:`clear` method is called.
     It then waits for the specified timeout and, unless another call to
-    :meth:`clear` has been made, clears the status via a call to
-    :func:`clearStatus`.
-
-    Apologies for the confusing naming.
+    :meth:`clear`, or a call to :meth:`veto` has been made, clears the
+    status via a call to :func:`clearStatus`.
     """
 
     
@@ -118,6 +125,7 @@ class ClearThread(threading.Thread):
 
         self.daemon       = True
         self.__clearEvent = threading.Event()
+        self.__vetoEvent  = threading.Event()
         self.__timeout    = None
 
         
@@ -126,6 +134,13 @@ class ClearThread(threading.Thread):
         
         self.__timeout = timeout
         self.__clearEvent.set()
+
+
+    def veto(self):
+        """If this ``ClearThread`` is waiting on a timeout to clear
+        the status, a call to ``veto`` will prevent it from doing so.
+        """
+        self.__vetoEvent.set()
 
         
     def run(self):
@@ -136,8 +151,12 @@ class ClearThread(threading.Thread):
 
         while True:
 
+            self.__vetoEvent .clear()
             self.__clearEvent.wait()
             self.__clearEvent.clear()
 
-            if not self.__clearEvent.wait(self.__timeout):
+            if not self.__clearEvent.wait(self.__timeout) and \
+               not self.__vetoEvent.isSet():
+                
+                log.debug('Timeout - clearing status')
                 clearStatus()
