@@ -71,7 +71,8 @@ class Model(object):
         
     def __del__(self):
         """Prints a log message."""
-        log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
+        if log:
+            log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
         
 
     def __repr__(self):

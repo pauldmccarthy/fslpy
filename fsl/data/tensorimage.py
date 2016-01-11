@@ -121,7 +121,8 @@ class TensorImage(fslimage.Nifti1):
 
         
     def __del__(self):
-        log.memory('{}.del({})'.format(type(self).__name__, id(self)))
+        if log:
+            log.memory('{}.del({})'.format(type(self).__name__, id(self)))
 
         
     def V1(self): return self.__v1
