@@ -113,28 +113,25 @@ def _wxIdleLoop(ev):
         
     ev.Skip()
 
-    try:                task = _idleQueue.get_nowait()
+    try:                task, args, kwargs = _idleQueue.get_nowait()
     except Queue.Empty: return
         
-    task()
+    task(*args, **kwargs)
 
     if _idleQueue.qsize() > 0:
         ev.RequestMore()
     
 
-def idle(task, name=None):
+def idle(task, *args, **kwargs):
     """Run the given task on a ``wx.EVT_IDLE`` event.
 
-    :arg task: The task to run - a function which accepts no parameters.
+    :arg task: The task to run.
 
-    :arg name: An optional name to use for this task in log statements.
+    All other arguments are passed through to the task function.
     """
 
     global _idleRegistered
     global _idleTasks
-
-    if name is None:
-        name = 'idle task'
 
     if _haveWX():
         import wx
@@ -143,11 +140,10 @@ def idle(task, name=None):
             wx.GetApp().Bind(wx.EVT_IDLE, _wxIdleLoop)
             _idleRegistered = True
 
-        log.debug('Scheduling task "{}" '
-                  'on wx idle loop'.format(name))
+        log.debug('Scheduling idle task on wx idle loop')
 
-        _idleQueue.put_nowait(task)
+        _idleQueue.put_nowait((task, args, kwargs))
             
     else:
-        log.debug('Running task "{}"'.format(name)) 
-        task()
+        log.debug('Running idle task directly') 
+        task(*args, **kwargs)
