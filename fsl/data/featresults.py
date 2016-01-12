@@ -15,6 +15,7 @@ following functions are provided:
 
    isFEATImage
    isFEATDir
+   hasStats
    hasMelodicDir
    getAnalysisDir
    getTopLevelAnalysisDir
@@ -95,6 +96,17 @@ def isFEATDir(path):
     if not op.exists(op.join(dirname, 'design.con')): return False
         
     return True
+
+
+def hasStats(featdir):
+    """Returns ``True`` if it looks like statistics have been calculated
+    for the given FEAT analysis, ``False`` otherwise.
+    """
+
+    statdir   = op.join(featdir, 'stats')
+    statfiles = glob.glob(op.join(statdir, '*'))
+    
+    return op.exists(statdir) and len(statfiles) > 0
 
 
 def hasMelodicDir(featdir):

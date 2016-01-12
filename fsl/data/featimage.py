@@ -72,8 +72,13 @@ class FEATImage(fslimage.Image):
 
         featDir     = op.dirname(path)
         settings    = featresults.loadSettings( featDir)
-        design      = featresults.loadDesign(   featDir)
-        names, cons = featresults.loadContrasts(featDir)
+
+        if featresults.hasStats(featDir):
+            design      = featresults.loadDesign(   featDir)
+            names, cons = featresults.loadContrasts(featDir)
+        else:
+            design      = np.zeros((0, 0))
+            names, cons = [], []
         
         fslimage.Image.__init__(self, path, **kwargs)
 
@@ -113,6 +118,13 @@ class FEATImage(fslimage.Image):
         is not part of another analysis.
         """
         return featresults.getTopLevelAnalysisDir(self.__featDir)
+
+
+    def hasStats(self):
+        """Returns ``True`` if the analysis for this ``FEATImage`` contains
+        a statistical analysis.
+        """
+        return self.__design.size > 0
         
 
     def getDesign(self):
