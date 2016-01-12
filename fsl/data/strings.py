@@ -104,8 +104,7 @@ messages = TypeDict({
     'CanvasPanel.screenshot'            : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved'   : 'Overlay {} needs saving before a '
                                           'screenshot can be taken.',
-    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
-                                          'please wait ...',
+    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot to {}...',
     'CanvasPanel.screenshot.error'      : 'Sorry, there was an error '
                                           'saving the screenshot. Try '
                                           'calling render directly with '
