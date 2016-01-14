@@ -10,8 +10,10 @@ as a mixin for providing a simple notification API.
 
 
 import logging
-import weakref
+import inspect
 import collections
+
+import props
 
 
 log = logging.getLogger(__name__)
@@ -24,7 +26,8 @@ class Notifier(object):
     the :meth:`notify` method.
 
     .. note:: The ``Notifier`` class stores ``weakref`` references to
-              registered callback functions.
+              registered callback functions, using the :class:`WeakFunctionRef`
+              class, provided by the :mod:`props` package.
     """
 
     def __new__(cls, *args, **kwargs):
@@ -44,7 +47,10 @@ class Notifier(object):
         :arg callback: The function to call - must accept this ``Notifier``
                        instance as its sole argument.
         """
-        self.__listeners[name] = weakref.ref(callback)
+
+        # We use a WeakFunctionRef so we can refer to
+        # both functions and class/instance methods
+        self.__listeners[name] = props.WeakFunctionRef(callback)
 
         log.debug('{}: Registered listener {} (function: {})'.format(
             type(self).__name__,
@@ -68,7 +74,7 @@ class Notifier(object):
         if callback is None:
             return
         
-        callback = callback()
+        callback = callback.function()
 
         if callback is not None:
             cbName = getattr(callback, '__name__', '<callable>')
@@ -81,17 +87,33 @@ class Notifier(object):
 
     def notify(self):
         """Notify all registered listeners of this ``Notifier``. """
-        
-        log.debug('{}: Notifying listeners'.format(type(self).__name__))
+
 
         listeners = list(self.__listeners.items())
+
+        if log.getEffectiveLevel() >= logging.DEBUG:
+            stack = inspect.stack()
+            frame = stack[1]
+
+            srcMod  = '...{}'.format(frame[1][-20:])
+            srcLine = frame[2] 
+
+            log.debug('{}: Notifying {} listeners [{}:{}]'.format(
+                type(self).__name__,
+                len(listeners),
+                srcMod,
+                srcLine))
                 
         for name, callback in listeners:
 
-            callback = callback()
+            callback = callback.function()
 
             # The callback, or the owner of the
             # callback function may have been
             # gc'd - remove it if this is the case.
-            if callback is None: self.__listeners.pop(name)
-            else:                callback(self)
+            if callback is None:
+                log.debug('Listener {} has been gc\'d - '
+                          'removing from list'.format(name))
+                self.__listeners.pop(name)
+            else:
+                callback(self)
