@@ -26,6 +26,7 @@ import argparse
 
 import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
 import fsl.fsleyes.displaycontext    as displaycontext
+import fsl.fsleyes.perspectives      as perspectives
 import fsl.fsleyes.overlay           as fsloverlay
 import fsl.utils.status              as status
 
@@ -42,6 +43,15 @@ def parseArgs(argv):
     """
 
     parser = argparse.ArgumentParser(add_help=False)
+
+    # TODO When you re-write the fsl settings module
+    # so that it works without GUI, you will be able
+    # to specify the possible options that this
+    # argument can take.
+    parser.add_argument('-ps', '--perspective',
+                        help='Frame layout perspective. If not provided, the '
+                             'previous layout is restored. This setting is '
+                             'overridden by the \'--scene\' option.')
 
     # Options for configuring the scene are
     # managed by the fsleyes_parseargs module
@@ -160,17 +170,17 @@ def interface(parent, args, ctx):
     :returns: the :class:`.FSLEyesFrame` that was created.
     """
 
-    import                                    wx
-    import fsl.fsleyes.frame               as fsleyesframe
-    import fsl.fsleyes.views.orthopanel    as op
-    import fsl.fsleyes.views.lightboxpanel as lbp
+    import                      wx
+    import fsl.fsleyes.frame as fsleyesframe
+    import fsl.fsleyes.views as views
 
     overlayList, displayCtx, splashFrame = ctx
 
-    # If a scene has not been specified, the default
-    # behaviour is to restore the previous frame layout
-    if args.scene is None: restore = True
-    else:                  restore = False
+    # If a scene or perspective has not been
+    # specified, the default behaviour is to
+    # restore the previous frame layout.
+    if args.scene is None and args.perspective is None: restore = True
+    else:                                               restore = False
 
     status.update('Creating FSLeyes interface...')
     
@@ -189,24 +199,39 @@ def interface(parent, args, ctx):
     splashFrame.Hide()
     splashFrame.Refresh()
     splashFrame.Update()
- 
     wx.CallLater(250, splashFrame.Close)
 
-    # Otherwise, we add the scene
-    # specified by the user
-    if   args.scene == 'ortho':    frame.addViewPanel(op .OrthoPanel)
-    elif args.scene == 'lightbox': frame.addViewPanel(lbp.LightBoxPanel)
+    # If a scene is specified, we add
+    # the panel corresponding to the scene.
+    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
+    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
+
+    # Otherwise, if a perspective has been
+    # specified, we load the perspective
+    elif args.perspective is not None:
+        perspectives.loadPerspective(frame, args.perspective)
 
     # The viewPanel is assumed to be a CanvasPanel 
     # (i.e. either OrthoPanel or LightBoxPanel)
-    viewPanel = frame.getViewPanels()[0]
-    viewOpts  = viewPanel.getSceneOptions()
+    viewPanels = frame.getViewPanels()
 
     status.update('Setting up scene...')
 
-    fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
+    for viewPanel in viewPanels:
+
+        if not isinstance(viewPanel, views.CanvasPanel):
+            continue
+
+        displayCtx = viewPanel.getDisplayContext()
+        viewOpts   = viewPanel.getSceneOptions()
+
+        fsleyes_parseargs.applySceneArgs(
+            args, overlayList, displayCtx, viewOpts)
 
     if args.scene == 'ortho':
+
+        viewPanel  = viewPanels[0]
+        displayCtx = viewPanel.getDisplayContext()
 
         xcentre = args.xcentre
         ycentre = args.ycentre
@@ -219,6 +244,7 @@ def interface(parent, args, ctx):
         viewPanel.getXCanvas().centreDisplayAt(*xcentre)
         viewPanel.getYCanvas().centreDisplayAt(*ycentre)
         viewPanel.getZCanvas().centreDisplayAt(*zcentre)
+ 
     return frame
 
     
