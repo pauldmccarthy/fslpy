@@ -484,7 +484,8 @@ def parseArgs(argv):
                                             argv,
                                             'render',
                                             'Scene renderer',
-                                            '-of outfile [options]')
+                                            '-of outfile [options]',
+                                            fileOpts=['of', 'outfile'])
 
     if namespace.outfile is None:
         log.error('outfile is required')
