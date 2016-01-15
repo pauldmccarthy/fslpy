@@ -48,7 +48,7 @@ def parseArgs(argv):
     return fsleyes_parseargs.parseArgs(parser,
                                        argv,
                                        'fsleyes',
-                                       'Image viewer')
+                                       'FSLeyes - the FSL image viewer')
 
 
 def context(args):
