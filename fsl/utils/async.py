@@ -59,12 +59,17 @@ def run(task, onFinish=None, name=None):
 
     :arg name:     An optional name to use for this task in log statements.
 
-    .. note:: If a ``wx`` application is not running, the ``onFinish``
-              function is called directly from the task thread.
+    :returns: A reference to the ``Thread`` that was created.
+
+    .. note:: If a ``wx`` application is not running, the ``task`` and
+              ``onFinish`` functions will simply be called directly, and
+             the return value will be ``None``.
     """
 
     if name is None:
         name = 'async task'
+
+    haveWX = _haveWX()
 
     def wrapper():
 
@@ -73,24 +78,26 @@ def run(task, onFinish=None, name=None):
 
         log.debug('Task "{}" finished'.format(name))
 
-        if onFinish is not None:
+        if (onFinish is not None):
 
-            if _haveWX():
-                import wx
+            import wx
 
-                log.debug('Scheduling task "{}" finish handler '
-                          'on wx.MainLoop'.format(name))
+            log.debug('Scheduling task "{}" finish handler '
+                      'on wx.MainLoop'.format(name))
 
-                wx.CallAfter(onFinish)
-            else:
-                log.debug('Running task "{}" finish handler'.format(name)) 
-                onFinish()
-                
+            wx.CallAfter(onFinish)
 
-    thread = threading.Thread(target=wrapper)
-    thread.start()
-
-    return thread
+    if haveWX:
+        thread = threading.Thread(target=wrapper)
+        thread.start()
+        return thread
+ 
+    else:
+        log.debug('Running task "{}" directly'.format(name)) 
+        task()
+        log.debug('Running task "{}" finish handler'.format(name)) 
+        onFinish()
+        return None
 
 
 _idleRegistered = False

@@ -165,7 +165,10 @@ def runTool(toolName, args, **kwargs):
     """
 
     args = [toolName] + args
-    
+
+    if log.getEffectiveLevel() == logging.DEBUG:
+        args = ['-vvv'] + args
+
     # If we are running from a compiled fsleyes
     # executable, we need to prepend command line
     # arguments with 'cmd' - see the wrapper script
