@@ -339,6 +339,18 @@ def run(args, context):
             width=width,
             height=height)
 
+        c.showCursor      = sceneOpts.showCursor
+        c.cursorColour    = sceneOpts.cursorColour
+        c.bgColour        = sceneOpts.bgColour
+        c.renderMode      = sceneOpts.renderMode
+        c.resolutionLimit = sceneOpts.resolutionLimit
+        c.sliceSpacing    = sceneOpts.sliceSpacing
+        c.nrows           = sceneOpts.nrows
+        c.ncols           = sceneOpts.ncols
+        c.zrange          = sceneOpts.zrange
+        c.showGridLines   = sceneOpts.showGridLines
+        c.highlightSlice  = sceneOpts.highlightSlice
+
         props.applyArguments(c, args)
         canvases.append(c)
 
@@ -397,6 +409,12 @@ def run(args, context):
                 zax=zax,
                 width=int(width),
                 height=int(height))
+
+            c.showCursor      = sceneOpts.showCursor
+            c.cursorColour    = sceneOpts.cursorColour
+            c.bgColour        = sceneOpts.bgColour
+            c.renderMode      = sceneOpts.renderMode
+            c.resolutionLimit = sceneOpts.resolutionLimit
             
             if zoom is not None: c.zoom = zoom
             c.centreDisplayAt(*centre)
@@ -407,8 +425,6 @@ def run(args, context):
     # lightbox canvases) and render them one by one
     for i, c in enumerate(canvases):
 
-        c.bgColour   = sceneOpts.bgColour
-        c.showCursor = sceneOpts.showCursor
         if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
         elif c.zax == 1: c.pos.xyz = displayCtx.location.xzy
         elif c.zax == 2: c.pos.xyz = displayCtx.location.xyz
@@ -511,9 +527,16 @@ def parseArgs(argv):
 
 def context(args):
 
-    # Create an image list and display context 
-    overlayList  = fsloverlay.OverlayList()
-    displayCtx = displaycontext.DisplayContext(overlayList)
+    # Create an image list and display context.
+    # The DisplayContext, Display and DisplayOpts
+    # classes are designed to be created in a
+    # parent-child hierarchy. So we need to create
+    # a 'dummy' master display context to make
+    # things work properly.
+    overlayList      = fsloverlay.OverlayList()
+    masterDisplayCtx = displaycontext.DisplayContext(overlayList)
+    childDisplayCtx  = displaycontext.DisplayContext(overlayList,
+                                                     parent=masterDisplayCtx)
 
     # The handleOverlayArgs function uses the
     # fsl.fsleyes.overlay.loadOverlays function,
@@ -528,12 +551,12 @@ def context(args):
     # Load the overlays specified on the command
     # line, and configure their display properties
     fsleyes_parseargs.applyOverlayArgs(
-        args, overlayList, displayCtx, loadFunc=load, errorFunc=error)
+        args, overlayList, masterDisplayCtx, loadFunc=load, errorFunc=error)
 
     if len(overlayList) == 0:
         raise RuntimeError('At least one overlay must be specified')
 
-    return overlayList, displayCtx
+    return overlayList, childDisplayCtx
  
 
 FSL_TOOLNAME  = 'Render'
