@@ -178,14 +178,16 @@ def interface(parent, args, ctx):
 
     # If a scene or perspective has not been
     # specified, the default behaviour is to
-    # restore the previous frame layout.
-    if args.scene is None and args.perspective is None: restore = True
-    else:                                               restore = False
+    # restore the previous frame layout. And
+    # if a scene is specified, the layout is
+    # not saved on exit.
+    restore = args.scene is None and args.perspective is None
+    save    = args.scene is None
 
     status.update('Creating FSLeyes interface...')
     
     frame = fsleyesframe.FSLEyesFrame(
-        parent, overlayList, displayCtx, restore)
+        parent, overlayList, displayCtx, restore, save)
 
     # Make sure the new frame is shown
     # before destroying the splash screen
