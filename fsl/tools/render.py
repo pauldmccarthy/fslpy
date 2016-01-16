@@ -13,13 +13,12 @@ See:
 """
 
 
-import os
+import            os
 import os.path as op
-import sys
-
-import logging
-
-import argparse
+import            sys
+import            logging
+import            textwrap
+import            argparse
 
 import props
 
@@ -479,12 +478,22 @@ def parseArgs(argv):
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
+
+
+    name        = 'render'
+    optStr      = '-of outfile [options]'
+    description = textwrap.dedent("""\
+        FSLeyes screenshot generator.
+
+        Use the '--scene' option to choose between orthographic
+        ('ortho') or lightbox ('lightbox') view.
+        """)
     
     namespace = fsleyes_parseargs.parseArgs(mainParser,
                                             argv,
-                                            'render',
-                                            'Scene renderer',
-                                            '-of outfile [options]',
+                                            name,
+                                            description,
+                                            optStr,
                                             fileOpts=['of', 'outfile'])
 
     if namespace.outfile is None:
@@ -492,8 +501,9 @@ def parseArgs(argv):
         mainParser.print_usage()
         sys.exit(1)
 
-    if namespace.scene is None:
-        log.info('Scene option not specified - defaulting to ortho')
+    if namespace.scene not in ('ortho', 'lightbox'):
+        log.info('Unknown scene specified  ("{}") - defaulting '
+                 'to ortho'.format(namespace.scene))
         namespace.scene = 'ortho'
  
     return namespace

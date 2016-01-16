@@ -22,6 +22,7 @@ See the :mod:`~fsl.fsleyes` package documentation for more details on
 
 
 import logging
+import textwrap
 import argparse
 
 import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
@@ -42,23 +43,29 @@ def parseArgs(argv):
     :arg argv: command line arguments for ``fsleyes``.
     """
 
-    parser = argparse.ArgumentParser(add_help=False)
+    parser = argparse.ArgumentParser(
+        add_help=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    # TODO When you re-write the fsl settings module
-    # so that it works without GUI, you will be able
-    # to specify the possible options that this
-    # argument can take.
-    parser.add_argument('-ps', '--perspective',
-                        help='Frame layout perspective. If not provided, the '
-                             'previous layout is restored. This setting is '
-                             'overridden by the \'--scene\' option.')
+    name        = 'fsleyes'
+    description = textwrap.dedent("""\
+        FSLeyes - the FSL image viewer.
+        
+        The '--scene' option may be used to:
+        
+          - Specify a single view to open ('ortho' or 'lightbox').
+          - Specify a saved perspective to open (TODO list saved
+            perspectives here).
+        
+        If no '--scene' is specified, the previous layout is restored.
+        """)
 
     # Options for configuring the scene are
     # managed by the fsleyes_parseargs module
     return fsleyes_parseargs.parseArgs(parser,
                                        argv,
-                                       'fsleyes',
-                                       'FSLeyes - the FSL image viewer')
+                                       name,
+                                       description)
 
 
 def context(args):
@@ -176,13 +183,24 @@ def interface(parent, args, ctx):
 
     overlayList, displayCtx, splashFrame = ctx
 
+    # The scene argument can be:
+    #
+    #   - 'lightbox' or 'ortho', specifying a single view
+    #      panel to display.
+    # 
+    #   - The name of a saved (or built-in) perspective
+    # 
+    #   - None, in which case the previous layout is restored
+    scene = args.scene
+
     # If a scene or perspective has not been
     # specified, the default behaviour is to
     # restore the previous frame layout. And
     # if a scene is specified, the layout is
     # not saved on exit.
-    restore = args.scene is None and args.perspective is None
-    save    = args.scene is None
+
+    restore = scene is None
+    save    = scene not in ('ortho', 'lightbox')
 
     status.update('Creating FSLeyes interface...')
     
@@ -210,8 +228,8 @@ def interface(parent, args, ctx):
 
     # Otherwise, if a perspective has been
     # specified, we load the perspective
-    elif args.perspective is not None:
-        perspectives.loadPerspective(frame, args.perspective)
+    elif args.scene is not None:
+        perspectives.loadPerspective(frame, args.scene)
 
     # The viewPanel is assumed to be a CanvasPanel 
     # (i.e. either OrthoPanel or LightBoxPanel)
