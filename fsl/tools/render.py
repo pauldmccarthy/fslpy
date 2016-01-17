@@ -29,6 +29,7 @@ import fsl.utils.textbitmap                    as textbitmap
 import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
 import fsl.fsleyes.overlay                     as fsloverlay
+import fsl.fsleyes.colourmaps                  as fslcm
 import fsl.fsleyes.fsleyes_parseargs           as fsleyes_parseargs
 import fsl.fsleyes.displaycontext              as displaycontext
 import fsl.fsleyes.displaycontext.orthoopts    as orthoopts
@@ -59,10 +60,10 @@ def buildLabelBitmaps(overlayList,
     either ``top``, ``bottom``, ``left`` or ``right``.
     """
     
-    # Default colour is white - if the orientation labels
-    # cannot be determined, the foreground colour will be
-    # changed to red
-    fgColour = 'white'
+    # Default label colour is determined from the background
+    # colour. If the orientation labels cannot be determined
+    # though, the foreground colour will be changed to red.
+    fgColour = fslcm.complementaryColour(bgColour)
 
     overlay = displayCtx.getReferenceImage(displayCtx.getSelectedOverlay())
 
