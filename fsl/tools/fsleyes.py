@@ -47,15 +47,17 @@ def parseArgs(argv):
         add_help=False,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    # TODO Dynamically generate perspective list
+    # in description. To do this, you will need
+    # to make fsl.utils.settings work without a
+    # wx.App (so we can retrieve the perspective
+    # list before the GUI is created).
     name        = 'fsleyes'
     description = textwrap.dedent("""\
         FSLeyes - the FSL image viewer.
         
-        The '--scene' option may be used to:
-        
-          - Specify a single view to open ('ortho' or 'lightbox').
-          - Specify a saved perspective to open (TODO list saved
-            perspectives here).
+        Use the '--scene' option to load a saved perspective (e.g. 'default',
+        'melodic', 'feat', 'ortho', or 'lightbox').
         
         If no '--scene' is specified, the previous layout is restored.
         """)
@@ -195,17 +197,13 @@ def interface(parent, args, ctx):
 
     # If a scene or perspective has not been
     # specified, the default behaviour is to
-    # restore the previous frame layout. And
-    # if a scene is specified, the layout is
-    # not saved on exit.
-
+    # restore the previous frame layout. 
     restore = scene is None
-    save    = scene not in ('ortho', 'lightbox')
 
     status.update('Creating FSLeyes interface...')
     
     frame = fsleyesframe.FSLEyesFrame(
-        parent, overlayList, displayCtx, restore, save)
+        parent, overlayList, displayCtx, restore, True)
 
     # Make sure the new frame is shown
     # before destroying the splash screen
@@ -221,14 +219,10 @@ def interface(parent, args, ctx):
     splashFrame.Update()
     wx.CallLater(250, splashFrame.Close)
 
-    # If a scene is specified, we add
-    # the panel corresponding to the scene.
-    if   args.scene == 'ortho':    frame.addViewPanel(views.OrthoPanel)
-    elif args.scene == 'lightbox': frame.addViewPanel(views.LightBoxPanel)
 
-    # Otherwise, if a perspective has been
-    # specified, we load the perspective
-    elif args.scene is not None:
+    # If a perspective has been specified,
+    # we load the perspective
+    if args.scene is not None:
         perspectives.loadPerspective(frame, args.scene)
 
     # The viewPanel is assumed to be a CanvasPanel 
@@ -247,23 +241,6 @@ def interface(parent, args, ctx):
 
         fsleyes_parseargs.applySceneArgs(
             args, overlayList, displayCtx, viewOpts)
-
-    if args.scene == 'ortho':
-
-        viewPanel  = viewPanels[0]
-        displayCtx = viewPanel.getDisplayContext()
-
-        xcentre = args.xcentre
-        ycentre = args.ycentre
-        zcentre = args.zcentre
-
-        if xcentre is None: xcentre = displayCtx.location.yz
-        if ycentre is None: ycentre = displayCtx.location.xz
-        if zcentre is None: zcentre = displayCtx.location.xy
-
-        viewPanel.getXCanvas().centreDisplayAt(*xcentre)
-        viewPanel.getYCanvas().centreDisplayAt(*ycentre)
-        viewPanel.getZCanvas().centreDisplayAt(*zcentre)
  
     return frame
 

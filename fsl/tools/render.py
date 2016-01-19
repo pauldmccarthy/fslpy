@@ -345,9 +345,9 @@ def run(args, context):
         c.bgColour        = sceneOpts.bgColour
         c.renderMode      = sceneOpts.renderMode
         c.resolutionLimit = sceneOpts.resolutionLimit
-        c.sliceSpacing    = sceneOpts.sliceSpacing
         c.nrows           = sceneOpts.nrows
         c.ncols           = sceneOpts.ncols
+        c.sliceSpacing    = sceneOpts.sliceSpacing
         c.zrange          = sceneOpts.zrange
         c.showGridLines   = sceneOpts.showGridLines
         c.highlightSlice  = sceneOpts.highlightSlice

@@ -868,9 +868,11 @@ melodic = TypeDict({
 })
 
 perspectives = {
-    'default' : 'Default layout',
-    'melodic' : 'Melodic mode',
-    'feat'    : 'FEAT mode',
+    'default'  : 'Default layout',
+    'melodic'  : 'Melodic mode',
+    'feat'     : 'FEAT mode',
+    'ortho'    : 'Plain orthographic',
+    'lightbox' : 'Plain lightbox',
 }
 
 tensor = {
