@@ -340,6 +340,10 @@ def run(args, context):
             width=width,
             height=height)
 
+        # Should I be initialising all of
+        # these? Aren't they initialised
+        # in the call to applyArguments
+        # below?
         c.showCursor      = sceneOpts.showCursor
         c.cursorColour    = sceneOpts.cursorColour
         c.bgColour        = sceneOpts.bgColour
