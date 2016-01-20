@@ -636,14 +636,17 @@ choices = TypeDict({
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
 
+    'MaskOpts.threshold.min' : 'Min.',
+    'MaskOpts.threshold.max' : 'Max.', 
+
     'VectorOpts.displayType.line' : 'Lines',
     'VectorOpts.displayType.rgb'  : 'RGB',
 
     'VectorOpts.modulateImage.none' : 'No modulation',
     'VectorOpts.clipImage.none'     : 'No clipping',
     
-    'VectorOpts.clippingRange.min' : 'Min.',
-    'VectorOpts.clippingRange.max' : 'Max.', 
+    'VectorOpts.clippingRange.min' : 'Clip min.',
+    'VectorOpts.clippingRange.max' : 'Clip max.', 
 
     'ModelOpts.refImage.none'     : 'No reference image',
 
