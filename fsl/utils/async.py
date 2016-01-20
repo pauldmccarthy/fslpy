@@ -4,8 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides a couple of functions for running tasks
-asynchronously - :func:`run` and :func:`idle`.
+"""This module provides functions for running tasks asynchronously.
 
 
 .. note:: The functions in this module are intended to be run from within a
@@ -26,6 +25,10 @@ The :func:`idle` function is a simple way to run a task on an ``wx``
 ``EVT_IDLE`` event handler. This effectively performs the same job as the
 :func:`run` function, but is more suitable for short tasks which do not
 warrant running in a separate thread.
+
+The :func:`wait` function is given one or more ``Thread`` instances, and a
+task to run. It waits until all the threads have finished, and then runs
+the task (via :func:`idle`).
 """
 
 import Queue
@@ -85,6 +88,7 @@ def run(task, onFinish=None, name=None):
             log.debug('Scheduling task "{}" finish handler '
                       'on wx.MainLoop'.format(name))
 
+            # Should I use the idle function here?
             wx.CallAfter(onFinish)
 
     if haveWX:
@@ -122,7 +126,8 @@ def _wxIdleLoop(ev):
 
     try:                task, args, kwargs = _idleQueue.get_nowait()
     except Queue.Empty: return
-        
+
+    log.debug('Running function on wx idle loop')
     task(*args, **kwargs)
 
     if _idleQueue.qsize() > 0:
@@ -135,6 +140,8 @@ def idle(task, *args, **kwargs):
     :arg task: The task to run.
 
     All other arguments are passed through to the task function.
+
+    If a ``wx.App`` is not running, the task is called directly.
     """
 
     global _idleRegistered
@@ -154,3 +161,39 @@ def idle(task, *args, **kwargs):
     else:
         log.debug('Running idle task directly') 
         task(*args, **kwargs)
+
+
+def wait(threads, task, *args, **kwargs):
+    """Creates and starts a new ``Thread`` which waits for all of the ``Thread``
+    instances to finsih (by ``join``ing them), and then runs the given
+    ``task`` via :func:`idle`.
+
+    If a ``wx.App`` is not running, this function ``join``s the threads
+    directly instead of creating a new ``Thread`` to do so.
+
+    :arg threads: A sequence of ``Thread`` instances to join. Elements in the
+                  sequence may be ``None``.
+
+    :arg task:    The task to run.
+
+    All other arguments are passed to the ``task`` function.
+    """
+    haveWX = _haveWX()
+
+    def joinAll():
+        log.debug('Wait thread joining on all targets')
+        for t in threads:
+            if t is not None:
+                t.join()
+
+        log.debug('Wait thread scheduling task on idle loop')
+        idle(task, *args, **kwargs)
+
+    if haveWX:
+        thread = threading.Thread(target=joinAll)
+        thread.start()
+        return thread
+    
+    else:
+        joinAll()
+        return None
