@@ -70,7 +70,7 @@ def run(task, onFinish=None, name=None):
     """
 
     if name is None:
-        name = 'async task'
+        name = getattr(task, '__name__', '<unknown>')
 
     haveWX = _haveWX()
 
@@ -127,7 +127,8 @@ def _wxIdleLoop(ev):
     try:                task, args, kwargs = _idleQueue.get_nowait()
     except Queue.Empty: return
 
-    log.debug('Running function on wx idle loop')
+    name = getattr(task, '__name__', '<unknown>')
+    log.debug('Running function ({}) on wx idle loop'.format(name))
     task(*args, **kwargs)
 
     if _idleQueue.qsize() > 0:
@@ -154,7 +155,8 @@ def idle(task, *args, **kwargs):
             wx.GetApp().Bind(wx.EVT_IDLE, _wxIdleLoop)
             _idleRegistered = True
 
-        log.debug('Scheduling idle task on wx idle loop')
+        name = getattr(task, '__name__', '<unknown>')
+        log.debug('Scheduling idle task ({}) on wx idle loop'.format(name))
 
         _idleQueue.put_nowait((task, args, kwargs))
             
