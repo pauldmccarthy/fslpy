@@ -8,7 +8,7 @@ Dependencies:
  - matplotlib 1.3.1
  - nibabel    1.3.0
  - Pillow     2.5.3 (for screenshots of any type other than PNG)
-
+ - PyParsing  2.0.3
  - wxPython   3.0.0.0
 
  - OSMesa 6.5.3 (for off-screen rendering)
@@ -17,7 +17,11 @@ Dependencies:
    - OpenGL 1.4, with the following extensions:
      - ARB_vertex_program
      - ARB_fragment_program
-   - OpenGL 2.1
+     - EXT_framebuffer_object
+   - OpenGL 2.1, with the following extensions:
+     - EXT_framebuffer_object
+     - ARB_instanced_arrays
+     - ARB_draw_instanced
 
 Some of the icons are derived from the Freeline icon set, by Enes Dal,
 available at https://www.iconfinder.com/Enesdal, and released under the
