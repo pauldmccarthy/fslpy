@@ -219,7 +219,6 @@ def interface(parent, args, ctx):
     splashFrame.Update()
     wx.CallLater(250, splashFrame.Close)
 
-
     # If a perspective has been specified,
     # we load the perspective
     if args.scene is not None:
