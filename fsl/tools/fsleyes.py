@@ -30,6 +30,7 @@ import fsl.fsleyes.displaycontext    as displaycontext
 import fsl.fsleyes.perspectives      as perspectives
 import fsl.fsleyes.overlay           as fsloverlay
 import fsl.utils.status              as status
+import fsl.utils.async               as async
 
 
 log = logging.getLogger(__name__)
@@ -240,7 +241,18 @@ def interface(parent, args, ctx):
 
         fsleyes_parseargs.applySceneArgs(
             args, overlayList, displayCtx, viewOpts)
- 
+
+        def centre():
+            if args.xcentre:
+                viewPanel.getXCanvas().centreDisplayAt(*args.xcentre)
+            if args.ycentre:
+                viewPanel.getYCanvas().centreDisplayAt(*args.ycentre)
+            if args.zcentre:
+                viewPanel.getZCanvas().centreDisplayAt(*args.zcentre)
+
+        if isinstance(viewPanel, views.OrthoPanel):
+            async.idle(centre)
+            
     return frame
 
     
