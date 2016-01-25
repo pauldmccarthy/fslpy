@@ -9,6 +9,7 @@ Dependencies:
  - nibabel    1.3.0
  - Pillow     2.5.3 (for screenshots of any type other than PNG)
  - PyParsing  2.0.3
+ - Jinja2     2.8
  - wxPython   3.0.0.0
 
  - OSMesa 6.5.3 (for off-screen rendering)
