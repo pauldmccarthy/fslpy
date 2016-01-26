@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.gl.gl21.glmodel_funcs module
 ========================================
 

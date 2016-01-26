@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.gl.glrgbvector module
 =================================
 

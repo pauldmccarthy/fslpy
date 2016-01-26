@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.utils.trace module
 ======================
 

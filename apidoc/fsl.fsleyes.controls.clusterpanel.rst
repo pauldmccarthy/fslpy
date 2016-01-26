@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.controls.clusterpanel module
 ========================================
 

@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.fsleyes.gl.gl14.glvolume_funcs module
+fsl.fsleyes.gl.gl21.gltensor_funcs module
 =========================================
 
-.. automodule:: fsl.fsleyes.gl.gl14.glvolume_funcs
+.. automodule:: fsl.fsleyes.gl.gl21.gltensor_funcs
     :members:
     :undoc-members:
     :show-inheritance:

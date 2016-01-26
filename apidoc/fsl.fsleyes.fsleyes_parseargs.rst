@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.fsleyes_parseargs module
 ====================================
 

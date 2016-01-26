@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.fsleyes.gl.routines module
+fsl.fsleyes.gl.gltensor module
 ==============================
 
-.. automodule:: fsl.fsleyes.gl.routines
+.. automodule:: fsl.fsleyes.gl.gltensor
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.views.canvaspanel module
 ====================================
 

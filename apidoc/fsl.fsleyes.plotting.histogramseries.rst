@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.plotting.histogramseries module
 ===========================================
 

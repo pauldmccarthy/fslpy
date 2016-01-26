@@ -1,3 +1,5 @@
+:orphan:
+
 fsl.fsleyes.gl.gl21.gllabel_funcs module
 ========================================
 
