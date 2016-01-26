@@ -1,7 +1,7 @@
-fsl.fsleyes.controls.timeserieslistpanel module
+fsl.fsleyes.plotting.powerspectrumseries module
 ===============================================
 
-.. automodule:: fsl.fsleyes.controls.timeserieslistpanel
+.. automodule:: fsl.fsleyes.plotting.powerspectrumseries
     :members:
     :undoc-members:
     :show-inheritance:

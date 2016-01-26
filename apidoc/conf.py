@@ -12,8 +12,11 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
+import sys
+import datetime
+
+date = datetime.date.today()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -53,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'fslpy'
-copyright = u'2015, Paul McCarthy, FMRIB Centre'
+copyright = u'{}, Paul McCarthy, FMRIB Centre'.format(date.year)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -274,7 +277,7 @@ texinfo_documents = [
 epub_title = u'FSLpy'
 epub_author = u'Paul McCarthy'
 epub_publisher = u'Paul McCarthy'
-epub_copyright = u'2014, Paul McCarthy'
+epub_copyright = u'{}, Paul McCarthy'.format(date.year)
 
 # The basename for the epub file. It defaults to the project name.
 #epub_basename = u'FSLpy'
