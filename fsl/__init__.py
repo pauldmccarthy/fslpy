@@ -192,7 +192,21 @@ def runTool(toolName, args, **kwargs):
 def _getFSLToolNames():
     """Returns the name of every tool in the :mod:`fsl.tools` package. """
 
-    allTools  = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
+    # Under linux/Pyinstaller 3.1, iter_modules
+    # doesn't seem to work, even if i include
+    # the source code in the frozen app directory.
+    # So i'm hard coding the names of the tool
+    # modules.
+    # 
+    # A workaround would be to manually glob the
+    # fsl/tools/ directory which, if I continue
+    # to add the source code to the frozen app
+    # directory, should work for both frozen and
+    # unfrozen apps.
+    if getattr(sys, 'frozen', False):
+        allTools = ['fsleyes', 'render', 'bet', 'flirt', 'feat']
+    else:
+        allTools = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
 
     return allTools
 
