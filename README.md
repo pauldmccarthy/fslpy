@@ -28,7 +28,7 @@ Dependencies
 
 | Library                                           | Version |
 | ------------------------------------------------- | ------- |
-| [props](https://git.fmrib.ox.ac.uk/paulmc/fslpy/) | Latest  |
+| [props](https://git.fmrib.ox.ac.uk/paulmc/props/) | Latest  |
 | [PyOpenGL](http://pyopengl.sourceforge.net/)      | 3.1.0   |
 | [numpy](http://www.numpy.org/)                    | 1.8.1   |
 | [scipy](http://www.scipy.org/)                    | 0.14.0  |
