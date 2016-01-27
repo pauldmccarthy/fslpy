@@ -22,11 +22,15 @@ See the :mod:`~fsl.fsleyes` package documentation for more details on
 
 
 import logging
+import textwrap
 import argparse
 
 import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
 import fsl.fsleyes.displaycontext    as displaycontext
+import fsl.fsleyes.perspectives      as perspectives
 import fsl.fsleyes.overlay           as fsloverlay
+import fsl.utils.status              as status
+import fsl.utils.async               as async
 
 
 log = logging.getLogger(__name__)
@@ -40,19 +44,31 @@ def parseArgs(argv):
     :arg argv: command line arguments for ``fsleyes``.
     """
 
-    parser = argparse.ArgumentParser(add_help=False)
+    parser = argparse.ArgumentParser(
+        add_help=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    # FSLEyes application options
-    parser.add_argument('-gl', '--glversion',
-                        metavar=('MAJOR', 'MINOR'), type=int, nargs=2,
-                        help='Desired (major, minor) OpenGL version')
+    # TODO Dynamically generate perspective list
+    # in description. To do this, you will need
+    # to make fsl.utils.settings work without a
+    # wx.App (so we can retrieve the perspective
+    # list before the GUI is created).
+    name        = 'fsleyes'
+    description = textwrap.dedent("""\
+        FSLeyes - the FSL image viewer.
+        
+        Use the '--scene' option to load a saved perspective (e.g. 'default',
+        'melodic', 'feat', 'ortho', or 'lightbox').
+        
+        If no '--scene' is specified, the previous layout is restored.
+        """)
 
     # Options for configuring the scene are
     # managed by the fsleyes_parseargs module
     return fsleyes_parseargs.parseArgs(parser,
                                        argv,
-                                       'fsleyes',
-                                       'Image viewer')
+                                       name,
+                                       description)
 
 
 def context(args):
@@ -79,7 +95,6 @@ def context(args):
                 - the :class:`.FSLEyesSplash` frame
     """
 
-    import wx
     import fsl.fsleyes.splash as fslsplash
 
     # Create a splash screen, and use it
@@ -94,12 +109,11 @@ def context(args):
 
     frame.CentreOnScreen()
     frame.Show()
+    frame.Refresh()
     frame.Update()
-    wx.Yield()
 
     import props
-    import fsl.fsleyes.gl   as fslgl
-    import fsl.data.strings as strings
+    import fsl.fsleyes.gl as fslgl
 
     props.initGUI()
     
@@ -108,9 +122,9 @@ def context(args):
     fslgl.getWXGLContext(frame)
     fslgl.bootstrap(args.glversion)
 
-    def status(overlay):
-        frame.SetStatus(strings.messages['fsleyes.loading'].format(overlay))
-        wx.Yield()
+    # Redirect status updates
+    # to the splash frame
+    status.setTarget(frame.SetStatus)
 
     # Create the overlay list (only one of these
     # ever exists) and the master DisplayContext.
@@ -136,8 +150,7 @@ def context(args):
     
     # Load the images - the splash screen status will 
     # be updated with the currently loading overlay name
-    fsleyes_parseargs.applyOverlayArgs(
-        args, overlayList, displayCtx, loadFunc=status)  
+    fsleyes_parseargs.applyOverlayArgs(args, overlayList, displayCtx)  
 
     return overlayList, displayCtx, frame
 
@@ -167,46 +180,31 @@ def interface(parent, args, ctx):
     :returns: the :class:`.FSLEyesFrame` that was created.
     """
 
-    import                                    wx
-    import fsl.fsleyes.frame               as fsleyesframe
-    import fsl.fsleyes.views.orthopanel    as op
-    import fsl.fsleyes.views.lightboxpanel as lbp
+    import                      wx
+    import fsl.fsleyes.frame as fsleyesframe
+    import fsl.fsleyes.views as views
 
     overlayList, displayCtx, splashFrame = ctx
 
-    # If a scene has not been specified, the default
-    # behaviour is to restore the previous frame layout
-    if args.scene is None: restore = True
-    else:                  restore = False
+    # The scene argument can be:
+    #
+    #   - 'lightbox' or 'ortho', specifying a single view
+    #      panel to display.
+    # 
+    #   - The name of a saved (or built-in) perspective
+    # 
+    #   - None, in which case the previous layout is restored
+    scene = args.scene
+
+    # If a scene or perspective has not been
+    # specified, the default behaviour is to
+    # restore the previous frame layout. 
+    restore = scene is None
+
+    status.update('Creating FSLeyes interface...')
     
     frame = fsleyesframe.FSLEyesFrame(
-        parent, overlayList, displayCtx, restore)
-
-    # Otherwise, we add the scene
-    # specified by the user
-    if   args.scene == 'ortho':    frame.addViewPanel(op .OrthoPanel)
-    elif args.scene == 'lightbox': frame.addViewPanel(lbp.LightBoxPanel)
-
-    # The viewPanel is assumed to be a CanvasPanel 
-    # (i.e. either OrthoPanel or LightBoxPanel)
-    viewPanel = frame.getViewPanels()[0]
-    viewOpts  = viewPanel.getSceneOptions()
-
-    fsleyes_parseargs.applySceneArgs(args, overlayList, displayCtx, viewOpts)
-
-    if args.scene == 'ortho':
-
-        xcentre = args.xcentre
-        ycentre = args.ycentre
-        zcentre = args.zcentre
-
-        if xcentre is None: xcentre = displayCtx.location.yz
-        if ycentre is None: ycentre = displayCtx.location.xz
-        if zcentre is None: zcentre = displayCtx.location.xy
-
-        viewPanel._xcanvas.centreDisplayAt(*xcentre)
-        viewPanel._ycanvas.centreDisplayAt(*ycentre)
-        viewPanel._zcanvas.centreDisplayAt(*zcentre)
+        parent, overlayList, displayCtx, restore, True)
 
     # Make sure the new frame is shown
     # before destroying the splash screen
@@ -216,12 +214,45 @@ def interface(parent, args, ctx):
 
     # Closing the splash screen immediately
     # can cause a crash under linux/GTK, so
-    # we'll do it a bit later.
-    def closeSplash():
-        splashFrame.Close()
+    # we'll hide it now, and destroy it later.
+    splashFrame.Hide()
+    splashFrame.Refresh()
+    splashFrame.Update()
+    wx.CallLater(250, splashFrame.Close)
 
-    wx.CallLater(500, closeSplash)
-    
+    # If a perspective has been specified,
+    # we load the perspective
+    if args.scene is not None:
+        perspectives.loadPerspective(frame, args.scene)
+
+    # The viewPanel is assumed to be a CanvasPanel 
+    # (i.e. either OrthoPanel or LightBoxPanel)
+    viewPanels = frame.getViewPanels()
+
+    status.update('Setting up scene...')
+
+    for viewPanel in viewPanels:
+
+        if not isinstance(viewPanel, views.CanvasPanel):
+            continue
+
+        displayCtx = viewPanel.getDisplayContext()
+        viewOpts   = viewPanel.getSceneOptions()
+
+        fsleyes_parseargs.applySceneArgs(
+            args, overlayList, displayCtx, viewOpts)
+
+        def centre():
+            if args.xcentre:
+                viewPanel.getXCanvas().centreDisplayAt(*args.xcentre)
+            if args.ycentre:
+                viewPanel.getYCanvas().centreDisplayAt(*args.ycentre)
+            if args.zcentre:
+                viewPanel.getZCanvas().centreDisplayAt(*args.zcentre)
+
+        if isinstance(viewPanel, views.OrthoPanel):
+            async.idle(centre)
+            
     return frame
 
     

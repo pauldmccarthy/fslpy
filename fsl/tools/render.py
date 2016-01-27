@@ -13,13 +13,12 @@ See:
 """
 
 
-import os
+import            os
 import os.path as op
-import sys
-
-import logging
-
-import argparse
+import            sys
+import            logging
+import            textwrap
+import            argparse
 
 import props
 
@@ -30,6 +29,7 @@ import fsl.utils.textbitmap                    as textbitmap
 import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
 import fsl.fsleyes.overlay                     as fsloverlay
+import fsl.fsleyes.colourmaps                  as fslcm
 import fsl.fsleyes.fsleyes_parseargs           as fsleyes_parseargs
 import fsl.fsleyes.displaycontext              as displaycontext
 import fsl.fsleyes.displaycontext.orthoopts    as orthoopts
@@ -60,10 +60,10 @@ def buildLabelBitmaps(overlayList,
     either ``top``, ``bottom``, ``left`` or ``right``.
     """
     
-    # Default colour is white - if the orientation labels
-    # cannot be determined, the foreground colour will be
-    # changed to red
-    fgColour = 'white'
+    # Default label colour is determined from the background
+    # colour. If the orientation labels cannot be determined
+    # though, the foreground colour will be changed to red.
+    fgColour = fslcm.complementaryColour(bgColour)
 
     overlay = displayCtx.getReferenceImage(displayCtx.getSelectedOverlay())
 
@@ -85,12 +85,12 @@ def buildLabelBitmaps(overlayList,
     if constants.ORIENT_UNKNOWN in [xorient, yorient, zorient]:
         fgColour = 'red'
 
-    xlo = strings.anatomy['Image', 'lowshort',  xorient]
-    ylo = strings.anatomy['Image', 'lowshort',  yorient]
-    zlo = strings.anatomy['Image', 'lowshort',  zorient]
-    xhi = strings.anatomy['Image', 'highshort', xorient]
-    yhi = strings.anatomy['Image', 'highshort', yorient]
-    zhi = strings.anatomy['Image', 'highshort', zorient]
+    xlo = strings.anatomy['Nifti1', 'lowshort',  xorient]
+    ylo = strings.anatomy['Nifti1', 'lowshort',  yorient]
+    zlo = strings.anatomy['Nifti1', 'lowshort',  zorient]
+    xhi = strings.anatomy['Nifti1', 'highshort', xorient]
+    yhi = strings.anatomy['Nifti1', 'highshort', yorient]
+    zhi = strings.anatomy['Nifti1', 'highshort', zorient]
 
     loLabels = [xlo, ylo, zlo]
     hiLabels = [xhi, yhi, zhi]
@@ -340,6 +340,22 @@ def run(args, context):
             width=width,
             height=height)
 
+        # Should I be initialising all of
+        # these? Aren't they initialised
+        # in the call to applyArguments
+        # below?
+        c.showCursor      = sceneOpts.showCursor
+        c.cursorColour    = sceneOpts.cursorColour
+        c.bgColour        = sceneOpts.bgColour
+        c.renderMode      = sceneOpts.renderMode
+        c.resolutionLimit = sceneOpts.resolutionLimit
+        c.nrows           = sceneOpts.nrows
+        c.ncols           = sceneOpts.ncols
+        c.sliceSpacing    = sceneOpts.sliceSpacing
+        c.zrange          = sceneOpts.zrange
+        c.showGridLines   = sceneOpts.showGridLines
+        c.highlightSlice  = sceneOpts.highlightSlice
+
         props.applyArguments(c, args)
         canvases.append(c)
 
@@ -398,6 +414,12 @@ def run(args, context):
                 zax=zax,
                 width=int(width),
                 height=int(height))
+
+            c.showCursor      = sceneOpts.showCursor
+            c.cursorColour    = sceneOpts.cursorColour
+            c.bgColour        = sceneOpts.bgColour
+            c.renderMode      = sceneOpts.renderMode
+            c.resolutionLimit = sceneOpts.resolutionLimit
             
             if zoom is not None: c.zoom = zoom
             c.centreDisplayAt(*centre)
@@ -408,8 +430,6 @@ def run(args, context):
     # lightbox canvases) and render them one by one
     for i, c in enumerate(canvases):
 
-        c.bgColour   = sceneOpts.bgColour
-        c.showCursor = sceneOpts.showCursor
         if   c.zax == 0: c.pos.xyz = displayCtx.location.yzx
         elif c.zax == 1: c.pos.xyz = displayCtx.location.xzy
         elif c.zax == 2: c.pos.xyz = displayCtx.location.xyz
@@ -479,20 +499,32 @@ def parseArgs(argv):
                             metavar=('W', 'H'),
                             help='Size in pixels (width, height)',
                             default=(800, 600))
+
+
+    name        = 'render'
+    optStr      = '-of outfile [options]'
+    description = textwrap.dedent("""\
+        FSLeyes screenshot generator.
+
+        Use the '--scene' option to choose between orthographic
+        ('ortho') or lightbox ('lightbox') view.
+        """)
     
     namespace = fsleyes_parseargs.parseArgs(mainParser,
                                             argv,
-                                            'render',
-                                            'Scene renderer',
-                                            '-of outfile [options]')
+                                            name,
+                                            description,
+                                            optStr,
+                                            fileOpts=['of', 'outfile'])
 
     if namespace.outfile is None:
         log.error('outfile is required')
         mainParser.print_usage()
         sys.exit(1)
 
-    if namespace.scene is None:
-        log.info('Scene option not specified - defaulting to ortho')
+    if namespace.scene not in ('ortho', 'lightbox'):
+        log.info('Unknown scene specified  ("{}") - defaulting '
+                 'to ortho'.format(namespace.scene))
         namespace.scene = 'ortho'
  
     return namespace
@@ -500,9 +532,16 @@ def parseArgs(argv):
 
 def context(args):
 
-    # Create an image list and display context 
-    overlayList  = fsloverlay.OverlayList()
-    displayCtx = displaycontext.DisplayContext(overlayList)
+    # Create an image list and display context.
+    # The DisplayContext, Display and DisplayOpts
+    # classes are designed to be created in a
+    # parent-child hierarchy. So we need to create
+    # a 'dummy' master display context to make
+    # things work properly.
+    overlayList      = fsloverlay.OverlayList()
+    masterDisplayCtx = displaycontext.DisplayContext(overlayList)
+    childDisplayCtx  = displaycontext.DisplayContext(overlayList,
+                                                     parent=masterDisplayCtx)
 
     # The handleOverlayArgs function uses the
     # fsl.fsleyes.overlay.loadOverlays function,
@@ -517,12 +556,12 @@ def context(args):
     # Load the overlays specified on the command
     # line, and configure their display properties
     fsleyes_parseargs.applyOverlayArgs(
-        args, overlayList, displayCtx, loadFunc=load, errorFunc=error)
+        args, overlayList, masterDisplayCtx, loadFunc=load, errorFunc=error)
 
     if len(overlayList) == 0:
         raise RuntimeError('At least one overlay must be specified')
 
-    return overlayList, displayCtx
+    return overlayList, childDisplayCtx
  
 
 FSL_TOOLNAME  = 'Render'

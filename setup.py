@@ -46,10 +46,11 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
-    packages=find_packages(exclude=('doc')),
+    packages=find_packages(exclude=('apidoc', 'doc')),
 
     install_requires=[
         'pyopengl>=3.1.0',
+        'pyparsing>=2.0.3',
         'numpy>=1.8.1',
         'scipy>=0.14.0',
         'matplotlib>=1.3.1',

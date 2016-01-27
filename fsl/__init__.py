@@ -45,14 +45,19 @@ The conventional way to run ``fslpy`` is as follows::
           single place - the :mod:`fsl.version` module.
 """
 
+
+from __future__ import print_function
+
 import logging
 import pkgutil
 import warnings
 
 import os
 import sys
+import time
 import argparse
 import importlib
+import threading
 import subprocess
 
 
@@ -87,25 +92,58 @@ def main(args=None):
     allTools                = _getFSLToolNames()
     fslTool, args, toolArgs = _parseArgs(args, allTools)
 
+    # Is this a GUI tool?
     if fslTool.interface is not None:
+
         import wx
-        app   = wx.App()
 
-        # Context creation may assume that a wx.App has been created
-        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-        else:                           ctx = None
+        # The main interface is created on the
+        # wx.MainLoop, because it is difficult
+        # to force immediate GUI refreshes when
+        # not running on the main loop - this
+        # is important for, e.g. FSLEyes, which
+        # displays status updates to the user
+        # while it is loading overlays and
+        # setting up the interface.
+        # 
+        # To make this work, this buildGUI
+        # function is called on a separate thread
+        # (so it is executed after wx.MainLoop
+        # has been called), but it schedules its
+        # work to be done on the wx.MainLoop.
+        def buildGUI():
+            def realBuild():
 
-        _fslDirWarning(fslTool.toolName, fslEnvActive)
+                if fslTool.context is not None: ctx = fslTool.context(toolArgs)
+                else:                           ctx = None
 
-        frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
-        frame.Show()
+                _fslDirWarning(fslTool.toolName, fslEnvActive)
 
-        if args.wxinspect:
-            import wx.lib.inspection
-            wx.lib.inspection.InspectionTool().Show()
-        
+                frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
+                frame.Show()
+
+                # See comment below
+                dummyFrame.Destroy()
+
+                if args.wxinspect:
+                    import wx.lib.inspection
+                    wx.lib.inspection.InspectionTool().Show()
+
+            time.sleep(0.1)
+            wx.CallAfter(realBuild)
+
+        # Create the wx.App object, and create a dummy
+        # frame. If we don't create a dummy frame, the
+        # wx.MainLoop call will just return immediately.
+        # The buildGUI function above will kill the dummy
+        # frame when it has created the real interface.
+        app        = wx.App()
+        dummyFrame = wx.Frame(None)
+
+        threading.Thread(target=buildGUI).start()
         app.MainLoop()
-        
+
+    # Or is this a CLI tool?
     elif fslTool.execute is not None:
         
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
@@ -127,7 +165,10 @@ def runTool(toolName, args, **kwargs):
     """
 
     args = [toolName] + args
-    
+
+    if log.getEffectiveLevel() == logging.DEBUG:
+        args = ['-vvv'] + args
+
     # If we are running from a compiled fsleyes
     # executable, we need to prepend command line
     # arguments with 'cmd' - see the wrapper script
@@ -151,7 +192,21 @@ def runTool(toolName, args, **kwargs):
 def _getFSLToolNames():
     """Returns the name of every tool in the :mod:`fsl.tools` package. """
 
-    allTools  = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
+    # Under linux/Pyinstaller 3.1, iter_modules
+    # doesn't seem to work, even if i include
+    # the source code in the frozen app directory.
+    # So i'm hard coding the names of the tool
+    # modules.
+    # 
+    # A workaround would be to manually glob the
+    # fsl/tools/ directory which, if I continue
+    # to add the source code to the frozen app
+    # directory, should work for both frozen and
+    # unfrozen apps.
+    if getattr(sys, 'frozen', False):
+        allTools = ['fsleyes', 'render', 'bet', 'flirt', 'feat']
+    else:
+        allTools = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
 
     return allTools
 
@@ -249,6 +304,10 @@ def _parseArgs(argv, allTools):
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='Verbose output (can be used up to 3 times)')
+
+    parser.add_argument(
+        '-V', '--version', action='store_true',
+        help='Print the current fslpy version and exit') 
     
     parser.add_argument(
         '-n', '--noisy', metavar='MODULE', action='append',
@@ -261,13 +320,14 @@ def _parseArgs(argv, allTools):
     parser.add_argument(
         '-w', '--wxinspect', action='store_true',
         help='Run wx inspection tool')
-    parser.add_argument('tool', help='FSL program to run')
+    
+    parser.add_argument('tool', help='FSL program to run', nargs='?')
 
     # No arguments at all? 
     # I'm not a mind-reader
     if len(argv) == 0:
         parser.print_help()
-        sys.exit(1) 
+        sys.exit(1)
 
     # find the index of the first positional
     # argument, i.e. the tool name
@@ -275,6 +335,9 @@ def _parseArgs(argv, allTools):
     while True:
 
         i = i + 1
+
+        if i >= len(argv):
+            break
             
         if argv[i].startswith('-'):
             continue
@@ -293,6 +356,11 @@ def _parseArgs(argv, allTools):
 
     namespace = parser.parse_args(fslArgv)
 
+    # Version number
+    if namespace.version:
+        print('fslpy version: {}'.format(__version__))
+        sys.exit(0)
+
     if namespace.noisy is None:
         namespace.noisy = []
 
@@ -307,7 +375,7 @@ def _parseArgs(argv, allTools):
 
         # unknown tool name supplied
         if toolArgv[0] not in allTools:
-            print '\nUnknown FSL tool: {}\n'.format(toolArgv[0])
+            print('\nUnknown FSL tool: {}\n'.format(toolArgv[0]))
             parser.print_help()
             sys.exit(1)
 
@@ -315,7 +383,7 @@ def _parseArgs(argv, allTools):
 
         # no tool specific argument parser
         if fslTool.parseArgs is None:
-            print 'No help for {}'.format(toolArgv[0])
+            print('No help for {}'.format(toolArgv[0]))
             
         # Otherwise, get help from the tool. We assume that
         # all the argument parser for every  tool will interpret
@@ -326,7 +394,7 @@ def _parseArgs(argv, allTools):
 
     # Unknown tool name supplied
     elif namespace.tool not in allTools:
-        print '\nUnknown FSL tool: {}\n'.format(namespace.tool)
+        print('\nUnknown FSL tool: {}\n'.format(namespace.tool))
         parser.print_help()
         sys.exit(1)
 

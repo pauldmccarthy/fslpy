@@ -39,18 +39,36 @@ messages = TypeDict({
     'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
                                      'FSL is installed',
 
-    'fsleyes.loading'              : 'Loading {}',
     'FSLEyesSplash.default'        : 'Loading ...',
+
+    'FSLEyesFrame.restoringLayout' : 'Restoring layout from last session ...',
 
     'image.saveImage.error'      : 'An error occurred saving the file. '
                                    'Details: {}',
     
-    'image.loadImage.decompress' : '{} is a large file ({} MB) - '
+    'image.loadImage.decompress' : '{} is a large file ({:0.0f} MB) - '
                                    'decompressing to {}, to allow memory '
                                    'mapping...',
+    'image.loadImage.largeFile'  : '{} is a large file ({:0.0f}) MB) - '
+                                   'loading it may take some time...',
 
     'ProcessingDialog.error' : 'An error has occurred: {}'
                                '\n\nDetails: {}',
+
+    'perspectives.applyingPerspective' : 'Applying {} perspective ...',
+
+    'SavePerspectiveAction.enterName'        : 'Enter a name for the '
+                                               'perspective',
+    'SavePerspectiveAction.nameIsBuiltIn'    : '"{}" is a reserved '
+                                               'perspective name - '
+                                               'enter a different name.', 
+    'SavePerspectiveAction.confirmOverwrite' : 'A perspective with the name '
+                                               '"{}" already exists - do '
+                                               'you want to replace it?', 
+
+    'ClearPerspectiveAction.confirmClear' : 'All saved perspectives will be '
+                                            'cleared! Are you sure you want '
+                                            'to continue?',
 
     'overlay.loadOverlays.loading'     : 'Loading {} ...',
     'overlay.loadOverlays.error'       : 'An error occurred loading the image '
@@ -86,8 +104,7 @@ messages = TypeDict({
     'CanvasPanel.screenshot'            : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved'   : 'Overlay {} needs saving before a '
                                           'screenshot can be taken.',
-    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot - '
-                                          'please wait ...',
+    'CanvasPanel.screenshot.pleaseWait' : 'Saving screenshot to {}...',
     'CanvasPanel.screenshot.error'      : 'Sorry, there was an error '
                                           'saving the screenshot. Try '
                                           'calling render directly with '
@@ -117,11 +134,42 @@ messages = TypeDict({
                                     'in this FEAT analysis',
     'ClusterPanel.badData'        : 'Cluster data could not be parsed - '
                                     'check your cluster_*.txt files.',
-    'ClusterPanel.loadingCluster' : 'Loading data for cluster {} ...',
+    'ClusterPanel.loadingCluster' : 'Loading clusters for COPE{} ({}) ...',
 
     'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
                                             'space reference image - this '
                                             'is necessary for editing.',
+
+
+    'MelodicClassificationPanel.disabled'    : 'Choose a melodic image.',
+    'MelodicClassificationPanel.loadError'   : 'An error occurred while '
+                                               'loading the file {}.'
+                                               '\n\nDetails: {}',
+    'MelodicClassificationPanel.noMelDir'    : 'The label file {} does not '
+                                               'specify a path to a Melodic '
+                                               'directory!',
+    'MelodicClassificationPanel.saveError'   : 'An error occurred while '
+                                               'saving the file {}.'
+                                               '\n\nDetails: {}', 
+    'MelodicClassificationPanel.wrongNComps' : 'The mumber of components in '
+                                               'the label file {} is greater '
+                                               'than the number of components '
+                                               'in the overlay {}!',
+    'MelodicClassificationPanel.diffMelDir'  : 'The label file {} does not '
+                                               'refer to the melodic '
+                                               'directory of the selected '
+                                               'overlay ({}). What do you '
+                                               'want to do?',
+    
+    'MelodicClassificationPanel.diffMelDir.labels'  : 'Load the overlay in '
+                                                      'the label file',
+    'MelodicClassificationPanel.diffMelDir.overlay' : 'Apply the labels to '
+                                                      'the current overlay'
+
+
+    'An error occurred while '
+                                               'saving the file {}.'
+                                               '\n\nDetails: {}', 
 })
 
 
@@ -137,10 +185,11 @@ titles = TypeDict({
     
     'overlay.loadOverlays.error'  : 'Error loading overlay',
 
-    'OrthoPanel'      : 'Ortho View',
-    'LightBoxPanel'   : 'Lightbox View',
-    'TimeSeriesPanel' : 'Time series',
-    'HistogramPanel'  : 'Histogram',
+    'OrthoPanel'         : 'Ortho View',
+    'LightBoxPanel'      : 'Lightbox View',
+    'TimeSeriesPanel'    : 'Time series',
+    'PowerSpectrumPanel' : 'Power spectra',
+    'HistogramPanel'     : 'Histogram',
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
@@ -151,67 +200,83 @@ titles = TypeDict({
     'AtlasInfoPanel'      : 'Atlas information',
     'AtlasOverlayPanel'   : 'Atlas overlays',
 
-    'OverlayListPanel'       : 'Overlay list',
-    'AtlasPanel'             : 'Atlases',
-    'LocationPanel'          : 'Location',
-    'OverlayDisplayToolBar'  : 'Display toolbar',
-    'CanvasSettingsPanel'    : 'View settings',
-    'OverlayDisplayPanel'    : 'Display settings',
-    'OrthoToolBar'           : 'Ortho view toolbar',
-    'OrthoEditToolBar'       : 'Ortho view edit toolbar',
-    'LightBoxToolBar'        : 'Lightbox view toolbar',
-    'LookupTablePanel'       : 'Lookup tables',
-    'LutLabelDialog'         : 'New LUT label',
-    'NewLutDialog'           : 'New LUT',
-    'TimeSeriesListPanel'    : 'Time series list',
-    'TimeSeriesControlPanel' : 'Time series control',
-    'HistogramListPanel'     : 'Histogram list',
-    'HistogramControlPanel'  : 'Histogram control',
-    'ClusterPanel'           : 'Cluster browser',
-    'OverlayInfoPanel'       : 'Overlay information',
-    'ShellPanel'             : 'Python shell',
+    'OverlayListPanel'          : 'Overlay list',
+    'AtlasPanel'                : 'Atlases',
+    'LocationPanel'             : 'Location',
+    'OverlayDisplayToolBar'     : 'Display toolbar',
+    'CanvasSettingsPanel'       : 'View settings',
+    'OverlayDisplayPanel'       : 'Display settings',
+    'OrthoToolBar'              : 'Ortho view toolbar',
+    'OrthoEditToolBar'          : 'Ortho view edit toolbar',
+    'LightBoxToolBar'           : 'Lightbox view toolbar',
+    'LookupTablePanel'          : 'Lookup tables',
+    'LutLabelDialog'            : 'New LUT label',
+    'NewLutDialog'              : 'New LUT',
+
+    'PlotListPanel'             : 'Plot list',
+    'TimeSeriesControlPanel'    : 'Time series control',
+    'HistogramControlPanel'     : 'Histogram control',
+    'PowerSpectrumControlPanel' : 'Power spectrum control',
+    'ClusterPanel'              : 'Cluster browser',
+    'OverlayInfoPanel'          : 'Overlay information',
+    'ShellPanel'                : 'Python shell',
+
+    'MelodicClassificationPanel' : 'Melodic IC classification',
 
     'LookupTablePanel.loadLut'     : 'Select a lookup table file',
     'LookupTablePanel.labelExists' : 'Label already exists',
+
+    'MelodicClassificationPanel.loadDialog' : 'Load FIX/Melview file...',
+    'MelodicClassificationPanel.saveDialog' : 'Save FIX/Melview file...',
+    'MelodicClassificationPanel.loadError'  : 'Error loading FIX/Melview file',
+    'MelodicClassificationPanel.saveError'  : 'Error saving FIX/Melview file',
+
+
+    'ClearPerspectiveAction.confirmClear'  : 'Clear all perspectives?',
 })
 
 
 actions = TypeDict({
 
-    'OpenFileAction'      : 'Add overlay file',
-    'OpenStandardAction'  : 'Add standard',
-    'CopyOverlayAction'   : 'Copy overlay',
-    'SaveOverlayAction'   : 'Save overlay',
-    'LoadColourMapAction' : 'Load custom colour map',
+    'OpenFileAction'         : 'Add overlay from file',
+    'OpenDirAction'          : 'Add overlay from directory',
+    'OpenStandardAction'     : 'Add standard',
+    'CopyOverlayAction'      : 'Copy overlay',
+    'SaveOverlayAction'      : 'Save overlay',
+    'LoadColourMapAction'    : 'Load custom colour map',
+    'SavePerspectiveAction'  : 'Save current perspective',
+    'ClearPerspectiveAction' : 'Clear all perspectives',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
-    'CanvasPanel.screenshot'              : 'Take screenshot',
-    'CanvasPanel.showCommandLineArgs'     : 'Show command line for scene',
-    'CanvasPanel.toggleColourBar'         : 'Colour bar',
-    'CanvasPanel.toggleOverlayList'       : 'Overlay list',
-    'CanvasPanel.toggleDisplayProperties' : 'Overlay display properties',
-    'CanvasPanel.toggleLocationPanel'     : 'Location panel',
-    'CanvasPanel.toggleAtlasPanel'        : 'Atlas panel',
-    'CanvasPanel.toggleLookupTablePanel'  : 'Lookup tables',
-    'CanvasPanel.toggleClusterPanel'      : 'Cluster browser',
-    'CanvasPanel.toggleOverlayInfo'       : 'Overlay information',
-    'CanvasPanel.toggleShell'             : 'Python shell',
+    'CanvasPanel.screenshot'                : 'Take screenshot',
+    'CanvasPanel.showCommandLineArgs'       : 'Show command line for scene',
+    'CanvasPanel.toggleColourBar'           : 'Colour bar',
+    'CanvasPanel.toggleOverlayList'         : 'Overlay list',
+    'CanvasPanel.toggleDisplayToolBar'      : 'Overlay display toolbar',
+    'CanvasPanel.toggleDisplayPanel'        : 'Overlay display panel',
+    'CanvasPanel.toggleCanvasSettingsPanel' : 'View settings panel',
+    'CanvasPanel.toggleLocationPanel'       : 'Location panel',
+    'CanvasPanel.toggleAtlasPanel'          : 'Atlas panel',
+    'CanvasPanel.toggleLookupTablePanel'    : 'Lookup tables',
+    'CanvasPanel.toggleClusterPanel'        : 'Cluster browser',
+    'CanvasPanel.toggleOverlayInfo'         : 'Overlay information',
+    'CanvasPanel.toggleClassificationPanel' : 'Melodic IC classification',
+    'CanvasPanel.toggleShell'               : 'Python shell',
     
-    'OrthoPanel.toggleOrthoToolBar'     : 'View properties',
+    'OrthoPanel.toggleOrthoToolBar'     : 'Ortho toolbar',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
 
-    'OrthoToolBar.more'           : 'More settings',
-    'LightBoxToolBar.more'        : 'More settings',
-    'OverlayDisplayToolBar.more'  : 'More settings',
-    
-    'LightBoxPanel.toggleLightBoxToolBar' : 'View properties',
+    'LightBoxPanel.toggleLightBoxToolBar' : 'Lightbox toolbar',
 
-    'PlotPanel.screenshot'                    : 'Take screenshot',
-    'TimeSeriesPanel.toggleTimeSeriesList'    : 'Time series list',
-    'TimeSeriesPanel.toggleTimeSeriesControl' : 'Time series control', 
-    'HistogramPanel.toggleHistogramList'      : 'Histogram list',
-    'HistogramPanel.toggleHistogramControl'   : 'Histogram control', 
+    'PlotPanel.screenshot'                          : 'Take screenshot',
+    'TimeSeriesPanel.toggleTimeSeriesList'          : 'Time series list',
+    'TimeSeriesPanel.toggleTimeSeriesControl'       : 'Time series control', 
+    'HistogramPanel.toggleHistogramList'            : 'Histogram list',
+    'HistogramPanel.toggleHistogramControl'         : 'Histogram control',
+    'PowerSpectrumPanel.togglePowerSpectrumList'    : 'Power spectrum list',
+    'PowerSpectrumPanel.togglePowerSpectrumControl' : 'Power spectrum '
+                                                      'control', 
 
     'OrthoViewProfile.centreCursor' : 'Centre cursor',
     'OrthoViewProfile.resetZoom'    : 'Reset zoom',
@@ -245,11 +310,12 @@ labels = TypeDict({
     'CanvasPanel.screenshot.notSaved.cancel' : 'Cancel screenshot',
 
 
-    'LookupTablePanel.addLabel' : 'Add label',
-    'LookupTablePanel.newLut'   : 'New',
-    'LookupTablePanel.copyLut'  : 'Copy',
-    'LookupTablePanel.saveLut'  : 'Save',
-    'LookupTablePanel.loadLut'  : 'Load',
+    'LookupTablePanel.addLabel'    : 'Add label',
+    'LookupTablePanel.removeLabel' : 'Remove label',
+    'LookupTablePanel.newLut'      : 'New LUT',
+    'LookupTablePanel.copyLut'     : 'Copy LUT',
+    'LookupTablePanel.saveLut'     : 'Save LUT',
+    'LookupTablePanel.loadLut'     : 'Load LUT',
 
     'LutLabelDialog.value'    : 'Value',
     'LutLabelDialog.name'     : 'Name',
@@ -262,25 +328,31 @@ labels = TypeDict({
     'NewLutDialog.cancel' : 'Cancel',
     'NewLutDialog.newLut' : 'New LUT',
 
-    'PlotPanel.plotSettings'    : 'General plot settings',
-    'PlotPanel.currentSettings' : 'Settings for currently '
-                                  'selected plot ({})',
-    'PlotPanel.xlim'            : 'X limits',
-    'PlotPanel.ylim'            : 'Y limits',
-    'PlotPanel.labels'          : 'Labels',
-    'PlotPanel.xlabel'          : 'X',
-    'PlotPanel.ylabel'          : 'Y',
 
-    'HistogramControlPanel.histSettings'        : 'Histogram plot settings',
+    'PlotControlPanel.plotSettings'       : 'General plot settings',
+    'PlotControlPanel.customPlotSettings' : 'Custom plot settings',
+    'PlotControlPanel.currentDSSettings'  : 'Plot settings for '
+                                            'selected overlay ({})',
+    'PlotControlPanel.customDSSettings'   : 'Custom plot settings for '
+                                            'selected overlay ({})',
+    'PlotControlPanel.xlim'               : 'X limits',
+    'PlotControlPanel.ylim'               : 'Y limits',
+    'PlotControlPanel.labels'             : 'Labels',
+    'PlotControlPanel.xlabel'             : 'X',
+    'PlotControlPanel.ylabel'             : 'Y',
+ 
 
-    'TimeSeriesControlPanel.tsSettings'         : 'Time series plot settings',
-    'TimeSeriesControlPanel.currentSettings'    : 'Plot settings for '
+    'TimeSeriesControlPanel.customPlotSettings' : 'Time series settings',
+    'TimeSeriesControlPanel.customDSSettings'   : 'FEAT settings for '
                                                   'selected overlay ({})',
-    'TimeSeriesControlPanel.currentFEATSettings' : 'FEAT settings for '
-                                                   'selected overlay ({})',
 
-    'TimeSeriesListPanel.featReduced' : 'Reduced against {}',
+    'PowerSpectrumControlPanel.customPlotSettings' : 'Power spectrum plot '
+                                                     'settings',
 
+    'HistogramControlPanel.customPlotSettings' : 'Histogram plot settings',
+    'HistogramControlPanel.customDSSettings'   : 'Histogram settings for '
+                                                  'selected overlay ({})',
+ 
     'FEATModelFitTimeSeries.full' : 'Full model fit',
     'FEATModelFitTimeSeries.cope' : 'COPE{} fit: {}',
     'FEATModelFitTimeSeries.pe'   : 'PE{} fit',
@@ -314,6 +386,7 @@ labels = TypeDict({
     'OverlayDisplayPanel.RGBVectorOpts'  : 'RGB vector settings',
     'OverlayDisplayPanel.LineVectorOpts' : 'Line vector settings',
     'OverlayDisplayPanel.ModelOpts'      : 'Model settings',
+    'OverlayDisplayPanel.TensorOpts'     : 'Diffusion tensor settings',
     
     'OverlayDisplayPanel.loadCmap'       : 'Load colour map',
 
@@ -321,9 +394,19 @@ labels = TypeDict({
     'CanvasSettingsPanel.ortho'    : 'Ortho view settings',
     'CanvasSettingsPanel.lightbox' : 'Lightbox settings',
 
-    'OverlayInfoPanel.Image.dimensions'   : 'Dimensions',
-    'OverlayInfoPanel.Image.transform'    : 'Transform/space',
-    'OverlayInfoPanel.Image.orient'       : 'Orientation',
+    'OverlayInfoPanel.general'             : 'General information',
+    'OverlayInfoPanel.overlayType'         : 'Displayed as',
+    'OverlayInfoPanel.displaySpace'        : 'Display space',
+
+    'OverlayInfoPanel.Nifti1.dimensions'   : 'Dimensions',
+    'OverlayInfoPanel.Nifti1.transform'    : 'Transform/space',
+    'OverlayInfoPanel.Nifti1.orient'       : 'Orientation',
+
+    'OverlayInfoPanel.Nifti1.displaySpace.id'     : 'Raw voxels',
+    'OverlayInfoPanel.Nifti1.displaySpace.pixdim' : 'Scaled voxels',
+    'OverlayInfoPanel.Nifti1.displaySpace.affine' : 'World coordinates',
+    'OverlayInfoPanel.Nifti1.displaySpace.world'  : 'World coordinates',
+    'OverlayInfoPanel.Nifti1.displaySpace.custom' : 'Scaled voxels ({})',
     
     'OverlayInfoPanel.Image'                    : 'NIFTI1 image',
     'OverlayInfoPanel.FEATImage'                : 'NIFTI1 image '
@@ -335,7 +418,29 @@ labels = TypeDict({
     'OverlayInfoPanel.Model'                    : 'VTK model',
     'OverlayInfoPanel.Model.numVertices'        : 'Number of vertices',
     'OverlayInfoPanel.Model.numIndices'         : 'Number of indices',
+    'OverlayInfoPanel.Model.displaySpace'       : 'Display space',
+    'OverlayInfoPanel.Model.refImage'           : 'Reference image',
+    'OverlayInfoPanel.Model.coordSpace'         : 'Vertices defined in',
+    'OverlayInfoPanel.Model.coordSpace.id'      : 'Voxels ({})',
+    'OverlayInfoPanel.Model.coordSpace.pixdim'  : 'Scaled voxels ({})',
+    'OverlayInfoPanel.Model.coordSpace.affine'  : 'World coordinates ({})',
+    'OverlayInfoPanel.Model.coordSpace.display' : 'Display coordinate system',
     'OverlayInfoPanel.dataSource'               : 'Data source',
+
+    'OverlayInfoPanel.TensorImage'              : 'NIFTI1 diffusion '
+                                                  'tensor images',
+    'OverlayInfoPanel.TensorImage.tensorInfo'   : 'Tensor image paths ',
+    
+    'MelodicClassificationPanel.componentTab'   : 'Components',
+    'MelodicClassificationPanel.labelTab'       : 'Labels',
+    'MelodicClassificationPanel.loadButton'     : 'Load labels',
+    'MelodicClassificationPanel.saveButton'     : 'Save labels',
+    'MelodicClassificationPanel.clearButton'    : 'Clear labels',
+
+    'ComponentGrid.componentColumn'             : 'IC #',
+    'ComponentGrid.labelColumn'                 : 'Labels',
+    'LabelGrid.componentColumn'                 : 'IC #',
+    'LabelGrid.labelColumn'                     : 'Label', 
 })
 
 
@@ -395,8 +500,12 @@ properties = TypeDict({
     'TimeSeriesPanel.plotResiduals'    : 'Plot residuals',
     
     'HistogramPanel.histType'    : 'Histogram type',
-    'HistogramPanel.autoBin'     : 'Automatic histogram binning', 
-    'HistogramPanel.showCurrent' : 'Plot histogram for current overlay',
+    'HistogramPanel.showMode'    : 'Histogram series to plot',
+
+    'PowerSpectrumPanel.showMode'        : 'Power spectra to plot',
+    'PowerSpectrumPanel.plotFrequencies' : 'Show frequencies along x axis ',
+    'PowerSpectrumPanel.plotMelodicICs'  : 'Plot component power spectra for '
+                                           'Melodic images',
 
     'DataSeries.colour'    : 'Colour',
     'DataSeries.alpha'     : 'Line transparency',
@@ -404,11 +513,14 @@ properties = TypeDict({
     'DataSeries.lineStyle' : 'Line style',
     
     'HistogramSeries.nbins'           : 'Number of bins',
+    'HistogramSeries.autoBin'         : 'Automatic histogram binning',
     'HistogramSeries.ignoreZeros'     : 'Ignore zeros',
     'HistogramSeries.includeOutliers' : 'Include values out of data range',
     'HistogramSeries.volume'          : 'Volume',
     'HistogramSeries.dataRange'       : 'Data range',
     'HistogramSeries.showOverlay'     : 'Show 3D histogram overlay',
+
+    'PowerSpectrumSeries.varNorm'     : 'Normalise to unit variance',
 
     'FEATTimeSeries.plotFullModelFit' : 'Plot full model fit',
     'FEATTimeSeries.plotEVs'          : 'Plot EV{} ({})',
@@ -434,16 +546,21 @@ properties = TypeDict({
     'Display.brightness'        : 'Brightness',
     'Display.contrast'          : 'Contrast',
 
-    'ImageOpts.resolution' : 'Resolution',
-    'ImageOpts.transform'  : 'Image transform',
-    'ImageOpts.volume'     : 'Volume',
+    'Nifti1Opts.resolution' : 'Resolution',
+    'Nifti1Opts.transform'  : 'Image transform',
+    'Nifti1Opts.volume'     : 'Volume',
     
-    'VolumeOpts.displayRange'   : 'Display range',
-    'VolumeOpts.clippingRange'  : 'Clipping range',
-    'VolumeOpts.cmap'           : 'Colour map',
-    'VolumeOpts.invert'         : 'Invert colour map',
-    'VolumeOpts.invertClipping' : 'Invert clipping range',
-    'VolumeOpts.interpolation'  : 'Interpolation',
+    'VolumeOpts.displayRange'    : 'Display range',
+    'VolumeOpts.clippingRange'   : 'Clipping range',
+    'VolumeOpts.clipImage'       : 'Clip by',
+    'VolumeOpts.linkLowRanges'   : 'Link low display/clipping ranges',
+    'VolumeOpts.linkHighRanges'  : 'Link high display/clipping ranges',
+    'VolumeOpts.cmap'            : 'Colour map',
+    'VolumeOpts.negativeCmap'    : '-ve colour map',
+    'VolumeOpts.useNegativeCmap' : '-ve colour map',
+    'VolumeOpts.invert'          : 'Invert colour map',
+    'VolumeOpts.invertClipping'  : 'Invert clipping range',
+    'VolumeOpts.interpolation'   : 'Interpolation',
 
     'MaskOpts.colour'         : 'Colour',
     'MaskOpts.invert'         : 'Invert',
@@ -456,8 +573,11 @@ properties = TypeDict({
     'VectorOpts.suppressX'     : 'Suppress X value',
     'VectorOpts.suppressY'     : 'Suppress Y value',
     'VectorOpts.suppressZ'     : 'Suppress Z value',
-    'VectorOpts.modulate'      : 'Modulate by',
-    'VectorOpts.modThreshold'  : 'Modulation threshold',
+    'VectorOpts.colourImage'   : 'Colour by',
+    'VectorOpts.cmap'          : 'Colour map',
+    'VectorOpts.modulateImage' : 'Modulate by',
+    'VectorOpts.clipImage'     : 'Clip by',
+    'VectorOpts.clippingRange' : 'Clipping range',
 
     'RGBVectorOpts.interpolation' : 'Interpolation',
 
@@ -475,6 +595,10 @@ properties = TypeDict({
     'LabelOpts.outline'      : 'Show outline only',
     'LabelOpts.outlineWidth' : 'Outline width',
     'LabelOpts.showNames'    : 'Show label names',
+
+    'TensorOpts.lighting'          : 'Lighting effects',
+    'TensorOpts.tensorResolution'  : 'Ellipsoid quality',
+    'TensorOpts.tensorScale'       : 'Tensor size',
 })
 
 
@@ -493,8 +617,7 @@ choices = TypeDict({
     'SceneOpts.performance' : {1 : 'Fastest',
                                2 : 'Faster',
                                3 : 'Good looking',
-                               4 : 'Better looking',
-                               5 : 'Best looking'},
+                               4 : 'Best looking'},
 
     'CanvasOpts.zax' : {0 : 'X axis',
                         1 : 'Y axis',
@@ -513,19 +636,27 @@ choices = TypeDict({
     'VolumeOpts.displayRange.min' : 'Min.',
     'VolumeOpts.displayRange.max' : 'Max.',
 
+    'MaskOpts.threshold.min' : 'Min.',
+    'MaskOpts.threshold.max' : 'Max.', 
+
     'VectorOpts.displayType.line' : 'Lines',
     'VectorOpts.displayType.rgb'  : 'RGB',
 
-    'VectorOpts.modulate.none'    : 'No modulation',
+    'VectorOpts.modulateImage.none' : 'No modulation',
+    'VectorOpts.clipImage.none'     : 'No clipping',
+    
+    'VectorOpts.clippingRange.min' : 'Clip min.',
+    'VectorOpts.clippingRange.max' : 'Clip max.', 
 
     'ModelOpts.refImage.none'     : 'No reference image',
 
-    'ImageOpts.transform' : {'affine' : 'Use qform/sform transformation '
-                                        'matrix',
-                             'pixdim' : 'Use pixdims only',
-                             'id'     : 'Do not use qform/sform or pixdims',
-                             'custom' : 'Apply a custom transformation '
-                                        'matrix'},
+    'TensorOpts.tensorResolution.min' : 'Low',
+    'TensorOpts.tensorResolution.max' : 'High',
+
+    'Nifti1Opts.transform' : {'affine' : 'World coordinates',
+                              'pixdim' : 'Scaled voxels',
+                              'id'     : 'Voxels',
+                              'custom' : 'Custom transformation'},
 
     'VolumeOpts.interpolation' : {'none'   : 'No interpolation', 
                                   'linear' : 'Linear interpolation', 
@@ -536,7 +667,8 @@ choices = TypeDict({
                              'label'      : 'Label image',
                              'rgbvector'  : '3-direction vector image (RGB)',
                              'linevector' : '3-direction vector image (Line)',
-                             'model'      : '3D model'},
+                             'model'      : '3D model',
+                             'tensor'     : 'Diffusion tensor'},
 
     'HistogramPanel.histType' : {'probability' : 'Probability',
                                  'count'       : 'Count'},
@@ -556,47 +688,61 @@ choices = TypeDict({
                                   'all'     : 'Show the time series '
                                               'for all overlays',
                                   'none'    : 'Only show the time series '
-                                              'in the time series list'}
+                                              'in the time series list'},
+    'HistogramPanel.showMode'  : {'current' : 'Show the histogram for '
+                                              'the currently selected overlay',
+                                  'all'     : 'Show the histograms '
+                                              'for all overlays',
+                                  'none'    : 'Only show the histograms '
+                                              'in the time series list'},
+    
+    'PowerSpectrumPanel.showMode' : {'current' : 'Show the power spectrum for '
+                                                 'the currently selected '
+                                                 'overlay',
+                                     'all'     : 'Show the power spectra '
+                                                 'for all overlays',
+                                     'none'    : 'Only show the power spectra '
+                                                 'in the power spectra list'} 
 })
 
 
 anatomy = TypeDict({
 
-    ('Image', 'lowlong',   constants.ORIENT_A2P)               : 'Anterior',
-    ('Image', 'lowlong',   constants.ORIENT_P2A)               : 'Posterior',
-    ('Image', 'lowlong',   constants.ORIENT_L2R)               : 'Left',
-    ('Image', 'lowlong',   constants.ORIENT_R2L)               : 'Right',
-    ('Image', 'lowlong',   constants.ORIENT_I2S)               : 'Inferior',
-    ('Image', 'lowlong',   constants.ORIENT_S2I)               : 'Superior',
-    ('Image', 'lowlong',   constants.ORIENT_UNKNOWN)           : 'Unknown',
-    ('Image', 'highlong',  constants.ORIENT_A2P)               : 'Posterior',
-    ('Image', 'highlong',  constants.ORIENT_P2A)               : 'Anterior',
-    ('Image', 'highlong',  constants.ORIENT_L2R)               : 'Right',
-    ('Image', 'highlong',  constants.ORIENT_R2L)               : 'Left',
-    ('Image', 'highlong',  constants.ORIENT_I2S)               : 'Superior',
-    ('Image', 'highlong',  constants.ORIENT_S2I)               : 'Inferior',
-    ('Image', 'highlong',  constants.ORIENT_UNKNOWN)           : 'Unknown',
-    ('Image', 'lowshort',  constants.ORIENT_A2P)               : 'A',
-    ('Image', 'lowshort',  constants.ORIENT_P2A)               : 'P',
-    ('Image', 'lowshort',  constants.ORIENT_L2R)               : 'L',
-    ('Image', 'lowshort',  constants.ORIENT_R2L)               : 'R',
-    ('Image', 'lowshort',  constants.ORIENT_I2S)               : 'I',
-    ('Image', 'lowshort',  constants.ORIENT_S2I)               : 'S',
-    ('Image', 'lowshort',  constants.ORIENT_UNKNOWN)           : '?',
-    ('Image', 'highshort', constants.ORIENT_A2P)               : 'P',
-    ('Image', 'highshort', constants.ORIENT_P2A)               : 'A',
-    ('Image', 'highshort', constants.ORIENT_L2R)               : 'R',
-    ('Image', 'highshort', constants.ORIENT_R2L)               : 'L',
-    ('Image', 'highshort', constants.ORIENT_I2S)               : 'S',
-    ('Image', 'highshort', constants.ORIENT_S2I)               : 'I',
-    ('Image', 'highshort', constants.ORIENT_UNKNOWN)           : '?',
-    ('Image', 'space',     constants.NIFTI_XFORM_UNKNOWN)      : 'Unknown',
-    ('Image', 'space',     constants.NIFTI_XFORM_SCANNER_ANAT) : 'Scanner '
-                                                                 'anatomical',
-    ('Image', 'space',     constants.NIFTI_XFORM_ALIGNED_ANAT) : 'Aligned '
-                                                                 'anatomical',
-    ('Image', 'space',     constants.NIFTI_XFORM_TALAIRACH)    : 'Talairach', 
-    ('Image', 'space',     constants.NIFTI_XFORM_MNI_152)      : 'MNI152',
+    ('Nifti1', 'lowlong',   constants.ORIENT_A2P)               : 'Anterior',
+    ('Nifti1', 'lowlong',   constants.ORIENT_P2A)               : 'Posterior',
+    ('Nifti1', 'lowlong',   constants.ORIENT_L2R)               : 'Left',
+    ('Nifti1', 'lowlong',   constants.ORIENT_R2L)               : 'Right',
+    ('Nifti1', 'lowlong',   constants.ORIENT_I2S)               : 'Inferior',
+    ('Nifti1', 'lowlong',   constants.ORIENT_S2I)               : 'Superior',
+    ('Nifti1', 'lowlong',   constants.ORIENT_UNKNOWN)           : 'Unknown',
+    ('Nifti1', 'highlong',  constants.ORIENT_A2P)               : 'Posterior',
+    ('Nifti1', 'highlong',  constants.ORIENT_P2A)               : 'Anterior',
+    ('Nifti1', 'highlong',  constants.ORIENT_L2R)               : 'Right',
+    ('Nifti1', 'highlong',  constants.ORIENT_R2L)               : 'Left',
+    ('Nifti1', 'highlong',  constants.ORIENT_I2S)               : 'Superior',
+    ('Nifti1', 'highlong',  constants.ORIENT_S2I)               : 'Inferior',
+    ('Nifti1', 'highlong',  constants.ORIENT_UNKNOWN)           : 'Unknown',
+    ('Nifti1', 'lowshort',  constants.ORIENT_A2P)               : 'A',
+    ('Nifti1', 'lowshort',  constants.ORIENT_P2A)               : 'P',
+    ('Nifti1', 'lowshort',  constants.ORIENT_L2R)               : 'L',
+    ('Nifti1', 'lowshort',  constants.ORIENT_R2L)               : 'R',
+    ('Nifti1', 'lowshort',  constants.ORIENT_I2S)               : 'I',
+    ('Nifti1', 'lowshort',  constants.ORIENT_S2I)               : 'S',
+    ('Nifti1', 'lowshort',  constants.ORIENT_UNKNOWN)           : '?',
+    ('Nifti1', 'highshort', constants.ORIENT_A2P)               : 'P',
+    ('Nifti1', 'highshort', constants.ORIENT_P2A)               : 'A',
+    ('Nifti1', 'highshort', constants.ORIENT_L2R)               : 'R',
+    ('Nifti1', 'highshort', constants.ORIENT_R2L)               : 'L',
+    ('Nifti1', 'highshort', constants.ORIENT_I2S)               : 'S',
+    ('Nifti1', 'highshort', constants.ORIENT_S2I)               : 'I',
+    ('Nifti1', 'highshort', constants.ORIENT_UNKNOWN)           : '?',
+    ('Nifti1', 'space',     constants.NIFTI_XFORM_UNKNOWN)      : 'Unknown',
+    ('Nifti1', 'space',     constants.NIFTI_XFORM_SCANNER_ANAT) : 'Scanner '
+                                                                  'anatomical',
+    ('Nifti1', 'space',     constants.NIFTI_XFORM_ALIGNED_ANAT) : 'Aligned '
+                                                                  'anatomical',
+    ('Nifti1', 'space',     constants.NIFTI_XFORM_TALAIRACH)    : 'Talairach', 
+    ('Nifti1', 'space',     constants.NIFTI_XFORM_MNI_152)      : 'MNI152',
 })
 
 
@@ -705,18 +851,38 @@ nifti = TypeDict({
 
 
 feat = TypeDict({
-    'analysisName' : 'Analysis name',
-    'numPoints'    : 'Number of volumes',
-    'numEVs'       : 'Number of EVs',
-    'numContrasts' : 'Number of contrasts',
-    'report'       : 'Link to report',
+    'analysisName'   : 'Analysis name',
+    'analysisDir'    : 'Analysis directory',
+    'partOfAnalysis' : 'Part of higher level analysis',
+    'numPoints'      : 'Number of volumes',
+    'numEVs'         : 'Number of EVs',
+    'numContrasts'   : 'Number of contrasts',
+    'report'         : 'Link to report',
 })
 
 
 melodic = TypeDict({
     'dataFile'       : 'Data file',
-    'partOfAnalysis' : 'Part of analysis',
+    'analysisDir'    : 'Analysis directory',
+    'partOfAnalysis' : 'Part of higher level analysis',
     'numComponents'  : 'Number of ICs',
     'tr'             : 'TR time',
     'report'         : 'Link to report',
 })
+
+perspectives = {
+    'default'  : 'Default layout',
+    'melodic'  : 'Melodic mode',
+    'feat'     : 'FEAT mode',
+    'ortho'    : 'Plain orthographic',
+    'lightbox' : 'Plain lightbox',
+}
+
+tensor = {
+    'v1' : 'First eigenvector image',
+    'v2' : 'Second eigenvector image',
+    'v3' : 'Third eigenvector image',
+    'l1' : 'First eigenvalue image',
+    'l2' : 'Second eigenvalue image',
+    'l3' : 'Third eigenvalue image',
+}

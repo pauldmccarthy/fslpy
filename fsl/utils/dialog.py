@@ -103,6 +103,14 @@ class SimpleMessageDialog(wx.Dialog):
 
         self.SetMessage(message)
 
+
+    def Show(self):
+        """Overrides ``wx.Dialog.Show``. Calls that method, and calls
+        ``wx.Yield``.
+        """
+        wx.Dialog.Show(self)
+        wx.Yield()
+
         
     def SetMessage(self, msg):
         """Updates the message shown on this ``SimpleMessageDialog``.

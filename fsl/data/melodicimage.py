@@ -26,13 +26,18 @@ class MelodicImage(fslimage.Image):
     The ``MelodicImage`` class provides a few MELODIC-specific attributes and
     methods:
 
+    
     .. autosummary::
+       :nosignatures:
 
        tr
        getComponentTimeSeries
+       getComponentPowerSpectrum
        numComponents
+       getMelodicDir
        getTopLevelAnalysisDir
        getDataFile
+       getICClassification
     """
 
 
@@ -54,30 +59,19 @@ class MelodicImage(fslimage.Image):
         """
 
         if op.isdir(path):
-            dirname  = path
-            filename = 'melodic_IC'
+            path = op.join(path, 'melodic_IC')
 
-        else:
-            dirname  = op.dirname( path)
-            filename = op.basename(path)
-
-        dirname = dirname.rstrip(op.sep)
-
-        if not melresults.isMelodicDir(dirname):
+        if not melresults.isMelodicImage(path):
             raise ValueError('{} does not appear to be a '
-                             'MELODIC directory'.format(dirname)) 
-        
-        if not filename.startswith('melodic_IC'):
-            raise ValueError('{} does not appear to be a MELODIC '
-                             'component file'.format(filename))
+                             'MELODIC component file'.format(path)) 
             
-        fslimage.Image.__init__(self,
-                                op.join(dirname, filename),
-                                *args,
-                                **kwargs)
+        fslimage.Image.__init__(self, path, *args, **kwargs)
 
-        self.__meldir = dirname
-        self.__melmix = melresults.getComponentTimeSeries(dirname)
+        meldir            = op.dirname(path)
+        self.__meldir     = meldir
+        self.__melmix     = melresults.getComponentTimeSeries(  meldir)
+        self.__melFTmix   = melresults.getComponentPowerSpectra(meldir)
+        self.__melICClass = melresults.MelodicClassification(   self)
 
         # Automatically set the
         # TR value if possible
@@ -88,21 +82,39 @@ class MelodicImage(fslimage.Image):
             if dataImage.is4DImage():
                 self.tr = dataImage.pixdim[3]
 
+        # TODO load classifications if present
+        for i in range(self.numComponents()):
+            self.__melICClass.addLabel(i, 'Unknown')
+
         
     def getComponentTimeSeries(self, component):
         """Returns the time course for the specified (0-indexed) component. """
         return self.__melmix[:, component]
+
+    
+    def getComponentPowerSpectrum(self, component):
+        """Returns the power spectrum for the time course of the specified
+        (0-indexed) component.
+        """
+        return self.__melFTmix[:, component] 
 
 
     def numComponents(self):
         """Returns the number of components in this ``MelodicImage``. """
         return self.shape[3]
 
+    
+    def getMelodicDir(self):
+        """Returns the melodic output directory in which this image is
+        contained.
+        """
+        return self.__meldir
+    
 
     def getTopLevelAnalysisDir(self):
         """Returns the top level analysis, if the melodic analysis for this
         ``MelodicImage`` is contained within another analysis. Otherwise,
-        returnsa ``None``. See the
+        returns ``None``. See the
         :func:`.melodicresults.getTopLevelAnalysisDir` function.
         """
         return melresults.getTopLevelAnalysisDir(self.__meldir)
@@ -114,3 +126,17 @@ class MelodicImage(fslimage.Image):
         :func:`.melodicresults.getDataFile` function.
         """
         return melresults.getDataFile(self.__meldir)
+
+
+    def getMeanFile(self):
+        """Returns the file name of the mean data image associated with this
+        ``MelodicImage``. See the :func:`.melodicresults.getMeanFile` function.
+        """
+        return melresults.getMeanFile(self.__meldir) 
+
+
+    def getICClassification(self):
+        """Return the :class:`.MelodicClassification` instance associated with
+        this ``MelodicImage``.
+        """
+        return self.__melICClass
