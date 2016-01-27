@@ -11,11 +11,11 @@ Documentation
 -------------
 
 
-Installation: https://git.fmrib.ox.ac.uk/paulmc/fslpy/wikis/home
+[Installation instructions](https://git.fmrib.ox.ac.uk/paulmc/fslpy/wikis/home)
 
-For users: `<todo - link to hosted docs>`
+[Documentation for users](todo - link to hosted docs)
 
-For developers: `<todo - link to hosted apidocs>`
+[Documentation for developers](todo - link to hosted apidocs)
 
 
 
