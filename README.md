@@ -13,9 +13,9 @@ Documentation
 
 [Installation instructions](https://git.fmrib.ox.ac.uk/paulmc/fslpy/wikis/home)
 
-[Documentation for users](todo - link to hosted docs)
+[Documentation for users](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_doc/index.html)
 
-[Documentation for developers](todo - link to hosted apidocs)
+[Documentation for developers](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_apidoc/index.html)
 
 
 
@@ -39,11 +39,18 @@ Dependencies
 | [Jinja2](http://jinja.pocoo.org/)                 | 2.8     |
 | [wxPython](http://wxpython.org/)                  | 3.0.2.0 |
 | [OSMesa](http://mesa3d.org/)                      | 8.0.5   |
+| [Sphinx](http://www.sphinx-doc.org/en/stable/)    | 1.3.5   |
 
-
- > If you are installing `fslpy` manually, don't worry too much about having
- > the exact version of each of the packages - just try with the latest
- > version, and roll-back if you have problems.
+ > Notes:
+ >   - Sphinx is only needed for building the documentation.
+ >
+ >   - OSMesa is only needed for the off-screen `render` program.
+ >
+ >   - Pillow is only needed for saving screenshots in formats other than PNG.
+ > 
+ >   - If you are installing `fslpy` manually, don't worry too much about 
+ >     having the exact version of each of the packages - just try with 
+ >     the latest version, and roll-back if you have problems.
 
 
 Being an OpenGL application, *FSLeyes* can only be used on computers
