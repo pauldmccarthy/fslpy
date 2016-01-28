@@ -243,12 +243,13 @@ def interface(parent, args, ctx):
             args, overlayList, displayCtx, viewOpts)
 
         def centre():
-            if args.xcentre:
-                viewPanel.getXCanvas().centreDisplayAt(*args.xcentre)
-            if args.ycentre:
-                viewPanel.getYCanvas().centreDisplayAt(*args.ycentre)
-            if args.zcentre:
-                viewPanel.getZCanvas().centreDisplayAt(*args.zcentre)
+            xc, yc, zc = fsleyes_parseargs.calcCanvasCentres(args,
+                                                             overlayList,
+                                                             displayCtx)
+
+            viewPanel.getXCanvas().centreDisplayAt(*xc)
+            viewPanel.getYCanvas().centreDisplayAt(*yc)
+            viewPanel.getZCanvas().centreDisplayAt(*zc)
 
         if isinstance(viewPanel, views.OrthoPanel):
             async.idle(centre)
