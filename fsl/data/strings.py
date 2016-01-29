@@ -92,7 +92,9 @@ messages = TypeDict({
 
     'AtlasPanel.loadingAtlas' : 'Loading {} atlas ...',
 
-    'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
+    'AtlasOverlayPanel.loadRegions'   : 'Loading region descriptions '
+                                        'for {} ...',
+    'AtlasOverlayPanel.regionsLoaded' : '{} region descriptions loaded.',
 
     'AtlasInfoPanel.notMNISpace'   : 'The selected overlay does not appear to '
                                      'be in MNI152 space - atlas '

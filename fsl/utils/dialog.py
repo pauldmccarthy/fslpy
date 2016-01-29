@@ -97,7 +97,7 @@ class SimpleMessageDialog(wx.Dialog):
                          flag=wx.EXPAND | wx.CENTRE | wx.ALL)
 
         self.SetTransparent(240)
-        self.SetBackgroundColour((225, 225, 200))
+        self.SetBackgroundColour((225, 225, 255))
         
         self.SetSizer(self.__sizer)
 
@@ -380,6 +380,7 @@ class TextEditDialog(wx.Dialog):
        TED_CANCEL
        TED_OK_CANCEL
        TED_COPY
+       TED_COPY_MESSAGE
 
     A ``TextEditDialog`` looks something like this:
 
@@ -410,8 +411,9 @@ class TextEditDialog(wx.Dialog):
         
         :arg style:   A combination of :data:`TED_READONLY`,
                       :data:`TED_MULTILINE`, :data:`TED_OK`, 
-                      :data:`TED_CANCEL`, :data:`TED_OK_CANCEL`, and
-                      :data:`TED_COPY`. Defaults to :data:`TED_OK`.
+                      :data:`TED_CANCEL`, :data:`TED_OK_CANCEL`, 
+                      :data:`TED_COPY` and :data:`TED_COPY_MESSAGE` . Defaults
+                      to :data:`TED_OK`.
         """
 
         if style is None:
@@ -431,6 +433,8 @@ class TextEditDialog(wx.Dialog):
 
         self.__message .SetLabel(message)
         self.__textEdit.SetValue(text)
+
+        self.__showCopyMessage = style & TED_COPY_MESSAGE
 
         # set the min size of the text 
         # ctrl so it can fit a few lines
@@ -518,8 +522,10 @@ class TextEditDialog(wx.Dialog):
         if cb.Open():
             cb.SetData(wx.TextDataObject(text))
             cb.Close()
-            td = TimeoutDialog(self, 'Copied!', 1000)
-            td.Show()
+
+            if self.__showCopyMessage:
+                td = TimeoutDialog(self, 'Copied!', 1000)
+                td.Show()
 
             
     def SetMessage(self, message):
@@ -694,4 +700,10 @@ TED_OK_CANCEL = 12
 TED_COPY = 16
 """If set, a *Copy* button will be shown, allowing the use to copy
 the text to the system clipboard.
+"""
+
+
+TED_COPY_MESSAGE = 32
+"""If set, and if :attr:`TED_COPY` is also set, when the user chooses
+to copy the text to the system clipboard, a popup message is displayed.
 """
