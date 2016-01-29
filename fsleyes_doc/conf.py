@@ -55,7 +55,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'fslpy'
+project = u'FSLeyes'
 copyright = u'{}, Paul McCarthy, FMRIB Centre'.format(date.year)
 
 # The version info for the project you're documenting, acts as replacement for
@@ -189,7 +189,7 @@ html_static_path = []
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'fslpydoc'
+htmlhelp_basename = 'fsleyes_doc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -209,7 +209,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'FSLpy.tex', u'FSLpy Documentation',
+  ('index', 'FSLeyes.tex', u'FSLeyes Documentation',
    u'Paul McCarthy', 'manual'),
 ]
 
@@ -239,7 +239,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'fslpy', u'FSLpy Documentation',
+    ('index', 'fsleyes', u'FSLeyes Documentation',
      [u'Paul McCarthy'], 1)
 ]
 
@@ -253,8 +253,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'FSLpy', u'FSLpy Documentation',
-   u'Paul McCarthy', 'FSLpy', 'One line description of project.',
+  ('index', 'FSLeyes', u'FSLeyes Documentation',
+   u'Paul McCarthy', 'FSLeyes', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -274,7 +274,7 @@ texinfo_documents = [
 # -- Options for Epub output ----------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'FSLpy'
+epub_title = u'FSLeyes'
 epub_author = u'Paul McCarthy'
 epub_publisher = u'Paul McCarthy'
 epub_copyright = u'{}, Paul McCarthy'.format(date.year)
