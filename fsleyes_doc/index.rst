@@ -2,10 +2,24 @@ FSLeyes
 =======
 
 
+.. image:: images/fsleyes_icon.png
+   :scale: 25%
+   :align: center
+
+
+This is the user documentation for *FSLeyes*, the FSL image viewer. Choose a
+topic from the list below:
+
+
+.. warning:: This documentation is a work in progress. There is not much
+             content, and the content that is present is subject to change
+             without warning..
+
+
 .. toctree::
    :name: mastertoc
    :caption: Table of contents
-   :hidden:
+   :maxdepth: 1
 
    self
    quick_start
@@ -13,11 +27,8 @@ FSLeyes
    overlays
    views
    controls
+   perspectives
+   linking_overlays
    multiple_views
-
-
-This is the user documentation for *FSLeyes*, the FSL image viewer.
-
-.. image:: images/fsleyes_icon.png
-   :scale: 50%
-   :align: center
+   command_line
+   offscreen_rendering
