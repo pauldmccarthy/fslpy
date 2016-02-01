@@ -240,14 +240,16 @@ titles = TypeDict({
 
 actions = TypeDict({
 
-    'OpenFileAction'         : 'Add overlay from file',
-    'OpenDirAction'          : 'Add overlay from directory',
-    'OpenStandardAction'     : 'Add standard',
-    'CopyOverlayAction'      : 'Copy overlay',
-    'SaveOverlayAction'      : 'Save overlay',
-    'LoadColourMapAction'    : 'Load custom colour map',
-    'SavePerspectiveAction'  : 'Save current perspective',
-    'ClearPerspectiveAction' : 'Clear all perspectives',
+    'OpenFileAction'          : 'Add overlay from file',
+    'OpenDirAction'           : 'Add overlay from directory',
+    'OpenStandardAction'      : 'Add standard',
+    'CopyOverlayAction'       : 'Copy overlay',
+    'SaveOverlayAction'       : 'Save overlay',
+    'RemoveOverlayAction'     : 'Remove overlay',
+    'RemoveAllOverlaysAction' : 'Remove all overlays',
+    'LoadColourMapAction'     : 'Load custom colour map',
+    'SavePerspectiveAction'   : 'Save current perspective',
+    'ClearPerspectiveAction'  : 'Clear all perspectives',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
