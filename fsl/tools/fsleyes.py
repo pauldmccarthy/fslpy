@@ -242,14 +242,14 @@ def interface(parent, args, ctx):
         fsleyes_parseargs.applySceneArgs(
             args, overlayList, displayCtx, viewOpts)
 
-        def centre():
+        def centre(vp=viewPanel):
             xc, yc, zc = fsleyes_parseargs.calcCanvasCentres(args,
                                                              overlayList,
                                                              displayCtx)
 
-            viewPanel.getXCanvas().centreDisplayAt(*xc)
-            viewPanel.getYCanvas().centreDisplayAt(*yc)
-            viewPanel.getZCanvas().centreDisplayAt(*zc)
+            vp.getXCanvas().centreDisplayAt(*xc)
+            vp.getYCanvas().centreDisplayAt(*yc)
+            vp.getZCanvas().centreDisplayAt(*zc)
 
         if isinstance(viewPanel, views.OrthoPanel):
             async.idle(centre)
