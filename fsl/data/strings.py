@@ -250,7 +250,7 @@ actions = TypeDict({
     'LoadColourMapAction'     : 'Load custom colour map',
     'SavePerspectiveAction'   : 'Save current perspective',
     'ClearPerspectiveAction'  : 'Clear all perspectives',
-    'DiagnosticReportAction'  : 'Generate diagnostic report',
+    'DiagnosticReportAction'  : 'Diagnostic report',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
