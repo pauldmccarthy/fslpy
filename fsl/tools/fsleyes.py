@@ -31,6 +31,7 @@ import fsl.fsleyes.perspectives      as perspectives
 import fsl.fsleyes.overlay           as fsloverlay
 import fsl.utils.status              as status
 import fsl.utils.async               as async
+import fsl.data.strings              as strings
 
 
 log = logging.getLogger(__name__)
@@ -256,6 +257,15 @@ def interface(parent, args, ctx):
             
     return frame
 
+
+def diagnosticReport(frame, ctx):
+    """Set as a ``FSL_ACTION`` (see the :mod:`.tools` documentation).
+    Creates and calls a :class:`.DiagnosticReportAction`.
+    """
+    overlayList, displayCtx, _ = ctx
+    import fsl.fsleyes.actions as actions
+    actions.DiagnosticReportAction(overlayList, displayCtx, frame)()
+
     
 #############################################
 # See the fsl.tools package documentation for
@@ -267,3 +277,4 @@ FSL_TOOLNAME  = 'FSLeyes'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs
+FSL_ACTIONS   = [(strings.actions['DiagnosticReportAction'], diagnosticReport)]

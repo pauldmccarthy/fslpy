@@ -233,8 +233,8 @@ titles = TypeDict({
     'MelodicClassificationPanel.loadError'  : 'Error loading FIX/Melview file',
     'MelodicClassificationPanel.saveError'  : 'Error saving FIX/Melview file',
 
-
     'ClearPerspectiveAction.confirmClear'  : 'Clear all perspectives?',
+    'DiagnosticReportAction.saveReport'    : 'Save diagnostic report',
 })
 
 
@@ -250,6 +250,7 @@ actions = TypeDict({
     'LoadColourMapAction'     : 'Load custom colour map',
     'SavePerspectiveAction'   : 'Save current perspective',
     'ClearPerspectiveAction'  : 'Clear all perspectives',
+    'DiagnosticReportAction'  : 'Generate diagnostic report',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
