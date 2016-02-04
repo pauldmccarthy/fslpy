@@ -245,6 +245,7 @@ actions = TypeDict({
     'OpenStandardAction'      : 'Add standard',
     'CopyOverlayAction'       : 'Copy overlay',
     'SaveOverlayAction'       : 'Save overlay',
+    'ReloadOverlayAction'     : 'Reload overlay',
     'RemoveOverlayAction'     : 'Remove overlay',
     'RemoveAllOverlaysAction' : 'Remove all overlays',
     'LoadColourMapAction'     : 'Load custom colour map',
