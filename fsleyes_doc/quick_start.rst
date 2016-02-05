@@ -70,15 +70,20 @@ You can interact with an orthographic view in a number of ways:
  - Click, or click and drag, to change the current location.
  - Right click and drag to draw a zoom rectangle. When you release the mouse,
    the view will zoom in to that rectangle.
- - Hover the mouse over one canvas, and use your mouse wheel to change the
-   current location along the depth axis for that canvas.
- - Hold down the |command_key| (under OSX) or Control key (under Linux), and
-   use your mouse wheel to zoom in and out of a canvas.
- - When a canvas is zoomed in, you can middle-click and drag to pan around.
- - Hold down the shift key, then click and drag the mouse to adjust the
-   brightness and contrast of the currently selected overlay. Moving the
-   mouse vertically will adjust the contrast, and horizontally will adjust
-   the brightness.
+
+ - Hold down the |command_key| key (OSX) or Control key (Linux), and
+   use your mouse wheel to zoom in and out of a canvas. 
+   
+ - Hold down the Shift key, and use your mouse wheel to change the current
+   location along the depth axis for that canvas.
+
+ - When a canvas is zoomed in, you can middle-click and drag, or hold down the
+   Alt key and drag with the left mouse button, to pan around.
+   
+ - Hold down the Shift key and the |command_key|/Control key, then click and
+   drag the mouse to adjust the brightness and contrast of the currently
+   selected overlay. Moving the mouse vertically will adjust the contrast, and
+   horizontally will adjust the brightness.
 
 
 The overlay list
