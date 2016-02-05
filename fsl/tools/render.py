@@ -158,8 +158,8 @@ def buildColourBarBitmap(overlayList,
         else:                      labelSide = 'left'
     elif cbarLabelSide == 'bottom-right':
         if orient == 'horizontal': labelSide = 'bottom'
-        else:                      labelSide = 'right'            
-    
+        else:                      labelSide = 'right'
+
     cbarBmp = cbarbitmap.colourBarBitmap(
         opts.cmap,
         opts.displayRange.xlo,
@@ -169,7 +169,8 @@ def buildColourBarBitmap(overlayList,
         display.name,
         orient,
         labelSide,
-        bgColour=bgColour)
+        bgColour=bgColour,
+        textColour=fslcm.complementaryColour(bgColour))
 
     # The colourBarBitmap function returns a w*h*4
     # array, but the fsl.utils.layout.Bitmap (see
