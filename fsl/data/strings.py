@@ -310,6 +310,8 @@ labels = TypeDict({
     'LocationPanel.outOfBounds'           : 'Out of bounds',
     'LocationPanel.notAvailable'          : 'N/A',
 
+    'OverlayListPanel.noDataSource'       : '[in memory]',
+
     'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
                                                'in screenshot)',
