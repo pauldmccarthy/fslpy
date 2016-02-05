@@ -341,27 +341,15 @@ def run(args, context):
             width=width,
             height=height)
 
-        # Should I be initialising all of
-        # these? Aren't they initialised
-        # in the call to applyArguments
-        # below?
-        c.showCursor      = sceneOpts.showCursor
-        c.cursorColour    = sceneOpts.cursorColour
-        c.bgColour        = sceneOpts.bgColour
-        c.renderMode      = sceneOpts.renderMode
-        c.resolutionLimit = sceneOpts.resolutionLimit
-        c.nrows           = sceneOpts.nrows
-        c.ncols           = sceneOpts.ncols
-        c.sliceSpacing    = sceneOpts.sliceSpacing
-        c.zrange          = sceneOpts.zrange
-        c.showGridLines   = sceneOpts.showGridLines
-        c.highlightSlice  = sceneOpts.highlightSlice
-
         props.applyArguments(c, args)
         canvases.append(c)
 
     # Ortho view -> up to three canvases
     elif args.scene == 'ortho':
+
+        xc, yc, zc = fsleyes_parseargs.calcCanvasCentres(args,
+                                                         overlayList,
+                                                         displayCtx) 
  
         # Build a list containing the horizontal 
         # and vertical axes for each canvas
@@ -371,20 +359,20 @@ def run(args, context):
         if sceneOpts.showXCanvas:
             canvasAxes.append((1, 2))
             zooms     .append(sceneOpts.xzoom)
-            centres   .append(args     .xcentre)
+            centres   .append(xc)
         if sceneOpts.showYCanvas:
             canvasAxes.append((0, 2))
             zooms     .append(sceneOpts.yzoom)
-            centres   .append(args     .ycentre)
+            centres   .append(yc)
         if sceneOpts.showZCanvas:
             canvasAxes.append((0, 1))
             zooms     .append(sceneOpts.zzoom)
-            centres   .append(args     .zcentre)
+            centres   .append(zc)
 
         # Grid only makes sense if
         # we're displaying 3 canvases
         if sceneOpts.layout == 'grid' and len(canvasAxes) <= 2:
-            args.layout = 'horizontal'
+            sceneOpts.layout = 'horizontal'
 
         if sceneOpts.layout == 'grid':
             canvasAxes = [canvasAxes[1], canvasAxes[0], canvasAxes[2]]
@@ -501,7 +489,6 @@ def parseArgs(argv):
                             help='Size in pixels (width, height)',
                             default=(800, 600))
 
-
     name        = 'render'
     optStr      = '-of outfile [options]'
     description = textwrap.dedent("""\
@@ -509,6 +496,8 @@ def parseArgs(argv):
 
         Use the '--scene' option to choose between orthographic
         ('ortho') or lightbox ('lightbox') view.
+
+        Tensor overlays are not supported by render.
         """)
     
     namespace = fsleyes_parseargs.parseArgs(mainParser,
