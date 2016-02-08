@@ -15,11 +15,11 @@ Check out the [Installation instructions](https://git.fmrib.ox.ac.uk/paulmc/fslp
 for details on getting started.
 
 
-The [Documentation for users](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_doc/index.html)
+The [Documentation for users](http://users.fmrib.ox.ac.uk/~paulmc/fsleyes/index.html)
 provides a comprehensive overview of how to use *FSLeyes*.
 
 
-Take a look at the [Documentation for developers](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_apidoc/index.html)
+Take a look at the [Documentation for developers](http://users.fmrib.ox.ac.uk/~paulmc/fslpy/index.html)
 if you want to program with `fslpy`.
 
 

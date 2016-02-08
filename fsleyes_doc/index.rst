@@ -30,5 +30,6 @@ topic from the list below:
    perspectives
    linking_overlays
    multiple_views
+   editing_images
    command_line
    offscreen_rendering

@@ -209,6 +209,56 @@ the *Settings/<view name>/View settings panel* menu option), and make sure
 that the *Sync overlay display settings* box is checked or unchecked.
 
 
+Edit a NIFTI1 image?
+^^^^^^^^^^^^^^^^^^^^
+
+
+You can :ref:`edit NIFTI1 image data <editing-images>` from within an ortho
+view. Open the :ref:`edit toolbar <editing-images-edit-toolbar>` (via the
+*Settings/<view name/Edit toolbar* menu option), and click on the pencil
+button to enter edit mode.
+
+Modifying the data in an image is a two-stage process:
+
+ 1. Select the voxels you wish to change.
+
+    - Voxels can be selected by right-clicking and draggng, or by holding down
+      the Shift key and left-clicking and dragging.
+      
+    - Voxels can be deselected by holding down the Shift key, and
+      right-clicking and draggng.
+
+    - The selection size can be adjusted via the *Selection size* field in the
+      edit toolbar, or by holding down the Shift key and spinning the mouse
+      wheel.
+
+    - By default, the selection block is a 2-dimensional rectangle in the
+      current slice, but it can be made into a 3-dimensional cube by toggling
+      the :ref:`2D/3D button <editing-images-selectionIs3D>` on the
+      edit toolbar.
+
+    - As an alternate to manually drawing the selection, voxels can be
+      :ref:`selected by value <editing-images-select-by-intensity>`.
+       
+ 2. Change the value of the selected voxels.
+
+    - The values of all selected voxels can be replaced with the current
+      :ref:`fill value <editing-images-fill-value>`, by clicking the
+      bucket-fill button on the edit toolbar.
+
+    - The values of all selected voxels can be *erased* (replaced with 0) by
+      clicking the :ref:`erase button <editing-images-erasing>` on the edit
+      toolbar.
+
+    - The current fill value can be modified via the *Fill value* field
+      on the edit toolbar.
+
+      
+When you have made changes to an image, don't forget to save them via the
+*File/Save overlay* menu item, or the floppy disk button on the
+:ref:`controls-overlay-list`.
+
+
 Classify ICA components?
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
