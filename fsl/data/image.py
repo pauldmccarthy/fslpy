@@ -416,6 +416,11 @@ class Image(Nifti1, props.HasProperties):
         
         if self.is4DImage() and vol is None:
             raise ValueError('Volume must be specified for 4D images')
+
+        newVals = np.array(newVals)
+
+        if newVals.size == 0:
+            return
         
         data          = self.data
         xlo, ylo, zlo = offset
