@@ -154,6 +154,13 @@ class SimpleMessageDialog(wx.Dialog):
         self.__message.Refresh()
         self.__message.Update() 
         wx.Yield()
+
+
+# SimpleMessageDialog style flags
+SMD_KEEP_CENTERED = 1
+"""If set, the dialog will be re-centred on its parent whenever its message
+changes.
+"""
             
 
 class TimeoutDialog(SimpleMessageDialog):
@@ -558,6 +565,43 @@ class TextEditDialog(wx.Dialog):
         return self.__textEdit.GetValue()
 
 
+# TextEditDialog style flags
+
+
+TED_READONLY = 1
+"""If set, the user will not be able to change the text field contents."""
+
+
+TED_MULTILINE = 2
+"""If set, the text field will span multiple lines. """
+
+
+TED_OK = 4
+"""If set, an *Ok* button will be shown. """
+
+
+TED_CANCEL = 8
+"""If set, a *Cancel* button will be shown. """
+
+
+TED_OK_CANCEL = 12
+"""If set, *Ok* and *Cancel* buttons will be shown. Equivalent to
+``TED_OK | TED_CANCEL``.
+"""
+
+
+TED_COPY = 16
+"""If set, a *Copy* button will be shown, allowing the use to copy
+the text to the system clipboard.
+"""
+
+
+TED_COPY_MESSAGE = 32
+"""If set, and if :attr:`TED_COPY` is also set, when the user chooses
+to copy the text to the system clipboard, a popup message is displayed.
+"""
+
+
 class FSLDirDialog(wx.Dialog):
     """A dialog which warns the user that the ``$FSLDIR`` environment
     variable is not set, and prompts them to identify the FSL
@@ -641,7 +685,7 @@ class FSLDirDialog(wx.Dialog):
  
 
     def __onSkip(self, ev):
-        """Called when the *Skip* button is pushed. """
+        """called when the *Skip* button is pushed. """
         self.EndModal(wx.ID_CANCEL)
 
 
@@ -665,45 +709,102 @@ class FSLDirDialog(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
-# SimpleMessageDialog style flags
-SMD_KEEP_CENTERED = 1
-"""If set, the dialog will be re-centred on its parent whenever its message
-changes.
-"""
+class CheckBoxMessageDialog(wx.Dialog):
+    """A ``wx.Dialog`` which displays a message, a ``wx.CheckBox``, and
+    an "Ok" button.
+    """
+
+    
+    def __init__(self,
+                 parent,
+                 title=None,
+                 message=None,
+                 cbMessage=None,
+                 cbState=False,
+                 btnText=None,
+                 icon=None, 
+                 style=None):
+        """Create a ``CheckBoxMessageDialog``.
+
+        :arg parent:    A ``wx`` parent object.
+        
+        :arg title:     The dialog frame title.
+        
+        :arg message:   Message to show on the dialog.
+        
+        :arg cbMessage: Label for the ``wx.CheckBox``.
+        
+        :arg cbState:   Initial state for the ``wx.CheckBox``.
+        
+        :arg btnText:   Text to show on the button. Defaults to "OK".
+        
+        :arg icon:      A ``wx`` icon identifier (e.g. 
+                        ``wx.ICON_EXCLAMATION``).
+        
+        :arg style:     Passed through to the ``wx.Dialog.__init__`` method.
+                        Defaults to ``wx.DEFAULT_DIALOG_STYLE`.
+        """
+
+        if style     is None: style     = wx.DEFAULT_DIALOG_STYLE
+        if title     is None: title     = ""
+        if message   is None: message   = ""
+        if cbMessage is None: cbMessage = ""
+        if btnText   is None: btnText   = "OK"
+
+        wx.Dialog.__init__(self, parent, title=title, style=style)
+
+        if icon is not None:
+            icon = wx.ArtProvider.GetMessageBoxIcon(icon) 
+            self.__icon = wx.StaticBitmap(self)
+            bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+            bmp.CopyFromIcon(icon)
+            self.__icon.SetBitmap(bmp)
+        else:
+            self.__icon = (1, 1)
+
+        self.__checkbox = wx.CheckBox(  self, label=cbMessage)
+        self.__button   = wx.Button(    self, label=btnText, id=wx.ID_OK)
+        self.__message  = wx.StaticText(self, label=message)
+
+        self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
+        self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
+        self.__btnSizer     = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.__contentSizer.Add(self.__message,  flag=wx.EXPAND, proportion=1)
+        self.__contentSizer.Add((1, 20),         flag=wx.EXPAND)
+        self.__contentSizer.Add(self.__checkbox, flag=wx.EXPAND)
+
+        self.__btnSizer.Add( (1, 1),          flag=wx.EXPAND, proportion=1)
+        self.__btnSizer.Add( self.__button)
+        
+        self.__contentSizer.Add(self.__btnSizer, flag=wx.EXPAND)
+
+        self.__mainSizer.Add(self.__icon,
+                             flag=wx.EXPAND | wx.ALL,
+                             border=20)
+        self.__mainSizer.Add(self.__contentSizer,
+                             flag=wx.EXPAND | wx.ALL,
+                             proportion=1,
+                             border=20)
+
+        self.__checkbox.SetValue(cbState)
+        self.__message.Wrap(self.GetSize().GetWidth())
+
+        self.SetSizer(self.__mainSizer)
+        self.Layout()
+        self.Fit()
+        self.CentreOnParent()
 
 
-# TextEditDialog style flags
+    def CheckBoxState(self):
+        """After this ``CheckBoxMessageDialog`` has been closed, this method
+        will retrieve the state of the dialog ``CheckBox``.
+        """
+        return self.__checkbox.GetValue()
 
 
-TED_READONLY = 1
-"""If set, the user will not be able to change the text field contents."""
-
-
-TED_MULTILINE = 2
-"""If set, the text field will span multiple lines. """
-
-
-TED_OK = 4
-"""If set, an *Ok* button will be shown. """
-
-
-TED_CANCEL = 8
-"""If set, a *Cancel* button will be shown. """
-
-
-TED_OK_CANCEL = 12
-"""If set, *Ok* and *Cancel* buttons will be shown. Equivalent to
-``TED_OK | TED_CANCEL``.
-"""
-
-
-TED_COPY = 16
-"""If set, a *Copy* button will be shown, allowing the use to copy
-the text to the system clipboard.
-"""
-
-
-TED_COPY_MESSAGE = 32
-"""If set, and if :attr:`TED_COPY` is also set, when the user chooses
-to copy the text to the system clipboard, a popup message is displayed.
-"""
+    def __onButton(self):
+        """Called when the button on this ``CheckBoxMessageDialog`` is
+        clicked. Closes the dialog.
+        """
+        self.EndModal(wx.ID_OK)

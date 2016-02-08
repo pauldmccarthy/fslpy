@@ -139,9 +139,12 @@ messages = TypeDict({
     'ClusterPanel.loadingCluster' : 'Loading clusters for COPE{} ({}) ...',
 
     'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
-                                            'space reference image - this '
-                                            'is necessary for editing.',
-
+                                            'space reference image - the '
+                                            'display space must match the '
+                                            'image being edited.',
+    
+    'OrthoEditProfile.displaySpaceChange.suppress' : 'Do not show this '
+                                                     'message again',
 
     'MelodicClassificationPanel.disabled'    : 'Choose a melodic image.',
     'MelodicClassificationPanel.loadError'   : 'An error occurred while '
@@ -235,6 +238,8 @@ titles = TypeDict({
 
     'ClearPerspectiveAction.confirmClear'  : 'Clear all perspectives?',
     'DiagnosticReportAction.saveReport'    : 'Save diagnostic report',
+
+    'OrthoEditProfile.displaySpaceChange' : 'Changing display space',
 })
 
 

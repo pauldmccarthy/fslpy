@@ -7,6 +7,10 @@
 """This module provides the :class:`TypeDict` class, a type-aware dictionary.
 """
 
+
+import collections
+
+
 class TypeDict(object):
     """A type-aware dictionary.
 
@@ -156,9 +160,25 @@ class TypeDict(object):
 
 
     def __tokenifyKey(self, key):
-        
-        if isinstance(key, basestring) and '.' in key:
-            return tuple(key.split('.'))
+        """Turns a dictionary key, which may have been specified as a
+        string, or a combination of strings and types, into a tuple.
+        """
+
+        if isinstance(key, basestring):
+            if '.' in key: return tuple(key.split('.'))
+            else:          return key
+
+        if isinstance(key, collections.Sequence):
+
+            tKeys = map(self.__tokenifyKey, key)
+            key   = []
+
+            for tk in tKeys:
+                if   isinstance(tk, basestring):           key.append(tk)
+                elif isinstance(tk, collections.Sequence): key += list(tk)
+                else:                                      key.append(tk)
+            
+            return tuple(key)
 
         return key
 
