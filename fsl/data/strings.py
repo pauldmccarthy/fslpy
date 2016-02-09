@@ -34,7 +34,7 @@ import fsl.data.constants as constants
 messages = TypeDict({
 
     'FSLDirDialog.FSLDirNotSet'    : 'The $FSLDIR environment variable '
-                                     'is not set - \n{} may not behave '
+                                     'is not set - {} may not behave '
                                      'correctly.',
     'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
                                      'FSL is installed',

@@ -117,13 +117,13 @@ def main(args=None):
                 if fslTool.context is not None: ctx = fslTool.context(toolArgs)
                 else:                           ctx = None
 
-                _fslDirWarning(fslTool.toolName, fslEnvActive)
-
                 frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
                 frame.Show()
 
                 # See comment below
                 dummyFrame.Destroy()
+
+                _fslDirWarning(frame, fslTool.toolName, fslEnvActive)
 
                 if args.wxinspect:
                     import wx.lib.inspection
@@ -149,7 +149,7 @@ def main(args=None):
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
         else:                           ctx = None
         
-        _fslDirWarning(fslTool.toolName, fslEnvActive)
+        _fslDirWarning(None, fslTool.toolName, fslEnvActive)
         fslTool.execute(toolArgs, ctx)
 
 
@@ -459,11 +459,13 @@ def _parseArgs(argv, allTools):
     return fslTool, namespace, toolArgs
 
 
-def _fslDirWarning(toolName, fslEnvActive):
+def _fslDirWarning(parent, toolName, fslEnvActive):
     """If ``fslEnvActive`` is False, displays a warning that the ``$FSLDIR``
     environment variable is not set. The warning is displayed either on
     stdout, or via a GUI dialog (if ``wx`` is available).
 
+    :arg parent:       A ``wx`` parent for the :class:`.FSLDirDialog`, if it
+                       is displayed.
     
     :arg toolName:     Name of the tool that is being executed.
 
@@ -497,7 +499,7 @@ def _fslDirWarning(toolName, fslEnvActive):
         from fsl.utils.dialog import FSLDirDialog
 
         def warn():
-            dlg = FSLDirDialog(None, toolName)
+            dlg = FSLDirDialog(parent, toolName)
 
             if dlg.ShowModal() == wx.ID_OK:
                 fsldir = dlg.GetFSLDir()
