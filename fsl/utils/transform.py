@@ -70,9 +70,14 @@ def scaleOffsetXform(scales, offsets):
     return xform
 
 
-def axisBounds(shape, xform, axes=None, origin='centre'):
-    """Returns the ``(lo, hi)`` bounds of the specified axis/axes in the world
-    coordinate system defined by ``xform``.
+def axisBounds(shape,
+               xform,
+               axes=None,
+               origin='centre',
+               boundary='high',
+               offset=1e-4):
+    """Returns the ``(lo, hi)`` bounds of the specified axis/axes in the
+    world coordinate system defined by ``xform``.
     
     If the ``origin`` parameter is set to  ``centre`` (the default),
     this function assumes that voxel indices correspond to the voxel
@@ -100,21 +105,35 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
 
     to the corner at
 
-      ``(shape[0], shape[1]5, shape[1])``.
+      ``(shape[0], shape[1], shape[1])``.
 
+
+    If the ``boundary`` parameter is set to ``high``, the high voxel bounds
+    are reduced by a small amount (specified by the ``offset`` parameter)
+    before they are transformed to the world coordinate system.  If
+    ``boundary`` is set to ``low``, the low bounds are increased by a small
+    amount.  The ``boundary`` parameter can also be set to ``'both'``, or
+    ``None``. This option is provided so that you can ensure that the
+    resulting bounds will always be contained within the image space.
     
-    :arg shape:  The ``(x, y, z)`` shape of the data.
+    :arg shape:    The ``(x, y, z)`` shape of the data.
 
-    :arg xform:  Transformation matrix which transforms voxel coordinates
-                 to the world coordinate system.
+    :arg xform:    Transformation matrix which transforms voxel coordinates
+                   to the world coordinate system.
 
-    :arg axes:   The world coordinate system axis bounds to calculate.
+    :arg axes:     The world coordinate system axis bounds to calculate.
 
-    :arg origin: Either ``'centre'`` or ``'origin'``
+    :arg origin:   Either ``'centre'`` (the default) or ``'origin'``.
 
-    :returns:    A list of tuples, one for each axis specified in the ``axes``
-                 argument. Each tuple contains the ``(lo, hi)`` bounds of the
-                 corresponding world coordinate system axis.
+    :arg boundary: Either ``'high'`` (the default), ``'low'``, ''`both'``,
+                   or ``None``. 
+
+    :arg offset:   Amount by which the boundary voxel coordinates should be
+                   offset. Defaults to ``1e-4``.
+
+    :returns:      A list of tuples, one for each axis specified in the 
+                   ``axes`` argument. Each tuple contains the ``(lo, hi)`` 
+                   bounds of the corresponding world coordinate system axis.
     """
 
     origin = origin.lower()
@@ -151,6 +170,16 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
         y0 = 0
         z0 = 0
 
+    if boundary in ('low', 'both'):
+        x0 += offset
+        y0 += offset
+        z0 += offset
+        
+    if boundary in ('high', 'both'):
+        x  -= offset
+        y  -= offset
+        z  -= offset
+
     points[0, :] = [x0, y0, z0]
     points[1, :] = [x0, y0,  z]
     points[2, :] = [x0,  y, z0]
@@ -167,7 +196,6 @@ def axisBounds(shape, xform, axes=None, origin='centre'):
 
     if scalar: return (lo[0], hi[0])
     else:      return (lo,    hi)
-
 
         
 def transform(p, xform, axes=None):

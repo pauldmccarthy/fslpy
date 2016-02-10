@@ -225,6 +225,20 @@ class Nifti1(object):
         return int(code)
 
 
+    def axisMapping(self, xform):
+        """Returns the (approximate) correspondence of each axis in the source
+        coordinate system to the axes in the destination coordinate system,
+        where the source and destinations are defined by the given affine
+        transformation matrix.
+        """
+
+        import nibabel as nib
+
+        inaxes = [[-1, 1], [-2, 2], [-3, 3]]
+
+        return nib.orientations.aff2axcodes(xform, inaxes)
+
+
     def getOrientation(self, axis, xform):
         """Returns a code representing the orientation of the specified data
         axis in the coordinate system defined by the given transformation
