@@ -1,5 +1,15 @@
 .. _quick-start:
 
+
+.. |command_key| unicode:: U+2318
+.. |shift_key|   unicode:: U+21E7
+.. |control_key| unicode:: U+2303
+.. |alt_key|     unicode:: U+2325 
+
+.. |up_arrow|    unicode:: U+25B2
+.. |down_arrow|  unicode:: U+25BC
+
+
 Quick start
 ===========
 
@@ -61,8 +71,6 @@ oriented acording to the MNI152 template, these canvases will correspond to
 the sagittal, coronal, and axial planes.
 
 
-.. |command_key| unicode:: U+2318
-
 
 You can interact with an orthographic view in a number of ways:
 
@@ -71,41 +79,48 @@ You can interact with an orthographic view in a number of ways:
  - Right click and drag to draw a zoom rectangle. When you release the mouse,
    the view will zoom in to that rectangle.
 
- - Hold down the |command_key| key (OSX) or Control key (Linux), and
+ - Hold down the |command_key| key (OSX) or |control_key| key (Linux), and
    use your mouse wheel to zoom in and out of a canvas. 
    
- - Hold down the Shift key, and use your mouse wheel to change the current
-   location along the depth axis for that canvas.
+ - Hold down the |shift_key| key, and use your mouse wheel to change the
+   current location along the depth axis for that canvas.
 
  - When a canvas is zoomed in, you can middle-click and drag, or hold down the
-   Alt key and drag with the left mouse button, to pan around.
+   |alt_key| key and drag with the left mouse button, to pan around.
    
- - Hold down the Shift key and the |command_key|/Control key, then click and
-   drag the mouse to adjust the brightness and contrast of the currently
+ - Hold down the Shift key and the |command_key|/|control_key| key, then click
+   and drag the mouse to adjust the brightness and contrast of the currently
    selected overlay. Moving the mouse vertically will adjust the contrast, and
    horizontally will adjust the brightness.
+
+   
+.. sidebar:: Modifier keys
+
+             Throughout this page, and the rest of the *FSLeyes* documentation,
+             we will use the following symbols to represent keyboard modifiers:
+
+             - |shift_key|: Shift 
+             - |control_key|: Control
+             - |command_key|: Command (on OSX; Control on other platforms)
+             - |alt_key|:     Option (on OSX; Alt on other platforms)
 
 
 The overlay list
 ^^^^^^^^^^^^^^^^
-
-
-.. |up_arrow|   unicode:: U+25B2
-.. |down_arrow| unicode:: U+25BC
 
            
 The :ref:`overlay list <controls-overlay-list>` displays a list of all
 overlays that you have loaded. With this list you can:
 
 
-     - Change the currently selected overlay, by clicking on the overlay
-       name.
-     - Add/remove overlays with the + and - buttons
-     - Change the overlay display order with the |up_arrow| and |down_arrow|
-       buttons
-     - Show/hide each overlay with the eye button, or by double clicking on
-       the overlay name
-     - Link overlay display properties with the chainlink button
+ - Change the currently selected overlay, by clicking on the overlay
+   name.
+ - Add/remove overlays with the + and - buttons
+ - Change the overlay display order with the |up_arrow| and |down_arrow|
+   buttons
+ - Show/hide each overlay with the eye button, or by double clicking on
+   the overlay name
+ - Link overlay display properties with the chainlink button
 
 
 The toolbars
@@ -221,37 +236,42 @@ button to enter edit mode.
 Modifying the data in an image is a two-stage process:
 
  1. Select the voxels you wish to change.
-
-    - Voxels can be selected by right-clicking and draggng, or by holding down
-      the Shift key and left-clicking and dragging.
-      
-    - Voxels can be deselected by holding down the Shift key, and
-      right-clicking and draggng.
-
-    - The selection size can be adjusted via the *Selection size* field in the
-      edit toolbar, or by holding down the Shift key and spinning the mouse
-      wheel.
-
-    - By default, the selection block is a 2-dimensional rectangle in the
-      current slice, but it can be made into a 3-dimensional cube by toggling
-      the :ref:`2D/3D button <editing-images-selectionIs3D>` on the
-      edit toolbar.
-
-    - As an alternate to manually drawing the selection, voxels can be
-      :ref:`selected by value <editing-images-select-by-intensity>`.
-       
  2. Change the value of the selected voxels.
 
-    - The values of all selected voxels can be replaced with the current
-      :ref:`fill value <editing-images-fill-value>`, by clicking the
-      bucket-fill button on the edit toolbar.
+*Selecting voxels*
 
-    - The values of all selected voxels can be *erased* (replaced with 0) by
-      clicking the :ref:`erase button <editing-images-erasing>` on the edit
-      toolbar.
+ - Voxels can be selected by right-clicking and draggng, or by holding down
+   the |command_key|/|control_key| and |shift_key| keys and left-clicking and
+   dragging.
+   
+ - Voxels can be deselected by holding down the |command_key|/|control_key|
+   and |shift_key| keys, and right-clicking and draggng.
 
-    - The current fill value can be modified via the *Fill value* field
-      on the edit toolbar.
+ - The selection size can be adjusted via the *Selection size* field in the
+   edit toolbar, or by holding down the |command_key|/|control_key| and
+   |shift_key| keys and spinning the mouse wheel.
+
+ - By default, the selection block is a 2-dimensional rectangle in the
+   current slice, but it can be made into a 3-dimensional cube by toggling
+   the :ref:`2D/3D button <editing-images-selectionIs3D>` on the
+   edit toolbar.
+
+ - As an alternate to manually drawing the selection, voxels can be
+   :ref:`selected by value <editing-images-select-by-intensity>`.
+
+           
+*Changing voxel values* 
+       
+ - The values of all selected voxels can be replaced with the current
+   :ref:`fill value <editing-images-fill-value>`, by clicking the
+   bucket-fill button on the edit toolbar.
+
+ - The values of all selected voxels can be *erased* (replaced with 0) by
+   clicking the :ref:`erase button <editing-images-erasing>` on the edit
+   toolbar.
+
+ - The current fill value can be modified via the *Fill value* field
+   on the edit toolbar.
 
       
 When you have made changes to an image, don't forget to save them via the
