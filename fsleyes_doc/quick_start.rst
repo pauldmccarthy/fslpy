@@ -9,6 +9,8 @@
 .. |up_arrow|    unicode:: U+25B2
 .. |down_arrow|  unicode:: U+25BC
 
+.. |right_arrow| unicode:: U+21D2
+
 
 Quick start
 ===========
@@ -96,8 +98,9 @@ You can interact with an orthographic view in a number of ways:
    
 .. sidebar:: Modifier keys
 
-             Throughout this page, and the rest of the *FSLeyes* documentation,
-             we will use the following symbols to represent keyboard modifiers:
+             Throughout this page, and the rest of the *FSLeyes*
+             documentation, we will use the following symbols to represent
+             keyboard modifiers keys:
 
              - |shift_key|: Shift 
              - |control_key|: Control
@@ -160,20 +163,21 @@ Load an overlay?
 
 You can load an overlay by doing one of the following:
 
-1. The *File/Add overlay from file* menu option allows you to choose a file to
-   load (e.g. a `.nii`, `.nii.gz`, or `.vtk` file).
+1. The *File* |right_arrow| *Add overlay from file* menu option allows you to
+   choose a file to load (e.g. a `.nii`, `.nii.gz`, or `.vtk` file).
 
-2. The *File/Add overlay from directory* menu option allows you to choose a
-   directory to load (e.g. a `.feat`, `.ica`, or `dtifit` directory).
+2. The *File* |right_arrow| *Add overlay from directory* menu option allows
+   you to choose a directory to load (e.g. a `.feat`, `.ica`, or `dtifit`
+   directory).
 
-3. The *File/Add standard* menu option allows you to choose a file from the
-   `$FSLDIR/data/standard/` directory to load.
+3. The *File* |right_arrow| *Add standard* menu option allows you to choose a
+   file from the `$FSLDIR/data/standard/` directory to load.
 
 4. The + button on the overlay list allows you to choose a file to load.
 
 
-.. note:: The *File/Add standard* menu option will be disabled if your FSL
-          environment is not configured correctly.
+.. note:: The *File* |right_arrow| *Add standard* menu option will be disabled
+          if your FSL environment is not configured correctly.
 
 
 Open another ortho/lightbox view?
@@ -191,8 +195,15 @@ Open/close control panels/toolbars?
 The *Settings* menu contains a sub-menu for every open view, which allows you
 to toggle the control panels and toolbars for that view, and perform a few
 other tasks. For exmaple, if you want to add an :ref:`edit toolbar
-<controls-edit-toolbar>`, you would select the *Settings/Ortho view 1/Edit
-toolbar* menu option.
+<controls-edit-toolbar>`, you would select the *Settings* |right_arrow| *Ortho
+view 1* |right_arrow| *Edit toolbar* menu option.
+
+.. sidebar:: I don't have an *Ortho view 1* menu!
+             
+             Every *FSLeyes* view panel is given a name and a number so that
+             it can be uniquely identified. If you have more than one view
+             panel open, you will be able to see the name and number of each
+             panel on its title bar.
 
 
 Show/hide the cursor/anatomical labels?
@@ -208,8 +219,8 @@ Take a screenshot?
 ^^^^^^^^^^^^^^^^^^
 
 
-Click the camera icon on the ortho toolbar, or select the *Settings/Ortho view
-1/Take screenshot* menu item.
+Click the camera icon on the ortho toolbar, or select the *Settings*
+|right_arrow| *Ortho view 1* |right_arrow| *Take screenshot* menu item.
 
 
 
@@ -220,8 +231,9 @@ Link/unlink the display properties across multiple views?
 If you have more than one view open (e.g. an ortho view and a lightbox view),
 and you want the overlay display settings to be the same across all views,
 open the view settings panel for each view (via the toolbar spanner button, or
-the *Settings/<view name>/View settings panel* menu option), and make sure
-that the *Sync overlay display settings* box is checked or unchecked.
+the *Settings* |right_arrow| *<view name>* |right_arrow| *View settings panel*
+menu option), and make sure that the *Sync overlay display settings* box is
+checked or unchecked.
 
 
 Edit a NIFTI1 image?
@@ -230,22 +242,23 @@ Edit a NIFTI1 image?
 
 You can :ref:`edit NIFTI1 image data <editing-images>` from within an ortho
 view. Open the :ref:`edit toolbar <editing-images-edit-toolbar>` (via the
-*Settings/<view name/Edit toolbar* menu option), and click on the pencil
-button to enter edit mode.
+*Settings* |right_arrow| *<view name>* |right_arrow| *Edit toolbar* menu
+option), and click on the pencil button to enter edit mode.
 
 Modifying the data in an image is a two-stage process:
 
  1. Select the voxels you wish to change.
  2. Change the value of the selected voxels.
 
-*Selecting voxels*
 
- - Voxels can be selected by right-clicking and draggng, or by holding down
+**Selecting voxels**
+
+ - Voxels can be selected by right-clicking and dragging, or by holding down
    the |command_key|/|control_key| and |shift_key| keys and left-clicking and
    dragging.
    
  - Voxels can be deselected by holding down the |command_key|/|control_key|
-   and |shift_key| keys, and right-clicking and draggng.
+   and |shift_key| keys, and right-clicking and dragging.
 
  - The selection size can be adjusted via the *Selection size* field in the
    edit toolbar, or by holding down the |command_key|/|control_key| and
@@ -260,7 +273,7 @@ Modifying the data in an image is a two-stage process:
    :ref:`selected by value <editing-images-select-by-intensity>`.
 
            
-*Changing voxel values* 
+**Changing voxel values**
        
  - The values of all selected voxels can be replaced with the current
    :ref:`fill value <editing-images-fill-value>`, by clicking the
@@ -275,8 +288,8 @@ Modifying the data in an image is a two-stage process:
 
       
 When you have made changes to an image, don't forget to save them via the
-*File/Save overlay* menu item, or the floppy disk button on the
-:ref:`controls-overlay-list`.
+*File* |right_arrow| *Save overlay* menu item, or the floppy disk button on
+the :ref:`controls-overlay-list`.
 
 
 Classify ICA components?
@@ -284,10 +297,10 @@ Classify ICA components?
 
 
 Load your `.ica` directory (or the `.ica/melodic_IC` image file), then open
-the melodic perspective (the *View/Perspectives/Melodic mode* menu
-option). Use the :ref:`melodic classification panel
-<controls-melodic-ic-classification>` to label components, and load/save
-label files.
+the melodic perspective (the *View* |right_arrow| *Perspectives* |right_arrow|
+*Melodic mode* menu option). Use the :ref:`melodic classification panel
+<controls-melodic-ic-classification>` to label components, and load/save label
+files.
 
 
 Save the current view/control panel layout?
@@ -297,6 +310,7 @@ Save the current view/control panel layout?
 When you close *FSLeyes*, the current layout is saved to a configuration
 file. This layout is then restored the next time you open *FSLeyes*.  You can
 also save a layout at any time by defining a new :ref:`perspective
-<perspectives>`: Choose the *View/Perspectives/Save current perspective* menu
-item, and give your layout a name. You can then restore it at any time by
-selecting it in the *View/Perspectives* menu.
+<perspectives>`: Choose the *View* |right_arrow| *Perspectives* |right_arrow|
+*Save current perspective* menu item, and give your layout a name. You can
+then restore it at any time by selecting it in the *View* |right_arrow|
+*Perspectives* menu.

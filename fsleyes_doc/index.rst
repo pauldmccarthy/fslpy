@@ -32,4 +32,5 @@ topic from the list below:
    multiple_views
    editing_images
    command_line
+   ic_classification
    offscreen_rendering
