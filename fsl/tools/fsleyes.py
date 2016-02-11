@@ -266,6 +266,15 @@ def diagnosticReport(frame, ctx):
     import fsl.fsleyes.actions as actions
     actions.DiagnosticReportAction(overlayList, displayCtx, frame)()
 
+
+def about(frame, ctx):
+    """Set as a ``FSL_ACTION`` (see the :mod:`.tools` documentation).
+    Creates and calls an :class:`.AboutAction`.
+    """
+    overlayList, displayCtx, _ = ctx
+    import fsl.fsleyes.actions as actions
+    actions.AboutAction(overlayList, displayCtx, frame)() 
+
     
 #############################################
 # See the fsl.tools package documentation for
@@ -277,4 +286,5 @@ FSL_TOOLNAME  = 'FSLeyes'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs
-FSL_ACTIONS   = [(strings.actions['DiagnosticReportAction'], diagnosticReport)]
+FSL_ACTIONS   = [(strings.actions['AboutAction'],            about),
+                 (strings.actions['DiagnosticReportAction'], diagnosticReport)]
