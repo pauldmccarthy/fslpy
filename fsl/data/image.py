@@ -33,6 +33,7 @@ file names:
 
 import               logging
 import               tempfile
+import               string
 import               os 
 import os.path    as op
 import subprocess as sp
@@ -44,7 +45,7 @@ import props
 
 import fsl.utils.transform as transform
 import fsl.utils.status    as status
-import fsl.data.strings    as strings
+import fsl.data.strings    as fslstrings
 import fsl.data.constants  as constants
 
 
@@ -222,6 +223,20 @@ class Nifti1(object):
         elif code < 0: code = constants.NIFTI_XFORM_UNKNOWN
         
         return int(code)
+
+
+    def axisMapping(self, xform):
+        """Returns the (approximate) correspondence of each axis in the source
+        coordinate system to the axes in the destination coordinate system,
+        where the source and destinations are defined by the given affine
+        transformation matrix.
+        """
+
+        import nibabel as nib
+
+        inaxes = [[-1, 1], [-2, 2], [-3, 3]]
+
+        return nib.orientations.aff2axcodes(xform, inaxes)
 
 
     def getOrientation(self, axis, xform):
@@ -415,6 +430,11 @@ class Image(Nifti1, props.HasProperties):
         
         if self.is4DImage() and vol is None:
             raise ValueError('Volume must be specified for 4D images')
+
+        newVals = np.array(newVals)
+
+        if newVals.size == 0:
+            return
         
         data          = self.data
         xlo, ylo, zlo = offset
@@ -665,7 +685,7 @@ def loadImage(filename):
 
         unzipped = os.fdopen(unzipped)
 
-        msg = strings.messages['image.loadImage.decompress']
+        msg = fslstrings.messages['image.loadImage.decompress']
         msg = msg.format(op.basename(realFilename), mbytes, filename)
 
         status.update(msg, None)
@@ -691,7 +711,7 @@ def loadImage(filename):
     import nibabel as nib
 
     if mbytes > 512:
-        msg     = strings.messages['image.loadImage.largeFile']
+        msg     = fslstrings.messages['image.loadImage.largeFile']
         msg     = msg.format(op.basename(filename),  mbytes)
         status.update(msg)
     
@@ -736,10 +756,16 @@ def saveImage(image, fromDir=None):
         if image.dataSource is None: lastDir = os.getcwd()
         else:                        lastDir = op.dirname(image.dataSource)
 
-    # TODO make image.name safe (spaces to 
-    # underscores, filter non-alphanumeric)
-    if image.dataSource is None: filename = image.name
-    else:                        filename = op.basename(image.dataSource)
+    if image.dataSource is None:
+        filename = image.name
+
+        # Make sure the image name is safe to
+        # use as a file name - replace all
+        # non-alphanumeric/-/_ characters with _.
+        safechars = string.letters + string.digits + '_-'
+        filename  = ''.join([c if c in safechars else '_' for c in filename])
+    else:
+        filename = op.basename(image.dataSource)
 
     filename = removeExt(filename)
 
@@ -749,7 +775,7 @@ def saveImage(image, fromDir=None):
         saveLastDir = True
 
     dlg = wx.FileDialog(app.GetTopWindow(),
-                        message=strings.titles['image.saveImage.dialog'],
+                        message=fslstrings.titles['image.saveImage.dialog'],
                         defaultDir=fromDir,
                         defaultFile=filename, 
                         style=wx.FD_SAVE)
@@ -795,7 +821,7 @@ def saveImage(image, fromDir=None):
             
     except Exception as e:
 
-        msg = strings.messages['image.saveImage.error'].format(e.msg)
+        msg = fslstrings.messages['image.saveImage.error'].format(e.msg)
         log.warn(msg)
         wx.MessageDialog(app.GetTopWindow(),
                          message=msg,

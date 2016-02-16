@@ -117,13 +117,13 @@ def main(args=None):
                 if fslTool.context is not None: ctx = fslTool.context(toolArgs)
                 else:                           ctx = None
 
-                _fslDirWarning(fslTool.toolName, fslEnvActive)
-
                 frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
                 frame.Show()
 
                 # See comment below
                 dummyFrame.Destroy()
+
+                _fslDirWarning(frame, fslTool.toolName, fslEnvActive)
 
                 if args.wxinspect:
                     import wx.lib.inspection
@@ -149,7 +149,7 @@ def main(args=None):
         if fslTool.context is not None: ctx = fslTool.context(toolArgs)
         else:                           ctx = None
         
-        _fslDirWarning(fslTool.toolName, fslEnvActive)
+        _fslDirWarning(None, fslTool.toolName, fslEnvActive)
         fslTool.execute(toolArgs, ctx)
 
 
@@ -365,8 +365,11 @@ def _parseArgs(argv, allTools):
         namespace.noisy = []
 
     # if the specified tool is 'help', it should be followed by
-    # one more argument, the name of the tool to print help for
-    if namespace.tool == 'help':
+    # one more argument, the name of the tool to print help for.
+    # 
+    # FSLeyes prints basic usage when passed '-h'/'--help';
+    # to get all options, we need to pass '-fh'/'--fullhelp'.
+    if namespace.tool in ('help', 'fullhelp'):
         
         # no tool name supplied
         if len(toolArgv) == 0:
@@ -379,6 +382,13 @@ def _parseArgs(argv, allTools):
             parser.print_help()
             sys.exit(1)
 
+        # Only fsleyes/render support full help
+        if namespace.tool == 'fullhelp' and \
+           toolArgv[0] not in ('fsleyes', 'render'):
+            print('\n{} does not support fullhelp\n'.format(toolArgv[0]))
+            parser.print_help()
+            sys.exit(1) 
+
         fslTool = _loadFSLTool(toolArgv[0])
 
         # no tool specific argument parser
@@ -386,10 +396,11 @@ def _parseArgs(argv, allTools):
             print('No help for {}'.format(toolArgv[0]))
             
         # Otherwise, get help from the tool. We assume that
-        # all the argument parser for every  tool will interpret
-        # '-h' as '--help', and will print some help
+        # all the argument parser for every tool will interpret
+        # '--help' (and fsleyes will interpret '--fullhelp'),
+        # and will print some help.
         else:
-            fslTool.parseArgs(['-h'])
+            fslTool.parseArgs(['--{}'.format(namespace.tool)])
         sys.exit(0)
 
     # Unknown tool name supplied
@@ -448,11 +459,13 @@ def _parseArgs(argv, allTools):
     return fslTool, namespace, toolArgs
 
 
-def _fslDirWarning(toolName, fslEnvActive):
+def _fslDirWarning(parent, toolName, fslEnvActive):
     """If ``fslEnvActive`` is False, displays a warning that the ``$FSLDIR``
     environment variable is not set. The warning is displayed either on
     stdout, or via a GUI dialog (if ``wx`` is available).
 
+    :arg parent:       A ``wx`` parent for the :class:`.FSLDirDialog`, if it
+                       is displayed.
     
     :arg toolName:     Name of the tool that is being executed.
 
@@ -486,7 +499,7 @@ def _fslDirWarning(toolName, fslEnvActive):
         from fsl.utils.dialog import FSLDirDialog
 
         def warn():
-            dlg = FSLDirDialog(None, toolName)
+            dlg = FSLDirDialog(parent, toolName)
 
             if dlg.ShowModal() == wx.ID_OK:
                 fsldir = dlg.GetFSLDir()

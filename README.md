@@ -15,11 +15,11 @@ Check out the [Installation instructions](https://git.fmrib.ox.ac.uk/paulmc/fslp
 for details on getting started.
 
 
-The [Documentation for users](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_doc/index.html)
+The [Documentation for users](http://users.fmrib.ox.ac.uk/~paulmc/fsleyes/index.html)
 provides a comprehensive overview of how to use *FSLeyes*.
 
 
-Take a look at the [Documentation for developers](http://users.fmrib.ox.ac.uk/~paulmc/fslpy_apidoc/index.html)
+Take a look at the [Documentation for developers](http://users.fmrib.ox.ac.uk/~paulmc/fslpy/index.html)
 if you want to program with `fslpy`.
 
 
@@ -39,7 +39,7 @@ Dependencies
 | [matplotlib](http://matplotlib.org/)              | 1.4.3   |
 | [nibabel](http://nipy.org/nibabel/)               | 1.3.0   |
 | [Pillow](https://python-pillow.github.io/)        | 2.5.3   |
-| [PyParsing](http://pyparsing.wikispaces.com/)     | 2.0.3   |
+| [PyParsing](http://pyparsing.wikispaces.com/)     | 2.1.0   |
 | [Jinja2](http://jinja.pocoo.org/)                 | 2.8     |
 | [wxPython](http://wxpython.org/)                  | 3.0.2.0 |
 | [OSMesa](http://mesa3d.org/)                      | 8.0.5   |

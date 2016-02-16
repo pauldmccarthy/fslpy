@@ -34,6 +34,7 @@ the task (via :func:`idle`).
 import Queue
 import logging
 import threading
+import collections
 
 
 log = logging.getLogger(__name__)
@@ -173,13 +174,17 @@ def wait(threads, task, *args, **kwargs):
     If a ``wx.App`` is not running, this function ``join``s the threads
     directly instead of creating a new ``Thread`` to do so.
 
-    :arg threads: A sequence of ``Thread`` instances to join. Elements in the
-                  sequence may be ``None``.
+    :arg threads: A ``Thread``, or a sequence of ``Thread`` instances to
+                  join. Elements in the sequence may be ``None``.
 
     :arg task:    The task to run.
 
     All other arguments are passed to the ``task`` function.
     """
+
+    if not isinstance(threads, collections.Sequence):
+        threads = [threads]
+    
     haveWX = _haveWX()
 
     def joinAll():

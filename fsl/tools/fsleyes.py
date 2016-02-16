@@ -31,6 +31,7 @@ import fsl.fsleyes.perspectives      as perspectives
 import fsl.fsleyes.overlay           as fsloverlay
 import fsl.utils.status              as status
 import fsl.utils.async               as async
+import fsl.data.strings              as strings
 
 
 log = logging.getLogger(__name__)
@@ -242,19 +243,37 @@ def interface(parent, args, ctx):
         fsleyes_parseargs.applySceneArgs(
             args, overlayList, displayCtx, viewOpts)
 
-        def centre():
+        def centre(vp=viewPanel):
             xc, yc, zc = fsleyes_parseargs.calcCanvasCentres(args,
                                                              overlayList,
                                                              displayCtx)
 
-            viewPanel.getXCanvas().centreDisplayAt(*xc)
-            viewPanel.getYCanvas().centreDisplayAt(*yc)
-            viewPanel.getZCanvas().centreDisplayAt(*zc)
+            vp.getXCanvas().centreDisplayAt(*xc)
+            vp.getYCanvas().centreDisplayAt(*yc)
+            vp.getZCanvas().centreDisplayAt(*zc)
 
         if isinstance(viewPanel, views.OrthoPanel):
             async.idle(centre)
             
     return frame
+
+
+def diagnosticReport(frame, ctx):
+    """Set as a ``FSL_ACTION`` (see the :mod:`.tools` documentation).
+    Creates and calls a :class:`.DiagnosticReportAction`.
+    """
+    overlayList, displayCtx, _ = ctx
+    import fsl.fsleyes.actions as actions
+    actions.DiagnosticReportAction(overlayList, displayCtx, frame)()
+
+
+def about(frame, ctx):
+    """Set as a ``FSL_ACTION`` (see the :mod:`.tools` documentation).
+    Creates and calls an :class:`.AboutAction`.
+    """
+    overlayList, displayCtx, _ = ctx
+    import fsl.fsleyes.actions as actions
+    actions.AboutAction(overlayList, displayCtx, frame)() 
 
     
 #############################################
@@ -267,3 +286,5 @@ FSL_TOOLNAME  = 'FSLeyes'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
 FSL_PARSEARGS = parseArgs
+FSL_ACTIONS   = [(strings.actions['AboutAction'],            about),
+                 (strings.actions['DiagnosticReportAction'], diagnosticReport)]

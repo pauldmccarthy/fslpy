@@ -133,6 +133,7 @@ class ClearThread(threading.Thread):
         """Clear the status after the specified timeout (in seconds). """
         
         self.__timeout = timeout
+        self.__vetoEvent .clear()
         self.__clearEvent.set()
 
 

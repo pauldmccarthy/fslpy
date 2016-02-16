@@ -19,13 +19,16 @@ into the following categories:
  :data:`labels`     Labels for miscellaneous things.
  :data:`properties` Display names for ``props.HasProperties`` properties.
  :data:`choices`    Display names for ``props.HasProperties`` choice
-                     properties.
+                    properties.
  :data:`anatomy`    Anatomical and orientation labels.
  :data:`nifti`      Labels for NIFTI header fields.
  :data:`feat`       FEAT specific names and labels.
+ :data:`about`      Strings used in the *FSLeyes* about dialog.
  ================== =====================================================
 """
 
+
+import textwrap
 
 from fsl.utils.typedict import TypeDict
 import fsl.data.constants as constants
@@ -34,7 +37,7 @@ import fsl.data.constants as constants
 messages = TypeDict({
 
     'FSLDirDialog.FSLDirNotSet'    : 'The $FSLDIR environment variable '
-                                     'is not set - \n{} may not behave '
+                                     'is not set - {} may not behave '
                                      'correctly.',
     'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
                                      'FSL is installed',
@@ -92,7 +95,9 @@ messages = TypeDict({
 
     'AtlasPanel.loadingAtlas' : 'Loading {} atlas ...',
 
-    'AtlasOverlayPanel.loadRegions' : 'Loading region descriptions for {} ...',
+    'AtlasOverlayPanel.loadRegions'   : 'Loading region descriptions '
+                                        'for {} ...',
+    'AtlasOverlayPanel.regionsLoaded' : '{} region descriptions loaded.',
 
     'AtlasInfoPanel.notMNISpace'   : 'The selected overlay does not appear to '
                                      'be in MNI152 space - atlas '
@@ -137,9 +142,12 @@ messages = TypeDict({
     'ClusterPanel.loadingCluster' : 'Loading clusters for COPE{} ({}) ...',
 
     'OrthoEditProfile.displaySpaceChange' : 'Setting {} as the display '
-                                            'space reference image - this '
-                                            'is necessary for editing.',
-
+                                            'space reference image - the '
+                                            'display space must match the '
+                                            'image being edited.',
+    
+    'OrthoEditProfile.displaySpaceChange.suppress' : 'Do not show this '
+                                                     'message again',
 
     'MelodicClassificationPanel.disabled'    : 'Choose a melodic image.',
     'MelodicClassificationPanel.loadError'   : 'An error occurred while '
@@ -231,21 +239,28 @@ titles = TypeDict({
     'MelodicClassificationPanel.loadError'  : 'Error loading FIX/Melview file',
     'MelodicClassificationPanel.saveError'  : 'Error saving FIX/Melview file',
 
-
     'ClearPerspectiveAction.confirmClear'  : 'Clear all perspectives?',
+    'DiagnosticReportAction.saveReport'    : 'Save diagnostic report',
+
+    'OrthoEditProfile.displaySpaceChange' : 'Changing display space',
 })
 
 
 actions = TypeDict({
 
-    'OpenFileAction'         : 'Add overlay from file',
-    'OpenDirAction'          : 'Add overlay from directory',
-    'OpenStandardAction'     : 'Add standard',
-    'CopyOverlayAction'      : 'Copy overlay',
-    'SaveOverlayAction'      : 'Save overlay',
-    'LoadColourMapAction'    : 'Load custom colour map',
-    'SavePerspectiveAction'  : 'Save current perspective',
-    'ClearPerspectiveAction' : 'Clear all perspectives',
+    'OpenFileAction'          : 'Add overlay from file',
+    'OpenDirAction'           : 'Add overlay from directory',
+    'OpenStandardAction'      : 'Add standard',
+    'CopyOverlayAction'       : 'Copy overlay',
+    'SaveOverlayAction'       : 'Save overlay',
+    'ReloadOverlayAction'     : 'Reload overlay',
+    'RemoveOverlayAction'     : 'Remove overlay',
+    'RemoveAllOverlaysAction' : 'Remove all overlays',
+    'LoadColourMapAction'     : 'Load custom colour map',
+    'SavePerspectiveAction'   : 'Save current perspective',
+    'ClearPerspectiveAction'  : 'Clear all perspectives',
+    'DiagnosticReportAction'  : 'Diagnostic report',
+    'AboutAction'             : 'About FSLeyes',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
 
@@ -285,6 +300,7 @@ actions = TypeDict({
     'OrthoEditProfile.undo'                    : 'Undo',
     'OrthoEditProfile.redo'                    : 'Redo',
     'OrthoEditProfile.fillSelection'           : 'Fill',
+    'OrthoEditProfile.eraseSelection'          : 'Erase',
     'OrthoEditProfile.clearSelection'          : 'Clear',
     'OrthoEditProfile.createMaskFromSelection' : 'Mask',
     'OrthoEditProfile.createROIFromSelection'  : 'ROI',
@@ -303,6 +319,8 @@ labels = TypeDict({
     'LocationPanel.noData'                : 'No data',
     'LocationPanel.outOfBounds'           : 'Out of bounds',
     'LocationPanel.notAvailable'          : 'N/A',
+
+    'OverlayListPanel.noDataSource'       : '[in memory]',
 
     'CanvasPanel.screenshot.notSaved.save'   : 'Save overlay now',
     'CanvasPanel.screenshot.notSaved.skip'   : 'Skip overlay (will not appear '
@@ -885,4 +903,43 @@ tensor = {
     'l1' : 'First eigenvalue image',
     'l2' : 'Second eigenvalue image',
     'l3' : 'Third eigenvalue image',
+}
+
+
+about = {
+    'title'      : 'About FSLeyes',
+    'author'     : 'Paul McCarthy',
+    'email'      : 'paulmc@fmrib.ox.ac.uk',
+    'company'    : u'\u00A9 FMRIB Centre, Oxford, UK',
+    'version'    : 'FSLeyes version: {}',
+    'glVersion'  : 'OpenGL version: {}',
+    'glRenderer' : 'OpenGL renderer: {}',
+    'software'   : textwrap.dedent(
+    """
+    FSLeyes was developed at the FMRIB Centre, Nuffield Department of Clinical Neurosciences, Oxford University, United Kingdom.
+    
+    FSLeyes is a Python application which leverages the following open-source software libraries:
+    
+     - jinja2 [{}] (http://jinja.pocoo.org)
+     - matplotlib [{}] (http://www.matplotlib.org)
+     - nibabel [{}] (http://nipy.org/nibabel)
+     - numpy [{}] (http://www.numpy.org)
+     - pillow [{}]  (http://python-pillow.org/)
+     - props [{}] (https://git.fmrib.ox.ac.uk/paulmc/props)
+     - pyopengl [{}] (http://pyopengl.sourceforge.net)
+     - pyparsing [{}] (http://pyparsing.wikispaces.com/)
+     - scipy [{}] (http://www.scipy.org)
+     - wxPython [{}] (http://www.wxpython.org)
+    
+    Some of the icons used in FSLeyes are derived from the Freeline icon set, by Enes Dal, available at https://www.iconfinder.com/Enesdal, and released under the Creative Commons (Attribution 3.0 Unported) license.
+    """).strip(),
+
+    # This is a list of all the libraries listed
+    # in the software string above - the AboutDialog
+    # dynamically looks up the version number for
+    # each of them, and inserts them into the above
+    # string.
+    'libs' : ['jinja2', 'matplotlib', 'nibabel', 'numpy',
+              'PIL',    'props',      'OpenGL',  'pyparsing',
+              'scipy',  'wx'],
 }

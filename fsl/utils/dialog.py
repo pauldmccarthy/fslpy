@@ -97,7 +97,7 @@ class SimpleMessageDialog(wx.Dialog):
                          flag=wx.EXPAND | wx.CENTRE | wx.ALL)
 
         self.SetTransparent(240)
-        self.SetBackgroundColour((225, 225, 200))
+        self.SetBackgroundColour((225, 225, 255))
         
         self.SetSizer(self.__sizer)
 
@@ -154,6 +154,13 @@ class SimpleMessageDialog(wx.Dialog):
         self.__message.Refresh()
         self.__message.Update() 
         wx.Yield()
+
+
+# SimpleMessageDialog style flags
+SMD_KEEP_CENTERED = 1
+"""If set, the dialog will be re-centred on its parent whenever its message
+changes.
+"""
             
 
 class TimeoutDialog(SimpleMessageDialog):
@@ -380,6 +387,7 @@ class TextEditDialog(wx.Dialog):
        TED_CANCEL
        TED_OK_CANCEL
        TED_COPY
+       TED_COPY_MESSAGE
 
     A ``TextEditDialog`` looks something like this:
 
@@ -410,8 +418,9 @@ class TextEditDialog(wx.Dialog):
         
         :arg style:   A combination of :data:`TED_READONLY`,
                       :data:`TED_MULTILINE`, :data:`TED_OK`, 
-                      :data:`TED_CANCEL`, :data:`TED_OK_CANCEL`, and
-                      :data:`TED_COPY`. Defaults to :data:`TED_OK`.
+                      :data:`TED_CANCEL`, :data:`TED_OK_CANCEL`, 
+                      :data:`TED_COPY` and :data:`TED_COPY_MESSAGE` . Defaults
+                      to :data:`TED_OK`.
         """
 
         if style is None:
@@ -431,6 +440,8 @@ class TextEditDialog(wx.Dialog):
 
         self.__message .SetLabel(message)
         self.__textEdit.SetValue(text)
+
+        self.__showCopyMessage = style & TED_COPY_MESSAGE
 
         # set the min size of the text 
         # ctrl so it can fit a few lines
@@ -518,8 +529,10 @@ class TextEditDialog(wx.Dialog):
         if cb.Open():
             cb.SetData(wx.TextDataObject(text))
             cb.Close()
-            td = TimeoutDialog(self, 'Copied!', 1000)
-            td.Show()
+
+            if self.__showCopyMessage:
+                td = TimeoutDialog(self, 'Copied!', 1000)
+                td.Show()
 
             
     def SetMessage(self, message):
@@ -552,120 +565,6 @@ class TextEditDialog(wx.Dialog):
         return self.__textEdit.GetValue()
 
 
-class FSLDirDialog(wx.Dialog):
-    """A dialog which warns the user that the ``$FSLDIR`` environment
-    variable is not set, and prompts them to identify the FSL
-    installation directory.
-
-    If the user selects a directory, the :meth:`getFSLDir` method can be
-    called to retrieve their selection after the dialog has been closed.
-
-    A ``FSLDirDialog`` looks something like this:
-
-    .. image:: images/fsldirdialog.png
-       :scale: 50%
-       :align: center
-    """
-
-    def __init__(self, parent, toolName):
-        """Create a ``FSLDirDialog``.
-
-        :arg parent:   The :mod:`wx` parent object.
-
-        :arg toolName: The name of the tool which is running.
-        """
-
-        wx.Dialog.__init__(self, parent, title=strings.titles[self])
-
-        self.__fsldir  = None
-        self.__icon    = wx.StaticBitmap(self)
-        self.__message = wx.StaticText(  self, style=wx.ALIGN_CENTRE)
-        self.__locate  = wx.Button(      self, id=wx.ID_OK)
-        self.__skip    = wx.Button(      self, id=wx.ID_CANCEL)
-
-        icon = wx.ArtProvider.GetMessageBoxIcon(wx.ICON_EXCLAMATION)
-        bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
-        bmp.CopyFromIcon(icon)
-
-        self.__icon.SetBitmap(bmp)
-        self.__message.SetLabel(
-            strings.messages[self, 'FSLDirNotSet'].format(toolName))
-        self.__locate .SetLabel(strings.labels[self, 'locate'])
-        self.__skip   .SetLabel(strings.labels[self, 'skip'])
-
-        self.__skip  .Bind(wx.EVT_BUTTON, self.__onSkip)
-        self.__locate.Bind(wx.EVT_BUTTON, self.__onLocate)
-
-        self.__sizer       = wx.BoxSizer(wx.VERTICAL)
-        self.__labelSizer  = wx.BoxSizer(wx.HORIZONTAL)
-        self.__buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.__labelSizer.Add(self.__icon,
-                              flag=wx.ALL | wx.CENTRE,
-                              border=20)
-        self.__labelSizer.Add(self.__message,
-                              flag=wx.ALL | wx.CENTRE,
-                              proportion=1,
-                              border=20)
-
-        self.__buttonSizer.AddStretchSpacer()
-        self.__buttonSizer.Add(self.__locate,
-                               flag=wx.ALL | wx.CENTRE,
-                               border=10)
-        self.__buttonSizer.Add(self.__skip,
-                               flag=(wx.TOP    |
-                                     wx.RIGHT  |
-                                     wx.BOTTOM |
-                                     wx.CENTRE),
-                               border=10)
-        self.__buttonSizer.Add((-1, 20))
-
-        self.__sizer.Add(self.__labelSizer,  flag=wx.EXPAND, proportion=1)
-        self.__sizer.Add(self.__buttonSizer, flag=wx.EXPAND)
-
-        self.SetSizer(self.__sizer)
-        self.Fit()
-
-        
-    def GetFSLDir(self):
-        """If the user selected a directory, this method returns their
-        selection. Otherwise, it returns ``None``.
-        """
-        return self.__fsldir
- 
-
-    def __onSkip(self, ev):
-        """Called when the *Skip* button is pushed. """
-        self.EndModal(wx.ID_CANCEL)
-
-
-    def __onLocate(self, ev):
-        """Called when the *Locate* button is pushed. Opens a
-        :class:`wx.DirDialog` which allows the user to locate the
-        FSL installation directory.
-        """
-
-        dlg = wx.DirDialog(
-            self,
-            message=strings.messages[self, 'selectFSLDir'],
-            style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
-
-        if dlg.ShowModal() != wx.ID_OK:
-            self.EndModal(wx.ID_CANCEL)
-            return
-
-        self.__fsldir = dlg.GetPath()
- 
-        self.EndModal(wx.ID_OK)
-
-
-# SimpleMessageDialog style flags
-SMD_KEEP_CENTERED = 1
-"""If set, the dialog will be re-centred on its parent whenever its message
-changes.
-"""
-
-
 # TextEditDialog style flags
 
 
@@ -695,3 +594,216 @@ TED_COPY = 16
 """If set, a *Copy* button will be shown, allowing the use to copy
 the text to the system clipboard.
 """
+
+
+TED_COPY_MESSAGE = 32
+"""If set, and if :attr:`TED_COPY` is also set, when the user chooses
+to copy the text to the system clipboard, a popup message is displayed.
+"""
+
+
+class FSLDirDialog(wx.Dialog):
+    """A dialog which warns the user that the ``$FSLDIR`` environment
+    variable is not set, and prompts them to identify the FSL
+    installation directory.
+
+    If the user selects a directory, the :meth:`getFSLDir` method can be
+    called to retrieve their selection after the dialog has been closed.
+
+    A ``FSLDirDialog`` looks something like this:
+
+    .. image:: images/fsldirdialog.png
+       :scale: 50%
+       :align: center
+    """
+
+    def __init__(self, parent, toolName):
+        """Create a ``FSLDirDialog``.
+
+        :arg parent:   The :mod:`wx` parent object.
+
+        :arg toolName: The name of the tool which is running.
+        """
+
+        wx.Dialog.__init__(self, parent, title=strings.titles[self])
+
+        self.__fsldir  = None
+        self.__icon    = wx.StaticBitmap(self)
+        self.__message = wx.StaticText(  self)
+        self.__locate  = wx.Button(      self, id=wx.ID_OK)
+        self.__skip    = wx.Button(      self, id=wx.ID_CANCEL)
+
+        icon = wx.ArtProvider.GetMessageBoxIcon(wx.ICON_EXCLAMATION)
+        bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+        bmp.CopyFromIcon(icon)
+
+        self.__icon.SetBitmap(bmp)
+        self.__message.SetLabel(
+            strings.messages[self, 'FSLDirNotSet'].format(toolName))
+        self.__locate .SetLabel(strings.labels[self, 'locate'])
+        self.__skip   .SetLabel(strings.labels[self, 'skip'])
+
+        self.__skip  .Bind(wx.EVT_BUTTON, self.__onSkip)
+        self.__locate.Bind(wx.EVT_BUTTON, self.__onLocate)
+
+
+        self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
+        self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
+        self.__buttonSizer  = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.__buttonSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
+        self.__buttonSizer.Add(self.__locate)
+        self.__buttonSizer.Add((20, 1))
+        self.__buttonSizer.Add(self.__skip)
+
+        self.__contentSizer.Add(self.__message, flag=wx.EXPAND, proportion=1)
+        self.__contentSizer.Add((1, 20))
+        self.__contentSizer.Add(self.__buttonSizer, flag=wx.EXPAND)
+        
+        self.__mainSizer.Add(self.__icon,
+                             flag=wx.ALL | wx.CENTRE,
+                             border=20)
+        self.__mainSizer.Add(self.__contentSizer,
+                             flag=wx.EXPAND | wx.ALL,
+                             proportion=1,
+                             border=20)
+
+        self.__message.Wrap(self.GetSize().GetWidth())
+
+        self.SetSizer(self.__mainSizer)
+        self.Layout()
+        self.Fit()
+        self.CentreOnParent()
+
+        
+    def GetFSLDir(self):
+        """If the user selected a directory, this method returns their
+        selection. Otherwise, it returns ``None``.
+        """
+        return self.__fsldir
+ 
+
+    def __onSkip(self, ev):
+        """called when the *Skip* button is pushed. """
+        self.EndModal(wx.ID_CANCEL)
+
+
+    def __onLocate(self, ev):
+        """Called when the *Locate* button is pushed. Opens a
+        :class:`wx.DirDialog` which allows the user to locate the
+        FSL installation directory.
+        """
+
+        dlg = wx.DirDialog(
+            self,
+            message=strings.messages[self, 'selectFSLDir'],
+            style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            self.EndModal(wx.ID_CANCEL)
+            return
+
+        self.__fsldir = dlg.GetPath()
+ 
+        self.EndModal(wx.ID_OK)
+
+
+class CheckBoxMessageDialog(wx.Dialog):
+    """A ``wx.Dialog`` which displays a message, a ``wx.CheckBox``, and
+    an "Ok" button.
+    """
+
+    
+    def __init__(self,
+                 parent,
+                 title=None,
+                 message=None,
+                 cbMessage=None,
+                 cbState=False,
+                 btnText=None,
+                 icon=None, 
+                 style=None):
+        """Create a ``CheckBoxMessageDialog``.
+
+        :arg parent:    A ``wx`` parent object.
+        
+        :arg title:     The dialog frame title.
+        
+        :arg message:   Message to show on the dialog.
+        
+        :arg cbMessage: Label for the ``wx.CheckBox``.
+        
+        :arg cbState:   Initial state for the ``wx.CheckBox``.
+        
+        :arg btnText:   Text to show on the button. Defaults to "OK".
+        
+        :arg icon:      A ``wx`` icon identifier (e.g. 
+                        ``wx.ICON_EXCLAMATION``).
+        
+        :arg style:     Passed through to the ``wx.Dialog.__init__`` method.
+                        Defaults to ``wx.DEFAULT_DIALOG_STYLE`.
+        """
+
+        if style     is None: style     = wx.DEFAULT_DIALOG_STYLE
+        if title     is None: title     = ""
+        if message   is None: message   = ""
+        if cbMessage is None: cbMessage = ""
+        if btnText   is None: btnText   = "OK"
+
+        wx.Dialog.__init__(self, parent, title=title, style=style)
+
+        if icon is not None:
+            icon = wx.ArtProvider.GetMessageBoxIcon(icon) 
+            self.__icon = wx.StaticBitmap(self)
+            bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+            bmp.CopyFromIcon(icon)
+            self.__icon.SetBitmap(bmp)
+        else:
+            self.__icon = (1, 1)
+
+        self.__checkbox = wx.CheckBox(  self, label=cbMessage)
+        self.__button   = wx.Button(    self, label=btnText, id=wx.ID_OK)
+        self.__message  = wx.StaticText(self, label=message)
+
+        self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
+        self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
+        self.__btnSizer     = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.__contentSizer.Add(self.__message,  flag=wx.EXPAND, proportion=1)
+        self.__contentSizer.Add((1, 20),         flag=wx.EXPAND)
+        self.__contentSizer.Add(self.__checkbox, flag=wx.EXPAND)
+
+        self.__btnSizer    .Add((1, 1),          flag=wx.EXPAND, proportion=1)
+        self.__btnSizer    .Add(self.__button)
+        
+        self.__contentSizer.Add(self.__btnSizer, flag=wx.EXPAND)
+
+        self.__mainSizer.Add(self.__icon,
+                             flag=wx.ALL | wx.CENTRE,
+                             border=20)
+        self.__mainSizer.Add(self.__contentSizer,
+                             flag=wx.EXPAND | wx.ALL,
+                             proportion=1,
+                             border=20)
+
+        self.__checkbox.SetValue(cbState)
+        self.__message.Wrap(self.GetSize().GetWidth())
+
+        self.SetSizer(self.__mainSizer)
+        self.Layout()
+        self.Fit()
+        self.CentreOnParent()
+
+
+    def CheckBoxState(self):
+        """After this ``CheckBoxMessageDialog`` has been closed, this method
+        will retrieve the state of the dialog ``CheckBox``.
+        """
+        return self.__checkbox.GetValue()
+
+
+    def __onButton(self):
+        """Called when the button on this ``CheckBoxMessageDialog`` is
+        clicked. Closes the dialog.
+        """
+        self.EndModal(wx.ID_OK)

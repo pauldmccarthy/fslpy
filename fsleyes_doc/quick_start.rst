@@ -1,5 +1,17 @@
 .. _quick-start:
 
+
+.. |command_key| unicode:: U+2318
+.. |shift_key|   unicode:: U+21E7
+.. |control_key| unicode:: U+2303
+.. |alt_key|     unicode:: U+2325 
+
+.. |up_arrow|    unicode:: U+25B2
+.. |down_arrow|  unicode:: U+25BC
+
+.. |right_arrow| unicode:: U+21D2
+
+
 Quick start
 ===========
 
@@ -61,8 +73,6 @@ oriented acording to the MNI152 template, these canvases will correspond to
 the sagittal, coronal, and axial planes.
 
 
-.. |command_key| unicode:: U+2318
-
 
 You can interact with an orthographic view in a number of ways:
 
@@ -70,37 +80,50 @@ You can interact with an orthographic view in a number of ways:
  - Click, or click and drag, to change the current location.
  - Right click and drag to draw a zoom rectangle. When you release the mouse,
    the view will zoom in to that rectangle.
- - Hover the mouse over one canvas, and use your mouse wheel to change the
+
+ - Hold down the |command_key| key (OSX) or |control_key| key (Linux), and
+   use your mouse wheel to zoom in and out of a canvas. 
+   
+ - Hold down the |shift_key| key, and use your mouse wheel to change the
    current location along the depth axis for that canvas.
- - Hold down the |command_key| (under OSX) or Control key (under Linux), and
-   use your mouse wheel to zoom in and out of a canvas.
- - When a canvas is zoomed in, you can middle-click and drag to pan around.
- - Hold down the shift key, then click and drag the mouse to adjust the
-   brightness and contrast of the currently selected overlay. Moving the
-   mouse vertically will adjust the contrast, and horizontally will adjust
-   the brightness.
+
+ - When a canvas is zoomed in, you can middle-click and drag, or hold down the
+   |alt_key| key and drag with the left mouse button, to pan around.
+   
+ - Hold down the Shift key and the |command_key|/|control_key| key, then click
+   and drag the mouse to adjust the brightness and contrast of the currently
+   selected overlay. Moving the mouse vertically will adjust the contrast, and
+   horizontally will adjust the brightness.
+
+   
+.. sidebar:: Modifier keys
+
+             Throughout this page, and the rest of the *FSLeyes*
+             documentation, we will use the following symbols to represent
+             keyboard modifiers keys:
+
+             - |shift_key|: Shift 
+             - |control_key|: Control
+             - |command_key|: Command (on OSX; Control on other platforms)
+             - |alt_key|:     Option (on OSX; Alt on other platforms)
 
 
 The overlay list
 ^^^^^^^^^^^^^^^^
-
-
-.. |up_arrow|   unicode:: U+25B2
-.. |down_arrow| unicode:: U+25BC
 
            
 The :ref:`overlay list <controls-overlay-list>` displays a list of all
 overlays that you have loaded. With this list you can:
 
 
-     - Change the currently selected overlay, by clicking on the overlay
-       name.
-     - Add/remove overlays with the + and - buttons
-     - Change the overlay display order with the |up_arrow| and |down_arrow|
-       buttons
-     - Show/hide each overlay with the eye button, or by double clicking on
-       the overlay name
-     - Link overlay display properties with the chainlink button
+ - Change the currently selected overlay, by clicking on the overlay
+   name.
+ - Add/remove overlays with the + and - buttons
+ - Change the overlay display order with the |up_arrow| and |down_arrow|
+   buttons
+ - Show/hide each overlay with the eye button, or by double clicking on
+   the overlay name
+ - Link overlay display properties with the chainlink button
 
 
 The toolbars
@@ -140,20 +163,21 @@ Load an overlay?
 
 You can load an overlay by doing one of the following:
 
-1. The *File/Add overlay from file* menu option allows you to choose a file to
-   load (e.g. a `.nii`, `.nii.gz`, or `.vtk` file).
+1. The *File* |right_arrow| *Add overlay from file* menu option allows you to
+   choose a file to load (e.g. a `.nii`, `.nii.gz`, or `.vtk` file).
 
-2. The *File/Add overlay from directory* menu option allows you to choose a
-   directory to load (e.g. a `.feat`, `.ica`, or `dtifit` directory).
+2. The *File* |right_arrow| *Add overlay from directory* menu option allows
+   you to choose a directory to load (e.g. a `.feat`, `.ica`, or `dtifit`
+   directory).
 
-3. The *File/Add standard* menu option allows you to choose a file from the
-   `$FSLDIR/data/standard/` directory to load.
+3. The *File* |right_arrow| *Add standard* menu option allows you to choose a
+   file from the `$FSLDIR/data/standard/` directory to load.
 
 4. The + button on the overlay list allows you to choose a file to load.
 
 
-.. note:: The *File/Add standard* menu option will be disabled if your FSL
-          environment is not configured correctly.
+.. note:: The *File* |right_arrow| *Add standard* menu option will be disabled
+          if your FSL environment is not configured correctly.
 
 
 Open another ortho/lightbox view?
@@ -171,8 +195,15 @@ Open/close control panels/toolbars?
 The *Settings* menu contains a sub-menu for every open view, which allows you
 to toggle the control panels and toolbars for that view, and perform a few
 other tasks. For exmaple, if you want to add an :ref:`edit toolbar
-<controls-edit-toolbar>`, you would select the *Settings/Ortho view 1/Edit
-toolbar* menu option.
+<controls-edit-toolbar>`, you would select the *Settings* |right_arrow| *Ortho
+view 1* |right_arrow| *Edit toolbar* menu option.
+
+.. sidebar:: I don't have an *Ortho view 1* menu!
+             
+             Every *FSLeyes* view panel is given a name and a number so that
+             it can be uniquely identified. If you have more than one view
+             panel open, you will be able to see the name and number of each
+             panel on its title bar.
 
 
 Show/hide the cursor/anatomical labels?
@@ -188,8 +219,8 @@ Take a screenshot?
 ^^^^^^^^^^^^^^^^^^
 
 
-Click the camera icon on the ortho toolbar, or select the *Settings/Ortho view
-1/Take screenshot* menu item.
+Click the camera icon on the ortho toolbar, or select the *Settings*
+|right_arrow| *Ortho view 1* |right_arrow| *Take screenshot* menu item.
 
 
 
@@ -200,8 +231,65 @@ Link/unlink the display properties across multiple views?
 If you have more than one view open (e.g. an ortho view and a lightbox view),
 and you want the overlay display settings to be the same across all views,
 open the view settings panel for each view (via the toolbar spanner button, or
-the *Settings/<view name>/View settings panel* menu option), and make sure
-that the *Sync overlay display settings* box is checked or unchecked.
+the *Settings* |right_arrow| *<view name>* |right_arrow| *View settings panel*
+menu option), and make sure that the *Sync overlay display settings* box is
+checked or unchecked.
+
+
+Edit a NIFTI1 image?
+^^^^^^^^^^^^^^^^^^^^
+
+
+You can :ref:`edit NIFTI1 image data <editing-images>` from within an ortho
+view. Open the :ref:`edit toolbar <editing-images-edit-toolbar>` (via the
+*Settings* |right_arrow| *<view name>* |right_arrow| *Edit toolbar* menu
+option), and click on the pencil button to enter edit mode.
+
+Modifying the data in an image is a two-stage process:
+
+ 1. Select the voxels you wish to change.
+ 2. Change the value of the selected voxels.
+
+
+**Selecting voxels**
+
+ - Voxels can be selected by right-clicking and dragging, or by holding down
+   the |command_key|/|control_key| and |shift_key| keys and left-clicking and
+   dragging.
+   
+ - Voxels can be deselected by holding down the |command_key|/|control_key|
+   and |shift_key| keys, and right-clicking and dragging.
+
+ - The selection size can be adjusted via the *Selection size* field in the
+   edit toolbar, or by holding down the |command_key|/|control_key| and
+   |shift_key| keys and spinning the mouse wheel.
+
+ - By default, the selection block is a 2-dimensional rectangle in the
+   current slice, but it can be made into a 3-dimensional cube by toggling
+   the :ref:`2D/3D button <editing-images-selectionIs3D>` on the
+   edit toolbar.
+
+ - As an alternate to manually drawing the selection, voxels can be
+   :ref:`selected by value <editing-images-select-by-intensity>`.
+
+           
+**Changing voxel values**
+       
+ - The values of all selected voxels can be replaced with the current
+   :ref:`fill value <editing-images-fill-value>`, by clicking the
+   bucket-fill button on the edit toolbar.
+
+ - The values of all selected voxels can be *erased* (replaced with 0) by
+   clicking the :ref:`erase button <editing-images-erasing>` on the edit
+   toolbar.
+
+ - The current fill value can be modified via the *Fill value* field
+   on the edit toolbar.
+
+      
+When you have made changes to an image, don't forget to save them via the
+*File* |right_arrow| *Save overlay* menu item, or the floppy disk button on
+the :ref:`controls-overlay-list`.
 
 
 Classify ICA components?
@@ -209,10 +297,10 @@ Classify ICA components?
 
 
 Load your `.ica` directory (or the `.ica/melodic_IC` image file), then open
-the melodic perspective (the *View/Perspectives/Melodic mode* menu
-option). Use the :ref:`melodic classification panel
-<controls-melodic-ic-classification>` to label components, and load/save
-label files.
+the melodic perspective (the *View* |right_arrow| *Perspectives* |right_arrow|
+*Melodic mode* menu option). Use the :ref:`melodic classification panel
+<controls-melodic-ic-classification>` to label components, and load/save label
+files.
 
 
 Save the current view/control panel layout?
@@ -222,6 +310,7 @@ Save the current view/control panel layout?
 When you close *FSLeyes*, the current layout is saved to a configuration
 file. This layout is then restored the next time you open *FSLeyes*.  You can
 also save a layout at any time by defining a new :ref:`perspective
-<perspectives>`: Choose the *View/Perspectives/Save current perspective* menu
-item, and give your layout a name. You can then restore it at any time by
-selecting it in the *View/Perspectives* menu.
+<perspectives>`: Choose the *View* |right_arrow| *Perspectives* |right_arrow|
+*Save current perspective* menu item, and give your layout a name. You can
+then restore it at any time by selecting it in the *View* |right_arrow|
+*Perspectives* menu.
