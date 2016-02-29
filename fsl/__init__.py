@@ -60,7 +60,6 @@ import importlib
 import threading
 import subprocess
 
-
 import fsl.tools          as tools
 import fsl.utils.settings as fslsettings
 
@@ -496,7 +495,9 @@ def _parseTopLevelArgs(argv, allTools):
     # things if its logging level has been
     # set to DEBUG, so we import it now so
     # it can set itself up.
-    import fsl.utils.trace
+    traceLogger = logging.getLogger('fsl.utils.trace')
+    if traceLogger.getEffectiveLevel() <= logging.DEBUG:
+        import fsl.utils.trace
 
     fslTool = _loadFSLTool(namespace.tool)
 
