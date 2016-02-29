@@ -228,7 +228,14 @@ def interface(parent, args, ctx):
     splashFrame.Hide()
     splashFrame.Refresh()
     splashFrame.Update()
-    wx.CallLater(250, splashFrame.Close)
+
+    # In certain instances under Linux/GTK,
+    # closing the splash screen will crash
+    # the application. No idea why. So if
+    # running GTK, we leave the splash
+    # screen hidden, but not closed.
+    if wx.Platform != '__WXGTK__':
+        wx.CallLater(250, splashFrame.Close)
 
     # If a perspective has been specified,
     # we load the perspective
