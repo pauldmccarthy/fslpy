@@ -25,11 +25,10 @@ import logging
 import textwrap
 import argparse
 
-import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
-import fsl.fsleyes.perspectives      as perspectives
-import fsl.utils.status              as status
-import fsl.utils.async               as async
-import fsl.data.strings              as strings
+import fsl.fsleyes.perspectives as perspectives
+import fsl.utils.status         as status
+import fsl.utils.async          as async
+import fsl.data.strings         as strings
 
 
 log = logging.getLogger(__name__)
@@ -57,6 +56,8 @@ def parseArgs(argv):
     
     :arg argv: command line arguments for ``fsleyes``.
     """
+
+    import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
 
     parser = argparse.ArgumentParser(
         add_help=False,
@@ -111,9 +112,10 @@ def context(args, splash):
                 - the :class:`.FSLEyesSplash` frame
     """
 
-    import fsl.fsleyes.overlay        as fsloverlay
-    import fsl.fsleyes.displaycontext as displaycontext
-    import fsl.fsleyes.gl             as fslgl
+    import fsl.fsleyes.overlay           as fsloverlay
+    import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
+    import fsl.fsleyes.displaycontext    as displaycontext
+    import fsl.fsleyes.gl                as fslgl
     import props
     
     props.initGUI()
@@ -187,9 +189,10 @@ def interface(parent, args, ctx):
     :returns: the :class:`.FSLEyesFrame` that was created.
     """
 
-    import                      wx
-    import fsl.fsleyes.frame as fsleyesframe
-    import fsl.fsleyes.views as views
+    import                                  wx
+    import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
+    import fsl.fsleyes.frame             as fsleyesframe
+    import fsl.fsleyes.views             as views
 
     overlayList, displayCtx, splashFrame = ctx
 
