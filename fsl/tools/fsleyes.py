@@ -26,15 +26,28 @@ import textwrap
 import argparse
 
 import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
-import fsl.fsleyes.displaycontext    as displaycontext
 import fsl.fsleyes.perspectives      as perspectives
-import fsl.fsleyes.overlay           as fsloverlay
 import fsl.utils.status              as status
 import fsl.utils.async               as async
 import fsl.data.strings              as strings
 
 
 log = logging.getLogger(__name__)
+
+
+def init():
+    """Creates and returns a :class:`.FSLEyesSplash` frame. """
+
+    import fsl.fsleyes.splash as fslsplash
+
+    frame = fslsplash.FSLEyesSplash(None)
+
+    frame.CentreOnScreen()
+    frame.Show()
+    frame.Refresh()
+    frame.Update()
+
+    return frame
 
 
 def parseArgs(argv):
@@ -72,7 +85,7 @@ def parseArgs(argv):
                                        description)
 
 
-def context(args):
+def context(args, splash):
     """Creates the ``fsleyes`` context.
 
     This function does a few things:
@@ -88,7 +101,9 @@ def context(args):
 
      4. Loads all of the overlays which were passed in on the command line.
 
-    :arg args: Parsed command line arguments (see :func:`parseArgs`).
+    :arg args:   Parsed command line arguments (see :func:`parseArgs`).
+
+    :arg splash: The :class:`.FSLEyesSplash` frame, created in :func:`init`.
 
     :returns: a tuple containing:
                 - the :class:`.OverlayList`
@@ -96,36 +111,27 @@ def context(args):
                 - the :class:`.FSLEyesSplash` frame
     """
 
-    import fsl.fsleyes.splash as fslsplash
-
-    # Create a splash screen, and use it
-    # to initialise the OpenGL context
+    import fsl.fsleyes.overlay        as fsloverlay
+    import fsl.fsleyes.displaycontext as displaycontext
+    import fsl.fsleyes.gl             as fslgl
+    import props
     
+    props.initGUI()
+
     # The splash screen is used as the parent of the dummy
     # canvas created by the gl.getWXGLContext function; the
     # splash screen frame is returned by this function, and
-    # passed through to the interface function above, which
-    # takes care of destroying it.
-    frame = fslsplash.FSLEyesSplash(None)
-
-    frame.CentreOnScreen()
-    frame.Show()
-    frame.Refresh()
-    frame.Update()
-
-    import props
-    import fsl.fsleyes.gl as fslgl
-
-    props.initGUI()
+    # passed through to the interface function below, which
+    # takes care of destroying it.    
     
     # force the creation of a wx.glcanvas.GLContext object,
     # and initialise OpenGL version-specific module loads.
-    fslgl.getWXGLContext(frame)
+    fslgl.getWXGLContext(splash)
     fslgl.bootstrap(args.glversion)
 
     # Redirect status updates
     # to the splash frame
-    status.setTarget(frame.SetStatus)
+    status.setTarget(splash.SetStatus)
 
     # Create the overlay list (only one of these
     # ever exists) and the master DisplayContext.
@@ -153,7 +159,7 @@ def context(args):
     # be updated with the currently loading overlay name
     fsleyes_parseargs.applyOverlayArgs(args, overlayList, displayCtx)  
 
-    return overlayList, displayCtx, frame
+    return overlayList, displayCtx, splash
 
 
 def interface(parent, args, ctx):
@@ -285,6 +291,7 @@ def about(frame, ctx):
 FSL_TOOLNAME  = 'FSLeyes'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
+FSL_INIT      = init
 FSL_PARSEARGS = parseArgs
 FSL_ACTIONS   = [(strings.actions['AboutAction'],            about),
                  (strings.actions['DiagnosticReportAction'], diagnosticReport)]

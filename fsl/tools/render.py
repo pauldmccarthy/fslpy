@@ -520,7 +520,7 @@ def parseArgs(argv):
     return namespace
 
 
-def context(args):
+def context(args, *a, **kwa):
 
     # Create an image list and display context.
     # The DisplayContext, Display and DisplayOpts

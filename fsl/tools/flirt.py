@@ -196,6 +196,6 @@ def interface(parent, args, opts):
 
 FSL_TOOLNAME  = 'FLIRT'
 FSL_HELPPAGE  = 'flirt'
-FSL_CONTEXT   = lambda args: Options()
+FSL_CONTEXT   = lambda *a: Options()
 FSL_INTERFACE = interface
 FSL_ACTIONS   = [('Run FLIRT', runFlirt)]

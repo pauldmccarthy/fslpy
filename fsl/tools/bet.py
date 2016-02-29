@@ -337,6 +337,6 @@ def runBet(parent, opts):
 
 FSL_TOOLNAME  = 'BET'
 FSL_HELPPAGE  = 'bet'
-FSL_CONTEXT   = lambda args: Options()
+FSL_CONTEXT   = lambda *a: Options()
 FSL_INTERFACE = interface
 FSL_ACTIONS   = [('Run BET', runBet)]

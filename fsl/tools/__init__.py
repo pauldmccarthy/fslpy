@@ -27,6 +27,11 @@ package) a tool module must provide the following module level attributes:
 
 ``FSL_HELPPAGE``  Optional. A URL to a web page providing help/documentation.
 
+``FSL_INIT``      Optional. A function which is called called before the
+                  tool arguments are parsed. The return value of this function
+                  will be passed on to the ``FSL_CONTEXT`` function (if it is
+                  provided).
+
 ``FSL_PARSEARGS`` Optional. A function which is given a list of command line
                   arguments specific to the tool. The function should parse
                   the arguments and return, for example, an :mod:`argparse`
@@ -63,16 +68,20 @@ asked to run a ``fslpy`` tool:
 
         import fsl.tools.mytool as mytool
 
-2.  Calls the ``FSL_PARSEARGS`` function::
+2.  Calls the ``FSL_INIT`` function::
+
+        initVal = mytool.FSL_INIT()
+
+3.  Calls the ``FSL_PARSEARGS`` function::
 
         parsedArgs = mytool.FSL_PARSEARGS(cmdLineArgs)
 
-3.  Calls the ``FSL_CONTEXT`` function, giving it the value returned by
+4.  Calls the ``FSL_CONTEXT`` function, giving it the value returned by
     ``FSL_PARSEARGS``::
 
-        context = mytool.FSL_CONTEXT(parsedArgs)
+        context = mytool.FSL_CONTEXT(parsedArgs, initVal)
 
-4.
+5.
 
  a. If the tool is a command line application, calls the ``FSL_EXECUTE``
     function, passing it the arguments and the context::

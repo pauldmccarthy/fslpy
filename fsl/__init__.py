@@ -89,8 +89,27 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    allTools                = _getFSLToolNames()
-    fslTool, args, toolArgs = _parseArgs(args, allTools)
+    # Get a list of all available tools, 
+    # and parse the top-level arguments
+    allTools                     = _getFSLToolNames()
+    fslTool, namespace, toolArgv = _parseTopLevelArgs(args, allTools)
+
+    # If this is a GUI tool, create
+    # the wx application before calling 
+    # fslTool.init(), in case it does
+    # any GUI stuff.
+    if fslTool.interface is not None:
+        import wx
+        app = wx.App()
+
+    # Call the tool's init
+    # function if there is one
+    if fslTool.init is not None: initVal = fslTool.init()
+    else:                        initVal = None
+
+    # Parse the tool-specific
+    # command line arguments
+    toolNamespace = _parseToolArgs(fslTool, namespace, toolArgv)
 
     # Is this a GUI tool?
     if fslTool.interface is not None:
@@ -114,10 +133,12 @@ def main(args=None):
         def buildGUI():
             def realBuild():
 
-                if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-                else:                           ctx = None
+                if fslTool.context is not None:
+                    ctx = fslTool.context(toolNamespace, initVal)
+                else:
+                    ctx = None
 
-                frame = _buildGUI(toolArgs, fslTool, ctx, fslEnvActive)
+                frame = _buildGUI(toolNamespace, fslTool, ctx, fslEnvActive)
                 frame.Show()
 
                 # See comment below
@@ -125,7 +146,7 @@ def main(args=None):
 
                 _fslDirWarning(frame, fslTool.toolName, fslEnvActive)
 
-                if args.wxinspect:
+                if namespace.wxinspect:
                     import wx.lib.inspection
                     wx.lib.inspection.InspectionTool().Show()
 
@@ -137,20 +158,24 @@ def main(args=None):
         # wx.MainLoop call will just return immediately.
         # The buildGUI function above will kill the dummy
         # frame when it has created the real interface.
-        app        = wx.App()
         dummyFrame = wx.Frame(None)
 
         threading.Thread(target=buildGUI).start()
+
+        # The wx.App was created above,
+        # before calling fslTool.init()
         app.MainLoop()
 
     # Or is this a CLI tool?
     elif fslTool.execute is not None:
         
-        if fslTool.context is not None: ctx = fslTool.context(toolArgs)
-        else:                           ctx = None
+        if fslTool.context is not None:
+            ctx = fslTool.context(toolNamespace, initVal)
+        else:
+            ctx = None
         
         _fslDirWarning(None, fslTool.toolName, fslEnvActive)
-        fslTool.execute(toolArgs, ctx)
+        fslTool.execute(toolNamespace, ctx)
 
 
 def runTool(toolName, args, **kwargs):
@@ -224,6 +249,7 @@ def _loadFSLTool(moduleName):
         ``moduleName`` The tool module name.
         ``toolName``   The tool name.
         ``helpPage``   The tool help page URL.
+        ``init``       An initialisation function.
         ``parseArgs``  A function to parse tool arguments.
         ``context``    A function to generate the tool context.
         ``interface``  A function to create the tool interface.
@@ -239,6 +265,7 @@ def _loadFSLTool(moduleName):
     # Each FSL tool module may specify several things
     toolName  = getattr(module, 'FSL_TOOLNAME',  None)
     helpPage  = getattr(module, 'FSL_HELPPAGE',  'index')
+    init      = getattr(module, 'FSL_INIT',      None)
     parseArgs = getattr(module, 'FSL_PARSEARGS', None)
     context   = getattr(module, 'FSL_CONTEXT',   None)
     interface = getattr(module, 'FSL_INTERFACE', None)
@@ -267,6 +294,7 @@ def _loadFSLTool(moduleName):
     fsltool.moduleName = moduleName
     fsltool.toolName   = toolName
     fsltool.helpPage   = helpPage
+    fsltool.init       = init
     fsltool.parseArgs  = parseArgs
     fsltool.context    = context
     fsltool.interface  = interface
@@ -276,20 +304,18 @@ def _loadFSLTool(moduleName):
     return fsltool
 
 
-def _parseArgs(argv, allTools):
-    """Creates a command line :class:`argparse.ArgumentParser` which will
-    process general arguments for ``fslpy`` and arguments for all FSL tools
-    which have defined their own command line arguments.
-
-    Parses the command line arguments, configures logging verbosity,  and
-    returns a tuple containing the following:
+def _parseTopLevelArgs(argv, allTools):
+    """Parses top-level command line arguments. This involves parsing arguments
+    which are shared across all tools.  Also identifies the tool to be invoked
+    and configures logging verbosity. Returns a tuple containing the
+    following:
     
       - The ``FSLTool`` instance (see :func:`_loadFSLTool`).
     
       - The :class:`argparse.Namespace` instance containing parsed arguments.
     
-      - The return value of the ``FSLTool.parseArgs`` function (see
-        :func:`_loadFSLTool`).
+      - All remaining unparsed command line arguments (to be passed to the
+        :func:`_parseToolArgs` function).
     """
 
     epilog = 'Type fslpy help <tool> for program-specific help. ' \
@@ -353,7 +379,6 @@ def _parseArgs(argv, allTools):
     # the top level args
     fslArgv   = argv[:firstPos + 1]
     toolArgv  = argv[ firstPos + 1:]
-
     namespace = parser.parse_args(fslArgv)
 
     # Version number
@@ -453,10 +478,26 @@ def _parseArgs(argv, allTools):
 
     fslTool = _loadFSLTool(namespace.tool)
 
-    if fslTool.parseArgs is not None: toolArgs = fslTool.parseArgs(toolArgv)
-    else:                             toolArgs = None
+    return fslTool, namespace, toolArgv
+
+
+def _parseToolArgs(tool, namespace, argv):
+    """Parses tool-specific command-line arguments. Returns the result of
+    calling the ``FSL_PARSEARGS`` attribute of the given tool, or ``None``
+    if the tool does not have the function.
+
+    :arg tool:      The ``FSLTool`` to be invoked.
+
+    :arg namespace: The ``argparse.Namespace`` object containing parsed
+                    top-level arguments.
+
+    :arg argv:      Command line arguments to be parsed.
+    """
+
+    if tool.parseArgs is not None: toolNamespace = tool.parseArgs(argv)
+    else:                          toolNamespace = None
     
-    return fslTool, namespace, toolArgs
+    return toolNamespace
 
 
 def _fslDirWarning(parent, toolName, fslEnvActive):
