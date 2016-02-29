@@ -233,8 +233,15 @@ def interface(parent, args, ctx):
     # closing the splash screen will crash
     # the application. No idea why. So if
     # running GTK, we leave the splash
-    # screen hidden, but not closed.
-    if wx.Platform != '__WXGTK__':
+    # screen hidden, but not closed, and
+    # close it when the main frame is
+    # closed.
+    if wx.Platform == '__WXGTK__':
+        def onFrameDestroy(ev):
+            ev.Skip()
+            splashFrame.Close()
+        frame.Bind(wx.EVT_WINDOW_DESTROY, onFrameDestroy)
+    else:
         wx.CallLater(250, splashFrame.Close)
 
     # If a perspective has been specified,
