@@ -104,11 +104,16 @@ def _runGUITool(fslTool, toolArgv):
     """
     import wx
 
-    fslEnvActive = 'FSLDIR' in os.environ
-
-    # Create a wx.App before init(), 
-    # in case it does GUI stuff.
-    app = wx.App() 
+    # Create the wx.App object befor fslTool.init,
+    # in case it does GUI stuff. Also create a dummy
+    # frame - if we don't create a dummy frame, the
+    # wx.MainLoop call below will just return
+    # immediately.
+    #
+    # The buildGUI function below will kill the dummy
+    # frame when it has created the real interface.
+    app        = wx.App()
+    dummyFrame = wx.Frame(None)
 
     # Call the tool's init
     # function if there is one
@@ -144,29 +149,24 @@ def _runGUITool(fslTool, toolArgv):
                 ctx = None
 
             # Build the GUI
-            frame = _buildGUI(toolNamespace, fslTool, ctx, fslEnvActive)
+            frame = _buildGUI(toolNamespace, fslTool, ctx)
             frame.Show()
 
             # See comment about the
             # dummy frame below
             dummyFrame.Destroy()
 
-            _fslDirWarning(frame, fslTool.toolName, fslEnvActive)
-
-        time.sleep(0.1)
+        # Sleep a bit so the main thread (on
+        # which wx.MainLoop is running) can
+        # start.
+        time.sleep(0.01)
+        wx.CallAfter(_fslDirWarning,
+                     None,
+                     fslTool.toolName,
+                     'FSLDIR' in os.environ)
         wx.CallAfter(realBuild)
 
-    # Create the wx.App object, and create a dummy
-    # frame. If we don't create a dummy frame, the
-    # wx.MainLoop call will just return immediately.
-    # The buildGUI function above will kill the dummy
-    # frame when it has created the real interface.
-    dummyFrame = wx.Frame(None)
-
     threading.Thread(target=buildGUI).start()
-
-    # The wx.App was created above,
-    # before calling fslTool.init()
     app.MainLoop()
 
 
@@ -575,16 +575,13 @@ def _fslDirWarning(parent, toolName, fslEnvActive):
         log.warn(warnmsg)
         
 
-def _buildGUI(args, fslTool, toolCtx, fslEnvActive):
+def _buildGUI(args, fslTool, toolCtx):
     """Builds a :mod:`wx` GUI for the tool.
 
     :arg fslTool:      The ``FSLTool`` instance (see :func:`_loadFSLTool`).
 
     :arg toolCtx:      The tool context, as returned by the 
                        ``FSLTool.context`` function.
-
-    :arg fslEnvActive: Set to ``True`` if ``$FSLDIR`` is set, ``False``
-                       otherwise. 
     """
 
     import wx
