@@ -254,7 +254,7 @@ def _getFSLToolNames():
     # directory, should work for both frozen and
     # unfrozen apps.
     if getattr(sys, 'frozen', False):
-        allTools = ['fsleyes', 'render', 'bet', 'flirt', 'feat']
+        allTools = ['fsleyes', 'render']
     else:
         allTools = [mod for _, mod, _ in pkgutil.iter_modules(tools.__path__)]
 

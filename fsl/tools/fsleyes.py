@@ -306,6 +306,7 @@ def about(frame, ctx):
 
 
 FSL_TOOLNAME  = 'FSLeyes'
+FSL_HELPPAGE  = 'http://users.fmrib.ox.ac.uk/~paulmc/fsleyes/'
 FSL_INTERFACE = interface
 FSL_CONTEXT   = context
 FSL_INIT      = init
