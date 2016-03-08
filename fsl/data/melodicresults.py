@@ -286,7 +286,7 @@ class MelodicClassification(props.HasProperties):
             labels = [self.getDisplayLabel(l) for l in self.labels[c]]
             allLabels.append(labels)
 
-        saveMelodicLabelFile(self.__melImage.getMelodicDir(),
+        saveMelodicLabelFile(self.__melimage.getMelodicDir(),
                              allLabels,
                              filename)
 

@@ -31,6 +31,8 @@ task to run. It waits until all the threads have finished, and then runs
 the task (via :func:`idle`).
 """
 
+
+import time
 import Queue
 import logging
 import threading
@@ -125,12 +127,18 @@ def _wxIdleLoop(ev):
         
     ev.Skip()
 
-    try:                task, args, kwargs = _idleQueue.get_nowait()
-    except Queue.Empty: return
+    try:
+        task, schedtime, timeout, args, kwargs = _idleQueue.get_nowait()
+    except Queue.Empty:
+        return
 
-    name = getattr(task, '__name__', '<unknown>')
-    log.debug('Running function ({}) on wx idle loop'.format(name))
-    task(*args, **kwargs)
+    name    = getattr(task, '__name__', '<unknown>')
+    now     = time.time()
+    elapsed = now - schedtime
+
+    if timeout == 0 or (elapsed < timeout):
+        log.debug('Running function ({}) on wx idle loop'.format(name))
+        task(*args, **kwargs)
 
     if _idleQueue.qsize() > 0:
         ev.RequestMore()
@@ -141,6 +149,12 @@ def idle(task, *args, **kwargs):
 
     :arg task: The task to run.
 
+    :arg timeout: Optional. If provided, must be provided as a keyword
+                  argument. Specifies a time out, in seconds. If this
+                  amount of time passes before the function gets
+                  scheduled to be called on the idle loop, the function
+                  is not called, and is dropped from the queue.
+
     All other arguments are passed through to the task function.
 
     If a ``wx.App`` is not running, the task is called directly.
@@ -148,6 +162,9 @@ def idle(task, *args, **kwargs):
 
     global _idleRegistered
     global _idleTasks
+
+    schedtime = time.time()
+    timeout   = kwargs.pop('timeout', 0)
 
     if _haveWX():
         import wx
@@ -159,7 +176,7 @@ def idle(task, *args, **kwargs):
         name = getattr(task, '__name__', '<unknown>')
         log.debug('Scheduling idle task ({}) on wx idle loop'.format(name))
 
-        _idleQueue.put_nowait((task, args, kwargs))
+        _idleQueue.put_nowait((task, schedtime, timeout, args, kwargs))
             
     else:
         log.debug('Running idle task directly') 

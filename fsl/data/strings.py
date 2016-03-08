@@ -912,6 +912,7 @@ about = {
     'email'      : 'paulmc@fmrib.ox.ac.uk',
     'company'    : u'\u00A9 FMRIB Centre, Oxford, UK',
     'version'    : 'FSLeyes version: {}',
+    'vcsVersion' : 'Internal version: {}',
     'glVersion'  : 'OpenGL version: {}',
     'glRenderer' : 'OpenGL renderer: {}',
     'software'   : textwrap.dedent(

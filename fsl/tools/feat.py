@@ -552,5 +552,5 @@ def interface(parent, args, featOpts):
 
 FSL_TOOLNAME  = 'FEAT'
 FSL_HELPPAGE  = 'feat'
-FSL_CONTEXT   = lambda args: Options()
+FSL_CONTEXT   = lambda *a: Options()
 FSL_INTERFACE = interface

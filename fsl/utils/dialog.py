@@ -710,7 +710,7 @@ class FSLDirDialog(wx.Dialog):
 
 class CheckBoxMessageDialog(wx.Dialog):
     """A ``wx.Dialog`` which displays a message, a ``wx.CheckBox``, and
-    an "Ok" button.
+    an *Ok* button.
     """
 
     
@@ -735,13 +735,13 @@ class CheckBoxMessageDialog(wx.Dialog):
         
         :arg cbState:   Initial state for the ``wx.CheckBox``.
         
-        :arg btnText:   Text to show on the button. Defaults to "OK".
+        :arg btnText:   Text to show on the button. Defaults to *OK*.
         
         :arg icon:      A ``wx`` icon identifier (e.g. 
                         ``wx.ICON_EXCLAMATION``).
         
         :arg style:     Passed through to the ``wx.Dialog.__init__`` method.
-                        Defaults to ``wx.DEFAULT_DIALOG_STYLE`.
+                        Defaults to ``wx.DEFAULT_DIALOG_STYLE``.
         """
 
         if style     is None: style     = wx.DEFAULT_DIALOG_STYLE

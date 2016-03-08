@@ -10,9 +10,14 @@ version number and information.
 .. autosummary::
 
    __version__
+   __vcs_version__
 
 .. todo:: Define a formal ``fslpy`` version number updating scheme.
 """
 
-__version__ = '0.1'
+__version__ = '0.9a'
 """Current version number, as a string. """
+
+
+__vcs_version__ = '0.9a'
+"""VCS (Version Control System) version number, for internal use. """
