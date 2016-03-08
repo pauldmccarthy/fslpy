@@ -13,38 +13,50 @@ The following functions are provided:
    :nosignatures:
 
    openPage
-   openFSLHelp
+   localHelpUrl
+   openLocalHelp
 """
 
-import os
-import webbrowser
+import            os
+import os.path as op
+import            webbrowser
 
 
 def openPage(url):
     """Opens the given URL in the system-default web browser."""
     webbrowser.open(url)
 
-    
-def openFSLHelp(toolName):
-    """Attempts to open the FSL help documentation for the given FSL tool.
-    If the ``$FSLDIR`` environment variable is not set, pops up a warning
-    message instead.
+
+def localHelpUrl(toolName):
+    """Checks the ``$FSLDIR`` to see if a local help page exists for the
+    FSL tool with the specified name.
+    """
+    fsldir = os.environ.get('FSLDIR', None)
+
+    if fsldir is None:
+        return None
+
+    toolName = toolName.lower()
+    localUrl = op.join(fsldir, 'doc', 'redirects', '{}.html'.format(toolName))
+
+    if op.exists(localUrl):
+        import urlparse
+        import urllib
+        return urlparse.urljoin(
+            'file:', urllib.pathname2url(localUrl)) 
+
+    return None
+
+
+def openLocalHelp(toolName):
+    """Attempts to open the locally hosted FSL help documentation
+    for the given FSL tool. If there is no help page for the
+    given tool, attempts to open the FSL wiki.
     """
 
-    import wx
+    localUrl = localHelpUrl(toolName)
 
-    fsldir = os.environ.get('FSLDIR', None)
-    url    = 'file://{}/doc/redirects/{}.html'.format(fsldir, toolName)
+    if localUrl is None:
+        localUrl = "http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/"
 
-    if fsldir is not None:
-        openPage(url)
-
-    else:
-
-        msg = 'The FSLDIR environment variable is not set - I don\'t '\
-            'know where to find the FSL documentation.'
-
-        wx.MessageDialog(
-            None,
-            message=msg,
-            style=wx.OK | wx.ICON_ERROR).ShowModal()
+    openPage(localUrl)

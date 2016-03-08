@@ -289,7 +289,7 @@ def _loadFSLTool(moduleName):
 
     # Each FSL tool module may specify several things
     toolName  = getattr(module, 'FSL_TOOLNAME',  None)
-    helpPage  = getattr(module, 'FSL_HELPPAGE',  'index')
+    helpPage  = getattr(module, 'FSL_HELPPAGE',  None)
     init      = getattr(module, 'FSL_INIT',      None)
     parseArgs = getattr(module, 'FSL_PARSEARGS', None)
     context   = getattr(module, 'FSL_CONTEXT',   None)
@@ -600,10 +600,16 @@ def _buildGUI(args, fslTool, toolCtx):
 
     actions = []
 
+    def help(ev):
+        if fslTool.helpPage is not None:
+            webpage.openPage(fslTool.helpPage)
+        else:
+            webpage.openLocalHelp(fslTool.toolName)
+
     actions.append((
         wx.ID_HELP,
         '{} Help'.format(fslTool.toolName),
-        lambda *ev: webpage.openFSLHelp(fslTool.helpPage)))
+        help))
 
     for (name, func) in fslTool.actions:
         actions.append((wx.ID_ANY, name, lambda ev, f=func: f(frame, toolCtx)))
