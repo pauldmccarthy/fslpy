@@ -104,7 +104,6 @@ class Instanceify(object):
     can be applied to instance methods. For example, say we have the following
     class::
 
-    
         class Container(object):
 
             def __init__(self):
@@ -121,7 +120,7 @@ class Instanceify(object):
     be associated with a single ``Container`` instance.
 
     
-    By redefining the ``Container`` class definition like so:
+    By redefining the ``Container`` class definition like so::
 
     
         class Container(object):
