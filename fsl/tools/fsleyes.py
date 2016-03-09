@@ -21,6 +21,9 @@ See the :mod:`~fsl.fsleyes` package documentation for more details on
 """
 
 
+from __future__ import print_function
+
+import sys
 import logging
 import textwrap
 import argparse
@@ -128,8 +131,14 @@ def context(args, splash):
     
     # force the creation of a wx.glcanvas.GLContext object,
     # and initialise OpenGL version-specific module loads.
-    fslgl.getWXGLContext(splash)
-    fslgl.bootstrap(args.glversion)
+    try:
+        fslgl.getWXGLContext(splash)
+        fslgl.bootstrap(args.glversion)
+        
+    except:
+        log.error('Unable to initialise OpenGL!', exc_info=True)
+        splash.Destroy()
+        sys.exit(1)
 
     # Redirect status updates
     # to the splash frame
