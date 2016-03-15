@@ -198,6 +198,8 @@ titles = TypeDict({
     'TimeSeriesPanel'    : 'Time series',
     'PowerSpectrumPanel' : 'Power spectra',
     'HistogramPanel'     : 'Histogram',
+    'ShellPanel'         : 'Python shell',
+ 
 
     'CanvasPanel.screenshot'          : 'Save screenshot',
     'CanvasPanel.screenshot.notSaved' : 'Save overlay before continuing',
@@ -227,7 +229,6 @@ titles = TypeDict({
     'PowerSpectrumControlPanel' : 'Power spectrum control',
     'ClusterPanel'              : 'Cluster browser',
     'OverlayInfoPanel'          : 'Overlay information',
-    'ShellPanel'                : 'Python shell',
 
     'MelodicClassificationPanel' : 'Melodic IC classification',
 
@@ -277,7 +278,6 @@ actions = TypeDict({
     'CanvasPanel.toggleClusterPanel'        : 'Cluster browser',
     'CanvasPanel.toggleOverlayInfo'         : 'Overlay information',
     'CanvasPanel.toggleClassificationPanel' : 'Melodic IC classification',
-    'CanvasPanel.toggleShell'               : 'Python shell',
     
     'OrthoPanel.toggleOrthoToolBar'     : 'Ortho toolbar',
     'OrthoPanel.toggleEditToolBar'      : 'Edit toolbar',
