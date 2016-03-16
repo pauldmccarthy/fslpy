@@ -93,6 +93,9 @@ messages = TypeDict({
     'actions.loadcolourmap.installerror'     : 'An error occurred while '
                                                'installing the colour map',
 
+    'RunScriptAction.runScript' : 'Choose a FSLeyes script to run',
+    'RunScriptAction.crash'     : 'The script {} has crashed! Reason: {}',
+
     'AtlasPanel.loadingAtlas' : 'Loading {} atlas ...',
 
     'AtlasOverlayPanel.loadRegions'   : 'Loading region descriptions '
@@ -261,6 +264,7 @@ actions = TypeDict({
     'SavePerspectiveAction'   : 'Save current perspective',
     'ClearPerspectiveAction'  : 'Clear all perspectives',
     'DiagnosticReportAction'  : 'Diagnostic report',
+    'RunScriptAction'         : 'Run script',
     'AboutAction'             : 'About FSLeyes',
 
     'FSLEyesFrame.closeViewPanel' : 'Close',
