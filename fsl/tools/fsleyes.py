@@ -66,6 +66,10 @@ def parseArgs(argv):
         add_help=False,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    parser.add_argument('-r', '--runscript',
+                        metavar='SCRIPTFILE',
+                        help='Run custom FSLeyes script')
+
     # TODO Dynamically generate perspective list
     # in description. To do this, you will need
     # to make fsl.utils.settings work without a
@@ -78,7 +82,10 @@ def parseArgs(argv):
         Use the '--scene' option to load a saved perspective (e.g. 'default',
         'melodic', 'feat', 'ortho', or 'lightbox').
         
-        If no '--scene' is specified, the previous layout is restored.
+        If no '--scene' is specified, the previous layout is restored, unless
+        a script is provided via the '--runscript' argument, in which case
+        it is assumed that the script sets up the scene, so the previous
+        layout is not restored.
         """)
 
     # Options for configuring the scene are
@@ -86,7 +93,8 @@ def parseArgs(argv):
     return fsleyes_parseargs.parseArgs(parser,
                                        argv,
                                        name,
-                                       description)
+                                       description,
+                                       fileOpts=['r', 'runscript'])
 
 
 def context(args, splash):
@@ -205,6 +213,7 @@ def interface(parent, args, ctx):
 
     overlayList, displayCtx, splashFrame = ctx
 
+    # Set up the frame scene (a.k.a. layout, perspective)
     # The scene argument can be:
     #
     #   - 'lightbox' or 'ortho', specifying a single view
@@ -212,13 +221,16 @@ def interface(parent, args, ctx):
     # 
     #   - The name of a saved (or built-in) perspective
     # 
-    #   - None, in which case the previous layout is restored
-    scene = args.scene
+    #   - None, in which case the previous layout is restored,
+    #     unless a custom script has been provided.
+    script = args.runscript 
+    scene  = args.scene
 
-    # If a scene or perspective has not been
-    # specified, the default behaviour is to
-    # restore the previous frame layout. 
-    restore = scene is None
+    # If a scene/perspective or custom script
+    # has not been specified, the default
+    # behaviour is to restore the previous
+    # frame layout. 
+    restore = (scene is None) and (script is None)
 
     status.update('Creating FSLeyes interface...')
     
@@ -253,17 +265,15 @@ def interface(parent, args, ctx):
     else:
         wx.CallLater(250, splashFrame.Close)
 
+    status.update('Setting up scene...')
+
     # If a perspective has been specified,
     # we load the perspective
     if args.scene is not None:
         perspectives.loadPerspective(frame, args.scene)
 
-    # The viewPanel is assumed to be a CanvasPanel 
-    # (i.e. either OrthoPanel or LightBoxPanel)
+    # Apply any view-panel specific arguments
     viewPanels = frame.getViewPanels()
-
-    status.update('Setting up scene...')
-
     for viewPanel in viewPanels:
 
         if not isinstance(viewPanel, views.CanvasPanel):
@@ -286,6 +296,15 @@ def interface(parent, args, ctx):
 
         if isinstance(viewPanel, views.OrthoPanel):
             async.idle(centre)
+
+    # If a script has been specified, we run
+    # the script. This has to be done on the
+    # idle loop, because overlays specified
+    # on the command line are loaded on the
+    # idle loop, and the script may assume
+    # that they have already been loaded.
+    if script is not None:
+        async.idle(frame.runScript, script)
             
     return frame
 
