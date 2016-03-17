@@ -571,7 +571,7 @@ def saveMelodicLabelFile(melDir, allLabels, filename):
         # commas in any label names
         labels = [l.replace(',', '_') for l in labels]
         
-        tokens = [str(comp + 1)] + labels + [str(noise)]
+        tokens = [str(comp)] + labels + [str(noise)]
 
         lines.append(', '.join(tokens))
 
@@ -579,7 +579,7 @@ def saveMelodicLabelFile(melDir, allLabels, filename):
             noisyComps.append(comp)
 
     # A line listing the bad components
-    lines.append('[' + ', '.join([str(c + 1) for c in noisyComps]) + ']')
+    lines.append('[' + ', '.join([str(c) for c in noisyComps]) + ']')
 
     with open(filename, 'wt') as f:
         f.write('\n'.join(lines) + '\n')
