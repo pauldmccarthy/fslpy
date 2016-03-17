@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module providse the :class:`Model` class, which represents a 3D model.
+"""This module provides the :class:`Model` class, which represents a 3D model.
 
 .. note:: I/O support is very limited - currently, the only supported file 
           type is the VTK legacy file format, containing the ``POLYDATA``
