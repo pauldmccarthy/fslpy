@@ -494,12 +494,12 @@ def loadMelodicLabelFile(filename):
             melDir = op.join(op.dirname(filename), melDir)
         
         # Parse the labels for every component
-        # We dot not add the labels as we go
-        # as, if something is wrong with the
-        # file contents, we don't want this
-        # MelodicClassification instance to
-        # be modified. So we'll assign the
-        # labels afterwards
+        # We do not add the labels as we go
+        # because, if something is wrong with
+        # the file contents, we don't want this
+        # MelodicClassification instance to be
+        # modified. So we'll assign the labels
+        # afterwards.
         allLabels = []
         for i, compLine in enumerate(lines[1:-1]):
 
@@ -507,43 +507,49 @@ def loadMelodicLabelFile(filename):
             tokens = [t.strip() for t in tokens]
 
             if len(tokens) < 3:
-                raise InvalidFixFileError('Invalid FIX classification '
-                                          'file - component line {} does '
-                                          'not have enough '
-                                          'tokens'.format(i + 1))
+                raise InvalidFixFileError(
+                    'Invalid FIX classification file - '
+                    'line {}: {}'.format(i + 1, compLine))
 
-            compIdx    = int(tokens[0])
+            try:
+                compIdx = int(tokens[0])
+                
+            except:
+                raise InvalidFixFileError(
+                    'Invalid FIX classification file - '
+                    'line {}: {}'.format(i + 1, compLine))
+                    
             compLabels = tokens[1:-1]
 
             if compIdx != i + 1:
-                raise InvalidFixFileError('Invalid FIX classification '
-                                          'file - component line {} has '
-                                          'wrong component number '
-                                          '({})'.format(i, compIdx))
+                raise InvalidFixFileError(
+                    'Invalid FIX classification file - wrong component '
+                    'number at line {}: {}'.format(i + 1, compLine))
 
             allLabels.append(compLabels)
 
-
     # Validate the labels against
     # the noisy list - all components
-    # in the noisy list should have
-    # the label 'unclassified noise'.
+    # in the noisy list should not
+    # have 'signal' or 'unknown' labels
     for i, labels in enumerate(allLabels):
 
-        for label in labels:
-            if label.lower() == 'unclassified noise' and \
-               (i + 1) not in noisyComps:
+        comp  = i + 1
+        noise = isNoisyComponent(labels)
 
-                raise InvalidFixFileError('Noisy component {} has an invalid '
-                                          'label: {}'.format(i + 1, label))
+        if noise and (comp not in noisyComps):
+            raise InvalidFixFileError('Noisy component {} has invalid '
+                                      'labels: {}'.format(comp, labels))
 
     for comp in noisyComps:
-        labels = allLabels[comp - 1]
-        labels = [l.lower() for l in labels]
         
-        if 'unclassified noise' not in labels:
+        i      = comp - 1
+        labels = allLabels[i]
+        noise  = isNoisyComponent(labels)
+        
+        if not noise:
             raise InvalidFixFileError('Noisy component {} is missing '
-                                      'a noise label'.format(i)) 
+                                      'a noise label'.format(comp)) 
 
     return melDir, allLabels
 
@@ -563,14 +569,12 @@ def saveMelodicLabelFile(melDir, allLabels, filename):
     # A line for each component
     for i, labels in enumerate(allLabels):
 
-        comp    = i + 1
-        lowered = [l.lower() for l in labels]
-        noise   = 'signal' not in lowered and 'unknown' not in lowered
+        comp   = i + 1
+        noise  = isNoisyComponent(labels)
 
         # Make sure there are no
         # commas in any label names
         labels = [l.replace(',', '_') for l in labels]
-        
         tokens = [str(comp)] + labels + [str(noise)]
 
         lines.append(', '.join(tokens))
@@ -584,6 +588,17 @@ def saveMelodicLabelFile(melDir, allLabels, filename):
     with open(filename, 'wt') as f:
         f.write('\n'.join(lines) + '\n')
 
+
+def isNoisyComponent(labels):
+    """Given a set of component labels, returns ``True`` if the component
+    is ultimately classified as noise, ``False`` otherwise.
+    """
+
+    labels = [l.lower() for l in labels]
+    noise  = ('signal' not in labels) and ('unknown' not in labels)
+
+    return noise
+    
 
 class InvalidFixFileError(Exception):
     """Exception raised by the :meth:`MelodicClassification.load` method and
