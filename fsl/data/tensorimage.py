@@ -34,26 +34,46 @@ def getTensorDataPrefix(path):
     fas   = glob.glob(op.join(path, '*_FA.*'))
     mds   = glob.glob(op.join(path, '*_MD.*'))
     files = [v1s, v2s, v3s, l1s, l2s, l3s, fas, mds]
-    
-    # Make sure there is exactly one
-    # of each of the above files
-    def lenone(l):
-        return len(l) == 1
 
-    if not all(map(lenone, files)):
-        return None
-
-    files = [f[0] for f in files]
-
-    # Make sure that all of the above
-    # files have the same prefix
+    # Gather all of the existing file
+    # prefixes into a dictionary of
+    # prefix : [file list] mappings.
     pattern  = '^(.*)_(?:V1|V2|V3|L1|L2|L3|FA|MD).*$'
-    prefixes = [re.findall(pattern, f)[0] for f in files]
+    prefixes = {}
 
-    if any([p != prefixes[0] for p in prefixes]):
+    for f in [f for flist in files for f in flist]:
+        prefix = re.findall(pattern, f)[0]
+
+        if prefix not in prefixes: prefixes[prefix] = [f]
+        else:                      prefixes[prefix].append(f)
+                
+    # Discard any prefixes which are 
+    # not present for every file type.
+    for prefix, files in list(prefixes.items()):
+        if len(files) != 8:
+            prefixes.pop(prefix)
+
+    # Discard any prefixes which
+    # match any files that do
+    # not look like image files
+    for prefix, files in list(prefixes.items()):
+        if not all([fslimage.looksLikeImage(f) for f in files]):
+            prefixes.pop(prefix)
+
+    prefixes = list(prefixes.keys())
+
+    # No more prefixes remaining -
+    # this is probably not a dtifit
+    # directory
+    if len(prefixes) == 0:
         return None
 
-    # And there's our prefix
+    # If there's more than one remaining
+    # prefix, I don't know what to do -
+    # just return the first one. 
+    if len(prefixes) > 1:
+        log.warning('Multiple dtifit prefixes detected: {}'.format(prefixes))
+
     return op.basename(prefixes[0])
 
 

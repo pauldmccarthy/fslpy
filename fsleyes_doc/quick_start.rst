@@ -30,8 +30,9 @@ looks like this:
    :align: center
 
 
-This is slightly boring, so let's load an image. Select the *File/Add overlay
-from file* menu option, and choose a `.nii.gz` image to load.
+This is slightly boring, so let's load an image. Select the *File
+|right_arrow| Add overlay from file* menu option, and choose a `.nii.gz` image
+to load.
           
 Now things are a bit more interesting:
 
@@ -242,54 +243,9 @@ Edit a NIFTI1 image?
 
 You can :ref:`edit NIFTI1 image data <editing-images>` from within an ortho
 view. Open the :ref:`edit toolbar <editing-images-edit-toolbar>` (via the
-*Settings* |right_arrow| *<view name>* |right_arrow| *Edit toolbar* menu
-option), and click on the pencil button to enter edit mode.
-
-Modifying the data in an image is a two-stage process:
-
- 1. Select the voxels you wish to change.
- 2. Change the value of the selected voxels.
-
-
-**Selecting voxels**
-
- - Voxels can be selected by right-clicking and dragging, or by holding down
-   the |command_key|/|control_key| and |shift_key| keys and left-clicking and
-   dragging.
-   
- - Voxels can be deselected by holding down the |command_key|/|control_key|
-   and |shift_key| keys, and right-clicking and dragging.
-
- - The selection size can be adjusted via the *Selection size* field in the
-   edit toolbar, or by holding down the |command_key|/|control_key| and
-   |shift_key| keys and spinning the mouse wheel.
-
- - By default, the selection block is a 2-dimensional rectangle in the
-   current slice, but it can be made into a 3-dimensional cube by toggling
-   the :ref:`2D/3D button <editing-images-selectionIs3D>` on the
-   edit toolbar.
-
- - As an alternate to manually drawing the selection, voxels can be
-   :ref:`selected by value <editing-images-select-by-intensity>`.
-
-           
-**Changing voxel values**
-       
- - The values of all selected voxels can be replaced with the current
-   :ref:`fill value <editing-images-fill-value>`, by clicking the
-   bucket-fill button on the edit toolbar.
-
- - The values of all selected voxels can be *erased* (replaced with 0) by
-   clicking the :ref:`erase button <editing-images-erasing>` on the edit
-   toolbar.
-
- - The current fill value can be modified via the *Fill value* field
-   on the edit toolbar.
-
-      
-When you have made changes to an image, don't forget to save them via the
-*File* |right_arrow| *Save overlay* menu item, or the floppy disk button on
-the :ref:`controls-overlay-list`.
+*Settings* |right_arrow| *Ortho view* |right_arrow| *Edit toolbar* menu
+option), and click on the pencil button to enter edit mode. See the page on
+:ref:`editing images <editing-images>` for more details.
 
 
 Classify ICA components?

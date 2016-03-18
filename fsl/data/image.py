@@ -23,7 +23,7 @@ file names:
 .. autosummary::
    :nosignatures:
 
-   isSupported
+   looksLikeImage
    removeExt
    addExt
    loadImage
@@ -146,8 +146,10 @@ class Nifti1(object):
         else:
             self.nibImage = image
 
-        self.shape         = self.nibImage.get_shape()
-        self.pixdim        = self.nibImage.get_header().get_zooms()
+        shape, pixdim = self.__determineShape(self.nibImage)
+        
+        self.shape         = shape
+        self.pixdim        = pixdim
         self.voxToWorldMat = np.array(self.nibImage.get_affine())
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
 
@@ -158,6 +160,39 @@ class Nifti1(object):
 
         if len(self.shape) < 3 or len(self.shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
+
+
+    def __determineShape(self, nibImage):
+        """This method is called by :meth:`__init__`. It figures out the shape
+        of the image data, and the zooms/pixdims for each data axis. Any empty
+        trailing dimensions are squeezed, but the returned shape is guaranteed
+        to be at least 3 dimensions.
+        """
+
+        nibHdr  = nibImage.get_header()
+        shape   = list(nibImage.shape)
+        pixdims = list(nibHdr.get_zooms())
+
+        # Squeeze out empty dimensions, as
+        # 3D image can sometimes be listed
+        # as having 4 or more dimensions 
+        for i in reversed(range(len(shape))):
+            if shape[i] == 1: shape = shape[:i]
+            else:             break
+
+        # But make sure the shape is 3D
+        if len(shape) < 3:
+            shape = shape + [1] * (3 - len(shape))
+
+        # The same goes for the pixdim - if get_zooms()
+        # doesn't return at least 3 values, we'll fall
+        # back to the pixdim field in the header.
+        if len(pixdims) < 3:
+            pixdims = nibHdr['pixdim'][1:]
+
+        pixdims = pixdims[:len(shape)]
+        
+        return shape, pixdims
  
     
     def loadData(self):
@@ -165,30 +200,26 @@ class Nifti1(object):
         be called if the ``loadData`` parameter passed to :meth:`__init__`
         was ``False``.
         """
-        
-        data = self.nibImage.get_data()
 
-        # Squeeze out empty dimensions, as
-        # 3D image can sometimes be listed
-        # as having 4 or more dimensions
-        shape = data.shape
-        
-        for i in reversed(range(len(shape))):
-            if shape[i] == 1: data = data.squeeze(axis=i)
-            else:             break
+        # Get the data, and reshape it according
+        # to the shape that the __determineShape
+        # method figured out.
+        data      = self.nibImage.get_data()
+        origShape = data.shape
+        data      = data.reshape(self.shape)
 
+        # Tell numpy to make the
+        # data array read-only
         data.flags.writeable = False
+        
+        self.data = data
 
         log.debug('Loaded image data ({}) - original '
                   'shape {}, squeezed shape {}'.format(
                       self.dataSource,
-                      shape,
+                      origShape,
                       data.shape))
 
-        self.data    = data
-        self.shape   = self.shape[ :len(data.shape)]
-        self.pixdim  = self.pixdim[:len(data.shape)]
-        
         
     # TODO: Remove this method, and use the shape attribute directly
     def is4DImage(self):
@@ -556,8 +587,8 @@ DEFAULT_EXTENSION  = '.nii.gz'
 """The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
 
 
-def isSupported(filename, allowedExts=None):
-    """Returns ``True`` if the given file has a supported extension, ``False``
+def looksLikeImage(filename, allowedExts=None):
+    """Returns ``True`` if the given file looks like an image, ``False``
     otherwise.
 
     :arg filename:    The file name to test.
@@ -567,6 +598,9 @@ def isSupported(filename, allowedExts=None):
     """
 
     if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    # TODO A much more robust approach would be
+    #      to try loading the file using nibabel.
 
     return any(map(lambda ext: filename.endswith(ext), allowedExts))
 
@@ -787,7 +821,8 @@ def saveImage(image, fromDir=None):
     path     = dlg.GetPath()
     nibImage = image.nibImage
 
-    if not isSupported(path):
+    # Add a file extension if not specified
+    if not looksLikeImage(path):
         path = addExt(path, False)
 
     # this is an image which has been
