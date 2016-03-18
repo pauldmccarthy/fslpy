@@ -23,7 +23,7 @@ file names:
 .. autosummary::
    :nosignatures:
 
-   isSupported
+   looksLikeImage
    removeExt
    addExt
    loadImage
@@ -556,8 +556,8 @@ DEFAULT_EXTENSION  = '.nii.gz'
 """The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
 
 
-def isSupported(filename, allowedExts=None):
-    """Returns ``True`` if the given file has a supported extension, ``False``
+def looksLikeImage(filename, allowedExts=None):
+    """Returns ``True`` if the given file looks like an image, ``False``
     otherwise.
 
     :arg filename:    The file name to test.
@@ -567,6 +567,9 @@ def isSupported(filename, allowedExts=None):
     """
 
     if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+
+    # TODO A much more robust approach would be
+    #      to try loading the file using nibabel.
 
     return any(map(lambda ext: filename.endswith(ext), allowedExts))
 
@@ -787,7 +790,8 @@ def saveImage(image, fromDir=None):
     path     = dlg.GetPath()
     nibImage = image.nibImage
 
-    if not isSupported(path):
+    # Add a file extension if not specified
+    if not looksLikeImage(path):
         path = addExt(path, False)
 
     # this is an image which has been
