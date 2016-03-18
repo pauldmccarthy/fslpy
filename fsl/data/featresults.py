@@ -48,6 +48,7 @@ import os.path             as op
 import numpy               as np
 
 import fsl.data.image      as fslimage
+import fsl.utils.path      as fslpath
 import fsl.utils.transform as transform
 
 
@@ -120,49 +121,20 @@ def getAnalysisDir(path):
     """If the given path is contained within a FEAT directory, the path
     to that FEAT directory is returned. Otherwise, ``None`` is returned.
     """
+    featdir = fslpath.deepest(path, ['.feat', '.gfeat'])
 
-    # This is basically the opposite to
-    # the getTopLevelAnalysisDir function
+    if featdir is not None and isFEATDir(featdir):
+        return featdir
 
-    path = path.strip()
-
-    if path == op.sep or path == '':
-        return None
-
-    path = path.rstrip(op.sep)
-
-    sufs = ['.feat', '.gfeat']
-
-    if any([path.endswith(suf) for suf in sufs]):
-        return path
-
-    return getAnalysisDir(op.dirname(path))
+    return None
 
 
 def getTopLevelAnalysisDir(path):
-    """If the given path is contained within a FEAT directory, or a
-    MELODIC directory, the path to the latter directory is returned.
-    Otherwise, ``None`` is returned.
+    """If the given path is contained within a hierarchy of FEAT or MELODIC
+    directories, the path to the highest-level (i.e. the shallowest in the
+    file system) directory is returned. Otherwise, ``None`` is returned.
     """
-
-    path = path.strip()
-
-    # We've reached the root of the file system
-    if path == op.sep or path == '':
-        return None
-
-    path   = path.rstrip(op.sep)
-    parent = getTopLevelAnalysisDir(op.dirname(path))
-
-    if parent is not None:
-        return parent
-
-    sufs = ['.ica', '.gica', '.feat', '.gfeat']
-
-    if any([path.endswith(suf) for suf in sufs]):
-        return path
-
-    return None
+    return fslpath.shallowest(path, ['.ica', '.gica', '.feat', '.gfeat'])
 
 
 def loadDesign(featdir):

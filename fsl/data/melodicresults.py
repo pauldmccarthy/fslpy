@@ -16,6 +16,7 @@ following functions are provided:
 
    isMelodicImage
    isMelodicDir
+   getAnalysisDir
    getTopLevelAnalysisDir
    getDataFile
    getICFile
@@ -38,6 +39,7 @@ import numpy   as np
 
 import props
 
+import fsl.utils.path       as fslpath
 import fsl.data.image       as fslimage
 import fsl.data.featresults as featresults
 
@@ -91,7 +93,27 @@ def isMelodicDir(path):
     return True
 
 
-getTopLevelAnalysisDir = featresults.getTopLevelAnalysisDir
+def getAnalysisDir(path):
+    """If the given path is contained within a MELODIC directory, the path
+    to that MELODIC directory is returned. Otherwise, ``None`` is returned.
+    """
+
+    meldir = fslpath.deepest(path, ['.ica', '.gica'])
+
+    if meldir is not None and isMelodicDir(meldir):
+        return meldir
+    
+    return None
+
+
+def getTopLevelAnalysisDir(path):
+    """If the given path is contained within a hierarchy of FEAT or MELODIC
+    directories, the path to the highest-level (i.e. the shallowest in the
+    file system) directory is returned. Otherwise, ``None`` is returned.
+
+    See :func:`.featresults.getTopLevelAnalysisDir`.
+    """ 
+    return featresults.getTopLevelAnalysisDir(path)
 
     
 def getDataFile(meldir):
