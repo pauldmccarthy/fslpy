@@ -90,17 +90,20 @@ def main(args=None):
     fslTool, namespace, toolArgv = _parseTopLevelArgs(args, allTools)
 
     # GUI or command-line tool?
-    if fslTool.interface is not None: _runGUITool(fslTool, toolArgv)
-    else:                             _runCLITool(fslTool, toolArgv)
+    if fslTool.interface is not None: _runGUITool(fslTool, namespace, toolArgv)
+    else:                             _runCLITool(fslTool, namespace, toolArgv)
 
 
-def _runGUITool(fslTool, toolArgv):
+def _runGUITool(fslTool, topLevelArgs, toolArgv):
     """Runs the given ``FSLTool``, which is assumed to be a GUI tool.
 
-    :arg fslTool:  The ``FSLTool`` to run - see the :func:`_loadFSLTool`
-                   function.
+    :arg fslTool:      The ``FSLTool`` to run - see the :func:`_loadFSLTool`
+                       function.
 
-    :arg toolArgv: Unparsed tool-specific command line arguments.
+    :arg topLevelArgs: An ``argparse.Namespace`` object containing parsed
+                       top-level arguments.
+
+    :arg toolArgv:     Unparsed tool-specific command line arguments.
     """
     import wx
 
@@ -160,24 +163,30 @@ def _runGUITool(fslTool, toolArgv):
         # which wx.MainLoop is running) can
         # start.
         time.sleep(0.01)
-        wx.CallAfter(_fslDirWarning,
-                     None,
-                     fslTool.toolName,
-                     'FSLDIR' in os.environ)
+
+        if not topLevelArgs.skipfslcheck:
+            wx.CallAfter(_fslDirWarning,
+                         None,
+                         fslTool.toolName,
+                         'FSLDIR' in os.environ)
+            
         wx.CallAfter(realBuild)
 
     threading.Thread(target=buildGUI).start()
     app.MainLoop()
 
 
-def _runCLITool(fslTool, toolArgv):
+def _runCLITool(fslTool, topLevelArgs, toolArgv):
     """Runs the given ``FSLTool``, which is assumed to be a command-line (i.e.
     non-GUI) tool.
 
-    :arg fslTool:  The ``FSLTool`` to run - see the :func:`_loadFSLTool`
-                   function.
+    :arg fslTool:      The ``FSLTool`` to run - see the :func:`_loadFSLTool`
+                       function.
 
-    :arg toolArgv: Unparsed tool-specific command line arguments.     
+    :arg topLevelArgs: An ``argparse.Namespace`` object containing parsed
+                       top-level arguments. 
+
+    :arg toolArgv:     Unparsed tool-specific command line arguments.     
     """
 
     if fslTool.execute is None:
@@ -198,8 +207,10 @@ def _runCLITool(fslTool, toolArgv):
     if fslTool.init    is not None: initVal = fslTool.init()
     if fslTool.context is not None: ctx     = fslTool.context(namespace,
                                                               initVal)
+
+    if not topLevelArgs.skipfslcheck:
+        _fslDirWarning(None, fslTool.toolName, 'FSLDIR' in os.environ)
         
-    _fslDirWarning(None, fslTool.toolName, 'FSLDIR' in os.environ)
     fslTool.execute(namespace, ctx)
 
 
@@ -358,7 +369,11 @@ def _parseTopLevelArgs(argv, allTools):
 
     parser.add_argument(
         '-V', '--version', action='store_true',
-        help='Print the current fslpy version and exit') 
+        help='Print the current fslpy version and exit')
+
+    parser.add_argument(
+        '-s', '--skipfslcheck', action='store_true',
+        help='Skip $FSLDIR check/warning')
     
     parser.add_argument(
         '-n', '--noisy', metavar='MODULE', action='append',
