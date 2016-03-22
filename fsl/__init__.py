@@ -62,6 +62,7 @@ import subprocess
 
 import fsl.tools          as tools
 import fsl.utils.settings as fslsettings
+import fsl.utils.platform as fslplatform
 
 import fsl.version
 
@@ -566,7 +567,8 @@ def _fslDirWarning(parent, toolName, fslEnvActive):
     fsldir = fslsettings.read('fsldir')
 
     if fsldir is not None:
-        os.environ['FSLDIR'] = fsldir
+        os.environ['FSLDIR']        = fsldir
+        fslplatform.platform.fsldir = fsldir
         return
 
     if haveGui:
@@ -581,8 +583,9 @@ def _fslDirWarning(parent, toolName, fslEnvActive):
                 log.debug('Setting $FSLDIR to {} (specified '
                           'by user)'.format(fsldir))
 
-                os.environ['FSLDIR'] = fsldir
-                fslsettings.write('fsldir', fsldir)
+                fslplatform.platform.fsldir   = fsldir
+                os.environ[         'FSLDIR'] = fsldir
+                fslsettings.write(  'fsldir',   fsldir)
 
         wx.CallLater(500, warn)
 
