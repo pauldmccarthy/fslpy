@@ -60,12 +60,20 @@ class Platform(notifier.Notifier):
     """The ``Platform`` class contains a handful of properties which contain
     information about the platform we are running on.
 
+    .. note:: The values of the :attr:`glVersion` and :attr:`glRenderer`
+              properties are not automatically set - they will only contain
+              a value if one is assigned to them. The
+              :func:`fsl.fsleyes.gl.bootstrap` function does this when it is
+              first called.
+
     .. autosummary::
 
        fsldir
        haveGui
        wxBuild
        wxFlavour
+       glVersion
+       glRenderer
     """
 
     
@@ -77,6 +85,8 @@ class Platform(notifier.Notifier):
         self.__haveGui    = False
         self.__wxFlavour  = None
         self.__wxPlatform = None
+        self.__glVersion  = None
+        self.__glRenderer = None
 
         try:
             import wx
@@ -150,6 +160,34 @@ class Platform(notifier.Notifier):
         """
         self.__fsldir = value
         self.notify()
+
+        
+    @property
+    def glVersion(self):
+        """Returns the available OpenGL version, or ``None`` if it has not
+        been set.
+        """
+        return self.__glVersion
+
+    
+    @glVersion.setter
+    def glVersion(self, value):
+        """Set the available OpenGL version. """
+        self.__glVersion = value
+
+
+    @property
+    def glRenderer(self):
+        """Returns the available OpenGL renderer, or ``None`` if it has not
+        been set.
+        """
+        return self.__glRenderer
+
+
+    @glRenderer.setter
+    def glRenderer(self, value):
+        """Set the available OpenGL renderer. """
+        self.__glRenderer = value
 
 
 platform = Platform()
