@@ -56,7 +56,8 @@ def isMelodicImage(path):
     dirname  = op.dirname( path)
     filename = op.basename(path)
 
-    return filename.startswith('melodic_IC') and isMelodicDir(dirname)
+    return fslimage.removeExt(filename) == 'melodic_IC' and \
+        isMelodicDir(dirname)
  
 
 def isMelodicDir(path):
