@@ -707,47 +707,49 @@ def loadImage(filename):
     In any case, a tuple is returned, consisting of the nibabel image object,
     and the name of the file that it was loaded from (either the passed-in
     file name, or the name of the temporary decompressed file).
+
+    .. note:: The decompressing logic has been disabled for the time being.
     """
 
-    realFilename = filename
-    mbytes       = op.getsize(filename) / 1048576.0
+    # realFilename = filename
+    # mbytes       = op.getsize(filename) / 1048576.0
 
-    # The mbytes limit is arbitrary
-    if filename.endswith('.gz') and mbytes > 512:
+    # # The mbytes limit is arbitrary
+    # if filename.endswith('.gz') and mbytes > 512:
 
-        unzipped, filename = tempfile.mkstemp(suffix='.nii')
+    #     unzipped, filename = tempfile.mkstemp(suffix='.nii')
 
-        unzipped = os.fdopen(unzipped)
+    #     unzipped = os.fdopen(unzipped)
 
-        msg = fslstrings.messages['image.loadImage.decompress']
-        msg = msg.format(op.basename(realFilename), mbytes, filename)
+    #     msg = fslstrings.messages['image.loadImage.decompress']
+    #     msg = msg.format(op.basename(realFilename), mbytes, filename)
 
-        status.update(msg, None)
+    #     status.update(msg, None)
 
-        gzip = ['gzip', '-d', '-c', realFilename]
-        log.debug('Running {} > {}'.format(' '.join(gzip), filename))
+    #     gzip = ['gzip', '-d', '-c', realFilename]
+    #     log.debug('Running {} > {}'.format(' '.join(gzip), filename))
 
-        # If the gzip call fails, revert to loading from the gzipped file
-        try:
-            sp.call(gzip, stdout=unzipped)
-            unzipped.close()
+    #     # If the gzip call fails, revert to loading from the gzipped file
+    #     try:
+    #         sp.call(gzip, stdout=unzipped)
+    #         unzipped.close()
 
-        except OSError as e:
-            log.warn('gzip call failed ({}) - cannot memory '
-                     'map file: {}'.format(e, realFilename),
-                     exc_info=True)
-            unzipped.close()
-            os.remove(filename)
-            filename = realFilename
+    #     except OSError as e:
+    #         log.warn('gzip call failed ({}) - cannot memory '
+    #                  'map file: {}'.format(e, realFilename),
+    #                  exc_info=True)
+    #         unzipped.close()
+    #         os.remove(filename)
+    #         filename = realFilename
 
     log.debug('Loading image from {}'.format(filename))
 
     import nibabel as nib
 
-    if mbytes > 512:
-        msg     = fslstrings.messages['image.loadImage.largeFile']
-        msg     = msg.format(op.basename(filename),  mbytes)
-        status.update(msg)
+    # if mbytes > 512:
+    #     msg     = fslstrings.messages['image.loadImage.largeFile']
+    #     msg     = msg.format(op.basename(filename),  mbytes)
+    #     status.update(msg)
     
     image = nib.load(filename)
 
