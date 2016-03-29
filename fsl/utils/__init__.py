@@ -19,7 +19,6 @@ things.
     ~fsl.utils.dialog
     ~fsl.utils.runwindow
     ~fsl.utils.webpage
-    ~fsl.utils.trace
     ~fsl.utils.status
     ~fsl.utils.memoize
     ~fsl.utils.async

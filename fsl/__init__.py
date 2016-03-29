@@ -511,9 +511,9 @@ def _parseTopLevelArgs(argv, allTools):
     # things if its logging level has been
     # set to DEBUG, so we import it now so
     # it can set itself up.
-    traceLogger = logging.getLogger('fsl.utils.trace')
+    traceLogger = logging.getLogger('props.trace')
     if traceLogger.getEffectiveLevel() <= logging.DEBUG:
-        import fsl.utils.trace
+        import props.trace
 
     fslTool = _loadFSLTool(namespace.tool)
 
