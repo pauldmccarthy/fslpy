@@ -209,6 +209,7 @@ def interface(parent, args, ctx):
     import                                  wx
     import fsl.fsleyes.fsleyes_parseargs as fsleyes_parseargs
     import fsl.fsleyes.frame             as fsleyesframe
+    import fsl.fsleyes.displaycontext    as fsldisplay
     import fsl.fsleyes.views             as views
 
     overlayList, displayCtx, splashFrame = ctx
@@ -266,6 +267,13 @@ def interface(parent, args, ctx):
         wx.CallLater(250, splashFrame.Close)
 
     status.update('Setting up scene...')
+
+    # Set the default SceneOpts.performance
+    # level so that all created SceneOpts
+    # instances will default to it
+    if args.performance is not None:
+        fsldisplay.SceneOpts.performance.setConstraint(
+            None, 'default', args.performance)
 
     # If a perspective has been specified,
     # we load the perspective
