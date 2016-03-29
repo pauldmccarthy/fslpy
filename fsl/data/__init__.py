@@ -20,6 +20,5 @@ models, constants, and other data-like things used throughout ``fslpy``.
     ~fsl.data.featresults
     ~fsl.data.melodicresults
     ~fsl.data.atlases
-    ~fsl.data.strings
     ~fsl.data.constants
 """

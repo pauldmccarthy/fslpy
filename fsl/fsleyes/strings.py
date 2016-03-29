@@ -36,27 +36,15 @@ import fsl.data.constants as constants
 
 messages = TypeDict({
 
-    'FSLDirDialog.FSLDirNotSet'    : 'The $FSLDIR environment variable '
-                                     'is not set - {} may not behave '
-                                     'correctly.',
-    'FSLDirDialog.selectFSLDir'    : 'Select the directory in which '
-                                     'FSL is installed',
-
     'FSLEyesSplash.default'        : 'Loading ...',
 
     'FSLEyesFrame.restoringLayout' : 'Restoring layout from last session ...',
 
-    'image.saveImage.error'      : 'An error occurred saving the file. '
-                                   'Details: {}',
-    
     'image.loadImage.decompress' : '{} is a large file ({:0.0f} MB) - '
                                    'decompressing to {}, to allow memory '
                                    'mapping...',
     'image.loadImage.largeFile'  : '{} is a large file ({:0.0f}) MB) - '
                                    'loading it may take some time...',
-
-    'ProcessingDialog.error' : 'An error has occurred: {}'
-                               '\n\nDetails: {}',
 
     'perspectives.applyingPerspective' : 'Applying {} perspective ...',
 
@@ -185,12 +173,6 @@ messages = TypeDict({
 
 
 titles = TypeDict({
-
-    'FSLDirDialog'           : '$FSLDIR is not set',
-    
-    'image.saveImage.dialog' : 'Save image file',
-
-    'ProcessingDialog.error' : 'Error',
     
     'overlay.addOverlays.dialog' : 'Open overlay files',
     
@@ -313,9 +295,6 @@ actions = TypeDict({
 
 labels = TypeDict({
 
-    'FSLDirDialog.locate' : 'Locate $FSLDIR',
-    'FSLDirDialog.skip'   : 'Skip',
-    
     'LocationPanel.worldLocation'         : 'Coordinates: ',
     'LocationPanel.worldLocation.unknown' : 'Unknown',
     'LocationPanel.voxelLocation'         : 'Voxel location',

@@ -22,8 +22,6 @@ import threading
 
 import wx
 
-import fsl.data.strings as strings
-
 
 class SimpleMessageDialog(wx.Dialog):
     """A simple, no-frills :class:`wx.Dialog` for displaying a message. The
@@ -369,8 +367,8 @@ class ProcessingDialog(SimpleMessageDialog):
         which contains a description of the error.
         """
         err   = str(err)
-        msg   = strings.messages[self, 'error'].format(msg, err)
-        title = strings.titles[  self, 'error']
+        msg   = 'An error hass occurred: {}\n\nDetails: {}'.format(msg, err)
+        title = 'Error'
         wx.MessageBox(msg, title, wx.ICON_ERROR | wx.OK) 
 
 
@@ -625,7 +623,7 @@ class FSLDirDialog(wx.Dialog):
         :arg toolName: The name of the tool which is running.
         """
 
-        wx.Dialog.__init__(self, parent, title=strings.titles[self])
+        wx.Dialog.__init__(self, parent, title='$FSLDIR is not set')
 
         self.__fsldir  = None
         self.__icon    = wx.StaticBitmap(self)
@@ -639,9 +637,11 @@ class FSLDirDialog(wx.Dialog):
 
         self.__icon.SetBitmap(bmp)
         self.__message.SetLabel(
-            strings.messages[self, 'FSLDirNotSet'].format(toolName))
-        self.__locate .SetLabel(strings.labels[self, 'locate'])
-        self.__skip   .SetLabel(strings.labels[self, 'skip'])
+            'The $FSLDIR environment variable '
+            'is not set - {} may not behave '
+            'correctly.'.format(toolName))
+        self.__locate .SetLabel('Locate $FSLDIR')
+        self.__skip   .SetLabel('Skip')
 
         self.__skip  .Bind(wx.EVT_BUTTON, self.__onSkip)
         self.__locate.Bind(wx.EVT_BUTTON, self.__onLocate)
@@ -696,7 +696,7 @@ class FSLDirDialog(wx.Dialog):
 
         dlg = wx.DirDialog(
             self,
-            message=strings.messages[self, 'selectFSLDir'],
+            message='Select the directory in which FSL is installed',
             style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
 
         if dlg.ShowModal() != wx.ID_OK:

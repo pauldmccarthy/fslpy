@@ -45,7 +45,6 @@ import props
 
 import fsl.utils.transform as transform
 import fsl.utils.status    as status
-import fsl.data.strings    as fslstrings
 import fsl.data.constants  as constants
 
 
@@ -811,7 +810,7 @@ def saveImage(image, fromDir=None):
         saveLastDir = True
 
     dlg = wx.FileDialog(app.GetTopWindow(),
-                        message=fslstrings.titles['image.saveImage.dialog'],
+                        message='Save image file',
                         defaultDir=fromDir,
                         defaultFile=filename, 
                         style=wx.FD_SAVE)
@@ -858,7 +857,7 @@ def saveImage(image, fromDir=None):
             
     except Exception as e:
 
-        msg = fslstrings.messages['image.saveImage.error'].format(e.msg)
+        msg = 'An error occurred saving the file. Details: {}'.format(e.msg)
         log.warn(msg)
         wx.MessageDialog(app.GetTopWindow(),
                          message=msg,

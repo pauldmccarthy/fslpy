@@ -26,8 +26,8 @@ import fsl
 import fsl.utils.layout                        as fsllayout
 import fsl.utils.colourbarbitmap               as cbarbitmap
 import fsl.utils.textbitmap                    as textbitmap
-import fsl.data.strings                        as strings
 import fsl.data.constants                      as constants
+import fsl.fsleyes.strings                     as strings
 import fsl.fsleyes.overlay                     as fsloverlay
 import fsl.fsleyes.colourmaps                  as fslcm
 import fsl.fsleyes.fsleyes_parseargs           as fsleyes_parseargs

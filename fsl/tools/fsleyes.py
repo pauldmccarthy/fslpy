@@ -29,9 +29,9 @@ import textwrap
 import argparse
 
 import fsl.fsleyes.perspectives as perspectives
+import fsl.fsleyes.strings      as strings
 import fsl.utils.status         as status
 import fsl.utils.async          as async
-import fsl.data.strings         as strings
 
 
 log = logging.getLogger(__name__)
