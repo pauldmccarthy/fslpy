@@ -28,10 +28,11 @@ import logging
 import textwrap
 import argparse
 
-import fsl.fsleyes.perspectives as perspectives
-import fsl.fsleyes.strings      as strings
-import fsl.utils.status         as status
-import fsl.utils.async          as async
+import fsl.fsleyes.perspectives           as perspectives
+import fsl.fsleyes.strings                as strings
+import fsl.utils.status                   as status
+import fsl.utils.async                    as async
+from   fsl.utils.platform import platform as fslplatform
 
 
 log = logging.getLogger(__name__)
@@ -258,7 +259,7 @@ def interface(parent, args, ctx):
     # screen hidden, but not closed, and
     # close it when the main frame is
     # closed.
-    if wx.Platform == '__WXGTK__':
+    if fslplatform.wxPlatform == fslplatform.WX_GTK:
         def onFrameDestroy(ev):
             ev.Skip()
             splashFrame.Close()
