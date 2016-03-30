@@ -70,7 +70,7 @@ class Platform(notifier.Notifier):
 
        fsldir
        haveGui
-       wxBuild
+       wxPlatform
        wxFlavour
        glVersion
        glRenderer
@@ -79,7 +79,14 @@ class Platform(notifier.Notifier):
     
     def __init__(self):
         """Create a ``Platform`` instance. """
-        
+
+        # For things which 'from fsl.utils.platform import platform',
+        # these identifiers are available on the platform instance
+        self.WX_PYTHON     = WX_PYTHON
+        self.WX_PHOENIX    = WX_PHOENIX
+        self.WX_MAC_COCOA  = WX_MAC_COCOA
+        self.WX_MAC_CARBON = WX_MAC_CARBON
+        self.WX_GTK        = WX_GTK
 
         self.__fsldir     = os.environ.get('FSLDIR', None)
         self.__haveGui    = False
@@ -108,16 +115,16 @@ class Platform(notifier.Notifier):
             if isPhoenix: self.__wxFlavour = WX_PHOENIX
             else:         self.__wxFlavour = WX_PYTHON
 
-            if   any(['cocoa'  in p for p in pi]): build = WX_MAC_COCOA
-            elif any(['carbon' in p for p in pi]): build = WX_MAC_CARBON
-            elif any(['gtk'    in p for p in pi]): build = WX_GTK
-            else:                                  build = None
+            if   any(['cocoa'  in p for p in pi]): platform = WX_MAC_COCOA
+            elif any(['carbon' in p for p in pi]): platform = WX_MAC_CARBON
+            elif any(['gtk'    in p for p in pi]): platform = WX_GTK
+            else:                                  platform = None
 
-            self.__build = build
+            self.__wxPlatform = platform
 
-            if self.__build is None:
-                log.warning('Could not determine wx build from '
-                            'platform information: {}'.format(pi))
+            if self.__wxPlatform is None:
+                log.warning('Could not determine wx platform from '
+                            'information: {}'.format(pi))
 
 
     @property
@@ -127,11 +134,11 @@ class Platform(notifier.Notifier):
 
     
     @property
-    def wxBuild(self):
+    def wxPlatform(self):
         """One of :data:`WX_MAC_COCOA`, :data:`WX_MAC_CARBON`, or
-        :data:`WX_GTK`, indicating the wx build.
+        :data:`WX_GTK`, indicating the wx platform.
         """
-        return self.__wxBuild
+        return self.__wxPlatform
 
     
     @property

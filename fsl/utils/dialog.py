@@ -22,6 +22,8 @@ import threading
 
 import wx
 
+from fsl.utils.platform import platform as fslplatform
+
 
 class SimpleMessageDialog(wx.Dialog):
     """A simple, no-frills :class:`wx.Dialog` for displaying a message. The
@@ -637,15 +639,13 @@ class FSLDirDialog(wx.Dialog):
 
         self.__icon.SetBitmap(bmp)
         self.__message.SetLabel(
-            'The $FSLDIR environment variable '
-            'is not set - {} may not behave '
-            'correctly.'.format(toolName))
+            'The $FSLDIR environment variable is not set - {} '
+            'may not behave correctly.'.format(toolName))
         self.__locate .SetLabel('Locate $FSLDIR')
         self.__skip   .SetLabel('Skip')
 
         self.__skip  .Bind(wx.EVT_BUTTON, self.__onSkip)
         self.__locate.Bind(wx.EVT_BUTTON, self.__onLocate)
-
 
         self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
         self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
@@ -671,8 +671,9 @@ class FSLDirDialog(wx.Dialog):
         self.__message.Wrap(self.GetSize().GetWidth())
 
         self.SetSizer(self.__mainSizer)
-        self.Layout()
-        self.Fit()
+        self.__mainSizer.Layout()
+        self.__mainSizer.Fit(self)
+
         self.CentreOnParent()
 
         
