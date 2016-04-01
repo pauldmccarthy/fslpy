@@ -46,7 +46,6 @@ import props
 import fsl.utils.transform as transform
 import fsl.utils.status    as status
 import fsl.utils.path      as fslpath
-import fsl.data.strings    as fslstrings
 import fsl.data.constants  as constants
 
 
