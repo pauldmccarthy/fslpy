@@ -43,7 +43,6 @@ The following functions return the names of various files of interest:
 
 
 import                        logging
-import                        glob
 import os.path             as op
 import numpy               as np
 
@@ -104,11 +103,12 @@ def hasStats(featdir):
     for the given FEAT analysis, ``False`` otherwise.
     """
 
-    statdir   = op.join(featdir, 'stats')
-    statfiles = glob.glob(op.join(statdir, '*'))
-    
-    return op.exists(statdir) and len(statfiles) > 0
-
+    try:
+        getZStatFile(featdir, 0)
+        return True
+    except:
+        return False
+        
 
 def hasMelodicDir(featdir):
     """Returns ``True`` if the data for the given FEAT directory has had
@@ -465,71 +465,83 @@ def getDataFile(featdir):
     """Returns the name of the file in the FEAT directory which contains
     the model input data (typically called ``filtered_func_data.nii.gz``).
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir: A FEAT directory.
     """
-    
-    # Assuming here that there is only
-    # one file called filtered_func_data.*
-    return glob.glob((op.join(featdir, 'filtered_func_data.*')))[0]
+    datafile = op.join(featdir, 'filtered_func_data')
+    return fslimage.addExt(datafile, mustExist=True)
 
 
 def getMelodicFile(featdir):
-    """Returns the name of the file in the FEAT results which contains the
-    melodic components. This file can be loaded as a :class:`.MelodicImage`.
+    """Returns the name of the file in the FEAT results which contains the melodic
+    components (if melodic ICA was performed as part of the FEAT
+    analysis). This file can be loaded as a :class:`.MelodicImage`.
+
+    Raises a :exc:`ValueError` if the file does not exist.
     """
-    return op.join(featdir, 'filtered_func_data.ica', 'melodic_IC.nii.gz')
+    melfile = op.join(featdir, 'filtered_func_data.ica', 'melodic_IC')
+    return fslimage.addExt(melfile, mustExist=True)
 
 
 def getResidualFile(featdir):
     """Returns the name of the file in the FEAT results which contains
     the model fit residuals (typically called ``res4d.nii.gz``).
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir: A FEAT directory.
     """
-    
-    # Assuming here that there is only
-    # one file called stats/res4d.*
-    return glob.glob((op.join(featdir, 'stats', 'res4d.*')))[0]
+    resfile = op.join(featdir, 'stats', 'res4d')
+    return fslimage.addExt(resfile, mustExist=True)
 
     
 def getPEFile(featdir, ev):
     """Returns the path of the PE file for the specified EV.
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir: A FEAT directory.
     :arg ev:      The EV number (0-indexed).
     """
-    pefile = op.join(featdir, 'stats', 'pe{}.*'.format(ev + 1))
-    return glob.glob(pefile)[0]
+    pefile = op.join(featdir, 'stats', 'pe{}'.format(ev + 1))
+    return fslimage.addExt(pefile, mustExist=True)
 
 
 def getCOPEFile(featdir, contrast):
     """Returns the path of the COPE file for the specified contrast.
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 
     """
-    copefile = op.join(featdir, 'stats', 'cope{}.*'.format(contrast + 1))
-    return glob.glob(copefile)[0]
+    copefile = op.join(featdir, 'stats', 'cope{}'.format(contrast + 1))
+    return fslimage.addExt(copefile, mustExist=True)
 
 
 def getZStatFile(featdir, contrast):
     """Returns the path of the Z-statistic file for the specified contrast.
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 
     """
-    zfile = op.join(featdir, 'stats', 'zstat{}.*'.format(contrast + 1))
-    return glob.glob(zfile)[0]
+    zfile = op.join(featdir, 'stats', 'zstat{}'.format(contrast + 1))
+    return fslimage.addExt(zfile, mustExist=True)
 
 
 def getClusterMaskFile(featdir, contrast):
     """Returns the path of the cluster mask file for the specified contrast.
 
+    Raises a :exc:`ValueError` if the file does not exist.
+
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 
     """
-    mfile = op.join(featdir, 'cluster_mask_zstat{}.*'.format(contrast + 1))
-    return glob.glob(mfile)[0]
+    mfile = op.join(featdir, 'cluster_mask_zstat{}'.format(contrast + 1))
+    return fslimage.addExt(mfile, mustExist=True)
 
 
 def getEVNames(settings):

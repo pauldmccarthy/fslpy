@@ -45,6 +45,7 @@ import props
 
 import fsl.utils.transform as transform
 import fsl.utils.status    as status
+import fsl.utils.path      as fslpath
 import fsl.data.strings    as fslstrings
 import fsl.data.constants  as constants
 
@@ -605,97 +606,26 @@ def looksLikeImage(filename, allowedExts=None):
     return any(map(lambda ext: filename.endswith(ext), allowedExts))
 
 
-def removeExt(filename, allowedExts=None):
+def removeExt(filename):
     """Removes the extension from the given file name. Returns the filename
     unmodified if it does not have a supported extension.
 
-    :arg filename:    The file name to strip.
-    
-    :arg allowedExts: A list of strings containing the allowed file
-                      extensions.    
+    See :func:`~fsl.utils.path.removeExt`.
+
+    :arg filename: The file name to strip.
     """
-
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
-
-    # figure out the extension of the given file
-    extMatches = map(lambda ext: filename.endswith(ext), allowedExts)
-
-    # the file does not have a supported extension
-    if not any(extMatches):
-        return filename
-
-    # figure out the length of the matched extension
-    extIdx = extMatches.index(True)
-    extLen = len(allowedExts[extIdx])
-
-    # and trim it from the file name
-    return filename[:-extLen]
+    return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
 
 
-def addExt(prefix, mustExist=True, allowedExts=None, defaultExt=None):
+def addExt(prefix, mustExist=True):
     """Adds a file extension to the given file ``prefix``.
 
-    If ``mustExist`` is False, and the file does not already have a 
-    supported extension, the default extension is appended and the new
-    file name returned. If the prefix already has a supported extension,
-    it is returned unchanged.
-
-    If ``mustExist`` is ``True`` (the default), the function checks to see 
-    if any files exist that have the given prefix, and a supported file 
-    extension.  A :exc:`ValueError` is raised if:
-
-       - No files exist with the given prefix and a supported extension.
-       - More than one file exists with the given prefix, and a supported
-         extension.
-
-    Otherwise the full file name is returned.
-
-    :arg prefix:      The file name refix to modify.
-    :arg mustExist:   Whether the file must exist or not.
-    :arg allowedExts: List of allowed file extensions.
-    :arg defaultExt:  Default file extension to use.
+    See :func:`~fsl.utils.path.addExt`.
     """
-
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
-    if defaultExt  is None: defaultExt  = DEFAULT_EXTENSION
-
-    if not mustExist:
-
-        # the provided file name already
-        # ends with a supported extension 
-        if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
-            return prefix
-
-        return prefix + defaultExt
-
-    # If the provided prefix already ends with a
-    # supported extension , check to see that it exists
-    if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
-        extended = [prefix]
-        
-    # Otherwise, make a bunch of file names, one per
-    # supported extension, and test to see if exactly
-    # one of them exists.
-    else:
-        extended = map(lambda ext: prefix + ext, allowedExts)
-
-    exists = map(op.isfile, extended)
-
-    # Could not find any supported file
-    # with the specified prefix
-    if not any(exists):
-        raise ValueError(
-            'Could not find a supported file with prefix {}'.format(prefix))
-
-    # Ambiguity! More than one supported
-    # file with the specified prefix
-    if len(filter(bool, exists)) > 1:
-        raise ValueError('More than one file with prefix {}'.format(prefix))
-
-    # Return the full file name of the
-    # supported file that was found
-    extIdx = exists.index(True)
-    return extended[extIdx]
+    return fslpath.addExt(prefix,
+                          ALLOWED_EXTENSIONS,
+                          mustExist,
+                          DEFAULT_EXTENSION)
 
 
 def loadImage(filename):
