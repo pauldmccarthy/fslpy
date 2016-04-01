@@ -365,43 +365,42 @@ def loadClusterResults(featdir, settings, contrast):
         def __init__(self, **kwargs):
             for name, val in kwargs.items():
                 
-                attrName, atype = colmap[name]
+                attrName = colmap[name]
                 if val is not None:
-                    val = atype(val)
+                    val = float(val)
                     
                 setattr(self, attrName, val)
 
     # This dict provides a mapping between 
     # Cluster object attribute names, and
     # the corresponding column name in the
-    # cluster.txt file. And the value type
-    # is thrown in as well, for good measure.
+    # cluster.txt file.
     colmap = {
-        'Cluster Index'    : ('index',    int),  
-        'Voxels'           : ('nvoxels',  int), 
-        'P'                : ('p',        float), 
-        '-log10(P)'        : ('logp',     float), 
-        'Z-MAX'            : ('zmax',     float), 
-        'Z-MAX X (vox)'    : ('zmaxx',    int), 
-        'Z-MAX Y (vox)'    : ('zmaxy',    int), 
-        'Z-MAX Z (vox)'    : ('zmaxz',    int), 
-        'Z-COG X (vox)'    : ('zcogx',    int), 
-        'Z-COG Y (vox)'    : ('zcogy',    int), 
-        'Z-COG Z (vox)'    : ('zcogz',    int),
-        'Z-MAX X (mm)'     : ('zmaxx',    float), 
-        'Z-MAX Y (mm)'     : ('zmaxy',    float), 
-        'Z-MAX Z (mm)'     : ('zmaxz',    float), 
-        'Z-COG X (mm)'     : ('zcogx',    float), 
-        'Z-COG Y (mm)'     : ('zcogy',    float), 
-        'Z-COG Z (mm)'     : ('zcogz',    float), 
-        'COPE-MAX'         : ('copemax',  float),
-        'COPE-MAX X (vox)' : ('copemaxx', int), 
-        'COPE-MAX Y (vox)' : ('copemaxy', int), 
-        'COPE-MAX Z (vox)' : ('copemaxz', int),
-        'COPE-MAX X (mm)'  : ('copemaxx', float),
-        'COPE-MAX Y (mm)'  : ('copemaxy', float),
-        'COPE-MAX Z (mm)'  : ('copemaxz', float),
-        'COPE-MEAN'        : ('copemean', float)}
+        'Cluster Index'    : 'index',
+        'Voxels'           : 'nvoxels',
+        'P'                : 'p',
+        '-log10(P)'        : 'logp',
+        'Z-MAX'            : 'zmax',
+        'Z-MAX X (vox)'    : 'zmaxx',
+        'Z-MAX Y (vox)'    : 'zmaxy',
+        'Z-MAX Z (vox)'    : 'zmaxz',
+        'Z-COG X (vox)'    : 'zcogx',
+        'Z-COG Y (vox)'    : 'zcogy',
+        'Z-COG Z (vox)'    : 'zcogz',
+        'Z-MAX X (mm)'     : 'zmaxx',
+        'Z-MAX Y (mm)'     : 'zmaxy',
+        'Z-MAX Z (mm)'     : 'zmaxz',
+        'Z-COG X (mm)'     : 'zcogx',
+        'Z-COG Y (mm)'     : 'zcogy',
+        'Z-COG Z (mm)'     : 'zcogz',
+        'COPE-MAX'         : 'copemax',
+        'COPE-MAX X (vox)' : 'copemaxx',
+        'COPE-MAX Y (vox)' : 'copemaxy',
+        'COPE-MAX Z (vox)' : 'copemaxz',
+        'COPE-MAX X (mm)'  : 'copemaxx',
+        'COPE-MAX Y (mm)'  : 'copemaxy',
+        'COPE-MAX Z (mm)'  : 'copemaxz',
+        'COPE-MEAN'        : 'copemean'}
 
     # An error will be raised if the
     # cluster file does not exist (e.g.
