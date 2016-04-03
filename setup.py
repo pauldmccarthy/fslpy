@@ -29,7 +29,7 @@ setup(
 
     version=version['__version__'],
 
-    description='Front end to FSL tools',
+    description='FSL Python library',
 
     url='https://git.fmrib.ox.ac.uk/paulmc/fslpy',
 
@@ -46,7 +46,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
-    packages=find_packages(exclude=('apidoc', 'doc')),
+    packages=find_packages(exclude=('doc')),
 
     install_requires=[
         'pyopengl>=3.1.0',
@@ -56,20 +56,4 @@ setup(
         'matplotlib>=1.3.1',
         'nibabel>=1.3.0',
         'Pillow>=2.5.3'],
-
-    package_data={
-        'fsl' : [
-            'fsleyes/splash.png',
-            'fsleyes/icons/*.png',
-            'fsleyes/gl/gl14/*prog',
-            'fsleyes/gl/gl21/*glsl',
-            'fsleyes/colourmaps/*cmap',
-            'fsleyes/luts/*lut',
-            'fsleyes/colourmaps/README',
-            'fsleyes/colourmaps/order.txt',
-            'fsleyes/luts/order.txt',
-        ]
-    },
-
-    entry_points={'console_scripts' : ['fslpy = fsl:main']}
 )
