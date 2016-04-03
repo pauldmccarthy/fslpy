@@ -392,14 +392,6 @@ class Image(Nifti1, props.HasProperties):
         else:
             self.name = 'Nibabel image'
 
-        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
-
-        
-    def __del__(self):
-        """Prints a log message. """
-        if log:
-            log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
-
 
     def __hash__(self):
         """Returns a number which uniquely idenfities this ``Image`` instance

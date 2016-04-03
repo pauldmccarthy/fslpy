@@ -137,13 +137,6 @@ class TensorImage(fslimage.Nifti1):
         self.dataSource = l1dir
         self.name       = '{}[tensor]'.format(op.basename(l1dir))
 
-        log.memory('{}.init({})'.format(type(self).__name__, id(self)))
-
-        
-    def __del__(self):
-        if log:
-            log.memory('{}.del({})'.format(type(self).__name__, id(self)))
-
         
     def V1(self): return self.__v1
     def V2(self): return self.__v2

@@ -66,14 +66,6 @@ class Model(object):
         self.__loBounds = self.vertices.min(axis=0)
         self.__hiBounds = self.vertices.max(axis=0)
 
-        log.memory('{}.init ({})'.format(type(self).__name__, id(self)))
-
-        
-    def __del__(self):
-        """Prints a log message."""
-        if log:
-            log.memory('{}.del ({})'.format(type(self).__name__, id(self)))
-        
 
     def __repr__(self):
         """Rewturns a string representation of this ``Model`` instance. """

@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module defines some constant values used throughout ``fsleyes``.
+"""This module defines some constant values used throughout ``fslpy``.
 
 
 The following constants relate to the orientation of an axis, in either

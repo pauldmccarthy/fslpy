@@ -62,9 +62,8 @@ class Platform(notifier.Notifier):
 
     .. note:: The values of the :attr:`glVersion` and :attr:`glRenderer`
               properties are not automatically set - they will only contain
-              a value if one is assigned to them. The
-              :func:`fsl.fsleyes.gl.bootstrap` function does this when it is
-              first called.
+              a value if one is assigned to them. *FSLeyes* does this during
+              startup, in the :func:`fsleyes.gl.bootstrap` function.
 
     .. autosummary::
 
