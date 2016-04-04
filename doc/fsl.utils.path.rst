@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.data.model module
+fsl.utils.path module
 =====================
 
-.. automodule:: fsl.data.model
+.. automodule:: fsl.utils.path
     :members:
     :undoc-members:
     :show-inheritance:

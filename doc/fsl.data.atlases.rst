@@ -1,5 +1,5 @@
 :orphan:
-   
+
 fsl.data.atlases module
 =======================
 

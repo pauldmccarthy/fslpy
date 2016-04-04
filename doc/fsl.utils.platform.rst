@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.data.constants module
+fsl.utils.platform module
 =========================
 
-.. automodule:: fsl.data.constants
+.. automodule:: fsl.utils.platform
     :members:
     :undoc-members:
     :show-inheritance:

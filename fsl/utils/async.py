@@ -70,7 +70,7 @@ def run(task, onFinish=None, name=None):
 
     .. note:: If a ``wx`` application is not running, the ``task`` and
               ``onFinish`` functions will simply be called directly, and
-             the return value will be ``None``.
+              the return value will be ``None``.
     """
 
     if name is None:

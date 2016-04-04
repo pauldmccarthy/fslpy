@@ -4,13 +4,11 @@
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
    fsl
-   fsl.tools
    fsl.data
    fsl.utils
-   fsl.fsleyes
 
    
 This is the ``fslpy`` API documentation.

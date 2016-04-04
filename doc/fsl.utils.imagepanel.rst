@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.data.featresults module
+fsl.utils.imagepanel module
 ===========================
 
-.. automodule:: fsl.data.featresults
+.. automodule:: fsl.utils.imagepanel
     :members:
     :undoc-members:
     :show-inheritance:

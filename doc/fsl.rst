@@ -1,5 +1,5 @@
-fslpy |version|
-===============
+fsl package
+===========
 
 .. automodule:: fsl
     :members:

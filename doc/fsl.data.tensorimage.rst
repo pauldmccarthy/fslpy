@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.data.featresults module
+fsl.data.tensorimage module
 ===========================
 
-.. automodule:: fsl.data.featresults
+.. automodule:: fsl.data.tensorimage
     :members:
     :undoc-members:
     :show-inheritance:

@@ -21,6 +21,7 @@ things.
     ~fsl.utils.webpage
     ~fsl.utils.status
     ~fsl.utils.memoize
+    ~fsl.utils.path
     ~fsl.utils.async
     ~fsl.utils.notifier
 """
