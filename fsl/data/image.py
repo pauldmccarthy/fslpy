@@ -38,6 +38,7 @@ import               os
 import os.path    as op
 import subprocess as sp
 
+import               six 
 import numpy      as np
 import nibabel    as nib
 
@@ -117,7 +118,7 @@ class Nifti1(object):
             header = header.copy()
 
         # The image parameter may be the name of an image file
-        if isinstance(image, basestring):
+        if isinstance(image, six.string_types):
             
             nibImage, filename = loadImage(addExt(image))
             self.nibImage      = nibImage
@@ -380,7 +381,7 @@ class Image(Nifti1, props.HasProperties):
             
         # Or, if this image was loaded 
         # from disk, use the file name
-        elif isinstance(image, basestring):
+        elif isinstance(image, six.string_types):
             self.name  = removeExt(op.basename(self.dataSource))
             self.saved = True
             
@@ -594,7 +595,7 @@ def looksLikeImage(filename, allowedExts=None):
     # TODO A much more robust approach would be
     #      to try loading the file using nibabel.
 
-    return any(map(lambda ext: filename.endswith(ext), allowedExts))
+    return any([filename.endswith(ext) for ext in allowedExts])
 
 
 def removeExt(filename):

@@ -8,17 +8,14 @@
 of information about the current platform we are running on. A single
 ``Platform`` instance is created when this module is first imported, and
 is available as a module attribute called :attr:`platform`.
-
-.. note:: The ``Platform`` class only contains information which is not
-          already accessible from the built-in ``platform`` module
-          (e.g. operating system information), or the ``six`` module (e.g.
-          python 2 vs 3).
 """
 
 
 import logging
 
 import os
+import sys
+import platform as builtin_platform
 
 import fsl.utils.notifier as notifier
 
@@ -67,6 +64,8 @@ class Platform(notifier.Notifier):
 
     .. autosummary::
 
+       os
+       frozen
        fsldir
        haveGui
        wxPlatform
@@ -124,6 +123,22 @@ class Platform(notifier.Notifier):
             if self.__wxPlatform is None:
                 log.warning('Could not determine wx platform from '
                             'information: {}'.format(pi))
+
+                
+    @property
+    def os(self):
+        """The operating system name. Whatever is returned by the built-in
+        ``platform.system`` function.
+        """
+        return builtin_platform.system()
+
+    
+    @property
+    def frozen(self):
+        """``True`` if we are running in a compiled/frozen application,
+        ``False`` otherwise.
+        """
+        return getattr(sys, 'frozen', False)
 
 
     @property

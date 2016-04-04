@@ -22,7 +22,7 @@ import threading
 
 import wx
 
-from fsl.utils.platform import platform as fslplatform
+from .platform import platform as fslplatform
 
 
 class SimpleMessageDialog(wx.Dialog):
@@ -455,7 +455,12 @@ class TextEditDialog(wx.Dialog):
         if icon is not None:
             
             icon = wx.ArtProvider.GetMessageBoxIcon(icon)
-            bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+
+            if fslplatform.wxFlavour == fslplatform.WX_PHOENIX:
+                bmp = wx.Bitmap()
+            else:
+                bmp = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+                
             bmp.CopyFromIcon(icon)
             self.__icon = wx.StaticBitmap(self)
             self.__icon.SetBitmap(bmp)
@@ -634,7 +639,12 @@ class FSLDirDialog(wx.Dialog):
         self.__skip    = wx.Button(      self, id=wx.ID_CANCEL)
 
         icon = wx.ArtProvider.GetMessageBoxIcon(wx.ICON_EXCLAMATION)
-        bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+
+        if fslplatform.wxFlavour == fslplatform.WX_PYTHON:
+            bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+        else:
+            bmp = wx.Bitmap()
+            
         bmp.CopyFromIcon(icon)
 
         self.__icon.SetBitmap(bmp)
@@ -756,7 +766,12 @@ class CheckBoxMessageDialog(wx.Dialog):
         if icon is not None:
             icon = wx.ArtProvider.GetMessageBoxIcon(icon) 
             self.__icon = wx.StaticBitmap(self)
-            bmp  = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+
+            if fslplatform.wxFlavour == fslplatform.WX_PYTHON:
+                bmp = wx.EmptyBitmap(icon.GetWidth(), icon.GetHeight())
+            else:
+                bmp = wx.Bitmap()
+                
             bmp.CopyFromIcon(icon)
             self.__icon.SetBitmap(bmp)
         else:

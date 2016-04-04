@@ -100,7 +100,7 @@ log = logging.getLogger(__name__)
 
 
 def listAtlases(refresh=False):
-    """Returns a dictionary containing :class:`AtlasDescription` objects for
+    """Returns a list containing :class:`AtlasDescription` objects for
     all available atlases.
 
     :arg refresh: If ``True``, or if the atlas desriptions have not
@@ -119,7 +119,7 @@ def listAtlases(refresh=False):
         refresh = True
 
     if not refresh:
-        return ATLAS_DESCRIPTIONS.values()
+        return list(ATLAS_DESCRIPTIONS.values())
 
     atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
     atlasDescs = map(AtlasDescription, atlasFiles)
@@ -131,7 +131,7 @@ def listAtlases(refresh=False):
         desc.index                       = i
         ATLAS_DESCRIPTIONS[desc.atlasID] = desc
 
-    return atlasDescs
+    return list(atlasDescs)
 
 
 def getAtlasDescription(atlasID):

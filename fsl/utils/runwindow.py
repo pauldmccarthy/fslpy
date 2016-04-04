@@ -26,7 +26,9 @@ import logging
 
 import subprocess as subp
 import threading  as thread
-import Queue      as queue
+
+try:    import queue
+except: import Queue as queue
 
 import wx
 

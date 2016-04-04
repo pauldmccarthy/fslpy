@@ -91,8 +91,8 @@ def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
     if not mustExist:
 
         # the provided file name already
-        # ends with a supported extension 
-        if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+        # ends with a supported extension
+        if any([prefix.endswith(ext) for ext in allowedExts]):
             return prefix
 
         if defaultExt is not None: return prefix + defaultExt
@@ -100,16 +100,16 @@ def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
 
     # If the provided prefix already ends with a
     # supported extension , check to see that it exists
-    if any(map(lambda ext: prefix.endswith(ext), allowedExts)):
+    if any([prefix.endswith(ext) for ext in allowedExts]):
         extended = [prefix]
         
     # Otherwise, make a bunch of file names, one per
     # supported extension, and test to see if exactly
     # one of them exists.
     else:
-        extended = map(lambda ext: prefix + ext, allowedExts)
+        extended = [prefix + ext for ext in allowedExts]
 
-    exists = map(op.isfile, extended)
+    exists = [op.isfile(e) for e in extended]
 
     # Could not find any supported file
     # with the specified prefix
@@ -119,7 +119,7 @@ def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
 
     # Ambiguity! More than one supported
     # file with the specified prefix
-    if len(filter(bool, exists)) > 1:
+    if sum(exists) > 1:
         raise ValueError('More than one file with prefix {}'.format(prefix))
 
     # Return the full file name of the
@@ -139,7 +139,7 @@ def removeExt(filename, allowedExts):
     """
 
     # figure out the extension of the given file
-    extMatches = map(lambda ext: filename.endswith(ext), allowedExts)
+    extMatches = [filename.endswith(ext) for ext in allowedExts]
 
     # the file does not have a supported extension
     if not any(extMatches):

@@ -8,6 +8,8 @@
 """
 
 
+import six
+
 import collections
 
 
@@ -164,7 +166,7 @@ class TypeDict(object):
         string, or a combination of strings and types, into a tuple.
         """
 
-        if isinstance(key, basestring):
+        if isinstance(key, six.string_types):
             if '.' in key: return tuple(key.split('.'))
             else:          return key
 
@@ -174,7 +176,7 @@ class TypeDict(object):
             key   = []
 
             for tk in tKeys:
-                if   isinstance(tk, basestring):           key.append(tk)
+                if   isinstance(tk, six.string_types):     key.append(tk)
                 elif isinstance(tk, collections.Sequence): key += list(tk)
                 else:                                      key.append(tk)
             

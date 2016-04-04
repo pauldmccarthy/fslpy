@@ -33,11 +33,12 @@ the task (via :func:`idle`).
 
 
 import time
-import Queue
 import logging
 import threading
 import collections
 
+try:    import queue
+except: import Queue as queue
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ in the :func:`idle` function.
 """
 
 
-_idleQueue = Queue.Queue()
+_idleQueue = queue.Queue()
 """A ``Queue`` of functions which are to be run on the ``wx.EVT_IDLE``
 loop.
 """
@@ -129,7 +130,7 @@ def _wxIdleLoop(ev):
 
     try:
         task, schedtime, timeout, args, kwargs = _idleQueue.get_nowait()
-    except Queue.Empty:
+    except queue.Empty:
         return
 
     name    = getattr(task, '__name__', '<unknown>')

@@ -9,12 +9,12 @@
 """
 
 
-import os.path as op
+import os.path      as op
 
-import numpy   as np
+import numpy        as np
 
-import image   as fslimage
-import            featresults
+from . import image as fslimage
+from . import          featresults
 
 
 class FEATImage(fslimage.Image):

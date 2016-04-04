@@ -14,8 +14,8 @@ import os.path as op
 
 import props
 
-import image          as fslimage
-import melodicresults as melresults
+from . import image          as fslimage
+from . import melodicresults as melresults
 
 
 class MelodicImage(fslimage.Image):

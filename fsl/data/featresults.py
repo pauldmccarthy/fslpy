@@ -414,7 +414,7 @@ def loadClusterResults(featdir, settings, contrast):
         # empty lines
         lines = f.readlines()
         lines = [l.strip() for l in lines]
-        lines = filter(lambda l: l != '', lines)
+        lines = [l         for l in lines if l != '']
 
         # the first line should contain column
         # names, and each other line should
@@ -554,19 +554,15 @@ def getEVNames(settings):
     :arg settings: A FEAT settings dictionary (see :func:`loadSettings`). 
     """
 
-    numEVs = int(settings['evs_real'])
+    numEVs    = int(settings['evs_real'])
+    titleKeys = [s for s in settings.keys() if s.startswith('evtitle')]
+    derivKeys = [s for s in settings.keys() if s.startswith('deriv_yn')]
 
-    titleKeys = filter(lambda s: s.startswith('evtitle'),  settings.keys())
-    derivKeys = filter(lambda s: s.startswith('deriv_yn'), settings.keys())
-
-    def _cmp(key1, key2):
-        key1 = ''.join([c for c in key1 if c.isdigit()])
-        key2 = ''.join([c for c in key2 if c.isdigit()])
-
-        return cmp(int(key1), int(key2))
-
-    titleKeys = sorted(titleKeys, cmp=_cmp)
-    derivKeys = sorted(derivKeys, cmp=_cmp)
+    def key(k):
+        return int(''.join([c for c in k if c.isdigit()]))
+        
+    titleKeys = sorted(titleKeys, key=key)
+    derivKeys = sorted(derivKeys, key=key)
     evnames  = []
 
     for titleKey, derivKey in zip(titleKeys, derivKeys):

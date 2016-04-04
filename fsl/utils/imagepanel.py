@@ -12,12 +12,18 @@ import logging
 
 import wx
 
+from fsl.utils.platform import platform as fslplatform
+
 
 log = logging.getLogger(__name__)
 
 
-class ImagePanel(wx.PyPanel):
-    """A :class:`wx.PyPanel` which may be used to display a resizeable
+if fslplatform.wxFlavour == fslplatform.WX_PHOENIX: ImagePanelBase = wx.Panel
+else:                                               ImagePanelBase = wx.PyPanel
+
+
+class ImagePanel(ImagePanelBase):
+    """A :class:`wx.Panel` which may be used to display a resizeable
     :class:`wx.Image`. The image is scaled to the size of the panel.
     """
 
@@ -32,7 +38,7 @@ class ImagePanel(wx.PyPanel):
         :arg image:  The :class:`wx.Image` object to display.
         """
 
-        wx.PyPanel.__init__(self, parent)
+        ImagePanelBase.__init__(self, parent)
 
         self.Bind(wx.EVT_PAINT, self.Draw)
         self.Bind(wx.EVT_SIZE,  self.__onSize)
@@ -46,6 +52,11 @@ class ImagePanel(wx.PyPanel):
         :arg image: The :class:`wx.Image` object to display.
         """
         self.__image = image
+
+
+        if image is not None: self.SetMinSize(image.GetSize())
+        else:                 self.SetMinSize((0, 0))
+        
         self.Refresh()
 
         
@@ -86,6 +97,6 @@ class ImagePanel(wx.PyPanel):
         if width == 0 or height == 0:
             return
 
-        bitmap = wx.BitmapFromImage(self.__image.Scale(width, height))
+        bitmap = self.__image.Scale(width, height).ConvertToBitmap()
         
         dc.DrawBitmap(bitmap, 0, 0, False)

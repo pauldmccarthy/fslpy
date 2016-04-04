@@ -18,6 +18,7 @@ a function:
 
 import hashlib
 import functools
+import six
 
 
 def memoizeMD5(func):
@@ -35,7 +36,8 @@ def memoizeMD5(func):
         hashobj = hashlib.md5()
 
         for arg in args:
-            hashobj.update(str(arg))
+            arg = six.u(arg).encode('utf-8')
+            hashobj.update(arg)
 
         digest = hashobj.hexdigest()
         cached = cache.get(digest)

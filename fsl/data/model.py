@@ -21,6 +21,8 @@ import logging
 import os.path as op
 import numpy   as np
 
+import six
+
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ class Model(object):
         :arg indices: A list of indices into the vertex data.
         """
 
-        if isinstance(data, basestring):
+        if isinstance(data, six.string_types):
             infile = data
             data, lengths, indices = loadVTKPolydataFile(infile)
 
@@ -131,6 +133,7 @@ def loadVTKPolydataFile(infile):
     for i in range(nVertices):
         vertLine       = lines[i + 5]
         vertices[i, :] = map(float, vertLine.split())
+        vertices[i, :] = [float(w) for w in vertLine.split()]
 
     indexOffset = 0
     for i in range(nPolygons):
@@ -141,6 +144,7 @@ def loadVTKPolydataFile(infile):
         start              = indexOffset
         end                = indexOffset + polygonLengths[i]
         indices[start:end] = map(int, polyLine[1:])
+        indices[start:end] = [int(w) for w in polyLine[1:]]
 
         indexOffset        += polygonLengths[i]
 

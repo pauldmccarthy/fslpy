@@ -34,7 +34,7 @@ class Notifier(object):
         """Initialises a dictionary of listeners on a new ``Notifier``
         instance.
         """
-        new             = object.__new__(cls, *args, **kwargs)
+        new             = object.__new__(cls)
         new.__listeners = collections.OrderedDict()
 
         return new
