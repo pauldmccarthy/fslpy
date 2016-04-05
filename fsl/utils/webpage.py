@@ -12,7 +12,9 @@ The following functions are provided:
 .. autosummary::
    :nosignatures:
 
+   fileToUrl
    openPage
+   openFile
    localHelpUrl
    openLocalHelp
 """
@@ -22,9 +24,24 @@ import os.path as op
 import            webbrowser
 
 
+def fileToUrl(fileName):
+    """Converts a file path to a URL. """
+    
+    import urlparse
+    import urllib
+    return urlparse.urljoin(
+        'file:', urllib.pathname2url(fileName))
+
+
+
 def openPage(url):
     """Opens the given URL in the system-default web browser."""
     webbrowser.open(url)
+
+
+def openFile(fileName):
+    """Opens the given file in the system-default web browser."""
+    openPage(fileToUrl(fileName))
 
 
 def localHelpUrl(toolName):
@@ -40,10 +57,7 @@ def localHelpUrl(toolName):
     localUrl = op.join(fsldir, 'doc', 'redirects', '{}.html'.format(toolName))
 
     if op.exists(localUrl):
-        import urlparse
-        import urllib
-        return urlparse.urljoin(
-            'file:', urllib.pathname2url(localUrl)) 
+        return fileToUrl(localUrl)
 
     return None
 
