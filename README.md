@@ -35,8 +35,6 @@ Dependencies
 
  > Notes:
  >   - Sphinx is only needed for building the documentation.
- >
- >   - Pillow is only needed for saving screenshots in formats other than PNG.
  > 
  >   - If you are installing `fslpy` manually, don't worry too much about 
  >     having the exact version of each of the packages - just try with 
