@@ -271,6 +271,22 @@ class Nifti1(object):
         return nib.orientations.aff2axcodes(xform, inaxes)
 
 
+    def isNeurological(self):
+        """Returns ``True`` if it looks like this ``Nifti1`` object is in
+        neurological orientation, ``False`` otherwise. This test is purely
+        based on the determinent of the voxel-to-mm transformation matrix -
+        if it has a positive determinant, the image is assumed to be in
+        neurological orientation, otherwise it is assumed to be in
+        radiological orientation.
+
+        http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_\
+          of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_\
+          transformation_parameters.3F
+        """
+        import numpy.linalg as npla
+        return npla.det(self.voxToWorldMat) > 0
+
+
     def getOrientation(self, axis, xform):
         """Returns a code representing the orientation of the specified data
         axis in the coordinate system defined by the given transformation
