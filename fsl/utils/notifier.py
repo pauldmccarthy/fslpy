@@ -85,8 +85,10 @@ class Notifier(object):
             type(self).__name__, name, cbName)) 
         
 
-    def notify(self):
-        """Notify all registered listeners of this ``Notifier``. """
+    def notify(self, *args, **kwargs):
+        """Notify all registered listeners of this ``Notifier``.
+        All arguments passed to this method are ignored.
+        """
 
 
         listeners = list(self.__listeners.items())
