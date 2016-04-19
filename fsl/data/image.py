@@ -5,8 +5,9 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`Image` class, for representing 3D/4D NIFTI1
-images. The ``nibabel`` package is used for file I/O.
+"""This module provides the :class:`Nifti1` and :class:`Image` classes, for
+representing 3D/4D NIFTI1 images. The ``nibabel`` package is used for file
+I/O.
 
 .. note:: Currently, only NIFTI1 images are supported.
 
@@ -570,6 +571,34 @@ class Image(Nifti1, props.HasProperties):
             self.dataSource, newMin, newMax))        
 
         return newMin, newMax
+
+
+class ProxyImage(Image):
+    """The ``ProxyImage`` class is a simple wrapper around an :class:`Image`
+    instance. It is intended to be used to represent images or data which
+    are derived from another image.
+    """
+
+    def __init__(self, base, *args, **kwargs):
+        """Create a ``ProxyImage``.
+
+        :arg base: The :class:`Image` instance upon which this ``ProxyImage``
+                   is based.
+        """
+
+        if not isinstance(base, Image):
+            raise ValueError('Base image must be an Image instance')
+
+        self.__base = base
+
+        kwargs['header'] = base.nibImage.get_header()
+
+        Image.__init__(self, base.data, *args, **kwargs)
+        
+
+    def getBase(self):
+        """Returns the base :class:`Image` of this ``ProxyImage``. """
+        return self.__base
     
 
 # TODO The wx.FileDialog does not    
