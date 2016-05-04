@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# featresults.py - Utility functions for loading/querying the contents of
+# featanalysis.py - Utility functions for loading/querying the contents of
 # a FEAT analysis directory.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -42,6 +42,7 @@ The following functions return the names of various files of interest:
 """
 
 
+import                        collections
 import                        logging
 import os.path             as op
 import numpy               as np
@@ -238,7 +239,7 @@ def loadSettings(featdir):
     :arg featdir: A FEAT directory.
     """
 
-    settings  = {}
+    settings  = collections.OrderedDict()
     designfsf = op.join(featdir, 'design.fsf')
 
     log.debug('Loading FEAT settings from {}'.format(designfsf))
@@ -254,7 +255,7 @@ def loadSettings(featdir):
             tkns = line.split(None, 2)
 
             key = tkns[1].strip()
-            val = tkns[2].strip().strip("'").strip('"')
+            val = tkns[2].strip(' \'"')
 
             if key.startswith('fmri(') and key.endswith(')'):
                 key = key[5:-1]

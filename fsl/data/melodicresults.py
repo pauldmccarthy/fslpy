@@ -39,9 +39,9 @@ import numpy   as np
 
 import props
 
-import fsl.utils.path       as fslpath
-import fsl.data.image       as fslimage
-import fsl.data.featresults as featresults
+import fsl.utils.path        as fslpath
+import fsl.data.image        as fslimage
+import fsl.data.featanalysis as featanalysis
 
 
 log = logging.getLogger(__name__)
@@ -112,9 +112,9 @@ def getTopLevelAnalysisDir(path):
     directories, the path to the highest-level (i.e. the shallowest in the
     file system) directory is returned. Otherwise, ``None`` is returned.
 
-    See :func:`.featresults.getTopLevelAnalysisDir`.
+    See :func:`.featanalysis.getTopLevelAnalysisDir`.
     """ 
-    return featresults.getTopLevelAnalysisDir(path)
+    return featanalysis.getTopLevelAnalysisDir(path)
 
     
 def getDataFile(meldir):

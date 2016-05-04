@@ -14,14 +14,14 @@ import os.path      as op
 import numpy        as np
 
 from . import image as fslimage
-from . import          featresults
+from . import          featanalysis
 
 
 class FEATImage(fslimage.Image):
     """An ``Image`` from a FEAT analysis.
 
     The :class:`FEATImage` class makes use of the functions defined in the
-    :mod:`.featresults` module.
+    :mod:`.featanalysis` module.
 
 
     An example of using the ``FEATImage`` class::
@@ -66,16 +66,16 @@ class FEATImage(fslimage.Image):
         if op.isdir(path):
             path = op.join(path, 'filtered_func_data')
 
-        if not featresults.isFEATImage(path):
+        if not featanalysis.isFEATImage(path):
             raise ValueError('{} does not appear to be data '
                              'from a FEAT analysis'.format(path))
 
         featDir     = op.dirname(path)
-        settings    = featresults.loadSettings( featDir)
+        settings    = featanalysis.loadSettings( featDir)
 
-        if featresults.hasStats(featDir):
-            design      = featresults.loadDesign(   featDir)
-            names, cons = featresults.loadContrasts(featDir)
+        if featanalysis.hasStats(featDir):
+            design      = featanalysis.loadDesign(   featDir)
+            names, cons = featanalysis.loadContrasts(featDir)
         else:
             design      = np.zeros((0, 0))
             names, cons = [], []
@@ -88,7 +88,7 @@ class FEATImage(fslimage.Image):
         self.__contrastNames = names
         self.__contrasts     = cons
         self.__settings      = settings
-        self.__evNames       = featresults.getEVNames(settings)
+        self.__evNames       = featanalysis.getEVNames(settings)
 
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
@@ -117,7 +117,7 @@ class FEATImage(fslimage.Image):
         which this FEAT analysis is a part, or ``None`` if this analysis
         is not part of another analysis.
         """
-        return featresults.getTopLevelAnalysisDir(self.__featDir)
+        return featanalysis.getTopLevelAnalysisDir(self.__featDir)
 
 
     def hasStats(self):
@@ -166,7 +166,7 @@ class FEATImage(fslimage.Image):
     def contrasts(self):
         """Returns a list containing the analysis contrast vectors.
 
-        See :func:`.featresults.loadContrasts`
+        See :func:`.featanalysis.loadContrasts`
 
         """
         return [list(c) for c in self.__contrasts]
@@ -175,26 +175,26 @@ class FEATImage(fslimage.Image):
     def thresholds(self):
         """Returns the statistical thresholds used in the analysis.
 
-        See :func:`.featresults.getThresholds`
+        See :func:`.featanalysis.getThresholds`
         """
-        return featresults.getThresholds(self.__settings)
+        return featanalysis.getThresholds(self.__settings)
 
 
     def clusterResults(self, contrast):
         """Returns the clusters found in the analysis.
 
-        See :func:.featresults.loadClusterResults`
+        See :func:.featanalysis.loadClusterResults`
         """
-        return featresults.loadClusterResults(self.__featDir,
-                                              self.__settings,
-                                              contrast)
+        return featanalysis.loadClusterResults(self.__featDir,
+                                               self.__settings,
+                                               contrast)
 
 
     def getPE(self, ev):
         """Returns the PE image for the given EV (0-indexed). """
 
         if self.__pes[ev] is None:
-            pefile = featresults.getPEFile(self.__featDir, ev)
+            pefile = featanalysis.getPEFile(self.__featDir, ev)
             self.__pes[ev] = fslimage.Image(
                 pefile,
                 name='{}: PE{} ({})'.format(
@@ -209,7 +209,7 @@ class FEATImage(fslimage.Image):
         """Returns the residuals of the full model fit. """
         
         if self.__residuals is None:
-            resfile = featresults.getResidualFile(self.__featDir)
+            resfile = featanalysis.getResidualFile(self.__featDir)
             self.__residuals = fslimage.Image(
                 resfile,
                 name='{}: residuals'.format(self.__analysisName))
@@ -221,7 +221,7 @@ class FEATImage(fslimage.Image):
         """Returns the COPE image for the given contrast (0-indexed). """
         
         if self.__copes[con] is None:
-            copefile = featresults.getPEFile(self.__featDir, con)
+            copefile = featanalysis.getPEFile(self.__featDir, con)
             self.__copes[con] = fslimage.Image(
                 copefile,
                 name='{}: COPE{} ({})'.format(
@@ -237,7 +237,7 @@ class FEATImage(fslimage.Image):
         """
         
         if self.__zstats[con] is None:
-            zfile = featresults.getZStatFile(self.__featDir, con)
+            zfile = featanalysis.getZStatFile(self.__featDir, con)
 
             self.__zstats[con] = fslimage.Image(
                 zfile,
@@ -254,7 +254,7 @@ class FEATImage(fslimage.Image):
         """
         
         if self.__clustMasks[con] is None:
-            mfile = featresults.getClusterMaskFile(self.__featDir, con)
+            mfile = featanalysis.getClusterMaskFile(self.__featDir, con)
 
             self.__clustMasks[con] = fslimage.Image(
                 mfile,
