@@ -151,24 +151,39 @@ class FEATFSFDesign(object):
 
         if len(self.__evs) != self.__numEVs:
             raise FSFError('Number of EVs does not match design.mat')
+
+        # Load the voxelwise images now,
+        # so they're ready to be used by
+        # the getDesign method.
+        for ev in self.__evs:
+            
+            if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
+                continue
+
+            # The path to some voxelwise 
+            # EVs may not be present - 
+            # see the VoxelwisEV class.
+            if ev.filename is not None: ev.image = fslimage.Image(ev.filename)
+            else:                       ev.image = None
  
     
     def getDesign(self, x, y, z):
-        """Returns the design matrix for the specified voxel.
-        """
+        """Returns the design matrix for the specified voxel. """
 
-        # if no vox EVs, just
-        # return the design
-        pass
+        design = np.array(self.__design)
 
+        for ev in self.__evs:
 
-    def getVoxelEVFile(self, idx):
-        return self.__evs[idx].filename
+            if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
+                continue
 
-    
-    def getVoxelConfoundFile(self, idx):
-        return self.__evs[idx].filename
+            if ev.image is None:
+                log.warning('Voxel EV image missing '
+                            'for ev {}'.format(ev.index))
 
+            design[:, ev.index] = ev.image.data[x, y, z, :]
+
+        return design
 
 
 class EV(object):
