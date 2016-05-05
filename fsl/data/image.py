@@ -280,9 +280,9 @@ class Nifti1(object):
         neurological orientation, otherwise it is assumed to be in
         radiological orientation.
 
-        http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_\
-          of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_\
-          transformation_parameters.3F
+        See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
+        _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
+        _the_transformation_parameters.3F
         """
         import numpy.linalg as npla
         return npla.det(self.voxToWorldMat) > 0

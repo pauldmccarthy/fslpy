@@ -6,8 +6,9 @@ fsl.data package
 
    fsl.data.atlases
    fsl.data.constants
+   fsl.data.featanalysis
+   fsl.data.featdesign
    fsl.data.featimage
-   fsl.data.featresults
    fsl.data.image
    fsl.data.melodicimage
    fsl.data.melodicresults

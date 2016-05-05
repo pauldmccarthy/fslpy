@@ -36,7 +36,7 @@ A FEAT design matrix may contain the following types of explanatory variables:
  - *Basis function* EV. One or more columns derived from a normal EV. A normal
    EV with the ``convolve`` value set to ``4``, ``5``, or ``6`` will be
    followed by a set of basis function EVs (the number of additional EVs can
-   be determined by the ````basisfnum`` flag).
+   be determined by the ``basisfnum`` flag).
 
  - *Voxelwise* EVs. An EV with different values for each voxel. An EV with the
    ``shape`` value set to ``9`` is a voxelwise EV. The voxel data will be
