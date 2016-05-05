@@ -29,8 +29,8 @@ class FEATImage(fslimage.Image):
         import fsl.data.featimage as featimage
 
         # You can pass in the name of the
-        # .feat/.gfeat directory, or any
-        # file contained within that directory.
+        # .feat directory, or any file
+        # contained within that directory.
         img = featimage.FEATImage('myanalysis.feat/filtered_func_data.nii.gz')
 
         # Query information about the FEAT analysis
@@ -74,10 +74,10 @@ class FEATImage(fslimage.Image):
         settings    = featanalysis.loadSettings( featDir)
 
         if featanalysis.hasStats(featDir):
-            design      = featanalysis.loadDesign(   featDir)
+            design      = featanalysis.loadDesign(   featDir, settings)
             names, cons = featanalysis.loadContrasts(featDir)
         else:
-            design      = np.zeros((0, 0))
+            design      = None
             names, cons = [], []
         
         fslimage.Image.__init__(self, path, **kwargs)
@@ -88,7 +88,6 @@ class FEATImage(fslimage.Image):
         self.__contrastNames = names
         self.__contrasts     = cons
         self.__settings      = settings
-        self.__evNames       = featanalysis.getEVNames(settings)
 
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
@@ -124,32 +123,47 @@ class FEATImage(fslimage.Image):
         """Returns ``True`` if the analysis for this ``FEATImage`` contains
         a statistical analysis.
         """
-        return self.__design.size > 0
+        return self.__design is not None
         
 
-    def getDesign(self):
+    def getDesign(self, voxel=None):
         """Returns the analysis design matrix as a :mod:`numpy` array
         with shape :math:`numPoints\\times numEVs`.
+        See :meth:`.FEATFSFDesign.getDesign`.
         """
-        return np.array(self.__design)
+        
+        if self.__design is None:
+            return None
+        
+        return self.__design.getDesign(voxel)
         
     
     def numPoints(self):
         """Returns the number of points (e.g. time points, number of
         subjects, etc) in the analysis.
         """
-        return self.__design.shape[0] 
+        if self.__design is None:
+            return None
+        
+        return self.__design.getDesign().shape[0]
 
     
     def numEVs(self):
         """Returns the number of explanatory variables (EVs) in the analysis.
         """
-        return self.__design.shape[1]
+        if self.__design is None:
+            return None 
+
+        return len(self.__design.getEVs())
 
 
     def evNames(self):
         """Returns a list containing the name of each EV in the analysis."""
-        return list(self.__evNames)
+        
+        if self.__design is None:
+            return None 
+        
+        return [ev.title for ev in self.__design.getEVs()]
 
     
     def numContrasts(self):
@@ -285,6 +299,9 @@ class FEATImage(fslimage.Image):
                         otherwise.
         """
 
+        if self.__design is None:
+            raise RuntimeError('No design')
+
         if not fullmodel:
             contrast = np.array(contrast)
             contrast = contrast / np.sqrt((contrast ** 2).sum())
@@ -295,7 +312,7 @@ class FEATImage(fslimage.Image):
         if len(contrast) != numEVs:
             raise ValueError('Contrast is wrong length')
         
-        X        = self.__design
+        X        = self.__design.getDesign(xyz)
         data     = self.data[x, y, z, :]
         modelfit = np.zeros(len(data))
 

@@ -22,7 +22,6 @@ following functions are provided:
    loadDesign
    loadContrasts
    loadSettings
-   getEVNames
    getThresholds
    loadClusterResults
 
@@ -47,9 +46,11 @@ import                        logging
 import os.path             as op
 import numpy               as np
 
-import fsl.data.image      as fslimage
 import fsl.utils.path      as fslpath
 import fsl.utils.transform as transform
+
+from . import image as fslimage
+from . import          featdesign 
 
 
 log = logging.getLogger(__name__)
@@ -136,36 +137,6 @@ def getTopLevelAnalysisDir(path):
     file system) directory is returned. Otherwise, ``None`` is returned.
     """
     return fslpath.shallowest(path, ['.ica', '.gica', '.feat', '.gfeat'])
-
-
-def loadDesign(featdir):
-    """Loads the design matrix from a FEAT directory.
-
-    Returns a ``numpy`` array containing the design matrix data, where the
-    first dimension corresponds to the data points, and the second to the EVs.
-
-    :arg featdir: A FEAT directory.
-    """
-
-    matrix    = None 
-    designmat = op.join(featdir, 'design.mat')
-
-    log.debug('Loading FEAT design matrix from {}'.format(designmat))
-
-    with open(designmat, 'rt') as f:
-
-        while True:
-            line = f.readline()
-            if line.strip() == '/Matrix':
-                break
-
-        matrix = np.loadtxt(f, ndmin=2)
-
-    if matrix is None or matrix.size == 0:
-        raise RuntimeError('{} does not appear to be a '
-                           'valid design.mat file'.format(designmat))
-
-    return matrix
 
 
 def loadContrasts(featdir):
@@ -263,6 +234,20 @@ def loadSettings(featdir):
             settings[key] = val
     
     return settings
+
+
+def loadDesign(featdir, settings):
+    """Loads the design matrix from a FEAT directory.
+
+    :arg featdir:  A FEAT directory.
+
+    :arg settings: Dictionary containing FEAT settings (see
+                   :func:`loadSettings`).
+    
+    :returns:      a :class:`.FEATFSFDesign` instance which represents the
+                   design matrix.
+    """
+    return featdesign.FEATFSFDesign(featdir, settings)
 
 
 def getThresholds(settings):
@@ -543,53 +528,3 @@ def getClusterMaskFile(featdir, contrast):
     """
     mfile = op.join(featdir, 'cluster_mask_zstat{}'.format(contrast + 1))
     return fslimage.addExt(mfile, mustExist=True)
-
-
-def getEVNames(settings):
-    """Returns the names of every EV in the FEAT analysis which has the given
-    ``settings`` (see the :func:`loadSettings` function).
-
-    An error of some sort will be raised if the EV names cannot be determined
-    from the FEAT settings.
-
-    :arg settings: A FEAT settings dictionary (see :func:`loadSettings`). 
-    """
-
-    numEVs    = int(settings['evs_real'])
-    titleKeys = [s for s in settings.keys() if s.startswith('evtitle')]
-    derivKeys = [s for s in settings.keys() if s.startswith('deriv_yn')]
-
-    def key(k):
-        return int(''.join([c for c in k if c.isdigit()]))
-        
-    titleKeys = sorted(titleKeys, key=key)
-    derivKeys = sorted(derivKeys, key=key)
-    evnames  = []
-
-    for titleKey, derivKey in zip(titleKeys, derivKeys):
-
-        # Figure out the ev number from
-        # the design.fsf key - skip over
-        # 'evtitle' (an offset of 7)
-        evnum = int(titleKey[7:])
-
-        # Sanity check - the evnum
-        # for the deriv_yn key matches
-        # that for the evtitle key
-        if evnum != int(derivKey[8:]):
-            raise RuntimeError('design.fsf seem to be corrupt')
-
-        title = settings[titleKey]
-        deriv = settings[derivKey]
-
-        if deriv == '0':
-            evnames.append(title)
-        else:
-            evnames.append(title)
-            evnames.append('{} - {}'.format(title, 'temporal derivative'))
-
-    if len(evnames) != numEVs:
-        raise RuntimeError('The number of EVs in design.fsf does not '
-                           'match the number of EVs in design.mat')
-
-    return evnames
