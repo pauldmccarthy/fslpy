@@ -143,7 +143,7 @@ class FEATImage(fslimage.Image):
         subjects, etc) in the analysis.
         """
         if self.__design is None:
-            return None
+            return 0
         
         return self.__design.getDesign().shape[0]
 
@@ -152,7 +152,7 @@ class FEATImage(fslimage.Image):
         """Returns the number of explanatory variables (EVs) in the analysis.
         """
         if self.__design is None:
-            return None 
+            return 0
 
         return len(self.__design.getEVs())
 
@@ -161,7 +161,7 @@ class FEATImage(fslimage.Image):
         """Returns a list containing the name of each EV in the analysis."""
         
         if self.__design is None:
-            return None 
+            return []
         
         return [ev.title for ev in self.__design.getEVs()]
 
