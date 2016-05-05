@@ -260,8 +260,11 @@ class VoxelwiseEV(NormalEV):
         """
         NormalEV.__init__(self, realIdx, origIdx, title)
 
-        if op.exists(filename): self.filename = filename
-        else:                   self.filename = None
+        if op.exists(filename):
+            self.filename = filename
+        else:
+            log.warning('Voxelwise EV file does not exist: '.format(filename))
+            self.filename = None
 
 
 class ConfoundEV(EV):
@@ -337,8 +340,12 @@ class VoxelwiseConfoundEV(EV):
         EV.__init__(self, index, title)
         self.voxIndex = voxIndex
 
-        if op.exists(filename): self.filename = filename
-        else:                   self.filename = None 
+        if op.exists(filename):
+            self.filename = filename
+        else:
+            log.warning('Voxelwise confound EV file '
+                        'does not exist: '.format(filename))
+            self.filename = None 
     
 
 def getFirstLevelEVs(featDir, settings, designMat):
@@ -388,9 +395,8 @@ def getFirstLevelEVs(featDir, settings, designMat):
         # original EV index.
         else:
 
-            # The addExt function will
-            # raise an error if the
-            # file does not exist.
+            # The addExt function will raise an
+            # error if the file does not exist.
             filename = op.join(
                 featDir, 'designVoxelwiseEV{}'.format(origIdx + 1))
             filename = fslimage.addExt(filename, True)
@@ -475,9 +481,12 @@ def getFirstLevelEVs(featDir, settings, designMat):
             raise FSFError('Unsupported voxelwise confound ordering '
                            '({} -> {})'.format(startIdx, voxConfLocs))
 
-        # Create the voxelwise confound EVs
+        # Create the voxelwise confound EVs.
+        # We make a name for the EV from the
+        # file name.
         for i, (f, l) in enumerate(zip(voxConfFiles, voxConfLocs)):
-            evs.append(VoxelwiseConfoundEV(len(evs), i, 'voxconf', f))
+            title = op.basename(fslimage.removeExt(f))
+            evs.append(VoxelwiseConfoundEV(len(evs), i, title, f))
 
     # Have motion parameters been added
     # as regressors to the design matrix?
