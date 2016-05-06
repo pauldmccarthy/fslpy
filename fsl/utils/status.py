@@ -150,25 +150,24 @@ class ClearThread(threading.Thread):
         (via a call to :func:`clearStatus`).
         """
 
-        # http://bugs.python.org/issue14623
-        #
-        # When the main thread exits, daemon threads will
-        # continue to run after the threading module is
-        # destroyed. Calls to the Event methods can thus
-        # result in errors.
-        try:
+        while True:
 
-            while True:
+            self.__vetoEvent .clear()
+            self.__clearEvent.wait()
+            self.__clearEvent.clear()
 
-                self.__vetoEvent .clear()
-                self.__clearEvent.wait()
-                self.__clearEvent.clear()
-
+            # http://bugs.python.org/issue14623
+            #
+            # When the main thread exits, daemon threads will
+            # continue to run after the threading module is
+            # destroyed. Calls to the Event methods can thus
+            # result in errors.
+            try:
                 if not self.__clearEvent.wait(self.__timeout) and \
                    not self.__vetoEvent.isSet():
 
                     log.debug('Timeout - clearing status')
                     clearStatus()
-
-        except:
-            pass
+                    
+            except TypeError:
+                return
