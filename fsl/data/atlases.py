@@ -52,13 +52,14 @@ have a structure that looks like the following:
 This module reads in all of these XML files, and builds a list of
 :class:`AtlasDescription` instances, each of which contains information about
 one atlas. Each atlas is assigned an identifier, which is simply the XML file
-name describing the atlas, sans-suffix.  For exmaple, the atlas described by:
+name describing the atlas, sans-suffix, and converted to lower case.  For
+exmaple, the atlas described by:
 
     ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
 
 is given the identifier
 
-    ``HarvardOxford-Cortical``
+    ``harvardoxford-cortical``
 
 
 The following functions provide access to the available
@@ -232,7 +233,7 @@ class AtlasDescription(object):
         header = root.find('header')
         data   = root.find('data')
 
-        self.atlasID   = op.splitext(op.basename(filename))[0]
+        self.atlasID   = op.splitext(op.basename(filename))[0].lower()
         self.name      = header.find('name').text
         self.atlasType = header.find('type').text.lower()
  
