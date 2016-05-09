@@ -179,7 +179,8 @@ class Platform(notifier.Notifier):
         """Changes the value of the :attr:`fsldir` property, and notifies any
         registered listeners.
         """
-        self.__fsldir = value
+        self.__fsldir        = value
+        os.environ['FSLDIR'] = value
         self.notify()
 
         
