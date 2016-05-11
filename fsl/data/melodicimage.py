@@ -14,8 +14,8 @@ import os.path as op
 
 import props
 
-from . import image          as fslimage
-from . import melodicresults as melresults
+from . import image           as fslimage
+from . import melodicanalysis as melanalysis
 
 
 class MelodicImage(fslimage.Image):
@@ -61,7 +61,7 @@ class MelodicImage(fslimage.Image):
         if op.isdir(path):
             path = op.join(path, 'melodic_IC')
 
-        if not melresults.isMelodicImage(path):
+        if not melanalysis.isMelodicImage(path):
             raise ValueError('{} does not appear to be a '
                              'MELODIC component file'.format(path)) 
             
@@ -69,9 +69,9 @@ class MelodicImage(fslimage.Image):
 
         meldir            = op.dirname(path)
         self.__meldir     = meldir
-        self.__melmix     = melresults.getComponentTimeSeries(  meldir)
-        self.__melFTmix   = melresults.getComponentPowerSpectra(meldir)
-        self.__melICClass = melresults.MelodicClassification(   self)
+        self.__melmix     = melanalysis.getComponentTimeSeries(  meldir)
+        self.__melFTmix   = melanalysis.getComponentPowerSpectra(meldir)
+        self.__melICClass = melanalysis.MelodicClassification(   self)
 
         # Automatically set the
         # TR value if possible
@@ -115,24 +115,25 @@ class MelodicImage(fslimage.Image):
         """Returns the top level analysis, if the melodic analysis for this
         ``MelodicImage`` is contained within another analysis. Otherwise,
         returns ``None``. See the
-        :func:`.melodicresults.getTopLevelAnalysisDir` function.
+        :func:`.melodicanalysis.getTopLevelAnalysisDir` function.
         """
-        return melresults.getTopLevelAnalysisDir(self.__meldir)
+        return melanalysis.getTopLevelAnalysisDir(self.__meldir)
 
 
     def getDataFile(self):
         """Returns the file name of the data image from which this
         ``MelodicImage`` was generated, if possible. See the
-        :func:`.melodicresults.getDataFile` function.
+        :func:`.melodicanalysis.getDataFile` function.
         """
-        return melresults.getDataFile(self.__meldir)
+        return melanalysis.getDataFile(self.__meldir)
 
 
     def getMeanFile(self):
         """Returns the file name of the mean data image associated with this
-        ``MelodicImage``. See the :func:`.melodicresults.getMeanFile` function.
+        ``MelodicImage``. See the :func:`.melodicanalysis.getMeanFile`
+        function.
         """
-        return melresults.getMeanFile(self.__meldir) 
+        return melanalysis.getMeanFile(self.__meldir) 
 
 
     def getICClassification(self):

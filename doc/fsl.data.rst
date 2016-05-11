@@ -10,8 +10,9 @@ fsl.data package
    fsl.data.featdesign
    fsl.data.featimage
    fsl.data.image
+   fsl.data.melodicanalysis
    fsl.data.melodicimage
-   fsl.data.melodicresults
+   fsl.data.melodiclabels
    fsl.data.model
    fsl.data.tensorimage
 

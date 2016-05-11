@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# melodicresults.py - Utility functions for loading/querying the contents of a
-# MELODIC analysis directory.
+# melodicanalysis.py - Utility functions for loading/querying the contents of
+# a MELODIC analysis directory.
 # 
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
