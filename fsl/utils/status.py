@@ -19,7 +19,12 @@ following functions:
 The :func:`update` function may be used to display a message. By default, the
 message is simply logged (via the ``logging`` module). However, if a status
 target has been set via the :func:`setTarget` function, the message is also
-passed to this target. 
+passed to this target.
+
+
+.. warning:: If the status update target is a ``wx`` GUI object, you must
+             make sure that it is updated asynchronously (e.g. via
+             ``wx.CallAfter``). 
 """
 
 
