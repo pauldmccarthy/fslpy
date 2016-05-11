@@ -16,6 +16,7 @@ import props
 
 from . import image           as fslimage
 from . import melodicanalysis as melanalysis
+from . import melodiclabels   as mellabels
 
 
 class MelodicImage(fslimage.Image):
@@ -71,7 +72,7 @@ class MelodicImage(fslimage.Image):
         self.__meldir     = meldir
         self.__melmix     = melanalysis.getComponentTimeSeries(  meldir)
         self.__melFTmix   = melanalysis.getComponentPowerSpectra(meldir)
-        self.__melICClass = melanalysis.MelodicClassification(   self)
+        self.__melICClass = mellabels  .MelodicClassification(   self)
 
         # Automatically set the
         # TR value if possible
