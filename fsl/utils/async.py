@@ -56,13 +56,17 @@ def _haveWX():
         return False
 
 
-def run(task, onFinish=None, name=None):
+def run(task, onFinish=None, onError=None, name=None):
     """Run the given ``task`` in a separate thread.
 
     :arg task:     The function to run. Must accept no arguments.
 
-    :arg onFinish: An optional function to schedule on the ``wx.MainLoop``
-                   once the ``task`` has finished. 
+    :arg onFinish: An optional function to schedule (on the ``wx.MainLoop``,
+                   via :func:`idle`) once the ``task`` has finished.
+
+    :arg onError:  An optional function to be called (on the ``wx.MainLoop``,
+                   via :func:`idle`) if the ``task`` raises an error. Passed
+                   the ``Exception`` that was raised.
 
     :arg name:     An optional name to use for this task in log statements.
 
@@ -78,33 +82,42 @@ def run(task, onFinish=None, name=None):
 
     haveWX = _haveWX()
 
+    # Calls the onFinish or onError handler
+    def callback(cb, *args, **kwargs):
+        
+        if cb is None:
+            return
+        
+        if haveWX: idle(cb, *args, **kwargs)
+        else:      cb(      *args, **kwargs)
+
+    # Runs the task, and calls 
+    # callback functions as needed.
     def wrapper():
 
-        log.debug('Running task "{}"...'.format(name))
-        task()
+        try:
+            task()
+            log.debug('Task "{}" finished'.format(name))
+            callback(onFinish) 
+            
+        except Exception as e:
+            
+            log.warn('Task "{}" crashed', exc_info=True)
+            callback(onError, e)
 
-        log.debug('Task "{}" finished'.format(name))
-
-        if (onFinish is not None):
-
-            import wx
-
-            log.debug('Scheduling task "{}" finish handler '
-                      'on wx.MainLoop'.format(name))
-
-            # Should I use the idle function here?
-            wx.CallAfter(onFinish)
-
+    # If WX, run on a thread
     if haveWX:
+        
+        log.debug('Running task "{}" on thread'.format(name))
+
         thread = threading.Thread(target=wrapper)
         thread.start()
         return thread
- 
+
+    # Otherwise run directly
     else:
-        log.debug('Running task "{}" directly'.format(name)) 
-        task()
-        log.debug('Running task "{}" finish handler'.format(name)) 
-        onFinish()
+        log.debug('Running task "{}" directly'.format(name))
+        wrapper()
         return None
 
 
