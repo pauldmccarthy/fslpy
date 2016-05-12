@@ -173,13 +173,19 @@ def getAtlasDescription(atlasID):
     return ATLAS_DESCRIPTIONS[atlasID]
 
 
-def loadAtlas(atlasID, loadSummary=False):
+def loadAtlas(atlasID, loadSummary=False, resolution=None):
     """Loads and returns an :class:`Atlas` instance for the atlas
     with the given  ``atlasID``. 
 
     :arg loadSummary: If ``True``, a 3D :class:`LabelAtlas` image is
                       loaded. Otherwise, if the atlas is probabilistic,
                       a 4D :class:`ProbabilisticAtlas` image is loaded.
+
+    :arg resolution: Optional. Desired isotropic atlas resolution in
+                     millimetres, e.g. ``1.0`` or ``2.0``. The available
+                     atlas with the nearest resolution to this value
+                     will be returned. If not provided, the highest
+                     resolution atlas will be loaded.
     """
 
     _setAtlasDir()
@@ -197,8 +203,8 @@ def loadAtlas(atlasID, loadSummary=False):
     if atlasDesc.atlasType == 'label':
         loadSummary = True
 
-    if loadSummary: atlas = LabelAtlas(        atlasDesc)
-    else:           atlas = ProbabilisticAtlas(atlasDesc)
+    if loadSummary: atlas = LabelAtlas(        atlasDesc, resolution)
+    else:           atlas = ProbabilisticAtlas(atlasDesc, resolution)
 
     return atlas
 
@@ -344,27 +350,32 @@ class Atlas(fslimage.Image):
     """
 
     
-    def __init__(self, atlasDesc, isLabel=False):
+    def __init__(self, atlasDesc, resolution=None, isLabel=False):
         """Initialise an ``Atlas``.
 
-        :arg atlasDesc: The :class:`AtlasDescription` instance which describes
-                        the atlas.
+        :arg atlasDesc:  The :class:`AtlasDescription` instance which 
+                         describes the atlas.
 
-        :arg isLabel:   Pass in ``True`` for label atlases, ``False`` for
-                        probabilistic atlases.
+        :arg resolution: Desired isotropic resolution in millimetres.
+
+        :arg isLabel:    Pass in ``True`` for label atlases, ``False`` for
+                         probabilistic atlases.
         """
 
-        # Choose the atlas image
-        # with the highest resolution 
-        minImageRes = 2 ** 32
-        imageIdx    = 0
-
-        for i, image in enumerate(atlasDesc.images):
-            imgRes = max(fslimage.Image(image, loadData=False).pixdim)
-
-            if imgRes < minImageRes:
-                minImageRes = imgRes
-                imageIdx    = i
+        # Get the index of the atlas with the
+        # nearest resolution to that provided.
+        # If a reslution has not been provided,
+        # choose the atlas image with the
+        # highest resolution.
+        # 
+        # We divide by three to get the atlas
+        # image index because there are three
+        # pixdim values for each atlas.
+        res   = resolution
+        reses = np.concatenate(atlasDesc.pixdims)
+ 
+        if resolution is None: imageIdx = np.argmin(reses)               / 3
+        else:                  imageIdx = np.argmin(np.abs(reses - res)) / 3
 
         if isLabel: imageFile = atlasDesc.summaryImages[imageIdx]
         else:       imageFile = atlasDesc.images[       imageIdx]
@@ -387,13 +398,15 @@ class LabelAtlas(Atlas):
     makes looking up the label at a location easy.
     """
 
-    def __init__(self, atlasDesc):
+    def __init__(self, atlasDesc, resolution=None):
         """Create a ``LabelAtlas`` instance.
 
-        :arg atlasDesc: The :class:`AtlasDescription` instance describing
-                        the atlas.
+        :arg atlasDesc:  The :class:`AtlasDescription` instance describing
+                         the atlas.
+
+        :arg resolution: Desired isotropic resolution in millimetres.
         """
-        Atlas.__init__(self, atlasDesc, isLabel=True)
+        Atlas.__init__(self, atlasDesc, resolution, True)
 
         
     def label(self, worldLoc):
@@ -428,13 +441,15 @@ class ProbabilisticAtlas(Atlas):
     which makes looking up region probabilities easy.
     """
 
-    def __init__(self, atlasDesc):
+    def __init__(self, atlasDesc, resolution=None):
         """Create a ``ProbabilisticAtlas`` instance.
 
-        :arg atlasDesc: The :class:`AtlasDescription` instance describing
-                        the atlas.
+        :arg atlasDesc:  The :class:`AtlasDescription` instance describing
+                         the atlas.
+
+        :arg resolution: Desired isotropic resolution in millimetres.
         """ 
-        Atlas.__init__(self, atlasDesc, isLabel=False)
+        Atlas.__init__(self, atlasDesc, resolution, False)
 
         
     def proportions(self, worldLoc):
