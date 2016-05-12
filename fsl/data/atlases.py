@@ -88,6 +88,7 @@ import xml.etree.ElementTree as et
 import os.path               as op
 import                          glob
 import                          collections
+import                          threading
 import                          logging
 
 import numpy                 as np
@@ -109,28 +110,49 @@ def listAtlases(refresh=False):
                   loaded from the atlas files. Otherwise, previously
                   loaded descriptions are returned (see 
                   :attr:`ATLAS_DESCRIPTIONS`).
+
+    .. note:: This function is thread-safe, because *FSLeyes* calls it
+              in a multi-threaded manner (to avoid blocking the GUI).
     """
 
     _setAtlasDir()
 
     if ATLAS_DIR is None:
         return []
+    
+    # Make sure the atlas description
+    # refresh is only performed by one
+    # thread. If a thread is loading
+    # the descriptions, any other thread
+    # which enters the function will
+    # block here until the descriptions
+    # are loaded. When it continues,
+    # it will see a populated
+    # ATLAS_DESCRIPTIONS list.
+    LOAD_ATLAS_LOCK.acquire()
 
     if len(ATLAS_DESCRIPTIONS) == 0:
         refresh = True
 
-    if not refresh:
-        return list(ATLAS_DESCRIPTIONS.values())
+    try:
+        if refresh:
 
-    atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
-    atlasDescs = map(AtlasDescription, atlasFiles)
-    atlasDescs = sorted(atlasDescs, key=lambda d: d.name)
+            log.debug('Loading atlas descriptions')
+            
+            atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
+            atlasDescs = map(AtlasDescription, atlasFiles)
+            atlasDescs = sorted(atlasDescs, key=lambda d: d.name)
 
-    ATLAS_DESCRIPTIONS.clear()
+            ATLAS_DESCRIPTIONS.clear()
 
-    for i, desc in enumerate(atlasDescs):
-        desc.index                       = i
-        ATLAS_DESCRIPTIONS[desc.atlasID] = desc
+            for i, desc in enumerate(atlasDescs):
+                desc.index                       = i
+                ATLAS_DESCRIPTIONS[desc.atlasID] = desc
+        else:
+            atlasDescs = list(ATLAS_DESCRIPTIONS.values())
+
+    finally:
+        LOAD_ATLAS_LOCK.release()
 
     return list(atlasDescs)
 
@@ -189,12 +211,24 @@ class AtlasDescription(object):
 
     ================= ======================================================
     ``atlasID``       The atlas ID, as described above.
+    
     ``name``          Name of the atlas.
+    
     ``atlasType``     Atlas type - either *probabilistic* or *label*.
+    
     ``images``        A list of images available for this atlas - usually
                       :math:`1mm^3` and :math:`2mm^3` images are present.
+    
     ``summaryImages`` For probabilistic atlases, a list of *summary* images,
                       which are just 3D labelled variants of the atlas.
+    
+    ``pixdims``       A list of ``(x, y, z)`` pixdim tuples in mm, one for
+                      each image in ``images``.
+
+    ``xforms``        A list of affine transformation matrices (as ``4*4``
+                      ``numpy`` arrays), one for each image in ``images``,
+                      defining the voxel to world coordinate transformations.
+    
     ``labels``        A list of ``AtlasLabel`` objects, describing each
                       region / label in the atlas.
     ================= ======================================================
@@ -216,8 +250,9 @@ class AtlasDescription(object):
 
     .. note:: The ``x``, ``y`` and ``z`` label coordinates are pre-calculated
               centre-of-gravity coordinates, as listed in the atlas xml file.
-              They are in the coordinate system defined by the atlas image
-              transformation matrix (typically MNI152 space).
+              They are in the coordinate system defined by the transformation
+              matrix for the first image in the ``images`` list.(typically
+              MNI152 space).
     """
 
     
@@ -244,6 +279,9 @@ class AtlasDescription(object):
         images             = header.findall('images')
         self.images        = []
         self.summaryImages = []
+        self.pixdims       = []
+        self.xforms        = []
+        
 
         for image in images:
             imagefile        = image.find('imagefile')       .text
@@ -252,8 +290,12 @@ class AtlasDescription(object):
             imagefile        = op.join(ATLAS_DIR, '.' + imagefile)
             summaryimagefile = op.join(ATLAS_DIR, '.' + summaryimagefile)
 
+            i = fslimage.Image(imagefile, loadData=False)
+
             self.images       .append(imagefile)
             self.summaryImages.append(summaryimagefile)
+            self.pixdims      .append(i.pixdim[:3])
+            self.xforms       .append(i.voxToWorldMat)
 
         # A container object used for
         # storing atlas label information
@@ -286,8 +328,7 @@ class AtlasDescription(object):
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
         # into world coordinates
-        xform  = fslimage.Image(self.images[0], loadData=False).voxToWorldMat
-        coords = transform.transform(coords, xform.T)
+        coords = transform.transform(coords, self.xforms[0].T)
 
         # Update the coordinates 
         # in our label objects
@@ -430,6 +471,12 @@ ATLAS_DIR = None
 ATLAS_DESCRIPTIONS = collections.OrderedDict()
 """This dictionary contains an ``{atlasID : AtlasDescription}`` mapping for
 all atlases contained in ``$FSLDIR/data/atlases/``.
+"""
+
+
+LOAD_ATLAS_LOCK = threading.Lock()
+"""This is used as a mutual-exclusion lock by the :func:`listAtlases`
+function, to make it thread-safe.
 """
 
 
