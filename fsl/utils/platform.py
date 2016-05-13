@@ -68,6 +68,7 @@ class Platform(notifier.Notifier):
        frozen
        fsldir
        haveGui
+       inSSHSession
        wxPlatform
        wxFlavour
        glVersion
@@ -86,12 +87,13 @@ class Platform(notifier.Notifier):
         self.WX_MAC_CARBON = WX_MAC_CARBON
         self.WX_GTK        = WX_GTK
 
-        self.__fsldir     = os.environ.get('FSLDIR', None)
-        self.__haveGui    = False
-        self.__wxFlavour  = None
-        self.__wxPlatform = None
-        self.__glVersion  = None
-        self.__glRenderer = None
+        self.__fsldir       = os.environ.get('FSLDIR', None)
+        self.__haveGui      = False
+        self.__inSSHSession = False
+        self.__wxFlavour    = None
+        self.__wxPlatform   = None
+        self.__glVersion    = None
+        self.__glRenderer   = None
 
         try:
             import wx
@@ -100,6 +102,8 @@ class Platform(notifier.Notifier):
         except ImportError:
             pass
 
+        # If we have a GUI, get some
+        # info about the wx platform
         if self.__haveGui:
 
             pi        = [t.lower() for t in wx.PlatformInfo]
@@ -124,6 +128,12 @@ class Platform(notifier.Notifier):
                 log.warning('Could not determine wx platform from '
                             'information: {}'.format(pi))
 
+        # If one of these environment
+        # variables is set, then we're
+        # probably running over SSH.
+        self.__inSSHSession = 'SSH_CLIENT' in os.environ or \
+                              'SSH_TTY'    in os.environ
+
                 
     @property
     def os(self):
@@ -145,6 +155,14 @@ class Platform(notifier.Notifier):
     def haveGui(self):
         """``True`` if we are running with a GUI, ``False`` otherwise. """
         return self.__haveGui
+
+
+    @property
+    def inSSHSession(self):
+        """``True`` if this application is running over an SSH session,
+        ``False`` otherwise.
+        """
+        return self.__inSSHSession
 
     
     @property
