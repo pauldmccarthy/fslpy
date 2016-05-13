@@ -102,7 +102,7 @@ def run(task, onFinish=None, onError=None, name=None):
             
         except Exception as e:
             
-            log.warn('Task "{}" crashed', exc_info=True)
+            log.warn('Task "{}" crashed'.format(name), exc_info=True)
             callback(onError, e)
 
     # If WX, run on a thread
