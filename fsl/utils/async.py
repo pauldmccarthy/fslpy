@@ -29,6 +29,8 @@ warrant running in a separate thread.
 The :func:`wait` function is given one or more ``Thread`` instances, and a
 task to run. It waits until all the threads have finished, and then runs
 the task (via :func:`idle`).
+
+.. todo:: You could possibly use ``props.callqueue`` to drive the idle loop.
 """
 
 
@@ -134,34 +136,59 @@ loop.
 """
 
 
+_idleQueueSet = set()
+"""A ``set`` containing the names of all named tasks which are
+currently queued on the idle loop (see the ``name`` parameter to the
+:func:`idle` function).
+"""
+
+
 def _wxIdleLoop(ev):
     """Function which is called on ``wx.EVT_IDLE`` events. If there
     is a function on the :attr:`_idleQueue`, it is popped and called.
     """
+
+    global _idleQueue
+    global _idleQueueSet
         
     ev.Skip()
 
     try:
-        task, schedtime, timeout, args, kwargs = _idleQueue.get_nowait()
+        task, schedtime, name, timeout, args, kwargs = _idleQueue.get_nowait()
     except queue.Empty:
         return
 
-    name    = getattr(task, '__name__', '<unknown>')
     now     = time.time()
     elapsed = now - schedtime
 
     if timeout == 0 or (elapsed < timeout):
-        log.debug('Running function ({}) on wx idle loop'.format(name))
+        log.debug('Running function ({}) on wx idle '
+                  'loop'.format(getattr(task, '__name__', '<unknown>')))
         task(*args, **kwargs)
+
+        if name is not None:
+            _idleQueueSet.discard(name)
 
     if _idleQueue.qsize() > 0:
         ev.RequestMore()
+
+
+def inIdle(taskName):
+    """Returns ``True`` if a task with the given name is queued on the
+    idle loop (or is currently running), ``False`` otherwise. 
+    """
+    global _idleQueueSet
+    return taskName in _idleQueueSet
     
 
 def idle(task, *args, **kwargs):
     """Run the given task on a ``wx.EVT_IDLE`` event.
 
-    :arg task: The task to run.
+    :arg task:    The task to run.
+
+    :arg name:    Optional. If provided, must be provided as a keyword
+                  argument. Specifies a name that can be used to query
+                  the state of this task via the :func:`inIdle` function.
 
     :arg timeout: Optional. If provided, must be provided as a keyword
                   argument. Specifies a time out, in seconds. If this
@@ -175,10 +202,12 @@ def idle(task, *args, **kwargs):
     """
 
     global _idleRegistered
-    global _idleTasks
+    global _idleQueue
+    global _idleQueueSet
 
     schedtime = time.time()
     timeout   = kwargs.pop('timeout', 0)
+    name      = kwargs.pop('name',    None)
 
     if _haveWX():
         import wx
@@ -187,10 +216,12 @@ def idle(task, *args, **kwargs):
             wx.GetApp().Bind(wx.EVT_IDLE, _wxIdleLoop)
             _idleRegistered = True
 
-        name = getattr(task, '__name__', '<unknown>')
-        log.debug('Scheduling idle task ({}) on wx idle loop'.format(name))
+        log.debug('Scheduling idle task ({}) on wx idle '
+                  'loop'.format(getattr(task, '__name__', '<unknown>')))
 
-        _idleQueue.put_nowait((task, schedtime, timeout, args, kwargs))
+        _idleQueue.put_nowait((task, schedtime, name, timeout, args, kwargs))
+        if name is not None:
+            _idleQueueSet.add(name)
             
     else:
         log.debug('Running idle task directly') 
