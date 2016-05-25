@@ -32,6 +32,24 @@ should be the same as the identifier given to the OSX application bundle
 """
 
 
+def strToBool(s):
+    """Currently the ``settings`` module is not type aware, so boolean
+    values are saved as strings ``'True'`` or ``'False'``. This makes
+    conversion back to boolean a bit annoying, as ``'False'`` evaluates
+    to ``True``.
+
+    This function may be used for a more sensible `str` -> `bool`
+    conversion
+
+    .. note:: In the future, the ``settings`` module will hopefully be 
+              type-aware, so use of this function will no longer be necessary.
+    """
+    s = str(s).lower()
+    if   s == 'true':  return True
+    elif s == 'false': return False
+    else:              return bool(s) 
+
+
 def read(name, default=None):
     """Reads a setting with the given ``name``, return ``default`` if
     there is no setting called ``name``.
