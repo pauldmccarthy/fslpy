@@ -150,9 +150,25 @@ class Nifti1(object):
 
         shape, pixdim = self.__determineShape(self.nibImage)
         
-        self.shape         = shape
-        self.pixdim        = pixdim
-        self.voxToWorldMat = np.array(self.nibImage.get_affine())
+        self.shape  = shape
+        self.pixdim = pixdim
+
+        # We have to treat FSL/FNIRT images
+        # specially, as FNIRT clobbers the
+        # sform section of the NIFTI header
+        # to store other data. The hard coded
+        # numbers here are the intent codes
+        # output by FNIRT.
+        intent = self.nibImage.get_header().get('intent_code', -1)
+        if intent in (2006, 2007, 2008, 2009):
+            log.debug('FNIRT output image detected - using qform matrix')
+            self.voxToWorldMat = self.nibImage.get_qform()
+
+        # Otherwise we let nibabel decide
+        # which transform to use.
+        else:
+            self.voxToWorldMat = np.array(self.nibImage.get_affine())
+
         self.worldToVoxMat = transform.invert(self.voxToWorldMat)
 
         if loadData:
