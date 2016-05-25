@@ -720,8 +720,9 @@ class FSLDirDialog(wx.Dialog):
 
 
 class CheckBoxMessageDialog(wx.Dialog):
-    """A ``wx.Dialog`` which displays a message, a ``wx.CheckBox``, and
-    an *Ok* button.
+    """A ``wx.Dialog`` which displays a message, one or more ``wx.CheckBox``
+    widgets, with associated messages, an *Ok* button, and (optionally) a
+    *Cancel* button.
     """
 
     
@@ -729,37 +730,44 @@ class CheckBoxMessageDialog(wx.Dialog):
                  parent,
                  title=None,
                  message=None,
-                 cbMessage=None,
-                 cbState=False,
-                 btnText=None,
-                 icon=None, 
+                 cbMessages=None,
+                 cbStates=None,
+                 okBtnText=None,
+                 cancelBtnText=None,
+                 icon=None,
                  style=None):
         """Create a ``CheckBoxMessageDialog``.
 
-        :arg parent:    A ``wx`` parent object.
+        :arg parent:        A ``wx`` parent object.
         
-        :arg title:     The dialog frame title.
+        :arg title:         The dialog frame title.
         
-        :arg message:   Message to show on the dialog.
+        :arg message:       Message to show on the dialog.
         
-        :arg cbMessage: Label for the ``wx.CheckBox``.
+        :arg cbMessages:    A list of labels, one for each ``wx.CheckBox``.
         
-        :arg cbState:   Initial state for the ``wx.CheckBox``.
+        :arg cbStates:      A list of initial states (boolean values) for
+                            each ``wx.CheckBox``.
         
-        :arg btnText:   Text to show on the button. Defaults to *OK*.
+        :arg okBtnText:     Text to show on the OK/confirm button. Defaults to
+                            *OK*.
+
+        :arg cancelBtnText: Text to show on the cancel button. If not provided,
+                            there will be no cancel button.
         
-        :arg icon:      A ``wx`` icon identifier (e.g. 
-                        ``wx.ICON_EXCLAMATION``).
+        :arg icon:          A ``wx`` icon identifier (e.g. 
+                            ``wx.ICON_EXCLAMATION``).
         
-        :arg style:     Passed through to the ``wx.Dialog.__init__`` method.
-                        Defaults to ``wx.DEFAULT_DIALOG_STYLE``.
+        :arg style:         Passed through to the ``wx.Dialog.__init__``
+                            method. Defaults to ``wx.DEFAULT_DIALOG_STYLE``.
         """
 
-        if style     is None: style     = wx.DEFAULT_DIALOG_STYLE
-        if title     is None: title     = ""
-        if message   is None: message   = ""
-        if cbMessage is None: cbMessage = ""
-        if btnText   is None: btnText   = "OK"
+        if style      is None: style         = wx.DEFAULT_DIALOG_STYLE
+        if title      is None: title         = ''
+        if message    is None: message       = ''
+        if cbMessages is None: cbMessages    = ['']
+        if cbStates   is None: cbStates      = [False] * len(cbMessages)
+        if okBtnText  is None: okBtnText     = 'OK'
 
         wx.Dialog.__init__(self, parent, title=title, style=style)
 
@@ -777,20 +785,41 @@ class CheckBoxMessageDialog(wx.Dialog):
         else:
             self.__icon = (1, 1)
 
-        self.__checkbox = wx.CheckBox(  self, label=cbMessage)
-        self.__button   = wx.Button(    self, label=btnText, id=wx.ID_OK)
+        self.__checkboxes = []
+        for msg, state in zip(cbMessages, cbStates):
+            cb = wx.CheckBox(self, label=msg)
+            cb.SetValue(state)
+            self.__checkboxes.append(cb)
+            
         self.__message  = wx.StaticText(self, label=message)
+        self.__okButton = wx.Button(    self, label=okBtnText, id=wx.ID_OK)
+
+        self.__okButton.Bind(wx.EVT_BUTTON, self.__onOKButton)
+
+        if cancelBtnText is not None:
+            self.__cancelButton = wx.Button(self,
+                                            label=cancelBtnText,
+                                            id=wx.ID_CANCEL)
+            self.__cancelButton.Bind(wx.EVT_BUTTON, self.__onCancelButton)
+        else:
+            self.__cancelButton = None
 
         self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
         self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
         self.__btnSizer     = wx.BoxSizer(wx.HORIZONTAL)
-        
-        self.__contentSizer.Add(self.__message,  flag=wx.EXPAND, proportion=1)
-        self.__contentSizer.Add((1, 20),         flag=wx.EXPAND)
-        self.__contentSizer.Add(self.__checkbox, flag=wx.EXPAND)
 
-        self.__btnSizer    .Add((1, 1),          flag=wx.EXPAND, proportion=1)
-        self.__btnSizer    .Add(self.__button)
+        self.__contentSizer.Add(self.__message,  flag=wx.EXPAND, proportion=1)
+        self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
+        for cb in self.__checkboxes:
+            self.__contentSizer.Add(cb, flag=wx.EXPAND)
+
+        self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
+        self.__btnSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
+        self.__btnSizer.Add(self.__okButton)
+        
+        if self.__cancelButton is not None:
+            self.__btnSizer.Add((5, 1), flag=wx.EXPAND)
+            self.__btnSizer.Add(self.__cancelButton)
         
         self.__contentSizer.Add(self.__btnSizer, flag=wx.EXPAND)
 
@@ -802,7 +831,6 @@ class CheckBoxMessageDialog(wx.Dialog):
                              proportion=1,
                              border=20)
 
-        self.__checkbox.SetValue(cbState)
         self.__message.Wrap(self.GetSize().GetWidth())
 
         self.SetSizer(self.__mainSizer)
@@ -811,15 +839,22 @@ class CheckBoxMessageDialog(wx.Dialog):
         self.CentreOnParent()
 
 
-    def CheckBoxState(self):
+    def CheckBoxState(self, index=0):
         """After this ``CheckBoxMessageDialog`` has been closed, this method
         will retrieve the state of the dialog ``CheckBox``.
         """
-        return self.__checkbox.GetValue()
+        return self.__checkboxes[index].GetValue()
 
 
-    def __onButton(self):
+    def __onOKButton(self, ev):
         """Called when the button on this ``CheckBoxMessageDialog`` is
         clicked. Closes the dialog.
         """
         self.EndModal(wx.ID_OK)
+
+        
+    def __onCancelButton(self, ev):
+        """If the ``CHECKBOX_MSGDLG_CANCEL_BUTTON`` style was set, this method
+        is called when the cancel button is clicked. Closes the dialog.
+        """
+        self.EndModal(wx.ID_CANCEL)
