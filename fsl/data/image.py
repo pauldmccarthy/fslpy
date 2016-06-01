@@ -33,20 +33,17 @@ file names:
 
 
 import               logging
-import               tempfile
 import               string
 import               os 
 import os.path    as op
-import subprocess as sp
 
 import               six 
 import numpy      as np
-import nibabel    as nib
 
-import props
 
 import fsl.utils.transform as transform
 import fsl.utils.status    as status
+import fsl.utils.notifier  as notifier
 import fsl.utils.path      as fslpath
 import fsl.data.constants  as constants
 
@@ -57,6 +54,9 @@ log = logging.getLogger(__name__)
 class Nifti1(object):
     """The ``Nifti1`` class is intended to be used as a base class for
     things which either are, or are associated with, a NIFTI1 image.
+    The ``Nifti1`` class is intended to represent information stored in
+    the header of a NIFTI1 file - if you want to load the data from
+    a file, use the :class:`Image` class instead.
 
 
     When a ``Nifti1`` instance is created, it adds the following attributes
@@ -64,13 +64,11 @@ class Nifti1(object):
 
     
     ================= ====================================================
-    ``nibImage``      The :mod:`nibabel` image object.
-    ``dataSource``    The name of the file that the image was loaded from. 
-    ``tempFile``      The name of the temporary file which was created (in
-                      the event that the image was large and was gzipped -
-                      see :func:`loadImage`).
+    ``header``        The :mod:`nibabel.Nifti1Header` object.
     ``shape``         A list/tuple containing the number of voxels along
-                      each image dimension. 
+                      each image dimension.
+    ``pixdim``        A list/tuple containing the length of one voxel 
+                      along each image dimension. 
     ``voxToWorldMat`` A 4*4 array specifying the affine transformation
                       for transforming voxel coordinates into real world
                       coordinates.
@@ -78,80 +76,26 @@ class Nifti1(object):
                       for transforming real world coordinates into voxel
                       coordinates.
     ================= ====================================================
+
+    
+    .. note:: The ``shape`` attribute may not precisely match the image shape
+              as reported in the NIFTI1 header, because trailing dimensions of
+              size 1 are squeezed out. See the :meth:`__determineShape` and
+              :meth:`mapIndices` methods.
     """
 
-    def __init__(self,
-                 image,
-                 xform=None,
-                 header=None,
-                 loadData=True):
+    def __init__(self, header):
         """Create a ``Nifti1`` object.
 
-        :arg image:    A string containing the name of an image file to load, 
-                       or a :mod:`numpy` array, or a :mod:`nibabel` image
-                       object.
-
-        :arg xform:    A :math:`4\\times 4` affine transformation matrix 
-                       which transforms voxel coordinates into real world
-                       coordinates.
-
-        :arg header:   If not ``None``, assumed to be a
-                       :class:`nibabel.nifti1.Nifti1Header` to be used as the 
-                       image header. Not applied to images loaded from file,
-                       or existing :mod:`nibabel` images.
-
-        :arg loadData: Defaults to ``True``. If ``False``, the image data is
-                       not loaded - this is useful if you're only interested
-                       in the header data, as the file will be loaded much
-                       more quickly. The image data may subsequently be loaded
-                       via the :meth:`loadData` method. 
+        :arg header:   A :class:`nibabel.nifti1.Nifti1Header` to be used as 
+                       the image header. 
         """
-        
-        self.nibImage      = None
-        self.dataSource    = None
-        self.tempFile      = None
-        self.shape         = None
-        self.pixdim        = None
-        self.voxToWorldMat = None
-        self.worldToVoxMat = None
 
-        if header is not None:
-            header = header.copy()
+        header                   = header.copy()
+        origShape, shape, pixdim = self.__determineShape(header)
 
-        # The image parameter may be the name of an image file
-        if isinstance(image, six.string_types):
-            
-            nibImage, filename = loadImage(addExt(image))
-            self.nibImage      = nibImage
-            self.dataSource    = op.abspath(image) 
-
-            # if the returned file name is not the same as
-            # the provided file name, that means that the
-            # image was opened from a temporary file
-            if filename != image:
-                self.tempFile = nibImage.get_filename()
-                
-        # Or a numpy array - we wrap it in a nibabel image,
-        # with an identity transformation (each voxel maps
-        # to 1mm^3 in real world space)
-        elif isinstance(image, np.ndarray):
-
-            if xform is None:
-                if header is None: xform = np.identity(4)
-                else:              xform = header.get_best_affine()
-            
-            self.nibImage  = nib.nifti1.Nifti1Image(image,
-                                                    xform,
-                                                    header=header)
-            
-        # otherwise, we assume that it is a nibabel image
-        else:
-            self.nibImage = image
-
-        shape, pixdim = self.__determineShape(self.nibImage)
-        
-        self.shape  = shape
-        self.pixdim = pixdim
+        if len(shape) < 3 or len(shape) > 4:
+            raise RuntimeError('Only 3D or 4D images are supported')
 
         # We have to treat FSL/FNIRT images
         # specially, as FNIRT clobbers the
@@ -159,37 +103,41 @@ class Nifti1(object):
         # to store other data. The hard coded
         # numbers here are the intent codes
         # output by FNIRT.
-        intent = self.nibImage.get_header().get('intent_code', -1)
+        intent = header.get('intent_code', -1)
         if intent in (2006, 2007, 2008, 2009):
             log.debug('FNIRT output image detected - using qform matrix')
-            self.voxToWorldMat = self.nibImage.get_qform()
+            voxToWorldMat = np.array(header.get_qform())
 
         # Otherwise we let nibabel decide
         # which transform to use.
         else:
-            self.voxToWorldMat = np.array(self.nibImage.get_affine())
+            voxToWorldMat = np.array(header.get_best_affine())
 
-        self.worldToVoxMat = transform.invert(self.voxToWorldMat)
+        worldToVoxMat = transform.invert(voxToWorldMat)
 
-        if loadData:
-            self.loadData()
-        else:
-            self.data = None
+        self.header        = header
+        self.shape         = shape
+        self.__origShape   = origShape
+        self.pixdim        = pixdim
+        self.voxToWorldMat = voxToWorldMat
+        self.worldToVoxMat = worldToVoxMat
 
-        if len(self.shape) < 3 or len(self.shape) > 4:
-            raise RuntimeError('Only 3D or 4D images are supported')
 
+    def __determineShape(self, header):
+        """This method is called by :meth:`__init__`. It figures out the actual 
+        shape of the image data, and the zooms/pixdims for each data axis. Any 
+        empty trailing dimensions are squeezed, but the returned shape is 
+        guaranteed to be at least 3 dimensions. Returns:
 
-    def __determineShape(self, nibImage):
-        """This method is called by :meth:`__init__`. It figures out the shape
-        of the image data, and the zooms/pixdims for each data axis. Any empty
-        trailing dimensions are squeezed, but the returned shape is guaranteed
-        to be at least 3 dimensions.
+         - A sequence/tuple containing the image shape, as reported in the
+           header.
+         - A sequence/tuple containing the effective image shape.
+         - A sequence/tuple containing the zooms/pixdims.
         """
 
-        nibHdr  = nibImage.get_header()
-        shape   = list(nibImage.shape)
-        pixdims = list(nibHdr.get_zooms())
+        origShape = list(header.get_data_shape())
+        shape     = list(origShape)
+        pixdims   = list(header.get_zooms())
 
         # Squeeze out empty dimensions, as
         # 3D image can sometimes be listed
@@ -198,7 +146,8 @@ class Nifti1(object):
             if shape[i] == 1: shape = shape[:i]
             else:             break
 
-        # But make sure the shape is 3D
+        # But make sure the shape 
+        # has at 3 least dimensions
         if len(shape) < 3:
             shape = shape + [1] * (3 - len(shape))
 
@@ -206,38 +155,28 @@ class Nifti1(object):
         # doesn't return at least 3 values, we'll fall
         # back to the pixdim field in the header.
         if len(pixdims) < 3:
-            pixdims = nibHdr['pixdim'][1:]
+            pixdims = header['pixdim'][1:]
 
         pixdims = pixdims[:len(shape)]
         
-        return shape, pixdims
- 
-    
-    def loadData(self):
-        """Loads the image data from the file. This method only needs to
-        be called if the ``loadData`` parameter passed to :meth:`__init__`
-        was ``False``.
+        return origShape, shape, pixdims
+
+
+    def mapIndices(self, sliceobj):
+        """Adjusts the given slice object so that it may be used to index the
+        underlying ``nibabel.Nifti1Image` object.
+
+        See the :meth:`__determineShape` method.
+
+        :arg sliceobj: Something that can be used to slice a
+                       multi-dimensional array, e.g. ``arr[sliceobj]``.
         """
 
-        # Get the data, and reshape it according
-        # to the shape that the __determineShape
-        # method figured out.
-        data      = self.nibImage.get_data()
-        origShape = data.shape
-        data      = data.reshape(self.shape)
-
-        # Tell numpy to make the
-        # data array read-only
-        data.flags.writeable = False
-        
-        self.data = data
-
-        log.debug('Loaded image data ({}) - original '
-                  'shape {}, squeezed shape {}'.format(
-                      self.dataSource,
-                      origShape,
-                      data.shape))
-
+        # How convenient - nibabel has a function
+        # that does the dirty work for us.
+        import nibabel.fileslice as fileslice
+        return fileslice.canonical_slicers(sliceobj, self.__origShape)
+ 
         
     # TODO: Remove this method, and use the shape attribute directly
     def is4DImage(self):
@@ -265,7 +204,7 @@ class Nifti1(object):
         elif code == 'qform' : code = 'qform_code'
         else: raise ValueError('code must be None, sform, or qform')
 
-        code = self.nibImage.get_header()[code]
+        code = self.header[code]
 
         # Invalid values
         if   code > 4: code = constants.NIFTI_XFORM_UNKNOWN
@@ -346,54 +285,47 @@ class Nifti1(object):
         return code 
 
 
-class Image(Nifti1, props.HasProperties):
+class Image(Nifti1, notifier.Notifier):
     """Class which represents a 3D/4D NIFTI1 image. Internally, the image
     is loaded/stored using :mod:`nibabel`.
 
     
-    In addition to the :attr:`data`, and :attr:`saved` properties, and
-    the attributes added by the :meth:`Nifti1.__init__` method, the
-    following attributes are present on an ``Image`` instance: 
+    .. todo:: If the image appears to be large, it is loaded using the
+              :mod:`indexed_gzip` module. Implement this, and also write
+              a note about what it means.
+
+    
+    In addition to the attributes added by the :meth:`Nifti1.__init__` method,
+    the following attributes are present on an ``Image`` instance:
 
 
     ================= ====================================================
-    ``name``          the name of this ``Image`` - defaults to the image
+    ``name``          The name of this ``Image`` - defaults to the image
                       file name, sans-suffix.
+
+    ``dataSource``    The data source of this ``Image`` - the name of the
+                      file from where it was loaded, or some other string
+                      describing its origin.
+    ================= ====================================================
+
+
+    The ``Image`` class implements the :class:`.Notifier` interface -
+    listeners may register to be notified on the following topics (see
+    the :class:`.Notifier` class documentation):
     
-    ``dataMin``       Minimum value in the image data. This is only
-                      calculated if the ``loadData`` parameter to
-                      :meth:`__init__` is ``True``, or when the
-                      :meth:`loadData` method is called. If this is not 
-                      the case, ``dataMin`` will be ``None``. The
-                      ``dataMin`` value is updated on every call to
-                      :meth:`applyChange`.
-    
-    ``dataMax``       Maximum value in the image data. This is calculated
-                      alongside ``dataMin``.
-    ================= ==================================================== 
+
+    =============== ======================================================
+    ``'data'``      This topic is notified whenever the image data changes
+                    (via the :meth:`applyChange` method).
+    ``'saveState'`` This topic is notified whenever the saved state of the
+                    image changes (i.e. it is edited, or saved to disk).
+    ``'dataRange'`` This topic is notified whenever the image data range
+                    is changed/adjusted.
+    =============== ======================================================
     """
 
 
-    data = props.Object()
-    """The image data. This is a read-only :mod:`numpy` array - all changes
-       to the image data must be via the :meth:`applyChange` method.
-    """
-
-
-    saved = props.Boolean(default=False)
-    """A read-only property (not enforced) which is ``True`` if the image,
-    as stored in memory, is saved to disk, ``False`` otherwise.
-    """
-
-
-    dataRange = props.Bounds(ndims=1, default=(np.inf, -np.inf))
-    """A read-only property (not enforced) which contains the image
-    data range. This property is updated every time the image data
-    is changed (via :meth:`applyChange`).
-    """
-
-
-    def __init__(self, image, name=None, **kwargs):
+    def __init__(self, image, name=None, header=None, xform=None):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:    A string containing the name of an image file to load, 
@@ -402,10 +334,44 @@ class Image(Nifti1, props.HasProperties):
 
         :arg name:     A name for the image.
 
-        All other arguments are passed through to :meth:`Nifti1.__init__`.
+        :arg header:   If not ``None``, assumed to be a
+                       :class:`nibabel.nifti1.Nifti1Header` to be used as the 
+                       image header. Not applied to images loaded from file,
+                       or existing :mod:`nibabel` images.
+
+        :arg xform:    A :math:`4\\times 4` affine transformation matrix 
+                       which transforms voxel coordinates into real world
+                       coordinates. Only used if ``image`` is a ``numpy``
+                       array, and ``header`` is ``None``.
         """
+
+        import nibabel as nib
+
+        self.name       = None
+        self.dataSource = None
+
+        # The image parameter may be the name of an image file
+        if isinstance(image, six.string_types):
+
+            image           = op.abspath(addExt(image))
+            self.nibImage   = loadImage(image)
+            self.dataSource = image
+ 
+        # Or a numpy array - we wrap it in a nibabel image,
+        # with an identity transformation (each voxel maps
+        # to 1mm^3 in real world space)
+        elif isinstance(image, np.ndarray):
+
+            if   header is not None: xform = header.get_best_affine()
+            elif xform  is     None: xform = np.identity(4)
                     
-        Nifti1.__init__(self, image, **kwargs)
+            self.nibImage = nib.nifti1.Nifti1Image(image,
+                                                   xform,
+                                                   header=header)
+            
+        # otherwise, we assume that it is a nibabel image
+        else:
+            self.nibImage = image
 
         # Figure out the name of this image.
         # It might have been explicitly passed in
@@ -416,7 +382,6 @@ class Image(Nifti1, props.HasProperties):
         # from disk, use the file name
         elif isinstance(image, six.string_types):
             self.name  = removeExt(op.basename(self.dataSource))
-            self.saved = True
             
         # Or the image was created from a numpy array
         elif isinstance(image, np.ndarray):
@@ -425,6 +390,8 @@ class Image(Nifti1, props.HasProperties):
         # Or image from a nibabel image
         else:
             self.name = 'Nibabel image'
+ 
+        Nifti1.__init__(self, self.nibImage.get_header())
 
 
     def __hash__(self):
@@ -682,61 +649,13 @@ def addExt(prefix, mustExist=True):
 
 
 def loadImage(filename):
-    """Given the name of an image file, loads it using nibabel.
-
-    If the file is large, and is gzipped, it is decompressed to a temporary
-    location, so that it can be memory-mapped.
-
-    In any case, a tuple is returned, consisting of the nibabel image object,
-    and the name of the file that it was loaded from (either the passed-in
-    file name, or the name of the temporary decompressed file).
-
-    .. note:: The decompressing logic has been disabled for the time being.
     """
-
-    # realFilename = filename
-    # mbytes       = op.getsize(filename) / 1048576.0
-
-    # # The mbytes limit is arbitrary
-    # if filename.endswith('.gz') and mbytes > 512:
-
-    #     unzipped, filename = tempfile.mkstemp(suffix='.nii')
-
-    #     unzipped = os.fdopen(unzipped)
-
-    #     msg = fslstrings.messages['image.loadImage.decompress']
-    #     msg = msg.format(op.basename(realFilename), mbytes, filename)
-
-    #     status.update(msg, None)
-
-    #     gzip = ['gzip', '-d', '-c', realFilename]
-    #     log.debug('Running {} > {}'.format(' '.join(gzip), filename))
-
-    #     # If the gzip call fails, revert to loading from the gzipped file
-    #     try:
-    #         sp.call(gzip, stdout=unzipped)
-    #         unzipped.close()
-
-    #     except OSError as e:
-    #         log.warn('gzip call failed ({}) - cannot memory '
-    #                  'map file: {}'.format(e, realFilename),
-    #                  exc_info=True)
-    #         unzipped.close()
-    #         os.remove(filename)
-    #         filename = realFilename
-
+    """
+    
     log.debug('Loading image from {}'.format(filename))
 
     import nibabel as nib
-
-    # if mbytes > 512:
-    #     msg     = fslstrings.messages['image.loadImage.largeFile']
-    #     msg     = msg.format(op.basename(filename),  mbytes)
-    #     status.update(msg)
-    
-    image = nib.load(filename)
-
-    return image, filename
+    return nib.load(filename)
 
 
 def saveImage(image, fromDir=None):
