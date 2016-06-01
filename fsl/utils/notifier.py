@@ -19,11 +19,18 @@ import props
 log = logging.getLogger(__name__)
 
 
+DEFAULT_TOPIC = 'default'
+"""Topic used when the caller does not specify one when registering,
+deregistering, or notifying listeners.
+"""
+
+
 class Notifier(object):
     """The ``Notifier`` class is a mixin which provides simple notification
-    capability. Listeners can be registered/deregistered via the
-    :meth:`register` and :meth:`deregister` methods, and notified via
-    the :meth:`notify` method.
+    capability. Listeners can be registered/deregistered to listen via the
+    :meth:`register` and :meth:`deregister` methods, and notified via the
+    :meth:`notify` method. Listeners can optionally listen on a specific
+    *topic*, or be notified for all topics.
 
     .. note:: The ``Notifier`` class stores ``weakref`` references to
               registered callback functions, using the :class:`WeakFunctionRef`
@@ -35,37 +42,53 @@ class Notifier(object):
         instance.
         """
         new             = object.__new__(cls)
-        new.__listeners = collections.OrderedDict()
+        new.__listeners = collections.defaultdict(collections.OrderedDict)
 
         return new
 
         
-    def register(self, name, callback):
+    def register(self, name, callback, topic=None):
         """Register a listener with this ``Notifier``.
 
         :arg name:     A unique name for the listener.
         :arg callback: The function to call - must accept this ``Notifier``
                        instance as its sole argument.
+        :arg topic:    Optional topic on which fto listen for notifications.
         """
+
+        if topic is None:
+            topic = DEFAULT_TOPIC
 
         # We use a WeakFunctionRef so we can refer to
         # both functions and class/instance methods
-        self.__listeners[name] = props.WeakFunctionRef(callback)
+        self.__listeners[topic][name] = props.WeakFunctionRef(callback)
 
-        log.debug('{}: Registered listener {} (function: {})'.format(
-            type(self).__name__,
-            name,
-            getattr(callback, '__name__', '<callable>')))
+        log.debug('{}: Registered listener {} '
+                  '[topic: {}] (function: {})'.format(
+                      type(self).__name__,
+                      name,
+                      topic, 
+                      getattr(callback, '__name__', '<callable>')))
 
         
-    def deregister(self, name):
+    def deregister(self, name, topic=None):
         """De-register a listener that has been previously registered with
         this ``Notifier``.
 
-        :arg name: Name of the listener to de-register.
+        :arg name:  Name of the listener to de-register.
+        :arg topic: Topic on which the listener was registered.
         """
 
-        callback = self.__listeners.pop(name, None)
+        if topic is None:
+            topic = DEFAULT_TOPIC
+
+        listeners = self.__listeners.get(topic, None)
+
+        # Silently absorb invalid topics
+        if listeners is None:
+            return
+
+        callback = listeners.pop(name, None)
 
         # Silently absorb invalid names - the
         # notify function may have removed gc'd
@@ -73,6 +96,10 @@ class Notifier(object):
         # in the dictionary.
         if callback is None:
             return
+
+        # No more listeners for this topic
+        if len(listeners) == 0:
+            self.__listeners.pop(topic)
         
         callback = callback.function()
 
@@ -81,17 +108,33 @@ class Notifier(object):
         else:
             cbName = '<deleted>'
 
-        log.debug('{}: De-registered listener {} (function: {})'.format(
-            type(self).__name__, name, cbName)) 
+        log.debug('{}: De-registered listener {} '
+                  '[topic: {}] (function: {})'.format(
+                      type(self).__name__,
+                      name,
+                      topic,
+                      cbName)) 
         
 
     def notify(self, *args, **kwargs):
         """Notify all registered listeners of this ``Notifier``.
-        All arguments passed to this method are ignored.
+
+        :args notifier_topic: Must be passed as a keyword argument.
+                              The topic on which to notify. Default
+                              listeners are always notified, regardless
+                              of the specified topic.
+        
+        All other arguments passed to this method are ignored.
         """
 
+        topic     = kwargs.get('notifier_topic', DEFAULT_TOPIC)
+        listeners = [self.__listeners[topic]]
 
-        listeners = list(self.__listeners.items())
+        if topic != DEFAULT_TOPIC:
+            listeners.append(self.__listeners[DEFAULT_TOPIC])
+
+        if sum(map(len, listeners)) == 0:
+            return
 
         if log.getEffectiveLevel() >= logging.DEBUG:
             stack = inspect.stack()
@@ -100,22 +143,24 @@ class Notifier(object):
             srcMod  = '...{}'.format(frame[1][-20:])
             srcLine = frame[2] 
 
-            log.debug('{}: Notifying {} listeners [{}:{}]'.format(
+            log.debug('{}: Notifying {} listeners (topic: {}) [{}:{}]'.format(
                 type(self).__name__,
-                len(listeners),
+                sum(map(len, listeners)),
+                topic,
                 srcMod,
                 srcLine))
+
+        for ldict in listeners:
+            for name, callback in list(ldict.items()):
                 
-        for name, callback in listeners:
+                callback = callback.function()
 
-            callback = callback.function()
-
-            # The callback, or the owner of the
-            # callback function may have been
-            # gc'd - remove it if this is the case.
-            if callback is None:
-                log.debug('Listener {} has been gc\'d - '
-                          'removing from list'.format(name))
-                self.__listeners.pop(name)
-            else:
-                callback(self)
+                # The callback, or the owner of the
+                # callback function may have been
+                # gc'd - remove it if this is the case.
+                if callback is None:
+                    log.debug('Listener {} has been gc\'d - '
+                              'removing from list'.format(name))
+                    ldict.pop(name)
+                else:
+                    callback(self)
