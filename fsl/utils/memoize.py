@@ -21,6 +21,59 @@ import functools
 import six
 
 
+def memoize(args=None, kwargs=None):
+    """Memoize the given function by the value of the input arguments, allowing
+    the caller to specify which positional arguments (by index) and keyword
+    arguments (by name) are used for the comparison.
+
+    If no positional or keyword arguments are specified, the function is
+    memoized on all arguments.
+
+    .. note:: This decorator must always be called with brackets, e.g.::
+                  memoize()
+                  def myfunc():
+                      ...
+
+    :arg args:   A list of positional argument indices.
+    :arg kwargs: A list of keyword argument names.
+    """
+    
+    cache = {}
+
+    def decorator(func):
+        def wrapper(*a, **kwa):
+
+            key = []
+
+            if args   is not None: key += [a[  i] for i in args]
+            if kwargs is not None: key += [kwa[k] for k in kwargs]
+
+            # This decorator was created without
+            # any arguments specified - use all
+            # the arguments as the cache key.
+            if len(key) == 0:
+
+                # Keyword arguments are unordered,
+                # so we'll try and overcome this
+                # by sorting the kwarg dict keys.
+                key = list(a) + list([kwa[k] for k in sorted(kwa.keys)])
+
+            key = tuple(key)
+
+            try:
+                result = cache[key]
+
+            except KeyError:
+
+                result     = func(*a, **kwa)
+                cache[key] = result
+
+            return result
+        return wrapper
+
+    return decorator
+
+
 def memoizeMD5(func):
     """Memoize the given function. Whenever the function is called, an
     md5 digest of its arguments is calculated - if the digest has been
