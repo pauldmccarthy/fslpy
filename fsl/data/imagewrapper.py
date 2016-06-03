@@ -192,54 +192,6 @@ class ImageWrapper(notifier.Notifier):
                 self.__name, self.__range[0], self.__range[1]))
             self.notify()
 
-    
-    # def __updateDataRangeOnWrite(self, oldvals, newvals):
-    #     """Called by :meth:`__setitem__`. Re-calculates the image data
-    #     range, and returns a tuple containing the ``(min, max)`` values.
-    #     """
-
-    #     # The old known image wide data range.
-    #     oldmin, oldmax = self.dataRange
-
-    #     # The data range of the changed sub-array.
-    #     newvalmin = np.nanmin(newvals)
-    #     newvalmax = np.nanmax(newvals)
-
-    #     # Has the entire image been updated?
-    #     wholeImage = tuple(newvals.shape) == tuple(self.image.shape)
-
-    #     # If the minimum of the new values
-    #     # is less than the old image minimum, 
-    #     # then it becomes the new minimum.
-    #     if (newvalmin <= oldmin) or wholeImage:
-    #         newmin = newvalmin
-
-    #     # Or, if the old minimum is being
-    #     # replaced by the new values, we
-    #     # need to re-calculate the minimum
-    #     # from scratch.
-    #     elif np.nanmin(oldvals) == oldmin:
-    #         newmin = None
-
-    #     # Otherwise, the image minimum
-    #     # has not changed.
-    #     else:
-    #         newmin = oldmin
-
-    #     # The same logic applies to the maximum.
-    #     if   (newvalmax >= oldmax) or wholeImage: newmax = newvalmax
-    #     elif np.nanmax(oldvals) == oldmax:        newmax = None
-    #     else:                                     newmax = oldmax
-
-    #     if newmin is not None and np.isnan(newmin): newmin = oldmin
-    #     if newmax is not None and np.isnan(newmax): newmax = oldmax
-
-    #     if newmin != oldmin or newmax != oldmax:
-
-    #         log.debug('Image {} data range adjusted: {} - {}'.format(
-    #             self.__name, newmin, newmax))
-    #         self.notify() 
-    
 
     def __getitem__(self, sliceobj):
         """
@@ -271,16 +223,3 @@ class ImageWrapper(notifier.Notifier):
             self.__updateDataRangeOnRead(slices, data)
 
         return data
-
-
-    # def __setitem__(self, sliceobj, values):
-        
-    #     sliceobj = nib.fileslice.canonical_slicers(
-    #         sliceobj, self.__image.shape)
-
-    #     # This will cause the whole image to be
-    #     # loaded into memory and cached by nibabel
-    #     # (if it has not already done so).
-    #     self.__image.get_data()[sliceobj] = values
-
-    #     self.__updateDataRangeOnWrite(values)

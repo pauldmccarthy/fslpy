@@ -33,8 +33,6 @@ file names:
 
 
 import               logging
-import               string
-import               os 
 import os.path    as op
 
 import               six 
@@ -548,32 +546,6 @@ class Image(Nifti1, notifier.Notifier):
         """
         return self.__imageWrapper.__getitem__(sliceobj)
 
-        
-    # def __setitem__(self, sliceobj, values):
-    #     """Changes the image data according to the given new values.
-    #     Any listeners registered on the :attr:`data` property will be
-    #     notified of the change.
-
-    #     :arg sliceobj:  Something with which the image array can be sliced.
-        
-    #     :arg values:    A numpy array containing the new image values.
-    #     """
-        
-    #     if values.size == 0:
-    #         return
-
-    #     self.__imageWrapper.__setitem__(sliceobj, values)
-    #     self.__saveState = False
-
-
-    # def save(self):
-    #     """Convenience method to save any changes made to the :attr:`data` of 
-    #     this :class:`Image` instance.
-
-    #     See the :func:`saveImage` function.
-    #     """
-    #     return saveImage(self)
-
 
 class ProxyImage(Image):
     """The ``ProxyImage`` class is a simple wrapper around an :class:`Image`
@@ -665,115 +637,3 @@ def addExt(prefix, mustExist=True):
                           ALLOWED_EXTENSIONS,
                           mustExist,
                           DEFAULT_EXTENSION)
-
-
-def saveImage(image, fromDir=None):
-    """Convenience function for interactively saving changes to an image.
-
-    If the :mod:`wx` package is available, a dialog is popped up, prompting
-    the user to select a destination. Or, if the image has been loaded 
-    from a file, the user is prompted to confirm that they want to overwrite  
-    the image.
-
-
-    :arg image:           The :class:`.Image` instance to be saved.
-
-    :arg fromDir:         Directory in which the file dialog should start.
-                          If ``None``, the most recently visited directory
-                          (via this method) is used, or the directory from
-                          the given image, or the current working directory.
-
-    :raise ImportError:  if :mod:`wx` is not present.
-    :raise RuntimeError: if a :class:`wx.App` has not been created.
-    """
-
-    if image.saved:
-        return
-    
-    import wx
-
-    app = wx.GetApp()
-
-    if app is None:
-        raise RuntimeError('A wx.App has not been created') 
-
-    lastDir = getattr(saveImage, 'lastDir', None)
-
-    if lastDir is None:
-        if image.dataSource is None: lastDir = os.getcwd()
-        else:                        lastDir = op.dirname(image.dataSource)
-
-    if image.dataSource is None:
-        filename = image.name
-
-        # Make sure the image name is safe to
-        # use as a file name - replace all
-        # non-alphanumeric/-/_ characters with _.
-        safechars = string.letters + string.digits + '_-'
-        filename  = ''.join([c if c in safechars else '_' for c in filename])
-    else:
-        filename = op.basename(image.dataSource)
-
-    filename = removeExt(filename)
-
-    saveLastDir = False
-    if fromDir is None:
-        fromDir = lastDir
-        saveLastDir = True
-
-    dlg = wx.FileDialog(app.GetTopWindow(),
-                        message='Save image file',
-                        defaultDir=fromDir,
-                        defaultFile=filename, 
-                        style=wx.FD_SAVE)
-
-    if dlg.ShowModal() != wx.ID_OK: return False
-
-    if saveLastDir: saveImage.lastDir = lastDir
-
-    path     = dlg.GetPath()
-    nibImage = image.nibImage
-
-    # Add a file extension if not specified
-    if not looksLikeImage(path):
-        path = addExt(path, False)
-
-    # this is an image which has been
-    # loaded from a file, and ungzipped
-    # to a temporary location
-    try:
-        if image.tempFile is not None:
-
-            # if selected path is same as original path,
-            # save to both temp file and to path
-
-            # else, if selected path is different from
-            # original path, save to temp file and to
-            # new path, and update the path
-
-            # actually, the two behaviours just described
-            # are identical
-            log.warn('Saving large images is not yet functional')
-            pass
-
-        # this is just a normal image
-        # which has been loaded from
-        # a file, or an in-memory image
-        else:
-
-            log.debug('Saving image ({}) to {}'.format(image, path))
-
-            import nibabel as nib
-            nib.save(nibImage, path)
-            image.dataSource = path
-            
-    except Exception as e:
-
-        msg = 'An error occurred saving the file. Details: {}'.format(e.msg)
-        log.warn(msg)
-        wx.MessageDialog(app.GetTopWindow(),
-                         message=msg,
-                         style=wx.OK | wx.ICON_ERROR).ShowModal()
-        return
-
-    image.saved = True
