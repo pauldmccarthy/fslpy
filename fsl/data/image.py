@@ -343,7 +343,8 @@ class Image(Nifti1, notifier.Notifier):
                  name=None,
                  header=None,
                  xform=None,
-                 loadData=True):
+                 loadData=True,
+                 calcRange=False):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:     A string containing the name of an image file to load, 
@@ -363,13 +364,17 @@ class Image(Nifti1, notifier.Notifier):
                         array, and ``header`` is ``None``.
 
         :arg loadData:  If ``True`` (the default) the image data is loaded
-                        immediately (although see the note above about large
-                        compressed files). Otherwise, only the image header
-                        information is read - the data may be loaded later on
-                        via the :meth:`loadData` method. In this case, the
-                        reported ``dataRange`` will be ``(None, None)``, and
-                        ``data`` will be ``None``, until the image data is
-                        loaded via a call to :meth:``loadData``.
+                        in to memory.  Otherwise, only the image header
+                        information is read, and the image data is kept
+                        from disk. In either case, the image data is
+                        accessed through an :class:`.ImageWrapper` instance.
+                        The data may be loaded into memory later on via the
+                        :meth:`loadData` method. 
+
+        :arg calcRange: If ``True``, the image range is calculated immediately.
+                        Otherwise (the default), the image range is
+                        incrementally updated as more data is read from memory
+                        or disk.
         """
 
         import nibabel as nib
@@ -420,12 +425,18 @@ class Image(Nifti1, notifier.Notifier):
         self.__dataSource   = dataSource
         self.__nibImage     = nibImage
         self.__saveState    = dataSource is not None
-        self.__imageWrapper = None
+        self.__imageWrapper = imagewrapper.ImageWrapper(self.nibImage,
+                                                        self.name,
+                                                        loadData=loadData)
 
-        if loadData:
-            self.loadData()
-            
+        if calcRange:
+            self.calcRange()
 
+        self.__imageWrapper.register(
+            '{}_{}'.format(id(self), self.name),
+            self.__dataRangeChanged) 
+
+        
     def __hash__(self):
         """Returns a number which uniquely idenfities this ``Image`` instance
         (the result of ``id(self)``).
@@ -478,49 +489,63 @@ class Image(Nifti1, notifier.Notifier):
     def dataRange(self):
         """
         """
-        if self.__imageWrapper is None: return (None, None)
-        else:                           return self.__imageWrapper.dataRange
+        if self.__imageWrapper is None: drange = (None, None)
+        else:                           drange = self.__imageWrapper.dataRange
+
+
+        # Fall back to the cal_min/max
+        # fields in the NIFTI1 header
+        # if we don't yet know anything
+        # about the image data range.
+        if drange[0] is None or drange[1] is None:
+            drange = (self.header.get('cal_min', None),
+                      self.header.get('cal_max', None))
+
+        return drange
+
+    
+    @property
+    def dtype(self):
+        """Returns the ``numpy`` data type of the image data. """
+        
+        # Get the data type from the
+        # first voxel in the image
+        coords = [0] * len(self.__nibImage.shape)
+        return self.__nibImage.dataobj[tuple(coords)].dtype
 
 
     def __dataRangeChanged(self, *args, **kwargs):
-        self.notify('dataRange')
- 
-
-    def loadData(self):
-        """Calculates initial values for :attr:`dataRange`.
+        """Called when the :class:`.ImageWrapper` data range changes.
+        Notifies any listeners of this ``Image`` (registered through the
+        :class:`.Notifier` interface) on the ``'dataRange'`` topic.
         """
+        self.notify('dataRange')
 
-        if self.__imageWrapper is not None:
-            raise RuntimeError('loadData can only be called once')
 
-        self.__imageWrapper = imagewrapper.ImageWrapper(
-            self.nibImage, self.name)
-        
-        self.__imageWrapper.register('{}_{}'.format(id(self), self.name),
-                                                    self.__dataRangeChanged)
+    def calcRange(self, sizethres=None):
 
-        # How big is this image? If it's not too big,
-        # then we'll calculate the actual data range
-        # right now.
-        # 
-        # This hard-coded threshold is equal to twice
-        # the number of voxels in the MNI152 T1 0.5mm
-        # standard image. Any bigger than this, and
-        # we'll calculate the range from a sample:
-        #
         # The ImageWrapper automatically calculates
         # the range of the specified slice, whenever
         # it gets indexed. All we have to do is
         # access a portion of the data to trigger the
-        # range calculation.
-        #
-        # Note: Only 3D/4D images supported here
-#         if   np.prod(self.shape) < 115536512: self.__imageWrapper[:]
-#         elif len(self.shape) >= 4:            self.__imageWrapper[:, :, :, 0]
-#         else:                                 self.__imageWrapper[:, :, 0]
+        # range calculation. 
+
+        # If an image size threshold has not been specified,
+        # then we'll calculate the full data range right now.
+        if sizethres is None:
+            self.__imageWrapper[:]
+
+        # Otherwise if the number of values in the
+        # image is bigger than the size threshold, 
+        # we'll calculate the range from a sample:
+        elif np.prod(self.shape) < sizethres:
+            if len(self.shape) == 3: self.__imageWrapper[:, :, 0]
+            else:                    self.__imageWrapper[:, :, :, 0]
 
 
     def __getitem__(self, sliceobj):
+        """
+        """
         return self.__imageWrapper.__getitem__(sliceobj)
 
         
