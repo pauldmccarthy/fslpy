@@ -21,13 +21,16 @@ import functools
 import six
 
 
+# TODO Make this a class, and add
+#      a "clearCache" method to it.
 def memoize(args=None, kwargs=None):
     """Memoize the given function by the value of the input arguments, allowing
     the caller to specify which positional arguments (by index) and keyword
     arguments (by name) are used for the comparison.
 
     If no positional or keyword arguments are specified, the function is
-    memoized on all arguments.
+    memoized on all arguments. Note that the arguments used for memoization
+    must be hashable, as they are used as keys in a dictionary..
 
     .. note:: This decorator must always be called with brackets, e.g.::
                   memoize()

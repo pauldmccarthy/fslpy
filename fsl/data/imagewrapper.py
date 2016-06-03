@@ -21,14 +21,23 @@ log = logging.getLogger(__name__)
 
 
 class ImageWrapper(notifier.Notifier):
+    """
 
-    def __init__(self, image, name=None):
+    Incrementally updates the data range as more image data is accessed.
+    """
+
+    def __init__(self, image, name=None, loadData=False):
         """
 
-        :arg image: A ``nibabel.Nifti1Image``.
+        :arg image:    A ``nibabel.Nifti1Image``.
 
-        :arg name:  A name for this ``ImageWrapper``, solely used for debug
-                    log messages.
+        :arg name:     A name for this ``ImageWrapper``, solely used for debug
+                       log messages.
+
+        :arg loadData: If ``True``, the image data is loaded into memory.
+                       Otherwise it is kept on disk (and data access is
+                       performed through the ``nibabel.Nifti1Image.dataobj``
+                       array proxy).
         """
         
         self.__image = image
@@ -44,16 +53,59 @@ class ImageWrapper(notifier.Notifier):
         # the same part of the image. This is a list of
         # (low, high) pairs, one pair for each dimension
         # in the image data.
-        self.__rangeCover = [[-1, -1] for i in range(len(image.shape))]
+        self.__sliceCoverage = [[None, None] for i in range(len(image.shape))]
+
+        if loadData:
+            self.loadData()
 
         
     @property
     def dataRange(self):
+        """Returns the currently known data range as a tuple of ``(min, max)``
+        values.
+
+        If the data range is completely unknown, returns ``(None, None)``.
+        """
         return tuple(self.__range)
 
 
-    def __rangeCovered(self, slices):
-        """Returns ``True`` if the range for the image data calculated by
+    def loadData(self):
+        """Forces all of the image data to be loaded into memory.
+
+        .. note:: This method will be called by :meth:`__init__` if its
+                  ``loadData`` parameter is ``True``.
+        """
+
+        # If the data is not already
+        # loaded, this will cause 
+        # nibabel to load and cache it
+        self.__image.get_data()
+
+
+    def __sanitiseSlices(self, slices):
+        """Turns an array slice object into a tuple of (low, high) index
+        pairs, one pair for each dimension in the image data.
+        """
+        
+        indices = []
+
+        for dim, s in enumerate(slices):
+
+            # each element in the slices tuple should 
+            # be a slice object or an integer
+            if isinstance(s, slice): i = [s.start, s.stop]
+            else:                    i = [s,       s + 1]
+
+            if i[0] is None: i[0] = 0
+            if i[1] is None: i[1] = self.__image.shape[dim]
+
+            indices.append(tuple(i))
+
+        return tuple(indices)
+
+
+    def __sliceCovered(self, slices):
+        """Returns ``True`` if the portion of the image data calculated by
         the given ``slices` has already been calculated, ``False`` otherwise.
         """
 
@@ -62,12 +114,15 @@ class ImageWrapper(notifier.Notifier):
 
         # TODO You could adjust the slice so that 
         #      it only spans the portion of the 
-        #      image that has not yet been covered.
+        #      image that has not yet been covered,
+        #      and return it to minimise the portion
+        #      of the image over which the range is
+        #      updated.
         for dim, size in enumerate(self.__image.shape):
 
-            lowCover, highCover = self.__rangeCover[dim]
+            lowCover, highCover = self.__sliceCoverage[dim]
 
-            if lowCover == -1 or highCover == -1:
+            if lowCover is None or highCover is None:
                 return False
 
             lowSlice, highSlice = slices[dim]
@@ -81,27 +136,41 @@ class ImageWrapper(notifier.Notifier):
         return True
 
 
-    def __updateCoveredRange(self, slices):
+    def __updateSliceCoverage(self, slices):
         """
         """
 
-        for dim, (lowSlice, highSlice) in enumerate(slices):
+        for dim, (lowSlc, highSlc) in enumerate(slices):
 
-            lowCover, highCover = self.__rangeCover[dim]
+            lowCov, highCov = self.__sliceCoverage[dim]
 
-            if lowSlice  is None: lowSlice  = 0
-            if highSlice is None: highSlice = self.__image.shape[dim]
+            if lowSlc  is None: lowSlc  = 0
+            if highSlc is None: highSlc = self.__image.shape[dim]
 
-            if lowSlice  < lowCover:  lowCover  = lowSlice
-            if highSlice > highCover: highCover = highSlice
+            if lowCov  is None or lowSlc  < lowCov:  lowCov  = lowSlc
+            if highCov is None or highSlc > highCov: highCov = highSlc
 
-            self.__rangeCover[dim] = [lowCover, highCover]
+            self.__sliceCoverage[dim] = [lowCov, highCov]
 
 
     @memoize.Instanceify(memoize.memoize(args=[0]))
-    def __updateRangeOnRead(self, slices, data):
+    def __updateDataRangeOnRead(self, slices, data):
+        """
+
+        :arg slices: A sequence of ``(low, high)`` index pairs, one for each
+                     dimension in the image. Tuples are used instead of
+                     ``slice`` objects, because this method is memoized (and
+                     ``slice`` objects are unhashable).
+        """
 
         oldmin, oldmax = self.__range
+
+        log.debug('Updating image {} data range (current range: '
+                  '[{}, {}]; current coverage: {})'.format(
+                      self.__name,
+                      self.__range[0],
+                      self.__range[1],
+                      self.__sliceCoverage))
 
         dmin = np.nanmin(data)
         dmax = np.nanmax(data)
@@ -116,16 +185,15 @@ class ImageWrapper(notifier.Notifier):
         else:             newmax = oldmax
 
         self.__range = (newmin, newmax)
-        self.__updateCoveredRange(slices)
+        self.__updateSliceCoverage(slices)
 
         if newmin != oldmin or newmax != oldmax:
-
-            log.debug('Image {} data range adjusted: {} - {}'.format(
-                self.__name, newmin, newmax))
+            log.debug('Image {} range changed: [{}, {}]'.format(
+                self.__name, self.__range[0], self.__range[1]))
             self.notify()
 
     
-    # def __updateRangeOnWrite(self, oldvals, newvals):
+    # def __updateDataRangeOnWrite(self, oldvals, newvals):
     #     """Called by :meth:`__setitem__`. Re-calculates the image data
     #     range, and returns a tuple containing the ``(min, max)`` values.
     #     """
@@ -180,7 +248,10 @@ class ImageWrapper(notifier.Notifier):
         sliceobj = nib.fileslice.canonical_slicers(
             sliceobj, self.__image.shape)
 
-        # If the image has noy been loaded
+        # TODO Cache 3D images for large 4D volumes, 
+        #      so you don't have to hit the disk
+
+        # If the image has not been loaded
         # into memory,  we can use the nibabel
         # ArrayProxy. Otheriwse if it is in
         # memory, we can access it directly.
@@ -190,16 +261,14 @@ class ImageWrapper(notifier.Notifier):
         # will give us out-of-date values (as
         # the ArrayProxy reads from disk). So
         # we have to read from the in-memory
-        # array.
+        # array to get changed values.
         if self.__image.in_memory: data = self.__image.get_data()[sliceobj]
         else:                      data = self.__image.dataobj[   sliceobj]
 
-        slices = tuple((s.start, s.stop) if isinstance(s, slice)
-                  else (s, s + 1)
-                  for s in sliceobj)
+        slices = self.__sanitiseSlices(sliceobj)
 
-        if not self.__rangeCovered(slices):
-            self.__updateRangeOnRead(slices, data)
+        if not self.__sliceCovered(slices):
+            self.__updateDataRangeOnRead(slices, data)
 
         return data
 
@@ -214,4 +283,4 @@ class ImageWrapper(notifier.Notifier):
     #     # (if it has not already done so).
     #     self.__image.get_data()[sliceobj] = values
 
-    #     self.__updateRangeOnWrite(values)
+    #     self.__updateDataRangeOnWrite(values)
