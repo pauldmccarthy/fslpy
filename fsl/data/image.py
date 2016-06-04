@@ -285,7 +285,8 @@ class Nifti1(object):
 
 class Image(Nifti1, notifier.Notifier):
     """Class which represents a 3D/4D NIFTI1 image. Internally, the image
-    is loaded/stored using :mod:`nibabel`.
+    is loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image`, and data
+    access managed by a :class:`.ImageWrapper`.
 
     
     .. todo:: If the image appears to be large, it is loaded using the
@@ -294,7 +295,7 @@ class Image(Nifti1, notifier.Notifier):
 
     
     In addition to the attributes added by the :meth:`Nifti1.__init__` method,
-    the following attributes are present on an ``Image`` instance as
+    the following read-only properties are present on an ``Image`` instance as
     properties (https://docs.python.org/2/library/functions.html#property):
 
 
@@ -312,9 +313,11 @@ class Image(Nifti1, notifier.Notifier):
                    saved to disk, ``False`` if it is in-memory, or has
                    been edited.
     
-    ``dataRange``  The minimum/maximum values in the image. This may not
-                   be accurate, and may also change as more image data
-                   is loaded from disk.
+    ``dataRange``  The minimum/maximum values in the image. Depending upon
+                   the value of the ``calcRange`` parameter to
+                   :meth:`__init__`, this may be calculated when the ``Image``
+                   is created, or may be incrementally updated as more image 
+                   data is loaded from disk.
     ============== ======================================================
 
     
@@ -323,6 +326,7 @@ class Image(Nifti1, notifier.Notifier):
     by registering on the following _topic_ names (see the :class:`.Notifier`
     class documentation):
 
+    
     =============== ======================================================
     ``'data'``      This topic is notified whenever the image data changes
                     (via the :meth:`__setitem__` method).
@@ -342,7 +346,7 @@ class Image(Nifti1, notifier.Notifier):
                  header=None,
                  xform=None,
                  loadData=True,
-                 calcRange=False):
+                 calcRange=True):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:     A string containing the name of an image file to load, 
@@ -369,10 +373,10 @@ class Image(Nifti1, notifier.Notifier):
                         The data may be loaded into memory later on via the
                         :meth:`loadData` method. 
 
-        :arg calcRange: If ``True``, the image range is calculated immediately.
-                        Otherwise (the default), the image range is
-                        incrementally updated as more data is read from memory
-                        or disk.
+        :arg calcRange: If ``True`` (the default), the image range is
+                        calculated immediately (vi a call to :meth:`calcRange`).
+                        Otherwise, the image range is incrementally updated as
+                        more data is read from memory or disk.
         """
 
         import nibabel as nib
@@ -456,21 +460,21 @@ class Image(Nifti1, notifier.Notifier):
 
     @property
     def name(self):
-        """
-        """
+        """Returns the name of this ``Image``. """
         return self.__name
 
     
     @property
     def dataSource(self):
-        """
+        """Returns the data source (e.g. file name) that this ``Image`` was
+        loaded from (``None`` if this image only exists in memory).
         """
         return self.__dataSource
 
     
     @property
     def nibImage(self):
-        """
+        """Returns a reference to the ``nibabel.nifti1.Nifti1Image`` instance.
         """
         return self.__nibImage
 
@@ -485,11 +489,16 @@ class Image(Nifti1, notifier.Notifier):
     
     @property
     def dataRange(self):
-        """
+        """Returns the image data range as a  ``(min, max)`` tuple. If the
+        ``calcRange`` parameter to :meth:`__init__` was ``False``, these
+        values may not be accurate, and may change as more image data is
+        accessed.
+
+        If the data range has not been no data has been accessed,
+        ``(None, None)`` is returned.
         """
         if self.__imageWrapper is None: drange = (None, None)
         else:                           drange = self.__imageWrapper.dataRange
-
 
         # Fall back to the cal_min/max
         # fields in the NIFTI1 header
@@ -521,6 +530,14 @@ class Image(Nifti1, notifier.Notifier):
 
 
     def calcRange(self, sizethres=None):
+        """Forces calculation of the image data range.
+
+        :arg sizethres: If not ``None``, specifies an image size threshold
+                        (threshold on the number of values). If the number
+                        of values in the image is greater than this threshold,
+                        the range is calculated on a sample (the first volume
+                        for a 4D image, or slice for a 3D image).
+        """
 
         # The ImageWrapper automatically calculates
         # the range of the specified slice, whenever
@@ -542,7 +559,9 @@ class Image(Nifti1, notifier.Notifier):
 
 
     def __getitem__(self, sliceobj):
-        """
+        """Access the image data with the specified ``sliceobj``.
+
+        :arg sliceobj: Something which can slice the image data.
         """
         return self.__imageWrapper.__getitem__(sliceobj)
 

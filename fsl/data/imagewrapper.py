@@ -4,7 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`ImageWrapper` class,
+"""This module provides the :class:`ImageWrapper` class, which can be used
+to manage data access to ``nibabel`` NIFTI images.
 """
 
 
@@ -21,13 +22,27 @@ log = logging.getLogger(__name__)
 
 
 class ImageWrapper(notifier.Notifier):
-    """
+    """The ``ImageWrapper`` class is a convenience class which manages data
+    access to ``nibabel`` NIFTI images. The ``ImageWrapper`` class can be
+    used to:
+    
+      - Control whether the image is loaded into memory, or kept on disk
+    
+      - Incrementally update the known image  data range, as more image
+        data is read in.
 
-    Incrementally updates the data range as more image data is accessed.
+
+    The ``ImageWrapper`` implements the :class:`.Notifier` interface.
+    Listeners can register to be notified whenever the known image data range
+    is updated. The data range can be accessed via the :attr:`dataRange`
+    property.
+
+
+    .. todo:: Figure out if NIFTI2 can be supported as well.
     """
 
     def __init__(self, image, name=None, loadData=False):
-        """
+        """Create an ``ImageWrapper``.
 
         :arg image:    A ``nibabel.Nifti1Image``.
 
@@ -137,7 +152,11 @@ class ImageWrapper(notifier.Notifier):
 
 
     def __updateSliceCoverage(self, slices):
-        """
+        """Updates the known portion of the image (with respect to the image
+        data range) according to the given set of slice indices.
+
+        :arg slices: A sequence of ``(low, high)`` index pairs, one for each
+                     dimension in the image. 
         """
 
         for dim, (lowSlc, highSlc) in enumerate(slices):
@@ -155,7 +174,10 @@ class ImageWrapper(notifier.Notifier):
 
     @memoize.Instanceify(memoize.memoize(args=[0]))
     def __updateDataRangeOnRead(self, slices, data):
-        """
+        """Called by :meth:`__getitem__`. Calculates the minimum/maximum
+        values of the given data (which has been extracted from the portion of
+        the image specified by ``slices``), and updates the known data range
+        of the image.
 
         :arg slices: A sequence of ``(low, high)`` index pairs, one for each
                      dimension in the image. Tuples are used instead of
@@ -194,14 +216,22 @@ class ImageWrapper(notifier.Notifier):
 
 
     def __getitem__(self, sliceobj):
-        """
+        """Returns the image data for the given ``sliceobj``, and updates
+        the known image data range if necessary.
+
+        .. note:: If the image data is in memory, it is accessed 
+                  directly, via the ``nibabel.Nifti1Image.get_data`` 
+                  method. Otherwise the image data is accessed through 
+                  the ``nibabel.Nifti1Image.dataobj`` array proxy.
+
+        :arg sliceobj: Something which can slice the image data.
         """
 
         sliceobj = nib.fileslice.canonical_slicers(
             sliceobj, self.__image.shape)
 
         # TODO Cache 3D images for large 4D volumes, 
-        #      so you don't have to hit the disk
+        #      so you don't have to hit the disk?
 
         # If the image has not been loaded
         # into memory,  we can use the nibabel
