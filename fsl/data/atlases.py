@@ -296,7 +296,7 @@ class AtlasDescription(object):
             imagefile        = op.join(ATLAS_DIR, '.' + imagefile)
             summaryimagefile = op.join(ATLAS_DIR, '.' + summaryimagefile)
 
-            i = fslimage.Image(imagefile, loadData=False)
+            i = fslimage.Image(imagefile, loadData=False, calcRange=False)
 
             self.images       .append(imagefile)
             self.summaryImages.append(summaryimagefile)
@@ -425,7 +425,7 @@ class LabelAtlas(Atlas):
            voxelLoc[2] >= self.shape[2]:
             return np.nan        
         
-        val = self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
+        val = self[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
 
         if self.desc.atlasType == 'label':
             return val
@@ -473,7 +473,7 @@ class ProbabilisticAtlas(Atlas):
            voxelLoc[2] >= self.shape[2]:
             return []
         
-        return self.data[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
+        return self[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
 
 
 

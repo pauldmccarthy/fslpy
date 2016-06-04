@@ -313,12 +313,12 @@ class FEATImage(fslimage.Image):
             raise ValueError('Contrast is wrong length')
         
         X        = self.__design.getDesign(xyz)
-        data     = self.data[x, y, z, :]
+        data     = self[x, y, z, :]
         modelfit = np.zeros(len(data))
 
         for i in range(numEVs):
 
-            pe        = self.getPE(i).data[x, y, z]
+            pe        = self.getPE(i)[x, y, z]
             modelfit += X[:, i] * pe * contrast[i]
 
         return modelfit + data.mean()
@@ -332,7 +332,7 @@ class FEATImage(fslimage.Image):
         """
 
         x, y, z   = xyz
-        residuals = self.getResiduals().data[x, y, z, :]
+        residuals = self.getResiduals()[x, y, z, :]
         modelfit  = self.fit(contrast, xyz, fullmodel)
 
         return residuals + modelfit

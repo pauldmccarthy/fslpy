@@ -374,9 +374,10 @@ class Image(Nifti1, notifier.Notifier):
                         :meth:`loadData` method. 
 
         :arg calcRange: If ``True`` (the default), the image range is
-                        calculated immediately (vi a call to :meth:`calcRange`).
-                        Otherwise, the image range is incrementally updated as
-                        more data is read from memory or disk.
+                        calculated immediately (vi a call to
+                        :meth:`calcRange`). Otherwise, the image range is
+                        incrementally updated as more data is read from memory
+                        or disk.
         """
 
         import nibabel as nib

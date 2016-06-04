@@ -194,8 +194,8 @@ class ImageWrapper(notifier.Notifier):
                       self.__range[1],
                       self.__sliceCoverage))
 
-        dmin = np.nanmin(data)
-        dmax = np.nanmax(data)
+        dmin = float(np.nanmin(data))
+        dmax = float(np.nanmax(data))
 
         if oldmin is None: oldmin = dmin
         if oldmax is None: oldmax = dmax

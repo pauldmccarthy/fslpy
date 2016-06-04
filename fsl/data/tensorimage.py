@@ -125,7 +125,9 @@ class TensorImage(fslimage.Nifti1):
         else:
             paths = path
 
-        fslimage.Nifti1.__init__(self, paths['l1'], loadData=False)
+        fslimage.Nifti1.__init__(self, paths['l1'],
+                                 loadData=False,
+                                 calcRange=False)
 
         self.__v1 = fslimage.Image(paths['v1'])
         self.__v2 = fslimage.Image(paths['v2'])

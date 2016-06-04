@@ -79,7 +79,9 @@ class MelodicImage(fslimage.Image):
         dataFile = self.getDataFile()
 
         if dataFile is not None: 
-            dataImage = fslimage.Image(dataFile, loadData=False)
+            dataImage = fslimage.Image(dataFile,
+                                       loadData=False,
+                                       calcRange=False)
             if dataImage.is4DImage():
                 self.tr = dataImage.pixdim[3]
 

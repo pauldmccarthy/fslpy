@@ -33,8 +33,6 @@ import logging
 import os.path as op
 import numpy   as np
 
-import props
-
 import fsl.utils.path        as fslpath
 import fsl.data.image        as fslimage
 import fsl.data.featanalysis as featanalysis
@@ -159,7 +157,7 @@ def getNumComponents(meldir):
     contained in the given directrory.
     """
 
-    icImg = fslimage.Image(getICFile(meldir), loadData=False)
+    icImg = fslimage.Image(getICFile(meldir), loadData=False, calcRange=False)
     return icImg.shape[3]
 
 
