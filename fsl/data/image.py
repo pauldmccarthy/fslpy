@@ -564,7 +564,15 @@ class Image(Nifti1, notifier.Notifier):
 
         :arg sliceobj: Something which can slice the image data.
         """
-        return self.__imageWrapper.__getitem__(sliceobj)
+        data = self.__imageWrapper.__getitem__(sliceobj)
+
+        if len(data.shape) > len(self.shape):
+
+            shape = data.shape[:len(self.shape)]
+            data  = np.reshape(data, shape)
+
+        return data
+
 
 
 class ProxyImage(Image):
