@@ -40,10 +40,11 @@ def memoize(args=None, kwargs=None):
     :arg args:   A list of positional argument indices.
     :arg kwargs: A list of keyword argument names.
     """
-    
-    cache = {}
 
     def decorator(func):
+
+        cache = {}
+ 
         def wrapper(*a, **kwa):
 
             key = []
