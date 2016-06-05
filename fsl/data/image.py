@@ -295,8 +295,8 @@ class Image(Nifti1, notifier.Notifier):
 
     
     In addition to the attributes added by the :meth:`Nifti1.__init__` method,
-    the following read-only properties are present on an ``Image`` instance as
-    properties (https://docs.python.org/2/library/functions.html#property):
+    the following attributes/properties are present on an ``Image`` instance 
+    as properties (https://docs.python.org/2/library/functions.html#property):
 
 
     ============== ======================================================
@@ -408,23 +408,26 @@ class Image(Nifti1, notifier.Notifier):
         else:
             nibImage = image
 
-        # Figure out the name of this image. If it has
-        # not beenbeen explicitly passed in, and this
-        # image was loaded from disk, use the file name.
-        if name is None and isinstance(image, six.string_types):
-            name = removeExt(op.basename(image))
+        # Figure out the name of this image, if 
+        # it has not beenbeen explicitly passed in
+        if name is None:
             
-        # Or the image was created from a numpy array
-        elif isinstance(image, np.ndarray):
-            name = 'Numpy array'
+            # If this image was loaded
+            # from disk, use the file name.
+            if isinstance(image, six.string_types):
+                name = removeExt(op.basename(image))
             
-        # Or image from a nibabel image
-        else:
-            name = 'Nibabel image'
+            # Or the image was created from a numpy array
+            elif isinstance(image, np.ndarray):
+                name = 'Numpy array'
+            
+            # Or image from a nibabel image
+            else:
+                name = 'Nibabel image'
  
         Nifti1.__init__(self, nibImage.get_header())
 
-        self.__name         = name
+        self.name           = name
         self.__dataSource   = dataSource
         self.__nibImage     = nibImage
         self.__saveState    = dataSource is not None
@@ -457,12 +460,6 @@ class Image(Nifti1, notifier.Notifier):
     def __repr__(self):
         """See the :meth:`__str__` method."""
         return self.__str__()
-
-
-    @property
-    def name(self):
-        """Returns the name of this ``Image``. """
-        return self.__name
 
     
     @property
