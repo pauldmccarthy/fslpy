@@ -12,8 +12,6 @@ sub-class which encapsulates data from a MELODIC analysis.
 
 import os.path as op
 
-import props
-
 from . import image           as fslimage
 from . import melodicanalysis as melanalysis
 from . import melodiclabels   as mellabels
@@ -39,15 +37,14 @@ class MelodicImage(fslimage.Image):
        getTopLevelAnalysisDir
        getDataFile
        getICClassification
-    """
 
 
-    tr = props.Real(default=1.0)
-    """The TR time of the raw data from which this ``MelodicImage`` was
-    generated. If it is possible to do so, this is automatically initialised
-    from the data file (see the :meth:`getDataFile` method).
+    The :attr:`tr` time of the ``MelodicImage`` may not be known when it is
+    created. If it is updated at a later time, the ``MelodicImage`` will
+    notify any listeners which are registerd on the ``'tr'`` topic (see the
+    :class:`.Notifier` interface).
     """
-    
+
 
     def __init__(self, path, *args, **kwargs):
         """Create a ``MelodicImage``.
@@ -69,6 +66,7 @@ class MelodicImage(fslimage.Image):
         fslimage.Image.__init__(self, path, *args, **kwargs)
 
         meldir            = op.dirname(path)
+        self.__tr         = 1.0
         self.__meldir     = meldir
         self.__melmix     = melanalysis.getComponentTimeSeries(  meldir)
         self.__melFTmix   = melanalysis.getComponentPowerSpectra(meldir)
@@ -83,11 +81,32 @@ class MelodicImage(fslimage.Image):
                                        loadData=False,
                                        calcRange=False)
             if dataImage.is4DImage():
-                self.tr = dataImage.pixdim[3]
+                self.__tr = dataImage.pixdim[3]
 
         # TODO load classifications if present
         for i in range(self.numComponents()):
             self.__melICClass.addLabel(i, 'Unknown')
+
+
+    @property
+    def tr(self):
+        """The TR time of the raw data from which this ``MelodicImage`` was
+        generated. If it is possible to do so, this is automatically
+        initialised from the data file (see the :meth:`getDataFile` method).
+        """
+        return self.__tr
+    
+
+    @tr.setter
+    def tr(self, val):
+        """Set the :attr:`tr` time for this ``MelodicImage``. Any listeners
+        registered on the ``'tr'`` topic are notified of the update.
+        """
+        oldval = self.__tr
+        self.__tr = val
+
+        if oldval != val:
+            self.notify('tr')
 
         
     def getComponentTimeSeries(self, component):
