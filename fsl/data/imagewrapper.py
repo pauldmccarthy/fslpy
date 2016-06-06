@@ -224,6 +224,8 @@ class ImageWrapper(notifier.Notifier):
         :arg sliceobj: Something which can slice the image data.
         """
 
+        log.debug('Getting image data: {}'.format(sliceobj))
+
         sliceobj = nib.fileslice.canonical_slicers(
             sliceobj, self.__image.shape)
 

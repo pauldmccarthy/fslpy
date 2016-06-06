@@ -531,29 +531,42 @@ class Image(Nifti1, notifier.Notifier):
         """Forces calculation of the image data range.
 
         :arg sizethres: If not ``None``, specifies an image size threshold
-                        (threshold on the number of values). If the number
-                        of values in the image is greater than this threshold,
-                        the range is calculated on a sample (the first volume
-                        for a 4D image, or slice for a 3D image).
+                        (total number of bytes). If the number of bytes in
+                        the image is greater than this threshold, the range 
+                        is calculated on a sample (the first volume for a
+                        4D image, or slice for a 3D image).
         """
 
         # The ImageWrapper automatically calculates
         # the range of the specified slice, whenever
         # it gets indexed. All we have to do is
         # access a portion of the data to trigger the
-        # range calculation. 
+        # range calculation.
+        nbytes = np.prod(self.shape) * self.dtype.itemsize
 
         # If an image size threshold has not been specified,
         # then we'll calculate the full data range right now.
-        if sizethres is None:
+        if sizethres is None or nbytes < sizethres:
+            log.debug('{}: Forcing calculation of full '
+                      'data range'.format(self.name))
             self.__imageWrapper[:]
+            
+        else:
+            log.debug('{}: Calculating data range '
+                      'from sample'.format(self.name))
 
-        # Otherwise if the number of values in the
-        # image is bigger than the size threshold, 
-        # we'll calculate the range from a sample:
-        elif np.prod(self.shape) < sizethres:
+            # Otherwise if the number of values in the
+            # image is bigger than the size threshold, 
+            # we'll calculate the range from a sample:
             if len(self.shape) == 3: self.__imageWrapper[:, :, 0]
             else:                    self.__imageWrapper[:, :, :, 0]
+
+
+    def loadData(self):
+        """Makes sure that the image data is loaded into memory.
+        See :meth:`.ImageWrapper.loadData`.
+        """
+        self.__imageWrapper.loadData()
 
 
     def __getitem__(self, sliceobj):
