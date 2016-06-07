@@ -16,9 +16,13 @@ a function:
 """
 
 
+import logging
+
 import hashlib
 import functools
 import six
+
+log = logging.getLogger(__name__)
 
 
 # TODO Make this a class, and add
@@ -72,6 +76,9 @@ def memoize(args=None, kwargs=None):
                 result     = func(*a, **kwa)
                 cache[key] = result
 
+                log.debug('Adding to cache[{}]: {}'.format(
+                    key, result))
+
             return result
         return wrapper
 
@@ -103,6 +110,9 @@ def memoizeMD5(func):
             return cached
 
         result = func(*args, **kwargs)
+
+        log.debug('Adding to MD5 cache[{}]: {}'.format(
+            digest, result))
 
         cache[digest] = result
 

@@ -289,11 +289,6 @@ class Image(Nifti1, notifier.Notifier):
     access managed by a :class:`.ImageWrapper`.
 
     
-    .. todo:: If the image appears to be large, it is loaded using the
-              :mod:`indexed_gzip` module. Implement this, and also write
-              a note here about what it means.
-
-    
     In addition to the attributes added by the :meth:`Nifti1.__init__` method,
     the following attributes/properties are present on an ``Image`` instance 
     as properties (https://docs.python.org/2/library/functions.html#property):
@@ -346,7 +341,8 @@ class Image(Nifti1, notifier.Notifier):
                  header=None,
                  xform=None,
                  loadData=True,
-                 calcRange=True):
+                 calcRange=True,
+                 indexed=False):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:     A string containing the name of an image file to load, 
@@ -378,6 +374,10 @@ class Image(Nifti1, notifier.Notifier):
                         :meth:`calcRange`). Otherwise, the image range is
                         incrementally updated as more data is read from memory
                         or disk.
+
+        :arg indexed:   If ``True``, and the file is gzipped, it is opened 
+                        using the :mod:`indexed_gzip` package. Otherwise the
+                        file is opened by ``nibabel``.
         """
 
         import nibabel as nib
@@ -388,8 +388,39 @@ class Image(Nifti1, notifier.Notifier):
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
 
-            image      = op.abspath(addExt(image))
-            nibImage   = nib.load(image)
+            image = op.abspath(addExt(image))
+
+            # Use indexed_gzip to open gzip files
+            # if requested - this provides fast
+            # on-disk access to the compressed
+            # data.
+            #
+            # If using indexed_gzip, we store a
+            # ref to the file object - we'll close
+            # it when we are destroyed.
+            if indexed and image.endswith('.gz'):
+
+                import indexed_gzip as igzip
+
+                log.debug('Loading {} using indexed gzip'.format(image))
+
+                fobj = igzip.IndexedGzipFile(
+                    filename=image,
+                    spacing=4194304,
+                    readbuf_size=131072)
+                
+                fmap = nib.Nifti1Image.make_file_map()
+                fmap['image'].fileobj = fobj
+                nibImage = nib.Nifti1Image.from_file_map(fmap)
+                
+                self.__fileobj = fobj
+
+            # Otherwise we let nibabel
+            # manage the file reference(s)
+            else:
+                nibImage  = nib.load(image)
+                self.__fileobj = None
+                
             dataSource = image
  
         # Or a numpy array - we wrap it in a nibabel image,
@@ -461,6 +492,12 @@ class Image(Nifti1, notifier.Notifier):
         """See the :meth:`__str__` method."""
         return self.__str__()
 
+
+    def __del__(self):
+        """Closes any open file handles. """
+        if self.__fileobj is not None:
+            self.__fileobj.close()
+        
     
     @property
     def dataSource(self):
