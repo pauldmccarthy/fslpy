@@ -58,10 +58,16 @@ class ImageWrapper(notifier.Notifier):
         self.__image = image
         self.__name  = name
 
+        hdr = image.get_header()
+
         # The current known image data range. This
         # gets updated as more image data gets read.
-        self.__range = None, None
-
+        # We default to whatever is stored in the
+        # header (which may or may not contain useful
+        # values).
+        self.__range = (float(hdr['cal_min']),
+                        float(hdr['cal_max']))
+        
         # We record the portions of the image that have
         # been included in the data range calculation, so
         # we do not unnecessarily re-calculate ranges on
@@ -78,8 +84,6 @@ class ImageWrapper(notifier.Notifier):
     def dataRange(self):
         """Returns the currently known data range as a tuple of ``(min, max)``
         values.
-
-        If the data range is completely unknown, returns ``(None, None)``.
         """
         return tuple(self.__range)
 
