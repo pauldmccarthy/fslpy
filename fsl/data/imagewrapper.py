@@ -58,6 +58,18 @@ class ImageWrapper(notifier.Notifier):
         self.__image = image
         self.__name  = name
 
+        # Save the number of 'real' dimensions,
+        # that is the number of dimensions minus
+        # any trailing dimensions of length 1
+        self.__numRealDims = len(image.shape)
+        for d in reversed(image.shape):
+            if d == 1: self.__numRealDims -= 1
+            else:      break
+
+        # And save the number of
+        # 'padding' dimensions too.
+        self.__numPadDims = len(image.shape) - self.__numRealDims
+
         hdr = image.get_header()
 
         # The current known image data range. This
@@ -65,16 +77,26 @@ class ImageWrapper(notifier.Notifier):
         # We default to whatever is stored in the
         # header (which may or may not contain useful
         # values).
-        self.__range = (float(hdr['cal_min']),
-                        float(hdr['cal_max']))
-        
-        # We record the portions of the image that have
+        self.__range = (float(hdr['cal_min']), float(hdr['cal_max']))
+
+        # For each entry in the last (real) dimension of
+        # the image (slice for 3D or volume for 4D), we
+        # record the portions of the image that have
         # been included in the data range calculation, so
         # we do not unnecessarily re-calculate ranges on
-        # the same part of the image. This is a list of
-        # (low, high) pairs, one pair for each dimension
-        # in the image data.
-        self.__sliceCoverage = [[None, None] for i in range(len(image.shape))]
+        # the same part of the image.
+        self.__sliceCoverage = []
+        
+        # This is a list of lists of (low, high) pairs,
+        # one list for each entry in the last dimension
+        # (e.g. one list per 2D slice or 3D volume), and
+        # one pair for each dimension in the entry (e.g.
+        # row/column for each slice, or row/column/depth
+        # for each volume).
+        for i in range(image.shape[self.__numRealDims - 1]):
+
+            cov = [[None, None] for i in range(self.__numRealDims - 1)]
+            self.__sliceCoverage.append(cov)
 
         if loadData:
             self.loadData()
@@ -101,79 +123,26 @@ class ImageWrapper(notifier.Notifier):
         self.__image.get_data()
 
 
-    def __sanitiseSlices(self, slices):
-        """Turns an array slice object into a tuple of (low, high) index
-        pairs, one pair for each dimension in the image data.
+    def __getData(self, sliceobj, isTuple=False):
         """
-        
-        indices = []
-
-        for dim, s in enumerate(slices):
-
-            # each element in the slices tuple should 
-            # be a slice object or an integer
-            if isinstance(s, slice): i = [s.start, s.stop]
-            else:                    i = [s,       s + 1]
-
-            if i[0] is None: i[0] = 0
-            if i[1] is None: i[1] = self.__image.shape[dim]
-
-            indices.append(tuple(i))
-
-        return tuple(indices)
-
-
-    def __sliceCovered(self, slices):
-        """Returns ``True`` if the portion of the image data calculated by
-        the given ``slices` has already been calculated, ``False`` otherwise.
         """
 
-        if self.__range == (None, None):
-            return False
+        if isTuple:
+            sliceobj = sliceTupletoSliceObj(sliceobj)
 
-        # TODO You could adjust the slice so that 
-        #      it only spans the portion of the 
-        #      image that has not yet been covered,
-        #      and return it to minimise the portion
-        #      of the image over which the range is
-        #      updated.
-        for dim, size in enumerate(self.__image.shape):
-
-            lowCover, highCover = self.__sliceCoverage[dim]
-
-            if lowCover is None or highCover is None:
-                return False
-
-            lowSlice, highSlice = slices[dim]
-
-            if lowSlice  is None: lowSlice  = 0
-            if highSlice is None: highSlice = self.__image.shape[dim]
-            
-            if lowSlice  < lowCover:  return False
-            if highSlice > highCover: return False
-
-        return True
-
-
-    def __updateSliceCoverage(self, slices):
-        """Updates the known portion of the image (with respect to the image
-        data range) according to the given set of slice indices.
-
-        :arg slices: A sequence of ``(low, high)`` index pairs, one for each
-                     dimension in the image. 
-        """
-
-        for dim, (lowSlc, highSlc) in enumerate(slices):
-
-            lowCov, highCov = self.__sliceCoverage[dim]
-
-            if lowSlc  is None: lowSlc  = 0
-            if highSlc is None: highSlc = self.__image.shape[dim]
-
-            if lowCov  is None or lowSlc  < lowCov:  lowCov  = lowSlc
-            if highCov is None or highSlc > highCov: highCov = highSlc
-
-            self.__sliceCoverage[dim] = [lowCov, highCov]
+        # If the image has not been loaded
+        # into memory,  we can use the nibabel
+        # ArrayProxy. Otheriwse if it is in
+        # memory, we can access it directly.
+        #
+        # Furthermore, if it is in memory and
+        # has been modified, the ArrayProxy
+        # will give us out-of-date values (as
+        # the ArrayProxy reads from disk). So
+        # we have to read from the in-memory
+        # array to get changed values.
+        if self.__image.in_memory: return self.__image.get_data()[sliceobj]
+        else:                      return self.__image.dataobj[   sliceobj] 
 
 
     @memoize.Instanceify(memoize.memoize(args=[0]))
@@ -187,6 +156,9 @@ class ImageWrapper(notifier.Notifier):
                      dimension in the image. Tuples are used instead of
                      ``slice`` objects, because this method is memoized (and
                      ``slice`` objects are unhashable).
+        
+        :arg data:   The image data at the given ``slices`` (as a ``numpy``
+                     array).
         """
 
         oldmin, oldmax = self.__range
@@ -198,24 +170,42 @@ class ImageWrapper(notifier.Notifier):
                       self.__range[1],
                       self.__sliceCoverage))
 
-        dmin = float(np.nanmin(data))
-        dmax = float(np.nanmax(data))
+        volumes, expansions = calcSliceExpansion(slices,
+                                                 self.__sliceCoverage,
+                                                 self.__numRealDims,
+                                                 self.__numPadDims)
 
-        if oldmin is None or dmin < oldmin: newmin = dmin
-        else:                               newmin = oldmin
+        newmin = oldmin
+        newmax = oldmax
 
-        if oldmax is None or dmax > oldmax: newmax = dmax
-        else:                               newmax = oldmax
+        for vol, exp in zip(volumes, expansions):
+
+            data = self.__getData(exp, isTuple=True)
+            dmin = float(np.nanmin(data))
+            dmax = float(np.nanmax(data))
+
+            if newmin is None or dmin < newmin: newmin = dmin
+            if newmax is None or dmax > newmax: newmax = dmax
 
         self.__range = (newmin, newmax)
-        self.__updateSliceCoverage(slices)
 
+        for vol, exp in zip(volumes, expansions):
+            self.__sliceCoverage[vol] = adjustSliceCoverage(
+                self.__sliceCoverage[vol],
+                exp,
+                self.__numRealDims)
+
+        # TODO floating point error
         if newmin != oldmin or newmax != oldmax:
-            log.debug('Image {} range changed: [{}, {}]'.format(
-                self.__name, self.__range[0], self.__range[1]))
+            log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
+                self.__name,
+                oldmin,
+                oldmax,
+                newmin,
+                newmax))
             self.notify()
 
-
+            
     def __getitem__(self, sliceobj):
         """Returns the image data for the given ``sliceobj``, and updates
         the known image data range if necessary.
@@ -236,23 +226,141 @@ class ImageWrapper(notifier.Notifier):
         # TODO Cache 3D images for large 4D volumes, 
         #      so you don't have to hit the disk?
 
-        # If the image has not been loaded
-        # into memory,  we can use the nibabel
-        # ArrayProxy. Otheriwse if it is in
-        # memory, we can access it directly.
-        #
-        # Furthermore, if it is in memory and
-        # has been modified, the ArrayProxy
-        # will give us out-of-date values (as
-        # the ArrayProxy reads from disk). So
-        # we have to read from the in-memory
-        # array to get changed values.
-        if self.__image.in_memory: data = self.__image.get_data()[sliceobj]
-        else:                      data = self.__image.dataobj[   sliceobj]
+        data = self.__getData(sliceobj)
 
-        slices = self.__sanitiseSlices(sliceobj)
+        # TODO If full range is 
+        #      known, return now.
 
-        if not self.__sliceCovered(slices):
+        slices = sliceObjToSliceTuple(sliceobj, self.__image.shape)
+
+        if not sliceCovered(slices,
+                            self.__sliceCoverage,
+                            self.__image.shape,
+                            self.__numRealDims):
+            
             self.__updateDataRangeOnRead(slices, data)
 
         return data
+
+
+
+def sliceObjToSliceTuple(sliceobj, shape):
+    """Turns an array slice object into a tuple of (low, high) index
+    pairs, one pair for each dimension in the given shape
+    """
+
+    indices = []
+
+    for dim, s in enumerate(sliceobj):
+
+        # each element in the slices tuple should 
+        # be a slice object or an integer
+        if isinstance(s, slice): i = [s.start, s.stop]
+        else:                    i = [s,       s + 1]
+
+        if i[0] is None: i[0] = 0
+        if i[1] is None: i[1] = shape[dim]
+
+        indices.append(tuple(i))
+
+    return tuple(indices)
+
+
+def sliceTupletoSliceObj(slices):
+    """
+    """
+
+    sliceobj = []
+
+    for lo, hi in slices:
+        sliceobj.append(slice(lo, hi, 1))
+
+    return tuple(sliceobj)
+
+
+
+def sliceCovered(slices, sliceCoverage, shape, realDims):
+    """Returns ``True`` if the portion of the image data calculated by
+    the given ``slices` has already been calculated, ``False`` otherwise.
+    """
+
+    lowVol, highVol = slices[realDims - 1]
+    shape           = shape[:realDims - 1]
+
+    for vol in range(lowVol, highVol):
+
+        coverage = sliceCoverage[vol]
+
+        for dim, size in enumerate(shape):
+
+            lowCover, highCover = coverage[dim]
+
+            if lowCover is None or highCover is None:
+                return False
+
+            lowSlice, highSlice = slices[dim]
+
+            if lowSlice  is None: lowSlice  = 0
+            if highSlice is None: highSlice = size
+
+            if lowSlice  < lowCover:  return False
+            if highSlice > highCover: return False
+
+    return True
+
+
+def calcSliceExpansion(slices, sliceCoverage, realDims, padDims):
+    """
+    """
+
+    # One per volume
+    lowVol, highVol = slices[realDims - 1] 
+
+    expansions = []
+    volumes    = list(range(lowVol, highVol))
+
+    # TODO Reduced slice duplication.
+    #      You know what this means.
+
+    for vol in volumes:
+
+        coverage  = sliceCoverage[vol]
+        expansion = []
+
+        for dim in range(realDims - 1):
+
+            lowCover, highCover = coverage[dim]
+            lowSlice, highSlice = slices[  dim]
+
+            if lowCover  is None: lowCover  = lowSlice
+            if highCover is None: highCover = highSlice
+
+            expansion.append((min(lowCover,  lowSlice),
+                              max(highCover, highSlice)))
+
+        expansion.append((vol, vol + 1))
+        for i in range(padDims):
+            expansion.append((0, 1))
+
+        expansions.append(expansion)
+
+    return volumes, expansions
+
+
+def adjustSliceCoverage(oldCoverage, slices, realDims): 
+    """
+    """
+
+    newCoverage = []
+
+    for dim in range(realDims - 1):
+
+        low,      high      = slices[     dim]
+        lowCover, highCover = oldCoverage[dim]
+
+        if lowCover  is None or low  < lowCover:  lowCover  = low
+        if highCover is None or high < highCover: highCover = high
+
+        newCoverage.append((lowCover, highCover))
+
+    return newCoverage
