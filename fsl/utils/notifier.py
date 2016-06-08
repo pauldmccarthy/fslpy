@@ -14,6 +14,7 @@ import inspect
 import collections
 
 import props
+import async
 
 
 log = logging.getLogger(__name__)
@@ -47,13 +48,17 @@ class Notifier(object):
         return new
 
         
-    def register(self, name, callback, topic=None):
+    def register(self, name, callback, topic=None, runOnIdle=False):
         """Register a listener with this ``Notifier``.
 
-        :arg name:     A unique name for the listener.
-        :arg callback: The function to call - must accept this ``Notifier``
-                       instance as its sole argument.
-        :arg topic:    Optional topic on which fto listen for notifications.
+        :arg name:      A unique name for the listener.
+        :arg callback:  The function to call - must accept this ``Notifier``
+                        instance as its sole argument.
+        :arg topic:     Optional topic on which to listen for notifications.
+        :arg runOnIdle: If ``True``, this listener will be called on the main
+                        thread, via the :func:`.async.idle` function.
+                        Otherwise this function will be called directly by the
+                        :meth:`notify` method.
         """
 
         if topic is None:
@@ -61,7 +66,8 @@ class Notifier(object):
 
         # We use a WeakFunctionRef so we can refer to
         # both functions and class/instance methods
-        self.__listeners[topic][name] = props.WeakFunctionRef(callback)
+        self.__listeners[topic][name] = (props.WeakFunctionRef(callback),
+                                         runOnIdle)
 
         log.debug('{}: Registered listener {} '
                   '[topic: {}] (function: {})'.format(
@@ -88,7 +94,7 @@ class Notifier(object):
         if listeners is None:
             return
 
-        callback = listeners.pop(name, None)
+        callback, _ = listeners.pop(name, None)
 
         # Silently absorb invalid names - the
         # notify function may have removed gc'd
@@ -119,12 +125,17 @@ class Notifier(object):
     def notify(self, *args, **kwargs):
         """Notify all registered listeners of this ``Notifier``.
 
-        :args notifier_topic: Must be passed as a keyword argument.
-                              The topic on which to notify. Default
+        The documented arguments must be passed as keyword arguments.
+
+        :args notifier_topic: The topic on which to notify. Default
                               listeners are always notified, regardless
                               of the specified topic.
         
         All other arguments passed to this method are ignored.
+
+        .. note:: Listeners registered with ``runOnIdle=True`` are called
+                  via :func:`async.idle`. Other listeners are called directly.
+                  See :meth:`register`.
         """
 
         topic     = kwargs.get('notifier_topic', DEFAULT_TOPIC)
@@ -151,7 +162,7 @@ class Notifier(object):
                 srcLine))
 
         for ldict in listeners:
-            for name, callback in list(ldict.items()):
+            for name, (callback, runOnIdle) in list(ldict.items()):
                 
                 callback = callback.function()
 
@@ -162,5 +173,6 @@ class Notifier(object):
                     log.debug('Listener {} has been gc\'d - '
                               'removing from list'.format(name))
                     ldict.pop(name)
-                else:
-                    callback(self)
+                    
+                elif runOnIdle: async.idle(callback, self)
+                else:           callback(self)

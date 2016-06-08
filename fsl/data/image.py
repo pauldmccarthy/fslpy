@@ -540,8 +540,8 @@ class Image(Nifti1, notifier.Notifier):
         # if we don't yet know anything
         # about the image data range.
         if drange[0] is None or drange[1] is None:
-            drange = (self.header.get('cal_min', None),
-                      self.header.get('cal_max', None))
+            drange = (float(self.header['cal_min']),
+                      float(self.header['cal_max']))
 
         return drange
 
@@ -561,7 +561,7 @@ class Image(Nifti1, notifier.Notifier):
         Notifies any listeners of this ``Image`` (registered through the
         :class:`.Notifier` interface) on the ``'dataRange'`` topic.
         """
-        self.notify('dataRange')
+        self.notify(notifier_topic='dataRange')
 
 
     def calcRange(self, sizethres=None):
