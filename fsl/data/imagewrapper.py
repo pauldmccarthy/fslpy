@@ -92,28 +92,35 @@ class ImageWrapper(notifier.Notifier):
         # values).
         self.__range = (float(hdr['cal_min']), float(hdr['cal_max']))
 
-        # For each entry in the last (real) dimension of
-        # the image (slice for 3D or volume for 4D), we
-        # record the portions of the image that have
-        # been included in the data range calculation, so
-        # we do not unnecessarily re-calculate ranges on
-        # the same part of the image.
-        self.__coverage = []
+        # The coverage array is used to keep track of
+        # the portions of the image which have been
+        # considered in the data range calculation.
+        # We use this coverage to avoid unnecessarily
+        # re-calculating the data range on the same
+        # part of the image.
+        #
+        # First of all, we're going to store a separate
+        # 'coverage' for each 2D slice in the 3D image
+        # (or 3D volume for 4D images). This effectively
+        # means a seaprate coverage for each index in the
+        # last 'real' image dimension (see above).
+        # 
+        # For each slice/volume, the the coverage is
+        # stored as sequences of (low, high) indices, one
+        # for each dimension in the slice/volume (e.g.
+        # row/column for a slice, or row/column/depth
+        # for a volume).
+        #
+        # All of these indices are stored in a big numpy
+        # array:
+        #   - first dimension:  low/high index
+        #   - second dimension: image dimension
+        #   - third dimension:  slice/volume index
+        self.__coverage = np.zeros(
+            (2, self.__numRealDims - 1, image.shape[self.__numRealDims - 1]),
+            dtype=np.uint32)
 
-        # TODO Use a numpy array of size
-        #      (2, [numRealDims - 1], [shape[numRealDims - 1]])
-        #      instead of a list of lists 
-        
-        # This is a list of lists of (low, high) pairs,
-        # one list for each entry in the last dimension
-        # (e.g. one list per 2D slice or 3D volume), and
-        # one pair for each dimension in the entry (e.g.
-        # row/column for each slice, or row/column/depth
-        # for each volume).
-        for i in range(image.shape[self.__numRealDims - 1]):
-
-            cov = [[None, None] for i in range(self.__numRealDims - 1)]
-            self.__coverage.append(cov)
+        self.__coverage[:] = np.nan
 
         if loadData:
             self.loadData()
@@ -207,7 +214,8 @@ class ImageWrapper(notifier.Notifier):
         self.__range = (newmin, newmax)
 
         for vol, exp in zip(volumes, expansions):
-            self.__coverage[vol] = adjustCoverage(self.__coverage[vol], exp)
+            self.__coverage[..., vol] = adjustCoverage(
+                self.__coverage[..., vol], exp)
 
         # TODO floating point error
         if newmin != oldmin or newmax != oldmax:
@@ -310,25 +318,28 @@ def adjustCoverage(oldCoverage, slices):
     """Adjusts/expands the given ``oldCoverage`` so that it covers the
     given set of ``slices``.
 
-    :arg oldCoverage: A sequence of (low, high) index pairs
+    :arg oldCoverage: A ``numpy`` array of shape ``(2, n)`` containing
+                      the (low, high) index pairs for a single slice/volume
+                      in the image.
+    
     :arg slices:      A sequence of (low, high) index pairs. If ``slices``
                       contains more dimensions than are specified in
                       ``oldCoverage``, the trailing dimensions are ignored.
 
-    :return: A list of (low, high) tuples containing the adjusted coverage.
+    :return: A ``numpy`` array containing the adjusted/expanded coverage.
     """
 
-    newCoverage = []
+    newCoverage = np.zeros(oldCoverage.shape, dtype=np.uint32)
 
-    for dim in range(len(oldCoverage)):
+    for dim in range(oldCoverage.shape[1]):
 
-        low,      high      = slices[     dim]
-        lowCover, highCover = oldCoverage[dim]
+        low,      high      = slices[        dim]
+        lowCover, highCover = oldCoverage[:, dim]
 
         if lowCover  is None or low  < lowCover:  lowCover  = low
         if highCover is None or high > highCover: highCover = high
 
-        newCoverage.append((lowCover, highCover))
+        newCoverage[:, dim] = lowCover, highCover
 
     return newCoverage
 
@@ -348,16 +359,13 @@ def sliceCovered(slices, coverage, shape, realDims):
 
     for vol in range(lowVol, highVol):
 
-        volCoverage = coverage[vol]
-
         for dim, size in enumerate(shape):
 
-            lowCover, highCover = volCoverage[dim]
+            lowCover, highCover = coverage[:, dim, vol]
+            lowSlice, highSlice = slices[     dim] 
 
             if lowCover is None or highCover is None:
                 return False
-
-            lowSlice, highSlice = slices[dim]
 
             if lowSlice  is None: lowSlice  = 0
             if highSlice is None: highSlice = size
@@ -383,12 +391,11 @@ def calcSliceExpansion(slices, coverage, realDims, padDims):
 
     for vol in volumes:
 
-        volCoverage = coverage[vol]
-        expansion   = []
+        expansion = []
 
         for dim in range(realDims - 1):
 
-            lowCover, highCover = volCoverage[dim]
+            lowCover, highCover = coverage[:, dim, vol]
             lowSlice, highSlice = slices[     dim]
 
             if lowCover  is None: lowCover  = lowSlice
