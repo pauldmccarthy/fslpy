@@ -49,7 +49,7 @@ class ImageWrapper(notifier.Notifier):
        sliceObjToSliceTuple
        sliceTupleToSliceObj
        sliceCovered
-       calcSliceExpansion
+       calcExpansion
        adjustCoverage
     """
 
@@ -111,8 +111,7 @@ class ImageWrapper(notifier.Notifier):
         # row/column for a slice, or row/column/depth
         # for a volume).
         #
-        # All of these indices are stored in a big numpy
-        # array:
+        # All of these indices are stored in a numpy array:
         #   - first dimension:  low/high index
         #   - second dimension: image dimension
         #   - third dimension:  slice/volume index
@@ -148,7 +147,14 @@ class ImageWrapper(notifier.Notifier):
 
 
     def __getData(self, sliceobj, isTuple=False):
-        """
+        """Retrieves and the image data at the location specified by
+        ``sliceobj``.
+
+        :arg sliceobj: Something which can be used to slice an array, or
+                       a sequence of (low, high) index pairs.
+
+        :arg isTuple:  Set to ``True`` if ``sliceobj`` is a sequence of
+                       (low, high) index pairs.
         """
 
         if isTuple:
@@ -176,10 +182,11 @@ class ImageWrapper(notifier.Notifier):
         the image specified by ``slices``), and updates the known data range
         of the image.
 
-        :arg slices: A sequence of ``(low, high)`` index pairs, one for each
-                     dimension in the image. Tuples are used instead of
-                     ``slice`` objects, because this method is memoized (and
-                     ``slice`` objects are unhashable).
+        :arg slices: A tuple of of tuples, each tuple being a ``(low, high)``
+                     index pair, one for each dimension in the image. Tuples
+                     must be used instead of lists or ``slice`` objects,
+                     because this method is memoized (and ``slice``/``list``
+                     objects are unhashable).
         
         :arg data:   The image data at the given ``slices`` (as a ``numpy``
                      array).
@@ -194,10 +201,7 @@ class ImageWrapper(notifier.Notifier):
                       self.__range[1],
                       self.__coverage))
 
-        volumes, expansions = calcSliceExpansion(slices,
-                                                 self.__coverage,
-                                                 self.__numRealDims,
-                                                 self.__numPadDims)
+        volumes, expansions = calcExpansion(slices, self.__coverage)
 
         newmin = oldmin
         newmax = oldmax
@@ -255,11 +259,7 @@ class ImageWrapper(notifier.Notifier):
 
         slices = sliceObjToSliceTuple(sliceobj, self.__image.shape)
 
-        if not sliceCovered(slices,
-                            self.__coverage,
-                            self.__image.shape,
-                            self.__numRealDims):
-            
+        if not sliceCovered(slices, self.__coverage, self.__image.shape):
             self.__updateDataRangeOnRead(slices, data)
 
         return data
@@ -277,9 +277,12 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
     indices = []
 
+    # The sliceobj could be a single sliceobj
+    # or integer, instead of a tuple
     if not isinstance(sliceobj, collections.Sequence):
         sliceobj = [sliceobj]
 
+    # Turn e.g. array[6] into array[6, :, :]
     if len(sliceobj) != len(shape):
         missing  = len(shape) - len(sliceobj)
         sliceobj = list(sliceobj) + [slice(None) for i in range(missing)]
@@ -301,7 +304,7 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
 def sliceTupleToSliceObj(slices):
     """Turns a sequence of (low, high) index pairs into a tuple of array
-    slice objects.
+    ``slice`` objects.
 
     :arg slices: A sequence of (low, high) index pairs.
     """
@@ -319,8 +322,8 @@ def adjustCoverage(oldCoverage, slices):
     given set of ``slices``.
 
     :arg oldCoverage: A ``numpy`` array of shape ``(2, n)`` containing
-                      the (low, high) index pairs for a single slice/volume
-                      in the image.
+                      the (low, high) index pairs for ``n`` dimensions of
+                      a single slice/volume in the image.
     
     :arg slices:      A sequence of (low, high) index pairs. If ``slices``
                       contains more dimensions than are specified in
@@ -336,26 +339,27 @@ def adjustCoverage(oldCoverage, slices):
         low,      high      = slices[        dim]
         lowCover, highCover = oldCoverage[:, dim]
 
-        if lowCover  is None or low  < lowCover:  lowCover  = low
-        if highCover is None or high > highCover: highCover = high
+        if np.isnan(lowCover)  or low  < lowCover:  lowCover  = low
+        if np.isnan(highCover) or high > highCover: highCover = high
 
         newCoverage[:, dim] = lowCover, highCover
 
     return newCoverage
 
 
-def sliceCovered(slices, coverage, shape, realDims):
+def sliceCovered(slices, coverage, shape):
     """Returns ``True`` if the portion of the image data calculated by
     the given ``slices` has already been calculated, ``False`` otherwise.
 
-    :arg slices:
+    :arg slices:   
     :arg coverage:
     :arg shape:
     :arg volDim:
     """
 
-    lowVol, highVol = slices[realDims - 1]
-    shape           = shape[:realDims - 1]
+    numDims         = coverage.shape[1]
+    lowVol, highVol = slices[numDims]
+    shape           = shape[:numDims]
 
     for vol in range(lowVol, highVol):
 
@@ -364,7 +368,7 @@ def sliceCovered(slices, coverage, shape, realDims):
             lowCover, highCover = coverage[:, dim, vol]
             lowSlice, highSlice = slices[     dim] 
 
-            if lowCover is None or highCover is None:
+            if np.isnan(lowCover) or np.isnan(highCover):
                 return False
 
             if lowSlice  is None: lowSlice  = 0
@@ -376,30 +380,36 @@ def sliceCovered(slices, coverage, shape, realDims):
     return True
 
 
-def calcSliceExpansion(slices, coverage, realDims, padDims):
+def calcExpansion(slices, coverage):
     """
     """
 
     # One per volume
-    lowVol, highVol = slices[realDims - 1] 
+    numDims         = coverage.shape[1]
+    padDims         = len(slices) - numDims - 1
+    lowVol, highVol = slices[numDims] 
 
     expansions = []
     volumes    = list(range(lowVol, highVol))
 
-    # TODO Reduced slice duplication.
-    #      You know what this means.
+    # TODO Currently, the returned expansion(s) includes
+    #      the current coverage. Remove this duplication;
+    #      you can return multiple expansions per volume,
+    #      so figure out how to expand the coverage with
+    #      one or more expansion slices without
+    #      overlapping the existing coverage.
 
     for vol in volumes:
 
         expansion = []
 
-        for dim in range(realDims - 1):
+        for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
             lowSlice, highSlice = slices[     dim]
 
-            if lowCover  is None: lowCover  = lowSlice
-            if highCover is None: highCover = highSlice
+            if np.isnan(lowCover):  lowCover  = lowSlice
+            if np.isnan(highCover): highCover = highSlice
 
             expansion.append((min(lowCover,  lowSlice),
                               max(highCover, highSlice)))
