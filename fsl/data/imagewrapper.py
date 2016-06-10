@@ -426,7 +426,7 @@ def calcExpansion(slices, coverage):
     lowVol, highVol = slices[numDims] 
 
     expansions = []
-    volumes    = list(range(lowVol, highVol))
+    volumes    = []
 
     # TODO Currently, the returned expansion(s) includes
     #      the current coverage. Remove this duplication;
@@ -435,10 +435,16 @@ def calcExpansion(slices, coverage):
     #      one or more expansion slices without
     #      overlapping the existing coverage.
 
-    for vol in volumes:
+    for vol in range(lowVol, highVol):
 
-        expansion = []
-
+        # First we'll figure out the index
+        # range for each dimension that
+        # needs to be added to the coverage.
+        # We build a list of required ranges,
+        # where each entry is a tuple
+        # containing:
+        #   (dimension, lowIndex, highIndex)
+        reqRanges = []
         for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
@@ -447,13 +453,53 @@ def calcExpansion(slices, coverage):
             if np.isnan(lowCover):  lowCover  = lowSlice
             if np.isnan(highCover): highCover = highSlice
 
-            expansion.append((min(lowCover,  lowSlice),
-                              max(highCover, highSlice)))
+            # The slice covers a region
+            # below the current coverage
+            if lowCover - lowSlice > 0:
+                reqRanges.append((dim, lowSlice, lowCover))
+                
+            # The slice covers a region
+            # above the current coverage
+            if highCover - highSlice < 0:
+                reqRanges.append((dim, highCover, highSlice))
 
-        expansion.append((vol, vol + 1))
-        for i in range(padDims):
-            expansion.append((0, 1))
+        # Now we generate an expansion for
+        # each of those ranges. 
+        for dimx, xlo, xhi in reqRanges:
 
-        expansions.append(expansion)
+            expansion = [[0, 0] for d in range(numDims)]
+
+            # The expansion for each
+            # dimension will span the range
+            # for that dimension...
+            expansion[dimx][0] = xlo
+            expansion[dimx][1] = xhi
+                
+            # And will span the union of
+            # the range and coverage for
+            # every other dimension.
+            for dimy, ylo, yhi in reqRanges:
+                if dimy == dimx:
+                    continue
+
+                # TODO The dimension expansions will
+                #      potentially overlap. Remove 
+                #      this duplication.
+
+                yLowCover, yHighCover = coverage[:, dimy, vol]
+
+                expansion[dimy][0] = min((ylo, yLowCover))
+                expansion[dimy][1] = max((yhi, yHighCover))
+
+            # Finish off this expansion by
+            # adding indices for the vector/
+            # slice/volume dimension, and for
+            # 'padding' dimensions of size 1.
+            expansion.append((vol, vol + 1))
+            for i in range(padDims):
+                expansion.append((0, 1)) 
+
+            volumes.   append(vol)
+            expansions.append(expansion)
 
     return volumes, expansions
