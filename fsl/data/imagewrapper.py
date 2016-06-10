@@ -6,6 +6,25 @@
 #
 """This module provides the :class:`ImageWrapper` class, which can be used
 to manage data access to ``nibabel`` NIFTI images.
+
+There are some confusing terms used in this module, so it may be of use to
+get their definitions straight:
+
+  - *Coverage*:  The portion of an image that has been covered in the data
+                 range calculation. The ``ImageWrapper`` keeps track of
+                 the coverage for individual volumes within a 4D image (or
+                 slices in a 3D image).
+
+  - *Slice*:     Portion of the image data which is being accessed. A slice
+                 comprises either a tuple of ``slice`` objects (or integers),
+                 or a sequence of ``(low, high)`` tuples, specifying the
+                 index range into each image dimension that is covered by
+                 the slice.
+
+  - *Expansion*: A sequence of ``(low, high)`` tuples, specifying an
+                 index range into each image dimension, that is used to
+                 *expand* the *coverage* of an image, based on a given set of
+                 *slices*.
 """
 
 
@@ -26,10 +45,11 @@ class ImageWrapper(notifier.Notifier):
     """The ``ImageWrapper`` class is a convenience class which manages data
     access to ``nibabel`` NIFTI images. The ``ImageWrapper`` class can be
     used to:
+
     
       - Control whether the image is loaded into memory, or kept on disk
     
-      - Incrementally update the known image  data range, as more image
+      - Incrementally update the known image data range, as more image
         data is read in.
 
 
@@ -87,10 +107,7 @@ class ImageWrapper(notifier.Notifier):
 
         # The current known image data range. This
         # gets updated as more image data gets read.
-        # We default to whatever is stored in the
-        # header (which may or may not contain useful
-        # values).
-        self.__range = (float(hdr['cal_min']), float(hdr['cal_max']))
+        self.__range = None, None
 
         # The coverage array is used to keep track of
         # the portions of the image which have been
@@ -130,7 +147,16 @@ class ImageWrapper(notifier.Notifier):
         """Returns the currently known data range as a tuple of ``(min, max)``
         values.
         """
-        return tuple(self.__range)
+        # If no image data has been read, we default
+        # to whatever is stored in the header (which
+        # may or may not contain useful values).
+        low, high = self.__range
+        hdr       = self.__image.get_header()
+
+        if low  is None: low  = float(hdr['cal_min'])
+        if high is None: high = float(hdr['cal_max'])
+
+        return low, high
 
 
     def loadData(self):
@@ -147,8 +173,7 @@ class ImageWrapper(notifier.Notifier):
 
 
     def __getData(self, sliceobj, isTuple=False):
-        """Retrieves and the image data at the location specified by
-        ``sliceobj``.
+        """Retrieves the image data at the location specified by ``sliceobj``.
 
         :arg sliceobj: Something which can be used to slice an array, or
                        a sequence of (low, high) index pairs.
@@ -161,7 +186,7 @@ class ImageWrapper(notifier.Notifier):
             sliceobj = sliceTupleToSliceObj(sliceobj)
 
         # If the image has not been loaded
-        # into memory,  we can use the nibabel
+        # into memory, we can use the nibabel
         # ArrayProxy. Otheriwse if it is in
         # memory, we can access it directly.
         #
@@ -182,14 +207,15 @@ class ImageWrapper(notifier.Notifier):
         the image specified by ``slices``), and updates the known data range
         of the image.
 
-        :arg slices: A tuple of of tuples, each tuple being a ``(low, high)``
-                     index pair, one for each dimension in the image. Tuples
-                     must be used instead of lists or ``slice`` objects,
-                     because this method is memoized (and ``slice``/``list``
-                     objects are unhashable).
+        :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
+                     index pair, one for each dimension in the image. 
         
         :arg data:   The image data at the given ``slices`` (as a ``numpy``
                      array).
+
+        .. note:: Tuples must be used instead of lists or ``slice`` objects fo
+                  the ``slices`` argument, because this method is memoized
+                  (and ``slice``/``list`` objects are unhashable).
         """
 
         oldmin, oldmax = self.__range
@@ -351,10 +377,14 @@ def sliceCovered(slices, coverage, shape):
     """Returns ``True`` if the portion of the image data calculated by
     the given ``slices` has already been calculated, ``False`` otherwise.
 
-    :arg slices:   
-    :arg coverage:
-    :arg shape:
-    :arg volDim:
+    :arg slices:    A sequence of (low, high) index pairs, assumed to cover
+                    all image dimensions.
+    :arg coverage:  A ``numpy`` array of shape ``(2, nd, nv)`` (where ``nd``
+                    is the number of dimensions being covered, and ``nv`` is
+                    the number of volumes (or vectors/slices) in the image,
+                    which contains the (low, high) index pairs describing
+                    the current image coverage.
+    :arg shape:     The full image shape.
     """
 
     numDims         = coverage.shape[1]
@@ -381,10 +411,16 @@ def sliceCovered(slices, coverage, shape):
 
 
 def calcExpansion(slices, coverage):
-    """
+    """Calculates a series of *expansion* slices, which can be used to expand
+    the given ``coverage`` so that it includes the given ``slices``.
+
+    :arg slices:   Slices that the coverage needs to be expanded to cover.
+    :arg coverage: Current image coverage.
+
+    :returns: A list of volume indices, and a corresponding list of
+              expansions.
     """
 
-    # One per volume
     numDims         = coverage.shape[1]
     padDims         = len(slices) - numDims - 1
     lowVol, highVol = slices[numDims] 
