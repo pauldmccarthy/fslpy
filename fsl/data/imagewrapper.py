@@ -476,8 +476,8 @@ def calcExpansion(slices, coverage):
             expansion[dimx][1] = xhi
                 
             # And will span the union of
-            # the range and coverage for
-            # every other dimension.
+            # the coverage, and calculated
+            # range for every other dimension.
             for dimy, ylo, yhi in reqRanges:
                 if dimy == dimx:
                     continue
@@ -487,9 +487,16 @@ def calcExpansion(slices, coverage):
                 #      this duplication.
 
                 yLowCover, yHighCover = coverage[:, dimy, vol]
+                expLow,    expHigh    = expansion[  dimy]
 
-                expansion[dimy][0] = min((ylo, yLowCover))
-                expansion[dimy][1] = max((yhi, yHighCover))
+                if np.isnan(expLow):  expLow  = yLowCover
+                if np.isnan(expHigh): expHigh = yHighCover
+
+                expLow  = min((ylo, yLowCover,  expLow))
+                expHigh = max((yhi, yHighCover, expHigh))
+
+                expansion[dimy][0] = expLow
+                expansion[dimy][1] = expHigh
 
             # Finish off this expansion by
             # adding indices for the vector/
