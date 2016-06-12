@@ -30,9 +30,10 @@ get their definitions straight:
 
 import logging
 import collections
+import itertools as it
 
-import numpy   as np
-import nibabel as nib
+import numpy     as np
+import nibabel   as nib
 
 import fsl.utils.notifier as notifier
 import fsl.utils.memoize  as memoize
@@ -102,8 +103,6 @@ class ImageWrapper(notifier.Notifier):
         # And save the number of
         # 'padding' dimensions too.
         self.__numPadDims = len(image.shape) - self.__numRealDims
-
-        hdr = image.get_header()
 
         # The current known image data range. This
         # gets updated as more image data gets read.
@@ -428,13 +427,6 @@ def calcExpansion(slices, coverage):
     expansions = []
     volumes    = []
 
-    # TODO Currently, the returned expansion(s) includes
-    #      the current coverage. Remove this duplication;
-    #      you can return multiple expansions per volume,
-    #      so figure out how to expand the coverage with
-    #      one or more expansion slices without
-    #      overlapping the existing coverage.
-
     for vol in range(lowVol, highVol):
 
         # First we'll figure out the index
@@ -464,10 +456,11 @@ def calcExpansion(slices, coverage):
                 reqRanges.append((dim, highCover, highSlice))
 
         # Now we generate an expansion for
-        # each of those ranges. 
+        # each of those ranges.
+        volExpansions = []
         for dimx, xlo, xhi in reqRanges:
 
-            expansion = [[0, 0] for d in range(numDims)]
+            expansion = [[np.nan, np.nan] for d in range(numDims)]
 
             # The expansion for each
             # dimension will span the range
@@ -481,10 +474,6 @@ def calcExpansion(slices, coverage):
             for dimy, ylo, yhi in reqRanges:
                 if dimy == dimx:
                     continue
-
-                # TODO The dimension expansions will
-                #      potentially overlap. Remove 
-                #      this duplication.
 
                 yLowCover, yHighCover = coverage[:, dimy, vol]
                 expLow,    expHigh    = expansion[  dimy]
@@ -506,7 +495,62 @@ def calcExpansion(slices, coverage):
             for i in range(padDims):
                 expansion.append((0, 1)) 
 
-            volumes.   append(vol)
-            expansions.append(expansion)
+            volumes.      append(vol)
+            volExpansions.append(expansion)
+
+        # We do a final run through all pairs
+        # of expansions, and adjust their
+        # range if they overlap with each other.
+        for exp1, exp2 in it.product(volExpansions, volExpansions):
+
+            # Check each dimension
+            for dimx in range(numDims):
+
+                xlo1, xhi1 = exp1[dimx]
+                xlo2, xhi2 = exp2[dimx]
+
+                # These expansions do not
+                # overlap with each other
+                # on this dimension (or at
+                # all). No need to check
+                # the other dimensions.
+                if xhi1 <= xlo2: break
+                if xlo1 >= xhi2: break
+
+                # These expansions overlap on
+                # this dimension - check to see
+                # if exp1 is wholly contained
+                # within exp2 in all other
+                # dimensions.
+                adjustable = True
+
+                for dimy in range(numDims):
+
+                    if dimy == dimx:
+                        continue
+
+                    ylo1, yhi1 = exp1[dimy]
+                    ylo2, yhi2 = exp2[dimy]
+
+                    # Exp1 is not contained within
+                    # exp2 on another dimension -
+                    # we can't reduce the overlap.
+                    if ylo1 < ylo2 or yhi1 > yhi2:
+                        adjustable = False
+                        break
+
+                # The x dimension range of exp1
+                # can be reduced, as it is covered
+                # by exp2.
+                if adjustable:
+                    if   xlo1 <  xlo2 and xhi1 <= xhi2 and xhi1 > xlo2:
+                        xhi1 = xlo2
+
+                    elif xlo1 >= xlo2 and xhi1 >  xhi2 and xlo1 < xhi2:
+                        xlo1 = xhi2
+
+                    exp1[dimx] = xlo1, xhi1
+
+        expansions.extend(volExpansions)
 
     return volumes, expansions
