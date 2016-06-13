@@ -192,6 +192,43 @@ def test_adjustCoverage():
         assert np.all(imagewrap.adjustCoverage(coverage, expansion) == result)
 
 
+def test_sliceOverlap():
+
+    # A bunch of random coverages
+    for i in range(250):
+
+        # 2D, 3D or 4D?
+        # ndims is the number of dimensions
+        # in one vector/slice/volume
+        ndims = random.choice((2, 3, 4)) - 1
+
+        # Shape of one vector[2D]/slice[3D]/volume[4D]
+        shape = np.random.randint(5, 100, size=ndims + 1)
+
+        # Number of vectors/slices/volumes
+        nvols = shape[-1]
+
+        coverage = random_coverage(shape)
+
+        # Generate some slices that should
+        # be contained within the coverage
+        for j in range(250):
+            slices = random_slices(coverage, shape, 'in')
+            assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_ALL
+
+        # Generate some slices that should
+        # overlap with the coverage 
+        for j in range(250):
+            slices = random_slices(coverage, shape, 'overlap')
+            assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_SOME
+
+        # Generate some slices that should
+        # be outside of the coverage 
+        for j in range(250):
+            slices = random_slices(coverage, shape, 'out')
+            assert imagewrap.sliceOverlap(slices, coverage)  == imagewrap.OVERLAP_NONE
+
+        
 def test_sliceCovered():
 
     # A bunch of random coverages
@@ -214,19 +251,19 @@ def test_sliceCovered():
         # be contained within the coverage
         for j in range(250):
             slices = random_slices(coverage, shape, 'in')
-            assert imagewrap.sliceCovered(slices, coverage, shape)
+            assert imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
         # overlap with the coverage 
         for j in range(250):
             slices = random_slices(coverage, shape, 'overlap')
-            assert not imagewrap.sliceCovered(slices, coverage, shape)
+            assert not imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
         # be outside of the coverage 
         for j in range(250):
             slices = random_slices(coverage, shape, 'out')
-            assert not imagewrap.sliceCovered(slices, coverage, shape) 
+            assert not imagewrap.sliceCovered(slices, coverage) 
 
 
 # The sum of the coverage ranges + the
