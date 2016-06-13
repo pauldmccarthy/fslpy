@@ -228,28 +228,12 @@ class ImageWrapper(notifier.Notifier):
         shape  = self.__image.shape
         slices = zip([0] * len(shape), shape)
         return sliceCovered(slices, self.__coverage)
-    
 
-    def __updateDataRangeOnRead(self, slices, data):
-        """Called by :meth:`__getitem__`. Calculates the minimum/maximum
-        values of the given data (which has been extracted from the portion of
-        the image specified by ``slices``), and updates the known data range
-        of the image.
 
-        :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
-                     index pair, one for each dimension in the image. 
-        
-        :arg data:   The image data at the given ``slices`` (as a ``numpy``
-                     array).
+    def __expandCoverage(self, slices):
+        """Expands the current image data range and coverage to encompass the
+        given ``slices``.
         """
-
-        log.debug('Updating image {} data range (current range: '
-                  '[{}, {}]; current coverage: {})'.format(
-                      self.__name,
-                      self.__range[0],
-                      self.__range[1],
-                      self.__coverage))
-        
         volumes, expansions = calcExpansion(slices, self.__coverage)
         
         oldmin, oldmax = self.__range
@@ -280,7 +264,35 @@ class ImageWrapper(notifier.Notifier):
                 oldmax,
                 newmin,
                 newmax))
-            self.notify()
+            self.notify() 
+    
+
+    def __updateDataRangeOnRead(self, slices, data):
+        """Called by :meth:`__getitem__`. Calculates the minimum/maximum
+        values of the given data (which has been extracted from the portion of
+        the image specified by ``slices``), and updates the known data range
+        of the image.
+
+        :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
+                     index pair, one for each dimension in the image. 
+        
+        :arg data:   The image data at the given ``slices`` (as a ``numpy``
+                     array).
+        """
+
+        log.debug('Updating image {} data range (current range: '
+                  '[{}, {}]; current coverage: {})'.format(
+                      self.__name,
+                      self.__range[0],
+                      self.__range[1],
+                      self.__coverage))
+
+        # TODO You could do something with
+        #      the provided data to avoid
+        #      reading it in again.
+
+        self.__expandCoverage(slices)
+
 
             
     def __getitem__(self, sliceobj):
