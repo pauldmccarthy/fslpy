@@ -36,7 +36,6 @@ import numpy     as np
 import nibabel   as nib
 
 import fsl.utils.notifier as notifier
-import fsl.utils.memoize  as memoize
 
 
 log = logging.getLogger(__name__)
@@ -218,7 +217,7 @@ class ImageWrapper(notifier.Notifier):
         # we have to read from the in-memory
         # array to get changed values.
         if self.__image.in_memory: return self.__image.get_data()[sliceobj]
-        else:                      return self.__image.dataobj[   sliceobj] 
+        else:                      return self.__image.dataobj[   sliceobj]
 
 
     def __imageIsCovered(self):
@@ -228,10 +227,9 @@ class ImageWrapper(notifier.Notifier):
         
         shape  = self.__image.shape
         slices = zip([0] * len(shape), shape)
-        return sliceCovered(slices, self.__coverage, shape)
+        return sliceCovered(slices, self.__coverage)
     
 
-    @memoize.Instanceify(memoize.memoize(args=[0]))
     def __updateDataRangeOnRead(self, slices, data):
         """Called by :meth:`__getitem__`. Calculates the minimum/maximum
         values of the given data (which has been extracted from the portion of
@@ -243,13 +241,7 @@ class ImageWrapper(notifier.Notifier):
         
         :arg data:   The image data at the given ``slices`` (as a ``numpy``
                      array).
-
-        .. note:: Tuples must be used instead of lists or ``slice`` objects fo
-                  the ``slices`` argument, because this method is memoized
-                  (and ``slice``/``list`` objects are unhashable).
         """
-
-        oldmin, oldmax = self.__range
 
         log.debug('Updating image {} data range (current range: '
                   '[{}, {}]; current coverage: {})'.format(
@@ -257,11 +249,11 @@ class ImageWrapper(notifier.Notifier):
                       self.__range[0],
                       self.__range[1],
                       self.__coverage))
-
+        
         volumes, expansions = calcExpansion(slices, self.__coverage)
-
-        newmin = oldmin
-        newmax = oldmax
+        
+        oldmin, oldmax = self.__range
+        newmin, newmax = oldmin, oldmax
 
         for vol, exp in zip(volumes, expansions):
 
@@ -317,7 +309,7 @@ class ImageWrapper(notifier.Notifier):
 
             slices = sliceObjToSliceTuple(sliceobj, self.__image.shape)
 
-            if not sliceCovered(slices, self.__coverage, self.__image.shape):
+            if not sliceCovered(slices, self.__coverage):
                 self.__updateDataRangeOnRead(slices, data)
 
         return data
@@ -405,7 +397,91 @@ def adjustCoverage(oldCoverage, slices):
     return newCoverage
 
 
-def sliceCovered(slices, coverage, shape):
+OVERLAP_ALL = 0
+"""Indicates that the slice is wholly contained within the coverage.  This is
+a return code for the :func:`sliceOverlap` function.
+"""
+
+
+OVERLAP_SOME = 1
+"""Indicates that the slice partially overlaps with the coverage. This is a
+return code for the :func:`sliceOverlap` function.
+"""
+
+
+OVERLAP_NONE = 2
+"""Indicates that the slice does not overlap with the coverage. This is a
+return code for the :func:`sliceOverlap` function.
+"""
+
+
+def sliceOverlap(slices, coverage):
+    """Determines whether the given ``slices`` overlap with the given
+    ``coverage``.
+
+    :arg slices:    A sequence of (low, high) index pairs, assumed to cover
+                    all image dimensions.
+    :arg coverage:  A ``numpy`` array of shape ``(2, nd, nv)`` (where ``nd``
+                    is the number of dimensions being covered, and ``nv`` is
+                    the number of volumes (or vectors/slices) in the image,
+                    which contains the (low, high) index pairs describing
+                    the current image coverage.
+
+    :returns: One of the following codes:
+              .. autosummary::
+
+              OVERLAP_ALL
+              OVERLAP_SOME
+              OVERLAP_NONE
+    """
+
+    numDims         = coverage.shape[1]
+    lowVol, highVol = slices[numDims]
+
+    # Overlap state is calculated for each volume
+    overlapStates = np.zeros(highVol - lowVol)
+
+    for i, vol in enumerate(range(lowVol, highVol)):
+
+        state = OVERLAP_ALL
+
+        for dim in range(numDims):
+
+            lowCover, highCover = coverage[:, dim, vol]
+            lowSlice, highSlice = slices[     dim] 
+
+            # No coverage
+            if np.isnan(lowCover) or np.isnan(highCover):
+                state = OVERLAP_NONE
+                break
+
+            # The slice is contained within the
+            # coverage on this dimension - check
+            # the other dimensions.
+            if lowSlice >= lowCover and highSlice <= highCover:
+                continue
+
+            # The slice does not overlap at all
+            # with the coverage on this dimension
+            # (or at all). No overlap - no need
+            # to check the other dimensions.
+            if lowSlice >= highCover or highSlice <= lowCover:
+                state = OVERLAP_NONE
+                break
+
+            # There is some overlap between the
+            # slice and coverage on this dimension
+            # - check the other dimensions.
+            state = OVERLAP_SOME
+            
+        overlapStates[i] = state
+
+    if   np.any(overlapStates == OVERLAP_SOME): return OVERLAP_SOME
+    elif np.all(overlapStates == OVERLAP_NONE): return OVERLAP_NONE
+    elif np.all(overlapStates == OVERLAP_ALL):  return OVERLAP_ALL
+
+
+def sliceCovered(slices, coverage):
     """Returns ``True`` if the portion of the image data calculated by
     the given ``slices` has already been calculated, ``False`` otherwise.
 
@@ -416,25 +492,20 @@ def sliceCovered(slices, coverage, shape):
                     the number of volumes (or vectors/slices) in the image,
                     which contains the (low, high) index pairs describing
                     the current image coverage.
-    :arg shape:     The full image shape.
     """
 
     numDims         = coverage.shape[1]
     lowVol, highVol = slices[numDims]
-    shape           = shape[:numDims]
 
     for vol in range(lowVol, highVol):
 
-        for dim, size in enumerate(shape):
+        for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
             lowSlice, highSlice = slices[     dim] 
 
             if np.isnan(lowCover) or np.isnan(highCover):
                 return False
-
-            if lowSlice  is None: lowSlice  = 0
-            if highSlice is None: highSlice = size
 
             if lowSlice  < lowCover:  return False
             if highSlice > highCover: return False
