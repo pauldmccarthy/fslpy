@@ -144,11 +144,16 @@ class ImageWrapper(notifier.Notifier):
         #   - first dimension:  low/high index
         #   - second dimension: image dimension
         #   - third dimension:  slice/volume index
-        self.__coverage = np.zeros(
-            (2, self.__numRealDims - 1, image.shape[self.__numRealDims - 1]),
-            dtype=np.float32)
+        ndims = self.__numRealDims - 1
+        nvols = image.shape[self.__numRealDims - 1]
+        self.__coverage = np.zeros((2, ndims, nvols), dtype=np.float32)
 
-        self.__coverage[:] = np.nan
+        # Internally, we calculate and store the
+        # data range for each volume/slice/vector
+        self.__volRanges = np.zeros((nvols, 2), dtype=np.float32)
+
+        self.__coverage[ :] = np.nan
+        self.__volRanges[:] = np.nan
 
         # This flag is set to true if/when the
         # full image data range becomes known
@@ -164,9 +169,10 @@ class ImageWrapper(notifier.Notifier):
         """Returns the currently known data range as a tuple of ``(min, max)``
         values.
         """
-        # If no image data has been read, we default
-        # to whatever is stored in the header (which
-        # may or may not contain useful values).
+        # If no image data has been accessed, we
+        # default to whatever is stored in the
+        # header (which may or may not contain
+        # useful values).
         low, high = self.__range
         hdr       = self.__image.get_header()
 
@@ -239,21 +245,35 @@ class ImageWrapper(notifier.Notifier):
         oldmin, oldmax = self.__range
         newmin, newmax = oldmin, oldmax
 
+        # The calcExpansion function splits up the
+        # expansions on volumes - here we calculate
+        # the min/max per volume/expansion, and
+        # iteratively update the stored per-volume
+        # coverage and data range.
         for vol, exp in zip(volumes, expansions):
 
-            data = self.__getData(exp, isTuple=True)
-            dmin = float(np.nanmin(data))
-            dmax = float(np.nanmax(data))
+            oldmin, oldmax = self.__volRanges[vol, :]
 
-            if newmin is None or dmin < newmin: newmin = dmin
-            if newmax is None or dmax > newmax: newmax = dmax
+            data   = self.__getData(exp, isTuple=True)
+            newmin = float(np.nanmin(data))
+            newmax = float(np.nanmax(data))
 
-        self.__range = (newmin, newmax)
+            if (not np.isnan(oldmin)) and oldmin < newmin: newmin = oldmin
+            if (not np.isnan(oldmax)) and oldmax > newmax: newmax = oldmax
 
-        for vol, exp in zip(volumes, expansions):
+            # Update the stored range and
+            # coverage for each volume 
+            self.__volRanges[vol, :]  = newmin, newmax
             self.__coverage[..., vol] = adjustCoverage(
                 self.__coverage[..., vol], exp)
 
+        # Calculate the new known data
+        # range over the entire image
+        # (i.e. over all volumes).
+        newmin = np.nanmin(self.__volRanges[:, 0])
+        newmax = np.nanmax(self.__volRanges[:, 1])
+
+        self.__range   = (newmin, newmax)
         self.__covered = self.__imageIsCovered()
 
         # TODO floating point error
