@@ -75,19 +75,33 @@ class ImageWrapper(notifier.Notifier):
     """
 
     
-    def __init__(self, image, name=None, loadData=False):
+    def __init__(self, image, name=None, loadData=False, dataRange=None):
         """Create an ``ImageWrapper``.
 
-        :arg image:    A ``nibabel.Nifti1Image``.
+        :arg image:     A ``nibabel.Nifti1Image``.
 
-        :arg name:     A name for this ``ImageWrapper``, solely used for debug
-                       log messages.
+        :arg name:      A name for this ``ImageWrapper``, solely used for 
+                        debug log messages.
 
-        :arg loadData: If ``True``, the image data is loaded into memory.
-                       Otherwise it is kept on disk (and data access is
-                       performed through the ``nibabel.Nifti1Image.dataobj``
-                       array proxy).
+        :arg loadData:  If ``True``, the image data is loaded into memory.
+                        Otherwise it is kept on disk (and data access is
+                        performed through the ``nibabel.Nifti1Image.dataobj``
+                        array proxy).
+
+        :arg dataRange: A tuple containing the initial ``(min, max)``  data
+                        range to use.
+
+
+        .. note:: The ``dataRange`` parameter is intended for situations where
+                  the image data range is known (e.g. it was calculated
+                  earlier, and the image is being re-loaded. If a
+                  ``dataRange`` is passed in, it will *not* be overwritten by
+                  any range calculated from the data, unless the calculated
+                  data range is wider than the provided ``dataRange``.
         """
+
+        if dataRange is None:
+            dataRange = None, None
         
         self.__image = image
         self.__name  = name
@@ -106,7 +120,7 @@ class ImageWrapper(notifier.Notifier):
 
         # The current known image data range. This
         # gets updated as more image data gets read.
-        self.__range = None, None
+        self.__range = dataRange
 
         # The coverage array is used to keep track of
         # the portions of the image which have been
@@ -137,6 +151,11 @@ class ImageWrapper(notifier.Notifier):
 
         self.__coverage[:] = np.nan
 
+        # This flag is set to true if/when the
+        # full image data range becomes known
+        # (i.e. when all data has been loaded in).
+        self.__covered = False
+
         if loadData:
             self.loadData()
 
@@ -165,9 +184,12 @@ class ImageWrapper(notifier.Notifier):
                   ``loadData`` parameter is ``True``.
         """
 
-        # If the data is not already
-        # loaded, this will cause 
-        # nibabel to load and cache it
+        # If the data is not already loaded, this will
+        # cause nibabel to load it. By default, nibabel
+        # will cache the numpy array that contains the
+        # image data, so subsequent calls to this
+        # method will not overwrite any changes that
+        # have been made to the data.
         self.__image.get_data()
 
 
@@ -198,6 +220,16 @@ class ImageWrapper(notifier.Notifier):
         if self.__image.in_memory: return self.__image.get_data()[sliceobj]
         else:                      return self.__image.dataobj[   sliceobj] 
 
+
+    def __imageIsCovered(self):
+        """Returns ``True`` if all portions of the image have been covered
+        in the data range calculation, ``False`` otherwise.
+        """
+        
+        shape  = self.__image.shape
+        slices = zip([0] * len(shape), shape)
+        return sliceCovered(slices, self.__coverage, shape)
+    
 
     @memoize.Instanceify(memoize.memoize(args=[0]))
     def __updateDataRangeOnRead(self, slices, data):
@@ -246,6 +278,8 @@ class ImageWrapper(notifier.Notifier):
             self.__coverage[..., vol] = adjustCoverage(
                 self.__coverage[..., vol], exp)
 
+        self.__covered = self.__imageIsCovered()
+
         # TODO floating point error
         if newmin != oldmin or newmax != oldmax:
             log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
@@ -279,13 +313,12 @@ class ImageWrapper(notifier.Notifier):
 
         data = self.__getData(sliceobj)
 
-        # TODO If full range is 
-        #      known, return now.
+        if not self.__covered:
 
-        slices = sliceObjToSliceTuple(sliceobj, self.__image.shape)
+            slices = sliceObjToSliceTuple(sliceobj, self.__image.shape)
 
-        if not sliceCovered(slices, self.__coverage, self.__image.shape):
-            self.__updateDataRangeOnRead(slices, data)
+            if not sliceCovered(slices, self.__coverage, self.__image.shape):
+                self.__updateDataRangeOnRead(slices, data)
 
         return data
 
@@ -465,12 +498,12 @@ def calcExpansion(slices, coverage):
             # The slice covers a region
             # below the current coverage
             if lowCover - lowSlice > 0:
-                reqRanges.append((dim, lowSlice, lowCover))
+                reqRanges.append((dim, int(lowSlice), int(lowCover)))
                 
             # The slice covers a region
             # above the current coverage
             if highCover - highSlice < 0:
-                reqRanges.append((dim, highCover, highSlice))
+                reqRanges.append((dim, int(highCover), int(highSlice)))
 
         # Now we generate an expansion for
         # each of those ranges.
