@@ -427,13 +427,25 @@ def calcExpansion(slices, coverage):
     expansions = []
     volumes    = []
 
+    # Finish off an expansion by
+    # adding indices for the vector/
+    # slice/volume dimension, and for
+    # 'padding' dimensions of size 1.
+    def finishExpansion(exp, vol):
+        exp.append((vol, vol + 1))
+        for i in range(padDims):
+            exp.append((0, 1))
+        return exp
+    
     for vol in range(lowVol, highVol):
 
         # No coverage of this volume - 
         # we need the whole slice.
         if np.any(np.isnan(coverage[:, :, vol])):
+            exp = [(s[0], s[1]) for s in slices[:numDims]]
+            exp = finishExpansion(exp, vol)
             volumes   .append(vol)
-            expansions.append([(s[0], s[1]) for s in slices[:numDims]])
+            expansions.append(exp)
             continue
 
         # First we'll figure out the index
@@ -492,13 +504,8 @@ def calcExpansion(slices, coverage):
                 expansion[dimy][0] = expLow
                 expansion[dimy][1] = expHigh
 
-            # Finish off this expansion by
-            # adding indices for the vector/
-            # slice/volume dimension, and for
-            # 'padding' dimensions of size 1.
-            expansion.append((vol, vol + 1))
-            for i in range(padDims):
-                expansion.append((0, 1)) 
+            # Finish off this expansion
+            expansion = finishExpansion(expansion, vol)
 
             volumes.      append(vol)
             volExpansions.append(expansion)
