@@ -133,7 +133,7 @@ class ImageWrapper(notifier.Notifier):
         #   - third dimension:  slice/volume index
         self.__coverage = np.zeros(
             (2, self.__numRealDims - 1, image.shape[self.__numRealDims - 1]),
-            dtype=np.uint32)
+            dtype=np.float32)
 
         self.__coverage[:] = np.nan
 
@@ -429,6 +429,13 @@ def calcExpansion(slices, coverage):
 
     for vol in range(lowVol, highVol):
 
+        # No coverage of this volume - 
+        # we need the whole slice.
+        if np.any(np.isnan(coverage[:, :, vol])):
+            volumes   .append(vol)
+            expansions.append([(s[0], s[1]) for s in slices[:numDims]])
+            continue
+
         # First we'll figure out the index
         # range for each dimension that
         # needs to be added to the coverage.
@@ -437,13 +444,11 @@ def calcExpansion(slices, coverage):
         # containing:
         #   (dimension, lowIndex, highIndex)
         reqRanges = []
+
         for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
             lowSlice, highSlice = slices[     dim]
-
-            if np.isnan(lowCover):  lowCover  = lowSlice
-            if np.isnan(highCover): highCover = highSlice
 
             # The slice covers a region
             # below the current coverage
