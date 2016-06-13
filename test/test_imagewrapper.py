@@ -259,7 +259,7 @@ def _test_expansion(coverage, slices, volumes, expansions):
     # coverage, or in one of the expansions.
     dimranges = []
     for d in range(ndims):
-        dimranges.append(np.arange(nc[0, d], nc[1, d]))
+        dimranges.append(np.linspace(nc[0, d], nc[1, d], nc[1, d] / 5, dtype=np.uint32))
 
     points = it.product(*dimranges)
 
