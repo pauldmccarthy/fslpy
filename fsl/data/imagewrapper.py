@@ -271,7 +271,7 @@ class ImageWrapper(notifier.Notifier):
                   array of shape ``(nd, 2)``, where ``nd`` is the number
                   of dimensions in the volume.
         """
-        return self.__coverage[..., vol]
+        return np.array(self.__coverage[..., vol], dtype=np.uint32)
 
     
     def loadData(self):
