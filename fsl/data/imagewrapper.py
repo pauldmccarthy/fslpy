@@ -443,7 +443,8 @@ class ImageWrapper(notifier.Notifier):
             lowVol, highVol = slices[self.__numRealDims - 1]
 
             for vol in range(lowVol, highVol):
-                self.__coverage[:, :, vol] = np.nan
+                self.__coverage[:, :, vol]    = np.nan
+                self.__volRanges[     vol, :] = np.nan
 
         self.__expandCoverage(slices)
 
