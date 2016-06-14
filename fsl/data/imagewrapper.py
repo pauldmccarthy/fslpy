@@ -7,6 +7,11 @@
 """This module provides the :class:`ImageWrapper` class, which can be used
 to manage data access to ``nibabel`` NIFTI images.
 
+
+Terminology
+-----------
+
+
 There are some confusing terms used in this module, so it may be of use to
 get their definitions straight:
 
@@ -53,6 +58,48 @@ class ImageWrapper(notifier.Notifier):
         data is read in.
 
 
+    *In memory or on disk?*
+
+    The image data will be kept on disk, and accessed through the
+    ``nibabel.Nifti1Image.dataobj`` array proxy, if:
+
+     - The ``loadData`` parameter to :meth:`__init__` is ``False``.
+     - The :meth:`loadData` method never gets called.
+     - The image data is not modified (via :meth:`__setitem__`.
+
+    If any of these conditions do not hold, the image data will be loaded into
+    memory and accessed directly, via the ``nibabel.Nifti1Image.get_data``
+    method.
+
+
+    *Image dimensionality*
+
+    
+    The ``ImageWrapper`` abstracts away trailing image dimensions of length 1.
+    This means that if the header for a NIFTI image specifies that the image
+    has four dimensions, but the fourth dimension is of length 1, you do not
+    need to worry about indexing that fourth dimension.
+
+
+    *Data range*
+
+    
+    In order to avoid the computational overhead of calculating the image data
+    range (its minimum/maximum values) when an image is first loaded in, an
+    ``ImageWrapper`` incrementally updates the known image data range as data
+    is accessed. The ``ImageWrapper`` keeps track of the image data _coverage_,
+    the portion of the image which has already been considered in the data
+    range calculation. When data from a region of the image not in the coverage
+    is accessed, the coverage is expanded to include this region. The coverage
+    is always expanded in a rectilinear manner, i.e. the coverage is always
+    rectangular for a 2D image, or cuboid for a 3D image.
+
+    
+    For a 4D image, the ``ImageWrapper`` internally maintains a separate
+    coverage and known data range for each 3D volume within the image. For a 3D
+    image, separate coverages and data ranges are stored for each 2D slice.
+
+
     The ``ImageWrapper`` implements the :class:`.Notifier` interface.
     Listeners can register to be notified whenever the known image data range
     is updated. The data range can be accessed via the :attr:`dataRange`
@@ -88,7 +135,8 @@ class ImageWrapper(notifier.Notifier):
                         array proxy).
 
         :arg dataRange: A tuple containing the initial ``(min, max)``  data
-                        range to use. See the :meth:`reset` method.
+                        range to use. See the :meth:`reset` method for
+                        important information about this parameter.
         """
 
         self.__image = image
@@ -119,48 +167,6 @@ class ImageWrapper(notifier.Notifier):
         if loadData:
             self.loadData()
 
-        
-    @property
-    def dataRange(self):
-        """Returns the currently known data range as a tuple of ``(min, max)``
-        values.
-        """
-        # If no image data has been accessed, we
-        # default to whatever is stored in the
-        # header (which may or may not contain
-        # useful values).
-        low, high = self.__range
-        hdr       = self.__image.get_header()
-
-        if low  is None: low  = float(hdr['cal_min'])
-        if high is None: high = float(hdr['cal_max'])
-
-        return low, high
-
-    
-    @property
-    def covered(self):
-        """Returns ``True`` if this ``ImageWrapper`` has read the entire
-        image data, ``False`` otherwise.
-        """
-        return self.__covered
-
-
-    def loadData(self):
-        """Forces all of the image data to be loaded into memory.
-
-        .. note:: This method will be called by :meth:`__init__` if its
-                  ``loadData`` parameter is ``True``.
-        """
-
-        # If the data is not already loaded, this will
-        # cause nibabel to load it. By default, nibabel
-        # will cache the numpy array that contains the
-        # image data, so subsequent calls to this
-        # method will not overwrite any changes that
-        # have been made to the data.
-        self.__image.get_data()
-
 
     def reset(self, dataRange=None):
         """Reset the internal state and known data range of this
@@ -173,7 +179,7 @@ class ImageWrapper(notifier.Notifier):
 
         .. note:: The ``dataRange`` parameter is intended for situations where
                   the image data range is known (e.g. it was calculated
-                  earlier, and the image is being re-loaded. If a
+                  earlier, and the image is being re-loaded). If a
                   ``dataRange`` is passed in, it will *not* be overwritten by
                   any range calculated from the data, unless the calculated
                   data range is wider than the provided ``dataRange``. 
@@ -182,7 +188,7 @@ class ImageWrapper(notifier.Notifier):
         if dataRange is None:
             dataRange = None, None
 
-        image = self.__image
+        image =             self.__image
         ndims =             self.__numRealDims - 1
         nvols = image.shape[self.__numRealDims - 1]
 
@@ -227,6 +233,62 @@ class ImageWrapper(notifier.Notifier):
         # (i.e. when all data has been loaded in).
         self.__covered = False
 
+        
+    @property
+    def dataRange(self):
+        """Returns the currently known data range as a tuple of ``(min, max)``
+        values.
+        """
+        # If no image data has been accessed, we
+        # default to whatever is stored in the
+        # header (which may or may not contain
+        # useful values).
+        low, high = self.__range
+        hdr       = self.__image.get_header()
+
+        if low  is None: low  = float(hdr['cal_min'])
+        if high is None: high = float(hdr['cal_max'])
+
+        return low, high
+
+    
+    @property
+    def covered(self):
+        """Returns ``True`` if this ``ImageWrapper`` has read the entire
+        image data, ``False`` otherwise.
+        """
+        return self.__covered
+
+
+    def coverage(self, vol):
+        """Returns the current image data coverage for the specified volume
+        (for a 4D image, slice for a 3D image, or vector for a 2D images).
+
+        :arg vol: Index of the volume/slice/vector to return the coverage
+                  for.
+
+        :returns: The coverage for the specified volume, as a ``numpy``
+                  array of shape ``(nd, 2)``, where ``nd`` is the number
+                  of dimensions in the volume.
+        """
+        return self.__coverage[..., vol]
+
+    
+    def loadData(self):
+        """Forces all of the image data to be loaded into memory.
+
+        .. note:: This method will be called by :meth:`__init__` if its
+                  ``loadData`` parameter is ``True``.
+        """
+
+        # If the data is not already loaded, this will
+        # cause nibabel to load it. By default, nibabel
+        # will cache the numpy array that contains the
+        # image data, so subsequent calls to this
+        # method will not overwrite any changes that
+        # have been made to the data array.
+        self.__image.get_data()
+
 
     def __getData(self, sliceobj, isTuple=False):
         """Retrieves the image data at the location specified by ``sliceobj``.
@@ -270,6 +332,14 @@ class ImageWrapper(notifier.Notifier):
         """Expands the current image data range and coverage to encompass the
         given ``slices``.
         """
+
+        log.debug('Updating image {} data range (current range: '
+                  '[{}, {}]; current coverage: {})'.format(
+                      self.__name,
+                      self.__range[0],
+                      self.__range[1],
+                      self.__coverage))
+        
         volumes, expansions = calcExpansion(slices, self.__coverage)
         
         oldmin, oldmax = self.__range
@@ -306,8 +376,7 @@ class ImageWrapper(notifier.Notifier):
         self.__range   = (newmin, newmax)
         self.__covered = self.__imageIsCovered()
 
-        # TODO floating point error
-        if newmin != oldmin or newmax != oldmax:
+        if not np.all(np.isclose([oldmin, oldmax], [newmin, newmax])):
             log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
                 self.__name,
                 oldmin,
@@ -330,13 +399,6 @@ class ImageWrapper(notifier.Notifier):
                      array).
         """
 
-        log.debug('Updating image {} data range (current range: '
-                  '[{}, {}]; current coverage: {})'.format(
-                      self.__name,
-                      self.__range[0],
-                      self.__range[1],
-                      self.__coverage))
-
         # TODO You could do something with
         #      the provided data to avoid
         #      reading it in again.
@@ -344,15 +406,51 @@ class ImageWrapper(notifier.Notifier):
         self.__expandCoverage(slices)
 
 
+    def __updateDataRangeOnWrite(self, slices, data):
+        """Called by :meth:`__setitem__`. Assumes that the image data has
+        been changed (the data at ``slices`` has been replaced with ``data``.
+        Updates the image data coverage, and known data range accordingly.
+
+        :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
+                     index pair, one for each dimension in the image. 
+        
+        :arg data:   The image data at the given ``slices`` (as a ``numpy``
+                     array). 
+        """
+
+        overlap = sliceOverlap(slices, self.__coverage)
+
+        # If there's no overlap between the written
+        # area and the current coverage, then it's
+        # easy - we just expand the coverage to
+        # include the newly written area.
+        if overlap in (OVERLAP_SOME, OVERLAP_ALL):
+
+            # If there is overlap between the written
+            # area and the current coverage, things are
+            # more complicated, because the portion of
+            # the image that has been written over may
+            # have contained the currently known data
+            # minimum/maximum. We have no way of knowing
+            # this, so we have to reset the coverage (on
+            # the affected volumes), and recalculate the
+            # data range.
+
+            # TODO Could you store the location of the
+            #      data minimum/maximum (in each volume),
+            #      so you know whether resetting the
+            #      coverage is necessary?
+            lowVol, highVol = slices[self.__numRealDims - 1]
+
+            for vol in range(lowVol, highVol):
+                self.__coverage[:, :, vol] = np.nan
+
+        self.__expandCoverage(slices)
+
             
     def __getitem__(self, sliceobj):
         """Returns the image data for the given ``sliceobj``, and updates
         the known image data range if necessary.
-
-        .. note:: If the image data is in memory, it is accessed 
-                  directly, via the ``nibabel.Nifti1Image.get_data`` 
-                  method. Otherwise the image data is accessed through 
-                  the ``nibabel.Nifti1Image.dataobj`` array proxy.
 
         :arg sliceobj: Something which can slice the image data.
         """
@@ -375,6 +473,33 @@ class ImageWrapper(notifier.Notifier):
                 self.__updateDataRangeOnRead(slices, data)
 
         return data
+
+
+    def __setitem__(self, sliceobj, values):
+        """Writes the given ``values`` to the image at the given ``sliceobj``.
+
+        
+        :arg sliceobj: Something which can be used to slice the array.
+        :arg values:   Data to write to the image.
+
+        
+        .. note:: Modifying image data will cause the entire image to be
+                  loaded into memory. 
+        """
+
+        sliceobj = nib.fileslice.canonical_slicers(sliceobj,
+                                                   self.__image.shape)
+        slices   = sliceObjToSliceTuple(           sliceobj,
+                                                   self.__image.shape)
+
+        # The image data has to be in memory
+        # for the data to be changed. If it's
+        # already in memory, this call won't
+        # have any effect.
+        self.loadData()
+
+        self.__image.get_data()[sliceobj] = values
+        self.__updateDataRangeOnWrite(slices, values)
 
 
 def sliceObjToSliceTuple(sliceobj, shape):
