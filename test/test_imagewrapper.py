@@ -10,6 +10,7 @@ import              collections
 import              random
 import itertools as it
 import numpy     as np
+import nibabel   as nib
 
 
 import fsl.data.image        as image
@@ -195,7 +196,7 @@ def test_adjustCoverage():
 def test_sliceOverlap():
 
     # A bunch of random coverages
-    for i in range(250):
+    for i in range(150):
 
         # 2D, 3D or 4D?
         # ndims is the number of dimensions
@@ -212,19 +213,19 @@ def test_sliceOverlap():
 
         # Generate some slices that should
         # be contained within the coverage
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'in')
             assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_ALL
 
         # Generate some slices that should
         # overlap with the coverage 
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'overlap')
             assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_SOME
 
         # Generate some slices that should
         # be outside of the coverage 
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'out')
             assert imagewrap.sliceOverlap(slices, coverage)  == imagewrap.OVERLAP_NONE
 
@@ -232,7 +233,7 @@ def test_sliceOverlap():
 def test_sliceCovered():
 
     # A bunch of random coverages
-    for i in range(250):
+    for i in range(150):
 
         # 2D, 3D or 4D?
         # ndims is the number of dimensions
@@ -249,19 +250,19 @@ def test_sliceCovered():
 
         # Generate some slices that should
         # be contained within the coverage
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'in')
             assert imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
         # overlap with the coverage 
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'overlap')
             assert not imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
         # be outside of the coverage 
-        for j in range(250):
+        for j in range(150):
             slices = random_slices(coverage, shape, 'out')
             assert not imagewrap.sliceCovered(slices, coverage) 
 
@@ -344,7 +345,7 @@ def _test_expansion(coverage, slices, volumes, expansions):
             
 def test_calcExpansionNoCoverage():
 
-    for i in range(500):
+    for i in range(150):
         ndims       = random.choice((2, 3, 4)) - 1
         shape       = np.random.randint(5, 100, size=ndims + 1)
         shape[-1]   = np.random.randint(1, 8)
@@ -353,7 +354,7 @@ def test_calcExpansionNoCoverage():
 
         print
         print '-- Out --' 
-        for j in range(250):
+        for j in range(150):
             slices     = random_slices(coverage, shape, 'out')
             vols, exps = imagewrap.calcExpansion(slices, coverage)
             _test_expansion(coverage, slices, vols, exps)
@@ -361,7 +362,7 @@ def test_calcExpansionNoCoverage():
                 
 def test_calcExpansion():
 
-    for i in range(250):
+    for i in range(150):
 
         ndims     = random.choice((2, 3, 4)) - 1
         shape     = np.random.randint(5, 60, size=ndims + 1)
@@ -375,7 +376,7 @@ def test_calcExpansion():
 
         print
         print '-- In --'
-        for j in range(250):
+        for j in range(150):
             slices     = random_slices(coverage, shape, 'in')
             vols, exps = imagewrap.calcExpansion(slices, coverage)
 
@@ -385,15 +386,73 @@ def test_calcExpansion():
             
         print
         print '-- Overlap --' 
-        for j in range(250):
+        for j in range(150):
             slices     = random_slices(coverage, shape, 'overlap')
             vols, exps = imagewrap.calcExpansion(slices, coverage)
             _test_expansion(coverage, slices, vols, exps)
 
         print
         print '-- Out --' 
-        for j in range(250):
+        for j in range(150):
             slices     = random_slices(coverage, shape, 'out')
             vols, exps = imagewrap.calcExpansion(slices, coverage)
             _test_expansion(coverage, slices, vols, exps)
 
+
+def test_ImageWrapper_read():
+
+
+    for i in range(150):
+
+        # Generate an image with a number of volumes
+        ndims     = random.choice((2, 3, 4)) - 1
+        shape     = np.random.randint(5, 60, size=ndims + 1)
+        shape[-1] = np.random.randint(5, 15)
+        nvols     = shape[-1]
+
+        data = np.zeros(shape)
+
+        # The data range of each volume
+        # increases sequentially
+        data[..., 0] = np.random.randint(-5, 6, shape[:-1])
+        volRanges    = [(np.min(data[..., 0]),
+                         np.max(data[..., 0]))]
+
+        for i in range(1, nvols):
+            data[..., i] = data[..., 0] * (i + 1)
+            volRanges.append((np.min(data[..., i]),
+                              np.max(data[..., i])))
+
+        img     = nib.Nifti1Image(data, np.eye(4))
+        wrapper = imagewrap.ImageWrapper(img, loadData=False)
+
+        # We're going to access data volumes 
+        # through the image wrapper with a
+        # bunch of random volume orderings.
+
+        for i in range(150):
+
+            ordering = list(range(nvols))
+            random.shuffle(ordering)
+
+            ranges = [volRanges[o] for o in ordering]
+
+            wrapper.reset()
+
+            assert wrapper.dataRange == (0.0, 0.0)
+
+            for j, (vol, r) in enumerate(zip(ordering, ranges)):
+
+                # Access the volume
+                wrapper[..., vol]
+
+                # The current known data range
+                # should be the min/max of
+                # all acccessed volumes so far
+                expMin = min([r[0] for r in ranges[:j + 1]])
+                expMax = max([r[1] for r in ranges[:j + 1]])
+
+                assert wrapper.dataRange == (expMin, expMax)
+
+                if j < nvols - 1: assert not wrapper.covered
+                else:             assert     wrapper.covered
