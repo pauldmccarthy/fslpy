@@ -336,9 +336,10 @@ class ImageWrapper(notifier.Notifier):
         given ``slices``.
         """
 
-        log.debug('Updating image {} data range (current range: '
+        log.debug('Updating image {} data range [slice: {}] (current range: '
                   '[{}, {}]; current coverage: {})'.format(
                       self.__name,
+                      slices,
                       self.__range[0],
                       self.__range[1],
                       self.__coverage))
@@ -379,7 +380,7 @@ class ImageWrapper(notifier.Notifier):
         self.__range   = (newmin, newmax)
         self.__covered = self.__imageIsCovered()
 
-        if not np.all(np.isclose([oldmin, oldmax], [newmin, newmax])):
+        if not np.all(np.isclose([oldmin, newmin], [oldmax, newmax])):
             log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
                 self.__name,
                 oldmin,
