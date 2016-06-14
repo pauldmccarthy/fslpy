@@ -149,29 +149,46 @@ def rfloat(lo, hi):
 def applyCoverage(wrapper, coverage):
 
     ndims = coverage.shape[1]
+    nvols = coverage.shape[2]
 
     wrapper.reset()
     # 'Apply' that coverage to the image
     # wrapper by accessing the data in it
 
-    sliceobjs = []
-    for dim in range(ndims):
-        sliceobjs.append(slice(coverage[0, dim, 0], coverage[1, dim, 0], 1))
-    sliceobjs.append(0)
+    for vol in range(nvols):
+        if np.any(np.isnan(coverage[..., vol])):
+            continue
 
-    wrapper[tuple(sliceobjs)]
+        sliceobjs = []
+        for dim in range(ndims):
+            sliceobjs.append(
+                slice(int(coverage[0, dim, vol]),
+                      int(coverage[1, dim, vol]), 1))
+        sliceobjs.append(vol)
+
+        wrapper[tuple(sliceobjs)]
 
     # Check that the image wrapper
     # has covered what we just told
-    # it to cover, for this volume
-    wcov = wrapper.coverage(0)
+    # it to cover
 
-    for dim in range(ndims):
-        assert coverage[0, dim, 0] == wcov[0, dim]
-        assert coverage[1, dim, 0] == wcov[1, dim]
+    for vol in range(nvols):
+
+        uncovered = np.any(np.isnan(coverage[..., vol]))
+            
+        wcov = wrapper.coverage(vol)
+
+        if uncovered:
+            assert np.any(np.isnan(wcov))
+
+        else:
+
+            for dim in range(ndims):
+                assert coverage[0, dim, vol] == wcov[0, dim]
+                assert coverage[1, dim, vol] == wcov[1, dim]
 
 
-def coverageDataRange(data, coverage, slices):
+def coverageDataRange(data, coverage, slices=None):
 
     # Assuming that adjustCoverage is working.
     ndims = coverage.shape[1]
@@ -534,24 +551,24 @@ def test_ImageWrapper_read(niters=150):
                 
 def test_ImageWrapper_write_out(niters=150):
     # This is HORRIBLE
-
-    # Generate an image with just two volumes. We're only
-    # testing within-volume modifications here.
-    ndims     = random.choice((2, 3, 4)) - 1
-    shape     = np.random.randint(5, 60, size=ndims + 1)
-    shape[-1] = np.random.randint(2, 3)
-    nvols     = shape[-1]
-
-    data = np.zeros(shape)
-
-    # The data range of each volume
-    # increases sequentially
-    data[..., 0] = np.random.randint(-5, 6, shape[:-1])
-    for i in range(1, nvols):
-        data[..., i] = data[..., 0] * (i + 1)
  
     # Generate a bunch of random coverages
     for i in range(niters):
+        
+        # Generate an image with just two volumes. We're only
+        # testing within-volume modifications here.
+        ndims     = random.choice((2, 3, 4)) - 1
+        shape     = np.random.randint(5, 60, size=ndims + 1)
+        shape[-1] = np.random.randint(2, 3)
+        nvols     = shape[-1]
+
+        data = np.zeros(shape)
+
+        # The data range of each volume
+        # increases sequentially
+        data[..., 0] = np.random.randint(-5, 6, shape[:-1])
+        for i in range(1, nvols):
+            data[..., i] = data[..., 0] * (i + 1)
 
         # Generate a random coverage
         cov = random_coverage(shape, vol_limit=1)
@@ -665,25 +682,24 @@ def test_ImageWrapper_write_out(niters=150):
 
             
 def test_ImageWrapper_write_in_overlap(niters=150):
-    # This is HORRIBLE
 
-    # Generate an image with just two volumes. We're only
-    # testing within-volume modifications here.
-    ndims     = random.choice((2, 3, 4)) - 1
-    shape     = np.random.randint(5, 60, size=ndims + 1)
-    shape[-1] = np.random.randint(2, 3)
-    nvols     = shape[-1]
-
-    data = np.zeros(shape)
-
-    # The data range of each volume
-    # increases sequentially
-    data[..., 0] = np.random.randint(-5, 6, shape[:-1])
-    for i in range(1, nvols):
-        data[..., i] = data[..., 0] * (i + 1)
- 
     # Generate a bunch of random coverages
     for i in range(niters):
+
+        # Generate an image with just two volumes. We're only
+        # testing within-volume modifications here.
+        ndims     = random.choice((2, 3, 4)) - 1
+        shape     = np.random.randint(5, 60, size=ndims + 1)
+        shape[-1] = np.random.randint(2, 3)
+        nvols     = shape[-1]
+
+        data = np.zeros(shape)
+
+        # The data range of each volume
+        # increases sequentially
+        data[..., 0] = np.random.randint(-5, 6, shape[:-1])
+        for i in range(1, nvols):
+            data[..., i] = data[..., 0] * (i + 1)        
 
         # Generate a random coverage
         cov = random_coverage(shape, vol_limit=1)
@@ -747,3 +763,140 @@ def test_ImageWrapper_write_in_overlap(niters=150):
 
                 assert np.isclose(newLo, rlo)
                 assert np.isclose(newHi, rhi)
+
+            
+def test_ImageWrapper_write_different_volume(niters=150):
+
+    for i in range(niters):
+
+        # Generate an image with several volumes. 
+        ndims     = random.choice((2, 3, 4)) - 1
+        nvols     = np.random.randint(10, 40)
+        shape     = np.random.randint(5, 60, size=ndims + 1)
+        shape[-1] = nvols
+
+        data = np.zeros(shape)
+
+        # The data range of each volume
+        # increases sequentially
+        data[..., 0] = np.random.randint(-5, 6, shape[:-1])
+        for i in range(1, nvols):
+            data[..., i] = data[..., 0] * (i + 1)
+
+
+        # Generate a random coverage
+        fullcov = random_coverage(shape)
+        cov     = np.copy(fullcov)
+
+        # Choose some consecutive volumes
+        # to limit that coverage to.
+        while True:
+            covvlo = np.random.randint(0,          nvols - 1)
+            covvhi = np.random.randint(covvlo + 1, nvols + 1)
+
+            # Only include up to 4
+            # volumes in the coverage
+            if covvhi - covvlo <= 3:
+                break
+
+        for v in range(nvols):
+            if v < covvlo or v >= covvhi:
+                cov[..., v] = np.nan
+
+        covlo, covhi = coverageDataRange(data, cov)
+
+        print 'Coverage: {} [{} - {}]'.format(
+            [(lo, hi) for lo, hi in cov[:, :, covvlo].T],
+            covvlo, covvhi)
+
+        # Now, we'll simulate some writes
+        # on volumes that are not in the
+        # coverage
+        for i in range(niters):
+
+            # Generate a slice, making
+            # sure that the slice covers
+            # at least two elements
+            while True:
+                slices = random_slices(fullcov,
+                                       shape,
+                                       random.choice(('out', 'in', 'overlap')))
+
+                # print slices
+
+                # Clobber the slice volume range
+                # so it does not overlap with the
+                # coverage volume range
+                while True:
+                    vlo = np.random.randint(0,       nvols)
+                    vhi = np.random.randint(vlo + 1, nvols + 1)
+                    
+                    if vhi < covvlo or vlo > covvhi:
+                        break
+                    
+                slices[-1] = vlo, vhi
+                
+                sliceshape = [hi - lo for lo, hi in slices]
+
+                if np.prod(sliceshape) == 1:
+                    continue
+
+                sliceobjs = imagewrap.sliceTupleToSliceObj(slices)
+                break
+
+            # Calculate what we expect the 
+            # coverage to be after the write
+            expCov = np.copy(cov)
+            for vol in range(slices[-1][0], slices[-1][1]):
+                expCov[..., vol] = imagewrap.adjustCoverage(
+                    expCov[..., vol], slices)
+
+            # Test all data range possibilities:
+            #  - inside the existing range       (clo < rlo < rhi < chi)
+            #  - encompassing the existing range (rlo < clo < chi < rhi)
+            #  - Overlapping the existing range  (rlo < clo < rhi < chi)
+            #                                    (clo < rlo < chi < rhi)
+            #  - Outside of the existing range   (clo < chi < rlo < rhi)
+            #                                    (rlo < rhi < clo < chi)
+            
+            loRanges = [rfloat(covlo,         covhi), 
+                        rfloat(covlo - 100,   covlo), 
+                        rfloat(covlo - 100,   covlo), 
+                        rfloat(covlo,         covhi), 
+                        rfloat(covhi,         covhi + 100), 
+                        rfloat(covlo - 100,   covlo)] 
+
+            hiRanges = [rfloat(loRanges[0], covhi), 
+                        rfloat(covhi,       covhi + 100), 
+                        rfloat(covlo,       covhi), 
+                        rfloat(covhi,       covhi + 100), 
+                        rfloat(loRanges[4], covhi + 100), 
+                        rfloat(loRanges[5], covlo)]
+
+            # What we expect the range to 
+            # be after the data write
+            expected = [(covlo,       covhi),
+                        (loRanges[1], hiRanges[1]),
+                        (loRanges[2], covhi),
+                        (covlo,       hiRanges[3]),
+                        (covlo,       hiRanges[4]),
+                        (loRanges[5], covhi)]
+
+            for rlo, rhi, (elo, ehi) in zip(loRanges, hiRanges, expected):
+
+                img     = nib.Nifti1Image(np.copy(data), np.eye(4))
+                wrapper = imagewrap.ImageWrapper(img)
+                applyCoverage(wrapper, cov)
+
+                newData = np.linspace(rlo, rhi, np.prod(sliceshape))
+                newData = newData.reshape(sliceshape)
+
+                wrapper[tuple(sliceobjs)] = newData
+
+                newLo, newHi = wrapper.dataRange
+
+                for vol in range(nvols):
+                    np.all(wrapper.coverage(vol) == expCov[..., vol])
+                    
+                assert np.isclose(newLo, elo)
+                assert np.isclose(newHi, ehi)
