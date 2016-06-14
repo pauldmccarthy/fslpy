@@ -270,8 +270,11 @@ class ImageWrapper(notifier.Notifier):
         :returns: The coverage for the specified volume, as a ``numpy``
                   array of shape ``(nd, 2)``, where ``nd`` is the number
                   of dimensions in the volume.
+
+        .. note:: If the specified volume is not covered, the returned array
+                  will contain ``np.nan`` values.
         """
-        return np.array(self.__coverage[..., vol], dtype=np.uint32)
+        return np.array(self.__coverage[..., vol])
 
     
     def loadData(self):
