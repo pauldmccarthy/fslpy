@@ -88,20 +88,9 @@ class ImageWrapper(notifier.Notifier):
                         array proxy).
 
         :arg dataRange: A tuple containing the initial ``(min, max)``  data
-                        range to use.
-
-
-        .. note:: The ``dataRange`` parameter is intended for situations where
-                  the image data range is known (e.g. it was calculated
-                  earlier, and the image is being re-loaded. If a
-                  ``dataRange`` is passed in, it will *not* be overwritten by
-                  any range calculated from the data, unless the calculated
-                  data range is wider than the provided ``dataRange``.
+                        range to use. See the :meth:`reset` method.
         """
 
-        if dataRange is None:
-            dataRange = None, None
-        
         self.__image = image
         self.__name  = name
 
@@ -116,6 +105,86 @@ class ImageWrapper(notifier.Notifier):
         # And save the number of
         # 'padding' dimensions too.
         self.__numPadDims = len(image.shape) - self.__numRealDims
+
+        # The internal state is stored
+        # in these attributes - they're
+        # initialised in the reset method.
+        self.__range     = None
+        self.__coverage  = None
+        self.__volRanges = None
+        self.__covered   = False
+
+        self.reset(dataRange)
+
+        if loadData:
+            self.loadData()
+
+        
+    @property
+    def dataRange(self):
+        """Returns the currently known data range as a tuple of ``(min, max)``
+        values.
+        """
+        # If no image data has been accessed, we
+        # default to whatever is stored in the
+        # header (which may or may not contain
+        # useful values).
+        low, high = self.__range
+        hdr       = self.__image.get_header()
+
+        if low  is None: low  = float(hdr['cal_min'])
+        if high is None: high = float(hdr['cal_max'])
+
+        return low, high
+
+    
+    @property
+    def covered(self):
+        """Returns ``True`` if this ``ImageWrapper`` has read the entire
+        image data, ``False`` otherwise.
+        """
+        return self.__covered
+
+
+    def loadData(self):
+        """Forces all of the image data to be loaded into memory.
+
+        .. note:: This method will be called by :meth:`__init__` if its
+                  ``loadData`` parameter is ``True``.
+        """
+
+        # If the data is not already loaded, this will
+        # cause nibabel to load it. By default, nibabel
+        # will cache the numpy array that contains the
+        # image data, so subsequent calls to this
+        # method will not overwrite any changes that
+        # have been made to the data.
+        self.__image.get_data()
+
+
+    def reset(self, dataRange=None):
+        """Reset the internal state and known data range of this
+        ``ImageWrapper``.
+
+        
+        :arg dataRange: A tuple containing the initial ``(min, max)``  data
+                        range to use. See the :meth:`reset` method.
+
+
+        .. note:: The ``dataRange`` parameter is intended for situations where
+                  the image data range is known (e.g. it was calculated
+                  earlier, and the image is being re-loaded. If a
+                  ``dataRange`` is passed in, it will *not* be overwritten by
+                  any range calculated from the data, unless the calculated
+                  data range is wider than the provided ``dataRange``. 
+        """
+        
+        if dataRange is None:
+            dataRange = None, None
+
+        image = self.__image
+        ndims =             self.__numRealDims - 1
+        nvols = image.shape[self.__numRealDims - 1]
 
         # The current known image data range. This
         # gets updated as more image data gets read.
@@ -143,9 +212,7 @@ class ImageWrapper(notifier.Notifier):
         # All of these indices are stored in a numpy array:
         #   - first dimension:  low/high index
         #   - second dimension: image dimension
-        #   - third dimension:  slice/volume index
-        ndims = self.__numRealDims - 1
-        nvols = image.shape[self.__numRealDims - 1]
+        #   - third dimension:  slice/volume index 
         self.__coverage = np.zeros((2, ndims, nvols), dtype=np.float32)
 
         # Internally, we calculate and store the
@@ -159,43 +226,6 @@ class ImageWrapper(notifier.Notifier):
         # full image data range becomes known
         # (i.e. when all data has been loaded in).
         self.__covered = False
-
-        if loadData:
-            self.loadData()
-
-        
-    @property
-    def dataRange(self):
-        """Returns the currently known data range as a tuple of ``(min, max)``
-        values.
-        """
-        # If no image data has been accessed, we
-        # default to whatever is stored in the
-        # header (which may or may not contain
-        # useful values).
-        low, high = self.__range
-        hdr       = self.__image.get_header()
-
-        if low  is None: low  = float(hdr['cal_min'])
-        if high is None: high = float(hdr['cal_max'])
-
-        return low, high
-
-
-    def loadData(self):
-        """Forces all of the image data to be loaded into memory.
-
-        .. note:: This method will be called by :meth:`__init__` if its
-                  ``loadData`` parameter is ``True``.
-        """
-
-        # If the data is not already loaded, this will
-        # cause nibabel to load it. By default, nibabel
-        # will cache the numpy array that contains the
-        # image data, so subsequent calls to this
-        # method will not overwrite any changes that
-        # have been made to the data.
-        self.__image.get_data()
 
 
     def __getData(self, sliceobj, isTuple=False):
