@@ -663,11 +663,11 @@ def test_ImageWrapper_write_out(niters=150):
                 assert np.isclose(newHi, expHi)
             print '--------------'
 
+            
+def test_ImageWrapper_write_in_overlap(niters=150):
+    # This is HORRIBLE
 
-                
-def best_ImageWrapper_write_in_overlap():
-
-    # Generate an image with only two volumes. We're only
+    # Generate an image with just two volumes. We're only
     # testing within-volume modifications here.
     ndims     = random.choice((2, 3, 4)) - 1
     shape     = np.random.randint(5, 60, size=ndims + 1)
@@ -683,27 +683,22 @@ def best_ImageWrapper_write_in_overlap():
         data[..., i] = data[..., 0] * (i + 1)
  
     # Generate a bunch of random coverages
-    for i in range(1):
+    for i in range(niters):
 
         # Generate a random coverage
         cov = random_coverage(shape, vol_limit=1)
 
-        print 'This is the coverage: {}'.format(cov)
-
-        img     = nib.Nifti1Image(data, np.eye(4))
-        wrapper = imagewrap.ImageWrapper(img)
-        applyCoverage(wrapper, cov)
-        clo, chi = wrapper.dataRange
-
         # Now, we'll simulate some writes
-        # outside of the coverage area.
-        for i in range(5):
+        # which are contained within, or
+        # overlap with, the initial coverage
+        for i in range(niters):
 
-            # Generate some slices inside/overlapping
-            # with the coverage area, making sure that
-            # the slice covers at least two elements
+            # Generate some slices outside
+            # of the coverage area, making
+            # sure that the slice covers
+            # at least two elements
             while True:
-                slices     = random_slices(cov, shape, np.random.choice(('in', 'overlap')))
+                slices     = random_slices(cov, shape, random.choice(('in', 'overlap')))
                 slices[-1] = [0, 1]
                 sliceshape = [hi - lo for lo, hi in slices]
 
@@ -715,82 +710,40 @@ def best_ImageWrapper_write_in_overlap():
                 sliceshape = sliceshape[:-1]
                 break
 
-            print '---------------'
-            print 'Slice {}'.format(slices)
 
-            # Expected wrapper coverage after the write
-            expCov = imagewrap.adjustCoverage(cov[..., 0], slices)
+            # Expected wrapper coverage after the write 
+            # The write will invalidate the current
+            # known data range and coverage, so the
+            # expected coverage after the write will
+            # be the area covered by the write slice
+            nullCov    = np.zeros(cov.shape)
+            nullCov[:] = np.nan
+            expCov     = imagewrap.adjustCoverage(nullCov[..., 0], slices)
 
-            # Figure out the data range of the
-            # expanded coverage (the original
-            # coverage expanded to include this
-            # slice).
-            elo, ehi = coverageDataRange(data, cov, slices)
+            for i in range(10):
 
-            # Test all data range possibilities:
-            #  - inside the existing range       (clo < rlo < rhi < chi)
-            #  - encompassing the existing range (rlo < clo < chi < rhi)
-            #  - Overlapping the existing range  (rlo < clo < rhi < chi)
-            #                                    (clo < rlo < chi < rhi)
-            #  - Outside of the existing range   (clo < chi < rlo < rhi)
-            #                                    (rlo < rhi < clo < chi)
-            loRanges = [rfloat(clo,         chi), 
-                        rfloat(elo - 100,   elo), 
-                        rfloat(elo - 100,   elo), 
-                        rfloat(clo,         chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(elo - 100,   elo)] 
-
-            hiRanges = [rfloat(loRanges[0], chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(clo,         chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(loRanges[4], ehi + 100), 
-                        rfloat(loRanges[5], elo)]
-            
-            for rlo, rhi in zip(loRanges, hiRanges):
+                rlo = rfloat(data.min() - 100, data.max() + 100)
+                rhi = rfloat(rlo,              data.max() + 100)
 
                 img     = nib.Nifti1Image(np.copy(data), np.eye(4))
                 wrapper = imagewrap.ImageWrapper(img)
                 applyCoverage(wrapper, cov)
 
-                print 'ndims', ndims
-                print 'sliceshape', sliceshape
-                print 'sliceobjs', sliceobjs
-
                 newData = np.linspace(rlo, rhi, np.prod(sliceshape))
                 newData = newData.reshape(sliceshape)
 
-                # Make sure that the expected low/high values
-                # are present in the data being written
 
-                print 'Writing data (shape: {})'.format(newData.shape)
-
-                oldCov = wrapper.coverage(0)
+                print 'Old range:      {} - {}'.format(*wrapper.dataRange)
 
                 wrapper[tuple(sliceobjs)] = newData
 
-                expLo, expHi = coverageDataRange(img.get_data(), cov, slices)
+                newCov       = wrapper.coverage(0)
                 newLo, newHi = wrapper.dataRange
 
-                print 'Old    range: {} - {}'.format(clo,   chi)
-                print 'Sim    range: {} - {}'.format(rlo,   rhi)
-                print 'Exp    range: {} - {}'.format(expLo, expHi)
-                print 'NewDat range: {} - {}'.format(newData.min(), newData.max())
-                print 'Data   range: {} - {}'.format(data.min(),   data.max())
-                print 'Expand range: {} - {}'.format(elo, ehi)
-                print 'New    range: {} - {}'.format(newLo, newHi)
-
-                newCov = wrapper.coverage(0)
-                print 'Old coverage:      {}'.format(oldCov)
-                print 'New coverage:      {}'.format(newCov)
-                print 'Expected coverage: {}'.format(expCov)
-                print
-                print
+                print 'Expected range: {} - {}'.format(rlo,   rhi)
+                print 'New range:      {} - {}'.format(newLo, newHi)
 
                 assert np.all(newCov == expCov)
 
-                assert np.isclose(newLo, expLo)
-                assert np.isclose(newHi, expHi)
-
-            print '--------------'
+                assert np.isclose(newLo, rlo)
+                assert np.isclose(newHi, rhi)
