@@ -66,6 +66,17 @@ def random_slices(coverage, shape, mode):
     
     slices = np.zeros((2, len(shape)))
 
+    origMode = mode
+
+    # If we're generating an 'out' slice (i.e.
+    # a slice which is not covered by the coverage),
+    # then only one dimension needs to be out. The
+    # other dimensions don't matter.
+    if mode == 'out':
+        dimModes = [random.choice(('in', 'out', 'overlap')) for i in range(ndims)]
+        if not any([m == 'out' for m in dimModes]):
+            dimModes[random.randint(0, ndims - 1)] = 'out'
+
     for dim, size in enumerate(shape):
 
         # Volumes 
@@ -75,13 +86,19 @@ def random_slices(coverage, shape, mode):
 
             slices[:, dim] = lowCover, highCover
             continue
+ 
+        if origMode == 'out':
+            mode = dimModes[dim]
 
         # Assuming that coverage is same for each volume
         lowCover  = coverage[0, dim, 0]
         highCover = coverage[1, dim, 0]
 
         if (np.isnan(lowCover) or np.isnan(highCover)) and mode in ('in', 'overlap'):
-            raise RuntimeError('Can\'t generate in/overlapping slices on an empty coverage')
+            if origMode == 'out':
+                mode = 'out'
+            else:
+                raise RuntimeError('Can\'t generate in/overlapping slices on an empty coverage')
         
         # Generate some slices that will
         # be contained within the coverage
