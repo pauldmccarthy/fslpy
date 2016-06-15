@@ -610,7 +610,21 @@ class Image(Nifti1, notifier.Notifier):
 
 
     def save(self, filename=None):
+        """Saves this ``Image`` to the specifed file, or the :attr:`dataSource`
+        if ``filename`` is ``None``.
+        """
+
+        if self.__dataSource is None and filename is None:
+            raise ValueError('A file name must be specified')
+
+        if filename is None:
+            filename = self.__dataSource
+
+        log.debug('Saving {} to {}'.format(self.name, filename))
+        
         raise NotImplementedError()
+
+        # TODO Update self.__dataSource if necessary
 
 
     def __getitem__(self, sliceobj):
