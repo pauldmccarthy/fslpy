@@ -336,19 +336,19 @@ class ImageWrapper(notifier.Notifier):
         given ``slices``.
         """
 
-        log.debug('Updating image {} data range [slice: {}] (current range: '
-                  '[{}, {}]; current coverage: {})'.format(
+        volumes, expansions = calcExpansion(slices, self.__coverage)
+
+        log.debug('Updating image {} data range [slice: {}] '
+                  '(current range: [{}, {}]; '
+                  'number of expansions: {}; '
+                  'current coverage: {})'.format(
                       self.__name,
                       slices,
                       self.__range[0],
                       self.__range[1],
+                      len(volumes),
                       self.__coverage))
         
-        volumes, expansions = calcExpansion(slices, self.__coverage)
-        
-        oldmin, oldmax = self.__range
-        newmin, newmax = oldmin, oldmax
-
         # The calcExpansion function splits up the
         # expansions on volumes - here we calculate
         # the min/max per volume/expansion, and
@@ -356,39 +356,41 @@ class ImageWrapper(notifier.Notifier):
         # coverage and data range.
         for vol, exp in zip(volumes, expansions):
 
-            oldmin, oldmax = self.__volRanges[vol, :]
+            oldvmin, oldvmax = self.__volRanges[vol, :]
 
-            data   = self.__getData(exp, isTuple=True)
-            newmin = float(np.nanmin(data))
-            newmax = float(np.nanmax(data))
+            data    = self.__getData(exp, isTuple=True)
+            newvmin = float(np.nanmin(data))
+            newvmax = float(np.nanmax(data))
 
-            if (not np.isnan(oldmin)) and oldmin < newmin: newmin = oldmin
-            if (not np.isnan(oldmax)) and oldmax > newmax: newmax = oldmax
+            if (not np.isnan(oldvmin)) and oldvmin < newvmin: newvmin = oldvmin
+            if (not np.isnan(oldvmax)) and oldvmax > newvmax: newvmax = oldvmax
 
             # Update the stored range and
             # coverage for each volume 
-            self.__volRanges[vol, :]  = newmin, newmax
+            self.__volRanges[vol, :]  = newvmin, newvmax
             self.__coverage[..., vol] = adjustCoverage(
                 self.__coverage[..., vol], exp)
 
         # Calculate the new known data
         # range over the entire image
         # (i.e. over all volumes).
-        newmin = np.nanmin(self.__volRanges[:, 0])
-        newmax = np.nanmax(self.__volRanges[:, 1])
+        newmin = float(np.nanmin(self.__volRanges[:, 0]))
+        newmax = float(np.nanmax(self.__volRanges[:, 1]))
 
+        oldmin, oldmax = self.__range
         self.__range   = (newmin, newmax)
         self.__covered = self.__imageIsCovered()
 
-        if not np.all(np.isclose([oldmin, newmin], [oldmax, newmax])):
+        if any((oldmin is None, oldmax is None)) or \
+           not np.all(np.isclose([oldmin, oldmax], [newmin, newmax])):
             log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
                 self.__name,
                 oldmin,
                 oldmax,
                 newmin,
                 newmax))
-            self.notify() 
-    
+            self.notify()
+
 
     def __updateDataRangeOnRead(self, slices, data):
         """Called by :meth:`__getitem__`. Calculates the minimum/maximum
@@ -445,6 +447,13 @@ class ImageWrapper(notifier.Notifier):
             #      so you know whether resetting the
             #      coverage is necessary?
             lowVol, highVol = slices[self.__numRealDims - 1]
+
+            log.debug('Image {} data written - clearing known data '
+                      'range on volumes {} - {} (write slice: {})'.format(
+                          self.__name,
+                          lowVol,
+                          highVol,
+                          slices))
 
             for vol in range(lowVol, highVol):
                 self.__coverage[:, :, vol]    = np.nan
@@ -799,6 +808,18 @@ def calcExpansion(slices, coverage):
 
                 expansion[dimy][0] = expLow
                 expansion[dimy][1] = expHigh
+
+
+            # If no range exists for any of the
+            # other dimensions, the range for
+            # all expansions will be the current
+            # coverage
+            for dimy in range(numDims):
+                if dimy == dimx:
+                    continue
+
+                if np.any(np.isnan(expansion[dimy])):
+                    expansion[dimy] = coverage[:, dimy, vol]
 
             # Finish off this expansion
             expansion = finishExpansion(expansion, vol)

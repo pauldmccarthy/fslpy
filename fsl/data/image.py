@@ -458,13 +458,14 @@ class Image(Nifti1, notifier.Notifier):
  
         Nifti1.__init__(self, nibImage.get_header())
 
-        self.name           = name
-        self.__dataSource   = dataSource
-        self.__nibImage     = nibImage
-        self.__saveState    = dataSource is not None
-        self.__imageWrapper = imagewrapper.ImageWrapper(self.nibImage,
-                                                        self.name,
-                                                        loadData=loadData)
+        self.name                = name
+        self.__dataSource        = dataSource
+        self.__nibImage          = nibImage
+        self.__saveState         = dataSource is not None
+        self.__suppressDataRange = False
+        self.__imageWrapper      = imagewrapper.ImageWrapper(self.nibImage,
+                                                             self.name,
+                                                             loadData=loadData)
 
         if calcRange:
             self.calcRange()
@@ -561,7 +562,8 @@ class Image(Nifti1, notifier.Notifier):
         Notifies any listeners of this ``Image`` (registered through the
         :class:`.Notifier` interface) on the ``'dataRange'`` topic.
         """
-        self.notify(notifier_topic='dataRange')
+        if not self.__suppressDataRange:
+            self.notify(notifier_topic='dataRange')
 
 
     def calcRange(self, sizethres=None):
@@ -606,11 +608,19 @@ class Image(Nifti1, notifier.Notifier):
         self.__imageWrapper.loadData()
 
 
+    def save(self, filename=None):
+        raise NotImplementedError()
+
+
     def __getitem__(self, sliceobj):
         """Access the image data with the specified ``sliceobj``.
 
         :arg sliceobj: Something which can slice the image data.
         """
+
+
+        log.debug('{}: __getitem__ [{}]'.format(self.name, sliceobj))
+        
         data = self.__imageWrapper.__getitem__(sliceobj)
 
         if len(data.shape) > len(self.shape):
@@ -619,6 +629,38 @@ class Image(Nifti1, notifier.Notifier):
             data  = np.reshape(data, shape)
 
         return data
+
+
+    def __setitem__(self, sliceobj, values):
+        """Set the image data at ``sliceobj`` to ``values``.
+
+        :arg sliceobj: Something which can slice the image data.
+        :arg values:   New image data.
+
+        .. note:: Modifying image data will force the entire image to be 
+                  loaded into memory if it has not already been loaded.
+        """
+
+        log.debug('{}: __setitem__ [{} = {}]'.format(self.name,
+                                                     sliceobj,
+                                                     values.shape))
+
+        self.__suppressDataRange = True
+        oldRange = self.__imageWrapper.dataRange
+
+        self.__imageWrapper.__setitem__(sliceobj, values)
+
+        newRange = self.__imageWrapper.dataRange
+        self.__suppressDataRange = False
+
+        if values.size > 0:
+            
+            self.__saveState = False
+            self.notify(notifier_topic='data')
+            self.notify(notifier_topic='saveState')
+
+            if not np.all(np.isclose(oldRange, newRange)):
+                self.notify(notifier_topic='dataRange') 
 
 
 # TODO The wx.FileDialog does not    
