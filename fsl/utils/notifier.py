@@ -94,7 +94,7 @@ class Notifier(object):
         if listeners is None:
             return
 
-        callback, _ = listeners.pop(name, None)
+        callback, _ = listeners.pop(name, (None, None))
 
         # Silently absorb invalid names - the
         # notify function may have removed gc'd

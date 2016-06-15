@@ -384,6 +384,7 @@ class Image(Nifti1, notifier.Notifier):
 
         nibImage   = None
         dataSource = None
+        fileobj    = None
 
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
@@ -413,13 +414,12 @@ class Image(Nifti1, notifier.Notifier):
                 fmap['image'].fileobj = fobj
                 nibImage = nib.Nifti1Image.from_file_map(fmap)
                 
-                self.__fileobj = fobj
+                fileobj = fobj
 
             # Otherwise we let nibabel
             # manage the file reference(s)
             else:
                 nibImage  = nib.load(image)
-                self.__fileobj = None
                 
             dataSource = image
  
@@ -460,6 +460,7 @@ class Image(Nifti1, notifier.Notifier):
 
         self.name                = name
         self.__dataSource        = dataSource
+        self.__fileobj           = fileobj
         self.__nibImage          = nibImage
         self.__saveState         = dataSource is not None
         self.__suppressDataRange = False
