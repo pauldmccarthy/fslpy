@@ -42,6 +42,7 @@ import collections
 try:    import queue
 except: import Queue as queue
 
+
 log = logging.getLogger(__name__)
 
 
@@ -143,6 +144,29 @@ currently queued on the idle loop (see the ``name`` parameter to the
 """
 
 
+class IdleTask(object):
+    """Container object used by the :func:`idle` and :func:`_wxIdleLoop`
+    functions.
+    """
+
+    def __init__(self,
+                 name,
+                 task,
+                 schedtime,
+                 after,
+                 timeout,
+                 args,
+                 kwargs):
+        self.name      = name
+        self.task      = task
+        self.schedtime = schedtime
+        self.after     = after
+        self.timeout   = timeout
+        self.args      = args
+        self.kwargs    = kwargs
+
+
+
 def _wxIdleLoop(ev):
     """Function which is called on ``wx.EVT_IDLE`` events. If there
     is a function on the :attr:`_idleQueue`, it is popped and called.
@@ -154,20 +178,30 @@ def _wxIdleLoop(ev):
     ev.Skip()
 
     try:
-        task, schedtime, name, timeout, args, kwargs = _idleQueue.get_nowait()
+        task = _idleQueue.get_nowait()
     except queue.Empty:
         return
 
     now     = time.time()
-    elapsed = now - schedtime
+    elapsed = now - task.schedtime
 
-    if timeout == 0 or (elapsed < timeout):
+    # Has enouggh time elapsed
+    # since the task was scheduled?
+    # If not, re-queue the task.
+    if elapsed < task.after:
+        log.debug('Re-queueing function ({}) on wx idle '
+                  'loop'.format(getattr(task.task, '__name__', '<unknown>'))) 
+        _idleQueue.put_nowait(task)
+
+    # Has the task timed out?
+    elif task.timeout == 0 or (elapsed < task.timeout):
+        
         log.debug('Running function ({}) on wx idle '
-                  'loop'.format(getattr(task, '__name__', '<unknown>')))
-        task(*args, **kwargs)
+                  'loop'.format(getattr(task.task, '__name__', '<unknown>')))
+        task.task(*task.args, **task.kwargs)
 
-        if name is not None:
-            _idleQueueSet.discard(name)
+        if task.name is not None:
+            _idleQueueSet.discard(task.name)
 
     if _idleQueue.qsize() > 0:
         ev.RequestMore()
@@ -190,15 +224,29 @@ def idle(task, *args, **kwargs):
                   argument. Specifies a name that can be used to query
                   the state of this task via the :func:`inIdle` function.
 
+    :arg after:   Optional. If provided, must be provided as a keyword
+                  argument. A time, in seconds, which specifies the amount
+                  of time to wait before running this task after it has
+                  been scheduled.
+
     :arg timeout: Optional. If provided, must be provided as a keyword
                   argument. Specifies a time out, in seconds. If this
                   amount of time passes before the function gets
                   scheduled to be called on the idle loop, the function
                   is not called, and is dropped from the queue.
 
+    
     All other arguments are passed through to the task function.
 
-    If a ``wx.App`` is not running, the task is called directly.
+    
+    If a ``wx.App`` is not running, the ``after`` and ``timeout`` arguments
+    are ignored, and the task is called directly.
+
+
+    .. note:: If the ``after`` argument is used, there is no guarantee that
+              the task will be executed in the order that it is scheduled.
+              This is because, if the required time has not elapsed when
+              the task is poppsed from the queue, it will be re-queued.
     """
 
     global _idleRegistered
@@ -207,6 +255,7 @@ def idle(task, *args, **kwargs):
 
     schedtime = time.time()
     timeout   = kwargs.pop('timeout', 0)
+    after     = kwargs.pop('after',   0)
     name      = kwargs.pop('name',    None)
 
     if _haveWX():
@@ -219,7 +268,16 @@ def idle(task, *args, **kwargs):
         log.debug('Scheduling idle task ({}) on wx idle '
                   'loop'.format(getattr(task, '__name__', '<unknown>')))
 
-        _idleQueue.put_nowait((task, schedtime, name, timeout, args, kwargs))
+        idleTask = IdleTask(name,
+                            task,
+                            schedtime,
+                            after,
+                            timeout,
+                            args,
+                            kwargs)
+
+        _idleQueue.put_nowait(idleTask)
+
         if name is not None:
             _idleQueueSet.add(name)
             
