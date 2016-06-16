@@ -18,8 +18,8 @@ It is very easy to load a NIFTI image::
     myimg = Image('MNI152_T1_2mm.nii.gz')
 
 
-A number of other functions are also provided for working with image files and
-file names:
+A handful of other functions are also provided for working with image files
+and file names:
 
 .. autosummary::
    :nosignatures:
@@ -27,8 +27,7 @@ file names:
    looksLikeImage
    removeExt
    addExt
-   loadImage
-   saveImage
+   loadIndexedImageFile
 """
 
 
@@ -400,21 +399,7 @@ class Image(Nifti1, notifier.Notifier):
             # ref to the file object - we'll close
             # it when we are destroyed.
             if indexed and image.endswith('.gz'):
-
-                import indexed_gzip as igzip
-
-                log.debug('Loading {} using indexed gzip'.format(image))
-
-                fobj = igzip.IndexedGzipFile(
-                    filename=image,
-                    spacing=4194304,
-                    readbuf_size=131072)
-                
-                fmap = nib.Nifti1Image.make_file_map()
-                fmap['image'].fileobj = fobj
-                nibImage = nib.Nifti1Image.from_file_map(fmap)
-                
-                fileobj = fobj
+                nibImage, fileobj = loadIndexedImageFile(image)
 
             # Otherwise we let nibabel
             # manage the file reference(s)
@@ -614,17 +599,52 @@ class Image(Nifti1, notifier.Notifier):
         if ``filename`` is ``None``.
         """
 
+        import nibabel as nib
+        
         if self.__dataSource is None and filename is None:
             raise ValueError('A file name must be specified')
 
         if filename is None:
             filename = self.__dataSource
 
-        log.debug('Saving {} to {}'.format(self.name, filename))
-        
-        raise NotImplementedError()
+        filename = op.abspath(filename)
 
-        # TODO Update self.__dataSource if necessary
+        log.debug('Saving {} to {}'.format(self.name, filename))
+
+        # If this Image is not managing its
+        # own file object, nibabel does all
+        # of the hard work.
+        if self.__fileobj is None:
+            nib.save(self.__nibImage, filename)
+
+        # Otherwise we've got our own file
+        # handle to an IndexedGzipFile
+        else:
+            # Currently indexed_gzip does not support
+            # writing. So we're going to use nibabel
+            # to save the image, then close and re-open
+            # the file.
+            #
+            # Unfortunately this means that we'll
+            # lose the file index (and fast random
+            # access) - I'll fix this when I get a
+            # chance to work on indexed_gzip a bit
+            # more.
+            #
+            # Hopefully I should be able to add write
+            # support to indexed_gzip, such that it
+            # re-builds the index while writing the
+            # compressed data. And then be able to
+            # transfer the index generated from the
+            # write to a new read-only file handle.
+            nib.save(self.__nibImage, filename)
+            self.__fileobj.close()
+            self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
+
+        self.__dataSource = filename
+        self.__saveState  = True
+        
+        self.notify(notifier_topic='saveState')
 
 
     def __getitem__(self, sliceobj):
@@ -669,10 +689,12 @@ class Image(Nifti1, notifier.Notifier):
         self.__suppressDataRange = False
 
         if values.size > 0:
-            
-            self.__saveState = False
+
             self.notify(notifier_topic='data')
-            self.notify(notifier_topic='saveState')
+
+            if self.__saveState:
+                self.__saveState = False
+                self.notify(notifier_topic='saveState')
 
             if not np.all(np.isclose(oldRange, newRange)):
                 self.notify(notifier_topic='dataRange') 
@@ -740,3 +762,27 @@ def addExt(prefix, mustExist=True):
                           ALLOWED_EXTENSIONS,
                           mustExist,
                           DEFAULT_EXTENSION)
+
+
+def loadIndexedImageFile(filename):
+    """Loads the given image file using ``nibabel`` and ``indexed_gzip``.
+
+    Returns a tuple containing the ``Nifti1Image``, and the open
+    ``IndexedGzipFile`` handle.
+    """
+    
+    import nibabel      as nib
+    import indexed_gzip as igzip
+
+    log.debug('Loading {} using indexed gzip'.format(filename))
+
+    fobj = igzip.IndexedGzipFile(
+        filename=filename,
+        spacing=4194304,
+        readbuf_size=131072)
+
+    fmap = nib.Nifti1Image.make_file_map()
+    fmap['image'].fileobj = fobj
+    image = nib.Nifti1Image.from_file_map(fmap)
+
+    return image, fobj
