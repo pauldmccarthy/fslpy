@@ -100,7 +100,7 @@ def memoizeMD5(func):
         hashobj = hashlib.md5()
 
         for arg in args:
-            arg = six.u(arg).encode('utf-8')
+            arg = six.u(str(arg)).encode('utf-8')
             hashobj.update(arg)
 
         digest = hashobj.hexdigest()

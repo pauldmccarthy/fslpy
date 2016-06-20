@@ -40,6 +40,7 @@ import numpy      as np
 
 import fsl.utils.transform   as transform
 import fsl.utils.notifier    as notifier
+import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
@@ -209,7 +210,11 @@ class Nifti1(object):
         
         return int(code)
 
-
+    # TODO Check what has worse performance - hashing
+    #      a 4x4 array (via memoizeMD5), or the call
+    #      to aff2axcodes. I'm guessing the latter,
+    #      but am not 100% sure.
+    @memoize.memoizeMD5
     def axisMapping(self, xform):
         """Returns the (approximate) correspondence of each axis in the source
         coordinate system to the axes in the destination coordinate system,
