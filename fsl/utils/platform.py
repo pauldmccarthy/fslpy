@@ -15,9 +15,20 @@ import logging
 
 import os
 import sys
-import platform as builtin_platform
+import importlib
 
 import fsl.utils.notifier as notifier
+
+# An annoying consequence of using
+# a system-module name for our own
+# module is that we can't import
+# it directly (as it will attempt
+# to import itself, i.e. this module).
+#
+# This is only necessary in Python 2.x
+# (as python 3 disallows relative
+# imports).
+builtin_platform = importlib.import_module('platform')
 
 
 log = logging.getLogger(__name__)
