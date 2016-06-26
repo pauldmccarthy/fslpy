@@ -732,8 +732,10 @@ class CheckBoxMessageDialog(wx.Dialog):
                  message=None,
                  cbMessages=None,
                  cbStates=None,
-                 okBtnText=None,
-                 cancelBtnText=None,
+                 yesText=None,
+                 noText=None,
+                 cancelText=None,
+                 focus=None,
                  icon=None,
                  style=None):
         """Create a ``CheckBoxMessageDialog``.
@@ -749,11 +751,18 @@ class CheckBoxMessageDialog(wx.Dialog):
         :arg cbStates:      A list of initial states (boolean values) for
                             each ``wx.CheckBox``.
         
-        :arg okBtnText:     Text to show on the OK/confirm button. Defaults to
-                            *OK*.
+        :arg yesText:       Text to show on the *yes*/confirm button. Defaults 
+                            to *OK*.
 
-        :arg cancelBtnText: Text to show on the cancel button. If not provided,
-                            there will be no cancel button.
+        :arg noText:        Text to show on the *no* button. If not provided,
+                            there will be no *no* button.
+
+        :arg cancelText:    Text to show on the *cancel* button. If not 
+                            provided, there will be no cancel button.
+
+        :arg focus:         One of ``'yes'``, ``'no'```, or ``'cancel'``,
+                            specifying which button should be given initial
+                            focus.
         
         :arg icon:          A ``wx`` icon identifier (e.g. 
                             ``wx.ICON_EXCLAMATION``).
@@ -762,12 +771,12 @@ class CheckBoxMessageDialog(wx.Dialog):
                             method. Defaults to ``wx.DEFAULT_DIALOG_STYLE``.
         """
 
-        if style      is None: style         = wx.DEFAULT_DIALOG_STYLE
-        if title      is None: title         = ''
-        if message    is None: message       = ''
-        if cbMessages is None: cbMessages    = ['']
-        if cbStates   is None: cbStates      = [False] * len(cbMessages)
-        if okBtnText  is None: okBtnText     = 'OK'
+        if style      is None: style      = wx.DEFAULT_DIALOG_STYLE
+        if title      is None: title      = ''
+        if message    is None: message    = ''
+        if cbMessages is None: cbMessages = ['']
+        if cbStates   is None: cbStates   = [False] * len(cbMessages)
+        if yesText    is None: yesText    = 'OK'
 
         wx.Dialog.__init__(self, parent, title=title, style=style)
 
@@ -791,18 +800,25 @@ class CheckBoxMessageDialog(wx.Dialog):
             cb.SetValue(state)
             self.__checkboxes.append(cb)
             
-        self.__message  = wx.StaticText(self, label=message)
-        self.__okButton = wx.Button(    self, label=okBtnText, id=wx.ID_OK)
+        self.__message   = wx.StaticText(self, label=message)
+        self.__yesButton = wx.Button(    self, label=yesText, id=wx.ID_YES)
 
-        self.__okButton.Bind(wx.EVT_BUTTON, self.__onOKButton)
+        self.__yesButton.Bind(wx.EVT_BUTTON, self.__onYesButton)
 
-        if cancelBtnText is not None:
+        if noText is not None:
+            self.__noButton = wx.Button(self, label=noText, id=wx.ID_NO)
+            self.__noButton.Bind(wx.EVT_BUTTON, self.__onNoButton)
+
+        else:
+            self.__noButton = None
+ 
+        if cancelText is not None:
             self.__cancelButton = wx.Button(self,
-                                            label=cancelBtnText,
+                                            label=cancelText,
                                             id=wx.ID_CANCEL)
             self.__cancelButton.Bind(wx.EVT_BUTTON, self.__onCancelButton)
         else:
-            self.__cancelButton = None
+            self.__cancelButton = None 
 
         self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
         self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
@@ -815,11 +831,14 @@ class CheckBoxMessageDialog(wx.Dialog):
 
         self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
         self.__btnSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
-        self.__btnSizer.Add(self.__okButton)
-        
-        if self.__cancelButton is not None:
-            self.__btnSizer.Add((5, 1), flag=wx.EXPAND)
-            self.__btnSizer.Add(self.__cancelButton)
+
+        buttons = [self.__yesButton, self.__noButton, self.__cancelButton]
+        buttons = [b for b in buttons if b is not None]
+
+        for i, b in enumerate(buttons):
+            self.__btnSizer.Add(b)
+            if i != len(buttons) - 1:
+                self.__btnSizer.Add((5, 1), flag=wx.EXPAND)
         
         self.__contentSizer.Add(self.__btnSizer, flag=wx.EXPAND)
 
@@ -832,6 +851,15 @@ class CheckBoxMessageDialog(wx.Dialog):
                              border=20)
 
         self.__message.Wrap(self.GetSize().GetWidth())
+
+        yes    = self.__yesButton
+        no     = self.__noButton
+        cancel = self.__cancelButton
+
+        # TODO This does not work.
+        if   focus == 'yes':                           yes   .SetFocus()
+        elif focus == 'no'     and no     is not None: no    .SetFocus()
+        elif focus == 'cancel' and cancel is not None: cancel.SetFocus()
 
         self.SetSizer(self.__mainSizer)
         self.Layout()
@@ -846,11 +874,18 @@ class CheckBoxMessageDialog(wx.Dialog):
         return self.__checkboxes[index].GetValue()
 
 
-    def __onOKButton(self, ev):
+    def __onYesButton(self, ev):
         """Called when the button on this ``CheckBoxMessageDialog`` is
         clicked. Closes the dialog.
         """
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.ID_YES)
+
+        
+    def __onNoButton(self, ev):
+        """Called when the button on this ``CheckBoxMessageDialog`` is
+        clicked. Closes the dialog.
+        """
+        self.EndModal(wx.ID_NO)
 
         
     def __onCancelButton(self, ev):
