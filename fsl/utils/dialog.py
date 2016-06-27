@@ -852,14 +852,13 @@ class CheckBoxMessageDialog(wx.Dialog):
 
         self.__message.Wrap(self.GetSize().GetWidth())
 
-        yes    = self.__yesButton
-        no     = self.__noButton
-        cancel = self.__cancelButton
+        yes  = self.__yesButton
+        no   = self.__noButton
+        cncl = self.__cancelButton
 
-        # TODO This does not work.
-        if   focus == 'yes':                           yes   .SetFocus()
-        elif focus == 'no'     and no     is not None: no    .SetFocus()
-        elif focus == 'cancel' and cancel is not None: cancel.SetFocus()
+        if   focus == 'yes':                         yes .SetDefault()
+        elif focus == 'no'     and no   is not None: no  .SetDefault()
+        elif focus == 'cancel' and cncl is not None: cncl.SetDefault()
 
         self.SetSizer(self.__mainSizer)
         self.Layout()
