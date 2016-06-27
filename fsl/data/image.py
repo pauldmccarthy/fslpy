@@ -95,6 +95,23 @@ class Nifti1(object):
         if len(shape) < 3 or len(shape) > 4:
             raise RuntimeError('Only 3D or 4D images are supported')
 
+        voxToWorldMat = self.__determineTransform(header)
+        worldToVoxMat = transform.invert(voxToWorldMat)
+
+        self.header        = header
+        self.shape         = shape
+        self.__origShape   = origShape
+        self.pixdim        = pixdim
+        self.voxToWorldMat = voxToWorldMat
+        self.worldToVoxMat = worldToVoxMat
+
+        
+    def __determineTransform(self, header):
+        """Called by :meth:`__init__`. Figures out the voxel-to-world
+        coordinate transformation matrix that is associated with this
+        ``Nifti1`` instance.
+        """
+        
         # We have to treat FSL/FNIRT images
         # specially, as FNIRT clobbers the
         # sform section of the NIFTI header
@@ -106,19 +123,26 @@ class Nifti1(object):
             log.debug('FNIRT output image detected - using qform matrix')
             voxToWorldMat = np.array(header.get_qform())
 
+        # If the qform or sform codes are unknown,
+        # then we can't assume that the transform
+        # matrices are valid. So we fall back to a
+        # pixdim scaling matrix.
+        # 
+        # n.b. For images like this, nibabel returns
+        # a scaling matrix where the centre voxel
+        # corresponds to world location (0, 0, 0).
+        # This goes against the NIFTI1 spec - it
+        # should just be a straight scaling matrix.
+        elif header['qform_code'] == 0 or header['sform_code'] == 0:
+            pixdims       = header.get_zooms()
+            voxToWorldMat = transform.scaleOffsetXform(pixdims, 0)
+
         # Otherwise we let nibabel decide
         # which transform to use.
         else:
             voxToWorldMat = np.array(header.get_best_affine())
 
-        worldToVoxMat = transform.invert(voxToWorldMat)
-
-        self.header        = header
-        self.shape         = shape
-        self.__origShape   = origShape
-        self.pixdim        = pixdim
-        self.voxToWorldMat = voxToWorldMat
-        self.worldToVoxMat = worldToVoxMat
+        return voxToWorldMat
 
 
     def __determineShape(self, header):
