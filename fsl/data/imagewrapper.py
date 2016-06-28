@@ -336,7 +336,8 @@ class ImageWrapper(notifier.Notifier):
         given ``slices``.
         """
 
-        volumes, expansions = calcExpansion(slices, self.__coverage)
+        _, expansions = calcExpansion(slices, self.__coverage)
+        expansions    = collapseExpansions(expansions, self.__numRealDims - 1)
 
         log.debug('Updating image {} data range [slice: {}] '
                   '(current range: [{}, {}]; '
@@ -346,30 +347,46 @@ class ImageWrapper(notifier.Notifier):
                       slices,
                       self.__range[0],
                       self.__range[1],
-                      len(volumes),
+                      len(expansions),
                       self.__coverage))
+
+        # As we access the data for each expansions,
+        # we want it to have the same dimensionality
+        # as the full image, so we can access data
+        # for each volume in the image separately.
+        # So we squeeze out the padding dimensions,
+        # but not the volume dimension.
+        squeezeDims = tuple(range(self.__numRealDims,
+                                  self.__numRealDims + self.__numPadDims))
         
         # The calcExpansion function splits up the
         # expansions on volumes - here we calculate
         # the min/max per volume/expansion, and
         # iteratively update the stored per-volume
         # coverage and data range.
-        for vol, exp in zip(volumes, expansions):
+        for i, exp in enumerate(expansions):
 
-            oldvmin, oldvmax = self.__volRanges[vol, :]
+            data = self.__getData(exp, isTuple=True)
+            data = data.squeeze(squeezeDims)
 
-            data    = self.__getData(exp, isTuple=True)
-            newvmin = float(np.nanmin(data))
-            newvmax = float(np.nanmax(data))
+            vlo, vhi = exp[self.__numRealDims - 1]
 
-            if (not np.isnan(oldvmin)) and oldvmin < newvmin: newvmin = oldvmin
-            if (not np.isnan(oldvmax)) and oldvmax > newvmax: newvmax = oldvmax
+            for vi, vol in enumerate(range(vlo, vhi)):
 
-            # Update the stored range and
-            # coverage for each volume 
-            self.__volRanges[vol, :]  = newvmin, newvmax
-            self.__coverage[..., vol] = adjustCoverage(
-                self.__coverage[..., vol], exp)
+                oldvlo, oldvhi = self.__volRanges[vol, :]
+                voldata        = data[..., vi]
+
+                newvlo = float(np.nanmin(voldata))
+                newvhi = float(np.nanmax(voldata))
+
+                if (not np.isnan(oldvlo)) and oldvlo < newvlo: newvlo = oldvlo
+                if (not np.isnan(oldvhi)) and oldvhi > newvhi: newvhi = oldvhi
+
+                # Update the stored range and
+                # coverage for each volume 
+                self.__volRanges[vol, :]  = newvlo, newvhi
+                self.__coverage[..., vol] = adjustCoverage(
+                    self.__coverage[..., vol], exp)
 
         # Calculate the new known data
         # range over the entire image
