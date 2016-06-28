@@ -883,3 +883,63 @@ def calcExpansion(slices, coverage):
         expansions.extend(volExpansions)
 
     return volumes, expansions
+
+
+def collapseExpansions(expansions, numDims):
+    """Scans through the given list of expansions (each assumed to pertain 
+    to a single 3D image), and combines any which cover the same
+    image area, and cover adjacent volumes.
+
+    :args expansions: A list of expansion slices - see :func:`calcExpansions`.
+
+    :args numDims:    Number of dimensions covered by each expansion,
+                      not including the volume dimension (i.e. 3 for a 4D
+                      image).
+
+    :returns: A list of expansions, with equivalent expansions that cover
+              adjacent images collapsed down.
+
+    .. note:: For one expansion ``exp`` in the ``expansions`` list, this
+              function assumes that the range at ``exp[numDims]`` contains
+              the image to which ``exp`` pertains (i.e.
+              ``exp[numDims] == (vol, vol + 1)``).
+    """
+    if len(expansions) == 0:
+        return []
+
+    commonExpansions = collections.OrderedDict()
+    expansions       = sorted(expansions)
+
+    for exp in expansions:
+
+        vol        = exp[numDims][0]
+        exp        = tuple(exp[:numDims])
+        commonExps = commonExpansions.get(exp, None)
+        
+        if commonExps is None:
+            commonExps            = []
+            commonExpansions[exp] = commonExps
+
+        for i, (vlo, vhi) in enumerate(commonExps):
+
+            if vol >= vlo and vol < vhi:
+                break
+            
+            elif vol == vlo - 1:
+                commonExps[i] = vol, vhi
+                break
+            elif vol == vhi:
+                commonExps[i] = vlo, vol + 1
+                break
+            
+        else:
+            commonExps.append((vol, vol + 1))
+            
+    collapsed = []
+
+    for exp, volRanges in commonExpansions.items():
+        for vlo, vhi in volRanges:
+            newExp = list(exp) + [(vlo, vhi)]
+            collapsed.append(newExp)
+
+    return collapsed
