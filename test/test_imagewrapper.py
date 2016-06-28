@@ -61,12 +61,16 @@ def random_coverage(shape, vol_limit=None):
 
 def random_slices(coverage, shape, mode):
 
-    ndims = len(shape) - 1
-    nvols = shape[-1]
-    
-    slices = np.zeros((2, len(shape)))
-
+    shape    = np.array(shape)
+    ndims    = len(shape) - 1
+    nvols    = shape[-1]
+    slices   = np.zeros((2, len(shape)))
     origMode = mode
+
+    if coverage is None:
+        coverage          = np.zeros((2, ndims, nvols), dtype=np.float32)
+        coverage[0, :, :] = 0
+        coverage[1, :, :] = shape[:-1].reshape(ndims, 1).repeat(nvols, 1)
 
     # If we're generating an 'out' slice (i.e.
     # a slice which is not covered by the coverage),
@@ -917,3 +921,89 @@ def test_ImageWrapper_write_different_volume(niters=150):
                     
                 assert np.isclose(newLo, elo)
                 assert np.isclose(newHi, ehi)
+
+
+def test_collapseExpansions(niters=500):
+
+    def expEq(exp1, exp2):
+        
+        if len(exp1) != len(exp2):
+            return False
+        
+        for (e1lo, e1hi), (e2lo, e2hi) in zip(exp1, exp2):
+            if e1lo != e2lo: return False
+            if e1hi != e2hi: return False
+        return True
+
+    def rangesOverlapOrAdjacent(r1, r2):
+
+        r1lo, r1hi = r1
+        r2lo, r2hi = r2
+
+        return not ((r1lo > r2hi) or (r1hi < r2lo) or \
+                    (r2lo > r1hi) or (r2hi < r1lo))
+
+    for i in range(niters):
+
+        # Generate a random coverage shape
+        ndims     = random.choice((2, 3, 4)) - 1
+        nvols     = np.random.randint(10, 40)
+        shape     = np.random.randint(5, 60, size=ndims + 1)
+        shape[-1] = nvols
+
+        # Generate a bunch of random slices, and
+        # split each of them up by volume to
+        # turn them each into a set of expansions
+        exps     = []
+        expected = []
+
+        for i in range(10):
+
+            # Generate a random slice with a volume
+            # range that doesn't overlap with, and
+            # is not adjacent to, any of the other
+            # generated random slices.
+            #
+            # The only reason I'm doing this is to
+            # overocme a chicken-and-egg problem -
+            # if I want to test overlapping/adjacent
+            # region, I basically have to
+            # re-implement the collapseExpansions
+            # function.
+            while True:
+                slices = random_slices(None, shape, 'in')
+                vlo, vhi = slices[-1]
+
+                for exp in expected:
+
+                    if not expEq(exp[:-1], slices[:-1]):
+                        continue
+                    
+                    evlo, evhi = exp[-1]
+
+                    # Overlap
+                    if rangesOverlapOrAdjacent((vlo, vhi), (evlo, evhi)):
+                        break
+                else:
+                    break
+
+            expected.append(slices)
+
+            for vol in range(slices[-1][0], slices[-1][1]):
+
+                exp = tuple(list(slices[:-1]) + [(vol, vol + 1)])
+                exps.append(exp)
+
+        # Now shuffle them up randomly
+        np.random.shuffle(exps)
+
+        # And attempt to collapse them
+        collapsed = imagewrap.collapseExpansions(exps, ndims)
+
+        collapsed = sorted(collapsed)
+        expected  = sorted(expected)
+
+        assert len(expected) == len(collapsed)
+
+        for exp, col in zip(expected, collapsed):
+            assert expEq(exp, col)
