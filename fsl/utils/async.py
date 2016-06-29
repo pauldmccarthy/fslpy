@@ -74,7 +74,7 @@ log = logging.getLogger(__name__)
 
 
 def _haveWX():
-    """Returns ``True`` if wqe are running within a ``wx`` application,
+    """Returns ``True`` if we are running within a ``wx`` application,
     ``False`` otherwise.
     """
     
@@ -273,7 +273,7 @@ def idle(task, *args, **kwargs):
     .. note:: If the ``after`` argument is used, there is no guarantee that
               the task will be executed in the order that it is scheduled.
               This is because, if the required time has not elapsed when
-              the task is poppsed from the queue, it will be re-queued.
+              the task is popped from the queue, it will be re-queued.
     """
 
     global _idleRegistered
