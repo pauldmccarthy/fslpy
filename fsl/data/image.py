@@ -406,12 +406,13 @@ class Image(Nifti1, notifier.Notifier):
 
         :arg indexed:   If ``True``, and the file is gzipped, it is opened 
                         using the :mod:`indexed_gzip` package. Otherwise the
-                        file is opened by ``nibabel``.
+                        file is opened by ``nibabel``. Ignored if ``loadData``
+                        is ``True``.
 
 
         :arg threaded:  If ``True``, the :class:`.ImageWrapper` will use a
                         separate thread for data range calculation. Defaults
-                        to ``False``.
+                        to ``False``. Ignored if ``loadData`` is ``True``.
         """
 
         import nibabel as nib
@@ -419,6 +420,10 @@ class Image(Nifti1, notifier.Notifier):
         nibImage   = None
         dataSource = None
         fileobj    = None
+
+        if loadData:
+            indexed  = False
+            threaded = False
 
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
