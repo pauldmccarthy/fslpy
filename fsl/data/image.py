@@ -322,7 +322,7 @@ class Image(Nifti1, notifier.Notifier):
     as properties (https://docs.python.org/2/library/functions.html#property):
 
 
-    ============== ======================================================
+    ============== ===========================================================
     ``name``       The name of this ``Image`` - defaults to the image
                    file name, sans-suffix.
 
@@ -341,7 +341,7 @@ class Image(Nifti1, notifier.Notifier):
                    :meth:`__init__`, this may be calculated when the ``Image``
                    is created, or may be incrementally updated as more image 
                    data is loaded from disk.
-    ============== ======================================================
+    ============== ===========================================================
 
     
     The ``Image`` class implements the :class:`.Notifier` interface -
@@ -408,7 +408,6 @@ class Image(Nifti1, notifier.Notifier):
                         using the :mod:`indexed_gzip` package. Otherwise the
                         file is opened by ``nibabel``. Ignored if ``loadData``
                         is ``True``.
-
 
         :arg threaded:  If ``True``, the :class:`.ImageWrapper` will use a
                         separate thread for data range calculation. Defaults

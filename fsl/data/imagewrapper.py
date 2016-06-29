@@ -149,8 +149,9 @@ class ImageWrapper(notifier.Notifier):
                         data range is updated directly on reads/writes.
         """
 
-        self.__image = image
-        self.__name  = name
+        self.__image      = image
+        self.__name       = name
+        self.__taskThread = None
 
         # Save the number of 'real' dimensions,
         # that is the number of dimensions minus
@@ -177,9 +178,7 @@ class ImageWrapper(notifier.Notifier):
         if loadData:
             self.loadData()
 
-        if not threaded:
-            self.__taskThread = None
-        else:
+        if threaded:
             self.__taskThread = async.TaskThread()
             self.__taskThread.start()
 
