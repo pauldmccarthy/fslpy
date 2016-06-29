@@ -41,6 +41,7 @@ import numpy     as np
 import nibabel   as nib
 
 import fsl.utils.notifier as notifier
+import fsl.utils.async    as async
 
 
 log = logging.getLogger(__name__)
@@ -121,7 +122,12 @@ class ImageWrapper(notifier.Notifier):
     """
 
     
-    def __init__(self, image, name=None, loadData=False, dataRange=None):
+    def __init__(self,
+                 image,
+                 name=None,
+                 loadData=False,
+                 dataRange=None,
+                 threaded=False):
         """Create an ``ImageWrapper``.
 
         :arg image:     A ``nibabel.Nifti1Image``.
@@ -137,6 +143,10 @@ class ImageWrapper(notifier.Notifier):
         :arg dataRange: A tuple containing the initial ``(min, max)``  data
                         range to use. See the :meth:`reset` method for
                         important information about this parameter.
+
+        :arg threaded:  If ``True``, the data range is updated on a
+                        :class:`.TaskThread`. Otherwise (the default), the
+                        data range is updated directly on reads/writes.
         """
 
         self.__image = image
@@ -166,6 +176,22 @@ class ImageWrapper(notifier.Notifier):
 
         if loadData:
             self.loadData()
+
+        if not threaded:
+            self.__taskThread = None
+        else:
+            self.__taskThread = async.TaskThread()
+            self.__taskThread.start()
+
+
+    def __del__(self):
+        """If this ``ImageWrapper`` was created with ``threaded=True``,
+        the :class:`.TaskThread` is stopped.
+        """
+        self.__image = None
+        if self.__taskThread is not None:
+            self.__taskThread.stop()
+            self.__taskThraed = None
 
 
     def reset(self, dataRange=None):
@@ -426,7 +452,12 @@ class ImageWrapper(notifier.Notifier):
         #      the provided data to avoid
         #      reading it in again.
 
-        self.__expandCoverage(slices)
+        if self.__taskThread is None:
+            self.__expandCoverage(slices)
+        else:
+            name = '{}_read_{}'.format(id(self), slices)
+            if not self.__taskThread.isQueued(name):
+                self.__taskThread.enqueue(name, self.__expandCoverage, slices)
 
 
     def __updateDataRangeOnWrite(self, slices, data):
@@ -476,7 +507,13 @@ class ImageWrapper(notifier.Notifier):
                 self.__coverage[:, :, vol]    = np.nan
                 self.__volRanges[     vol, :] = np.nan
 
-        self.__expandCoverage(slices)
+
+        if self.__taskThread is None:
+            self.__expandCoverage(slices)
+        else:
+            name = '{}_write_{}'.format(id(self), slices)
+            if not self.__taskThread.isQueued(name):
+                self.__taskThread.enqueue(name, self.__expandCoverage, slices)
 
             
     def __getitem__(self, sliceobj):

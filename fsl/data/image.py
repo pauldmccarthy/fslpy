@@ -370,7 +370,8 @@ class Image(Nifti1, notifier.Notifier):
                  xform=None,
                  loadData=True,
                  calcRange=True,
-                 indexed=False):
+                 indexed=False,
+                 threaded=False):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:     A string containing the name of an image file to load, 
@@ -406,6 +407,11 @@ class Image(Nifti1, notifier.Notifier):
         :arg indexed:   If ``True``, and the file is gzipped, it is opened 
                         using the :mod:`indexed_gzip` package. Otherwise the
                         file is opened by ``nibabel``.
+
+
+        :arg threaded:  If ``True``, the :class:`.ImageWrapper` will use a
+                        separate thread for data range calculation. Defaults
+                        to ``False``.
         """
 
         import nibabel as nib
@@ -480,7 +486,8 @@ class Image(Nifti1, notifier.Notifier):
         self.__suppressDataRange = False
         self.__imageWrapper      = imagewrapper.ImageWrapper(self.nibImage,
                                                              self.name,
-                                                             loadData=loadData)
+                                                             loadData=loadData,
+                                                             threaded=threaded)
 
         if calcRange:
             self.calcRange()
@@ -510,7 +517,11 @@ class Image(Nifti1, notifier.Notifier):
 
 
     def __del__(self):
-        """Closes any open file handles. """
+        """Closes any open file handles, and clears some references. """
+        
+        self.__nibImage     = None
+        self.__imageWrapper = None
+        
         if self.__fileobj is not None:
             self.__fileobj.close()
         
@@ -805,7 +816,7 @@ def loadIndexedImageFile(filename):
 
     log.debug('Loading {} using indexed gzip'.format(filename))
 
-    fobj = igzip.IndexedGzipFile(
+    fobj = igzip.SafeIndexedGzipFile(
         filename=filename,
         spacing=4194304,
         readbuf_size=131072)
