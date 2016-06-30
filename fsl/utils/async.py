@@ -57,12 +57,22 @@ the task (via :func:`idle`).
 The :class:`TaskThread` class is a simple thread which runs a queue of tasks.
 
 
+Other facilities
+----------------
+
+
+The ``async`` module also defines the :func:`mutex` decorator, which is
+intended to be used to mark the methods of a class as being mutually exclusive.
+The ``mutex`` decorator uses the :class:`MutexFactory` class to do its work.
+
+
 .. todo:: You could possibly use ``props.callqueue`` to drive the idle loop.
 """
 
 
 import time
 import logging
+import functools
 import threading
 import collections
 
@@ -484,3 +494,98 @@ class TaskThread(threading.Thread):
         self.__q        = None
         self.__enqueued = None
         log.debug('Task thread finished')
+
+
+
+
+def mutex(*args, **kwargs):
+    """Decorator for use on methods of a class, which makes the method
+    call mutually exclusive.
+
+    If you define a class which has one or more methods that must only
+    be accessed by one thread at a time, you can use the ``mutex`` decorator
+    to enforce this restriction. As a contrived example::
+
+
+        class Example(object):
+
+            def __init__(self):
+                self.__sharedData = []
+
+            @mutex
+            def dangerousMethod1(self, message):
+                sefl.__sharedData.append(message)
+
+            @mutex
+            def dangerousMethod2(self):
+                return sefl.__sharedData.pop()
+
+    
+
+    The ``@mutex`` decorator will ensure that, at any point in time, only
+    one thread is running either of the ``dangerousMethod1`` or
+    ``dangerousMethod2`` methods.
+
+    See the :class:`MutexFactory``
+    """
+    return MutexFactory(*args, **kwargs)
+
+
+class MutexFactory(object):
+    """The ``MutexFactory`` is a placeholder for methods which have been
+    decorated with the :func:`mutex` decorator. When the method of a class
+    is decorated with ``@mutex``, a ``MutexFactory`` is created.
+
+    Later on, when the method is accessed on an instance, the :meth:`__get__`
+    method creates the true decorator function, and replaces the instance
+    method with that decorator.
+
+    .. note:: The ``MutexFactory`` adds an attribute called
+              ``_async_mutex_lock`` to all instances that have
+              ``@mutex``-decorated methods.
+    """
+
+
+    def __init__(self, function):
+        """Create a ``MutexFactory``.
+        """
+        self.__func = function
+
+
+    def __get__(self, instance, cls):
+        """When this ``MutexFactory`` is accessed through an instance,
+        a decorator function is created which enforces mutually exclusive
+        access to the decorated method. A single ``threading.Lock`` object
+        is shared between all ``@mutex``-decorated methods on a single
+        instance.
+
+        If this ``MutexFactory`` is accessed through a class, the
+        decorated function is returned.
+        """
+        
+        # Class-level access
+        if instance is None:
+            return self.__func
+
+        # Get the lock object, creating if it necessary
+        lock = getattr(instance, '_async_mutex_lock', None)
+        if lock is None:
+            lock                       = threading.Lock()
+            instance._async_mutex_lock = lock
+
+        # The true decorator function:
+        #    - Acquire the lock (blocking until it has been released)
+        #    - Run the decorated method
+        #    - Release the lock
+        def decorator(*args, **kwargs):
+            lock.acquire()
+            try:
+                return self.__func(instance, *args, **kwargs)
+            finally:
+                lock.release()
+
+        # Replace this MutexFactory with
+        # the decorator on the instance 
+        decorator = functools.update_wrapper(decorator, self.__func)
+        setattr(instance, self.__func.__name__, decorator)
+        return decorator
