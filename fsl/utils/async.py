@@ -456,6 +456,12 @@ class TaskThread(threading.Thread):
             except queue.Empty:
                 continue
 
+            # Any other error typically indicates
+            # that this is a daemon thread, and
+            # the TaskThread object has been GC'd
+            except:
+                break
+
             finally:
                 if self.__stop:
                     break
