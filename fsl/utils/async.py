@@ -318,16 +318,30 @@ def wait(threads, task, *args, **kwargs):
     instances to finsih (by ``join``ing them), and then runs the given
     ``task`` via :func:`idle`.
 
-    If a ``wx.App`` is not running, this function ``join``s the threads
-    directly instead of creating a new ``Thread`` to do so.
+    If the ``direct`` parameter is ``True``, or a ``wx.App`` is not running,
+    this function ``join``s the threads directly instead of creating a new
+    ``Thread`` to do so.
 
-    :arg threads: A ``Thread``, or a sequence of ``Thread`` instances to
-                  join. Elements in the sequence may be ``None``.
+    :arg threads:      A ``Thread``, or a sequence of ``Thread`` instances to
+                       join. Elements in the sequence may be ``None``.
 
-    :arg task:    The task to run.
+    :arg task:         The task to run once all ``threads`` have completed.
 
+    :arg wait_direct:  Must be passed as a keyword argument.  If ``True``, this
+                       function call will ``join`` all of the ``threads``, and
+                       then call the ``task``. Otherwise (the default), this
+                       function will create a new thread to ``join`` the
+                       ``threads``, and will return immediately.
+
+    
     All other arguments are passed to the ``task`` function.
+
+    
+    .. note:: This function will not support ``task`` functions which expect
+              a keyword argument called ``wait_direct``.
     """
+
+    direct = kwargs.pop('wait_direct', False)
 
     if not isinstance(threads, collections.Sequence):
         threads = [threads]
@@ -343,7 +357,7 @@ def wait(threads, task, *args, **kwargs):
         log.debug('Wait thread scheduling task on idle loop')
         idle(task, *args, **kwargs)
 
-    if haveWX:
+    if haveWX and not direct:
         thread = threading.Thread(target=joinAll)
         thread.start()
         return thread

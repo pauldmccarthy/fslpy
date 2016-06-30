@@ -180,6 +180,7 @@ class ImageWrapper(notifier.Notifier):
 
         if threaded:
             self.__taskThread = async.TaskThread()
+            self.__taskThread.daemon = True
             self.__taskThread.start()
 
 
