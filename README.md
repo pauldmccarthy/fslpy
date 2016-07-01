@@ -24,19 +24,13 @@ Dependencies
 
 | Library                                                        | Version |
 | -------------------------------------------------------------- | ------- |
-| [props](https://git.fmrib.ox.ac.uk/paulmc/props/)              | Latest  |
 | [indexed_gzip](https://github.com/pauldmccarthy/indexed_gzip/) | Latest  |
-| [numpy](http://www.numpy.org/)                                 | 1.11.0  |
-| [scipy](http://www.scipy.org/)                                 | 0.17.0  |
+| [props](https://git.fmrib.ox.ac.uk/paulmc/props/)              | Latest  |
 | [matplotlib](http://matplotlib.org/)                           | 1.5.1   |
 | [nibabel](http://nipy.org/nibabel/)                            | 2.0.2   |
+| [numpy](http://www.numpy.org/)                                 | 1.11.0  |
+| [scipy](http://www.scipy.org/)                                 | 0.17.0  |
 | [six](https://pythonhosted.org/six/)                           | 1.10.0  |
-| [Sphinx](http://www.sphinx-doc.org/en/stable/)                 | 1.4,1   |
+| [Sphinx](http://www.sphinx-doc.org/en/stable/)                 | 1.4.1   |
+| [Sphinx RTD theme](https://github.com/snide/sphinx_rtd_theme)  | 0.1.9   | 
 | [wxPython](http://wxpython.org/)                               | 3.0.2.0 |
-
- > Notes:
- >   - Sphinx is only needed for building the documentation.
- > 
- >   - If you are installing `fslpy` manually, don't worry too much about 
- >     having the exact version of each of the packages - just try with 
- >     the latest version, and roll-back if you have problems.
