@@ -73,6 +73,7 @@ class Nifti1(object):
     ``worldToVoxMat`` A 4*4 array specifying the affine transformation
                       for transforming real world coordinates into voxel
                       coordinates.
+    ``intent``        The NIFTI intent code specified in the header.
     ================= ====================================================
 
     
@@ -100,6 +101,8 @@ class Nifti1(object):
 
         self.header        = header
         self.shape         = shape
+        self.intent        = header.get('intent_code',
+                                        constants.NIFTI_INTENT_NONE)
         self.__origShape   = origShape
         self.pixdim        = pixdim
         self.voxToWorldMat = voxToWorldMat
@@ -115,11 +118,12 @@ class Nifti1(object):
         # We have to treat FSL/FNIRT images
         # specially, as FNIRT clobbers the
         # sform section of the NIFTI header
-        # to store other data. The hard coded
-        # numbers here are the intent codes
-        # output by FNIRT.
+        # to store other data. 
         intent = header.get('intent_code', -1)
-        if intent in (2006, 2007, 2008, 2009):
+        if intent in (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
+                      constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_DCT_COEFFICIENTS,
+                      constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS):
             log.debug('FNIRT output image detected - using qform matrix')
             voxToWorldMat = np.array(header.get_qform())
 
