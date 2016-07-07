@@ -18,9 +18,10 @@ use throughout ``fslpy``. The available dialogs are:
 """
 
 
-import threading
+import os.path as op
+import            threading
 
-import wx
+import            wx
 
 from .platform import platform as fslplatform
 
@@ -708,6 +709,7 @@ class FSLDirDialog(wx.Dialog):
         dlg = wx.DirDialog(
             self,
             message='Select the directory in which FSL is installed',
+            defaultPath=op.join('usr', 'local'),
             style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
 
         if dlg.ShowModal() != wx.ID_OK:
