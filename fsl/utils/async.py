@@ -390,6 +390,15 @@ class Task(object):
         self.enabled  = True
 
 
+class TaskThreadVeto(Exception):
+    """Task functions which are added to a :class:`TaskThread` may raise
+    a ``TaskThreadVeto`` error to skip processing of the task's ``onFinish``
+    handler (if one has been specified). See the :meth:`TaskThread.enqueue`
+    method for more details.
+    """
+    pass
+
+
 class TaskThread(threading.Thread):
     """The ``TaskThread`` is a simple thread which runs tasks. Tasks may be
     enqueued and dequeued.
@@ -423,7 +432,9 @@ class TaskThread(threading.Thread):
 
         :arg onFinish: An optional function to be called (via :func:`idle`)
                        when the task funtion has finished. Must be provided as
-                       a keyword argument.
+                       a keyword argument. If the ``func`` raises a
+                       :class`TaskThreadVeto` error, this function will not
+                       be called.
 
         All other arguments are passed through to the task function when it is
         executed.
@@ -512,6 +523,13 @@ class TaskThread(threading.Thread):
                     idle(task.onFinish)
 
                 log.debug('Task completed: {} [{}]'.format(
+                    task.name,
+                    getattr(task.func, '__name__', '<unknown>')))
+
+            # If the task raises a TaskThreadVeto error,
+            # we just have to skip the onFinish handler
+            except TaskThreadVeto:
+                log.debug('Task completed (vetoed onFinish): {} [{}]'.format(
                     task.name,
                     getattr(task.func, '__name__', '<unknown>')))
                 
