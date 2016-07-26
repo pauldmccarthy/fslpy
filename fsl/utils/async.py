@@ -410,23 +410,35 @@ class TaskThread(threading.Thread):
         log.debug('New task thread')
 
 
-    def enqueue(self, name, func, onFinish, *args, **kwargs):
+    def enqueue(self, func, *args, **kwargs):
         """Enqueue a task to be executed.
 
-        :arg name:     Task name. Does not necessarily have to be a string,
-                       but must be hashable.
         :arg func:     The task function.
-        :arg onFinish: An optional function to be called (via :func:`idle`)
-                       when the task funtion has finished.
 
-        All other arguments will be passed through to the task when it is
+        :arg taskName: Task name. Must be specified as a keyword
+                       argument. Does not necessarily have to be a string, but
+                       must be hashable. If you wish to use the :meth:`dequeue`
+                       or :meth:`isQueued` methods, you must provide a task
+                       name.
+
+        :arg onFinish: An optional function to be called (via :func:`idle`)
+                       when the task funtion has finished. Must be provided as
+                       a keyword argument.
+
+        All other arguments are passed through to the task function when it is
         executed.
 
-        .. note:: If the specified ``name`` is not unique (i.e. another task
-                  with the same name may already be enqueued), the
+        .. note:: If the specified ``taskName`` is not unique (i.e. another 
+                  task with the same name may already be enqueued), the
                   :meth:`isQueued` method will probably return invalid
                   results.
+
+        .. warning:: Make sure that your task function is not expecting keyword
+                     arguments called ``taskName`` or ``onFinish``!
         """
+
+        name     = kwargs.pop('taskName', None)
+        onFinish = kwargs.pop('onFinish', None)
 
         log.debug('Enqueueing task: {} [{}]'.format(
             name, getattr(func, '__name__', '<unknown>')))
@@ -514,8 +526,6 @@ class TaskThread(threading.Thread):
         self.__q        = None
         self.__enqueued = None
         log.debug('Task thread finished')
-
-
 
 
 def mutex(*args, **kwargs):
