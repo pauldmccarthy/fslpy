@@ -457,7 +457,8 @@ class ImageWrapper(notifier.Notifier):
         else:
             name = '{}_read_{}'.format(id(self), slices)
             if not self.__taskThread.isQueued(name):
-                self.__taskThread.enqueue(name, self.__expandCoverage, slices)
+                self.__taskThread.enqueue(
+                    name, self.__expandCoverage, None, slices)
 
 
     def __updateDataRangeOnWrite(self, slices, data):
@@ -513,7 +514,8 @@ class ImageWrapper(notifier.Notifier):
         else:
             name = '{}_write_{}'.format(id(self), slices)
             if not self.__taskThread.isQueued(name):
-                self.__taskThread.enqueue(name, self.__expandCoverage, slices)
+                self.__taskThread.enqueue(
+                    name, self.__expandCoverage, None, slices)
 
             
     def __getitem__(self, sliceobj):
