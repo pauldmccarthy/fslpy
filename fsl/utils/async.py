@@ -163,7 +163,7 @@ def run(task, onFinish=None, onError=None, name=None):
 
 
 _idleRegistered = False
-"""Boolean flag indicating whether the :func:`wxIdleLoop` function has
+"""Boolean flag indicating whether the :func:`_wxIdleLoop` function has
 been registered as a ``wx.EVT_IDLE`` event handler. Checked and set
 in the :func:`idle` function.
 """
@@ -179,6 +179,20 @@ _idleQueueSet = set()
 """A ``set`` containing the names of all named tasks which are
 currently queued on the idle loop (see the ``name`` parameter to the
 :func:`idle` function).
+"""
+
+
+_idleTimer = None
+"""A ``wx.Timer`` instance which is used to periodically trigger the
+:func:`_wxIdleLoop` in circumstances where ``wx.EVT_IDLE`` events may not
+be generated. This is created in the first call to :func:`idle`.
+"""
+
+
+_idleCallRate = 200
+"""Minimum time (in milliseconds) between consecutive calls to
+:func:`_wxIdleLoop`. If ``wx.EVT_IDLE`` events are not being fired, the
+:attr:`_idleTimer` is used to maintain the idle loop at this rate.
 """
 
 
@@ -204,20 +218,35 @@ class IdleTask(object):
         self.kwargs    = kwargs
 
 
-
 def _wxIdleLoop(ev):
-    """Function which is called on ``wx.EVT_IDLE`` events. If there
+    """Function which is called on ``wx.EVT_IDLE`` events, and occasionally
+    on ``wx.EVT_TIMER` events via the :attr:`_idleTimer`. If there
     is a function on the :attr:`_idleQueue`, it is popped and called.
+
+    .. note:: The ``wx.EVT_IDLE`` event is only triggered on user interaction
+              (e.g. mouse movement). This means that a situation may arise
+              whereby a function is queued via the :func:`idle` function, but
+              no ``EVT_IDLE`` event gets generated. Therefore, the
+              :attr:`_idleTimer` object is occasionally used to call this
+              function as well.
     """
 
+    import wx
     global _idleQueue
     global _idleQueueSet
-        
+    global _idleTimer
+    global _idleCallRate
+
     ev.Skip()
 
     try:
         task = _idleQueue.get_nowait()
+        
     except queue.Empty:
+
+        # Make sure that we get called periodically,
+        # if EVT_IDLE decides to stop firing.
+        _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
         return
 
     now     = time.time()
@@ -243,6 +272,8 @@ def _wxIdleLoop(ev):
 
     if _idleQueue.qsize() > 0:
         ev.RequestMore()
+    else:
+        _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
 
 
 def inIdle(taskName):
@@ -288,6 +319,7 @@ def idle(task, *args, **kwargs):
     """
 
     global _idleRegistered
+    global _idleTimer
     global _idleQueue
     global _idleQueueSet
 
@@ -300,8 +332,13 @@ def idle(task, *args, **kwargs):
         import wx
 
         if not _idleRegistered:
-            wx.GetApp().Bind(wx.EVT_IDLE, _wxIdleLoop)
+            app = wx.GetApp()
+            app.Bind(wx.EVT_IDLE, _wxIdleLoop)
+            
+            _idleTimer      = wx.Timer(app)
             _idleRegistered = True
+
+            _idleTimer.Bind(wx.EVT_TIMER, _wxIdleLoop)
 
         log.debug('Scheduling idle task ({}) on wx idle '
                   'loop'.format(getattr(task, '__name__', '<unknown>')))
@@ -558,7 +595,7 @@ class TaskThread(threading.Thread):
                     getattr(task.func, '__name__', '<unknown>')))
                 
             except Exception as e:
-                log.debug('Task crashed: {} [{}]: {}: {}'.format(
+                log.warning('Task crashed: {} [{}]: {}: {}'.format(
                     task.name,
                     getattr(task.func, '__name__', '<unknown>'),
                     type(e).__name__,
