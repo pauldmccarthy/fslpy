@@ -287,35 +287,45 @@ def inIdle(taskName):
 def idle(task, *args, **kwargs):
     """Run the given task on a ``wx.EVT_IDLE`` event.
 
-    :arg task:    The task to run.
+    :arg task:         The task to run.
 
-    :arg name:    Optional. If provided, must be provided as a keyword
-                  argument. Specifies a name that can be used to query
-                  the state of this task via the :func:`inIdle` function.
+    :arg name:         Optional. If provided, must be provided as a keyword
+                       argument. Specifies a name that can be used to query
+                       the state of this task via the :func:`inIdle` function.
 
-    :arg after:   Optional. If provided, must be provided as a keyword
-                  argument. A time, in seconds, which specifies the amount
-                  of time to wait before running this task after it has
-                  been scheduled.
+    :arg after:        Optional. If provided, must be provided as a keyword
+                       argument. A time, in seconds, which specifies the
+                       amount of time to wait before running this task after
+                       it has been scheduled.
 
-    :arg timeout: Optional. If provided, must be provided as a keyword
-                  argument. Specifies a time out, in seconds. If this
-                  amount of time passes before the function gets
-                  scheduled to be called on the idle loop, the function
-                  is not called, and is dropped from the queue.
+    :arg timeout:      Optional. If provided, must be provided as a keyword
+                       argument. Specifies a time out, in seconds. If this
+                       amount of time passes before the function gets
+                       scheduled to be called on the idle loop, the function
+                       is not called, and is dropped from the queue.
 
-    
+    :arg skipIfQueued: Optional. If provided, must be provided as a keyword
+                       argument. If ``True``, and a task with the given
+                       ``name`` is already enqueud, (or is running), the
+                       function is not called. Defaults to ``False``.
+
     All other arguments are passed through to the task function.
 
     
-    If a ``wx.App`` is not running, the ``after`` and ``timeout`` arguments
-    are ignored, and the task is called directly.
+    If a ``wx.App`` is not running, the ``after``, ``timeout``, ``name``
+    and ``skipIfQueued`` arguments are ignored, and the task is called
+    directly.
 
 
     .. note:: If the ``after`` argument is used, there is no guarantee that
               the task will be executed in the order that it is scheduled.
               This is because, if the required time has not elapsed when
               the task is popped from the queue, it will be re-queued.
+
+
+    .. note:: You will run into difficulties if you schedule a function that
+              expects/accepts its own keyword arguments called ``name``,
+              ``skipIfQueued``, ``after``, or ``timeout``.
     """
 
     global _idleRegistered
@@ -323,10 +333,11 @@ def idle(task, *args, **kwargs):
     global _idleQueue
     global _idleQueueSet
 
-    schedtime = time.time()
-    timeout   = kwargs.pop('timeout', 0)
-    after     = kwargs.pop('after',   0)
-    name      = kwargs.pop('name',    None)
+    schedtime    = time.time()
+    timeout      = kwargs.pop('timeout',      0)
+    after        = kwargs.pop('after',        0)
+    name         = kwargs.pop('name',         None)
+    skipIfQueued = kwargs.pop('skipIfQueued', None)
 
     if _haveWX():
         import wx
@@ -339,6 +350,11 @@ def idle(task, *args, **kwargs):
             _idleRegistered = True
 
             _idleTimer.Bind(wx.EVT_TIMER, _wxIdleLoop)
+
+        if name is not None and skipIfQueued and inIdle(name):
+            log.debug('Idle task ({}) is already queued - dropping '
+                      'it'.format(getattr(task, '__name__', '<unknown>')))
+            return
 
         log.debug('Scheduling idle task ({}) on wx idle '
                   'loop'.format(getattr(task, '__name__', '<unknown>')))
@@ -378,7 +394,7 @@ def idleWhen(func, condition, *args, **kwargs):
     pollTime = kwargs.get('pollTime', 0.2)
 
     if not condition():
-        idle(idleWhen, func, condition, after=pollTime, *args, **kwargs)
+        idle(idleWhen, func, condition, after=pollTime, *args, **dict(kwargs))
     else:
         kwargs.pop('pollTime', None)
         idle(func, *args, **kwargs)
