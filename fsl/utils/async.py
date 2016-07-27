@@ -20,6 +20,7 @@ Idle tasks
    :nosignatures:
 
    idle
+   idleWhen
    inIdle
 
 
@@ -321,6 +322,29 @@ def idle(task, *args, **kwargs):
     else:
         log.debug('Running idle task directly') 
         task(*args, **kwargs)
+
+
+def idleWhen(func, condition, *args, **kwargs):
+    """Poll the ``condition`` function periodically, and schedule ``func`` on
+    :func:`idle` when it returns ``True``.
+
+    :arg func:      Function to call.
+    
+    :arg condition: Function which returns ``True`` or ``False``. The ``func``
+                    function is only called when the ``condition`` function 
+                    returns ``True``.
+    
+    :arg pollTime:  Must be passed as a keyword argument. Time (in seconds) to
+                    wait between successive calls to ``when``.
+    """
+
+    pollTime = kwargs.get('pollTime', 0.2)
+
+    if not condition():
+        idle(idleWhen, func, condition, after=pollTime, *args, **kwargs)
+    else:
+        kwargs.pop('pollTime', None)
+        idle(func, *args, **kwargs)
 
 
 def wait(threads, task, *args, **kwargs):
