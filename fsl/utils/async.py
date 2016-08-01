@@ -88,13 +88,8 @@ def _haveWX():
     """Returns ``True`` if we are running within a ``wx`` application,
     ``False`` otherwise.
     """
-    
-    try:
-        import wx
-        return wx.GetApp() is not None
-    
-    except ImportError:
-        return False
+    import fsl.utils.platform as fslplatform
+    return fslplatform.platform.haveGui
 
 
 def run(task, onFinish=None, onError=None, name=None):

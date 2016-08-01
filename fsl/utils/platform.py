@@ -79,6 +79,7 @@ class Platform(notifier.Notifier):
        frozen
        fsldir
        haveGui
+       canHaveGui
        inSSHSession
        wxPlatform
        wxFlavour
@@ -100,6 +101,7 @@ class Platform(notifier.Notifier):
 
         self.__fsldir       = os.environ.get('FSLDIR', None)
         self.__haveGui      = False
+        self.__canHaveGui   = False
         self.__inSSHSession = False
         self.__wxFlavour    = None
         self.__wxPlatform   = None
@@ -107,8 +109,13 @@ class Platform(notifier.Notifier):
         self.__glRenderer   = None
 
         try:
+
             import wx
-            self.__haveGui = True
+
+            self.__canHaveGui = True
+            
+            if wx.GetApp() is not None:
+                self.__haveGui = True
 
         except ImportError:
             pass
@@ -166,6 +173,12 @@ class Platform(notifier.Notifier):
     def haveGui(self):
         """``True`` if we are running with a GUI, ``False`` otherwise. """
         return self.__haveGui
+
+
+    @property
+    def canHaveGui(self):
+        """``True`` if it is possible to create a GUI, ``False`` otherwise. """
+        return self.__canHaveGui
 
 
     @property
