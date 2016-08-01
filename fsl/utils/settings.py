@@ -21,6 +21,8 @@
 
 import logging
 
+from .platform import platform as fslplatform
+
 
 log = logging.getLogger(__name__)
 
@@ -55,11 +57,10 @@ def read(name, default=None):
     there is no setting called ``name``.
     """
 
-    try:    import wx
-    except: return None
+    if not fslplatform.haveGui:
+        return default
 
-    if wx.GetApp() is None:
-        return None
+    import wx
 
     config = wx.Config(_CONFIG_ID)
     
@@ -75,11 +76,10 @@ def read(name, default=None):
 def write(name, value):
     """Writes a setting with the given ``name`` and ``value``.""" 
 
-    try:    import wx
-    except: return
-
-    if wx.GetApp() is None:
+    if not fslplatform.haveGui:
         return 
+
+    import wx
 
     value  = str(value)
     config = wx.Config(_CONFIG_ID)
@@ -91,11 +91,11 @@ def write(name, value):
 
 def delete(name):
     """Delete the setting with the given ``name``. """
-    try:    import wx
-    except: return
 
-    if wx.GetApp() is None:
-        return
+    if not fslplatform.haveGui:
+        return 
+
+    import wx 
 
     config = wx.Config(_CONFIG_ID)
 
