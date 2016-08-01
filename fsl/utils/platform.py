@@ -47,19 +47,19 @@ are running wx Python/Phoenix.
 
 
 WX_MAC_COCOA = 1
-"""Identifier for the :attr:`Platform.wxFlavour` property, indicating that we
+"""Identifier for the :attr:`Platform.wxPlatform` property, indicating that we
 are running the OSX cocoa wx build.
 """
 
 
 WX_MAC_CARBON = 2
-"""Identifier for the :attr:`Platform.wxFlavour` property, indicating that we
+"""Identifier for the :attr:`Platform.wxPlatform` property, indicating that we
 are running the OSX carbon wx build.
 """
 
 
 WX_GTK = 3
-"""Identifier for the :attr:`Platform.wxFlavour` property, indicating that we
+"""Identifier for the :attr:`Platform.wxPlatform` property, indicating that we
 are running the Linux/GTK wx build.
 """
 
