@@ -34,6 +34,13 @@ builtin_platform = importlib.import_module('platform')
 log = logging.getLogger(__name__)
 
 
+WX_UNKNOWN = 0
+"""Identifier for the :attr:`Platform.wxFlavour` and
+:attr:`Platform.wxPlatform` properties indicating an unknown/undetermined
+ flavour/platform.
+"""
+
+
 WX_PYTHON  = 1
 """Identifier for the :attr:`Platform.wxFlavour` property, indicating that
 we are running standard wx Python.
@@ -93,6 +100,7 @@ class Platform(notifier.Notifier):
 
         # For things which 'from fsl.utils.platform import platform',
         # these identifiers are available on the platform instance
+        self.WX_UNKNOWN    = WX_UNKNOWN
         self.WX_PYTHON     = WX_PYTHON
         self.WX_PHOENIX    = WX_PHOENIX
         self.WX_MAC_COCOA  = WX_MAC_COCOA
@@ -100,51 +108,9 @@ class Platform(notifier.Notifier):
         self.WX_GTK        = WX_GTK
 
         self.__fsldir       = os.environ.get('FSLDIR', None)
-        self.__haveGui      = False
-        self.__canHaveGui   = False
         self.__inSSHSession = False
-        self.__wxFlavour    = None
-        self.__wxPlatform   = None
         self.__glVersion    = None
         self.__glRenderer   = None
-
-        try:
-
-            import wx
-
-            self.__canHaveGui = True
-            
-            if wx.GetApp() is not None:
-                self.__haveGui = True
-
-        except ImportError:
-            pass
-
-        # If we have a GUI, get some
-        # info about the wx platform
-        if self.__haveGui:
-
-            pi        = [t.lower() for t in wx.PlatformInfo]
-            isPhoenix = False
-
-            for tag in pi:
-                if 'phoenix' in tag: 
-                    isPhoenix = True
-                    break
-
-            if isPhoenix: self.__wxFlavour = WX_PHOENIX
-            else:         self.__wxFlavour = WX_PYTHON
-
-            if   any(['cocoa'  in p for p in pi]): platform = WX_MAC_COCOA
-            elif any(['carbon' in p for p in pi]): platform = WX_MAC_CARBON
-            elif any(['gtk'    in p for p in pi]): platform = WX_GTK
-            else:                                  platform = None
-
-            self.__wxPlatform = platform
-
-            if self.__wxPlatform is None:
-                log.warning('Could not determine wx platform from '
-                            'information: {}'.format(pi))
 
         # If one of these environment
         # variables is set, then we're
@@ -172,13 +138,22 @@ class Platform(notifier.Notifier):
     @property
     def haveGui(self):
         """``True`` if we are running with a GUI, ``False`` otherwise. """
-        return self.__haveGui
+        try:
+            import wx
+            return self.canHaveGui and wx.GetApp() is not None
+        except ImportError:
+            return False
 
 
     @property
     def canHaveGui(self):
         """``True`` if it is possible to create a GUI, ``False`` otherwise. """
-        return self.__canHaveGui
+
+        try:
+            import wx
+            return wx.App.IsDisplayAvailable()
+        except ImportError:
+            return False
 
 
     @property
@@ -191,18 +166,52 @@ class Platform(notifier.Notifier):
     
     @property
     def wxPlatform(self):
-        """One of :data:`WX_MAC_COCOA`, :data:`WX_MAC_CARBON`, or
-        :data:`WX_GTK`, indicating the wx platform.
+        """One of :data:`WX_UNKNOWN`, :data:`WX_MAC_COCOA`,
+        :data:`WX_MAC_CARBON`, or :data:`WX_GTK`, indicating the wx platform.
         """
-        return self.__wxPlatform
+        
+        if not self.haveGui:
+            return WX_UNKNOWN
+
+        import wx
+
+        pi = [t.lower() for t in wx.PlatformInfo]
+
+        for tag in pi:
+
+            if   any(['cocoa'  in p for p in pi]): platform = WX_MAC_COCOA
+            elif any(['carbon' in p for p in pi]): platform = WX_MAC_CARBON
+            elif any(['gtk'    in p for p in pi]): platform = WX_GTK
+            else:                                  platform = WX_UNKNOWN
+
+            if platform is WX_UNKNOWN:
+                log.warning('Could not determine wx platform from '
+                            'information: {}'.format(pi))
+ 
+        return platform
 
     
     @property
     def wxFlavour(self):
-        """One of :data:`WX_PYTHON` or :data:`WX_PHOENIX`, indicating the wx
-        flavour.
+        """One of :data:`WX_UNKNOWN`, :data:`WX_PYTHON` or :data:`WX_PHOENIX`,
+        indicating the wx flavour.
         """
-        return self.__wxFlavour
+
+        if not self.haveGui:
+            return WX_UNKNOWN
+
+        import wx
+
+        pi        = [t.lower() for t in wx.PlatformInfo]
+        isPhoenix = False
+
+        for tag in pi:
+            if 'phoenix' in tag: 
+                isPhoenix = True
+                break
+
+        if isPhoenix: return WX_PHOENIX
+        else:         return WX_PYTHON
 
 
     @property

@@ -307,9 +307,9 @@ def idle(task, *args, **kwargs):
     All other arguments are passed through to the task function.
 
     
-    If a ``wx.App`` is not running, the ``after``, ``timeout``, ``name``
-    and ``skipIfQueued`` arguments are ignored, and the task is called
-    directly.
+    If a ``wx.App`` is not running, the ``timeout``, ``name`` and
+    ``skipIfQueued`` arguments are ignored. Instead, the call will sleep for
+    ``after`` seconds, and then the ``task`` is called directly.
 
 
     .. note:: If the ``after`` argument is used, there is no guarantee that
@@ -368,6 +368,7 @@ def idle(task, *args, **kwargs):
             _idleQueueSet.add(name)
             
     else:
+        time.sleep(after)
         log.debug('Running idle task directly') 
         task(*args, **kwargs)
 
