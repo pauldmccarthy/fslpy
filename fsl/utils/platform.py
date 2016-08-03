@@ -140,7 +140,11 @@ class Platform(notifier.Notifier):
         """``True`` if we are running with a GUI, ``False`` otherwise. """
         try:
             import wx
-            return self.canHaveGui and wx.GetApp() is not None
+            app = wx.GetApp()
+            return (self.canHaveGui and
+                    app is not None and
+                    app.IsMainLoopRunning())
+        
         except ImportError:
             return False
 
