@@ -304,6 +304,13 @@ def idle(task, *args, **kwargs):
                        ``name`` is already enqueud, (or is running), the
                        function is not called. Defaults to ``False``.
 
+    :arg alwaysQueue:  Optional. If provided, must be provided as a keyword
+                       argument. If ``True``, and a ``wx.MainLoop`` is not
+                       running, the task is enqueued anyway, under the
+                       assumption that a ``wx.MainLoop`` will be started in
+                       the future.
+
+
     All other arguments are passed through to the task function.
 
     
@@ -333,8 +340,9 @@ def idle(task, *args, **kwargs):
     after        = kwargs.pop('after',        0)
     name         = kwargs.pop('name',         None)
     skipIfQueued = kwargs.pop('skipIfQueued', None)
+    alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
-    if _haveWX():
+    if alwaysQueue or _haveWX():
         import wx
 
         if not _idleRegistered:
