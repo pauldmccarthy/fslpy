@@ -244,8 +244,9 @@ def _wxIdleLoop(ev):
         _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
         return
 
-    now     = time.time()
-    elapsed = now - task.schedtime
+    now             = time.time()
+    elapsed         = now - task.schedtime
+    queueSizeOffset = 0
 
     # Has enouggh time elapsed
     # since the task was scheduled?
@@ -254,6 +255,7 @@ def _wxIdleLoop(ev):
         log.debug('Re-queueing function ({}) on wx idle '
                   'loop'.format(getattr(task.task, '__name__', '<unknown>'))) 
         _idleQueue.put_nowait(task)
+        queueSizeOffset = 1
 
     # Has the task timed out?
     elif task.timeout == 0 or (elapsed < task.timeout):
@@ -265,7 +267,7 @@ def _wxIdleLoop(ev):
         if task.name is not None:
             _idleQueueSet.discard(task.name)
 
-    if _idleQueue.qsize() > 0:
+    if _idleQueue.qsize() > queueSizeOffset:
         ev.RequestMore()
     else:
         _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
