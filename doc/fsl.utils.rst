@@ -5,6 +5,7 @@ fsl.utils package
    :hidden:
 
    fsl.utils.async
+   fsl.utils.cache
    fsl.utils.colourbarbitmap
    fsl.utils.dialog
    fsl.utils.imagepanel
