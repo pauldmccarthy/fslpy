@@ -34,12 +34,14 @@ def memoize(args=None, kwargs=None):
 
     If no positional or keyword arguments are specified, the function is
     memoized on all arguments. Note that the arguments used for memoization
-    must be hashable, as they are used as keys in a dictionary..
+    must be hashable, as they are used as keys in a dictionary.
 
-    .. note:: This decorator must always be called with brackets, e.g.::
-                  memoize()
-                  def myfunc():
-                      ...
+    This decorator must always be called with brackets, e.g. ::
+    
+        memoize()
+        def myfunc():
+            # do stuff to be memoized
+    
 
     :arg args:   A list of positional argument indices.
     :arg kwargs: A list of keyword argument names.

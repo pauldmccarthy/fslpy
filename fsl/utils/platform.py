@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 WX_UNKNOWN = 0
 """Identifier for the :attr:`Platform.wxFlavour` and
 :attr:`Platform.wxPlatform` properties indicating an unknown/undetermined
- flavour/platform.
+flavour/platform.
 """
 
 

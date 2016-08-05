@@ -685,6 +685,7 @@ def sliceOverlap(slices, coverage):
                     the current image coverage.
 
     :returns: One of the following codes:
+    
               .. autosummary::
 
               OVERLAP_ALL

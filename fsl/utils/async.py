@@ -485,13 +485,11 @@ class TaskThreadVeto(Exception):
 class TaskThread(threading.Thread):
     """The ``TaskThread`` is a simple thread which runs tasks. Tasks may be
     enqueued and dequeued.
-
-    .. note::
     """
 
 
     def __init__(self, *args, **kwargs):
-        """Create a ``TaskThread`` """
+        """Create a ``TaskThread``. """
 
         threading.Thread.__init__(self, *args, **kwargs)
 

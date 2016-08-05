@@ -190,7 +190,7 @@ class Nifti1(object):
 
     def mapIndices(self, sliceobj):
         """Adjusts the given slice object so that it may be used to index the
-        underlying ``nibabel.Nifti1Image` object.
+        underlying ``nibabel.Nifti1Image`` object.
 
         See the :meth:`__determineShape` method.
 
