@@ -112,6 +112,18 @@ class Platform(notifier.Notifier):
         self.__glVersion    = None
         self.__glRenderer   = None
 
+        # Determine if a display is available. We do
+        # this once at init (instead of on-demand in
+        # the canHaveGui method) because calling the
+        # IsDisplayAvailable function will cause the
+        # application to steal focus under OSX!
+        try:
+            import wx
+            self.__canHaveGui = wx.App.IsDisplayAvailable()
+        except ImportError:
+            self.__canHaveGui = False
+        
+
         # If one of these environment
         # variables is set, then we're
         # probably running over SSH.
@@ -152,12 +164,7 @@ class Platform(notifier.Notifier):
     @property
     def canHaveGui(self):
         """``True`` if it is possible to create a GUI, ``False`` otherwise. """
-
-        try:
-            import wx
-            return wx.App.IsDisplayAvailable()
-        except ImportError:
-            return False
+        return self.__canHaveGui
 
 
     @property
