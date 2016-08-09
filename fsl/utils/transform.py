@@ -27,9 +27,15 @@ def invert(x):
     return linalg.inv(x)
 
 
-def concat(x1, x2):
-    """Combines the two matrices (returns the dot product)."""
-    return np.dot(x1, x2)
+def concat(*xforms):
+    """Combines the given matrices (returns the dot product)."""
+
+    result = xforms[0]
+
+    for i in range(1, len(xforms)):
+        result = np.dot(result, xforms[i])
+
+    return result
 
 
 def scaleOffsetXform(scales, offsets):
