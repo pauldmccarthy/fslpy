@@ -14,7 +14,8 @@ import inspect
 import collections
 
 import props
-import async
+
+import fsl.utils.async as async
 
 
 log = logging.getLogger(__name__)

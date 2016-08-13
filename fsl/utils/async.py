@@ -247,22 +247,30 @@ def _wxIdleLoop(ev):
     now             = time.time()
     elapsed         = now - task.schedtime
     queueSizeOffset = 0
+    taskName        = task.name
+    funcName        = getattr(task.task, '__name__', '<unknown>')
+
+    if taskName is None: taskName = funcName
+    else:                taskName = '{} [{}]'.format(taskName, funcName)
 
     # Has enouggh time elapsed
     # since the task was scheduled?
     # If not, re-queue the task.
     if elapsed < task.after:
-        log.debug('Re-queueing function ({}) on wx idle '
-                  'loop'.format(getattr(task.task, '__name__', '<unknown>'))) 
+        log.debug('Re-queueing function ({}) on wx idle loop'.format(taskName))
         _idleQueue.put_nowait(task)
         queueSizeOffset = 1
 
     # Has the task timed out?
     elif task.timeout == 0 or (elapsed < task.timeout):
         
-        log.debug('Running function ({}) on wx idle '
-                  'loop'.format(getattr(task.task, '__name__', '<unknown>')))
-        task.task(*task.args, **task.kwargs)
+        log.debug('Running function ({}) on wx idle loop'.format(taskName))
+
+        try:
+            task.task(*task.args, **task.kwargs)
+        except Exception as e:
+            log.warning('Idle task {} crashed - {}: {}'.format(
+                taskName, type(e).__name__, str(e)))
 
         if task.name is not None:
             _idleQueueSet.discard(task.name)
