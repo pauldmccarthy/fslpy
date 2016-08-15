@@ -270,7 +270,7 @@ def _wxIdleLoop(ev):
             task.task(*task.args, **task.kwargs)
         except Exception as e:
             log.warning('Idle task {} crashed - {}: {}'.format(
-                taskName, type(e).__name__, str(e)))
+                taskName, type(e).__name__, str(e)), exc_info=True)
 
         if task.name is not None:
             _idleQueueSet.discard(task.name)
