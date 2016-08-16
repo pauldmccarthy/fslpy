@@ -242,7 +242,7 @@ class Nifti1(object):
     #      a 4x4 array (via memoizeMD5), or the call
     #      to aff2axcodes. I'm guessing the latter,
     #      but am not 100% sure.
-    @memoize.memoizeMD5
+    @memoize.Instanceify(memoize.memoizeMD5)
     def axisMapping(self, xform):
         """Returns the (approximate) correspondence of each axis in the source
         coordinate system to the axes in the destination coordinate system,
@@ -257,10 +257,11 @@ class Nifti1(object):
         return nib.orientations.aff2axcodes(xform, inaxes)
 
 
+    @memoize.Instanceify(memoize.memoize)
     def isNeurological(self):
         """Returns ``True`` if it looks like this ``Nifti1`` object is in
         neurological orientation, ``False`` otherwise. This test is purely
-        based on the determinent of the voxel-to-mm transformation matrix -
+        based on the determinant of the voxel-to-mm transformation matrix -
         if it has a positive determinant, the image is assumed to be in
         neurological orientation, otherwise it is assumed to be in
         radiological orientation.

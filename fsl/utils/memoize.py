@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 # TODO Make this a class, and add
 #      a "clearCache" method to it.
-def memoize(args=None, kwargs=None):
+def memoize(func):
     """Memoize the given function by the value of the input arguments, allowing
     the caller to specify which positional arguments (by index) and keyword
     arguments (by name) are used for the comparison.
@@ -36,55 +36,41 @@ def memoize(args=None, kwargs=None):
     memoized on all arguments. Note that the arguments used for memoization
     must be hashable, as they are used as keys in a dictionary.
 
-    This decorator must always be called with brackets, e.g. ::
-    
-        memoize()
-        def myfunc():
-            # do stuff to be memoized
-    
 
     :arg args:   A list of positional argument indices.
     :arg kwargs: A list of keyword argument names.
     """
 
-    def decorator(func):
+    cache      = {}
+    defaultKey = '_memoize_noargs_'
 
-        cache = {}
- 
-        def wrapper(*a, **kwa):
+    def wrapper(*a, **kwa):
 
-            key = []
+        key = []
 
-            if args   is not None: key += [a[  i] for i in args]
-            if kwargs is not None: key += [kwa[k] for k in kwargs]
+        if a   is not None: key += list(a)
+        if kwa is not None: key += [kwa[k] for k in sorted(kwa.keys())]
 
-            # This decorator was created without
-            # any arguments specified - use all
-            # the arguments as the cache key.
-            if len(key) == 0:
+        # This decorator was created without
+        # any arguments specified - use the
+        # default cache key.
+        if len(key) == 0:
+            key = [defaultKey]
 
-                # Keyword arguments are unordered,
-                # so we'll try and overcome this
-                # by sorting the kwarg dict keys.
-                key = list(a) + list([kwa[k] for k in sorted(kwa.keys)])
+        key = tuple(key)
+        
+        try:
+            result = cache[key]
 
-            key = tuple(key)
+        except KeyError:
 
-            try:
-                result = cache[key]
+            result     = func(*a, **kwa)
+            cache[key] = result
 
-            except KeyError:
+            log.debug('Adding to cache[{}]: {}'.format(key, result))
 
-                result     = func(*a, **kwa)
-                cache[key] = result
-
-                log.debug('Adding to cache[{}]: {}'.format(
-                    key, result))
-
-            return result
-        return wrapper
-
-    return decorator
+        return result
+    return wrapper
 
 
 def memoizeMD5(func):
