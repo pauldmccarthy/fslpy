@@ -20,8 +20,8 @@ voxel or world space:
    ORIENT_UNKNOWN
 
 
-These constants relate to the *space* in which a NIFTI1 image is assumed to be
-(i.e. the transformed coordinate space); they are defined in the NIFTI1
+These constants relate to the *space* in which a NIFTI image is assumed to be
+(i.e. the transformed coordinate space); they are defined in the NIFTI
 specification:
 
 .. autosummary::

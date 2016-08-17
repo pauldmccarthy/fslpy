@@ -5,11 +5,11 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`Nifti1` and :class:`Image` classes, for
-representing 3D/4D NIFTI1 images. The ``nibabel`` package is used for file
+"""This module provides the :class:`Nifti` and :class:`Image` classes, for
+representing 3D/4D NIFI1 images. The ``nibabel`` package is used for file
 I/O.
 
-.. note:: Currently, only NIFTI1 images are supported.
+.. note:: Support for ANALYZE75 and NIFTI2 images has not been tested.
 
 
 It is very easy to load a NIFTI image::
@@ -49,15 +49,15 @@ import fsl.data.imagewrapper as imagewrapper
 log = logging.getLogger(__name__)
 
 
-class Nifti1(object):
-    """The ``Nifti1`` class is intended to be used as a base class for
-    things which either are, or are associated with, a NIFTI1 image.
-    The ``Nifti1`` class is intended to represent information stored in
-    the header of a NIFTI1 file - if you want to load the data from
+class Nifti(object):
+    """The ``Nifti`` class is intended to be used as a base class for
+    things which either are, or are associated with, a NIFTI image.
+    The ``Nifti`` class is intended to represent information stored in
+    the header of a NIFTI file - if you want to load the data from
     a file, use the :class:`Image` class instead.
 
 
-    When a ``Nifti1`` instance is created, it adds the following attributes
+    When a ``Nifti`` instance is created, it adds the following attributes
     to itself:
 
     
@@ -78,13 +78,13 @@ class Nifti1(object):
 
     
     .. note:: The ``shape`` attribute may not precisely match the image shape
-              as reported in the NIFTI1 header, because trailing dimensions of
+              as reported in the NIFTI header, because trailing dimensions of
               size 1 are squeezed out. See the :meth:`__determineShape` and
               :meth:`mapIndices` methods.
     """
 
     def __init__(self, header):
-        """Create a ``Nifti1`` object.
+        """Create a ``Nifti`` object.
 
         :arg header:   A :class:`nibabel.nifti1.Nifti1Header` to be used as 
                        the image header. 
@@ -112,7 +112,7 @@ class Nifti1(object):
     def __determineTransform(self, header):
         """Called by :meth:`__init__`. Figures out the voxel-to-world
         coordinate transformation matrix that is associated with this
-        ``Nifti1`` instance.
+        ``Nifti`` instance.
         """
         
         # We have to treat FSL/FNIRT images
@@ -135,7 +135,7 @@ class Nifti1(object):
         # n.b. For images like this, nibabel returns
         # a scaling matrix where the centre voxel
         # corresponds to world location (0, 0, 0).
-        # This goes against the NIFTI1 spec - it
+        # This goes against the NIFTI spec - it
         # should just be a straight scaling matrix.
         elif header['qform_code'] == 0 or header['sform_code'] == 0:
             pixdims       = header.get_zooms()
@@ -211,7 +211,7 @@ class Nifti1(object):
 
     
     def getXFormCode(self, code=None):
-        """This method returns the code contained in the NIFTI1 header,
+        """This method returns the code contained in the NIFTI header,
         indicating the space to which the (transformed) image is oriented.
 
         The ``code`` parameter may be either ``sform`` (the default) or
@@ -259,7 +259,7 @@ class Nifti1(object):
 
     @memoize.Instanceify(memoize.memoize)
     def isNeurological(self):
-        """Returns ``True`` if it looks like this ``Nifti1`` object is in
+        """Returns ``True`` if it looks like this ``Nifti`` object is in
         neurological orientation, ``False`` otherwise. This test is purely
         based on the determinant of the voxel-to-mm transformation matrix -
         if it has a positive determinant, the image is assumed to be in
@@ -316,13 +316,13 @@ class Nifti1(object):
         return code 
 
 
-class Image(Nifti1, notifier.Notifier):
-    """Class which represents a 3D/4D NIFTI1 image. Internally, the image
+class Image(Nifti, notifier.Notifier):
+    """Class which represents a 3D/4D NIFTI image. Internally, the image
     is loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image`, and data
     access managed by a :class:`.ImageWrapper`.
 
     
-    In addition to the attributes added by the :meth:`Nifti1.__init__` method,
+    In addition to the attributes added by the :meth:`Nifti.__init__` method,
     the following attributes/properties are present on an ``Image`` instance 
     as properties (https://docs.python.org/2/library/functions.html#property):
 
@@ -485,7 +485,7 @@ class Image(Nifti1, notifier.Notifier):
             else:
                 name = 'Nibabel image'
  
-        Nifti1.__init__(self, nibImage.get_header())
+        Nifti.__init__(self, nibImage.get_header())
 
         self.name                = name
         self.__dataSource        = dataSource
@@ -572,7 +572,7 @@ class Image(Nifti1, notifier.Notifier):
         else:                           drange = self.__imageWrapper.dataRange
 
         # Fall back to the cal_min/max
-        # fields in the NIFTI1 header
+        # fields in the NIFTI header
         # if we don't yet know anything
         # about the image data range.
         if drange[0] is None or drange[1] is None:
@@ -760,11 +760,11 @@ below.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['Compressed NIFTI1 images',
-                          'NIFTI1 images',
+EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
+                          'NIFTI images',
                           'ANALYZE75 images',
-                          'NIFTI1/ANALYZE75 headers',
-                          'Compressed NIFTI1/ANALYZE75 images',
+                          'NIFTI/ANALYZE75 headers',
+                          'Compressed NIFTI/ANALYZE75 images',
                           'Compressed images']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
@@ -816,7 +816,7 @@ def addExt(prefix, mustExist=True):
 def loadIndexedImageFile(filename):
     """Loads the given image file using ``nibabel`` and ``indexed_gzip``.
 
-    Returns a tuple containing the ``Nifti1Image``, and the open
+    Returns a tuple containing the ``nibabel.Nifti1Image``, and the open
     ``IndexedGzipFile`` handle.
     """
     
