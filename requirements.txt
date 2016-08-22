@@ -3,5 +3,7 @@ six>=1.10.0
 numpy>=1.11.1
 matplotlib>=1.5.1
 nibabel>=2.0.2
+sphinx>=1.4.1
+sphinx-rtd-theme>=0.1.9
 git+https://github.com/pauldmccarthy/indexed_gzip.git#egg=indexed_gzip
 git+ssh://git@git.fmrib.ox.ac.uk/paulmc/props.git#egg=props
