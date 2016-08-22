@@ -23,6 +23,11 @@ version = {}
 with open(op.join(basedir, "fsl", "version.py")) as f:
     exec(f.read(), version)
 
+install_requires = open(op.join(basedir, 'requirements.txt'), 'rt').readlines()
+
+dependency_links = [i for i in install_requires if     i.startswith('git')]
+install_requires = [i for i in install_requires if not i.startswith('git')]
+
 setup(
 
     name='fslpy',
@@ -48,12 +53,10 @@ setup(
 
     packages=find_packages(exclude=('doc')),
 
-    install_requires=[
-        'pyopengl>=3.1.0',
-        'pyparsing>=2.0.3',
-        'numpy>=1.8.1',
-        'scipy>=0.14.0',
-        'matplotlib>=1.3.1',
-        'nibabel>=1.3.0',
-        'Pillow>=2.5.3'],
+    install_requires=install_requires,
+    dependency_links=dependency_links,
+
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'pytest-runner'],
+    test_suite='tests',
 )
