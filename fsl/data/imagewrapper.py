@@ -79,7 +79,10 @@ class ImageWrapper(notifier.Notifier):
     The ``ImageWrapper`` abstracts away trailing image dimensions of length 1.
     This means that if the header for a NIFTI image specifies that the image
     has four dimensions, but the fourth dimension is of length 1, you do not
-    need to worry about indexing that fourth dimension.
+    need to worry about indexing that fourth dimension. However, all NIFTI
+    images will be presented as having at least three dimensions, so if your
+    image header specifies a third dimension of length 1, you will still
+    need provide an index of 0 for that dimensions, for all data accesses.
 
 
     *Data range*
@@ -88,7 +91,7 @@ class ImageWrapper(notifier.Notifier):
     In order to avoid the computational overhead of calculating the image data
     range (its minimum/maximum values) when an image is first loaded in, an
     ``ImageWrapper`` incrementally updates the known image data range as data
-    is accessed. The ``ImageWrapper`` keeps track of the image data _coverage_,
+    is accessed. The ``ImageWrapper`` keeps track of the image data *coverage*,
     the portion of the image which has already been considered in the data
     range calculation. When data from a region of the image not in the coverage
     is accessed, the coverage is expanded to include this region. The coverage
@@ -204,11 +207,11 @@ class ImageWrapper(notifier.Notifier):
 
 
         .. note:: The ``dataRange`` parameter is intended for situations where
-                  the image data range is known (e.g. it was calculated
-                  earlier, and the image is being re-loaded). If a
+                  the image data range is known in advance (e.g. it was
+                  calculated earlier, and the image is being re-loaded). If a
                   ``dataRange`` is passed in, it will *not* be overwritten by
                   any range calculated from the data, unless the calculated
-                  data range is wider than the provided ``dataRange``. 
+                  data range is wider than the provided ``dataRange``.
         """
         
         if dataRange is None:
@@ -331,6 +334,14 @@ class ImageWrapper(notifier.Notifier):
 
         if isTuple:
             sliceobj = sliceTupleToSliceObj(sliceobj)
+
+        # Truncate some dimensions from the
+        # slice object if it has too many
+        # (e.g. trailing dims of length 1).
+        ndims = len(self.__image.shape)
+
+        if len(sliceobj) > ndims:
+            sliceobj = sliceobj[:ndims]
 
         # If the image has not been loaded
         # into memory, we can use the nibabel
@@ -527,8 +538,19 @@ class ImageWrapper(notifier.Notifier):
 
         log.debug('Getting image data: {}'.format(sliceobj))
 
-        sliceobj = nib.fileslice.canonical_slicers(
-            sliceobj, self.__image.shape)
+        if not isinstance(sliceobj, tuple):
+            sliceobj = (sliceobj,)
+
+        # Truncate some dimensions from the
+        # slice object if it has too many
+        # (e.g. trailing dims of length 1).
+        shape = self.__image.shape
+        ndims = len(shape)
+
+        if len(sliceobj) > ndims:
+            sliceobj = sliceobj[:ndims]
+
+        sliceobj = nib.fileslice.canonical_slicers(sliceobj, shape)
 
         # TODO Cache 3D images for large 4D volumes, 
         #      so you don't have to hit the disk?
