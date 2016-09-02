@@ -10,6 +10,7 @@ import os.path as op
 import pytest
 
 import fsl.utils.path as fslpath
+import fsl.data.image as fslimage
 
 
 def test_addExt_exists_shouldPass(testdir):
@@ -17,9 +18,8 @@ def test_addExt_exists_shouldPass(testdir):
     are valid.
     """
 
-    # If we have a .hdr/.img pair, the .img should take precedence
-    replacements = {'.hdr' : ['.img', '.img.gz']}
-    allowedExts  = ['.hdr', '.img', '.nii', '.nii.gz', '.img.gz']
+    replacements = fslimage.REPLACEMENTS
+    allowedExts  = fslimage.ALLOWED_EXTENSIONS
 
     tests = [
         ('compressed',                     'compressed.nii.gz'),
@@ -30,7 +30,7 @@ def test_addExt_exists_shouldPass(testdir):
         ('img_hdr_pair.hdr',               'img_hdr_pair.hdr'),
         ('img_hdr_pair.img',               'img_hdr_pair.img'),
         ('compressed_img_hdr_pair',        'compressed_img_hdr_pair.img.gz'),
-        ('compressed_img_hdr_pair.hdr',    'compressed_img_hdr_pair.hdr'),
+        ('compressed_img_hdr_pair.hdr.gz', 'compressed_img_hdr_pair.hdr.gz'),
         ('compressed_img_hdr_pair.img.gz', 'compressed_img_hdr_pair.img.gz'),
     ]
 
@@ -48,9 +48,9 @@ def test_addExt_exists_shouldFail(testdir):
     """Tests the addExt function with inputs that should cause it to raise an
     error.
     """
-
-    replacements = {'.hdr' : ['.img', '.img.gz']}
-    allowedExts  = ['.hdr', '.img', '.nii', '.nii.gz', '.img.gz'] 
+    
+    replacements = fslimage.REPLACEMENTS
+    allowedExts  = fslimage.ALLOWED_EXTENSIONS
 
     shouldFail = [
 
@@ -73,6 +73,8 @@ def test_addExt_exists_shouldFail(testdir):
         ('ambiguous',  [],      {'.hdr' : ['.img']}),
         ('ambiguous',  False,   {'.hdr' : ['.img.gz']}),
         ('ambiguous',  [],      {'.hdr' : ['.img.gz']}),
+        ('ambiguous',  False,   {'.hdr' : ['.img', '.img.gz', '.nii']}),
+        ('ambiguous',  [],      {'.hdr' : ['.img', '.img.gz', '.nii']}),
         
         ('badpath'),
         ('badpath.nii.gz'),
@@ -101,7 +103,7 @@ def test_addExt_exists_shouldFail(testdir):
 
 def test_addExt_noExist(testdir):
 
-    allowedExts = ['.hdr', '.img', '.nii', '.nii.gz', '.img.gz']
+    allowedExts  = fslimage.ALLOWED_EXTENSIONS 
 
     # Prefix, output, defaultExt, allowedExts
     tests = [
@@ -136,7 +138,7 @@ def test_addExt_noExist(testdir):
 
 def test_removeExt(testdir):
 
-    allowedExts = ['.hdr', '.img', '.nii', '.nii.gz', '.img.gz']
+    allowedExts = fslimage.ALLOWED_EXTENSIONS
     
     # If len(test) == 2, allowedExts is set from above
     # Otherwise, it is set from the test tuple
@@ -170,7 +172,7 @@ def test_removeExt(testdir):
 
 def test_getExt(testdir):
 
-    allowedExts = ['.hdr', '.img', '.nii', '.nii.gz', '.img.gz']
+    allowedExts = fslimage.ALLOWED_EXTENSIONS
 
     # len(test) == 2 -> allowedExts set from above
     # Otherwise, allowedExts set from test tuple
