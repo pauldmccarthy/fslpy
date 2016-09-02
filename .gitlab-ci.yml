@@ -1,5 +1,12 @@
-image: python:2.7
+test:2.7:
+  image: python2.7
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - python setup.py test
 
-test:
-  - cat requirements.txt | xargs -n 1 pip install
-  - python setup.py test
+
+test:3.5:
+  image: python3.5
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - python setup.py test
