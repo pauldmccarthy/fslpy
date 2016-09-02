@@ -15,10 +15,16 @@ paths.
    shallowest
    addExt
    removeExt
+   getExt
 """
 
 
 import os.path as op
+
+
+class PathError(Exception):
+    """``Exception`` class raised by :func:`addExt` and :func:`getExt`. """
+    pass
 
 
 def deepest(path, suffixes):
@@ -64,7 +70,11 @@ def shallowest(path, suffixes):
     return None 
 
 
-def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
+def addExt(prefix,
+           allowedExts,
+           mustExist=True,
+           defaultExt=None,
+           replace=None):
     """Adds a file extension to the given file ``prefix``.
 
     If ``mustExist`` is False, and the file does not already have a 
@@ -77,16 +87,46 @@ def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
     extension.  A :exc:`ValueError` is raised if:
 
        - No files exist with the given prefix and a supported extension.
-       - More than one file exists with the given prefix, and a supported
-         extension.
+    
+       - ``replace`` is ``None``, and more than one file exists with the
+         given prefix, and a supported extension. 
 
     Otherwise the full file name is returned.
 
-    :arg prefix:      The file name refix to modify.
-    :arg mustExist:   Whether the file must exist or not.
+    :arg prefix:      The file name prefix to modify.
+
     :arg allowedExts: List of allowed file extensions.
+    
+    :arg mustExist:   Whether the file must exist or not.
+    
     :arg defaultExt:  Default file extension to use.
+    
+    :arg replace:     If multiple files exist with the same ``prefix`` and
+                      supported extensions (e.g. ``file.hdr`` and
+                      ``file.img``), this dictionary can be used to resolve
+                      ambiguities. It must have the structure::
+
+                          {
+                              suffix : [replacement, ...],
+                              ...
+                          }
+    
+                      If files with ``suffix`` and one of the ``replacement``
+                      suffixes exists, the ``suffix`` file will
+                      be ignored, and replaced with the ``replacement`` file.
+                      If multiple ``replacement`` files exist alongside the
+                      ``suffix`` file, a ``PathError`` is raised.
+
+    .. note:: The primary use-case of the ``replace`` parameter is to resolve
+              ambiguity with respect to NIFTI and ANALYSE75 image pairs. By
+              specifying ``replace={'.hdr' : ['.img'. '.img.gz'}``, the
+              ``addExt`` function is able to figure out what you mean when you
+              wish to add an extension to ``file``, and ``file.hdr`` and
+              either ``file.img`` or ``file.img.gz`` (but not both) exist.
     """
+
+    if replace is None:
+        replace = {}
 
     if not mustExist:
 
@@ -101,31 +141,74 @@ def addExt(prefix, allowedExts, mustExist=True, defaultExt=None):
     # If the provided prefix already ends with a
     # supported extension , check to see that it exists
     if any([prefix.endswith(ext) for ext in allowedExts]):
-        extended = [prefix]
+        allPaths = [prefix]
         
     # Otherwise, make a bunch of file names, one per
     # supported extension, and test to see if exactly
     # one of them exists.
     else:
-        extended = [prefix + ext for ext in allowedExts]
+        allPaths = [prefix + ext for ext in allowedExts]
 
-    exists = [op.isfile(e) for e in extended]
+    exists  = [op.isfile(e) for e in allPaths]
+    nexists = sum(exists)
 
     # Could not find any supported file
     # with the specified prefix
-    if not any(exists):
-        raise ValueError(
-            'Could not find a supported file with prefix {}'.format(prefix))
+    if nexists == 0:
+        raise PathError('Could not find a supported file '
+                        'with prefix {}'.format(prefix))
 
     # Ambiguity! More than one supported
-    # file with the specified prefix
-    if sum(exists) > 1:
-        raise ValueError('More than one file with prefix {}'.format(prefix))
+    # file with the specified prefix.
+    elif nexists > 1:
+
+        # Remove non-existent paths from the
+        # extended list, get all their
+        # suffixes, and potential replacements
+        allPaths     = [allPaths[i] for i in range(len(allPaths)) if exists[i]]
+        suffixes     = [getExt(e, allowedExts) for e in allPaths]
+        replacements = [replace.get(s) for s in suffixes]
+        hasReplace   = [r is not None for r in replacements]
+
+        for p, r in zip(allPaths, replacements):
+            print '   {} replacements: {}'.format(p, r)
+
+        # If any replacement has been specified
+        # for any of the existing suffixes,
+        # see if we have a unique match for
+        # exactly one existing suffix, the
+        # one to be ignored/replaced. 
+        if sum(hasReplace) == 1:
+
+            # Make sure there is exactly one potential
+            # replacement for this suffix. If there's
+            # more than one (e.g. file.hdr plus both
+            # file.img and file.img.gz) we can't resolve
+            # the ambiguity. In this case the code will
+            # fall through to the raise statement below.
+            toReplace    = allPaths[hasReplace.index(True)]
+            replacements = replacements[hasReplace.index(True)]
+            replacements = [prefix + ext for ext in replacements]
+            replExists   = [r in allPaths for r in replacements]
+
+            if sum(replExists) == 1:
+                
+                replacedBy = replacements[replExists.index(True)]
+                allPaths[allPaths.index(toReplace)] = replacedBy
+                allPaths = list(set(allPaths))
+
+        exists = [True] * len(allPaths)
+
+        # There's more than one path match -
+        # we can't resolve the ambiguity
+        if len(allPaths) > 1:
+            raise PathError('More than one file with '
+                            'prefix {}'.format(prefix))
 
     # Return the full file name of the
     # supported file that was found
     extIdx = exists.index(True)
-    return extended[extIdx]
+    return allPaths[extIdx]
 
 
 def removeExt(filename, allowedExts):
@@ -151,3 +234,32 @@ def removeExt(filename, allowedExts):
 
     # and trim it from the file name
     return filename[:-extLen]
+
+
+def getExt(filename, allowedExts=None):
+    """Returns the extension from the given file name.
+
+    If ``allowedExts`` is ``None``, this function is equivalent to using::
+    
+        os.path.splitext(filename)[1]
+
+    If ``allowedExts`` is provided, but the file does not end with an allowed
+    extension, a :exc:`PathError` is raised.
+
+    :arg allowedExts: Allowed/recognised file extensions.
+    """
+
+    # If allowedExts is not specified,
+    # we just use op.splitext
+    if allowedExts is None:
+        return op.splitext(filename)[1]
+
+    # Otherwise, try and find a suffix match
+    extMatches = [filename.endswith(ext) for ext in allowedExts]
+
+    if not any(extMatches):
+        raise PathError('{} does not end in a supported extension ({})'.format(
+            filename, ', '.join(allowedExts)))
+
+    extIdx = extMatches.index(True)
+    return allowedExts[extIdx]

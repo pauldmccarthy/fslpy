@@ -90,7 +90,7 @@ def isFEATDir(path):
 
     try:
         fslimage.addExt(op.join(path, 'filtered_func_data'), mustExist=True)
-    except ValueError:
+    except fslimage.PathError:
         return False
     
     if not op.exists(op.join(dirname, 'design.fsf')): return False
@@ -451,7 +451,7 @@ def getDataFile(featdir):
     """Returns the name of the file in the FEAT directory which contains
     the model input data (typically called ``filtered_func_data.nii.gz``).
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir: A FEAT directory.
     """
@@ -464,7 +464,7 @@ def getMelodicFile(featdir):
     components (if melodic ICA was performed as part of the FEAT
     analysis). This file can be loaded as a :class:`.MelodicImage`.
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
     """
     melfile = op.join(featdir, 'filtered_func_data.ica', 'melodic_IC')
     return fslimage.addExt(melfile, mustExist=True)
@@ -474,7 +474,7 @@ def getResidualFile(featdir):
     """Returns the name of the file in the FEAT results which contains
     the model fit residuals (typically called ``res4d.nii.gz``).
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir: A FEAT directory.
     """
@@ -485,7 +485,7 @@ def getResidualFile(featdir):
 def getPEFile(featdir, ev):
     """Returns the path of the PE file for the specified EV.
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir: A FEAT directory.
     :arg ev:      The EV number (0-indexed).
@@ -497,7 +497,7 @@ def getPEFile(featdir, ev):
 def getCOPEFile(featdir, contrast):
     """Returns the path of the COPE file for the specified contrast.
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 
@@ -509,7 +509,7 @@ def getCOPEFile(featdir, contrast):
 def getZStatFile(featdir, contrast):
     """Returns the path of the Z-statistic file for the specified contrast.
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 
@@ -521,7 +521,7 @@ def getZStatFile(featdir, contrast):
 def getClusterMaskFile(featdir, contrast):
     """Returns the path of the cluster mask file for the specified contrast.
 
-    Raises a :exc:`ValueError` if the file does not exist.
+    Raises a :exc:`.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed). 

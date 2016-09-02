@@ -77,7 +77,7 @@ def isMelodicDir(path):
     # Must contain an image file called melodic_IC
     try:
         fslimage.addExt(op.join(dirname, 'melodic_IC'), mustExist=True)
-    except ValueError:
+    except fslimage.PathError:
         return False
 
     # Must contain files called
@@ -124,8 +124,8 @@ def getDataFile(meldir):
 
     dataFile = op.join(topDir, 'filtered_func_data')
 
-    try:               return fslimage.addExt(dataFile, mustExist=True)
-    except ValueError: return None
+    try:                       return fslimage.addExt(dataFile, mustExist=True)
+    except fslimage.PathErrpr: return None
 
 
 def getMeanFile(meldir):

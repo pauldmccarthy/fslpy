@@ -769,8 +769,20 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
+REPLACEMENTS = {'.hdr' : ['.img', '.img.gz']}
+"""Suffix replacements used by :func:`addExt` to resolve file path
+ambiguities - see :func:`fsl.utils.path.addExt`.
+"""
+
+
 DEFAULT_EXTENSION  = '.nii.gz'
 """The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
+
+
+PathError = fslpath.PathError
+"""Error raised by :mod:`fsl.utils.path` functions when an error occurs.
+Made available in this module for convenience.
+"""
 
 
 def looksLikeImage(filename, allowedExts=None):
@@ -810,7 +822,8 @@ def addExt(prefix, mustExist=True):
     return fslpath.addExt(prefix,
                           ALLOWED_EXTENSIONS,
                           mustExist,
-                          DEFAULT_EXTENSION)
+                          DEFAULT_EXTENSION,
+                          replace=REPLACEMENTS)
 
 
 def loadIndexedImageFile(filename):
