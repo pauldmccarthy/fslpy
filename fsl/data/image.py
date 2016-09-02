@@ -761,7 +761,7 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
                           'ANALYZE75 images',
                           'NIFTI/ANALYZE75 headers',
                           'Compressed NIFTI/ANALYZE75 images',
-                          'Compressed images']
+                          'Compressed NIFTI/ANALYZE75 headers']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
