@@ -13,6 +13,8 @@ import glob
 import numpy   as np
 import nibabel as nib
 
+from nibabel.spatialimages import HeaderDataError
+
 import fsl.data.constants as constants
 import fsl.data.image     as fslimage
 import fsl.utils.path     as fslpath
@@ -44,18 +46,19 @@ def test_load(testdir):
                   'ambiguous.img',
                   'ambiguous.hdr.gz',
                   'ambiguous.img.gz']
-    shouldRaise = ['notexist',
-                   'notexist.nii.gz',
-                   'ambiguous']
+    shouldRaise = [('notexist',        fslpath.PathError),
+                   ('notexist.nii.gz', fslpath.PathError),
+                   ('ambiguous',       fslpath.PathError),
+                   ('notnifti',        HeaderDataError),
+                   ('notnifti.nii.gz', HeaderDataError)]
     
     # Not raising an error means the test passes
     for fname in shouldPass:
         fslimage.Image(op.join(testdir, 'nifti_formats', fname))
 
     # These should raise an error
-    for fname in shouldRaise:
-        with pytest.raises(fslpath.PathError):
-            print fname
+    for fname, exc in shouldRaise:
+        with pytest.raises(exc):
             fslimage.Image(op.join(testdir, 'nifti_formats', fname))
             
 
