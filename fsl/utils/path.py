@@ -170,9 +170,6 @@ def addExt(prefix,
         replacements = [replace.get(s) for s in suffixes]
         hasReplace   = [r is not None for r in replacements]
 
-        for p, r in zip(allPaths, replacements):
-            print '   {} replacements: {}'.format(p, r)
-
         # If any replacement has been specified
         # for any of the existing suffixes,
         # see if we have a unique match for

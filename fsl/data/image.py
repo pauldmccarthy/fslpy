@@ -749,11 +749,7 @@ class Image(Nifti, notifier.Notifier):
                 self.notify(notifier_topic='dataRange') 
 
 
-# TODO The wx.FileDialog does not    
-# seem to handle wildcards with      
-# multiple suffixes (e.g. '.nii.gz'),
-# so i'm just providing '*.gz'for now
-ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.gz']
+ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
 """The file extensions which we understand. This list is used as the default
 if the ``allowedExts`` parameter is not passed to any of the functions
 below.
@@ -769,7 +765,7 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-REPLACEMENTS = {'.hdr' : ['.img', '.img.gz']}
+REPLACEMENTS = {'.hdr' : ['.img'], '.hdr.gz' : ['.img.gz']}
 """Suffix replacements used by :func:`addExt` to resolve file path
 ambiguities - see :func:`fsl.utils.path.addExt`.
 """
@@ -789,10 +785,14 @@ def looksLikeImage(filename, allowedExts=None):
     """Returns ``True`` if the given file looks like an image, ``False``
     otherwise.
 
+    .. note:: The ``filename`` cannot just be a file prefix - it must
+              include the file suffix (e.g. ``myfile.nii.gz``, not
+              ``myfile``).
+
     :arg filename:    The file name to test.
     
     :arg allowedExts: A list of strings containing the allowed file
-                      extensions.
+                      extensions - defaults to :attr:`ALLOWED_EXTENSIONS`.
     """
 
     if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
