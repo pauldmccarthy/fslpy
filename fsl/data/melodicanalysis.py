@@ -125,7 +125,7 @@ def getDataFile(meldir):
     dataFile = op.join(topDir, 'filtered_func_data')
 
     try:                       return fslimage.addExt(dataFile, mustExist=True)
-    except fslimage.PathErrpr: return None
+    except fslimage.PathError: return None
 
 
 def getMeanFile(meldir):
