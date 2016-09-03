@@ -46,6 +46,10 @@ class Notifier(object):
         new             = object.__new__(cls)
         new.__listeners = collections.defaultdict(collections.OrderedDict)
 
+        if isinstance(new, props.HasProperties):
+            log.warning('Warning: {} is a sub-class of both '
+                        'Notifier and props.HasProperties!')
+
         return new
 
         

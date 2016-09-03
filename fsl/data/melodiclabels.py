@@ -88,14 +88,10 @@ class MelodicClassification(props.HasProperties):
     def clear(self):
         """Removes all labels from all components. """
 
-        notifState = self.getNotificationState('labels')
-        self.disableNotification('labels')
-        
-        self.__components = {}
-        self.labels       = [[] for i in range(self.__ncomps)]
-        
-        self.setNotificationState('labels', notifState)
-        self.notify('labels')
+        with props.suppress(self, 'labels', notify=True):
+
+            self.__components = {}
+            self.labels       = [[] for i in range(self.__ncomps)]
         
 
     def load(self, filename):
@@ -130,15 +126,11 @@ class MelodicClassification(props.HasProperties):
                 allLabels.append(['Unknown'])
 
         # Add the labels to this melclass object
-        notifState = self.getNotificationState('labels')
-        self.disableNotification('labels')
+        with props.suppress(self, 'labels', notify=True):
 
-        for i, labels in enumerate(allLabels):
-            for label in labels:
-                self.addLabel(i, label)
-                
-        self.setNotificationState('labels', notifState)
-        self.notify('labels')
+            for i, labels in enumerate(allLabels):
+                for label in labels:
+                    self.addLabel(i, label)
 
     
     def save(self, filename):
@@ -223,13 +215,9 @@ class MelodicClassification(props.HasProperties):
         
         labels = self.getLabels(component)
 
-        self.disableNotification('labels')
-        
-        for l in labels:
-            self.removeLabel(component, l)
-            
-        self.enableNotification('labels')
-        self.notify('labels')
+        with props.suppress(self, 'labels', notify=True):
+            for l in labels:
+                self.removeLabel(component, l)
 
         log.debug('Labels cleared from component: {}'.format(component))
 
@@ -262,13 +250,9 @@ class MelodicClassification(props.HasProperties):
         
         components = self.getComponents(label)
 
-        self.disableNotification('labels') 
-
-        for c in components:
-            self.removeComponent(label, c)
-            
-        self.enableNotification('labels')
-        self.notify('labels')
+        with props.suppress(self, 'labels', notify=True):
+            for c in components:
+                self.removeComponent(label, c)
 
 
 def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
