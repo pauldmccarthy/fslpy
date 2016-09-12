@@ -119,6 +119,13 @@ class FEATImage(fslimage.Image):
         return featanalysis.getTopLevelAnalysisDir(self.__featDir)
 
 
+    def getReportFile(self):
+        """Returns the path to the FEAT report - see
+        :func:`.featanalysis.getReportFile`.
+        """
+        return featanalysis.getReportFile(self.__featDir) 
+
+
     def hasStats(self):
         """Returns ``True`` if the analysis for this ``FEATImage`` contains
         a statistical analysis.

@@ -149,7 +149,13 @@ def getFTMixFile(meldir):
 
 
 def getReportFile(meldir):
-    pass
+    """Returns the path to the MELODIC report index file, or ``None`` if there
+    is no report.
+    """
+    
+    report = op.join(meldir, '..', 'report.html')
+    if op.exists(report): return report
+    else:                 return None 
 
 
 def getNumComponents(meldir):

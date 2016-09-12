@@ -139,6 +139,16 @@ def getTopLevelAnalysisDir(path):
     return fslpath.shallowest(path, ['.ica', '.gica', '.feat', '.gfeat'])
 
 
+def getReportFile(featdir):
+    """Returns the path to the FEAT report index file, or ``None`` if there
+    is no report.
+    """
+    
+    report = op.join(featdir, 'report.html')
+    if op.exists(report): return report
+    else:                 return None
+
+
 def loadContrasts(featdir):
     """Loads the contrasts from a FEAT directory. Returns a tuple containing:
     

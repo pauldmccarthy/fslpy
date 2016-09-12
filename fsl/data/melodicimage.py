@@ -131,6 +131,13 @@ class MelodicImage(fslimage.Image):
         contained.
         """
         return self.__meldir
+
+
+    def getReportFile(self):
+        """Returns the path to the MELODIC report - see
+        :func:`.melodicanalysis.getReportFile`.
+        """
+        return melanalysis.getReportFile(self.__meldir)
     
 
     def getTopLevelAnalysisDir(self):
