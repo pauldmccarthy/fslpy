@@ -106,7 +106,7 @@ class MelodicImage(fslimage.Image):
         self.__tr = val
 
         if oldval != val:
-            self.notify(notifier_topic='tr')
+            self.notify(topic='tr')
 
         
     def getComponentTimeSeries(self, component):

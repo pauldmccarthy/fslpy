@@ -39,6 +39,7 @@ class Notifier(object):
               class, provided by the :mod:`props` package.
     """
 
+
     def __new__(cls, *args, **kwargs):
         """Initialises a dictionary of listeners on a new ``Notifier``
         instance.
@@ -57,13 +58,21 @@ class Notifier(object):
         """Register a listener with this ``Notifier``.
 
         :arg name:      A unique name for the listener.
-        :arg callback:  The function to call - must accept this ``Notifier``
-                        instance as its sole argument.
+
+        :arg callback:  The function to call - must accept two positional
+                        arguments:
+
+                          - this ``Notifier`` instance.
+
+                          - A value, which may be ``None`` - see
+                            :meth:`notify`.
+
         :arg topic:     Optional topic on which to listen for notifications.
+
         :arg runOnIdle: If ``True``, this listener will be called on the main
                         thread, via the :func:`.async.idle` function.
                         Otherwise this function will be called directly by the
-                        :meth:`notify` method.
+                        :meth:`notify` method. Defaults to ``False``.
         """
 
         if topic is None:
@@ -132,9 +141,13 @@ class Notifier(object):
 
         The documented arguments must be passed as keyword arguments.
 
-        :args notifier_topic: The topic on which to notify. Default
-                              listeners are always notified, regardless
-                              of the specified topic.
+        :arg topic: The topic on which to notify. Default
+                    listeners are always notified, regardless
+                    of the specified topic.
+
+        :arg value: A value passed through to the registered listener
+                    functions. If not provided, listeners will be passed
+                    a value of ``None``.
         
         All other arguments passed to this method are ignored.
 
@@ -143,7 +156,8 @@ class Notifier(object):
                   See :meth:`register`.
         """
 
-        topic     = kwargs.get('notifier_topic', DEFAULT_TOPIC)
+        topic     = kwargs.get('topic', DEFAULT_TOPIC)
+        value     = kwargs.get('value', None)
         listeners = [self.__listeners[topic]]
 
         if topic != DEFAULT_TOPIC:
@@ -179,5 +193,5 @@ class Notifier(object):
                               'removing from list'.format(name))
                     ldict.pop(name)
                     
-                elif runOnIdle: async.idle(callback, self)
-                else:           callback(self)
+                elif runOnIdle: async.idle(callback, self, value)
+                else:           callback(            self, value)

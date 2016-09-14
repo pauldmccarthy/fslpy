@@ -598,7 +598,7 @@ class Image(Nifti, notifier.Notifier):
         :class:`.Notifier` interface) on the ``'dataRange'`` topic.
         """
         if not self.__suppressDataRange:
-            self.notify(notifier_topic='dataRange')
+            self.notify(topic='dataRange')
 
 
     def calcRange(self, sizethres=None):
@@ -693,7 +693,7 @@ class Image(Nifti, notifier.Notifier):
         self.__dataSource = filename
         self.__saveState  = True
         
-        self.notify(notifier_topic='saveState')
+        self.notify(topic='saveState')
 
 
     def __getitem__(self, sliceobj):
@@ -739,14 +739,14 @@ class Image(Nifti, notifier.Notifier):
 
         if values.size > 0:
 
-            self.notify(notifier_topic='data')
+            self.notify(topic='data')
 
             if self.__saveState:
                 self.__saveState = False
-                self.notify(notifier_topic='saveState')
+                self.notify(topic='saveState')
 
             if not np.all(np.isclose(oldRange, newRange)):
-                self.notify(notifier_topic='dataRange') 
+                self.notify(topic='dataRange') 
 
 
 ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
