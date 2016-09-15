@@ -27,6 +27,46 @@ deregistering, or notifying listeners.
 """
 
 
+class _Listener(object):
+    """This class is used internally by the :class:`.Notifier` class to
+    store references to callback functions.
+    """
+
+    def __init__(self, name, callback, topic, runOnIdle):
+
+        self.name = name
+
+        # We use a WeakFunctionRef so we can refer to
+        # both functions and class/instance methods
+        self.__callback = props.WeakFunctionRef(callback)
+        self.topic      = topic
+        self.runOnIdle  = runOnIdle
+        self.enabled    = True
+
+
+    @property
+    def callback(self):
+        """Returns the callback function, or ``None`` if it has been
+        garbage-collected.
+        """
+        return self.__callback.function()
+
+
+    def __str__(self):
+
+        cb = self.callback
+        
+        if cb is not None: cbName = getattr(cb, '__name__', '<callable>')
+        else:              cbName = '<deleted>'
+
+        return 'Listener {} [topic: {}] [function: {}]'.format(
+            self.name, self.topic, cbName)
+
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class Notifier(object):
     """The ``Notifier`` class is a mixin which provides simple notification
     capability. Listeners can be registered/deregistered to listen via the
@@ -78,17 +118,10 @@ class Notifier(object):
         if topic is None:
             topic = DEFAULT_TOPIC
 
-        # We use a WeakFunctionRef so we can refer to
-        # both functions and class/instance methods
-        self.__listeners[topic][name] = (props.WeakFunctionRef(callback),
-                                         runOnIdle)
+        listener = _Listener(name, callback, topic, runOnIdle)
+        self.__listeners[topic][name] = listener
 
-        log.debug('{}: Registered listener {} '
-                  '[topic: {}] (function: {})'.format(
-                      type(self).__name__,
-                      name,
-                      topic, 
-                      getattr(callback, '__name__', '<callable>')))
+        log.debug('{}: Registered {}'.format(type(self).__name__, listener))
 
         
     def deregister(self, name, topic=None):
@@ -108,32 +141,21 @@ class Notifier(object):
         if listeners is None:
             return
 
-        callback, _ = listeners.pop(name, (None, None))
+        listener = listeners.pop(name, None)
 
         # Silently absorb invalid names - the
         # notify function may have removed gc'd
         # listeners, so they will no longer exist
         # in the dictionary.
-        if callback is None:
+        if listener is None:
             return
 
         # No more listeners for this topic
         if len(listeners) == 0:
             self.__listeners.pop(topic)
         
-        callback = callback.function()
-
-        if callback is not None:
-            cbName = getattr(callback, '__name__', '<callable>')
-        else:
-            cbName = '<deleted>'
-
-        log.debug('{}: De-registered listener {} '
-                  '[topic: {}] (function: {})'.format(
-                      type(self).__name__,
-                      name,
-                      topic,
-                      cbName)) 
+        log.debug('{}: De-registered listener {}'.format(
+            type(self).__name__, listener))
         
 
     def notify(self, *args, **kwargs):
@@ -181,9 +203,9 @@ class Notifier(object):
                 srcLine))
 
         for ldict in listeners:
-            for name, (callback, runOnIdle) in list(ldict.items()):
+            for name, listener in list(ldict.items()):
                 
-                callback = callback.function()
+                callback = listener.callback
 
                 # The callback, or the owner of the
                 # callback function may have been
@@ -192,6 +214,9 @@ class Notifier(object):
                     log.debug('Listener {} has been gc\'d - '
                               'removing from list'.format(name))
                     ldict.pop(name)
+
+                elif not listener.enabled:
+                    continue
                     
-                elif runOnIdle: async.idle(callback, self, value)
-                else:           callback(            self, value)
+                elif listener.runOnIdle: async.idle(callback, self, value)
+                else:                    callback(            self, value)
