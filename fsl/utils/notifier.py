@@ -189,6 +189,20 @@ class Notifier(object):
     def skip(self, name, topic=None):
         """Context manager which disables the speciifed listener, and
         restores its state before returning.
+
+        You can use this method if you have some code which triggers a
+        notification, but you do not your own listener to be notified.
+        For example::
+
+            def __myListener(*a):
+                pass
+
+            notifier.register('myListener', __myListener)
+
+            with notifier.skip('myListener'):
+                # if a notification is triggered
+                # by the code here, the __myListener
+                # function will not be called.
         """
 
         state = self.isEnabled(name, topic)
