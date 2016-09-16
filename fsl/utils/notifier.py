@@ -11,6 +11,7 @@ as a mixin for providing a simple notification API.
 
 import logging
 import inspect
+import contextlib
 import collections
 
 import props
@@ -156,6 +157,49 @@ class Notifier(object):
         
         log.debug('{}: De-registered listener {}'.format(
             type(self).__name__, listener))
+
+
+    def enable(self, name, topic=None):
+        """Enables the specified listener. """
+        if topic is None:
+            topic = DEFAULT_TOPIC
+
+        self.__listeners[topic][name].enabled = True
+
+
+    def disable(self, name, topic=None):
+        """Disables the specified listener. """
+        if topic is None:
+            topic = DEFAULT_TOPIC
+
+        self.__listeners[topic][name].enabled = False
+
+
+    def isEnabled(self, name, topic=None):
+        """Returns ``True`` if the specified listener is enabled, ``False``
+        otherwise.
+        """
+        if topic is None:
+            topic = DEFAULT_TOPIC
+
+        return self.__listeners[topic][name].enabled
+
+
+    @contextlib.contextmanager
+    def skip(self, name, topic=None):
+        """Context manager which disables the speciifed listener, and
+        restores its state before returning.
+        """
+
+        state = self.isEnabled(name, topic)
+        self.disable(name, topic)
+
+        try:
+            yield
+
+        finally:
+            if state: self.enable( name, topic)
+            else:     self.disable(name, topic)
         
 
     def notify(self, *args, **kwargs):
