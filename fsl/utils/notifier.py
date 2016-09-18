@@ -85,8 +85,23 @@ class Notifier(object):
         """Initialises a dictionary of listeners on a new ``Notifier``
         instance.
         """
-        new             = object.__new__(cls)
+        
+        new = object.__new__(cls)
+
+        # Listeners are stored in this
+        #
+        # { topic : { name : _Listener } }
+        #
+        # dictionary, with the inner
+        # dictionaries ordered by
+        # insertion time.
         new.__listeners = collections.defaultdict(collections.OrderedDict)
+
+        # Notification can be enabled on a per-
+        # topic basis. This dictionary contains
+        # enable states for each topic, as
+        # { topic : enabled } mappings.
+        new.__enabled = {}
 
         if isinstance(new, props.HasProperties):
             log.warning('Warning: {} is a sub-class of both '
@@ -120,7 +135,9 @@ class Notifier(object):
             topic = DEFAULT_TOPIC
 
         listener = _Listener(name, callback, topic, runOnIdle)
+        
         self.__listeners[topic][name] = listener
+        self.__enabled[  topic]       = self.__enabled.get(topic, True)
 
         log.debug('{}: Registered {}'.format(type(self).__name__, listener))
 
@@ -154,25 +171,23 @@ class Notifier(object):
         # No more listeners for this topic
         if len(listeners) == 0:
             self.__listeners.pop(topic)
+            self.__enabled  .pop(topic)
         
         log.debug('{}: De-registered listener {}'.format(
             type(self).__name__, listener))
 
 
-    def enable(self, name, topic=None):
+    def enable(self, name, topic=None, enable=True):
         """Enables the specified listener. """
         if topic is None:
             topic = DEFAULT_TOPIC
 
-        self.__listeners[topic][name].enabled = True
+        self.__listeners[topic][name].enabled = enable
 
 
     def disable(self, name, topic=None):
         """Disables the specified listener. """
-        if topic is None:
-            topic = DEFAULT_TOPIC
-
-        self.__listeners[topic][name].enabled = False
+        self.enable(name, topic, False)
 
 
     def isEnabled(self, name, topic=None):
@@ -183,6 +198,55 @@ class Notifier(object):
             topic = DEFAULT_TOPIC
 
         return self.__listeners[topic][name].enabled
+
+
+    def enableAll(self, topic=None, state=True):
+        """Enable/disable all listeners for the specified topic.
+
+        :arg topic: Topic to enable/disable listeners on. If ``None``,
+                    all listeners are enabled/disabled.
+
+        :arg state: State to set listeners to.
+        """
+
+
+        if topic is None:
+            topic = DEFAULT_TOPIC
+
+        self.__enabled[topic] = state
+
+    
+    def disableAll(self, topic=None):
+        """Disable all listeners for the specified topic (or ``None``
+        to disable all listeners).
+        """
+        self.enableAll(False)
+
+
+    def isAllEnabled(self, topic=None):
+        """Returns ``True`` if all listeners for the specified topic (or all
+        listeners if ``topic=None``) are enabled, ``False`` otherwise.
+        """
+        if topic is None:
+            topic = DEFAULT_TOPIC
+            
+        return self.__enabled[topic]
+
+
+    @contextlib.contextmanager
+    def skipAll(self, topic=None):
+        """Context manager which disables all listeners for the
+        specified, and restores their state before returning.
+        """
+        
+        state = self.isAllEnabled(topic)
+        
+        self.disableAll(topic)
+
+        try:
+            yield
+        finally:
+            self.enableAll(topic, state)
 
 
     @contextlib.contextmanager
@@ -236,11 +300,20 @@ class Notifier(object):
                   See :meth:`register`.
         """
 
-        topic     = kwargs.get('topic', DEFAULT_TOPIC)
-        value     = kwargs.get('value', None)
-        listeners = [self.__listeners[topic]]
+        topic        = kwargs.get('topic', DEFAULT_TOPIC)
+        value        = kwargs.get('value', None)
+        isDefault    = topic == DEFAULT_TOPIC
+        allEnabled   = self.__enabled.get(DEFAULT_TOPIC, True)
+        topicEnabled = ((isDefault and allEnabled) or
+                        self.__enabled.get(topic), True)
+                       
+        if not allEnabled:
+            return
 
-        if topic != DEFAULT_TOPIC:
+        if topicEnabled:
+            listeners = [self.__listeners[topic]]
+
+        if not isDefault:
             listeners.append(self.__listeners[DEFAULT_TOPIC])
 
         if sum(map(len, listeners)) == 0:
