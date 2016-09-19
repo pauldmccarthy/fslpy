@@ -19,16 +19,15 @@ saving/loading component classifications to/from file:
 
 
 import logging
-
 import os.path as op
 
-import props
+import fsl.utils.notifier as notifier
 
 
 log = logging.getLogger(__name__)
 
 
-class MelodicClassification(props.HasProperties):
+class MelodicClassification(notifier.Notifier):
     """The ``MelodicClassification`` class is a convenience class for managing
     a collection of component classification labels.
 
@@ -47,35 +46,47 @@ class MelodicClassification(props.HasProperties):
        clearLabels
        clearComponents
 
+    The ``MelodicClassification`` class uses the :class:`.Notifier` interface
+    to notify listeners about changes to the labels. Listeners can be 
+    registered to be notified on the following topics:
 
-    .. note::    All component labels are internally stored as lower case;
-                 their cased version (whatever is initially used) is accessible
-                 via the :meth:`getDisplayLabel` method.
-    
+      - ``added``:   A new label was added to a component.
+      - ``removed``: A label was removed from a component.
 
-    .. warning:: Do not modify the :attr:`labels` list directly - use the
-                 methods listed above. A ``MelodicClassification`` needs to
-                 manage some internal state whenever the component labels
-                 change, so directly modifying the ``labels`` list will corrupt
-                 this internal state.
-    """
+    When either of these events occur, the value passed to registered
+    listeners will contain a list of ``(component, label)``) tuples,
+    which specify the labels that were added/removed.
 
-    
-    labels = props.List()
-    """A list of lists, one for each component, which contains the labels that
-    have been added to that component. Do not modify this list directly.
-    However, feel free to register a listener to be notified when this list
-    changes.
+    .. note:: All component labels are internally stored as lower case;
+              their cased version (whatever is initially used) is accessible
+              via the :meth:`getDisplayLabel` method.
     """
 
     
     def __init__(self, melimage):
         """Create a ``MelodicClassification`` instance.
+
+        :arg melimage: A :class:`.MelodicImage` instance.
         """
 
         self.__melimage      = melimage
         self.__ncomps        = melimage.numComponents()
         self.__displayLabels = {}
+
+        # __labels is a list of lists, one list
+        # for each component, containing the
+        # labels for that component.
+        #
+        # __components is a dictionary of
+        #
+        #   { label : [component] } mappings
+        # 
+        # containing the same information, but
+        # making lookup by label a bit quicker.
+        #
+        # These are initialised in clear()
+        self.__labels        = None
+        self.__components    = None
 
         self.clear()
 
@@ -88,10 +99,8 @@ class MelodicClassification(props.HasProperties):
     def clear(self):
         """Removes all labels from all components. """
 
-        with props.suppress(self, 'labels', notify=True):
-
-            self.__components = {}
-            self.labels       = [[] for i in range(self.__ncomps)]
+        self.__components = {}
+        self.__labels     = [[] for i in range(self.__ncomps)]
         
 
     def load(self, filename):
@@ -126,8 +135,7 @@ class MelodicClassification(props.HasProperties):
                 allLabels.append(['Unknown'])
 
         # Add the labels to this melclass object
-        with props.suppress(self, 'labels', notify=True):
-
+        with self.skipAll(topic='added'):
             for i, labels in enumerate(allLabels):
                 for label in labels:
                     self.addLabel(i, label)
@@ -142,7 +150,7 @@ class MelodicClassification(props.HasProperties):
         allLabels = []
 
         for c in range(self.__ncomps):
-            labels = [self.getDisplayLabel(l) for l in self.labels[c]]
+            labels = [self.getDisplayLabel(l) for l in self[c]]
             allLabels.append(labels)
 
         saveLabelFile(self.__melimage.getMelodicDir(),
@@ -152,7 +160,7 @@ class MelodicClassification(props.HasProperties):
 
     def getLabels(self, component):
         """Returns all labels of the specified component. """
-        return list(self.labels[component])
+        return list(self.__labels[component])
 
 
     def hasLabel(self, component, label):
@@ -160,66 +168,88 @@ class MelodicClassification(props.HasProperties):
         ``False`` otherwise.
         """
         label = label.lower()
-        return label in self.labels[component]
+        return label in self.__labels[component]
     
 
-    def addLabel(self, component, label):
-        """Adds the given label to the given component. """
+    def addLabel(self, component, label, notify=True):
+        """Adds the given label to the given component.
+
+        :arg notify: If ``True`` (the default), the :meth:`.Notifier.notify`
+                     method will be called, with the ``'added'`` topic.
+                     This parameter is only intended for uses interal to the
+                     ``MelodicClassification`` class.
+
+        :returns: ``True`` if the label was added, ``False`` if the label was
+                  already present.
+        """
 
         display = label
         label   = label.lower()
-        labels  = list(self.labels[component])
+        labels  = list(self.__labels[component])
         comps   = list(self.__components.get(label, []))
         
         if label in labels:
-            return 
+            return False
 
         labels.append(label)
         comps .append(component)
 
-        self.__displayLabels[label] = display
-
-        # Change __components first, so
-        # any listeners on labels are
-        # not notified before our intenral
-        # state becomes consistent
-        self.__components[label]     = comps        
-        self.labels[      component] = labels
+        self.__displayLabels[label]     = display
+        self.__components[   label]     = comps        
+        self.__labels[       component] = labels
 
         log.debug('Label added to component: {} <-> {}'.format(component,
                                                                label))
+
+        if notify:
+            self.notify(topic='added', value=[(component, label)])
+
+        return True
  
 
-    def removeLabel(self, component, label):
-        """Removes the given label from the given component. """
+    def removeLabel(self, component, label, notify=True):
+        """Removes the given label from the given component.
+
+        :returns: ``True`` if the label was removed, ``False`` if the 
+                  component did not have this label.
+        """
 
         label  = label.lower()
-        labels = list(self.labels[component])
+        labels = list(self.__labels[component])
         comps  = list(self.__components.get(label, []))
 
         if label not in labels:
-            return
+            return False
 
         labels.remove(label)
         comps .remove(component)
 
         self.__components[label]     = comps        
-        self.labels[      component] = labels
+        self.__labels[    component] = labels
 
         log.debug('Label removed from component: {} <-> {}'.format(component,
                                                                    label))
 
-    
+        if notify:
+            self.notify(topic='removed', value=[(component, label)])
+
+        return True
+
+
     def clearLabels(self, component):
         """Removes all labels from the given component. """
         
-        labels = self.getLabels(component)
+        labels  = self.getLabels(component)
+        removed = []
 
-        with props.suppress(self, 'labels', notify=True):
-            for l in labels:
-                self.removeLabel(component, l)
+        for label in labels:
+            if self.removeLabel(component, label, notify=False):
+                removed.append((component, label))
 
         log.debug('Labels cleared from component: {}'.format(component))
+
+        if len(removed) > 0:
+            self.notify(topic='removed', value=removed)
 
     
     def getComponents(self, label):
@@ -240,19 +270,23 @@ class MelodicClassification(props.HasProperties):
         self.addLabel(component, label)
 
 
-    def removeComponent(self, label, component):
+    def removeComponent(self, label, component, notify=True):
         """Removes the given label from the given component. """
-        self.removeLabel(component, label)
+        self.removeLabel(component, label, notify)
 
     
     def clearComponents(self, label):
         """Removes the given label from all components. """
         
         components = self.getComponents(label)
+        removed    = []
 
-        with props.suppress(self, 'labels', notify=True):
-            for c in components:
-                self.removeComponent(label, c)
+        for comp in components:
+            if self.removeComponent(label, comp, notify=False):
+                removed.append((comp, label))
+
+        if len(removed) > 0:
+            self.notify(topic='removed', value=removed)
 
 
 def loadLabelFile(filename, includeLabel=None, excludeLabel=None):

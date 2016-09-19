@@ -220,7 +220,7 @@ class Notifier(object):
         """Disable all listeners for the specified topic (or ``None``
         to disable all listeners).
         """
-        self.enableAll(False)
+        self.enableAll(topic, False)
 
 
     def isAllEnabled(self, topic=None):
@@ -236,11 +236,14 @@ class Notifier(object):
     @contextlib.contextmanager
     def skipAll(self, topic=None):
         """Context manager which disables all listeners for the
-        specified, and restores their state before returning.
+        specified topic, and restores their state before returning.
+
+        :arg topic: Topic to skip listeners on. If ``None``, notification
+                    is disabled for all topics.
         """
         
         state = self.isAllEnabled(topic)
-        
+
         self.disableAll(topic)
 
         try:
