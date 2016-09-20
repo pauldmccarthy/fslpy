@@ -14,6 +14,8 @@ import inspect
 import contextlib
 import collections
 
+import six
+
 import props
 
 import fsl.utils.async as async
@@ -119,6 +121,9 @@ class Notifier(object):
                         arguments:
 
                           - this ``Notifier`` instance.
+
+                          - The topic, which may be ``None`` - see
+                            :meth:`notify`.
 
                           - A value, which may be ``None`` - see
                             :meth:`notify`.
@@ -270,17 +275,27 @@ class Notifier(object):
                 # if a notification is triggered
                 # by the code here, the __myListener
                 # function will not be called.
+
+        :arg name:  Name of the listener to skip
+
+        :arg topic: Topic or topics that the listener is registered on.
         """
 
-        state = self.isEnabled(name, topic)
-        self.disable(name, topic)
+        if topic is None or isinstance(topic, six.string_types):
+            topic = [topic]
+
+        topics = topic
+        states = [self.isEnabled(name, t) for t in topics]
+
+        for topic in topics:
+            self.disable(name, topic)
 
         try:
             yield
 
         finally:
-            if state: self.enable( name, topic)
-            else:     self.disable(name, topic)
+            for topic, state in zip(topics, states):
+                self.enable(name, topic, state)
         
 
     def notify(self, *args, **kwargs):
@@ -303,54 +318,66 @@ class Notifier(object):
                   See :meth:`register`.
         """
 
-        topic        = kwargs.get('topic', DEFAULT_TOPIC)
-        value        = kwargs.get('value', None)
-        isDefault    = topic == DEFAULT_TOPIC
-        allEnabled   = self.__enabled.get(DEFAULT_TOPIC, True)
-        topicEnabled = ((isDefault and allEnabled) or
-                        self.__enabled.get(topic), True)
-                       
-        if not allEnabled:
+        topic     = kwargs.get('topic', None)
+        value     = kwargs.get('value', None)
+        listeners = self.__getListeners(topic)
+
+        if len(listeners) == 0:
             return
 
-        if topicEnabled:
-            listeners = [self.__listeners[topic]]
-
-        if not isDefault:
-            listeners.append(self.__listeners[DEFAULT_TOPIC])
-
-        if sum(map(len, listeners)) == 0:
-            return
-
-        if log.getEffectiveLevel() >= logging.DEBUG:
-            stack = inspect.stack()
-            frame = stack[1]
-
+        if log.getEffectiveLevel() <= logging.DEBUG:
+            stack   = inspect.stack()
+            frame   = stack[1]
             srcMod  = '...{}'.format(frame[1][-20:])
             srcLine = frame[2] 
 
             log.debug('{}: Notifying {} listeners (topic: {}) [{}:{}]'.format(
                 type(self).__name__,
-                sum(map(len, listeners)),
+                len(listeners),
                 topic,
                 srcMod,
                 srcLine))
 
-        for ldict in listeners:
-            for name, listener in list(ldict.items()):
+        for listener in listeners:
                 
-                callback = listener.callback
+            callback = listener.callback
+            name     = listener.name
 
-                # The callback, or the owner of the
-                # callback function may have been
-                # gc'd - remove it if this is the case.
-                if callback is None:
-                    log.debug('Listener {} has been gc\'d - '
-                              'removing from list'.format(name))
-                    ldict.pop(name)
+            # The callback, or the owner of the
+            # callback function may have been
+            # gc'd - remove it if this is the case.
+            if callback is None:
+                log.debug('Listener {} has been gc\'d - '
+                          'removing from list'.format(name))
+                self.__listeners[listener.topic].pop(name)
 
-                elif not listener.enabled:
-                    continue
-                    
-                elif listener.runOnIdle: async.idle(callback, self, value)
-                else:                    callback(            self, value)
+            elif not listener.enabled:
+                continue
+
+            elif listener.runOnIdle: async.idle(callback, self, topic, value)
+            else:                    callback(            self, topic, value)
+
+
+    def __getListeners(self, topic):
+        """Called by :meth:`notify`. Returns all listeners which should be
+        notified for the specified ``topic``.
+        """
+
+        isDefault    = topic is None
+        allEnabled   = self.__enabled.get(DEFAULT_TOPIC, True)
+        topicEnabled = ((isDefault and allEnabled) or
+                        self.__enabled.get(topic), True)
+
+        if isDefault:
+            topic = DEFAULT_TOPIC
+
+        if not allEnabled:
+            return []
+
+        if topicEnabled:
+            listeners = list(self.__listeners.get(topic, {}).values())
+
+        if not isDefault:
+            listeners.extend(self.__listeners.get(DEFAULT_TOPIC, {}).values())
+
+        return listeners
