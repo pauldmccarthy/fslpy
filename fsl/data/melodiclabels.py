@@ -163,6 +163,13 @@ class MelodicClassification(notifier.Notifier):
         return list(self.__labels[component])
 
 
+    def getAllLabels(self):
+        """Returns all labels that are currently associated with any
+        component.
+        """
+        return list(self.__components.keys())
+
+
     def hasLabel(self, component, label):
         """Returns ``True`` if the specified component has the specified label,
         ``False`` otherwise.

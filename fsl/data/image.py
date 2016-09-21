@@ -137,7 +137,7 @@ class Nifti(object):
         # corresponds to world location (0, 0, 0).
         # This goes against the NIFTI spec - it
         # should just be a straight scaling matrix.
-        elif header['qform_code'] == 0 or header['sform_code'] == 0:
+        elif header['qform_code'] == 0 and header['sform_code'] == 0:
             pixdims       = header.get_zooms()
             voxToWorldMat = transform.scaleOffsetXform(pixdims, 0)
 
