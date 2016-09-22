@@ -184,4 +184,47 @@ def test_Image_orientation(testdir):
     assert radio.getOrientation(1, radio.worldToVoxMat) == constants.ORIENT_P2A
     assert radio.getOrientation(2, radio.worldToVoxMat) == constants.ORIENT_I2S 
 
+
+def test_Image_sqforms(testdir):
+
+    benchmark   = fslimage.Image(op.join(testdir, 'MNI152_T1_2mm.nii.gz'))
+    nosform     = fslimage.Image(op.join(testdir, 'MNI152_T1_2mm_nosform.nii.gz'))
+    noqform     = fslimage.Image(op.join(testdir, 'MNI152_T1_2mm_noqform.nii.gz'))
+    nosqform    = fslimage.Image(op.join(testdir, 'MNI152_T1_2mm_nosqform.nii.gz'))
     
+    scalemat    = np.diag([2,   2,   2,   1])
+    invScalemat = np.diag([0.5, 0.5, 0.5, 1])
+
+    assert np.all(np.isclose(nosform.voxToWorldMat,  benchmark.voxToWorldMat))
+    assert np.all(np.isclose(nosform.worldToVoxMat,  benchmark.worldToVoxMat))
+    assert np.all(np.isclose(noqform.voxToWorldMat,  benchmark.voxToWorldMat))
+    assert np.all(np.isclose(noqform.worldToVoxMat,  benchmark.worldToVoxMat))
+    assert np.all(np.isclose(nosqform.voxToWorldMat, scalemat))
+    assert np.all(np.isclose(nosqform.worldToVoxMat, invScalemat))
+    
+
+def test_2D_images(testdir):
+
+    tests = [('MNI152_T1_2mm_sliceXY.nii.gz',          (91, 109, 1),    (2.0, 2.0, 2.0)),
+             ('MNI152_T1_2mm_sliceXZ.nii.gz',          (91, 1,   91),   (2.0, 2.0, 2.0)),
+             ('MNI152_T1_2mm_sliceYZ.nii.gz',          (1,  109, 91),   (2.0, 2.0, 2.0)),
+             ('MNI152_T1_2mm_sliceXY_4D.nii.gz',       (91, 109, 1, 5), (2.0, 2.0, 2.0, 1.0)),
+
+             # When you create an XY slice with
+             # fslroi, it sets nifti/dim0 to 2.
+             # This should still be read in as
+             # a 3D image.
+             ('MNI152_T1_2mm_sliceXY_bad_dim0.nii.gz', (91, 109, 1),  (2.0, 2.0, 2.0))]
+
+    for fname, shape, pixdim in tests:
+
+        fname  = op.join(testdir, 'nifti2D', fname)
+        image  = fslimage.Image(fname)
+        
+        assert len(shape)  == len(image   .shape)
+        assert len(shape)  == len(image[:].shape)
+        assert len(pixdim) == len(image   .pixdim)
+
+        assert tuple(map(float, shape))  == tuple(map(float, image   .shape))
+        assert tuple(map(float, shape))  == tuple(map(float, image[:].shape))
+        assert tuple(map(float, pixdim)) == tuple(map(float, image   .pixdim))
