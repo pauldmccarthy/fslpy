@@ -150,7 +150,7 @@ class MelodicClassification(notifier.Notifier):
         allLabels = []
 
         for c in range(self.__ncomps):
-            labels = [self.getDisplayLabel(l) for l in self[c]]
+            labels = [self.getDisplayLabel(l) for l in self.getLabels(c)]
             allLabels.append(labels)
 
         saveLabelFile(self.__melimage.getMelodicDir(),
@@ -422,7 +422,7 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
     else:
 
         melDir     = lines[0]
-        noisyComps = map(int, lines[-1].strip(' []').split(', '))
+        noisyComps = map(int, lines[-1].strip(' []').split(','))
 
         # The melodic directory path should
         # either be an absolute path, or
