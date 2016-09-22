@@ -161,26 +161,17 @@ class Nifti(object):
          - A sequence/tuple containing the zooms/pixdims.
         """
 
+        # The canonicalShape method figures out
+        # the data shape that we should use.
         origShape = list(header.get_data_shape())
-        shape     = list(origShape)
+        shape     = imagewrapper.canonicalShape(origShape)
         pixdims   = list(header.get_zooms())
 
-        # Squeeze out empty dimensions, as
-        # 3D image can sometimes be listed
-        # as having 4 or more dimensions 
-        for i in reversed(range(len(shape))):
-            if shape[i] == 1: shape = shape[:i]
-            else:             break
-
-        # But make sure the shape 
-        # has at 3 least dimensions
-        if len(shape) < 3:
-            shape = shape + [1] * (3 - len(shape))
-
-        # The same goes for the pixdim - if get_zooms()
-        # doesn't return at least 3 values, we'll fall
-        # back to the pixdim field in the header.
-        if len(pixdims) < 3:
+        # if get_zooms() doesn't return at
+        # least len(shape) values, we'll
+        # fall back to the pixdim field in
+        # the header.
+        if len(pixdims) < len(shape):
             pixdims = header['pixdim'][1:]
 
         pixdims = pixdims[:len(shape)]
