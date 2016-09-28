@@ -22,12 +22,22 @@ Idle tasks
    idle
    idleWhen
    inIdle
+   getIdleTimeout
+   setIdleTimeout
 
 
 The :func:`idle` function is a simple way to run a task on an ``wx``
 ``EVT_IDLE`` event handler. This effectively performs the same job as the
 :func:`run` function, but is more suitable for short tasks which do not
 warrant running in a separate thread.
+
+
+The ``EVT_IDLE`` event is generated automatically by ``wx``. However, there
+are some circumstances in which ``EVT_IDLE`` will not be generated, and
+pending events may be left on the queue. For this reason, the
+:func:`_wxIdleLoop` will occasionally use a ``wx.Timer`` to ensure that it
+continues to be called. The time-out used by this ``Timer`` can be queried
+and set via the :func:`getIdleTimeout` and :func:`setIdleTimeout` functions.
 
 
 Thread tasks
@@ -191,6 +201,27 @@ _idleCallRate = 200
 """
 
 
+def getIdleTimeout():
+    """Returns the current ``wx`` idle loop time out/call rate.
+    """
+    return _idleCallRate
+
+
+def setIdleTimeout(timeout=None):
+    """Set the ``wx`` idle loop time out/call rate. If ``timeout`` is not
+    provided, or is set to ``None``, the timeout is set to 200 milliseconds.
+    """
+
+    global _idleCallRate
+    
+    if timeout is None:
+        timeout = 200
+
+    log.debug('Idle loop timeout changed to {}'.format(timeout))
+
+    _idleCallRate = timeout
+
+
 class IdleTask(object):
     """Container object used by the :func:`idle` and :func:`_wxIdleLoop`
     functions.
@@ -256,6 +287,10 @@ def _wxIdleLoop(ev):
     # Has enouggh time elapsed
     # since the task was scheduled?
     # If not, re-queue the task.
+    # If this is the only task on the
+    # queue, the idle loop will be
+    # called again after
+    # _idleCallRate millisecs.
     if elapsed < task.after:
         log.debug('Re-queueing function ({}) on wx idle loop'.format(taskName))
         _idleQueue.put_nowait(task)
@@ -402,7 +437,8 @@ def idleWhen(func, condition, *args, **kwargs):
                     returns ``True``.
     
     :arg pollTime:  Must be passed as a keyword argument. Time (in seconds) to
-                    wait between successive calls to ``when``.
+                    wait between successive calls to ``when``. Defaults to
+                    ``0.2``.
     """
 
     pollTime = kwargs.get('pollTime', 0.2)
