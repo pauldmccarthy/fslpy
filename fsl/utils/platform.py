@@ -92,6 +92,7 @@ class Platform(notifier.Notifier):
        wxFlavour
        glVersion
        glRenderer
+       glIsSoftwareRenderer
     """
 
     
@@ -111,6 +112,7 @@ class Platform(notifier.Notifier):
         self.__inSSHSession = False
         self.__glVersion    = None
         self.__glRenderer   = None
+        self.__glIsSoftware = None
 
         # Determine if a display is available. We do
         # this once at init (instead of on-demand in
@@ -272,6 +274,31 @@ class Platform(notifier.Notifier):
     def glRenderer(self, value):
         """Set the available OpenGL renderer. """
         self.__glRenderer = value
+
+        value = value.lower()
+
+        # There doesn't seem to be any quantitative
+        # method for determining whether we are using
+        # software-based rendering, so a hack is
+        # necessary.
+        self.__glIsSoftware = any((
+            'software' in value,
+            'mesa'     in value,
+            'gallium'  in value,
+            'llvmpipe' in value,
+            'chromium' in value,
+        ))
+
+
+    @property
+    def glIsSoftwareRenderer(self):
+        """Returns ``True`` if the OpenGL renderer is software based,
+        ``False`` otherwise, or ``None`` if the renderer has not yet been set.
+
+        .. note:: This check is based on heuristics, ans is not guaranteed to
+                  be correct.
+        """
+        return self.__glIsSoftware
 
 
 platform = Platform()
