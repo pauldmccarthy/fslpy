@@ -479,11 +479,11 @@ class Image(Nifti, notifier.Notifier):
         Nifti.__init__(self, nibImage.get_header())
 
         self.name                = name
+        self.__lName             = '{}_{}'.format(id(self), self.name)
         self.__dataSource        = dataSource
         self.__fileobj           = fileobj
         self.__nibImage          = nibImage
         self.__saveState         = dataSource is not None
-        self.__suppressDataRange = False
         self.__imageWrapper      = imagewrapper.ImageWrapper(self.nibImage,
                                                              self.name,
                                                              loadData=loadData,
@@ -492,9 +492,7 @@ class Image(Nifti, notifier.Notifier):
         if calcRange:
             self.calcRange()
 
-        self.__imageWrapper.register(
-            '{}_{}'.format(id(self), self.name),
-            self.__dataRangeChanged) 
+        self.__imageWrapper.register(self.__lName, self.__dataRangeChanged) 
 
         
     def __hash__(self):
@@ -588,8 +586,7 @@ class Image(Nifti, notifier.Notifier):
         Notifies any listeners of this ``Image`` (registered through the
         :class:`.Notifier` interface) on the ``'dataRange'`` topic.
         """
-        if not self.__suppressDataRange:
-            self.notify(topic='dataRange')
+        self.notify(topic='dataRange')
 
 
     def calcRange(self, sizethres=None):
@@ -720,13 +717,11 @@ class Image(Nifti, notifier.Notifier):
                                                      sliceobj,
                                                      values.shape))
 
-        self.__suppressDataRange = True
-        oldRange = self.__imageWrapper.dataRange
+        with self.__imageWrapper.skip(self.__lName):
 
-        self.__imageWrapper.__setitem__(sliceobj, values)
-
-        newRange = self.__imageWrapper.dataRange
-        self.__suppressDataRange = False
+            oldRange = self.__imageWrapper.dataRange
+            self.__imageWrapper.__setitem__(sliceobj, values)
+            newRange = self.__imageWrapper.dataRange
 
         if values.size > 0:
 
