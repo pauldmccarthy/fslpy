@@ -22,6 +22,7 @@ import            os
 import os.path as op
 import            threading
 
+import            six
 import            wx
 
 from .platform import platform as fslplatform
@@ -671,7 +672,25 @@ class FSLDirDialog(wx.Dialog):
         self.__contentSizer.Add(self.__message, flag=wx.EXPAND, proportion=1)
         self.__contentSizer.Add((1, 20))
         self.__contentSizer.Add(self.__buttonSizer, flag=wx.EXPAND)
-        
+
+        # If running on OSX, add a message
+        # telling the user about the
+        # cmd+shift+g shortcut
+        if fslplatform.os == 'Darwin':
+
+            self.__hint = wx.StaticText(
+                self,
+                label=six.u('Hint: Press \u2318+\u21e7+G in the file '
+                            'dialog to manually type in a location.'))
+
+            self.__hint.SetForegroundColour('#888888')
+
+            self.__contentSizer.Insert(2, self.__hint, flag=wx.EXPAND)
+            self.__contentSizer.Insert(3, (1, 20))
+            
+        else:
+            self.__hint = None
+            
         self.__mainSizer.Add(self.__icon,
                              flag=wx.ALL | wx.CENTRE,
                              border=20)

@@ -827,7 +827,7 @@ def loadIndexedImageFile(filename):
     fobj = igzip.SafeIndexedGzipFile(
         filename=filename,
         spacing=4194304,
-        readbuf_size=131072)
+        readbuf_size=1048576)
 
     fmap = nib.Nifti1Image.make_file_map()
     fmap['image'].fileobj = fobj

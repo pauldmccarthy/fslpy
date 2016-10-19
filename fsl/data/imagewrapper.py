@@ -12,7 +12,7 @@ Terminology
 -----------
 
 
-There are some confusing terms used in this module, so it may be of use to
+There are some confusing terms used in this module, so it may be useful to
 get their definitions straight:
 
   - *Coverage*:  The portion of an image that has been covered in the data
