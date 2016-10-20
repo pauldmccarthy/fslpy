@@ -117,6 +117,7 @@ class ImageWrapper(notifier.Notifier):
     .. autosummary::
        :nosignatures:
 
+       naninfrange
        sliceObjToSliceTuple
        sliceTupleToSliceObj
        sliceCovered
@@ -414,8 +415,7 @@ class ImageWrapper(notifier.Notifier):
                 oldvlo, oldvhi = self.__volRanges[vol, :]
                 voldata        = data[..., vi]
 
-                newvlo = float(np.nanmin(voldata))
-                newvhi = float(np.nanmax(voldata))
+                newvlo, newvhi = naninfrange(voldata)
 
                 if (not np.isnan(oldvlo)) and oldvlo < newvlo: newvlo = oldvlo
                 if (not np.isnan(oldvhi)) and oldvhi > newvhi: newvhi = oldvhi
@@ -429,8 +429,7 @@ class ImageWrapper(notifier.Notifier):
         # Calculate the new known data
         # range over the entire image
         # (i.e. over all volumes).
-        newmin = float(np.nanmin(self.__volRanges[:, 0]))
-        newmax = float(np.nanmax(self.__volRanges[:, 1]))
+        newmin, newmax = naninfrange(self.__volRanges)
 
         oldmin, oldmax = self.__range
         self.__range   = (newmin, newmax)
@@ -605,6 +604,49 @@ class ImageWrapper(notifier.Notifier):
 
         self.__image.get_data()[sliceobj] = values
         self.__updateDataRangeOnWrite(slices, values)
+
+
+def naninfrange(data):
+    """Returns the minimum and maximum values in the given ``numpy`` array,
+    ignoring ``nan`` and ``inf`` values.
+
+    The ``numpy.nanmin``/``numpy.nanmax`` functions do not handle
+    positive/negative infinity, so if such values are in the data, we need to
+    use an alternate approach to calculating the minimum/maximum.
+    """
+
+    if not np.issubdtype(data.dtype, np.float):
+        return data.min(), data.max()
+
+    # But np.nanmin/nanmax are substantially
+    # faster than the alternate, so we try it
+    # first.
+    dmin = np.nanmin(data)
+    dmax = np.nanmax(data)
+
+    # If there are no nans/infs in the data,
+    # we can just use nanmin/nanmax
+    if np.isfinite(dmin) and np.isfinite(dmax):
+        return dmin, dmax
+
+    # The entire array contains nans
+    if np.isnan(dmin):
+        return dmin, dmin
+
+    # Otherwise we need to calculate min/max
+    # only on finite values. This is the slow
+    # option.
+
+    # Find all finite values
+    finite = np.isfinite(data)
+
+    # Try to calculate min/max on those values.
+    # An error will be raised if there are no
+    # finite values in the array
+    try:
+        return data[finite].min(), data[finite].max()
+    except:
+        return np.nan, np.nan
 
 
 def canonicalShape(shape):
