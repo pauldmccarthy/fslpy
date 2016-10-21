@@ -15,7 +15,7 @@ fsl.data package
    fsl.data.melodicimage
    fsl.data.melodiclabels
    fsl.data.model
-   fsl.data.tensorimage
+   fsl.data.dtifit
 
 .. automodule:: fsl.data
     :members:
