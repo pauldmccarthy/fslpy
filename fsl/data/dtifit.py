@@ -133,11 +133,11 @@ def decomposeTensorMatrix(data):
     # into their respective locations
     matrices[:, 0, 0] = data[..., 0].flat
     matrices[:, 0, 1] = data[..., 1].flat
-    matrices[:, 0, 2] = data[..., 2].flat
     matrices[:, 1, 0] = data[..., 1].flat
+    matrices[:, 0, 2] = data[..., 2].flat
+    matrices[:, 2, 0] = data[..., 2].flat
     matrices[:, 1, 1] = data[..., 3].flat
     matrices[:, 1, 2] = data[..., 4].flat
-    matrices[:, 2, 0] = data[..., 2].flat
     matrices[:, 2, 1] = data[..., 4].flat
     matrices[:, 2, 2] = data[..., 5].flat
 
@@ -146,12 +146,21 @@ def decomposeTensorMatrix(data):
     vals, vecs = npla.eig(matrices)
     vecShape   = list(shape) + [3]
 
-    l1 = vals[:, 0]   .reshape(shape)
+    # Grr, np.linalg.eig does not 
+    # sort the eigenvalues/vectors, 
+    # so we have to do it ourselves.
+    order = vals.argsort(axis=1)
+    i     = np.arange(nvoxels)[:, np.newaxis]
+    vecs  = vecs.transpose(0, 2, 1)
+    vals  = vals[i, order]
+    vecs  = vecs[i, order, :]
+
+    l1 = vals[:, 2]   .reshape(shape)
     l2 = vals[:, 1]   .reshape(shape)
-    l3 = vals[:, 2]   .reshape(shape)
-    v1 = vecs[:, 0, :].reshape(vecShape)
+    l3 = vals[:, 0]   .reshape(shape)
+    v1 = vecs[:, 2, :].reshape(vecShape)
     v2 = vecs[:, 1, :].reshape(vecShape)
-    v3 = vecs[:, 2, :].reshape(vecShape)
+    v3 = vecs[:, 0, :].reshape(vecShape)
 
     return v1, v2, v3, l1, l2, l3
 
@@ -191,7 +200,7 @@ class DTIFitTensor(fslimage.Nifti):
         fslimage.Nifti.__init__(self, self.__l1.header)
 
         self.dataSource = op.abspath(path)
-        self.name       = '{}[tensor]'.format(op.basename(path))
+        self.name       = '{}'.format(op.basename(path))
 
     def V1(self): return self.__v1
     def V2(self): return self.__v2
