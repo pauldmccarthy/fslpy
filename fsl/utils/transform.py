@@ -63,7 +63,7 @@ def scaleOffsetXform(scales, offsets):
     if lens < 3: scales  = scales  + [1.0] * (3 - lens)
     if leno < 3: offsets = offsets + [0.0] * (3 - leno)
 
-    xform = np.eye(4, dtype=np.float32)
+    xform = np.eye(4, dtype=np.float64)
 
     xform[0, 0] = scales[0]
     xform[1, 1] = scales[1]
