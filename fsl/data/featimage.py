@@ -309,6 +309,17 @@ class FEATImage(fslimage.Image):
         if self.__design is None:
             raise RuntimeError('No design')
 
+        # Here we are basically trying to 
+        # replicate the behaviour of tsplot.
+        # There are some differences though - 
+        # by default, tsplot weights the
+        # data by Z statistics. We're not
+        # doing that here.
+
+        # If we are not plotting a full model fit,
+        # normalise the contrast vector to unit
+        # length. Why? Because that's what tsplot
+        # does.
         if not fullmodel:
             contrast = np.array(contrast)
             contrast = contrast / np.sqrt((contrast ** 2).sum())
@@ -318,17 +329,21 @@ class FEATImage(fslimage.Image):
 
         if len(contrast) != numEVs:
             raise ValueError('Contrast is wrong length')
-        
+
         X        = self.__design.getDesign(xyz)
         data     = self[x, y, z, :]
         modelfit = np.zeros(len(data))
 
         for i in range(numEVs):
 
+            ev        = X[:, i]
             pe        = self.getPE(i)[x, y, z]
-            modelfit += X[:, i] * pe * contrast[i]
+            modelfit += ev * pe * contrast[i]
 
-        return modelfit + data.mean()
+        # Make sure the full model fit
+        # has the same mean as the data
+        if fullmodel: return modelfit - modelfit.mean() + data.mean()
+        else:         return modelfit
 
 
     def partialFit(self, contrast, xyz, fullmodel=False):
