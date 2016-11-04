@@ -320,7 +320,8 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
                   [2, 5, 6, 7]
 
               The square brackets may or may not be present, i.e. the
-              following format is also accepted::
+              following format is also accepted (this format is generated
+              by ICA-AROMA)::
 
                   2, 5, 6, 7
 

@@ -45,7 +45,7 @@ class FEATImage(fslimage.Image):
         # [23, 30, 42] (in this example, we
         # have 4 EVs - the first argument
         # is a contrast vector).
-        img.fit([1, 1, 1, 1], [23, 30, 42], fullmodel=True)
+        img.fit([1, 1, 1, 1], [23, 30, 42], fullModel=True)
     """
     
 
@@ -109,6 +109,13 @@ class FEATImage(fslimage.Image):
         name, minus the ``.feat`` / ``.gfeat`` suffix.
         """
         return self.__analysisName
+
+
+    def isFirstLevelAnalysis(self):
+        """Returns ``True`` if the FEAT analysis described by ``settings``
+        is a first level analysis, ``False`` otherwise.
+        """
+        return featanalysis.isFirstLevelAnalysis(self.__settings)
 
 
     def getTopLevelAnalysisDir(self):
@@ -287,12 +294,12 @@ class FEATImage(fslimage.Image):
         return self.__clustMasks[con] 
             
 
-    def fit(self, contrast, xyz, fullmodel=False):
+    def fit(self, contrast, xyz, fullModel=False):
         """Calculates the model fit for the given contrast vector
         at the given voxel.
 
-        Passing in a contrast of all 1s, and ``fullmodel=True`` will
-        get you the full model fit. Pass in ``fullmodel=False`` for
+        Passing in a contrast of all 1s, and ``fullModel=True`` will
+        get you the full model fit. Pass in ``fullModel=False`` for
         all other contrasts, otherwise the model fit values will not
         be scaled correctly.
 
@@ -302,12 +309,19 @@ class FEATImage(fslimage.Image):
         :arg xyz:       Coordinates of the voxel to calculate the model fit
                         for.
 
-        :arg fullmodel: Set to ``True`` for a full model fit, ``False``
+        :arg fullModel: Set to ``True`` for a full model fit, ``False``
                         otherwise.
         """
 
         if self.__design is None:
             raise RuntimeError('No design')
+
+        x, y, z    = xyz
+        firstLevel = self.isFirstLevelAnalysis()
+        numEVs     = self.numEVs()
+
+        if len(contrast) != numEVs:
+            raise ValueError('Contrast is wrong length')
 
         # Here we are basically trying to 
         # replicate the behaviour of tsplot.
@@ -316,19 +330,21 @@ class FEATImage(fslimage.Image):
         # data by Z statistics. We're not
         # doing that here.
 
-        # If we are not plotting a full model fit,
-        # normalise the contrast vector to unit
-        # length. Why? Because that's what tsplot
-        # does.
-        if not fullmodel:
-            contrast = np.array(contrast)
-            contrast = contrast / np.sqrt((contrast ** 2).sum())
-
-        x, y, z = xyz
-        numEVs  = self.numEVs()
-
-        if len(contrast) != numEVs:
-            raise ValueError('Contrast is wrong length')
+        # Normalise the contrast vector.
+        # The scaling factor is arbitrary,
+        # but should result in a visually
+        # sensible scaling of the model fit.
+        # For a vector of all 1's (i.e. a
+        # full model fit) this is a no-op.
+        #
+        # We also take the absolute value
+        # of the values in the contrast
+        # vector, as the parameter estimates
+        # should be appropriately signed.
+        contrast = np.array(contrast)
+        nonzero  = sum(~np.isclose(contrast, 0))
+        contrast = contrast / np.sqrt((contrast ** 2).sum())
+        contrast = np.abs(contrast * np.sqrt(nonzero))
 
         X        = self.__design.getDesign(xyz)
         data     = self[x, y, z, :]
@@ -340,13 +356,19 @@ class FEATImage(fslimage.Image):
             pe        = self.getPE(i)[x, y, z]
             modelfit += ev * pe * contrast[i]
 
-        # Make sure the full model fit
-        # has the same mean as the data
-        if fullmodel: return modelfit - modelfit.mean() + data.mean()
-        else:         return modelfit
+        # Make sure the model fit has an appropriate mean.
+        # 
+        # Full model fits should, but won't necessarily,
+        # have the same mean as the data.
+        #
+        # The data in first level analyses is demeaned before
+        # model fitting, so we need to add it back in.
+        if   fullModel:  return modelfit - modelfit.mean() + data.mean()
+        elif firstLevel: return modelfit - modelfit.mean() + data.mean()
+        else:            return modelfit
 
 
-    def partialFit(self, contrast, xyz, fullmodel=False):
+    def partialFit(self, contrast, xyz, fullModel=False):
         """Calculates and returns the partial model fit for the specified
         contrast vector at the specified voxel.
 
@@ -355,6 +377,6 @@ class FEATImage(fslimage.Image):
 
         x, y, z   = xyz
         residuals = self.getResiduals()[x, y, z, :]
-        modelfit  = self.fit(contrast, xyz, fullmodel)
+        modelfit  = self.fit(contrast, xyz, fullModel=fullModel)
 
         return residuals + modelfit

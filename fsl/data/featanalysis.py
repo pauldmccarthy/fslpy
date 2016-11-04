@@ -19,6 +19,7 @@ following functions are provided:
    hasMelodicDir
    getAnalysisDir
    getTopLevelAnalysisDir
+   isFirstLevelAnalysis
    loadDesign
    loadContrasts
    loadSettings
@@ -277,6 +278,15 @@ def getThresholds(settings):
         'p' : settings.get('prob_thresh', None),
         'z' : settings.get('z_thresh',    None)
     }
+
+
+def isFirstLevelAnalysis(settings):
+    """Returns ``True`` if the FEAT analysis described by ``settings``
+    is a first level analysis, ``False`` otherwise.
+
+    :arg settings: A FEAT settings dictionary (see :func:`loadSettings`).
+    """
+    return settings['level'] == '1'
 
 
 def loadClusterResults(featdir, settings, contrast):
