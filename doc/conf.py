@@ -51,12 +51,18 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'fsl'
+master_doc = 'index'
 
 # General information about the project.
 project = u'fslpy'
 copyright = u'{}, Paul McCarthy, FMRIB Centre, University of Oxford'.format(
     date.year)
+
+# Links to other things
+rst_epilog = """
+.. _fsleyes_apidoc: http://users.fmrib.ox.ac.uk/~paulmc/fsleyes_apidoc/index.html
+"""
+
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
