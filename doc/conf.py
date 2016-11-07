@@ -60,6 +60,7 @@ copyright = u'{}, Paul McCarthy, FMRIB Centre, University of Oxford'.format(
 
 # Links to other things
 rst_epilog = """
+.. |fsleyes_apidoc| replace:: FSLeyes
 .. _fsleyes_apidoc: http://users.fmrib.ox.ac.uk/~paulmc/fsleyes_apidoc/index.html
 """
 
