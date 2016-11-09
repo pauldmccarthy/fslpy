@@ -8,6 +8,14 @@
 of information about the current platform we are running on. A single
 ``Platform`` instance is created when this module is first imported, and
 is available as a module attribute called :attr:`platform`.
+
+This module is also home to the following utility functions which abstract
+away various platform differences:
+
+.. autosummary::
+   :nosignatures:
+
+   isWidgetAlive
 """
 
 
@@ -71,6 +79,25 @@ are running the Linux/GTK wx build.
 """
 
 
+def isWidgetAlive(widget):
+    """Returns ``True`` if the given ``wx.Window`` object is "alive" (i.e.
+    has not been destroyed), ``False`` otherwise. Works in both wxPython
+    and wxPython/Phoenix.
+    """
+
+    import wx
+
+    if platform.wxFlavour == WX_PHOENIX:
+        return bool(widget)
+    
+    elif platform.wxFlavour == WX_PYTHON:
+        try:
+            widget.IsEnabled()
+            return True
+        except wx.PyDeadObjectError:
+            return False
+
+
 class Platform(notifier.Notifier):
     """The ``Platform`` class contains a handful of properties which contain
     information about the platform we are running on.
@@ -107,6 +134,7 @@ class Platform(notifier.Notifier):
         self.WX_MAC_COCOA  = WX_MAC_COCOA
         self.WX_MAC_CARBON = WX_MAC_CARBON
         self.WX_GTK        = WX_GTK
+        self.isWidgetAlive = isWidgetAlive
 
         self.__fsldir       = os.environ.get('FSLDIR', None)
         self.__inSSHSession = False
